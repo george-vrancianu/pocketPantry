@@ -121,10 +121,10 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('only Product is wired: other modes say so and cannot scan', async () => {
+  it('only Product and Receipt are wired: other modes say so and cannot scan', async () => {
     renderScan({});
-    await userEvent.click(screen.getByRole('button', { name: 'Receipt' }));
-    expect(screen.getByRole('button', { name: 'Receipt' })).toHaveAttribute(
+    await userEvent.click(screen.getByRole('button', { name: 'Plate' }));
+    expect(screen.getByRole('button', { name: 'Plate' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );

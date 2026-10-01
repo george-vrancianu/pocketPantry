@@ -130,6 +130,27 @@ export class ShoppingService {
     });
   }
 
+  /** Ids of unchecked Shopping Items on the Family's active list for any of these Ingredients. */
+  async uncheckedItemIdsFor(
+    memberId: string,
+    ingredientIds: string[],
+  ): Promise<string[]> {
+    if (ingredientIds.length === 0) return [];
+    const listId = await this.activeListId(this.database, memberId);
+    const rows = await this.database
+      .select({ id: shoppingItems.id })
+      .from(shoppingItems)
+      .where(
+        and(
+          eq(shoppingItems.listId, listId),
+          eq(shoppingItems.checked, false),
+          inArray(shoppingItems.ingredientId, ingredientIds),
+        ),
+      )
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+    return rows.map((row) => row.id);
+  }
+
   async setChecked(
     memberId: string,
     itemId: string,

@@ -6,6 +6,7 @@ import { ApiError } from '../../../lib/api';
 import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
 import { startReview } from '../../../lib/review';
+import { useReceiptScan } from '../../../lib/receiptScan';
 import {
   isScanMode,
   useProductScan,
@@ -25,12 +26,14 @@ export function useScanScreen() {
 
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
+  const receiptScan = useReceiptScan(i18n.language);
+  const scanner = mode === 'receipt' ? receiptScan : productScan;
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [resizeError, setResizeError] = useState<ApiError | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || productScan.isPending;
+  const reading = resizing || scanner.isPending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
@@ -46,7 +49,7 @@ export function useScanScreen() {
     } finally {
       setResizing(false);
     }
-    productScan.mutate(image, {
+    scanner.mutate(image, {
       onSuccess: ({ lines }) => {
         startReview({ mode, lines });
         navigate('/scan/review');
@@ -71,7 +74,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const error = resizeError ?? productScan.error;
+  const error = resizeError ?? scanner.error;
 
   return {
     mode,
@@ -83,7 +86,7 @@ export function useScanScreen() {
     fileInput,
     error: error ? translateApiError(t, error) : null,
     setMode: (next: ScanMode) => {
-      productScan.reset();
+      scanner.reset();
       setResizeError(null);
       setParams({ mode: next }, { replace: true });
     },

@@ -11,7 +11,7 @@ export const SCAN_MODES: ScanMode[] = [
   'ingredients',
 ];
 /** Scan Modes that are wired end to end. The others show their pill but cannot scan yet. */
-export const WIRED_SCAN_MODES: ScanMode[] = ['product'];
+export const WIRED_SCAN_MODES: ScanMode[] = ['product', 'receipt'];
 
 export function isScanMode(value: string | null): value is ScanMode {
   return SCAN_MODES.some((mode) => mode === value);
@@ -35,6 +35,8 @@ export type ProposedLine = {
   /** `YYYY-MM-DD` read from the packaging, or null. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Receipt Scan: the line was left out of the Pantry (not food, unreadable), with the reason if known. */
+  excluded?: { reason: string | null };
 };
 
 export type ScanResponse = { lines: ProposedLine[] };

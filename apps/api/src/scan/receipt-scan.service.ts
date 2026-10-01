@@ -6,6 +6,7 @@ import {
   StructuredOutputAiService,
   type StructuredOutputResult,
 } from '../ai/structured-output-ai.service';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { deriveReceiptQuantity } from './receipt-quantity';
 import {
@@ -26,9 +27,9 @@ export class ReceiptScanService {
 
   async analyze(
     input: ReceiptScanInput,
-    locale: string,
+    locale: CatalogLocale,
   ): Promise<ReceiptScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalog();
+    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
     const catalogPrompt = this.ingredientCatalog.toPrompt(catalog);
 
     let response: StructuredOutputResult;

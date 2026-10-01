@@ -24,5 +24,11 @@
   "save_few": "Save {{count}} items",
   "save_other": "Save {{count}} items",
   "saving": "Saving",
-  "discard": "Discard"
+  "discard": "Discard",
+  "excluded": {
+    "title": "Excluded ({{count}})",
+    "noReason": "Not a pantry item",
+    "include": "Include {{name}}",
+    "includeShort": "Include"
+  }
 }

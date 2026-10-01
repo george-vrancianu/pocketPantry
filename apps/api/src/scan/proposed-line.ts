@@ -22,6 +22,8 @@ export type ProposedLine = {
   /** Best-before date read from the packaging, `YYYY-MM-DD`; null lets the Catalog default apply. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Receipt Scan only: a line the Scan left out of the Pantry (not food, or unreadable), with why. Absent on lines proposed for saving. */
+  excluded?: { reason: string | null };
 };
 
 export type ScanResponse = { lines: ProposedLine[] };

@@ -15,6 +15,7 @@ import {
   withMatch,
   type ReviewLine,
 } from '../../../lib/review';
+import { useReceiptConfirm } from '../../../lib/receiptScan';
 import { useAddBatches } from '../../../lib/scan';
 
 /**
@@ -36,10 +37,15 @@ export function useReviewScreen() {
     );
   });
   const addBatches = useAddBatches(i18n.language);
+  const confirmReceipt = useReceiptConfirm(i18n.language);
+  const saver = draft?.mode === 'receipt' ? confirmReceipt : addBatches;
+  // Excluded lines (Receipt Scan) wait outside the list and are never saved.
+  const included = lines.filter((line) => line.excluded === null);
+  const excluded = lines.filter((line) => line.excluded !== null);
   // Only Unmatched lines choose a category, so only fetch the list when one is on screen.
   const parents = useCatalogParents(
     i18n.language,
-    lines.some((line) => line.match === null),
+    included.some((line) => line.match === null),
   );
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
@@ -52,16 +58,20 @@ export function useReviewScreen() {
         line.key === key ? withMatch(line, match, new Date()) : line,
       ),
     );
+  const include = (key: string) => change(key, { excluded: null });
   const drop = (key: string) =>
     setLines((all) => all.filter((line) => line.key !== key));
 
   const save = () => {
-    addBatches.mutate(lines.map(toNewBatch), {
+    const done = {
       onSuccess: () => {
         clearReview();
         navigate('/pantry');
       },
-    });
+    };
+    const batches = included.map(toNewBatch);
+    if (draft?.mode === 'receipt') confirmReceipt.mutate(batches, done);
+    else addBatches.mutate(batches, done);
   };
   const discard = () => {
     clearReview();
@@ -70,15 +80,17 @@ export function useReviewScreen() {
 
   return {
     hadDraft,
-    lines,
+    lines: included,
+    excluded,
     parents: parents.data ?? [],
     canSave:
-      lines.length > 0 && lines.every(isLineValid) && !addBatches.isPending,
-    saving: addBatches.isPending,
-    error: addBatches.error ? translateApiError(t, addBatches.error) : null,
+      included.length > 0 && included.every(isLineValid) && !saver.isPending,
+    saving: saver.isPending,
+    error: saver.error ? translateApiError(t, saver.error) : null,
     change,
     changeMatch,
     drop,
+    include,
     save,
     discard,
   };

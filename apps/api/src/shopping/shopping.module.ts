@@ -9,5 +9,6 @@ import { ShoppingService } from './shopping.service';
   imports: [SettingsModule],
   controllers: [ShoppingController, FinishShoppingController],
   providers: [ShoppingService, FinishShoppingService],
+  exports: [ShoppingService],
 })
 export class ShoppingModule {}

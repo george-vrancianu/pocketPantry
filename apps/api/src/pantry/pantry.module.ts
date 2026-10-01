@@ -7,5 +7,6 @@ import { PantryService } from './pantry.service';
   imports: [SettingsModule],
   controllers: [PantryController],
   providers: [PantryService],
+  exports: [PantryService],
 })
 export class PantryModule {}

@@ -6,6 +6,9 @@ import type { AppConfig } from '../config/env';
 import { SettingsService } from '../settings/settings.service';
 import type { ProductScanInput } from './product-scan.schemas';
 import { ProductScanService } from './product-scan.service';
+import { ReceiptProposalService } from './receipt-proposal.service';
+import type { ReceiptScanInput } from './receipt-scan.schemas';
+import { ReceiptScanService } from './receipt-scan.service';
 import { productLine, type ScanResponse } from './proposed-line';
 import { ScanCapService } from './scan-cap.service';
 
@@ -19,6 +22,8 @@ export class ScanService {
   constructor(
     private readonly cap: ScanCapService,
     private readonly productScan: ProductScanService,
+    private readonly receiptScan: ReceiptScanService,
+    private readonly receiptProposal: ReceiptProposalService,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
@@ -44,6 +49,19 @@ export class ScanService {
       infer: true,
     });
     return { lines: [productLine(result, match ?? null, threshold)] };
+  }
+
+  async scanReceipt(
+    memberId: string,
+    input: ReceiptScanInput,
+    locale: CatalogLocale,
+  ): Promise<ScanResponse> {
+    const result = await this.withinCap(memberId, () =>
+      this.receiptScan.analyze(input, locale),
+    );
+    return {
+      lines: await this.receiptProposal.propose(result, locale, memberId),
+    };
   }
 
   /** Counts the Scan before calling the provider, and hands it back if the provider fails. */

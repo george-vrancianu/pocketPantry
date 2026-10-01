@@ -24,5 +24,11 @@
   "save_few": "Salvează {{count}} articole",
   "save_other": "Salvează {{count}} de articole",
   "saving": "Se salvează",
-  "discard": "Renunță"
+  "discard": "Renunță",
+  "excluded": {
+    "title": "Excluse ({{count}})",
+    "noReason": "Nu e un articol de cămară",
+    "include": "Include {{name}}",
+    "includeShort": "Include"
+  }
 }

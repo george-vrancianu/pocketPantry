@@ -52,6 +52,8 @@ export type ReviewLine = {
   /** Unmatched only: the Parent Category the Batch lands in; '' leaves it to the server's default (top-level Other). */
   parentCategoryId: string;
   description: string;
+  /** Receipt Scan: left out of the Pantry until the Member re-includes it. Excluded lines are never saved. */
+  excluded: { reason: string | null } | null;
 };
 
 export function toReviewLine(
@@ -71,6 +73,7 @@ export function toReviewLine(
     expiryExplicit: line.expiryDate !== null,
     parentCategoryId: '',
     description: line.productDescription ?? '',
+    excluded: line.excluded ?? null,
   };
   return {
     ...base,

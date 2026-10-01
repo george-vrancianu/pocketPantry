@@ -2,6 +2,7 @@ import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { ExcludedLines } from './components/ExcludedLines';
 import { ReviewLineCard } from './components/ReviewLineCard';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
@@ -19,7 +20,7 @@ export function ReviewPage() {
   return (
     <>
       <AppScreenHeader title={t('title')} />
-      {screen.lines.length === 0 ? (
+      {screen.lines.length === 0 && screen.excluded.length === 0 ? (
         <Stack spacing={2}>
           <Typography color="text.secondary">{t('empty')}</Typography>
           <Button onClick={screen.discard}>{t('backToScan')}</Button>
@@ -43,6 +44,7 @@ export function ReviewPage() {
               />
             ))}
           </Stack>
+          <ExcludedLines lines={screen.excluded} onInclude={screen.include} />
           {screen.error ? <Alert>{screen.error}</Alert> : null}
           <Stack direction="row" spacing={1}>
             <Button onClick={screen.save} disabled={!screen.canSave}>
