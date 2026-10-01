@@ -1,7 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
-import { seedCatalog } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -36,7 +35,7 @@ describe('Shopping List (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    await seedCatalog(database);
+    // The starter Catalog is seeded once by global-setup.mjs.
   });
 
   afterAll(async () => {

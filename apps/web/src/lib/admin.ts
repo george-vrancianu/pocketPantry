@@ -31,6 +31,8 @@ export type AdminParentCategory = Translated & {
 };
 export type AdminLeafCategory = Translated & {
   parentId: string;
+  /** The Parent's catch-all Leaf for Unmatched Batches: cannot be deleted or moved. */
+  isOther: boolean;
   defaultExpiryDays: number | null;
   defaultLocation: Location | null;
 };

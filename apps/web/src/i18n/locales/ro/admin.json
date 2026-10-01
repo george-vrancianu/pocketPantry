@@ -53,6 +53,7 @@
     "defaultExpiryDays": "Valabilitate implicită (zile)",
     "defaultLocation": "Locație implicită",
     "expiryInvalid": "Introdu un număr întreg de zile între 0 și {{max}}, sau lasă gol pentru a moșteni.",
+    "otherLeafNote": "Aceasta este Categoria frunză Altele a Categoriei părinte. Primește Loturile nepotrivite, deci nu poate fi mutată sau ștearsă.",
     "leafCount": "Categorii frunză: {{count}}"
   },
   "translations": {

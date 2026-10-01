@@ -39,6 +39,7 @@ describe('Catalog (integration)', () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
     // The starter Catalog is seeded once by global-setup.mjs.
+
     const email = `catalog-${Date.now()}@example.com`;
     const signUp = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
@@ -320,6 +321,10 @@ describe('Catalog (integration)', () => {
       SEED_LEAVES.map((leaf) => seedId.leaf(leaf.slug)),
     );
 
+    // Seed ids are deterministic UUIDv5; rows created at runtime (e.g. by the
+    // Admin spec running in parallel) are UUIDv4.
+    const seeded = <T extends { id: string }>(rows: T[]) =>
+      rows.filter((row) => row.id[14] === '5');
     const snapshot = async () => ({
       aisles: await database.select().from(aisles).orderBy(aisles.id),
       // Seed rows only: other suites add their own Parents/Leaves concurrently.
@@ -332,29 +337,6 @@ describe('Catalog (integration)', () => {
       leaves: (
         await database.select().from(leafCategories).orderBy(leafCategories.id)
       ).filter((row) => seedLeafIds.has(row.id)),
-      ingredients: await database
-        .select()
-        .from(ingredients)
-        .orderBy(ingredients.id),
-      translations: await database
-        .select()
-        .from(catalogTranslations)
-        .orderBy(catalogTranslations.id),
-    // Seed ids are deterministic UUIDv5; rows created at runtime (e.g. by the
-    // Admin spec running in parallel) are UUIDv4. Only compare seeded rows.
-    const seeded = <T extends { id: string }>(rows: T[]) =>
-      rows.filter((row) => row.id[14] === '5');
-    const snapshot = async () => ({
-      aisles: seeded(await database.select().from(aisles).orderBy(aisles.id)),
-      parents: seeded(
-        await database
-          .select()
-          .from(parentCategories)
-          .orderBy(parentCategories.id),
-      ),
-      leaves: seeded(
-        await database.select().from(leafCategories).orderBy(leafCategories.id),
-      ),
       ingredients: seeded(
         await database.select().from(ingredients).orderBy(ingredients.id),
       ),
@@ -505,9 +487,8 @@ describe('Catalog (integration)', () => {
       const parents = (await database.select().from(parentCategories)).filter(
         (row) => seedParentIds.has(row.id),
       );
-      const parents = seeded(await database.select().from(parentCategories));
       expect(parents).toHaveLength(18);
-      const leaves = seeded(await database.select().from(leafCategories));
+      const leaves = await database.select().from(leafCategories);
       for (const parent of parents) {
         expect(
           leaves.filter((leaf) => leaf.parentId === parent.id && leaf.isOther),

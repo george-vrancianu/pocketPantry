@@ -46,4 +46,42 @@ describe('CategoryEditor', () => {
       defaultLocation: null,
     });
   });
+
+  it('does not offer to delete or move the Other Leaf Category', () => {
+    const other = {
+      id: 'l9',
+      name: 'Other dairy',
+      parentId: 'p1',
+      isOther: true,
+      defaultExpiryDays: null,
+      defaultLocation: null,
+      translations: [],
+    } as const;
+    vi.stubGlobal('fetch', stubApi({}).fetchMock);
+    renderWithProviders(
+      <CategoryEditor
+        kind="leaf"
+        category={{ ...other, translations: [] }}
+        catalog={{
+          ...catalog,
+          parentCategories: [
+            {
+              id: 'p1',
+              name: 'Dairy',
+              aisleId: 'a1',
+              defaultExpiryDays: 10,
+              defaultLocation: 'fridge',
+              translations: [],
+            },
+          ],
+          leafCategories: [{ ...other, translations: [] }],
+        }}
+        onDone={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    expect(screen.getByLabelText('Parent Category')).toBeDisabled();
+    expect(screen.getByText(/cannot be moved or deleted/)).toBeVisible();
+  });
 });

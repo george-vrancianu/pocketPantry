@@ -1,14 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
-import { Test } from '@nestjs/testing';
-import { and, eq, ilike, sql } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/app.setup';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  batches,
   catalogTranslations,
   shoppingItems,
   shoppingLists,
@@ -17,7 +14,7 @@ import {
   parentCategories,
   user,
 } from '../src/database/schema';
-import { TEST_ORIGIN } from './support/create-test-app';
+import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Body = { id: string; [key: string]: unknown };
 type Overview = {
@@ -34,7 +31,7 @@ describe('Admin role and Catalog curation (integration)', () => {
   let memberCookie: string;
   const stamp = Date.now();
   const shoppingListIds: string[] = [];
-  const refTable = (kind: string) => `admin_spec_${kind}_refs_${stamp}`;
+  const batchIds: string[] = [];
 
   async function signUp(email: string, name: string) {
     let response = await request(app.getHttpServer())
@@ -101,26 +98,8 @@ describe('Admin role and Catalog curation (integration)', () => {
   }
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = moduleRef.createNestApplication<NestFastifyApplication>(
-      new FastifyAdapter(),
-    );
-    configureApp(app);
-    await app.init();
-    await app.getHttpAdapter().getInstance().ready();
+    app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    // Stand-in for a Leaf Category dependant (Batches arrive in a later ticket):
-    // a table whose foreign key blocks deletes, like the real one will.
-    await database.execute(
-      sql.raw(`
-        CREATE TABLE ${refTable('leaf')} (
-          leaf_id uuid REFERENCES leaf_categories(id)
-        );
-      `),
-    );
-
     // Allow-listed in test/support/env.ts (mixed case on purpose).
     adminCookie = (await signUp('chef.admin@example.com', 'Chef Admin')).cookie;
     memberCookie = (await signUp(`member-${stamp}@example.com`, 'Member'))
@@ -132,7 +111,9 @@ describe('Admin role and Catalog curation (integration)', () => {
     for (const id of shoppingListIds) {
       await database.delete(shoppingLists).where(eq(shoppingLists.id, id));
     }
-    await database.execute(sql.raw(`DROP TABLE IF EXISTS ${refTable('leaf')}`));
+    for (const id of batchIds) {
+      await database.delete(batches).where(eq(batches.id, id));
+    }
     const like = `%${stamp}%`;
     for (const table of [ingredients, leafCategories, parentCategories]) {
       await database.delete(table).where(ilike(table.name, like));
@@ -478,25 +459,110 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(await translationsOf('parent_category', parent.id)).toEqual([]);
     });
 
-    it('rejects deleting a Leaf Category that another table still references', async () => {
-      const parentId = seedId.parent('dairy');
+    async function insertBatch(leafCategoryId: string): Promise<string> {
+      const [admin] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, 'chef.admin@example.com'));
+      const [batch] = await database
+        .insert(batches)
+        .values({
+          familyId: admin.familyId,
+          leafCategoryId,
+          unmatched: true,
+          rawName: 'mystery',
+          location: 'fridge',
+        })
+        .returning({ id: batches.id });
+      batchIds.push(batch.id);
+      return batch.id;
+    }
+
+    it('rejects deleting a Leaf Category that Batches still reference', async () => {
       const leaf = (
         await as(adminCookie)
           .post('/leaf-categories', {
-            parentId,
+            parentId: seedId.parent('dairy'),
             name: `Referenced leaf ${stamp}`,
           })
           .expect(201)
       ).body as Body;
-      await database.execute(
-        sql.raw(`INSERT INTO ${refTable('leaf')} VALUES ('${leaf.id}')`),
-      );
+      const batchId = await insertBatch(leaf.id);
       await as(adminCookie)
         .del(`/leaf-categories/${leaf.id}`)
         .expect(409)
         .expect({ code: 'catalog.category_not_empty', params: {} });
-      await database.execute(sql.raw(`DELETE FROM ${refTable('leaf')}`));
+      // The failed delete rolled back, translations included.
+      expect(await translationsOf('leaf_category', leaf.id)).toHaveLength(1);
+      await database.delete(batches).where(eq(batches.id, batchId));
       await as(adminCookie).del(`/leaf-categories/${leaf.id}`).expect(204);
+    });
+
+    it('creates an Other Leaf with every Parent, protects it, and removes it with an empty Parent', async () => {
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `Spreads ${stamp}`,
+            aisleId: seedId.aisle('dry-goods'),
+            defaultExpiryDays: 90,
+            defaultLocation: 'cupboard',
+          })
+          .expect(201)
+      ).body as Body;
+      const other = (await overview()).leafCategories.find(
+        (leaf) => leaf.parentId === parent.id,
+      ) as Body;
+      expect(other).toMatchObject({
+        isOther: true,
+        name: `Other spreads ${stamp}`,
+        defaultExpiryDays: null,
+        defaultLocation: null,
+      });
+      expect(await translationsOf('leaf_category', other.id)).toEqual([
+        expect.objectContaining({ locale: 'en', kind: 'name' }),
+      ]);
+
+      // Protected: not deletable, not movable. Renaming stays allowed.
+      await as(adminCookie)
+        .del(`/leaf-categories/${other.id}`)
+        .expect(409)
+        .expect({ code: 'catalog.other_leaf_protected', params: {} });
+      await as(adminCookie)
+        .patch(`/leaf-categories/${other.id}`, {
+          parentId: seedId.parent('dairy'),
+        })
+        .expect(409)
+        .expect({ code: 'catalog.other_leaf_protected', params: {} });
+      await as(adminCookie)
+        .patch(`/leaf-categories/${other.id}`, {
+          name: `Misc spreads ${stamp}`,
+        })
+        .expect(200);
+
+      // A Batch on the Other Leaf blocks deleting the Parent, atomically.
+      const batchId = await insertBatch(other.id);
+      await as(adminCookie)
+        .del(`/parent-categories/${parent.id}`)
+        .expect(409)
+        .expect({ code: 'catalog.category_not_empty', params: {} });
+      expect(await translationsOf('leaf_category', other.id)).toHaveLength(1);
+      expect(await translationsOf('parent_category', parent.id)).toHaveLength(
+        1,
+      );
+      await database.delete(batches).where(eq(batches.id, batchId));
+
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+      expect(await translationsOf('leaf_category', other.id)).toEqual([]);
+      expect(
+        (await overview()).leafCategories.some((leaf) => leaf.id === other.id),
+      ).toBe(false);
+    });
+
+    it('never deletes the top-level Other Parent', async () => {
+      await as(adminCookie)
+        .del(`/parent-categories/${seedId.parent('other')}`)
+        .expect(409)
+        .expect({ code: 'catalog.other_leaf_protected', params: {} });
     });
 
     it('enforces unique Category names and a real Aisle', async () => {
@@ -543,9 +609,31 @@ describe('Admin role and Catalog curation (integration)', () => {
         .post('/translations', { ...synonym, value: `PARM ${stamp}` })
         .expect(409);
       expect(duplicate.body).toEqual({
-        code: 'catalog.name_taken',
+        code: 'catalog.translation_exists',
         params: {},
       });
+
+      // A display name already used by another entity in that locale is a name clash.
+      const other = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: seedId.leaf('hard-cheese'),
+            name: `Clash ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/translations', {
+          entityType: 'ingredient',
+          entityId: other.id,
+          locale: 'ro',
+          kind: 'name',
+          value: 'Parmezan',
+        })
+        .expect(409)
+        .expect({ code: 'catalog.name_taken', params: {} });
+      await as(adminCookie).del(`/ingredients/${other.id}`).expect(204);
     });
 
     it('manages the English display name only through the entity', async () => {

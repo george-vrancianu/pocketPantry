@@ -55,6 +55,8 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
   const [location, setLocation] = useState<Location | ''>(
     category?.defaultLocation ?? '',
   );
+  const isOther =
+    category !== undefined && 'isOther' in category && category.isOther;
   const expiryDays = parseExpiry(expiry);
   const expiryInvalid = expiryDays === 'invalid';
 
@@ -96,7 +98,7 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
         }}
         onCancel={onDone}
         onDelete={
-          category
+          category && !isOther
             ? () => remove.mutate(category.id, { onSuccess: onDone })
             : undefined
         }
@@ -117,6 +119,8 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
           }
           value={ownerId}
           onChange={(event) => setOwnerId(event.target.value)}
+          disabled={isOther}
+          helperText={isOther ? t('admin:category.otherLeafNote') : undefined}
           slotProps={{ select: { native: true } }}
         >
           {owners.map((owner) => (

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq } from 'drizzle-orm';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
+import { seedId } from '../catalog/seed/seed-catalog';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -36,6 +37,22 @@ function hasPgCode(error: unknown, code: string): boolean {
   }
   return false;
 }
+
+function pgConstraint(error: unknown): string | undefined {
+  let current: unknown = error;
+  while (current && typeof current === 'object') {
+    if ('constraint' in current && typeof current.constraint === 'string') {
+      return current.constraint;
+    }
+    current = 'cause' in current ? current.cause : undefined;
+  }
+  return undefined;
+}
+
+/** The top-level "Other" Parent is the home of Unmatched Batches: never deletable. */
+const PROTECTED_PARENT_IDS = new Set([seedId.parent('other')]);
+const otherLeafProtected = () =>
+  new ApiException(409, 'catalog.other_leaf_protected');
 
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
@@ -105,6 +122,7 @@ export class AdminCatalogService {
         id: row.id,
         name: row.name,
         parentId: row.parentId,
+        isOther: row.isOther,
         defaultExpiryDays: row.defaultExpiryDays,
         defaultLocation: row.defaultLocation,
         translations: translations('leaf_category', row.id),
@@ -130,6 +148,18 @@ export class AdminCatalogService {
         .values({ id, ...input, normalizedName: normalizeName(input.name) })
         .returning();
       await this.addCanonicalName(tx, 'parent_category', id, input.name);
+      // Every Parent has an "Other" Leaf so Unmatched Batches always have a
+      // home; it inherits Default Expiry and Location from the Parent.
+      const otherName = `Other ${input.name.toLowerCase()}`;
+      const otherId = randomUUID();
+      await tx.insert(leafCategories).values({
+        id: otherId,
+        parentId: id,
+        name: otherName,
+        normalizedName: normalizeName(otherName),
+        isOther: true,
+      });
+      await this.addCanonicalName(tx, 'leaf_category', otherId, otherName);
       return row;
     });
   }
@@ -151,20 +181,33 @@ export class AdminCatalogService {
   }
 
   deleteParentCategory(id: string) {
-    return this.write(async (tx) => {
-      await this.requireRow(tx, 'parent_category', id);
-      const [{ children }] = await tx
-        .select({ children: count() })
-        .from(leafCategories)
-        .where(eq(leafCategories.parentId, id));
-      if (children > 0) {
-        throw new ApiException(409, 'catalog.category_not_empty', {
-          children,
-        });
-      }
-      await tx.delete(parentCategories).where(eq(parentCategories.id, id));
-      await this.deleteTranslationsOf(tx, 'parent_category', id);
-    });
+    // A Leaf inserted concurrently (or a Batch on the Other Leaf) fails the
+    // delete with a foreign-key error, mapped to the same code.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, 'parent_category', id);
+        if (PROTECTED_PARENT_IDS.has(id)) throw otherLeafProtected();
+        const leaves = await tx
+          .select({ id: leafCategories.id, isOther: leafCategories.isOther })
+          .from(leafCategories)
+          .where(eq(leafCategories.parentId, id));
+        const children = leaves.filter((leaf) => !leaf.isOther).length;
+        if (children > 0) {
+          throw new ApiException(409, 'catalog.category_not_empty', {
+            children,
+          });
+        }
+        // Translations first: if a delete below hits a foreign key, the whole
+        // transaction (including this) rolls back.
+        for (const leaf of leaves) {
+          await this.deleteTranslationsOf(tx, 'leaf_category', leaf.id);
+          await tx.delete(leafCategories).where(eq(leafCategories.id, leaf.id));
+        }
+        await this.deleteTranslationsOf(tx, 'parent_category', id);
+        await tx.delete(parentCategories).where(eq(parentCategories.id, id));
+      },
+      new ApiException(409, 'catalog.category_not_empty'),
+    );
   }
 
   // Leaf Categories
@@ -186,6 +229,16 @@ export class AdminCatalogService {
     return this.write(async (tx) => {
       if (input.parentId) {
         await this.requireRow(tx, 'parent_category', input.parentId);
+        const [current] = await tx
+          .select({
+            parentId: leafCategories.parentId,
+            isOther: leafCategories.isOther,
+          })
+          .from(leafCategories)
+          .where(eq(leafCategories.id, id));
+        if (current?.isOther && current.parentId !== input.parentId) {
+          throw otherLeafProtected();
+        }
       }
       const [row] = await tx
         .update(leafCategories)
@@ -201,10 +254,15 @@ export class AdminCatalogService {
   }
 
   deleteLeafCategory(id: string) {
-    // Ingredients (and later Batches) reference a Leaf Category by foreign key.
+    // Ingredients and Batches reference a Leaf Category by foreign key.
     return this.write(
       async (tx) => {
-        await this.requireRow(tx, 'leaf_category', id);
+        const [leaf] = await tx
+          .select({ isOther: leafCategories.isOther })
+          .from(leafCategories)
+          .where(eq(leafCategories.id, id));
+        if (!leaf) throw notFound('leaf_category');
+        if (leaf.isOther) throw otherLeafProtected();
         const [{ children }] = await tx
           .select({ children: count() })
           .from(ingredients)
@@ -214,8 +272,8 @@ export class AdminCatalogService {
             children,
           });
         }
-        await tx.delete(leafCategories).where(eq(leafCategories.id, id));
         await this.deleteTranslationsOf(tx, 'leaf_category', id);
+        await tx.delete(leafCategories).where(eq(leafCategories.id, id));
       },
       new ApiException(409, 'catalog.category_not_empty'),
     );
@@ -261,8 +319,10 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, 'ingredient', id);
-        await tx.delete(ingredients).where(eq(ingredients.id, id));
+        // Translations first: a foreign-key failure on the delete below rolls
+        // them back with it.
         await this.deleteTranslationsOf(tx, 'ingredient', id);
+        await tx.delete(ingredients).where(eq(ingredients.id, id));
       },
       new ApiException(409, 'catalog.ingredient_in_use'),
     );
@@ -272,34 +332,41 @@ export class AdminCatalogService {
 
   createTranslation(input: TranslationCreate) {
     this.assertEditable(input.kind, input.locale);
-    return this.write(async (tx) => {
-      await this.requireRow(tx, input.entityType, input.entityId);
-      if (input.kind === 'name') {
-        const [existing] = await tx
-          .select({ id: catalogTranslations.id })
-          .from(catalogTranslations)
-          .where(
-            and(
-              eq(catalogTranslations.entityType, input.entityType),
-              eq(catalogTranslations.entityId, input.entityId),
-              eq(catalogTranslations.locale, input.locale),
-              eq(catalogTranslations.kind, 'name'),
-            ),
-          );
-        if (existing) {
-          throw new ApiException(409, 'catalog.translation_exists');
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, input.entityType, input.entityId);
+        if (input.kind === 'name') {
+          const [existing] = await tx
+            .select({ id: catalogTranslations.id })
+            .from(catalogTranslations)
+            .where(
+              and(
+                eq(catalogTranslations.entityType, input.entityType),
+                eq(catalogTranslations.entityId, input.entityId),
+                eq(catalogTranslations.locale, input.locale),
+                eq(catalogTranslations.kind, 'name'),
+              ),
+            );
+          if (existing) {
+            throw new ApiException(409, 'catalog.translation_exists');
+          }
         }
-      }
-      const [row] = await tx
-        .insert(catalogTranslations)
-        .values({
-          id: randomUUID(),
-          ...input,
-          normalizedValue: normalizeName(input.value),
-        })
-        .returning();
-      return row;
-    });
+        const [row] = await tx
+          .insert(catalogTranslations)
+          .values({
+            id: randomUUID(),
+            ...input,
+            normalizedValue: normalizeName(input.value),
+          })
+          .returning();
+        return row;
+      },
+      undefined,
+      (constraint) =>
+        constraint === 'catalog_translations_display_value_idx'
+          ? 'catalog.name_taken'
+          : 'catalog.translation_exists',
+    );
   }
 
   updateTranslation(id: string, input: TranslationUpdate) {
@@ -336,12 +403,14 @@ export class AdminCatalogService {
   private async write<T>(
     work: (tx: Tx) => Promise<T>,
     inUse?: ApiException,
+    /** Picks the code for a unique violation; defaults to `catalog.name_taken`. */
+    uniqueCode: (constraint?: string) => string = () => 'catalog.name_taken',
   ): Promise<T> {
     try {
       return await this.database.transaction(work);
     } catch (error) {
       if (hasPgCode(error, '23505')) {
-        throw new ApiException(409, 'catalog.name_taken');
+        throw new ApiException(409, uniqueCode(pgConstraint(error)));
       }
       if (inUse && hasPgCode(error, '23503')) throw inUse;
       throw error;
