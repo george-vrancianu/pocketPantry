@@ -1,7 +1,9 @@
 import { Alert, Button, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { AddItemForm } from './components/AddItemForm';
+import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
@@ -9,6 +11,19 @@ import { useShoppingScreen } from './hooks/useShoppingScreen';
 export function ShoppingPage() {
   const { t } = useTranslation(['shopping', 'common']);
   const screen = useShoppingScreen();
+  const [reviewing, setReviewing] = useState(false);
+
+  if (reviewing) {
+    return (
+      <>
+        <AppScreenHeader title={t('shopping:title')} />
+        <FinishShoppingReview
+          onDone={() => setReviewing(false)}
+          onCancel={() => setReviewing(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -37,6 +52,11 @@ export function ShoppingPage() {
                 onRemove={screen.remove}
               />
             )}
+            {screen.list.summary.checked > 0 ? (
+              <Button onClick={() => setReviewing(true)}>
+                {t('shopping:finish.button')}
+              </Button>
+            ) : null}
           </>
         ) : null}
       </Stack>

@@ -105,7 +105,7 @@ A recipe whose missing ingredients added a Shopping Item. One Shopping Item may 
 _Avoid_: Recipe tag, origin
 
 **Finish Shopping**:
-The action that moves checked Shopping Items into the Pantry as Batches with Default Expiry, archives the list, and starts a new empty one.
+The action that moves checked Shopping Items into the Pantry as Batches with Default Expiry, after a Review, archives the list, and starts a new one that carries over the unchecked items.
 _Avoid_: Move to pantry, checkout, complete
 
 ### Scanning
@@ -134,7 +134,7 @@ The link from a scanned or typed name to an Ingredient, with a confidence.
 _Avoid_: Mapping, resolution
 
 **Review**:
-The screen where a Member confirms, edits, or discards Scan results before anything is saved.
+The screen where a Member confirms, edits, or discards results before anything is saved: Scan results, or the Batches proposed for the checked Shopping Items when Finishing Shopping.
 _Avoid_: Confirm sheet, preview
 
 **Scan Cap**:
