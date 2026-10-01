@@ -51,7 +51,8 @@ const responsesUsageSchema = z
     output_tokens: tokenCount,
     input_tokens_details: z
       .object({ cached_tokens: tokenCount.optional() })
-      .optional(),
+      .optional()
+      .catch(undefined),
   })
   .transform((u): AiTokenUsage => ({
     inputTokens: u.input_tokens,
@@ -65,7 +66,8 @@ const chatUsageSchema = z
     completion_tokens: tokenCount,
     prompt_tokens_details: z
       .object({ cached_tokens: tokenCount.optional() })
-      .optional(),
+      .optional()
+      .catch(undefined),
   })
   .transform((u): AiTokenUsage => ({
     inputTokens: u.prompt_tokens,
@@ -168,15 +170,10 @@ export class StructuredOutputAiService {
     const requestId = response.headers.get('x-request-id');
     try {
       const body: unknown = await response.json();
+      this.logUsage(isResponsesApi, body, request.schemaName, requestId);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
         : this.readChatCompletionsText(body, requestId);
-      this.logUsage(
-        isResponsesApi ? responsesUsageSchema : chatUsageSchema,
-        body,
-        request.schemaName,
-        requestId,
-      );
       return { data: JSON.parse(text) as unknown, requestId };
     } catch (error) {
       if (error instanceof ApiException) throw error;
@@ -186,12 +183,15 @@ export class StructuredOutputAiService {
 
   /** Logs token counts only (never prompt, image or response content). */
   private logUsage(
-    schema: typeof responsesUsageSchema | typeof chatUsageSchema,
+    isResponsesApi: boolean,
     body: unknown,
     schemaName: string,
     requestId: string | null,
   ) {
-    const usage = schema.safeParse((body as { usage?: unknown }).usage);
+    const schema: z.ZodType<AiTokenUsage> = isResponsesApi
+      ? responsesUsageSchema
+      : chatUsageSchema;
+    const usage = schema.safeParse((body as { usage?: unknown } | null)?.usage);
     if (!usage.success) return;
     const { cachedInputTokens, ...counts } = usage.data;
     this.logger.log({

@@ -156,10 +156,50 @@ describe('StructuredOutputAiService', () => {
     });
 
     it('ignores a malformed usage block instead of failing', async () => {
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
       respond(responses({ input_tokens: 'lots' }));
       await expect(serviceFor('openai').generate(request)).resolves.toEqual({
         data: {},
         requestId: 'req-1',
+      });
+      expect(log).not.toHaveBeenCalled();
+    });
+
+    it('keeps the token counts when only the cached-token details are malformed', async () => {
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      respond(
+        chat({
+          prompt_tokens: 5,
+          completion_tokens: 2,
+          prompt_tokens_details: { cached_tokens: 'many' },
+        }),
+      );
+      await serviceFor('openai-compatible').generate(request);
+      expect(log).toHaveBeenCalledWith({
+        message: 'AI token usage',
+        requestId: 'req-1',
+        schemaName: 'receipt',
+        inputTokens: 5,
+        outputTokens: 2,
+      });
+    });
+
+    it('logs usage even when the billed call ends in an incomplete answer', async () => {
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      respond({
+        status: 'incomplete',
+        output: [],
+        usage: { input_tokens: 900, output_tokens: 1 },
+      });
+      await expect(
+        serviceFor('openai').generate(request),
+      ).rejects.toMatchObject({ reason: 'incomplete' });
+      expect(log).toHaveBeenCalledWith({
+        message: 'AI token usage',
+        requestId: 'req-1',
+        schemaName: 'receipt',
+        inputTokens: 900,
+        outputTokens: 1,
       });
     });
 
