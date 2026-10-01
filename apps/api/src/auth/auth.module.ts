@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import type { AppConfig } from '../config/env';
-import { allowedOrigins } from '../config/origins';
+import { allowedOrigins, isAllowedOrigin } from '../config/origins';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import * as schema from '../database/schema';
@@ -38,9 +38,16 @@ import { AuthGuard } from './auth.guard';
             },
           },
           rateLimit: { enabled: true, window: 60, max: 100 },
-          trustedOrigins: allowedOrigins(
-            config.get('CLIENT_ORIGIN', { infer: true }),
-          ),
+          // Function form so our strict matcher governs, not better-auth's
+          // looser `*` wildcard (which matches `10.a.evil.com`).
+          trustedOrigins: (request) => {
+            const clientOrigin = config.get('CLIENT_ORIGIN', { infer: true });
+            const origin = request?.headers.get('origin');
+            return origin &&
+              isAllowedOrigin(origin, allowedOrigins(clientOrigin))
+              ? [clientOrigin, origin]
+              : [clientOrigin];
+          },
         }),
     },
     AuthGuard,

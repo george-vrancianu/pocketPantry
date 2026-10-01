@@ -19,6 +19,6 @@ coverage/
 .scratch/
 
 # stray tsc output next to config files
-apps/*/*.js
-apps/*/*.d.ts
-apps/*/*.js.map
+apps/api/drizzle.config.js
+apps/api/drizzle.config.d.ts
+apps/api/drizzle.config.js.map
