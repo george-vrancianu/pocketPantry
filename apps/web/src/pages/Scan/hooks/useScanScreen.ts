@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
+import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
 import { cropToReceiptArea } from '../../../lib/image';
 import {
@@ -12,7 +13,7 @@ import {
   type ImageOrigin,
 } from '../../../lib/scanImage';
 import type { ReceiptCrop } from '../components/ReceiptCropper';
-import { useReceiptScan } from '../../../lib/receiptScan';
+import { useReceiptSections } from './useReceiptSections';
 import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
@@ -33,31 +34,59 @@ export function useScanScreen() {
 
   const camera = useCamera(mode === 'receipt');
   const productScan = useProductScan(i18n.language);
-  const receiptScan = useReceiptScan(i18n.language);
+  const receiptSections = useReceiptSections(i18n.language);
   const plate = usePlateScan();
   const ingredientsScan = useIngredientsScan(i18n.language);
-  // Every wired mode but Plate has one endpoint and returns the same proposed lines.
-  const modeScans = {
-    product: productScan,
-    receipt: receiptScan,
-    ingredients: ingredientsScan,
-  };
-  const modeScan = mode === 'plate' ? null : modeScans[mode];
+  // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
+  // own flow, and Receipt photographs the receipt in sections.
+  const modeScans = { product: productScan, ingredients: ingredientsScan };
+  const modeScan =
+    mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
+  // The mode can also change through the URL (the Dock's Scan item links to plain `/scan`),
+  // bypassing `setMode`: leaving Receipt always discards the batch and any read in flight.
+  // A receipt photo from the gallery waiting for the Member to frame it in the crop step.
+  const [cropping, setCropping] = useState<Blob | null>(null);
+  const resetReceiptSections = useRef(receiptSections.reset);
+  resetReceiptSections.current = receiptSections.reset;
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current !== mode) setCropping(null);
+    if (previousMode.current === 'receipt' && mode !== 'receipt') {
+      resetReceiptSections.current();
+    }
+    previousMode.current = mode;
+  }, [mode]);
   const [flash, setFlash] = useState(false);
   // A restarted stream (e.g. switching into or out of Receipt mode) has its torch off.
   useEffect(() => {
     if (camera.status !== 'ready') setFlash(false);
   }, [camera.status]);
+  // A reload or tab close would lose the sections too.
+  const sectionCount = receiptSections.sections.length;
+  useEffect(() => {
+    if (sectionCount === 0) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = ''; // older Safari
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [sectionCount]);
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || (modeScan?.isPending ?? false) || plate.pending;
-  const busy = reading || !wired;
-
-  // A receipt photo from the gallery waiting for the Member to frame it in the crop step.
-  const [cropping, setCropping] = useState<Blob | null>(null);
+  const reading =
+    resizing ||
+    (modeScan?.isPending ?? false) ||
+    plate.pending ||
+    receiptSections.pending;
+  const sectionsInProgress = receiptSections.sections.length > 0;
+  const busy =
+    reading ||
+    !wired ||
+    (mode === 'receipt' && (receiptSections.deciding || receiptSections.full));
 
   /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
   const scanImage = async (
@@ -77,6 +106,10 @@ export function useScanScreen() {
     } finally {
       setResizing(false);
     }
+    if (mode === 'receipt') {
+      await receiptSections.submit(image);
+      return;
+    }
     if (!modeScan) {
       plate.scan(image);
       return;
@@ -93,15 +126,25 @@ export function useScanScreen() {
     });
   };
 
+  // A double tap on the shutter must not send the same section twice.
+  const shooting = useRef(false);
   const shoot = async () => {
-    const frame = await camera.capture();
-    if (frame) await scanImage(frame, 'camera');
+    if (shooting.current) return;
+    shooting.current = true;
+    try {
+      const frame = await camera.capture();
+      if (frame) await scanImage(frame, 'camera');
+    } finally {
+      shooting.current = false;
+    }
   };
 
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file) return;
+    // The same locks as the shutter: a section being read, a result awaiting a decision, or a
+    // full batch (retaking targets an existing section, so it is not full).
+    if (!file || busy) return;
     if (needsCropStep(mode, 'gallery')) setCropping(file);
     else void scanImage(file, 'gallery');
   };
@@ -109,10 +152,34 @@ export function useScanScreen() {
   const confirmCrop = ({ area, rotation }: ReceiptCrop) => {
     const photo = cropping;
     setCropping(null);
-    if (photo)
+    if (photo && !busy)
       void scanImage(photo, 'gallery', () =>
         cropToReceiptArea(photo, area, rotation),
       );
+  };
+
+  /** Asks before throwing away Receipt Sections that have not reached Review. */
+  const confirmDiscard = () =>
+    !sectionsInProgress || window.confirm(t('scan:sections.discardConfirm'));
+
+  // The Dock goes through this guard. The browser/OS back button stays unguarded:
+  // the app uses BrowserRouter, which has no `useBlocker`.
+  const confirmDiscardRef = useRef(confirmDiscard);
+  confirmDiscardRef.current = confirmDiscard;
+  useEffect(() => {
+    if (sectionCount === 0) return;
+    return registerLeaveGuard(() => confirmDiscardRef.current());
+  }, [sectionCount]);
+
+  /** Merge the sections and go to Review, like a single photo does. */
+  const finishSections = () => {
+    const { lines } = receiptSections.merged();
+    if (lines.length === 0) {
+      setLocalError('scan.nothing_found');
+      return;
+    }
+    startReview({ mode: 'receipt', lines });
+    navigate('/scan/review');
   };
 
   const toggleFlash = async () => {
@@ -121,7 +188,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = modeScan?.error ?? plate.error;
+  const scanError = modeScan?.error ?? plate.error ?? receiptSections.error;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -134,17 +201,23 @@ export function useScanScreen() {
     camera,
     flash,
     reading,
+    /** Switching Scan Mode would reset the batch under an in-flight section. */
+    modesDisabled: receiptSections.pending,
     controlsDisabled: busy,
     fileInput,
     error,
     setMode: (next: ScanMode) => {
+      if (next !== mode && !confirmDiscard()) return;
       Object.values(modeScans).forEach((scan) => scan.reset());
+      receiptSections.reset();
       plate.reset();
       setLocalError(null);
       setCropping(null);
       setParams({ mode: next }, { replace: true });
     },
     plate,
+    receiptSections,
+    finishSections,
     shoot,
     pickFile,
     cropping,
@@ -153,8 +226,14 @@ export function useScanScreen() {
     openGallery: () => fileInput.current?.click(),
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.
-    close: () => (location.key === 'default' ? navigate('/') : navigate(-1)),
+    close: () => {
+      if (!confirmDiscard()) return;
+      if (location.key === 'default') navigate('/');
+      else navigate(-1);
+    },
     // Handoff section 7: the Pantry's add form is the manual entry.
-    addManually: () => navigate('/pantry?add=1'),
+    addManually: () => {
+      if (confirmDiscard()) navigate('/pantry?add=1');
+    },
   };
 }

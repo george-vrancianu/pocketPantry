@@ -16,7 +16,8 @@ const resizeOnly: ImagePreparation = (source) => resizeImage(source);
 export const IMAGE_PREPARATION: Record<ScanMode, ImagePreparation> = {
   product: resizeOnly,
   // A camera frame is cropped to the viewfinder's guide. A gallery file is cropped by the
-  // Member in the crop step instead (see needsCropStep), so it never comes through here.
+  // Member in the crop step instead, so it never comes through here: callers must check
+  // needsCropStep first and use cropToReceiptArea. Rejecting is deliberate, not a TODO.
   receipt: (source, origin) =>
     origin === 'camera'
       ? cropToReceiptGuide(source)

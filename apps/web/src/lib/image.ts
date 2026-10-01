@@ -147,6 +147,9 @@ function cropReceiptRegion(
   canvas.height = height;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('canvas unavailable');
+  // Downscaling a big photo to 512 wide: smooth it, or small print aliases.
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
   context.setTransform(
     ...rotatedCropTransform(bitmap, crop, degrees, width / crop.width),
   );
@@ -184,7 +187,10 @@ export async function cropToReceiptArea(
   crop: Rect,
   degrees: number,
 ): Promise<string> {
-  const bitmap = await createImageBitmap(photo);
+  // Honour the photo's EXIF orientation: the crop step shows it that way up.
+  const bitmap = await createImageBitmap(photo, {
+    imageOrientation: 'from-image',
+  });
   try {
     return cropReceiptRegion(bitmap, crop, degrees);
   } finally {

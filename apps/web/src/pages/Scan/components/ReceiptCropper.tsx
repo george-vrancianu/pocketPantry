@@ -1,5 +1,5 @@
 import { Box, Button, Typography, tokens } from '@pocket-pantry/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import type { Rect } from '../../../lib/image';
@@ -39,12 +39,28 @@ export function ReceiptCropper({
 
   const rotation = quarterTurns * 90 + fine;
 
+  // Dialog a11y: focus moves in on open and goes back to where it was on close.
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const opener = document.activeElement;
+    dialog.current?.focus();
+    return () => {
+      if (opener instanceof HTMLElement) opener.focus();
+    };
+  }, []);
+
   return (
     <Box
+      ref={dialog}
       role="dialog"
       aria-modal="true"
       aria-label={t('crop.title')}
+      tabIndex={-1}
+      onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape') onCancel();
+      }}
       sx={{
+        outline: 'none',
         position: 'fixed',
         inset: 0,
         zIndex: 1300,

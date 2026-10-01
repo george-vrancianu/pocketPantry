@@ -116,24 +116,83 @@ describe('rotatedBounds', () => {
 
 describe('rotatedCropTransform', () => {
   const image = { width: 400, height: 300 };
-  const crop = { x: 100, y: 50, width: 100, height: 300 };
+  const corners = [
+    [-200, -150],
+    [200, -150],
+    [200, 150],
+    [-200, 150],
+  ];
+  /** Where the source image corners land on the output canvas. */
+  const landed = (
+    crop: { x: number; y: number; width: number; height: number },
+    degrees: number,
+    scale = 1,
+  ) => {
+    const [a, b, c, d, e, f] = rotatedCropTransform(
+      image,
+      crop,
+      degrees,
+      scale,
+    );
+    return corners.map(([x, y]) => [a * x + c * y + e, b * x + d * y + f]);
+  };
+  const xs = (points: number[][]) => points.map(([x]) => x);
+  const ys = (points: number[][]) => points.map(([, y]) => y);
 
-  it('maps an unrotated crop to a plain translate', () => {
-    const [a, b, c, d, e, f] = rotatedCropTransform(image, crop, 0, 1);
-    expect([a, b, c + 0, d, e, f]).toEqual([1, 0, 0, 1, 100, 100]);
+  it.each([0, 90, 180, 270, 10])(
+    'puts the rotated image exactly on its bounding box when the crop is that box (%i degrees)',
+    (degrees) => {
+      const bounds = rotatedBounds(image.width, image.height, degrees);
+      const points = landed(
+        { x: 0, y: 0, width: bounds.width, height: bounds.height },
+        degrees,
+      );
+      expect(Math.min(...xs(points))).toBeCloseTo(0);
+      expect(Math.max(...xs(points))).toBeCloseTo(bounds.width);
+      expect(Math.min(...ys(points))).toBeCloseTo(0);
+      expect(Math.max(...ys(points))).toBeCloseTo(bounds.height);
+    },
+  );
+
+  it('sends each corner to the expected corner at the right angles', () => {
+    // 90 degrees clockwise: top-left goes to top-right, in a 300 x 400 box.
+    const [topLeft, topRight, bottomRight, bottomLeft] = landed(
+      { x: 0, y: 0, width: 300, height: 400 },
+      90,
+    );
+    expect(topLeft).toEqual([expect.closeTo(300), expect.closeTo(0)]);
+    expect(topRight).toEqual([expect.closeTo(300), expect.closeTo(400)]);
+    expect(bottomRight).toEqual([expect.closeTo(0), expect.closeTo(400)]);
+    expect(bottomLeft).toEqual([expect.closeTo(0), expect.closeTo(0)]);
+    // 180 degrees: top-left goes to bottom-right of the unchanged 400 x 300 box.
+    const [flipped] = landed({ x: 0, y: 0, width: 400, height: 300 }, 180);
+    expect(flipped).toEqual([expect.closeTo(400), expect.closeTo(300)]);
+    // 270 degrees: top-left goes to bottom-left.
+    const [turned] = landed({ x: 0, y: 0, width: 300, height: 400 }, 270);
+    expect(turned).toEqual([expect.closeTo(0), expect.closeTo(400)]);
   });
 
-  it('scales the output', () => {
-    const [a, b, c, d, e, f] = rotatedCropTransform(image, crop, 0, 0.5);
-    expect([a, b, c + 0, d, e, f]).toEqual([0.5, 0, 0, 0.5, 50, 50]);
+  it('moves the output origin to the crop corner', () => {
+    const crop = { x: 100, y: 50, width: 100, height: 300 };
+    const whole = rotatedBounds(image.width, image.height, 10);
+    const full = landed(
+      { x: 0, y: 0, width: whole.width, height: whole.height },
+      10,
+    );
+    const cropped = landed(crop, 10);
+    cropped.forEach(([x, y], i) => {
+      expect(x).toBeCloseTo(full[i][0] - crop.x);
+      expect(y).toBeCloseTo(full[i][1] - crop.y);
+    });
   });
 
-  it('centres the source on the rotated bounds, relative to the crop', () => {
-    // Rotated 90 degrees the bounds are 300 x 400, so the centre is (150, 200).
-    const rotated = { x: 50, y: 100, width: 100, height: 300 };
-    const [a, b, c, d, e, f] = rotatedCropTransform(image, rotated, 90, 1);
-    expect([a, b, c, d].map((n) => Math.round(n) + 0)).toEqual([0, 1, -1, 0]);
-    expect(e).toBeCloseTo(100);
-    expect(f).toBeCloseTo(100);
+  it('scales the whole output', () => {
+    const crop = { x: 100, y: 50, width: 100, height: 300 };
+    const one = landed(crop, 10);
+    const half = landed(crop, 10, 0.5);
+    half.forEach(([x, y], i) => {
+      expect(x).toBeCloseTo(one[i][0] / 2);
+      expect(y).toBeCloseTo(one[i][1] / 2);
+    });
   });
 });

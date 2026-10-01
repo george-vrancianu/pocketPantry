@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { DockItem, type DockVariant } from '../molecules/DockItem';
 import { tokens } from '../theme/tokens';
 
@@ -18,6 +18,8 @@ export type DockProps = {
   items: DockEntry[];
   activeKey?: string;
   variant?: DockVariant;
+  /** Runs before an item navigates; call `preventDefault()` to stay. */
+  onNavigate?: (event: MouseEvent<HTMLElement>) => void;
 };
 
 /** The floating bottom navigation. Handoff section 5 and 9 for sizes. */
@@ -26,6 +28,7 @@ export function Dock({
   items,
   activeKey,
   variant = 'light',
+  onNavigate,
 }: DockProps) {
   const { color } = tokens;
   const dark = variant === 'dark';
@@ -63,6 +66,7 @@ export function Dock({
           emphasis={item.emphasis}
           active={item.key === activeKey}
           variant={variant}
+          onNavigate={onNavigate}
         />
       ))}
     </Box>
