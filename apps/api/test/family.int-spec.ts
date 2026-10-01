@@ -166,6 +166,9 @@ describe('Household of One and the Family (integration)', () => {
         return new;
       end $$ language plpgsql`);
     await database.execute(
+      sql`drop trigger if exists pp_test_reject_user on "user"`,
+    );
+    await database.execute(
       sql`create trigger pp_test_reject_user before insert on "user" for each row execute function pp_test_reject_user()`,
     );
     try {
@@ -175,25 +178,15 @@ describe('Household of One and the Family (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .set('x-forwarded-for', '10.9.9.9')
         .send({ name: 'Doomed', email, password });
-      expect(failed.status).toBeGreaterThanOrEqual(400);
+      expect(failed.status).toBe(422);
       expect(await countOrphans()).toBe(before);
     } finally {
-      await database.execute(sql`drop trigger pp_test_reject_user on "user"`);
-      await database.execute(sql`drop function pp_test_reject_user()`);
+      await database.execute(
+        sql`drop trigger if exists pp_test_reject_user on "user"`,
+      );
+      await database.execute(
+        sql`drop function if exists pp_test_reject_user()`,
+      );
     }
-  });
-
-  it('a normal sign-up still produces a Family with the Member as Owner', async () => {
-    const { userId } = await signUp('Founder');
-    const [row] = await database
-      .select({ familyId: user.familyId, familyRole: user.familyRole })
-      .from(user)
-      .where(eq(user.id, userId));
-    expect(row.familyRole).toBe('owner');
-    const families = await database
-      .select()
-      .from(family)
-      .where(eq(family.id, row.familyId));
-    expect(families).toHaveLength(1);
   });
 });

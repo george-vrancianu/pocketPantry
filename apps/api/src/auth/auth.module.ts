@@ -1,6 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { betterAuth, getCurrentAdapter } from 'better-auth';
+import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import type { AppConfig } from '../config/env';
 import { allowedOrigins, isAllowedOrigin } from '../config/origins';
@@ -11,15 +11,6 @@ import { createHouseholdOfOne } from '../family/household-of-one';
 import { AUTH } from './auth.constants';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AuthGuard } from './auth.guard';
-
-/** The transaction adapter of the in-flight sign-up; refuses to fall back to an unscoped write. */
-async function currentAdapter(
-  context: { context: { adapter: unknown } } | null,
-) {
-  const adapter = await getCurrentAdapter(context?.context.adapter as never);
-  if (!adapter) throw new Error('No adapter available to create the Family');
-  return adapter;
-}
 
 @Global()
 @Module({
@@ -47,7 +38,9 @@ async function currentAdapter(
           plugins: [
             {
               // Registers our Family table as a Better Auth model so the hook
-              // can write it through the sign-up transaction adapter.
+              // can write it through the sign-up transaction adapter. The
+              // Drizzle schema (database/schema.ts) is the source of truth for
+              // these columns; keep them in sync.
               id: 'family-model',
               schema: {
                 family: {
@@ -76,14 +69,12 @@ async function currentAdapter(
             user: {
               create: {
                 // Signing up creates a Household of One with the Member as Owner.
-                // Written through the current (transaction) adapter, never the
-                // raw handle, so it is atomic with the user insert.
-                before: async (newUser, context) => ({
+                // Written through the sign-up transaction (and refused outside
+                // one), so it is atomic with the user insert.
+                before: async (newUser) => ({
                   data: {
                     ...newUser,
-                    familyId: await createHouseholdOfOne(
-                      await currentAdapter(context),
-                    ),
+                    familyId: await createHouseholdOfOne(),
                     familyRole: 'owner',
                   },
                 }),
