@@ -1,6 +1,7 @@
 import { PageLayout } from '@pocket-pantry/ui';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
+import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { AppDock } from './AppDock';
 
 /** The signed-in shell: page frame plus the Dock for the current route. */
@@ -9,6 +10,7 @@ export function AppLayout() {
   const dock = dockStateFor(pathname);
   return (
     <>
+      <ApplyMemberLocale />
       <PageLayout withDock={dock.visible} dark={dock.variant === 'dark'}>
         <Outlet />
       </PageLayout>

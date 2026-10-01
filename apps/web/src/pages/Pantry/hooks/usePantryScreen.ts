@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -12,7 +12,8 @@ import {
 
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
-  const batches = useBatches(i18n.language);
+  const today = useMemo(() => new Date(), []);
+  const batches = useBatches(i18n.language, today);
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
@@ -40,7 +41,7 @@ export function usePantryScreen() {
     isEmpty: batches.isSuccess && all.length === 0,
     noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
     error: batches.error ? translateApiError(t, batches.error) : null,
-    today: new Date(),
+    today,
     adding,
     startAdding: () => setAdding(true),
     stopAdding: () => setAdding(false),

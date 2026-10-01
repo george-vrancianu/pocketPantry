@@ -19,6 +19,7 @@ function batch(overrides: Partial<Batch>): Batch {
     location: 'fridge',
     expiryDate: null,
     productDescription: null,
+    expiringSoon: false,
     createdAt: '2026-10-01T00:00:00Z',
     ...overrides,
   };
@@ -64,6 +65,7 @@ describe('PantryPage', () => {
         ingredientId: 'spinach-id',
         location: 'fridge',
         expiryDate: inDays(2),
+        expiringSoon: true,
       }),
       batch({
         name: 'Feta',
@@ -208,6 +210,7 @@ describe('PantryPage', () => {
         unit: 'l',
         productDescription: 'Opened',
         expiryDate: inDays(2),
+        expiringSoon: true,
       }),
       batch({
         id: 'cheese',

@@ -1,7 +1,31 @@
 {
   "title": "Setări",
   "language": "Limbă",
+  "preferences": "Preferințe de membru",
+  "preferencesPrivate": "Doar tu le vezi. Te urmează pe orice dispozitiv.",
   "account": "Cont",
   "signedInAs": "Autentificat ca {{name}}",
-  "signOut": "Deconectare"
+  "localeSaveFailed": "Nu am putut salva limba. Încearcă din nou.",
+  "signOut": "Deconectare",
+  "family": {
+    "title": "Setările familiei",
+    "shared": "Comune pentru toată familia. Orice membru le poate schimba.",
+    "staleThreshold": "Prag de expirare (zile)",
+    "staleThresholdHelp": "Un lot e considerat aproape de expirare cu atâtea zile înainte să expire.",
+    "saveThreshold": "Salvează pragul",
+    "overrides": "Valori proprii pentru expirare",
+    "overridesHelp": "Se folosesc pentru a completa data de expirare când adaugi un lot. Înlocuiesc valorile din catalog.",
+    "noOverrides": "Nicio valoare proprie încă. Se folosesc valorile din catalog.",
+    "overrideRow_one": "{{name}}: {{count}} zi",
+    "overrideRow_few": "{{name}}: {{count}} zile",
+    "overrideRow_other": "{{name}}: {{count}} de zile",
+    "removeOverride": "Elimină valoarea proprie pentru {{name}}",
+    "remove": "Elimină",
+    "category": "Categorie",
+    "chooseCategory": "Alege o categorie",
+    "wholeParent": "{{name}} (toate)",
+    "days": "Zile până la expirare",
+    "saved": "Salvat.",
+    "saveOverride": "Salvează valoarea"
+  }
 }

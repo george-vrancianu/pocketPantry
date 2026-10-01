@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
+import { SettingsModule } from '../settings/settings.module';
 import { PantryController } from './pantry.controller';
 import { PantryService } from './pantry.service';
 
-@Module({ controllers: [PantryController], providers: [PantryService] })
+@Module({
+  imports: [SettingsModule],
+  controllers: [PantryController],
+  providers: [PantryService],
+})
 export class PantryModule {}

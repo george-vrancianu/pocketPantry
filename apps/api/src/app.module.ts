@@ -11,6 +11,7 @@ import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
 import { ShoppingModule } from './shopping/shopping.module';
 import { PantryModule } from './pantry/pantry.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PantryModule } from './pantry/pantry.module';
     ShoppingModule,
     PantryModule,
     DashboardModule,
+    SettingsModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })

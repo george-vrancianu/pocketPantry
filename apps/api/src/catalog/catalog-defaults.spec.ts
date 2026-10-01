@@ -1,4 +1,38 @@
-import { resolveCatalogDefaults } from './catalog-defaults';
+import { resolveCatalogDefaults, resolveExpiryDays } from './catalog-defaults';
+
+describe('resolveExpiryDays', () => {
+  const leaf = { id: 'leaf', defaultExpiryDays: 30 };
+  const parent = { id: 'parent', defaultExpiryDays: 10 };
+
+  it('uses the Catalog default when the Family has no override', () => {
+    expect(resolveExpiryDays(leaf, parent, [])).toBe(30);
+    expect(
+      resolveExpiryDays({ id: 'leaf', defaultExpiryDays: null }, parent, []),
+    ).toBe(10);
+  });
+
+  it('a Leaf override beats a Parent override and both Catalog defaults', () => {
+    const overrides = [
+      { entityType: 'parent_category' as const, entityId: 'parent', days: 4 },
+      { entityType: 'leaf_category' as const, entityId: 'leaf', days: 2 },
+    ];
+    expect(resolveExpiryDays(leaf, parent, overrides)).toBe(2);
+  });
+
+  it('a Parent override beats the Leaf and Parent Catalog defaults', () => {
+    const overrides = [
+      { entityType: 'parent_category' as const, entityId: 'parent', days: 4 },
+    ];
+    expect(resolveExpiryDays(leaf, parent, overrides)).toBe(4);
+  });
+
+  it('ignores overrides for other Categories', () => {
+    const overrides = [
+      { entityType: 'leaf_category' as const, entityId: 'elsewhere', days: 1 },
+    ];
+    expect(resolveExpiryDays(leaf, parent, overrides)).toBe(30);
+  });
+});
 
 describe('resolveCatalogDefaults', () => {
   it('uses the Leaf Category defaults when set', () => {
