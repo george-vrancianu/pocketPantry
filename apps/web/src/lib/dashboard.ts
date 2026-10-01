@@ -12,7 +12,8 @@ export type WidgetType =
   | 'meal-plan'
   | 'budget'
   | 'nutrition';
-export type WidgetSize = 'small' | 'wide';
+/** `tall` is two rows high on the four-column grid (900 px and up) and behaves as `wide` below it. */
+export type WidgetSize = 'small' | 'wide' | 'tall';
 
 /** One Widget on a Member's Dashboard. The same type may appear more than once. */
 export type WidgetInstance = { id: string; type: WidgetType; size: WidgetSize };

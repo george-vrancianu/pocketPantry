@@ -27,7 +27,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   'use-soon': {
     component: UseSoonWidget,
     nameKey: 'widgets.useSoon.title',
-    sizes: ['small', 'wide'],
+    sizes: ['small', 'wide', 'tall'],
     defaultSize: 'wide',
   },
   shopping: {

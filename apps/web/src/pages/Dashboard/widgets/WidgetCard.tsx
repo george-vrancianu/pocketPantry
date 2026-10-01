@@ -3,11 +3,14 @@ import type { ElementType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { WidgetSize } from '../../../lib/dashboard';
+import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 
 type Props = {
   /** Accessible name of the card, also its visible title in most Widgets. */
   label: string;
   size: WidgetSize;
+  /** The Dashboard grid's column count, passed down by the page. */
+  columns: GridColumns;
   tone?: 'surface' | 'butter';
   /** Makes the whole card a link, as the Shopping and Pantry Stock Widgets are. */
   to?: string;
@@ -23,6 +26,7 @@ type Props = {
 export function WidgetCard({
   label,
   size,
+  columns,
   tone = 'surface',
   to,
   isLoading = false,
@@ -31,6 +35,7 @@ export function WidgetCard({
   children,
 }: Props) {
   const { t } = useTranslation('dashboard');
+  const span = widgetSpan(size, columns);
   const butter = tone === 'butter';
   const linked = Boolean(to) && !isLoading && !error;
   const Component: ElementType = linked ? Link : 'section';
@@ -41,7 +46,8 @@ export function WidgetCard({
       {...(linked ? { to } : {})}
       aria-label={label}
       sx={{
-        gridColumn: size === 'wide' ? 'span 2' : 'span 1',
+        gridColumn: `span ${span.columns}`,
+        gridRow: `span ${span.rows}`,
         display: 'flex',
         flexDirection: 'column',
         minHeight: size === 'small' ? 136 : undefined,

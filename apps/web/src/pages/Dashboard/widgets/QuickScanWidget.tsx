@@ -20,10 +20,15 @@ const SCAN_MODES: Array<{ mode: string; icon: ReactNode }> = [
 ];
 
 /** Four tiles, each deep-linking to one Scan Mode. */
-export function QuickScanWidget({ size }: WidgetProps) {
+export function QuickScanWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   return (
-    <WidgetCard label={t('widgets.quickScan.title')} size={size} padding="12px">
+    <WidgetCard
+      label={t('widgets.quickScan.title')}
+      size={size}
+      columns={columns}
+      padding="12px"
+    >
       <Box
         sx={{
           display: 'grid',

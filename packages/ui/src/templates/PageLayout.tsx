@@ -10,7 +10,7 @@ export type PageLayoutProps = {
   dark?: boolean;
 };
 
-/** Page frame: 20 px gutters on phones, 48 px on wide screens, content capped at ~960 px. */
+/** Page frame: 20 px gutters on phones, 48 px on wide screens, content capped at ~960 px. The camera screen (`dark`) stays full-bleed. */
 export function PageLayout({
   children,
   withDock = true,
@@ -27,7 +27,7 @@ export function PageLayout({
         pb: withDock ? '110px' : '24px',
       }}
     >
-      <Box component="main" sx={{ maxWidth: 960, mx: 'auto' }}>
+      <Box component="main" sx={{ maxWidth: dark ? 'none' : 960, mx: 'auto' }}>
         {children}
       </Box>
     </Box>
