@@ -1,6 +1,5 @@
-// TODO(ticket #4): these catalog types are a minimal stand-in for the scan
-// services. The catalog model (Categories, Aisles, translations) is redefined
-// in ticket #4.
+// Scan-facing snapshot of the Catalog: canonical English Ingredient names and
+// their Leaf Category names. Display names and Synonyms live in src/catalog.
 export type CatalogIngredient = {
   id: string;
   name: string;

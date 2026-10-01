@@ -66,4 +66,7 @@ never reach a client.
   `AI_VISION_MODEL`, `AI_BASE_URL`).
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
   schemas. Not exposed by any controller yet.
-- `src/ingredients`: catalog validator and service. Stand-in until ticket #4.
+- `src/catalog`: Catalog search (`GET /api/catalog/search`), name normalisation, and the
+  starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent).
+- `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories
+  are the categories the AI sees).

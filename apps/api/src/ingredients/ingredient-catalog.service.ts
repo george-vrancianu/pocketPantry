@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { ingredientCategories, ingredients } from '../database/schema';
+import { ingredients, leafCategories } from '../database/schema';
 import {
   type CatalogMatch,
   type IngredientCatalog,
@@ -65,18 +65,18 @@ export class IngredientCatalogService {
           id: ingredients.id,
           name: ingredients.name,
           defaultUnit: ingredients.defaultUnit,
-          category: ingredientCategories.name,
+          category: leafCategories.name,
         })
         .from(ingredients)
         .innerJoin(
-          ingredientCategories,
-          eq(ingredients.categoryId, ingredientCategories.id),
+          leafCategories,
+          eq(ingredients.leafCategoryId, leafCategories.id),
         )
-        .orderBy(ingredientCategories.name, ingredients.name),
+        .orderBy(leafCategories.name, ingredients.name),
       this.database
-        .select({ name: ingredientCategories.name })
-        .from(ingredientCategories)
-        .orderBy(ingredientCategories.name),
+        .select({ name: leafCategories.name })
+        .from(leafCategories)
+        .orderBy(leafCategories.name),
     ]);
 
     const value = {

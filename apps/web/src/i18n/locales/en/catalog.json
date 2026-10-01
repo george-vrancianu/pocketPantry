@@ -1,0 +1,9 @@
+{
+  "search": {
+    "label": "Search ingredients",
+    "placeholder": "Type an ingredient, e.g. parmesan",
+    "searching": "Searching",
+    "noResults": "No ingredients found",
+    "resultCount": "Results: {{count}}"
+  }
+}
