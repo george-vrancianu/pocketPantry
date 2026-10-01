@@ -1,3 +1,28 @@
 {
-  "title": "Cumpărături"
+  "title": "Cumpărături",
+  "summary": {
+    "toBuy": "{{count}} de cumpărat",
+    "inBasket": "{{checked}} din {{total}} în coș",
+    "progress": "Progresul coșului"
+  },
+  "add": {
+    "quantity": "Cantitate",
+    "unit": "Unitate",
+    "noUnit": "Fără unitate",
+    "submit": "Adaugă în listă",
+    "unmatchedHint": "Nu există o potrivire în catalog, deci va fi adăugat ca articol nepotrivit."
+  },
+  "item": {
+    "remove": "Elimină {{name}}",
+    "unmatched": "Nepotrivit"
+  },
+  "unmatchedGroup": "În afara catalogului",
+  "empty": "Lista ta este goală. Adaugă mai sus ce ai nevoie.",
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "pcs": "buc"
+  }
 }

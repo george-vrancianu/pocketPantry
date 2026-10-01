@@ -1,3 +1,28 @@
 {
-  "title": "Shopping"
+  "title": "Shopping",
+  "summary": {
+    "toBuy": "{{count}} to buy",
+    "inBasket": "{{checked}} of {{total}} in your basket",
+    "progress": "Basket progress"
+  },
+  "add": {
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "noUnit": "No unit",
+    "submit": "Add to list",
+    "unmatchedHint": "No catalog match, so this will be added as an unmatched item."
+  },
+  "item": {
+    "remove": "Remove {{name}}",
+    "unmatched": "Unmatched"
+  },
+  "unmatchedGroup": "Not in the catalog",
+  "empty": "Your list is empty. Add what you need above.",
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "pcs": "pcs"
+  }
 }
