@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { ingredientUnit, storageLocation } from '../database/schema';
+import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
 
 export const pantryLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
@@ -34,6 +35,8 @@ export const createBatchBody = z
     rawName: z.string().trim().min(1).max(100).optional(),
     /** Unmatched only: the Parent Category whose "Other" Leaf receives the Batch. */
     parentCategoryId: z.uuid().optional(),
+    /** Unmatched only: where the name came from (a Scan Mode or typed); defaults to manual. */
+    source: z.enum(BATCH_SOURCES).optional(),
     quantity: quantity.nullish(),
     unit: z.enum(ingredientUnit.enumValues).nullish(),
     location: z.enum(storageLocation.enumValues).optional(),

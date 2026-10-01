@@ -19,6 +19,7 @@ import {
   user,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
+import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
   BatchView,
   CreateBatchBody,
@@ -81,7 +82,26 @@ export class PantryService {
     for (const body of bodies) {
       values.push(await this.toRow(familyId, body, overrides));
     }
-    const rows = await this.database.insert(batches).values(values).returning();
+    const rows = await this.database.transaction(async (tx) => {
+      const inserted = await tx.insert(batches).values(values).returning();
+      // Returned in insertion order, so line `i` is row `i`.
+      await recordUnmatched(
+        tx,
+        inserted.flatMap((row, index) =>
+          row.unmatched
+            ? [
+                {
+                  rawName: row.rawName ?? '',
+                  locale,
+                  source: bodies[index].source ?? 'manual',
+                  batchId: row.id,
+                },
+              ]
+            : [],
+        ),
+      );
+      return inserted;
+    });
     // `today` only anchors expiringSoon; a bulk request carries one client date.
     return this.toViews(rows, locale, familyId, bodies[0]?.today);
   }
