@@ -1,17 +1,44 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { groupByLocation, useBatches } from '../../../lib/pantry';
+import {
+  countByLocation,
+  groupByLocation,
+  matchesSearch,
+  rollUp,
+  useBatches,
+  type PantryFilter,
+} from '../../../lib/pantry';
 
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
   const batches = useBatches(i18n.language);
   const [adding, setAdding] = useState(false);
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<PantryFilter>('all');
+
+  const all = batches.data ?? [];
+  // Chip counts follow the search, so they always say how many Batches the chip would show.
+  const searched = all.filter((batch) => matchesSearch(batch, query));
+  const shown =
+    filter === 'all'
+      ? searched
+      : searched.filter((batch) => batch.location === filter);
 
   return {
-    sections: groupByLocation(batches.data ?? []),
+    sections: groupByLocation(shown).map((group) => ({
+      location: group.location,
+      batchCount: group.batches.length,
+      rows: rollUp(group.batches),
+    })),
+    counts: countByLocation(searched),
+    query,
+    setQuery,
+    filter,
+    setFilter,
     isLoading: batches.isPending,
-    isEmpty: batches.isSuccess && batches.data.length === 0,
+    isEmpty: batches.isSuccess && all.length === 0,
+    noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
     error: batches.error ? translateApiError(t, batches.error) : null,
     today: new Date(),
     adding,

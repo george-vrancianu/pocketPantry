@@ -1,14 +1,29 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
+  batchIdParam,
   createBatchBody,
+  updateBatchBody,
   pantryLocaleQuery,
   type BatchView,
+  type BatchIdParam,
   type CreateBatchBody,
+  type UpdateBatchBody,
   type PantryLocaleQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
@@ -41,5 +56,29 @@ export class PantryController {
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
     return this.pantry.create(member.id, body, query.locale);
+  }
+
+  @Patch('batches/:id')
+  @ApiOperation({
+    summary:
+      'Edit a Batch of the Family Pantry (quantity, unit, expiry, Location, Product Description)',
+  })
+  update(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(batchIdParam)) params: BatchIdParam,
+    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Body(new ZodValidationPipe(updateBatchBody)) body: UpdateBatchBody,
+  ): Promise<BatchView> {
+    return this.pantry.update(member.id, params.id, body, query.locale);
+  }
+
+  @Delete('batches/:id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete a Batch of the Family Pantry' })
+  async remove(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(batchIdParam)) params: BatchIdParam,
+  ): Promise<void> {
+    await this.pantry.remove(member.id, params.id);
   }
 }

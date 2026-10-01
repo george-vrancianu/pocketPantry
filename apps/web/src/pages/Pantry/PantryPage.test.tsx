@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -52,14 +52,25 @@ describe('PantryPage', () => {
     stubPantry([
       batch({
         name: 'Yogurt',
+        ingredientId: 'yogurt-id',
         location: 'fridge',
         quantity: 500,
         unit: 'g',
         productDescription: 'Greek, opened',
         expiryDate: inDays(0),
       }),
-      batch({ name: 'Spinach', location: 'fridge', expiryDate: inDays(2) }),
-      batch({ name: 'Feta', location: 'fridge', expiryDate: inDays(9) }),
+      batch({
+        name: 'Spinach',
+        ingredientId: 'spinach-id',
+        location: 'fridge',
+        expiryDate: inDays(2),
+      }),
+      batch({
+        name: 'Feta',
+        ingredientId: 'feta-id',
+        location: 'fridge',
+        expiryDate: inDays(9),
+      }),
       batch({
         name: 'Zorblax paste',
         location: 'cupboard',
@@ -137,7 +148,7 @@ describe('PantryPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
     await user.type(screen.getByLabelText('Quantity'), '1.2345');
     expect(
-      screen.getByText(/at least 0.001, with up to 3 decimals/),
+      screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -179,5 +190,353 @@ describe('PantryPage', () => {
       unit: null,
     });
     expect(post?.body).not.toHaveProperty('ingredientId');
+  });
+
+  describe('managing the Pantry', () => {
+    const stock = () => [
+      batch({
+        id: 'milk-1',
+        name: 'Milk',
+        quantity: 1,
+        unit: 'l',
+        expiryDate: inDays(5),
+      }),
+      batch({
+        id: 'milk-2',
+        name: 'Milk',
+        quantity: 0.5,
+        unit: 'l',
+        productDescription: 'Opened',
+        expiryDate: inDays(2),
+      }),
+      batch({
+        id: 'cheese',
+        name: 'Parmesan',
+        ingredientId: 'parmesan-id',
+        location: 'freezer',
+        productDescription: 'Grana Padano 200g',
+        expiryDate: inDays(40),
+      }),
+      batch({
+        id: 'rice',
+        name: 'Rice',
+        ingredientId: 'rice-id',
+        location: 'cupboard',
+      }),
+    ];
+
+    function stubManaged(initial: Batch[]) {
+      let batches = initial;
+      const remove = (id: string) => () => {
+        batches = batches.filter((b) => b.id !== id);
+        return new Response(null, { status: 204 });
+      };
+      const { fetchMock, calls } = stubApi({
+        'GET /api/pantry': () => Response.json({ batches }),
+        'PATCH /api/pantry/batches/milk-2': () => Response.json(batches[1]),
+        'DELETE /api/pantry/batches/milk-2': remove('milk-2'),
+        'DELETE /api/pantry/batches/cheese': remove('cheese'),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      return calls;
+    }
+
+    it('rolls Batches of one Ingredient into a row with the total and soonest expiry', async () => {
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      const fridge = await screen.findByRole('region', { name: 'Fridge · 2' });
+      const [row] = within(fridge).getAllByRole('listitem');
+      expect(row.textContent).toBe(
+        'M' + 'Milk' + '1.5 L · 2 batches' + '2 days',
+      );
+    });
+
+    it('lists totals separately when the units differ', async () => {
+      stubManaged([
+        batch({ name: 'Flour', ingredientId: 'f', quantity: 500, unit: 'g' }),
+        batch({ name: 'Flour', ingredientId: 'f', quantity: 2, unit: 'pcs' }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      expect(
+        await screen.findByText('500 g + 2 pcs · 2 batches'),
+      ).toBeVisible();
+    });
+
+    it('expands a row to each Batch with its own expiry, Edit and Delete', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      const toggle = await screen.findByRole('button', { name: /^Milk/ });
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+      const details = within(
+        screen.getByRole('list', { name: 'Batches of Milk' }),
+      ).getAllByRole('listitem');
+      expect(details.map((d) => d.textContent)).toEqual([
+        '0.5 L · Opened' + '2 days' + 'Edit' + 'Delete',
+        expect.stringMatching(/^1 L.*Edit.*Delete$/),
+      ]);
+      expect(
+        within(details[0]).getByRole('button', { name: 'Edit Milk batch' }),
+      ).toBeInTheDocument();
+
+      await user.click(toggle);
+      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('edits a Batch and sends only that Batch', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        within(
+          screen.getByRole('list', { name: 'Batches of Milk' }),
+        ).getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+      expect(within(form).getByLabelText('Quantity')).toHaveValue(0.5);
+      expect(within(form).getByLabelText('Product description')).toHaveValue(
+        'Opened',
+      );
+
+      await user.clear(within(form).getByLabelText('Quantity'));
+      await user.type(within(form).getByLabelText('Quantity'), '0.25');
+      await user.selectOptions(
+        within(form).getByLabelText('Location'),
+        'freezer',
+      );
+      await user.clear(within(form).getByLabelText('Expiry date'));
+      await user.click(
+        within(form).getByRole('button', { name: 'Save changes' }),
+      );
+
+      const patch = calls.find(
+        (call) => call.key === 'PATCH /api/pantry/batches/milk-2',
+      );
+      // Only what changed, so two Members editing different fields do not overwrite each other.
+      expect(patch?.body).toEqual({
+        quantity: 0.25,
+        location: 'freezer',
+        expiryDate: null,
+      });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('form', { name: 'Edit Milk batch' }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('sends no request when nothing changed', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('form', { name: 'Edit Milk batch' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
+    });
+
+    it('refuses an exponent quantity when editing', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      fireEvent.change(screen.getByLabelText('Quantity'), {
+        target: { value: '1e3' },
+      });
+      expect(
+        screen.getByRole('button', { name: 'Save changes' }),
+      ).toBeDisabled();
+    });
+
+    it('refuses an invalid quantity when editing', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      await user.clear(screen.getByLabelText('Quantity'));
+      await user.type(screen.getByLabelText('Quantity'), '1.2345');
+      expect(
+        screen.getByRole('button', { name: 'Save changes' }),
+      ).toBeDisabled();
+    });
+
+    it('deletes a Batch only after confirming', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Delete Milk batch' })[0],
+      );
+      expect(calls.some((c) => c.key.startsWith('DELETE'))).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+      await waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'DELETE /api/pantry/batches/milk-2',
+        ),
+      );
+    });
+
+    describe('focus', () => {
+      async function openMilk(batches = stock()) {
+        const user = userEvent.setup();
+        stubManaged(batches);
+        renderWithProviders(<PantryPage />);
+        const toggle = await screen.findByRole('button', { name: /^Milk/ });
+        await user.click(toggle);
+        return { user, toggle };
+      }
+      const editButton = () =>
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0];
+      const deleteButton = () =>
+        screen.getAllByRole('button', { name: 'Delete Milk batch' })[0];
+
+      it('moves focus into the edit form and back to Edit on Cancel', async () => {
+        const { user } = await openMilk();
+        await user.click(editButton());
+        expect(screen.getByLabelText('Quantity')).toHaveFocus();
+        await user.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(editButton()).toHaveFocus();
+      });
+
+      it('returns focus to Edit after Save', async () => {
+        const { user } = await openMilk();
+        await user.click(editButton());
+        await user.clear(screen.getByLabelText('Quantity'));
+        await user.type(screen.getByLabelText('Quantity'), '2');
+        await user.click(screen.getByRole('button', { name: 'Save changes' }));
+        await waitFor(() => expect(editButton()).toHaveFocus());
+      });
+
+      it('moves focus to the confirm control and back to Delete on Cancel', async () => {
+        const { user } = await openMilk();
+        await user.click(deleteButton());
+        expect(
+          screen.getByRole('button', { name: 'Yes, delete' }),
+        ).toHaveFocus();
+        await user.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(deleteButton()).toHaveFocus();
+      });
+
+      it('focuses the roll-up toggle after deleting one of several Batches', async () => {
+        const { user, toggle } = await openMilk();
+        await user.click(deleteButton());
+        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await waitFor(() => expect(toggle).toHaveFocus());
+      });
+
+      it('focuses the section heading after deleting the last Batch of a row', async () => {
+        const user = userEvent.setup();
+        stubManaged([
+          ...stock(),
+          batch({
+            id: 'peas',
+            name: 'Peas',
+            ingredientId: 'peas-id',
+            location: 'freezer',
+          }),
+        ]);
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Parmesan/ }),
+        );
+        await user.click(
+          screen.getByRole('button', { name: 'Delete Parmesan batch' }),
+        );
+        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await waitFor(() =>
+          expect(
+            screen.getByRole('heading', { name: 'Freezer · 1' }),
+          ).toHaveFocus(),
+        );
+      });
+    });
+
+    it('searches localised names and Product Descriptions', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      const search = await screen.findByRole('searchbox', {
+        name: 'Search pantry',
+      });
+      await user.type(search, 'grana');
+      expect(screen.getByText('Parmesan')).toBeInTheDocument();
+      expect(screen.queryByText('Milk')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'All · 1' }),
+      ).toBeInTheDocument();
+
+      await user.clear(search);
+      await user.type(search, 'MILK');
+      expect(screen.getByText('Milk')).toBeInTheDocument();
+      expect(screen.queryByText('Parmesan')).not.toBeInTheDocument();
+
+      await user.clear(search);
+      await user.type(search, 'zzz');
+      expect(screen.getByText('No batches match.')).toBeInTheDocument();
+    });
+
+    it('filters by Location with live counts and marks the active chip', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      const all = await screen.findByRole('button', { name: 'All · 4' });
+      expect(all).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        screen.getByRole('button', { name: 'Fridge · 2' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Freezer · 1' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Cupboard · 1' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Spices · 0' }),
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Freezer · 1' }));
+      expect(
+        screen.getByRole('button', { name: 'Freezer · 1' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(all).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByText('Parmesan')).toBeInTheDocument();
+      expect(screen.queryByText('Milk')).not.toBeInTheDocument();
+
+      // Counts follow the search.
+      await user.type(
+        screen.getByRole('searchbox', { name: 'Search pantry' }),
+        'milk',
+      );
+      expect(
+        screen.getByRole('button', { name: 'Fridge · 2' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Freezer · 0' }),
+      ).toBeInTheDocument();
+    });
   });
 });

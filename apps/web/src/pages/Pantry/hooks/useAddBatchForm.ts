@@ -5,7 +5,12 @@ import type {
   CatalogSearchResult,
   StorageLocation,
 } from '../../../lib/catalog';
-import { defaultExpiryDate, useAddBatch, type Unit } from '../../../lib/pantry';
+import {
+  defaultExpiryDate,
+  parseQuantity,
+  useAddBatch,
+  type Unit,
+} from '../../../lib/pantry';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 
@@ -46,13 +51,8 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setExpiryDate('');
   };
 
-  const quantityValue = quantity.trim() === '' ? null : Number(quantity);
-  // numeric(10,3) on the server: at least 0.001, at most 3 decimals.
-  const quantityValid =
-    quantityValue === null ||
-    (Number.isFinite(quantityValue) &&
-      quantityValue >= 0.001 &&
-      Math.abs(Math.round(quantityValue * 1000) - quantityValue * 1000) < 1e-6);
+  const { value: quantityValue, valid: quantityValid } =
+    parseQuantity(quantity);
   const canSave =
     (ingredient !== null || Boolean(unmatchedName)) &&
     quantityValid &&
