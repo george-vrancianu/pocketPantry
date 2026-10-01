@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
+import {
+  FALLBACK_LOCALE,
+  type CatalogLocale,
+} from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
@@ -17,9 +20,11 @@ import {
   parentCategories,
   shoppingItems,
   shoppingLists,
+  unmatchedEntries,
   user,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
+import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
   FinishProposal,
   FinishResult,
@@ -143,24 +148,28 @@ export class FinishShoppingService {
       const other = await this.otherTarget(tx);
       const byId = new Map(rows.map((row) => [row.id, row]));
       if (body.lines.length > 0) {
-        await tx.insert(batches).values(
-          body.lines.map((line) => {
-            const row = byId.get(line.itemId) as CheckedRow;
-            const unmatched = row.ingredientId === null;
-            return {
-              familyId,
-              ingredientId: row.ingredientId,
-              leafCategoryId: (row.leaf ?? other.leaf).id,
-              unmatched,
-              rawName: unmatched ? row.typedName : null,
-              quantity: line.quantity,
-              unit: line.unit,
-              location: line.location,
-              expiryDate: line.expiryDate,
-              productDescription: line.productDescription || null,
-            };
-          }),
-        );
+        const inserted = await tx
+          .insert(batches)
+          .values(
+            body.lines.map((line) => {
+              const row = byId.get(line.itemId) as CheckedRow;
+              const unmatched = row.ingredientId === null;
+              return {
+                familyId,
+                ingredientId: row.ingredientId,
+                leafCategoryId: (row.leaf ?? other.leaf).id,
+                unmatched,
+                rawName: unmatched ? row.typedName : null,
+                quantity: line.quantity,
+                unit: line.unit,
+                location: line.location,
+                expiryDate: line.expiryDate,
+                productDescription: line.productDescription || null,
+              };
+            }),
+          )
+          .returning({ id: batches.id, rawName: batches.rawName });
+        await this.queueUnmatchedBatches(tx, body, inserted);
       }
 
       // The partial unique index allows one active list per Family: archive first.
@@ -185,6 +194,45 @@ export class FinishShoppingService {
 
       return { listId: fresh.id, batchCount: body.lines.length };
     });
+  }
+
+  /**
+   * Unmatched Shopping Items become Unmatched Batches: queue the Batches too,
+   * in the locale the name was first saved in (the Shopping Item's entry).
+   */
+  private async queueUnmatchedBatches(
+    tx: Tx,
+    body: FinishShoppingBody,
+    inserted: Array<{ id: string; rawName: string | null }>,
+  ): Promise<void> {
+    const unmatched = inserted.flatMap((batch, index) =>
+      batch.rawName === null
+        ? []
+        : [{ batch, itemId: body.lines[index].itemId }],
+    );
+    if (unmatched.length === 0) return;
+    const locales = await tx
+      .select({
+        itemId: unmatchedEntries.shoppingItemId,
+        locale: unmatchedEntries.locale,
+      })
+      .from(unmatchedEntries)
+      .where(
+        inArray(
+          unmatchedEntries.shoppingItemId,
+          unmatched.map((entry) => entry.itemId),
+        ),
+      );
+    const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
+    await recordUnmatched(
+      tx,
+      unmatched.map(({ batch, itemId }) => ({
+        rawName: batch.rawName ?? '',
+        locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
+        source: 'finish_shopping' as const,
+        batchId: batch.id,
+      })),
+    );
   }
 
   private async activeList(executor: Executor, memberId: string) {

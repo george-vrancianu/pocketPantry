@@ -71,5 +71,10 @@
     "cannot_transfer_to_self": "You are already the Owner.",
     "member_not_found": "That person is not a Member of your Family.",
     "concurrent_change": "The Family changed while you were doing that. Please try again."
+  },
+  "unmatched": {
+    "name_taken": "That name already belongs to another Ingredient. Resolve it to that Ingredient, or rename the other one first.",
+    "not_found": "That name is no longer in the queue. Someone may have resolved it already.",
+    "concurrent_change": "The lists changed while resolving. Please try again."
   }
 }

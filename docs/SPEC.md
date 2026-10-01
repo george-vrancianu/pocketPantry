@@ -158,7 +158,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - Each Ingredient has a default unit from the unit enum.
 - The seed is generated once with an LLM from the 18 parents, producing Leaf Categories and Ingredients with English and Romanian names and Synonyms, then reviewed by hand before being committed as seed data. Seed rows have fixed identifiers so re-seeding is idempotent.
 - An "Other" Leaf Category exists under every Parent Category, plus a top-level "Other" Parent, so Unmatched Batches always have a home.
-- Unmatched names are recorded in a review queue with the raw text, locale, source (which Scan Mode or manual), and the Batch or Shopping Item they were saved on. Admin resolution either links to an existing Ingredient or creates a new one, then relinks the referencing rows and adds the raw text as a Synonym.
+- Unmatched names are recorded in a review queue with the raw text, locale, source (which Scan Mode or manual), and the Batch or Shopping Item they were saved on. Admin resolution either links to an existing Ingredient or creates a new one, then relinks the referencing rows and adds the raw text as a Synonym. A relinked Shopping Item on the active list merges with an existing line for the same Ingredient and unit; on archived lists it only relinks. Unmatched rows saved before the queue existed (migration 0009) are not queued; that is dev data only and no backfill is provided.
 
 ### Matching
 

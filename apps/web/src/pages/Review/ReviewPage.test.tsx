@@ -154,6 +154,7 @@ describe('ReviewPage', () => {
         },
         {
           rawName: 'Mystery jar',
+          source: 'product',
           quantity: null,
           unit: null,
           location: 'cupboard',

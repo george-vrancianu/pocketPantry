@@ -18,6 +18,7 @@ import {
   shoppingLists,
   user,
 } from '../database/schema';
+import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
   AddShoppingItemBody,
   ShoppingGroupView,
@@ -119,12 +120,25 @@ export class ShoppingService {
           })
           .where(eq(shoppingItems.id, existing.id));
       } else {
-        await tx.insert(shoppingItems).values({
-          listId,
-          ...insertValues,
-          quantity: quantity === null ? null : String(quantity),
-          unit,
-        });
+        const [inserted] = await tx
+          .insert(shoppingItems)
+          .values({
+            listId,
+            ...insertValues,
+            quantity: quantity === null ? null : String(quantity),
+            unit,
+          })
+          .returning({ id: shoppingItems.id });
+        if ('name' in insertValues) {
+          await recordUnmatched(tx, [
+            {
+              rawName: insertValues.name,
+              locale,
+              source: body.source ?? 'manual',
+              shoppingItemId: inserted.id,
+            },
+          ]);
+        }
       }
       return this.view(tx, listId, locale);
     });

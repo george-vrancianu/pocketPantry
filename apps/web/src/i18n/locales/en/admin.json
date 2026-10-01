@@ -3,7 +3,8 @@
   "sections": "Catalog sections",
   "tabs": {
     "ingredients": "Ingredients",
-    "categories": "Categories"
+    "categories": "Categories",
+    "unmatched": "Unmatched"
   },
   "units": {
     "g": "g",
@@ -66,5 +67,39 @@
     "addSynonym": "Add {{language}} Synonym",
     "removeSynonym": "Remove Synonym {{value}}",
     "none": "No Synonyms yet."
+  },
+  "unmatched": {
+    "statusLabel": "Queue",
+    "status": {
+      "open": "Open",
+      "dismissed": "Dismissed"
+    },
+    "empty": "Nothing to review.",
+    "rows_one": "{{count}} row",
+    "rows_other": "{{count}} rows",
+    "sources": {
+      "product": "Product",
+      "receipt": "Receipt",
+      "plate": "Plate",
+      "ingredients": "Ingredients",
+      "manual": "Typed",
+      "finish_shopping": "Finish Shopping"
+    },
+    "resolve": "Resolve",
+    "resolveName": "Resolve {{name}}",
+    "dismiss": "Dismiss",
+    "dismissName": "Dismiss {{name}}",
+    "modeLabel": "Resolve to",
+    "mode": {
+      "existing": "Existing Ingredient",
+      "new": "New Ingredient"
+    },
+    "picked": "Selected: {{name}}",
+    "synonymLocale": "Synonym language",
+    "synonymHint": "\"{{name}}\" is added as a Synonym in this language, so it matches next time.",
+    "confirm": "Resolve",
+    "resolving": "Resolving…",
+    "resolved_one": "Linked {{count}} row to {{name}}.",
+    "resolved_other": "Linked {{count}} rows to {{name}}."
   }
 }

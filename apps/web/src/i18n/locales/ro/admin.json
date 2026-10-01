@@ -3,7 +3,8 @@
   "sections": "Secțiunile Catalogului",
   "tabs": {
     "ingredients": "Ingrediente",
-    "categories": "Categorii"
+    "categories": "Categorii",
+    "unmatched": "Nepotrivite"
   },
   "units": {
     "g": "g",
@@ -66,5 +67,41 @@
     "addSynonym": "Adaugă Sinonim în {{language}}",
     "removeSynonym": "Elimină Sinonimul {{value}}",
     "none": "Încă niciun Sinonim."
+  },
+  "unmatched": {
+    "statusLabel": "Coadă",
+    "status": {
+      "open": "Deschise",
+      "dismissed": "Respinse"
+    },
+    "empty": "Nimic de revizuit.",
+    "rows_one": "{{count}} rând",
+    "rows_few": "{{count}} rânduri",
+    "rows_other": "{{count}} de rânduri",
+    "sources": {
+      "product": "Produs",
+      "receipt": "Bon",
+      "plate": "Farfurie",
+      "ingredients": "Ingrediente",
+      "manual": "Scris de mână",
+      "finish_shopping": "Finalizare cumpărături"
+    },
+    "resolve": "Rezolvă",
+    "resolveName": "Rezolvă {{name}}",
+    "dismiss": "Respinge",
+    "dismissName": "Respinge {{name}}",
+    "modeLabel": "Rezolvă către",
+    "mode": {
+      "existing": "Ingredient existent",
+      "new": "Ingredient nou"
+    },
+    "picked": "Selectat: {{name}}",
+    "synonymLocale": "Limba sinonimului",
+    "synonymHint": "„{{name}}” este adăugat ca Sinonim în această limbă, ca să se potrivească data viitoare.",
+    "confirm": "Rezolvă",
+    "resolving": "Se rezolvă…",
+    "resolved_one": "{{count}} rând legat de {{name}}.",
+    "resolved_few": "{{count}} rânduri legate de {{name}}.",
+    "resolved_other": "{{count}} de rânduri legate de {{name}}."
   }
 }

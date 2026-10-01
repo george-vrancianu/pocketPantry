@@ -56,12 +56,20 @@ export function useReviewScreen() {
     setLines((all) => all.filter((line) => line.key !== key));
 
   const save = () => {
-    addBatches.mutate(lines.map(toNewBatch), {
-      onSuccess: () => {
-        clearReview();
-        navigate('/pantry');
+    const mode = draft?.mode;
+    const source = mode && mode !== 'plate' ? mode : undefined;
+    addBatches.mutate(
+      lines.map(toNewBatch).map((batch) =>
+        // The queue only records the source of Unmatched names.
+        batch.rawName && source ? { ...batch, source } : batch,
+      ),
+      {
+        onSuccess: () => {
+          clearReview();
+          navigate('/pantry');
+        },
       },
-    });
+    );
   };
   const discard = () => {
     clearReview();
