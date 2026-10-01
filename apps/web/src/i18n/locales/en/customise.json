@@ -1,4 +1,31 @@
 {
   "title": "Customise",
-  "done": "Done"
+  "done": "Done",
+  "hint": "Drag to reorder, pick a size, add or remove.",
+  "onDashboard": "On your dashboard",
+  "addWidgets": "Add widgets",
+  "emptyList": "No widgets on your dashboard yet.",
+  "allAdded": "Every widget is already on your dashboard.",
+  "reorder": "Reorder {{name}}",
+  "moveUp": "Move {{name}} up",
+  "moveDown": "Move {{name}} down",
+  "remove": "Remove {{name}} widget",
+  "add": "Add {{name}} widget",
+  "size": {
+    "small": "Small",
+    "wide": "Wide",
+    "tall": "Tall"
+  },
+  "sizeToggle": "Size of {{name}}: {{current}}. Switch to {{next}}.",
+  "sizeLocked": "Size of {{name}}: {{current}}.",
+  "dragInstructions": "To reorder, press space to pick up, use the arrow keys to move, then press space to drop. Press escape to cancel.",
+  "announce": {
+    "pickedUp": "Picked up {{name}}.",
+    "movedTo": "{{name}} moved to position {{position}} of {{total}}.",
+    "dropped": "{{name}} dropped at position {{position}} of {{total}}.",
+    "cancelled": "Reorder cancelled.",
+    "added": "{{name}} added.",
+    "removed": "{{name}} removed.",
+    "resized": "{{name}} size set to {{size}}."
+  }
 }

@@ -1,3 +1,12 @@
+import {
+  BudgetIcon,
+  ClockIcon,
+  NutritionIcon,
+  PantryIcon,
+  RecipesIcon,
+  ScanIcon,
+  ShoppingIcon,
+} from '@pocket-pantry/ui';
 import type { ComponentType } from 'react';
 import type { WidgetSize, WidgetType } from '../../../lib/dashboard';
 import {
@@ -15,6 +24,8 @@ export type WidgetDefinition = {
   component: ComponentType<WidgetProps>;
   /** Translation key (`dashboard` namespace) of the Widget's name, for the customise screen. */
   nameKey: string;
+  /** The Widget's icon, shown beside its name on the customise screen. */
+  icon: ComponentType<{ size?: number }>;
   sizes: WidgetSize[];
   defaultSize: WidgetSize;
 };
@@ -27,42 +38,49 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   'use-soon': {
     component: UseSoonWidget,
     nameKey: 'widgets.useSoon.title',
+    icon: ClockIcon,
     sizes: ['small', 'wide', 'tall'],
     defaultSize: 'wide',
   },
   shopping: {
     component: ShoppingWidget,
     nameKey: 'widgets.shopping.title',
+    icon: ShoppingIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
   },
   'pantry-stock': {
     component: PantryStockWidget,
     nameKey: 'widgets.pantryStock.title',
+    icon: PantryIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
   },
   'quick-scan': {
     component: QuickScanWidget,
     nameKey: 'widgets.quickScan.title',
+    icon: ScanIcon,
     sizes: ['wide'],
     defaultSize: 'wide',
   },
   'meal-plan': {
     component: MealPlanWidget,
     nameKey: 'widgets.mealPlan.title',
+    icon: RecipesIcon,
     sizes: ['wide'],
     defaultSize: 'wide',
   },
   budget: {
     component: BudgetWidget,
     nameKey: 'widgets.budget.title',
+    icon: BudgetIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
   },
   nutrition: {
     component: NutritionWidget,
     nameKey: 'widgets.nutrition.title',
+    icon: NutritionIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
   },

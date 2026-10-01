@@ -17,6 +17,12 @@ import {
   Leaf,
   Receipt,
   ScanBarcode,
+  Wallet,
+  Apple,
+  ChevronUp,
+  ChevronDown,
+  Minus,
+  GripVertical,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -42,3 +48,9 @@ export const ProductScanIcon = withDefaults(ScanBarcode);
 export const ReceiptScanIcon = withDefaults(Receipt);
 export const PlateScanIcon = withDefaults(CircleDot);
 export const IngredientsScanIcon = withDefaults(Leaf);
+export const BudgetIcon = withDefaults(Wallet);
+export const NutritionIcon = withDefaults(Apple);
+export const ChevronUpIcon = withDefaults(ChevronUp);
+export const ChevronDownIcon = withDefaults(ChevronDown);
+export const MinusIcon = withDefaults(Minus);
+export const GripIcon = withDefaults(GripVertical);
