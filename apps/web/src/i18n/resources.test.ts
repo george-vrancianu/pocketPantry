@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { FALLBACK_LOCALE, LOCALES, resources } from './resources';
 
+/** Plural variants differ per locale (en: one/other, ro: one/few/other). */
+const pluralBase = (path: string) =>
+  path.replace(/_(zero|one|two|few|many|other)$/, '');
+
 function keyPaths(value: unknown, prefix = ''): string[] {
-  if (typeof value !== 'object' || value === null) return [prefix];
+  if (typeof value !== 'object' || value === null) return [pluralBase(prefix)];
   return Object.entries(value).flatMap(([key, child]) =>
     keyPaths(child, prefix ? `${prefix}.${key}` : key),
   );
@@ -18,9 +22,9 @@ describe('translation resources', () => {
         Object.keys(reference).sort(),
       );
       for (const namespace of Object.keys(reference)) {
-        expect(keyPaths(resources[locale][namespace]).sort()).toEqual(
-          keyPaths(reference[namespace]).sort(),
-        );
+        expect(
+          [...new Set(keyPaths(resources[locale][namespace]))].sort(),
+        ).toEqual([...new Set(keyPaths(reference[namespace]))].sort());
       }
     },
   );

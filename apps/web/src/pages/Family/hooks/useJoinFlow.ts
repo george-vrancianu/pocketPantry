@@ -1,0 +1,50 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../../i18n/translateApiError';
+import {
+  useJoinFamily,
+  useJoinPreview,
+  type JoinPreview,
+} from '../../../lib/family';
+
+export type JoinFlow = {
+  code: string;
+  setCode: (code: string) => void;
+  /** Set once the code checked out: what joining will delete. */
+  preview: JoinPreview | undefined;
+  checking: boolean;
+  joining: boolean;
+  error: string | null;
+  check: () => void;
+  confirm: () => void;
+  cancel: () => void;
+};
+
+export function useJoinFlow(): JoinFlow {
+  const { t } = useTranslation();
+  const [code, setCodeState] = useState('');
+  const previewRequest = useJoinPreview();
+  const join = useJoinFamily();
+
+  const error = previewRequest.error ?? join.error;
+  const reset = () => {
+    previewRequest.reset();
+    join.reset();
+  };
+
+  return {
+    code,
+    setCode: (next) => {
+      reset();
+      setCodeState(next);
+    },
+    preview: previewRequest.data,
+    checking: previewRequest.isPending,
+    joining: join.isPending,
+    error: error ? translateApiError(t, error) : null,
+    check: () => previewRequest.mutate(code.trim()),
+    confirm: () =>
+      join.mutate(code.trim(), { onSuccess: () => setCodeState('') }),
+    cancel: reset,
+  };
+}

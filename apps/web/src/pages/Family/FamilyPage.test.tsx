@@ -50,7 +50,7 @@ describe('FamilyPage', () => {
     const items = screen.getAllByRole('listitem');
     expect(items.map((item) => item.textContent)).toEqual([
       'AnaOwner',
-      'Mihai',
+      'MihaiMake OwnerRemove',
     ]);
     expect(screen.getByText(/^Expires /)).toBeInTheDocument();
     expect(
@@ -104,7 +104,9 @@ describe('FamilyPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Ask the Owner to generate a new one',
     );
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Generate a new code' }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders in Romanian', async () => {

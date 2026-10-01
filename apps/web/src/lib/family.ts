@@ -32,3 +32,58 @@ export function useRegenerateInviteCode() {
     onSuccess: (family) => queryClient.setQueryData(familyQueryKey, family),
   });
 }
+
+export type JoinPreview = {
+  abandonedFamilyId: string;
+  batches: number;
+  shoppingItems: number;
+};
+
+/** Validates the code and returns what joining would delete. Changes nothing. */
+export function useJoinPreview() {
+  return useMutation({
+    mutationFn: (code: string) =>
+      apiRequest<JoinPreview>(
+        `/family/join-preview?code=${encodeURIComponent(code)}`,
+      ),
+  });
+}
+
+/** Each membership change returns the caller's Family as it is afterwards. */
+function useFamilyMutation<TVariables = void>(
+  request: (variables: TVariables) => Promise<Family>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: request,
+    onSuccess: (family) => queryClient.setQueryData(familyQueryKey, family),
+  });
+}
+
+export const useJoinFamily = () =>
+  useFamilyMutation((code: string) =>
+    apiRequest<Family>('/family/join', { method: 'POST', body: { code } }),
+  );
+
+export const useLeaveFamily = () =>
+  useFamilyMutation(() =>
+    apiRequest<Family>('/family/leave', { method: 'POST', body: {} }),
+  );
+
+export const useRemoveMember = () =>
+  useFamilyMutation((memberId: string) =>
+    apiRequest<Family>(`/family/members/${encodeURIComponent(memberId)}`, {
+      method: 'DELETE',
+    }),
+  );
+
+export const useTransferOwnership = () =>
+  useFamilyMutation((memberId: string) =>
+    apiRequest<Family>('/family/transfer-ownership', {
+      method: 'POST',
+      body: { memberId },
+    }),
+  );
+
+export const useDeleteFamily = () =>
+  useFamilyMutation(() => apiRequest<Family>('/family', { method: 'DELETE' }));

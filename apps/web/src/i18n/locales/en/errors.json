@@ -35,6 +35,15 @@
     "category_not_found": "We could not find that category."
   },
   "family": {
-    "owner_required": "Only the Owner of the Family can do this."
+    "owner_required": "Only the Owner of the Family can do this.",
+    "invite_code_invalid": "That Invite Code does not exist. Check it and try again.",
+    "invite_code_expired": "That Invite Code has expired. Ask the Owner for a new one.",
+    "already_member": "You are already in this Family.",
+    "not_household_of_one": "You can only join another Family while you are alone in yours. Leave it first, or as the Owner, transfer ownership and leave, or delete the Family.",
+    "owner_cannot_leave": "The Owner cannot leave. Transfer ownership to another Member first.",
+    "cannot_remove_self": "You cannot remove yourself. Transfer ownership and leave, or delete the Family.",
+    "cannot_transfer_to_self": "You are already the Owner.",
+    "member_not_found": "That person is not a Member of your Family.",
+    "concurrent_change": "The Family changed while you were doing that. Please try again."
   }
 }

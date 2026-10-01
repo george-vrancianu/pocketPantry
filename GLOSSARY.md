@@ -15,7 +15,7 @@ The group that owns a Pantry, a Shopping List, and Family Settings. Every Member
 _Avoid_: Household, group, team
 
 **Household of One**:
-The Family created automatically for a Member at signup, before anyone else has joined.
+The Family with a single Member, created automatically at signup and again whenever a Member leaves a Family, is removed from it, or the Family is deleted.
 _Avoid_: Solo family, personal account
 
 **Owner**:

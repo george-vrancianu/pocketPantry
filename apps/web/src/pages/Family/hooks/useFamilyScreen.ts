@@ -1,16 +1,38 @@
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useFamily, useRegenerateInviteCode } from '../../../lib/family';
+import {
+  useDeleteFamily,
+  useFamily,
+  useLeaveFamily,
+  useRegenerateInviteCode,
+  useRemoveMember,
+  useTransferOwnership,
+} from '../../../lib/family';
 
 export function useFamilyScreen() {
   const { t, i18n } = useTranslation();
   const family = useFamily();
   const regenerate = useRegenerateInviteCode();
+  const leave = useLeaveFamily();
+  const remove = useRemoveMember();
+  const transfer = useTransferOwnership();
+  const deleteFamily = useDeleteFamily();
 
-  const error = family.error ?? regenerate.error;
+  const error =
+    family.error ??
+    regenerate.error ??
+    leave.error ??
+    remove.error ??
+    transfer.error ??
+    deleteFamily.error;
   const expiresAt = family.data
     ? new Date(family.data.inviteCodeExpiresAt)
     : null;
+  const busy =
+    leave.isPending ||
+    remove.isPending ||
+    transfer.isPending ||
+    deleteFamily.isPending;
 
   return {
     family: family.data,
@@ -24,6 +46,11 @@ export function useFamilyScreen() {
       : null,
     regenerate: () => regenerate.mutate(),
     regenerating: regenerate.isPending,
+    busy,
+    leave: () => leave.mutate(),
+    removeMember: (memberId: string) => remove.mutate(memberId),
+    makeOwner: (memberId: string) => transfer.mutate(memberId),
+    deleteFamily: () => deleteFamily.mutate(),
     retry: () => void family.refetch(),
   };
 }
