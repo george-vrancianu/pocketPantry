@@ -1,3 +1,30 @@
 {
-  "title": "Scanează"
+  "title": "Scanează {{mode}}",
+  "close": "Închide scanerul",
+  "flash": "Comută blițul",
+  "gallery": "Alege din galerie",
+  "shutter": "Fă o poză",
+  "manual": "Adaugă manual",
+  "modes": "Mod de scanare",
+  "reading": "Citim fotografia",
+  "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
+  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor funcționează acum.",
+  "mode": {
+    "product": "Produs",
+    "receipt": "Bon",
+    "plate": "Farfurie",
+    "ingredients": "Ingrediente"
+  },
+  "hint": {
+    "product": "Îndreaptă camera spre un cod de bare sau o etichetă",
+    "receipt": "Încadrează tot bonul",
+    "plate": "Ține telefonul stabil deasupra farfuriei",
+    "ingredients": "Întinde produsele pe blat"
+  },
+  "detail": {
+    "product": "Îl adaugă în cămară cu data de expirare.",
+    "receipt": "Adaugă toate produsele din cumpărături deodată.",
+    "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
+    "ingredients": "Recunoaște produsele vrac și sugerează rețete."
+  }
 }

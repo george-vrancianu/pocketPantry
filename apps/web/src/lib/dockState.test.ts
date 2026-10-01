@@ -25,6 +25,13 @@ describe('dockStateFor', () => {
     });
   });
 
+  it('uses the light dock on the Review screen, still under Scan', () => {
+    expect(dockStateFor('/scan/review')).toMatchObject({
+      variant: 'light',
+      activeKey: 'scan',
+    });
+  });
+
   it('shows the dock with nothing active on the dashboard and other screens', () => {
     expect(dockStateFor('/')).toMatchObject({
       visible: true,

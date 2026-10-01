@@ -1,7 +1,220 @@
+import {
+  Alert,
+  Box,
+  CloseIcon,
+  FlashIcon,
+  GalleryIcon,
+  ManualEntryIcon,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { SCAN_MODES } from '../../lib/scan';
+import { Viewfinder } from './components/Viewfinder';
+import { useScanScreen } from './hooks/useScanScreen';
 
+const roundButton = (size: number, disabled: boolean) => ({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: size,
+  height: size,
+  borderRadius: '50%',
+  border: 0,
+  backgroundColor: 'rgba(255,255,255,0.12)',
+  color: '#FFFFFF',
+  cursor: disabled ? 'default' : 'pointer',
+  opacity: disabled ? 0.5 : 1,
+  '&:focus-visible': {
+    outline: `2px solid ${tokens.color.accentMid}`,
+    outlineOffset: 2,
+  },
+});
+
+/** The dark camera screen (handoff section 7). Only Product is wired; the other mode pills show a notice. */
 export function ScanPage() {
   const { t } = useTranslation('scan');
-  return <AppScreenHeader title={t('title')} />;
+  const screen = useScanScreen();
+  const modeLabel = t(`mode.${screen.mode}`);
+
+  return (
+    <Box sx={{ pt: '22px', pb: 2, color: '#FFFFFF' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('close')}
+          onClick={screen.close}
+          sx={roundButton(44, false)}
+        >
+          <CloseIcon size={20} />
+        </Box>
+        <Typography component="h1" sx={{ fontSize: 15, fontWeight: 700 }}>
+          {t('title', { mode: modeLabel.toLocaleLowerCase() })}
+        </Typography>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('flash')}
+          aria-pressed={screen.flash}
+          onClick={() => void screen.toggleFlash()}
+          sx={{
+            ...roundButton(44, false),
+            ...(screen.flash && {
+              backgroundColor: '#FFFFFF',
+              color: tokens.color.ink,
+            }),
+          }}
+        >
+          <FlashIcon size={20} />
+        </Box>
+      </Box>
+
+      <Box sx={{ mt: '40px' }}>
+        <Viewfinder
+          videoRef={screen.camera.videoRef}
+          scanning={screen.reading}
+        />
+      </Box>
+
+      <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
+        <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+          {t(`hint.${screen.mode}`)}
+        </Typography>
+        <Typography
+          sx={{ mt: '6px', fontSize: 13, color: tokens.color.cameraMuted }}
+        >
+          {t(`detail.${screen.mode}`)}
+        </Typography>
+      </Box>
+
+      <Box
+        role="status"
+        sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
+      >
+        {screen.reading ? t('reading') : null}
+        {!screen.wired ? t('comingSoon', { mode: modeLabel }) : null}
+        {screen.camera.status === 'unavailable' && screen.wired
+          ? t('noCamera')
+          : null}
+      </Box>
+      {screen.error ? (
+        <Box sx={{ mt: 1 }}>
+          <Alert>{screen.error}</Alert>
+        </Box>
+      ) : null}
+
+      <Box
+        role="group"
+        aria-label={t('modes')}
+        sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: '6px' }}
+      >
+        {SCAN_MODES.map((mode) => {
+          const active = mode === screen.mode;
+          return (
+            <Box
+              key={mode}
+              component="button"
+              type="button"
+              aria-pressed={active}
+              onClick={() => screen.setMode(mode)}
+              sx={{
+                height: 40,
+                px: '14px',
+                borderRadius: '20px',
+                border: 0,
+                fontFamily: 'inherit',
+                fontSize: 13,
+                fontWeight: active ? 700 : 600,
+                cursor: 'pointer',
+                backgroundColor: active ? '#FFFFFF' : 'rgba(255,255,255,0.10)',
+                color: active ? tokens.color.ink : '#D5DED8',
+              }}
+            >
+              {t(`mode.${mode}`)}
+            </Box>
+          );
+        })}
+      </Box>
+
+      <Box
+        sx={{
+          mt: 3,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '44px',
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('gallery')}
+          disabled={screen.controlsDisabled}
+          onClick={screen.openGallery}
+          sx={roundButton(48, screen.controlsDisabled)}
+        >
+          <GalleryIcon size={22} />
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('shutter')}
+          disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
+          onClick={() => void screen.shoot()}
+          sx={{
+            width: 76,
+            height: 76,
+            boxSizing: 'border-box',
+            borderRadius: '50%',
+            border: '4px solid #FFFFFF',
+            background: 'transparent',
+            p: '5px',
+            cursor: 'pointer',
+            '&:disabled': { opacity: 0.5, cursor: 'default' },
+            '&:focus-visible': {
+              outline: `2px solid ${tokens.color.accentMid}`,
+              outlineOffset: 2,
+            },
+          }}
+        >
+          <Box
+            component="span"
+            sx={{
+              display: 'block',
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+            }}
+          />
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('manual')}
+          onClick={screen.addManually}
+          sx={roundButton(48, false)}
+        >
+          <ManualEntryIcon size={22} />
+        </Box>
+      </Box>
+
+      <Box
+        component="input"
+        ref={screen.fileInput}
+        type="file"
+        accept="image/*"
+        onChange={screen.pickFile}
+        data-testid="gallery-input"
+        sx={{ display: 'none' }}
+      />
+    </Box>
+  );
 }

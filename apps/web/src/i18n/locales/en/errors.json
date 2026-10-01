@@ -24,6 +24,16 @@
     "unauthorized": "Wrong email or password.",
     "too_many_requests": "Too many attempts. Please wait a moment and try again."
   },
+  "scan": {
+    "cap_reached": "You have used all {{cap}} scans for today. Try again tomorrow, or add items by hand.",
+    "image_invalid": "That file is not a photo we can read. Use a JPEG, PNG or WebP image.",
+    "image_too_large": "That photo is too large. Try a smaller one.",
+    "provider_unavailable": "Scanning is not available right now. Please try again in a moment.",
+    "provider_refused": "The photo could not be processed. Try a clearer photo of the product.",
+    "provider_incomplete": "The scan did not finish. Please try again.",
+    "result_invalid": "We could not read that photo. Try a clearer one.",
+    "not_configured": "Scanning is not set up on this server yet."
+  },
   "shopping": {
     "item_not_found": "We could not find that item on the list.",
     "ingredient_not_found": "We could not find that ingredient."
