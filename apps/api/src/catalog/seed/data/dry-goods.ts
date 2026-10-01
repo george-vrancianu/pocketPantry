@@ -35,7 +35,7 @@ export const pasta: SeedSection = {
         'Spaghete',
         'g',
         undefined,
-        ['spagheti', 'paste spaghete'],
+        ['spagheti', 'paste spaghete', 'spag'],
       ],
       ['penne', 'Penne', 'Penne', 'g', undefined, ['paste penne']],
       [
@@ -60,7 +60,7 @@ export const pasta: SeedSection = {
         'Macaroane',
         'g',
         ['elbow pasta'],
-        ['macaroane', 'paste macaroane', 'macaroane pipe'],
+        ['paste macaroane', 'macaroane pipe', 'macar'],
       ],
       ['rigatoni', 'Rigatoni', 'Rigatoni', 'g'],
       [
@@ -86,7 +86,7 @@ export const pasta: SeedSection = {
         'Scoici de paste',
         'g',
         ['conchiglie'],
-        ['paste scoici', 'conchiglie'],
+        ['paste scoici'],
       ],
     ]),
     ...ingredientsOf('noodles-and-vermicelli', [
@@ -104,7 +104,7 @@ export const pasta: SeedSection = {
         'Tăiței de casă',
         'g',
         undefined,
-        ['taitei cu ou', 'taitei de casa', 'taitei', 'taitei oua'],
+        ['taitei cu ou', 'taitei', 'taitei oua'],
       ],
       [
         'rice-noodles',
@@ -120,16 +120,9 @@ export const pasta: SeedSection = {
         'Tăiței instant',
         'g',
         ['ramen'],
-        ['taitei instant', 'supa instant', 'noodles'],
+        ['supa instant', 'noodles'],
       ],
-      [
-        'soba-noodles',
-        'Soba noodles',
-        'Tăiței soba',
-        'g',
-        undefined,
-        ['taitei soba'],
-      ],
+      ['soba-noodles', 'Soba noodles', 'Tăiței soba', 'g'],
     ]),
     ...ingredientsOf('fresh-pasta', [
       [
@@ -137,8 +130,8 @@ export const pasta: SeedSection = {
         'Tortellini',
         'Tortellini',
         'g',
-        ['ravioli'],
-        ['ravioli', 'tortelini', 'paste umplute'],
+        undefined,
+        ['tortelini', 'paste umplute'],
       ],
       [
         'gnocchi',
@@ -146,7 +139,7 @@ export const pasta: SeedSection = {
         'Găluște italienești',
         'g',
         ['potato gnocchi'],
-        ['gnocchi', 'gnochi', 'galuste cartofi'],
+        ['gnochi', 'galuste cartofi'],
       ],
       [
         'fresh-tagliatelle',
@@ -162,8 +155,9 @@ export const pasta: SeedSection = {
         'Găluști',
         'g',
         undefined,
-        ['galuste', 'galusti', 'nokedli'],
+        ['galuste', 'nokedli'],
       ],
+      ['ravioli', 'Ravioli', 'Ravioli', 'g'],
     ]),
   ],
 };
@@ -227,7 +221,7 @@ export const grains: SeedSection = {
         'Orez',
         'g',
         ['white rice', 'long grain rice'],
-        ['orez alb', 'orez bob lung', 'orez 1kg'],
+        ['orez alb', 'orez bob lung', 'orez lung'],
       ],
       ['basmati-rice', 'Basmati rice', 'Orez basmati', 'g', ['basmati']],
       [
@@ -243,7 +237,7 @@ export const grains: SeedSection = {
         'Risotto rice',
         'Orez pentru risotto',
         'g',
-        ['arborio', 'risotto rice'],
+        ['arborio'],
         ['orez arborio', 'orez risotto'],
       ],
       [
@@ -252,7 +246,7 @@ export const grains: SeedSection = {
         'Orez brun',
         'g',
         ['wholegrain rice'],
-        ['orez integral', 'orez brun'],
+        ['orez integral'],
       ],
       [
         'round-rice',
@@ -268,25 +262,18 @@ export const grains: SeedSection = {
         'Fulgi de ovăz',
         'g',
         ['porridge oats', 'rolled oats'],
-        ['fulgi ovaz', 'ovaz', 'fulgi de ovaz'],
+        ['fulgi ovaz', 'ovaz'],
       ],
     ]),
     ...ingredientsOf('breakfast-cereals', [
-      [
-        'muesli',
-        'Muesli',
-        'Musli',
-        'g',
-        ['granola'],
-        ['musli', 'granola', 'musli cu fructe'],
-      ],
+      ['muesli', 'Muesli', 'Musli', 'g', ['granola'], ['musli cu fructe']],
       [
         'cornflakes',
         'Corn flakes',
         'Fulgi de porumb',
         'g',
         ['cornflakes'],
-        ['fulgi porumb', 'cornflakes', 'corn flakes'],
+        ['fulgi porumb'],
       ],
       [
         'chocolate-cereal',
@@ -311,7 +298,7 @@ export const grains: SeedSection = {
       ],
     ]),
     ...ingredientsOf('other-grains', [
-      ['couscous', 'Couscous', 'Cușcuș', 'g', undefined, ['cuscus']],
+      ['couscous', 'Couscous', 'Cușcuș', 'g'],
       ['bulgur', 'Bulgur', 'Bulgur', 'g'],
       ['quinoa', 'Quinoa', 'Quinoa', 'g'],
       [
@@ -320,25 +307,18 @@ export const grains: SeedSection = {
         'Mălai',
         'g',
         ['polenta', 'maize flour'],
-        ['malai', 'faina de porumb', 'mamaliga', 'malai extra'],
+        ['faina de porumb', 'mamaliga', 'malai extra'],
       ],
-      [
-        'semolina',
-        'Semolina',
-        'Griș',
-        'g',
-        undefined,
-        ['gris', 'gris de grau'],
-      ],
+      ['semolina', 'Semolina', 'Griș', 'g', undefined, ['gris de grau']],
       [
         'pearl-barley',
         'Pearl barley',
         'Arpacaș',
         'g',
         ['barley'],
-        ['arpacas', 'orz perlat', 'orz'],
+        ['orz perlat', 'orz'],
       ],
-      ['buckwheat', 'Buckwheat', 'Hrișcă', 'g', undefined, ['hrisca']],
+      ['buckwheat', 'Buckwheat', 'Hrișcă', 'g'],
       ['millet', 'Millet', 'Mei', 'g'],
       [
         'wheat-berries',
@@ -346,7 +326,7 @@ export const grains: SeedSection = {
         'Grâu boabe',
         'g',
         undefined,
-        ['grau', 'grau boabe', 'grau fiert'],
+        ['grau', 'grau fiert'],
       ],
     ]),
     ...ingredientsOf('flour-and-sugar', [
@@ -356,7 +336,7 @@ export const grains: SeedSection = {
         'Făină',
         'g',
         ['plain flour', 'wheat flour'],
-        ['faina', 'faina alba', 'faina 000', 'faina 650', 'faina de grau'],
+        ['faina alba', 'faina 000', 'faina 650', 'faina de grau'],
       ],
       [
         'wholemeal-flour',
@@ -364,7 +344,7 @@ export const grains: SeedSection = {
         'Făină integrală',
         'g',
         ['whole wheat flour'],
-        ['faina integrala', 'faina neagra'],
+        ['faina neagra'],
       ],
       [
         'rye-flour',
@@ -396,7 +376,7 @@ export const grains: SeedSection = {
         'Zahăr',
         'g',
         ['white sugar', 'granulated sugar'],
-        ['zahar', 'zahar alb', 'zahar cristal', 'zahar 1kg'],
+        ['zahar alb', 'zahar cristal', 'zahar tos'],
       ],
       [
         'icing-sugar',
@@ -404,7 +384,7 @@ export const grains: SeedSection = {
         'Zahăr pudră',
         'g',
         ['powdered sugar', 'confectioners sugar'],
-        ['zahar pudra', 'pudra de zahar'],
+        ['pudra de zahar', 'zahar pud'],
       ],
       [
         'brown-sugar',
@@ -412,7 +392,7 @@ export const grains: SeedSection = {
         'Zahăr brun',
         'g',
         ['cane sugar'],
-        ['zahar brun', 'zahar tapioca', 'zahar din trestie'],
+        ['zahar tapioca', 'zahar din trestie'],
       ],
       [
         'vanilla-sugar',
@@ -420,7 +400,7 @@ export const grains: SeedSection = {
         'Zahăr vanilat',
         'g',
         undefined,
-        ['zahar vanilat', 'zahar vanilinat', 'vanilat'],
+        ['zahar vanilinat', 'vanilat', 'zahar vanil'],
       ],
       [
         'sweetener',
@@ -428,7 +408,7 @@ export const grains: SeedSection = {
         'Îndulcitor',
         'g',
         ['stevia', 'artificial sweetener'],
-        ['indulcitor', 'stevia', 'zahar fara calorii'],
+        ['zahar fara calorii'],
       ],
     ]),
     ...ingredientsOf('baking-essentials', [
@@ -446,7 +426,7 @@ export const grains: SeedSection = {
         'Bicarbonat de sodiu',
         'g',
         ['bicarbonate of soda'],
-        ['bicarbonat', 'bicarbonat de sodiu', 'bicarbonat sodiu'],
+        ['bicarbonat', 'bicarbonat sodiu'],
       ],
       [
         'dry-yeast',
@@ -454,7 +434,7 @@ export const grains: SeedSection = {
         'Drojdie uscată',
         'g',
         ['instant yeast'],
-        ['drojdie uscata', 'drojdie instant', 'drojdie plic', 'drojdie'],
+        ['drojdie instant', 'drojdie plic'],
       ],
       [
         'vanilla-extract',
@@ -470,7 +450,7 @@ export const grains: SeedSection = {
         'Vanilină',
         'g',
         undefined,
-        ['vanilina', 'zahar vanilina plic'],
+        ['zahar vanilina plic'],
       ],
       [
         'cocoa-powder',
@@ -478,7 +458,7 @@ export const grains: SeedSection = {
         'Cacao pudră',
         'g',
         ['cocoa'],
-        ['cacao', 'cacao pudra', 'cacao tern', 'cacao amara'],
+        ['cacao', 'cacao tern', 'cacao amara'],
       ],
       [
         'gelatin',
@@ -486,7 +466,7 @@ export const grains: SeedSection = {
         'Gelatină',
         'g',
         undefined,
-        ['gelatina', 'gelatina alimentara', 'gelatina pudra'],
+        ['gelatina alimentara', 'gelatina pudra'],
       ],
       [
         'citric-acid',
@@ -494,7 +474,7 @@ export const grains: SeedSection = {
         'Acid citric',
         'g',
         undefined,
-        ['acid citric', 'sare de lamaie', 'lamaita'],
+        ['sare de lamaie', 'lamaita'],
       ],
       [
         'food-colouring',
@@ -502,7 +482,7 @@ export const grains: SeedSection = {
         'Colorant alimentar',
         'ml',
         undefined,
-        ['colorant alimentar', 'colorant'],
+        ['colorant'],
       ],
       [
         'rum-essence',
@@ -510,7 +490,7 @@ export const grains: SeedSection = {
         'Esență de rom',
         'ml',
         ['rum flavouring'],
-        ['esenta rom', 'esenta de rom', 'aroma rom'],
+        ['esenta rom', 'aroma rom'],
       ],
       [
         'pudding-mix',
@@ -518,7 +498,7 @@ export const grains: SeedSection = {
         'Budincă instant',
         'g',
         ['custard powder'],
-        ['budinca instant', 'budinca pudra', 'praf de budinca'],
+        ['budinca pudra', 'praf de budinca'],
       ],
     ]),
     ...ingredientsOf('fresh-yeast', [
@@ -528,7 +508,7 @@ export const grains: SeedSection = {
         'Drojdie proaspătă',
         'g',
         ['baker’s yeast'],
-        ['drojdie proaspata', 'drojdie cub', 'drojdie de bere'],
+        ['drojdie cub', 'drojdie'],
       ],
     ]),
   ],
@@ -563,21 +543,14 @@ export const legumes: SeedSection = {
         ['green lentils', 'brown lentils'],
         ['linte verde', 'linte bruna'],
       ],
-      [
-        'red-lentils',
-        'Red lentils',
-        'Linte roșie',
-        'g',
-        undefined,
-        ['linte rosie'],
-      ],
+      ['red-lentils', 'Red lentils', 'Linte roșie', 'g'],
       [
         'chickpeas',
         'Chickpeas',
         'Năut',
         'g',
         ['garbanzo beans'],
-        ['naut', 'naut uscat'],
+        ['naut uscat'],
       ],
       [
         'kidney-beans',
@@ -585,7 +558,7 @@ export const legumes: SeedSection = {
         'Fasole roșie',
         'g',
         undefined,
-        ['fasole rosie', 'fasole rosie uscata'],
+        ['fasole rosie uscata'],
       ],
       [
         'white-beans',
@@ -593,23 +566,16 @@ export const legumes: SeedSection = {
         'Fasole albă',
         'g',
         ['haricot beans', 'navy beans', 'cannellini beans'],
-        ['fasole alba', 'fasole boabe', 'fasole uscata', 'fasole'],
+        ['fasole boabe', 'fasole uscata', 'fasole', 'fasole alb'],
       ],
-      [
-        'black-beans',
-        'Black beans',
-        'Fasole neagră',
-        'g',
-        undefined,
-        ['fasole neagra'],
-      ],
+      ['black-beans', 'Black beans', 'Fasole neagră', 'g'],
       [
         'split-peas',
         'Split peas',
         'Mazăre uscată',
         'g',
         ['dried peas'],
-        ['mazare uscata', 'mazare despicata'],
+        ['mazare despicata'],
       ],
       [
         'soybeans',
