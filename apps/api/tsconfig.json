@@ -15,6 +15,7 @@
     "outDir": "./dist",
     "rootDir": ".",
     "incremental": true,
+    "noEmit": true,
     "skipLibCheck": true,
     "strict": true,
     "types": ["node", "jest"],

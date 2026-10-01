@@ -17,3 +17,8 @@ coverage/
 
 # scratch
 .scratch/
+
+# stray tsc output next to config files
+apps/*/*.js
+apps/*/*.d.ts
+apps/*/*.js.map

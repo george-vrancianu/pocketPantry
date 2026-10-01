@@ -9,6 +9,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { configureApp } from './app.setup';
 import type { AppConfig } from './config/env';
+import { allowedOrigins, isAllowedOrigin } from './config/origins';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -18,15 +19,11 @@ async function bootstrap() {
   const config = app.get(ConfigService<AppConfig, true>);
 
   configureApp(app);
+  const origins = allowedOrigins(config.get('CLIENT_ORIGIN', { infer: true }));
   app.enableCors({
-    origin: [
-      config.get('CLIENT_ORIGIN', { infer: true }),
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5174',
-      /^http:\/\/(?:10\.(?:25[0-5]|2[0-4]\d|1?\d?\d)\.(?:25[0-5]|2[0-4]\d|1?\d?\d)\.(?:25[0-5]|2[0-4]\d|1?\d?\d)|192\.168\.(?:25[0-5]|2[0-4]\d|1?\d?\d)\.(?:25[0-5]|2[0-4]\d|1?\d?\d)|172\.(?:1[6-9]|2\d|3[0-1])\.(?:25[0-5]|2[0-4]\d|1?\d?\d)\.(?:25[0-5]|2[0-4]\d|1?\d?\d)):(?:5173|5174)$/,
-    ],
+    origin: (origin, callback) => {
+      callback(null, !origin || isAllowedOrigin(origin, origins));
+    },
     credentials: true,
     methods: 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS',
   });

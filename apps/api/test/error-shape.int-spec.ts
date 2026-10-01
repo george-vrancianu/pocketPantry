@@ -75,4 +75,20 @@ describe('Error shape (integration)', () => {
       .expect(404);
     expect(response.body).toEqual({ code: 'not_found', params: {} });
   });
+
+  it('returns { code, params } for malformed JSON on /api/auth/*', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .set('content-type', 'application/json')
+      .send('{not json')
+      .expect(400);
+    expect(response.body).toEqual({ code: 'bad_request', params: {} });
+  });
+
+  it('returns { code, params } for an unknown /api/auth/* sub-route', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/auth/does-not-exist')
+      .expect(404);
+    expect(response.body).toEqual({ code: 'auth.not_found', params: {} });
+  });
 });

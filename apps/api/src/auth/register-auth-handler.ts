@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { fromNodeHeaders } from 'better-auth/node';
+import { codeForStatus } from '../common/api-error';
 import type { AuthInstance } from './auth.types';
 
 /**
@@ -7,8 +8,8 @@ import type { AuthInstance } from './auth.types';
  * message. Keep the stable code and drop the message so this surface follows
  * the same `{ code, params }` convention as the rest of the API.
  */
-export function toApiErrorBody(text: string): string {
-  let code = 'auth.error';
+export function toApiErrorBody(text: string, status: number): string {
+  let code = `auth.${codeForStatus(status)}`;
   try {
     const parsed: unknown = JSON.parse(text);
     if (
@@ -20,7 +21,7 @@ export function toApiErrorBody(text: string): string {
       code = `auth.${parsed.code.toLowerCase()}`;
     }
   } catch {
-    // Non-JSON error body: fall through to the generic code.
+    // Empty or non-JSON error body: keep the status-derived code.
   }
   return JSON.stringify({ code, params: {} });
 }
@@ -51,20 +52,23 @@ export function registerAuthHandler(
       const response = await auth.handler(authRequest);
 
       reply.code(response.status);
+      const isError = response.status >= 400;
       response.headers.forEach((value, key) => {
-        if (key !== 'set-cookie') reply.header(key, value);
+        if (key === 'set-cookie') return;
+        if (isError && (key === 'content-length' || key === 'content-type'))
+          return;
+        reply.header(key, value);
       });
       const cookies = response.headers.getSetCookie();
       if (cookies.length > 0) reply.header('set-cookie', cookies);
 
-      if (!response.body || response.status === 204) return reply.send();
-      const text = await response.text();
-      if (response.status >= 400) {
+      if (isError) {
         return reply
           .header('content-type', 'application/json; charset=utf-8')
-          .send(toApiErrorBody(text));
+          .send(toApiErrorBody(await response.text(), response.status));
       }
-      return reply.send(text);
+      if (!response.body || response.status === 204) return reply.send();
+      return reply.send(await response.text());
     },
   });
 }
