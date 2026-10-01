@@ -1,0 +1,12 @@
+{
+  "title": "Creează-ți contul",
+  "subtitle": "Începe-ți propria cămară. Îți poți invita familia mai târziu.",
+  "name": "Nume",
+  "email": "E-mail",
+  "password": "Parolă",
+  "passwordHint": "Cel puțin 8 caractere.",
+  "submit": "Creează cont",
+  "submitting": "Se creează contul",
+  "haveAccount": "Ai deja un cont?",
+  "signIn": "Autentifică-te"
+}
