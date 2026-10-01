@@ -1,4 +1,29 @@
 {
   "title": "Personalizare",
-  "done": "Gata"
+  "done": "Gata",
+  "hint": "Trage pentru a reordona, alege dimensiunea, adaugă sau elimină.",
+  "onDashboard": "Pe tabloul tău de bord",
+  "addWidgets": "Adaugă widgeturi",
+  "emptyList": "Încă nu ai widgeturi pe tabloul de bord.",
+  "allAdded": "Toate widgeturile sunt deja pe tabloul tău de bord.",
+  "reorder": "Reordonează {{name}}",
+  "moveUp": "Mută {{name}} în sus",
+  "moveDown": "Mută {{name}} în jos",
+  "remove": "Elimină widgetul {{name}}",
+  "add": "Adaugă widgetul {{name}}",
+  "size": {
+    "small": "Mic",
+    "wide": "Lat"
+  },
+  "sizeToggle": "Dimensiunea pentru {{name}}: {{current}}. Comută la {{next}}.",
+  "sizeLocked": "Dimensiunea pentru {{name}}: {{current}}.",
+  "dragInstructions": "Pentru a reordona, apasă spațiu pentru a ridica, folosește săgețile pentru a muta, apoi apasă spațiu pentru a lăsa. Apasă Escape pentru a anula.",
+  "announce": {
+    "pickedUp": "{{name}} a fost ridicat.",
+    "movedTo": "{{name}} a fost mutat pe poziția {{position}} din {{total}}.",
+    "dropped": "{{name}} a fost lăsat pe poziția {{position}} din {{total}}.",
+    "cancelled": "Reordonare anulată.",
+    "added": "{{name}} a fost adăugat.",
+    "removed": "{{name}} a fost eliminat."
+  }
 }
