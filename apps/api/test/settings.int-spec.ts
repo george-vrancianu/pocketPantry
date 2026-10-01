@@ -228,6 +228,41 @@ describe('Settings (integration)', () => {
       ).toBe(inDays(14));
     });
 
+    it('also applies to the Finish Shopping proposal', async () => {
+      const { cookie } = await signUp();
+      const item = await request(app.getHttpServer())
+        .post('/api/shopping-list/items')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ ingredientId: seedId.ingredient('parmesan') })
+        .expect(200);
+      const itemId = (
+        item.body as { groups: { items: { id: string }[] }[] }
+      ).groups.flatMap((g) => g.items)[0].id;
+      await request(app.getHttpServer())
+        .patch(`/api/shopping-list/items/${itemId}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ checked: true })
+        .expect(200);
+      await call(
+        cookie,
+        'put',
+        `/family/expiry-overrides/${seedId.leaf('hard-cheese')}`,
+      )
+        .send({ days: 14 })
+        .expect(200);
+      const proposal = await request(app.getHttpServer())
+        .get('/api/shopping-list/finish')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(200);
+      expect(
+        (proposal.body as { lines: { expiryDate: string }[] }).lines[0]
+          .expiryDate,
+      ).toBe(inDays(14));
+    });
+
     it('takes precedence over the Parent default too, and a Leaf override beats a Parent one', async () => {
       const { cookie } = await signUp();
       await call(

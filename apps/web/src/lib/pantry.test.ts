@@ -101,6 +101,7 @@ const make = (overrides: Partial<Batch>): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
+  expiringSoon: false,
   createdAt: '2026-10-01T00:00:00Z',
   ...overrides,
 });

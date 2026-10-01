@@ -210,6 +210,7 @@ describe('PantryPage', () => {
         unit: 'l',
         productDescription: 'Opened',
         expiryDate: inDays(2),
+        expiringSoon: true,
       }),
       batch({
         id: 'cheese',

@@ -144,7 +144,7 @@ export class PantryService {
       .returning();
     // Deleted by another Member between the read and the update.
     if (!row) throw new ApiException(404, 'pantry.batch_not_found');
-    return (await this.toViews([row], locale))[0];
+    return (await this.toViews([row], locale, familyId))[0];
   }
 
   /** Another Family's Batch is indistinguishable from a missing one. */
