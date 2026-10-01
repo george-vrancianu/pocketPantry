@@ -10,7 +10,7 @@ import {
 } from './dashboard.schemas';
 import { DashboardService } from './dashboard.service';
 
-/** The signed-in Member's own Dashboard layout (a Member Preference, never shared in the Family). */
+/** The signed-in Member's own Dashboard layout (a Member Preferences entry, never shared in the Family). */
 @ApiTags('dashboard')
 @UseGuards(AuthGuard)
 @Controller('dashboard-layout')
