@@ -70,3 +70,18 @@ never reach a client.
   starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent).
 - `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories
   are the categories the AI sees).
+
+## Catalog seed
+
+`npm run db:seed -w @pocket-pantry/api` loads the Catalog from
+`src/catalog/seed/`. Every row has a fixed id derived from its slug and is
+inserted with `ON CONFLICT DO NOTHING`, so re-running is safe and keeps Admin
+edits. The seed validates itself first and refuses to run with duplicate names,
+ambiguous Synonyms, or dangling references. Slugs are permanent once merged.
+
+- Databases seeded by the #4 starter seed must be reset before re-seeding with
+  the full seed: display-name translation ids used to include the name text
+  and now do not, so the old rows collide with the new ids.
+- Seed changes to an existing row's Leaf, Default Expiry, or unit do not reach
+  databases that are already seeded (existing rows are never updated). An
+  upsert strategy is needed before the first real deployment.

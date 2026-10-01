@@ -92,6 +92,22 @@ describe('Catalog seed validation', () => {
     ]);
   });
 
+  it('flags a Synonym that repeats the Ingredient’s own name or is listed twice', () => {
+    expect(
+      problems([
+        ingredient('a', 'Apple', 'Măr', { en: ['APPLE'], ro: ['mar'] }),
+      ]),
+    ).toEqual([
+      expect.stringContaining('"APPLE" repeats its own name'),
+      expect.stringContaining('"mar" repeats its own name'),
+    ]);
+    expect(
+      problems([
+        ingredient('a', 'Apple', 'Măr', { en: ['pomme'], ro: ['Pomme!'] }),
+      ]),
+    ).toEqual([expect.stringContaining('"Pomme!" is listed twice')]);
+  });
+
   it('throws one error listing every problem', () => {
     expect(() =>
       assertCatalogSeedValid({

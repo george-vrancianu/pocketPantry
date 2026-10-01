@@ -58,6 +58,14 @@ export const snacks: SeedSection = {
       270,
       'cupboard',
     ),
+    leaf(
+      'packaged-cakes',
+      'snacks',
+      'Packaged cakes',
+      'Prăjituri ambalate',
+      60,
+      'cupboard',
+    ),
   ],
   ingredients: [
     ...ingredientsOf('sweet-snacks', [
@@ -68,10 +76,11 @@ export const snacks: SeedSection = {
         'g',
         ['milk chocolate'],
         [
-          'ciocolata',
           'ciocolata cu lapte',
           'ciocolata tableta',
           'tableta ciocolata',
+          'ciocolata lapte',
+          'ciocolata tab',
         ],
       ],
       [
@@ -80,23 +89,16 @@ export const snacks: SeedSection = {
         'Ciocolată neagră',
         'g',
         ['plain chocolate'],
-        ['ciocolata neagra', 'ciocolata amaruie', 'ciocolata de menaj'],
+        ['ciocolata amaruie', 'ciocolata de menaj', 'ciocolata neagr'],
       ],
-      [
-        'white-chocolate',
-        'White chocolate',
-        'Ciocolată albă',
-        'g',
-        undefined,
-        ['ciocolata alba'],
-      ],
+      ['white-chocolate', 'White chocolate', 'Ciocolată albă', 'g'],
       [
         'chocolate-bar',
         'Chocolate bar',
         'Baton de ciocolată',
         'pcs',
         ['candy bar', 'snickers', 'mars'],
-        ['baton ciocolata', 'baton de ciocolata', 'baton snickers', 'baton'],
+        ['baton ciocolata', 'baton snickers', 'baton'],
       ],
       [
         'candy',
@@ -104,7 +106,7 @@ export const snacks: SeedSection = {
         'Bomboane',
         'g',
         ['candy', 'hard candy'],
-        ['bomboane', 'bomboane ciocolata', 'dropsuri', 'acadele'],
+        ['bomboane ciocolata', 'dropsuri', 'acadele'],
       ],
       [
         'gummy-sweets',
@@ -112,7 +114,7 @@ export const snacks: SeedSection = {
         'Jeleuri',
         'g',
         ['gummies', 'jelly sweets'],
-        ['jeleuri', 'jeleuri gumate', 'jelly beans', 'gumate'],
+        ['jeleuri gumate', 'jelly beans', 'gumate'],
       ],
       [
         'marshmallows',
@@ -136,7 +138,7 @@ export const snacks: SeedSection = {
         'Rahat',
         'g',
         ['lokum'],
-        ['rahat', 'rahat lokum'],
+        ['rahat lokum'],
       ],
       [
         'chocolate-sprinkles',
@@ -145,14 +147,6 @@ export const snacks: SeedSection = {
         'g',
         ['chocolate chunks', 'sprinkles'],
         ['picaturi ciocolata', 'bucati de ciocolata', 'fulgi de ciocolata'],
-      ],
-      [
-        'cake-snack',
-        'Snack cake',
-        'Prăjitură ambalată',
-        'pcs',
-        ['snack cakes'],
-        ['prajitura', 'prajitura ambalata', 'negresa', 'briosa ambalata'],
       ],
     ]),
     ...ingredientsOf('biscuits-and-wafers', [
@@ -163,11 +157,12 @@ export const snacks: SeedSection = {
         'g',
         ['cookies'],
         [
-          'biscuiti',
           'biscuiti cu unt',
           'biscuiti petit beurre',
           'biscuiti simpli',
           'fursecuri',
+          'bisc',
+          'bisc unt',
         ],
       ],
       [
@@ -176,7 +171,7 @@ export const snacks: SeedSection = {
         'Biscuiți cu cremă',
         'g',
         ['sandwich biscuits', 'oreo'],
-        ['biscuiti cu crema', 'biscuiti oreo', 'oreo', 'biscuiti sandwich'],
+        ['biscuiti oreo', 'biscuiti sandwich'],
       ],
       [
         'digestive-biscuits',
@@ -184,7 +179,7 @@ export const snacks: SeedSection = {
         'Biscuiți digestivi',
         'g',
         undefined,
-        ['biscuiti digestivi', 'biscuiti integrali'],
+        ['biscuiti integrali'],
       ],
       [
         'wafers',
@@ -192,23 +187,16 @@ export const snacks: SeedSection = {
         'Napolitane',
         'g',
         ['wafer biscuits'],
-        ['napolitane', 'napolitane cu crema', 'napolitana'],
+        ['napolitane cu crema', 'napolitana', 'napol'],
       ],
-      [
-        'ladyfingers',
-        'Ladyfingers',
-        'Piscoturi',
-        'g',
-        ['savoiardi'],
-        ['piscoturi', 'savoiardi', 'pesmeți piscot'],
-      ],
+      ['ladyfingers', 'Ladyfingers', 'Pișcoturi', 'g', ['savoiardi']],
       [
         'gingerbread-snack',
         'Gingerbread',
         'Turtă dulce',
         'g',
         undefined,
-        ['turta dulce', 'turta dulce cu glazura'],
+        ['turta dulce cu glazura'],
       ],
     ]),
     ...ingredientsOf('salty-snacks', [
@@ -239,7 +227,6 @@ export const snacks: SeedSection = {
         'Chipsuri tortilla',
         'g',
         ['nachos'],
-        ['nachos', 'chipsuri tortilla', 'tortilla chips'],
       ],
       [
         'pretzels',
@@ -247,13 +234,7 @@ export const snacks: SeedSection = {
         'Covrigei sărați',
         'g',
         ['salted sticks', 'bread sticks'],
-        [
-          'covrigei',
-          'covrigei sarati',
-          'sticks sarate',
-          'bastonase sarate',
-          'pretzeli',
-        ],
+        ['covrigei', 'sticks sarate', 'bastonase sarate', 'pretzeli'],
       ],
       [
         'cheese-puffs',
@@ -263,7 +244,6 @@ export const snacks: SeedSection = {
         ['corn puffs'],
         [
           'snacks cascaval',
-          'snacks cu cascaval',
           'cheetos',
           'pufuleti',
           'pufuleti cu cascaval',
@@ -276,7 +256,7 @@ export const snacks: SeedSection = {
         'Alune sărate',
         'g',
         ['roasted peanuts'],
-        ['alune sarate', 'arahide sarate', 'alune prajite', 'alune americane'],
+        ['arahide sarate', 'alune prajite', 'alune americane'],
       ],
     ]),
     ...ingredientsOf('crackers-and-crispbread', [
@@ -294,7 +274,7 @@ export const snacks: SeedSection = {
         'Pâine crocantă',
         'g',
         ['knackebrod'],
-        ['paine crocanta', 'paine crocanta secara', 'knackebrot'],
+        ['paine crocanta secara', 'knackebrot'],
       ],
       [
         'rice-cakes',
@@ -309,8 +289,8 @@ export const snacks: SeedSection = {
         'Grissini',
         'Grisine',
         'g',
-        ['grissini'],
-        ['grisine', 'grisini', 'bastonase grisine'],
+        undefined,
+        ['grisini', 'bastonase grisine'],
       ],
       [
         'dried-bread-chips',
@@ -336,7 +316,7 @@ export const snacks: SeedSection = {
         'Migdale',
         'g',
         undefined,
-        ['migdale', 'migdale decojite', 'migdale crude', 'migdale prajite'],
+        ['migdale decojite', 'migdale crude', 'migdale prajite'],
       ],
       [
         'walnuts',
@@ -344,7 +324,7 @@ export const snacks: SeedSection = {
         'Nuci',
         'g',
         ['walnut kernels'],
-        ['nuci', 'nuci decojite', 'miez de nuca', 'nuca'],
+        ['nuci decojite', 'miez de nuca', 'nuca', 'miez nuca'],
       ],
       [
         'hazelnuts',
@@ -352,7 +332,7 @@ export const snacks: SeedSection = {
         'Alune de pădure',
         'g',
         ['filberts'],
-        ['alune de padure', 'alune padure', 'alune de padure crude'],
+        ['alune padure', 'alune de padure crude'],
       ],
       [
         'cashews',
@@ -360,7 +340,7 @@ export const snacks: SeedSection = {
         'Caju',
         'g',
         ['cashews'],
-        ['caju', 'nuci caju', 'nuci de caju'],
+        ['nuci caju', 'nuci de caju'],
       ],
       [
         'pistachios',
@@ -368,7 +348,7 @@ export const snacks: SeedSection = {
         'Fistic',
         'g',
         ['pistachio nuts'],
-        ['fistic', 'fistic nesarat', 'fistic sarat', 'fistic prajit'],
+        ['fistic nesarat', 'fistic sarat', 'fistic prajit'],
       ],
       [
         'pumpkin-seeds',
@@ -376,11 +356,7 @@ export const snacks: SeedSection = {
         'Semințe de dovleac',
         'g',
         ['pepitas'],
-        [
-          'seminte dovleac',
-          'seminte de dovleac',
-          'seminte de dovleac decorticate',
-        ],
+        ['seminte dovleac', 'seminte de dovleac decorticate'],
       ],
       [
         'sunflower-seeds',
@@ -390,10 +366,10 @@ export const snacks: SeedSection = {
         undefined,
         [
           'seminte floarea soarelui',
-          'seminte de floarea soarelui',
           'seminte',
           'seminte prajite',
           'seminte decorticate',
+          'seminte fl soarelui',
         ],
       ],
       [
@@ -402,7 +378,7 @@ export const snacks: SeedSection = {
         'Susan',
         'g',
         undefined,
-        ['susan', 'seminte de susan', 'seminte susan'],
+        ['seminte de susan', 'seminte susan'],
       ],
       [
         'chia-seeds',
@@ -410,7 +386,7 @@ export const snacks: SeedSection = {
         'Semințe de chia',
         'g',
         ['chia'],
-        ['seminte chia', 'chia'],
+        ['seminte chia'],
       ],
       [
         'flax-seeds',
@@ -418,16 +394,9 @@ export const snacks: SeedSection = {
         'Semințe de in',
         'g',
         ['linseed'],
-        ['seminte in', 'seminte de in', 'in macinat'],
+        ['seminte in', 'in macinat'],
       ],
-      [
-        'pine-nuts',
-        'Pine nuts',
-        'Semințe de pin',
-        'g',
-        undefined,
-        ['seminte de pin', 'pinoli'],
-      ],
+      ['pine-nuts', 'Pine nuts', 'Semințe de pin', 'g', undefined, ['pinoli']],
       [
         'desiccated-coconut',
         'Desiccated coconut',
@@ -458,7 +427,7 @@ export const snacks: SeedSection = {
         'Stafide',
         'g',
         ['sultanas'],
-        ['stafide', 'stafide aurii', 'stafide negre'],
+        ['stafide aurii', 'stafide negre'],
       ],
       [
         'dried-apricots',
@@ -466,7 +435,7 @@ export const snacks: SeedSection = {
         'Caise uscate',
         'g',
         undefined,
-        ['caise uscate', 'caise deshidratate'],
+        ['caise deshidratate'],
       ],
       [
         'prunes',
@@ -474,7 +443,7 @@ export const snacks: SeedSection = {
         'Prune uscate',
         'g',
         ['dried plums'],
-        ['prune uscate', 'prune afumate', 'prune deshidratate'],
+        ['prune afumate', 'prune deshidratate'],
       ],
       [
         'dates',
@@ -482,7 +451,7 @@ export const snacks: SeedSection = {
         'Curmale',
         'g',
         ['medjool dates'],
-        ['curmale', 'curmale medjool', 'curmale fara samburi'],
+        ['curmale medjool', 'curmale fara samburi'],
       ],
       [
         'dried-figs',
@@ -490,7 +459,7 @@ export const snacks: SeedSection = {
         'Smochine uscate',
         'g',
         ['figs'],
-        ['smochine', 'smochine uscate'],
+        ['smochine'],
       ],
       [
         'dried-cranberries',
@@ -498,7 +467,7 @@ export const snacks: SeedSection = {
         'Merișoare uscate',
         'g',
         ['cranberries'],
-        ['merisoare', 'merisoare uscate', 'merisoare deshidratate'],
+        ['merisoare', 'merisoare deshidratate'],
       ],
       [
         'dried-apple',
@@ -506,16 +475,9 @@ export const snacks: SeedSection = {
         'Mere uscate',
         'g',
         ['apple chips'],
-        ['mere uscate', 'chips de mere', 'mere deshidratate'],
+        ['chips de mere', 'mere deshidratate'],
       ],
-      [
-        'goji-berries',
-        'Goji berries',
-        'Goji',
-        'g',
-        undefined,
-        ['goji', 'fructe goji'],
-      ],
+      ['goji-berries', 'Goji berries', 'Goji', 'g', undefined, ['fructe goji']],
     ]),
     ...ingredientsOf('snack-bars', [
       [
@@ -524,7 +486,7 @@ export const snacks: SeedSection = {
         'Baton de cereale',
         'pcs',
         ['granola bar', 'muesli bar'],
-        ['baton cereale', 'baton de cereale', 'baton musli', 'baton granola'],
+        ['baton cereale', 'baton musli', 'baton granola'],
       ],
       [
         'protein-bar',
@@ -532,7 +494,7 @@ export const snacks: SeedSection = {
         'Baton proteic',
         'pcs',
         undefined,
-        ['baton proteic', 'baton protein', 'baton cu proteine'],
+        ['baton protein', 'baton cu proteine'],
       ],
       [
         'fruit-bar',
@@ -540,7 +502,17 @@ export const snacks: SeedSection = {
         'Baton de fructe',
         'pcs',
         ['date bar'],
-        ['baton fructe', 'baton de fructe', 'baton fructe uscate'],
+        ['baton fructe', 'baton fructe uscate'],
+      ],
+    ]),
+    ...ingredientsOf('packaged-cakes', [
+      [
+        'cake-snack',
+        'Snack cake',
+        'Prăjitură ambalată',
+        'pcs',
+        ['snack cakes'],
+        ['negresa', 'briosa ambalata'],
       ],
     ]),
   ],
@@ -598,6 +570,14 @@ export const beverage: SeedSection = {
       1825,
       'cupboard',
     ),
+    leaf(
+      'chilled-drinks',
+      'beverage',
+      'Fresh juice and smoothies',
+      'Sucuri proaspete și smoothie',
+      5,
+      'fridge',
+    ),
   ],
   ingredients: [
     ...ingredientsOf('juices', [
@@ -607,7 +587,7 @@ export const beverage: SeedSection = {
         'Suc de portocale',
         'ml',
         undefined,
-        ['suc portocale', 'suc natural portocale', 'suc de portocale 100%'],
+        ['suc portocale', 'suc de portocale 100%', 'suc port', 'suc port 100'],
       ],
       [
         'apple-juice',
@@ -623,7 +603,7 @@ export const beverage: SeedSection = {
         'Suc multifruct',
         'ml',
         ['mixed fruit juice'],
-        ['suc multifruct', 'suc mix fructe', 'suc fructe', 'nectar multifruct'],
+        ['suc mix fructe', 'suc fructe', 'nectar multifruct'],
       ],
       [
         'nectar',
@@ -631,13 +611,7 @@ export const beverage: SeedSection = {
         'Nectar',
         'ml',
         ['fruit drink'],
-        [
-          'nectar',
-          'nectar piersici',
-          'nectar caise',
-          'nectar de fructe',
-          'suc nectar',
-        ],
+        ['nectar piersici', 'nectar caise', 'nectar de fructe', 'suc nectar'],
       ],
       [
         'grape-juice',
@@ -653,15 +627,7 @@ export const beverage: SeedSection = {
         'Suc de lămâie',
         'ml',
         undefined,
-        ['suc lamaie', 'suc de lamaie'],
-      ],
-      [
-        'smoothie',
-        'Smoothie',
-        'Smoothie',
-        'ml',
-        undefined,
-        ['smoothie fructe'],
+        ['suc lamaie'],
       ],
       [
         'coconut-water',
@@ -669,7 +635,7 @@ export const beverage: SeedSection = {
         'Apă de cocos',
         'ml',
         undefined,
-        ['apa de cocos', 'apa cocos'],
+        ['apa cocos'],
       ],
     ]),
     ...ingredientsOf('soft-drinks', [
@@ -679,7 +645,7 @@ export const beverage: SeedSection = {
         'Cola',
         'ml',
         ['coca cola', 'pepsi'],
-        ['coca cola', 'pepsi', 'cola 2l', 'bautura cola', 'suc cola'],
+        ['bautura cola', 'suc cola'],
       ],
       [
         'lemonade',
@@ -687,7 +653,7 @@ export const beverage: SeedSection = {
         'Limonadă',
         'ml',
         ['lemon soda'],
-        ['limonada', 'bautura lamaie', 'sprite', 'suc lamaie lime'],
+        ['bautura lamaie', 'sprite', 'suc lamaie lime'],
       ],
       [
         'orange-soda',
@@ -696,7 +662,6 @@ export const beverage: SeedSection = {
         'ml',
         ['fanta'],
         [
-          'fanta',
           'suc portocale carbogazos',
           'bautura portocale',
           'suc carbogazos portocale',
@@ -708,7 +673,7 @@ export const beverage: SeedSection = {
         'Ceai rece',
         'ml',
         ['ready-to-drink tea'],
-        ['ceai rece', 'ice tea', 'nestea', 'lipton ice tea'],
+        ['ice tea', 'nestea', 'lipton ice tea'],
       ],
       [
         'energy-drink',
@@ -716,7 +681,7 @@ export const beverage: SeedSection = {
         'Băutură energizantă',
         'ml',
         ['red bull'],
-        ['bautura energizanta', 'energizant', 'red bull', 'monster'],
+        ['energizant', 'monster'],
       ],
       [
         'tonic-water',
@@ -724,16 +689,16 @@ export const beverage: SeedSection = {
         'Apă tonică',
         'ml',
         ['tonic'],
-        ['apa tonica', 'tonic', 'schweppes'],
+        ['schweppes'],
       ],
-      ['kvass', 'Kvass', 'Kvas', 'ml', undefined, ['kvas', 'bautura kvas']],
+      ['kvass', 'Kvass', 'Kvas', 'ml', undefined, ['bautura kvas']],
       [
         'ginger-beer',
         'Ginger ale',
         'Ginger ale',
         'ml',
         ['ginger beer'],
-        ['ginger ale', 'bere de ghimbir'],
+        ['bere de ghimbir'],
       ],
     ]),
     ...ingredientsOf('water', [
@@ -744,14 +709,12 @@ export const beverage: SeedSection = {
         'l',
         ['water', 'spring water', 'bottled water'],
         [
-          'apa plata',
           'apa',
           'apa izvor',
           'apa de izvor',
           'apa naturala',
-          'apa plata 2l',
-          'apa plata 5l',
           'apa minerala plata',
+          'apa nat',
         ],
       ],
       [
@@ -761,13 +724,13 @@ export const beverage: SeedSection = {
         'l',
         ['mineral water', 'soda water', 'carbonated water'],
         [
-          'apa minerala',
           'apa carbogazoasa',
-          'apa minerala 2l',
           'apa gazoasa',
           'borsec',
           'dorna',
           'apa minerala naturala',
+          'apa min',
+          'apa carb',
         ],
       ],
       [
@@ -776,7 +739,7 @@ export const beverage: SeedSection = {
         'Apă aromatizată',
         'ml',
         undefined,
-        ['apa aromatizata', 'apa cu aroma', 'apa cu lamaie'],
+        ['apa cu aroma', 'apa cu lamaie'],
       ],
     ]),
     ...ingredientsOf('coffee-and-tea', [
@@ -786,7 +749,7 @@ export const beverage: SeedSection = {
         'Cafea',
         'g',
         ['ground coffee'],
-        ['cafea macinata', 'cafea 250g', 'cafea prajita', 'cafea filtru'],
+        ['cafea macinata', 'cafea prajita', 'cafea filtru', 'cafea mac'],
       ],
       [
         'coffee-beans',
@@ -794,7 +757,7 @@ export const beverage: SeedSection = {
         'Cafea boabe',
         'g',
         ['whole bean coffee'],
-        ['cafea in boabe', 'cafea boabe', 'boabe cafea'],
+        ['cafea in boabe', 'boabe cafea'],
       ],
       [
         'instant-coffee',
@@ -802,7 +765,7 @@ export const beverage: SeedSection = {
         'Cafea instant',
         'g',
         ['soluble coffee', 'nescafe'],
-        ['cafea solubila', 'nescafe', 'cafea instant', 'nes cafe'],
+        ['cafea solubila', 'nes cafe', 'cafea inst'],
       ],
       [
         'coffee-capsules',
@@ -810,21 +773,15 @@ export const beverage: SeedSection = {
         'Capsule de cafea',
         'pcs',
         ['coffee pods'],
-        [
-          'capsule cafea',
-          'capsule de cafea',
-          'capsule nespresso',
-          'paduri cafea',
-        ],
+        ['capsule cafea', 'capsule nespresso', 'paduri cafea'],
       ],
       [
-        'espresso-3in1',
+        'coffee-3in1',
         '3-in-1 coffee',
         'Cafea 3 în 1',
         'pcs',
         ['coffee mix sachets'],
         [
-          'cafea 3 in 1',
           'cafea 3in1',
           'cafea instant 3in1',
           'plicuri cafea',
@@ -839,7 +796,7 @@ export const beverage: SeedSection = {
         ['black tea', 'tea bags'],
         ['ceai negru', 'ceai plicuri', 'ceai la plic', 'ceai 20 plicuri'],
       ],
-      ['green-tea', 'Green tea', 'Ceai verde', 'g', undefined, ['ceai verde']],
+      ['green-tea', 'Green tea', 'Ceai verde', 'g'],
       [
         'herbal-tea',
         'Herbal tea',
@@ -861,7 +818,7 @@ export const beverage: SeedSection = {
         'Ceai de mușețel',
         'g',
         ['chamomile'],
-        ['ceai musetel', 'musetel', 'ceai de musetel'],
+        ['ceai musetel', 'musetel'],
       ],
       [
         'mint-tea',
@@ -869,7 +826,7 @@ export const beverage: SeedSection = {
         'Ceai de mentă',
         'g',
         ['peppermint tea'],
-        ['ceai menta', 'ceai de menta'],
+        ['ceai menta'],
       ],
       [
         'rosehip-tea',
@@ -877,7 +834,7 @@ export const beverage: SeedSection = {
         'Ceai de măceșe',
         'g',
         undefined,
-        ['ceai macese', 'macese', 'ceai de macese'],
+        ['ceai macese', 'macese'],
       ],
     ]),
     ...ingredientsOf('hot-drink-mixes', [
@@ -887,7 +844,7 @@ export const beverage: SeedSection = {
         'Ciocolată caldă',
         'g',
         ['drinking chocolate'],
-        ['ciocolata calda', 'ciocolata calda instant', 'ciocolata pudra'],
+        ['ciocolata calda instant', 'ciocolata pudra'],
       ],
       [
         'cocoa-drink-mix',
@@ -895,7 +852,7 @@ export const beverage: SeedSection = {
         'Băutură de cacao',
         'g',
         ['chocolate milk powder', 'nesquik'],
-        ['bautura cacao', 'nesquik', 'cacao instant', 'cacao cu lapte'],
+        ['bautura cacao', 'cacao instant', 'cacao cu lapte'],
       ],
       [
         'instant-cappuccino',
@@ -903,7 +860,7 @@ export const beverage: SeedSection = {
         'Cappuccino instant',
         'g',
         ['latte mix'],
-        ['cappuccino instant', 'cappuccino plic', 'cappuccino'],
+        ['cappuccino plic', 'cappuccino'],
       ],
       [
         'malted-drink',
@@ -911,15 +868,15 @@ export const beverage: SeedSection = {
         'Cafea de orz',
         'g',
         ['barley coffee'],
-        ['cafea de orz', 'cafea din orz', 'bautura de orz', 'ovaltine'],
+        ['cafea din orz', 'bautura de orz', 'ovaltine'],
       ],
       [
-        'cicory-drink',
+        'chicory-drink',
         'Chicory drink',
         'Cicoare',
         'g',
         ['chicory'],
-        ['cicoare', 'cafea de cicoare'],
+        ['cafea de cicoare'],
       ],
     ]),
     ...ingredientsOf('beer-and-cider', [
@@ -931,11 +888,11 @@ export const beverage: SeedSection = {
         ['lager', 'pilsner'],
         [
           'bere blonda',
-          'bere 0.5l',
           'bere doza',
           'bere sticla',
           'bere pet',
           'bere lager',
+          'bere bl',
         ],
       ],
       [
@@ -944,7 +901,7 @@ export const beverage: SeedSection = {
         'Bere neagră',
         'ml',
         ['stout', 'porter'],
-        ['bere bruna', 'bere neagra'],
+        ['bere bruna'],
       ],
       [
         'non-alcoholic-beer',
@@ -952,7 +909,7 @@ export const beverage: SeedSection = {
         'Bere fără alcool',
         'ml',
         ['alcohol-free beer', '0.0 beer'],
-        ['bere fara alcool', 'bere 0.0', 'bere 0%', 'bere nealcoolica'],
+        ['bere 0.0', 'bere 0%', 'bere nealcoolica'],
       ],
       [
         'radler',
@@ -962,7 +919,7 @@ export const beverage: SeedSection = {
         ['shandy', 'beer with lemon'],
         ['bere cu lamaie', 'bere radler'],
       ],
-      ['cider', 'Cider', 'Cidru', 'ml', undefined, ['cidru de mere', 'cidru']],
+      ['cider', 'Cider', 'Cidru', 'ml', undefined, ['cidru de mere']],
     ]),
     ...ingredientsOf('wine', [
       [
@@ -972,11 +929,11 @@ export const beverage: SeedSection = {
         'ml',
         undefined,
         [
-          'vin rosu',
           'vin rosu sec',
           'vin rosu demisec',
           'vin rosu dulce',
-          'vin rosu 0.75l',
+          'vin ros',
+          'vin ros sec',
         ],
       ],
       [
@@ -985,29 +942,16 @@ export const beverage: SeedSection = {
         'Vin alb',
         'ml',
         undefined,
-        [
-          'vin alb',
-          'vin alb sec',
-          'vin alb demisec',
-          'vin alb dulce',
-          'vin alb 0.75l',
-        ],
+        ['vin alb sec', 'vin alb demisec', 'vin alb dulce'],
       ],
-      [
-        'rose-wine',
-        'Rosé wine',
-        'Vin rosé',
-        'ml',
-        ['rose'],
-        ['vin rose', 'rose'],
-      ],
+      ['rose-wine', 'Rosé wine', 'Vin rosé', 'ml', ['rose']],
       [
         'sparkling-wine',
         'Sparkling wine',
         'Vin spumant',
         'ml',
         ['prosecco', 'champagne'],
-        ['spumant', 'vin spumant', 'sampanie', 'prosecco', 'cava'],
+        ['spumant', 'sampanie', 'cava'],
       ],
       [
         'cooking-wine',
@@ -1015,7 +959,7 @@ export const beverage: SeedSection = {
         'Vin pentru gătit',
         'ml',
         ['marsala'],
-        ['vin pentru gatit', 'vin de gatit'],
+        ['vin de gatit'],
       ],
       [
         'mulled-wine-base',
@@ -1027,31 +971,17 @@ export const beverage: SeedSection = {
       ],
     ]),
     ...ingredientsOf('spirits', [
-      ['vodka', 'Vodka', 'Vodcă', 'ml', undefined, ['vodca', 'votca']],
-      ['rum', 'Rum', 'Rom', 'ml', undefined, ['rom']],
-      [
-        'whisky',
-        'Whisky',
-        'Whisky',
-        'ml',
-        ['whiskey', 'bourbon'],
-        ['whiskey', 'viski'],
-      ],
-      [
-        'brandy',
-        'Brandy',
-        'Coniac',
-        'ml',
-        ['cognac'],
-        ['coniac', 'brandy', 'cognac'],
-      ],
+      ['vodka', 'Vodka', 'Vodcă', 'ml', undefined, ['votca']],
+      ['rum', 'Rum', 'Rom', 'ml'],
+      ['whisky', 'Whisky', 'Whisky', 'ml', ['whiskey', 'bourbon'], ['viski']],
+      ['brandy', 'Brandy', 'Coniac', 'ml', ['cognac']],
       [
         'tuica',
         'Țuică',
         'Țuică',
         'ml',
         ['plum brandy', 'palinca', 'rakia'],
-        ['tuica', 'palinca', 'tuica de prune', 'horinca', 'rachiu'],
+        ['tuica de prune', 'horinca', 'rachiu'],
       ],
       ['gin', 'Gin', 'Gin', 'ml'],
       [
@@ -1060,15 +990,26 @@ export const beverage: SeedSection = {
         'Lichior',
         'ml',
         ['baileys', 'amaretto'],
-        ['lichior', 'baileys', 'amaretto', 'lichior de ou', 'lichior cafea'],
+        ['lichior de ou', 'lichior cafea'],
+      ],
+      ['vermouth', 'Vermouth', 'Vermut', 'ml', ['aperitif'], ['aperol']],
+    ]),
+    ...ingredientsOf('chilled-drinks', [
+      [
+        'smoothie',
+        'Smoothie',
+        'Smoothie',
+        'ml',
+        undefined,
+        ['smoothie fructe'],
       ],
       [
-        'vermouth',
-        'Vermouth',
-        'Vermut',
+        'fresh-orange-juice',
+        'Fresh orange juice',
+        'Suc proaspăt de portocale',
         'ml',
-        ['aperitif'],
-        ['vermut', 'aperol'],
+        ['freshly squeezed orange juice'],
+        ['suc natural portocale', 'suc natural', 'suc proaspat portocale'],
       ],
     ]),
   ],

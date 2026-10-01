@@ -123,6 +123,15 @@ describe('catalog seed data', () => {
     expect(withRo.length / SEED_INGREDIENTS.length).toBeGreaterThan(0.8);
   });
 
+  it('lists the data sections in the same order as the Parent Categories', () => {
+    const order = [...new Set(SEED_LEAVES.map((l) => l.parent))];
+    expect(order).toEqual(
+      SEED_PARENTS.map((p) => p.slug)
+        .filter((s) => s !== 'other')
+        .concat('other'),
+    );
+  });
+
   it('derives stable, valid UUIDs', () => {
     expect(seedId.ingredient('parmesan')).toBe(seedId.ingredient('parmesan'));
     expect(seedId.ingredient('parmesan')).not.toBe(seedId.leaf('parmesan'));
