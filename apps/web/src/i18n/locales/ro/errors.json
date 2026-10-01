@@ -23,5 +23,8 @@
     "missing_or_null_origin": "Această aplicație nu are voie să comunice cu serverul de la această adresă.",
     "unauthorized": "E-mail sau parolă greșită.",
     "too_many_requests": "Prea multe încercări. Așteaptă puțin și încearcă din nou."
+  },
+  "family": {
+    "owner_required": "Doar Proprietarul Familiei poate face asta."
   }
 }

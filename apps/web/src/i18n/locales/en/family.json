@@ -1,3 +1,14 @@
 {
-  "title": "Family"
+  "title": "Family",
+  "members": "Members",
+  "owner": "Owner",
+  "inviteCode": "Invite Code",
+  "inviteCodeHelp": "Share this code with the people you want to join your Family.",
+  "expiresOn": "Expires {{date}}",
+  "expired": "Expired",
+  "expiredOwnerPrompt": "This code has expired. Generate a new one to invite someone.",
+  "expiredMemberPrompt": "This code has expired. Ask the Owner to generate a new one.",
+  "regenerate": "Generate a new code",
+  "regenerating": "Generating…",
+  "regenerateWarning": "The previous code stops working as soon as you generate a new one."
 }
