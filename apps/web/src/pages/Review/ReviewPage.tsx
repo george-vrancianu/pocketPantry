@@ -37,6 +37,7 @@ export function ReviewPage() {
                 key={line.key}
                 line={line}
                 parents={screen.parents}
+                shopping={screen.shopping}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}
@@ -47,8 +48,10 @@ export function ReviewPage() {
           <Stack direction="row" spacing={1}>
             <Button onClick={screen.save} disabled={!screen.canSave}>
               {screen.saving
-                ? t('saving')
-                : t('save', { count: screen.lines.length })}
+                ? t(screen.shopping ? 'shoppingAdding' : 'saving')
+                : t(screen.shopping ? 'shoppingSave' : 'save', {
+                    count: screen.lines.length,
+                  })}
             </Button>
             <Button variant="text" onClick={screen.discard}>
               {t('discard')}

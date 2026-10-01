@@ -6,6 +6,7 @@ import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
+import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
   useProductScan,
@@ -25,6 +26,7 @@ export function useScanScreen() {
 
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
+  const plate = usePlateScan();
   const ingredientsScan = useIngredientsScan(i18n.language);
   // Every wired mode has its own endpoint and returns the same proposed lines.
   const modeScan = mode === 'ingredients' ? ingredientsScan : productScan;
@@ -34,7 +36,7 @@ export function useScanScreen() {
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || modeScan.isPending;
+  const reading = resizing || modeScan.isPending || plate.pending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
@@ -49,6 +51,10 @@ export function useScanScreen() {
       return;
     } finally {
       setResizing(false);
+    }
+    if (mode === 'plate') {
+      plate.scan(image);
+      return;
     }
     modeScan.mutate(image, {
       onSuccess: ({ lines }) => {
@@ -79,10 +85,11 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
+  const scanError = modeScan.error ?? plate.error;
   const error = localError
     ? t(`errors:${localError}`)
-    : modeScan.error
-      ? translateApiError(t, modeScan.error)
+    : scanError
+      ? translateApiError(t, scanError)
       : null;
 
   return {
@@ -97,9 +104,11 @@ export function useScanScreen() {
     setMode: (next: ScanMode) => {
       productScan.reset();
       ingredientsScan.reset();
+      plate.reset();
       setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },
+    plate,
     shoot,
     pickFile,
     openGallery: () => fileInput.current?.click(),

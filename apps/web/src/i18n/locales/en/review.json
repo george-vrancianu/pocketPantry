@@ -9,7 +9,8 @@
   "keepMatch": "Keep this match",
   "flag": {
     "unmatched": "Unmatched: pick an ingredient, or save it under the name we read.",
-    "lowConfidence": "Low confidence: please check this line."
+    "lowConfidence": "Low confidence: please check this line.",
+    "unmatchedShopping": "Not in our catalogue: pick an ingredient, or add it to your list under the name we read."
   },
   "dropShort": "Drop",
   "matchedAs": "Matched as {{name}}",
@@ -24,5 +25,9 @@
   "save_few": "Save {{count}} items",
   "save_other": "Save {{count}} items",
   "saving": "Saving",
-  "discard": "Discard"
+  "discard": "Discard",
+  "shoppingSave_one": "Add {{count}} item to shopping list",
+  "shoppingSave_few": "Add {{count}} items to shopping list",
+  "shoppingSave_other": "Add {{count}} items to shopping list",
+  "shoppingAdding": "Adding"
 }

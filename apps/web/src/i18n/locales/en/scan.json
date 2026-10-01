@@ -8,7 +8,12 @@
   "modes": "Scan mode",
   "reading": "Reading your photo",
   "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
-  "comingSoon": "{{mode}} scanning is coming soon. Product and Ingredients scanning work now.",
+  "comingSoon": "{{mode}} scanning is coming soon. Product, Plate and Ingredients scanning work now.",
+  "plate": {
+    "pickTitle": "Which dish is it?",
+    "option": "{{title}}, {{percent}}% likely",
+    "retake": "Retake photo"
+  },
   "mode": {
     "product": "Product",
     "receipt": "Receipt",

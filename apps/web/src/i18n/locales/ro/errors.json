@@ -34,6 +34,7 @@
     "provider_refused": "Fotografia nu a putut fi procesată. Încearcă o poză mai clară a produsului.",
     "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
     "result_invalid": "Nu am putut citi fotografia. Încearcă una mai clară.",
+    "plate_token_invalid": "Lista de preparate a expirat. Fă din nou poza.",
     "not_configured": "Scanarea nu este încă configurată pe acest server."
   },
   "shopping": {

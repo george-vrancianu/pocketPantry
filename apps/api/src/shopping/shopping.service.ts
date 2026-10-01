@@ -62,86 +62,104 @@ export class ShoppingService {
     body: AddShoppingItemBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
+    return this.addItems(memberId, [body], locale);
+  }
+
+  /** Adds every item with the merge rules, in one transaction: all of them or none. */
+  async addItems(
+    memberId: string,
+    bodies: AddShoppingItemBody[],
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const listId = await this.lockActiveList(tx, memberId);
-
-      const unit = body.unit ?? null;
-      const quantity = body.quantity ?? null;
-      let identity;
-      let insertValues:
-        { ingredientId: string } | { name: string; normalizedName: string };
-      if (body.ingredientId !== undefined) {
-        const [found] = await tx
-          .select({ id: ingredients.id })
-          .from(ingredients)
-          .where(eq(ingredients.id, body.ingredientId));
-        if (!found) {
-          throw new ApiException(404, 'shopping.ingredient_not_found');
-        }
-        identity = eq(shoppingItems.ingredientId, found.id);
-        insertValues = { ingredientId: found.id };
-      } else {
-        const name = (body.name ?? '').trim();
-        const normalizedName = normalizeName(name);
-        if (!normalizedName) throw new ApiException(400, 'validation_failed');
-        identity = and(
-          isNull(shoppingItems.ingredientId),
-          eq(shoppingItems.normalizedName, normalizedName),
-        );
-        insertValues = { name, normalizedName };
-      }
-
-      const [existing] = await tx
-        .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
-        .from(shoppingItems)
-        .where(
-          and(
-            eq(shoppingItems.listId, listId),
-            identity,
-            unit === null
-              ? isNull(shoppingItems.unit)
-              : eq(shoppingItems.unit, unit),
-          ),
-        )
-        .limit(1);
-
-      if (existing) {
-        const merged = sumQuantities(
-          existing.quantity === null ? null : Number(existing.quantity),
-          quantity,
-        );
-        // Adding something already bought means it is wanted again.
-        await tx
-          .update(shoppingItems)
-          .set({
-            quantity: merged === null ? null : String(merged),
-            checked: false,
-          })
-          .where(eq(shoppingItems.id, existing.id));
-      } else {
-        const [inserted] = await tx
-          .insert(shoppingItems)
-          .values({
-            listId,
-            ...insertValues,
-            quantity: quantity === null ? null : String(quantity),
-            unit,
-          })
-          .returning({ id: shoppingItems.id });
-        if ('name' in insertValues) {
-          await recordUnmatched(tx, [
-            {
-              rawName: insertValues.name,
-              locale,
-              source: body.source ?? 'manual',
-              shoppingItemId: inserted.id,
-            },
-          ]);
-        }
-      }
+      for (const body of bodies) await this.mergeItem(tx, listId, body, locale);
       return this.view(tx, listId, locale);
     });
+  }
+
+  private async mergeItem(
+    tx: Tx,
+    listId: string,
+    body: AddShoppingItemBody,
+    locale: CatalogLocale,
+  ): Promise<void> {
+    const unit = body.unit ?? null;
+    const quantity = body.quantity ?? null;
+    let identity;
+    let insertValues:
+      { ingredientId: string } | { name: string; normalizedName: string };
+    if (body.ingredientId !== undefined) {
+      const [found] = await tx
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .where(eq(ingredients.id, body.ingredientId));
+      if (!found) {
+        throw new ApiException(404, 'shopping.ingredient_not_found');
+      }
+      identity = eq(shoppingItems.ingredientId, found.id);
+      insertValues = { ingredientId: found.id };
+    } else {
+      const name = (body.name ?? '').trim();
+      const normalizedName = normalizeName(name);
+      if (!normalizedName) throw new ApiException(400, 'validation_failed');
+      identity = and(
+        isNull(shoppingItems.ingredientId),
+        eq(shoppingItems.normalizedName, normalizedName),
+      );
+      insertValues = { name, normalizedName };
+    }
+
+    const [existing] = await tx
+      .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+      .from(shoppingItems)
+      .where(
+        and(
+          eq(shoppingItems.listId, listId),
+          identity,
+          unit === null
+            ? isNull(shoppingItems.unit)
+            : eq(shoppingItems.unit, unit),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      const merged = sumQuantities(
+        existing.quantity === null ? null : Number(existing.quantity),
+        quantity,
+      );
+      // Adding something already bought means it is wanted again.
+      await tx
+        .update(shoppingItems)
+        .set({
+          quantity: merged === null ? null : String(merged),
+          checked: false,
+        })
+        .where(eq(shoppingItems.id, existing.id));
+    } else {
+      const [inserted] = await tx
+        .insert(shoppingItems)
+        .values({
+          listId,
+          ...insertValues,
+          quantity: quantity === null ? null : String(quantity),
+          unit,
+        })
+        .returning({ id: shoppingItems.id });
+      // Only newly inserted Unmatched names are queued; merges add no entry.
+      if ('name' in insertValues) {
+        await recordUnmatched(tx, [
+          {
+            rawName: insertValues.name,
+            locale,
+            source: body.source ?? 'manual',
+            shoppingItemId: inserted.id,
+          },
+        ]);
+      }
+    }
   }
 
   async setChecked(

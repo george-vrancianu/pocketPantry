@@ -8,7 +8,12 @@
   "modes": "Mod de scanare",
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
-  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor și a ingredientelor funcționează acum.",
+  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor, a farfuriei și a ingredientelor funcționează acum.",
+  "plate": {
+    "pickTitle": "Ce preparat este?",
+    "option": "{{title}}, {{percent}}% probabil",
+    "retake": "Fă altă poză"
+  },
   "mode": {
     "product": "Produs",
     "receipt": "Bon",

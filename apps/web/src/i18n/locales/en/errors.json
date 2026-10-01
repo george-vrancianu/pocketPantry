@@ -34,6 +34,7 @@
     "provider_refused": "The photo could not be processed. Try a clearer photo of the product.",
     "provider_incomplete": "The scan did not finish. Please try again.",
     "result_invalid": "We could not read that photo. Try a clearer one.",
+    "plate_token_invalid": "That dish list has expired. Take the photo again.",
     "not_configured": "Scanning is not set up on this server yet."
   },
   "shopping": {

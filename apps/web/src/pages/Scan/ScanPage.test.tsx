@@ -121,7 +121,7 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('only Product is wired: other modes say so and cannot scan', async () => {
+  it('only Product, Plate and Ingredients are wired: other modes say so and cannot scan', async () => {
     renderScan({});
     await userEvent.click(screen.getByRole('button', { name: 'Receipt' }));
     expect(screen.getByRole('button', { name: 'Receipt' })).toHaveAttribute(
@@ -130,7 +130,7 @@ describe('ScanPage', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent(/coming soon/i);
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Product and Ingredients scanning work now',
+      'Product, Plate and Ingredients scanning work now',
     );
     expect(screen.getByRole('button', { name: 'Take photo' })).toBeDisabled();
     expect(

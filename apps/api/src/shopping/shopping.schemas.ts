@@ -27,6 +27,13 @@ export const addShoppingItemBody = z
   );
 export type AddShoppingItemBody = z.infer<typeof addShoppingItemBody>;
 
+/** Plate Scan confirms its lines in one go; all lines are added or none. */
+export const MAX_BULK_SHOPPING_ITEMS = 100;
+export const addShoppingItemsBody = z.object({
+  items: z.array(addShoppingItemBody).min(1).max(MAX_BULK_SHOPPING_ITEMS),
+});
+export type AddShoppingItemsBody = z.infer<typeof addShoppingItemsBody>;
+
 export const setCheckedBody = z.object({ checked: z.boolean() });
 export type SetCheckedBody = z.infer<typeof setCheckedBody>;
 
