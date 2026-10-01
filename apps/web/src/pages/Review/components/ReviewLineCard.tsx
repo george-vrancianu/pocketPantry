@@ -20,6 +20,8 @@ type Props = {
   onDrop: () => void;
   /** Parent Categories an Unmatched line can be placed in. */
   parents: CatalogParent[];
+  /** The line goes on the Shopping List: no Category, Location, expiry or description. */
+  shopping?: boolean;
 };
 
 /** One proposed line, editable. Flagged lines (Unmatched or low confidence) are tinted and say why. */
@@ -29,6 +31,7 @@ export function ReviewLineCard({
   onChangeMatch,
   onDrop,
   parents,
+  shopping = false,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry']);
   const id = useId();
@@ -49,7 +52,14 @@ export function ReviewLineCard({
         border: `1px solid ${flagged ? tokens.color.urgentFg : tokens.color.line}`,
       }}
     >
-      <Stack spacing={1.5} component="section" aria-label={displayName}>
+      <Stack
+        spacing={1.5}
+        component="section"
+        aria-label={displayName}
+        id={`review-line-${line.key}`}
+        tabIndex={-1}
+        sx={{ outline: 'none' }}
+      >
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Typography sx={{ flexGrow: 1, fontWeight: 700 }}>
             {displayName}
@@ -78,7 +88,11 @@ export function ReviewLineCard({
             }}
           >
             {unmatched
-              ? t('review:flag.unmatched')
+              ? t(
+                  shopping
+                    ? 'review:flag.unmatchedShopping'
+                    : 'review:flag.unmatched',
+                )
               : t('review:flag.lowConfidence')}
           </Box>
         ) : null}
@@ -93,7 +107,7 @@ export function ReviewLineCard({
           />
         ) : null}
 
-        {unmatched ? (
+        {unmatched && !shopping ? (
           <TextField
             id={`${id}-category`}
             select
@@ -171,41 +185,52 @@ export function ReviewLineCard({
           </TextField>
         </Stack>
 
-        <TextField
-          id={`${id}-location`}
-          select
-          label={t('review:location')}
-          value={line.location}
-          onChange={(event) =>
-            onChange({ location: event.target.value as ReviewLine['location'] })
-          }
-          slotProps={{ select: { native: true } }}
-        >
-          {LOCATIONS.map((location) => (
-            <option key={location} value={location}>
-              {t(`pantry:locations.${location}`)}
-            </option>
-          ))}
-        </TextField>
+        {shopping ? null : (
+          <>
+            <TextField
+              id={`${id}-location`}
+              select
+              label={t('review:location')}
+              value={line.location}
+              onChange={(event) =>
+                onChange({
+                  location: event.target.value as ReviewLine['location'],
+                })
+              }
+              slotProps={{ select: { native: true } }}
+            >
+              {LOCATIONS.map((location) => (
+                <option key={location} value={location}>
+                  {t(`pantry:locations.${location}`)}
+                </option>
+              ))}
+            </TextField>
 
-        <TextField
-          id={`${id}-expiry`}
-          type="date"
-          label={t('review:expiry')}
-          value={line.expiryDate}
-          onChange={(event) =>
-            onChange({ expiryDate: event.target.value, expiryExplicit: true })
-          }
-          slotProps={{ inputLabel: { shrink: true } }}
-        />
+            <TextField
+              id={`${id}-expiry`}
+              type="date"
+              label={t('review:expiry')}
+              value={line.expiryDate}
+              onChange={(event) =>
+                onChange({
+                  expiryDate: event.target.value,
+                  expiryExplicit: true,
+                })
+              }
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
 
-        <TextField
-          id={`${id}-description`}
-          label={t('review:description')}
-          value={line.description}
-          onChange={(event) => onChange({ description: event.target.value })}
-          slotProps={{ htmlInput: { maxLength: 200 } }}
-        />
+            <TextField
+              id={`${id}-description`}
+              label={t('review:description')}
+              value={line.description}
+              onChange={(event) =>
+                onChange({ description: event.target.value })
+              }
+              slotProps={{ htmlInput: { maxLength: 200 } }}
+            />
+          </>
+        )}
       </Stack>
     </Box>
   );

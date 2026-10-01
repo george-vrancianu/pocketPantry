@@ -39,7 +39,7 @@ const bagLine: ProposedLine = {
   unit: null,
   expiryDate: null,
   productDescription: null,
-  excluded: { reason: 'Carrier bag, not food' },
+  excluded: { reason: 'other' },
 };
 
 function renderReceiptReview(lines: ProposedLine[], extra = {}) {
@@ -75,15 +75,52 @@ describe('Receipt Review', () => {
     const excluded = screen.getByRole('group', { name: 'Excluded (1)' });
     expect(excluded).not.toHaveAttribute('open');
     expect(within(excluded).getByText('SACOSA BIO')).toBeInTheDocument();
-    expect(
-      within(excluded).getByText('Carrier bag, not food'),
-    ).toBeInTheDocument();
+    expect(within(excluded).getByText('Not a pantry item')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeEnabled();
   });
 
-  it('says why when an excluded line has no reason', () => {
-    renderReceiptReview([milkLine, { ...bagLine, excluded: { reason: null } }]);
-    expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
+  it('says why in the Member language, from the reason code', () => {
+    renderReceiptReview([
+      milkLine,
+      { ...bagLine, excluded: { reason: 'deposit' } },
+    ]);
+    expect(screen.getByText('A deposit')).toBeInTheDocument();
+  });
+
+  it('moves focus to the line card when an excluded line is included', async () => {
+    renderReceiptReview([milkLine, bagLine]);
+    await userEvent.click(screen.getByText('Excluded (1)'));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Include SACOSA BIO' }),
+    );
+    expect(screen.getByRole('region', { name: 'SACOSA BIO' })).toHaveFocus();
+  });
+
+  it('says so and blocks Save when more than 50 entries would be saved', () => {
+    const many = Array.from({ length: 51 }, (_, i) => ({
+      ...milkLine,
+      name: `Milk ${i}`,
+    }));
+    renderReceiptReview(many);
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'You can save up to 50 items at once. Drop or exclude 1 to continue.',
+    );
+    expect(
+      screen.getByRole('button', { name: 'Save 51 items' }),
+    ).toBeDisabled();
+  }, 30_000);
+
+  it('sends source receipt on Unmatched Batches only', async () => {
+    const calls = renderReceiptReview([
+      milkLine,
+      { ...bagLine, excluded: undefined },
+    ]);
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/scan/receipt/confirm')
+      ?.body as { batches: { source?: string }[] };
+    expect(body.batches[0].source).toBeUndefined();
+    expect(body.batches[1].source).toBe('receipt');
   });
 
   it('re-includes an excluded line as an editable Unmatched line that is then saved', async () => {
@@ -146,13 +183,37 @@ describe('Receipt Review', () => {
     );
   });
 
-  it('still lands on the Pantry when ticking a Shopping Item fails', async () => {
+  it('saves, then says a removed Shopping Item was not ticked, without blocking', async () => {
     renderReceiptReview([milkLine], {
       'POST /api/scan/receipt/confirm': () =>
         Response.json({ batches: [], matchedShoppingItemIds: ['item-1'] }),
+      'PATCH /api/shopping-list/items/item-1': () =>
+        Response.json({ code: 'shopping.item_not_found' }, { status: 404 }),
     });
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 Shopping Item was removed from your list before we could tick it off.',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Go to Pantry' }));
     expect(await screen.findByText('pantry screen')).toBeInTheDocument();
+  });
+
+  it('says the list changed when a tick gets 409 shopping.list_changed', async () => {
+    renderReceiptReview([milkLine], {
+      'POST /api/scan/receipt/confirm': () =>
+        Response.json({
+          batches: [],
+          matchedShoppingItemIds: ['item-1', 'item-2'],
+        }),
+      'PATCH /api/shopping-list/items/item-1': () =>
+        Response.json({ code: 'shopping.list_changed' }, { status: 409 }),
+      'PATCH /api/shopping-list/items/item-2': () =>
+        Response.json({ code: 'shopping.list_changed' }, { status: 409 }),
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The Shopping List changed, so 2 Shopping Items were not ticked off.',
+    );
   });
 
   it('with only excluded lines there is nothing to save', () => {

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
+import { SHOPPING_ITEM_SOURCES } from '../unmatched/unmatched-entries';
 
 export type ShoppingUnit = (typeof ingredientUnit.enumValues)[number];
 const UNITS = ['g', 'kg', 'ml', 'l', 'pcs'] as const satisfies ShoppingUnit[];
@@ -17,12 +18,21 @@ export const addShoppingItemBody = z
     name: z.string().trim().min(1).max(100).optional(),
     quantity: z.number().positive().max(999_999).optional(),
     unit: z.enum(UNITS).optional(),
+    /** Unmatched names only: where the name came from; defaults to manual. */
+    source: z.enum(SHOPPING_ITEM_SOURCES).optional(),
   })
   .refine(
     (body) => (body.ingredientId === undefined) !== (body.name === undefined),
     { message: 'Provide either ingredientId or name', path: ['ingredientId'] },
   );
 export type AddShoppingItemBody = z.infer<typeof addShoppingItemBody>;
+
+/** Plate Scan confirms its lines in one go; all lines are added or none. */
+export const MAX_BULK_SHOPPING_ITEMS = 100;
+export const addShoppingItemsBody = z.object({
+  items: z.array(addShoppingItemBody).min(1).max(MAX_BULK_SHOPPING_ITEMS),
+});
+export type AddShoppingItemsBody = z.infer<typeof addShoppingItemsBody>;
 
 export const setCheckedBody = z.object({ checked: z.boolean() });
 export type SetCheckedBody = z.infer<typeof setCheckedBody>;

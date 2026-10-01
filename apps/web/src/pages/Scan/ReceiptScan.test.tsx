@@ -51,7 +51,7 @@ describe('Receipt Scan on the Scan screen', () => {
               unit: null,
               expiryDate: null,
               productDescription: null,
-              excluded: { reason: 'Carrier bag' },
+              excluded: { reason: 'other' },
             },
           ],
         }),
@@ -69,7 +69,7 @@ describe('Receipt Scan on the Scan screen', () => {
     expect(
       await screen.findByRole('region', { name: 'Eggs' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Carrier bag')).toBeInTheDocument();
+    expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /api/scan/receipt')?.body).toEqual(
       { receiptImage: 'data:image/jpeg;base64,YQ==' },
     );

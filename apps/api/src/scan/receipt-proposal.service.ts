@@ -19,8 +19,9 @@ import type { ReceiptScanResult } from './receipt-scan.schemas';
  * were already checked against the Catalog; here each one is loaded as a
  * localised Catalog Ingredient with the Family's Default Expiry overrides. A
  * pantry line the model left Unmatched gets one more chance: its generic name
- * is searched against Ingredient names and Synonyms in every locale, which is
- * how a Romanian receipt line finds its Ingredient.
+ * must exactly equal (once normalised) an Ingredient name, display name or
+ * Synonym in any locale, which is how a Romanian receipt line finds its
+ * Ingredient. Anything short of an exact hit stays Unmatched.
  */
 @Injectable()
 export class ReceiptProposalService {
@@ -51,17 +52,22 @@ export class ReceiptProposalService {
       ),
     );
 
-    const guesses = new Map<number, CatalogSearchResult>();
-    for (const line of pantryLines) {
-      if (line.matchedIngredientId || !line.fallbackIngredientName) continue;
-      const [hit] = await this.catalogSearch.search(
-        line.fallbackIngredientName,
-        locale,
-        1,
-        overrides,
-      );
-      if (hit) guesses.set(line.lineNumber, hit);
-    }
+    // One query for every line the model left Unmatched. Only an exact
+    // normalised name hit counts; anything looser stays Unmatched.
+    const fallbackNames = [
+      ...new Set(
+        pantryLines.flatMap((line) =>
+          !line.matchedIngredientId && line.fallbackIngredientName
+            ? [line.fallbackIngredientName]
+            : [],
+        ),
+      ),
+    ];
+    const exact = await this.catalogSearch.findExact(
+      fallbackNames,
+      locale,
+      overrides,
+    );
 
     const resolve = (line: ReceiptScanResult['lines'][number]) => {
       const named = line.matchedIngredientId
@@ -69,9 +75,11 @@ export class ReceiptProposalService {
         : undefined;
       if (named)
         return { match: named, guessed: false } satisfies ResolvedMatch;
-      const guess = guesses.get(line.lineNumber);
-      return guess
-        ? ({ match: guess, guessed: true } satisfies ResolvedMatch)
+      const hit = line.fallbackIngredientName
+        ? exact.get(line.fallbackIngredientName)
+        : undefined;
+      return hit
+        ? ({ match: hit, guessed: true } satisfies ResolvedMatch)
         : null;
     };
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {

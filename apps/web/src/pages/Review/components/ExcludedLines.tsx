@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * Receipt lines the Scan left out of the Pantry (carrier bags, cleaning
- * products, unreadable lines), collapsed, each with its reason and a way to
+ * products, unreadable lines), collapsed, each with its reason (a localised label for the kind of line) and a way to
  * put it back. A native disclosure keeps keyboard and screen-reader behaviour.
  */
 export function ExcludedLines({ lines, onInclude }: Props) {
@@ -57,7 +57,7 @@ export function ExcludedLines({ lines, onInclude }: Props) {
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography sx={{ fontWeight: 600 }}>{line.name}</Typography>
               <Typography sx={{ fontSize: 13, color: tokens.color.muted }}>
-                {line.excluded?.reason ?? t('excluded.noReason')}
+                {t(`excluded.reason.${line.excluded?.reason ?? 'other'}`)}
               </Typography>
             </Box>
             <Button

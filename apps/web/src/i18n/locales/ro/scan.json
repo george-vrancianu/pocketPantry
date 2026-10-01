@@ -8,7 +8,12 @@
   "modes": "Mod de scanare",
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
-  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor funcționează acum.",
+  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor, a farfuriei și a ingredientelor funcționează acum.",
+  "plate": {
+    "pickTitle": "Ce preparat este?",
+    "option": "{{title}}, {{percent}}% probabil",
+    "retake": "Fă altă poză"
+  },
   "mode": {
     "product": "Produs",
     "receipt": "Bon",
@@ -25,6 +30,6 @@
     "product": "Îl adaugă în cămară cu data de expirare.",
     "receipt": "Adaugă toate produsele din cumpărături deodată.",
     "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
-    "ingredients": "Recunoaște produsele vrac și sugerează rețete."
+    "ingredients": "Adaugă în cămară fiecare produs vrac de pe blat."
   }
 }

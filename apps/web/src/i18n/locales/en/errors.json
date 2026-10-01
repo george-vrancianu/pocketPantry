@@ -28,10 +28,13 @@
     "cap_reached": "You have used all {{cap}} scans for today. Try again tomorrow, or add items by hand.",
     "image_invalid": "That file is not a photo we can read. Use a JPEG, PNG or WebP image.",
     "image_too_large": "That photo is too large. Try a smaller one.",
+    "too_many_items": "We found more than {{max}} items. Photograph fewer at a time.",
+    "nothing_found": "We could not spot any ingredients. Spread them out in good light and try again.",
     "provider_unavailable": "Scanning is not available right now. Please try again in a moment.",
     "provider_refused": "The photo could not be processed. Try a clearer photo of the product.",
     "provider_incomplete": "The scan did not finish. Please try again.",
     "result_invalid": "We could not read that photo. Try a clearer one.",
+    "plate_token_invalid": "That dish list has expired. Take the photo again.",
     "not_configured": "Scanning is not set up on this server yet."
   },
   "shopping": {
@@ -69,5 +72,10 @@
     "cannot_transfer_to_self": "You are already the Owner.",
     "member_not_found": "That person is not a Member of your Family.",
     "concurrent_change": "The Family changed while you were doing that. Please try again."
+  },
+  "unmatched": {
+    "name_taken": "That name already belongs to another Ingredient. Resolve it to that Ingredient, or rename the other one first.",
+    "not_found": "That name is no longer in the queue. Someone may have resolved it already.",
+    "concurrent_change": "The lists changed while resolving. Please try again."
   }
 }

@@ -5,6 +5,11 @@ import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.modul
 import { PantryModule } from '../pantry/pantry.module';
 import { SettingsModule } from '../settings/settings.module';
 import { ShoppingModule } from '../shopping/shopping.module';
+import { PlateScanController } from './plate-scan.controller';
+import { PlateScanFlowService } from './plate-scan-flow.service';
+import { PlateScanService } from './plate-scan.service';
+import { IngredientsScanService } from './ingredients-scan.service';
+import { PlateTokenUses } from './plate-token-uses';
 import { ProductScanService } from './product-scan.service';
 import { ReceiptConfirmService } from './receipt-confirm.service';
 import { ReceiptProposalService } from './receipt-proposal.service';
@@ -22,10 +27,14 @@ import { ScanService } from './scan.service';
     PantryModule,
     ShoppingModule,
   ],
-  controllers: [ScanController, ReceiptScanController],
+  controllers: [ScanController, PlateScanController, ReceiptScanController],
   providers: [
     StructuredOutputAiService,
     ProductScanService,
+    PlateScanService,
+    PlateScanFlowService,
+    PlateTokenUses,
+    IngredientsScanService,
     ReceiptScanService,
     ReceiptProposalService,
     ReceiptConfirmService,

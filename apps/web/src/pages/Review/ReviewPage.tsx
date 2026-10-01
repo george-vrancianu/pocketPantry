@@ -15,6 +15,29 @@ export function ReviewPage() {
   const { t } = useTranslation('review');
   const screen = useReviewScreen();
 
+  if (screen.tickFailures) {
+    const { missing, changed, other } = screen.tickFailures;
+    return (
+      <>
+        <AppScreenHeader title={t('saved.title')} />
+        <Stack spacing={2}>
+          <Alert severity="warning">
+            <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2 }}>
+              {missing > 0 ? (
+                <li>{t('tick.missing', { count: missing })}</li>
+              ) : null}
+              {changed > 0 ? (
+                <li>{t('tick.changed', { count: changed })}</li>
+              ) : null}
+              {other > 0 ? <li>{t('tick.failed', { count: other })}</li> : null}
+            </Stack>
+          </Alert>
+          <Button onClick={screen.toPantry}>{t('saved.toPantry')}</Button>
+        </Stack>
+      </>
+    );
+  }
+
   if (!screen.hadDraft) return <Navigate to="/scan" replace />;
 
   return (
@@ -38,6 +61,7 @@ export function ReviewPage() {
                 key={line.key}
                 line={line}
                 parents={screen.parents}
+                shopping={screen.shopping}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}
@@ -45,12 +69,22 @@ export function ReviewPage() {
             ))}
           </Stack>
           <ExcludedLines lines={screen.excluded} onInclude={screen.include} />
+          {screen.overLimit > 0 ? (
+            <Alert severity="warning">
+              {t('tooMany', {
+                max: screen.maxItems,
+                over: screen.overLimit,
+              })}
+            </Alert>
+          ) : null}
           {screen.error ? <Alert>{screen.error}</Alert> : null}
           <Stack direction="row" spacing={1}>
             <Button onClick={screen.save} disabled={!screen.canSave}>
               {screen.saving
-                ? t('saving')
-                : t('save', { count: screen.lines.length })}
+                ? t(screen.shopping ? 'shoppingAdding' : 'saving')
+                : t(screen.shopping ? 'shoppingSave' : 'save', {
+                    count: screen.lines.length,
+                  })}
             </Button>
             <Button variant="text" onClick={screen.discard}>
               {t('discard')}

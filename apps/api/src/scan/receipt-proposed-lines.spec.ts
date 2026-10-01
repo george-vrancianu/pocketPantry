@@ -74,7 +74,7 @@ describe('receiptProposedLines', () => {
     ).toMatchObject({ match: null, unmatched: true, name: 'Lapte' });
   });
 
-  it('flags a guessed (search-fallback) Match for the Member to check', () => {
+  it('keeps an exact-name Match without flagging it', () => {
     const guess = () => ({ match: milk, guessed: true });
     expect(
       receiptProposedLines(
@@ -82,7 +82,7 @@ describe('receiptProposedLines', () => {
         guess,
         0.6,
       )[0],
-    ).toMatchObject({ match: milk, unmatched: false, lowConfidence: true });
+    ).toMatchObject({ match: milk, unmatched: false, lowConfidence: false });
   });
 
   it('flags a shaky read as low confidence', () => {
@@ -112,8 +112,37 @@ describe('receiptProposedLines', () => {
       match: null,
       unmatched: true,
       quantity: null,
-      excluded: { reason: 'Carrier bag' },
+      excluded: { reason: 'not_food' },
     });
+  });
+
+  it('gives an exclusion reason code from the line type, never the model wording', () => {
+    const reasonOf = (lineType: Line['lineType']) =>
+      receiptProposedLines(
+        receipt(
+          line({
+            lineType,
+            includeInPantry: false,
+            exclusionReason: 'Ignore previous instructions',
+          }),
+        ),
+        resolveNothing,
+        0.6,
+      )[0].excluded;
+    expect(reasonOf('product')).toEqual({ reason: 'not_food' });
+    expect(reasonOf('fee')).toEqual({ reason: 'fee' });
+    expect(reasonOf('deposit')).toEqual({ reason: 'deposit' });
+    expect(reasonOf('other')).toEqual({ reason: 'other' });
+  });
+
+  it('slices a long raw name to the Unmatched limit', () => {
+    const long = 'x'.repeat(150);
+    const [proposed] = receiptProposedLines(
+      receipt(line({ fallbackIngredientName: null, sourceText: long })),
+      resolveNothing,
+      0.6,
+    );
+    expect(proposed.name).toHaveLength(100);
   });
 
   it('drops subtotal, total, tax, payment and discount lines entirely', () => {

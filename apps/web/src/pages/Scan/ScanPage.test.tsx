@@ -121,19 +121,22 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('only Product and Receipt are wired: other modes say so and cannot scan', async () => {
-    renderScan({});
-    await userEvent.click(screen.getByRole('button', { name: 'Plate' }));
-    expect(screen.getByRole('button', { name: 'Plate' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByRole('status')).toHaveTextContent(/coming soon/i);
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: 'Choose from photos' }),
-    ).toBeDisabled();
-  });
+  it.each(['Product', 'Receipt', 'Plate', 'Ingredients'])(
+    'has %s wired: no coming-soon notice and the shutter works',
+    async (mode) => {
+      renderScan({});
+      await userEvent.click(screen.getByRole('button', { name: mode }));
+      expect(screen.getByRole('button', { name: mode })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(screen.getByRole('status')).not.toHaveTextContent(/coming soon/i);
+      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+      expect(
+        screen.getByRole('button', { name: 'Choose from photos' }),
+      ).toBeEnabled();
+    },
+  );
 
   it('turns a gallery photo into a proposed line on the Review screen', async () => {
     const calls = renderScan({

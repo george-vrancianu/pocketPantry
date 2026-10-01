@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation } from './catalog';
 import { defaultExpiryDate, type NewBatch, type Unit } from './pantry';
-import type { ProposedLine, ScanMode } from './scan';
+import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
 /**
  * The Review seam. Every Scan Mode ends by calling `startReview` with its
@@ -53,7 +53,7 @@ export type ReviewLine = {
   parentCategoryId: string;
   description: string;
   /** Receipt Scan: left out of the Pantry until the Member re-includes it. Excluded lines are never saved. */
-  excluded: { reason: string | null } | null;
+  excluded: { reason: ExclusionReason } | null;
 };
 
 export function toReviewLine(

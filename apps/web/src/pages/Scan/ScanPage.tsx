@@ -10,6 +10,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES } from '../../lib/scan';
+import { DishPicker } from './components/DishPicker';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
 
@@ -109,6 +110,15 @@ export function ScanPage() {
         <Box sx={{ mt: 1 }}>
           <Alert>{screen.error}</Alert>
         </Box>
+      ) : null}
+
+      {screen.plate.dishes ? (
+        <DishPicker
+          dishes={screen.plate.dishes}
+          disabled={screen.reading}
+          onPick={screen.plate.pick}
+          onRetake={screen.plate.reset}
+        />
       ) : null}
 
       <Box

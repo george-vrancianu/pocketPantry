@@ -1,12 +1,12 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
-import type { ProposedLine } from './proposed-line';
+import type { ExclusionReason, ProposedLine } from './proposed-line';
 
 type PantryUnit = (typeof ingredientUnit.enumValues)[number];
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
-/** The Catalog Ingredient for a line, and whether it was guessed by name search rather than named by the model. */
+/** The Catalog Ingredient for a line, and whether it was found by exact name lookup rather than named by the model. */
 export type ResolvedMatch = { match: CatalogSearchResult; guessed: boolean };
 
 /** Lines that are part of the receipt's arithmetic, never worth showing on Review. */
@@ -18,7 +18,21 @@ const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([
   'discount',
 ]);
 
+/** The Unmatched raw name limit of the Batch bulk create. */
 const MAX_RAW_NAME = 100;
+
+/** From what kind of line it is, never from the model's wording. */
+function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
+  switch (lineType) {
+    case 'fee':
+    case 'deposit':
+      return lineType;
+    case 'product':
+      return 'not_food';
+    default:
+      return 'other';
+  }
+}
 
 /** Receipt units onto the Pantry's units; anything else yields no quantity. */
 function toPantryQuantity(
@@ -57,9 +71,9 @@ function toPantryQuantity(
  * A Receipt Scan result as proposed lines for the Review screen, in receipt
  * order. Arithmetic lines (totals, tax, payment, discounts) are dropped; other
  * lines the Scan left out of the Pantry stay, marked `excluded` with their
- * reason, so the Member can re-include them. `resolve` supplies the validated
+ * reason code, so the Member can re-include them. `resolve` supplies the validated
  * Catalog Ingredient for a line. A model Match below `threshold` is dropped,
- * which makes the line Unmatched; a guessed Match is kept but flagged.
+ * which makes the line Unmatched; a Match found by exact name is kept.
  */
 export function receiptProposedLines(
   result: ReceiptScanResult,
@@ -80,7 +94,7 @@ export function receiptProposedLines(
           unit: null,
           expiryDate: null,
           productDescription: null,
-          excluded: { reason: line.exclusionReason },
+          excluded: { reason: exclusionReason(line.lineType) },
         };
       }
       const resolved = resolve(line);
@@ -88,17 +102,19 @@ export function receiptProposedLines(
         resolved !== null &&
         (resolved.guessed || line.matchConfidence >= threshold);
       return {
-        name: line.fallbackIngredientName ?? line.sourceText,
+        name: (line.fallbackIngredientName ?? line.sourceText).slice(
+          0,
+          MAX_RAW_NAME,
+        ),
         match: confident ? resolved.match : null,
-        // A guess has no model confidence; it sits at the threshold and is flagged.
+        // An exact name hit has no model confidence; it sits at the threshold.
         matchConfidence: !confident
           ? 0
           : resolved.guessed
             ? threshold
             : line.matchConfidence,
         unmatched: !confident,
-        lowConfidence:
-          line.confidence < threshold || (confident && resolved.guessed),
+        lowConfidence: line.confidence < threshold,
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,

@@ -28,10 +28,13 @@
     "cap_reached": "Ai folosit toate cele {{cap}} scanări de azi. Încearcă mâine sau adaugă produsele manual.",
     "image_invalid": "Fișierul nu este o fotografie pe care o putem citi. Folosește o imagine JPEG, PNG sau WebP.",
     "image_too_large": "Fotografia este prea mare. Încearcă una mai mică.",
+    "too_many_items": "Am găsit mai mult de {{max}} produse. Fotografiază mai puține odată.",
+    "nothing_found": "Nu am găsit niciun ingredient. Așază-le separat, la lumină bună, și încearcă din nou.",
     "provider_unavailable": "Scanarea nu este disponibilă acum. Încearcă din nou peste puțin timp.",
     "provider_refused": "Fotografia nu a putut fi procesată. Încearcă o poză mai clară a produsului.",
     "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
     "result_invalid": "Nu am putut citi fotografia. Încearcă una mai clară.",
+    "plate_token_invalid": "Lista de preparate a expirat. Fă din nou poza.",
     "not_configured": "Scanarea nu este încă configurată pe acest server."
   },
   "shopping": {
@@ -69,5 +72,10 @@
     "cannot_transfer_to_self": "Ești deja Proprietarul.",
     "member_not_found": "Această persoană nu este Membru al Familiei tale.",
     "concurrent_change": "Familia s-a schimbat în timp ce făceai asta. Încearcă din nou."
+  },
+  "unmatched": {
+    "name_taken": "Acest nume aparține deja altui Ingredient. Rezolvă-l către acel Ingredient sau redenumește-l mai întâi pe celălalt.",
+    "not_found": "Numele nu mai este în coadă. Poate că cineva l-a rezolvat deja.",
+    "concurrent_change": "Listele s-au schimbat în timpul rezolvării. Încearcă din nou."
   }
 }

@@ -29,7 +29,7 @@ type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 type Executor = Database | Tx;
 
-function hasPgCode(error: unknown, code: string): boolean {
+export function hasPgCode(error: unknown, code: string): boolean {
   let current: unknown = error;
   while (current && typeof current === 'object') {
     if ('code' in current && current.code === code) return true;
@@ -306,16 +306,19 @@ export class AdminCatalogService {
   // Ingredients
 
   createIngredient(input: IngredientCreate) {
-    return this.write(async (tx) => {
-      await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
-      const id = randomUUID();
-      const [row] = await tx
-        .insert(ingredients)
-        .values({ id, ...input, normalizedName: normalizeName(input.name) })
-        .returning();
-      await this.addCanonicalName(tx, 'ingredient', id, input.name);
-      return row;
-    });
+    return this.write((tx) => this.createIngredientIn(tx, input));
+  }
+
+  /** Creates an Ingredient with its English name inside the caller's transaction. */
+  async createIngredientIn(tx: Tx, input: IngredientCreate) {
+    await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
+    const id = randomUUID();
+    const [row] = await tx
+      .insert(ingredients)
+      .values({ id, ...input, normalizedName: normalizeName(input.name) })
+      .returning();
+    await this.addCanonicalName(tx, 'ingredient', id, input.name);
+    return row;
   }
 
   updateIngredient(id: string, input: IngredientUpdate) {
