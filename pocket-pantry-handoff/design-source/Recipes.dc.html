@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pocket Pantry — Recipes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&amp;family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2E6A4D}a:hover{color:#1F4D37}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; box-sizing: border-box; background: #EEF1EA; font-family: 'DM Sans', sans-serif; color: #17231C">
+
+<header style="display: flex; align-items: center; gap: 12px; padding: 24px 20px 14px">
+<a href="Main.dc.html" aria-label="Home" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; border: 1px solid #DCE3D8; color: #17231C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1z"></path></svg></a>
+<h1 style="margin: 0; flex-grow: 1; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Recipes</h1>
+<button type="button" aria-label="Search recipes" style="display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 22px; border: 1px solid #DCE3D8; background: #FFFFFF; color: #17231C; cursor: pointer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="m20 20-4.5-4.5"></path></svg></button>
+</header>
+
+<div style="margin: 0 20px; padding: 4px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: #E2E8DD; border-radius: 16px">
+<button type="button" aria-pressed="true" style="height: 40px; border: 0; border-radius: 12px; background: #FFFFFF; color: #17231C; font-family: inherit; font-size: 14px; font-weight: 700; box-shadow: 0 1px 2px rgba(23,35,28,0.08)">Cook now</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: 0; border-radius: 12px; background: transparent; color: #55635A; font-family: inherit; font-size: 14px; font-weight: 600">Saved</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: 0; border-radius: 12px; background: transparent; color: #55635A; font-family: inherit; font-size: 14px; font-weight: 600">Explore</button>
+</div>
+
+<p style="margin: 14px 24px 10px; font-size: 13px; color: #55635A">Matched to what's in your pantry</p>
+
+<article style="margin: 0 20px; background: #FFFFFF; border: 1px solid #DCE3D8; border-radius: 22px; overflow: hidden">
+<div style="height: 148px; position: relative; background: #DDEBE2; color: #2E6A4D; display: flex; align-items: center; justify-content: center">
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Recipe photo placeholder"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4.5"></circle></svg>
+<span style="position: absolute; left: 12px; top: 12px; font-size: 12px; font-weight: 700; background: #2E6A4D; color: #FFFFFF; padding: 5px 10px; border-radius: 999px">All 8 ingredients</span>
+<span style="position: absolute; right: 12px; top: 12px; font-size: 12px; font-weight: 700; background: #FBE6DA; color: #B54A17; padding: 5px 10px; border-radius: 999px">Uses 3 expiring</span>
+</div>
+<div style="padding: 14px 16px 16px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Spinach &amp; feta orzo</h2>
+<p style="margin: 4px 0 0; font-size: 13px; color: #55635A">25 min · 2 servings · vegetarian</p>
+</div>
+</article>
+
+<ul style="list-style: none; margin: 12px 20px 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #FFFFFF; border: 1px solid #DCE3D8; border-radius: 18px">
+<div style="flex-shrink: 0; width: 64px; height: 64px; border-radius: 14px; background: #F6EBC8; color: #6E5200; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4.5"></circle></svg></div>
+<div style="flex-grow: 1; min-width: 0">
+<p style="margin: 0; font-size: 15px; font-weight: 700">Chickpea &amp; tomato curry</p>
+<p style="margin: 2px 0 8px; font-size: 12px; color: #55635A">35 min · missing coriander</p>
+<div style="display: flex; align-items: center; gap: 8px"><div style="flex-grow: 1; height: 6px; border-radius: 3px; background: #EEF1EA; overflow: hidden"><div style="width: 90%; height: 6px; background: #2E6A4D"></div></div><span style="font-size: 12px; font-weight: 700; color: #2E6A4D">9/10</span></div>
+</div>
+</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #FFFFFF; border: 1px solid #DCE3D8; border-radius: 18px">
+<div style="flex-shrink: 0; width: 64px; height: 64px; border-radius: 14px; background: #FBE6DA; color: #B54A17; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4.5"></circle></svg></div>
+<div style="flex-grow: 1; min-width: 0">
+<p style="margin: 0; font-size: 15px; font-weight: 700">Lemon chicken traybake</p>
+<p style="margin: 2px 0 8px; font-size: 12px; color: #55635A">50 min · missing lemons, thyme</p>
+<div style="display: flex; align-items: center; gap: 8px"><div style="flex-grow: 1; height: 6px; border-radius: 3px; background: #EEF1EA; overflow: hidden"><div style="width: 75%; height: 6px; background: #2E6A4D"></div></div><span style="font-size: 12px; font-weight: 700; color: #2E6A4D">6/8</span></div>
+</div>
+</li>
+<li style="display: flex; gap: 12px; align-items: center; padding: 10px; background: #FFFFFF; border: 1px solid #DCE3D8; border-radius: 18px">
+<div style="flex-shrink: 0; width: 64px; height: 64px; border-radius: 14px; background: #DDEBE2; color: #2E6A4D; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4.5"></circle></svg></div>
+<div style="flex-grow: 1; min-width: 0">
+<p style="margin: 0; font-size: 15px; font-weight: 700">Yogurt flatbreads</p>
+<p style="margin: 2px 0 8px; font-size: 12px; color: #55635A">20 min · you have everything</p>
+<div style="display: flex; align-items: center; gap: 8px"><div style="flex-grow: 1; height: 6px; border-radius: 3px; background: #EEF1EA; overflow: hidden"><div style="width: 100%; height: 6px; background: #2E6A4D"></div></div><span style="font-size: 12px; font-weight: 700; color: #2E6A4D">5/5</span></div>
+</div>
+</li>
+</ul>
+
+<nav aria-label="Main" style="position: absolute; left: 16px; right: 16px; bottom: 16px; height: 76px; box-sizing: border-box; padding: 8px; background: rgba(255,255,255,0.94); border: 1px solid #DCE3D8; border-radius: 26px; box-shadow: 0 10px 30px rgba(23,35,28,0.12); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+<a href="Shopping.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #55635A; font-size: 11px; font-weight: 600"><span style="display: flex; align-items: center; justify-content: center; width: 52px; height: 32px; border-radius: 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8z"></path><path d="M9 8V7a3 3 0 0 1 6 0v1"></path></svg></span><span>Shopping</span></a>
+<a href="Pantry.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #55635A; font-size: 11px; font-weight: 600"><span style="display: flex; align-items: center; justify-content: center; width: 52px; height: 32px; border-radius: 16px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8v3H8z"></path><path d="M7 6h10a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1z"></path><path d="M6 11h12"></path></svg></span><span>Pantry</span></a>
+<a href="Recipes.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #2E6A4D; font-size: 11px; font-weight: 700"><span style="display: flex; align-items: center; justify-content: center; width: 52px; height: 32px; border-radius: 16px; background: #DDEBE2"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"></path><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"></path><path d="M9 7.5h6"></path></svg></span><span>Recipes</span></a>
+<a href="Scan.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-decoration: none; color: #17231C; font-size: 11px; font-weight: 700"><span style="display: flex; align-items: center; justify-content: center; width: 52px; height: 32px; border-radius: 16px; background: #2E6A4D; color: #FFFFFF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7H8l1.6-2h4.8L16 7h2.5A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"></path><circle cx="12" cy="12.5" r="3.5"></circle></svg></span><span>Scan</span></a>
+</nav>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

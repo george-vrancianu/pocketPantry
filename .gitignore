@@ -1,0 +1,19 @@
+# OS / editor
+*:Zone.Identifier
+.DS_Store
+Thumbs.db
+
+# dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# scratch
+.scratch/
