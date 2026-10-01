@@ -175,6 +175,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 
 - A Batch belongs to a Family and an Ingredient and has quantity, unit, Location, expiry date (date only, nullable), Product Description, an Unmatched flag with the raw name, and a created-at timestamp. One row per purchase; nothing is merged.
 - Pantry read endpoints return Batches grouped by Ingredient with totals and soonest expiry, and support filtering by Location and searching by localised name.
+  - Wave 1 deviation: the roll-up and search run client-side in `apps/web/src/lib/pantry.ts` and the API returns Batches. See [ADR 0002](adr/0002-pantry-rollup-and-search-client-side.md).
 - Expiring Soon is computed from the Family's Stale Threshold at read time, not stored.
 
 ### Scanning
@@ -221,7 +222,7 @@ A good test exercises external behaviour through a stable seam and would survive
 
 Seams, highest first:
 
-- **API HTTP seam.** Integration tests boot the NestJS app against a test Postgres, sign in as a seeded Member, and call endpoints. This is the primary seam for Family rules, Pantry grouping, Shopping merging and Finish Shopping, Scan confirmation, Scan Cap, and admin resolution of Unmatched names. The AI provider is replaced at the structured-output service boundary with a fake returning canned structured results.
+- **API HTTP seam.** Integration tests boot the NestJS app against a test Postgres, sign in as a seeded Member, and call endpoints. This is the primary seam for Family rules, Pantry grouping, Shopping merging and Finish Shopping, Scan confirmation, Scan Cap, and admin resolution of Unmatched names. In wave 1 Pantry grouping is the exception: it is client-side and covered by unit and component tests (see [ADR 0002](adr/0002-pantry-rollup-and-search-client-side.md)). The AI provider is replaced at the structured-output service boundary with a fake returning canned structured results.
 - **Scan service seam.** The ported scan services keep their retzetar specs, which exercise schema parsing and catalog validation with a fake provider. New tests are added for the matching stage one and for Ingredients and Plate, which retzetar left untested.
 - **Web page seam.** Component tests render a page with the API client mocked at the network boundary and assert on what the Member sees and can do: Review screen editing, Finish Shopping review, Customise reorder, locale switching. No tests for the UI package atoms beyond what Storybook will later cover.
 
