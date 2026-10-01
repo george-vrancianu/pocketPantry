@@ -120,7 +120,9 @@ export function ScanPage() {
               })
             : t('reading')
           : null}
-        {screen.mode === 'receipt' && screen.receiptSections.full
+        {screen.mode === 'receipt' &&
+        screen.receiptSections.full &&
+        !screen.receiptSections.deciding
           ? t('sections.full', { max: MAX_RECEIPT_SECTIONS })
           : null}
         {!screen.wired ? t('comingSoon', { mode: modeLabel }) : null}
@@ -163,6 +165,7 @@ export function ScanPage() {
               component="button"
               type="button"
               aria-pressed={active}
+              disabled={screen.modesDisabled}
               onClick={() => screen.setMode(mode)}
               sx={{
                 height: 40,
@@ -173,6 +176,7 @@ export function ScanPage() {
                 fontSize: 13,
                 fontWeight: active ? 700 : 600,
                 cursor: 'pointer',
+                '&:disabled': { opacity: 0.5, cursor: 'default' },
                 backgroundColor: active ? '#FFFFFF' : 'rgba(255,255,255,0.10)',
                 color: active ? tokens.color.ink : '#D5DED8',
               }}

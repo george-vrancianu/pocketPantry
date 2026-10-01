@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AppDock } from '../../components/AppDock';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -54,11 +55,15 @@ function setup(responses: Array<() => Response>) {
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
-    <Routes>
-      <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
-      <Route path="/" element={<p>home</p>} />
-    </Routes>,
+    <>
+      <Routes>
+        <Route path="/scan" element={<ScanPage />} />
+        <Route path="/scan/review" element={<ReviewPage />} />
+        <Route path="/pantry" element={<p>pantry page</p>} />
+        <Route path="/" element={<p>home</p>} />
+      </Routes>
+      <AppDock variant="dark" activeKey="scan" />
+    </>,
     { route: '/scan?mode=receipt' },
   );
   return { calls };
@@ -212,6 +217,50 @@ describe('Receipt Scan in sections', () => {
     expect(shutter()).toBeDisabled();
   });
 
+  it('does not announce the limit while the 10th result is still on screen', async () => {
+    setup(Array.from({ length: 10 }, (_, i) => () => lines(`Item ${i}`)));
+    for (let i = 0; i < 9; i++) {
+      await shoot();
+      await screen.findByText(`Section ${i + 1}: 1 line found`);
+      await click('Next photo');
+    }
+    await shoot();
+    await screen.findByText('Section 10: 1 line found');
+    expect(screen.queryByText(/limit of 10 sections/)).not.toBeInTheDocument();
+    await click('Next photo');
+    expect(screen.getByText(/limit of 10 sections/)).toBeInTheDocument();
+  });
+
+  it('sends one request for a double-tapped shutter', async () => {
+    const { calls } = setup([() => lines('Eggs'), () => lines('Rice')]);
+    const button = shutter();
+    await Promise.all([userEvent.click(button), userEvent.click(button)]);
+    await screen.findByText('Section 1: 1 line found');
+    expect(
+      calls.filter((c) => c.key === 'POST /api/scan/receipt'),
+    ).toHaveLength(1);
+  });
+
+  it('disables the Scan Mode buttons while a section is being read', async () => {
+    let release: (r: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => (release = resolve));
+    const { fetchMock } = stubApi({
+      'GET /api/catalog/parents': () => Response.json({ parents: [] }),
+    });
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes('/scan/receipt')
+        ? pending
+        : fetchMock(input, init),
+    );
+    renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
+    await shoot();
+    await screen.findByText('Reading section 1…');
+    expect(screen.getByRole('button', { name: 'Product' })).toBeDisabled();
+    release(lines('Eggs'));
+    await screen.findByText('Section 1: 1 line found');
+    expect(screen.getByRole('button', { name: 'Product' })).toBeEnabled();
+  });
+
   it('reports a reached Scan Cap and lets the Member finish what was read', async () => {
     setup([() => lines('Eggs'), capReached]);
     await shoot();
@@ -253,6 +302,27 @@ describe('Receipt Scan in sections', () => {
           'Eggs',
         ),
       ).toBeInTheDocument();
+    });
+
+    it('asks before the Dock leaves the screen and stays when declined', async () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      setup([() => lines('Eggs')]);
+      await shoot();
+      await screen.findByText('Section 1: 1 line found');
+      await userEvent.click(screen.getByRole('link', { name: 'Pantry' }));
+      expect(confirm).toHaveBeenCalled();
+      expect(screen.queryByText('pantry page')).not.toBeInTheDocument();
+      confirm.mockReturnValue(true);
+      await userEvent.click(screen.getByRole('link', { name: 'Pantry' }));
+      expect(await screen.findByText('pantry page')).toBeInTheDocument();
+    });
+
+    it('lets the Dock leave without asking when nothing has been scanned', async () => {
+      const confirm = vi.spyOn(window, 'confirm');
+      setup([]);
+      await userEvent.click(screen.getByRole('link', { name: 'Pantry' }));
+      expect(await screen.findByText('pantry page')).toBeInTheDocument();
+      expect(confirm).not.toHaveBeenCalled();
     });
 
     it('does not ask when nothing has been scanned', async () => {

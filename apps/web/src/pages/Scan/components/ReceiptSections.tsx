@@ -112,7 +112,7 @@ export function ReceiptSections({ batch, onFinish }: Props) {
                 })}
               </Typography>
               {section.lines.length === 0 ? (
-                <Alert>{t('sections.empty')}</Alert>
+                <Alert severity="warning">{t('sections.empty')}</Alert>
               ) : (
                 <Box
                   component="ul"

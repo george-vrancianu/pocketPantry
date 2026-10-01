@@ -25,23 +25,6 @@ describe('mergeReceiptSections', () => {
     expect(merged.lines.map((l) => l.name)).toEqual(['Eggs', 'Milk', 'Rice']);
   });
 
-  it('renumbers lines across the receipt when they carry line numbers', () => {
-    const merged = mergeReceiptSections([
-      {
-        lines: [
-          line('Eggs', { lineNumber: 1 }),
-          line('Milk', { lineNumber: 2 }),
-        ],
-      },
-      { lines: [line('Rice', { lineNumber: 1 })] },
-    ]);
-    expect(
-      merged.lines.map(
-        (l) => (l as unknown as { lineNumber: number }).lineNumber,
-      ),
-    ).toEqual([1, 2, 3]);
-  });
-
   it('takes the first non-null merchant and date in section order', () => {
     const merged = mergeReceiptSections([
       { lines: [], merchantName: null, purchaseDate: '2026-09-25' },

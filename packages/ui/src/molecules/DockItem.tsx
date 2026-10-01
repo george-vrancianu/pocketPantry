@@ -1,6 +1,6 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { tokens } from '../theme/tokens';
 
 export type DockVariant = 'light' | 'dark';
@@ -13,6 +13,8 @@ export type DockItemProps = {
   /** Always-filled item (Scan). */
   emphasis?: boolean;
   variant?: DockVariant;
+  /** Runs before navigating; call `preventDefault()` to stay. */
+  onNavigate?: (event: MouseEvent<HTMLElement>) => void;
 };
 
 export function DockItem({
@@ -22,6 +24,7 @@ export function DockItem({
   active = false,
   emphasis = false,
   variant = 'light',
+  onNavigate,
 }: DockItemProps) {
   const { color } = tokens;
   const dark = variant === 'dark';
@@ -47,6 +50,7 @@ export function DockItem({
   return (
     <ButtonBase
       href={href}
+      onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       sx={{
         flexDirection: 'column',

@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
+import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useReceiptSections } from './useReceiptSections';
@@ -44,7 +45,10 @@ export function useScanScreen() {
   const sectionCount = receiptSections.sections.length;
   useEffect(() => {
     if (sectionCount === 0) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = ''; // older Safari
+    };
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [sectionCount]);
@@ -97,9 +101,17 @@ export function useScanScreen() {
     });
   };
 
+  // A double tap on the shutter must not send the same section twice.
+  const shooting = useRef(false);
   const shoot = async () => {
-    const frame = await camera.capture();
-    if (frame) await scanImage(frame, 'camera');
+    if (shooting.current) return;
+    shooting.current = true;
+    try {
+      const frame = await camera.capture();
+      if (frame) await scanImage(frame, 'camera');
+    } finally {
+      shooting.current = false;
+    }
   };
 
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -111,6 +123,15 @@ export function useScanScreen() {
   /** Asks before throwing away Receipt Sections that have not reached Review. */
   const confirmDiscard = () =>
     !sectionsInProgress || window.confirm(t('scan:sections.discardConfirm'));
+
+  // The Dock goes through this guard. The browser/OS back button stays unguarded:
+  // the app uses BrowserRouter, which has no `useBlocker`.
+  const confirmDiscardRef = useRef(confirmDiscard);
+  confirmDiscardRef.current = confirmDiscard;
+  useEffect(() => {
+    if (sectionCount === 0) return;
+    return registerLeaveGuard(() => confirmDiscardRef.current());
+  }, [sectionCount]);
 
   /** Merge the sections and go to Review, like a single photo does. */
   const finishSections = () => {
@@ -142,6 +163,8 @@ export function useScanScreen() {
     camera,
     flash,
     reading,
+    /** Switching Scan Mode would reset the batch under an in-flight section. */
+    modesDisabled: receiptSections.pending,
     controlsDisabled: busy,
     fileInput,
     error,

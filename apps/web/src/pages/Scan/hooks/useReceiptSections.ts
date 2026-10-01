@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useReceiptScan } from '../../../lib/receiptScan';
 import {
   MAX_RECEIPT_SECTIONS,
@@ -30,6 +30,9 @@ export function useReceiptSections(locale: string) {
   } | null>(null);
   const [readingIndex, setReadingIndex] = useState<number | null>(null);
 
+  /** Bumped by `reset()`: a response for an older batch is thrown away. */
+  const generation = useRef(0);
+
   const target = failed?.index ?? retaking ?? sections.length;
   const full = target >= MAX_RECEIPT_SECTIONS;
 
@@ -37,10 +40,12 @@ export function useReceiptSections(locale: string) {
   const submit = async (image: string) => {
     if (full) return;
     const index = target;
+    const started = generation.current;
     setReadingIndex(index);
     setSelected(null);
     try {
       const result = await scan.mutateAsync(image);
+      if (started !== generation.current) return;
       setSections((current) => {
         const next = [...current];
         next[index] = { ...result, thumbnail: image };
@@ -50,9 +55,9 @@ export function useReceiptSections(locale: string) {
       setRetaking(null);
       setSelected(index);
     } catch (error) {
-      setFailed({ index, error });
+      if (started === generation.current) setFailed({ index, error });
     } finally {
-      setReadingIndex(null);
+      if (started === generation.current) setReadingIndex(null);
     }
   };
 
@@ -94,6 +99,8 @@ export function useReceiptSections(locale: string) {
       setFailed(null);
     },
     reset: () => {
+      generation.current += 1;
+      setReadingIndex(null);
       setSections([]);
       setSelected(null);
       setRetaking(null);
