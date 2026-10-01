@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { fitWithin, guideCropRect, receiptOutputSize } from './image';
+import {
+  fitWithin,
+  guideCropRect,
+  receiptOutputSize,
+  rotatedBounds,
+  rotatedCropTransform,
+} from './image';
 import {
   RECEIPT_GUIDE_ASPECT,
   RECEIPT_GUIDE_HEIGHT_FRACTION,
@@ -87,5 +93,47 @@ describe('receipt guide with the shipped constants', () => {
     const { rect, out } = crop(1920, 1080);
     expect(out.width).toBe(rect.width);
     expect(out.height / out.width).toBeCloseTo(3, 1);
+  });
+});
+
+describe('rotatedBounds', () => {
+  it('is the image itself at 0 and 180 degrees, and swaps sides at 90', () => {
+    expect(rotatedBounds(400, 300, 0)).toEqual({ width: 400, height: 300 });
+    const quarter = rotatedBounds(400, 300, 90);
+    expect(quarter.width).toBeCloseTo(300);
+    expect(quarter.height).toBeCloseTo(400);
+    const half = rotatedBounds(400, 300, 180);
+    expect(half.width).toBeCloseTo(400);
+    expect(half.height).toBeCloseTo(300);
+  });
+
+  it('grows to hold a slightly tilted image', () => {
+    const tilted = rotatedBounds(400, 300, 10);
+    expect(tilted.width).toBeGreaterThan(400);
+    expect(tilted.height).toBeGreaterThan(300);
+  });
+});
+
+describe('rotatedCropTransform', () => {
+  const image = { width: 400, height: 300 };
+  const crop = { x: 100, y: 50, width: 100, height: 300 };
+
+  it('maps an unrotated crop to a plain translate', () => {
+    const [a, b, c, d, e, f] = rotatedCropTransform(image, crop, 0, 1);
+    expect([a, b, c + 0, d, e, f]).toEqual([1, 0, 0, 1, 100, 100]);
+  });
+
+  it('scales the output', () => {
+    const [a, b, c, d, e, f] = rotatedCropTransform(image, crop, 0, 0.5);
+    expect([a, b, c + 0, d, e, f]).toEqual([0.5, 0, 0, 0.5, 50, 50]);
+  });
+
+  it('centres the source on the rotated bounds, relative to the crop', () => {
+    // Rotated 90 degrees the bounds are 300 x 400, so the centre is (150, 200).
+    const rotated = { x: 50, y: 100, width: 100, height: 300 };
+    const [a, b, c, d, e, f] = rotatedCropTransform(image, rotated, 90, 1);
+    expect([a, b, c, d].map((n) => Math.round(n) + 0)).toEqual([0, 1, -1, 0]);
+    expect(e).toBeCloseTo(100);
+    expect(f).toBeCloseTo(100);
   });
 });

@@ -5,7 +5,13 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
-import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
+import { cropToReceiptArea } from '../../../lib/image';
+import {
+  IMAGE_PREPARATION,
+  needsCropStep,
+  type ImageOrigin,
+} from '../../../lib/scanImage';
+import type { ReceiptCrop } from '../components/ReceiptCropper';
 import { useReceiptScan } from '../../../lib/receiptScan';
 import { usePlateScan } from './usePlateScan';
 import {
@@ -50,13 +56,21 @@ export function useScanScreen() {
   const reading = resizing || (modeScan?.isPending ?? false) || plate.pending;
   const busy = reading || !wired;
 
-  /** A camera frame or gallery file: resize it, scan it, and land on Review. */
-  const scanImage = async (source: Blob, origin: ImageOrigin) => {
+  // A receipt photo from the gallery waiting for the Member to frame it in the crop step.
+  const [cropping, setCropping] = useState<Blob | null>(null);
+
+  /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
+  const scanImage = async (
+    source: Blob,
+    origin: ImageOrigin,
+    prepare: () => Promise<string> = () =>
+      IMAGE_PREPARATION[mode](source, origin),
+  ) => {
     setLocalError(null);
     setResizing(true);
     let image: string;
     try {
-      image = await IMAGE_PREPARATION[mode](source, origin);
+      image = await prepare();
     } catch {
       setLocalError('scan.image_invalid');
       return;
@@ -87,7 +101,18 @@ export function useScanScreen() {
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (file) void scanImage(file, 'gallery');
+    if (!file) return;
+    if (needsCropStep(mode, 'gallery')) setCropping(file);
+    else void scanImage(file, 'gallery');
+  };
+
+  const confirmCrop = ({ area, rotation }: ReceiptCrop) => {
+    const photo = cropping;
+    setCropping(null);
+    if (photo)
+      void scanImage(photo, 'gallery', () =>
+        cropToReceiptArea(photo, area, rotation),
+      );
   };
 
   const toggleFlash = async () => {
@@ -116,11 +141,15 @@ export function useScanScreen() {
       Object.values(modeScans).forEach((scan) => scan.reset());
       plate.reset();
       setLocalError(null);
+      setCropping(null);
       setParams({ mode: next }, { replace: true });
     },
     plate,
     shoot,
     pickFile,
+    cropping,
+    confirmCrop,
+    cancelCrop: () => setCropping(null),
     openGallery: () => fileInput.current?.click(),
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.

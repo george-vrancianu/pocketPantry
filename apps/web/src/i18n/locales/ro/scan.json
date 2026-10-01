@@ -9,6 +9,15 @@
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
   "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor, a farfuriei și a ingredientelor funcționează acum.",
+  "crop": {
+    "title": "Decupează bonul",
+    "instruction": "Trage și mărește imaginea astfel încât tot bonul să încapă în cadru.",
+    "fine": "Îndreaptă: {{degrees}}°",
+    "rotateLeft": "Rotește la stânga",
+    "rotateRight": "Rotește la dreapta",
+    "cancel": "Anulează",
+    "confirm": "Folosește fotografia"
+  },
   "plate": {
     "pickTitle": "Ce preparat este?",
     "option": "{{title}}, {{percent}}% probabil",

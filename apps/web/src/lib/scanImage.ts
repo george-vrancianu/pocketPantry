@@ -15,10 +15,17 @@ const resizeOnly: ImagePreparation = (source) => resizeImage(source);
 /** How each Scan Mode prepares its image before sending it. */
 export const IMAGE_PREPARATION: Record<ScanMode, ImagePreparation> = {
   product: resizeOnly,
-  // A camera frame is cropped to the viewfinder's guide; gallery files get the usual resize
-  // until they get a crop UI of their own.
+  // A camera frame is cropped to the viewfinder's guide. A gallery file is cropped by the
+  // Member in the crop step instead (see needsCropStep), so it never comes through here.
   receipt: (source, origin) =>
-    origin === 'camera' ? cropToReceiptGuide(source) : resizeImage(source),
+    origin === 'camera'
+      ? cropToReceiptGuide(source)
+      : Promise.reject(new Error('gallery receipts go through the crop step')),
   plate: resizeOnly,
   ingredients: resizeOnly,
 };
+
+/** Whether a photo must go through the Member's crop step before it is prepared and sent. */
+export function needsCropStep(mode: ScanMode, origin: ImageOrigin): boolean {
+  return mode === 'receipt' && origin === 'gallery';
+}
