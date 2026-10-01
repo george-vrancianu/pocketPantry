@@ -1,9 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { seedCatalog } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  aisles,
   catalogTranslations,
   ingredients,
   leafCategories,
@@ -101,6 +103,18 @@ describe('Catalog (integration)', () => {
       expect(parmesan.name).toBe('Parmezan');
       expect(parmesan.leafCategory.name).toBe('Brânzeturi tari');
       expect(parmesan.parentCategory.name).toBe('Lactate');
+      expect(parmesan.parentCategory.aisle).toBe('Lactate și ouă');
+    });
+
+    it('localises the Aisle name, with English fallback', async () => {
+      const [ro] = await search('parsley', 'ro');
+      expect(ro.parentCategory.aisle).toBe('Legume și fructe');
+      const [en] = await search('parsley', 'en');
+      expect(en.parentCategory.aisle).toBe('Fruit & veg');
+      // Herbs and Produce share one Aisle.
+      expect((await search('tomato', 'en'))[0].parentCategory.aisle).toBe(
+        en.parentCategory.aisle,
+      );
     });
 
     it('defaults to English when no locale is given', async () => {
@@ -259,6 +273,7 @@ describe('Catalog (integration)', () => {
 
   describe('seed', () => {
     const snapshot = async () => ({
+      aisles: await database.select().from(aisles).orderBy(aisles.id),
       parents: await database
         .select()
         .from(parentCategories)
@@ -282,6 +297,25 @@ describe('Catalog (integration)', () => {
       await seedCatalog(database);
       await seedCatalog(database);
       expect(await snapshot()).toEqual(before);
+    });
+
+    it('gives Parent Categories that share an Aisle one shared sort order', async () => {
+      const rows = await database
+        .select({
+          parent: parentCategories.name,
+          aisleId: aisles.id,
+          sortOrder: aisles.sortOrder,
+        })
+        .from(parentCategories)
+        .innerJoin(aisles, eq(parentCategories.aisleId, aisles.id));
+      const produce = rows.find((r) => r.parent === 'Produce');
+      const herbs = rows.find((r) => r.parent === 'Herbs');
+      expect(produce?.aisleId).toBe(herbs?.aisleId);
+      expect(produce?.sortOrder).toBe(herbs?.sortOrder);
+      const orders = (await database.select().from(aisles)).map(
+        (a) => a.sortOrder,
+      );
+      expect(new Set(orders).size).toBe(orders.length);
     });
 
     it('loads 18 Parent Categories with Aisles and an Other Leaf under each', async () => {

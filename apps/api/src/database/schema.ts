@@ -10,7 +10,6 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -143,12 +142,30 @@ export const ingredientUnit = pgEnum('ingredient_unit', [
 ]);
 
 export const catalogEntityType = pgEnum('catalog_entity_type', [
+  'aisle',
   'parent_category',
   'leaf_category',
   'ingredient',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
+
+// An Aisle is an ordered shop section; several Parent Categories may share one.
+// `name` is the canonical English name; display names live in catalog_translations.
+export const aisles = pgTable(
+  'aisles',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('aisles_normalized_name_idx').on(table.normalizedName),
+    uniqueIndex('aisles_sort_order_idx').on(table.sortOrder),
+  ],
+);
 
 // `name` is the canonical English name; `normalizedName` is its matching key.
 // A Parent Category carries the Aisle and its shop-walk sort order.
@@ -158,8 +175,9 @@ export const parentCategories = pgTable(
     id: uuid('id').primaryKey(),
     name: text('name').notNull(),
     normalizedName: text('normalized_name').notNull(),
-    aisle: text('aisle').notNull(),
-    aisleSortOrder: integer('aisle_sort_order').notNull(),
+    aisleId: uuid('aisle_id')
+      .notNull()
+      .references(() => aisles.id),
     defaultExpiryDays: integer('default_expiry_days'),
     defaultLocation: storageLocation('default_location'),
     ...timestamps,
@@ -168,6 +186,7 @@ export const parentCategories = pgTable(
     uniqueIndex('parent_categories_normalized_name_idx').on(
       table.normalizedName,
     ),
+    index('parent_categories_aisle_idx').on(table.aisleId),
   ],
 );
 

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Database } from '../../database/database.types';
 import {
+  aisles,
   catalogTranslations,
   ingredients,
   leafCategories,
@@ -8,6 +9,7 @@ import {
 } from '../../database/schema';
 import { normalizeName } from '../normalize';
 import {
+  SEED_AISLES,
   SEED_INGREDIENTS,
   SEED_LEAVES,
   SEED_PARENTS,
@@ -30,6 +32,7 @@ export function stableId(key: string): string {
 }
 
 export const seedId = {
+  aisle: (slug: string) => stableId(`aisle:${slug}`),
   parent: (slug: string) => stableId(`parent:${slug}`),
   leaf: (slug: string) => stableId(`leaf:${slug}`),
   ingredient: (slug: string) => stableId(`ingredient:${slug}`),
@@ -74,14 +77,25 @@ function translationRows(
 export async function seedCatalog(database: Database): Promise<void> {
   await database.transaction(async (tx) => {
     await tx
+      .insert(aisles)
+      .values(
+        SEED_AISLES.map((aisle) => ({
+          id: seedId.aisle(aisle.slug),
+          name: aisle.en,
+          normalizedName: normalizeName(aisle.en),
+          sortOrder: aisle.sortOrder,
+        })),
+      )
+      .onConflictDoNothing({ target: aisles.id });
+
+    await tx
       .insert(parentCategories)
       .values(
         SEED_PARENTS.map((parent) => ({
           id: seedId.parent(parent.slug),
           name: parent.en,
           normalizedName: normalizeName(parent.en),
-          aisle: parent.aisle,
-          aisleSortOrder: parent.aisleSortOrder,
+          aisleId: seedId.aisle(parent.aisle),
           defaultExpiryDays: parent.defaultExpiryDays,
           defaultLocation: parent.defaultLocation,
         })),
@@ -116,6 +130,9 @@ export async function seedCatalog(database: Database): Promise<void> {
       .onConflictDoNothing({ target: ingredients.id });
 
     const translations: TranslationRow[] = [
+      ...SEED_AISLES.flatMap((aisle) =>
+        translationRows('aisle', seedId.aisle(aisle.slug), aisle),
+      ),
       ...SEED_PARENTS.flatMap((parent) =>
         translationRows('parent_category', seedId.parent(parent.slug), parent),
       ),

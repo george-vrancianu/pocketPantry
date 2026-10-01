@@ -3,6 +3,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
+  aisles,
   catalogTranslations,
   ingredients,
   leafCategories,
@@ -69,7 +70,8 @@ export class CatalogSearchService {
         leafName: leafCategories.name,
         parentId: parentCategories.id,
         parentName: parentCategories.name,
-        aisle: parentCategories.aisle,
+        aisleId: aisles.id,
+        aisleName: aisles.name,
       })
       .from(ingredients)
       .innerJoin(
@@ -80,12 +82,13 @@ export class CatalogSearchService {
         parentCategories,
         eq(leafCategories.parentId, parentCategories.id),
       )
+      .innerJoin(aisles, eq(parentCategories.aisleId, aisles.id))
       .where(inArray(ingredients.id, ids));
     const byId = new Map(rows.map((row) => [row.id, row]));
 
     const names = await this.displayNames(
       locale,
-      rows.flatMap((row) => [row.id, row.leafId, row.parentId]),
+      rows.flatMap((row) => [row.id, row.leafId, row.parentId, row.aisleId]),
     );
     const display = (type: EntityType, id: string, canonical: string) =>
       names.get(`${type}:${id}:${locale}`) ??
@@ -107,7 +110,7 @@ export class CatalogSearchService {
           parentCategory: {
             id: row.parentId,
             name: display('parent_category', row.parentId, row.parentName),
-            aisle: row.aisle,
+            aisle: display('aisle', row.aisleId, row.aisleName),
           },
         },
       ];

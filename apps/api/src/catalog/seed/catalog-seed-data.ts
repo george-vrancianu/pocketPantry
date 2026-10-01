@@ -6,12 +6,18 @@ import type { ingredientUnit, storageLocation } from '../../database/schema';
 type Location = (typeof storageLocation.enumValues)[number];
 type Unit = (typeof ingredientUnit.enumValues)[number];
 
+export type SeedAisle = {
+  slug: string;
+  en: string;
+  ro: string;
+  sortOrder: number;
+};
+
 export type SeedParent = {
   slug: string;
   en: string;
   ro: string;
-  aisle: string;
-  aisleSortOrder: number;
+  aisle: string; // Aisle slug
   defaultExpiryDays: number | null;
   defaultLocation: Location | null;
 };
@@ -34,100 +40,84 @@ export type SeedIngredient = {
   synonyms?: { en?: string[]; ro?: string[] };
 };
 
+const aisle = (
+  slug: string,
+  en: string,
+  ro: string,
+  sortOrder: number,
+): SeedAisle => ({ slug, en, ro, sortOrder });
+
+// Shop-walk order. Parent Categories sharing an Aisle share its sort order.
+export const SEED_AISLES: SeedAisle[] = [
+  aisle('fruit-veg', 'Fruit & veg', 'Legume și fructe', 1),
+  aisle('bakery', 'Bakery', 'Panificație', 2),
+  aisle('meat-fish', 'Meat & fish', 'Carne și pește', 3),
+  aisle('dairy-eggs', 'Dairy & eggs', 'Lactate și ouă', 4),
+  aisle('frozen', 'Frozen', 'Congelate', 5),
+  aisle('dry-goods', 'Dry goods', 'Produse uscate', 6),
+  aisle('tins-jars', 'Tins & jars', 'Conserve și borcane', 7),
+  aisle('oils-spices', 'Oils & spices', 'Uleiuri și mirodenii', 8),
+  aisle('snacks-drinks', 'Snacks & drinks', 'Gustări și băuturi', 9),
+  aisle('other', 'Other', 'Altele', 10),
+];
+
 const parent = (
   slug: string,
   en: string,
   ro: string,
-  aisle: string,
-  aisleSortOrder: number,
+  aisleSlug: string,
   defaultExpiryDays: number | null,
   defaultLocation: Location | null,
 ): SeedParent => ({
   slug,
   en,
   ro,
-  aisle,
-  aisleSortOrder,
+  aisle: aisleSlug,
   defaultExpiryDays,
   defaultLocation,
 });
 
 // retzetar's 18 categories, in shop-walk order.
 export const SEED_PARENTS: SeedParent[] = [
-  parent(
-    'produce',
-    'Produce',
-    'Legume și fructe',
-    'Fruit & veg',
-    1,
-    7,
-    'fridge',
-  ),
-  parent('herbs', 'Herbs', 'Ierburi aromatice', 'Fruit & veg', 2, 7, 'fridge'),
-  parent('bakery', 'Bakery', 'Panificație', 'Bakery', 3, 4, 'cupboard'),
-  parent('meat', 'Meat', 'Carne', 'Meat & fish', 4, 3, 'fridge'),
+  parent('produce', 'Produce', 'Legume și fructe', 'fruit-veg', 7, 'fridge'),
+  parent('herbs', 'Herbs', 'Ierburi aromatice', 'fruit-veg', 7, 'fridge'),
+  parent('bakery', 'Bakery', 'Panificație', 'bakery', 4, 'cupboard'),
+  parent('meat', 'Meat', 'Carne', 'meat-fish', 3, 'fridge'),
   parent(
     'seafood',
     'Seafood',
     'Pește și fructe de mare',
-    'Meat & fish',
-    5,
+    'meat-fish',
     2,
     'fridge',
   ),
-  parent('dairy', 'Dairy', 'Lactate', 'Dairy & eggs', 6, 10, 'fridge'),
-  parent('eggs', 'Eggs', 'Ouă', 'Dairy & eggs', 7, 21, 'fridge'),
-  parent('frozen', 'Frozen', 'Congelate', 'Frozen', 8, 180, 'freezer'),
-  parent('pasta', 'Pasta', 'Paste', 'Dry goods', 9, 365, 'cupboard'),
+  parent('dairy', 'Dairy', 'Lactate', 'dairy-eggs', 10, 'fridge'),
+  parent('eggs', 'Eggs', 'Ouă', 'dairy-eggs', 21, 'fridge'),
+  parent('frozen', 'Frozen', 'Congelate', 'frozen', 180, 'freezer'),
+  parent('pasta', 'Pasta', 'Paste', 'dry-goods', 365, 'cupboard'),
   parent(
     'grains',
     'Grains',
     'Cereale și făinuri',
-    'Dry goods',
-    10,
+    'dry-goods',
     365,
     'cupboard',
   ),
-  parent('legumes', 'Legumes', 'Leguminoase', 'Dry goods', 11, 365, 'cupboard'),
+  parent('legumes', 'Legumes', 'Leguminoase', 'dry-goods', 365, 'cupboard'),
   parent(
     'canned-goods',
     'Canned Goods',
     'Conserve',
-    'Tins & jars',
-    12,
+    'tins-jars',
     540,
     'cupboard',
   ),
-  parent(
-    'condiments',
-    'Condiments',
-    'Sosuri',
-    'Tins & jars',
-    13,
-    180,
-    'cupboard',
-  ),
-  parent(
-    'oils',
-    'Oils',
-    'Uleiuri și oțet',
-    'Oils & spices',
-    14,
-    365,
-    'cupboard',
-  ),
-  parent('spices', 'Spices', 'Mirodenii', 'Oils & spices', 15, 730, 'spices'),
-  parent('snacks', 'Snacks', 'Gustări', 'Snacks & drinks', 16, 180, 'cupboard'),
-  parent(
-    'beverage',
-    'Beverage',
-    'Băuturi',
-    'Snacks & drinks',
-    17,
-    180,
-    'cupboard',
-  ),
-  parent('other', 'Other', 'Altele', 'Other', 18, null, null),
+  parent('condiments', 'Condiments', 'Sosuri', 'tins-jars', 180, 'cupboard'),
+  parent('oils', 'Oils', 'Uleiuri și oțet', 'oils-spices', 365, 'cupboard'),
+  parent('spices', 'Spices', 'Mirodenii', 'oils-spices', 730, 'spices'),
+  parent('snacks', 'Snacks', 'Gustări', 'snacks-drinks', 180, 'cupboard'),
+  parent('beverage', 'Beverage', 'Băuturi', 'snacks-drinks', 180, 'cupboard'),
+  parent('other', 'Other', 'Altele', 'other', null, null),
 ];
 
 const leaf = (
