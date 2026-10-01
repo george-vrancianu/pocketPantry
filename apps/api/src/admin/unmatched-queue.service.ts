@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
@@ -94,6 +95,16 @@ export class UnmatchedQueueService {
       if (hasPgCode(error, '23505')) {
         throw new ApiException(409, 'catalog.name_taken');
       }
+      // The target Ingredient was deleted between the check and the relink.
+      if (hasPgCode(error, '23503') && !body.newIngredient) {
+        throw new ApiException(404, 'catalog.not_found', {
+          entity: 'ingredient',
+        });
+      }
+      // Rare: deleting a Household of One on join cascades over its Batches
+      // and Shopping Lists (and their entries) in an order we cannot control,
+      // so it can deadlock with a resolve touching the same rows. Postgres
+      // aborts one side; the Admin just retries.
       if (hasPgCode(error, '40P01')) {
         throw new ApiException(409, 'unmatched.concurrent_change');
       }
@@ -108,63 +119,26 @@ export class UnmatchedQueueService {
     const key = body.normalizedName;
     await this.lockName(tx, key);
 
-    const entries = await tx
-      .select()
-      .from(unmatchedEntries)
-      .where(eq(unmatchedEntries.normalizedName, key))
-      .orderBy(desc(unmatchedEntries.createdAt), desc(unmatchedEntries.id));
+    const entries = await this.lockEntries(tx, key);
     if (entries.length === 0) throw notInQueue();
     const latest = entries[0];
     const locale = body.locale ?? latest.locale;
 
     await this.assertNameFree(tx, key, body.ingredientId);
 
-    // Lock every referencing row before changing any of them.
-    const itemIds = entries.flatMap((e) =>
-      e.shoppingItemId ? [e.shoppingItemId] : [],
-    );
-    const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
-    await this.lockShoppingLists(tx, itemIds);
-    if (itemIds.length > 0) {
-      await tx
-        .select({ id: shoppingItems.id })
-        .from(shoppingItems)
-        .where(inArray(shoppingItems.id, itemIds))
-        .orderBy(shoppingItems.id)
-        .for('update');
-    }
-    if (batchIds.length > 0) {
-      await tx
-        .select({ id: batches.id })
-        .from(batches)
-        .where(inArray(batches.id, batchIds))
-        .orderBy(batches.id)
-        .for('update');
-    }
-
     const target = body.newIngredient
       ? await this.catalog.createIngredientIn(tx, body.newIngredient)
       : await this.requireIngredient(tx, body.ingredientId as string);
 
-    const relinkedShoppingItems =
-      itemIds.length === 0
-        ? 0
-        : (
-            await tx
-              .update(shoppingItems)
-              .set({
-                ingredientId: target.id,
-                name: null,
-                normalizedName: null,
-              })
-              .where(
-                and(
-                  inArray(shoppingItems.id, itemIds),
-                  isNull(shoppingItems.ingredientId),
-                ),
-              )
-              .returning({ id: shoppingItems.id })
-          ).length;
+    const itemIds = entries.flatMap((e) =>
+      e.shoppingItemId ? [e.shoppingItemId] : [],
+    );
+    const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
+    const relinkedShoppingItems = await this.relinkShoppingItems(
+      tx,
+      itemIds,
+      target.id,
+    );
     const relinkedBatches =
       batchIds.length === 0
         ? 0
@@ -191,9 +165,13 @@ export class UnmatchedQueueService {
       key,
       locale,
     );
-    await tx
-      .delete(unmatchedEntries)
-      .where(eq(unmatchedEntries.normalizedName, key));
+    // Only the entries relinked above: one saved after our read stays queued.
+    await tx.delete(unmatchedEntries).where(
+      inArray(
+        unmatchedEntries.id,
+        entries.map((e) => e.id),
+      ),
+    );
 
     return {
       ingredientId: target.id,
@@ -202,6 +180,136 @@ export class UnmatchedQueueService {
       relinkedShoppingItems,
       synonymAdded,
     };
+  }
+
+  /**
+   * Locks everything the name's entries point at, then returns the entries as
+   * read AFTER the locks. Entries committed while we waited (a Batch saved
+   * under a Shopping List we were blocked on) are picked up by re-reading;
+   * we loop until the entry set no longer grows. Relinking and deleting only
+   * the returned entries means an entry committed after the final read stays
+   * queued rather than being deleted unrelinked.
+   */
+  private async lockEntries(tx: Tx, key: string): Promise<EntryRow[]> {
+    const read = () =>
+      tx
+        .select()
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.normalizedName, key))
+        .orderBy(desc(unmatchedEntries.createdAt), desc(unmatchedEntries.id));
+    let entries = await read();
+    const lockedItems = new Set<string>();
+    const lockedBatches = new Set<string>();
+    for (let attempt = 0; attempt < MAX_LOCK_ATTEMPTS; attempt++) {
+      const itemIds = entries.flatMap((e) =>
+        e.shoppingItemId ? [e.shoppingItemId] : [],
+      );
+      const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
+      await this.lockShoppingLists(tx, itemIds);
+      if (itemIds.length > 0) {
+        await tx
+          .select({ id: shoppingItems.id })
+          .from(shoppingItems)
+          .where(inArray(shoppingItems.id, itemIds))
+          .orderBy(shoppingItems.id)
+          .for('update');
+      }
+      if (batchIds.length > 0) {
+        await tx
+          .select({ id: batches.id })
+          .from(batches)
+          .where(inArray(batches.id, batchIds))
+          .orderBy(batches.id)
+          .for('update');
+      }
+      itemIds.forEach((id) => lockedItems.add(id));
+      batchIds.forEach((id) => lockedBatches.add(id));
+      entries = await read();
+      const covered = entries.every((e) =>
+        e.batchId
+          ? lockedBatches.has(e.batchId)
+          : lockedItems.has(e.shoppingItemId as string),
+      );
+      if (covered) return entries;
+    }
+    throw new ApiException(409, 'unmatched.concurrent_change');
+  }
+
+  /**
+   * Relinks Unmatched Shopping Items to the Ingredient. On the active list an
+   * item merges into an existing line for the same Ingredient and unit (the
+   * list's "adding an item for an Ingredient already on it merges" rule);
+   * archived lists are history, so there it only relinks.
+   */
+  private async relinkShoppingItems(
+    tx: Tx,
+    itemIds: string[],
+    ingredientId: string,
+  ): Promise<number> {
+    if (itemIds.length === 0) return 0;
+    const rows = await tx
+      .select({
+        id: shoppingItems.id,
+        listId: shoppingItems.listId,
+        unit: shoppingItems.unit,
+        quantity: shoppingItems.quantity,
+        checked: shoppingItems.checked,
+        status: shoppingLists.status,
+      })
+      .from(shoppingItems)
+      .innerJoin(shoppingLists, eq(shoppingLists.id, shoppingItems.listId))
+      .where(
+        and(
+          inArray(shoppingItems.id, itemIds),
+          isNull(shoppingItems.ingredientId),
+        ),
+      )
+      .orderBy(shoppingItems.id);
+    for (const row of rows) {
+      const [twin] =
+        row.status === 'active'
+          ? await tx
+              .select({
+                id: shoppingItems.id,
+                quantity: shoppingItems.quantity,
+                checked: shoppingItems.checked,
+              })
+              .from(shoppingItems)
+              .where(
+                and(
+                  eq(shoppingItems.listId, row.listId),
+                  eq(shoppingItems.ingredientId, ingredientId),
+                  row.unit === null
+                    ? isNull(shoppingItems.unit)
+                    : eq(shoppingItems.unit, row.unit),
+                ),
+              )
+              .limit(1)
+              .for('update')
+          : [];
+      if (twin) {
+        const merged = sumQuantities(
+          twin.quantity === null ? null : Number(twin.quantity),
+          row.quantity === null ? null : Number(row.quantity),
+        );
+        await tx
+          .update(shoppingItems)
+          .set({
+            quantity: merged === null ? null : String(merged),
+            // Still wanted if either line was.
+            checked: twin.checked && row.checked,
+          })
+          .where(eq(shoppingItems.id, twin.id));
+        // Its queue entry goes with it (cascade) and is also deleted by id.
+        await tx.delete(shoppingItems).where(eq(shoppingItems.id, row.id));
+      } else {
+        await tx
+          .update(shoppingItems)
+          .set({ ingredientId, name: null, normalizedName: null })
+          .where(eq(shoppingItems.id, row.id));
+      }
+    }
+    return rows.length;
   }
 
   /** Per-name advisory lock held to the end of the transaction. */
@@ -252,7 +360,9 @@ export class UnmatchedQueueService {
     const [row] = await tx
       .select()
       .from(ingredients)
-      .where(eq(ingredients.id, id));
+      .where(eq(ingredients.id, id))
+      // Blocks a concurrent delete of the Ingredient until we commit.
+      .for('key share');
     if (!row)
       throw new ApiException(404, 'catalog.not_found', {
         entity: 'ingredient',

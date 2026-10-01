@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { AdminCatalog } from '../../../lib/admin';
@@ -32,6 +32,27 @@ export function UnmatchedQueue({ catalog }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const queue = useUnmatchedQueue(status);
   const dismiss = useDismissUnmatched();
+  const listRef = useRef<HTMLUListElement>(null);
+  const noticeRef = useRef<HTMLDivElement>(null);
+  // Where focus goes when the resolver closes: back to the row's Resolve
+  // button on Cancel, to the result message on Done (the row is gone).
+  const [restoreFocus, setRestoreFocus] = useState<
+    { to: 'row'; name: string } | { to: 'notice' } | null
+  >(null);
+
+  useEffect(() => {
+    if (resolving || !restoreFocus) return;
+    if (restoreFocus.to === 'notice') {
+      noticeRef.current?.focus();
+    } else {
+      const buttons =
+        listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
+      [...(buttons ?? [])]
+        .find((button) => button.dataset.resolveFor === restoreFocus.name)
+        ?.focus();
+    }
+    setRestoreFocus(null);
+  }, [resolving, restoreFocus, queue.data]);
 
   if (resolving) {
     return (
@@ -41,8 +62,12 @@ export function UnmatchedQueue({ catalog }: Props) {
         onDone={(message) => {
           setResolving(null);
           setNotice(message);
+          setRestoreFocus({ to: 'notice' });
         }}
-        onCancel={() => setResolving(null)}
+        onCancel={() => {
+          setRestoreFocus({ to: 'row', name: resolving.normalizedName });
+          setResolving(null);
+        }}
       />
     );
   }
@@ -64,7 +89,7 @@ export function UnmatchedQueue({ catalog }: Props) {
         ]}
       />
       {/* A polite live region so the result of a resolve is announced. */}
-      <div role="status">
+      <div role="status" ref={noticeRef} tabIndex={-1}>
         {notice ? <Typography variant="body2">{notice}</Typography> : null}
       </div>
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
@@ -74,7 +99,12 @@ export function UnmatchedQueue({ catalog }: Props) {
           {t('admin:unmatched.empty')}
         </Typography>
       ) : null}
-      <Stack component="ul" spacing={2} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+      <Stack
+        component="ul"
+        ref={listRef}
+        spacing={2}
+        sx={{ m: 0, p: 0, listStyle: 'none' }}
+      >
         {entries.map((entry) => (
           <li key={entry.normalizedName}>
             <QueueRow
@@ -128,6 +158,7 @@ function QueueRow({
       <Stack direction="row" spacing={1}>
         <Button
           aria-label={t('unmatched.resolveName', { name: entry.rawName })}
+          data-resolve-for={entry.normalizedName}
           onClick={onResolve}
         >
           {t('unmatched.resolve')}

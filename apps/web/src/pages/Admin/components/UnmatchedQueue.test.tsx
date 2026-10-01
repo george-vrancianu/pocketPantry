@@ -158,6 +158,23 @@ describe('UnmatchedQueue', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Linked 3 rows to Parmesan',
     );
+    // Focus lands on the result message, not on the page body.
+    expect(screen.getByRole('status')).toHaveFocus();
+  });
+
+  it('returns focus to the Resolve button when the resolver is cancelled', async () => {
+    stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    ).toHaveFocus();
   });
 
   it('resolves to a new Ingredient prefilled with the raw name', async () => {

@@ -1,5 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, ilike, inArray } from 'drizzle-orm';
+import { and, eq, ilike, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
@@ -9,6 +9,7 @@ import {
   catalogTranslations,
   ingredients,
   shoppingItems,
+  shoppingLists,
   unmatchedEntries,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
@@ -489,6 +490,33 @@ describe('Unmatched queue (integration)', () => {
       expect(await entryFor(raw)).toBeDefined();
     });
 
+    it('answers 404, not 500, when the Ingredient is deleted while the resolve waits', async () => {
+      const raw = name('vanishing');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      const created = (
+        await call(adminCookie).post('/admin/catalog/ingredients', {
+          name: `Gone ${raw}`,
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          defaultUnit: 'g',
+        })
+      ).body as { id: string };
+      expect(created.id).toBeDefined();
+
+      let response: Promise<request.Response> | undefined;
+      await database.transaction(async (tx) => {
+        await tx.execute(sql`DELETE FROM ingredients WHERE id = ${created.id}`);
+        response = Promise.resolve(
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: created.id,
+          }).then((r) => r),
+        );
+        await new Promise((done) => setTimeout(done, 500));
+      });
+      expect((await response)?.status).toBe(404);
+      expect(await entryFor(raw)).toBeDefined();
+    });
+
     it('requires exactly one of ingredientId and newIngredient', async () => {
       await resolve({ normalizedName: 'x' }).expect(400);
       await resolve({
@@ -500,6 +528,100 @@ describe('Unmatched queue (integration)', () => {
           defaultUnit: 'g',
         },
       }).expect(400);
+    });
+  });
+
+  describe('relinking Shopping Items', () => {
+    const addTyped = (cookie: string, body: object) =>
+      call(cookie).post('/shopping-list/items', body).expect(200);
+    const itemsOf = (cookie: string) =>
+      call(cookie)
+        .get('/shopping-list')
+        .expect(200)
+        .then((r) =>
+          (
+            r.body as {
+              groups: Array<{
+                items: Array<{
+                  id: string;
+                  quantity: number | null;
+                  unit: string | null;
+                  unmatched: boolean;
+                  ingredientId?: string;
+                }>;
+              }>;
+            }
+          ).groups.flatMap((g) => g.items),
+        );
+
+    it('merges into the Ingredient line already on the active list when the unit matches', async () => {
+      const raw = name('merge');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addTyped(member, {
+        ingredientId: parmesan,
+        quantity: 2,
+        unit: 'g',
+      });
+      await addTyped(member, { name: raw, quantity: 3, unit: 'g' });
+      await addTyped(member, { name: raw, quantity: 1, unit: 'kg' });
+
+      const response = await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+      expect(response.body).toMatchObject({ relinkedShoppingItems: 2 });
+
+      const items = await itemsOf(member);
+      expect(items).toHaveLength(2);
+      expect(items.find((i) => i.unit === 'g')?.quantity).toBe(5);
+      expect(items.find((i) => i.unit === 'kg')?.quantity).toBe(1);
+      expect(items.every((i) => !i.unmatched)).toBe(true);
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('only relinks on an archived list', async () => {
+      const raw = name('archived');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addTyped(member, { name: raw, quantity: 3, unit: 'g' });
+      const [item] = await database
+        .select({ id: shoppingItems.id, listId: shoppingItems.listId })
+        .from(shoppingItems)
+        .where(eq(shoppingItems.name, raw));
+      const [list] = await database
+        .select()
+        .from(shoppingLists)
+        .where(eq(shoppingLists.id, item.listId));
+      await database
+        .update(shoppingLists)
+        .set({ status: 'archived' })
+        .where(eq(shoppingLists.id, list.id));
+      const [older] = await database
+        .insert(shoppingItems)
+        .values({
+          listId: list.id,
+          ingredientId: parmesan,
+          quantity: '2',
+          unit: 'g',
+        })
+        .returning({ id: shoppingItems.id });
+
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+
+      const rows = await database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.listId, list.id));
+      expect(rows).toHaveLength(2);
+      expect(rows.find((r) => r.id === item.id)).toMatchObject({
+        ingredientId: parmesan,
+        quantity: '3.000',
+      });
+      expect(rows.find((r) => r.id === older.id)?.quantity).toBe('2.000');
     });
   });
 
@@ -564,7 +686,77 @@ describe('Unmatched queue (integration)', () => {
       expect(synonyms).toHaveLength(1);
     });
 
-    it('does not deadlock with Finish Shopping, adds, and Batch edits on the same rows', async () => {
+    it('relinks or keeps queued a Batch saved while the resolve waits for the Shopping List lock', async () => {
+      const raw = name('late batch');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addItem(member, raw);
+      const [item] = await database
+        .select({ listId: shoppingItems.listId })
+        .from(shoppingItems)
+        .where(eq(shoppingItems.name, raw));
+      const [list] = await database
+        .select({ familyId: shoppingLists.familyId })
+        .from(shoppingLists)
+        .where(eq(shoppingLists.id, item.listId));
+      const [other] = await database
+        .select({ id: ingredients.leafCategoryId })
+        .from(ingredients)
+        .where(eq(ingredients.id, parmesan));
+
+      let resolveResponse: Promise<request.Response> | undefined;
+      let lateBatchId = '';
+      await database.transaction(async (tx) => {
+        await tx.execute(
+          sql`SELECT id FROM shopping_lists WHERE id = ${item.listId} FOR UPDATE`,
+        );
+        // Resolve reads its entries, then waits for this list.
+        resolveResponse = Promise.resolve(
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: parmesan,
+          }).then((r) => r),
+        );
+        await new Promise((done) => setTimeout(done, 500));
+        const [batch] = await tx
+          .insert(batches)
+          .values({
+            familyId: list.familyId,
+            leafCategoryId: other.id,
+            unmatched: true,
+            rawName: raw,
+            quantity: 1,
+            unit: 'pcs',
+            location: 'cupboard',
+          })
+          .returning({ id: batches.id });
+        lateBatchId = batch.id;
+        await tx.insert(unmatchedEntries).values({
+          normalizedName: normalise(raw),
+          rawName: raw,
+          locale: 'en',
+          source: 'manual',
+          batchId: batch.id,
+        });
+      });
+      expect((await resolveResponse)?.status).toBe(201);
+
+      const [late] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.id, lateBatchId));
+      const entries = await database
+        .select()
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.batchId, lateBatchId));
+      // Never "Unmatched with no queue entry".
+      expect(late.unmatched === false || entries.length > 0).toBe(true);
+      // With the entries read under the locks, the late Batch is relinked.
+      expect(late).toMatchObject({ unmatched: false, ingredientId: parmesan });
+      expect(entries).toEqual([]);
+    });
+
+    it('does not deadlock with Finish Shopping and adds on the same rows', async () => {
       const members = await Promise.all([newMember(), newMember()]);
       const raws = [name('mix a'), name('mix b')];
       for (const cookie of members) {
