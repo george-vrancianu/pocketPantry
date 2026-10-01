@@ -66,6 +66,7 @@ export const updateBatchBody = z
     expiryDate: isoDate.nullable().optional(),
     productDescription: z.string().trim().max(200).nullable().optional(),
   })
+  .strict()
   .refine((body) => Object.keys(body).length > 0, {
     message: 'at least one field to change',
   });

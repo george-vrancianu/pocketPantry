@@ -201,7 +201,7 @@ export function useAddBatch(locale: string) {
   });
 }
 
-/** Parse the quantity field: blank is no quantity; otherwise numeric(10,3) rules (at least 0.001, at most 3 decimals). */
+/** Parse the quantity field: blank is no quantity; otherwise the server's rules (0.001 to 1,000,000, at most 3 decimals, plain digits only). */
 export function parseQuantity(text: string): {
   value: number | null;
   valid: boolean;
@@ -209,19 +209,23 @@ export function parseQuantity(text: string): {
   if (text.trim() === '') return { value: null, valid: true };
   const value = Number(text);
   const valid =
+    // `Number` accepts exponents such as 1e3; the user should type the number out.
+    !/e/i.test(text) &&
     Number.isFinite(value) &&
     value >= 0.001 &&
+    value <= 1_000_000 &&
     Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;
   return { value, valid };
 }
 
+/** The fields to change; anything left out stays as it is. */
 export type BatchEdit = {
-  quantity: number | null;
-  unit: Unit | null;
-  location: StorageLocation;
+  quantity?: number | null;
+  unit?: Unit | null;
+  location?: StorageLocation;
   /** `null` clears the expiry. */
-  expiryDate: string | null;
-  productDescription: string | null;
+  expiryDate?: string | null;
+  productDescription?: string | null;
 };
 
 export function useUpdateBatch(locale: string) {

@@ -1,5 +1,5 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
 import type { RollUp } from '../../../lib/pantry';
@@ -16,10 +16,13 @@ type Props = {
 export function LocationSection({ location, batchCount, rows, today }: Props) {
   const { t } = useTranslation('pantry');
   const headingId = useId();
+  const heading = useRef<HTMLHeadingElement>(null);
   return (
     <Box component="section" aria-labelledby={headingId} sx={{ mb: 2 }}>
       <Typography
         id={headingId}
+        ref={heading}
+        tabIndex={-1}
         variant="sectionLabel"
         component="h2"
         color="text.secondary"
@@ -41,7 +44,12 @@ export function LocationSection({ location, batchCount, rows, today }: Props) {
         }}
       >
         {rows.map((row) => (
-          <RollUpRow key={row.key} rollUp={row} today={today} />
+          <RollUpRow
+            key={row.key}
+            rollUp={row}
+            today={today}
+            onRowGone={() => heading.current?.focus()}
+          />
         ))}
       </Box>
     </Box>

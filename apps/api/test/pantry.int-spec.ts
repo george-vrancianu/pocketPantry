@@ -510,9 +510,20 @@ describe('Pantry (integration)', () => {
           201,
         )
       ).body as Batch;
-      await patch(cookie, bare.id, { quantity: 2 }).expect(400);
+      const noUnit = await patch(cookie, bare.id, { quantity: 2 }).expect(400);
+      expect(noUnit.body).toMatchObject({ code: 'pantry.unit_required' });
       await patch(cookie, bare.id, {}).expect(400);
       await patch(cookie, bare.id, { quantity: 0 }).expect(400);
+    });
+
+    it('rejects an attempt to change what a Batch matches', async () => {
+      const { cookie } = await signUp();
+      const batch = await addParmesan(cookie);
+      const response = await patch(cookie, batch.id, {
+        quantity: 3,
+        ingredientId: seedId.ingredient('milk'),
+      }).expect(400);
+      expect(response.body).toMatchObject({ code: 'validation_failed' });
     });
 
     it('deletes a Batch', async () => {

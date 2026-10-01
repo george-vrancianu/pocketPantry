@@ -1,5 +1,5 @@
 import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCATIONS, UNITS, type Batch } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
@@ -10,10 +10,15 @@ export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
   const { t } = useTranslation('pantry');
   const form = useEditBatchForm(batch, { onSaved });
   const id = useId();
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    formRef.current?.querySelector<HTMLElement>('input, select')?.focus();
+  }, []);
 
   return (
     <Stack
       component="form"
+      ref={formRef}
       spacing={2}
       onSubmit={form.submit}
       aria-label={t('edit.title', { name: batch.name })}

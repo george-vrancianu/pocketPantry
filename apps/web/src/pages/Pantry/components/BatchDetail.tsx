@@ -1,5 +1,5 @@
 import { Alert, Box, Button, Typography, tokens } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { expiryChipFor, useDeleteBatch, type Batch } from '../../../lib/pantry';
@@ -7,14 +7,36 @@ import { formatAmount } from './amount';
 import { EditBatchForm } from './EditBatchForm';
 import { ExpiryChip } from './ExpiryChip';
 
-type Props = { batch: Batch; today: Date };
+type Props = {
+  batch: Batch;
+  today: Date;
+  /** Called once the Batch is deleted, so the parent can place focus (this row unmounts). */
+  onDeleted: () => void;
+};
 
 /** One Batch inside an expanded roll-up row: its own amount, expiry and Product Description, with Edit and Delete. */
-export function BatchDetail({ batch, today }: Props) {
+export function BatchDetail({ batch, today, onDeleted }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [mode, setMode] = useState<'view' | 'edit' | 'confirmDelete'>('view');
   const remove = useDeleteBatch();
   const chip = expiryChipFor(batch.expiryDate, today);
+
+  // Focus follows the mode: into the form or confirmation, back to the opening button on leaving it.
+  const editButton = useRef<HTMLButtonElement>(null);
+  const deleteButton = useRef<HTMLButtonElement>(null);
+  const confirmButton = useRef<HTMLButtonElement>(null);
+  const previous = useRef(mode);
+  useEffect(() => {
+    const from = previous.current;
+    previous.current = mode;
+    if (mode === 'confirmDelete') confirmButton.current?.focus();
+    else if (mode === 'view' && from === 'edit') editButton.current?.focus();
+    else if (mode === 'view' && from === 'confirmDelete')
+      deleteButton.current?.focus();
+  }, [mode]);
+
+  const confirmDelete = () =>
+    remove.mutateAsync(batch.id).then(onDeleted, () => undefined);
 
   if (mode === 'edit') {
     return (
@@ -64,8 +86,9 @@ export function BatchDetail({ batch, today }: Props) {
           ) : null}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
+              ref={confirmButton}
               disabled={remove.isPending}
-              onClick={() => remove.mutate(batch.id)}
+              onClick={confirmDelete}
             >
               {t('delete.yes')}
             </Button>
@@ -77,6 +100,7 @@ export function BatchDetail({ batch, today }: Props) {
       ) : (
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
           <Button
+            ref={editButton}
             variant="text"
             aria-label={t('edit.action', { name: batch.name })}
             onClick={() => setMode('edit')}
@@ -84,6 +108,7 @@ export function BatchDetail({ batch, today }: Props) {
             {t('edit.label')}
           </Button>
           <Button
+            ref={deleteButton}
             variant="text"
             aria-label={t('delete.action', { name: batch.name })}
             onClick={() => setMode('confirmDelete')}

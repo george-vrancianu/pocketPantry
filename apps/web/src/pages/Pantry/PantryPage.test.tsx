@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -148,7 +148,7 @@ describe('PantryPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
     await user.type(screen.getByLabelText('Quantity'), '1.2345');
     expect(
-      screen.getByText(/at least 0.001, with up to 3 decimals/),
+      screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -225,12 +225,17 @@ describe('PantryPage', () => {
       }),
     ];
 
-    function stubManaged(batches: Batch[]) {
+    function stubManaged(initial: Batch[]) {
+      let batches = initial;
+      const remove = (id: string) => () => {
+        batches = batches.filter((b) => b.id !== id);
+        return new Response(null, { status: 204 });
+      };
       const { fetchMock, calls } = stubApi({
         'GET /api/pantry': () => Response.json({ batches }),
         'PATCH /api/pantry/batches/milk-2': () => Response.json(batches[1]),
-        'DELETE /api/pantry/batches/milk-2': () =>
-          new Response(null, { status: 204 }),
+        'DELETE /api/pantry/batches/milk-2': remove('milk-2'),
+        'DELETE /api/pantry/batches/cheese': remove('cheese'),
       });
       vi.stubGlobal('fetch', fetchMock);
       return calls;
@@ -314,18 +319,50 @@ describe('PantryPage', () => {
       const patch = calls.find(
         (call) => call.key === 'PATCH /api/pantry/batches/milk-2',
       );
+      // Only what changed, so two Members editing different fields do not overwrite each other.
       expect(patch?.body).toEqual({
         quantity: 0.25,
-        unit: 'l',
         location: 'freezer',
         expiryDate: null,
-        productDescription: 'Opened',
       });
       await waitFor(() =>
         expect(
           screen.queryByRole('form', { name: 'Edit Milk batch' }),
         ).not.toBeInTheDocument(),
       );
+    });
+
+    it('sends no request when nothing changed', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('form', { name: 'Edit Milk batch' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
+    });
+
+    it('refuses an exponent quantity when editing', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      fireEvent.change(screen.getByLabelText('Quantity'), {
+        target: { value: '1e3' },
+      });
+      expect(
+        screen.getByRole('button', { name: 'Save changes' }),
+      ).toBeDisabled();
     });
 
     it('refuses an invalid quantity when editing', async () => {
@@ -359,6 +396,81 @@ describe('PantryPage', () => {
           'DELETE /api/pantry/batches/milk-2',
         ),
       );
+    });
+
+    describe('focus', () => {
+      async function openMilk(batches = stock()) {
+        const user = userEvent.setup();
+        stubManaged(batches);
+        renderWithProviders(<PantryPage />);
+        const toggle = await screen.findByRole('button', { name: /^Milk/ });
+        await user.click(toggle);
+        return { user, toggle };
+      }
+      const editButton = () =>
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0];
+      const deleteButton = () =>
+        screen.getAllByRole('button', { name: 'Delete Milk batch' })[0];
+
+      it('moves focus into the edit form and back to Edit on Cancel', async () => {
+        const { user } = await openMilk();
+        await user.click(editButton());
+        expect(screen.getByLabelText('Quantity')).toHaveFocus();
+        await user.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(editButton()).toHaveFocus();
+      });
+
+      it('returns focus to Edit after Save', async () => {
+        const { user } = await openMilk();
+        await user.click(editButton());
+        await user.clear(screen.getByLabelText('Quantity'));
+        await user.type(screen.getByLabelText('Quantity'), '2');
+        await user.click(screen.getByRole('button', { name: 'Save changes' }));
+        await waitFor(() => expect(editButton()).toHaveFocus());
+      });
+
+      it('moves focus to the confirm control and back to Delete on Cancel', async () => {
+        const { user } = await openMilk();
+        await user.click(deleteButton());
+        expect(
+          screen.getByRole('button', { name: 'Yes, delete' }),
+        ).toHaveFocus();
+        await user.click(screen.getByRole('button', { name: 'Cancel' }));
+        expect(deleteButton()).toHaveFocus();
+      });
+
+      it('focuses the roll-up toggle after deleting one of several Batches', async () => {
+        const { user, toggle } = await openMilk();
+        await user.click(deleteButton());
+        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await waitFor(() => expect(toggle).toHaveFocus());
+      });
+
+      it('focuses the section heading after deleting the last Batch of a row', async () => {
+        const user = userEvent.setup();
+        stubManaged([
+          ...stock(),
+          batch({
+            id: 'peas',
+            name: 'Peas',
+            ingredientId: 'peas-id',
+            location: 'freezer',
+          }),
+        ]);
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Parmesan/ }),
+        );
+        await user.click(
+          screen.getByRole('button', { name: 'Delete Parmesan batch' }),
+        );
+        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await waitFor(() =>
+          expect(
+            screen.getByRole('heading', { name: 'Freezer · 1' }),
+          ).toHaveFocus(),
+        );
+      });
     });
 
     it('searches localised names and Product Descriptions', async () => {

@@ -60,7 +60,7 @@
     "descriptionPlaceholder": "de ex. Grana Padano 200g",
     "useUnmatched": "Nu e în Catalog? Adaugă \"{{name}}\" ca Nepotrivit",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
-    "quantityInvalid": "Introdu o cantitate de cel puțin 0,001, cu maximum 3 zecimale.",
+    "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "pickIngredient": "Alege un ingredient din rezultatele căutării sau adaugă propriul nume ca Nepotrivit."
   }
 }

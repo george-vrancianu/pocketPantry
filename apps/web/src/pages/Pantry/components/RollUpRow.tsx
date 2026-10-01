@@ -1,18 +1,24 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expiryChipFor, type RollUp } from '../../../lib/pantry';
 import { formatAmount } from './amount';
 import { BatchDetail } from './BatchDetail';
 import { ExpiryChip } from './ExpiryChip';
 
-type Props = { rollUp: RollUp; today: Date };
+type Props = {
+  rollUp: RollUp;
+  today: Date;
+  /** Called when deleting a Batch leaves this row with nothing, so focus can go elsewhere. */
+  onRowGone: () => void;
+};
 
 /** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch. */
-export function RollUpRow({ rollUp, today }: Props) {
+export function RollUpRow({ rollUp, today, onRowGone }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
+  const toggle = useRef<HTMLButtonElement>(null);
   const chip = expiryChipFor(rollUp.soonestExpiry, today);
 
   const detail = [
@@ -39,8 +45,9 @@ export function RollUpRow({ rollUp, today }: Props) {
       <Box
         component="button"
         type="button"
+        ref={toggle}
         aria-expanded={expanded}
-        aria-controls={panelId}
+        aria-controls={expanded ? panelId : undefined}
         onClick={() => setExpanded((open) => !open)}
         sx={{
           display: 'flex',
@@ -128,7 +135,16 @@ export function RollUpRow({ rollUp, today }: Props) {
           sx={{ m: 0, mb: 1, pl: '48px', pr: 0 }}
         >
           {rollUp.batches.map((batch) => (
-            <BatchDetail key={batch.id} batch={batch} today={today} />
+            <BatchDetail
+              key={batch.id}
+              batch={batch}
+              today={today}
+              onDeleted={() =>
+                rollUp.batches.length > 1
+                  ? toggle.current?.focus()
+                  : onRowGone()
+              }
+            />
           ))}
         </Box>
       ) : null}

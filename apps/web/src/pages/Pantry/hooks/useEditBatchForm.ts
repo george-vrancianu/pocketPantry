@@ -5,8 +5,22 @@ import {
   parseQuantity,
   useUpdateBatch,
   type Batch,
+  type BatchEdit,
   type Unit,
 } from '../../../lib/pantry';
+
+/** Only the fields that differ from the Batch: a stale form must not overwrite another Member's edit. */
+function changesFrom(batch: Batch, next: Required<BatchEdit>): BatchEdit {
+  const edit: BatchEdit = {};
+  if (next.quantity !== batch.quantity) edit.quantity = next.quantity;
+  // The unit only matters alongside a quantity; the server clears it with the quantity.
+  if (next.quantity !== null && next.unit !== batch.unit) edit.unit = next.unit;
+  if (next.location !== batch.location) edit.location = next.location;
+  if (next.expiryDate !== batch.expiryDate) edit.expiryDate = next.expiryDate;
+  if (next.productDescription !== batch.productDescription)
+    edit.productDescription = next.productDescription;
+  return edit;
+}
 
 /** Edit-Batch form state, starting from the Batch as it is now. */
 export function useEditBatchForm(
@@ -32,19 +46,18 @@ export function useEditBatchForm(
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!canSave) return;
-    update.mutate(
-      {
-        id: batch.id,
-        edit: {
-          quantity: parsed.value,
-          unit: parsed.value === null ? null : unit,
-          location,
-          expiryDate: expiryDate === '' ? null : expiryDate,
-          productDescription: description.trim() || null,
-        },
-      },
-      { onSuccess: onSaved },
-    );
+    const edit = changesFrom(batch, {
+      quantity: parsed.value,
+      unit,
+      location,
+      expiryDate: expiryDate === '' ? null : expiryDate,
+      productDescription: description.trim() || null,
+    });
+    if (Object.keys(edit).length === 0) {
+      onSaved();
+      return;
+    }
+    update.mutate({ id: batch.id, edit }, { onSuccess: onSaved });
   };
 
   return {

@@ -60,7 +60,7 @@
     "descriptionPlaceholder": "e.g. Grana Padano 200g",
     "useUnmatched": "Not in the Catalog? Add \"{{name}}\" as Unmatched",
     "unmatchedNotice": "\"{{name}}\" will be saved as Unmatched and flagged for review.",
-    "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
+    "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals and no exponent.",
     "pickIngredient": "Pick an ingredient from the search results, or add your own name as Unmatched."
   }
 }

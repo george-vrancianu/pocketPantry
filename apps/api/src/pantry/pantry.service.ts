@@ -126,6 +126,8 @@ export class PantryService {
       })
       .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
       .returning();
+    // Deleted by another Member between the read and the update.
+    if (!row) throw new ApiException(404, 'pantry.batch_not_found');
     return (await this.toViews([row], locale))[0];
   }
 

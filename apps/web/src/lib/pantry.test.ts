@@ -5,6 +5,7 @@ import {
   countByLocation,
   groupByLocation,
   matchesSearch,
+  parseQuantity,
   rollUp,
   type Batch,
 } from './pantry';
@@ -172,5 +173,29 @@ describe('countByLocation', () => {
         make({ location: 'spices' }),
       ]),
     ).toEqual({ all: 3, fridge: 2, freezer: 0, cupboard: 0, spices: 1 });
+  });
+});
+
+describe('parseQuantity', () => {
+  it('treats blank as no quantity', () => {
+    expect(parseQuantity('  ')).toEqual({ value: null, valid: true });
+  });
+
+  it.each(['0.001', '1', '2.5', '1000000'])('accepts %s', (text) => {
+    expect(parseQuantity(text)).toEqual({ value: Number(text), valid: true });
+  });
+
+  it.each([
+    '0',
+    '-1',
+    '0.0004',
+    '1.2345',
+    '1000000.001',
+    '1e3',
+    '1E3',
+    '2e-3',
+    'abc',
+  ])('rejects %s', (text) => {
+    expect(parseQuantity(text).valid).toBe(false);
   });
 });
