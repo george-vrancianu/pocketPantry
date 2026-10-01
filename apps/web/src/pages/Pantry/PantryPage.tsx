@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
+import { PantryFilters } from './components/PantryFilters';
 import { usePantryScreen } from './hooks/usePantryScreen';
 
 export function PantryPage() {
@@ -57,11 +58,26 @@ export function PantryPage() {
           {screen.isEmpty ? (
             <Typography color="text.secondary">{t('pantry:empty')}</Typography>
           ) : null}
+          {!screen.isEmpty && !screen.isLoading && !screen.error ? (
+            <PantryFilters
+              query={screen.query}
+              onQueryChange={screen.setQuery}
+              filter={screen.filter}
+              onFilterChange={screen.setFilter}
+              counts={screen.counts}
+            />
+          ) : null}
+          {screen.noMatches ? (
+            <Typography color="text.secondary">
+              {t('pantry:noMatches')}
+            </Typography>
+          ) : null}
           {screen.sections.map((section) => (
             <LocationSection
               key={section.location}
               location={section.location}
-              batches={section.batches}
+              batchCount={section.batchCount}
+              rows={section.rows}
               today={screen.today}
             />
           ))}

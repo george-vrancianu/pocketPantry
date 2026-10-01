@@ -32,7 +32,9 @@
     "location_required": "Alege unde este depozitat lotul.",
     "ingredient_not_found": "Nu am găsit ingredientul.",
     "other_leaf_missing": "Această categorie nu poate primi încă loturi nepotrivite.",
-    "category_not_found": "Nu am găsit categoria."
+    "category_not_found": "Nu am găsit categoria.",
+    "batch_not_found": "Nu am găsit acest lot.",
+    "unit_required": "Alege o unitate pentru cantitate."
   },
   "family": {
     "owner_required": "Doar Proprietarul Familiei poate face asta.",

@@ -8,7 +8,6 @@ export const pantryLocaleQuery = z.object({
 export type PantryLocaleQuery = z.infer<typeof pantryLocaleQuery>;
 
 /** A real calendar date: `2026-02-31` is rejected rather than rolled over. */
-/** A real calendar date: `2026-02-31` is rejected rather than rolled over. */
 const isoDate = z.iso.date();
 
 /** numeric(10,3): at least 0.001 and at most 3 decimals, so storage never rounds. */
@@ -53,6 +52,27 @@ export const createBatchBody = z
     path: ['unit'],
   });
 export type CreateBatchBody = z.infer<typeof createBatchBody>;
+
+/**
+ * Edit a Batch. Only the fields sent change; `quantity`, `productDescription`
+ * and `expiryDate` accept null to clear. What a Batch matches (its Ingredient)
+ * is not editable: delete it and add a new one.
+ */
+export const updateBatchBody = z
+  .object({
+    quantity: quantity.nullable().optional(),
+    unit: z.enum(ingredientUnit.enumValues).nullable().optional(),
+    location: z.enum(storageLocation.enumValues).optional(),
+    expiryDate: isoDate.nullable().optional(),
+    productDescription: z.string().trim().max(200).nullable().optional(),
+  })
+  .refine((body) => Object.keys(body).length > 0, {
+    message: 'at least one field to change',
+  });
+export type UpdateBatchBody = z.infer<typeof updateBatchBody>;
+
+export const batchIdParam = z.object({ id: z.uuid() });
+export type BatchIdParam = z.infer<typeof batchIdParam>;
 
 export type BatchView = {
   id: string;

@@ -424,4 +424,135 @@ describe('Pantry (integration)', () => {
       [added.id, fromMihai.id].sort(),
     );
   });
+
+  describe('editing and deleting a Batch', () => {
+    const patch = (cookie: string, id: string, body: object) =>
+      request(app.getHttpServer())
+        .patch(`/api/pantry/batches/${id}`)
+        .query({ locale: 'en' })
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body);
+    const remove = (cookie: string, id: string) =>
+      request(app.getHttpServer())
+        .delete(`/api/pantry/batches/${id}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie);
+
+    async function addParmesan(cookie: string) {
+      return (
+        await add(cookie, {
+          ingredientId: seedId.ingredient('parmesan'),
+          quantity: 200,
+          unit: 'g',
+          productDescription: 'Grana Padano 200g',
+        }).expect(201)
+      ).body as Batch;
+    }
+
+    it('edits quantity, unit, expiry, Location and Product Description', async () => {
+      const { cookie } = await signUp();
+      const batch = await addParmesan(cookie);
+      const edited = (
+        await patch(cookie, batch.id, {
+          quantity: 1.5,
+          unit: 'kg',
+          expiryDate: '2030-02-01',
+          location: 'freezer',
+          productDescription: 'Parmigiano 1.5kg',
+        }).expect(200)
+      ).body as Batch;
+      expect(edited).toMatchObject({
+        id: batch.id,
+        name: 'Parmesan',
+        quantity: 1.5,
+        unit: 'kg',
+        expiryDate: '2030-02-01',
+        location: 'freezer',
+        productDescription: 'Parmigiano 1.5kg',
+      });
+      expect(await list(cookie)).toEqual([
+        expect.objectContaining({ id: batch.id, quantity: 1.5, unit: 'kg' }),
+      ]);
+    });
+
+    it('leaves fields that are not sent alone and clears the ones sent as null', async () => {
+      const { cookie } = await signUp();
+      const batch = await addParmesan(cookie);
+      const untouched = (
+        await patch(cookie, batch.id, { location: 'cupboard' }).expect(200)
+      ).body as Batch;
+      expect(untouched).toMatchObject({
+        quantity: 200,
+        unit: 'g',
+        expiryDate: batch.expiryDate,
+        productDescription: 'Grana Padano 200g',
+      });
+      const cleared = (
+        await patch(cookie, batch.id, {
+          quantity: null,
+          expiryDate: null,
+          productDescription: null,
+        }).expect(200)
+      ).body as Batch;
+      expect(cleared).toMatchObject({
+        quantity: null,
+        unit: null,
+        expiryDate: null,
+        productDescription: null,
+      });
+    });
+
+    it('rejects a quantity without a unit, an empty edit and a zero quantity', async () => {
+      const { cookie } = await signUp();
+      const bare = (
+        await add(cookie, { ingredientId: seedId.ingredient('milk') }).expect(
+          201,
+        )
+      ).body as Batch;
+      await patch(cookie, bare.id, { quantity: 2 }).expect(400);
+      await patch(cookie, bare.id, {}).expect(400);
+      await patch(cookie, bare.id, { quantity: 0 }).expect(400);
+    });
+
+    it('deletes a Batch', async () => {
+      const { cookie } = await signUp();
+      const batch = await addParmesan(cookie);
+      await remove(cookie, batch.id).expect(204);
+      expect(await list(cookie)).toEqual([]);
+      await remove(cookie, batch.id).expect(404);
+    });
+
+    it('lets any Member of the Family edit and delete, and no one else', async () => {
+      const ana = await signUp();
+      const mihai = await signUp();
+      const outsider = await signUp();
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.id, ana.userId));
+      await database
+        .update(user)
+        .set({ familyId, familyRole: 'member' })
+        .where(eq(user.id, mihai.userId));
+
+      const batch = await addParmesan(ana.cookie);
+      await patch(outsider.cookie, batch.id, { quantity: 1 }).expect(404);
+      await remove(outsider.cookie, batch.id).expect(404);
+
+      await patch(mihai.cookie, batch.id, { quantity: 50 }).expect(200);
+      expect((await list(ana.cookie))[0].quantity).toBe(50);
+      await remove(mihai.cookie, batch.id).expect(204);
+      expect(await list(ana.cookie)).toEqual([]);
+    });
+
+    it('requires authentication and a valid id', async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/pantry/batches/${randomUUID()}`)
+        .set('origin', TEST_ORIGIN)
+        .expect(401);
+      const { cookie } = await signUp();
+      await patch(cookie, 'not-a-uuid', { quantity: 1 }).expect(400);
+    });
+  });
 });
