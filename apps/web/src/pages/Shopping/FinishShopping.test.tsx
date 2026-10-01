@@ -148,6 +148,7 @@ describe('Finish Shopping review', () => {
     expect(
       calls.find((c) => c.key === 'POST /api/shopping-list/finish')?.body,
     ).toEqual({
+      listId: 'l1',
       lines: [
         {
           itemId: 'i1',
@@ -201,5 +202,90 @@ describe('Finish Shopping review', () => {
     expect(
       screen.getByRole('region', { name: 'Add to your pantry' }),
     ).toBeVisible();
+  });
+  it('offers Reload after a 409 that refetches the proposal and clears edits and the error', async () => {
+    let proposals = 0;
+    const calls = stubFinish({
+      'GET /api/shopping-list/finish': () => {
+        proposals += 1;
+        return Response.json(
+          proposals === 1
+            ? proposal
+            : { listId: 'l2', lines: [line({ itemId: 'i9', name: 'Bread' })] },
+        );
+      },
+      'POST /api/shopping-list/finish': () =>
+        Response.json(
+          { code: 'shopping.list_changed', params: {} },
+          { status: 409 },
+        ),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    const review = within(await openReview());
+    await user.click(await review.findByRole('button', { name: 'Drop Milk' }));
+    await user.click(
+      review.getByRole('button', { name: 'Add 2 items to pantry' }),
+    );
+    await screen.findByText(/The list changed while you were reviewing/);
+
+    await user.click(review.getByRole('button', { name: 'Reload' }));
+
+    expect(await review.findByRole('region', { name: 'Bread' })).toBeVisible();
+    expect(
+      screen.queryByText(/The list changed while you were reviewing/),
+    ).not.toBeInTheDocument();
+    expect(review.queryByRole('button', { name: 'Reload' })).toBeNull();
+    expect(
+      calls.filter((c) => c.key === 'GET /api/shopping-list/finish'),
+    ).toHaveLength(2);
+  });
+
+  it('shows an empty state when the proposal has no lines', async () => {
+    stubFinish({
+      'GET /api/shopping-list/finish': () =>
+        Response.json({ listId: 'l2', lines: [] }),
+    });
+    renderWithProviders(<ShoppingPage />);
+
+    const review = within(await openReview());
+
+    expect(await review.findByText(/Nothing to review/)).toBeVisible();
+    expect(
+      review.queryByRole('button', { name: /to pantry/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('marks Drop as pressed once a line is dropped', async () => {
+    stubFinish();
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    const review = within(await openReview());
+
+    const drop = await review.findByRole('button', { name: 'Drop Milk' });
+    expect(drop).toHaveAttribute('aria-pressed', 'false');
+    await user.click(drop);
+
+    expect(review.getByRole('button', { name: 'Keep Milk' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('blocks a quantity above the 1,000,000 maximum', async () => {
+    stubFinish();
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    const review = within(await openReview());
+    const parmesan = within(
+      await review.findByRole('region', { name: 'Parmesan' }),
+    );
+
+    await user.clear(parmesan.getByLabelText('Quantity'));
+    await user.type(parmesan.getByLabelText('Quantity'), '1000001');
+
+    expect(
+      review.getByRole('button', { name: 'Add 3 items to pantry' }),
+    ).toBeDisabled();
   });
 });

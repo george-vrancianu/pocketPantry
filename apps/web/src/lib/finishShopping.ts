@@ -25,7 +25,12 @@ export type FinishLine = {
   expiryDate: string | null;
 };
 
-export type FinishRequest = { lines: FinishLine[]; droppedItemIds: string[] };
+export type FinishRequest = {
+  /** The list the proposal was built from; the API answers 409 if it is no longer active. */
+  listId: string;
+  lines: FinishLine[];
+  droppedItemIds: string[];
+};
 
 /** The proposal is a snapshot to edit, so it is fetched once per Review and never refetched. */
 export function useFinishProposal(locale: string) {

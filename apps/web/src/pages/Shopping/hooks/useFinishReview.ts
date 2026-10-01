@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ApiError } from '../../../lib/api';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { StorageLocation } from '../../../lib/catalog';
 import {
@@ -25,13 +26,14 @@ const initialEdit = (line: FinishProposalLine): ReviewEdit => ({
   expiryDate: line.expiryDate ?? '',
 });
 
-// numeric(10,3) on the server: at least 0.001, at most 3 decimals.
+// numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
 function quantityOf(text: string): { valid: boolean; value: number | null } {
   if (text.trim() === '') return { valid: true, value: null };
   const value = Number(text);
   const valid =
     Number.isFinite(value) &&
     value >= 0.001 &&
+    value <= 1_000_000 &&
     Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;
   return { valid, value: valid ? value : null };
 }
@@ -54,16 +56,23 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
     };
   });
   const kept = lines.filter((row) => !row.dropped);
+  const listId = proposal.data?.listId;
   const canConfirm =
     proposal.isSuccess &&
+    listId !== undefined &&
     lines.length > 0 &&
     kept.every((row) => row.quantityValid) &&
     !finish.isPending;
 
   const error = proposal.error ?? finish.error;
+  // The list changed under the Review: the edits no longer match, so offer a fresh proposal.
+  const stale = finish.error instanceof ApiError && finish.error.status === 409;
 
   return {
     isLoading: proposal.isPending,
+    isEmpty: proposal.isSuccess && lines.length === 0,
+    stale,
+    dropped: (itemId: string) => dropped.has(itemId),
     lines,
     keptCount: kept.length,
     canConfirm,
@@ -80,11 +89,17 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
         if (!next.delete(itemId)) next.add(itemId);
         return next;
       }),
-    retry: () => void proposal.refetch(),
+    reload: () => {
+      setEdits({});
+      setDropped(new Set());
+      finish.reset();
+      void proposal.refetch();
+    },
     confirm: () => {
-      if (!canConfirm) return;
+      if (!canConfirm || listId === undefined) return;
       finish.mutate(
         {
+          listId,
           lines: kept.map(({ line, edit }) => {
             const { value } = quantityOf(edit.quantity);
             return {

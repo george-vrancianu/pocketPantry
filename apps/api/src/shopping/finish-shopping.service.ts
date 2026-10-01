@@ -114,7 +114,7 @@ export class FinishShoppingService {
         .select({ status: shoppingLists.status })
         .from(shoppingLists)
         .where(eq(shoppingLists.id, listId));
-      if (locked?.status !== 'active') {
+      if (locked?.status !== 'active' || body.listId !== listId) {
         throw new ApiException(409, 'shopping.list_changed');
       }
 
@@ -124,8 +124,9 @@ export class FinishShoppingService {
         ...body.droppedItemIds,
       ];
       const checkedIds = new Set(rows.map((row) => row.id));
+      if (rows.length === 0)
+        throw new ApiException(409, 'shopping.nothing_checked');
       if (
-        rows.length === 0 ||
         new Set(accounted).size !== accounted.length ||
         accounted.length !== checkedIds.size ||
         accounted.some((id) => !checkedIds.has(id))

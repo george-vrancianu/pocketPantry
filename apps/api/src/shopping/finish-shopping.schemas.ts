@@ -41,6 +41,8 @@ export const finishLine = z
  * `lines` (becomes a Batch) or in `droppedItemIds` (left out of the Pantry).
  */
 export const finishShoppingBody = z.object({
+  /** The list the Review was built from; a mismatch with the active list is a 409. */
+  listId: z.uuid(),
   lines: z.array(finishLine).max(500),
   droppedItemIds: z.array(z.uuid()).max(500).default([]),
 });

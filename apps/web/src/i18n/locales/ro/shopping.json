@@ -28,14 +28,16 @@
   "finish": {
     "button": "Termină cumpărăturile",
     "reviewTitle": "Adaugă în cămară",
-    "reviewHint": "Verifică ce ai cumpărat. Ajustează cantitatea, locația sau data de expirare sau renunță la o linie.",
+    "reviewHint": "Verifică ce ai cumpărat. Ajustează cantitatea, locația sau data de expirare sau renunță la un produs.",
     "drop": "Renunță la {{name}}",
     "restore": "Păstrează {{name}}",
-    "quantityInvalid": "Introdu o cantitate de cel puțin 0,001, cu maximum 3 zecimale.",
+    "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale.",
     "confirm_one": "Adaugă {{count}} produs în cămară",
     "confirm_few": "Adaugă {{count}} produse în cămară",
     "confirm_other": "Adaugă {{count}} de produse în cămară",
     "confirming": "Se salvează",
+    "empty": "Nimic de verificat. Poate un alt membru a terminat deja cumpărăturile.",
+    "reload": "Reîncarcă",
     "cancel": "Înapoi la listă"
   }
 }

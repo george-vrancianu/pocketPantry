@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, sql } from 'drizzle-orm';
+import pg from 'pg';
 import request from 'supertest';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
@@ -73,7 +74,7 @@ describe('Finish Shopping (integration)', () => {
   }
 
   const api = (
-    method: 'get' | 'post' | 'patch',
+    method: 'get' | 'post' | 'patch' | 'delete',
     cookie: string,
     path: string,
   ) =>
@@ -203,6 +204,7 @@ describe('Finish Shopping (integration)', () => {
             : lineFor(l),
         ),
         droppedItemIds: [],
+        listId,
       })
       .expect(200);
 
@@ -249,9 +251,9 @@ describe('Finish Shopping (integration)', () => {
     const list = await addItem(cookie, { name: 'Mystery jar' });
     await check(cookie, itemIdByName(list, 'Mystery jar'));
 
-    const { lines } = await proposal(cookie);
+    const { lines, listId } = await proposal(cookie);
     await api('post', cookie, 'shopping-list/finish')
-      .send({ lines: lines.map((l) => lineFor(l)), droppedItemIds: [] })
+      .send({ listId, lines: lines.map((l) => lineFor(l)), droppedItemIds: [] })
       .expect(200);
 
     const [batch] = await database
@@ -274,10 +276,11 @@ describe('Finish Shopping (integration)', () => {
     await check(cookie, itemIdByName(list, 'Milk'));
     await check(cookie, itemIdByName(list, 'Skip me'));
 
-    const { lines } = await proposal(cookie);
+    const { lines, listId } = await proposal(cookie);
     const skipped = lines.find((l) => l.name === 'Skip me')!;
     await api('post', cookie, 'shopping-list/finish')
       .send({
+        listId,
         lines: lines.filter((l) => l !== skipped).map((l) => lineFor(l)),
         droppedItemIds: [skipped.itemId],
       })
@@ -301,7 +304,7 @@ describe('Finish Shopping (integration)', () => {
     await check(cookie, itemIdByName(list, 'Milk'));
     const { lines, listId } = await proposal(cookie);
 
-    // Fail the new-list insert, the last step, after the Batches are in and the old list is archived.
+    // Fail the new-list insert, after the Batches are in and the old list is archived (the carry-over comes after it).
     const trigger = `finish_fail_${counter}`;
     await database.execute(
       sql.raw(`CREATE FUNCTION ${trigger}() RETURNS trigger AS $$
@@ -316,7 +319,11 @@ describe('Finish Shopping (integration)', () => {
     );
     try {
       await api('post', cookie, 'shopping-list/finish')
-        .send({ lines: lines.map((l) => lineFor(l)), droppedItemIds: [] })
+        .send({
+          listId,
+          lines: lines.map((l) => lineFor(l)),
+          droppedItemIds: [],
+        })
         .expect(500);
     } finally {
       await database.execute(
@@ -349,11 +356,11 @@ describe('Finish Shopping (integration)', () => {
     const list = await addItem(cookie, { ingredientId: milk });
     const other = await addItem(cookie, { name: 'Late check' });
     await check(cookie, itemIdByName(list, 'Milk'));
-    const { lines } = await proposal(cookie);
+    const { lines, listId } = await proposal(cookie);
     await check(cookie, itemIdByName(other, 'Late check'));
 
     const response = await api('post', cookie, 'shopping-list/finish')
-      .send({ lines: lines.map((l) => lineFor(l)), droppedItemIds: [] })
+      .send({ listId, lines: lines.map((l) => lineFor(l)), droppedItemIds: [] })
       .expect(409);
 
     expect((response.body as { code: string }).code).toBe(
@@ -367,8 +374,12 @@ describe('Finish Shopping (integration)', () => {
     const milk = await ingredientId(mine.cookie, 'milk');
     const list = await addItem(mine.cookie, { ingredientId: milk });
     await check(mine.cookie, itemIdByName(list, 'Milk'));
-    const { lines } = await proposal(mine.cookie);
-    const body = { lines: lines.map((l) => lineFor(l)), droppedItemIds: [] };
+    const { lines, listId } = await proposal(mine.cookie);
+    const body = {
+      listId,
+      lines: lines.map((l) => lineFor(l)),
+      droppedItemIds: [],
+    };
 
     await api('post', theirs.cookie, 'shopping-list/finish')
       .send(body)
@@ -379,5 +390,238 @@ describe('Finish Shopping (integration)', () => {
     await api('post', mine.cookie, 'shopping-list/finish')
       .send(body)
       .expect(409);
+  });
+  it('finishes with every line dropped: no Batches, a new list, unchecked items carried over', async () => {
+    const { cookie, familyId } = await signUp();
+    const list = await addItem(cookie, { name: 'Skip me' });
+    await addItem(cookie, { name: 'Stays' });
+    await check(cookie, itemIdByName(list, 'Skip me'));
+    const { lines, listId } = await proposal(cookie);
+
+    const result = await api('post', cookie, 'shopping-list/finish')
+      .send({ listId, lines: [], droppedItemIds: lines.map((l) => l.itemId) })
+      .expect(200);
+
+    expect((result.body as { batchCount: number }).batchCount).toBe(0);
+    expect(
+      await database
+        .select()
+        .from(batches)
+        .where(eq(batches.familyId, familyId)),
+    ).toHaveLength(0);
+    const fresh = (await api('get', cookie, 'shopping-list').expect(200))
+      .body as List;
+    expect(fresh.id).not.toBe(listId);
+    expect(fresh.groups.flatMap((g) => g.items).map((i) => i.name)).toEqual([
+      'Stays',
+    ]);
+  });
+
+  it("rejects another Family's real item ids sent against the caller's own list", async () => {
+    const mine = await signUp();
+    const theirs = await signUp();
+    const milk = await ingredientId(mine.cookie, 'milk');
+    const mineList = await addItem(mine.cookie, { ingredientId: milk });
+    await check(mine.cookie, itemIdByName(mineList, 'Milk'));
+    const theirList = await addItem(theirs.cookie, { ingredientId: milk });
+    await check(theirs.cookie, itemIdByName(theirList, 'Milk'));
+    const mineProposal = await proposal(mine.cookie);
+    const theirProposal = await proposal(theirs.cookie);
+
+    const response = await api('post', mine.cookie, 'shopping-list/finish')
+      .send({
+        listId: mineProposal.listId,
+        lines: theirProposal.lines.map((l) => lineFor(l)),
+        droppedItemIds: [],
+      })
+      .expect(409);
+
+    expect((response.body as { code: string }).code).toBe(
+      'shopping.list_changed',
+    );
+    expect(await database.select().from(batches)).not.toContainEqual(
+      expect.objectContaining({ familyId: theirs.familyId }),
+    );
+  });
+
+  it('rejects a commit built for a list that is no longer the active one', async () => {
+    const { cookie } = await signUp();
+    const milk = await ingredientId(cookie, 'milk');
+    const list = await addItem(cookie, { ingredientId: milk });
+    await check(cookie, itemIdByName(list, 'Milk'));
+    const { lines } = await proposal(cookie);
+
+    const response = await api('post', cookie, 'shopping-list/finish')
+      .send({
+        listId: '00000000-0000-4000-8000-000000000000',
+        lines: lines.map((l) => lineFor(l)),
+        droppedItemIds: [],
+      })
+      .expect(409);
+
+    expect((response.body as { code: string }).code).toBe(
+      'shopping.list_changed',
+    );
+  });
+
+  it('answers nothing_checked when nothing is checked at finish time', async () => {
+    const { cookie } = await signUp();
+    const list = await addItem(cookie, { name: 'Unchecked' });
+
+    const response = await api('post', cookie, 'shopping-list/finish')
+      .send({ listId: list.id, lines: [], droppedItemIds: [] })
+      .expect(409);
+
+    expect((response.body as { code: string }).code).toBe(
+      'shopping.nothing_checked',
+    );
+  });
+
+  describe('while a Finish is in progress', () => {
+    let pool: pg.Pool;
+    beforeAll(() => {
+      pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+    });
+    afterAll(async () => {
+      await pool.end();
+    });
+
+    /**
+     * Holds the active list's row lock like the Finish transaction does, so a
+     * request that starts now has to wait; `complete` then does Finish's
+     * archive, new list and carry-over and commits.
+     */
+    async function holdFinish(familyId: string) {
+      const client = await pool.connect();
+      await client.query('BEGIN');
+      const { rows } = await client.query<{ id: string }>(
+        `SELECT id FROM shopping_lists WHERE family_id = $1 AND status = 'active' FOR UPDATE`,
+        [familyId],
+      );
+      const oldId = rows[0].id;
+      return {
+        oldId,
+        complete: async () => {
+          await client.query(
+            `UPDATE shopping_lists SET status = 'archived' WHERE id = $1`,
+            [oldId],
+          );
+          const fresh = await client.query<{ id: string }>(
+            `INSERT INTO shopping_lists (family_id) VALUES ($1) RETURNING id`,
+            [familyId],
+          );
+          await client.query(
+            `UPDATE shopping_items SET list_id = $1 WHERE list_id = $2 AND checked = false`,
+            [fresh.rows[0].id, oldId],
+          );
+          await client.query('COMMIT');
+          client.release();
+          return fresh.rows[0].id;
+        },
+      };
+    }
+
+    /** Starts the request, proves it is blocked behind the lock, then lets Finish commit. */
+    async function duringFinish(
+      familyId: string,
+      send: () => Promise<request.Response>,
+    ) {
+      const held = await holdFinish(familyId);
+      let settled = false;
+      const pending = send().then((response) => {
+        settled = true;
+        return response;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const blocked = !settled;
+      const newListId = await held.complete();
+      const response = await pending;
+      expect(blocked).toBe(true);
+      return { response, oldId: held.oldId, newListId };
+    }
+
+    it('lands an added item on the new active list, not the archived one', async () => {
+      const { cookie, familyId } = await signUp();
+      await addItem(cookie, { name: 'Already here' });
+
+      const { response, oldId, newListId } = await duringFinish(familyId, () =>
+        api('post', cookie, 'shopping-list/items')
+          .send({ name: 'Late add' })
+          .then((r) => r),
+      );
+
+      expect(response.status).toBe(200);
+      const view = response.body as List;
+      expect(view.id).toBe(newListId);
+      expect(
+        view.groups
+          .flatMap((g) => g.items)
+          .map((i) => i.name)
+          .sort(),
+      ).toEqual(['Already here', 'Late add']);
+      const stranded = await database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.listId, oldId));
+      expect(stranded).toHaveLength(0);
+    });
+
+    it('does not lose a check made during Finish', async () => {
+      const { cookie, familyId } = await signUp();
+      const list = await addItem(cookie, { name: 'Late check' });
+      const id = itemIdByName(list, 'Late check');
+
+      const { response, newListId } = await duringFinish(familyId, () =>
+        api('patch', cookie, `shopping-list/items/${id}`)
+          .send({ checked: true })
+          .then((r) => r),
+      );
+
+      expect(response.status).toBe(200);
+      expect((response.body as List).id).toBe(newListId);
+      const [row] = await database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.id, id));
+      expect(row).toMatchObject({ listId: newListId, checked: true });
+    });
+
+    it('does not resurrect an item unchecked after Finish bought it', async () => {
+      const { cookie, familyId } = await signUp();
+      const list = await addItem(cookie, { name: 'Bought' });
+      const id = itemIdByName(list, 'Bought');
+      await check(cookie, id);
+
+      const { response, oldId } = await duringFinish(familyId, () =>
+        api('patch', cookie, `shopping-list/items/${id}`)
+          .send({ checked: false })
+          .then((r) => r),
+      );
+
+      expect(response.status).toBe(404);
+      const [row] = await database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.id, id));
+      expect(row).toMatchObject({ listId: oldId, checked: true });
+    });
+
+    it('removes an item that was carried over during Finish', async () => {
+      const { cookie, familyId } = await signUp();
+      const list = await addItem(cookie, { name: 'Carried' });
+      const id = itemIdByName(list, 'Carried');
+
+      const { response } = await duringFinish(familyId, () =>
+        api('delete', cookie, `shopping-list/items/${id}`).then((r) => r),
+      );
+
+      expect(response.status).toBe(200);
+      expect(
+        await database
+          .select()
+          .from(shoppingItems)
+          .where(eq(shoppingItems.id, id)),
+      ).toHaveLength(0);
+    });
   });
 });

@@ -28,7 +28,15 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
         {t('shopping:finish.reviewHint')}
       </Typography>
       {review.error ? <Alert>{review.error}</Alert> : null}
+      {review.stale ? (
+        <Button type="button" variant="text" onClick={review.reload}>
+          {t('shopping:finish.reload')}
+        </Button>
+      ) : null}
       {review.isLoading ? <Spinner label={t('common:loading')} /> : null}
+      {review.isEmpty ? (
+        <Typography>{t('shopping:finish.empty')}</Typography>
+      ) : null}
 
       {review.lines.map(({ line, edit, dropped, quantityValid }) => (
         <Stack
@@ -55,6 +63,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
             <Button
               variant="text"
               type="button"
+              aria-pressed={dropped}
               onClick={() => review.toggleDrop(line.itemId)}
             >
               {dropped
@@ -79,7 +88,12 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
                     review.edit(line.itemId, { quantity: event.target.value })
                   }
                   slotProps={{
-                    htmlInput: { min: 0, step: 'any', inputMode: 'decimal' },
+                    htmlInput: {
+                      min: 0,
+                      max: 1_000_000,
+                      step: 'any',
+                      inputMode: 'decimal',
+                    },
                   }}
                 />
                 <TextField
@@ -132,15 +146,17 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
       ))}
 
       <Stack direction="row" spacing={1}>
-        <Button
-          type="button"
-          disabled={!review.canConfirm}
-          onClick={review.confirm}
-        >
-          {review.confirming
-            ? t('shopping:finish.confirming')
-            : t('shopping:finish.confirm', { count: review.keptCount })}
-        </Button>
+        {review.isEmpty ? null : (
+          <Button
+            type="button"
+            disabled={!review.canConfirm}
+            onClick={review.confirm}
+          >
+            {review.confirming
+              ? t('shopping:finish.confirming')
+              : t('shopping:finish.confirm', { count: review.keptCount })}
+          </Button>
+        )}
         <Button type="button" variant="text" onClick={onCancel}>
           {t('shopping:finish.cancel')}
         </Button>
