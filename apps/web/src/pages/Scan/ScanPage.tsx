@@ -116,10 +116,21 @@ export function ScanPage() {
       >
         {screen.reading
           ? screen.receiptSections.readingNumber !== null
-            ? t('sections.reading', {
-                number: screen.receiptSections.readingNumber,
-              })
+            ? screen.photoQueue.total > 1
+              ? t('sections.readingBatch', {
+                  number: screen.photoQueue.number,
+                  total: screen.photoQueue.total,
+                })
+              : t('sections.reading', {
+                  number: screen.receiptSections.readingNumber,
+                })
             : t('reading')
+          : null}
+        {screen.mode === 'receipt' &&
+        !screen.reading &&
+        !screen.cropping &&
+        screen.photoQueue.waiting > 0
+          ? t('sections.queued', { count: screen.photoQueue.waiting })
           : null}
         {screen.mode === 'receipt' &&
         screen.receiptSections.full &&
@@ -134,6 +145,11 @@ export function ScanPage() {
       {screen.error ? (
         <Box sx={{ mt: 1 }}>
           <Alert>{screen.error}</Alert>
+        </Box>
+      ) : null}
+      {screen.notice ? (
+        <Box sx={{ mt: 1 }}>
+          <Alert severity="warning">{screen.notice}</Alert>
         </Box>
       ) : null}
 
@@ -253,6 +269,15 @@ export function ScanPage() {
 
       {screen.cropping ? (
         <ReceiptCropper
+          key={screen.photoQueue.number}
+          progress={
+            screen.photoQueue.total > 1
+              ? t('sections.photoOf', {
+                  number: screen.photoQueue.number,
+                  total: screen.photoQueue.total,
+                })
+              : undefined
+          }
           photo={screen.cropping}
           onConfirm={screen.confirmCrop}
           onCancel={screen.cancelCrop}
@@ -264,6 +289,7 @@ export function ScanPage() {
         ref={screen.fileInput}
         type="file"
         accept="image/*"
+        multiple={screen.mode === 'receipt'}
         onChange={screen.pickFile}
         data-testid="gallery-input"
         sx={{ display: 'none' }}

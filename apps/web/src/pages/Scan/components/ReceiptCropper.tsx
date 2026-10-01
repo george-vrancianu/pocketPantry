@@ -42,10 +42,13 @@ function trapFocus(
  */
 export function ReceiptCropper({
   photo,
+  progress,
   onConfirm,
   onCancel,
 }: {
   photo: Blob;
+  /** Where this photo is in a selection of several, e.g. "Photo 2 of 4". */
+  progress?: string;
   onConfirm: (crop: ReceiptCrop) => void;
   onCancel: () => void;
 }) {
@@ -97,6 +100,13 @@ export function ReceiptCropper({
         color: '#FFFFFF',
       }}
     >
+      {progress ? (
+        <Typography
+          sx={{ pt: 2, textAlign: 'center', fontSize: 13, fontWeight: 700 }}
+        >
+          {progress}
+        </Typography>
+      ) : null}
       <Typography sx={{ p: 2, textAlign: 'center', fontSize: 14 }}>
         {t('crop.instruction')}
       </Typography>

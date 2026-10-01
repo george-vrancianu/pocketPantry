@@ -36,16 +36,18 @@ export function useReceiptSections(locale: string) {
   const target = failed?.index ?? retaking ?? sections.length;
   const full = target >= MAX_RECEIPT_SECTIONS;
 
-  /** Sends one prepared photo as the target section and waits for the result. */
-  const submit = async (image: string) => {
-    if (full) return;
+  /** Sends one prepared photo as the target section and waits for the result; says how it went. */
+  const submit = async (
+    image: string,
+  ): Promise<'read' | 'failed' | 'dropped'> => {
+    if (full) return 'dropped';
     const index = target;
     const started = generation.current;
     setReadingIndex(index);
     setSelected(null);
     try {
       const result = await scan.mutateAsync(image);
-      if (started !== generation.current) return;
+      if (started !== generation.current) return 'dropped';
       setSections((current) => {
         const next = [...current];
         next[index] = { ...result, thumbnail: image };
@@ -54,8 +56,11 @@ export function useReceiptSections(locale: string) {
       setFailed(null);
       setRetaking(null);
       setSelected(index);
+      return 'read';
     } catch (error) {
-      if (started === generation.current) setFailed({ index, error });
+      if (started !== generation.current) return 'dropped';
+      setFailed({ index, error });
+      return 'failed';
     } finally {
       if (started === generation.current) setReadingIndex(null);
     }
@@ -73,6 +78,8 @@ export function useReceiptSections(locale: string) {
     /** Which section the failed request was for. */
     failedIndex: failed?.index ?? null,
     /** A result or failure is on screen: the camera waits until the Member decides what to do. */
+    /** The next photo replaces a section instead of adding one. */
+    retaking: retaking !== null,
     deciding: selected !== null || failed !== null,
     submit,
     select: (index: number) => {
