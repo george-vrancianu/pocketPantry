@@ -165,7 +165,7 @@ function LocaleBlock({
               })}
               onClick={() => void remove(item.id).catch(() => {})}
             >
-              {t('common.delete')}
+              {t('common.remove')}
             </Button>
           </Stack>
         ))}
@@ -186,7 +186,7 @@ function LocaleBlock({
           onClick={() => void addSynonym()}
           aria-label={t('translations.addSynonym', { language })}
         >
-          {t('common.save')}
+          {t('common.add')}
         </Button>
       </Stack>
     </Stack>

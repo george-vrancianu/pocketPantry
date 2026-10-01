@@ -29,6 +29,8 @@
     "delete": "Delete",
     "confirmDelete": "Confirm delete",
     "cancel": "Cancel",
+    "add": "Add",
+    "remove": "Remove",
     "close": "Close"
   },
   "ingredient": {
@@ -50,6 +52,7 @@
     "parent": "Parent Category",
     "defaultExpiryDays": "Default Expiry (days)",
     "defaultLocation": "Default location",
+    "expiryInvalid": "Enter a whole number of days from 0 to {{max}}, or leave blank to inherit.",
     "leafCount": "Leaf Categories: {{count}}"
   },
   "translations": {

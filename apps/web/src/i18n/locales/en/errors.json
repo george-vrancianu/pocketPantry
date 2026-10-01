@@ -41,8 +41,9 @@
   "catalog": {
     "not_found": "That Catalog entry no longer exists.",
     "name_taken": "That name is already used. Names must be unique, ignoring case and accents.",
-    "category_not_empty": "This Category still contains {{children}} entries. Move or delete them first.",
-    "ingredient_in_use": "This Ingredient is still used by {{batches}} Batches and {{shoppingItems}} Shopping Items, so it cannot be deleted.",
+    "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
+    "ingredient_in_use": "This Ingredient is still used by Batches or Shopping Items, so it cannot be deleted.",
+    "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
     "canonical_name_managed": "The English name changes with the entry's name, not here."
   },
   "family": {

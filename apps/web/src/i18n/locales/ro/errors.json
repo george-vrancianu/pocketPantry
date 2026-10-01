@@ -41,8 +41,9 @@
   "catalog": {
     "not_found": "Această intrare din Catalog nu mai există.",
     "name_taken": "Numele este deja folosit. Numele trebuie să fie unice, indiferent de majuscule și diacritice.",
-    "category_not_empty": "Această Categorie conține încă {{children}} intrări. Mută-le sau șterge-le mai întâi.",
-    "ingredient_in_use": "Acest Ingredient este încă folosit în {{batches}} Loturi și {{shoppingItems}} Articole din lista de cumpărături, deci nu poate fi șters.",
+    "category_not_empty": "Această Categorie este încă folosită sau conține intrări. Mută-le sau șterge-le mai întâi.",
+    "ingredient_in_use": "Acest Ingredient este încă folosit de Loturi sau Articole din lista de cumpărături, deci nu poate fi șters.",
+    "translation_exists": "Această intrare are deja un nume în acea limbă. Editează-l pe cel existent.",
     "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici."
   },
   "family": {

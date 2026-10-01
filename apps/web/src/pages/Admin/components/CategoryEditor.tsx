@@ -1,7 +1,6 @@
-import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
-import { useState, type FormEvent } from 'react';
+import { Stack, TextField } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
 import {
   LOCATIONS,
   localName,
@@ -13,6 +12,7 @@ import {
   type CategoryKind,
   type Location,
 } from '../../../lib/admin';
+import { EditorForm } from './EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {
@@ -22,6 +22,18 @@ type Props = {
   catalog: AdminCatalog;
   onDone: () => void;
 };
+
+const MAX_EXPIRY_DAYS = 3650;
+
+/** Blank means "inherit" (null); anything else must be a whole number of days. */
+function parseExpiry(text: string): number | null | 'invalid' {
+  const trimmed = text.trim();
+  if (trimmed === '') return null;
+  const days = Number(trimmed);
+  return Number.isInteger(days) && days >= 0 && days <= MAX_EXPIRY_DAYS
+    ? days
+    : 'invalid';
+}
 
 /** Create or edit a Parent Category (carries the Aisle) or a Leaf Category. */
 export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
@@ -43,26 +55,53 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
   const [location, setLocation] = useState<Location | ''>(
     category?.defaultLocation ?? '',
   );
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const error = save.error ?? remove.error;
+  const expiryDays = parseExpiry(expiry);
+  const expiryInvalid = expiryDays === 'invalid';
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    save.mutate(
-      {
-        name: name.trim(),
-        ...(kind === 'parent' ? { aisleId: ownerId } : { parentId: ownerId }),
-        defaultExpiryDays: expiry.trim() === '' ? null : Number(expiry),
-        defaultLocation: location === '' ? null : location,
-      },
-      { onSuccess: onDone },
-    );
-  };
+  const heading = category
+    ? t(
+        kind === 'parent'
+          ? 'admin:category.editParent'
+          : 'admin:category.editLeaf',
+        {
+          name: localName(category, i18n.language),
+        },
+      )
+    : t(
+        kind === 'parent'
+          ? 'admin:category.newParent'
+          : 'admin:category.newLeaf',
+      );
 
   return (
     <Stack spacing={3}>
-      <Stack component="form" spacing={2} onSubmit={submit} noValidate>
-        {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+      <EditorForm
+        heading={heading}
+        error={save.error ?? remove.error}
+        canSave={name.trim() !== '' && !expiryInvalid}
+        saving={save.isPending}
+        onSubmit={() => {
+          if (expiryDays === 'invalid') return;
+          save.mutate(
+            {
+              name: name.trim(),
+              ...(kind === 'parent'
+                ? { aisleId: ownerId }
+                : { parentId: ownerId }),
+              defaultExpiryDays: expiryDays,
+              defaultLocation: location === '' ? null : location,
+            },
+            { onSuccess: onDone },
+          );
+        }}
+        onCancel={onDone}
+        onDelete={
+          category
+            ? () => remove.mutate(category.id, { onSuccess: onDone })
+            : undefined
+        }
+        deleting={remove.isPending}
+      >
         <TextField
           label={t('admin:category.name')}
           value={name}
@@ -91,7 +130,13 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
           type="number"
           value={expiry}
           onChange={(event) => setExpiry(event.target.value)}
-          slotProps={{ htmlInput: { min: 0, max: 3650 } }}
+          error={expiryInvalid}
+          helperText={
+            expiryInvalid
+              ? t('admin:category.expiryInvalid', { max: MAX_EXPIRY_DAYS })
+              : undefined
+          }
+          slotProps={{ htmlInput: { min: 0, max: MAX_EXPIRY_DAYS } }}
         />
         <TextField
           select
@@ -107,32 +152,7 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
             </option>
           ))}
         </TextField>
-        <Stack direction="row" spacing={1}>
-          <Button type="submit" disabled={save.isPending || name.trim() === ''}>
-            {save.isPending ? t('admin:common.saving') : t('admin:common.save')}
-          </Button>
-          <Button variant="text" onClick={onDone}>
-            {t('admin:common.cancel')}
-          </Button>
-          {category ? (
-            confirmingDelete ? (
-              <Button
-                variant="secondary"
-                disabled={remove.isPending}
-                onClick={() =>
-                  remove.mutate(category.id, { onSuccess: onDone })
-                }
-              >
-                {t('admin:common.confirmDelete')}
-              </Button>
-            ) : (
-              <Button variant="text" onClick={() => setConfirmingDelete(true)}>
-                {t('admin:common.delete')}
-              </Button>
-            )
-          ) : null}
-        </Stack>
-      </Stack>
+      </EditorForm>
       {category ? (
         <TranslationsEditor
           entityType={kind === 'parent' ? 'parent_category' : 'leaf_category'}

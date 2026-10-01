@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { catalogSearchQueryKey, type Unit } from './catalog';
 
-export const UNITS = ['g', 'kg', 'ml', 'l', 'pcs'] as const;
-export type Unit = (typeof UNITS)[number];
 export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
 export type Location = (typeof LOCATIONS)[number];
 export const CATALOG_LOCALES = ['en', 'ro'] as const;
@@ -69,8 +68,12 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: send,
+    // Member-facing Catalog search shows the same names, so refresh it too.
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
+        queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+      ]),
   });
 }
 

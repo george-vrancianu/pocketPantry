@@ -186,7 +186,7 @@ describe('IngredientEditor', () => {
         Response.json(
           {
             code: 'catalog.ingredient_in_use',
-            params: { batches: 2, shoppingItems: 1 },
+            params: {},
           },
           { status: 409 },
         ),
@@ -207,7 +207,7 @@ describe('IngredientEditor', () => {
     );
 
     expect(
-      await screen.findByText(/încă folosit în 2 Loturi și 1 Articole/),
+      await screen.findByText(/încă folosit de Loturi sau Articole/),
     ).toBeVisible();
   });
 
@@ -228,5 +228,36 @@ describe('IngredientEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText(/already used/)).toBeVisible();
+  });
+
+  it('focuses a heading when the editor opens', () => {
+    stub();
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={parmesan}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Edit Parmesan' }),
+    ).toHaveFocus();
+  });
+
+  it('keeps visible button text inside the accessible name', () => {
+    stub();
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={parmesan}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+    const add = screen.getByRole('button', { name: 'Add Romanian Synonym' });
+    expect(add).toHaveTextContent('Add');
+    const remove = screen.getByRole('button', {
+      name: 'Remove Synonym Parmigiano',
+    });
+    expect(remove).toHaveTextContent('Remove');
   });
 });

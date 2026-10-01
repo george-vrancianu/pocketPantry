@@ -1,16 +1,15 @@
-import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
-import { useState, type FormEvent } from 'react';
+import { Stack, TextField } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
 import {
-  UNITS,
   localName,
   useDeleteIngredient,
   useSaveIngredient,
   type AdminCatalog,
   type AdminIngredient,
-  type Unit,
 } from '../../../lib/admin';
+import { UNITS, type Unit } from '../../../lib/catalog';
+import { EditorForm } from './EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {
@@ -32,16 +31,6 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
   const [defaultUnit, setDefaultUnit] = useState<Unit>(
     ingredient?.defaultUnit ?? 'g',
   );
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const error = save.error ?? remove.error;
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    save.mutate(
-      { name: name.trim(), leafCategoryId, defaultUnit },
-      { onSuccess: onDone },
-    );
-  };
 
   const leaves = catalog.leafCategories.map((leaf) => {
     const parent = catalog.parentCategories.find((p) => p.id === leaf.parentId);
@@ -53,8 +42,31 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
 
   return (
     <Stack spacing={3}>
-      <Stack component="form" spacing={2} onSubmit={submit} noValidate>
-        {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+      <EditorForm
+        heading={
+          ingredient
+            ? t('admin:ingredient.edit', {
+                name: localName(ingredient, i18n.language),
+              })
+            : t('admin:ingredient.new')
+        }
+        error={save.error ?? remove.error}
+        canSave={name.trim() !== ''}
+        saving={save.isPending}
+        onSubmit={() =>
+          save.mutate(
+            { name: name.trim(), leafCategoryId, defaultUnit },
+            { onSuccess: onDone },
+          )
+        }
+        onCancel={onDone}
+        onDelete={
+          ingredient
+            ? () => remove.mutate(ingredient.id, { onSuccess: onDone })
+            : undefined
+        }
+        deleting={remove.isPending}
+      >
         <TextField
           label={t('admin:ingredient.name')}
           value={name}
@@ -87,32 +99,7 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
             </option>
           ))}
         </TextField>
-        <Stack direction="row" spacing={1}>
-          <Button type="submit" disabled={save.isPending || name.trim() === ''}>
-            {save.isPending ? t('admin:common.saving') : t('admin:common.save')}
-          </Button>
-          <Button variant="text" onClick={onDone}>
-            {t('admin:common.cancel')}
-          </Button>
-          {ingredient ? (
-            confirmingDelete ? (
-              <Button
-                variant="secondary"
-                disabled={remove.isPending}
-                onClick={() =>
-                  remove.mutate(ingredient.id, { onSuccess: onDone })
-                }
-              >
-                {t('admin:common.confirmDelete')}
-              </Button>
-            ) : (
-              <Button variant="text" onClick={() => setConfirmingDelete(true)}>
-                {t('admin:common.delete')}
-              </Button>
-            )
-          ) : null}
-        </Stack>
-      </Stack>
+      </EditorForm>
       {ingredient ? (
         <TranslationsEditor
           entityType="ingredient"

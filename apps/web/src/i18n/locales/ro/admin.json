@@ -29,6 +29,8 @@
     "delete": "Șterge",
     "confirmDelete": "Confirmă ștergerea",
     "cancel": "Anulează",
+    "add": "Adaugă",
+    "remove": "Elimină",
     "close": "Închide"
   },
   "ingredient": {
@@ -50,6 +52,7 @@
     "parent": "Categorie părinte",
     "defaultExpiryDays": "Valabilitate implicită (zile)",
     "defaultLocation": "Locație implicită",
+    "expiryInvalid": "Introdu un număr întreg de zile între 0 și {{max}}, sau lasă gol pentru a moșteni.",
     "leafCount": "Categorii frunză: {{count}}"
   },
   "translations": {
