@@ -84,4 +84,25 @@ describe('CategoryEditor', () => {
     expect(screen.getByLabelText('Parent Category')).toBeDisabled();
     expect(screen.getByText(/cannot be moved or deleted/)).toBeVisible();
   });
+
+  it('does not offer to delete the top-level Other Parent Category', () => {
+    vi.stubGlobal('fetch', stubApi({}).fetchMock);
+    renderWithProviders(
+      <CategoryEditor
+        kind="parent"
+        category={{
+          id: '06aa911a-270a-58da-9f4c-b4438a117a41',
+          name: 'Other',
+          aisleId: 'a1',
+          defaultExpiryDays: null,
+          defaultLocation: null,
+          translations: [],
+        }}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+  });
 });

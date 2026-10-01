@@ -44,6 +44,7 @@
     "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
     "ingredient_in_use": "This Ingredient is still used by Batches or Shopping Items, so it cannot be deleted.",
     "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
+    "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
     "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
     "canonical_name_managed": "The English name changes with the entry's name, not here."
   },

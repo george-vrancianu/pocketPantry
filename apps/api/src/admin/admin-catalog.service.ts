@@ -54,6 +54,20 @@ const PROTECTED_PARENT_IDS = new Set([seedId.parent('other')]);
 const otherLeafProtected = () =>
   new ApiException(409, 'catalog.other_leaf_protected');
 
+const MAX_NAME_LENGTH = 100;
+const OTHER_PREFIX = 'Other ';
+
+/** The generated Other Leaf name, capped to the API's name limit by truncating the Parent part. */
+export function otherLeafName(parentName: string): string {
+  return (
+    OTHER_PREFIX +
+    parentName.toLowerCase().slice(0, MAX_NAME_LENGTH - OTHER_PREFIX.length)
+  ).trimEnd();
+}
+
+const otherLeafNameTaken = () =>
+  new ApiException(409, 'catalog.other_leaf_name_taken');
+
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
 
@@ -150,16 +164,21 @@ export class AdminCatalogService {
       await this.addCanonicalName(tx, 'parent_category', id, input.name);
       // Every Parent has an "Other" Leaf so Unmatched Batches always have a
       // home; it inherits Default Expiry and Location from the Parent.
-      const otherName = `Other ${input.name.toLowerCase()}`;
+      const otherName = otherLeafName(input.name);
       const otherId = randomUUID();
-      await tx.insert(leafCategories).values({
-        id: otherId,
-        parentId: id,
-        name: otherName,
-        normalizedName: normalizeName(otherName),
-        isOther: true,
-      });
-      await this.addCanonicalName(tx, 'leaf_category', otherId, otherName);
+      try {
+        await tx.insert(leafCategories).values({
+          id: otherId,
+          parentId: id,
+          name: otherName,
+          normalizedName: normalizeName(otherName),
+          isOther: true,
+        });
+        await this.addCanonicalName(tx, 'leaf_category', otherId, otherName);
+      } catch (error) {
+        if (hasPgCode(error, '23505')) throw otherLeafNameTaken();
+        throw error;
+      }
       return row;
     });
   }
@@ -167,6 +186,10 @@ export class AdminCatalogService {
   updateParentCategory(id: string, input: ParentCategoryUpdate) {
     return this.write(async (tx) => {
       if (input.aisleId) await this.requireAisle(tx, input.aisleId);
+      const [before] = await tx
+        .select({ name: parentCategories.name })
+        .from(parentCategories)
+        .where(eq(parentCategories.id, id));
       const [row] = await tx
         .update(parentCategories)
         .set({ ...input, ...this.normalized(input.name) })
@@ -175,6 +198,7 @@ export class AdminCatalogService {
       if (!row) throw notFound('parent_category');
       if (input.name) {
         await this.renameCanonicalName(tx, 'parent_category', id, input.name);
+        if (before) await this.renameOtherLeaf(tx, id, before.name, input.name);
       }
       return row;
     });
@@ -413,6 +437,37 @@ export class AdminCatalogService {
         throw new ApiException(409, uniqueCode(pgConstraint(error)));
       }
       if (inUse && hasPgCode(error, '23503')) throw inUse;
+      throw error;
+    }
+  }
+
+  /** Keeps the Other Leaf's generated name in step with its Parent, unless an admin renamed it. */
+  private async renameOtherLeaf(
+    tx: Tx,
+    parentId: string,
+    oldName: string,
+    newName: string,
+  ): Promise<void> {
+    const [leaf] = await tx
+      .select({ id: leafCategories.id, name: leafCategories.name })
+      .from(leafCategories)
+      .where(
+        and(
+          eq(leafCategories.parentId, parentId),
+          eq(leafCategories.isOther, true),
+        ),
+      );
+    if (!leaf || leaf.name !== otherLeafName(oldName)) return;
+    const name = otherLeafName(newName);
+    if (name === leaf.name) return;
+    try {
+      await tx
+        .update(leafCategories)
+        .set({ name, normalizedName: normalizeName(name) })
+        .where(eq(leafCategories.id, leaf.id));
+      await this.renameCanonicalName(tx, 'leaf_category', leaf.id, name);
+    } catch (error) {
+      if (hasPgCode(error, '23505')) throw otherLeafNameTaken();
       throw error;
     }
   }

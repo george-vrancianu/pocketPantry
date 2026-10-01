@@ -558,6 +558,79 @@ describe('Admin role and Catalog curation (integration)', () => {
       ).toBe(false);
     });
 
+    it('caps a long generated Other Leaf name, and reports a clash clearly', async () => {
+      const longName = `${'x'.repeat(95)}${stamp}`.slice(0, 100);
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: longName,
+            aisleId: seedId.aisle('dry-goods'),
+          })
+          .expect(201)
+      ).body as Body;
+      const other = (await overview()).leafCategories.find(
+        (leaf) => leaf.parentId === parent.id,
+      ) as Body;
+      expect(String(other.name)).toHaveLength(100);
+      expect(String(other.name).startsWith('Other xxx')).toBe(true);
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+
+      // A Leaf already called "Other <name>" makes the generated name clash.
+      const clash = `Clash ${stamp}`;
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            name: `Other ${clash.toLowerCase()}`,
+            parentId: seedId.parent('dairy'),
+          })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/parent-categories', {
+          name: clash,
+          aisleId: seedId.aisle('dry-goods'),
+        })
+        .expect(409)
+        .expect({ code: 'catalog.other_leaf_name_taken', params: {} });
+      await as(adminCookie).del(`/leaf-categories/${leaf.id}`).expect(204);
+    });
+
+    it('renames the Other Leaf with its Parent only while it has the generated name', async () => {
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `Jams ${stamp}`,
+            aisleId: seedId.aisle('dry-goods'),
+          })
+          .expect(201)
+      ).body as Body;
+      const otherOf = async () =>
+        (await overview()).leafCategories.find(
+          (leaf) => leaf.parentId === parent.id,
+        ) as Body;
+      const other = await otherOf();
+
+      await as(adminCookie)
+        .patch(`/parent-categories/${parent.id}`, {
+          name: `Preserves ${stamp}`,
+        })
+        .expect(200);
+      expect((await otherOf()).name).toBe(`Other preserves ${stamp}`);
+      expect(await translationsOf('leaf_category', other.id)).toEqual([
+        expect.objectContaining({ value: `Other preserves ${stamp}` }),
+      ]);
+
+      await as(adminCookie)
+        .patch(`/leaf-categories/${other.id}`, { name: `Misc ${stamp}` })
+        .expect(200);
+      await as(adminCookie)
+        .patch(`/parent-categories/${parent.id}`, { name: `Spreads2 ${stamp}` })
+        .expect(200);
+      expect((await otherOf()).name).toBe(`Misc ${stamp}`);
+
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+    });
+
     it('never deletes the top-level Other Parent', async () => {
       await as(adminCookie)
         .del(`/parent-categories/${seedId.parent('other')}`)

@@ -25,6 +25,9 @@ type Props = {
 
 const MAX_EXPIRY_DAYS = 3650;
 
+/** The seeded top-level Other Parent (the API's seedId.parent('other')): the server refuses to delete it. */
+const OTHER_PARENT_ID = '06aa911a-270a-58da-9f4c-b4438a117a41';
+
 /** Blank means "inherit" (null); anything else must be a whole number of days. */
 function parseExpiry(text: string): number | null | 'invalid' {
   const trimmed = text.trim();
@@ -98,7 +101,7 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
         }}
         onCancel={onDone}
         onDelete={
-          category && !isOther
+          category && !isOther && category.id !== OTHER_PARENT_ID
             ? () => remove.mutate(category.id, { onSuccess: onDone })
             : undefined
         }
