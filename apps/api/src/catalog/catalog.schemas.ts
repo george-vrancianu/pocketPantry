@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ingredientUnit } from '../database/schema';
 
 export const CATALOG_LOCALES = ['en', 'ro'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
@@ -14,7 +15,7 @@ export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 export type CatalogSearchResult = {
   id: string;
   name: string;
-  defaultUnit: string;
+  defaultUnit: (typeof ingredientUnit.enumValues)[number];
   leafCategory: { id: string; name: string };
   parentCategory: { id: string; name: string; aisle: string };
 };

@@ -66,8 +66,10 @@ function translationRows(
 
 /**
  * Loads the starter Catalog. Rows have fixed ids and are inserted with
- * ON CONFLICT DO NOTHING, so running it again leaves the database unchanged
- * (and never overwrites Admin edits to seeded rows).
+ * ON CONFLICT (id) DO NOTHING, so running it again leaves the database unchanged
+ * and keeps in-place Admin edits. Rows an Admin deleted or renamed are restored,
+ * and a real collision (e.g. an Admin-made Ingredient with the same normalised
+ * name) fails loudly instead of being skipped.
  */
 export async function seedCatalog(database: Database): Promise<void> {
   await database.transaction(async (tx) => {
@@ -84,7 +86,7 @@ export async function seedCatalog(database: Database): Promise<void> {
           defaultLocation: parent.defaultLocation,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: parentCategories.id });
 
     await tx
       .insert(leafCategories)
@@ -98,7 +100,7 @@ export async function seedCatalog(database: Database): Promise<void> {
           defaultLocation: leaf.defaultLocation ?? null,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: leafCategories.id });
 
     await tx
       .insert(ingredients)
@@ -111,7 +113,7 @@ export async function seedCatalog(database: Database): Promise<void> {
           defaultUnit: item.unit,
         })),
       )
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: ingredients.id });
 
     const translations: TranslationRow[] = [
       ...SEED_PARENTS.flatMap((parent) =>
@@ -132,6 +134,6 @@ export async function seedCatalog(database: Database): Promise<void> {
     await tx
       .insert(catalogTranslations)
       .values(translations)
-      .onConflictDoNothing();
+      .onConflictDoNothing({ target: catalogTranslations.id });
   });
 }
