@@ -111,6 +111,42 @@ describe('Product Scan (integration)', () => {
     });
   });
 
+  describe('Family Default Expiry overrides', () => {
+    const setOverride = (cookie: string, categoryId: string, days: number) =>
+      request(app.getHttpServer())
+        .put(`/api/settings/family/expiry-overrides/${categoryId}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ days })
+        .expect(200);
+
+    const proposedExpiryDays = async (cookie: string) => {
+      respondWith(parmesan());
+      const body = (await scan(cookie, { productImage: IMAGE }).expect(201))
+        .body as { lines: { match: { defaults: { expiryDays: number } } }[] };
+      return body.lines[0].match.defaults.expiryDays;
+    };
+
+    it('uses the Family Leaf override over the Catalog default', async () => {
+      const cookie = await signUp();
+      await setOverride(cookie, seedId.leaf('hard-cheese'), 14);
+      expect(await proposedExpiryDays(cookie)).toBe(14);
+    });
+
+    it('uses the Family Parent override when the Leaf has none', async () => {
+      const cookie = await signUp();
+      await setOverride(cookie, seedId.parent('dairy'), 6);
+      expect(await proposedExpiryDays(cookie)).toBe(6);
+    });
+
+    it('prefers the Family Leaf override over the Family Parent override', async () => {
+      const cookie = await signUp();
+      await setOverride(cookie, seedId.parent('dairy'), 6);
+      await setOverride(cookie, seedId.leaf('hard-cheese'), 14);
+      expect(await proposedExpiryDays(cookie)).toBe(14);
+    });
+  });
+
   it('hands the model the Catalog in the Member locale and returns names in it', async () => {
     respondWith(parmesan());
     prompts.length = 0;
