@@ -5,6 +5,7 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { ApiError } from '../../../lib/api';
 import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
+import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
 import {
   isScanMode,
@@ -25,12 +26,15 @@ export function useScanScreen() {
 
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
+  const ingredientsScan = useIngredientsScan(i18n.language);
+  // Every wired mode has its own endpoint and returns the same proposed lines.
+  const modeScan = mode === 'ingredients' ? ingredientsScan : productScan;
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [resizeError, setResizeError] = useState<ApiError | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || productScan.isPending;
+  const reading = resizing || modeScan.isPending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
@@ -46,8 +50,12 @@ export function useScanScreen() {
     } finally {
       setResizing(false);
     }
-    productScan.mutate(image, {
+    modeScan.mutate(image, {
       onSuccess: ({ lines }) => {
+        if (lines.length === 0) {
+          setResizeError(new ApiError('scan.nothing_found', 200));
+          return;
+        }
         startReview({ mode, lines });
         navigate('/scan/review');
       },
@@ -71,7 +79,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const error = resizeError ?? productScan.error;
+  const error = resizeError ?? modeScan.error;
 
   return {
     mode,
@@ -84,6 +92,7 @@ export function useScanScreen() {
     error: error ? translateApiError(t, error) : null,
     setMode: (next: ScanMode) => {
       productScan.reset();
+      ingredientsScan.reset();
       setResizeError(null);
       setParams({ mode: next }, { replace: true });
     },

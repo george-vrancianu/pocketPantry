@@ -4,6 +4,9 @@ import { imageDataUrlSchema } from './product-scan.schemas';
 export const ingredientsScanSchema = z.object({
   ingredientsImage: imageDataUrlSchema,
 });
+/** The most items one Ingredients Scan returns; a photo with more is rejected with `scan.too_many_items`. */
+export const INGREDIENTS_SCAN_MAX_ITEMS = 100;
+
 const item = z.object({
   productName: z.string().trim().min(1).max(120),
   productType: z.string().trim().min(1).max(80),
@@ -14,7 +17,8 @@ const item = z.object({
   confidence: z.number().min(0).max(1),
 });
 export const ingredientsScanModelResultSchema = z.object({
-  items: z.array(item).max(100),
+  // The cap above is enforced by the service, with its own error, not by parsing.
+  items: z.array(item).max(INGREDIENTS_SCAN_MAX_ITEMS * 3),
 });
 export const ingredientsScanResultSchema = z.object({
   items: z
@@ -29,37 +33,10 @@ export const ingredientsScanResultSchema = z.object({
           .nullable(),
       }),
     )
-    .max(100),
+    .max(INGREDIENTS_SCAN_MAX_ITEMS),
 });
 export type IngredientsScanInput = z.infer<typeof ingredientsScanSchema>;
 export type IngredientsScanResult = z.infer<typeof ingredientsScanResultSchema>;
-const responseSchema = z.object({
-  status: z.string().optional(),
-  output: z.array(
-    z.object({
-      type: z.string().optional(),
-      content: z
-        .array(z.object({ type: z.string(), text: z.string().optional() }))
-        .optional(),
-    }),
-  ),
-});
-export function parseIngredientsScanOutput(body: unknown) {
-  const response = responseSchema.parse(body);
-  if (response.status && response.status !== 'completed')
-    throw new Error('scan incomplete');
-  const content = response.output
-    .filter((entry) => !entry.type || entry.type === 'message')
-    .flatMap((entry) => entry.content ?? []);
-  if (content.some((entry) => entry.type === 'refusal'))
-    throw new Error('scan refused');
-  const text = content
-    .filter((entry) => entry.type === 'output_text')
-    .map((entry) => entry.text ?? '')
-    .join('');
-  if (!text.trim()) throw new Error('scan empty');
-  return ingredientsScanModelResultSchema.parse(JSON.parse(text) as unknown);
-}
 export const ingredientsScanModelJsonSchema = z.toJSONSchema(
   ingredientsScanModelResultSchema,
   { target: 'draft-7' },

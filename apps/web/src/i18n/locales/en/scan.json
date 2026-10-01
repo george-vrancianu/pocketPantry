@@ -25,6 +25,6 @@
     "product": "Adds it to your pantry with its best-before date.",
     "receipt": "Adds every item from your shop in one go.",
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
-    "ingredients": "Recognises loose produce and suggests recipes."
+    "ingredients": "Adds each loose item on the counter to your pantry."
   }
 }

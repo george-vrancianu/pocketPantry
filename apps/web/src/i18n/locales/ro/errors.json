@@ -28,6 +28,8 @@
     "cap_reached": "Ai folosit toate cele {{cap}} scanări de azi. Încearcă mâine sau adaugă produsele manual.",
     "image_invalid": "Fișierul nu este o fotografie pe care o putem citi. Folosește o imagine JPEG, PNG sau WebP.",
     "image_too_large": "Fotografia este prea mare. Încearcă una mai mică.",
+    "too_many_items": "Am găsit mai mult de {{max}} produse. Fotografiază mai puține odată.",
+    "nothing_found": "Nu am găsit niciun ingredient. Așază-le separat, la lumină bună, și încearcă din nou.",
     "provider_unavailable": "Scanarea nu este disponibilă acum. Încearcă din nou peste puțin timp.",
     "provider_refused": "Fotografia nu a putut fi procesată. Încearcă o poză mai clară a produsului.",
     "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
