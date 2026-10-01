@@ -7,6 +7,7 @@ import { allowedOrigins, isAllowedOrigin } from '../config/origins';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import * as schema from '../database/schema';
+import { createHouseholdOfOne } from '../family/household';
 import { AUTH } from './auth.constants';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AuthGuard } from './auth.guard';
@@ -35,6 +36,27 @@ import { AuthGuard } from './auth.guard';
             additionalFields: {
               // Read-only for clients; admin assignment arrives in ticket #16.
               role: { type: 'string', defaultValue: 'regular', input: false },
+              // Set by the signup hook below, never by clients (the column is NOT NULL).
+              familyId: { type: 'string', required: false, input: false },
+              familyRole: {
+                type: 'string',
+                defaultValue: 'member',
+                input: false,
+              },
+            },
+          },
+          databaseHooks: {
+            user: {
+              create: {
+                // Signing up creates a Household of One with the Member as Owner.
+                before: async (newUser) => ({
+                  data: {
+                    ...newUser,
+                    familyId: await createHouseholdOfOne(database),
+                    familyRole: 'owner',
+                  },
+                }),
+              },
             },
           },
           rateLimit: { enabled: true, window: 60, max: 100 },

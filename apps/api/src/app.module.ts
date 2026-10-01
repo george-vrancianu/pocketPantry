@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { validateEnv } from './config/env';
 import { DatabaseModule } from './database/database.module';
+import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { HealthModule } from './health/health.module';
     }),
     DatabaseModule,
     AuthModule,
+    FamilyModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],

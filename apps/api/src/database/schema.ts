@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
@@ -20,17 +21,44 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
+export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
-// Better Auth core tables. User IDs intentionally remain text because Better Auth owns them.
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
-  image: text('image'),
-  role: userRole('role').notNull().default('regular'),
+// A Family owns the Pantry, Shopping List and Family Settings (later tickets).
+// The Invite Code is replaced in place on regeneration, which revokes the old one.
+export const family = pgTable('family', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  inviteCode: text('invite_code').notNull().unique(),
+  inviteCodeExpiresAt: timestamp('invite_code_expires_at', {
+    withTimezone: true,
+  }).notNull(),
   ...timestamps,
 });
+
+// Better Auth core tables. User IDs intentionally remain text because Better Auth owns them.
+export const user = pgTable(
+  'user',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    image: text('image'),
+    role: userRole('role').notNull().default('regular'),
+    // Every Member belongs to exactly one Family: never nullable.
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id),
+    familyRole: familyRole('family_role').notNull().default('member'),
+    ...timestamps,
+  },
+  (table) => [
+    index('user_family_id_idx').on(table.familyId),
+    // A Family has a single Owner.
+    uniqueIndex('user_family_owner_idx')
+      .on(table.familyId)
+      .where(sql`${table.familyRole} = 'owner'`),
+  ],
+);
 
 export const session = pgTable(
   'session',
