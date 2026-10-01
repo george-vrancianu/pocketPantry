@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, sql } from 'drizzle-orm';
-import { resolveCatalogDefaults } from '../catalog/catalog-defaults';
+import {
+  resolveCatalogDefaults,
+  resolveExpiryDays,
+} from '../catalog/catalog-defaults';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -16,6 +19,7 @@ import {
   shoppingLists,
   user,
 } from '../database/schema';
+import { SettingsService } from '../settings/settings.service';
 import type {
   FinishProposal,
   FinishResult,
@@ -48,14 +52,18 @@ type CheckedRow = {
 /** Finish Shopping: propose Batches for the checked items, then commit the reviewed result atomically. */
 @Injectable()
 export class FinishShoppingService {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly settings: SettingsService,
+  ) {}
 
   async propose(
     memberId: string,
     locale: CatalogLocale,
     today: string = new Date().toISOString().slice(0, 10),
   ): Promise<FinishProposal> {
-    const { listId } = await this.activeList(this.database, memberId);
+    const { listId, familyId } = await this.activeList(this.database, memberId);
+    const overrides = await this.settings.expiryOverridesOf(familyId);
     const rows = await this.checkedRows(this.database, listId);
     const other = await this.otherTarget(this.database);
     const names = await loadDisplayNames(
@@ -67,10 +75,10 @@ export class FinishShoppingService {
     return {
       listId,
       lines: rows.map((row) => {
-        const defaults = resolveCatalogDefaults(
-          row.leaf ?? other.leaf,
-          row.parent ?? other.parent,
-        );
+        const leaf = row.leaf ?? other.leaf;
+        const parent = row.parent ?? other.parent;
+        const defaults = resolveCatalogDefaults(leaf, parent);
+        const expiryDays = resolveExpiryDays(leaf, parent, overrides);
         const quantity = row.quantity === null ? null : Number(row.quantity);
         return {
           itemId: row.id,
@@ -87,10 +95,7 @@ export class FinishShoppingService {
           unit:
             row.unit ?? (quantity === null ? null : (row.defaultUnit ?? 'pcs')),
           location: defaults.location ?? FALLBACK_LOCATION,
-          expiryDate:
-            defaults.expiryDays === null
-              ? null
-              : addDays(today, defaults.expiryDays),
+          expiryDate: expiryDays === null ? null : addDays(today, expiryDays),
         };
       }),
     };

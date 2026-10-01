@@ -14,31 +14,31 @@ const today = new Date(2026, 9, 1, 15, 30); // 1 Oct 2026, local
 
 describe('expiryChipFor', () => {
   it('is urgent for today and for already-expired Batches', () => {
-    expect(expiryChipFor('2026-10-01', today)).toEqual({
+    expect(expiryChipFor('2026-10-01', today, true)).toEqual({
       tone: 'urgent',
       kind: 'today',
     });
-    expect(expiryChipFor('2026-09-28', today)).toEqual({
+    expect(expiryChipFor('2026-09-28', today, true)).toEqual({
       tone: 'urgent',
       kind: 'expired',
     });
   });
 
-  it('is soon for 1 to 3 days (the Stale Threshold)', () => {
-    expect(expiryChipFor('2026-10-02', today)).toEqual({
+  it('is soon for Expiring Soon Batches (within the Stale Threshold)', () => {
+    expect(expiryChipFor('2026-10-02', today, true)).toEqual({
       tone: 'soon',
       kind: 'days',
       days: 1,
     });
-    expect(expiryChipFor('2026-10-04', today)).toEqual({
+    expect(expiryChipFor('2026-10-04', today, true)).toEqual({
       tone: 'soon',
       kind: 'days',
       days: 3,
     });
   });
 
-  it('is ok from 4 days out, showing the date', () => {
-    expect(expiryChipFor('2026-10-05', today)).toEqual({
+  it('is ok when not Expiring Soon, showing the date', () => {
+    expect(expiryChipFor('2026-10-05', today, false)).toEqual({
       tone: 'ok',
       kind: 'date',
       days: 4,
@@ -46,7 +46,7 @@ describe('expiryChipFor', () => {
   });
 
   it('has no chip without an expiry date', () => {
-    expect(expiryChipFor(null, today)).toBeNull();
+    expect(expiryChipFor(null, today, false)).toBeNull();
   });
 });
 
@@ -72,6 +72,7 @@ describe('groupByLocation', () => {
     location,
     expiryDate: null,
     productDescription: null,
+    expiringSoon: false,
     createdAt: '2026-10-01T00:00:00Z',
   });
 
@@ -100,6 +101,7 @@ const make = (overrides: Partial<Batch>): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
+  expiringSoon: false,
   createdAt: '2026-10-01T00:00:00Z',
   ...overrides,
 });

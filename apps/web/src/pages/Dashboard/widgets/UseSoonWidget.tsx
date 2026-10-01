@@ -11,8 +11,8 @@ import type { WidgetProps } from './types';
 /** The three soonest-expiring Batches with their ExpiryChips. */
 export function UseSoonWidget({ size }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
-  const batches = useBatches(i18n.language);
   const today = new Date();
+  const batches = useBatches(i18n.language, today);
   const soonest = soonestExpiring(batches.data ?? [], today);
 
   return (
@@ -54,7 +54,11 @@ export function UseSoonWidget({ size }: WidgetProps) {
       ) : (
         <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {soonest.map((batch) => {
-            const chip = expiryChipFor(batch.expiryDate, today);
+            const chip = expiryChipFor(
+              batch.expiryDate,
+              today,
+              batch.expiringSoon,
+            );
             return (
               <Box
                 component="li"

@@ -1,6 +1,6 @@
 {
-  "id": "9c7f8d48-09e8-474e-aa7f-3f578cf9e1a0",
-  "prevId": "99e8b821-c762-45ea-adca-9327f5ee6283",
+  "id": "cc3aef45-a701-46f2-bed7-510c4e871c7f",
+  "prevId": "9c7f8d48-09e8-474e-aa7f-3f578cf9e1a0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1113,6 +1113,65 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.scan_usage": {
+      "name": "scan_usage",
+      "schema": "",
+      "columns": {
+        "member_id": {
+          "name": "member_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "count": {
+          "name": "count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "scan_usage_member_id_user_id_fk": {
+          "name": "scan_usage_member_id_user_id_fk",
+          "tableFrom": "scan_usage",
+          "tableTo": "user",
+          "columnsFrom": [
+            "member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "scan_usage_member_id_day_pk": {
+          "name": "scan_usage_member_id_day_pk",
+          "columns": [
+            "member_id",
+            "day"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "scan_usage_count_non_negative": {
+          "name": "scan_usage_count_non_negative",
+          "value": "\"scan_usage\".\"count\" >= 0"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.session": {

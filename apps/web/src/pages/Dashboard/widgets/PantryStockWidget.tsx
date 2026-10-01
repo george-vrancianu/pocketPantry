@@ -16,7 +16,7 @@ const LOCATION_COLORS = {
 /** Total Batches and a stacked bar of how they split across Locations. */
 export function PantryStockWidget({ size }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
-  const batches = useBatches(i18n.language);
+  const batches = useBatches(i18n.language, new Date());
   const stock = stockByLocation(batches.data ?? []).filter(
     (entry) => entry.count > 0,
   );

@@ -15,7 +15,11 @@ import {
   type CatalogSearchResult,
 } from './catalog.schemas';
 import { loadDisplayNames } from './display-names';
-import { resolveCatalogDefaults } from './catalog-defaults';
+import {
+  resolveCatalogDefaults,
+  resolveExpiryDays,
+  type ExpiryOverride,
+} from './catalog-defaults';
 import { normalizeName } from './normalize';
 
 @Injectable()
@@ -32,6 +36,7 @@ export class CatalogSearchService {
     query: string,
     locale: CatalogLocale,
     limit: number,
+    overrides: readonly ExpiryOverride[] = [],
   ): Promise<CatalogSearchResult[]> {
     const key = normalizeName(query);
     if (!key) return [];
@@ -61,6 +66,7 @@ export class CatalogSearchService {
     return this.findByIds(
       ranked.rows.map((row) => row.id),
       locale,
+      overrides,
     );
   }
 
@@ -86,6 +92,7 @@ export class CatalogSearchService {
   async findByIds(
     ids: string[],
     locale: CatalogLocale,
+    overrides: readonly ExpiryOverride[] = [],
   ): Promise<CatalogSearchResult[]> {
     if (ids.length === 0) return [];
 
@@ -142,16 +149,24 @@ export class CatalogSearchService {
             name: display('parent_category', row.parentId, row.parentName),
             aisle: display('aisle', row.aisleId, row.aisleName),
           },
-          defaults: resolveCatalogDefaults(
-            {
-              defaultExpiryDays: row.leafExpiry,
-              defaultLocation: row.leafLocation,
-            },
-            {
-              defaultExpiryDays: row.parentExpiry,
-              defaultLocation: row.parentLocation,
-            },
-          ),
+          defaults: {
+            ...resolveCatalogDefaults(
+              {
+                defaultExpiryDays: row.leafExpiry,
+                defaultLocation: row.leafLocation,
+              },
+              {
+                defaultExpiryDays: row.parentExpiry,
+                defaultLocation: row.parentLocation,
+              },
+            ),
+            // The Family's Default Expiry override wins over the Catalog defaults.
+            expiryDays: resolveExpiryDays(
+              { id: row.leafId, defaultExpiryDays: row.leafExpiry },
+              { id: row.parentId, defaultExpiryDays: row.parentExpiry },
+              overrides,
+            ),
+          },
         },
       ];
     });

@@ -19,7 +19,7 @@ export function BatchDetail({ batch, today, onDeleted }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [mode, setMode] = useState<'view' | 'edit' | 'confirmDelete'>('view');
   const remove = useDeleteBatch();
-  const chip = expiryChipFor(batch.expiryDate, today);
+  const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
 
   // Focus follows the mode: into the form or confirmation, back to the opening button on leaving it.
   const editButton = useRef<HTMLButtonElement>(null);

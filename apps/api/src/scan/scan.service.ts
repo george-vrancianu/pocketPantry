@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
+import { SettingsService } from '../settings/settings.service';
 import type { ProductScanInput } from './product-scan.schemas';
 import { ProductScanService } from './product-scan.service';
 import { productLine, type ScanResponse } from './proposed-line';
@@ -19,6 +20,7 @@ export class ScanService {
     private readonly cap: ScanCapService,
     private readonly productScan: ProductScanService,
     private readonly catalogSearch: CatalogSearchService,
+    private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
@@ -30,8 +32,13 @@ export class ScanService {
     const result = await this.withinCap(memberId, () =>
       this.productScan.analyze(input, locale),
     );
+    // The Family's Default Expiry overrides shape the proposed expiry, as in search.
     const [match] = result.matchedIngredientId
-      ? await this.catalogSearch.findByIds([result.matchedIngredientId], locale)
+      ? await this.catalogSearch.findByIds(
+          [result.matchedIngredientId],
+          locale,
+          await this.settings.expiryOverridesForMember(memberId),
+        )
       : [];
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,

@@ -83,7 +83,7 @@ The free-text name of the actual product a Batch came from, such as "Grana Padan
 _Avoid_: Label, brand
 
 **Expiring Soon**:
-A Batch whose expiry date falls within the Family's Stale Threshold.
+A Batch whose expiry date falls within the Family's Stale Threshold. Derived at read time from the expiry date and the current threshold, never stored on the Batch; a Batch with no expiry date is never Expiring Soon.
 _Avoid_: About to go stale, going off
 
 **Stale Threshold**:

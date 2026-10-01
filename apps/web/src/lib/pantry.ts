@@ -12,9 +12,6 @@ export const LOCATIONS: StorageLocation[] = [
 ];
 export const UNITS: Unit[] = ['g', 'kg', 'ml', 'l', 'pcs'];
 
-/** Batches expiring within this many days are Expiring Soon (configurable in a later ticket). */
-export const STALE_THRESHOLD_DAYS = 3;
-
 export type Batch = {
   id: string;
   /** Localised Ingredient name, or the typed name for an Unmatched Batch. */
@@ -27,6 +24,8 @@ export type Batch = {
   /** `YYYY-MM-DD`, or null. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Within the Family's Stale Threshold; derived by the API, never stored on the Batch. */
+  expiringSoon: boolean;
   createdAt: string;
 };
 
@@ -64,15 +63,17 @@ export function daysUntil(expiryDate: string, today: Date): number {
   return dayNumber(expiryDate) - dayNumber(localIso(today));
 }
 
+/** `expiringSoon` comes from the API, which applies the Family's Stale Threshold. */
 export function expiryChipFor(
   expiryDate: string | null,
   today: Date,
+  expiringSoon: boolean,
 ): ExpiryChip | null {
   if (!expiryDate) return null;
   const days = daysUntil(expiryDate, today);
   if (days < 0) return { tone: 'urgent', kind: 'expired' };
   if (days === 0) return { tone: 'urgent', kind: 'today' };
-  if (days <= STALE_THRESHOLD_DAYS) return { tone: 'soon', kind: 'days', days };
+  if (expiringSoon) return { tone: 'soon', kind: 'days', days };
   return { tone: 'ok', kind: 'date', days };
 }
 
@@ -181,12 +182,13 @@ export function rollUp(batches: Batch[]): RollUp[] {
     .sort((a, b) => byExpiry(a.batches[0], b.batches[0]));
 }
 
-export function useBatches(locale: string) {
+export function useBatches(locale: string, today: Date) {
+  const localToday = localIso(today);
   return useQuery({
-    queryKey: ['pantry', locale],
+    queryKey: ['pantry', locale, localToday],
     queryFn: () =>
       apiRequest<{ batches: Batch[] }>(
-        `/pantry?${new URLSearchParams({ locale })}`,
+        `/pantry?${new URLSearchParams({ locale, today: localToday })}`,
       ).then((body) => body.batches),
   });
 }

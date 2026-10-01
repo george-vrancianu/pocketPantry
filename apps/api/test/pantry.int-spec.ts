@@ -23,6 +23,7 @@ type Batch = {
   location: string;
   expiryDate: string | null;
   productDescription: string | null;
+  expiringSoon?: boolean;
 };
 
 const inDays = (days: number) =>
@@ -601,6 +602,21 @@ describe('Pantry (integration)', () => {
         ingredientId: null,
       });
       expect(await list(cookie)).toHaveLength(2);
+    });
+
+    it('flags expiringSoon on bulk-created Batches', async () => {
+      const { cookie } = await signUp();
+      const response = await addMany(cookie, [
+        { rawName: 'Soon jar', location: 'cupboard', expiryDate: inDays(1) },
+        { rawName: 'Far jar', location: 'cupboard', expiryDate: inDays(90) },
+        { rawName: 'Never jar', location: 'cupboard', expiryDate: null },
+      ]).expect(201);
+      const saved = (response.body as { batches: Batch[] }).batches;
+      const soon = (name: string) =>
+        saved.find((b) => b.name === name)?.expiringSoon;
+      expect(soon('Soon jar')).toBe(true);
+      expect(soon('Far jar')).toBe(false);
+      expect(soon('Never jar')).toBe(false);
     });
 
     it('saves nothing when one line is bad', async () => {
