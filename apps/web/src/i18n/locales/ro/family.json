@@ -1,3 +1,14 @@
 {
-  "title": "Familie"
+  "title": "Familie",
+  "members": "Membri",
+  "owner": "Proprietar",
+  "inviteCode": "Cod de invitație",
+  "inviteCodeHelp": "Trimite acest cod persoanelor pe care vrei să le adaugi în Familie.",
+  "expiresOn": "Expiră pe {{date}}",
+  "expired": "Expirat",
+  "expiredOwnerPrompt": "Acest cod a expirat. Generează unul nou pentru a invita pe cineva.",
+  "expiredMemberPrompt": "Acest cod a expirat. Roagă Proprietarul să genereze unul nou.",
+  "regenerate": "Generează un cod nou",
+  "regenerating": "Se generează…",
+  "regenerateWarning": "Codul vechi nu mai funcționează imediat ce generezi unul nou."
 }

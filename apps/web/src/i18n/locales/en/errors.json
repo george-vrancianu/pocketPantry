@@ -23,5 +23,8 @@
     "missing_or_null_origin": "This app is not allowed to talk to the server from this address.",
     "unauthorized": "Wrong email or password.",
     "too_many_requests": "Too many attempts. Please wait a moment and try again."
+  },
+  "family": {
+    "owner_required": "Only the Owner of the Family can do this."
   }
 }
