@@ -43,6 +43,13 @@
       "when": 1790869738259,
       "tag": "0005_family_cascade",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790871567341,
+      "tag": "0006_scan_usage",
+      "breakpoints": true
     }
   ]
 }
