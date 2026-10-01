@@ -434,6 +434,9 @@ describe('Catalog (integration)', () => {
           and(
             eq(catalogTranslations.entityType, 'ingredient'),
             eq(catalogTranslations.kind, 'synonym'),
+            // Seed ids are UUIDv5; the Admin spec adds (UUIDv4) synonyms to
+            // seeded Ingredients concurrently.
+            sql`substr(${catalogTranslations.id}::text, 15, 1) = '5'`,
             inArray(
               catalogTranslations.entityId,
               SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
