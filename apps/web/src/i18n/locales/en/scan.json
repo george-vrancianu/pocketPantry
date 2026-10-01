@@ -1,3 +1,30 @@
 {
-  "title": "Scan"
+  "title": "Scan {{mode}}",
+  "close": "Close scanner",
+  "flash": "Toggle flash",
+  "gallery": "Choose from photos",
+  "shutter": "Take photo",
+  "manual": "Add manually",
+  "modes": "Scan mode",
+  "reading": "Reading your photo",
+  "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
+  "comingSoon": "{{mode}} scanning is coming soon. Product scanning works now.",
+  "mode": {
+    "product": "Product",
+    "receipt": "Receipt",
+    "plate": "Plate",
+    "ingredients": "Ingredients"
+  },
+  "hint": {
+    "product": "Point at a barcode or label",
+    "receipt": "Fit the whole receipt in the frame",
+    "plate": "Hold steady above your plate",
+    "ingredients": "Spread items out on the counter"
+  },
+  "detail": {
+    "product": "Adds it to your pantry with its best-before date.",
+    "receipt": "Adds every item from your shop in one go.",
+    "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
+    "ingredients": "Recognises loose produce and suggests recipes."
+  }
 }

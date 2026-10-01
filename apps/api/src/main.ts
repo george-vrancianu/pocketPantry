@@ -7,14 +7,14 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { configureApp } from './app.setup';
+import { configureApp, MAX_REQUEST_BODY_BYTES } from './app.setup';
 import type { AppConfig } from './config/env';
 import { allowedOrigins, isAllowedOrigin } from './config/origins';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ bodyLimit: 12 * 1024 * 1024 }),
+    new FastifyAdapter({ bodyLimit: MAX_REQUEST_BODY_BYTES }),
   );
   const config = app.get(ConfigService<AppConfig, true>);
 

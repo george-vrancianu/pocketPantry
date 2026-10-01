@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
+  type ExpiryOverride,
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
@@ -65,17 +66,37 @@ export class PantryService {
     body: CreateBatchBody,
     locale: CatalogLocale,
   ): Promise<BatchView> {
+    return (await this.createMany(memberId, [body], locale))[0];
+  }
+
+  /** Adds all Batches in one statement, so a bad line saves nothing. Used by the Review screen. */
+  async createMany(
+    memberId: string,
+    bodies: CreateBatchBody[],
+    locale: CatalogLocale,
+  ): Promise<BatchView[]> {
     const familyId = await this.familyIdOf(memberId);
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const values: (typeof batches.$inferInsert)[] = [];
+    for (const body of bodies) {
+      values.push(await this.toRow(familyId, body, overrides));
+    }
+    const rows = await this.database.insert(batches).values(values).returning();
+    // `today` only anchors expiringSoon; a bulk request carries one client date.
+    return this.toViews(rows, locale, familyId, bodies[0]?.today);
+  }
+
+  private async toRow(
+    familyId: string,
+    body: CreateBatchBody,
+    overrides: ExpiryOverride[],
+  ): Promise<typeof batches.$inferInsert> {
     const target = body.rawName
       ? await this.unmatchedTarget(body.parentCategoryId)
       : await this.matchedTarget(body.ingredientId as string);
 
     const defaults = resolveCatalogDefaults(target.leaf, target.parent);
-    const expiryDays = resolveExpiryDays(
-      target.leaf,
-      target.parent,
-      await this.settings.expiryOverridesOf(familyId),
-    );
+    const expiryDays = resolveExpiryDays(target.leaf, target.parent, overrides);
     const location = body.location ?? defaults.location;
     if (!location) throw new ApiException(400, 'pantry.location_required');
     const expiryDate =
@@ -88,22 +109,18 @@ export class PantryService {
               expiryDays,
             );
 
-    const [row] = await this.database
-      .insert(batches)
-      .values({
-        familyId,
-        ingredientId: target.ingredientId,
-        leafCategoryId: target.leaf.id,
-        unmatched: body.rawName !== undefined,
-        rawName: body.rawName ?? null,
-        quantity: body.quantity ?? null,
-        unit: body.unit ?? null,
-        location,
-        expiryDate,
-        productDescription: body.productDescription || null,
-      })
-      .returning();
-    return (await this.toViews([row], locale, familyId, body.today))[0];
+    return {
+      familyId,
+      ingredientId: target.ingredientId,
+      leafCategoryId: target.leaf.id,
+      unmatched: body.rawName !== undefined,
+      rawName: body.rawName ?? null,
+      quantity: body.quantity ?? null,
+      unit: body.unit ?? null,
+      location,
+      expiryDate,
+      productDescription: body.productDescription || null,
+    };
   }
 
   async update(

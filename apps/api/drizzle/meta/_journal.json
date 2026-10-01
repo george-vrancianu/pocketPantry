@@ -57,6 +57,13 @@
       "when": 1790872491462,
       "tag": "0007_family_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790873245118,
+      "tag": "0008_scan_usage",
+      "breakpoints": true
     }
   ]
 }

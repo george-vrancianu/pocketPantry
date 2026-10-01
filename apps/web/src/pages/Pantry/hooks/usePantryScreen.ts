@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   countByLocation,
@@ -14,7 +15,12 @@ export function usePantryScreen() {
   const { t, i18n } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const batches = useBatches(i18n.language, today);
-  const [adding, setAdding] = useState(false);
+  // The Scan screen's manual-add button lands here with `?add=1`: open the form straight away.
+  const [params, setParams] = useSearchParams();
+  const [adding, setAdding] = useState(params.get('add') === '1');
+  useEffect(() => {
+    if (params.get('add') === '1') setParams({}, { replace: true });
+  }, [params, setParams]);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
 

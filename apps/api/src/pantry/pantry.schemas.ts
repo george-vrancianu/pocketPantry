@@ -55,6 +55,11 @@ export const createBatchBody = z
   });
 export type CreateBatchBody = z.infer<typeof createBatchBody>;
 
+/** The reviewed lines of a Scan, saved together: all of them or none. */
+export const createBatchesBody = z.object({
+  batches: z.array(createBatchBody).min(1).max(50),
+});
+export type CreateBatchesBody = z.infer<typeof createBatchesBody>;
 /**
  * Edit a Batch. Only the fields sent change; `quantity`, `productDescription`
  * and `expiryDate` accept null to clear. What a Batch matches (its Ingredient)

@@ -1,4 +1,5 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ApiException } from '../common/api-exception';
 import { z } from 'zod';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -53,10 +54,9 @@ export class PlateScanService {
         maxOutputTokens: 4000,
       });
       return response.data;
-    } catch {
-      throw new BadGatewayException(
-        'The plate recognition service is unavailable',
-      );
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(502, 'scan.result_invalid');
     }
   }
   async findRecipes(input: z.infer<typeof plateScanSchema>) {

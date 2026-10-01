@@ -1,4 +1,6 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ApiException } from '../common/api-exception';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
@@ -16,9 +18,9 @@ export class ProductScanService {
 
   async analyze(
     input: ProductScanInput,
-    locale: string,
+    locale: CatalogLocale,
   ): Promise<ProductScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalog();
+    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
     const catalogPrompt = this.ingredientCatalog.toPrompt(catalog);
 
     const content: Array<Record<string, unknown>> = [
@@ -93,8 +95,9 @@ export class ProductScanService {
         ...result,
         ...this.ingredientCatalog.validateMatch(catalog, result),
       };
-    } catch {
-      throw new BadGatewayException('The image recognition result was invalid');
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(502, 'scan.result_invalid');
     }
   }
 }

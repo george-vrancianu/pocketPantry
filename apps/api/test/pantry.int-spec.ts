@@ -23,6 +23,7 @@ type Batch = {
   location: string;
   expiryDate: string | null;
   productDescription: string | null;
+  expiringSoon?: boolean;
 };
 
 const inDays = (days: number) =>
@@ -564,6 +565,79 @@ describe('Pantry (integration)', () => {
         .expect(401);
       const { cookie } = await signUp();
       await patch(cookie, 'not-a-uuid', { quantity: 1 }).expect(400);
+    });
+  });
+
+  describe('bulk create', () => {
+    const addMany = (cookie: string, batches: object[]) =>
+      request(app.getHttpServer())
+        .post('/api/pantry/batches/bulk')
+        .query({ locale: 'en' })
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ batches });
+
+    it('saves matched and Unmatched lines together with the single-Batch rules', async () => {
+      const { cookie } = await signUp();
+      const response = await addMany(cookie, [
+        {
+          ingredientId: seedId.ingredient('parmesan'),
+          quantity: 200,
+          unit: 'g',
+          productDescription: 'Grana Padano 200g',
+        },
+        { rawName: 'Mystery jar', location: 'cupboard', expiryDate: null },
+      ]).expect(201);
+      const saved = (response.body as { batches: Batch[] }).batches;
+      expect(saved).toHaveLength(2);
+      // By id, not name: the catalog spec renames Parmesan while this runs.
+      expect(
+        saved.find((b) => b.ingredientId === seedId.ingredient('parmesan')),
+      ).toMatchObject({
+        location: 'fridge',
+        expiryDate: inDays(60),
+      });
+      expect(saved.find((b) => b.name === 'Mystery jar')).toMatchObject({
+        unmatched: true,
+        ingredientId: null,
+      });
+      expect(await list(cookie)).toHaveLength(2);
+    });
+
+    it('flags expiringSoon on bulk-created Batches', async () => {
+      const { cookie } = await signUp();
+      const response = await addMany(cookie, [
+        { rawName: 'Soon jar', location: 'cupboard', expiryDate: inDays(1) },
+        { rawName: 'Far jar', location: 'cupboard', expiryDate: inDays(90) },
+        { rawName: 'Never jar', location: 'cupboard', expiryDate: null },
+      ]).expect(201);
+      const saved = (response.body as { batches: Batch[] }).batches;
+      const soon = (name: string) =>
+        saved.find((b) => b.name === name)?.expiringSoon;
+      expect(soon('Soon jar')).toBe(true);
+      expect(soon('Far jar')).toBe(false);
+      expect(soon('Never jar')).toBe(false);
+    });
+
+    it('saves nothing when one line is bad', async () => {
+      const { cookie } = await signUp();
+      await addMany(cookie, [
+        { ingredientId: seedId.ingredient('milk') },
+        { ingredientId: randomUUID() },
+      ]).expect(404);
+      expect(await list(cookie)).toEqual([]);
+    });
+
+    it('rejects an empty list', async () => {
+      const { cookie } = await signUp();
+      await addMany(cookie, []).expect(400);
+    });
+
+    it('requires authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/api/pantry/batches/bulk')
+        .send({ batches: [] })
+        .expect(401);
     });
   });
 });

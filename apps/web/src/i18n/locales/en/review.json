@@ -1,0 +1,28 @@
+{
+  "title": "Review",
+  "empty": "Nothing to review.",
+  "backToScan": "Back to scan",
+  "name": "Name",
+  "category": "Category",
+  "categoryOther": "Not sure",
+  "changeMatch": "Change match",
+  "keepMatch": "Keep this match",
+  "flag": {
+    "unmatched": "Unmatched: pick an ingredient, or save it under the name we read.",
+    "lowConfidence": "Low confidence: please check this line."
+  },
+  "dropShort": "Drop",
+  "matchedAs": "Matched as {{name}}",
+  "drop": "Drop {{name}}",
+  "quantity": "Quantity",
+  "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
+  "unit": "Unit",
+  "location": "Location",
+  "expiry": "Expiry date",
+  "description": "Product description",
+  "save_one": "Save {{count}} item",
+  "save_few": "Save {{count}} items",
+  "save_other": "Save {{count}} items",
+  "saving": "Saving",
+  "discard": "Discard"
+}

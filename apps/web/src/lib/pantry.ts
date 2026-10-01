@@ -32,6 +32,8 @@ export type Batch = {
 export type NewBatch = {
   ingredientId?: string;
   rawName?: string;
+  /** With `rawName` only: the Parent Category whose Other Leaf receives the Batch. */
+  parentCategoryId?: string;
   quantity?: number | null;
   unit?: Unit | null;
   location: StorageLocation;

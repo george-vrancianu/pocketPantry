@@ -24,6 +24,16 @@
     "unauthorized": "E-mail sau parolă greșită.",
     "too_many_requests": "Prea multe încercări. Așteaptă puțin și încearcă din nou."
   },
+  "scan": {
+    "cap_reached": "Ai folosit toate cele {{cap}} scanări de azi. Încearcă mâine sau adaugă produsele manual.",
+    "image_invalid": "Fișierul nu este o fotografie pe care o putem citi. Folosește o imagine JPEG, PNG sau WebP.",
+    "image_too_large": "Fotografia este prea mare. Încearcă una mai mică.",
+    "provider_unavailable": "Scanarea nu este disponibilă acum. Încearcă din nou peste puțin timp.",
+    "provider_refused": "Fotografia nu a putut fi procesată. Încearcă o poză mai clară a produsului.",
+    "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
+    "result_invalid": "Nu am putut citi fotografia. Încearcă una mai clară.",
+    "not_configured": "Scanarea nu este încă configurată pe acest server."
+  },
   "shopping": {
     "item_not_found": "Nu am găsit acel articol în listă.",
     "ingredient_not_found": "Nu am găsit acel ingredient.",

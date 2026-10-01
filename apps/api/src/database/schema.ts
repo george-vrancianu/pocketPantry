@@ -377,6 +377,21 @@ export const batches = pgTable(
   ],
 );
 
+// Scan Cap bookkeeping: one row per Member per UTC day, counting Scans that reached the provider.
+export const scanUsage = pgTable(
+  'scan_usage',
+  {
+    memberId: text('member_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    day: date('day', { mode: 'string' }).notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.memberId, table.day] }),
+    check('scan_usage_count_non_negative', sql`${table.count} >= 0`),
+  ],
+);
 // Dashboard: a Member's own layout, an ordered list of Widget instances (type and size).
 // No row means the Member never customised it and gets the default layout.
 export const dashboardLayouts = pgTable('dashboard_layouts', {

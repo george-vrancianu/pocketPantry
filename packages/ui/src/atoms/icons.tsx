@@ -12,6 +12,9 @@ import {
   ShoppingBag,
   Archive,
   BookOpen,
+  Image,
+  Pencil,
+  Zap,
   Clock,
   CircleDot,
   Leaf,
@@ -43,6 +46,9 @@ export const CheckIcon = withDefaults(Check);
 export const SettingsIcon = withDefaults(Settings);
 export const PlusIcon = withDefaults(Plus);
 export const CloseIcon = withDefaults(X);
+export const GalleryIcon = withDefaults(Image);
+export const ManualEntryIcon = withDefaults(Pencil);
+export const FlashIcon = withDefaults(Zap);
 export const ClockIcon = withDefaults(Clock);
 export const ProductScanIcon = withDefaults(ScanBarcode);
 export const ReceiptScanIcon = withDefaults(Receipt);

@@ -66,6 +66,41 @@ describe('Catalog (integration)', () => {
     return (response.body as { results: SearchResult[] }).results;
   }
 
+  describe('parents', () => {
+    const parents = (locale: string) =>
+      request(app.getHttpServer())
+        .get('/api/catalog/parents')
+        .query({ locale })
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie);
+
+    it('lists the Parent Categories by name in the Member locale, for placing Unmatched Batches', async () => {
+      const en = (
+        (await parents('en').expect(200)).body as {
+          parents: { id: string; name: string }[];
+        }
+      ).parents;
+      const ro = (
+        (await parents('ro').expect(200)).body as {
+          parents: { id: string; name: string }[];
+        }
+      ).parents;
+      expect(en.length).toBeGreaterThan(5);
+      expect(en.map((p) => p.name)).toEqual(
+        [...en.map((p) => p.name)].sort((a, b) => a.localeCompare(b)),
+      );
+      const dairyEn = en.find((p) => p.name === 'Dairy');
+      expect(dairyEn).toBeDefined();
+      expect(ro.find((p) => p.id === dairyEn?.id)?.name).toBe('Lactate');
+    });
+
+    it('requires authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/api/catalog/parents')
+        .expect(401);
+    });
+  });
+
   describe('search', () => {
     it('finds Parmesan for "parm" in English and "parmezan" in Romanian', async () => {
       const en = (await search('parm', 'en')).find(
@@ -326,7 +361,8 @@ describe('Catalog (integration)', () => {
     const seeded = <T extends { id: string }>(rows: T[]) =>
       rows.filter((row) => row.id[14] === '5');
     const snapshot = async () => ({
-      aisles: await database.select().from(aisles).orderBy(aisles.id),
+      // Seed rows only: other suites insert their own Aisles concurrently.
+      aisles: seeded(await database.select().from(aisles).orderBy(aisles.id)),
       // Seed rows only: other suites add their own Parents/Leaves concurrently.
       parents: (
         await database

@@ -151,11 +151,29 @@ describe('Household of One and the Family (integration)', () => {
   });
 
   it('leaves no Family behind when the Member insert fails during sign-up', async () => {
-    const countOrphans = async () => {
+    // Sign-up commits the Family just before the Member row, so concurrent
+    // sign-ups in other suites show a Family as childless for a moment. Only
+    // Families created during this test count, and a transient one must clear
+    // within the deadline; a leaked Family never does.
+    const startedAt = (
+      (await database.execute(sql`select now() as t`)).rows[0] as { t: Date }
+    ).t;
+    const countNewOrphans = async () => {
       const result = await database.execute(
-        sql`select count(*)::int as n from family where id not in (select family_id from "user")`,
+        sql`select count(*)::int as n from family
+            where created_at >= ${startedAt}
+              and id not in (select family_id from "user")`,
       );
       return (result.rows[0] as { n: number }).n;
+    };
+    const settledOrphans = async () => {
+      const deadline = Date.now() + 5000;
+      let orphans = await countNewOrphans();
+      while (orphans > 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        orphans = await countNewOrphans();
+      }
+      return orphans;
     };
     const email = `doomed-${Date.now()}@example.com`;
     // Fails only the user insert (after the Family is created), for this email.
@@ -172,14 +190,13 @@ describe('Household of One and the Family (integration)', () => {
       sql`create trigger pp_test_reject_user before insert on "user" for each row execute function pp_test_reject_user()`,
     );
     try {
-      const before = await countOrphans();
       const failed = await request(app.getHttpServer())
         .post('/api/auth/sign-up/email')
         .set('origin', TEST_ORIGIN)
         .set('x-forwarded-for', '10.9.9.9')
         .send({ name: 'Doomed', email, password });
       expect(failed.status).toBe(422);
-      expect(await countOrphans()).toBe(before);
+      expect(await settledOrphans()).toBe(0);
     } finally {
       await database.execute(
         sql`drop trigger if exists pp_test_reject_user on "user"`,

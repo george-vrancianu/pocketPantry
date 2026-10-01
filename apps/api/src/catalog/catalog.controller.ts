@@ -7,7 +7,10 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
 import { CatalogSearchService } from './catalog-search.service';
 import {
+  catalogParentsQuery,
   catalogSearchQuery,
+  type CatalogParent,
+  type CatalogParentsQuery,
   type CatalogSearchQuery,
   type CatalogSearchResult,
 } from './catalog.schemas';
@@ -20,6 +23,18 @@ export class CatalogController {
     private readonly searchService: CatalogSearchService,
     private readonly settings: SettingsService,
   ) {}
+
+  @Get('parents')
+  @ApiOperation({
+    summary:
+      'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
+  })
+  async parents(
+    @Query(new ZodValidationPipe(catalogParentsQuery))
+    query: CatalogParentsQuery,
+  ): Promise<{ parents: CatalogParent[] }> {
+    return { parents: await this.searchService.listParents(query.locale) };
+  }
 
   @Get('search')
   @ApiOperation({

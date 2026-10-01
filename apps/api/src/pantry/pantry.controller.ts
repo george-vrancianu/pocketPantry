@@ -18,11 +18,13 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   batchIdParam,
   createBatchBody,
+  createBatchesBody,
   updateBatchBody,
   pantryLocaleQuery,
   type BatchView,
   type BatchIdParam,
   type CreateBatchBody,
+  type CreateBatchesBody,
   type UpdateBatchBody,
   type PantryLocaleQuery,
 } from './pantry.schemas';
@@ -58,6 +60,25 @@ export class PantryController {
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
     return this.pantry.create(member.id, body, query.locale);
+  }
+
+  @Post('batches/bulk')
+  @ApiOperation({
+    summary:
+      'Add the reviewed lines of a Scan as Batches, all or none; the same per-line rules as a single Batch',
+  })
+  async createMany(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
+  ): Promise<{ batches: BatchView[] }> {
+    return {
+      batches: await this.pantry.createMany(
+        member.id,
+        body.batches,
+        query.locale,
+      ),
+    };
   }
 
   @Patch('batches/:id')

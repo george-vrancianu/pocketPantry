@@ -1,10 +1,7 @@
-import {
-  BadGatewayException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
+import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 
 export type StructuredOutputRequest = {
@@ -23,18 +20,19 @@ export type StructuredOutputResult = {
 export type StructuredOutputErrorCode =
   'incomplete' | 'refusal' | 'empty' | 'failed';
 
-export class StructuredOutputAiError extends BadGatewayException {
+/** Provider-side failure; `code` is the stable API code, `reason` says what the provider did. */
+export class StructuredOutputAiError extends ApiException {
   constructor(
-    readonly code: StructuredOutputErrorCode,
+    readonly reason: StructuredOutputErrorCode,
     readonly requestId: string | null,
   ) {
-    const messages: Record<StructuredOutputErrorCode, string> = {
-      incomplete: 'The AI provider did not finish the request',
-      refusal: 'The AI provider refused the request',
-      empty: 'The AI provider returned an empty result',
-      failed: 'The AI provider could not finish the request',
+    const codes: Record<StructuredOutputErrorCode, string> = {
+      incomplete: 'scan.provider_incomplete',
+      empty: 'scan.provider_incomplete',
+      refusal: 'scan.provider_refused',
+      failed: 'scan.provider_unavailable',
     };
-    super(messages[code]);
+    super(502, codes[reason]);
   }
 }
 
@@ -87,14 +85,10 @@ export class StructuredOutputAiService {
     const configuredBaseUrl = this.config.get('AI_BASE_URL', { infer: true });
 
     if (!apiKey) {
-      throw new ServiceUnavailableException(
-        'AI image recognition is not configured. Set AI_API_KEY on the API server.',
-      );
+      throw new ApiException(503, 'scan.not_configured');
     }
     if (provider === 'openai-compatible' && !configuredBaseUrl) {
-      throw new ServiceUnavailableException(
-        'AI_BASE_URL is required when AI_PROVIDER is openai-compatible.',
-      );
+      throw new ApiException(503, 'scan.not_configured');
     }
 
     const baseUrl = (configuredBaseUrl ?? 'https://api.openai.com/v1').replace(
@@ -121,13 +115,13 @@ export class StructuredOutputAiService {
         },
       );
     } catch {
-      throw new BadGatewayException('The AI provider is unavailable');
+      throw new ApiException(502, 'scan.provider_unavailable');
     }
 
     if (!response.ok) {
-      throw new BadGatewayException(
-        `The AI provider returned ${response.status}`,
-      );
+      throw new ApiException(502, 'scan.provider_unavailable', {
+        status: response.status,
+      });
     }
 
     const requestId = response.headers.get('x-request-id');
@@ -138,10 +132,8 @@ export class StructuredOutputAiService {
         : this.readChatCompletionsText(body, requestId);
       return { data: JSON.parse(text) as unknown, requestId };
     } catch (error) {
-      if (error instanceof BadGatewayException) throw error;
-      throw new BadGatewayException(
-        'The AI provider returned invalid structured output',
-      );
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(502, 'scan.result_invalid');
     }
   }
 

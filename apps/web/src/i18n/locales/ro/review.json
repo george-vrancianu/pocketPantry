@@ -1,0 +1,28 @@
+{
+  "title": "Verificare",
+  "empty": "Nu e nimic de verificat.",
+  "backToScan": "Înapoi la scanare",
+  "name": "Nume",
+  "category": "Categorie",
+  "categoryOther": "Nu sunt sigur",
+  "changeMatch": "Schimbă potrivirea",
+  "keepMatch": "Păstrează această potrivire",
+  "flag": {
+    "unmatched": "Nepotrivit: alege un ingredient sau salvează-l cu numele citit.",
+    "lowConfidence": "Încredere scăzută: verifică această linie."
+  },
+  "dropShort": "Elimină",
+  "matchedAs": "Potrivit cu {{name}}",
+  "drop": "Elimină {{name}}",
+  "quantity": "Cantitate",
+  "quantityInvalid": "Introdu cel puțin 0,001, cu cel mult 3 zecimale.",
+  "unit": "Unitate",
+  "location": "Locație",
+  "expiry": "Data expirării",
+  "description": "Descrierea produsului",
+  "save_one": "Salvează {{count}} articol",
+  "save_few": "Salvează {{count}} articole",
+  "save_other": "Salvează {{count}} de articole",
+  "saving": "Se salvează",
+  "discard": "Renunță"
+}
