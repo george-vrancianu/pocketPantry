@@ -1,0 +1,12 @@
+{
+  "title": "Create your account",
+  "subtitle": "Start your own pantry. You can invite your family later.",
+  "name": "Name",
+  "email": "Email",
+  "password": "Password",
+  "passwordHint": "At least 8 characters.",
+  "submit": "Create account",
+  "submitting": "Creating account",
+  "haveAccount": "Already have an account?",
+  "signIn": "Sign in"
+}

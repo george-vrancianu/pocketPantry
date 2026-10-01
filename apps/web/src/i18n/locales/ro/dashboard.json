@@ -1,0 +1,9 @@
+{
+  "customise": "Personalizează tabloul de bord",
+  "greeting": {
+    "morning": "Bună dimineața",
+    "afternoon": "Bună ziua",
+    "evening": "Bună seara"
+  },
+  "settings": "Setări"
+}

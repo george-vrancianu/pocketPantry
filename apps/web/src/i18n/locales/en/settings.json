@@ -1,0 +1,7 @@
+{
+  "title": "Settings",
+  "language": "Language",
+  "account": "Account",
+  "signedInAs": "Signed in as {{name}}",
+  "signOut": "Sign out"
+}

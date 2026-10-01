@@ -1,0 +1,9 @@
+{
+  "customise": "Customise dashboard",
+  "greeting": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening"
+  },
+  "settings": "Settings"
+}

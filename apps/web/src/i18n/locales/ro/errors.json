@@ -1,0 +1,27 @@
+{
+  "unknown": "Ceva nu a mers bine. Încearcă din nou.",
+  "network_error": "Nu am putut contacta serverul. Verifică conexiunea și încearcă din nou.",
+  "internal_server_error": "Ceva nu a mers bine la noi. Încearcă din nou.",
+  "unauthorized": "Autentifică-te pentru a continua.",
+  "forbidden": "Nu ai acces aici.",
+  "not_found": "Nu am găsit ce căutai.",
+  "too_many_requests": "Prea multe încercări. Așteaptă puțin și încearcă din nou.",
+  "validation_failed": "Verifică datele introduse și încearcă din nou.",
+  "auth": {
+    "unauthenticated": "Autentifică-te pentru a continua.",
+    "admin_required": "Această zonă este doar pentru administratorii catalogului.",
+    "invalid_email_or_password": "E-mail sau parolă greșită.",
+    "invalid_email": "Adresa de e-mail nu pare corectă.",
+    "invalid_password": "Parolă greșită.",
+    "user_not_found": "E-mail sau parolă greșită.",
+    "password_too_short": "Parola este prea scurtă. Folosește cel puțin 8 caractere.",
+    "password_too_long": "Parola este prea lungă.",
+    "user_already_exists": "Există deja un cont cu acest e-mail.",
+    "user_already_exists_use_another_email": "Există deja un cont cu acest e-mail.",
+    "email_not_verified": "Confirmă adresa de e-mail înainte de a te autentifica.",
+    "invalid_origin": "Această aplicație nu are voie să comunice cu serverul de la această adresă.",
+    "missing_or_null_origin": "Această aplicație nu are voie să comunice cu serverul de la această adresă.",
+    "unauthorized": "E-mail sau parolă greșită.",
+    "too_many_requests": "Prea multe încercări. Așteaptă puțin și încearcă din nou."
+  }
+}

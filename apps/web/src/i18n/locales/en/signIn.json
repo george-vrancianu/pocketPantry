@@ -1,0 +1,10 @@
+{
+  "title": "Welcome back",
+  "subtitle": "Sign in to your pantry.",
+  "email": "Email",
+  "password": "Password",
+  "submit": "Sign in",
+  "submitting": "Signing in",
+  "noAccount": "New here?",
+  "createAccount": "Create an account"
+}

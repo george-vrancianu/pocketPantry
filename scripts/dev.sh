@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One command: Postgres up, migrations applied, API running.
+# One command: Postgres up, migrations applied, API and web app running.
 set -Eeuo pipefail
 
 cd "$(dirname -- "${BASH_SOURCE[0]}")/.."
@@ -16,4 +16,8 @@ fi
 
 docker compose up -d --wait postgres
 npm run db:migrate
+npm run dev --workspace @pocket-pantry/web &
+web_pid=$!
+trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+
 npm run start:dev --workspace @pocket-pantry/api
