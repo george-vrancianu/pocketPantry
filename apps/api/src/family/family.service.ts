@@ -4,7 +4,7 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { family, user } from '../database/schema';
-import { withFreshInviteCode } from './household';
+import { withFreshInviteCode } from './invite-code';
 
 export type FamilyView = {
   id: string;

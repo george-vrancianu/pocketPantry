@@ -149,4 +149,44 @@ describe('Household of One and the Family (integration)', () => {
       ),
     ).rejects.toThrow();
   });
+
+  it('leaves no Family behind when the Member insert fails during sign-up', async () => {
+    const countOrphans = async () => {
+      const result = await database.execute(
+        sql`select count(*)::int as n from family where id not in (select family_id from "user")`,
+      );
+      return (result.rows[0] as { n: number }).n;
+    };
+    const email = `doomed-${Date.now()}@example.com`;
+    // Fails only the user insert (after the Family is created), for this email.
+    await database.execute(sql`
+      create or replace function pp_test_reject_user() returns trigger as $$
+      begin
+        if new.email like 'doomed-%' then raise exception 'forced user insert failure'; end if;
+        return new;
+      end $$ language plpgsql`);
+    await database.execute(
+      sql`drop trigger if exists pp_test_reject_user on "user"`,
+    );
+    await database.execute(
+      sql`create trigger pp_test_reject_user before insert on "user" for each row execute function pp_test_reject_user()`,
+    );
+    try {
+      const before = await countOrphans();
+      const failed = await request(app.getHttpServer())
+        .post('/api/auth/sign-up/email')
+        .set('origin', TEST_ORIGIN)
+        .set('x-forwarded-for', '10.9.9.9')
+        .send({ name: 'Doomed', email, password });
+      expect(failed.status).toBe(422);
+      expect(await countOrphans()).toBe(before);
+    } finally {
+      await database.execute(
+        sql`drop trigger if exists pp_test_reject_user on "user"`,
+      );
+      await database.execute(
+        sql`drop function if exists pp_test_reject_user()`,
+      );
+    }
+  });
 });
