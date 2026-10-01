@@ -12,7 +12,7 @@ import { PlateScanFlowService } from './plate-scan-flow.service';
 import {
   plateDishSchema,
   plateScanSchema,
-  type PlateDishes,
+  type PlateDishesResponse,
   type PlateDishInput,
   type PlateScanInput,
 } from './plate-scan.schemas';
@@ -35,20 +35,20 @@ export class PlateScanController {
     @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ScanImagePipe(plateScanSchema, ['plateImage']))
     body: PlateScanInput,
-  ): Promise<PlateDishes> {
+  ): Promise<PlateDishesResponse> {
     return this.plate.scanDishes(member.id, body, query.locale);
   }
 
   @Post('ingredients')
   @ApiOperation({
     summary:
-      "The picked dish's Ingredients for one serving as proposed lines for the Review screen",
+      "The picked dish's Ingredients for one serving as proposed lines for the Review screen. Needs the token from Plate Scan; not counted against the Scan Cap again.",
   })
   ingredients(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
     @Body(new ZodValidationPipe(plateDishSchema)) body: PlateDishInput,
   ): Promise<ScanResponse> {
-    return this.plate.dishLines(member.id, body.dishTitle, query.locale);
+    return this.plate.dishLines(member.id, body, query.locale);
   }
 }

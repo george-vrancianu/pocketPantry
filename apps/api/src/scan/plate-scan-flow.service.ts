@@ -5,15 +5,21 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
 import { SettingsService } from '../settings/settings.service';
 import { plateLine } from './plate-lines';
+import { signPlateToken, verifyPlateToken } from './plate-token';
 import { PlateScanService } from './plate-scan.service';
-import type { PlateDishes, PlateScanInput } from './plate-scan.schemas';
+import type {
+  PlateDishesResponse,
+  PlateDishInput,
+  PlateScanInput,
+} from './plate-scan.schemas';
 import type { ScanResponse } from './proposed-line';
 import { ScanCapService } from './scan-cap.service';
 
 /**
  * Plate Scan for a Member. The photo is the Scan the Scan Cap counts (handed
  * back if the provider fails); loading the picked dish's Ingredients is the
- * second half of the same Scan and is not counted again.
+ * second half of the same Scan and is not counted again, but needs the token
+ * the photo step signed, so it cannot be called for an arbitrary title.
  */
 @Injectable()
 export class PlateScanFlowService {
@@ -29,10 +35,16 @@ export class PlateScanFlowService {
     memberId: string,
     input: PlateScanInput,
     locale: CatalogLocale,
-  ): Promise<PlateDishes> {
+  ): Promise<PlateDishesResponse> {
     const day = await this.cap.consume(memberId);
     try {
-      return await this.plate.findDishes(input, locale);
+      const result = await this.plate.findDishes(input, locale);
+      const token = signPlateToken({
+        secret: this.config.get('SCAN_TOKEN_SECRET', { infer: true }),
+        memberId,
+        titles: result.dishes.map((dish) => dish.title),
+      });
+      return { ...result, token };
     } catch (error) {
       await this.cap.refund(memberId, day);
       throw error;
@@ -41,10 +53,17 @@ export class PlateScanFlowService {
 
   async dishLines(
     memberId: string,
-    dishTitle: string,
+    input: PlateDishInput,
     locale: CatalogLocale,
   ): Promise<ScanResponse> {
-    const { items } = await this.plate.findIngredients(dishTitle, locale);
+    // Before the provider is called: the expensive call only runs for a dish this Member's Scan guessed.
+    verifyPlateToken({
+      secret: this.config.get('SCAN_TOKEN_SECRET', { infer: true }),
+      memberId,
+      dishTitle: input.dishTitle,
+      token: input.plateToken,
+    });
+    const { items } = await this.plate.findIngredients(input.dishTitle, locale);
     const ids = [
       ...new Set(
         items.flatMap((item) =>

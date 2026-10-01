@@ -83,68 +83,66 @@ export class ShoppingService {
     listId: string,
     body: AddShoppingItemBody,
   ): Promise<void> {
-    {
-      const unit = body.unit ?? null;
-      const quantity = body.quantity ?? null;
-      let identity;
-      let insertValues:
-        { ingredientId: string } | { name: string; normalizedName: string };
-      if (body.ingredientId !== undefined) {
-        const [found] = await tx
-          .select({ id: ingredients.id })
-          .from(ingredients)
-          .where(eq(ingredients.id, body.ingredientId));
-        if (!found) {
-          throw new ApiException(404, 'shopping.ingredient_not_found');
-        }
-        identity = eq(shoppingItems.ingredientId, found.id);
-        insertValues = { ingredientId: found.id };
-      } else {
-        const name = (body.name ?? '').trim();
-        const normalizedName = normalizeName(name);
-        if (!normalizedName) throw new ApiException(400, 'validation_failed');
-        identity = and(
-          isNull(shoppingItems.ingredientId),
-          eq(shoppingItems.normalizedName, normalizedName),
-        );
-        insertValues = { name, normalizedName };
+    const unit = body.unit ?? null;
+    const quantity = body.quantity ?? null;
+    let identity;
+    let insertValues:
+      { ingredientId: string } | { name: string; normalizedName: string };
+    if (body.ingredientId !== undefined) {
+      const [found] = await tx
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .where(eq(ingredients.id, body.ingredientId));
+      if (!found) {
+        throw new ApiException(404, 'shopping.ingredient_not_found');
       }
+      identity = eq(shoppingItems.ingredientId, found.id);
+      insertValues = { ingredientId: found.id };
+    } else {
+      const name = (body.name ?? '').trim();
+      const normalizedName = normalizeName(name);
+      if (!normalizedName) throw new ApiException(400, 'validation_failed');
+      identity = and(
+        isNull(shoppingItems.ingredientId),
+        eq(shoppingItems.normalizedName, normalizedName),
+      );
+      insertValues = { name, normalizedName };
+    }
 
-      const [existing] = await tx
-        .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
-        .from(shoppingItems)
-        .where(
-          and(
-            eq(shoppingItems.listId, listId),
-            identity,
-            unit === null
-              ? isNull(shoppingItems.unit)
-              : eq(shoppingItems.unit, unit),
-          ),
-        )
-        .limit(1);
+    const [existing] = await tx
+      .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+      .from(shoppingItems)
+      .where(
+        and(
+          eq(shoppingItems.listId, listId),
+          identity,
+          unit === null
+            ? isNull(shoppingItems.unit)
+            : eq(shoppingItems.unit, unit),
+        ),
+      )
+      .limit(1);
 
-      if (existing) {
-        const merged = sumQuantities(
-          existing.quantity === null ? null : Number(existing.quantity),
-          quantity,
-        );
-        // Adding something already bought means it is wanted again.
-        await tx
-          .update(shoppingItems)
-          .set({
-            quantity: merged === null ? null : String(merged),
-            checked: false,
-          })
-          .where(eq(shoppingItems.id, existing.id));
-      } else {
-        await tx.insert(shoppingItems).values({
-          listId,
-          ...insertValues,
-          quantity: quantity === null ? null : String(quantity),
-          unit,
-        });
-      }
+    if (existing) {
+      const merged = sumQuantities(
+        existing.quantity === null ? null : Number(existing.quantity),
+        quantity,
+      );
+      // Adding something already bought means it is wanted again.
+      await tx
+        .update(shoppingItems)
+        .set({
+          quantity: merged === null ? null : String(merged),
+          checked: false,
+        })
+        .where(eq(shoppingItems.id, existing.id));
+    } else {
+      await tx.insert(shoppingItems).values({
+        listId,
+        ...insertValues,
+        quantity: quantity === null ? null : String(quantity),
+        unit,
+      });
     }
   }
 

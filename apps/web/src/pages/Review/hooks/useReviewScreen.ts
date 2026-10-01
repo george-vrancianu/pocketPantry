@@ -41,10 +41,10 @@ export function useReviewScreen() {
   // Plate lines are things to buy, not things in the Pantry.
   const shopping = draft?.mode === 'plate';
   const saveMutation = shopping ? addShoppingItems : addBatches;
-  // Only Unmatched lines choose a category, so only fetch the list when one is on screen.
+  // Only Unmatched Pantry lines choose a category; Plate lines go to the Shopping List, which has no category picker.
   const parents = useCatalogParents(
     i18n.language,
-    lines.some((line) => line.match === null),
+    !shopping && lines.some((line) => line.match === null),
   );
 
   const change = (key: string, patch: Partial<ReviewLine>) =>

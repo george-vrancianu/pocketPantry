@@ -38,7 +38,7 @@ export function DishPicker({ dishes, disabled, onPick, onRetake }: Props) {
   const { t } = useTranslation('scan');
   const heading = useRef<HTMLHeadingElement>(null);
   // Hand focus to the new choice so keyboard and screen reader users land on it.
-  useEffect(() => heading.current?.focus(), []);
+  useEffect(() => heading.current?.focus(), [dishes]);
 
   return (
     <Box sx={{ mt: 2 }}>

@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
@@ -93,8 +94,42 @@ describe('Plate Scan (integration)', () => {
       .send(body);
   const dishes = (cookie: string, body: object = { plateImage: IMAGE }) =>
     post(cookie, 'scan/plate', body);
-  const ingredients = (cookie: string, dishTitle = 'Pancakes', locale = 'en') =>
-    post(cookie, 'scan/plate/ingredients', { dishTitle }, locale);
+  /** A genuine token for this Member, from a real Plate Scan that guessed Pancakes and Crepes. */
+  const tokenFor = async (cookie: string) => {
+    const saved = next;
+    const seen = prompts.length;
+    respondWith({
+      matches: [
+        { title: 'Pancakes', confidence: 0.7 },
+        { title: 'Crepes', confidence: 0.2 },
+      ],
+    });
+    const { token } = (await dishes(cookie).expect(201)).body as {
+      token: string;
+    };
+    next = saved;
+    prompts.length = seen; // The photo step's prompt is not the one under test.
+    return token;
+  };
+  /** Loads Ingredients for a dish; gets a genuine token first unless one (or null for none) is given. */
+  const ingredients = (
+    cookie: string,
+    dishTitle = 'Pancakes',
+    locale = 'en',
+    token?: string | null,
+  ) => ({
+    expect: async (status: number) => {
+      const plateToken = token === undefined ? await tokenFor(cookie) : token;
+      const response = await post(
+        cookie,
+        'scan/plate/ingredients',
+        { dishTitle, ...(plateToken === null ? {} : { plateToken }) },
+        locale,
+      );
+      expect(response.status).toBe(status);
+      return response;
+    },
+  });
   const bulk = (cookie: string, items: object[]) =>
     post(cookie, 'shopping-list/items/bulk', { items });
 
@@ -126,6 +161,7 @@ describe('Plate Scan (integration)', () => {
           { title: 'Pancakes', confidence: 0.7 },
           { title: 'Crepes', confidence: 0.2 },
         ],
+        token: expect.stringMatching(/^[\w-]+\.[\w-]+$/) as string,
       });
       expect(prompts[0].images).toEqual([IMAGE]);
     });
@@ -218,7 +254,7 @@ describe('Plate Scan (integration)', () => {
     it('names Ingredients in the Member locale', async () => {
       respondWith({ items: [item()] });
       const { lines } = (
-        await ingredients(await signUp(), 'Clătite', 'ro').expect(201)
+        await ingredients(await signUp(), 'Pancakes', 'ro').expect(201)
       ).body as { lines: Line[] };
       expect(lines[0].match?.name).not.toBe('Milk');
     });
@@ -232,10 +268,99 @@ describe('Plate Scan (integration)', () => {
     it('requires a bounded dish title and does not call the provider otherwise', async () => {
       const cookie = await signUp();
       prompts.length = 0;
+      const token = await tokenFor(cookie);
+      prompts.length = 0;
       await post(cookie, 'scan/plate/ingredients', {}).expect(400);
-      await ingredients(cookie, '   ').expect(400);
-      await ingredients(cookie, 'x'.repeat(121)).expect(400);
+      await ingredients(cookie, '   ', 'en', token).expect(400);
+      await ingredients(cookie, 'x'.repeat(121), 'en', token).expect(400);
       expect(prompts).toHaveLength(0);
+    });
+
+    describe('Plate token', () => {
+      const rejected = { code: 'scan.plate_token_invalid', params: {} };
+      const refuse = async (
+        cookie: string,
+        dishTitle: string,
+        token: string | null,
+      ) => {
+        prompts.length = 0;
+        const response = await ingredients(
+          cookie,
+          dishTitle,
+          'en',
+          token,
+        ).expect(400);
+        expect(response.body).toEqual(rejected);
+        expect(prompts).toHaveLength(0);
+      };
+
+      it('works for any dish the Scan guessed', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
+      });
+
+      it('refuses a missing token, a made-up one and a title the Scan did not guess', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        await refuse(cookie, 'Pancakes', null);
+        await refuse(cookie, 'Pancakes', 'not-a-token');
+        await refuse(cookie, 'Lasagne', token);
+      });
+
+      it('refuses a tampered token', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        const [body, signature] = token.split('.');
+        const payload = JSON.parse(
+          Buffer.from(body, 'base64url').toString(),
+        ) as { t: string[] };
+        payload.t.push('Lasagne');
+        const forged = Buffer.from(JSON.stringify(payload)).toString(
+          'base64url',
+        );
+        respondWith({ items: [item()] });
+        await refuse(cookie, 'Lasagne', `${forged}.${signature}`);
+      });
+
+      it("refuses another Member's token", async () => {
+        const token = await tokenFor(await signUp());
+        respondWith({ items: [item()] });
+        await refuse(await signUp(), 'Pancakes', token);
+      });
+
+      it('refuses an expired token', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        const now = Date.now();
+        const clock = jest
+          .spyOn(Date, 'now')
+          .mockReturnValue(now + 11 * 60_000);
+        try {
+          await refuse(cookie, 'Pancakes', token);
+        } finally {
+          clock.mockRestore();
+        }
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+      });
+
+      it('is the same Scan: loading Ingredients does not touch the Scan Cap', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        for (let i = 0; i < 5; i++) {
+          await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        }
+        // Cap is 3 and one Scan was used: two more photos still work, the third is blocked.
+        respondWith({ matches: [{ title: 'Pancakes', confidence: 0.7 }] });
+        await dishes(cookie).expect(201);
+        await dishes(cookie).expect(201);
+        await dishes(cookie).expect(429);
+      });
     });
   });
 

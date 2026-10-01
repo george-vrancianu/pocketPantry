@@ -6,7 +6,8 @@ import type { NewShoppingItem, ShoppingList } from './shopping';
 
 /** One guess at the dish in the photo. */
 export type DishGuess = { title: string; confidence: number };
-export type PlateDishes = { dishes: DishGuess[] };
+/** `token` proves to step two that these guesses came from this Member's Scan; send it back with the pick. */
+export type PlateDishes = { dishes: DishGuess[]; token: string };
 
 /** Plate Scan step one: the photo goes up as a data URL and is never stored. */
 export function usePlateDishes(locale: string) {
@@ -25,10 +26,10 @@ export function usePlateDishes(locale: string) {
 /** Plate Scan step two: the picked dish becomes proposed lines for one serving. */
 export function usePlateIngredients(locale: string) {
   return useMutation({
-    mutationFn: (dishTitle: string) =>
+    mutationFn: (pick: { dishTitle: string; plateToken: string }) =>
       apiRequest<ScanResponse>(
         `/scan/plate/ingredients?${new URLSearchParams({ locale })}`,
-        { method: 'POST', body: { dishTitle } },
+        { method: 'POST', body: pick },
       ),
   });
 }

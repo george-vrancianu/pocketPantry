@@ -8,6 +8,8 @@ export type PlateScanInput = z.infer<typeof plateScanSchema>;
 /** Plate Scan step two: the dish the Member picked. Free text, so it is bounded and quoted into the prompt. */
 export const plateDishSchema = z.object({
   dishTitle: z.string().trim().min(1).max(120),
+  /** The token Plate Scan step one returned; proves the dish was guessed for this Member. */
+  plateToken: z.string().max(2000).optional(),
 });
 export type PlateDishInput = z.infer<typeof plateDishSchema>;
 
@@ -37,7 +39,8 @@ const plateItemSchema = z.object({
   matchConfidence: z.number().min(0).max(1),
   fallbackIngredientName: z.string().trim().min(1).max(80),
   quantityType: z.enum(['count', 'measured']).nullable(),
-  quantity: z.number().positive().max(1_000_000).nullable(),
+  // Same ceiling as a Shopping Item, so a line the Member confirms is never a 400.
+  quantity: z.number().positive().max(999_999).nullable(),
   unit: z.string().trim().min(1).max(30).nullable(),
   confidence: z.number().min(0).max(1),
 });
@@ -51,3 +54,5 @@ export const plateIngredientsJsonSchema = z.toJSONSchema(
 
 export type DishGuess = { title: string; confidence: number };
 export type PlateDishes = { dishes: DishGuess[] };
+/** What step one returns: the guesses, and the short-lived token that unlocks step two for them. */
+export type PlateDishesResponse = PlateDishes & { token: string };

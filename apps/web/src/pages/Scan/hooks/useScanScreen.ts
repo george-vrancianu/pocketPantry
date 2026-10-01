@@ -2,9 +2,9 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { ApiError } from '../../../lib/api';
 import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
+import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
 import { usePlateScan } from './usePlateScan';
 import {
@@ -27,23 +27,27 @@ export function useScanScreen() {
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
   const plate = usePlateScan();
+  const ingredientsScan = useIngredientsScan(i18n.language);
+  // Every wired mode has its own endpoint and returns the same proposed lines.
+  const modeScan = mode === 'ingredients' ? ingredientsScan : productScan;
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
-  const [resizeError, setResizeError] = useState<ApiError | null>(null);
+  // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
+  const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || productScan.isPending || plate.pending;
+  const reading = resizing || modeScan.isPending || plate.pending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
   const scanImage = async (source: Blob) => {
-    setResizeError(null);
+    setLocalError(null);
     setResizing(true);
     let image: string;
     try {
       image = await resizeImage(source);
     } catch {
-      setResizeError(new ApiError('scan.image_invalid', 400));
+      setLocalError('scan.image_invalid');
       return;
     } finally {
       setResizing(false);
@@ -52,8 +56,12 @@ export function useScanScreen() {
       plate.scan(image);
       return;
     }
-    productScan.mutate(image, {
+    modeScan.mutate(image, {
       onSuccess: ({ lines }) => {
+        if (lines.length === 0) {
+          setLocalError('scan.nothing_found');
+          return;
+        }
         startReview({ mode, lines });
         navigate('/scan/review');
       },
@@ -77,7 +85,12 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const error = resizeError ?? productScan.error ?? plate.error;
+  const scanError = modeScan.error ?? plate.error;
+  const error = localError
+    ? t(`errors:${localError}`)
+    : scanError
+      ? translateApiError(t, scanError)
+      : null;
 
   return {
     mode,
@@ -87,11 +100,13 @@ export function useScanScreen() {
     reading,
     controlsDisabled: busy,
     fileInput,
-    error: error ? translateApiError(t, error) : null,
+    error,
     setMode: (next: ScanMode) => {
       productScan.reset();
+      productScan.reset();
+      ingredientsScan.reset();
       plate.reset();
-      setResizeError(null);
+      setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },
     plate,

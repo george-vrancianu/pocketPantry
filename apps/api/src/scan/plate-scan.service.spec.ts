@@ -2,6 +2,7 @@ import type { StructuredOutputAiService } from '../ai/structured-output-ai.servi
 import { ApiException } from '../common/api-exception';
 import { validateCatalogMatch } from '../ingredients/ingredient-catalog';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import { addShoppingItemBody } from '../shopping/shopping.schemas';
 import { PlateScanService } from './plate-scan.service';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
@@ -144,6 +145,28 @@ describe('PlateScanService', () => {
         service.findIngredients('Pizza', 'en'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
       provider({ items: [item({ quantity: -1 })] });
+      await expect(
+        service.findIngredients('Pizza', 'en'),
+      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
+    });
+
+    it('caps quantity where Shopping does, so a confirmed line can never be a 400', async () => {
+      const top = 999_999;
+      expect(
+        addShoppingItemBody.safeParse({ ingredientId: milkId, quantity: top })
+          .success,
+      ).toBe(true);
+      provider({ items: [item({ quantity: top })] });
+      await expect(
+        service.findIngredients('Pizza', 'en'),
+      ).resolves.toBeDefined();
+      expect(
+        addShoppingItemBody.safeParse({
+          ingredientId: milkId,
+          quantity: top + 1,
+        }).success,
+      ).toBe(false);
+      provider({ items: [item({ quantity: top + 1 })] });
       await expect(
         service.findIngredients('Pizza', 'en'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });

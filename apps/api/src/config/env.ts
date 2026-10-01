@@ -19,9 +19,15 @@ const envSchema = z.object({
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
   /** Below this a Match counts as Unmatched, and an image read counts as low-confidence. */
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
+  /** Signs the Plate Scan token. Required in production; development and test fall back to a fixed, public default. */
+  SCAN_TOKEN_SECRET: z.string().min(32).optional(),
 });
 
-export type AppConfig = z.infer<typeof envSchema>;
+const DEV_SCAN_TOKEN_SECRET = 'dev-only-scan-token-secret-not-for-production';
+
+export type AppConfig = Omit<z.infer<typeof envSchema>, 'SCAN_TOKEN_SECRET'> & {
+  SCAN_TOKEN_SECRET: string;
+};
 
 export function validateEnv(config: Record<string, unknown>): AppConfig {
   // `KEY=` in a .env file means "unset", not an empty value.
@@ -32,5 +38,14 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
   if (!result.success) {
     throw new Error(`Invalid environment: ${z.prettifyError(result.error)}`);
   }
-  return result.data;
+  const { SCAN_TOKEN_SECRET, ...rest } = result.data;
+  if (!SCAN_TOKEN_SECRET && rest.NODE_ENV === 'production') {
+    throw new Error(
+      'Invalid environment: SCAN_TOKEN_SECRET is required in production (at least 32 characters)',
+    );
+  }
+  return {
+    ...rest,
+    SCAN_TOKEN_SECRET: SCAN_TOKEN_SECRET ?? DEV_SCAN_TOKEN_SECRET,
+  };
 }

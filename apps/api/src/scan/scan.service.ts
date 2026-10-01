@@ -5,6 +5,9 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
 import { SettingsService } from '../settings/settings.service';
 import type { ProductScanInput } from './product-scan.schemas';
+import { ingredientsLine } from './ingredients-line';
+import type { IngredientsScanInput } from './ingredients-scan.schemas';
+import { IngredientsScanService } from './ingredients-scan.service';
 import { ProductScanService } from './product-scan.service';
 import { productLine, type ScanResponse } from './proposed-line';
 import { ScanCapService } from './scan-cap.service';
@@ -19,6 +22,7 @@ export class ScanService {
   constructor(
     private readonly cap: ScanCapService,
     private readonly productScan: ProductScanService,
+    private readonly ingredientsScan: IngredientsScanService,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
@@ -44,6 +48,45 @@ export class ScanService {
       infer: true,
     });
     return { lines: [productLine(result, match ?? null, threshold)] };
+  }
+
+  async scanIngredients(
+    memberId: string,
+    input: IngredientsScanInput,
+    locale: CatalogLocale,
+  ): Promise<ScanResponse> {
+    const result = await this.withinCap(memberId, () =>
+      this.ingredientsScan.analyze(input, locale),
+    );
+    const ids = [
+      ...new Set(
+        result.items.flatMap((item) =>
+          item.matchedIngredientId ? [item.matchedIngredientId] : [],
+        ),
+      ),
+    ];
+    const matches = new Map(
+      (
+        await this.catalogSearch.findByIds(
+          ids,
+          locale,
+          await this.settings.expiryOverridesForMember(memberId),
+        )
+      ).map((match) => [match.id, match]),
+    );
+    const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
+      infer: true,
+    });
+    return {
+      lines: result.items.map((item) =>
+        ingredientsLine(
+          item,
+          (item.matchedIngredientId && matches.get(item.matchedIngredientId)) ||
+            null,
+          threshold,
+        ),
+      ),
+    };
   }
 
   /** Counts the Scan before calling the provider, and hands it back if the provider fails. */

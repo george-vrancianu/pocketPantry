@@ -53,6 +53,7 @@ const line = (overrides: Partial<ProposedLine>): ProposedLine => ({
 });
 
 const dishes = {
+  token: 'signed-token',
   dishes: [
     { title: 'Pancakes', confidence: 0.72 },
     { title: 'Crepes', confidence: 0.2 },
@@ -127,7 +128,7 @@ describe('Plate Scan', () => {
     ).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'POST /api/scan/plate/ingredients')?.body,
-    ).toEqual({ dishTitle: 'Pancakes' });
+    ).toEqual({ dishTitle: 'Pancakes', plateToken: 'signed-token' });
     expect(screen.getByRole('region', { name: 'Pixie dust' })).toBeVisible();
   });
 
@@ -136,6 +137,27 @@ describe('Plate Scan', () => {
     await shoot();
     await screen.findByRole('group', { name: 'Which dish is it?' });
     await userEvent.click(screen.getByRole('button', { name: 'Retake photo' }));
+    expect(
+      screen.queryByRole('group', { name: 'Which dish is it?' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+  });
+
+  it('goes back to the scan step with a message when the token is rejected', async () => {
+    renderPlate({
+      'POST /api/scan/plate/ingredients': () =>
+        Response.json(
+          { code: 'scan.plate_token_invalid', params: {} },
+          { status: 400 },
+        ),
+    });
+    await shoot();
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Pancakes/ }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'That dish list has expired. Take the photo again.',
+    );
     expect(
       screen.queryByRole('group', { name: 'Which dish is it?' }),
     ).not.toBeInTheDocument();
@@ -177,6 +199,18 @@ describe('Plate Scan', () => {
     expect(
       screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
     ).toBeEnabled();
+  });
+
+  it('does not load the Parent Category list for Plate lines, even Unmatched ones', async () => {
+    const calls = renderPlate();
+    await shoot();
+    await userEvent.click(
+      await screen.findByRole('button', { name: /Pancakes/ }),
+    );
+    expect(
+      await screen.findByRole('region', { name: 'Pixie dust' }),
+    ).toBeVisible();
+    expect(calls.map((c) => c.key)).not.toContain('GET /api/catalog/parents');
   });
 
   it('confirm adds the lines to the Shopping List: matched by id, Unmatched by name', async () => {

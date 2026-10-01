@@ -2,7 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ApiException } from '../common/api-exception';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import {
+  INGREDIENTS_SCAN_MAX_ITEMS,
   ingredientsScanModelJsonSchema,
   ingredientsScanModelResultSchema,
   type IngredientsScanInput,
@@ -17,16 +19,18 @@ export class IngredientsScanService {
   ) {}
   async analyze(
     input: IngredientsScanInput,
-    locale: string,
+    locale: CatalogLocale,
   ): Promise<IngredientsScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalog();
+    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
     try {
       const response = await this.ai.generate({
         prompt: [
           'Identify every distinct edible grocery item visible in this photo. This is a photo of groceries or ingredients, not a receipt.',
-          'Use locale ' +
+          'The user locale is ' +
             locale +
-            ' only as context for labels. Return one item per distinct visible grocery product or ingredient. Do not include packaging, kitchen tools, household items, or obscured products. Do not duplicate items.',
+            '; use it only as context for labels, and match catalog ingredients across languages. Return one item per distinct visible grocery product or ingredient. Do not include packaging, kitchen tools, household items, or obscured products. Do not duplicate items. Return at most ' +
+            INGREDIENTS_SCAN_MAX_ITEMS +
+            ' items.',
           'Use a concise consumer-facing productName and broad food productType. Do not invent a brand, quantity, expiry date, or details not visible.',
           'Match each item against the application catalog. Ingredient tuples are [id, name, category]. Return matchedIngredientId only when that exact ID is present and is a reasonable match. Never invent IDs. Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence. Use null when no catalog ingredient is a good match.',
           'Always return fallbackIngredientName as a short generic ingredient name suitable for catalog search or creation. confidence is per-item recognition confidence from 0 to 1.',
@@ -38,6 +42,11 @@ export class IngredientsScanService {
         maxOutputTokens: 8000,
       });
       const result = ingredientsScanModelResultSchema.parse(response.data);
+      if (result.items.length > INGREDIENTS_SCAN_MAX_ITEMS) {
+        throw new ApiException(422, 'scan.too_many_items', {
+          max: INGREDIENTS_SCAN_MAX_ITEMS,
+        });
+      }
       return {
         items: result.items.map((value) => ({
           ...value,
