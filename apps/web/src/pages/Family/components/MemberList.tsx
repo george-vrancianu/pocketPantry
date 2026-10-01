@@ -39,6 +39,7 @@ export function MemberList({ members, onMakeOwner, onRemove, busy }: Props) {
                   <ConfirmAction
                     variant="text"
                     label={t('makeOwner')}
+                    triggerName={t('makeOwnerNamed', { name: member.name })}
                     message={t('makeOwnerConfirm', { name: member.name })}
                     disabled={busy}
                     onConfirm={() => onMakeOwner(member)}
@@ -48,6 +49,7 @@ export function MemberList({ members, onMakeOwner, onRemove, busy }: Props) {
                   <ConfirmAction
                     variant="text"
                     label={t('remove')}
+                    triggerName={t('removeNamed', { name: member.name })}
                     message={t('removeConfirm', { name: member.name })}
                     disabled={busy}
                     onConfirm={() => onRemove(member)}

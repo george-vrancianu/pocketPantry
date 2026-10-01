@@ -2,7 +2,7 @@ import MuiAlert from '@mui/material/Alert';
 import type { ReactNode } from 'react';
 
 export type AlertProps = {
-  severity?: 'error' | 'info' | 'success';
+  severity?: 'error' | 'warning' | 'info' | 'success';
   children: ReactNode;
 };
 

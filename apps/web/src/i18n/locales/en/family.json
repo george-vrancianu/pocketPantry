@@ -18,9 +18,7 @@
   "joinCodeLabel": "Invite Code",
   "joinCheck": "Check code",
   "joinChecking": "Checking…",
-  "joinWarningTitle": "Joining deletes your current Household of One",
   "joinWarning": "Your current Household of One and its Pantry and Shopping data will be deleted. Data is not merged.",
-  "joinCounts": "This will delete {{batches}} Batches and {{shoppingItems}} Shopping Items.",
   "joinConfirm": "Join and delete my data",
   "joining": "Joining…",
   "makeOwner": "Make Owner",
@@ -31,5 +29,11 @@
   "leaveConfirm": "Leave this Family? You will get a new, empty Household of One.",
   "ownerCannotLeave": "As Owner you cannot leave. Make another Member the Owner first.",
   "delete": "Delete Family",
-  "deleteConfirm": "Delete this Family and all its data? Every Member, you included, will get a new, empty Household of One. This cannot be undone."
+  "deleteConfirm": "Delete this Family and all its data? Every Member, you included, will get a new, empty Household of One. This cannot be undone.",
+  "joinBatches_one": "{{count}} Batch will be deleted.",
+  "joinBatches_other": "{{count}} Batches will be deleted.",
+  "joinShoppingItems_one": "{{count}} Shopping Item will be deleted.",
+  "joinShoppingItems_other": "{{count}} Shopping Items will be deleted.",
+  "removeNamed": "Remove {{name}}",
+  "makeOwnerNamed": "Make {{name}} the Owner"
 }

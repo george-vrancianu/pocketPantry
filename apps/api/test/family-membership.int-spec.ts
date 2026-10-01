@@ -1,9 +1,19 @@
+import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { family, user } from '../src/database/schema';
+import {
+  aisles,
+  batches,
+  family,
+  leafCategories,
+  parentCategories,
+  shoppingItems,
+  shoppingLists,
+  user,
+} from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type FamilyBody = {
@@ -499,6 +509,186 @@ describe('Family membership: join, leave, remove, transfer, delete (integration)
         .expect(401);
       await api.delete('/api/family/members/x').expect(401);
       await api.delete('/api/family').expect(401);
+    });
+  });
+
+  describe('Family-owned data', () => {
+    let leafId: string;
+
+    beforeAll(async () => {
+      const tag = `fm${Date.now()}${Math.floor(Math.random() * 1e6)}`;
+      const [aisle] = await database
+        .insert(aisles)
+        .values({
+          id: randomUUID(),
+          name: tag,
+          normalizedName: tag,
+          sortOrder: 100_000 + Math.floor(Math.random() * 1_000_000),
+        })
+        .returning();
+      const [parent] = await database
+        .insert(parentCategories)
+        .values({
+          id: randomUUID(),
+          name: tag,
+          normalizedName: tag,
+          aisleId: aisle.id,
+        })
+        .returning();
+      const [leaf] = await database
+        .insert(leafCategories)
+        .values({
+          id: randomUUID(),
+          parentId: parent.id,
+          name: tag,
+          normalizedName: tag,
+        })
+        .returning();
+      leafId = leaf.id;
+    });
+
+    /** 3 Batches and 4 Shopping Items (2 active, 2 on an archived list). */
+    async function seed(familyId: string) {
+      await database.insert(batches).values(
+        [1, 2, 3].map((n) => ({
+          familyId,
+          leafCategoryId: leafId,
+          unmatched: true,
+          rawName: `thing ${n}`,
+          location: 'cupboard' as const,
+        })),
+      );
+      const [active] = await database
+        .insert(shoppingLists)
+        .values({ familyId })
+        .returning();
+      const [archived] = await database
+        .insert(shoppingLists)
+        .values({ familyId, status: 'archived' })
+        .returning();
+      await database.insert(shoppingItems).values(
+        [active.id, active.id, archived.id, archived.id].map((listId, n) => ({
+          listId,
+          name: `item ${n}`,
+          normalizedName: `item ${n}`,
+        })),
+      );
+    }
+
+    const dataOf = async (familyId: string) => {
+      const b = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.familyId, familyId));
+      const lists = await database
+        .select()
+        .from(shoppingLists)
+        .where(eq(shoppingLists.familyId, familyId));
+      const items = lists.length
+        ? await database
+            .select()
+            .from(shoppingItems)
+            .where(
+              inArray(
+                shoppingItems.listId,
+                lists.map((l) => l.id),
+              ),
+            )
+        : [];
+      return { batches: b.length, lists: lists.length, items: items.length };
+    };
+
+    it('cascades every foreign key referencing family, except user.family_id', async () => {
+      const result = await database.execute(sql`
+        select cl.relname as table_name, rc.delete_rule
+        from information_schema.referential_constraints rc
+        join pg_constraint c on c.conname = rc.constraint_name
+        join pg_class cl on cl.oid = c.conrelid
+        join pg_class ref on ref.oid = c.confrelid
+        where ref.relname = 'family' and c.contype = 'f'`);
+      const rules = result.rows as Array<{
+        table_name: string;
+        delete_rule: string;
+      }>;
+      const byTable = Object.fromEntries(
+        rules.map((r) => [r.table_name, r.delete_rule]),
+      );
+      expect(byTable['user']).toBe('NO ACTION');
+      expect(byTable['batches']).toBe('CASCADE');
+      expect(byTable['shopping_lists']).toBe('CASCADE');
+      expect(
+        rules.filter(
+          (r) => r.table_name !== 'user' && r.delete_rule !== 'CASCADE',
+        ),
+      ).toEqual([]);
+    });
+
+    it('shows real counts in the join warning, then deletes the abandoned data on join', async () => {
+      const owner = await signUp('Owner');
+      const joiner = await signUp('Joiner');
+      const mine = (await familyOf(joiner)).id;
+      await seed(mine);
+
+      const code = (await familyOf(owner)).inviteCode;
+      const preview = await call(
+        joiner,
+        'get',
+        `/join-preview?code=${code}`,
+      ).expect(200);
+      expect(preview.body).toEqual({
+        abandonedFamilyId: mine,
+        batches: 3,
+        shoppingItems: 4,
+      });
+      expect(await dataOf(mine)).toEqual({ batches: 3, lists: 2, items: 4 });
+
+      await call(joiner, 'post', '/join', { code }).expect(201);
+      expect(await familyExists(mine)).toBe(false);
+      expect(await dataOf(mine)).toEqual({ batches: 0, lists: 0, items: 0 });
+    });
+
+    it('leaves the target Family data alone when someone joins', async () => {
+      const owner = await signUp('Owner');
+      const joiner = await signUp('Joiner');
+      const { id, inviteCode } = await familyOf(owner);
+      await seed(id);
+      await call(joiner, 'post', '/join', { code: inviteCode }).expect(201);
+      expect(await dataOf(id)).toEqual({ batches: 3, lists: 2, items: 4 });
+    });
+
+    it('deletes all Family data with the Family and keeps the Members', async () => {
+      const { owner, members, familyId } = await familyWith(1);
+      await seed(familyId);
+      await call(owner, 'delete', '').expect(200);
+      expect(await familyExists(familyId)).toBe(false);
+      expect(await dataOf(familyId)).toEqual({
+        batches: 0,
+        lists: 0,
+        items: 0,
+      });
+      const fresh = await familyOf(members[0]);
+      expect(await dataOf(fresh.id)).toEqual({
+        batches: 0,
+        lists: 0,
+        items: 0,
+      });
+    });
+
+    it('leaves Family data with the Family when a Member leaves or is removed', async () => {
+      const { owner, members, familyId } = await familyWith(2);
+      await seed(familyId);
+      await call(members[0], 'post', '/leave').expect(200);
+      await call(owner, 'delete', `/members/${members[1].userId}`).expect(200);
+      expect(await dataOf(familyId)).toEqual({
+        batches: 3,
+        lists: 2,
+        items: 4,
+      });
+      expect(await dataOf((await familyOf(members[0])).id)).toEqual({
+        batches: 0,
+        lists: 0,
+        items: 0,
+      });
     });
   });
 

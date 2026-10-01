@@ -63,7 +63,7 @@ describe('FamilyPage: joining another Family', () => {
       'Your current Household of One and its Pantry and Shopping data will be deleted. Data is not merged.',
     );
     expect(warning).toHaveTextContent(
-      'This will delete 12 Batches and 3 Shopping Items.',
+      '12 Batches will be deleted. 3 Shopping Items will be deleted.',
     );
     // Nothing is joined until the Member confirms.
     expect(calls.map((c) => c.key)).not.toContain('POST /api/family/join');
@@ -136,7 +136,7 @@ describe('FamilyPage: joining another Family', () => {
       screen.getByRole('button', { name: 'Verifică codul' }),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Se vor șterge 12 Loturi și 3 Articole din lista de cumpărături.',
+      'Se vor șterge 12 Loturi. Se vor șterge 3 Articole din lista de cumpărături.',
     );
   });
 
@@ -190,13 +190,45 @@ describe('FamilyPage: leaving, removing, transferring and deleting', () => {
       screen.queryByRole('button', { name: 'Leave Family' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Make Owner' }),
+      screen.getByRole('button', { name: 'Make Mihai the Owner' }),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Mihai' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     expect(await screen.findByText('Join another Family')).toBeInTheDocument();
     expect(calls.map((c) => c.key)).toContain('DELETE /api/family/members/2');
+  });
+
+  it('moves focus to Confirm, and back to the trigger on Cancel', async () => {
+    stub({ 'GET /api/family': () => Response.json(owned) });
+    renderWithProviders(<FamilyPage />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete Family' }),
+    );
+    expect(screen.getByRole('button', { name: 'Confirm' })).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Delete Family' })).toHaveFocus();
+  });
+
+  it('pluralises the join counts', async () => {
+    stub({
+      'GET /api/family/join-preview': () =>
+        Response.json({
+          abandonedFamilyId: 'mine',
+          batches: 1,
+          shoppingItems: 1,
+        }),
+    });
+    renderWithProviders(<FamilyPage />);
+    await userEvent.type(
+      await screen.findByLabelText('Invite Code', { selector: 'input' }),
+      'K7M2PQ9X',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Check code' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '1 Batch will be deleted. 1 Shopping Item will be deleted.',
+    );
   });
 
   it('lets the Owner delete the Family after confirming', async () => {

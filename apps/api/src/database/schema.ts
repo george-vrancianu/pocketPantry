@@ -280,7 +280,7 @@ export const shoppingLists = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     familyId: uuid('family_id')
       .notNull()
-      .references(() => family.id),
+      .references(() => family.id, { onDelete: 'cascade' }),
     status: shoppingListStatus('status').notNull().default('active'),
     ...timestamps,
   },

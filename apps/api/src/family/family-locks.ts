@@ -11,7 +11,32 @@ export type LockedMember = {
   familyRole: 'owner' | 'member';
 };
 
+/** The Member moved Family between the unlocked peek and the lock. */
+export class ConcurrentMove extends Error {}
+
 const MAX_ATTEMPTS = 5;
+
+/**
+ * Runs `work` in a transaction, restarting it from scratch if it reports a
+ * ConcurrentMove. Restarting (rather than re-locking inside the transaction)
+ * releases every lock first, so Family locks are always taken in ascending id
+ * order and cannot deadlock.
+ */
+export async function runLocked<T>(
+  database: Database,
+  work: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await database.transaction(work);
+    } catch (error) {
+      if (!(error instanceof ConcurrentMove)) throw error;
+      if (attempt >= MAX_ATTEMPTS) {
+        throw new ApiException(409, 'family.concurrent_change');
+      }
+    }
+  }
+}
 
 /**
  * Lock order, everywhere: Family rows first (ascending id when several), then
@@ -20,36 +45,34 @@ const MAX_ATTEMPTS = 5;
  *
  * Locks the Member's current Family (plus any extra Families) and then the
  * Member, and returns the Member as read from the database under the lock,
- * never from the session. If the Member moved Family between the unlocked
- * peek and the lock, it tries again.
+ * never from the session. Throws ConcurrentMove if the Member changed Family
+ * in between; call through `runLocked` so the transaction restarts.
  */
 export async function lockMemberAndFamily(
   tx: Tx,
   memberId: string,
   alsoLockFamilyIds: string[] = [],
 ): Promise<LockedMember> {
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const [peek] = await tx
-      .select({ familyId: user.familyId })
-      .from(user)
-      .where(eq(user.id, memberId));
-    if (!peek) throw new ApiException(401, 'auth.unauthenticated');
+  const [peek] = await tx
+    .select({ familyId: user.familyId })
+    .from(user)
+    .where(eq(user.id, memberId));
+  if (!peek) throw new ApiException(401, 'auth.unauthenticated');
 
-    await lockFamilies(tx, [peek.familyId, ...alsoLockFamilyIds]);
+  await lockFamilies(tx, [peek.familyId, ...alsoLockFamilyIds]);
 
-    const [member] = await tx
-      .select({
-        id: user.id,
-        familyId: user.familyId,
-        familyRole: user.familyRole,
-      })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .for('update');
-    if (!member) throw new ApiException(401, 'auth.unauthenticated');
-    if (member.familyId === peek.familyId) return member;
-  }
-  throw new ApiException(409, 'family.concurrent_change');
+  const [member] = await tx
+    .select({
+      id: user.id,
+      familyId: user.familyId,
+      familyRole: user.familyRole,
+    })
+    .from(user)
+    .where(eq(user.id, memberId))
+    .for('update');
+  if (!member) throw new ApiException(401, 'auth.unauthenticated');
+  if (member.familyId !== peek.familyId) throw new ConcurrentMove();
+  return member;
 }
 
 /** `SELECT ... FOR UPDATE` in ascending id order; rows already deleted are skipped. */

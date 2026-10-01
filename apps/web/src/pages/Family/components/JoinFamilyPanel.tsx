@@ -15,8 +15,10 @@ export function JoinFamilyPanel({ flow }: { flow: JoinFlow }) {
       </Typography>
       {flow.preview ? (
         <>
-          <Alert severity="info">
-            {t('joinWarning')} {t('joinCounts', flow.preview)}
+          <Alert severity="warning">
+            {t('joinWarning')}{' '}
+            {t('joinBatches', { count: flow.preview.batches })}{' '}
+            {t('joinShoppingItems', { count: flow.preview.shoppingItems })}
           </Alert>
           <Stack direction="row" spacing={1}>
             <Button disabled={flow.joining} onClick={flow.confirm}>

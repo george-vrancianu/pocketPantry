@@ -1,5 +1,11 @@
-import { eq } from 'drizzle-orm';
-import { family, user } from '../database/schema';
+import { count, eq } from 'drizzle-orm';
+import {
+  batches,
+  family,
+  shoppingItems,
+  shoppingLists,
+  user,
+} from '../database/schema';
 import type { Tx } from './family-locks';
 import { withFreshInviteCode } from './invite-code';
 
@@ -28,12 +34,23 @@ export async function moveToNewHouseholdOfOne(
 export type FamilyDataCounts = { batches: number; shoppingItems: number };
 
 /**
- * What a Family owns that is deleted along with it. The Pantry and Shopping
- * tables arrive in later tickets (they must reference `family` with
- * ON DELETE CASCADE, which is what makes deleting the Family remove them);
- * until then there is nothing to count. Those tickets add `(tx: Tx, familyId: string)`
- * parameters and the queries.
+ * What a Family owns that is deleted along with it, as shown in the join
+ * warning: Batches, and Shopping Items across active and archived lists.
+ * Deleting the Family itself relies on every Family-owned table referencing
+ * `family` with ON DELETE CASCADE (enforced by a test over information_schema).
  */
-export function countFamilyData(): FamilyDataCounts {
-  return { batches: 0, shoppingItems: 0 };
+export async function countFamilyData(
+  tx: Pick<Tx, 'select'>,
+  familyId: string,
+): Promise<FamilyDataCounts> {
+  const [{ n: batchCount }] = await tx
+    .select({ n: count() })
+    .from(batches)
+    .where(eq(batches.familyId, familyId));
+  const [{ n: itemCount }] = await tx
+    .select({ n: count() })
+    .from(shoppingItems)
+    .innerJoin(shoppingLists, eq(shoppingItems.listId, shoppingLists.id))
+    .where(eq(shoppingLists.familyId, familyId));
+  return { batches: batchCount, shoppingItems: itemCount };
 }

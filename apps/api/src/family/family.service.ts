@@ -9,6 +9,7 @@ import {
   lockFamilyMembers,
   lockMemberAndFamily,
   requireOwner,
+  runLocked,
   type Tx,
 } from './family-locks';
 import { withFreshInviteCode } from './invite-code';
@@ -74,7 +75,7 @@ export class FamilyService {
 
   /** Owner only. Replaces the code in place, so the previous one stops working. */
   async regenerateInviteCode(memberId: string): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
+    await runLocked(this.database, async (tx) => {
       const owner = await lockMemberAndFamily(tx, memberId);
       requireOwner(owner);
       await withFreshInviteCode((code) =>
@@ -91,10 +92,14 @@ export class FamilyService {
 
   /** Same checks as `join`, no changes: what joining with `code` would delete. */
   async previewJoin(memberId: string, code: string): Promise<JoinPreview> {
-    return this.database.transaction(async (tx) => {
-      const { abandoned, counts } = await this.prepareJoin(tx, memberId, code);
-      return { abandonedFamilyId: abandoned, ...counts };
-    });
+    // Read-only: no row locks, so a preview never blocks (or is blocked by) others.
+    const { abandoned, counts } = await this.prepareJoin(
+      this.database,
+      memberId,
+      code,
+      false,
+    );
+    return { abandonedFamilyId: abandoned, ...counts };
   }
 
   /**
@@ -102,8 +107,13 @@ export class FamilyService {
    * it is deleted with its data (never merged) in the same transaction.
    */
   async join(memberId: string, code: string): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
-      const { abandoned, target } = await this.prepareJoin(tx, memberId, code);
+    await runLocked(this.database, async (tx) => {
+      const { abandoned, target } = await this.prepareJoin(
+        tx,
+        memberId,
+        code,
+        true,
+      );
       await tx
         .update(user)
         .set({ familyId: target, familyRole: 'member' })
@@ -116,7 +126,7 @@ export class FamilyService {
 
   /** A non-Owner Member leaves for a fresh Household of One. */
   async leave(memberId: string): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
+    await runLocked(this.database, async (tx) => {
       const member = await lockMemberAndFamily(tx, memberId);
       if (member.familyRole === 'owner') {
         throw new ApiException(409, 'family.owner_cannot_leave');
@@ -128,7 +138,7 @@ export class FamilyService {
 
   /** Owner only. The removed Member lands in a fresh Household of One. */
   async removeMember(ownerId: string, targetId: string): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
+    await runLocked(this.database, async (tx) => {
       const owner = await lockMemberAndFamily(tx, ownerId);
       requireOwner(owner);
       if (targetId === ownerId) {
@@ -145,7 +155,7 @@ export class FamilyService {
     ownerId: string,
     targetId: string,
   ): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
+    await runLocked(this.database, async (tx) => {
       const owner = await lockMemberAndFamily(tx, ownerId);
       requireOwner(owner);
       if (targetId === ownerId) {
@@ -170,7 +180,7 @@ export class FamilyService {
    * the Owner included, gets a fresh empty Household of One.
    */
   async deleteFamily(ownerId: string): Promise<FamilyView> {
-    await this.database.transaction(async (tx) => {
+    await runLocked(this.database, async (tx) => {
       const owner = await lockMemberAndFamily(tx, ownerId);
       requireOwner(owner);
       const members = await lockFamilyMembers(tx, owner.familyId);
@@ -183,20 +193,39 @@ export class FamilyService {
     return this.getForMember(ownerId);
   }
 
-  private async prepareJoin(tx: Tx, memberId: string, rawCode: string) {
+  /**
+   * Validates a join. With `lock`, takes the Family/Member locks and the
+   * result is authoritative (used by `join`); without, plain reads (preview).
+   */
+  private async prepareJoin(
+    db: Tx | Database,
+    memberId: string,
+    rawCode: string,
+    lock: boolean,
+  ) {
     const code = rawCode.trim().toUpperCase();
     const invalid = () => new ApiException(404, 'family.invite_code_invalid');
 
-    const [peek] = await tx
+    const [peek] = await db
       .select({ id: family.id })
       .from(family)
       .where(eq(family.inviteCode, code));
     if (!peek) throw invalid();
 
-    const member = await lockMemberAndFamily(tx, memberId, [peek.id]);
+    let member: { familyId: string };
+    if (lock) {
+      member = await lockMemberAndFamily(db as Tx, memberId, [peek.id]);
+    } else {
+      const [row] = await db
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.id, memberId));
+      if (!row) throw new ApiException(401, 'auth.unauthenticated');
+      member = row;
+    }
 
-    // Re-read under the lock: the Owner may have regenerated or deleted it.
-    const [target] = await tx
+    // Re-read (under the lock when locking): the Owner may have regenerated or deleted it.
+    const [target] = await db
       .select()
       .from(family)
       .where(eq(family.id, peek.id));
@@ -207,14 +236,19 @@ export class FamilyService {
     if (target.inviteCodeExpiresAt.getTime() <= Date.now()) {
       throw new ApiException(410, 'family.invite_code_expired');
     }
-    const housemates = await lockFamilyMembers(tx, member.familyId);
+    const housemates = lock
+      ? await lockFamilyMembers(db as Tx, member.familyId)
+      : await db
+          .select({ id: user.id })
+          .from(user)
+          .where(eq(user.familyId, member.familyId));
     if (housemates.length > 1) {
       throw new ApiException(409, 'family.not_household_of_one');
     }
     return {
       abandoned: member.familyId,
       target: target.id,
-      counts: countFamilyData(),
+      counts: await countFamilyData(db, member.familyId),
     };
   }
 }
