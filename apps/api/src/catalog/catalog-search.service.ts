@@ -70,6 +70,64 @@ export class CatalogSearchService {
     );
   }
 
+  /**
+   * Exact matching only, for many names in one query: each name is normalised
+   * and looked up against canonical names, display names, and Synonyms in every
+   * locale. Returns the Ingredient per input name (keyed by the name as given);
+   * a name with no exact hit, or one that is exactly the name of more than one
+   * Ingredient, is left out so the caller keeps it Unmatched.
+   */
+  async findExact(
+    names: string[],
+    locale: CatalogLocale,
+    overrides: readonly ExpiryOverride[] = [],
+  ): Promise<Map<string, CatalogSearchResult>> {
+    const keyOf = new Map(
+      names.flatMap((name) => {
+        const key = normalizeName(name);
+        return key ? [[name, key] as const] : [];
+      }),
+    );
+    const keys = [...new Set(keyOf.values())];
+    if (keys.length === 0) return new Map();
+
+    const keyList = sql.join(
+      keys.map((key) => sql`${key}`),
+      sql`, `,
+    );
+    const hits = await this.database.execute<{ id: string; key: string }>(sql`
+      SELECT DISTINCT c.id, c.key
+      FROM (
+        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
+        FROM ${ingredients}
+        UNION ALL
+        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
+        FROM ${catalogTranslations}
+        WHERE ${catalogTranslations.entityType} = 'ingredient'
+      ) c
+      WHERE c.key = ANY(ARRAY[${keyList}]::text[])
+    `);
+    const idsByKey = new Map<string, string[]>();
+    for (const { id, key } of hits.rows) {
+      idsByKey.set(key, [...(idsByKey.get(key) ?? []), id]);
+    }
+    const unique = [...idsByKey.values()].flatMap((ids) =>
+      ids.length === 1 ? ids : [],
+    );
+    const found = new Map(
+      (await this.findByIds([...new Set(unique)], locale, overrides)).map(
+        (match) => [match.id, match],
+      ),
+    );
+    const result = new Map<string, CatalogSearchResult>();
+    for (const [name, key] of keyOf) {
+      const ids = idsByKey.get(key);
+      const match = ids?.length === 1 ? found.get(ids[0]) : undefined;
+      if (match) result.set(name, match);
+    }
+    return result;
+  }
+
   /** Every Parent Category with its name in `locale`, sorted by that name. */
   async listParents(locale: CatalogLocale): Promise<CatalogParent[]> {
     const rows = await this.database

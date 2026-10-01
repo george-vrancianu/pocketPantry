@@ -52,7 +52,14 @@ export function ReviewLineCard({
         border: `1px solid ${flagged ? tokens.color.urgentFg : tokens.color.line}`,
       }}
     >
-      <Stack spacing={1.5} component="section" aria-label={displayName}>
+      <Stack
+        spacing={1.5}
+        component="section"
+        aria-label={displayName}
+        id={`review-line-${line.key}`}
+        tabIndex={-1}
+        sx={{ outline: 'none' }}
+      >
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <Typography sx={{ flexGrow: 1, fontWeight: 700 }}>
             {displayName}

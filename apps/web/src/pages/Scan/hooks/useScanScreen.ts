@@ -6,6 +6,7 @@ import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
+import { useReceiptScan } from '../../../lib/receiptScan';
 import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
@@ -26,17 +27,23 @@ export function useScanScreen() {
 
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
+  const receiptScan = useReceiptScan(i18n.language);
   const plate = usePlateScan();
   const ingredientsScan = useIngredientsScan(i18n.language);
-  // Every wired mode has its own endpoint and returns the same proposed lines.
-  const modeScan = mode === 'ingredients' ? ingredientsScan : productScan;
+  // Every wired mode but Plate has one endpoint and returns the same proposed lines.
+  const modeScans = {
+    product: productScan,
+    receipt: receiptScan,
+    ingredients: ingredientsScan,
+  };
+  const modeScan = mode === 'plate' ? null : modeScans[mode];
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || modeScan.isPending || plate.pending;
+  const reading = resizing || (modeScan?.isPending ?? false) || plate.pending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
@@ -52,7 +59,7 @@ export function useScanScreen() {
     } finally {
       setResizing(false);
     }
-    if (mode === 'plate') {
+    if (!modeScan) {
       plate.scan(image);
       return;
     }
@@ -85,7 +92,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = modeScan.error ?? plate.error;
+  const scanError = modeScan?.error ?? plate.error;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -102,8 +109,7 @@ export function useScanScreen() {
     fileInput,
     error,
     setMode: (next: ScanMode) => {
-      productScan.reset();
-      ingredientsScan.reset();
+      Object.values(modeScans).forEach((scan) => scan.reset());
       plate.reset();
       setLocalError(null);
       setParams({ mode: next }, { replace: true });

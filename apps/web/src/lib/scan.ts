@@ -11,7 +11,12 @@ export const SCAN_MODES: ScanMode[] = [
   'ingredients',
 ];
 /** Scan Modes that are wired end to end. The others show their pill but cannot scan yet. */
-export const WIRED_SCAN_MODES: ScanMode[] = ['product', 'plate', 'ingredients'];
+export const WIRED_SCAN_MODES: ScanMode[] = [
+  'product',
+  'receipt',
+  'plate',
+  'ingredients',
+];
 
 export function isScanMode(value: string | null): value is ScanMode {
   return SCAN_MODES.some((mode) => mode === value);
@@ -35,7 +40,12 @@ export type ProposedLine = {
   /** `YYYY-MM-DD` read from the packaging, or null. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Receipt Scan: the line was left out of the Pantry; the reason is a code the client localises. */
+  excluded?: { reason: ExclusionReason };
 };
+
+/** Why Receipt Scan left a line out of the Pantry. */
+export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = { lines: ProposedLine[] };
 
@@ -49,6 +59,9 @@ export function useProductScan(locale: string) {
       ),
   });
 }
+
+/** The bulk Batch create takes at most this many entries at once. */
+export const MAX_BULK_BATCHES = 50;
 
 /** Saves reviewed lines as Batches, all or none. */
 export function useAddBatches(locale: string) {

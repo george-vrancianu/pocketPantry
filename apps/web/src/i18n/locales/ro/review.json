@@ -29,5 +29,33 @@
   "shoppingSave_one": "Adaugă {{count}} articol în lista de cumpărături",
   "shoppingSave_few": "Adaugă {{count}} articole în lista de cumpărături",
   "shoppingSave_other": "Adaugă {{count}} de articole în lista de cumpărături",
-  "shoppingAdding": "Se adaugă"
+  "shoppingAdding": "Se adaugă",
+  "excluded": {
+    "title": "Excluse ({{count}})",
+    "noReason": "Nu e un articol de cămară",
+    "reason": {
+      "not_food": "Nu e aliment",
+      "fee": "Taxă",
+      "deposit": "Garanție",
+      "other": "Nu e un articol de cămară"
+    },
+    "include": "Include {{name}}",
+    "includeShort": "Include"
+  },
+  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} sau exclude-le ca să continui.",
+  "saved": {
+    "title": "Salvat în cămară",
+    "toPantry": "Mergi la cămară"
+  },
+  "tick": {
+    "missing_one": "{{count}} articol din lista de cumpărături a fost șters înainte să-l putem bifa.",
+    "missing_few": "{{count}} articole din lista de cumpărături au fost șterse înainte să le putem bifa.",
+    "missing_other": "{{count}} de articole din lista de cumpărături au fost șterse înainte să le putem bifa.",
+    "changed_one": "Lista de cumpărături s-a schimbat, deci {{count}} articol nu a fost bifat.",
+    "changed_few": "Lista de cumpărături s-a schimbat, deci {{count}} articole nu au fost bifate.",
+    "changed_other": "Lista de cumpărături s-a schimbat, deci {{count}} de articole nu au fost bifate.",
+    "failed_one": "{{count}} articol din lista de cumpărături nu a putut fi bifat.",
+    "failed_few": "{{count}} articole din lista de cumpărături nu au putut fi bifate.",
+    "failed_other": "{{count}} de articole din lista de cumpărături nu au putut fi bifate."
+  }
 }

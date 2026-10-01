@@ -29,5 +29,30 @@
   "shoppingSave_one": "Add {{count}} item to shopping list",
   "shoppingSave_few": "Add {{count}} items to shopping list",
   "shoppingSave_other": "Add {{count}} items to shopping list",
-  "shoppingAdding": "Adding"
+  "shoppingAdding": "Adding",
+  "excluded": {
+    "title": "Excluded ({{count}})",
+    "noReason": "Not a pantry item",
+    "reason": {
+      "not_food": "Not a food item",
+      "fee": "A fee",
+      "deposit": "A deposit",
+      "other": "Not a pantry item"
+    },
+    "include": "Include {{name}}",
+    "includeShort": "Include"
+  },
+  "tooMany": "You can save up to {{max}} items at once. Drop or exclude {{over}} to continue.",
+  "saved": {
+    "title": "Saved to your Pantry",
+    "toPantry": "Go to Pantry"
+  },
+  "tick": {
+    "missing_one": "{{count}} Shopping Item was removed from your list before we could tick it off.",
+    "missing_other": "{{count}} Shopping Items were removed from your list before we could tick them off.",
+    "changed_one": "The Shopping List changed, so {{count}} Shopping Item was not ticked off.",
+    "changed_other": "The Shopping List changed, so {{count}} Shopping Items were not ticked off.",
+    "failed_one": "{{count}} Shopping Item could not be ticked off.",
+    "failed_other": "{{count}} Shopping Items could not be ticked off."
+  }
 }

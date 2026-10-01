@@ -2,6 +2,7 @@ import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { ExcludedLines } from './components/ExcludedLines';
 import { ReviewLineCard } from './components/ReviewLineCard';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
@@ -14,12 +15,35 @@ export function ReviewPage() {
   const { t } = useTranslation('review');
   const screen = useReviewScreen();
 
+  if (screen.tickFailures) {
+    const { missing, changed, other } = screen.tickFailures;
+    return (
+      <>
+        <AppScreenHeader title={t('saved.title')} />
+        <Stack spacing={2}>
+          <Alert severity="warning">
+            <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2 }}>
+              {missing > 0 ? (
+                <li>{t('tick.missing', { count: missing })}</li>
+              ) : null}
+              {changed > 0 ? (
+                <li>{t('tick.changed', { count: changed })}</li>
+              ) : null}
+              {other > 0 ? <li>{t('tick.failed', { count: other })}</li> : null}
+            </Stack>
+          </Alert>
+          <Button onClick={screen.toPantry}>{t('saved.toPantry')}</Button>
+        </Stack>
+      </>
+    );
+  }
+
   if (!screen.hadDraft) return <Navigate to="/scan" replace />;
 
   return (
     <>
       <AppScreenHeader title={t('title')} />
-      {screen.lines.length === 0 ? (
+      {screen.lines.length === 0 && screen.excluded.length === 0 ? (
         <Stack spacing={2}>
           <Typography color="text.secondary">{t('empty')}</Typography>
           <Button onClick={screen.discard}>{t('backToScan')}</Button>
@@ -44,6 +68,15 @@ export function ReviewPage() {
               />
             ))}
           </Stack>
+          <ExcludedLines lines={screen.excluded} onInclude={screen.include} />
+          {screen.overLimit > 0 ? (
+            <Alert severity="warning">
+              {t('tooMany', {
+                max: screen.maxItems,
+                over: screen.overLimit,
+              })}
+            </Alert>
+          ) : null}
           {screen.error ? <Alert>{screen.error}</Alert> : null}
           <Stack direction="row" spacing={1}>
             <Button onClick={screen.save} disabled={!screen.canSave}>

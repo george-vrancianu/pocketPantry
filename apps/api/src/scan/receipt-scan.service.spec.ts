@@ -64,7 +64,7 @@ describe('ReceiptScanService', () => {
           })[key],
       } as ConfigService<AppConfig, true>),
       {
-        getCatalog: jest.fn().mockResolvedValue(catalog),
+        getCatalogIn: jest.fn().mockResolvedValue(catalog),
         toPrompt: jest.fn().mockReturnValue(JSON.stringify(catalog)),
         validateMatch: validateCatalogMatch,
       } as unknown as IngredientCatalogService,
