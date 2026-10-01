@@ -14,6 +14,7 @@ import {
   SEED_LEAVES,
   SEED_PARENTS,
 } from './catalog-seed-data';
+import { assertCatalogSeedValid } from './validate-seed';
 
 type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
 type TranslationRow = typeof catalogTranslations.$inferInsert;
@@ -49,8 +50,12 @@ function translationRows(
     kind: 'name' | 'synonym',
     value: string,
   ): TranslationRow => ({
+    // A display name's id ignores its text, so changing the wording in the seed
+    // never collides with the name row an earlier seed run already wrote.
+    // Synonyms are many per locale, so their id includes the value.
     id: stableId(
-      `translation:${entityType}:${entityId}:${locale}:${kind}:${normalizeName(value)}`,
+      `translation:${entityType}:${entityId}:${locale}:${kind}` +
+        (kind === 'synonym' ? `:${normalizeName(value)}` : ''),
     ),
     entityType,
     entityId,
@@ -68,13 +73,19 @@ function translationRows(
 }
 
 /**
- * Loads the starter Catalog. Rows have fixed ids and are inserted with
+ * Loads the Catalog seed, after checking it for duplicates and dangling references. Rows have fixed ids and are inserted with
  * ON CONFLICT (id) DO NOTHING, so running it again leaves the database unchanged
- * and keeps in-place Admin edits. Rows an Admin deleted or renamed are restored,
- * and a real collision (e.g. an Admin-made Ingredient with the same normalised
+ * and keeps in-place Admin edits. Rows an Admin deleted come back; rows an Admin
+ * renamed keep their new name. A real collision (e.g. an Admin-made Ingredient with the same normalised
  * name) fails loudly instead of being skipped.
  */
 export async function seedCatalog(database: Database): Promise<void> {
+  assertCatalogSeedValid({
+    aisles: SEED_AISLES,
+    parents: SEED_PARENTS,
+    leaves: SEED_LEAVES,
+    ingredients: SEED_INGREDIENTS,
+  });
   await database.transaction(async (tx) => {
     await tx
       .insert(aisles)

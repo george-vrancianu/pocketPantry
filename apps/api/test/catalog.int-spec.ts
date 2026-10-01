@@ -1,7 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import request from 'supertest';
-import { seedCatalog } from '../src/catalog/seed/seed-catalog';
+import {
+  seedCatalog,
+  seedId,
+  stableId,
+} from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -221,6 +225,39 @@ describe('Catalog (integration)', () => {
     });
   });
 
+  describe('Romanian receipt lines', () => {
+    // Receipt text after quantities and prices are stripped. Search is
+    // stage one (exact, prefix, word-prefix), so these are the short names and
+    // abbreviations receipts actually print.
+    const lines: [string, string][] = [
+      ['LAPTE UHT', 'Lapte'],
+      ['PIEPT PUI', 'Piept de pui'],
+      ['PULPE PUI', 'Pulpe de pui dezosate'],
+      ['CARNE TOCATA MIXTA', 'Carne tocată amestec'],
+      ['PARIZER', 'Parizer'],
+      ['CARTOFI ALBI', 'Cartofi'],
+      ['ROSII CHERRY', 'Roșii cherry'],
+      ['CASTRAVETI', 'Castraveți'],
+      ['CASCAVAL FELII', 'Cașcaval'],
+      ['TELEMEA DE VACA', 'Telemea'],
+      ['SMANTANA 20', 'Smântână'],
+      ['IAURT GRECESC', 'Iaurt grecesc'],
+      ['OUA M', 'Ouă'],
+      ['PAINE ALBA', 'Pâine'],
+      ['FAINA 000', 'Făină'],
+      ['ZAHAR', 'Zahăr'],
+      ['ULEI FLOAREA SOARELUI', 'Ulei de floarea soarelui'],
+      ['BOIA DULCE', 'Boia de ardei'],
+      ['APA PLATA', 'Apă plată'],
+      ['CAFEA MACINATA', 'Cafea'],
+    ];
+
+    it.each(lines)('matches "%s" to %s', async (line, expected) => {
+      const results = await search(line, 'ro');
+      expect(results[0]?.name).toBe(expected);
+    });
+  });
+
   describe('schema constraints', () => {
     it('rejects an Ingredient whose normalised canonical name already exists', async () => {
       const [leaf] = await database.select().from(leafCategories).limit(1);
@@ -297,6 +334,45 @@ describe('Catalog (integration)', () => {
       await seedCatalog(database);
       await seedCatalog(database);
       expect(await snapshot()).toEqual(before);
+    });
+
+    it('does not fail when a display name was worded differently by an earlier seed', async () => {
+      const id = stableId(
+        `translation:ingredient:${seedId.ingredient('parmesan')}:en:name`,
+      );
+      const [original] = await database
+        .select()
+        .from(catalogTranslations)
+        .where(eq(catalogTranslations.id, id));
+      expect(original?.value).toBe('Parmesan');
+      await database
+        .update(catalogTranslations)
+        .set({ value: 'Old Parmesan', normalizedValue: 'old parmesan' })
+        .where(eq(catalogTranslations.id, id));
+      try {
+        await expect(seedCatalog(database)).resolves.toBeUndefined();
+        const [after] = await database
+          .select()
+          .from(catalogTranslations)
+          .where(eq(catalogTranslations.id, id));
+        expect(after.value).toBe('Old Parmesan');
+      } finally {
+        await database
+          .update(catalogTranslations)
+          .set({ value: 'Parmesan', normalizedValue: 'parmesan' })
+          .where(eq(catalogTranslations.id, id));
+      }
+    });
+
+    it('loads a full Catalog and leaves existing rows alone', async () => {
+      const [{ count }] = await database
+        .select({ count: sql<number>`count(*)::int` })
+        .from(ingredients);
+      expect(count).toBeGreaterThanOrEqual(400);
+      const [{ leafCount }] = await database
+        .select({ leafCount: sql<number>`count(*)::int` })
+        .from(leafCategories);
+      expect(leafCount).toBeGreaterThanOrEqual(100);
     });
 
     it('gives Parent Categories that share an Aisle one shared sort order', async () => {
