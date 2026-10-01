@@ -1,5 +1,4 @@
-import type { Database } from '../database/database.types';
-import { family } from '../database/schema';
+import { randomUUID } from 'node:crypto';
 import { generateInviteCode, inviteCodeExpiry } from './invite-code';
 
 const MAX_CODE_ATTEMPTS = 5;
@@ -33,12 +32,33 @@ export async function withFreshInviteCode<T>(
   }
 }
 
-/** The empty Family a Member is created into at signup; returns its id. */
+/** The slice of a Better Auth (transaction) adapter needed to create the Family. */
+type FamilyWriter = {
+  create(args: {
+    model: string;
+    data: Record<string, unknown>;
+    forceAllowId?: boolean;
+  }): Promise<unknown>;
+};
+
+/**
+ * The empty Family a Member is created into at signup; returns its id.
+ * Pass the current transaction adapter so the Family commits or rolls back
+ * together with the Member. No collision retry here: a failed statement
+ * aborts the surrounding transaction, and a code clash is vanishingly rare.
+ */
 export async function createHouseholdOfOne(
-  database: Database,
+  writer: FamilyWriter,
 ): Promise<string> {
-  const [created] = await withFreshInviteCode((code) =>
-    database.insert(family).values(code).returning({ id: family.id }),
-  );
-  return created.id;
+  const id = randomUUID();
+  await writer.create({
+    model: 'family',
+    data: {
+      id,
+      inviteCode: generateInviteCode(),
+      inviteCodeExpiresAt: inviteCodeExpiry(),
+    },
+    forceAllowId: true,
+  });
+  return id;
 }
