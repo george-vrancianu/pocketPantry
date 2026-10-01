@@ -1,0 +1,40 @@
+import type { ProposedLine } from './scan';
+
+/** Most Receipt Sections one receipt may have: each is one Scan against the Scan Cap. */
+export const MAX_RECEIPT_SECTIONS = 10;
+
+/** What one Receipt Section's request returned. The endpoint may also carry the shop and date it read. */
+export type ReceiptSectionResult = {
+  lines: ProposedLine[];
+  merchantName?: string | null;
+  purchaseDate?: string | null;
+};
+
+export type MergedReceipt = {
+  lines: ProposedLine[];
+  merchantName: string | null;
+  purchaseDate: string | null;
+};
+
+const firstPresent = (values: Array<string | null | undefined>) =>
+  values.find((value): value is string => value != null) ?? null;
+
+/**
+ * Joins the Receipt Sections of one receipt, in order, into a single result:
+ * lines are concatenated (and renumbered across the whole receipt when they
+ * carry a `lineNumber`); the shop and date are the first ones any section read.
+ */
+export function mergeReceiptSections(
+  sections: ReceiptSectionResult[],
+): MergedReceipt {
+  const lines = sections
+    .flatMap((section) => section.lines)
+    .map((line, index) =>
+      'lineNumber' in line ? { ...line, lineNumber: index + 1 } : line,
+    );
+  return {
+    lines,
+    merchantName: firstPresent(sections.map((s) => s.merchantName)),
+    purchaseDate: firstPresent(sections.map((s) => s.purchaseDate)),
+  };
+}

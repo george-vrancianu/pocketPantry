@@ -9,8 +9,10 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { SCAN_MODES } from '../../lib/scan';
 import { DishPicker } from './components/DishPicker';
+import { ReceiptSections } from './components/ReceiptSections';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
 
@@ -96,9 +98,14 @@ export function ScanPage() {
           {t(`detail.${screen.mode}`)}
         </Typography>
         {screen.mode === 'receipt' ? (
-          <Typography sx={{ mt: '6px', fontSize: 13 }}>
-            {t('guide.receipt')}
-          </Typography>
+          <>
+            <Typography sx={{ mt: '6px', fontSize: 13 }}>
+              {t('guide.receipt')}
+            </Typography>
+            <Typography sx={{ mt: '6px', fontSize: 13 }}>
+              {t('guide.receiptFold')}
+            </Typography>
+          </>
         ) : null}
       </Box>
 
@@ -106,7 +113,16 @@ export function ScanPage() {
         role="status"
         sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
       >
-        {screen.reading ? t('reading') : null}
+        {screen.reading
+          ? screen.receiptSections.readingNumber !== null
+            ? t('sections.reading', {
+                number: screen.receiptSections.readingNumber,
+              })
+            : t('reading')
+          : null}
+        {screen.mode === 'receipt' && screen.receiptSections.full
+          ? t('sections.full', { max: MAX_RECEIPT_SECTIONS })
+          : null}
         {!screen.wired ? t('comingSoon', { mode: modeLabel }) : null}
         {screen.camera.status === 'unavailable' && screen.wired
           ? t('noCamera')
@@ -116,6 +132,13 @@ export function ScanPage() {
         <Box sx={{ mt: 1 }}>
           <Alert>{screen.error}</Alert>
         </Box>
+      ) : null}
+
+      {screen.mode === 'receipt' ? (
+        <ReceiptSections
+          batch={screen.receiptSections}
+          onFinish={screen.finishSections}
+        />
       ) : null}
 
       {screen.plate.dishes ? (

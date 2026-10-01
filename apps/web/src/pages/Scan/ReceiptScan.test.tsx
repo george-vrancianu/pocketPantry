@@ -34,7 +34,7 @@ describe('Receipt Scan on the Scan screen', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('sends the cropped receipt photo to the Receipt endpoint and lands on Review with its lines', async () => {
+  it('sends the cropped receipt photo to the Receipt endpoint and, on Finish, lands on Review with its lines', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/catalog/parents': () => Response.json({ parents: [] }),
       'POST /api/scan/receipt': () =>
@@ -76,6 +76,9 @@ describe('Receipt Scan on the Scan screen', () => {
     );
     expect(screen.getByRole('status')).not.toHaveTextContent(/coming soon/i);
     await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Finish' }),
+    );
     expect(
       await screen.findByRole('region', { name: 'Eggs' }),
     ).toBeInTheDocument();
@@ -89,7 +92,7 @@ describe('Receipt Scan on the Scan screen', () => {
   it('shows the 1:3 guide with its instruction and asks the camera for high resolution', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     expect(screen.getByTestId('receipt-guide')).toBeInTheDocument();
-    expect(screen.getByText(/20 cm above the receipt/)).toBeInTheDocument();
+    expect(screen.getByText(/40 cm above the receipt/)).toBeInTheDocument();
     expect(useCameraMock).toHaveBeenLastCalledWith(true);
   });
 
@@ -97,7 +100,7 @@ describe('Receipt Scan on the Scan screen', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=product' });
     expect(screen.queryByTestId('receipt-guide')).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/20 cm above the receipt/),
+      screen.queryByText(/40 cm above the receipt/),
     ).not.toBeInTheDocument();
     expect(useCameraMock).toHaveBeenLastCalledWith(false);
   });
