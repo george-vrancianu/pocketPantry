@@ -35,6 +35,15 @@
     "category_not_found": "Nu am găsit categoria."
   },
   "family": {
-    "owner_required": "Doar Proprietarul Familiei poate face asta."
+    "owner_required": "Doar Proprietarul Familiei poate face asta.",
+    "invite_code_invalid": "Acest cod de invitație nu există. Verifică-l și încearcă din nou.",
+    "invite_code_expired": "Acest cod de invitație a expirat. Cere Proprietarului unul nou.",
+    "already_member": "Ești deja în această Familie.",
+    "not_household_of_one": "Poți intra în altă Familie doar dintr-un Household of One. Părăsește mai întâi Familia curentă.",
+    "owner_cannot_leave": "Proprietarul nu poate pleca. Transferă mai întâi proprietatea unui alt Membru.",
+    "cannot_remove_self": "Nu te poți elimina singur. Transferă proprietatea și pleacă, sau șterge Familia.",
+    "cannot_transfer_to_self": "Ești deja Proprietarul.",
+    "member_not_found": "Această persoană nu este în Familia ta.",
+    "concurrent_change": "Familia s-a schimbat în timp ce făceai asta. Încearcă din nou."
   }
 }

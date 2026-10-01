@@ -1,13 +1,21 @@
-import { Alert, Button, Spinner, Stack } from '@pocket-pantry/ui';
+import { Alert, Button, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { ConfirmAction } from './components/ConfirmAction';
 import { InviteCodePanel } from './components/InviteCodePanel';
+import { JoinFamilyPanel } from './components/JoinFamilyPanel';
 import { MemberList } from './components/MemberList';
 import { useFamilyScreen } from './hooks/useFamilyScreen';
+import { useJoinFlow } from './hooks/useJoinFlow';
 
 export function FamilyPage() {
   const { t } = useTranslation(['family', 'common']);
   const screen = useFamilyScreen();
+  const joinFlow = useJoinFlow();
+  const family = screen.family;
+  const isOwner = family?.currentMemberIsOwner ?? false;
+  // Only a Household of One can be abandoned by joining another Family.
+  const isHouseholdOfOne = family?.members.length === 1;
 
   return (
     <>
@@ -15,20 +23,48 @@ export function FamilyPage() {
       <Stack spacing={3}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
-        {!screen.family && !screen.isLoading ? (
+        {!family && !screen.isLoading ? (
           <Button onClick={screen.retry}>{t('common:retry')}</Button>
         ) : null}
-        {screen.family ? (
+        {family ? (
           <>
-            <MemberList members={screen.family.members} />
+            <MemberList
+              members={family.members}
+              busy={screen.busy}
+              onMakeOwner={isOwner ? (m) => screen.makeOwner(m.id) : undefined}
+              onRemove={isOwner ? (m) => screen.removeMember(m.id) : undefined}
+            />
             <InviteCodePanel
-              code={screen.family.inviteCode}
+              code={family.inviteCode}
               expiryLabel={screen.expiryLabel ?? ''}
               expired={screen.expired}
-              isOwner={screen.family.currentMemberIsOwner}
+              isOwner={isOwner}
               regenerating={screen.regenerating}
               onRegenerate={screen.regenerate}
             />
+            {isHouseholdOfOne ? <JoinFamilyPanel flow={joinFlow} /> : null}
+            {isOwner ? (
+              <Stack spacing={1}>
+                {!isHouseholdOfOne ? (
+                  <Typography variant="meta" color="text.secondary">
+                    {t('family:ownerCannotLeave')}
+                  </Typography>
+                ) : null}
+                <ConfirmAction
+                  label={t('family:delete')}
+                  message={t('family:deleteConfirm')}
+                  disabled={screen.busy}
+                  onConfirm={screen.deleteFamily}
+                />
+              </Stack>
+            ) : (
+              <ConfirmAction
+                label={t('family:leave')}
+                message={t('family:leaveConfirm')}
+                disabled={screen.busy}
+                onConfirm={screen.leave}
+              />
+            )}
           </>
         ) : null}
       </Stack>
