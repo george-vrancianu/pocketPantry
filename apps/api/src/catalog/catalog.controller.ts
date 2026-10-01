@@ -4,7 +4,10 @@ import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CatalogSearchService } from './catalog-search.service';
 import {
+  catalogParentsQuery,
   catalogSearchQuery,
+  type CatalogParent,
+  type CatalogParentsQuery,
   type CatalogSearchQuery,
   type CatalogSearchResult,
 } from './catalog.schemas';
@@ -14,6 +17,18 @@ import {
 @UseGuards(AuthGuard)
 export class CatalogController {
   constructor(private readonly searchService: CatalogSearchService) {}
+
+  @Get('parents')
+  @ApiOperation({
+    summary:
+      'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
+  })
+  async parents(
+    @Query(new ZodValidationPipe(catalogParentsQuery))
+    query: CatalogParentsQuery,
+  ): Promise<{ parents: CatalogParent[] }> {
+    return { parents: await this.searchService.listParents(query.locale) };
+  }
 
   @Get('search')
   @ApiOperation({

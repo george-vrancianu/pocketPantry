@@ -14,6 +14,8 @@ export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<CameraStatus>('starting');
+  // Many devices (and every desktop webcam) have no torch: the flash toggle must say so.
+  const [torchSupported, setTorchSupported] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -31,6 +33,10 @@ export function useCamera() {
         }
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
+        // `torch` is not in the DOM typings; `getCapabilities` itself is missing in some browsers.
+        const capabilities = stream.getVideoTracks()[0]?.getCapabilities?.() as
+          { torch?: boolean } | undefined;
+        setTorchSupported(capabilities?.torch === true);
         setStatus('ready');
       })
       .catch(() => {
@@ -68,5 +74,5 @@ export function useCamera() {
     }
   }, []);
 
-  return { videoRef, status, capture, setTorch };
+  return { videoRef, status, torchSupported, capture, setTorch };
 }

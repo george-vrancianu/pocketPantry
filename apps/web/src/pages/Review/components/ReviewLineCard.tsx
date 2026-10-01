@@ -9,7 +9,7 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import type { CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
 import { LOCATIONS, UNITS } from '../../../lib/pantry';
 import { isQuantityValid, type ReviewLine } from '../../../lib/review';
 
@@ -18,6 +18,8 @@ type Props = {
   onChange: (patch: Partial<ReviewLine>) => void;
   onChangeMatch: (match: CatalogSearchResult) => void;
   onDrop: () => void;
+  /** Parent Categories an Unmatched line can be placed in. */
+  parents: CatalogParent[];
 };
 
 /** One proposed line, editable. Flagged lines (Unmatched or low confidence) are tinted and say why. */
@@ -26,6 +28,7 @@ export function ReviewLineCard({
   onChange,
   onChangeMatch,
   onDrop,
+  parents,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry']);
   const id = useId();
@@ -67,7 +70,7 @@ export function ReviewLineCard({
             sx={{
               px: 1.5,
               py: 1,
-              borderRadius: '12px',
+              borderRadius: `${tokens.radius.input}px`,
               bgcolor: tokens.color.urgentBg,
               color: tokens.color.urgentFg,
               fontSize: 13,
@@ -88,6 +91,26 @@ export function ReviewLineCard({
             onChange={(event) => onChange({ name: event.target.value })}
             slotProps={{ htmlInput: { maxLength: 100 } }}
           />
+        ) : null}
+
+        {unmatched ? (
+          <TextField
+            id={`${id}-category`}
+            select
+            label={t('review:category')}
+            value={line.parentCategoryId}
+            onChange={(event) =>
+              onChange({ parentCategoryId: event.target.value })
+            }
+            slotProps={{ select: { native: true } }}
+          >
+            <option value="">{t('review:categoryOther')}</option>
+            {parents.map((parent) => (
+              <option key={parent.id} value={parent.id}>
+                {parent.name}
+              </option>
+            ))}
+          </TextField>
         ) : null}
 
         {searching ? (
@@ -171,7 +194,7 @@ export function ReviewLineCard({
           label={t('review:expiry')}
           value={line.expiryDate}
           onChange={(event) =>
-            onChange({ expiryDate: event.target.value, expiryFromScan: true })
+            onChange({ expiryDate: event.target.value, expiryExplicit: true })
           }
           slotProps={{ inputLabel: { shrink: true } }}
         />

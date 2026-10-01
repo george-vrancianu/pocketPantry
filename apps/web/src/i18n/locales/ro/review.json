@@ -3,6 +3,8 @@
   "empty": "Nu e nimic de verificat.",
   "backToScan": "Înapoi la scanare",
   "name": "Nume",
+  "category": "Categorie",
+  "categoryOther": "Nu sunt sigur",
   "changeMatch": "Schimbă potrivirea",
   "keepMatch": "Păstrează această potrivire",
   "flag": {

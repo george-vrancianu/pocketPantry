@@ -63,9 +63,10 @@ export function ScanPage() {
           type="button"
           aria-label={t('flash')}
           aria-pressed={screen.flash}
+          disabled={!screen.camera.torchSupported}
           onClick={() => void screen.toggleFlash()}
           sx={{
-            ...roundButton(44, false),
+            ...roundButton(44, !screen.camera.torchSupported),
             ...(screen.flash && {
               backgroundColor: '#FFFFFF',
               color: tokens.color.ink,

@@ -3,8 +3,11 @@ import request from 'supertest';
 import { ApiException } from '../src/common/api-exception';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
+import { eq } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
+import { scanUsage } from '../src/database/schema';
+import { ScanCapService } from '../src/scan/scan-cap.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
@@ -199,6 +202,32 @@ describe('Product Scan (integration)', () => {
     }
     respondWith(parmesan());
     await scan(cookie, { productImage: IMAGE }).expect(201);
+  });
+
+  it('refunds a failed Scan against the day it was counted, even after UTC midnight', async () => {
+    const cap = app.get(ScanCapService);
+    const database = app.get<Database>(DATABASE);
+    const response = await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .set('origin', TEST_ORIGIN)
+      .set('x-forwarded-for', '10.13.0.1')
+      .send({
+        name: 'Midnight',
+        email: `midnight-${Date.now()}@example.com`,
+        password: 'correct-horse-staple',
+      })
+      .expect(200);
+    const memberId = (response.body as { user: { id: string } }).user.id;
+
+    const day = await cap.consume(memberId, new Date('2020-03-01T23:59:59Z'));
+    expect(day).toBe('2020-03-01');
+    // The provider call straddles midnight: the refund lands on the original day.
+    await cap.refund(memberId, day);
+    const rows = await database
+      .select({ day: scanUsage.day, count: scanUsage.count })
+      .from(scanUsage)
+      .where(eq(scanUsage.memberId, memberId));
+    expect(rows).toEqual([{ day: '2020-03-01', count: 0 }]);
   });
 
   it('rejects a result the model got wrong with a stable code', async () => {

@@ -11,6 +11,7 @@ import {
 } from '../database/schema';
 import {
   type CatalogLocale,
+  type CatalogParent,
   type CatalogSearchResult,
 } from './catalog.schemas';
 import { loadDisplayNames } from './display-names';
@@ -61,6 +62,24 @@ export class CatalogSearchService {
       ranked.rows.map((row) => row.id),
       locale,
     );
+  }
+
+  /** Every Parent Category with its name in `locale`, sorted by that name. */
+  async listParents(locale: CatalogLocale): Promise<CatalogParent[]> {
+    const rows = await this.database
+      .select({ id: parentCategories.id, name: parentCategories.name })
+      .from(parentCategories);
+    const { pick } = await loadDisplayNames(
+      this.database,
+      locale,
+      rows.map((row) => row.id),
+    );
+    return rows
+      .map((row) => ({
+        id: row.id,
+        name: pick('parent_category', row.id, row.name),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, locale));
   }
 
   /** Ingredients by id, in the order given, shaped like a search result. Unknown ids are skipped. */

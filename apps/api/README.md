@@ -65,7 +65,10 @@ never reach a client.
 - `src/ai`: structured-output AI service (`AI_PROVIDER`, `AI_API_KEY`,
   `AI_VISION_MODEL`, `AI_BASE_URL`).
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
-  schemas. Not exposed by any controller yet.
+  schemas. Only `POST /api/scan/product` is exposed so far. The Scan Cap is
+  `SCAN_DAILY_CAP` Scans per Member per UTC day (default 30; `0` disables the
+  cap); `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
+  becomes Unmatched and an image read is flagged low-confidence.
 - `src/catalog`: Catalog search (`GET /api/catalog/search`), name normalisation, and the
   starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent).
 - `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories

@@ -41,6 +41,13 @@ function renderReview(lines: ProposedLine[], extra = {}) {
   startReview({ mode: 'product', lines });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    'GET /api/catalog/parents': () =>
+      Response.json({
+        parents: [
+          { id: 'dairy-id', name: 'Dairy' },
+          { id: 'other-id', name: 'Other' },
+        ],
+      }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
     ...extra,
   });
@@ -154,6 +161,33 @@ describe('ReviewPage', () => {
           productDescription: 'Grana Padano 200g',
         },
       ],
+    });
+  });
+
+  it('lets the Member place an Unmatched line in a Parent Category, and not a matched one', async () => {
+    const calls = renderReview([
+      line(),
+      line({ match: null, unmatched: true, name: 'Mystery jar' }),
+    ]);
+    expect(
+      within(screen.getByRole('region', { name: 'Parmesan' })).queryByLabelText(
+        'Category',
+      ),
+    ).not.toBeInTheDocument();
+    const card = screen.getByRole('region', { name: 'Mystery jar' });
+    await within(card).findByRole('option', { name: 'Dairy' });
+    await userEvent.selectOptions(
+      within(card).getByLabelText('Category'),
+      'Dairy',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
+      ?.body as { batches: object[] };
+    expect(body.batches[0]).not.toHaveProperty('parentCategoryId');
+    expect(body.batches[1]).toMatchObject({
+      rawName: 'Mystery jar',
+      parentCategoryId: 'dairy-id',
     });
   });
 

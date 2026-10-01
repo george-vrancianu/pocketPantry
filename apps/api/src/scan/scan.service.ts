@@ -44,11 +44,11 @@ export class ScanService {
     memberId: string,
     run: () => Promise<T>,
   ): Promise<T> {
-    await this.cap.consume(memberId);
+    const day = await this.cap.consume(memberId);
     try {
       return await run();
     } catch (error) {
-      await this.cap.refund(memberId);
+      await this.cap.refund(memberId, day);
       throw error;
     }
   }

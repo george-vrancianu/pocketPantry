@@ -6,16 +6,19 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { PantryPage } from '../Pantry/PantryPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
 // jsdom has no camera or canvas: the camera and the resizer are the seams.
+const camera = vi.hoisted(() => ({ torchSupported: true }));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
     videoRef: { current: null },
     status: 'ready',
+    torchSupported: camera.torchSupported,
     capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
     setTorch: () => Promise.resolve(true),
   }),
@@ -59,7 +62,10 @@ function renderScan(routes: Record<string, () => Response>) {
 }
 
 describe('ScanPage', () => {
-  beforeEach(() => clearReview());
+  beforeEach(() => {
+    clearReview();
+    camera.torchSupported = true;
+  });
   afterEach(() => vi.unstubAllGlobals());
 
   it('has the camera controls, with Product selected among all four mode pills', () => {
@@ -81,6 +87,30 @@ describe('ScanPage', () => {
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
+  });
+
+  it('disables the flash toggle when the camera has no torch', () => {
+    camera.torchSupported = false;
+    renderScan({});
+    expect(screen.getByRole('button', { name: 'Toggle flash' })).toBeDisabled();
+  });
+
+  it('opens manual entry on the Pantry from the manual-add button', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/pantry': () => Response.json({ batches: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Routes>
+        <Route path="/scan" element={<ScanPage />} />
+        <Route path="/pantry" element={<PantryPage />} />
+      </Routes>,
+      { route: '/scan' },
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Add manually' }));
+    expect(
+      await screen.findByRole('form', { name: 'Add to pantry' }),
+    ).toBeInTheDocument();
   });
 
   it('toggles the flash', async () => {

@@ -47,7 +47,7 @@ describe('toReviewLine', () => {
       unit: 'g',
       location: 'fridge',
       expiryDate: defaultExpiryDate(60, today),
-      expiryFromScan: false,
+      expiryExplicit: false,
       description: 'Grana Padano 200g',
     });
   });
@@ -55,7 +55,7 @@ describe('toReviewLine', () => {
   it('prefers the best-before date read off the packaging', () => {
     expect(
       toReviewLine(line({ expiryDate: '2026-12-24' }), 'a', today),
-    ).toMatchObject({ expiryDate: '2026-12-24', expiryFromScan: true });
+    ).toMatchObject({ expiryDate: '2026-12-24', expiryExplicit: true });
   });
 
   it('leaves an Unmatched line in the cupboard with no expiry unless one was read', () => {
@@ -128,6 +128,21 @@ describe('toNewBatch', () => {
       expiryDate: '2026-12-24',
       productDescription: 'Grana Padano 200g',
     });
+  });
+
+  it('sends the chosen Parent Category with an Unmatched line only', () => {
+    const unmatched = toReviewLine(line({ match: null }), 'a', today);
+    expect(
+      toNewBatch({ ...unmatched, parentCategoryId: 'dairy-id' }),
+    ).toMatchObject({ rawName: 'Grana Padano', parentCategoryId: 'dairy-id' });
+    expect(toNewBatch(unmatched)).not.toHaveProperty('parentCategoryId');
+    // A Match picked afterwards wins: the Parent choice is not sent with an Ingredient.
+    const rematched = withMatch(
+      { ...unmatched, parentCategoryId: 'dairy-id' },
+      milk,
+      today,
+    );
+    expect(toNewBatch(rematched)).not.toHaveProperty('parentCategoryId');
   });
 
   it('sends an Unmatched line by the name the scan read, with no unit when there is no quantity', () => {

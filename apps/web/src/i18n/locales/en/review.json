@@ -3,6 +3,8 @@
   "empty": "Nothing to review.",
   "backToScan": "Back to scan",
   "name": "Name",
+  "category": "Category",
+  "categoryOther": "Not sure",
   "changeMatch": "Change match",
   "keepMatch": "Keep this match",
   "flag": {

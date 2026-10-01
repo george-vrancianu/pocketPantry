@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
-import type { CatalogSearchResult } from '../../../lib/catalog';
+import {
+  useCatalogParents,
+  type CatalogSearchResult,
+} from '../../../lib/catalog';
 import {
   clearReview,
   isLineValid,
@@ -33,6 +36,11 @@ export function useReviewScreen() {
     );
   });
   const addBatches = useAddBatches(i18n.language);
+  // Only Unmatched lines choose a category, so only fetch the list when one is on screen.
+  const parents = useCatalogParents(
+    i18n.language,
+    lines.some((line) => line.match === null),
+  );
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
     setLines((all) =>
@@ -63,6 +71,7 @@ export function useReviewScreen() {
   return {
     hadDraft,
     lines,
+    parents: parents.data ?? [],
     canSave:
       lines.length > 0 && lines.every(isLineValid) && !addBatches.isPending,
     saving: addBatches.isPending,

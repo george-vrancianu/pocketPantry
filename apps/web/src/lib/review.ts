@@ -47,8 +47,10 @@ export type ReviewLine = {
   location: StorageLocation;
   /** `YYYY-MM-DD`, or empty for no expiry. */
   expiryDate: string;
-  /** The expiry came off the packaging, so changing the Match keeps it. */
-  expiryFromScan: boolean;
+  /** The date was read off the packaging or typed by the Member, so changing the Match keeps it instead of re-deriving from Catalog defaults. */
+  expiryExplicit: boolean;
+  /** Unmatched only: the Parent Category the Batch lands in; '' leaves it to the server's default (top-level Other). */
+  parentCategoryId: string;
   description: string;
 };
 
@@ -66,7 +68,8 @@ export function toReviewLine(
     quantity: line.quantity === null ? '' : String(line.quantity),
     unit: line.unit ?? match?.defaultUnit ?? FALLBACK_UNIT,
     location: match?.defaults.location ?? FALLBACK_LOCATION,
-    expiryFromScan: line.expiryDate !== null,
+    expiryExplicit: line.expiryDate !== null,
+    parentCategoryId: '',
     description: line.productDescription ?? '',
   };
   return {
@@ -86,10 +89,11 @@ export function withMatch(
   return {
     ...line,
     match,
+    parentCategoryId: '',
     lowConfidence: false,
     unit: match.defaultUnit,
     location: match.defaults.location ?? FALLBACK_LOCATION,
-    expiryDate: line.expiryFromScan
+    expiryDate: line.expiryExplicit
       ? line.expiryDate
       : defaultExpiryDate(match.defaults.expiryDays, today),
   };
@@ -119,7 +123,12 @@ export function toNewBatch(line: ReviewLine): NewBatch {
   return {
     ...(line.match
       ? { ingredientId: line.match.id }
-      : { rawName: line.name.trim() }),
+      : {
+          rawName: line.name.trim(),
+          ...(line.parentCategoryId
+            ? { parentCategoryId: line.parentCategoryId }
+            : {}),
+        }),
     quantity,
     unit: quantity === null ? null : line.unit,
     location: line.location,

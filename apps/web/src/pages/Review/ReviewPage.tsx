@@ -36,6 +36,7 @@ export function ReviewPage() {
               <ReviewLineCard
                 key={line.key}
                 line={line}
+                parents={screen.parents}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}

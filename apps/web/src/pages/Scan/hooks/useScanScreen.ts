@@ -67,9 +67,8 @@ export function useScanScreen() {
 
   const toggleFlash = async () => {
     const next = !flash;
-    // Not every device has a torch; the toggle still shows its state.
-    await camera.setTorch(next);
-    setFlash(next);
+    // Only show the flash as on if the device actually switched the torch.
+    if (await camera.setTorch(next)) setFlash(next);
   };
 
   const error = resizeError ?? productScan.error;
@@ -94,6 +93,7 @@ export function useScanScreen() {
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => (location.key === 'default' ? navigate('/') : navigate(-1)),
-    addManually: () => navigate('/pantry'),
+    // Handoff section 7: the Pantry's add form is the manual entry.
+    addManually: () => navigate('/pantry?add=1'),
   };
 }

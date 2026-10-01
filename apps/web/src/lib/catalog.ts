@@ -22,6 +22,21 @@ function useDebounced<T>(value: T, delayMs: number): T {
   return debounced;
 }
 
+export type CatalogParent = { id: string; name: string };
+
+/** The Catalog's Parent Categories by name in `locale`; `enabled` holds the request back until a screen needs it. */
+export function useCatalogParents(locale: string, enabled = true) {
+  return useQuery({
+    queryKey: ['catalog-parents', locale],
+    queryFn: () =>
+      apiRequest<{ parents: CatalogParent[] }>(
+        `/catalog/parents?${new URLSearchParams({ locale })}`,
+      ).then((body) => body.parents),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}
+
 /** Catalog search, with names in `locale`. Idle for a blank query. */
 export function useCatalogSearch(query: string, locale: string) {
   const debounced = useDebounced(query.trim(), 150);
