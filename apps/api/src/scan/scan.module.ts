@@ -3,6 +3,7 @@ import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { CatalogModule } from '../catalog/catalog.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
 import { SettingsModule } from '../settings/settings.module';
+import { IngredientsScanService } from './ingredients-scan.service';
 import { ProductScanService } from './product-scan.service';
 import { ScanCapService } from './scan-cap.service';
 import { ScanController } from './scan.controller';
@@ -14,6 +15,7 @@ import { ScanService } from './scan.service';
   providers: [
     StructuredOutputAiService,
     ProductScanService,
+    IngredientsScanService,
     ScanCapService,
     ScanService,
   ],

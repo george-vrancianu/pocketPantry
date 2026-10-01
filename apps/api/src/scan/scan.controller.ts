@@ -9,6 +9,10 @@ import {
   type PantryLocaleQuery,
 } from '../pantry/pantry.schemas';
 import {
+  ingredientsScanSchema,
+  type IngredientsScanInput,
+} from './ingredients-scan.schemas';
+import {
   productScanSchema,
   type ProductScanInput,
 } from './product-scan.schemas';
@@ -34,5 +38,19 @@ export class ScanController {
     body: ProductScanInput,
   ): Promise<ScanResponse> {
     return this.scan.scanProduct(member.id, body, query.locale);
+  }
+
+  @Post('ingredients')
+  @ApiOperation({
+    summary:
+      'Ingredients Scan: one proposed line per loose ingredient in the photo, for the Review screen. The image is forwarded, never stored.',
+  })
+  ingredients(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Body(new ScanImagePipe(ingredientsScanSchema, ['ingredientsImage']))
+    body: IngredientsScanInput,
+  ): Promise<ScanResponse> {
+    return this.scan.scanIngredients(member.id, body, query.locale);
   }
 }

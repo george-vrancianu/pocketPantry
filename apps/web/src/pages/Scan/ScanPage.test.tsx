@@ -129,6 +129,9 @@ describe('ScanPage', () => {
       'true',
     );
     expect(screen.getByRole('status')).toHaveTextContent(/coming soon/i);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Product and Ingredients scanning work now',
+    );
     expect(screen.getByRole('button', { name: 'Take photo' })).toBeDisabled();
     expect(
       screen.getByRole('button', { name: 'Choose from photos' }),
