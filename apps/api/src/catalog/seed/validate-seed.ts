@@ -71,6 +71,14 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
       problems.push(`leaf "${l.slug}": unknown Parent "${l.parent}"`);
     }
   }
+  for (const p of seed.parents) {
+    const others = seed.leaves.filter((l) => l.parent === p.slug && l.isOther);
+    if (others.length !== 1) {
+      problems.push(
+        `parent "${p.slug}": expected exactly one is_other Leaf, found ${others.length}`,
+      );
+    }
+  }
   for (const i of seed.ingredients) {
     if (!leaves.has(i.leaf)) {
       problems.push(`ingredient "${i.slug}": unknown Leaf "${i.leaf}"`);

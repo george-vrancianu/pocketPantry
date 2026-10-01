@@ -2,6 +2,10 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, sql } from 'drizzle-orm';
 import request from 'supertest';
 import {
+  SEED_LEAVES,
+  SEED_PARENTS,
+} from '../src/catalog/seed/catalog-seed-data';
+import {
   seedCatalog,
   seedId,
   stableId,
@@ -309,16 +313,25 @@ describe('Catalog (integration)', () => {
   });
 
   describe('seed', () => {
+    const seedParentIds = new Set(
+      SEED_PARENTS.map((parent) => seedId.parent(parent.slug)),
+    );
+    const seedLeafIds = new Set(
+      SEED_LEAVES.map((leaf) => seedId.leaf(leaf.slug)),
+    );
+
     const snapshot = async () => ({
       aisles: await database.select().from(aisles).orderBy(aisles.id),
-      parents: await database
-        .select()
-        .from(parentCategories)
-        .orderBy(parentCategories.id),
-      leaves: await database
-        .select()
-        .from(leafCategories)
-        .orderBy(leafCategories.id),
+      // Seed rows only: other suites add their own Parents/Leaves concurrently.
+      parents: (
+        await database
+          .select()
+          .from(parentCategories)
+          .orderBy(parentCategories.id)
+      ).filter((row) => seedParentIds.has(row.id)),
+      leaves: (
+        await database.select().from(leafCategories).orderBy(leafCategories.id)
+      ).filter((row) => seedLeafIds.has(row.id)),
       ingredients: await database
         .select()
         .from(ingredients)
@@ -395,17 +408,15 @@ describe('Catalog (integration)', () => {
     });
 
     it('loads 18 Parent Categories with Aisles and an Other Leaf under each', async () => {
-      const parents = await database.select().from(parentCategories);
+      const parents = (await database.select().from(parentCategories)).filter(
+        (row) => seedParentIds.has(row.id),
+      );
       expect(parents).toHaveLength(18);
       const leaves = await database.select().from(leafCategories);
       for (const parent of parents) {
         expect(
-          leaves.some(
-            (leaf) =>
-              leaf.parentId === parent.id &&
-              leaf.normalizedName.startsWith('other'),
-          ),
-        ).toBe(true);
+          leaves.filter((leaf) => leaf.parentId === parent.id && leaf.isOther),
+        ).toHaveLength(1);
       }
     });
   });

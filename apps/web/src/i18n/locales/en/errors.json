@@ -28,6 +28,12 @@
     "item_not_found": "We could not find that item on the list.",
     "ingredient_not_found": "We could not find that ingredient."
   },
+  "pantry": {
+    "location_required": "Choose where this batch is stored.",
+    "ingredient_not_found": "We could not find that ingredient.",
+    "other_leaf_missing": "That category cannot take unmatched batches yet.",
+    "category_not_found": "We could not find that category."
+  },
   "family": {
     "owner_required": "Only the Owner of the Family can do this."
   }

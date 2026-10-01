@@ -18,6 +18,7 @@ const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
     name: locale === 'ro' ? 'Lactate' : 'Dairy',
     aisle: 'Dairy & eggs',
   },
+  defaults: { expiryDays: 30, location: 'fridge' },
 });
 
 const cheddar: CatalogSearchResult = {
@@ -26,6 +27,7 @@ const cheddar: CatalogSearchResult = {
   defaultUnit: 'g',
   leafCategory: { id: 'hard-cheese', name: 'Hard cheese' },
   parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy & eggs' },
+  defaults: { expiryDays: 30, location: 'fridge' },
 };
 
 function stubSearch(results: (locale: 'en' | 'ro') => CatalogSearchResult[]) {

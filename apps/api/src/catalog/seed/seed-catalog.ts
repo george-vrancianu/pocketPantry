@@ -123,6 +123,7 @@ export async function seedCatalog(database: Database): Promise<void> {
           normalizedName: normalizeName(leaf.en),
           defaultExpiryDays: leaf.defaultExpiryDays ?? null,
           defaultLocation: leaf.defaultLocation ?? null,
+          isOther: leaf.isOther ?? false,
         })),
       )
       .onConflictDoNothing({ target: leafCategories.id });

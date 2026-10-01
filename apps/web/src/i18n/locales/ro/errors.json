@@ -28,6 +28,12 @@
     "item_not_found": "Nu am găsit acel articol în listă.",
     "ingredient_not_found": "Nu am găsit acel ingredient."
   },
+  "pantry": {
+    "location_required": "Alege unde este depozitat lotul.",
+    "ingredient_not_found": "Nu am găsit ingredientul.",
+    "other_leaf_missing": "Această categorie nu poate primi încă loturi nepotrivite.",
+    "category_not_found": "Nu am găsit categoria."
+  },
   "family": {
     "owner_required": "Doar Proprietarul Familiei poate face asta."
   }

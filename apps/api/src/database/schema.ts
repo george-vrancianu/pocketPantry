@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   numeric,
@@ -205,11 +206,18 @@ export const leafCategories = pgTable(
     normalizedName: text('normalized_name').notNull(),
     defaultExpiryDays: integer('default_expiry_days'),
     defaultLocation: storageLocation('default_location'),
+    // Marks the Parent's catch-all "Other" Leaf that receives Unmatched Batches.
+    // Structural, so renaming a Leaf never breaks the lookup.
+    isOther: boolean('is_other').notNull().default(false),
     ...timestamps,
   },
   (table) => [
     uniqueIndex('leaf_categories_normalized_name_idx').on(table.normalizedName),
     index('leaf_categories_parent_idx').on(table.parentId),
+    // At most one "Other" Leaf per Parent.
+    uniqueIndex('leaf_categories_one_other_per_parent_idx')
+      .on(table.parentId)
+      .where(sql`${table.isOther}`),
   ],
 );
 
@@ -322,4 +330,44 @@ export const shoppingItemSourceRecipes = pgTable(
     ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.shoppingItemId, table.recipeId] })],
+);
+
+// Pantry: one Batch is one purchase of one Ingredient, owned by a Family (not a Member).
+// An Unmatched Batch has no Ingredient: it keeps the typed `rawName` and sits under an
+// "Other" Leaf Category (`leafCategoryId` is always set so Admin curation can find it).
+export const batches = pgTable(
+  'batches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id),
+    leafCategoryId: uuid('leaf_category_id')
+      .notNull()
+      .references(() => leafCategories.id),
+    unmatched: boolean('unmatched').notNull().default(false),
+    rawName: text('raw_name'),
+    quantity: numeric('quantity', { precision: 10, scale: 3, mode: 'number' }),
+    unit: ingredientUnit('unit'),
+    location: storageLocation('location').notNull(),
+    expiryDate: date('expiry_date', { mode: 'string' }),
+    productDescription: text('product_description'),
+    ...timestamps,
+  },
+  (table) => [
+    index('batches_family_idx').on(table.familyId),
+    check(
+      'batches_unit_with_quantity',
+      sql`${table.quantity} IS NULL OR ${table.unit} IS NOT NULL`,
+    ),
+    check(
+      'batches_quantity_positive',
+      sql`${table.quantity} IS NULL OR ${table.quantity} > 0`,
+    ),
+    check(
+      'batches_match_state',
+      sql`(${table.unmatched} AND ${table.ingredientId} IS NULL AND ${table.rawName} IS NOT NULL) OR (NOT ${table.unmatched} AND ${table.ingredientId} IS NOT NULL)`,
+    ),
+  ],
 );

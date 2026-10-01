@@ -1,3 +1,42 @@
 {
-  "title": "Pantry"
+  "title": "Pantry",
+  "add": "Add batch",
+  "empty": "Your pantry is empty. Add your first batch with the + button.",
+  "locations": {
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "cupboard": "Cupboard",
+    "spices": "Spices"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "pcs": "pcs"
+  },
+  "expiry": {
+    "today": "Today",
+    "expired": "Expired",
+    "days_one": "{{count}} day",
+    "days_few": "{{count}} days",
+    "days_other": "{{count}} days"
+  },
+  "unmatched": "Unmatched",
+  "form": {
+    "title": "Add to pantry",
+    "cancel": "Cancel",
+    "save": "Add to pantry",
+    "saving": "Saving",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "location": "Location",
+    "expiry": "Expiry date",
+    "description": "Product description",
+    "descriptionPlaceholder": "e.g. Grana Padano 200g",
+    "useUnmatched": "Not in the Catalog? Add \"{{name}}\" as Unmatched",
+    "unmatchedNotice": "\"{{name}}\" will be saved as Unmatched and flagged for review.",
+    "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
+    "pickIngredient": "Pick an ingredient from the search results, or add your own name as Unmatched."
+  }
 }

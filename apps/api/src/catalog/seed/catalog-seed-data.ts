@@ -125,12 +125,19 @@ const SECTIONS: SeedSection[] = [
 // carry no Default Expiry of their own and fall back to the Parent's.
 const OTHER_LEAVES: SeedLeaf[] = SEED_PARENTS.map((p) =>
   p.slug === 'other'
-    ? { slug: 'other-other', parent: p.slug, en: 'Other', ro: 'Altele' }
+    ? {
+        slug: 'other-other',
+        parent: p.slug,
+        en: 'Other',
+        ro: 'Altele',
+        isOther: true,
+      }
     : {
         slug: `${p.slug}-other`,
         parent: p.slug,
         en: `Other ${p.en.toLowerCase()}`,
         ro: `Altele (${p.ro.toLowerCase()})`,
+        isOther: true,
       },
 );
 
