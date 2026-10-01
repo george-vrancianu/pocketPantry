@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -38,6 +38,10 @@ export function useScanScreen() {
   };
   const modeScan = mode === 'plate' ? null : modeScans[mode];
   const [flash, setFlash] = useState(false);
+  // A restarted stream (e.g. switching into or out of Receipt mode) has its torch off.
+  useEffect(() => {
+    if (camera.status !== 'ready') setFlash(false);
+  }, [camera.status]);
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);

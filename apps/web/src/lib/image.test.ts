@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { fitWithin, guideCropRect, receiptOutputSize } from './image';
+import {
+  RECEIPT_GUIDE_ASPECT,
+  RECEIPT_GUIDE_HEIGHT_FRACTION,
+  RECEIPT_VIEW,
+} from './receiptGuide';
 
 describe('fitWithin', () => {
   it('scales the longest edge down to the limit, keeping the aspect ratio', () => {
@@ -58,5 +63,29 @@ describe('receiptOutputSize', () => {
       width: 768,
       height: 2304,
     });
+  });
+});
+
+describe('receipt guide with the shipped constants', () => {
+  const crop = (width: number, height: number) => {
+    const rect = guideCropRect(
+      { width, height },
+      RECEIPT_VIEW,
+      RECEIPT_GUIDE_HEIGHT_FRACTION,
+      RECEIPT_GUIDE_ASPECT,
+    );
+    return { rect, out: receiptOutputSize(rect.width, rect.height) };
+  };
+
+  it('turns a 1080 x 1920 portrait frame into exactly 512 x 1536', () => {
+    const { rect, out } = crop(1080, 1920);
+    expect(rect.width).toBeGreaterThanOrEqual(512);
+    expect(out).toEqual({ width: 512, height: 1536 });
+  });
+
+  it('keeps a 1920 x 1080 landscape frame at the guide aspect, never upscaled', () => {
+    const { rect, out } = crop(1920, 1080);
+    expect(out.width).toBe(rect.width);
+    expect(out.height / out.width).toBeCloseTo(3, 1);
   });
 });

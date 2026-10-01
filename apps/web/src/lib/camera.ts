@@ -38,6 +38,8 @@ export function useCamera(highResolution = false) {
   useEffect(() => {
     let cancelled = false;
     setStatus('starting');
+    // The new stream's torch starts off and its support is not known yet.
+    setTorchSupported(false);
     const devices = navigator.mediaDevices as MediaDevices | undefined;
     if (!devices?.getUserMedia) {
       setStatus('unavailable');

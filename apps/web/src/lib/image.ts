@@ -77,6 +77,13 @@ export function receiptOutputSize(
   cropHeight: number,
   outputWidth = RECEIPT_OUTPUT_WIDTH,
 ): { width: number; height: number } {
+  // Downscaling lands on exactly the guide aspect: the crop's own rounding must not cost a row.
+  if (cropWidth > outputWidth) {
+    return {
+      width: outputWidth,
+      height: Math.round(outputWidth / RECEIPT_GUIDE_ASPECT),
+    };
+  }
   const scale = Math.min(1, outputWidth / cropWidth);
   return {
     width: Math.max(1, Math.round(cropWidth * scale)),

@@ -28,11 +28,46 @@ type Props = {
 
 /** The camera preview with corner brackets and the sweeping scan line. */
 export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
+  // In receipt mode the line lives inside the guide and sweeps its full height (percentages);
+  // otherwise it sweeps the 300 px box.
+  const sweep = receiptGuide
+    ? { from: { top: '0%' }, to: { top: '100%' } }
+    : {
+        from: { transform: 'translateY(-110px)' },
+        to: { transform: 'translateY(110px)' },
+      };
+  const sweepName = receiptGuide ? 'pp-scan-sweep-guide' : 'pp-scan-sweep';
+  const scanLine = (
+    <Box
+      data-testid="scan-line"
+      sx={{
+        position: 'absolute',
+        left: receiptGuide ? 8 : 24,
+        right: receiptGuide ? 8 : 24,
+        top: receiptGuide ? undefined : 148,
+        height: 2,
+        borderRadius: '1px',
+        backgroundColor: '#8DBBA0',
+        [`@keyframes ${sweepName}`]: {
+          '0%': sweep.from,
+          '100%': sweep.to,
+        },
+        animation: scanning
+          ? `${sweepName} 1.2s ease-in-out infinite alternate`
+          : `${sweepName} 2.4s ease-in-out infinite alternate`,
+        // Handoff section 10: respect prefers-reduced-motion for the scan line.
+        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+      }}
+    />
+  );
   return (
     <Box
       sx={{
         position: 'relative',
-        width: receiptGuide ? RECEIPT_VIEW.width : 280,
+        // The receipt box keeps its 9:16 shape but shrinks to fit narrow or short screens.
+        width: receiptGuide
+          ? `min(${RECEIPT_VIEW.width}px, calc(55vh * ${RECEIPT_VIEW.width / RECEIPT_VIEW.height}))`
+          : 280,
         maxWidth: '100%',
         ...(receiptGuide
           ? { aspectRatio: `${RECEIPT_VIEW.width} / ${RECEIPT_VIEW.height}` }
@@ -75,13 +110,15 @@ export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
               height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
               aspectRatio: String(RECEIPT_GUIDE_ASPECT),
               transform: 'translate(-50%, -50%)',
-              boxSizing: 'border-box',
-              border: edge,
+              // An outline sits outside the box, so the visible interior is exactly the crop.
+              outline: edge,
               borderRadius: '8px',
               // Dim everything outside the guide: only what is inside is sent.
               boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
             }}
-          />
+          >
+            {scanLine}
+          </Box>
         </Box>
       ) : null}
       <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
@@ -121,27 +158,7 @@ export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
             },
           )}
         />
-        <Box
-          data-testid="scan-line"
-          sx={{
-            position: 'absolute',
-            left: 24,
-            right: 24,
-            top: 148,
-            height: 2,
-            borderRadius: '1px',
-            backgroundColor: '#8DBBA0',
-            '@keyframes pp-scan-sweep': {
-              '0%': { transform: 'translateY(-110px)' },
-              '100%': { transform: 'translateY(110px)' },
-            },
-            animation: scanning
-              ? 'pp-scan-sweep 1.2s ease-in-out infinite alternate'
-              : 'pp-scan-sweep 2.4s ease-in-out infinite alternate',
-            // Handoff section 10: respect prefers-reduced-motion for the scan line.
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-          }}
-        />
+        {receiptGuide ? null : scanLine}
       </Box>
     </Box>
   );

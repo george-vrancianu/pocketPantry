@@ -14,15 +14,28 @@ const IMAGE = 'data:image/jpeg;base64,YQ==';
 
 // jsdom has no camera or canvas: the camera and the resizer are the seams.
 const camera = vi.hoisted(() => ({ torchSupported: true }));
-vi.mock('../../lib/camera', () => ({
-  useCamera: () => ({
-    videoRef: { current: null },
-    status: 'ready',
-    torchSupported: camera.torchSupported,
-    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
-    setTorch: () => Promise.resolve(true),
-  }),
-}));
+vi.mock('../../lib/camera', async () => {
+  const { useEffect, useState } = await import('react');
+  return {
+    // Like the real hook, restarts (status 'starting', then 'ready') when the resolution flips.
+    useCamera: (highResolution: boolean) => {
+      const [status, setStatus] = useState('ready');
+      useEffect(() => {
+        setStatus('starting');
+        const timer = setTimeout(() => setStatus('ready'), 0);
+        return () => clearTimeout(timer);
+      }, [highResolution]);
+      return {
+        videoRef: { current: null },
+        status,
+        torchSupported: camera.torchSupported,
+        capture: () =>
+          Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
+        setTorch: () => Promise.resolve(true),
+      };
+    },
+  };
+});
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
@@ -119,6 +132,15 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(flash);
     expect(flash).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('turns the flash off when switching into Receipt mode restarts the camera', async () => {
+    renderScan({});
+    const flash = screen.getByRole('button', { name: 'Toggle flash' });
+    await userEvent.click(flash);
+    expect(flash).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Receipt' }));
+    await waitFor(() => expect(flash).toHaveAttribute('aria-pressed', 'false'));
   });
 
   it.each(['Product', 'Receipt', 'Plate', 'Ingredients'])(
