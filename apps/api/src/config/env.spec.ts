@@ -8,11 +8,15 @@ const base = {
 };
 
 describe('SCAN_TOKEN_SECRET', () => {
-  it('has a deterministic default outside production', () => {
+  it('falls back to a random per-process secret outside production, never a fixed one', () => {
     const a = validateEnv({ ...base, NODE_ENV: 'development' });
     const b = validateEnv({ ...base, NODE_ENV: 'test' });
-    expect(a.SCAN_TOKEN_SECRET).toBe(b.SCAN_TOKEN_SECRET);
-    expect(a.SCAN_TOKEN_SECRET.length).toBeGreaterThanOrEqual(32);
+    const c = validateEnv({ ...base });
+    expect(a.SCAN_TOKEN_SECRET).not.toBe(b.SCAN_TOKEN_SECRET);
+    expect(c.SCAN_TOKEN_SECRET).not.toBe(a.SCAN_TOKEN_SECRET);
+    for (const { SCAN_TOKEN_SECRET } of [a, b, c]) {
+      expect(SCAN_TOKEN_SECRET.length).toBeGreaterThanOrEqual(32);
+    }
   });
 
   it('is required in production', () => {

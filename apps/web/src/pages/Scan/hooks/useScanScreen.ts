@@ -103,7 +103,6 @@ export function useScanScreen() {
     error,
     setMode: (next: ScanMode) => {
       productScan.reset();
-      productScan.reset();
       ingredientsScan.reset();
       plate.reset();
       setLocalError(null);

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 
 const envSchema = z.object({
@@ -19,11 +20,9 @@ const envSchema = z.object({
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
   /** Below this a Match counts as Unmatched, and an image read counts as low-confidence. */
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
-  /** Signs the Plate Scan token. Required in production; development and test fall back to a fixed, public default. */
+  /** Signs the Plate Scan token. Required in production; elsewhere a missing one becomes a random per-process secret (tokens do not survive a restart). */
   SCAN_TOKEN_SECRET: z.string().min(32).optional(),
 });
-
-const DEV_SCAN_TOKEN_SECRET = 'dev-only-scan-token-secret-not-for-production';
 
 export type AppConfig = Omit<z.infer<typeof envSchema>, 'SCAN_TOKEN_SECRET'> & {
   SCAN_TOKEN_SECRET: string;
@@ -46,6 +45,7 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
   }
   return {
     ...rest,
-    SCAN_TOKEN_SECRET: SCAN_TOKEN_SECRET ?? DEV_SCAN_TOKEN_SECRET,
+    SCAN_TOKEN_SECRET:
+      SCAN_TOKEN_SECRET ?? randomBytes(32).toString('base64url'),
   };
 }

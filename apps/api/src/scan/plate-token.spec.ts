@@ -94,6 +94,31 @@ describe('Plate token', () => {
     invalid(() => verify(`${body}.`));
   });
 
+  it('rejects a signature that decodes to the right mac but is not its canonical encoding', () => {
+    const token = sign();
+    const [body, signature] = token.split('.');
+    invalid(() => verify(`${body}.${signature}=`));
+    // 32 bytes fill 43 characters with 4 spare bits: another last character can decode to the same bytes.
+    const alphabet =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    const last = signature.at(-1) as string;
+    const sibling = alphabet[(alphabet.indexOf(last) ^ 1) % 64];
+    expect(
+      Buffer.from(signature.slice(0, -1) + sibling, 'base64url').equals(
+        Buffer.from(signature, 'base64url'),
+      ),
+    ).toBe(true);
+    invalid(() => verify(`${body}.${signature.slice(0, -1)}${sibling}`));
+  });
+
+  it('returns what identifies this token and when it lapses', () => {
+    const token = sign();
+    expect(verify(token)).toEqual({
+      signature: token.split('.')[1],
+      expiresAt: T0 + 10 * 60_000,
+    });
+  });
+
   it("rejects another Member's token", () => {
     invalid(() => verify(sign({ memberId: 'm2' })));
   });

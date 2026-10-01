@@ -31,19 +31,23 @@ export function signPlateToken(input: {
   return `${body}.${mac(input.secret, body).toString('base64url')}`;
 }
 
-/** Throws `scan.plate_token_invalid` unless the token is genuine, unexpired, this Member's, and lists the title. */
+/**
+ * Throws `scan.plate_token_invalid` unless the token is genuine, unexpired, this Member's, and lists the title.
+ * Returns what identifies the token and when it lapses, for tracking its uses.
+ */
 export function verifyPlateToken(input: {
   secret: string;
   memberId: string;
   dishTitle: string;
   token: string | undefined;
   now?: number;
-}): void {
+}): { signature: string; expiresAt: number } {
   const parts = input.token?.split('.') ?? [];
   if (parts.length !== 2) throw rejected();
   const [body, signature] = parts;
-  const given = Buffer.from(signature, 'base64url');
-  const expected = mac(input.secret, body);
+  // Compare the canonical encoding, so a non-canonical spelling of the same bytes does not verify.
+  const given = Buffer.from(signature);
+  const expected = Buffer.from(mac(input.secret, body).toString('base64url'));
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
     throw rejected();
   }
@@ -64,4 +68,5 @@ export function verifyPlateToken(input: {
   ) {
     throw rejected();
   }
+  return { signature, expiresAt: payload.e };
 }

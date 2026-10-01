@@ -348,13 +348,63 @@ describe('Plate Scan (integration)', () => {
         await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
       });
 
+      it('lets each signed title be used once per token: a replay is refused without a provider call', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await refuse(cookie, 'Pancakes', token);
+        await refuse(cookie, ' Pancakes ', token);
+      });
+
+      it('still serves another signed title on the same token after one was used', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item()] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await ingredients(cookie, 'Crepes', 'en', token).expect(201);
+      });
+
+      it('lets exactly one of two concurrent requests for the same title through', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        next = () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () => resolve({ data: { items: [item()] }, requestId: 'slow' }),
+              50,
+            ),
+          );
+        prompts.length = 0;
+        const responses = await Promise.all([
+          post(cookie, 'scan/plate/ingredients', {
+            dishTitle: 'Pancakes',
+            plateToken: token,
+          }),
+          post(cookie, 'scan/plate/ingredients', {
+            dishTitle: 'Pancakes',
+            plateToken: token,
+          }),
+        ]);
+        expect(responses.map((r) => r.status).sort()).toEqual([201, 400]);
+        expect(prompts).toHaveLength(1);
+      });
+
+      it('gives the use back when the provider fails, so the Member can retry', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith({ items: [item()] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
+        await refuse(cookie, 'Pancakes', token);
+      });
+
       it('is the same Scan: loading Ingredients does not touch the Scan Cap', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
         respondWith({ items: [item()] });
-        for (let i = 0; i < 5; i++) {
-          await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
-        }
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(201);
         // Cap is 3 and one Scan was used: two more photos still work, the third is blocked.
         respondWith({ matches: [{ title: 'Pancakes', confidence: 0.7 }] });
         await dishes(cookie).expect(201);
