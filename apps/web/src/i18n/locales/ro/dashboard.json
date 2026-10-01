@@ -5,5 +5,56 @@
     "afternoon": "Bună ziua",
     "evening": "Bună seara"
   },
-  "settings": "Setări"
+  "settings": "Setări",
+  "loading": "Se încarcă",
+  "retry": "Încearcă din nou",
+  "comingSoon": "În curând",
+  "widgets": {
+    "useSoon": {
+      "title": "De folosit curând",
+      "seeAll": "Vezi tot",
+      "empty": "Încă nu ai nimic cu dată de expirare în cămară."
+    },
+    "shopping": {
+      "title": "Cumpărături",
+      "itemsToBuy_one": "produs de cumpărat",
+      "itemsToBuy_few": "produse de cumpărat",
+      "itemsToBuy_other": "de produse de cumpărat",
+      "empty": "Lista ta este goală"
+    },
+    "pantryStock": {
+      "title": "Cămară",
+      "itemsInStock_one": "produs în stoc",
+      "itemsInStock_few": "produse în stoc",
+      "itemsInStock_other": "de produse în stoc",
+      "locations": {
+        "fridge": "Frigider",
+        "freezer": "Congelator",
+        "cupboard": "Dulap",
+        "spices": "Condimente"
+      }
+    },
+    "quickScan": {
+      "title": "Scanare rapidă",
+      "modes": {
+        "product": "Produs",
+        "receipt": "Bon",
+        "plate": "Farfurie",
+        "ingredients": "Ingrediente"
+      }
+    },
+    "mealPlan": {
+      "title": "Plan de mese"
+    },
+    "budget": {
+      "title": "Buget",
+      "sample": "0 din 0 lei"
+    },
+    "nutrition": {
+      "title": "Nutriție",
+      "protein": "Proteine",
+      "carbs": "Carbohidrați",
+      "fat": "Grăsimi"
+    }
+  }
 }

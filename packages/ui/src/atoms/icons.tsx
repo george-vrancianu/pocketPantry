@@ -12,6 +12,11 @@ import {
   ShoppingBag,
   Archive,
   BookOpen,
+  Clock,
+  CircleDot,
+  Leaf,
+  Receipt,
+  ScanBarcode,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -32,3 +37,8 @@ export const CheckIcon = withDefaults(Check);
 export const SettingsIcon = withDefaults(Settings);
 export const PlusIcon = withDefaults(Plus);
 export const CloseIcon = withDefaults(X);
+export const ClockIcon = withDefaults(Clock);
+export const ProductScanIcon = withDefaults(ScanBarcode);
+export const ReceiptScanIcon = withDefaults(Receipt);
+export const PlateScanIcon = withDefaults(CircleDot);
+export const IngredientsScanIcon = withDefaults(Leaf);
