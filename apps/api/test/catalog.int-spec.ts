@@ -38,7 +38,7 @@ describe('Catalog (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    await seedCatalog(database);
+    // The starter Catalog is seeded once by global-setup.mjs.
 
     const email = `catalog-${Date.now()}@example.com`;
     const signUp = await request(app.getHttpServer())
@@ -356,6 +356,10 @@ describe('Catalog (integration)', () => {
       SEED_LEAVES.map((leaf) => seedId.leaf(leaf.slug)),
     );
 
+    // Seed ids are deterministic UUIDv5; rows created at runtime (e.g. by the
+    // Admin spec running in parallel) are UUIDv4.
+    const seeded = <T extends { id: string }>(rows: T[]) =>
+      rows.filter((row) => row.id[14] === '5');
     const snapshot = async () => ({
       aisles: await database.select().from(aisles).orderBy(aisles.id),
       // Seed rows only: other suites add their own Parents/Leaves concurrently.
@@ -368,14 +372,15 @@ describe('Catalog (integration)', () => {
       leaves: (
         await database.select().from(leafCategories).orderBy(leafCategories.id)
       ).filter((row) => seedLeafIds.has(row.id)),
-      ingredients: await database
-        .select()
-        .from(ingredients)
-        .orderBy(ingredients.id),
-      translations: await database
-        .select()
-        .from(catalogTranslations)
-        .orderBy(catalogTranslations.id),
+      ingredients: seeded(
+        await database.select().from(ingredients).orderBy(ingredients.id),
+      ),
+      translations: seeded(
+        await database
+          .select()
+          .from(catalogTranslations)
+          .orderBy(catalogTranslations.id),
+      ),
     });
 
     it('leaves the database unchanged when run twice', async () => {
@@ -464,6 +469,9 @@ describe('Catalog (integration)', () => {
           and(
             eq(catalogTranslations.entityType, 'ingredient'),
             eq(catalogTranslations.kind, 'synonym'),
+            // Seed ids are UUIDv5; the Admin spec adds (UUIDv4) synonyms to
+            // seeded Ingredients concurrently.
+            sql`substr(${catalogTranslations.id}::text, 15, 1) = '5'`,
             inArray(
               catalogTranslations.entityId,
               SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),

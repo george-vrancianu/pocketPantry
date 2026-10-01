@@ -1,3 +1,70 @@
 {
-  "title": "Admin"
+  "title": "Admin",
+  "sections": "Catalog sections",
+  "tabs": {
+    "ingredients": "Ingredients",
+    "categories": "Categories"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "pcs": "pcs"
+  },
+  "locations": {
+    "none": "Inherit",
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "cupboard": "Cupboard",
+    "spices": "Spices"
+  },
+  "locales": {
+    "en": "English",
+    "ro": "Romanian"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "cancel": "Cancel",
+    "add": "Add",
+    "remove": "Remove",
+    "close": "Close"
+  },
+  "ingredient": {
+    "new": "New Ingredient",
+    "edit": "Edit {{name}}",
+    "filter": "Filter Ingredients",
+    "empty": "No Ingredients match.",
+    "name": "Name (English)",
+    "leafCategory": "Leaf Category",
+    "defaultUnit": "Default unit"
+  },
+  "category": {
+    "newParent": "New Parent Category",
+    "newLeaf": "New Leaf Category",
+    "editParent": "Edit Parent Category {{name}}",
+    "editLeaf": "Edit Leaf Category {{name}}",
+    "name": "Name (English)",
+    "aisle": "Aisle",
+    "parent": "Parent Category",
+    "defaultExpiryDays": "Default Expiry (days)",
+    "defaultLocation": "Default location",
+    "expiryInvalid": "Enter a whole number of days from 0 to {{max}}, or leave blank to inherit.",
+    "otherLeafNote": "This is the Other Leaf Category of its Parent. It receives Unmatched Batches, so it cannot be moved or deleted.",
+    "leafCount": "Leaf Categories: {{count}}"
+  },
+  "translations": {
+    "title": "Translations and Synonyms",
+    "canonicalName": "English name: {{name}}",
+    "displayName": "Name ({{language}})",
+    "saveName": "Save {{language}} name",
+    "synonyms": "Synonyms ({{language}})",
+    "newSynonym": "New Synonym ({{language}})",
+    "addSynonym": "Add {{language}} Synonym",
+    "removeSynonym": "Remove Synonym {{value}}",
+    "none": "No Synonyms yet."
+  }
 }

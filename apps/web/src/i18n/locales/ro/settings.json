@@ -3,6 +3,8 @@
   "language": "Limbă",
   "preferences": "Preferințe de membru",
   "preferencesPrivate": "Doar tu le vezi. Te urmează pe orice dispozitiv.",
+  "admin": "Catalog",
+  "openAdmin": "Administrează Catalogul",
   "account": "Cont",
   "signedInAs": "Autentificat ca {{name}}",
   "localeSaveFailed": "Nu am putut salva limba. Încearcă din nou.",

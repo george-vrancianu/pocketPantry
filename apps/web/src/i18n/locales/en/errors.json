@@ -48,6 +48,16 @@
     "batch_not_found": "We could not find that batch.",
     "unit_required": "Choose a unit for the quantity."
   },
+  "catalog": {
+    "not_found": "That Catalog entry no longer exists.",
+    "name_taken": "That name is already used. Names must be unique, ignoring case and accents.",
+    "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
+    "ingredient_in_use": "This Ingredient is still used by Batches or Shopping Items, so it cannot be deleted.",
+    "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
+    "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
+    "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
+    "canonical_name_managed": "The English name changes with the entry's name, not here."
+  },
   "family": {
     "owner_required": "Only the Owner of the Family can do this.",
     "invite_code_invalid": "That Invite Code does not exist. Check it and try again.",

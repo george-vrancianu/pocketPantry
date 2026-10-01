@@ -10,3 +10,4 @@ process.env.BETTER_AUTH_SECRET =
 // Small enough for the Scan Cap tests to reach it in a few requests.
 process.env.SCAN_DAILY_CAP = '3';
 process.env.SCAN_MATCH_CONFIDENCE_THRESHOLD = '0.6';
+process.env.ADMIN_EMAILS = 'Chef.Admin@example.com, second-admin@example.com';
