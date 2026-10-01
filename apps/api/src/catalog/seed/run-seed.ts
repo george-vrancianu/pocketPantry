@@ -1,5 +1,5 @@
 // CLI entry: `npm run db:seed -w @pocket-pantry/api` (needs DATABASE_URL).
-// Seeds the Catalog; outside production it also adds the local test accounts.
+// Seeds the Catalog; with NODE_ENV=development it also adds the local test accounts.
 import { resolve } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
@@ -30,8 +30,10 @@ async function main(): Promise<void> {
     await seedCatalog(database);
     console.log('Catalog seeded.');
 
+    // Opt-in on an explicit development env (as in .env.example), so CI,
+    // tests, and any env that forgets NODE_ENV never get known credentials.
+    if (process.env.NODE_ENV !== 'development') return;
     const env = validateEnv(process.env);
-    if (env.NODE_ENV === 'production') return;
     const created = await seedTestAccounts(database, {
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,

@@ -79,7 +79,7 @@ never reach a client.
   assumes a single API instance (a durable store is needed for several). Never
   log the secret or tokens.
 - `src/catalog`: Catalog search (`GET /api/catalog/search`), name normalisation, and the
-  starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent). Outside production
+  starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent). With `NODE_ENV=development`
   the seed also signs up the test accounts `alice@test.local` and `bob@test.local`
   (password `password123`, see `src/auth/seed-test-accounts.ts`).
 - `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories
