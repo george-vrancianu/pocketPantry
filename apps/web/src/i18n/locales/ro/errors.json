@@ -36,13 +36,17 @@
   },
   "shopping": {
     "item_not_found": "Nu am găsit acel articol în listă.",
-    "ingredient_not_found": "Nu am găsit acel ingredient."
+    "ingredient_not_found": "Nu am găsit acel ingredient.",
+    "list_changed": "Lista s-a schimbat cât timp ai verificat. Te rugăm să verifici din nou.",
+    "nothing_checked": "Bifează cel puțin un produs înainte de a termina."
   },
   "pantry": {
     "location_required": "Alege unde este depozitat lotul.",
     "ingredient_not_found": "Nu am găsit ingredientul.",
     "other_leaf_missing": "Această categorie nu poate primi încă loturi nepotrivite.",
-    "category_not_found": "Nu am găsit categoria."
+    "category_not_found": "Nu am găsit categoria.",
+    "batch_not_found": "Nu am găsit acest lot.",
+    "unit_required": "Alege o unitate pentru cantitate."
   },
   "family": {
     "owner_required": "Doar Proprietarul Familiei poate face asta.",

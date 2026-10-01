@@ -6,6 +6,7 @@ import { CatalogModule } from './catalog/catalog.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { validateEnv } from './config/env';
 import { DatabaseModule } from './database/database.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
 import { ShoppingModule } from './shopping/shopping.module';
@@ -27,6 +28,7 @@ import { ScanModule } from './scan/scan.module';
     ShoppingModule,
     PantryModule,
     ScanModule,
+    DashboardModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })

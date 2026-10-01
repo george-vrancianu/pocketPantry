@@ -1,5 +1,5 @@
 {
-  "id": "16cddccd-4986-4567-b438-cc96597df983",
+  "id": "99e8b821-c762-45ea-adca-9327f5ee6283",
   "prevId": "9ffb0f70-6308-48b8-b282-06cc218cdbbf",
   "version": "7",
   "dialect": "postgresql",
@@ -573,6 +573,59 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.dashboard_layouts": {
+      "name": "dashboard_layouts",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "widgets": {
+          "name": "widgets",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dashboard_layouts_user_id_user_id_fk": {
+          "name": "dashboard_layouts_user_id_user_id_fk",
+          "tableFrom": "dashboard_layouts",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.family": {
       "name": "family",
       "schema": "",
@@ -969,65 +1022,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.scan_usage": {
-      "name": "scan_usage",
-      "schema": "",
-      "columns": {
-        "member_id": {
-          "name": "member_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "day": {
-          "name": "day",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "count": {
-          "name": "count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "scan_usage_member_id_user_id_fk": {
-          "name": "scan_usage_member_id_user_id_fk",
-          "tableFrom": "scan_usage",
-          "tableTo": "user",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "scan_usage_member_id_day_pk": {
-          "name": "scan_usage_member_id_day_pk",
-          "columns": [
-            "member_id",
-            "day"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "scan_usage_count_non_negative": {
-          "name": "scan_usage_count_non_negative",
-          "value": "\"scan_usage\".\"count\" >= 0"
-        }
-      },
       "isRLSEnabled": false
     },
     "public.session": {

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultExpiryDate,
   expiryChipFor,
+  countByLocation,
   groupByLocation,
+  matchesSearch,
+  parseQuantity,
+  rollUp,
   type Batch,
 } from './pantry';
 
@@ -83,5 +87,115 @@ describe('groupByLocation', () => {
         ['cupboard', ['a', 'c']],
       ],
     );
+  });
+});
+
+const make = (overrides: Partial<Batch>): Batch => ({
+  id: crypto.randomUUID(),
+  name: 'Milk',
+  ingredientId: 'milk',
+  unmatched: false,
+  quantity: null,
+  unit: null,
+  location: 'fridge',
+  expiryDate: null,
+  productDescription: null,
+  createdAt: '2026-10-01T00:00:00Z',
+  ...overrides,
+});
+
+describe('rollUp', () => {
+  it('sums quantities when the units agree and takes the soonest expiry', () => {
+    const [row] = rollUp([
+      make({ quantity: 0.1, unit: 'l', expiryDate: '2026-10-09' }),
+      make({ quantity: 0.2, unit: 'l', expiryDate: '2026-10-05' }),
+      make({ quantity: null, expiryDate: null }),
+    ]);
+    expect(row.totals).toEqual([{ unit: 'l', quantity: 0.3 }]);
+    expect(row.soonestExpiry).toBe('2026-10-05');
+    expect(row.batches.map((b) => b.expiryDate)).toEqual([
+      '2026-10-05',
+      '2026-10-09',
+      null,
+    ]);
+  });
+
+  it('lists totals separately when the units differ', () => {
+    const [row] = rollUp([
+      make({ quantity: 500, unit: 'g' }),
+      make({ quantity: 2, unit: 'pcs' }),
+      make({ quantity: 250, unit: 'g' }),
+    ]);
+    expect(row.totals).toEqual([
+      { unit: 'g', quantity: 750 },
+      { unit: 'pcs', quantity: 2 },
+    ]);
+  });
+
+  it('keeps Ingredients apart, Unmatched names by name, ordered by soonest expiry', () => {
+    const rows = rollUp([
+      make({ name: 'Rice', ingredientId: 'rice', expiryDate: '2027-01-01' }),
+      make({ name: 'Zorblax', ingredientId: null, unmatched: true }),
+      make({ name: 'zorblax', ingredientId: null, unmatched: true }),
+      make({ name: 'Milk', expiryDate: '2026-10-02' }),
+    ]);
+    expect(rows.map((r) => [r.name, r.batches.length])).toEqual([
+      ['Milk', 1],
+      ['Rice', 1],
+      ['Zorblax', 2],
+    ]);
+  });
+});
+
+describe('matchesSearch', () => {
+  const batch = make({
+    name: 'Mămăligă',
+    productDescription: 'Grana Padano 200g',
+  });
+  it('matches the localised name ignoring case and diacritics', () => {
+    expect(matchesSearch(batch, 'MAMALI')).toBe(true);
+  });
+  it('matches the Product Description', () => {
+    expect(matchesSearch(batch, 'padano')).toBe(true);
+  });
+  it('matches everything for a blank query and nothing unrelated', () => {
+    expect(matchesSearch(batch, '  ')).toBe(true);
+    expect(matchesSearch(batch, 'cheddar')).toBe(false);
+  });
+});
+
+describe('countByLocation', () => {
+  it('counts all and each Location', () => {
+    expect(
+      countByLocation([
+        make({ location: 'fridge' }),
+        make({ location: 'fridge' }),
+        make({ location: 'spices' }),
+      ]),
+    ).toEqual({ all: 3, fridge: 2, freezer: 0, cupboard: 0, spices: 1 });
+  });
+});
+
+describe('parseQuantity', () => {
+  it('treats blank as no quantity', () => {
+    expect(parseQuantity('  ')).toEqual({ value: null, valid: true });
+  });
+
+  it.each(['0.001', '1', '2.5', '1000000'])('accepts %s', (text) => {
+    expect(parseQuantity(text)).toEqual({ value: Number(text), valid: true });
+  });
+
+  it.each([
+    '0',
+    '-1',
+    '0.0004',
+    '1.2345',
+    '1000000.001',
+    '1e3',
+    '1E3',
+    '2e-3',
+    'abc',
+  ])('rejects %s', (text) => {
+    expect(parseQuantity(text).valid).toBe(false);
   });
 });

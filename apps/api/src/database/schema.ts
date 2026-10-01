@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -387,3 +388,14 @@ export const scanUsage = pgTable(
     check('scan_usage_count_non_negative', sql`${table.count} >= 0`),
   ],
 );
+// Dashboard: a Member's own layout, an ordered list of Widget instances (type and size).
+// No row means the Member never customised it and gets the default layout.
+export const dashboardLayouts = pgTable('dashboard_layouts', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  widgets: jsonb('widgets')
+    .$type<Array<{ id: string; type: string; size: string }>>()
+    .notNull(),
+  ...timestamps,
+});

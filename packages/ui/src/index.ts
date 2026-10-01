@@ -13,6 +13,11 @@ export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
   CheckIcon,
+  ClockIcon,
+  IngredientsScanIcon,
+  PlateScanIcon,
+  ProductScanIcon,
+  ReceiptScanIcon,
   CloseIcon,
   PlusIcon,
   CustomiseIcon,

@@ -47,8 +47,15 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1790871567341,
-      "tag": "0006_scan_usage",
+      "when": 1790871596710,
+      "tag": "0006_dashboard_layouts",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790872691518,
+      "tag": "0007_scan_usage",
       "breakpoints": true
     }
   ]

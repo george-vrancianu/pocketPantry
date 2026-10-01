@@ -1,25 +1,34 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
-import type { Batch } from '../../../lib/pantry';
-import { BatchRow } from './BatchRow';
+import type { RollUp } from '../../../lib/pantry';
+import { RollUpRow } from './RollUpRow';
 
-type Props = { location: StorageLocation; batches: Batch[]; today: Date };
+type Props = {
+  location: StorageLocation;
+  /** Number of Batches (not rows) in this Location. */
+  batchCount: number;
+  rows: RollUp[];
+  today: Date;
+};
 
-export function LocationSection({ location, batches, today }: Props) {
+export function LocationSection({ location, batchCount, rows, today }: Props) {
   const { t } = useTranslation('pantry');
   const headingId = useId();
+  const heading = useRef<HTMLHeadingElement>(null);
   return (
     <Box component="section" aria-labelledby={headingId} sx={{ mb: 2 }}>
       <Typography
         id={headingId}
+        ref={heading}
+        tabIndex={-1}
         variant="sectionLabel"
         component="h2"
         color="text.secondary"
         sx={{ display: 'block', mx: '4px', mb: 1 }}
       >
-        {`${t(`locations.${location}`)} · ${batches.length}`}
+        {`${t(`locations.${location}`)} · ${batchCount}`}
       </Typography>
       <Box
         component="ul"
@@ -34,8 +43,13 @@ export function LocationSection({ location, batches, today }: Props) {
           overflow: 'hidden',
         }}
       >
-        {batches.map((batch) => (
-          <BatchRow key={batch.id} batch={batch} today={today} />
+        {rows.map((row) => (
+          <RollUpRow
+            key={row.key}
+            rollUp={row}
+            today={today}
+            onRowGone={() => heading.current?.focus()}
+          />
         ))}
       </Box>
     </Box>

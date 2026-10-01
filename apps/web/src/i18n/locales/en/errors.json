@@ -36,13 +36,17 @@
   },
   "shopping": {
     "item_not_found": "We could not find that item on the list.",
-    "ingredient_not_found": "We could not find that ingredient."
+    "ingredient_not_found": "We could not find that ingredient.",
+    "list_changed": "The list changed while you were reviewing. Please review again.",
+    "nothing_checked": "Check at least one item before finishing."
   },
   "pantry": {
     "location_required": "Choose where this batch is stored.",
     "ingredient_not_found": "We could not find that ingredient.",
     "other_leaf_missing": "That category cannot take unmatched batches yet.",
-    "category_not_found": "We could not find that category."
+    "category_not_found": "We could not find that category.",
+    "batch_not_found": "We could not find that batch.",
+    "unit_required": "Choose a unit for the quantity."
   },
   "family": {
     "owner_required": "Only the Owner of the Family can do this.",

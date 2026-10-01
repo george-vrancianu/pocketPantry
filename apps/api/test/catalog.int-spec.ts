@@ -389,28 +389,34 @@ describe('Catalog (integration)', () => {
       const id = stableId(
         `translation:ingredient:${seedId.ingredient('parmesan')}:en:name`,
       );
-      const [original] = await database
+      // Run inside one transaction that is rolled back: other test workers
+      // read this seeded row and must never see the uncommitted edit.
+      class Rollback extends Error {}
+      await expect(
+        database.transaction(async (tx) => {
+          const [original] = await tx
+            .select()
+            .from(catalogTranslations)
+            .where(eq(catalogTranslations.id, id));
+          expect(original?.value).toBe('Parmesan');
+          await tx
+            .update(catalogTranslations)
+            .set({ value: 'Old Parmesan', normalizedValue: 'old parmesan' })
+            .where(eq(catalogTranslations.id, id));
+          await expect(seedCatalog(tx)).resolves.toBeUndefined();
+          const [after] = await tx
+            .select()
+            .from(catalogTranslations)
+            .where(eq(catalogTranslations.id, id));
+          expect(after.value).toBe('Old Parmesan');
+          throw new Rollback();
+        }),
+      ).rejects.toBeInstanceOf(Rollback);
+      const [restored] = await database
         .select()
         .from(catalogTranslations)
         .where(eq(catalogTranslations.id, id));
-      expect(original?.value).toBe('Parmesan');
-      await database
-        .update(catalogTranslations)
-        .set({ value: 'Old Parmesan', normalizedValue: 'old parmesan' })
-        .where(eq(catalogTranslations.id, id));
-      try {
-        await expect(seedCatalog(database)).resolves.toBeUndefined();
-        const [after] = await database
-          .select()
-          .from(catalogTranslations)
-          .where(eq(catalogTranslations.id, id));
-        expect(after.value).toBe('Old Parmesan');
-      } finally {
-        await database
-          .update(catalogTranslations)
-          .set({ value: 'Parmesan', normalizedValue: 'parmesan' })
-          .where(eq(catalogTranslations.id, id));
-      }
+      expect(restored.value).toBe('Parmesan');
     });
 
     it('loads exactly the seeded Catalog', async () => {

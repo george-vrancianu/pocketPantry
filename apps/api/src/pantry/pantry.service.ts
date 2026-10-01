@@ -14,7 +14,11 @@ import {
   parentCategories,
   user,
 } from '../database/schema';
-import type { BatchView, CreateBatchBody } from './pantry.schemas';
+import type {
+  BatchView,
+  CreateBatchBody,
+  UpdateBatchBody,
+} from './pantry.schemas';
 
 const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
 
@@ -101,6 +105,59 @@ export class PantryService {
       expiryDate,
       productDescription: body.productDescription || null,
     };
+  }
+
+  async update(
+    memberId: string,
+    batchId: string,
+    body: UpdateBatchBody,
+    locale: CatalogLocale,
+  ): Promise<BatchView> {
+    const familyId = await this.familyIdOf(memberId);
+    const [current] = await this.database
+      .select()
+      .from(batches)
+      .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
+      .limit(1);
+    if (!current) throw new ApiException(404, 'pantry.batch_not_found');
+
+    const quantity =
+      body.quantity !== undefined ? body.quantity : current.quantity;
+    const unit = body.unit !== undefined ? body.unit : current.unit;
+    if (quantity !== null && unit === null) {
+      throw new ApiException(400, 'pantry.unit_required');
+    }
+
+    const [row] = await this.database
+      .update(batches)
+      .set({
+        quantity,
+        unit: quantity === null ? null : unit,
+        location: body.location ?? current.location,
+        expiryDate:
+          body.expiryDate !== undefined ? body.expiryDate : current.expiryDate,
+        productDescription:
+          body.productDescription !== undefined
+            ? body.productDescription || null
+            : current.productDescription,
+      })
+      .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
+      .returning();
+    // Deleted by another Member between the read and the update.
+    if (!row) throw new ApiException(404, 'pantry.batch_not_found');
+    return (await this.toViews([row], locale))[0];
+  }
+
+  /** Another Family's Batch is indistinguishable from a missing one. */
+  async remove(memberId: string, batchId: string): Promise<void> {
+    const familyId = await this.familyIdOf(memberId);
+    const deleted = await this.database
+      .delete(batches)
+      .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
+      .returning({ id: batches.id });
+    if (deleted.length === 0) {
+      throw new ApiException(404, 'pantry.batch_not_found');
+    }
   }
 
   private async familyIdOf(memberId: string): Promise<string> {

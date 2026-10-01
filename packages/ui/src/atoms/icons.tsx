@@ -15,6 +15,11 @@ import {
   Image,
   Pencil,
   Zap,
+  Clock,
+  CircleDot,
+  Leaf,
+  Receipt,
+  ScanBarcode,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -38,3 +43,8 @@ export const CloseIcon = withDefaults(X);
 export const GalleryIcon = withDefaults(Image);
 export const ManualEntryIcon = withDefaults(Pencil);
 export const FlashIcon = withDefaults(Zap);
+export const ClockIcon = withDefaults(Clock);
+export const ProductScanIcon = withDefaults(ScanBarcode);
+export const ReceiptScanIcon = withDefaults(Receipt);
+export const PlateScanIcon = withDefaults(CircleDot);
+export const IngredientsScanIcon = withDefaults(Leaf);

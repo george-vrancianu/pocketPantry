@@ -23,6 +23,30 @@
     "days_other": "{{count}} days"
   },
   "unmatched": "Unmatched",
+  "all": "All",
+  "filters": "Filter by location",
+  "search": {
+    "label": "Search pantry",
+    "placeholder": "Search by name or product"
+  },
+  "noMatches": "No batches match.",
+  "batchCount_one": "{{count}} batch",
+  "batchCount_few": "{{count}} batches",
+  "batchCount_other": "{{count}} batches",
+  "batchesOf": "Batches of {{name}}",
+  "noDetails": "No quantity set",
+  "edit": {
+    "label": "Edit",
+    "action": "Edit {{name}} batch",
+    "title": "Edit {{name}} batch",
+    "save": "Save changes"
+  },
+  "delete": {
+    "label": "Delete",
+    "action": "Delete {{name}} batch",
+    "confirm": "Delete this batch?",
+    "yes": "Yes, delete"
+  },
   "form": {
     "title": "Add to pantry",
     "cancel": "Cancel",
@@ -36,7 +60,7 @@
     "descriptionPlaceholder": "e.g. Grana Padano 200g",
     "useUnmatched": "Not in the Catalog? Add \"{{name}}\" as Unmatched",
     "unmatchedNotice": "\"{{name}}\" will be saved as Unmatched and flagged for review.",
-    "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
+    "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals and no exponent.",
     "pickIngredient": "Pick an ingredient from the search results, or add your own name as Unmatched."
   }
 }

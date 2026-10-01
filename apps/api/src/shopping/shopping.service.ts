@@ -62,11 +62,8 @@ export class ShoppingService {
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
-      const listId = await this.activeListId(tx, memberId);
-      // Serialise concurrent adds on one list so merges never duplicate a line.
-      await tx.execute(
-        sql`SELECT 1 FROM ${shoppingLists} WHERE ${shoppingLists.id} = ${listId} FOR UPDATE`,
-      );
+      // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
+      const listId = await this.lockActiveList(tx, memberId);
 
       const unit = body.unit ?? null;
       const quantity = body.quantity ?? null;
@@ -139,16 +136,18 @@ export class ShoppingService {
     checked: boolean,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    const listId = await this.activeListId(this.database, memberId);
-    const updated = await this.database
-      .update(shoppingItems)
-      .set({ checked })
-      .where(
-        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-      )
-      .returning({ id: shoppingItems.id });
-    if (updated.length === 0) throw itemNotFound();
-    return this.view(this.database, listId, locale);
+    return this.database.transaction(async (tx) => {
+      const listId = await this.lockActiveList(tx, memberId);
+      const updated = await tx
+        .update(shoppingItems)
+        .set({ checked })
+        .where(
+          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+        )
+        .returning({ id: shoppingItems.id });
+      if (updated.length === 0) throw itemNotFound();
+      return this.view(tx, listId, locale);
+    });
   }
 
   async removeItem(
@@ -156,15 +155,34 @@ export class ShoppingService {
     itemId: string,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    const listId = await this.activeListId(this.database, memberId);
-    const removed = await this.database
-      .delete(shoppingItems)
-      .where(
-        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-      )
-      .returning({ id: shoppingItems.id });
-    if (removed.length === 0) throw itemNotFound();
-    return this.view(this.database, listId, locale);
+    return this.database.transaction(async (tx) => {
+      const listId = await this.lockActiveList(tx, memberId);
+      const removed = await tx
+        .delete(shoppingItems)
+        .where(
+          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+        )
+        .returning({ id: shoppingItems.id });
+      if (removed.length === 0) throw itemNotFound();
+      return this.view(tx, listId, locale);
+    });
+  }
+
+  /**
+   * The Family's active list, row-locked until the transaction ends, so every
+   * mutation serialises with Finish Shopping. If a Finish commits while we
+   * wait, Postgres rechecks the predicate and the archived row drops out (no
+   * row); a fresh statement then sees the new active list.
+   */
+  private async lockActiveList(tx: Tx, memberId: string): Promise<string> {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const listId = await this.activeListId(tx, memberId);
+      const locked = await tx.execute<{ id: string }>(
+        sql`SELECT ${shoppingLists.id} AS id FROM ${shoppingLists} WHERE ${shoppingLists.id} = ${listId} AND ${shoppingLists.status} = 'active' FOR UPDATE`,
+      );
+      if (locked.rows.length > 0) return listId;
+    }
+    throw new ApiException(409, 'shopping.list_changed');
   }
 
   /** The Family's active list, created on first use. */

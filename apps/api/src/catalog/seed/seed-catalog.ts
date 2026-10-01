@@ -79,7 +79,9 @@ function translationRows(
  * renamed keep their new name. A real collision (e.g. an Admin-made Ingredient with the same normalised
  * name) fails loudly instead of being skipped.
  */
-export async function seedCatalog(database: Database): Promise<void> {
+export async function seedCatalog(
+  database: Pick<Database, 'transaction'>,
+): Promise<void> {
   assertCatalogSeedValid({
     aisles: SEED_AISLES,
     parents: SEED_PARENTS,

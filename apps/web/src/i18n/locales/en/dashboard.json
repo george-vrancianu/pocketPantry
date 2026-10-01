@@ -5,5 +5,56 @@
     "afternoon": "Good afternoon",
     "evening": "Good evening"
   },
-  "settings": "Settings"
+  "settings": "Settings",
+  "loading": "Loading",
+  "retry": "Try again",
+  "comingSoon": "Coming soon",
+  "widgets": {
+    "useSoon": {
+      "title": "Use soon",
+      "seeAll": "See all",
+      "empty": "Nothing with an expiry date in your pantry yet."
+    },
+    "shopping": {
+      "title": "Shopping",
+      "itemsToBuy_one": "item to buy",
+      "itemsToBuy_few": "items to buy",
+      "itemsToBuy_other": "items to buy",
+      "empty": "Your list is empty"
+    },
+    "pantryStock": {
+      "title": "Pantry",
+      "itemsInStock_one": "item in stock",
+      "itemsInStock_few": "items in stock",
+      "itemsInStock_other": "items in stock",
+      "locations": {
+        "fridge": "Fridge",
+        "freezer": "Freezer",
+        "cupboard": "Cupboard",
+        "spices": "Spices"
+      }
+    },
+    "quickScan": {
+      "title": "Quick scan",
+      "modes": {
+        "product": "Product",
+        "receipt": "Receipt",
+        "plate": "Plate",
+        "ingredients": "Ingredients"
+      }
+    },
+    "mealPlan": {
+      "title": "Meal plan"
+    },
+    "budget": {
+      "title": "Budget",
+      "sample": "€0 of €0"
+    },
+    "nutrition": {
+      "title": "Nutrition",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat"
+    }
+  }
 }

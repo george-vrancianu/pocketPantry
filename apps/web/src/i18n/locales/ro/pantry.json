@@ -22,6 +22,30 @@
     "days_few": "{{count}} zile",
     "days_other": "{{count}} de zile"
   },
+  "all": "Toate",
+  "filters": "Filtrează după locație",
+  "search": {
+    "label": "Caută în cămară",
+    "placeholder": "Caută după nume sau produs"
+  },
+  "noMatches": "Niciun lot nu se potrivește.",
+  "batchCount_one": "{{count}} lot",
+  "batchCount_few": "{{count}} loturi",
+  "batchCount_other": "{{count}} de loturi",
+  "batchesOf": "Loturi de {{name}}",
+  "noDetails": "Fără cantitate",
+  "edit": {
+    "label": "Editează",
+    "action": "Editează lotul de {{name}}",
+    "title": "Editează lotul de {{name}}",
+    "save": "Salvează modificările"
+  },
+  "delete": {
+    "label": "Șterge",
+    "action": "Șterge lotul de {{name}}",
+    "confirm": "Ștergi acest lot?",
+    "yes": "Da, șterge"
+  },
   "unmatched": "Nepotrivit",
   "form": {
     "title": "Adaugă în cămară",
@@ -36,7 +60,7 @@
     "descriptionPlaceholder": "de ex. Grana Padano 200g",
     "useUnmatched": "Nu e în Catalog? Adaugă \"{{name}}\" ca Nepotrivit",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
-    "quantityInvalid": "Introdu o cantitate de cel puțin 0,001, cu maximum 3 zecimale.",
+    "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "pickIngredient": "Alege un ingredient din rezultatele căutării sau adaugă propriul nume ca Nepotrivit."
   }
 }
