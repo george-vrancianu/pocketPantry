@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Link,
   SignOutIcon,
   Stack,
   Typography,
@@ -48,6 +49,16 @@ export function SettingsPage() {
           </Box>
           {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
         </Stack>
+        {session.data?.user.role === 'admin' ? (
+          <Stack spacing={1}>
+            <Typography variant="sectionLabel" color="text.secondary">
+              {t('admin')}
+            </Typography>
+            <Box>
+              <Link href="/admin">{t('openAdmin')}</Link>
+            </Box>
+          </Stack>
+        ) : null}
         <Stack
           component="section"
           spacing={1}
