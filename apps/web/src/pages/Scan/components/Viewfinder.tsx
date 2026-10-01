@@ -1,5 +1,10 @@
 import { Box } from '@pocket-pantry/ui';
 import type { RefObject } from 'react';
+import {
+  RECEIPT_GUIDE_ASPECT,
+  RECEIPT_GUIDE_HEIGHT_FRACTION,
+  RECEIPT_VIEW,
+} from '../../../lib/receiptGuide';
 
 const corner = (
   position: Record<string, number>,
@@ -17,17 +22,56 @@ const edge = '3px solid #FFFFFF';
 type Props = {
   videoRef: RefObject<HTMLVideoElement | null>;
   scanning: boolean;
+  /** Overlay the tall 1:3 receipt guide (and size the preview to match what gets cropped). */
+  receiptGuide?: boolean;
 };
 
 /** The camera preview with corner brackets and the sweeping scan line. */
-export function Viewfinder({ videoRef, scanning }: Props) {
+export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
+  // In receipt mode the line lives inside the guide and sweeps its full height (percentages);
+  // otherwise it sweeps the 300 px box.
+  const sweep = receiptGuide
+    ? { from: { top: '0%' }, to: { top: '100%' } }
+    : {
+        from: { transform: 'translateY(-110px)' },
+        to: { transform: 'translateY(110px)' },
+      };
+  const sweepName = receiptGuide ? 'pp-scan-sweep-guide' : 'pp-scan-sweep';
+  const scanLine = (
+    <Box
+      data-testid="scan-line"
+      sx={{
+        position: 'absolute',
+        left: receiptGuide ? 8 : 24,
+        right: receiptGuide ? 8 : 24,
+        top: receiptGuide ? undefined : 148,
+        height: 2,
+        borderRadius: '1px',
+        backgroundColor: '#8DBBA0',
+        [`@keyframes ${sweepName}`]: {
+          '0%': sweep.from,
+          '100%': sweep.to,
+        },
+        animation: scanning
+          ? `${sweepName} 1.2s ease-in-out infinite alternate`
+          : `${sweepName} 2.4s ease-in-out infinite alternate`,
+        // Handoff section 10: respect prefers-reduced-motion for the scan line.
+        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+      }}
+    />
+  );
   return (
     <Box
       sx={{
         position: 'relative',
-        width: 280,
+        // The receipt box keeps its 9:16 shape but shrinks to fit narrow or short screens.
+        width: receiptGuide
+          ? `min(${RECEIPT_VIEW.width}px, calc(55vh * ${RECEIPT_VIEW.width / RECEIPT_VIEW.height}))`
+          : 280,
         maxWidth: '100%',
-        height: 300,
+        ...(receiptGuide
+          ? { aspectRatio: `${RECEIPT_VIEW.width} / ${RECEIPT_VIEW.height}` }
+          : { height: 300 }),
         mx: 'auto',
       }}
     >
@@ -47,6 +91,36 @@ export function Viewfinder({ videoRef, scanning }: Props) {
           borderRadius: '20px',
         }}
       />
+      {receiptGuide ? (
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            borderRadius: '20px',
+          }}
+        >
+          <Box
+            data-testid="receipt-guide"
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
+              aspectRatio: String(RECEIPT_GUIDE_ASPECT),
+              transform: 'translate(-50%, -50%)',
+              // An outline sits outside the box, so the visible interior is exactly the crop.
+              outline: edge,
+              borderRadius: '8px',
+              // Dim everything outside the guide: only what is inside is sent.
+              boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
+            }}
+          >
+            {scanLine}
+          </Box>
+        </Box>
+      ) : null}
       <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
         <Box
           sx={corner(
@@ -84,27 +158,7 @@ export function Viewfinder({ videoRef, scanning }: Props) {
             },
           )}
         />
-        <Box
-          data-testid="scan-line"
-          sx={{
-            position: 'absolute',
-            left: 24,
-            right: 24,
-            top: 148,
-            height: 2,
-            borderRadius: '1px',
-            backgroundColor: '#8DBBA0',
-            '@keyframes pp-scan-sweep': {
-              '0%': { transform: 'translateY(-110px)' },
-              '100%': { transform: 'translateY(110px)' },
-            },
-            animation: scanning
-              ? 'pp-scan-sweep 1.2s ease-in-out infinite alternate'
-              : 'pp-scan-sweep 2.4s ease-in-out infinite alternate',
-            // Handoff section 10: respect prefers-reduced-motion for the scan line.
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-          }}
-        />
+        {receiptGuide ? null : scanLine}
       </Box>
     </Box>
   );

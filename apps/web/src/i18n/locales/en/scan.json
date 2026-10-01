@@ -26,6 +26,9 @@
     "plate": "Hold steady above your plate",
     "ingredients": "Spread items out on the counter"
   },
+  "guide": {
+    "receipt": "Hold the phone about 20 cm above the receipt so its edges touch the guide."
+  },
   "detail": {
     "product": "Adds it to your pantry with its best-before date.",
     "receipt": "Adds every item from your shop in one go.",
