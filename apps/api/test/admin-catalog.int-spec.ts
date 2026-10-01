@@ -10,6 +10,8 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   catalogTranslations,
+  shoppingItems,
+  shoppingLists,
   ingredients,
   leafCategories,
   parentCategories,
@@ -31,6 +33,7 @@ describe('Admin role and Catalog curation (integration)', () => {
   let adminCookie: string;
   let memberCookie: string;
   const stamp = Date.now();
+  const shoppingListIds: string[] = [];
   const refTable = (kind: string) => `admin_spec_${kind}_refs_${stamp}`;
 
   async function signUp(email: string, name: string) {
@@ -108,13 +111,10 @@ describe('Admin role and Catalog curation (integration)', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     database = app.get<Database>(DATABASE);
-    // Stand-ins for Batches / Shopping Items / a Leaf Category dependant: tables
-    // whose foreign keys block deletes, like the real ones will.
+    // Stand-in for a Leaf Category dependant (Batches arrive in a later ticket):
+    // a table whose foreign key blocks deletes, like the real one will.
     await database.execute(
       sql.raw(`
-        CREATE TABLE ${refTable('ingredient')} (
-          ingredient_id uuid REFERENCES ingredients(id)
-        );
         CREATE TABLE ${refTable('leaf')} (
           leaf_id uuid REFERENCES leaf_categories(id)
         );
@@ -129,11 +129,10 @@ describe('Admin role and Catalog curation (integration)', () => {
 
   afterAll(async () => {
     // Leave no rows behind even if a test failed midway: other suites count Catalog rows.
-    await database.execute(
-      sql.raw(
-        `DROP TABLE IF EXISTS ${refTable('ingredient')}, ${refTable('leaf')}`,
-      ),
-    );
+    for (const id of shoppingListIds) {
+      await database.delete(shoppingLists).where(eq(shoppingLists.id, id));
+    }
+    await database.execute(sql.raw(`DROP TABLE IF EXISTS ${refTable('leaf')}`));
     const like = `%${stamp}%`;
     for (const table of [ingredients, leafCategories, parentCategories]) {
       await database.delete(table).where(ilike(table.name, like));
@@ -347,7 +346,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect((invalid.body as Body).code).toBe('validation_failed');
     });
 
-    it('rejects deleting an Ingredient that other tables still reference', async () => {
+    it('rejects deleting an Ingredient that is still on a Shopping List', async () => {
       const made = (
         await as(adminCookie)
           .post('/ingredients', {
@@ -357,9 +356,19 @@ describe('Admin role and Catalog curation (integration)', () => {
           })
           .expect(201)
       ).body as Body;
-      await database.execute(
-        sql.raw(`INSERT INTO ${refTable('ingredient')} VALUES ('${made.id}')`),
-      );
+      // A real Shopping Item (archived list, so the Family's active list is untouched).
+      const [admin] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, 'chef.admin@example.com'));
+      const [list] = await database
+        .insert(shoppingLists)
+        .values({ familyId: admin.familyId, status: 'archived' })
+        .returning({ id: shoppingLists.id });
+      shoppingListIds.push(list.id);
+      await database
+        .insert(shoppingItems)
+        .values({ listId: list.id, ingredientId: made.id });
 
       const response = await as(adminCookie)
         .del(`/ingredients/${made.id}`)
@@ -371,7 +380,9 @@ describe('Admin role and Catalog curation (integration)', () => {
       // The failed delete rolled back, translations included.
       expect(await translationsOf('ingredient', made.id)).toHaveLength(1);
 
-      await database.execute(sql.raw(`DELETE FROM ${refTable('ingredient')}`));
+      await database
+        .delete(shoppingItems)
+        .where(eq(shoppingItems.ingredientId, made.id));
       await as(adminCookie).del(`/ingredients/${made.id}`).expect(204);
       await as(adminCookie).del(`/ingredients/${made.id}`).expect(404);
     });
