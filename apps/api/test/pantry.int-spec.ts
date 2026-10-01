@@ -424,4 +424,62 @@ describe('Pantry (integration)', () => {
       [added.id, fromMihai.id].sort(),
     );
   });
+
+  describe('bulk create', () => {
+    const addMany = (cookie: string, batches: object[]) =>
+      request(app.getHttpServer())
+        .post('/api/pantry/batches/bulk')
+        .query({ locale: 'en' })
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ batches });
+
+    it('saves matched and Unmatched lines together with the single-Batch rules', async () => {
+      const { cookie } = await signUp();
+      const response = await addMany(cookie, [
+        {
+          ingredientId: seedId.ingredient('parmesan'),
+          quantity: 200,
+          unit: 'g',
+          productDescription: 'Grana Padano 200g',
+        },
+        { rawName: 'Mystery jar', location: 'cupboard', expiryDate: null },
+      ]).expect(201);
+      const saved = (response.body as { batches: Batch[] }).batches;
+      expect(saved.map((b) => b.name).sort()).toEqual([
+        'Mystery jar',
+        'Parmesan',
+      ]);
+      expect(saved.find((b) => b.name === 'Parmesan')).toMatchObject({
+        location: 'fridge',
+        expiryDate: inDays(60),
+      });
+      expect(saved.find((b) => b.name === 'Mystery jar')).toMatchObject({
+        unmatched: true,
+        ingredientId: null,
+      });
+      expect(await list(cookie)).toHaveLength(2);
+    });
+
+    it('saves nothing when one line is bad', async () => {
+      const { cookie } = await signUp();
+      await addMany(cookie, [
+        { ingredientId: seedId.ingredient('milk') },
+        { ingredientId: randomUUID() },
+      ]).expect(404);
+      expect(await list(cookie)).toEqual([]);
+    });
+
+    it('rejects an empty list', async () => {
+      const { cookie } = await signUp();
+      await addMany(cookie, []).expect(400);
+    });
+
+    it('requires authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/api/pantry/batches/bulk')
+        .send({ batches: [] })
+        .expect(401);
+    });
+  });
 });

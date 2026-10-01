@@ -54,6 +54,12 @@ export const createBatchBody = z
   });
 export type CreateBatchBody = z.infer<typeof createBatchBody>;
 
+/** The reviewed lines of a Scan, saved together: all of them or none. */
+export const createBatchesBody = z.object({
+  batches: z.array(createBatchBody).min(1).max(50),
+});
+export type CreateBatchesBody = z.infer<typeof createBatchesBody>;
+
 export type BatchView = {
   id: string;
   /** Localised Ingredient name, or the typed name for an Unmatched Batch. */

@@ -1,4 +1,5 @@
-import { BadGatewayException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ApiException } from '../common/api-exception';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import {
@@ -43,10 +44,9 @@ export class IngredientsScanService {
           ...this.ingredientCatalog.validateMatch(catalog, value),
         })),
       };
-    } catch {
-      throw new BadGatewayException(
-        'The ingredient photo result was invalid. Please try a clearer photo.',
-      );
+    } catch (error) {
+      if (error instanceof ApiException) throw error;
+      throw new ApiException(502, 'scan.result_invalid');
     }
   }
 }

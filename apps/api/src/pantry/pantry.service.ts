@@ -50,7 +50,28 @@ export class PantryService {
     body: CreateBatchBody,
     locale: CatalogLocale,
   ): Promise<BatchView> {
+    return (await this.createMany(memberId, [body], locale))[0];
+  }
+
+  /** Adds all Batches in one statement, so a bad line saves nothing. Used by the Review screen. */
+  async createMany(
+    memberId: string,
+    bodies: CreateBatchBody[],
+    locale: CatalogLocale,
+  ): Promise<BatchView[]> {
     const familyId = await this.familyIdOf(memberId);
+    const values: (typeof batches.$inferInsert)[] = [];
+    for (const body of bodies) {
+      values.push(await this.toRow(familyId, body));
+    }
+    const rows = await this.database.insert(batches).values(values).returning();
+    return this.toViews(rows, locale);
+  }
+
+  private async toRow(
+    familyId: string,
+    body: CreateBatchBody,
+  ): Promise<typeof batches.$inferInsert> {
     const target = body.rawName
       ? await this.unmatchedTarget(body.parentCategoryId)
       : await this.matchedTarget(body.ingredientId as string);
@@ -68,22 +89,18 @@ export class PantryService {
               defaults.expiryDays,
             );
 
-    const [row] = await this.database
-      .insert(batches)
-      .values({
-        familyId,
-        ingredientId: target.ingredientId,
-        leafCategoryId: target.leaf.id,
-        unmatched: body.rawName !== undefined,
-        rawName: body.rawName ?? null,
-        quantity: body.quantity ?? null,
-        unit: body.unit ?? null,
-        location,
-        expiryDate,
-        productDescription: body.productDescription || null,
-      })
-      .returning();
-    return (await this.toViews([row], locale))[0];
+    return {
+      familyId,
+      ingredientId: target.ingredientId,
+      leafCategoryId: target.leaf.id,
+      unmatched: body.rawName !== undefined,
+      rawName: body.rawName ?? null,
+      quantity: body.quantity ?? null,
+      unit: body.unit ?? null,
+      location,
+      expiryDate,
+      productDescription: body.productDescription || null,
+    };
   }
 
   private async familyIdOf(memberId: string): Promise<string> {

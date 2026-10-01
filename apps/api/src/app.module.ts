@@ -10,6 +10,7 @@ import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
 import { ShoppingModule } from './shopping/shopping.module';
 import { PantryModule } from './pantry/pantry.module';
+import { ScanModule } from './scan/scan.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PantryModule } from './pantry/pantry.module';
     CatalogModule,
     ShoppingModule,
     PantryModule,
+    ScanModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })

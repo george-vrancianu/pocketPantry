@@ -371,3 +371,19 @@ export const batches = pgTable(
     ),
   ],
 );
+
+// Scan Cap bookkeeping: one row per Member per UTC day, counting Scans that reached the provider.
+export const scanUsage = pgTable(
+  'scan_usage',
+  {
+    memberId: text('member_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    day: date('day', { mode: 'string' }).notNull(),
+    count: integer('count').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({ columns: [table.memberId, table.day] }),
+    check('scan_usage_count_non_negative', sql`${table.count} >= 0`),
+  ],
+);

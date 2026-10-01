@@ -13,6 +13,10 @@ const envSchema = z.object({
   AI_API_KEY: z.string().min(1).optional(),
   AI_BASE_URL: z.url().optional(),
   AI_VISION_MODEL: z.string().min(1).default('gpt-4o-mini-2024-07-18'),
+  /** Scan Cap: Scans per Member per UTC day. */
+  SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
+  /** Below this a Match counts as Unmatched, and an image read counts as low-confidence. */
+  SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;

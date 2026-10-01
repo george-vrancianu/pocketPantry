@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import {
+  type CatalogLocale,
+  FALLBACK_LOCALE,
+} from '../catalog/catalog.schemas';
+import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { ingredients, leafCategories } from '../database/schema';
@@ -30,6 +35,24 @@ export class IngredientCatalogService {
     }
 
     return this.loading;
+  }
+
+  /** The Catalog with Ingredient names in `locale` (English fallback), as handed to the model. */
+  async getCatalogIn(locale: CatalogLocale): Promise<IngredientCatalog> {
+    const catalog = await this.getCatalog();
+    if (locale === FALLBACK_LOCALE) return catalog;
+    const names = await loadDisplayNames(
+      this.database,
+      locale,
+      catalog.ingredients.map((ingredient) => ingredient.id),
+    );
+    return {
+      ...catalog,
+      ingredients: catalog.ingredients.map((ingredient) => ({
+        ...ingredient,
+        name: names.pick('ingredient', ingredient.id, ingredient.name),
+      })),
+    };
   }
 
   invalidate(): void {

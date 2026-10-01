@@ -4,6 +4,9 @@ import type { AuthInstance } from './auth/auth.types';
 import { toErrorResponse } from './common/api-error';
 import { registerAuthHandler } from './auth/register-auth-handler';
 
+/** Scan images arrive as data URLs in the JSON body, so the default 1 MB is far too small. */
+export const MAX_REQUEST_BODY_BYTES = 12 * 1024 * 1024;
+
 /** Wiring shared by the real server and the integration tests. */
 export function configureApp(app: NestFastifyApplication): void {
   app.setGlobalPrefix('api');

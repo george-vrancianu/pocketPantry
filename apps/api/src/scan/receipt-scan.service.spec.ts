@@ -1,4 +1,4 @@
-import { BadGatewayException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/env';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
@@ -278,7 +278,7 @@ describe('ReceiptScanService', () => {
     });
     await expect(
       service.analyze({ receiptImage: 'data:image/jpeg;base64,YQ==' }, 'ro'),
-    ).rejects.toThrow('smaller section');
+    ).rejects.toMatchObject({ code: 'scan.provider_incomplete' });
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({
         requestId: 'request-test',
@@ -304,7 +304,9 @@ describe('ReceiptScanService', () => {
     });
     await expect(
       service.analyze({ receiptImage: 'data:image/jpeg;base64,YQ==' }, 'ro'),
-    ).rejects.toThrow(BadGatewayException);
+    ).rejects.toMatchObject({
+      code: 'scan.result_invalid',
+    });
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({
         reason: 'invalid_fields',

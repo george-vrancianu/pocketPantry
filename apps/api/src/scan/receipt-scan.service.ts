@@ -1,4 +1,5 @@
-import { BadGatewayException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ApiException } from '../common/api-exception';
 import { z } from 'zod';
 import {
   StructuredOutputAiError,
@@ -67,11 +68,8 @@ export class ReceiptScanService {
         this.logger.warn({
           message: 'Receipt scan response validation failed',
           requestId: error.requestId,
-          reason: error.code,
+          reason: error.reason,
         });
-        throw new BadGatewayException(
-          new ReceiptScanOutputError(error.code).message,
-        );
       }
       throw error;
     }
@@ -203,11 +201,9 @@ export class ReceiptScanService {
             }
           : {}),
       });
-      throw new BadGatewayException(
-        error instanceof ReceiptScanOutputError
-          ? error.message
-          : 'The receipt recognition result was invalid. Please try again with a clearer photo.',
-      );
+      throw error instanceof ReceiptScanOutputError
+        ? new StructuredOutputAiError(error.code, response.requestId)
+        : new ApiException(502, 'scan.result_invalid');
     }
   }
 }

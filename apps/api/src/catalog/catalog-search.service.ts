@@ -57,7 +57,17 @@ export class CatalogSearchService {
                c.id
       LIMIT ${limit}
     `);
-    const ids = ranked.rows.map((row) => row.id);
+    return this.findByIds(
+      ranked.rows.map((row) => row.id),
+      locale,
+    );
+  }
+
+  /** Ingredients by id, in the order given, shaped like a search result. Unknown ids are skipped. */
+  async findByIds(
+    ids: string[],
+    locale: CatalogLocale,
+  ): Promise<CatalogSearchResult[]> {
     if (ids.length === 0) return [];
 
     const rows = await this.database
