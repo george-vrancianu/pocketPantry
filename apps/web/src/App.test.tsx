@@ -19,6 +19,36 @@ describe('App shell', () => {
     vi.unstubAllGlobals();
   });
 
+  it('keeps Members without the Admin role out of /admin', async () => {
+    stubSession(true);
+    renderWithProviders(<App />, { route: '/admin' });
+    expect(
+      await screen.findByRole('navigation', { name: 'Main' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Admin' })).toBeNull();
+  });
+
+  it('lets Admins into /admin', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/auth/get-session': () =>
+        Response.json({
+          user: { id: '1', name: 'Ana', email: 'a@x.com', role: 'admin' },
+        }),
+      'GET /api/admin/catalog': () =>
+        Response.json({
+          aisles: [],
+          parentCategories: [],
+          leafCategories: [],
+          ingredients: [],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<App />, { route: '/admin' });
+    expect(
+      await screen.findByRole('button', { name: 'New Ingredient' }),
+    ).toBeInTheDocument();
+  });
+
   it('sends signed-out visitors to sign in', async () => {
     stubSession(false);
     renderWithProviders(<App />, { route: '/pantry' });

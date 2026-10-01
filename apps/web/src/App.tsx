@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/AppLayout';
 import { RedirectIfSignedIn } from './components/RedirectIfSignedIn';
+import { RequireAdmin } from './components/RequireAdmin';
 import { RequireAuth } from './components/RequireAuth';
 import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
@@ -32,7 +33,9 @@ export function App() {
           <Route path="recipes" element={<RecipesPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="family" element={<FamilyPage />} />
-          <Route path="admin" element={<AdminPage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="admin" element={<AdminPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

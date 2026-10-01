@@ -3,6 +3,8 @@
   "language": "Language",
   "preferences": "Member Preferences",
   "preferencesPrivate": "Only you see these. They follow you to any device.",
+  "admin": "Catalog",
+  "openAdmin": "Curate the Catalog",
   "account": "Account",
   "signedInAs": "Signed in as {{name}}",
   "localeSaveFailed": "Could not save your language. Try again.",

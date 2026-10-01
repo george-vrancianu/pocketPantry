@@ -1,3 +1,66 @@
 {
-  "title": "Administrare"
+  "title": "Administrare",
+  "sections": "Secțiunile Catalogului",
+  "tabs": {
+    "ingredients": "Ingrediente",
+    "categories": "Categorii"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "pcs": "buc."
+  },
+  "locations": {
+    "none": "Moștenit",
+    "fridge": "Frigider",
+    "freezer": "Congelator",
+    "cupboard": "Dulap",
+    "spices": "Condimente"
+  },
+  "locales": {
+    "en": "Engleză",
+    "ro": "Română"
+  },
+  "common": {
+    "save": "Salvează",
+    "saving": "Se salvează…",
+    "delete": "Șterge",
+    "confirmDelete": "Confirmă ștergerea",
+    "cancel": "Anulează",
+    "close": "Închide"
+  },
+  "ingredient": {
+    "new": "Ingredient nou",
+    "edit": "Editează {{name}}",
+    "filter": "Filtrează Ingredientele",
+    "empty": "Niciun Ingredient găsit.",
+    "name": "Nume (engleză)",
+    "leafCategory": "Categorie frunză",
+    "defaultUnit": "Unitate implicită"
+  },
+  "category": {
+    "newParent": "Categorie părinte nouă",
+    "newLeaf": "Categorie frunză nouă",
+    "editParent": "Editează Categoria părinte {{name}}",
+    "editLeaf": "Editează Categoria frunză {{name}}",
+    "name": "Nume (engleză)",
+    "aisle": "Raion",
+    "parent": "Categorie părinte",
+    "defaultExpiryDays": "Valabilitate implicită (zile)",
+    "defaultLocation": "Locație implicită",
+    "leafCount": "Categorii frunză: {{count}}"
+  },
+  "translations": {
+    "title": "Traduceri și Sinonime",
+    "canonicalName": "Nume în engleză: {{name}}",
+    "displayName": "Nume ({{language}})",
+    "saveName": "Salvează numele în {{language}}",
+    "synonyms": "Sinonime ({{language}})",
+    "newSynonym": "Sinonim nou ({{language}})",
+    "addSynonym": "Adaugă Sinonim în {{language}}",
+    "removeSynonym": "Elimină Sinonimul {{value}}",
+    "none": "Încă niciun Sinonim."
+  }
 }

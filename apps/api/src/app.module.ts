@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
@@ -29,6 +30,7 @@ import { SettingsModule } from './settings/settings.module';
     PantryModule,
     DashboardModule,
     SettingsModule,
+    AdminModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })

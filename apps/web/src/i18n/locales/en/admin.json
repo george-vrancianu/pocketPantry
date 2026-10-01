@@ -1,3 +1,66 @@
 {
-  "title": "Admin"
+  "title": "Admin",
+  "sections": "Catalog sections",
+  "tabs": {
+    "ingredients": "Ingredients",
+    "categories": "Categories"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "l",
+    "pcs": "pcs"
+  },
+  "locations": {
+    "none": "Inherit",
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "cupboard": "Cupboard",
+    "spices": "Spices"
+  },
+  "locales": {
+    "en": "English",
+    "ro": "Romanian"
+  },
+  "common": {
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete",
+    "confirmDelete": "Confirm delete",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "ingredient": {
+    "new": "New Ingredient",
+    "edit": "Edit {{name}}",
+    "filter": "Filter Ingredients",
+    "empty": "No Ingredients match.",
+    "name": "Name (English)",
+    "leafCategory": "Leaf Category",
+    "defaultUnit": "Default unit"
+  },
+  "category": {
+    "newParent": "New Parent Category",
+    "newLeaf": "New Leaf Category",
+    "editParent": "Edit Parent Category {{name}}",
+    "editLeaf": "Edit Leaf Category {{name}}",
+    "name": "Name (English)",
+    "aisle": "Aisle",
+    "parent": "Parent Category",
+    "defaultExpiryDays": "Default Expiry (days)",
+    "defaultLocation": "Default location",
+    "leafCount": "Leaf Categories: {{count}}"
+  },
+  "translations": {
+    "title": "Translations and Synonyms",
+    "canonicalName": "English name: {{name}}",
+    "displayName": "Name ({{language}})",
+    "saveName": "Save {{language}} name",
+    "synonyms": "Synonyms ({{language}})",
+    "newSynonym": "New Synonym ({{language}})",
+    "addSynonym": "Add {{language}} Synonym",
+    "removeSynonym": "Remove Synonym {{value}}",
+    "none": "No Synonyms yet."
+  }
 }

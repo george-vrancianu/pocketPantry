@@ -2,6 +2,7 @@
   "moduleFileExtensions": ["js", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
+  "maxWorkers": 1,
   "globalSetup": "<rootDir>/support/global-setup.mjs",
   "setupFiles": ["<rootDir>/support/env.ts"],
   "testRegex": ".int-spec.ts$",

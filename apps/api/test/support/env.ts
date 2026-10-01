@@ -7,3 +7,4 @@ process.env.CLIENT_ORIGIN = 'http://localhost:5173';
 process.env.BETTER_AUTH_URL = 'http://localhost:3000';
 process.env.BETTER_AUTH_SECRET =
   'test-secret-that-is-at-least-32-characters-long';
+process.env.ADMIN_EMAILS = 'Chef.Admin@example.com, second-admin@example.com';

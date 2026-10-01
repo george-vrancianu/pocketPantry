@@ -11,6 +11,7 @@ import { createHouseholdOfOne } from '../family/household-of-one';
 import { AUTH } from './auth.constants';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AuthGuard } from './auth.guard';
+import { isAdminEmail, parseAdminEmails } from './admin-emails';
 
 @Global()
 @Module({
@@ -54,7 +55,7 @@ import { AuthGuard } from './auth.guard';
           ],
           user: {
             additionalFields: {
-              // Read-only for clients; admin assignment arrives in ticket #16.
+              // Read-only for clients; set only by the signup hook from ADMIN_EMAILS.
               role: { type: 'string', defaultValue: 'regular', input: false },
               // Set by the signup hook below, never by clients (the column is NOT NULL).
               familyId: { type: 'string', required: false, input: false },
@@ -74,6 +75,14 @@ import { AuthGuard } from './auth.guard';
                 before: async (newUser) => ({
                   data: {
                     ...newUser,
+                    role: isAdminEmail(
+                      newUser.email,
+                      parseAdminEmails(
+                        config.get('ADMIN_EMAILS', { infer: true }),
+                      ),
+                    )
+                      ? 'admin'
+                      : 'regular',
                     familyId: await createHouseholdOfOne(),
                     familyRole: 'owner',
                   },
