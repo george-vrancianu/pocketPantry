@@ -24,5 +24,18 @@
     "ml": "ml",
     "l": "l",
     "pcs": "pcs"
+  },
+  "finish": {
+    "button": "Finish shopping",
+    "reviewTitle": "Add to your pantry",
+    "reviewHint": "Check what you bought. Adjust the amount, location or expiry, or drop a line.",
+    "drop": "Drop {{name}}",
+    "restore": "Keep {{name}}",
+    "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
+    "confirm_one": "Add {{count}} item to pantry",
+    "confirm_few": "Add {{count}} items to pantry",
+    "confirm_other": "Add {{count}} items to pantry",
+    "confirming": "Saving",
+    "cancel": "Back to list"
   }
 }
