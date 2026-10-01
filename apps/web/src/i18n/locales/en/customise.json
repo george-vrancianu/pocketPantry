@@ -13,7 +13,8 @@
   "add": "Add {{name}} widget",
   "size": {
     "small": "Small",
-    "wide": "Wide"
+    "wide": "Wide",
+    "tall": "Tall"
   },
   "sizeToggle": "Size of {{name}}: {{current}}. Switch to {{next}}.",
   "sizeLocked": "Size of {{name}}: {{current}}.",
@@ -24,6 +25,7 @@
     "dropped": "{{name}} dropped at position {{position}} of {{total}}.",
     "cancelled": "Reorder cancelled.",
     "added": "{{name}} added.",
-    "removed": "{{name}} removed."
+    "removed": "{{name}} removed.",
+    "resized": "{{name}} size set to {{size}}."
   }
 }

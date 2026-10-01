@@ -20,12 +20,17 @@ import {
   Alert,
   Box,
   CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  GripIcon,
+  IconButton,
+  MinusIcon,
   PlusIcon,
   Spinner,
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -38,10 +43,17 @@ import {
   addWidget,
   availableWidgetTypes,
   moveWidget,
+  newWidgetId,
+  nextSize,
   removeWidget,
   resizeWidget,
   useEditDashboardLayout,
 } from '../../lib/dashboardLayout';
+import {
+  sizesAvailableAt,
+  useGridColumns,
+  widgetSpan,
+} from '../../lib/layoutColumns';
 import { WIDGET_REGISTRY } from '../Dashboard/widgets/registry';
 import { WidgetPreview } from './WidgetPreview';
 
@@ -55,69 +67,6 @@ const FOCUS_RING = {
 const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function Glyph({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {children}
-    </svg>
-  );
-}
-
-function RoundButton({
-  label,
-  tone,
-  onClick,
-  ariaDisabled,
-  children,
-}: {
-  label: string;
-  tone: 'urgent' | 'accent' | 'plain';
-  onClick: () => void;
-  ariaDisabled?: boolean;
-  children: ReactNode;
-}) {
-  const colors = {
-    urgent: { bgcolor: tokens.color.urgentBg, color: tokens.color.urgentFg },
-    accent: { bgcolor: tokens.color.accent, color: '#FFFFFF' },
-    plain: { bgcolor: 'transparent', color: tokens.color.muted },
-  }[tone];
-  return (
-    <Box
-      component="button"
-      type="button"
-      aria-label={label}
-      aria-disabled={ariaDisabled || undefined}
-      onClick={ariaDisabled ? undefined : onClick}
-      sx={{
-        flexShrink: 0,
-        width: 40,
-        height: 40,
-        borderRadius: '20px',
-        border: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        cursor: 'pointer',
-        ...colors,
-        ...(ariaDisabled ? { opacity: 0.35, cursor: 'default' } : {}),
-        ...FOCUS_RING,
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
 
 type RowProps = {
   widget: WidgetInstance;
@@ -151,9 +100,16 @@ function WidgetRow({
     transition,
     isDragging,
   } = useSortable({ id: widget.id });
-  const otherSize: WidgetSize = widget.size === 'wide' ? 'small' : 'wide';
-  const canResize = Boolean(definition?.sizes.includes(otherSize));
+  const columns = useGridColumns();
+  const sizes = definition?.sizes ?? [];
+  const nextOne = nextSize(
+    sizes,
+    sizesAvailableAt(sizes, columns),
+    widget.size,
+  );
+  const canResize = nextOne !== widget.size;
   const current = t(`size.${widget.size}`);
+  const Icon = definition?.icon;
 
   return (
     <Box
@@ -166,8 +122,9 @@ function WidgetRow({
       }}
       sx={{
         display: 'flex',
+        flexWrap: 'wrap',
         alignItems: 'center',
-        gap: '6px',
+        columnGap: '4px',
         minHeight: 58,
         borderTop: `1px solid ${tokens.color.divider}`,
         bgcolor: isDragging ? tokens.color.accentTint : tokens.color.surface,
@@ -177,100 +134,109 @@ function WidgetRow({
       }}
     >
       <Box
-        component="button"
-        type="button"
-        ref={setActivatorNodeRef}
-        data-handle={widget.id}
-        {...attributes}
-        {...listeners}
-        aria-label={t('reorder', { name })}
         sx={{
-          flexShrink: 0,
-          width: 40,
-          height: 40,
-          border: 0,
-          bgcolor: 'transparent',
-          color: tokens.color.muted,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'grab',
-          touchAction: 'none',
-          borderRadius: '10px',
-          ...FOCUS_RING,
+          gap: '4px',
+          flex: '1 1 140px',
+          minWidth: 0,
         }}
       >
-        <Glyph>
-          <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" />
-        </Glyph>
+        <IconButton
+          ref={setActivatorNodeRef}
+          data-handle={widget.id}
+          {...attributes}
+          {...listeners}
+          label={t('reorder', { name })}
+          tone="plain"
+          style={{ touchAction: 'none', cursor: 'grab' }}
+        >
+          <GripIcon size={18} />
+        </IconButton>
+        {Icon ? (
+          <Box
+            data-testid="widget-icon"
+            sx={{
+              display: 'flex',
+              flexShrink: 0,
+              color: tokens.color.accent,
+            }}
+          >
+            <Icon size={20} />
+          </Box>
+        ) : null}
+        <Typography
+          component="span"
+          sx={{ flexGrow: 1, minWidth: 0, fontSize: 15, fontWeight: 600 }}
+        >
+          {name}
+        </Typography>
       </Box>
-      <Typography
-        component="span"
-        sx={{ flexGrow: 1, minWidth: 0, fontSize: 15, fontWeight: 600 }}
-      >
-        {name}
-      </Typography>
-      <RoundButton
-        label={t('moveUp', { name })}
-        tone="plain"
-        ariaDisabled={index === 0}
-        onClick={() => onMove(index - 1)}
-      >
-        <Glyph>
-          <path d="m6 15 6-6 6 6" />
-        </Glyph>
-      </RoundButton>
-      <RoundButton
-        label={t('moveDown', { name })}
-        tone="plain"
-        ariaDisabled={index === total - 1}
-        onClick={() => onMove(index + 1)}
-      >
-        <Glyph>
-          <path d="m6 9 6 6 6-6" />
-        </Glyph>
-      </RoundButton>
       <Box
-        component="button"
-        type="button"
-        disabled={!canResize}
-        aria-label={
-          canResize
-            ? t('sizeToggle', {
-                name,
-                current,
-                next: t(`size.${otherSize}`),
-              })
-            : t('sizeLocked', { name, current })
-        }
-        onClick={() => onResize(otherSize)}
         sx={{
-          flexShrink: 0,
-          height: 32,
-          px: '10px',
-          borderRadius: '10px',
-          border: `1px solid ${tokens.color.line}`,
-          bgcolor: '#F7F9F5',
-          color: tokens.color.ink,
-          fontFamily: 'inherit',
-          fontSize: 12,
-          fontWeight: 600,
-          cursor: canResize ? 'pointer' : 'default',
-          '&:disabled': { color: tokens.color.muted },
-          ...FOCUS_RING,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          ml: 'auto',
         }}
       >
-        {current}
+        <IconButton
+          label={t('moveUp', { name })}
+          tone="plain"
+          ariaDisabled={index === 0}
+          onClick={() => onMove(index - 1)}
+        >
+          <ChevronUpIcon size={18} />
+        </IconButton>
+        <IconButton
+          label={t('moveDown', { name })}
+          tone="plain"
+          ariaDisabled={index === total - 1}
+          onClick={() => onMove(index + 1)}
+        >
+          <ChevronDownIcon size={18} />
+        </IconButton>
+        <Box
+          component="button"
+          type="button"
+          aria-disabled={canResize ? undefined : true}
+          aria-label={
+            canResize
+              ? t('sizeToggle', {
+                  name,
+                  current,
+                  next: t(`size.${nextOne}`),
+                })
+              : t('sizeLocked', { name, current })
+          }
+          onClick={canResize ? () => onResize(nextOne) : undefined}
+          sx={{
+            flexShrink: 0,
+            minWidth: 44,
+            height: 44,
+            px: '12px',
+            borderRadius: '12px',
+            border: `1px solid ${tokens.color.line}`,
+            bgcolor: '#F7F9F5',
+            color: canResize ? tokens.color.ink : tokens.color.muted,
+            fontFamily: 'inherit',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: canResize ? 'pointer' : 'default',
+            opacity: canResize ? 1 : 0.6,
+            ...FOCUS_RING,
+          }}
+        >
+          {current}
+        </Box>
+        <IconButton
+          label={t('remove', { name })}
+          tone="urgent"
+          onClick={onRemove}
+        >
+          <MinusIcon size={18} />
+        </IconButton>
       </Box>
-      <RoundButton
-        label={t('remove', { name })}
-        tone="urgent"
-        onClick={onRemove}
-      >
-        <Glyph>
-          <path d="M6 12h12" />
-        </Glyph>
-      </RoundButton>
     </Box>
   );
 }
@@ -280,6 +246,7 @@ export function CustomisePage() {
   const { t } = useTranslation(['customise', 'dashboard']);
   const layout = useDashboardLayout();
   const editor = useEditDashboardLayout();
+  const columns = useGridColumns();
   const [status, setStatus] = useState('');
   const [focus, setFocus] = useState<
     { kind: 'row'; id: string } | { kind: 'list' } | null
@@ -297,11 +264,12 @@ export function CustomisePage() {
   useEffect(() => {
     if (!focus) return;
     if (focus.kind === 'row') {
-      listRef.current
-        ?.querySelectorAll<HTMLElement>('[data-handle]')
-        .forEach((handle) => {
-          if (handle.dataset.handle === focus.id) handle.focus();
-        });
+      const handle = Array.from(
+        listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
+      ).find((candidate) => candidate.dataset.handle === focus.id);
+      // The edit applies a moment after the click, so keep waiting until the row exists.
+      if (!handle) return;
+      handle.focus();
     } else {
       headingRef.current?.focus();
     }
@@ -358,8 +326,17 @@ export function CustomisePage() {
     editor.edit((current) => removeWidget(current, id));
     setFocus(neighbour ? { kind: 'row', id: neighbour.id } : { kind: 'list' });
   };
+  const resize = (widget: WidgetInstance, size: WidgetSize) => {
+    editor.edit((current) => resizeWidget(current, widget.id, size));
+    setStatus(
+      t('announce.resized', {
+        name: nameOf(widget),
+        size: t(`size.${size}`),
+      }),
+    );
+  };
   const add = (type: WidgetInstance['type']) => {
-    const id = crypto.randomUUID();
+    const id = newWidgetId();
     editor.edit((current) => addWidget(current, type, () => id));
     setStatus(t('announce.added', { name: nameOf({ type }) }));
     setFocus({ kind: 'row', id });
@@ -465,11 +442,7 @@ export function CustomisePage() {
                 index={index}
                 total={widgets.length}
                 onMove={(to) => move(widget.id, to)}
-                onResize={(size) =>
-                  editor.edit((current) =>
-                    resizeWidget(current, widget.id, size),
-                  )
-                }
+                onResize={(size) => resize(widget, size)}
                 onRemove={() => remove(widget.id, index)}
               />
             ))}
@@ -509,7 +482,7 @@ export function CustomisePage() {
           <Box
             sx={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
               gap: '12px',
             }}
           >
@@ -519,6 +492,7 @@ export function CustomisePage() {
                 <Box
                   key={type}
                   sx={{
+                    gridColumn: `span ${widgetSpan(WIDGET_REGISTRY[type].defaultSize, columns).columns}`,
                     bgcolor: tokens.color.surface,
                     border: `1px solid ${tokens.color.line}`,
                     borderRadius: '20px',
@@ -541,13 +515,13 @@ export function CustomisePage() {
                     >
                       {name}
                     </Typography>
-                    <RoundButton
+                    <IconButton
                       label={t('add', { name })}
                       tone="accent"
                       onClick={() => add(type)}
                     >
                       <PlusIcon size={18} />
-                    </RoundButton>
+                    </IconButton>
                   </Box>
                 </Box>
               );

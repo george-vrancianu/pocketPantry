@@ -13,6 +13,12 @@ export { Spinner } from './atoms/Spinner';
 export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
+  BudgetIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  GripIcon,
+  MinusIcon,
+  NutritionIcon,
   CheckIcon,
   ClockIcon,
   IngredientsScanIcon,

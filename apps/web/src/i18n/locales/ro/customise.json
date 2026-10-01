@@ -13,7 +13,8 @@
   "add": "Adaugă widgetul {{name}}",
   "size": {
     "small": "Mic",
-    "wide": "Lat"
+    "wide": "Lat",
+    "tall": "Înalt"
   },
   "sizeToggle": "Dimensiunea pentru {{name}}: {{current}}. Comută la {{next}}.",
   "sizeLocked": "Dimensiunea pentru {{name}}: {{current}}.",
@@ -24,6 +25,7 @@
     "dropped": "{{name}} a fost lăsat pe poziția {{position}} din {{total}}.",
     "cancelled": "Reordonare anulată.",
     "added": "{{name}} a fost adăugat.",
-    "removed": "{{name}} a fost eliminat."
+    "removed": "{{name}} a fost eliminat.",
+    "resized": "Dimensiunea pentru {{name}} a fost setată la {{size}}."
   }
 }
