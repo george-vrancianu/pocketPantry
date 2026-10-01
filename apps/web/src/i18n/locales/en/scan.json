@@ -27,12 +27,28 @@
     "ingredients": "Spread items out on the counter"
   },
   "guide": {
-    "receipt": "Hold the phone about 20 cm above the receipt so its edges touch the guide."
+    "receipt": "Hold the phone about 40 cm above the receipt so its edges touch the guide.",
+    "receiptFold": "For long receipts, fold where the guide ends (about every 20 items), flip the folded part over, and take the next photo."
   },
   "detail": {
     "product": "Adds it to your pantry with its best-before date.",
     "receipt": "Adds every item from your shop in one go.",
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your pantry."
+  },
+  "sections": {
+    "reading": "Reading section {{number}}…",
+    "section": "Section {{number}}",
+    "open": "Show section {{number}}",
+    "count": "{{count}} of {{max}} sections",
+    "found_one": "Section {{number}}: {{count}} line found",
+    "found_other": "Section {{number}}: {{count}} lines found",
+    "empty": "No lines were found in this section. Retake it, or take the next photo.",
+    "retake": "Retake",
+    "delete": "Delete section",
+    "next": "Next photo",
+    "finish": "Finish",
+    "full": "You have reached the limit of {{max}} sections. Finish, or retake or delete a section.",
+    "discardConfirm": "Leave the scanner? The sections you have taken so far will be lost."
   }
 }

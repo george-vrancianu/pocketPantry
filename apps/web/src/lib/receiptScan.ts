@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiRequest } from './api';
 import type { Batch, NewBatch } from './pantry';
-import type { ScanResponse } from './scan';
+import type { ReceiptSectionResult } from './receiptSections';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
 export function useReceiptScan(locale: string) {
   return useMutation({
     mutationFn: (receiptImage: string) =>
-      apiRequest<ScanResponse>(
+      apiRequest<ReceiptSectionResult>(
         `/scan/receipt?${new URLSearchParams({ locale })}`,
         { method: 'POST', body: { receiptImage } },
       ),
