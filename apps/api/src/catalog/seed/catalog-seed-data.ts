@@ -135,7 +135,7 @@ const OTHER_LEAVES: SeedLeaf[] = SEED_PARENTS.map((p) =>
     : {
         slug: `${p.slug}-other`,
         parent: p.slug,
-        en: `Other ${p.en.toLowerCase()}`,
+        en: `Other ${p.slug === 'beverage' ? 'drinks' : p.en.toLowerCase()}`,
         ro: `Altele (${p.ro.toLowerCase()})`,
         isOther: true,
       },

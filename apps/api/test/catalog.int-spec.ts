@@ -1,7 +1,8 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
 import {
+  SEED_INGREDIENTS,
   SEED_LEAVES,
   SEED_PARENTS,
 } from '../src/catalog/seed/catalog-seed-data';
@@ -230,30 +231,30 @@ describe('Catalog (integration)', () => {
   });
 
   describe('Romanian receipt lines', () => {
-    // Receipt text after quantities and prices are stripped. Search is
-    // stage one (exact, prefix, word-prefix), so these are the short names and
-    // abbreviations receipts actually print.
+    // Receipt text as printed: upper case, no diacritics, abbreviated, with
+    // quantities and prices already stripped. Search is stage one (exact,
+    // prefix, word-prefix) over names and Synonyms.
     const lines: [string, string][] = [
-      ['LAPTE UHT', 'Lapte'],
-      ['PIEPT PUI', 'Piept de pui'],
-      ['PULPE PUI', 'Pulpe de pui dezosate'],
-      ['CARNE TOCATA MIXTA', 'Carne tocată amestec'],
-      ['PARIZER', 'Parizer'],
+      ['LAPTE UHT', 'Lapte UHT'],
+      ['SMANT', 'Smântână'],
+      ['CASC FELII', 'Cașcaval'],
+      ['BR VACI', 'Brânză de vaci'],
+      ['TELEMEA DE VACI', 'Telemea'],
+      ['PIEPT PUI DEZ', 'Piept de pui'],
+      ['PULPE PUI', 'Pulpe întregi de pui'],
+      ['MUSCHI FILE', 'Mușchi de porc'],
+      ['SALAM SASESC', 'Salam'],
+      ['CRENV', 'Crenvurști'],
+      ['TOBA', 'Tobă'],
+      ['CARNE TOC MIXTA', 'Carne tocată amestec'],
       ['CARTOFI ALBI', 'Cartofi'],
       ['ROSII CHERRY', 'Roșii cherry'],
-      ['CASTRAVETI', 'Castraveți'],
-      ['CASCAVAL FELII', 'Cașcaval'],
-      ['TELEMEA DE VACA', 'Telemea'],
-      ['SMANTANA 20', 'Smântână'],
-      ['IAURT GRECESC', 'Iaurt grecesc'],
+      ['LEURDA', 'Leurdă'],
       ['OUA M', 'Ouă'],
-      ['PAINE ALBA', 'Pâine'],
-      ['FAINA 000', 'Făină'],
-      ['ZAHAR', 'Zahăr'],
-      ['ULEI FLOAREA SOARELUI', 'Ulei de floarea soarelui'],
-      ['BOIA DULCE', 'Boia de ardei'],
+      ['PAINE FELIATA', 'Pâine pentru toast'],
+      ['ULEI FL SOARELUI', 'Ulei de floarea soarelui'],
+      ['ZAHAR TOS', 'Zahăr'],
       ['APA PLATA', 'Apă plată'],
-      ['CAFEA MACINATA', 'Cafea'],
     ];
 
     it.each(lines)('matches "%s" to %s', async (line, expected) => {
@@ -377,15 +378,79 @@ describe('Catalog (integration)', () => {
       }
     });
 
-    it('loads a full Catalog and leaves existing rows alone', async () => {
-      const [{ count }] = await database
-        .select({ count: sql<number>`count(*)::int` })
-        .from(ingredients);
-      expect(count).toBeGreaterThanOrEqual(400);
-      const [{ leafCount }] = await database
-        .select({ leafCount: sql<number>`count(*)::int` })
-        .from(leafCategories);
-      expect(leafCount).toBeGreaterThanOrEqual(100);
+    it('loads exactly the seeded Catalog', async () => {
+      const count = async (
+        table:
+          | typeof ingredients
+          | typeof leafCategories
+          | typeof parentCategories
+          | typeof aisles,
+        ids: string[],
+      ) =>
+        (
+          await database
+            .select({ n: sql<number>`count(*)::int` })
+            .from(table)
+            .where(inArray(table.id, ids))
+        )[0].n;
+      expect(
+        await count(
+          ingredients,
+          SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
+        ),
+      ).toBe(SEED_INGREDIENTS.length);
+      expect(
+        await count(
+          leafCategories,
+          SEED_LEAVES.map((l) => seedId.leaf(l.slug)),
+        ),
+      ).toBe(SEED_LEAVES.length);
+      expect(
+        await count(
+          parentCategories,
+          SEED_PARENTS.map((p) => seedId.parent(p.slug)),
+        ),
+      ).toBe(18);
+      const synonyms = SEED_INGREDIENTS.reduce(
+        (n, i) =>
+          n + (i.synonyms?.en?.length ?? 0) + (i.synonyms?.ro?.length ?? 0),
+        0,
+      );
+      const [{ stored }] = await database
+        .select({ stored: sql<number>`count(*)::int` })
+        .from(catalogTranslations)
+        .where(
+          and(
+            eq(catalogTranslations.entityType, 'ingredient'),
+            eq(catalogTranslations.kind, 'synonym'),
+            inArray(
+              catalogTranslations.entityId,
+              SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
+            ),
+          ),
+        );
+      expect(stored).toBe(synonyms);
+    });
+
+    it('leaves a row edited since the last seed run exactly as it was', async () => {
+      const id = seedId.ingredient('parmesan');
+      await database
+        .update(ingredients)
+        .set({ defaultUnit: 'kg' })
+        .where(eq(ingredients.id, id));
+      try {
+        await seedCatalog(database);
+        const [row] = await database
+          .select()
+          .from(ingredients)
+          .where(eq(ingredients.id, id));
+        expect(row.defaultUnit).toBe('kg');
+      } finally {
+        await database
+          .update(ingredients)
+          .set({ defaultUnit: 'g' })
+          .where(eq(ingredients.id, id));
+      }
     });
 
     it('gives Parent Categories that share an Aisle one shared sort order', async () => {

@@ -87,13 +87,26 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
 
   const owners = new Map<string, Set<string>>();
   for (const i of seed.ingredients) {
-    const keys = [
-      i.en,
-      i.ro,
+    const own = new Set([i.en, i.ro].map(normalizeName));
+    const seenSynonyms = new Set<string>();
+    for (const synonym of [
       ...(i.synonyms?.en ?? []),
       ...(i.synonyms?.ro ?? []),
-    ].map(normalizeName);
-    for (const key of new Set(keys)) {
+    ]) {
+      const key = normalizeName(synonym);
+      if (own.has(key)) {
+        problems.push(
+          `ingredient "${i.slug}": Synonym "${synonym}" repeats its own name`,
+        );
+      } else if (seenSynonyms.has(key)) {
+        problems.push(
+          `ingredient "${i.slug}": Synonym "${synonym}" is listed twice`,
+        );
+      }
+      seenSynonyms.add(key);
+    }
+    const keys = [...own, ...seenSynonyms];
+    for (const key of keys) {
       owners.set(key, (owners.get(key) ?? new Set()).add(i.slug));
     }
   }
