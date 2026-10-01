@@ -165,7 +165,14 @@ export const produce: SeedSection = {
     ...ingredientsOf('root-vegetables', [
       ['carrot', 'Carrot', 'Morcovi', 'g', ['carrots'], ['morcov', 'morc']],
       ['beetroot', 'Beetroot', 'Sfeclă roșie', 'g', ['beet'], ['sfecla']],
-      ['celeriac', 'Celeriac', 'Țelină rădăcină', 'g', ['celery root']],
+      [
+        'celeriac',
+        'Celeriac',
+        'Țelină',
+        'g',
+        ['celery root'],
+        ['telina radacina'],
+      ],
       ['parsnip', 'Parsnip', 'Păstârnac', 'g'],
       [
         'parsley-root',
@@ -299,7 +306,14 @@ export const produce: SeedSection = {
         undefined,
         ['sparanghel verde'],
       ],
-      ['celery', 'Celery', 'Țelină', 'g', ['celery stalks'], ['telina pai']],
+      [
+        'celery',
+        'Celery',
+        'Țelină pai',
+        'g',
+        ['celery stalks'],
+        ['telina tulpini'],
+      ],
       ['fennel', 'Fennel', 'Fenicul', 'g', ['fennel bulb']],
       ['okra', 'Okra', 'Bame', 'g', ['ladies fingers'], ['bamia']],
     ]),

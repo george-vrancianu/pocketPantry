@@ -752,7 +752,7 @@ export const condiments: SeedSection = {
         'Jam',
         'Dulceață',
         'g',
-        ['fruit preserve', 'marmalade'],
+        ['fruit preserve'],
         [
           'dulceata de capsuni',
           'dulceata visine',
@@ -956,7 +956,7 @@ export const oils: SeedSection = {
         'Oțet',
         'ml',
         ['white vinegar', 'distilled vinegar'],
-        ['otet alb', 'otet 9', 'otet alimentar', 'otet alim'],
+        ['otet alb', 'otet alimentar', 'otet alim'],
       ],
       [
         'wine-vinegar',

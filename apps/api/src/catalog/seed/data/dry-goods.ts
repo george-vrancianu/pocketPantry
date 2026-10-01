@@ -367,8 +367,8 @@ export const grains: SeedSection = {
         'Potato starch',
         'Amidon de cartofi',
         'g',
-        ['cornflour', 'corn starch'],
-        ['amidon', 'amidon de porumb', 'faina de cartofi', 'starch'],
+        undefined,
+        ['amidon', 'faina de cartofi', 'starch'],
       ],
       [
         'sugar',
@@ -409,6 +409,14 @@ export const grains: SeedSection = {
         'g',
         ['stevia', 'artificial sweetener'],
         ['zahar fara calorii'],
+      ],
+      [
+        'corn-starch',
+        'Corn starch',
+        'Amidon de porumb',
+        'g',
+        ['cornflour', 'cornstarch'],
+        ['amidon porumb', 'faina de porumb fina'],
       ],
     ]),
     ...ingredientsOf('baking-essentials', [

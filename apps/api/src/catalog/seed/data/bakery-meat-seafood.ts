@@ -342,6 +342,14 @@ export const meat: SeedSection = {
       10,
       'fridge',
     ),
+    leaf(
+      'chilled-meat-specialties',
+      'meat',
+      'Head cheese, liver sausage and pâté',
+      'Tobă, lebăr și pateuri',
+      5,
+      'fridge',
+    ),
   ],
   ingredients: [
     ...ingredientsOf('chicken-breast', [
@@ -421,7 +429,7 @@ export const meat: SeedSection = {
         'Pui întreg',
         'g',
         ['chicken'],
-        ['pui', 'pui congelat', 'pui int', 'pui int cong'],
+        ['pui', 'pui int'],
       ],
       [
         'chicken-wings',
@@ -429,7 +437,7 @@ export const meat: SeedSection = {
         'Aripioare de pui',
         'g',
         ['wings'],
-        ['aripioare pui', 'aripi pui', 'aripioare pui cong'],
+        ['aripioare pui', 'aripi pui'],
       ],
       [
         'chicken-back',
@@ -534,7 +542,22 @@ export const meat: SeedSection = {
         'Compoziție pentru mici',
         'g',
         ['mititei mix'],
-        ['compozitie mici', 'mix mici', 'mici crudi'],
+        ['compozitie mici', 'mix mici', 'mici crudi', 'mici'],
+      ],
+      [
+        'fresh-sausages',
+        'Fresh sausages',
+        'Cârnați proaspeți',
+        'g',
+        ['raw sausages', 'bratwurst'],
+        [
+          'carnati',
+          'carnati de porc',
+          'carnati cu usturoi',
+          'carnati prosp',
+          'carnati p',
+          'carnat',
+        ],
       ],
     ]),
     ...ingredientsOf('red-meat', [
@@ -562,10 +585,10 @@ export const meat: SeedSection = {
       [
         'beef-shank',
         'Beef shank',
-        'Pulpă de vită',
+        'Fluier de vită',
         'g',
-        ['beef leg'],
-        ['pulpa vita', 'ciolan vita'],
+        ['shin'],
+        ['ciolan vita', 'rasol', 'rasol de vita', 'fluier vita'],
       ],
       [
         'beef-ribs',
@@ -590,6 +613,14 @@ export const meat: SeedSection = {
         'g',
         ['veal escalope'],
         ['vitel', 'carne vitel', 'snitel vitel'],
+      ],
+      [
+        'beef-round',
+        'Beef round',
+        'Pulpă de vită',
+        'g',
+        ['beef leg', 'topside'],
+        ['pulpa vita'],
       ],
     ]),
     ...ingredientsOf('pork', [
@@ -656,7 +687,14 @@ export const meat: SeedSection = {
         ['ham hock', 'pork hock'],
         ['ciolan porc', 'ciolan afumat'],
       ],
-      ['pork-fat', 'Pork fat', 'Slănină', 'g', ['salo'], ['slanina proaspata']],
+      [
+        'pork-fat',
+        'Pork fat',
+        'Slănină',
+        'g',
+        ['salo'],
+        ['slanina proaspata', 'slanina afumata'],
+      ],
       [
         'pork-trotters',
         'Pork trotters',
@@ -831,21 +869,6 @@ export const meat: SeedSection = {
         ['cabanos afumat'],
       ],
       [
-        'fresh-sausages',
-        'Fresh sausages',
-        'Cârnați proaspeți',
-        'g',
-        ['raw sausages', 'bratwurst'],
-        [
-          'carnati',
-          'carnati de porc',
-          'carnati cu usturoi',
-          'carnati prosp',
-          'carnati p',
-          'carnat',
-        ],
-      ],
-      [
         'smoked-sausages',
         'Smoked sausages',
         'Cârnați afumați',
@@ -855,20 +878,22 @@ export const meat: SeedSection = {
       ],
       ['chorizo', 'Chorizo', 'Chorizo', 'g'],
       [
-        'liver-pate',
-        'Liver pâté',
-        'Pateu de ficat',
-        'g',
-        ['pate'],
-        ['pate ficat', 'pateu', 'pate de pui'],
-      ],
-      [
         'sausage-sibiu',
         'Winter salami',
         'Salam de iarnă',
         'g',
         ['sibiu salami'],
         ['salam iarna', 'salam sibiu'],
+      ],
+    ]),
+    ...ingredientsOf('chilled-meat-specialties', [
+      [
+        'liver-pate',
+        'Liver pâté',
+        'Pateu de ficat',
+        'g',
+        ['pate'],
+        ['pate ficat', 'pateu', 'pate de pui'],
       ],
       ['toba', 'Head cheese', 'Tobă', 'g', ['brawn'], ['toba de porc']],
       [

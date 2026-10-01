@@ -575,7 +575,7 @@ export const beverage: SeedSection = {
       'beverage',
       'Fresh juice and smoothies',
       'Sucuri proaspete și smoothie',
-      5,
+      3,
       'fridge',
     ),
   ],

@@ -236,7 +236,7 @@ describe('Catalog (integration)', () => {
     // prefix, word-prefix) over names and Synonyms.
     const lines: [string, string][] = [
       ['LAPTE UHT', 'Lapte UHT'],
-      ['SMANT 20', 'Smântână'],
+      ['SMANT', 'Smântână'],
       ['CASC FELII', 'Cașcaval'],
       ['BR VACI', 'Brânză de vaci'],
       ['TELEMEA DE VACI', 'Telemea'],
