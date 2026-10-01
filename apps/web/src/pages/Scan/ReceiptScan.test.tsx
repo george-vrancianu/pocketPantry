@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
+import { AppDock } from '../../components/AppDock';
 import {
   afterEach,
   beforeEach,
@@ -30,13 +31,19 @@ vi.mock('../../lib/camera', () => ({
   },
 }));
 const cropToReceiptAreaMock = vi.hoisted(() => vi.fn());
+/** When set, image preparation waits on it, so a test can change the screen mid-preparation. */
+const gate = vi.hoisted(() => ({ current: null as Promise<void> | null }));
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
-  cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
-  cropToReceiptArea: (...args: unknown[]) => {
+  cropToReceiptGuide: async () => {
+    await gate.current;
+    return 'data:image/jpeg;base64,Y3JvcA==';
+  },
+  cropToReceiptArea: async (...args: unknown[]) => {
     cropToReceiptAreaMock(...args);
-    return Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ==');
+    await gate.current;
+    return 'data:image/jpeg;base64,Z2FsbGVyeQ==';
   },
 }));
 // react-easy-crop measures real image and element sizes, which jsdom cannot do: report a fixed crop.
@@ -164,6 +171,12 @@ describe('Receipt Scan on the Scan screen', () => {
     const renderScan = (
       responses: Array<{ lines: unknown[] }> = [{ lines: [eggs] }],
     ) => {
+      return renderScreen(responses);
+    };
+    const renderScreen = (
+      responses: Array<{ lines: unknown[] }> = [{ lines: [eggs] }],
+      withDock = false,
+    ) => {
       const queue = [...responses];
       const { fetchMock, calls } = stubApi({
         'GET /api/catalog/parents': () => Response.json({ parents: [] }),
@@ -171,14 +184,26 @@ describe('Receipt Scan on the Scan screen', () => {
           Response.json(queue.shift() ?? { lines: [] }),
       });
       vi.stubGlobal('fetch', fetchMock);
-      renderWithProviders(
-        <Routes>
-          <Route path="/scan" element={<ScanPage />} />
-          <Route path="/scan/review" element={<ReviewPage />} />
-        </Routes>,
+      const view = renderWithProviders(
+        <>
+          <Routes>
+            <Route path="/scan" element={<ScanPage />} />
+            <Route path="/scan/review" element={<ReviewPage />} />
+          </Routes>
+          {withDock ? <AppDock variant="dark" activeKey="scan" /> : null}
+        </>,
         { route: '/scan?mode=receipt' },
       );
-      return { calls };
+      return { calls, view };
+    };
+    const holdPreparation = () => {
+      let release: () => void = () => undefined;
+      gate.current = new Promise<void>((resolve) => (release = resolve));
+      return async () => {
+        release();
+        gate.current = null;
+        await new Promise((r) => setTimeout(r, 20));
+      };
     };
     const receiptCalls = (calls: Array<{ key: string; body?: unknown }>) =>
       calls.filter((c) => c.key === 'POST /api/scan/receipt');
@@ -187,6 +212,7 @@ describe('Receipt Scan on the Scan screen', () => {
 
     beforeEach(() => {
       cropToReceiptAreaMock.mockClear();
+      gate.current = null;
       createObjectURL = vi
         .spyOn(URL, 'createObjectURL')
         .mockReturnValue('blob:photo');
@@ -323,6 +349,102 @@ describe('Receipt Scan on the Scan screen', () => {
       await click('Cancel');
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(receiptCalls(calls)).toHaveLength(0);
+    });
+
+    it('does not send a gallery photo whose crop finishes after the Dock Scan item switched to Product', async () => {
+      const confirm = vi.spyOn(window, 'confirm');
+      const { calls } = renderScreen([{ lines: [eggs] }], true);
+      await uploadPhoto();
+      await cropDialog();
+      const release = holdPreparation();
+      await click('Use photo');
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await release();
+      expect(receiptCalls(calls)).toHaveLength(0);
+      await click('Receipt');
+      expect(confirm).not.toHaveBeenCalled();
+      expect(
+        screen.queryByRole('group', { name: 'Section 1' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not send a camera frame whose crop finishes after the Dock Scan item switched to Product', async () => {
+      const confirm = vi.spyOn(window, 'confirm');
+      const { calls } = renderScreen([{ lines: [eggs] }], true);
+      const release = holdPreparation();
+      await click('Take photo');
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      await release();
+      expect(receiptCalls(calls)).toHaveLength(0);
+      await click('Receipt');
+      expect(confirm).not.toHaveBeenCalled();
+      expect(
+        screen.queryByRole('group', { name: 'Section 1' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not send a photo whose crop finishes after the screen was left', async () => {
+      const { calls, view } = renderScreen();
+      await uploadPhoto();
+      await cropDialog();
+      const release = holdPreparation();
+      await click('Use photo');
+      view.unmount();
+      await release();
+      expect(receiptCalls(calls)).toHaveLength(0);
+    });
+
+    it('keeps the Scan Mode buttons disabled while a photo is being prepared', async () => {
+      renderScan();
+      await uploadPhoto();
+      await cropDialog();
+      const release = holdPreparation();
+      await click('Use photo');
+      expect(screen.getByRole('button', { name: 'Product' })).toBeDisabled();
+      await release();
+      await screen.findByText('Section 1: 1 line found');
+    });
+
+    it('closes the crop step when the Dock Scan item changes the mode through the URL', async () => {
+      renderScreen([{ lines: [eggs] }], true);
+      await uploadPhoto();
+      await cropDialog();
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('locks the gallery button and ignores a picked file when the batch is full', async () => {
+      const { calls } = renderScreen(
+        Array.from({ length: 11 }, () => ({ lines: [eggs] })),
+      );
+      for (let i = 1; i <= 10; i++) {
+        await click('Take photo');
+        await screen.findByText(`Section ${i}: 1 line found`);
+        if (i < 10) await click('Next photo');
+      }
+      expect(
+        screen.getByRole('button', { name: 'Choose from photos' }),
+      ).toBeDisabled();
+      await uploadPhoto();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(receiptCalls(calls)).toHaveLength(10);
+    });
+
+    it('keeps Tab focus inside the crop step', async () => {
+      renderScan();
+      await uploadPhoto();
+      await cropDialog();
+      const confirm = screen.getByRole('button', { name: 'Use photo' });
+      await vi.waitFor(() => expect(confirm).toBeEnabled());
+      confirm.focus();
+      await userEvent.tab();
+      expect(screen.getByRole('slider')).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(confirm).toHaveFocus();
     });
 
     it('skips the crop step in the other modes', async () => {

@@ -42,15 +42,29 @@ export function useScanScreen() {
   const modeScans = { product: productScan, ingredients: ingredientsScan };
   const modeScan =
     mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
-  // The mode can also change through the URL (the Dock's Scan item links to plain `/scan`),
-  // bypassing `setMode`: leaving Receipt always discards the batch and any read in flight.
   // A receipt photo from the gallery waiting for the Member to frame it in the crop step.
   const [cropping, setCropping] = useState<Blob | null>(null);
   const resetReceiptSections = useRef(receiptSections.reset);
   resetReceiptSections.current = receiptSections.reset;
   const previousMode = useRef(mode);
+  /**
+   * Bumped whenever what a photo being prepared was meant for goes away (mode change, batch
+   * reset, leaving the screen): a photo prepared under an older value is dropped, not sent.
+   */
+  const scanEpoch = useRef(0);
+  useEffect(
+    () => () => {
+      scanEpoch.current += 1;
+    },
+    [],
+  );
+  // The mode can also change through the URL (the Dock's Scan item links to plain `/scan`),
+  // bypassing `setMode`: leaving Receipt always discards the batch and any read in flight.
   useEffect(() => {
-    if (previousMode.current !== mode) setCropping(null);
+    if (previousMode.current !== mode) {
+      scanEpoch.current += 1;
+      setCropping(null);
+    }
     if (previousMode.current === 'receipt' && mode !== 'receipt') {
       resetReceiptSections.current();
     }
@@ -97,15 +111,17 @@ export function useScanScreen() {
   ) => {
     setLocalError(null);
     setResizing(true);
+    const epoch = scanEpoch.current;
     let image: string;
     try {
       image = await prepare();
     } catch {
-      setLocalError('scan.image_invalid');
+      if (epoch === scanEpoch.current) setLocalError('scan.image_invalid');
       return;
     } finally {
       setResizing(false);
     }
+    if (epoch !== scanEpoch.current) return;
     if (mode === 'receipt') {
       await receiptSections.submit(image);
       return;
@@ -202,12 +218,13 @@ export function useScanScreen() {
     flash,
     reading,
     /** Switching Scan Mode would reset the batch under an in-flight section. */
-    modesDisabled: receiptSections.pending,
+    modesDisabled: receiptSections.pending || resizing,
     controlsDisabled: busy,
     fileInput,
     error,
     setMode: (next: ScanMode) => {
       if (next !== mode && !confirmDiscard()) return;
+      scanEpoch.current += 1;
       Object.values(modeScans).forEach((scan) => scan.reset());
       receiptSections.reset();
       plate.reset();

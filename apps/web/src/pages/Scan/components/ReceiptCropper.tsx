@@ -10,6 +10,32 @@ export type ReceiptCrop = { area: Rect; rotation: number };
 
 const FINE_ROTATION_LIMIT = 15;
 
+const FOCUSABLE =
+  'button:not(:disabled), input:not(:disabled), [href], [tabindex]:not([tabindex="-1"])';
+
+/** Keeps Tab inside the dialog: from the last control it wraps to the first, and back. */
+function trapFocus(
+  event: KeyboardEvent<HTMLElement>,
+  dialog: HTMLElement | null,
+) {
+  const items = Array.from(
+    dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+  ).sort((a, b) =>
+    a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1,
+  );
+  if (items.length === 0) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  const active = document.activeElement;
+  if (event.shiftKey && (active === first || active === dialog)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 /**
  * The crop step for a receipt photo from the gallery: pan, zoom and rotate the photo under a
  * fixed 1:3 frame (the same shape as the camera guide). Reusable per photo.
@@ -58,6 +84,7 @@ export function ReceiptCropper({
       tabIndex={-1}
       onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Escape') onCancel();
+        if (event.key === 'Tab') trapFocus(event, dialog.current);
       }}
       sx={{
         outline: 'none',
