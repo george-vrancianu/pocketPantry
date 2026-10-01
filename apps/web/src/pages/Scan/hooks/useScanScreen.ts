@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
-import { resizeImage } from '../../../lib/image';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { startReview } from '../../../lib/review';
+import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useReceiptScan } from '../../../lib/receiptScan';
 import { usePlateScan } from './usePlateScan';
 import {
@@ -47,12 +47,12 @@ export function useScanScreen() {
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
-  const scanImage = async (source: Blob) => {
+  const scanImage = async (source: Blob, origin: ImageOrigin) => {
     setLocalError(null);
     setResizing(true);
     let image: string;
     try {
-      image = await resizeImage(source);
+      image = await IMAGE_PREPARATION[mode](source, origin);
     } catch {
       setLocalError('scan.image_invalid');
       return;
@@ -77,13 +77,13 @@ export function useScanScreen() {
 
   const shoot = async () => {
     const frame = await camera.capture();
-    if (frame) await scanImage(frame);
+    if (frame) await scanImage(frame, 'camera');
   };
 
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (file) void scanImage(file);
+    if (file) void scanImage(file, 'gallery');
   };
 
   const toggleFlash = async () => {
