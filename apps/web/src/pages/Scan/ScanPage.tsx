@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { SCAN_MODES } from '../../lib/scan';
 import { DishPicker } from './components/DishPicker';
+import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
@@ -249,6 +250,14 @@ export function ScanPage() {
           <ManualEntryIcon size={22} />
         </Box>
       </Box>
+
+      {screen.cropping ? (
+        <ReceiptCropper
+          photo={screen.cropping}
+          onConfirm={screen.confirmCrop}
+          onCancel={screen.cancelCrop}
+        />
+      ) : null}
 
       <Box
         component="input"

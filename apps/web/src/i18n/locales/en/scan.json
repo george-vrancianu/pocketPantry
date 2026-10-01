@@ -9,6 +9,15 @@
   "reading": "Reading your photo",
   "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
   "comingSoon": "{{mode}} scanning is coming soon. Product, Plate and Ingredients scanning work now.",
+  "crop": {
+    "title": "Crop receipt",
+    "instruction": "Drag and zoom so the whole receipt fits the frame.",
+    "fine": "Straighten: {{degrees}}°",
+    "rotateLeft": "Rotate left",
+    "rotateRight": "Rotate right",
+    "cancel": "Cancel",
+    "confirm": "Use photo"
+  },
   "plate": {
     "pickTitle": "Which dish is it?",
     "option": "{{title}}, {{percent}}% likely",
