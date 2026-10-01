@@ -88,7 +88,7 @@ describe('UseSoonWidget', () => {
         }),
     });
 
-    renderWithProviders(<UseSoonWidget size="wide" />);
+    renderWithProviders(<UseSoonWidget size="wide" columns={2} />);
 
     const region = await screen.findByRole('region', { name: 'Use soon' });
     const rows = await within(region).findAllByRole('listitem');
@@ -108,7 +108,7 @@ describe('UseSoonWidget', () => {
         Response.json({ batches: [batch({ id: '1', name: 'Orzo' })] }),
     });
 
-    renderWithProviders(<UseSoonWidget size="wide" />);
+    renderWithProviders(<UseSoonWidget size="wide" columns={2} />);
 
     expect(
       await screen.findByText(
@@ -126,7 +126,7 @@ describe('UseSoonWidget', () => {
         ),
     });
 
-    renderWithProviders(<UseSoonWidget size="wide" />);
+    renderWithProviders(<UseSoonWidget size="wide" columns={2} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Something went wrong on our side',
@@ -149,7 +149,7 @@ describe('ShoppingWidget', () => {
         ),
     });
 
-    renderWithProviders(<ShoppingWidget size="small" />);
+    renderWithProviders(<ShoppingWidget size="small" columns={2} />);
 
     const link = await screen.findByRole('link', { name: 'Shopping' });
     expect(link).toHaveAttribute('href', '/shopping');
@@ -162,7 +162,7 @@ describe('ShoppingWidget', () => {
   it('shows an empty list', async () => {
     stub({ 'GET /api/shopping-list': () => Response.json(shoppingList([])) });
 
-    renderWithProviders(<ShoppingWidget size="small" />);
+    renderWithProviders(<ShoppingWidget size="small" columns={2} />);
 
     expect(await screen.findByText('Your list is empty')).toBeInTheDocument();
   });
@@ -173,7 +173,9 @@ describe('ShoppingWidget', () => {
         Response.json(shoppingList([item({ id: '1', name: 'Lămâi' })])),
     });
 
-    renderWithProviders(<ShoppingWidget size="small" />, { locale: 'ro' });
+    renderWithProviders(<ShoppingWidget size="small" columns={2} />, {
+      locale: 'ro',
+    });
 
     expect(
       await screen.findByRole('link', { name: 'Cumpărături' }),
@@ -195,7 +197,7 @@ describe('PantryStockWidget', () => {
         }),
     });
 
-    renderWithProviders(<PantryStockWidget size="small" />);
+    renderWithProviders(<PantryStockWidget size="small" columns={2} />);
 
     const link = await screen.findByRole('link', { name: 'Pantry' });
     expect(link).toHaveAttribute('href', '/pantry');
@@ -211,7 +213,7 @@ describe('PantryStockWidget', () => {
   it('shows zero for an empty Pantry', async () => {
     stub({ 'GET /api/pantry': () => Response.json({ batches: [] }) });
 
-    renderWithProviders(<PantryStockWidget size="small" />);
+    renderWithProviders(<PantryStockWidget size="small" columns={2} />);
 
     expect(
       await screen.findByRole('link', { name: 'Pantry' }),
@@ -221,7 +223,7 @@ describe('PantryStockWidget', () => {
 
 describe('QuickScanWidget', () => {
   it('deep-links each tile to its Scan Mode', () => {
-    renderWithProviders(<QuickScanWidget size="wide" />);
+    renderWithProviders(<QuickScanWidget size="wide" columns={2} />);
 
     const hrefs = Object.fromEntries(
       screen
@@ -243,14 +245,14 @@ describe.each([
   ['Nutrition', NutritionWidget, 'Nutriție'],
 ])('%s placeholder', (name, Widget, roName) => {
   it('is marked as coming soon in English', () => {
-    renderWithProviders(<Widget size="small" />);
+    renderWithProviders(<Widget size="small" columns={2} />);
 
     const region = screen.getByRole('region', { name });
     expect(within(region).getByText('Coming soon')).toBeInTheDocument();
   });
 
   it('is marked as coming soon in Romanian', () => {
-    renderWithProviders(<Widget size="small" />, { locale: 'ro' });
+    renderWithProviders(<Widget size="small" columns={2} />, { locale: 'ro' });
 
     const region = screen.getByRole('region', { name: roName });
     expect(within(region).getByText('În curând')).toBeInTheDocument();

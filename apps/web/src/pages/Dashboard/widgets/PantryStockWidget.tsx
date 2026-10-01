@@ -14,7 +14,7 @@ const LOCATION_COLORS = {
 } as const;
 
 /** Total Batches and a stacked bar of how they split across Locations. */
-export function PantryStockWidget({ size }: WidgetProps) {
+export function PantryStockWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const batches = useBatches(i18n.language, new Date());
   const stock = stockByLocation(batches.data ?? []).filter(
@@ -26,6 +26,7 @@ export function PantryStockWidget({ size }: WidgetProps) {
     <WidgetCard
       label={t('widgets.pantryStock.title')}
       size={size}
+      columns={columns}
       to="/pantry"
       isLoading={batches.isPending}
       error={batches.error ? translateApiError(t, batches.error) : null}

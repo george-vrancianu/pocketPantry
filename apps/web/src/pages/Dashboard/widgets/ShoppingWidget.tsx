@@ -7,7 +7,7 @@ import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
 /** Unchecked Shopping Items on the butter card: the count and the first few names. */
-export function ShoppingWidget({ size }: WidgetProps) {
+export function ShoppingWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const list = useShoppingList(i18n.language);
   const { names, hasMore } = list.data
@@ -18,6 +18,7 @@ export function ShoppingWidget({ size }: WidgetProps) {
     <WidgetCard
       label={t('widgets.shopping.title')}
       size={size}
+      columns={columns}
       tone="butter"
       to="/shopping"
       isLoading={list.isPending}
