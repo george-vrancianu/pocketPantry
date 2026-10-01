@@ -82,6 +82,7 @@ export function ScanPage() {
         <Viewfinder
           videoRef={screen.camera.videoRef}
           scanning={screen.reading}
+          receiptGuide={screen.mode === 'receipt'}
         />
       </Box>
 
@@ -94,6 +95,11 @@ export function ScanPage() {
         >
           {t(`detail.${screen.mode}`)}
         </Typography>
+        {screen.mode === 'receipt' ? (
+          <Typography sx={{ mt: '6px', fontSize: 13 }}>
+            {t('guide.receipt')}
+          </Typography>
+        ) : null}
       </Box>
 
       <Box

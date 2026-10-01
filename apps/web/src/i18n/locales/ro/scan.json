@@ -26,6 +26,9 @@
     "plate": "Ține telefonul stabil deasupra farfuriei",
     "ingredients": "Întinde produsele pe blat"
   },
+  "guide": {
+    "receipt": "Ține telefonul la aproximativ 20 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul."
+  },
   "detail": {
     "product": "Îl adaugă în cămară cu data de expirare.",
     "receipt": "Adaugă toate produsele din cumpărături deodată.",

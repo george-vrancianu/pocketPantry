@@ -25,7 +25,7 @@ export function useScanScreen() {
   const mode: ScanMode = isScanMode(requested) ? requested : 'product';
   const wired = WIRED_SCAN_MODES.includes(mode);
 
-  const camera = useCamera();
+  const camera = useCamera(mode === 'receipt');
   const productScan = useProductScan(i18n.language);
   const receiptScan = useReceiptScan(i18n.language);
   const plate = usePlateScan();

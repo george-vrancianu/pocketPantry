@@ -1,5 +1,10 @@
 import { Box } from '@pocket-pantry/ui';
 import type { RefObject } from 'react';
+import {
+  RECEIPT_GUIDE_ASPECT,
+  RECEIPT_GUIDE_HEIGHT_FRACTION,
+  RECEIPT_VIEW,
+} from '../../../lib/receiptGuide';
 
 const corner = (
   position: Record<string, number>,
@@ -17,17 +22,21 @@ const edge = '3px solid #FFFFFF';
 type Props = {
   videoRef: RefObject<HTMLVideoElement | null>;
   scanning: boolean;
+  /** Overlay the tall 1:3 receipt guide (and size the preview to match what gets cropped). */
+  receiptGuide?: boolean;
 };
 
 /** The camera preview with corner brackets and the sweeping scan line. */
-export function Viewfinder({ videoRef, scanning }: Props) {
+export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
   return (
     <Box
       sx={{
         position: 'relative',
-        width: 280,
+        width: receiptGuide ? RECEIPT_VIEW.width : 280,
         maxWidth: '100%',
-        height: 300,
+        ...(receiptGuide
+          ? { aspectRatio: `${RECEIPT_VIEW.width} / ${RECEIPT_VIEW.height}` }
+          : { height: 300 }),
         mx: 'auto',
       }}
     >
@@ -47,6 +56,34 @@ export function Viewfinder({ videoRef, scanning }: Props) {
           borderRadius: '20px',
         }}
       />
+      {receiptGuide ? (
+        <Box
+          aria-hidden="true"
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            borderRadius: '20px',
+          }}
+        >
+          <Box
+            data-testid="receipt-guide"
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
+              aspectRatio: String(RECEIPT_GUIDE_ASPECT),
+              transform: 'translate(-50%, -50%)',
+              boxSizing: 'border-box',
+              border: edge,
+              borderRadius: '8px',
+              // Dim everything outside the guide: only what is inside is sent.
+              boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
+            }}
+          />
+        </Box>
+      ) : null}
       <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
         <Box
           sx={corner(
