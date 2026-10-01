@@ -361,7 +361,8 @@ describe('Catalog (integration)', () => {
     const seeded = <T extends { id: string }>(rows: T[]) =>
       rows.filter((row) => row.id[14] === '5');
     const snapshot = async () => ({
-      aisles: await database.select().from(aisles).orderBy(aisles.id),
+      // Seed rows only: other suites insert their own Aisles concurrently.
+      aisles: seeded(await database.select().from(aisles).orderBy(aisles.id)),
       // Seed rows only: other suites add their own Parents/Leaves concurrently.
       parents: (
         await database
