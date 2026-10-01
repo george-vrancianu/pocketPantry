@@ -26,6 +26,8 @@ export type SeedLeaf = {
   ro: string;
   defaultExpiryDays?: number;
   defaultLocation?: Location;
+  /** The Parent's catch-all Leaf for Unmatched Batches: exactly one per Parent. */
+  isOther?: boolean;
 };
 
 export type SeedIngredient = {

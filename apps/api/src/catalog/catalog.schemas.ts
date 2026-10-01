@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ingredientUnit } from '../database/schema';
+import type { ResolvedCatalogDefaults } from './catalog-defaults';
 
 export const CATALOG_LOCALES = ['en', 'ro'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
@@ -18,4 +19,6 @@ export type CatalogSearchResult = {
   defaultUnit: (typeof ingredientUnit.enumValues)[number];
   leafCategory: { id: string; name: string };
   parentCategory: { id: string; name: string; aisle: string };
+  /** Default Expiry (days) and Location, resolved Leaf then Parent. */
+  defaults: ResolvedCatalogDefaults;
 };

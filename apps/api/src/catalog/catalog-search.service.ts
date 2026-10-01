@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
@@ -12,11 +12,10 @@ import {
 import {
   type CatalogLocale,
   type CatalogSearchResult,
-  FALLBACK_LOCALE,
 } from './catalog.schemas';
+import { loadDisplayNames } from './display-names';
+import { resolveCatalogDefaults } from './catalog-defaults';
 import { normalizeName } from './normalize';
-
-type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
 
 @Injectable()
 export class CatalogSearchService {
@@ -68,6 +67,10 @@ export class CatalogSearchService {
         defaultUnit: ingredients.defaultUnit,
         leafId: leafCategories.id,
         leafName: leafCategories.name,
+        leafExpiry: leafCategories.defaultExpiryDays,
+        leafLocation: leafCategories.defaultLocation,
+        parentExpiry: parentCategories.defaultExpiryDays,
+        parentLocation: parentCategories.defaultLocation,
         parentId: parentCategories.id,
         parentName: parentCategories.name,
         aisleId: aisles.id,
@@ -86,14 +89,12 @@ export class CatalogSearchService {
       .where(inArray(ingredients.id, ids));
     const byId = new Map(rows.map((row) => [row.id, row]));
 
-    const names = await this.displayNames(
+    const names = await loadDisplayNames(
+      this.database,
       locale,
       rows.flatMap((row) => [row.id, row.leafId, row.parentId, row.aisleId]),
     );
-    const display = (type: EntityType, id: string, canonical: string) =>
-      names.get(`${type}:${id}:${locale}`) ??
-      names.get(`${type}:${id}:${FALLBACK_LOCALE}`) ??
-      canonical;
+    const display = names.pick;
 
     return ids.flatMap((id) => {
       const row = byId.get(id);
@@ -112,35 +113,18 @@ export class CatalogSearchService {
             name: display('parent_category', row.parentId, row.parentName),
             aisle: display('aisle', row.aisleId, row.aisleName),
           },
+          defaults: resolveCatalogDefaults(
+            {
+              defaultExpiryDays: row.leafExpiry,
+              defaultLocation: row.leafLocation,
+            },
+            {
+              defaultExpiryDays: row.parentExpiry,
+              defaultLocation: row.parentLocation,
+            },
+          ),
         },
       ];
     });
-  }
-
-  private async displayNames(
-    locale: CatalogLocale,
-    entityIds: string[],
-  ): Promise<Map<string, string>> {
-    const rows = await this.database
-      .select({
-        entityType: catalogTranslations.entityType,
-        entityId: catalogTranslations.entityId,
-        locale: catalogTranslations.locale,
-        value: catalogTranslations.value,
-      })
-      .from(catalogTranslations)
-      .where(
-        and(
-          eq(catalogTranslations.kind, 'name'),
-          inArray(catalogTranslations.locale, [locale, FALLBACK_LOCALE]),
-          inArray(catalogTranslations.entityId, [...new Set(entityIds)]),
-        ),
-      );
-    return new Map(
-      rows.map((row) => [
-        `${row.entityType}:${row.entityId}:${row.locale}`,
-        row.value,
-      ]),
-    );
   }
 }

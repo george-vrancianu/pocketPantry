@@ -16,13 +16,13 @@ describe('catalog seed data', () => {
     expect(SEED_PARENTS).toHaveLength(18);
   });
 
-  it('has an "Other" Leaf under every Parent', () => {
+  it('has exactly one is_other Leaf under every Parent', () => {
     for (const parent of SEED_PARENTS) {
       expect(
-        SEED_LEAVES.some(
-          (leaf) => leaf.parent === parent.slug && leaf.slug.endsWith('-other'),
+        SEED_LEAVES.filter(
+          (leaf) => leaf.parent === parent.slug && leaf.isOther,
         ),
-      ).toBe(true);
+      ).toHaveLength(1);
     }
   });
 

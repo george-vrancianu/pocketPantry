@@ -1,3 +1,42 @@
 {
-  "title": "Cămară"
+  "title": "Cămară",
+  "add": "Adaugă lot",
+  "empty": "Cămara este goală. Adaugă primul lot cu butonul +.",
+  "locations": {
+    "fridge": "Frigider",
+    "freezer": "Congelator",
+    "cupboard": "Dulap",
+    "spices": "Mirodenii"
+  },
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "pcs": "buc"
+  },
+  "expiry": {
+    "today": "Astăzi",
+    "expired": "Expirat",
+    "days_one": "{{count}} zi",
+    "days_few": "{{count}} zile",
+    "days_other": "{{count}} de zile"
+  },
+  "unmatched": "Nepotrivit",
+  "form": {
+    "title": "Adaugă în cămară",
+    "cancel": "Anulează",
+    "save": "Adaugă în cămară",
+    "saving": "Se salvează",
+    "quantity": "Cantitate",
+    "unit": "Unitate",
+    "location": "Locație",
+    "expiry": "Data expirării",
+    "description": "Descrierea produsului",
+    "descriptionPlaceholder": "de ex. Grana Padano 200g",
+    "useUnmatched": "Nu e în Catalog? Adaugă \"{{name}}\" ca Nepotrivit",
+    "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
+    "quantityInvalid": "Introdu o cantitate de cel puțin 0,001, cu maximum 3 zecimale.",
+    "pickIngredient": "Alege un ingredient din rezultatele căutării sau adaugă propriul nume ca Nepotrivit."
+  }
 }

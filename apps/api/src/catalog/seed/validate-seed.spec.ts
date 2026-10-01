@@ -20,7 +20,7 @@ const parents: SeedParent[] = [
   },
 ];
 const leaves: SeedLeaf[] = [
-  { slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză' },
+  { slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză', isOther: true },
 ];
 const ingredient = (
   slug: string,
@@ -40,6 +40,25 @@ describe('Catalog seed validation', () => {
         ingredient('b', 'Pear', 'Pară'),
       ]),
     ).toEqual([]);
+  });
+
+  it('flags a Parent without exactly one is_other Leaf', () => {
+    const find = (extra: SeedLeaf[]) =>
+      findSeedProblems({
+        aisles,
+        parents,
+        leaves: extra,
+        ingredients: [],
+      });
+    expect(
+      find([{ slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză' }]),
+    ).toEqual([expect.stringContaining('found 0')]);
+    expect(
+      find([
+        { slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză', isOther: true },
+        { slug: 'm', parent: 'p', en: 'Mother', ro: 'Mamă', isOther: true },
+      ]),
+    ).toEqual([expect.stringContaining('found 2')]);
   });
 
   it('flags two Ingredients whose English names normalise the same', () => {
@@ -88,6 +107,7 @@ describe('Catalog seed validation', () => {
       }),
     ).toEqual([
       expect.stringContaining('unknown Parent "missing"'),
+      expect.stringContaining('found 0'),
       expect.stringContaining('unknown Leaf "nope"'),
     ]);
   });

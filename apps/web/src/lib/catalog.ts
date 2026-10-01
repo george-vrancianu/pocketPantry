@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
 
+export type StorageLocation = 'fridge' | 'freezer' | 'cupboard' | 'spices';
+
 export type CatalogSearchResult = {
+  defaults: { expiryDays: number | null; location: StorageLocation | null };
   id: string;
   name: string;
   defaultUnit: 'g' | 'kg' | 'ml' | 'l' | 'pcs';
