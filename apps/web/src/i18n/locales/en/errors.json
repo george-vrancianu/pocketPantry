@@ -24,6 +24,10 @@
     "unauthorized": "Wrong email or password.",
     "too_many_requests": "Too many attempts. Please wait a moment and try again."
   },
+  "shopping": {
+    "item_not_found": "We could not find that item on the list.",
+    "ingredient_not_found": "We could not find that ingredient."
+  },
   "family": {
     "owner_required": "Only the Owner of the Family can do this."
   }

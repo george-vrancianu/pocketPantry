@@ -1,10 +1,13 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -255,4 +258,68 @@ export const catalogTranslations = pgTable(
       .where(sql`${table.kind} = 'synonym'`),
     index('catalog_translations_lookup_idx').on(table.normalizedValue),
   ],
+);
+
+// Shopping: one active Shopping List per Family (archived ones come with Finish Shopping).
+export const shoppingListStatus = pgEnum('shopping_list_status', [
+  'active',
+  'archived',
+]);
+
+export const shoppingLists = pgTable(
+  'shopping_lists',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id),
+    status: shoppingListStatus('status').notNull().default('active'),
+    ...timestamps,
+  },
+  (table) => [
+    // Exactly one active list per Family.
+    uniqueIndex('shopping_lists_active_family_idx')
+      .on(table.familyId)
+      .where(sql`${table.status} = 'active'`),
+  ],
+);
+
+// A matched Shopping Item points at an Ingredient; an Unmatched one has no
+// `ingredientId` and keeps the typed `name` (with its matching key).
+export const shoppingItems = pgTable(
+  'shopping_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    listId: uuid('list_id')
+      .notNull()
+      .references(() => shoppingLists.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id),
+    name: text('name'),
+    normalizedName: text('normalized_name'),
+    quantity: numeric('quantity', { precision: 12, scale: 3 }),
+    unit: ingredientUnit('unit'),
+    checked: boolean('checked').notNull().default(false),
+    ...timestamps,
+  },
+  (table) => [
+    index('shopping_items_list_idx').on(table.listId),
+    check(
+      'shopping_items_matched_or_named',
+      sql`(${table.ingredientId} IS NOT NULL) <> (${table.name} IS NOT NULL)`,
+    ),
+  ],
+);
+
+// Created now, empty until recipes land in wave 2. `recipeId` has no foreign
+// key yet because the recipes table does not exist.
+export const shoppingItemSourceRecipes = pgTable(
+  'shopping_item_source_recipes',
+  {
+    shoppingItemId: uuid('shopping_item_id')
+      .notNull()
+      .references(() => shoppingItems.id, { onDelete: 'cascade' }),
+    recipeId: uuid('recipe_id').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.shoppingItemId, table.recipeId] })],
 );

@@ -24,6 +24,10 @@
     "unauthorized": "E-mail sau parolă greșită.",
     "too_many_requests": "Prea multe încercări. Așteaptă puțin și încearcă din nou."
   },
+  "shopping": {
+    "item_not_found": "Nu am găsit acel articol în listă.",
+    "ingredient_not_found": "Nu am găsit acel ingredient."
+  },
   "family": {
     "owner_required": "Doar Proprietarul Familiei poate face asta."
   }

@@ -1,0 +1,321 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import {
+  FALLBACK_LOCALE,
+  type CatalogLocale,
+} from '../catalog/catalog.schemas';
+import { normalizeName } from '../catalog/normalize';
+import { ApiException } from '../common/api-exception';
+import { DATABASE } from '../database/database.constants';
+import type { Database } from '../database/database.types';
+import {
+  aisles,
+  catalogTranslations,
+  ingredients,
+  leafCategories,
+  parentCategories,
+  shoppingItems,
+  shoppingLists,
+  user,
+} from '../database/schema';
+import type {
+  AddShoppingItemBody,
+  ShoppingGroupView,
+  ShoppingItemView,
+  ShoppingListView,
+} from './shopping.schemas';
+
+type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+type Executor = Database | Tx;
+
+/**
+ * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
+ * the same unit collapse into one and their quantities add up. Different units
+ * stay on separate lines. A missing quantity adds nothing.
+ */
+export function sumQuantities(
+  existing: number | null,
+  added: number | null,
+): number | null {
+  if (existing === null) return added;
+  if (added === null) return existing;
+  return Math.round((existing + added) * 1000) / 1000;
+}
+
+const itemNotFound = () => new ApiException(404, 'shopping.item_not_found');
+
+@Injectable()
+export class ShoppingService {
+  constructor(@Inject(DATABASE) private readonly database: Database) {}
+
+  async getList(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    const listId = await this.activeListId(this.database, memberId);
+    return this.view(this.database, listId, locale);
+  }
+
+  async addItem(
+    memberId: string,
+    body: AddShoppingItemBody,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    return this.database.transaction(async (tx) => {
+      const listId = await this.activeListId(tx, memberId);
+      // Serialise concurrent adds on one list so merges never duplicate a line.
+      await tx.execute(
+        sql`SELECT 1 FROM ${shoppingLists} WHERE ${shoppingLists.id} = ${listId} FOR UPDATE`,
+      );
+
+      const unit = body.unit ?? null;
+      const quantity = body.quantity ?? null;
+      let identity;
+      let insertValues:
+        { ingredientId: string } | { name: string; normalizedName: string };
+      if (body.ingredientId !== undefined) {
+        const [found] = await tx
+          .select({ id: ingredients.id })
+          .from(ingredients)
+          .where(eq(ingredients.id, body.ingredientId));
+        if (!found) {
+          throw new ApiException(404, 'shopping.ingredient_not_found');
+        }
+        identity = eq(shoppingItems.ingredientId, found.id);
+        insertValues = { ingredientId: found.id };
+      } else {
+        const name = (body.name ?? '').trim();
+        const normalizedName = normalizeName(name);
+        if (!normalizedName) throw new ApiException(400, 'validation_failed');
+        identity = and(
+          isNull(shoppingItems.ingredientId),
+          eq(shoppingItems.normalizedName, normalizedName),
+        );
+        insertValues = { name, normalizedName };
+      }
+
+      const [existing] = await tx
+        .select({ id: shoppingItems.id, quantity: shoppingItems.quantity })
+        .from(shoppingItems)
+        .where(
+          and(
+            eq(shoppingItems.listId, listId),
+            identity,
+            unit === null
+              ? isNull(shoppingItems.unit)
+              : eq(shoppingItems.unit, unit),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        const merged = sumQuantities(
+          existing.quantity === null ? null : Number(existing.quantity),
+          quantity,
+        );
+        // Adding something already bought means it is wanted again.
+        await tx
+          .update(shoppingItems)
+          .set({
+            quantity: merged === null ? null : String(merged),
+            checked: false,
+          })
+          .where(eq(shoppingItems.id, existing.id));
+      } else {
+        await tx.insert(shoppingItems).values({
+          listId,
+          ...insertValues,
+          quantity: quantity === null ? null : String(quantity),
+          unit,
+        });
+      }
+      return this.view(tx, listId, locale);
+    });
+  }
+
+  async setChecked(
+    memberId: string,
+    itemId: string,
+    checked: boolean,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    const listId = await this.activeListId(this.database, memberId);
+    const updated = await this.database
+      .update(shoppingItems)
+      .set({ checked })
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (updated.length === 0) throw itemNotFound();
+    return this.view(this.database, listId, locale);
+  }
+
+  async removeItem(
+    memberId: string,
+    itemId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    const listId = await this.activeListId(this.database, memberId);
+    const removed = await this.database
+      .delete(shoppingItems)
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (removed.length === 0) throw itemNotFound();
+    return this.view(this.database, listId, locale);
+  }
+
+  /** The Family's active list, created on first use. */
+  private async activeListId(
+    executor: Executor,
+    memberId: string,
+  ): Promise<string> {
+    const [member] = await executor
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.id, memberId))
+      .limit(1);
+    if (!member) throw new ApiException(401, 'auth.unauthenticated');
+
+    await executor
+      .insert(shoppingLists)
+      .values({ familyId: member.familyId })
+      .onConflictDoNothing();
+    const [list] = await executor
+      .select({ id: shoppingLists.id })
+      .from(shoppingLists)
+      .where(
+        and(
+          eq(shoppingLists.familyId, member.familyId),
+          eq(shoppingLists.status, 'active'),
+        ),
+      );
+    return list.id;
+  }
+
+  private async view(
+    executor: Executor,
+    listId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    const rows = await executor
+      .select({
+        id: shoppingItems.id,
+        ingredientId: shoppingItems.ingredientId,
+        typedName: shoppingItems.name,
+        canonicalName: ingredients.name,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+        checked: shoppingItems.checked,
+        aisleId: aisles.id,
+        aisleName: aisles.name,
+        aisleSortOrder: aisles.sortOrder,
+      })
+      .from(shoppingItems)
+      .leftJoin(ingredients, eq(shoppingItems.ingredientId, ingredients.id))
+      .leftJoin(
+        leafCategories,
+        eq(ingredients.leafCategoryId, leafCategories.id),
+      )
+      .leftJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .leftJoin(aisles, eq(parentCategories.aisleId, aisles.id))
+      .where(eq(shoppingItems.listId, listId))
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+
+    const names = await this.displayNames(
+      executor,
+      locale,
+      rows.flatMap((row) => [row.ingredientId, row.aisleId]),
+    );
+    const display = (
+      type: 'ingredient' | 'aisle',
+      id: string,
+      canonical: string,
+    ) =>
+      names.get(`${type}:${id}:${locale}`) ??
+      names.get(`${type}:${id}:${FALLBACK_LOCALE}`) ??
+      canonical;
+
+    const groups = new Map<string, ShoppingGroupView>();
+    const unmatchedItems: ShoppingItemView[] = [];
+    for (const row of rows) {
+      const item: ShoppingItemView = {
+        id: row.id,
+        name:
+          row.ingredientId !== null
+            ? display(
+                'ingredient',
+                row.ingredientId,
+                row.canonicalName ?? row.typedName ?? '',
+              )
+            : (row.typedName ?? ''),
+        quantity: row.quantity === null ? null : Number(row.quantity),
+        unit: row.unit,
+        checked: row.checked,
+        unmatched: row.ingredientId === null,
+      };
+      if (row.aisleId === null || row.aisleName === null) {
+        unmatchedItems.push(item);
+        continue;
+      }
+      const group = groups.get(row.aisleId) ?? {
+        aisle: {
+          id: row.aisleId,
+          name: display('aisle', row.aisleId, row.aisleName),
+          sortOrder: row.aisleSortOrder ?? 0,
+        },
+        items: [],
+      };
+      group.items.push(item);
+      groups.set(row.aisleId, group);
+    }
+
+    const ordered = [...groups.values()].sort(
+      (a, b) => (a.aisle?.sortOrder ?? 0) - (b.aisle?.sortOrder ?? 0),
+    );
+    if (unmatchedItems.length > 0) {
+      ordered.push({ aisle: null, items: unmatchedItems });
+    }
+    const checked = rows.filter((row) => row.checked).length;
+    return {
+      id: listId,
+      groups: ordered,
+      summary: { remaining: rows.length - checked, checked },
+    };
+  }
+
+  private async displayNames(
+    executor: Executor,
+    locale: CatalogLocale,
+    entityIds: Array<string | null>,
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(entityIds.filter((id) => id !== null))];
+    if (ids.length === 0) return new Map();
+    const rows = await executor
+      .select({
+        entityType: catalogTranslations.entityType,
+        entityId: catalogTranslations.entityId,
+        locale: catalogTranslations.locale,
+        value: catalogTranslations.value,
+      })
+      .from(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.kind, 'name'),
+          inArray(catalogTranslations.locale, [locale, FALLBACK_LOCALE]),
+          inArray(catalogTranslations.entityId, ids),
+        ),
+      );
+    return new Map(
+      rows.map((row) => [
+        `${row.entityType}:${row.entityId}:${row.locale}`,
+        row.value,
+      ]),
+    );
+  }
+}

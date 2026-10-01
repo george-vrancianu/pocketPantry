@@ -6,13 +6,19 @@ import { useCatalogSearch, type CatalogSearchResult } from '../lib/catalog';
 export type CatalogSearchProps = {
   onSelect: (ingredient: CatalogSearchResult) => void;
   autoFocus?: boolean;
+  /** Called with the text as the Member types it (not on selection). */
+  onQueryChange?: (query: string) => void;
 };
 
 /**
  * Reusable Catalog search (WAI-ARIA combobox with a listbox popup). Names come
  * back in the Member's locale; ArrowUp/Down move, Enter selects, Escape closes.
  */
-export function CatalogSearch({ onSelect, autoFocus }: CatalogSearchProps) {
+export function CatalogSearch({
+  onSelect,
+  autoFocus,
+  onQueryChange,
+}: CatalogSearchProps) {
   const { t, i18n } = useTranslation('catalog');
   const id = useId();
   const listId = `${id}-list`;
@@ -27,6 +33,7 @@ export function CatalogSearch({ onSelect, autoFocus }: CatalogSearchProps) {
 
   const change = (event: ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
+    onQueryChange?.(event.target.value);
     setOpen(true);
     setActiveIndex(-1);
   };

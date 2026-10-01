@@ -3,6 +3,8 @@ import type { LucideProps } from 'lucide-react';
 import {
   Camera,
   Check,
+  Plus,
+  X,
   Settings,
   House,
   LayoutGrid,
@@ -28,3 +30,5 @@ export const CustomiseIcon = withDefaults(LayoutGrid);
 export const SignOutIcon = withDefaults(LogOut);
 export const CheckIcon = withDefaults(Check);
 export const SettingsIcon = withDefaults(Settings);
+export const PlusIcon = withDefaults(Plus);
+export const CloseIcon = withDefaults(X);

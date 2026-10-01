@@ -8,6 +8,7 @@ import { validateEnv } from './config/env';
 import { DatabaseModule } from './database/database.module';
 import { FamilyModule } from './family/family.module';
 import { HealthModule } from './health/health.module';
+import { ShoppingModule } from './shopping/shopping.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { HealthModule } from './health/health.module';
     FamilyModule,
     HealthModule,
     CatalogModule,
+    ShoppingModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: ApiExceptionFilter }],
 })
