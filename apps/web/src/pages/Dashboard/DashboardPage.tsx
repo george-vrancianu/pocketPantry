@@ -1,16 +1,23 @@
 import {
+  Alert,
   Box,
+  Button,
   CustomiseIcon,
   IconButton,
   SettingsIcon,
+  Spinner,
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../i18n/translateApiError';
+import { useDashboardLayout } from '../../lib/dashboard';
 import { greetingKeyForHour } from '../../lib/greeting';
+import { WIDGET_REGISTRY } from './widgets/registry';
 
-/** The Dashboard: date, greeting, Customise. Widgets arrive in a later ticket. */
+/** The Dashboard: date, greeting, Customise, and the Member's grid of Widgets. */
 export function DashboardPage() {
   const { t, i18n } = useTranslation('dashboard');
+  const layout = useDashboardLayout();
   const now = new Date();
   const date = new Intl.DateTimeFormat(i18n.language, {
     weekday: 'long',
@@ -19,37 +26,73 @@ export function DashboardPage() {
   }).format(now);
 
   return (
-    <Box
-      component="header"
-      sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: '12px',
-        pt: '28px',
-        pb: '18px',
-      }}
-    >
-      <Box>
-        <Typography
-          variant="meta"
-          color="text.secondary"
-          sx={{ fontWeight: 600 }}
+    <>
+      <Box
+        component="header"
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '12px',
+          pt: '28px',
+          pb: '18px',
+        }}
+      >
+        <Box>
+          <Typography
+            variant="meta"
+            color="text.secondary"
+            sx={{ fontWeight: 600 }}
+          >
+            {date}
+          </Typography>
+          <Typography variant="h1" sx={{ mt: '4px' }}>
+            {t(`greeting.${greetingKeyForHour(now.getHours())}`)}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: '8px' }}>
+          <IconButton label={t('settings')} href="/settings">
+            <SettingsIcon size={20} />
+          </IconButton>
+          <IconButton label={t('customise')} href="/customise">
+            <CustomiseIcon size={20} />
+          </IconButton>
+        </Box>
+      </Box>
+      {layout.isPending ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Spinner label={t('loading')} />
+        </Box>
+      ) : layout.error ? (
+        <Box>
+          <Alert severity="error">{translateApiError(t, layout.error)}</Alert>
+          <Button
+            variant="text"
+            onClick={() => void layout.refetch()}
+            sx={{ mt: 1 }}
+          >
+            {t('retry')}
+          </Button>
+        </Box>
+      ) : (
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: '12px',
+            pb: 2,
+          }}
         >
-          {date}
-        </Typography>
-        <Typography variant="h1" sx={{ mt: '4px' }}>
-          {t(`greeting.${greetingKeyForHour(now.getHours())}`)}
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', gap: '8px' }}>
-        <IconButton label={t('settings')} href="/settings">
-          <SettingsIcon size={20} />
-        </IconButton>
-        <IconButton label={t('customise')} href="/customise">
-          <CustomiseIcon size={20} />
-        </IconButton>
-      </Box>
-    </Box>
+          {layout.data.widgets.map(({ id, type, size }) => {
+            // A layout saved by a newer app version may hold a type this one lacks.
+            const definition = WIDGET_REGISTRY[type] as
+              (typeof WIDGET_REGISTRY)[typeof type] | undefined;
+            if (!definition) return null;
+            const Widget = definition.component;
+            return <Widget key={id} size={size} />;
+          })}
+        </Box>
+      )}
+    </>
   );
 }
