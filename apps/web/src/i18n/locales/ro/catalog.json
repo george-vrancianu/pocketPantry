@@ -1,0 +1,9 @@
+{
+  "search": {
+    "label": "Caută ingrediente",
+    "placeholder": "Scrie un ingredient, de ex. parmezan",
+    "searching": "Se caută",
+    "noResults": "Niciun ingredient găsit",
+    "resultCount": "Rezultate: {{count}}"
+  }
+}

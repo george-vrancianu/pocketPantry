@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -124,38 +125,134 @@ export const verification = pgTable(
   (table) => [index('verification_identifier_idx').on(table.identifier)],
 );
 
-// TODO(ticket #4): placeholder catalog tables, copied from retzetar only so the
-// scan services and IngredientCatalogService compile. Ticket #4 replaces them
-// with the two-level Category tree, translations, and Aisle ordering.
-export const ingredientCategories = pgTable(
-  'ingredient_categories',
+// Catalog: two-level Categories, Ingredients, and translated names/Synonyms.
+export const storageLocation = pgEnum('storage_location', [
+  'fridge',
+  'freezer',
+  'cupboard',
+  'spices',
+]);
+
+export const ingredientUnit = pgEnum('ingredient_unit', [
+  'g',
+  'kg',
+  'ml',
+  'l',
+  'pcs',
+]);
+
+export const catalogEntityType = pgEnum('catalog_entity_type', [
+  'aisle',
+  'parent_category',
+  'leaf_category',
+  'ingredient',
+]);
+
+export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
+
+// An Aisle is an ordered shop section; several Parent Categories may share one.
+// `name` is the canonical English name; display names live in catalog_translations.
+export const aisles = pgTable(
+  'aisles',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: uuid('id').primaryKey(),
     name: text('name').notNull(),
     normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('ingredient_categories_normalized_name_idx').on(
+    uniqueIndex('aisles_normalized_name_idx').on(table.normalizedName),
+    uniqueIndex('aisles_sort_order_idx').on(table.sortOrder),
+  ],
+);
+
+// `name` is the canonical English name; `normalizedName` is its matching key.
+// A Parent Category carries the Aisle and its shop-walk sort order.
+export const parentCategories = pgTable(
+  'parent_categories',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    aisleId: uuid('aisle_id')
+      .notNull()
+      .references(() => aisles.id),
+    defaultExpiryDays: integer('default_expiry_days'),
+    defaultLocation: storageLocation('default_location'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('parent_categories_normalized_name_idx').on(
       table.normalizedName,
     ),
+    index('parent_categories_aisle_idx').on(table.aisleId),
+  ],
+);
+
+// Null Default Expiry / default Location fall back to the Parent Category.
+export const leafCategories = pgTable(
+  'leaf_categories',
+  {
+    id: uuid('id').primaryKey(),
+    parentId: uuid('parent_id')
+      .notNull()
+      .references(() => parentCategories.id),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    defaultExpiryDays: integer('default_expiry_days'),
+    defaultLocation: storageLocation('default_location'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('leaf_categories_normalized_name_idx').on(table.normalizedName),
+    index('leaf_categories_parent_idx').on(table.parentId),
   ],
 );
 
 export const ingredients = pgTable(
   'ingredients',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
+    id: uuid('id').primaryKey(),
+    leafCategoryId: uuid('leaf_category_id')
+      .notNull()
+      .references(() => leafCategories.id),
     name: text('name').notNull(),
     normalizedName: text('normalized_name').notNull(),
-    defaultUnit: text('default_unit').notNull(),
-    categoryId: uuid('category_id')
-      .notNull()
-      .references(() => ingredientCategories.id),
+    defaultUnit: ingredientUnit('default_unit').notNull(),
     ...timestamps,
   },
   (table) => [
     uniqueIndex('ingredients_normalized_name_idx').on(table.normalizedName),
-    index('ingredients_category_idx').on(table.categoryId),
+    index('ingredients_leaf_category_idx').on(table.leafCategoryId),
+  ],
+);
+
+// Display names and Synonyms per entity and locale. `entityId` is polymorphic
+// (selected by `entityType`), so it carries no foreign key.
+export const catalogTranslations = pgTable(
+  'catalog_translations',
+  {
+    id: uuid('id').primaryKey(),
+    entityType: catalogEntityType('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    locale: text('locale').notNull(),
+    kind: translationKind('kind').notNull(),
+    value: text('value').notNull(),
+    normalizedValue: text('normalized_value').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    // One display name per entity and locale, unique within the locale.
+    uniqueIndex('catalog_translations_display_entity_idx')
+      .on(table.entityType, table.entityId, table.locale)
+      .where(sql`${table.kind} = 'name'`),
+    uniqueIndex('catalog_translations_display_value_idx')
+      .on(table.entityType, table.locale, table.normalizedValue)
+      .where(sql`${table.kind} = 'name'`),
+    uniqueIndex('catalog_translations_synonym_idx')
+      .on(table.entityType, table.entityId, table.locale, table.normalizedValue)
+      .where(sql`${table.kind} = 'synonym'`),
+    index('catalog_translations_lookup_idx').on(table.normalizedValue),
   ],
 );
