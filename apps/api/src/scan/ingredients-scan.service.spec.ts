@@ -115,6 +115,17 @@ describe('IngredientsScanService', () => {
     });
   });
 
+  it('tells the client for a very large count too, not a result_invalid', async () => {
+    respond({
+      items: Array.from({ length: 1000 }, () => item()),
+    });
+    await expect(analyze()).rejects.toMatchObject({
+      status: 422,
+      code: 'scan.too_many_items',
+      params: { max: INGREDIENTS_SCAN_MAX_ITEMS },
+    });
+  });
+
   it('passes a provider failure through unchanged', async () => {
     generate.mockRejectedValue(
       new ApiException(502, 'scan.provider_unavailable'),

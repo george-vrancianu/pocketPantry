@@ -2,7 +2,6 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { ApiError } from '../../../lib/api';
 import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
@@ -31,7 +30,8 @@ export function useScanScreen() {
   const modeScan = mode === 'ingredients' ? ingredientsScan : productScan;
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
-  const [resizeError, setResizeError] = useState<ApiError | null>(null);
+  // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
+  const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const reading = resizing || modeScan.isPending;
@@ -39,13 +39,13 @@ export function useScanScreen() {
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
   const scanImage = async (source: Blob) => {
-    setResizeError(null);
+    setLocalError(null);
     setResizing(true);
     let image: string;
     try {
       image = await resizeImage(source);
     } catch {
-      setResizeError(new ApiError('scan.image_invalid', 400));
+      setLocalError('scan.image_invalid');
       return;
     } finally {
       setResizing(false);
@@ -53,7 +53,7 @@ export function useScanScreen() {
     modeScan.mutate(image, {
       onSuccess: ({ lines }) => {
         if (lines.length === 0) {
-          setResizeError(new ApiError('scan.nothing_found', 200));
+          setLocalError('scan.nothing_found');
           return;
         }
         startReview({ mode, lines });
@@ -79,7 +79,11 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const error = resizeError ?? modeScan.error;
+  const error = localError
+    ? t(`errors:${localError}`)
+    : modeScan.error
+      ? translateApiError(t, modeScan.error)
+      : null;
 
   return {
     mode,
@@ -89,11 +93,11 @@ export function useScanScreen() {
     reading,
     controlsDisabled: busy,
     fileInput,
-    error: error ? translateApiError(t, error) : null,
+    error,
     setMode: (next: ScanMode) => {
       productScan.reset();
       ingredientsScan.reset();
-      setResizeError(null);
+      setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },
     shoot,

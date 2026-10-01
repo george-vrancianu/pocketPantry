@@ -188,6 +188,12 @@ describe('Ingredients Scan (integration)', () => {
         params: { max: INGREDIENTS_SCAN_MAX_ITEMS },
       });
     }
+    respondWith(Array.from({ length: 1000 }, () => item()));
+    const huge = await scan(cookie, { ingredientsImage: IMAGE }).expect(422);
+    expect(huge.body).toEqual({
+      code: 'scan.too_many_items',
+      params: { max: INGREDIENTS_SCAN_MAX_ITEMS },
+    });
     respondWith([item()]);
     await scan(cookie, { ingredientsImage: IMAGE }).expect(201);
   });

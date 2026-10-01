@@ -8,7 +8,7 @@
   "modes": "Mod de scanare",
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
-  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor funcționează acum.",
+  "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor și a ingredientelor funcționează acum.",
   "mode": {
     "product": "Produs",
     "receipt": "Bon",

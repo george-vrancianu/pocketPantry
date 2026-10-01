@@ -4,8 +4,13 @@ import { imageDataUrlSchema } from './product-scan.schemas';
 export const ingredientsScanSchema = z.object({
   ingredientsImage: imageDataUrlSchema,
 });
-/** The most items one Ingredients Scan returns; a photo with more is rejected with `scan.too_many_items`. */
-export const INGREDIENTS_SCAN_MAX_ITEMS = 100;
+/**
+ * The most items one Ingredients Scan returns; a photo with more is rejected with
+ * `scan.too_many_items`. Sized to the provider's `maxOutputTokens: 8000` budget
+ * (each item is ~60-80 output tokens, so ~100-130 items fit): 50 leaves headroom
+ * and keeps the Review screen usable.
+ */
+export const INGREDIENTS_SCAN_MAX_ITEMS = 50;
 
 const item = z.object({
   productName: z.string().trim().min(1).max(120),
@@ -17,8 +22,9 @@ const item = z.object({
   confidence: z.number().min(0).max(1),
 });
 export const ingredientsScanModelResultSchema = z.object({
-  // The cap above is enforced by the service, with its own error, not by parsing.
-  items: z.array(item).max(INGREDIENTS_SCAN_MAX_ITEMS * 3),
+  // No upper bound here: the cap above is enforced by the service with its own
+  // error for any count, so a huge result is `too_many_items`, not `result_invalid`.
+  items: z.array(item),
 });
 export const ingredientsScanResultSchema = z.object({
   items: z

@@ -100,13 +100,13 @@ describe('Ingredients Scan on the Scan screen', () => {
     renderIngredients({
       'POST /api/scan/ingredients': () =>
         Response.json(
-          { code: 'scan.too_many_items', params: { max: 100 } },
+          { code: 'scan.too_many_items', params: { max: 50 } },
           { status: 422 },
         ),
     });
     await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'more than 100 items',
+      'more than 50 items',
     );
   });
 });
