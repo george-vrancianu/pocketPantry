@@ -10,11 +10,21 @@ import { Injectable } from '@nestjs/common';
  * could land on another instance. Entries live as long as their token could
  * still verify, and are pruned on access.
  */
+/** Total attempts per title per token, failures included. */
+export const MAX_ATTEMPTS = 3;
+
 @Injectable()
 export class PlateTokenUses {
-  private readonly spent = new Map<string, number>();
+  private readonly spent = new Map<
+    string,
+    { expiresAt: number; attempts: number; held: boolean }
+  >();
 
-  /** Marks the title spent. False if it already was. Synchronous, so concurrent requests cannot both win. */
+  /**
+   * Marks the title spent. False if it already is, or if it was already
+   * attempted MAX_ATTEMPTS times (a released use may be retried, but not
+   * without limit). Synchronous, so concurrent requests cannot both win.
+   */
   claim(
     signature: string,
     title: string,
@@ -23,14 +33,20 @@ export class PlateTokenUses {
   ): boolean {
     this.prune(now);
     const key = this.key(signature, title);
-    if (this.spent.has(key)) return false;
-    this.spent.set(key, expiresAt);
+    const entry = this.spent.get(key);
+    if (entry && (entry.held || entry.attempts >= MAX_ATTEMPTS)) return false;
+    this.spent.set(key, {
+      expiresAt,
+      attempts: (entry?.attempts ?? 0) + 1,
+      held: true,
+    });
     return true;
   }
 
-  /** Gives the use back, e.g. after the provider failed. */
+  /** Gives the use back, e.g. after the provider failed. The attempt still counts. */
   release(signature: string, title: string): void {
-    this.spent.delete(this.key(signature, title));
+    const entry = this.spent.get(this.key(signature, title));
+    if (entry) entry.held = false;
   }
 
   get size(): number {
@@ -42,8 +58,8 @@ export class PlateTokenUses {
   }
 
   private prune(now: number) {
-    for (const [key, expiresAt] of this.spent) {
-      if (now > expiresAt) this.spent.delete(key);
+    for (const [key, entry] of this.spent) {
+      if (now > entry.expiresAt) this.spent.delete(key);
     }
   }
 }

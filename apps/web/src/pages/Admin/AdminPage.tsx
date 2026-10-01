@@ -5,6 +5,7 @@ import { CategoryEditor } from './components/CategoryEditor';
 import { CategoryTree } from './components/CategoryTree';
 import { IngredientEditor } from './components/IngredientEditor';
 import { IngredientList } from './components/IngredientList';
+import { UnmatchedQueue } from './components/UnmatchedQueue';
 import { useAdminScreen } from './hooks/useAdminScreen';
 
 export function AdminPage() {
@@ -42,6 +43,7 @@ export function AdminPage() {
           options={[
             { value: 'ingredients', label: t('admin:tabs.ingredients') },
             { value: 'categories', label: t('admin:tabs.categories') },
+            { value: 'unmatched', label: t('admin:tabs.unmatched') },
           ]}
         />
         {screen.tab === 'ingredients' ? (
@@ -52,6 +54,8 @@ export function AdminPage() {
             onCreate={() => screen.edit({ type: 'ingredient', id: null })}
             onEdit={(id) => screen.edit({ type: 'ingredient', id })}
           />
+        ) : screen.tab === 'unmatched' ? (
+          <UnmatchedQueue catalog={catalog} />
         ) : (
           <CategoryTree
             catalog={catalog}

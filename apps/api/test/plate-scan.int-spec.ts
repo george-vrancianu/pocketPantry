@@ -1,8 +1,12 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { eq, ilike } from 'drizzle-orm';
 import request from 'supertest';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { ApiException } from '../src/common/api-exception';
+import { DATABASE } from '../src/database/database.constants';
+import type { Database } from '../src/database/database.types';
+import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
@@ -400,6 +404,19 @@ describe('Plate Scan (integration)', () => {
         await refuse(cookie, 'Pancakes', token);
       });
 
+      it('refuses after 3 attempts in total, even when each failed', async () => {
+        const cookie = await signUp();
+        const token = await tokenFor(cookie);
+        respondWith({ items: [item({ matchedIngredientId: 'milk' })] });
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
+        await ingredients(cookie, 'Pancakes', 'en', token).expect(502);
+        respondWith({ items: [item()] });
+        prompts.length = 0;
+        await refuse(cookie, 'Pancakes', token);
+        expect(prompts).toHaveLength(0);
+      });
+
       it('is the same Scan: loading Ingredients does not touch the Scan Cap', async () => {
         const cookie = await signUp();
         const token = await tokenFor(cookie);
@@ -454,6 +471,52 @@ describe('Plate Scan (integration)', () => {
       );
       expect(items).toHaveLength(3);
       expect(await listOf(cookie)).toEqual(response.body);
+    });
+
+    describe('Unmatched queue', () => {
+      const entriesFor = async (rawName: string) =>
+        app
+          .get<Database>(DATABASE)
+          .select({
+            source: unmatchedEntries.source,
+            locale: unmatchedEntries.locale,
+            shoppingItemId: unmatchedEntries.shoppingItemId,
+          })
+          .from(unmatchedEntries)
+          .where(ilike(unmatchedEntries.rawName, rawName));
+
+      it('queues a new free-text dish line once, with source plate and the request locale; a merge adds none; a matched line adds none', async () => {
+        const cookie = await signUp();
+        const raw = `Zzp pixie ${Date.now()}`;
+        await post(
+          cookie,
+          'shopping-list/items/bulk',
+          {
+            items: [
+              { name: raw, source: 'plate', quantity: 1, unit: 'pcs' },
+              { ingredientId: milk, quantity: 100, unit: 'ml' },
+            ],
+          },
+          'ro',
+        ).expect(200);
+        const first = await entriesFor(raw);
+        expect(first).toHaveLength(1);
+        expect(first[0]).toMatchObject({ source: 'plate', locale: 'ro' });
+        expect(first[0].shoppingItemId).not.toBeNull();
+
+        await post(
+          cookie,
+          'shopping-list/items/bulk',
+          { items: [{ name: raw, source: 'plate', quantity: 2, unit: 'pcs' }] },
+          'ro',
+        ).expect(200);
+        expect(await entriesFor(raw)).toHaveLength(1);
+
+        await app
+          .get<Database>(DATABASE)
+          .delete(unmatchedEntries)
+          .where(eq(unmatchedEntries.rawName, raw));
+      });
     });
 
     it('is all or none: one bad line leaves the list untouched', async () => {

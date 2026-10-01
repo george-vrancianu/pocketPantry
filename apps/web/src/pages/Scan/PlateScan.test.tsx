@@ -229,7 +229,7 @@ describe('Plate Scan', () => {
     ).toEqual({
       items: [
         { ingredientId: 'milk-id', quantity: 200, unit: 'ml' },
-        { name: 'Pixie dust', quantity: 2, unit: 'pcs' },
+        { name: 'Pixie dust', source: 'plate', quantity: 2, unit: 'pcs' },
       ],
     });
     expect(calls.map((c) => c.key)).not.toContain(

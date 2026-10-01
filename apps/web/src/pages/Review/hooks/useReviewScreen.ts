@@ -70,7 +70,15 @@ export function useReviewScreen() {
     if (shopping) {
       addShoppingItems.mutate(lines.map(toNewShoppingItem), done('/shopping'));
     } else {
-      addBatches.mutate(lines.map(toNewBatch), done('/pantry'));
+      const mode = draft?.mode;
+      const source = mode && mode !== 'plate' ? mode : undefined;
+      addBatches.mutate(
+        lines.map(toNewBatch).map((batch) =>
+          // The queue only records the source of Unmatched names.
+          batch.rawName && source ? { ...batch, source } : batch,
+        ),
+        done('/pantry'),
+      );
     }
   };
   const discard = () => {

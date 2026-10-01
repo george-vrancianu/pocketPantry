@@ -54,7 +54,7 @@ export function toNewShoppingItem(line: ReviewLine): NewShoppingItem {
   return {
     ...(line.match
       ? { ingredientId: line.match.id }
-      : { name: line.name.trim() }),
+      : { name: line.name.trim(), source: 'plate' as const }),
     ...(quantity === null ? {} : { quantity, unit: line.unit }),
   };
 }

@@ -18,6 +18,7 @@ import {
   shoppingLists,
   user,
 } from '../database/schema';
+import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
   AddShoppingItemBody,
   ShoppingGroupView,
@@ -73,7 +74,7 @@ export class ShoppingService {
     return this.database.transaction(async (tx) => {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const listId = await this.lockActiveList(tx, memberId);
-      for (const body of bodies) await this.mergeItem(tx, listId, body);
+      for (const body of bodies) await this.mergeItem(tx, listId, body, locale);
       return this.view(tx, listId, locale);
     });
   }
@@ -82,6 +83,7 @@ export class ShoppingService {
     tx: Tx,
     listId: string,
     body: AddShoppingItemBody,
+    locale: CatalogLocale,
   ): Promise<void> {
     const unit = body.unit ?? null;
     const quantity = body.quantity ?? null;
@@ -137,12 +139,26 @@ export class ShoppingService {
         })
         .where(eq(shoppingItems.id, existing.id));
     } else {
-      await tx.insert(shoppingItems).values({
-        listId,
-        ...insertValues,
-        quantity: quantity === null ? null : String(quantity),
-        unit,
-      });
+      const [inserted] = await tx
+        .insert(shoppingItems)
+        .values({
+          listId,
+          ...insertValues,
+          quantity: quantity === null ? null : String(quantity),
+          unit,
+        })
+        .returning({ id: shoppingItems.id });
+      // Only newly inserted Unmatched names are queued; merges add no entry.
+      if ('name' in insertValues) {
+        await recordUnmatched(tx, [
+          {
+            rawName: insertValues.name,
+            locale,
+            source: body.source ?? 'manual',
+            shoppingItemId: inserted.id,
+          },
+        ]);
+      }
     }
   }
 

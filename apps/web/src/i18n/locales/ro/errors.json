@@ -72,5 +72,10 @@
     "cannot_transfer_to_self": "Ești deja Proprietarul.",
     "member_not_found": "Această persoană nu este Membru al Familiei tale.",
     "concurrent_change": "Familia s-a schimbat în timp ce făceai asta. Încearcă din nou."
+  },
+  "unmatched": {
+    "name_taken": "Acest nume aparține deja altui Ingredient. Rezolvă-l către acel Ingredient sau redenumește-l mai întâi pe celălalt.",
+    "not_found": "Numele nu mai este în coadă. Poate că cineva l-a rezolvat deja.",
+    "concurrent_change": "Listele s-au schimbat în timpul rezolvării. Încearcă din nou."
   }
 }

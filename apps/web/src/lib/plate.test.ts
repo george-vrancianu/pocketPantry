@@ -47,7 +47,12 @@ describe('toNewShoppingItem', () => {
   it('sends an Unmatched line by its trimmed name', () => {
     expect(
       toNewShoppingItem(line({ match: null, name: ' Pixie dust ' })),
-    ).toEqual({ name: 'Pixie dust', quantity: 200, unit: 'ml' });
+    ).toEqual({
+      name: 'Pixie dust',
+      source: 'plate',
+      quantity: 200,
+      unit: 'ml',
+    });
   });
 
   it('leaves quantity and unit out when the quantity is blank', () => {

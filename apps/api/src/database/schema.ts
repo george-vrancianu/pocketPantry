@@ -377,6 +377,57 @@ export const batches = pgTable(
   ],
 );
 
+// Where an Unmatched name was saved from: a Scan Mode, a typed entry, or Finish Shopping.
+export const unmatchedSource = pgEnum('unmatched_source', [
+  'product',
+  'receipt',
+  'plate',
+  'ingredients',
+  'manual',
+  'finish_shopping',
+]);
+
+// The Admin review queue: one row per Unmatched Batch or Shopping Item, recording the
+// raw text, its locale and source. The queue groups rows by `normalizedName`.
+// Resolving a name deletes its rows; dismissing keeps them with `dismissedAt` set.
+// Rows vanish with the Batch or Shopping Item they were saved on.
+export const unmatchedEntries = pgTable(
+  'unmatched_entries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    normalizedName: text('normalized_name').notNull(),
+    rawName: text('raw_name').notNull(),
+    locale: text('locale').notNull(),
+    source: unmatchedSource('source').notNull(),
+    batchId: uuid('batch_id').references(() => batches.id, {
+      onDelete: 'cascade',
+    }),
+    shoppingItemId: uuid('shopping_item_id').references(
+      () => shoppingItems.id,
+      {
+        onDelete: 'cascade',
+      },
+    ),
+    dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index('unmatched_entries_normalized_name_idx').on(table.normalizedName),
+    uniqueIndex('unmatched_entries_batch_idx')
+      .on(table.batchId)
+      .where(sql`${table.batchId} IS NOT NULL`),
+    uniqueIndex('unmatched_entries_shopping_item_idx')
+      .on(table.shoppingItemId)
+      .where(sql`${table.shoppingItemId} IS NOT NULL`),
+    check(
+      'unmatched_entries_one_target',
+      sql`(${table.batchId} IS NOT NULL) <> (${table.shoppingItemId} IS NOT NULL)`,
+    ),
+  ],
+);
+
 // Scan Cap bookkeeping: one row per Member per UTC day, counting Scans that reached the provider.
 export const scanUsage = pgTable(
   'scan_usage',

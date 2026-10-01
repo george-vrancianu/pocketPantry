@@ -9,7 +9,7 @@ import {
   type CategoryKind,
 } from '../../../lib/admin';
 
-export type AdminTab = 'ingredients' | 'categories';
+export type AdminTab = 'ingredients' | 'categories' | 'unmatched';
 export type Editing =
   | { type: 'ingredient'; id: string | null }
   | { type: 'category'; kind: CategoryKind; id: string | null };
