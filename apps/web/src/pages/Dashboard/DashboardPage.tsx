@@ -12,12 +12,14 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
 import { useDashboardLayout } from '../../lib/dashboard';
 import { greetingKeyForHour } from '../../lib/greeting';
+import { useGridColumns } from '../../lib/layoutColumns';
 import { WIDGET_REGISTRY } from './widgets/registry';
 
 /** The Dashboard: date, greeting, Customise, and the Member's grid of Widgets. */
 export function DashboardPage() {
   const { t, i18n } = useTranslation('dashboard');
   const layout = useDashboardLayout();
+  const columns = useGridColumns();
   const now = new Date();
   const date = new Intl.DateTimeFormat(i18n.language, {
     weekday: 'long',
@@ -78,8 +80,9 @@ export function DashboardPage() {
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            gridAutoFlow: 'dense',
+            gap: { xs: '12px', md: '16px' },
             pb: 2,
           }}
         >

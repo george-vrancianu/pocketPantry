@@ -10,7 +10,7 @@ export const WIDGET_TYPES = [
   'budget',
   'nutrition',
 ] as const;
-export const WIDGET_SIZES = ['small', 'wide'] as const;
+export const WIDGET_SIZES = ['small', 'wide', 'tall'] as const;
 
 export const widgetInstance = z.object({
   /** Client-chosen, unique within the layout, so one type can appear twice. */

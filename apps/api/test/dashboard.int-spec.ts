@@ -77,6 +77,7 @@ describe('Dashboard layout (integration)', () => {
       { id: 'a', type: 'budget', size: 'small' },
       { id: 'b', type: 'meal-plan', size: 'wide' },
       { id: 'c', type: 'budget', size: 'wide' },
+      { id: 'd', type: 'meal-plan', size: 'tall' },
     ];
 
     await call('put', cookie).send({ widgets: layout }).expect(200);

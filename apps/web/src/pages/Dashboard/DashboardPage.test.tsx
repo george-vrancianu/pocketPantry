@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubViewport } from '../../test/viewport';
 import { DashboardPage } from './DashboardPage';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -36,6 +37,41 @@ describe('DashboardPage', () => {
       'Quick scan',
       'Budget',
     ]);
+  });
+
+  it.each([
+    [390, 'repeat(2, minmax(0, 1fr))'],
+    [768, 'repeat(3, minmax(0, 1fr))'],
+    [1280, 'repeat(4, minmax(0, 1fr))'],
+  ])(
+    'lays Widgets out in the right columns at %ipx',
+    async (width, columns) => {
+      stubViewport(width);
+      stub({ widgets: [{ id: 'a', type: 'budget', size: 'small' }] });
+
+      renderWithProviders(<DashboardPage />);
+
+      const widget = await screen.findByRole('region', { name: 'Budget' });
+      const grid = widget.parentElement as HTMLElement;
+      expect(getComputedStyle(grid).gridTemplateColumns).toBe(columns);
+    },
+  );
+
+  it('shows a tall Widget two rows high only from 900px, and keeps its saved size', async () => {
+    stub({ widgets: [{ id: 'a', type: 'meal-plan', size: 'tall' }] });
+
+    stubViewport(1280);
+    const wide = renderWithProviders(<DashboardPage />);
+    let card = await screen.findByRole('region', { name: 'Meal plan' });
+    expect(getComputedStyle(card).gridRow).toBe('span 2');
+    expect(getComputedStyle(card).gridColumn).toBe('span 2');
+    wide.unmount();
+
+    stubViewport(768);
+    renderWithProviders(<DashboardPage />);
+    card = await screen.findByRole('region', { name: 'Meal plan' });
+    expect(getComputedStyle(card).gridRow).not.toBe('span 2');
+    expect(getComputedStyle(card).gridColumn).toBe('span 2');
   });
 
   it('keeps the Customise button in the header', async () => {
