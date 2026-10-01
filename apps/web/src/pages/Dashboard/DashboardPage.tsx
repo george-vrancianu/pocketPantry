@@ -81,7 +81,13 @@ export function DashboardPage() {
           sx={{
             display: 'grid',
             gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            gridAutoFlow: 'dense',
+            // Dense packing reorders cards on screen relative to the DOM, so use
+            // it only on the 4-column grid, where tall cards leave gaps. On the
+            // phone and 3-column grid visual order must match saved and tab
+            // order (WCAG 1.3.2, 2.4.3).
+            gridAutoFlow: columns === 4 ? 'dense' : 'row',
+            // Tall cards span two rows: 2 x 150 + 16 gap = 316px, as in the mockup.
+            gridAutoRows: columns === 4 ? 'minmax(150px, auto)' : undefined,
             gap: { xs: '12px', md: '16px' },
             pb: 2,
           }}
@@ -92,7 +98,7 @@ export function DashboardPage() {
               (typeof WIDGET_REGISTRY)[typeof type] | undefined;
             if (!definition) return null;
             const Widget = definition.component;
-            return <Widget key={id} size={size} />;
+            return <Widget key={id} size={size} columns={columns} />;
           })}
         </Box>
       )}

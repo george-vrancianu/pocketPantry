@@ -3,12 +3,14 @@ import type { ElementType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { WidgetSize } from '../../../lib/dashboard';
-import { useGridColumns, widgetSpan } from '../../../lib/layoutColumns';
+import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 
 type Props = {
   /** Accessible name of the card, also its visible title in most Widgets. */
   label: string;
   size: WidgetSize;
+  /** The Dashboard grid's column count, passed down by the page. */
+  columns: GridColumns;
   tone?: 'surface' | 'butter';
   /** Makes the whole card a link, as the Shopping and Pantry Stock Widgets are. */
   to?: string;
@@ -24,6 +26,7 @@ type Props = {
 export function WidgetCard({
   label,
   size,
+  columns,
   tone = 'surface',
   to,
   isLoading = false,
@@ -32,7 +35,7 @@ export function WidgetCard({
   children,
 }: Props) {
   const { t } = useTranslation('dashboard');
-  const span = widgetSpan(size, useGridColumns());
+  const span = widgetSpan(size, columns);
   const butter = tone === 'butter';
   const linked = Boolean(to) && !isLoading && !error;
   const Component: ElementType = linked ? Link : 'section';
@@ -47,7 +50,7 @@ export function WidgetCard({
         gridRow: `span ${span.rows}`,
         display: 'flex',
         flexDirection: 'column',
-        minHeight: span.rows === 2 ? 296 : size === 'small' ? 136 : undefined,
+        minHeight: size === 'small' ? 136 : undefined,
         boxSizing: 'border-box',
         p: padding,
         borderRadius: `${tokens.radius.widget}px`,

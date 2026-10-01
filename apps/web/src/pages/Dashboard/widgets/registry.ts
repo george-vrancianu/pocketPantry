@@ -51,7 +51,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   'meal-plan': {
     component: MealPlanWidget,
     nameKey: 'widgets.mealPlan.title',
-    sizes: ['wide', 'tall'],
+    sizes: ['wide'],
     defaultSize: 'wide',
   },
   budget: {

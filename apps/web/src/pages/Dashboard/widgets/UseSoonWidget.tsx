@@ -9,7 +9,7 @@ import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
 /** The three soonest-expiring Batches with their ExpiryChips. */
-export function UseSoonWidget({ size }: WidgetProps) {
+export function UseSoonWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = new Date();
   const batches = useBatches(i18n.language, today);
@@ -19,6 +19,7 @@ export function UseSoonWidget({ size }: WidgetProps) {
     <WidgetCard
       label={t('widgets.useSoon.title')}
       size={size}
+      columns={columns}
       isLoading={batches.isPending}
       error={batches.error ? translateApiError(t, batches.error) : null}
       padding="14px 16px 8px"

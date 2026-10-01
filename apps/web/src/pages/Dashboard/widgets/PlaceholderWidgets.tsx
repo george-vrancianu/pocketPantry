@@ -8,15 +8,17 @@ import type { WidgetProps } from './types';
 function Placeholder({
   title,
   size,
+  columns,
   children,
 }: {
   title: string;
   size: WidgetProps['size'];
+  columns: WidgetProps['columns'];
   children: ReactNode;
 }) {
   const { t } = useTranslation('dashboard');
   return (
-    <WidgetCard label={title} size={size}>
+    <WidgetCard label={title} size={size} columns={columns}>
       <Box
         sx={{
           display: 'flex',
@@ -55,10 +57,14 @@ function Placeholder({
 
 const DAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-export function MealPlanWidget({ size }: WidgetProps) {
+export function MealPlanWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   return (
-    <Placeholder title={t('widgets.mealPlan.title')} size={size}>
+    <Placeholder
+      title={t('widgets.mealPlan.title')}
+      size={size}
+      columns={columns}
+    >
       <Box
         sx={{
           display: 'grid',
@@ -112,10 +118,14 @@ function Bar({ value, color }: { value: number; color: string }) {
   );
 }
 
-export function BudgetWidget({ size }: WidgetProps) {
+export function BudgetWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   return (
-    <Placeholder title={t('widgets.budget.title')} size={size}>
+    <Placeholder
+      title={t('widgets.budget.title')}
+      size={size}
+      columns={columns}
+    >
       <Box
         component="p"
         sx={{
@@ -133,10 +143,14 @@ export function BudgetWidget({ size }: WidgetProps) {
   );
 }
 
-export function NutritionWidget({ size }: WidgetProps) {
+export function NutritionWidget({ size, columns }: WidgetProps) {
   const { t } = useTranslation('dashboard');
   return (
-    <Placeholder title={t('widgets.nutrition.title')} size={size}>
+    <Placeholder
+      title={t('widgets.nutrition.title')}
+      size={size}
+      columns={columns}
+    >
       <Box sx={{ display: 'grid', gap: '8px' }}>
         {(
           [

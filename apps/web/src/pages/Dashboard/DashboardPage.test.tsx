@@ -58,21 +58,50 @@ describe('DashboardPage', () => {
   );
 
   it('shows a tall Widget two rows high only from 900px, and keeps its saved size', async () => {
-    stub({ widgets: [{ id: 'a', type: 'meal-plan', size: 'tall' }] });
+    stub({ widgets: [{ id: 'a', type: 'use-soon', size: 'tall' }] });
 
     stubViewport(1280);
     const wide = renderWithProviders(<DashboardPage />);
-    let card = await screen.findByRole('region', { name: 'Meal plan' });
+    let card = await screen.findByRole('region', { name: 'Use soon' });
     expect(getComputedStyle(card).gridRow).toBe('span 2');
     expect(getComputedStyle(card).gridColumn).toBe('span 2');
     wide.unmount();
 
     stubViewport(768);
     renderWithProviders(<DashboardPage />);
-    card = await screen.findByRole('region', { name: 'Meal plan' });
+    card = await screen.findByRole('region', { name: 'Use soon' });
     expect(getComputedStyle(card).gridRow).not.toBe('span 2');
     expect(getComputedStyle(card).gridColumn).toBe('span 2');
   });
+
+  it('renders a tall Widget as wide (two columns, one row) at 390px', async () => {
+    stubViewport(390);
+    stub({ widgets: [{ id: 'a', type: 'use-soon', size: 'tall' }] });
+
+    renderWithProviders(<DashboardPage />);
+
+    const card = await screen.findByRole('region', { name: 'Use soon' });
+    expect(getComputedStyle(card).gridColumn).toBe('span 2');
+    expect(getComputedStyle(card).gridRow).toBe('span 1');
+  });
+
+  it.each([
+    [390, ''],
+    [768, ''],
+    [1280, 'dense'],
+  ])(
+    'packs the grid densely only on the four-column grid (%ipx)',
+    async (width, dense) => {
+      stubViewport(width);
+      stub({ widgets: [{ id: 'a', type: 'budget', size: 'small' }] });
+
+      renderWithProviders(<DashboardPage />);
+
+      const widget = await screen.findByRole('region', { name: 'Budget' });
+      const grid = widget.parentElement as HTMLElement;
+      expect(getComputedStyle(grid).gridAutoFlow).toBe(dense || 'row');
+    },
+  );
 
   it('keeps the Customise button in the header', async () => {
     stub({ widgets: [] });
