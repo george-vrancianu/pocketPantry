@@ -4,23 +4,33 @@ import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useSession, useSignOut } from '../../lib/auth';
+import { useSaveLocale } from '../../lib/settings';
+import { FamilySettingsSection } from './components/FamilySettingsSection';
 
 export function SettingsPage() {
   const { t } = useTranslation('settings');
   const session = useSession();
   const signOut = useSignOut();
+  const saveLocale = useSaveLocale();
   const navigate = useNavigate();
 
   return (
     <>
       <AppScreenHeader title={t('title')} />
       <Stack spacing={3}>
+        <FamilySettingsSection />
         <Stack spacing={1}>
           <Typography variant="sectionLabel" color="text.secondary">
-            {t('language')}
+            {t('preferences')}
           </Typography>
+          <Typography variant="meta" color="text.secondary">
+            {t('preferencesPrivate')}
+          </Typography>
+          <Typography variant="body1">{t('language')}</Typography>
           <Box>
-            <LanguageSwitcher />
+            <LanguageSwitcher
+              onChange={(locale) => saveLocale.mutate(locale)}
+            />
           </Box>
         </Stack>
         <Stack spacing={1}>

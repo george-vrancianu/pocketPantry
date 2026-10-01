@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
-import { resolveCatalogDefaults } from '../catalog/catalog-defaults';
+import {
+  resolveCatalogDefaults,
+  resolveExpiryDays,
+} from '../catalog/catalog-defaults';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -14,6 +17,7 @@ import {
   parentCategories,
   user,
 } from '../database/schema';
+import { SettingsService } from '../settings/settings.service';
 import type {
   BatchView,
   CreateBatchBody,
@@ -32,10 +36,17 @@ function addDays(from: string, days: number): string {
 
 @Injectable()
 export class PantryService {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly settings: SettingsService,
+  ) {}
 
   /** The Family's Batches, soonest expiry first; Batches without an expiry come last. */
-  async list(memberId: string, locale: CatalogLocale): Promise<BatchView[]> {
+  async list(
+    memberId: string,
+    locale: CatalogLocale,
+    today?: string,
+  ): Promise<BatchView[]> {
     const familyId = await this.familyIdOf(memberId);
     const rows = await this.database
       .select()
@@ -46,7 +57,7 @@ export class PantryService {
         asc(batches.createdAt),
         asc(batches.id),
       );
-    return this.toViews(rows, locale);
+    return this.toViews(rows, locale, familyId, today);
   }
 
   async create(
@@ -60,16 +71,21 @@ export class PantryService {
       : await this.matchedTarget(body.ingredientId as string);
 
     const defaults = resolveCatalogDefaults(target.leaf, target.parent);
+    const expiryDays = resolveExpiryDays(
+      target.leaf,
+      target.parent,
+      await this.settings.expiryOverridesOf(familyId),
+    );
     const location = body.location ?? defaults.location;
     if (!location) throw new ApiException(400, 'pantry.location_required');
     const expiryDate =
       body.expiryDate !== undefined
         ? body.expiryDate
-        : defaults.expiryDays === null
+        : expiryDays === null
           ? null
           : addDays(
               body.today ?? new Date().toISOString().slice(0, 10),
-              defaults.expiryDays,
+              expiryDays,
             );
 
     const [row] = await this.database
@@ -87,7 +103,7 @@ export class PantryService {
         productDescription: body.productDescription || null,
       })
       .returning();
-    return (await this.toViews([row], locale))[0];
+    return (await this.toViews([row], locale, familyId, body.today))[0];
   }
 
   async update(
@@ -206,7 +222,11 @@ export class PantryService {
   private async toViews(
     rows: BatchRow[],
     locale: CatalogLocale,
+    familyId: string,
+    today: string = new Date().toISOString().slice(0, 10),
   ): Promise<BatchView[]> {
+    const threshold = await this.settings.staleThresholdOf(familyId);
+    const latestSoon = addDays(today, threshold);
     const ingredientRows = await this.database
       .select({ id: ingredients.id, name: ingredients.name })
       .from(ingredients)
@@ -239,6 +259,7 @@ export class PantryService {
       location: row.location,
       expiryDate: row.expiryDate,
       productDescription: row.productDescription,
+      expiringSoon: row.expiryDate !== null && row.expiryDate <= latestSoon,
       createdAt: row.createdAt,
     }));
   }

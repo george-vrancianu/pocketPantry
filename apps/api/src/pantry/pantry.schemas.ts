@@ -4,6 +4,8 @@ import { ingredientUnit, storageLocation } from '../database/schema';
 
 export const pantryLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  /** The Member's local date; Expiring Soon counts from it (default: server UTC date). */
+  today: z.iso.date().optional(),
 });
 export type PantryLocaleQuery = z.infer<typeof pantryLocaleQuery>;
 
@@ -87,5 +89,7 @@ export type BatchView = {
   /** ISO date (YYYY-MM-DD) or null. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Derived, never stored: expiry is within the Family's Stale Threshold (or already past). */
+  expiringSoon: boolean;
   createdAt: Date;
 };

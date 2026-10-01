@@ -37,6 +37,8 @@ export const family = pgTable('family', {
   inviteCodeExpiresAt: timestamp('invite_code_expires_at', {
     withTimezone: true,
   }).notNull(),
+  // Family Setting: days before expiry a Batch counts as Expiring Soon.
+  staleThresholdDays: integer('stale_threshold_days').notNull().default(3),
   ...timestamps,
 });
 
@@ -55,6 +57,8 @@ export const user = pgTable(
       .notNull()
       .references(() => family.id),
     familyRole: familyRole('family_role').notNull().default('member'),
+    // Member Preference: 'en' | 'ro' (validated in the API); null until chosen.
+    locale: text('locale'),
     ...timestamps,
   },
   (table) => [
@@ -384,3 +388,29 @@ export const dashboardLayouts = pgTable('dashboard_layouts', {
     .notNull(),
   ...timestamps,
 });
+
+// Family Settings: a Default Expiry override per Category. `entityId` is a Parent or
+// Leaf Category id (selected by `entityType`), so it carries no foreign key.
+export const familyExpiryOverrides = pgTable(
+  'family_expiry_overrides',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    entityType: catalogEntityType('entity_type').notNull(),
+    entityId: uuid('entity_id').notNull(),
+    days: integer('days').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.familyId, table.entityType, table.entityId] }),
+    check(
+      'family_expiry_overrides_category',
+      sql`${table.entityType} IN ('parent_category', 'leaf_category')`,
+    ),
+    check(
+      'family_expiry_overrides_days',
+      sql`${table.days} BETWEEN 1 AND 3650`,
+    ),
+  ],
+);

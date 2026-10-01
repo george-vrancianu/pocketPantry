@@ -1,7 +1,29 @@
 {
   "title": "Settings",
   "language": "Language",
+  "preferences": "Member Preferences",
+  "preferencesPrivate": "Only you see these. They follow you to any device.",
   "account": "Account",
   "signedInAs": "Signed in as {{name}}",
-  "signOut": "Sign out"
+  "signOut": "Sign out",
+  "family": {
+    "title": "Family Settings",
+    "shared": "Shared by everyone in your Family. Any member can change them.",
+    "staleThreshold": "Stale Threshold (days)",
+    "staleThresholdHelp": "A batch counts as expiring soon this many days before it expires.",
+    "saveThreshold": "Save threshold",
+    "overrides": "Default Expiry overrides",
+    "overridesHelp": "Used to pre-fill the expiry date when you add a batch. They replace the Catalog defaults.",
+    "noOverrides": "No overrides yet. Catalog defaults are used.",
+    "overrideRow_one": "{{name}}: {{count}} day",
+    "overrideRow_few": "{{name}}: {{count}} days",
+    "overrideRow_other": "{{name}}: {{count}} days",
+    "removeOverride": "Remove override for {{name}}",
+    "remove": "Remove",
+    "category": "Category",
+    "chooseCategory": "Choose a category",
+    "wholeParent": "{{name}} (all)",
+    "days": "Days until expiry",
+    "saveOverride": "Save override"
+  }
 }

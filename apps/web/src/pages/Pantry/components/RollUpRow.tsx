@@ -19,7 +19,11 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   const toggle = useRef<HTMLButtonElement>(null);
-  const chip = expiryChipFor(rollUp.soonestExpiry, today);
+  const chip = expiryChipFor(
+    rollUp.soonestExpiry,
+    today,
+    rollUp.batches[0].expiringSoon,
+  );
 
   const detail = [
     rollUp.totals
