@@ -33,6 +33,7 @@ export function FamilySettingsSection() {
 
   const [categoryId, setCategoryId] = useState('');
   const [days, setDays] = useState('');
+  const [savedNotice, setSavedNotice] = useState(false);
 
   const error = [
     settings.error,
@@ -43,17 +44,23 @@ export function FamilySettingsSection() {
 
   const submitThreshold = (event: FormEvent) => {
     event.preventDefault();
-    if (isWholeDays(threshold, 365)) setThreshold.mutate(Number(threshold));
+    if (!isWholeDays(threshold, 365)) return;
+    setSavedNotice(false);
+    setThreshold.mutate(Number(threshold), {
+      onSuccess: () => setSavedNotice(true),
+    });
   };
   const submitOverride = (event: FormEvent) => {
     event.preventDefault();
     if (!categoryId || !isWholeDays(days, 3650)) return;
+    setSavedNotice(false);
     setOverride.mutate(
       { categoryId, days: Number(days) },
       {
         onSuccess: () => {
           setCategoryId('');
           setDays('');
+          setSavedNotice(true);
         },
       },
     );
@@ -73,6 +80,9 @@ export function FamilySettingsSection() {
         {t('family.shared')}
       </Typography>
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+      {savedNotice && !error ? (
+        <Alert severity="success">{t('family.saved')}</Alert>
+      ) : null}
 
       <Stack component="form" spacing={1} onSubmit={submitThreshold}>
         <TextField
@@ -125,7 +135,12 @@ export function FamilySettingsSection() {
               variant="text"
               disabled={removeOverride.isPending}
               aria-label={t('family.removeOverride', { name: override.name })}
-              onClick={() => removeOverride.mutate(override.categoryId)}
+              onClick={() => {
+                setSavedNotice(false);
+                removeOverride.mutate(override.categoryId, {
+                  onSuccess: () => setSavedNotice(true),
+                });
+              }}
             >
               {t('family.remove')}
             </Button>

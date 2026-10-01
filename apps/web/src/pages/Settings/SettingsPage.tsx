@@ -1,4 +1,12 @@
-import { Box, Button, SignOutIcon, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  Button,
+  SignOutIcon,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -13,14 +21,20 @@ export function SettingsPage() {
   const signOut = useSignOut();
   const saveLocale = useSaveLocale();
   const navigate = useNavigate();
+  const id = useId();
 
   return (
     <>
       <AppScreenHeader title={t('title')} />
       <Stack spacing={3}>
         <FamilySettingsSection />
-        <Stack spacing={1}>
-          <Typography variant="sectionLabel" color="text.secondary">
+        <Stack component="section" spacing={1} aria-labelledby={`${id}-prefs`}>
+          <Typography
+            id={`${id}-prefs`}
+            variant="sectionLabel"
+            component="h2"
+            color="text.secondary"
+          >
             {t('preferences')}
           </Typography>
           <Typography variant="meta" color="text.secondary">
@@ -32,9 +46,19 @@ export function SettingsPage() {
               onChange={(locale) => saveLocale.mutate(locale)}
             />
           </Box>
+          {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
         </Stack>
-        <Stack spacing={1}>
-          <Typography variant="sectionLabel" color="text.secondary">
+        <Stack
+          component="section"
+          spacing={1}
+          aria-labelledby={`${id}-account`}
+        >
+          <Typography
+            id={`${id}-account`}
+            variant="sectionLabel"
+            component="h2"
+            color="text.secondary"
+          >
             {t('account')}
           </Typography>
           {session.data ? (

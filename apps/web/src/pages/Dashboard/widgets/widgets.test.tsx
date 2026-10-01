@@ -28,6 +28,7 @@ const batch = (overrides: Partial<Batch> & { id: string }): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
+  expiringSoon: false,
   createdAt: '2026-01-01T00:00:00Z',
   ...overrides,
 });
@@ -64,10 +65,25 @@ describe('UseSoonWidget', () => {
         Response.json({
           batches: [
             batch({ id: '1', name: 'Feta', expiryDate: isoIn(6) }),
-            batch({ id: '2', name: 'Yogurt', expiryDate: isoIn(0) }),
+            batch({
+              id: '2',
+              name: 'Yogurt',
+              expiryDate: isoIn(0),
+              expiringSoon: true,
+            }),
             batch({ id: '3', name: 'Orzo' }),
-            batch({ id: '4', name: 'Spinach', expiryDate: isoIn(1) }),
-            batch({ id: '5', name: 'Chicken', expiryDate: isoIn(2) }),
+            batch({
+              id: '4',
+              name: 'Spinach',
+              expiryDate: isoIn(1),
+              expiringSoon: true,
+            }),
+            batch({
+              id: '5',
+              name: 'Chicken',
+              expiryDate: isoIn(2),
+              expiringSoon: true,
+            }),
           ],
         }),
     });

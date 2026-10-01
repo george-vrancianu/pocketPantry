@@ -5,6 +5,7 @@
   "preferencesPrivate": "Doar tu le vezi. Te urmează pe orice dispozitiv.",
   "account": "Cont",
   "signedInAs": "Autentificat ca {{name}}",
+  "localeSaveFailed": "Nu am putut salva limba. Încearcă din nou.",
   "signOut": "Deconectare",
   "family": {
     "title": "Setările familiei",
@@ -24,6 +25,7 @@
     "chooseCategory": "Alege o categorie",
     "wholeParent": "{{name}} (toate)",
     "days": "Zile până la expirare",
+    "saved": "Salvat.",
     "saveOverride": "Salvează valoarea"
   }
 }

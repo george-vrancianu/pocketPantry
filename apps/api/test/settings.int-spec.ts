@@ -180,6 +180,17 @@ describe('Settings (integration)', () => {
       expect((await familySettings(cookie)).expiryOverrides).toEqual([]);
     });
 
+    it('lets an outsider DELETE only their own Family overrides', async () => {
+      const { cookie } = await signUp();
+      const outsider = await signUp();
+      const category = `/family/expiry-overrides/${seedId.parent('dairy')}`;
+      await call(cookie, 'put', category).send({ days: 4 }).expect(200);
+      await call(outsider.cookie, 'delete', category).expect(200);
+      expect((await familySettings(cookie)).expiryOverrides).toEqual([
+        expect.objectContaining({ kind: 'parent', days: 4 }),
+      ]);
+    });
+
     it('lists the Categories an override can target, localised', async () => {
       const { cookie } = await signUp();
       const body = (

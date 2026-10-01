@@ -5,6 +5,7 @@
   "preferencesPrivate": "Only you see these. They follow you to any device.",
   "account": "Account",
   "signedInAs": "Signed in as {{name}}",
+  "localeSaveFailed": "Could not save your language. Try again.",
   "signOut": "Sign out",
   "family": {
     "title": "Family Settings",
@@ -24,6 +25,7 @@
     "chooseCategory": "Choose a category",
     "wholeParent": "{{name}} (all)",
     "days": "Days until expiry",
+    "saved": "Saved.",
     "saveOverride": "Save override"
   }
 }

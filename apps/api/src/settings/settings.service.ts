@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { ExpiryOverride } from '../catalog/catalog-defaults';
 import {
   CATALOG_LOCALES,
@@ -221,10 +221,12 @@ export class SettingsService {
     const [leaves, parents] = await Promise.all([
       this.database
         .select({ id: leafCategories.id, name: leafCategories.name })
-        .from(leafCategories),
+        .from(leafCategories)
+        .where(inArray(leafCategories.id, ids)),
       this.database
         .select({ id: parentCategories.id, name: parentCategories.name })
-        .from(parentCategories),
+        .from(parentCategories)
+        .where(inArray(parentCategories.id, ids)),
     ]);
     return new Map([...leaves, ...parents].map((c) => [c.id, c.name]));
   }
