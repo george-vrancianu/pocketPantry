@@ -36,9 +36,7 @@ export class CatalogController {
         query.q,
         query.locale,
         query.limit,
-        await this.settings.expiryOverridesOf(
-          await this.settings.familyIdOf(member.id),
-        ),
+        await this.settings.expiryOverridesForMember(member.id),
       ),
     };
   }

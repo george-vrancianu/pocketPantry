@@ -38,6 +38,10 @@ export class SettingsService {
     return self.familyId;
   }
 
+  expiryOverridesForMember(memberId: string): Promise<ExpiryOverride[]> {
+    return this.familyIdOf(memberId).then((id) => this.expiryOverridesOf(id));
+  }
+
   /** The Family's Default Expiry overrides, for resolving a Category's expiry. */
   async expiryOverridesOf(familyId: string): Promise<ExpiryOverride[]> {
     return this.database

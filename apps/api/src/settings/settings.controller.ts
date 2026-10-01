@@ -98,7 +98,7 @@ export class SettingsController {
   }
 
   @Get('preferences')
-  @ApiOperation({ summary: "The signed-in Member's private preferences" })
+  @ApiOperation({ summary: "The signed-in Member's Member Preferences" })
   preferences(
     @CurrentUser() member: CurrentUserValue,
   ): Promise<PreferencesView> {
