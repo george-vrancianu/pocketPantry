@@ -61,10 +61,29 @@ export class ShoppingService {
     body: AddShoppingItemBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
+    return this.addItems(memberId, [body], locale);
+  }
+
+  /** Adds every item with the merge rules, in one transaction: all of them or none. */
+  async addItems(
+    memberId: string,
+    bodies: AddShoppingItemBody[],
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const listId = await this.lockActiveList(tx, memberId);
+      for (const body of bodies) await this.mergeItem(tx, listId, body);
+      return this.view(tx, listId, locale);
+    });
+  }
 
+  private async mergeItem(
+    tx: Tx,
+    listId: string,
+    body: AddShoppingItemBody,
+  ): Promise<void> {
+    {
       const unit = body.unit ?? null;
       const quantity = body.quantity ?? null;
       let identity;
@@ -126,8 +145,7 @@ export class ShoppingService {
           unit,
         });
       }
-      return this.view(tx, listId, locale);
-    });
+    }
   }
 
   async setChecked(

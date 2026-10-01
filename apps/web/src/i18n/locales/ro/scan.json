@@ -9,6 +9,11 @@
   "reading": "Citim fotografia",
   "noCamera": "Camera nu este disponibilă. Alege în schimb o fotografie din galerie.",
   "comingSoon": "Scanarea pentru {{mode}} vine în curând. Scanarea produselor funcționează acum.",
+  "plate": {
+    "pickTitle": "Ce preparat este?",
+    "option": "{{title}}, {{percent}}% probabil",
+    "retake": "Fă altă poză"
+  },
   "mode": {
     "product": "Produs",
     "receipt": "Bon",

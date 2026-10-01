@@ -17,10 +17,12 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   addShoppingItemBody,
+  addShoppingItemsBody,
   itemIdParam,
   setCheckedBody,
   shoppingLocaleQuery,
   type AddShoppingItemBody,
+  type AddShoppingItemsBody,
   type SetCheckedBody,
   type ShoppingListView,
   type ShoppingLocaleQuery,
@@ -60,6 +62,21 @@ export class ShoppingController {
     @Body(new ZodValidationPipe(addShoppingItemBody)) body: AddShoppingItemBody,
   ): Promise<ShoppingListView> {
     return this.shopping.addItem(member.id, body, locale);
+  }
+
+  @Post('items/bulk')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Add several Shopping Items at once (Plate Scan), merging as for a single add; all or none',
+  })
+  addMany(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
+    @Body(new ZodValidationPipe(addShoppingItemsBody))
+    body: AddShoppingItemsBody,
+  ): Promise<ShoppingListView> {
+    return this.shopping.addItems(member.id, body.items, locale);
   }
 
   @Patch('items/:id')

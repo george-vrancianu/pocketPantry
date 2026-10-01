@@ -6,6 +6,7 @@ import { ApiError } from '../../../lib/api';
 import { useCamera } from '../../../lib/camera';
 import { resizeImage } from '../../../lib/image';
 import { startReview } from '../../../lib/review';
+import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
   useProductScan,
@@ -25,12 +26,13 @@ export function useScanScreen() {
 
   const camera = useCamera();
   const productScan = useProductScan(i18n.language);
+  const plate = usePlateScan();
   const [flash, setFlash] = useState(false);
   const [resizing, setResizing] = useState(false);
   const [resizeError, setResizeError] = useState<ApiError | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const reading = resizing || productScan.isPending;
+  const reading = resizing || productScan.isPending || plate.pending;
   const busy = reading || !wired;
 
   /** A camera frame or gallery file: resize it, scan it, and land on Review. */
@@ -45,6 +47,10 @@ export function useScanScreen() {
       return;
     } finally {
       setResizing(false);
+    }
+    if (mode === 'plate') {
+      plate.scan(image);
+      return;
     }
     productScan.mutate(image, {
       onSuccess: ({ lines }) => {
@@ -71,7 +77,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const error = resizeError ?? productScan.error;
+  const error = resizeError ?? productScan.error ?? plate.error;
 
   return {
     mode,
@@ -84,9 +90,11 @@ export function useScanScreen() {
     error: error ? translateApiError(t, error) : null,
     setMode: (next: ScanMode) => {
       productScan.reset();
+      plate.reset();
       setResizeError(null);
       setParams({ mode: next }, { replace: true });
     },
+    plate,
     shoot,
     pickFile,
     openGallery: () => fileInput.current?.click(),

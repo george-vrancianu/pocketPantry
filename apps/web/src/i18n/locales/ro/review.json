@@ -9,7 +9,8 @@
   "keepMatch": "Păstrează această potrivire",
   "flag": {
     "unmatched": "Nepotrivit: alege un ingredient sau salvează-l cu numele citit.",
-    "lowConfidence": "Încredere scăzută: verifică această linie."
+    "lowConfidence": "Încredere scăzută: verifică această linie.",
+    "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
   },
   "dropShort": "Elimină",
   "matchedAs": "Potrivit cu {{name}}",
@@ -24,5 +25,9 @@
   "save_few": "Salvează {{count}} articole",
   "save_other": "Salvează {{count}} de articole",
   "saving": "Se salvează",
-  "discard": "Renunță"
+  "discard": "Renunță",
+  "shoppingSave_one": "Adaugă {{count}} articol în lista de cumpărături",
+  "shoppingSave_few": "Adaugă {{count}} articole în lista de cumpărături",
+  "shoppingSave_other": "Adaugă {{count}} de articole în lista de cumpărături",
+  "shoppingAdding": "Se adaugă"
 }

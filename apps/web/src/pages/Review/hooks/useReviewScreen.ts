@@ -15,6 +15,7 @@ import {
   withMatch,
   type ReviewLine,
 } from '../../../lib/review';
+import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useAddBatches } from '../../../lib/scan';
 
 /**
@@ -36,6 +37,10 @@ export function useReviewScreen() {
     );
   });
   const addBatches = useAddBatches(i18n.language);
+  const addShoppingItems = useAddShoppingItems(i18n.language);
+  // Plate lines are things to buy, not things in the Pantry.
+  const shopping = draft?.mode === 'plate';
+  const saveMutation = shopping ? addShoppingItems : addBatches;
   // Only Unmatched lines choose a category, so only fetch the list when one is on screen.
   const parents = useCatalogParents(
     i18n.language,
@@ -56,12 +61,17 @@ export function useReviewScreen() {
     setLines((all) => all.filter((line) => line.key !== key));
 
   const save = () => {
-    addBatches.mutate(lines.map(toNewBatch), {
+    const done = (to: string) => ({
       onSuccess: () => {
         clearReview();
-        navigate('/pantry');
+        navigate(to);
       },
     });
+    if (shopping) {
+      addShoppingItems.mutate(lines.map(toNewShoppingItem), done('/shopping'));
+    } else {
+      addBatches.mutate(lines.map(toNewBatch), done('/pantry'));
+    }
   };
   const discard = () => {
     clearReview();
@@ -70,12 +80,13 @@ export function useReviewScreen() {
 
   return {
     hadDraft,
+    shopping,
     lines,
     parents: parents.data ?? [],
     canSave:
-      lines.length > 0 && lines.every(isLineValid) && !addBatches.isPending,
-    saving: addBatches.isPending,
-    error: addBatches.error ? translateApiError(t, addBatches.error) : null,
+      lines.length > 0 && lines.every(isLineValid) && !saveMutation.isPending,
+    saving: saveMutation.isPending,
+    error: saveMutation.error ? translateApiError(t, saveMutation.error) : null,
     change,
     changeMatch,
     drop,
