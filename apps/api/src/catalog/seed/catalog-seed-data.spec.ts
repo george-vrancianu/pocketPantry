@@ -6,6 +6,7 @@ import {
   SEED_PARENTS,
 } from './catalog-seed-data';
 import { seedId, stableId } from './seed-catalog';
+import { findSeedProblems } from './validate-seed';
 
 const duplicates = (values: string[]) =>
   values.filter((value, index) => values.indexOf(value) !== index);
@@ -39,8 +40,19 @@ describe('catalog seed data', () => {
     expect(SEED_INGREDIENTS.filter((i) => !leaves.has(i.leaf))).toEqual([]);
   });
 
-  it('has roughly 50 Ingredients with English and Romanian names', () => {
-    expect(SEED_INGREDIENTS.length).toBeGreaterThanOrEqual(50);
+  it('is free of duplicate names, ambiguous Synonyms, and dangling references', () => {
+    expect(
+      findSeedProblems({
+        aisles: SEED_AISLES,
+        parents: SEED_PARENTS,
+        leaves: SEED_LEAVES,
+        ingredients: SEED_INGREDIENTS,
+      }),
+    ).toEqual([]);
+  });
+
+  it('has hundreds of Ingredients with English and Romanian names', () => {
+    expect(SEED_INGREDIENTS.length).toBeGreaterThanOrEqual(400);
     for (const item of SEED_INGREDIENTS) {
       expect(item.en).toBeTruthy();
       expect(item.ro).toBeTruthy();
@@ -58,6 +70,57 @@ describe('catalog seed data', () => {
       expect(duplicates(rows.map((r) => normalizeName(r.en)))).toEqual([]);
       expect(duplicates(rows.map((r) => normalizeName(r.ro)))).toEqual([]);
     }
+  });
+
+  const leafOf = (slug: string) =>
+    SEED_INGREDIENTS.find((i) => i.slug === slug)?.leaf;
+
+  it('keeps Parmesan and Cheddar, and chicken breast and chicken thighs, in different Leaf Categories', () => {
+    expect(leafOf('parmesan')).toBeDefined();
+    expect(leafOf('parmesan')).not.toBe(leafOf('cheddar'));
+    expect(leafOf('chicken-breast')).toBeDefined();
+    expect(leafOf('chicken-breast')).not.toBe(leafOf('chicken-thighs'));
+  });
+
+  it('gives every Parent except "Other" several real Leaf Categories, each holding Ingredients', () => {
+    const used = new Set(SEED_INGREDIENTS.map((i) => i.leaf));
+    for (const parent of SEED_PARENTS.filter((p) => p.slug !== 'other')) {
+      const real = SEED_LEAVES.filter(
+        (l) => l.parent === parent.slug && !l.slug.endsWith('-other'),
+      );
+      expect(real.length).toBeGreaterThanOrEqual(2);
+      expect(real.filter((l) => !used.has(l.slug)).map((l) => l.slug)).toEqual(
+        [],
+      );
+    }
+  });
+
+  it('gives every Ingredient a Default Expiry and Location through its Leaf or Parent', () => {
+    const parents = new Map(SEED_PARENTS.map((p) => [p.slug, p]));
+    const leaves = new Map(SEED_LEAVES.map((l) => [l.slug, l]));
+    for (const item of SEED_INGREDIENTS) {
+      const l = leaves.get(item.leaf)!;
+      const p = parents.get(l.parent)!;
+      const days = l.defaultExpiryDays ?? p.defaultExpiryDays;
+      const location = l.defaultLocation ?? p.defaultLocation;
+      expect([item.slug, days !== null, location !== null]).toEqual([
+        item.slug,
+        true,
+        true,
+      ]);
+    }
+  });
+
+  it('sets Default Expiry explicitly on every real Leaf Category, and never a non-positive one', () => {
+    for (const l of SEED_LEAVES.filter((x) => !x.slug.endsWith('-other'))) {
+      expect(l.defaultExpiryDays).toBeGreaterThan(0);
+      expect(l.defaultLocation).toBeDefined();
+    }
+  });
+
+  it('gives most Ingredients a Romanian Synonym', () => {
+    const withRo = SEED_INGREDIENTS.filter((i) => i.synonyms?.ro?.length);
+    expect(withRo.length / SEED_INGREDIENTS.length).toBeGreaterThan(0.8);
   });
 
   it('derives stable, valid UUIDs', () => {

@@ -168,7 +168,7 @@ export const aisles = pgTable(
 );
 
 // `name` is the canonical English name; `normalizedName` is its matching key.
-// A Parent Category carries the Aisle and its shop-walk sort order.
+// A Parent Category belongs to an Aisle; the Aisle carries the shop-walk sort order.
 export const parentCategories = pgTable(
   'parent_categories',
   {
