@@ -446,11 +446,11 @@ describe('Pantry (integration)', () => {
         { rawName: 'Mystery jar', location: 'cupboard', expiryDate: null },
       ]).expect(201);
       const saved = (response.body as { batches: Batch[] }).batches;
-      expect(saved.map((b) => b.name).sort()).toEqual([
-        'Mystery jar',
-        'Parmesan',
-      ]);
-      expect(saved.find((b) => b.name === 'Parmesan')).toMatchObject({
+      expect(saved).toHaveLength(2);
+      // By id, not name: the catalog spec renames Parmesan while this runs.
+      expect(
+        saved.find((b) => b.ingredientId === seedId.ingredient('parmesan')),
+      ).toMatchObject({
         location: 'fridge',
         expiryDate: inDays(60),
       });
