@@ -82,6 +82,10 @@ ambiguous Synonyms, or dangling references. Slugs are permanent once merged.
 - Databases seeded by the #4 starter seed must be reset before re-seeding with
   the full seed: display-name translation ids used to include the name text
   and now do not, so the old rows collide with the new ids.
+- Dev databases already seeded with the first full seed (#29) must also be
+  reset: this review round renamed slugs (`chicory-drink`, `fruit-syrup`,
+  `coffee-3in1`, Leaf `fruiting-vegetables`) and moved Ingredients between
+  Leaves, and re-seeding never updates or removes existing rows.
 - Seed changes to an existing row's Leaf, Default Expiry, or unit do not reach
   databases that are already seeded (existing rows are never updated). An
   upsert strategy is needed before the first real deployment.
