@@ -13,7 +13,6 @@ import {
   leafCategories,
   parentCategories,
 } from '../database/schema';
-import { isUniqueViolation } from '../family/household';
 import type {
   IngredientCreate,
   IngredientUpdate,
@@ -24,11 +23,19 @@ import type {
   TranslationCreate,
   TranslationUpdate,
 } from './admin-catalog.schemas';
-import { IngredientUsage } from './ingredient-usage';
 
 type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
 type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 type Executor = Database | Tx;
+
+function hasPgCode(error: unknown, code: string): boolean {
+  let current: unknown = error;
+  while (current && typeof current === 'object') {
+    if ('code' in current && current.code === code) return true;
+    current = 'cause' in current ? current.cause : undefined;
+  }
+  return false;
+}
 
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
@@ -43,10 +50,7 @@ const notFound = (entity: EntityType | 'translation') =>
  */
 @Injectable()
 export class AdminCatalogService {
-  constructor(
-    @Inject(DATABASE) private readonly database: Database,
-    private readonly usage: IngredientUsage,
-  ) {}
+  constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   async overview() {
     const [aisleRows, parentRows, leafRows, ingredientRows, translationRows] =
@@ -197,20 +201,24 @@ export class AdminCatalogService {
   }
 
   deleteLeafCategory(id: string) {
-    return this.write(async (tx) => {
-      await this.requireRow(tx, 'leaf_category', id);
-      const [{ children }] = await tx
-        .select({ children: count() })
-        .from(ingredients)
-        .where(eq(ingredients.leafCategoryId, id));
-      if (children > 0) {
-        throw new ApiException(409, 'catalog.category_not_empty', {
-          children,
-        });
-      }
-      await tx.delete(leafCategories).where(eq(leafCategories.id, id));
-      await this.deleteTranslationsOf(tx, 'leaf_category', id);
-    });
+    // Ingredients (and later Batches) reference a Leaf Category by foreign key.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, 'leaf_category', id);
+        const [{ children }] = await tx
+          .select({ children: count() })
+          .from(ingredients)
+          .where(eq(ingredients.leafCategoryId, id));
+        if (children > 0) {
+          throw new ApiException(409, 'catalog.category_not_empty', {
+            children,
+          });
+        }
+        await tx.delete(leafCategories).where(eq(leafCategories.id, id));
+        await this.deleteTranslationsOf(tx, 'leaf_category', id);
+      },
+      new ApiException(409, 'catalog.category_not_empty'),
+    );
   }
 
   // Ingredients
@@ -246,19 +254,18 @@ export class AdminCatalogService {
     });
   }
 
-  async deleteIngredient(id: string): Promise<void> {
-    await this.requireRow(this.database, 'ingredient', id);
-    const { batches, shoppingItems } = await this.usage.count(id);
-    if (batches > 0 || shoppingItems > 0) {
-      throw new ApiException(409, 'catalog.ingredient_in_use', {
-        batches,
-        shoppingItems,
-      });
-    }
-    await this.write(async (tx) => {
-      await tx.delete(ingredients).where(eq(ingredients.id, id));
-      await this.deleteTranslationsOf(tx, 'ingredient', id);
-    });
+  deleteIngredient(id: string) {
+    // Batches and Shopping Items reference Ingredients with a foreign key, so
+    // the database is the guard: a referenced Ingredient fails the delete
+    // atomically (no check-then-delete race) and is mapped to a stable code.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, 'ingredient', id);
+        await tx.delete(ingredients).where(eq(ingredients.id, id));
+        await this.deleteTranslationsOf(tx, 'ingredient', id);
+      },
+      new ApiException(409, 'catalog.ingredient_in_use'),
+    );
   }
 
   // Translations and Synonyms
@@ -267,6 +274,22 @@ export class AdminCatalogService {
     this.assertEditable(input.kind, input.locale);
     return this.write(async (tx) => {
       await this.requireRow(tx, input.entityType, input.entityId);
+      if (input.kind === 'name') {
+        const [existing] = await tx
+          .select({ id: catalogTranslations.id })
+          .from(catalogTranslations)
+          .where(
+            and(
+              eq(catalogTranslations.entityType, input.entityType),
+              eq(catalogTranslations.entityId, input.entityId),
+              eq(catalogTranslations.locale, input.locale),
+              eq(catalogTranslations.kind, 'name'),
+            ),
+          );
+        if (existing) {
+          throw new ApiException(409, 'catalog.translation_exists');
+        }
+      }
       const [row] = await tx
         .insert(catalogTranslations)
         .values({
@@ -305,14 +328,22 @@ export class AdminCatalogService {
 
   // Helpers
 
-  /** Runs `work` in a transaction, mapping a name collision to a stable code. */
-  private async write<T>(work: (tx: Tx) => Promise<T>): Promise<T> {
+  /**
+   * Runs `work` in a transaction. A name collision maps to `catalog.name_taken`;
+   * a foreign-key violation (something still references the row being deleted)
+   * maps to `inUse`.
+   */
+  private async write<T>(
+    work: (tx: Tx) => Promise<T>,
+    inUse?: ApiException,
+  ): Promise<T> {
     try {
       return await this.database.transaction(work);
     } catch (error) {
-      if (isUniqueViolation(error)) {
+      if (hasPgCode(error, '23505')) {
         throw new ApiException(409, 'catalog.name_taken');
       }
+      if (inUse && hasPgCode(error, '23503')) throw inUse;
       throw error;
     }
   }

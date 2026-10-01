@@ -38,8 +38,7 @@ describe('Catalog (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    await seedCatalog(database);
-
+    // The starter Catalog is seeded once by global-setup.mjs.
     const email = `catalog-${Date.now()}@example.com`;
     const signUp = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
@@ -341,6 +340,30 @@ describe('Catalog (integration)', () => {
         .select()
         .from(catalogTranslations)
         .orderBy(catalogTranslations.id),
+    // Seed ids are deterministic UUIDv5; rows created at runtime (e.g. by the
+    // Admin spec running in parallel) are UUIDv4. Only compare seeded rows.
+    const seeded = <T extends { id: string }>(rows: T[]) =>
+      rows.filter((row) => row.id[14] === '5');
+    const snapshot = async () => ({
+      aisles: seeded(await database.select().from(aisles).orderBy(aisles.id)),
+      parents: seeded(
+        await database
+          .select()
+          .from(parentCategories)
+          .orderBy(parentCategories.id),
+      ),
+      leaves: seeded(
+        await database.select().from(leafCategories).orderBy(leafCategories.id),
+      ),
+      ingredients: seeded(
+        await database.select().from(ingredients).orderBy(ingredients.id),
+      ),
+      translations: seeded(
+        await database
+          .select()
+          .from(catalogTranslations)
+          .orderBy(catalogTranslations.id),
+      ),
     });
 
     it('leaves the database unchanged when run twice', async () => {
@@ -482,8 +505,9 @@ describe('Catalog (integration)', () => {
       const parents = (await database.select().from(parentCategories)).filter(
         (row) => seedParentIds.has(row.id),
       );
+      const parents = seeded(await database.select().from(parentCategories));
       expect(parents).toHaveLength(18);
-      const leaves = await database.select().from(leafCategories);
+      const leaves = seeded(await database.select().from(leafCategories));
       for (const parent of parents) {
         expect(
           leaves.filter((leaf) => leaf.parentId === parent.id && leaf.isOther),

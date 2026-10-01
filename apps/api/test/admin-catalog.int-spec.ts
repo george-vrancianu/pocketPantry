@@ -1,12 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
-import { and, eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, sql } from 'drizzle-orm';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/app.setup';
-import { IngredientUsage } from '../src/admin/ingredient-usage';
-import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
+import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -26,21 +25,13 @@ type Overview = {
   ingredients: Body[];
 };
 
-const usage = {
-  counts: new Map<string, { batches: number; shoppingItems: number }>(),
-  count(id: string) {
-    return Promise.resolve(
-      this.counts.get(id) ?? { batches: 0, shoppingItems: 0 },
-    );
-  },
-};
-
 describe('Admin role and Catalog curation (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let adminCookie: string;
   let memberCookie: string;
   const stamp = Date.now();
+  const refTable = (kind: string) => `admin_spec_${kind}_refs_${stamp}`;
 
   async function signUp(email: string, name: string) {
     let response = await request(app.getHttpServer())
@@ -107,10 +98,9 @@ describe('Admin role and Catalog curation (integration)', () => {
   }
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-      .overrideProvider(IngredientUsage)
-      .useValue(usage)
-      .compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter(),
     );
@@ -118,7 +108,18 @@ describe('Admin role and Catalog curation (integration)', () => {
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
     database = app.get<Database>(DATABASE);
-    await seedCatalog(database);
+    // Stand-ins for Batches / Shopping Items / a Leaf Category dependant: tables
+    // whose foreign keys block deletes, like the real ones will.
+    await database.execute(
+      sql.raw(`
+        CREATE TABLE ${refTable('ingredient')} (
+          ingredient_id uuid REFERENCES ingredients(id)
+        );
+        CREATE TABLE ${refTable('leaf')} (
+          leaf_id uuid REFERENCES leaf_categories(id)
+        );
+      `),
+    );
 
     // Allow-listed in test/support/env.ts (mixed case on purpose).
     adminCookie = (await signUp('chef.admin@example.com', 'Chef Admin')).cookie;
@@ -128,6 +129,11 @@ describe('Admin role and Catalog curation (integration)', () => {
 
   afterAll(async () => {
     // Leave no rows behind even if a test failed midway: other suites count Catalog rows.
+    await database.execute(
+      sql.raw(
+        `DROP TABLE IF EXISTS ${refTable('ingredient')}, ${refTable('leaf')}`,
+      ),
+    );
     const like = `%${stamp}%`;
     for (const table of [ingredients, leafCategories, parentCategories]) {
       await database.delete(table).where(ilike(table.name, like));
@@ -341,7 +347,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect((invalid.body as Body).code).toBe('validation_failed');
     });
 
-    it('rejects deleting an Ingredient used by Batches or Shopping Items', async () => {
+    it('rejects deleting an Ingredient that other tables still reference', async () => {
       const made = (
         await as(adminCookie)
           .post('/ingredients', {
@@ -351,20 +357,34 @@ describe('Admin role and Catalog curation (integration)', () => {
           })
           .expect(201)
       ).body as Body;
-      usage.counts.set(made.id, { batches: 2, shoppingItems: 1 });
+      await database.execute(
+        sql.raw(`INSERT INTO ${refTable('ingredient')} VALUES ('${made.id}')`),
+      );
 
       const response = await as(adminCookie)
         .del(`/ingredients/${made.id}`)
         .expect(409);
       expect(response.body).toEqual({
         code: 'catalog.ingredient_in_use',
-        params: { batches: 2, shoppingItems: 1 },
+        params: {},
       });
+      // The failed delete rolled back, translations included.
       expect(await translationsOf('ingredient', made.id)).toHaveLength(1);
 
-      usage.counts.delete(made.id);
+      await database.execute(sql.raw(`DELETE FROM ${refTable('ingredient')}`));
       await as(adminCookie).del(`/ingredients/${made.id}`).expect(204);
       await as(adminCookie).del(`/ingredients/${made.id}`).expect(404);
+    });
+
+    it('rejects a PATCH with no fields as a validation error, not a 500', async () => {
+      const response = await as(adminCookie)
+        .patch(`/ingredients/${seedId.ingredient('parmesan')}`, {})
+        .expect(400);
+      expect((response.body as Body).code).toBe('validation_failed');
+      await as(adminCookie)
+        .patch(`/parent-categories/${seedId.parent('dairy')}`, {})
+        .expect(400);
+      await as(adminCookie).patch(`/leaf-categories/${leafId}`, {}).expect(400);
     });
   });
 
@@ -447,6 +467,27 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(await translationsOf('parent_category', parent.id)).toEqual([]);
     });
 
+    it('rejects deleting a Leaf Category that another table still references', async () => {
+      const parentId = seedId.parent('dairy');
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId,
+            name: `Referenced leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      await database.execute(
+        sql.raw(`INSERT INTO ${refTable('leaf')} VALUES ('${leaf.id}')`),
+      );
+      await as(adminCookie)
+        .del(`/leaf-categories/${leaf.id}`)
+        .expect(409)
+        .expect({ code: 'catalog.category_not_empty', params: {} });
+      await database.execute(sql.raw(`DELETE FROM ${refTable('leaf')}`));
+      await as(adminCookie).del(`/leaf-categories/${leaf.id}`).expect(204);
+    });
+
     it('enforces unique Category names and a real Aisle', async () => {
       await as(adminCookie)
         .post('/parent-categories', {
@@ -476,7 +517,8 @@ describe('Admin role and Catalog curation (integration)', () => {
           kind: 'name',
           value: 'Alt nume',
         })
-        .expect(409);
+        .expect(409)
+        .expect({ code: 'catalog.translation_exists', params: {} });
 
       const synonym = {
         entityType: 'ingredient',

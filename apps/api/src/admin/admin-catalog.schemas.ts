@@ -16,6 +16,10 @@ const text = z
   .refine((value) => normalizeName(value).length > 0, 'must contain a letter');
 
 const id = z.uuid();
+
+/** A PATCH that changes nothing is a client error, not a no-op the database rejects. */
+const atLeastOne = (value: object) => Object.keys(value).length > 0;
+const atLeastOneMessage = 'at least one field is required';
 const expiryDays = z.number().int().min(0).max(3650).nullable();
 const location = z.enum(storageLocation.enumValues).nullable();
 
@@ -32,7 +36,8 @@ export const parentCategoryUpdate = z
     defaultExpiryDays: expiryDays,
     defaultLocation: location,
   })
-  .partial();
+  .partial()
+  .refine(atLeastOne, atLeastOneMessage);
 
 export const leafCategoryCreate = z.object({
   parentId: id,
@@ -47,14 +52,17 @@ export const leafCategoryUpdate = z
     defaultExpiryDays: expiryDays,
     defaultLocation: location,
   })
-  .partial();
+  .partial()
+  .refine(atLeastOne, atLeastOneMessage);
 
 export const ingredientCreate = z.object({
   leafCategoryId: id,
   name: text,
   defaultUnit: z.enum(ingredientUnit.enumValues),
 });
-export const ingredientUpdate = ingredientCreate.partial();
+export const ingredientUpdate = ingredientCreate
+  .partial()
+  .refine(atLeastOne, atLeastOneMessage);
 
 export const translationCreate = z.object({
   entityType: z.enum(catalogEntityType.enumValues),

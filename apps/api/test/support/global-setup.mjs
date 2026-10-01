@@ -1,4 +1,5 @@
 // Runs once before all integration workers, so they never race to migrate an empty database.
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
@@ -17,4 +18,15 @@ export default async function globalSetup() {
   } finally {
     await pool.end();
   }
+  // Seed the starter Catalog once, here, so parallel specs never race on a fresh DB.
+  execFileSync('npx', ['tsx', 'src/catalog/seed/run-seed.ts'], {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      DATABASE_URL:
+        process.env.TEST_DATABASE_URL ??
+        'postgresql://postgres:postgres@localhost:5433/pocket_pantry_test',
+    },
+  });
 }
