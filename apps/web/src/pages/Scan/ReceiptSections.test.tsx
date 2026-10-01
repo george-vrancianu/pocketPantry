@@ -317,6 +317,72 @@ describe('Receipt Scan in sections', () => {
       expect(await screen.findByText('pantry page')).toBeInTheDocument();
     });
 
+    it('drops the batch and its guards when the Dock Scan item switches to Product', async () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      setup([() => lines('Eggs')]);
+      await shoot();
+      await screen.findByText('Section 1: 1 line found');
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      expect(confirm).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      // The leave guard is gone: the Dock leaves without asking again.
+      await userEvent.click(screen.getByRole('link', { name: 'Pantry' }));
+      expect(await screen.findByText('pantry page')).toBeInTheDocument();
+      expect(confirm).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not bring the batch back when switching to Receipt after the Dock Scan item', async () => {
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      setup([() => lines('Eggs')]);
+      await shoot();
+      await screen.findByText('Section 1: 1 line found');
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      await click('Receipt');
+      expect(confirm).toHaveBeenCalledTimes(1);
+      expect(
+        screen.queryByRole('group', { name: 'Section 1' }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Eggs')).not.toBeInTheDocument();
+    });
+
+    it('throws away a section read that lands after the Dock Scan item switched to Product', async () => {
+      const confirm = vi.spyOn(window, 'confirm');
+      let release: (r: Response) => void = () => undefined;
+      const pending = new Promise<Response>((resolve) => (release = resolve));
+      const { fetchMock } = stubApi({
+        'GET /api/catalog/parents': () => Response.json({ parents: [] }),
+      });
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+        String(input).includes('/scan/receipt')
+          ? pending
+          : fetchMock(input, init),
+      );
+      renderWithProviders(
+        <>
+          <Routes>
+            <Route path="/scan" element={<ScanPage />} />
+          </Routes>
+          <AppDock variant="dark" activeKey="scan" />
+        </>,
+        { route: '/scan?mode=receipt' },
+      );
+      await shoot();
+      await screen.findByText('Reading section 1…');
+      await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
+      expect(confirm).not.toHaveBeenCalled();
+      release(lines('Eggs'));
+      await new Promise((r) => setTimeout(r, 20));
+      await click('Receipt');
+      expect(confirm).not.toHaveBeenCalled();
+      expect(screen.queryByText('Eggs')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('group', { name: 'Section 1' }),
+      ).not.toBeInTheDocument();
+    });
+
     it('lets the Dock leave without asking when nothing has been scanned', async () => {
       const confirm = vi.spyOn(window, 'confirm');
       setup([]);

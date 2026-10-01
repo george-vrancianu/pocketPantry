@@ -36,6 +36,17 @@ export function useScanScreen() {
   const modeScans = { product: productScan, ingredients: ingredientsScan };
   const modeScan =
     mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
+  // The mode can also change through the URL (the Dock's Scan item links to plain `/scan`),
+  // bypassing `setMode`: leaving Receipt always discards the batch and any read in flight.
+  const resetReceiptSections = useRef(receiptSections.reset);
+  resetReceiptSections.current = receiptSections.reset;
+  const previousMode = useRef(mode);
+  useEffect(() => {
+    if (previousMode.current === 'receipt' && mode !== 'receipt') {
+      resetReceiptSections.current();
+    }
+    previousMode.current = mode;
+  }, [mode]);
   const [flash, setFlash] = useState(false);
   // A restarted stream (e.g. switching into or out of Receipt mode) has its torch off.
   useEffect(() => {
