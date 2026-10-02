@@ -8,24 +8,24 @@ const TONES = {
   ok: { bg: tokens.color.okBg, fg: tokens.color.okFg },
 } as const;
 
-type Props = { chip: ExpiryChipValue; expiryDate: string };
+type Props = { chip: ExpiryChipValue };
 
 /** Today / 1 to 3 days / later, coloured per the handoff's ExpiryChip. */
-export function ExpiryChip({ chip, expiryDate }: Props) {
+export function ExpiryChip({ chip }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const tone = TONES[chip.tone];
 
   let label: string;
-  if (chip.kind === 'today') label = t('expiry.today');
-  else if (chip.kind === 'expired') label = t('expiry.expired');
-  else if (chip.kind === 'days') label = t('expiry.days', { count: chip.days });
-  else {
+  if (chip.kind === 'date') {
     label = new Intl.DateTimeFormat(i18n.language, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-    }).format(new Date(`${expiryDate}T00:00:00`));
-  }
+    }).format(new Date(`${chip.expiryDate}T00:00:00`));
+  } else if (chip.kind === 'days') {
+    label = t('expiry.days', { count: chip.days });
+  } else if (chip.kind === 'today') label = t('expiry.today');
+  else label = t('expiry.expired');
 
   return (
     <Box

@@ -127,9 +127,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
             </Typography>
           ) : null}
         </Box>
-        {chip && rollUp.soonestExpiry ? (
-          <ExpiryChip chip={chip} expiryDate={rollUp.soonestExpiry} />
-        ) : null}
+        {chip ? <ExpiryChip chip={chip} /> : null}
       </Box>
       {expanded ? (
         <Box

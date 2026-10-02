@@ -51,7 +51,7 @@ export function BatchDetail({ batch, today, onDeleted }: Props) {
   }
 
   const amount =
-    batch.quantity === null
+    batch.quantity === null || batch.unit === null
       ? null
       : formatAmount(batch.quantity, batch.unit, i18n.language, t);
   const detail = [amount, batch.productDescription].filter(Boolean).join(' · ');
@@ -72,9 +72,7 @@ export function BatchDetail({ batch, today, onDeleted }: Props) {
         >
           {detail || t('noDetails')}
         </Typography>
-        {chip && batch.expiryDate ? (
-          <ExpiryChip chip={chip} expiryDate={batch.expiryDate} />
-        ) : null}
+        {chip ? <ExpiryChip chip={chip} /> : null}
       </Box>
       {mode === 'confirmDelete' ? (
         <Box sx={{ mt: 1 }} role="group" aria-label={t('delete.confirm')}>
