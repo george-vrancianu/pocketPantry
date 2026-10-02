@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { imageDataUrlSchema } from './product-scan.schemas';
+import { MAX_QUANTITY } from '../common/quantity';
 
 /** Plate Scan step one: the photo of the dish. */
 export const plateScanSchema = z.object({ plateImage: imageDataUrlSchema });
@@ -40,7 +41,7 @@ const plateItemSchema = z.object({
   fallbackIngredientName: z.string().trim().min(1).max(80),
   quantityType: z.enum(['count', 'measured']).nullable(),
   // Same ceiling as a Shopping Item, so a line the Member confirms is never a 400.
-  quantity: z.number().positive().max(999_999).nullable(),
+  quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
   unit: z.string().trim().min(1).max(30).nullable(),
   confidence: z.number().min(0).max(1),
 });

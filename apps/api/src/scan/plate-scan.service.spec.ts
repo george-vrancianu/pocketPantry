@@ -1,5 +1,6 @@
 import type { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { ApiException } from '../common/api-exception';
+import { MAX_QUANTITY } from '../common/quantity';
 import { validateCatalogMatch } from '../ingredients/ingredient-catalog';
 import type { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { addShoppingItemBody } from '../shopping/shopping.schemas';
@@ -151,7 +152,7 @@ describe('PlateScanService', () => {
     });
 
     it('caps quantity where Shopping does, so a confirmed line can never be a 400', async () => {
-      const top = 999_999;
+      const top = MAX_QUANTITY;
       expect(
         addShoppingItemBody.safeParse({ ingredientId: milkId, quantity: top })
           .success,
