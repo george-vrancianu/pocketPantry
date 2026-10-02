@@ -1,5 +1,7 @@
 {
   "appName": "Pocket Pantry",
   "loading": "Loading",
+  "confirm": "Confirm",
+  "cancel": "Cancel",
   "retry": "Try again"
 }

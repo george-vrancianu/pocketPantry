@@ -16,7 +16,6 @@
   "matchedAs": "Matched as {{name}}",
   "drop": "Drop {{name}}",
   "quantity": "Quantity",
-  "quantityInvalid": "Enter an amount of at least 0.001, with up to 3 decimals.",
   "unit": "Unit",
   "location": "Location",
   "expiry": "Expiry date",

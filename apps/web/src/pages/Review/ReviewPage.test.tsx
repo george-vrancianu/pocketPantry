@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -197,6 +197,19 @@ describe('ReviewPage', () => {
     await userEvent.type(screen.getByLabelText('Quantity'), '0');
     expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeDisabled();
   });
+
+  it.each(['1e3', '2000000'])(
+    'will not save a quantity the server rejects (%s)',
+    (bad) => {
+      renderReview([line()]);
+      fireEvent.change(screen.getByLabelText('Quantity'), {
+        target: { value: bad },
+      });
+      expect(
+        screen.getByRole('button', { name: 'Save 1 item' }),
+      ).toBeDisabled();
+    },
+  );
 
   it('discards the draft and returns to Scan', async () => {
     renderReview([line()]);

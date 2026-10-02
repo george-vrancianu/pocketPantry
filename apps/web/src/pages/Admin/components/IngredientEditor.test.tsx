@@ -204,9 +204,7 @@ describe('IngredientEditor', () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole('button', { name: 'Șterge' }));
-    await user.click(
-      screen.getByRole('button', { name: 'Confirmă ștergerea' }),
-    );
+    await user.click(screen.getByRole('button', { name: 'Confirmă' }));
 
     expect(
       await screen.findByText(/încă folosit de Loturi sau Articole/),

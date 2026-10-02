@@ -10,8 +10,8 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
 import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
-import { LOCATIONS, UNITS } from '../../../lib/pantry';
-import { isQuantityValid, type ReviewLine } from '../../../lib/review';
+import { LOCATIONS, UNITS, parseQuantity } from '../../../lib/pantry';
+import type { ReviewLine } from '../../../lib/review';
 
 type Props = {
   line: ReviewLine;
@@ -39,7 +39,7 @@ export function ReviewLineCard({
   const unmatched = line.match === null;
   const flagged = unmatched || line.lowConfidence;
   const displayName = line.match?.name ?? line.name;
-  const quantityValid = isQuantityValid(line.quantity);
+  const quantityValid = parseQuantity(line.quantity).valid;
 
   return (
     <Box
@@ -161,7 +161,9 @@ export function ReviewLineCard({
             type="number"
             value={line.quantity}
             error={!quantityValid}
-            helperText={quantityValid ? undefined : t('review:quantityInvalid')}
+            helperText={
+              quantityValid ? undefined : t('pantry:form.quantityInvalid')
+            }
             onChange={(event) => onChange({ quantity: event.target.value })}
             slotProps={{
               htmlInput: { min: 0, step: 'any', inputMode: 'decimal' },

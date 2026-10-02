@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -233,8 +233,10 @@ describe('Receipt Scan in sections', () => {
 
   it('sends one request for a double-tapped shutter', async () => {
     const { calls } = setup([() => lines('Eggs'), () => lines('Rice')]);
-    const button = shutter();
-    await Promise.all([userEvent.click(button), userEvent.click(button)]);
+    // Two clicks back to back, as a double tap: userEvent's delays between clicks let a slow
+    // runner finish the first scan before the second click, which is then a real second photo.
+    fireEvent.click(shutter());
+    fireEvent.click(shutter());
     await screen.findByText('Section 1: 1 line found');
     expect(
       calls.filter((c) => c.key === 'POST /api/scan/receipt'),

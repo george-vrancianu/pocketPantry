@@ -1,7 +1,7 @@
 import { Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { FamilyMember } from '../../../lib/family';
-import { ConfirmAction } from './ConfirmAction';
+import { ConfirmAction } from '../../../components/ConfirmAction';
 
 type Props = {
   members: FamilyMember[];

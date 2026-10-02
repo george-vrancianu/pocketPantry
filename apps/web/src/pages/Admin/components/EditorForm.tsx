@@ -1,12 +1,7 @@
 import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ConfirmAction } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
 
 type Props = {
@@ -40,7 +35,6 @@ export function EditorForm({
 }: Props) {
   const { t } = useTranslation(['admin', 'errors']);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -71,18 +65,16 @@ export function EditorForm({
         <Button variant="text" onClick={onCancel}>
           {t('admin:common.cancel')}
         </Button>
-        {onDelete ? (
-          confirmingDelete ? (
-            <Button variant="secondary" disabled={deleting} onClick={onDelete}>
-              {t('admin:common.confirmDelete')}
-            </Button>
-          ) : (
-            <Button variant="text" onClick={() => setConfirmingDelete(true)}>
-              {t('admin:common.delete')}
-            </Button>
-          )
-        ) : null}
       </Stack>
+      {onDelete ? (
+        <ConfirmAction
+          variant="text"
+          label={t('admin:common.delete')}
+          message={t('admin:common.deleteConfirm')}
+          disabled={deleting}
+          onConfirm={onDelete}
+        />
+      ) : null}
     </Stack>
   );
 }

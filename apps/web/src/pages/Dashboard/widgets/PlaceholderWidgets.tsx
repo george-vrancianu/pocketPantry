@@ -55,10 +55,16 @@ function Placeholder({
   );
 }
 
-const DAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
 export function MealPlanWidget({ size, columns }: WidgetProps) {
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
+  const weekday = new Intl.DateTimeFormat(i18n.language, {
+    weekday: 'narrow',
+    timeZone: 'UTC',
+  });
+  // 1 January 2024 was a Monday.
+  const dayInitials = Array.from({ length: 7 }, (_, day) =>
+    weekday.format(Date.UTC(2024, 0, 1 + day)),
+  );
   return (
     <Placeholder
       title={t('widgets.mealPlan.title')}
@@ -72,7 +78,7 @@ export function MealPlanWidget({ size, columns }: WidgetProps) {
           gap: '6px',
         }}
       >
-        {DAY_INITIALS.map((initial, index) => (
+        {dayInitials.map((initial, index) => (
           <Box
             key={index}
             aria-hidden="true"
