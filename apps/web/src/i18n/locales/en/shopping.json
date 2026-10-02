@@ -20,7 +20,7 @@
   "empty": "Your list is empty. Add what you need above.",
   "finish": {
     "button": "Finish shopping",
-    "reviewTitle": "Add to your pantry",
+    "reviewTitle": "Add to your Pantry",
     "reviewHint": "Check what you bought. Adjust the amount, location or expiry, or drop an item.",
     "drop": "Drop {{name}}",
     "restore": "Keep {{name}}",

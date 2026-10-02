@@ -9,7 +9,7 @@
   "keepMatch": "Keep this match",
   "flag": {
     "unmatched": "Unmatched: pick an ingredient, or save it under the name we read.",
-    "lowConfidence": "Low confidence: please check this line.",
+    "lowConfidence": "Low confidence: check this before saving.",
     "unmatchedShopping": "Not in our catalogue: pick an ingredient, or add it to your list under the name we read."
   },
   "dropShort": "Drop",

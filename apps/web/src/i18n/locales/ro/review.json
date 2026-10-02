@@ -9,7 +9,7 @@
   "keepMatch": "Păstrează această potrivire",
   "flag": {
     "unmatched": "Nepotrivit: alege un ingredient sau salvează-l cu numele citit.",
-    "lowConfidence": "Încredere scăzută: verifică această linie.",
+    "lowConfidence": "Încredere scăzută: verifică înainte să salvezi.",
     "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
   },
   "dropShort": "Elimină",

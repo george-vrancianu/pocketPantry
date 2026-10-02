@@ -76,7 +76,7 @@ async function openReview() {
   await userEvent.click(
     await screen.findByRole('button', { name: 'Finish shopping' }),
   );
-  return screen.findByRole('region', { name: 'Add to your pantry' });
+  return screen.findByRole('region', { name: 'Add to your Pantry' });
 }
 
 describe('Finish Shopping review', () => {
@@ -142,7 +142,7 @@ describe('Finish Shopping review', () => {
 
     await waitFor(() =>
       expect(
-        screen.queryByRole('region', { name: 'Add to your pantry' }),
+        screen.queryByRole('region', { name: 'Add to your Pantry' }),
       ).not.toBeInTheDocument(),
     );
     expect(
@@ -200,7 +200,7 @@ describe('Finish Shopping review', () => {
       await screen.findByText(/The list changed while you were reviewing/),
     ).toBeVisible();
     expect(
-      screen.getByRole('region', { name: 'Add to your pantry' }),
+      screen.getByRole('region', { name: 'Add to your Pantry' }),
     ).toBeVisible();
   });
   it('offers Reload after a 409 that refetches the proposal and clears edits and the error', async () => {
