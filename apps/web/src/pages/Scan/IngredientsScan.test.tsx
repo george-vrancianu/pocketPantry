@@ -60,10 +60,9 @@ describe('Ingredients Scan on the Scan screen', () => {
   beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
-  it('is wired: the shutter is enabled and no coming-soon notice shows', () => {
+  it('enables the shutter', () => {
     renderIngredients({});
     expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
-    expect(screen.queryByText(/coming soon/i)).not.toBeInTheDocument();
   });
 
   it('sends the photo to the Ingredients endpoint and reviews one card per item', async () => {

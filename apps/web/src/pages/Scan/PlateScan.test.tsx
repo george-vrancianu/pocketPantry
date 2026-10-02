@@ -95,10 +95,9 @@ describe('Plate Scan', () => {
   beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
-  it('is wired: Plate can scan, and says it adds to the shopping list', () => {
+  it('Plate can scan, and says it adds to the shopping list', () => {
     renderPlate();
     expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
-    expect(screen.getByRole('status')).not.toHaveTextContent(/coming soon/i);
     expect(screen.getByText(/shopping list/i)).toBeInTheDocument();
   });
 

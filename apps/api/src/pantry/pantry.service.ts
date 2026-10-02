@@ -98,7 +98,7 @@ export class PantryService {
                   rawName: value.rawName ?? '',
                   locale,
                   source: bodies[index].source ?? 'manual',
-                  batchId: value.id as string,
+                  batchId: value.id,
                 },
               ]
             : [],
@@ -195,7 +195,7 @@ export class PantryService {
 
   /**
    * The Leaf and Parent Category each body lands under, in body order, in at
-   * most three queries however many bodies there are: matched bodies by their
+   * most two queries however many bodies there are: matched bodies by their
    * Ingredient, Unmatched ones under their Parent's `is_other` Leaf. With no
    * Parent given an Unmatched body uses the top-level "Other" Parent,
    * identified by its fixed seed id (slugs and ids never change once shipped),
