@@ -428,24 +428,22 @@ export class AdminCatalogService {
     oldName: string,
     newName: string,
   ): Promise<void> {
-    const [leaf] = await tx
-      .select({ id: leafCategories.id, name: leafCategories.name })
-      .from(leafCategories)
-      .where(
-        and(
-          eq(leafCategories.parentId, parentId),
-          eq(leafCategories.isOther, true),
-        ),
-      );
-    if (!leaf || leaf.name !== otherLeafName(oldName)) return;
     const name = otherLeafName(newName);
-    if (name === leaf.name) return;
     try {
-      await tx
+      // Matching the old generated name keeps an Admin's concurrent rename: the update skips the row.
+      const [leaf] = await tx
         .update(leafCategories)
         .set({ name, normalizedName: normalizeName(name) })
-        .where(eq(leafCategories.id, leaf.id));
-      await this.renameCanonicalName(tx, 'leaf_category', leaf.id, name);
+        .where(
+          and(
+            eq(leafCategories.parentId, parentId),
+            eq(leafCategories.isOther, true),
+            eq(leafCategories.name, otherLeafName(oldName)),
+          ),
+        )
+        .returning({ id: leafCategories.id });
+      if (leaf)
+        await this.renameCanonicalName(tx, 'leaf_category', leaf.id, name);
     } catch (error) {
       if (hasPgCode(error, '23505')) throw otherLeafNameTaken();
       throw error;

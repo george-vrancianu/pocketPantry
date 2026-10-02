@@ -1,8 +1,9 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, ilike } from 'drizzle-orm';
+import type { Pool } from 'pg';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
-import { DATABASE } from '../src/database/database.constants';
+import { DATABASE, DATABASE_POOL } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
@@ -630,6 +631,61 @@ describe('Admin role and Catalog curation (integration)', () => {
 
       await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
     });
+
+    it('never overwrites an Admin rename of the Other Leaf that lands during a Parent rename', async () => {
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `Chutneys ${stamp}`,
+            aisleId: seedId.aisle('dry-goods'),
+          })
+          .expect(201)
+      ).body as Body;
+      const [other] = await database
+        .select({ id: leafCategories.id })
+        .from(leafCategories)
+        .where(eq(leafCategories.parentId, parent.id));
+
+      const client = await app.get<Pool>(DATABASE_POOL).connect();
+      let parentRename: Promise<request.Response> | undefined;
+      try {
+        // The Admin's rename holds the Other Leaf's row, uncommitted.
+        await client.query('BEGIN');
+        await client.query(
+          'UPDATE leaf_categories SET name = $1, normalized_name = $2 WHERE id = $3',
+          [`Misc ${stamp}`, `misc ${stamp}`, other.id],
+        );
+        parentRename = Promise.resolve(
+          as(adminCookie)
+            .patch(`/parent-categories/${parent.id}`, {
+              name: `Relishes ${stamp}`,
+            })
+            .then((r) => r),
+        );
+        for (;;) {
+          const waiting = await client.query(
+            `SELECT 1 FROM pg_stat_activity
+             WHERE wait_event_type = 'Lock' AND pid <> pg_backend_pid()
+               AND query ILIKE '%leaf_categories%'`,
+          );
+          if (waiting.rowCount) break;
+          await new Promise((done) => setTimeout(done, 20));
+        }
+        await client.query('COMMIT');
+      } finally {
+        await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
+      expect((await parentRename)?.status).toBe(200);
+
+      const [leaf] = await database
+        .select({ name: leafCategories.name })
+        .from(leafCategories)
+        .where(eq(leafCategories.id, other.id));
+      expect(leaf.name).toBe(`Misc ${stamp}`);
+
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+    }, 20_000);
 
     it('never deletes the top-level Other Parent', async () => {
       await as(adminCookie)
