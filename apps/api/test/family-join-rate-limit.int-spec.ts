@@ -19,8 +19,10 @@ describe('Invite Code redemption rate limit (integration)', () => {
     // AppModule reads env when first imported, so import it only now.
     process.env.INVITE_CODE_LIMIT_PER_USER = String(USER_LIMIT);
     process.env.INVITE_CODE_LIMIT_PER_IP = String(IP_LIMIT);
-    // @ts-expect-error TS wants a .js extension on dynamic imports; Jest resolves the .ts.
-    const { createTestApp } = await import('./support/create-test-app');
+    const modulePath = './support/create-test-app'; // a variable: TS demands a .js extension on literal dynamic imports, Jest resolves the .ts
+    const { createTestApp } = (await import(
+      modulePath
+    )) as typeof import('./support/create-test-app');
     app = await createTestApp();
   });
 
