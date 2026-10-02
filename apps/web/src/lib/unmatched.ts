@@ -1,17 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Locale } from '../i18n/resources';
-import { adminCatalogQueryKey } from './admin';
+import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
-import { catalogSearchQueryKey, type Unit } from './catalog';
+import { catalogSearchQueryKey } from './catalog';
+import type { ScanMode } from './scan';
 
 export type UnmatchedStatus = 'open' | 'dismissed';
-export type UnmatchedSource =
-  | 'product'
-  | 'receipt'
-  | 'plate'
-  | 'ingredients'
-  | 'manual'
-  | 'finish_shopping';
+export type UnmatchedSource = ScanMode | 'manual' | 'finish_shopping';
 
 export type UnmatchedReference = {
   type: 'batch' | 'shopping_item';
@@ -46,16 +41,7 @@ export type UnmatchedResolution = {
 export type ResolveInput = {
   normalizedName: string;
   locale: Locale;
-} & (
-  | { ingredientId: string }
-  | {
-      newIngredient: {
-        name: string;
-        leafCategoryId: string;
-        defaultUnit: Unit;
-      };
-    }
-);
+} & ({ ingredientId: string } | { newIngredient: IngredientInput });
 
 const queueKey = ['admin-unmatched'] as const;
 

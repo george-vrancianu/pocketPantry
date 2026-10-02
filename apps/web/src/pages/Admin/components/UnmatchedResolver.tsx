@@ -1,22 +1,20 @@
 import {
-  Alert,
-  Button,
   SegmentedControl,
   Stack,
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCALES, type Locale } from '../../../i18n/resources';
-import { translateApiError } from '../../../i18n/translateApiError';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import { localName, type AdminCatalog } from '../../../lib/admin';
-import { UNITS, type Unit } from '../../../lib/catalog';
+import type { AdminCatalog, IngredientInput } from '../../../lib/admin';
 import {
   useResolveUnmatched,
   type UnmatchedEntry,
 } from '../../../lib/unmatched';
+import { EditorForm } from './EditorForm';
+import { IngredientFields } from './IngredientFields';
 
 type Props = {
   entry: UnmatchedEntry;
@@ -34,53 +32,40 @@ type Mode = 'existing' | 'new';
  * Synonym it adds. The server relinks every row carrying the name in one go.
  */
 export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
-  const { t, i18n } = useTranslation(['admin', 'errors']);
+  const { t } = useTranslation('admin');
   const resolve = useResolveUnmatched();
-  const headingRef = useRef<HTMLHeadingElement>(null);
   const [mode, setMode] = useState<Mode>('existing');
   const [picked, setPicked] = useState<{ id: string; name: string } | null>(
     null,
   );
-  const [name, setName] = useState(entry.rawName);
-  const [leafCategoryId, setLeafCategoryId] = useState(
-    catalog.leafCategories.find((leaf) => !leaf.isOther)?.id ??
+  const [newIngredient, setNewIngredient] = useState<IngredientInput>({
+    name: entry.rawName,
+    leafCategoryId:
+      catalog.leafCategories.find((leaf) => !leaf.isOther)?.id ??
       catalog.leafCategories[0]?.id ??
       '',
-  );
-  const [defaultUnit, setDefaultUnit] = useState<Unit>('g');
-  const [locale, setLocale] = useState<Locale>(entry.locale);
-
-  useEffect(() => {
-    headingRef.current?.focus();
-  }, []);
-
-  const leaves = catalog.leafCategories.map((leaf) => {
-    const parent = catalog.parentCategories.find((p) => p.id === leaf.parentId);
-    return {
-      id: leaf.id,
-      label: `${parent ? localName(parent, i18n.language) : ''} › ${localName(leaf, i18n.language)}`,
-    };
+    defaultUnit: 'g',
   });
+  const [locale, setLocale] = useState<Locale>(entry.locale);
 
   const canSubmit =
     mode === 'existing'
       ? picked !== null
-      : name.trim() !== '' && leafCategoryId !== '';
+      : newIngredient.name.trim() !== '' && newIngredient.leafCategoryId !== '';
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = () => {
     if (!canSubmit || resolve.isPending) return;
     const target =
       mode === 'existing'
         ? { ingredientId: picked?.id as string }
         : {
             newIngredient: {
-              name: name.trim(),
-              leafCategoryId,
-              defaultUnit,
+              ...newIngredient,
+              name: newIngredient.name.trim(),
             },
           };
-    const ingredientName = mode === 'existing' ? picked?.name : name.trim();
+    const ingredientName =
+      mode === 'existing' ? picked?.name : newIngredient.name.trim();
     resolve.mutate(
       { normalizedName: entry.normalizedName, locale, ...target },
       {
@@ -96,22 +81,17 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
   };
 
   return (
-    <Stack component="form" spacing={2} onSubmit={submit} noValidate>
-      <Typography
-        ref={headingRef}
-        component="h2"
-        variant="h6"
-        tabIndex={-1}
-        sx={{ outline: 'none' }}
-      >
-        {t('admin:unmatched.resolveName', { name: entry.rawName })}
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {t('admin:unmatched.rows', { count: entry.count })}
-      </Typography>
-      {resolve.error ? (
-        <Alert>{translateApiError(t, resolve.error)}</Alert>
-      ) : null}
+    <EditorForm
+      heading={t('admin:unmatched.resolveName', { name: entry.rawName })}
+      description={t('admin:unmatched.rows', { count: entry.count })}
+      error={resolve.error}
+      canSave={canSubmit}
+      saving={resolve.isPending}
+      onSubmit={submit}
+      onCancel={onCancel}
+      saveLabel={t('admin:unmatched.confirm')}
+      savingLabel={t('admin:unmatched.resolving')}
+    >
       <SegmentedControl
         label={t('admin:unmatched.modeLabel')}
         value={mode}
@@ -137,38 +117,11 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
         </Stack>
       ) : (
         <Stack spacing={2}>
-          <TextField
-            label={t('admin:ingredient.name')}
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
+          <IngredientFields
+            catalog={catalog}
+            value={newIngredient}
+            onChange={setNewIngredient}
           />
-          <TextField
-            select
-            label={t('admin:ingredient.leafCategory')}
-            value={leafCategoryId}
-            onChange={(event) => setLeafCategoryId(event.target.value)}
-            slotProps={{ select: { native: true } }}
-          >
-            {leaves.map((leaf) => (
-              <option key={leaf.id} value={leaf.id}>
-                {leaf.label}
-              </option>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label={t('admin:ingredient.defaultUnit')}
-            value={defaultUnit}
-            onChange={(event) => setDefaultUnit(event.target.value as Unit)}
-            slotProps={{ select: { native: true } }}
-          >
-            {UNITS.map((unit) => (
-              <option key={unit} value={unit}>
-                {t(`common:units.${unit}`)}
-              </option>
-            ))}
-          </TextField>
         </Stack>
       )}
       <TextField
@@ -185,16 +138,6 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
           </option>
         ))}
       </TextField>
-      <Stack direction="row" spacing={1}>
-        <Button type="submit" disabled={!canSubmit || resolve.isPending}>
-          {resolve.isPending
-            ? t('admin:unmatched.resolving')
-            : t('admin:unmatched.confirm')}
-        </Button>
-        <Button variant="text" onClick={onCancel}>
-          {t('admin:common.cancel')}
-        </Button>
-      </Stack>
-    </Stack>
+    </EditorForm>
   );
 }
