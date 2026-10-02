@@ -26,11 +26,13 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
   const deleteButton = useRef<HTMLButtonElement>(null);
   const confirmButton = useRef<HTMLButtonElement>(null);
   const previous = useRef(mode);
+  const moved = useRef(false);
   useEffect(() => {
     const from = previous.current;
     previous.current = mode;
     if (mode === 'confirmDelete') confirmButton.current?.focus();
-    else if (mode === 'view' && from === 'edit') editButton.current?.focus();
+    else if (mode === 'view' && from === 'edit' && !moved.current)
+      editButton.current?.focus();
     else if (mode === 'view' && from === 'confirmDelete')
       deleteButton.current?.focus();
   }, [mode]);
@@ -43,7 +45,14 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
       <Box component="li" sx={{ listStyle: 'none' }}>
         <EditBatchForm
           batch={batch}
-          onSaved={(edit) => (edit.location ? onLeft() : setMode('view'))}
+          onSaved={(edit) => {
+            setMode('view');
+            // A `location` in the edit means the Batch moved out of this row.
+            if (edit.location) {
+              moved.current = true;
+              onLeft();
+            }
+          }}
           onCancel={() => setMode('view')}
         />
       </Box>

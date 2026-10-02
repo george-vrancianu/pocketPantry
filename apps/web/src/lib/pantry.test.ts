@@ -183,9 +183,12 @@ describe('parseQuantity', () => {
     expect(parseQuantity('  ')).toEqual({ value: null, valid: true });
   });
 
-  it.each(['0.001', '1', '2.5', '1000000'])('accepts %s', (text) => {
-    expect(parseQuantity(text)).toEqual({ value: Number(text), valid: true });
-  });
+  it.each(['0.001', '1', '2.5', '1000000', '.5', '5.'])(
+    'accepts %s',
+    (text) => {
+      expect(parseQuantity(text)).toEqual({ value: Number(text), valid: true });
+    },
+  );
 
   it.each([
     '0',
@@ -201,8 +204,6 @@ describe('parseQuantity', () => {
     ' 5',
     '5 ',
     '+5',
-    '.5',
-    '5.',
     '2e-3',
     'abc',
   ])('rejects %s', (text) => {

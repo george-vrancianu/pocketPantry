@@ -9,7 +9,7 @@ import {
   type BatchEdit,
 } from '../../../lib/pantry';
 
-/** Only the fields that differ from the Batch the form opened with, so a field the Member left alone never overwrites another Member's edit made meanwhile. */
+/** Only the fields that differ from the Batch as the form opened: untouched fields never overwrite another Member's edit. */
 function changesFrom(batch: Batch, next: Required<BatchEdit>): BatchEdit {
   const edit: BatchEdit = {};
   if (next.quantity !== batch.quantity) edit.quantity = next.quantity;

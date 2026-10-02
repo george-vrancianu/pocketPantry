@@ -335,6 +335,11 @@ describe('PantryPage', () => {
         location: 'freezer',
         expiryDate: null,
       });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('form', { name: 'Edit Milk batch' }),
+        ).not.toBeInTheDocument(),
+      );
     });
 
     it("does not revert another Member's change made while the form was open", async () => {

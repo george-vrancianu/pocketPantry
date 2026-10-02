@@ -11,7 +11,7 @@ type Props = {
   batchCount: number;
   rows: RollUp[];
   today: Date;
-  /** Called when this section's last row is gone, so the section unmounts and focus must go elsewhere. */
+  /** Called when the last row is gone and this section unmounts, so focus can go elsewhere. */
   onEmptied: () => void;
 };
 
