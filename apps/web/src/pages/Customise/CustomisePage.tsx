@@ -272,7 +272,7 @@ export function CustomisePage() {
       focus.kind === 'row'
         ? focus.index === undefined
           ? !ids.includes(focus.id)
-          : ids.indexOf(focus.id) !== focus.index
+          : ids.includes(focus.id) && ids.indexOf(focus.id) !== focus.index
         : ids.includes(focus.id);
     if (pending) return;
     const target =
