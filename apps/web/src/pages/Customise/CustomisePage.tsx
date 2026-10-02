@@ -249,7 +249,9 @@ export function CustomisePage() {
   const columns = useGridColumns();
   const [status, setStatus] = useState('');
   const [focus, setFocus] = useState<
-    { kind: 'row'; id: string } | { kind: 'list' } | null
+    | { kind: 'row'; id: string; index?: number }
+    | { kind: 'removed'; id: string; index: number }
+    | null
   >(null);
   const listRef = useRef<HTMLUListElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -262,17 +264,25 @@ export function CustomisePage() {
 
   // Adding or removing unmounts the focused control, so hand focus to a sensible neighbour.
   useEffect(() => {
-    if (!focus) return;
-    if (focus.kind === 'row') {
-      const handle = Array.from(
-        listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
-      ).find((candidate) => candidate.dataset.handle === focus.id);
-      // The edit applies a moment after the click, so keep waiting until the row exists.
-      if (!handle) return;
-      handle.focus();
-    } else {
-      headingRef.current?.focus();
-    }
+    if (!focus || !layout.data) return;
+    const ids = layout.data.widgets.map((w) => w.id);
+    // The edit applies a moment after the click, so keep waiting until it has:
+    // focusing a row before React reorders it would lose focus again.
+    const pending =
+      focus.kind === 'row'
+        ? focus.index === undefined
+          ? !ids.includes(focus.id)
+          : ids.includes(focus.id) && ids.indexOf(focus.id) !== focus.index
+        : ids.includes(focus.id);
+    if (pending) return;
+    const target =
+      focus.kind === 'row'
+        ? focus.id
+        : ids[Math.min(focus.index, ids.length - 1)];
+    const handle = Array.from(
+      listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
+    ).find((candidate) => candidate.dataset.handle === target);
+    (handle ?? headingRef.current)?.focus();
     setFocus(null);
   }, [focus, layout.data]);
 
@@ -319,12 +329,16 @@ export function CustomisePage() {
         total: widgets.length,
       }),
     );
+    setFocus({
+      kind: 'row',
+      id,
+      index: Math.max(0, Math.min(to, widgets.length - 1)),
+    });
   };
   const remove = (id: string, index: number) => {
-    const neighbour = widgets[index + 1] ?? widgets[index - 1];
     setStatus(t('announce.removed', { name: nameById(id) }));
     editor.edit((current) => removeWidget(current, id));
-    setFocus(neighbour ? { kind: 'row', id: neighbour.id } : { kind: 'list' });
+    setFocus({ kind: 'removed', id, index });
   };
   const resize = (widget: WidgetInstance, size: WidgetSize) => {
     editor.edit((current) => resizeWidget(current, widget.id, size));
@@ -351,6 +365,7 @@ export function CustomisePage() {
         to,
       ),
     );
+    setFocus({ kind: 'row', id: String(active.id), index: to });
   };
 
   const available = availableWidgetTypes(widgets);

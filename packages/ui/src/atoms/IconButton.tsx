@@ -52,6 +52,7 @@ export function IconButton({
     urgent: {
       backgroundColor: color.urgentBg,
       color: color.urgentFg,
+      '&:hover': { backgroundColor: color.urgentHover },
     },
   }[tone];
   return (
