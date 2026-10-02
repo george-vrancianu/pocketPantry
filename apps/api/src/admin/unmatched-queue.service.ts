@@ -69,7 +69,19 @@ export class UnmatchedQueueService {
       );
   }
 
-  async dismiss(normalizedName: string): Promise<void> {
+  dismiss(normalizedName: string): Promise<void> {
+    return this.setDismissed(normalizedName, new Date());
+  }
+
+  undismiss(normalizedName: string): Promise<void> {
+    return this.setDismissed(normalizedName, null);
+  }
+
+  /** The Batches and Shopping Items stay Unmatched either way; only the queue entry moves between tabs. */
+  private async setDismissed(
+    normalizedName: string,
+    dismissedAt: Date | null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
       await this.catalog.lockName(tx, normalizedName);
       const rows = await tx
@@ -77,16 +89,10 @@ export class UnmatchedQueueService {
         .from(unmatchedEntries)
         .where(eq(unmatchedEntries.normalizedName, normalizedName));
       if (rows.length === 0) throw notInQueue();
-      // The Batches and Shopping Items stay Unmatched; only the queue entry is set aside.
       await tx
         .update(unmatchedEntries)
-        .set({ dismissedAt: new Date() })
-        .where(
-          and(
-            eq(unmatchedEntries.normalizedName, normalizedName),
-            isNull(unmatchedEntries.dismissedAt),
-          ),
-        );
+        .set({ dismissedAt })
+        .where(eq(unmatchedEntries.normalizedName, normalizedName));
     });
   }
 

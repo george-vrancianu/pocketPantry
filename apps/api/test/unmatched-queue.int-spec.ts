@@ -680,6 +680,30 @@ describe('Unmatched queue (integration)', () => {
       expect(reopened?.dismissed).toBe(false);
     });
 
+    it('puts a dismissed name back in the open queue on undismiss', async () => {
+      const raw = name('restored');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      const body = { normalizedName: normalise(raw) };
+      await call(adminCookie)
+        .post('/admin/unmatched/dismiss', body)
+        .expect(204);
+
+      await call(adminCookie)
+        .post('/admin/unmatched/undismiss', body)
+        .expect(204);
+
+      expect(await entryFor(raw, 'dismissed')).toBeUndefined();
+      expect(await entryFor(raw)).toMatchObject({ count: 1, dismissed: false });
+    });
+
+    it('answers 404 when undismissing a name that is not in the queue', async () => {
+      await call(adminCookie)
+        .post('/admin/unmatched/undismiss', {
+          normalizedName: name('never saved'),
+        })
+        .expect(404);
+    });
+
     it('answers 404 for a name that is not in the queue', async () => {
       await call(adminCookie)
         .post('/admin/unmatched/dismiss', {

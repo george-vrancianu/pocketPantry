@@ -64,4 +64,16 @@ export class UnmatchedQueueController {
   ): Promise<void> {
     await this.queue.dismiss(body.normalizedName);
   }
+
+  @Post('undismiss')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Admin only: put a dismissed name back in the open queue',
+  })
+  async undismiss(
+    @Body(new ZodValidationPipe(unmatchedDismissBody))
+    body: UnmatchedDismissBody,
+  ): Promise<void> {
+    await this.queue.undismiss(body.normalizedName);
+  }
 }
