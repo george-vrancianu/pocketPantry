@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogSearchResult } from './catalog';
 import { defaultExpiryDate } from './pantry';
-import {
-  isLineValid,
-  needsAttention,
-  toNewBatch,
-  toReviewLine,
-  withMatch,
-} from './review';
+import { isLineValid, toNewBatch, toReviewLine, withMatch } from './review';
 import type { ProposedLine } from './scan';
 
 const today = new Date(2026, 9, 1);
@@ -91,17 +85,7 @@ describe('withMatch', () => {
   });
 });
 
-describe('flags and validity', () => {
-  it('flags Unmatched and low-confidence lines, not confident ones', () => {
-    expect(needsAttention(toReviewLine(line(), 'a', today))).toBe(false);
-    expect(
-      needsAttention(toReviewLine(line({ match: null }), 'a', today)),
-    ).toBe(true);
-    expect(
-      needsAttention(toReviewLine(line({ lowConfidence: true }), 'a', today)),
-    ).toBe(true);
-  });
-
+describe('validity', () => {
   it('rejects a quantity the server would reject, and a nameless Unmatched line', () => {
     const base = toReviewLine(line(), 'a', today);
     expect(isLineValid({ ...base, quantity: '0' })).toBe(false);

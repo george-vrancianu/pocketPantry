@@ -162,7 +162,7 @@ export function ReviewLineCard({
         <Stack direction="row" spacing={1}>
           <TextField
             id={`${id}-quantity`}
-            label={t('review:quantity')}
+            label={t('pantry:form.quantity')}
             type="number"
             value={line.quantity}
             error={!quantityValid}
@@ -177,7 +177,7 @@ export function ReviewLineCard({
           <TextField
             id={`${id}-unit`}
             select
-            label={t('review:unit')}
+            label={t('pantry:form.unit')}
             value={line.unit}
             onChange={(event) =>
               onChange({ unit: event.target.value as ReviewLine['unit'] })
@@ -197,7 +197,7 @@ export function ReviewLineCard({
             <TextField
               id={`${id}-location`}
               select
-              label={t('review:location')}
+              label={t('pantry:form.location')}
               value={line.location}
               onChange={(event) =>
                 onChange({
@@ -216,7 +216,7 @@ export function ReviewLineCard({
             <TextField
               id={`${id}-expiry`}
               type="date"
-              label={t('review:expiry')}
+              label={t('pantry:form.expiry')}
               value={line.expiryDate}
               onChange={(event) =>
                 onChange({
@@ -229,7 +229,7 @@ export function ReviewLineCard({
 
             <TextField
               id={`${id}-description`}
-              label={t('review:description')}
+              label={t('pantry:form.description')}
               value={line.description}
               onChange={(event) =>
                 onChange({ description: event.target.value })
