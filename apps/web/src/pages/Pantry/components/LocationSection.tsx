@@ -11,9 +11,17 @@ type Props = {
   batchCount: number;
   rows: RollUp[];
   today: Date;
+  /** Called when this section's last row is gone, so the section unmounts and focus must go elsewhere. */
+  onEmptied: () => void;
 };
 
-export function LocationSection({ location, batchCount, rows, today }: Props) {
+export function LocationSection({
+  location,
+  batchCount,
+  rows,
+  today,
+  onEmptied,
+}: Props) {
   const { t } = useTranslation('pantry');
   const headingId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
@@ -48,7 +56,9 @@ export function LocationSection({ location, batchCount, rows, today }: Props) {
             key={row.key}
             rollUp={row}
             today={today}
-            onRowGone={() => heading.current?.focus()}
+            onRowGone={() =>
+              rows.length > 1 ? heading.current?.focus() : onEmptied()
+            }
           />
         ))}
       </Box>

@@ -9,7 +9,7 @@ import {
   type BatchEdit,
 } from '../../../lib/pantry';
 
-/** Only the fields that differ from the Batch: a stale form must not overwrite another Member's edit. */
+/** Only the fields that differ from the Batch the form opened with, so a field the Member left alone never overwrites another Member's edit made meanwhile. */
 function changesFrom(batch: Batch, next: Required<BatchEdit>): BatchEdit {
   const edit: BatchEdit = {};
   if (next.quantity !== batch.quantity) edit.quantity = next.quantity;
@@ -25,9 +25,10 @@ function changesFrom(batch: Batch, next: Required<BatchEdit>): BatchEdit {
 /** Edit-Batch form state, starting from the Batch as it is now. */
 export function useEditBatchForm(
   batch: Batch,
-  { onSaved }: { onSaved: () => void },
+  { onSaved }: { onSaved: (edit: BatchEdit) => void },
 ) {
   const { t, i18n } = useTranslation();
+  const [opened] = useState(batch);
   const update = useUpdateBatch(i18n.language);
 
   const [quantity, setQuantity] = useState(
@@ -46,7 +47,7 @@ export function useEditBatchForm(
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!canSave) return;
-    const edit = changesFrom(batch, {
+    const edit = changesFrom(opened, {
       quantity: parsed.value,
       unit,
       location,
@@ -54,10 +55,14 @@ export function useEditBatchForm(
       productDescription: description.trim() || null,
     });
     if (Object.keys(edit).length === 0) {
-      onSaved();
+      onSaved(edit);
       return;
     }
-    update.mutate({ id: batch.id, edit }, { onSuccess: onSaved });
+    // `mutateAsync`, not `mutate`'s callbacks: those are dropped once the form unmounts, which a move out of the section does.
+    update.mutateAsync({ id: opened.id, edit }).then(
+      () => onSaved(edit),
+      () => undefined,
+    );
   };
 
   return {
