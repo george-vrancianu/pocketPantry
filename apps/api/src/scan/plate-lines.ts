@@ -1,6 +1,6 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import { ingredientUnit } from '../database/schema';
-import type { ProposedLine } from './proposed-line';
+import { applyThreshold, type ProposedLine } from './proposed-line';
 
 /** The fields of a validated Plate Ingredient that shape its proposed line. */
 export type PlateIngredient = {
@@ -27,19 +27,18 @@ export function plateLine(
   match: CatalogSearchResult | null,
   threshold: number,
 ): ProposedLine {
-  const matched = match !== null && item.matchConfidence >= threshold;
+  const shaped = applyThreshold(match, item, threshold);
   const unit =
     item.quantity === null
       ? null
       : isUnit(item.unit)
         ? item.unit
-        : matched
-          ? match.defaultUnit
+        : shaped.match
+          ? shaped.match.defaultUnit
           : null;
   return {
     name: item.fallbackIngredientName,
-    match: matched ? match : null,
-    lowConfidence: item.confidence < threshold,
+    ...shaped,
     quantity: unit === null ? null : item.quantity,
     unit,
     expiryDate: null,

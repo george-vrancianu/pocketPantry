@@ -29,6 +29,22 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 export type ScanResponse = { lines: ProposedLine[] };
 
 /**
+ * The confidence rules every Scan Mode shares. A Match whose confidence falls
+ * below `threshold` is dropped (the line becomes Unmatched), as is a missing
+ * one; an image read below `threshold` is flagged low-confidence.
+ */
+export function applyThreshold(
+  match: CatalogSearchResult | null,
+  item: { matchConfidence: number; confidence: number },
+  threshold: number,
+): Pick<ProposedLine, 'match' | 'lowConfidence'> {
+  return {
+    match: match !== null && item.matchConfidence >= threshold ? match : null,
+    lowConfidence: item.confidence < threshold,
+  };
+}
+
+/**
  * A Product Scan result as one proposed line. A Match whose confidence falls
  * below `threshold` is dropped, which makes the line Unmatched, as does having
  * no Match at all. `match` is the validated Catalog Ingredient for
@@ -39,11 +55,9 @@ export function productLine(
   match: CatalogSearchResult | null,
   threshold: number,
 ): ProposedLine {
-  const matched = match !== null && result.matchConfidence >= threshold;
   return {
     name: result.fallbackIngredientName,
-    match: matched ? match : null,
-    lowConfidence: result.confidence < threshold,
+    ...applyThreshold(match, result, threshold),
     quantity: null,
     unit: null,
     expiryDate: result.expiryDate,
