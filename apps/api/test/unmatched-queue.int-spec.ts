@@ -588,6 +588,28 @@ describe('Unmatched queue (integration)', () => {
       expect(await entryFor(raw)).toBeUndefined();
     });
 
+    it('keeps a separate line instead of merging past the quantity cap', async () => {
+      const raw = name('cap');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addTyped(member, {
+        ingredientId: parmesan,
+        quantity: 600_000,
+        unit: 'g',
+      });
+      await addTyped(member, { name: raw, quantity: 500_000, unit: 'g' });
+
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+
+      const items = await itemsOf(member);
+      expect(items.map((i) => i.quantity).sort()).toEqual([500_000, 600_000]);
+      expect(items.every((i) => !i.unmatched)).toBe(true);
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
     it('only relinks on an archived list', async () => {
       const raw = name('archived');
       const member = await newMember();

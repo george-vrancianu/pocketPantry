@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
+import { MAX_QUANTITY } from '../common/quantity';
 
 export const pantryLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
@@ -17,7 +18,7 @@ const isoDate = z.iso.date();
 const quantity = z
   .number()
   .min(0.001)
-  .max(1_000_000)
+  .max(MAX_QUANTITY)
   .refine((value) => Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6, {
     message: 'at most 3 decimals',
   });

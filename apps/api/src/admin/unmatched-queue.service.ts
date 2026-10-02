@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -239,7 +240,8 @@ export class UnmatchedQueueService {
    * Relinks Unmatched Shopping Items to the Ingredient. On the active list an
    * item merges into an existing line for the same Ingredient and unit (the
    * list's "adding an item for an Ingredient already on it merges" rule);
-   * archived lists are history, so there it only relinks.
+   * archived lists are history, so there it only relinks, and so does a merge
+   * that would pass the quantity cap.
    */
   private async relinkShoppingItems(
     tx: Tx,
@@ -287,11 +289,15 @@ export class UnmatchedQueueService {
               .limit(1)
               .for('update')
           : [];
-      if (twin) {
-        const merged = sumQuantities(
-          twin.quantity === null ? null : Number(twin.quantity),
-          row.quantity === null ? null : Number(row.quantity),
-        );
+      const merged = twin
+        ? sumQuantities(
+            twin.quantity === null ? null : Number(twin.quantity),
+            row.quantity === null ? null : Number(row.quantity),
+          )
+        : null;
+      // A merge past the cap is not possible, and an Admin cannot fix a
+      // Family's quantities: keep the line as its own, relinked.
+      if (twin && !exceedsMaxQuantity(merged)) {
         await tx
           .update(shoppingItems)
           .set({
