@@ -13,7 +13,7 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = new Date();
   const batches = useBatches(i18n.language, today);
-  const soonest = soonestExpiring(batches.data ?? [], today);
+  const soonest = soonestExpiring(batches.data ?? []);
 
   return (
     <WidgetCard
@@ -87,9 +87,7 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
                 >
                   {batch.name}
                 </Box>
-                {chip && batch.expiryDate ? (
-                  <ExpiryChip chip={chip} expiryDate={batch.expiryDate} />
-                ) : null}
+                {chip ? <ExpiryChip chip={chip} /> : null}
               </Box>
             );
           })}

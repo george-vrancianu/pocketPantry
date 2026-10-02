@@ -63,7 +63,7 @@ export function DashboardPage() {
       </Box>
       {layout.isPending ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <Spinner label={t('loading')} />
+          <Spinner label={t('common:loading')} />
         </Box>
       ) : layout.error ? (
         <Box>
@@ -73,7 +73,7 @@ export function DashboardPage() {
             onClick={() => void layout.refetch()}
             sx={{ mt: 1 }}
           >
-            {t('retry')}
+            {t('common:retry')}
           </Button>
         </Box>
       ) : (

@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { daysUntil, type Batch } from './pantry';
-import { LOCATIONS, type StorageLocation } from './catalog';
+import type { Batch } from './pantry';
 import type { ShoppingList } from './shopping';
 
 export type WidgetType =
@@ -29,40 +28,21 @@ export function useDashboardLayout() {
   });
 }
 
-/** How many Batches the Use Soon Widget lists. */
-export const USE_SOON_COUNT = 3;
-
-/** The soonest-expiring Batches (already expired ones first); Batches without an expiry never qualify. */
-export function soonestExpiring(
-  batches: Batch[],
-  today: Date,
-  count = USE_SOON_COUNT,
-): Batch[] {
+/** The three soonest-expiring Batches (already expired ones first); Batches without an expiry never qualify. */
+export function soonestExpiring(batches: Batch[]): Batch[] {
   return batches
     .filter((batch) => batch.expiryDate !== null)
-    .sort(
-      (a, b) =>
-        daysUntil(a.expiryDate as string, today) -
-        daysUntil(b.expiryDate as string, today),
+    .sort((a, b) =>
+      (a.expiryDate as string).localeCompare(b.expiryDate as string),
     )
-    .slice(0, count);
-}
-
-/** Batch count per Location, in the fixed Location order, including empty Locations. */
-export function stockByLocation(
-  batches: Batch[],
-): Array<{ location: StorageLocation; count: number }> {
-  return LOCATIONS.map((location) => ({
-    location,
-    count: batches.filter((batch) => batch.location === location).length,
-  }));
+    .slice(0, 3);
 }
 
 /** Names of the first unchecked Shopping Items, in Aisle order, and whether more remain. */
-export function firstUncheckedNames(list: ShoppingList, count = 3) {
+export function firstUncheckedNames(list: ShoppingList) {
   const names = list.groups
     .flatMap((group) => group.items)
     .filter((item) => !item.checked)
     .map((item) => item.name);
-  return { names: names.slice(0, count), hasMore: names.length > count };
+  return { names: names.slice(0, 3), hasMore: names.length > 3 };
 }
