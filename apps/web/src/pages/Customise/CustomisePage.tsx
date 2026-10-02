@@ -249,7 +249,7 @@ export function CustomisePage() {
   const columns = useGridColumns();
   const [status, setStatus] = useState('');
   const [focus, setFocus] = useState<
-    | { kind: 'row'; id: string }
+    | { kind: 'row'; id: string; index?: number }
     | { kind: 'removed'; id: string; index: number }
     | null
   >(null);
@@ -266,9 +266,14 @@ export function CustomisePage() {
   useEffect(() => {
     if (!focus || !layout.data) return;
     const ids = layout.data.widgets.map((w) => w.id);
-    // The edit applies a moment after the click, so keep waiting until it has.
+    // The edit applies a moment after the click, so keep waiting until it has:
+    // focusing a row before React reorders it would lose focus again.
     const pending =
-      focus.kind === 'row' ? !ids.includes(focus.id) : ids.includes(focus.id);
+      focus.kind === 'row'
+        ? focus.index === undefined
+          ? !ids.includes(focus.id)
+          : ids.indexOf(focus.id) !== focus.index
+        : ids.includes(focus.id);
     if (pending) return;
     const target =
       focus.kind === 'row'
@@ -324,7 +329,11 @@ export function CustomisePage() {
         total: widgets.length,
       }),
     );
-    setFocus({ kind: 'row', id });
+    setFocus({
+      kind: 'row',
+      id,
+      index: Math.max(0, Math.min(to, widgets.length - 1)),
+    });
   };
   const remove = (id: string, index: number) => {
     setStatus(t('announce.removed', { name: nameById(id) }));
@@ -356,7 +365,7 @@ export function CustomisePage() {
         to,
       ),
     );
-    setFocus({ kind: 'row', id: String(active.id) });
+    setFocus({ kind: 'row', id: String(active.id), index: to });
   };
 
   const available = availableWidgetTypes(widgets);
