@@ -30,8 +30,10 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
   useEffect(() => {
     const from = previous.current;
     previous.current = mode;
+    const wasMove = moved.current;
+    moved.current = false;
     if (mode === 'confirmDelete') confirmButton.current?.focus();
-    else if (mode === 'view' && from === 'edit' && !moved.current)
+    else if (mode === 'view' && from === 'edit' && !wasMove)
       editButton.current?.focus();
     else if (mode === 'view' && from === 'confirmDelete')
       deleteButton.current?.focus();
