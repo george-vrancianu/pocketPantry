@@ -716,7 +716,7 @@ describe('Unmatched queue (integration)', () => {
       expect(synonyms).toHaveLength(1);
     });
 
-    it('relinks or keeps queued a Batch saved while the resolve waits for the Shopping List lock', async () => {
+    it('relinks or keeps queued a Batch saved while the resolve waits for the Family lock', async () => {
       const raw = name('late batch');
       const member = await newMember();
       const parmesan = seedId.ingredient('parmesan');
@@ -741,9 +741,9 @@ describe('Unmatched queue (integration)', () => {
           sql`SELECT pg_backend_pid() AS pid`,
         );
         await tx.execute(
-          sql`SELECT id FROM shopping_lists WHERE id = ${item.listId} FOR UPDATE`,
+          sql`SELECT id FROM family WHERE id = ${list.familyId} FOR UPDATE`,
         );
-        // Resolve reads its entries, then waits for this list.
+        // Resolve reads its entries, then waits for this Family.
         resolveResponse = Promise.resolve(
           resolve({
             normalizedName: normalise(raw),
@@ -785,6 +785,47 @@ describe('Unmatched queue (integration)', () => {
       // With the entries read under the locks, the late Batch is relinked.
       expect(late).toMatchObject({ unmatched: false, ingredientId: parmesan });
       expect(entries).toEqual([]);
+    });
+
+    it('takes the Family lock before any list, item or Batch lock', async () => {
+      const raw = name('family lock');
+      const member = await newMember();
+      const [batch] = await saveBatches(member, [{ rawName: raw }]);
+      const [{ familyId }] = await database
+        .select({ familyId: batches.familyId })
+        .from(batches)
+        .where(eq(batches.id, batch.id));
+
+      // Holds the Family row like deleteFamily does, then touches its Batch.
+      const holder = await pool.connect();
+      let response: Promise<request.Response> | undefined;
+      try {
+        await holder.query('BEGIN');
+        const { rows } = await holder.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await holder.query('SELECT id FROM family WHERE id = $1 FOR UPDATE', [
+          familyId,
+        ]);
+        response = Promise.resolve(
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: seedId.ingredient('parmesan'),
+          }).then((r) => r),
+        );
+        await waitForBlockedBackend(pool, rows[0].pid);
+        // Had the resolve taken the Batch lock first, deleteFamily's cascade
+        // would now wait on it while the resolve waits on the Family.
+        const { rows: held } = await holder.query(
+          'SELECT 1 FROM batches WHERE id = $1 FOR UPDATE NOWAIT',
+          [batch.id],
+        );
+        expect(held).toHaveLength(1);
+      } finally {
+        await holder.query('ROLLBACK').catch(() => undefined);
+        holder.release();
+      }
+      expect((await response)?.status).toBe(201);
     });
 
     it('does not deadlock with Finish Shopping and adds on the same rows', async () => {

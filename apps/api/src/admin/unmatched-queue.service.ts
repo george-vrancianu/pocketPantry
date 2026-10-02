@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import { lockFamilies } from '../family/family-locks';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
@@ -35,10 +36,10 @@ const notInQueue = () => new ApiException(404, 'unmatched.not_found');
  * Item carrying the name, add the Synonym, clear the entries).
  *
  * Lock order, every time: the per-name advisory lock (serialises Admins
- * working the same name), then Shopping List rows in ascending id (the same
- * list-first order Finish Shopping and list edits use), then Shopping Item and
- * Batch rows in ascending id. Nothing here ever waits on a Family row, and no
- * other code path takes the advisory lock, so no ordering can invert.
+ * working the same name), then the Family rows involved in ascending id (as
+ * family-locks.ts requires everywhere), then Shopping List rows in ascending
+ * id, then Shopping Item and Batch rows in ascending id. Only this service
+ * takes the advisory lock, so it cannot invert with another path.
  */
 @Injectable()
 export class UnmatchedQueueService {
@@ -102,10 +103,8 @@ export class UnmatchedQueueService {
           entity: 'ingredient',
         });
       }
-      // Rare: deleting a Household of One on join cascades over its Batches
-      // and Shopping Lists (and their entries) in an order we cannot control,
-      // so it can deadlock with a resolve touching the same rows. Postgres
-      // aborts one side; the Admin just retries.
+      // Rare: two resolves of different names re-locking after an entry set
+      // grew can still cross; Postgres aborts one side and the Admin retries.
       if (hasPgCode(error, '40P01')) {
         throw new ApiException(409, 'unmatched.concurrent_change');
       }
@@ -201,11 +200,13 @@ export class UnmatchedQueueService {
     let entries = await read();
     const lockedItems = new Set<string>();
     const lockedBatches = new Set<string>();
+    const lockedFamilies = new Set<string>();
     for (let attempt = 0; attempt < MAX_LOCK_ATTEMPTS; attempt++) {
       const itemIds = entries.flatMap((e) =>
         e.shoppingItemId ? [e.shoppingItemId] : [],
       );
       const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
+      await this.lockFamiliesOf(tx, itemIds, batchIds, lockedFamilies);
       await this.lockShoppingLists(tx, itemIds);
       if (itemIds.length > 0) {
         await tx
@@ -323,6 +324,42 @@ export class UnmatchedQueueService {
     await tx.execute(
       sql`SELECT pg_advisory_xact_lock(hashtextextended(${`unmatched:${normalizedName}`}, 0))`,
     );
+  }
+
+  /**
+   * Locks the Families owning the rows, ascending id, before anything else
+   * of theirs: the order deleteFamily and Finish Shopping use
+   * (family-locks.ts), so the cascade cannot deadlock with a relink.
+   */
+  private async lockFamiliesOf(
+    tx: Tx,
+    itemIds: string[],
+    batchIds: string[],
+    locked: Set<string>,
+  ): Promise<void> {
+    const ofBatches =
+      batchIds.length === 0
+        ? []
+        : await tx
+            .select({ id: batches.familyId })
+            .from(batches)
+            .where(inArray(batches.id, batchIds));
+    const ofItems =
+      itemIds.length === 0
+        ? []
+        : await tx
+            .select({ id: shoppingLists.familyId })
+            .from(shoppingItems)
+            .innerJoin(
+              shoppingLists,
+              eq(shoppingLists.id, shoppingItems.listId),
+            )
+            .where(inArray(shoppingItems.id, itemIds));
+    const missing = [...ofBatches, ...ofItems]
+      .map((row) => row.id)
+      .filter((id) => !locked.has(id));
+    await lockFamilies(tx, missing);
+    missing.forEach((id) => locked.add(id));
   }
 
   /**
