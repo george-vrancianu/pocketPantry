@@ -27,6 +27,8 @@ type Props = {
   parents: CatalogParent[];
   /** The line goes on the Shopping List: no Category, Location, expiry or description. */
   shopping?: boolean;
+  /** Set only when other lines share this line's name: tells them apart for assistive tech. */
+  position?: { index: number; total: number };
 };
 
 /** One proposed line, editable. Flagged lines (Unmatched or low confidence) are tinted and say why. */
@@ -37,6 +39,7 @@ export function ReviewLineCard({
   onDrop,
   parents,
   shopping = false,
+  position,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry']);
   const id = useId();
@@ -44,6 +47,9 @@ export function ReviewLineCard({
   const unmatched = line.match === null;
   const flagged = unmatched || line.lowConfidence;
   const displayName = line.match?.name ?? line.name;
+  const accessibleName = position
+    ? t('review:position', { name: displayName, ...position })
+    : displayName;
   const quantityValid = parseQuantity(line.quantity).valid;
 
   return (
@@ -60,7 +66,7 @@ export function ReviewLineCard({
       <Stack
         spacing={1.5}
         component="section"
-        aria-label={displayName}
+        aria-label={accessibleName}
         id={`review-line-${line.key}`}
         tabIndex={-1}
         sx={{ outline: 'none' }}
@@ -73,7 +79,7 @@ export function ReviewLineCard({
             variant="text"
             type="button"
             onClick={onDrop}
-            aria-label={t('review:drop', { name: displayName })}
+            aria-label={t('review:drop', { name: accessibleName })}
           >
             {t('review:dropShort')}
           </Button>

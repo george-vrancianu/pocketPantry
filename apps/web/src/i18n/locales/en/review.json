@@ -13,6 +13,7 @@
     "unmatchedShopping": "Not in our catalogue: pick an ingredient, or add it to your list under the name we read."
   },
   "dropShort": "Drop",
+  "position": "{{name}} ({{index}} of {{total}})",
   "drop": "Drop {{name}}",
   "save_one": "Save {{count}} item",
   "save_few": "Save {{count}} items",

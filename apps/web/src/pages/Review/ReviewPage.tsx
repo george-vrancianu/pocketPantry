@@ -5,6 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExcludedLines } from './components/ExcludedLines';
 import { ReviewLineCard } from './components/ReviewLineCard';
+import type { ReviewLine } from '../../lib/review';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
 /**
@@ -20,6 +21,14 @@ export function ReviewPage() {
     (heading: HTMLHeadingElement | null) => heading?.focus(),
     [],
   );
+
+  const nameOf = (line: ReviewLine) => line.match?.name ?? line.name;
+  const positionOf = (line: ReviewLine) => {
+    const same = screen.lines.filter((o) => nameOf(o) === nameOf(line));
+    return same.length > 1
+      ? { index: same.indexOf(line) + 1, total: same.length }
+      : undefined;
+  };
 
   if (screen.tickFailures) {
     const { missing, changed, other } = screen.tickFailures;
@@ -68,6 +77,7 @@ export function ReviewPage() {
                 line={line}
                 parents={screen.parents}
                 shopping={screen.shopping}
+                position={positionOf(line)}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}

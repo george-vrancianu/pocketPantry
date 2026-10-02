@@ -13,6 +13,7 @@
     "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
   },
   "dropShort": "Elimină",
+  "position": "{{name}} ({{index}} din {{total}})",
   "drop": "Elimină {{name}}",
   "save_one": "Salvează {{count}} articol",
   "save_few": "Salvează {{count}} articole",
