@@ -12,6 +12,7 @@ import {
   user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Item = { id: string; name: string; checked: boolean };
 type List = {
@@ -534,19 +535,6 @@ describe('Finish Shopping (integration)', () => {
       }
     }
 
-    /** Polls until some backend is waiting on a lock held by `holder`. */
-    async function waitForBlockedBackend(holder: number) {
-      for (let attempt = 0; attempt < 100; attempt++) {
-        const { rows } = await pool.query(
-          `SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))`,
-          [holder],
-        );
-        if (rows.length > 0) return;
-        await new Promise((resolve) => setTimeout(resolve, 20));
-      }
-      throw new Error('no backend ever blocked on a lock');
-    }
-
     /** Starts the request, proves it is blocked behind the lock, then lets Finish commit. */
     async function duringFinish(
       familyId: string,
@@ -559,7 +547,7 @@ describe('Finish Shopping (integration)', () => {
           settled = true;
           return response;
         });
-        await waitForBlockedBackend(held.pid);
+        await waitForBlockedBackend(pool, held.pid);
         expect(settled).toBe(false);
         const newListId = await held.complete();
         const response = await pending;

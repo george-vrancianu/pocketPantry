@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, ilike, inArray, sql } from 'drizzle-orm';
+import pg from 'pg';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
@@ -13,6 +14,7 @@ import {
   unmatchedEntries,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Entry = {
   normalizedName: string;
@@ -34,6 +36,7 @@ type Entry = {
 describe('Unmatched queue (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let pool: pg.Pool;
   let adminCookie: string;
   const stamp = Date.now();
   let counter = 0;
@@ -124,11 +127,13 @@ describe('Unmatched queue (integration)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
+    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     database = app.get<Database>(DATABASE);
     adminCookie = await signUp('chef.admin@example.com');
   });
 
   afterAll(async () => {
+    await pool.end();
     const like = `%${stamp}%`;
     await database.delete(batches).where(ilike(batches.rawName, like));
     // Resolved rows lost their raw name: find them through their Ingredient.
@@ -504,6 +509,9 @@ describe('Unmatched queue (integration)', () => {
 
       let response: Promise<request.Response> | undefined;
       await database.transaction(async (tx) => {
+        const { rows } = await tx.execute<{ pid: number }>(
+          sql`SELECT pg_backend_pid() AS pid`,
+        );
         await tx.execute(sql`DELETE FROM ingredients WHERE id = ${created.id}`);
         response = Promise.resolve(
           resolve({
@@ -511,7 +519,7 @@ describe('Unmatched queue (integration)', () => {
             ingredientId: created.id,
           }).then((r) => r),
         );
-        await new Promise((done) => setTimeout(done, 500));
+        await waitForBlockedBackend(pool, rows[0].pid);
       });
       expect((await response)?.status).toBe(404);
       expect(await entryFor(raw)).toBeDefined();
@@ -707,6 +715,9 @@ describe('Unmatched queue (integration)', () => {
       let resolveResponse: Promise<request.Response> | undefined;
       let lateBatchId = '';
       await database.transaction(async (tx) => {
+        const { rows } = await tx.execute<{ pid: number }>(
+          sql`SELECT pg_backend_pid() AS pid`,
+        );
         await tx.execute(
           sql`SELECT id FROM shopping_lists WHERE id = ${item.listId} FOR UPDATE`,
         );
@@ -717,7 +728,7 @@ describe('Unmatched queue (integration)', () => {
             ingredientId: parmesan,
           }).then((r) => r),
         );
-        await new Promise((done) => setTimeout(done, 500));
+        await waitForBlockedBackend(pool, rows[0].pid);
         const [batch] = await tx
           .insert(batches)
           .values({
@@ -749,8 +760,6 @@ describe('Unmatched queue (integration)', () => {
         .select()
         .from(unmatchedEntries)
         .where(eq(unmatchedEntries.batchId, lateBatchId));
-      // Never "Unmatched with no queue entry".
-      expect(late.unmatched === false || entries.length > 0).toBe(true);
       // With the entries read under the locks, the late Batch is relinked.
       expect(late).toMatchObject({ unmatched: false, ingredientId: parmesan });
       expect(entries).toEqual([]);
