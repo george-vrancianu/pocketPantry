@@ -18,9 +18,12 @@ Other root scripts: `npm run db:migrate`, `npm run lint`, `npm run typecheck`,
 (dev on `:5432`, tests on `:5433`).
 
 Tests have two layers. `test:unit` runs `src/**/*.spec.ts` with no database.
-`test:integration` runs `test/*.int-spec.ts`, which boot the real app against
-`TEST_DATABASE_URL` (default `postgresql://postgres:postgres@localhost:5433/pocket_pantry_test`),
-apply the migrations, and exercise HTTP endpoints.
+`test:integration` runs `test/*.int-spec.ts`, which boot the real app and
+exercise HTTP endpoints. Against the server in `TEST_DATABASE_URL` (default
+`postgresql://postgres:postgres@localhost:5433/pocket_pantry_test`), global
+setup migrates and seeds a template database once and clones it per Jest
+worker, so workers never share state. Global teardown drops them; the next run
+also sweeps databases left by dead runs.
 
 Swagger lives at `/api/docs`. better-auth is mounted at `/api/auth/*`
 (`sign-up/email`, `sign-in/email`, `get-session`, ...).

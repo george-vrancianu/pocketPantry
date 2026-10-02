@@ -151,10 +151,8 @@ describe('Household of One and the Family (integration)', () => {
   });
 
   it('leaves no Family behind when the Member insert fails during sign-up', async () => {
-    // Sign-up commits the Family just before the Member row, so a Family can
-    // look childless for a moment. Only Families created during this test
-    // count, and a transient one must clear within the deadline; a leaked
-    // Family never does.
+    // Only Families created during this test count: earlier specs in this
+    // worker may leave Families without Members.
     const startedAt = (
       (await database.execute(sql`select now() as t`)).rows[0] as { t: Date }
     ).t;
@@ -165,15 +163,6 @@ describe('Household of One and the Family (integration)', () => {
               and id not in (select family_id from "user")`,
       );
       return (result.rows[0] as { n: number }).n;
-    };
-    const settledOrphans = async () => {
-      const deadline = Date.now() + 5000;
-      let orphans = await countNewOrphans();
-      while (orphans > 0 && Date.now() < deadline) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        orphans = await countNewOrphans();
-      }
-      return orphans;
     };
     const email = `doomed-${Date.now()}@example.com`;
     // Fails only the user insert (after the Family is created), for this email.
@@ -196,7 +185,7 @@ describe('Household of One and the Family (integration)', () => {
         .set('x-forwarded-for', '10.9.9.9')
         .send({ name: 'Doomed', email, password });
       expect(failed.status).toBe(422);
-      expect(await settledOrphans()).toBe(0);
+      expect(await countNewOrphans()).toBe(0);
     } finally {
       await database.execute(
         sql`drop trigger if exists pp_test_reject_user on "user"`,

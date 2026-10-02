@@ -374,7 +374,7 @@ describe('Catalog (integration)', () => {
       await seedCatalog(database);
       await seedCatalog(database);
       expect(await snapshot()).toEqual(before);
-    }, 20_000);
+    });
 
     it('does not fail when a display name was worded differently by an earlier seed', async () => {
       const id = stableId(
@@ -505,7 +505,14 @@ describe('Catalog (integration)', () => {
     });
 
     it('loads 18 Parent Categories with Aisles and an Other Leaf under each', async () => {
-      const parents = await database.select().from(parentCategories);
+      // Seed rows only: other specs in this worker insert Parent Categories
+      // they never delete.
+      const seedParentIds = new Set(
+        SEED_PARENTS.map((parent) => seedId.parent(parent.slug)),
+      );
+      const parents = (await database.select().from(parentCategories)).filter(
+        (row) => seedParentIds.has(row.id),
+      );
       expect(parents).toHaveLength(18);
       const leaves = await database.select().from(leafCategories);
       for (const parent of parents) {
