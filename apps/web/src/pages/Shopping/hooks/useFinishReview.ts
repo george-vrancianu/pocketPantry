@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../../lib/api';
@@ -42,6 +43,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
   const { t, i18n } = useTranslation();
   const proposal = useFinishProposal(i18n.language);
   const finish = useFinishShopping();
+  const queryClient = useQueryClient();
   const [edits, setEdits] = useState<Record<string, Partial<ReviewEdit>>>({});
   const [dropped, setDropped] = useState<ReadonlySet<string>>(new Set());
 
@@ -93,6 +95,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
       setDropped(new Set());
       finish.reset();
       void proposal.refetch();
+      void queryClient.invalidateQueries({ queryKey: ['shopping-list'] });
     },
     confirm: () => {
       if (!canConfirm || listId === undefined) return;

@@ -239,6 +239,12 @@ describe('Finish Shopping review', () => {
     expect(
       calls.filter((c) => c.key === 'GET /api/shopping-list/finish'),
     ).toHaveLength(2);
+    // The list behind the Review is stale too, so Reload refreshes it as well.
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key === 'GET /api/shopping-list'),
+      ).toHaveLength(2),
+    );
   });
 
   it('shows an empty state when the proposal has no lines', async () => {
