@@ -190,6 +190,9 @@ describe('Receipt Review', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '1 Shopping Item was removed from your list before we could tick it off.',
     );
+    expect(
+      screen.getByRole('heading', { name: 'Saved to your Pantry' }),
+    ).toHaveFocus();
     await userEvent.click(screen.getByRole('button', { name: 'Go to Pantry' }));
     expect(await screen.findByText('pantry screen')).toBeInTheDocument();
   });
