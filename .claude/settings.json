@@ -16,7 +16,8 @@
             "RemoteTrigger",
             "ReportFindings",
             "ScheduleWakeup",
-            "AskUserQuestion"
+            "AskUserQuestion",
+            "SendFeedback"
         ]
     },
     "statusLine": {
