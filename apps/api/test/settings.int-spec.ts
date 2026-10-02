@@ -10,7 +10,7 @@ import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 type Batch = { id: string; name: string; expiryDate: string | null };
 type FamilySettings = {
   staleThresholdDays: number;
-  expiryOverrides: { categoryId: string; kind: string; days: number }[];
+  expiryOverrides: { categoryId: string; days: number }[];
 };
 
 const inDays = (days: number) =>
@@ -122,7 +122,6 @@ describe('Settings (integration)', () => {
       expect(seen.expiryOverrides).toEqual([
         expect.objectContaining({
           categoryId: seedId.leaf('hard-cheese'),
-          kind: 'leaf',
           days: 14,
         }),
       ]);
@@ -174,7 +173,10 @@ describe('Settings (integration)', () => {
       await call(cookie, 'put', category).send({ days: 3 }).expect(200);
       await call(cookie, 'put', category).send({ days: 6 }).expect(200);
       expect((await familySettings(cookie)).expiryOverrides).toEqual([
-        expect.objectContaining({ kind: 'parent', days: 6 }),
+        expect.objectContaining({
+          categoryId: seedId.parent('dairy'),
+          days: 6,
+        }),
       ]);
       await call(cookie, 'delete', category).expect(200);
       expect((await familySettings(cookie)).expiryOverrides).toEqual([]);
@@ -187,7 +189,10 @@ describe('Settings (integration)', () => {
       await call(cookie, 'put', category).send({ days: 4 }).expect(200);
       await call(outsider.cookie, 'delete', category).expect(200);
       expect((await familySettings(cookie)).expiryOverrides).toEqual([
-        expect.objectContaining({ kind: 'parent', days: 4 }),
+        expect.objectContaining({
+          categoryId: seedId.parent('dairy'),
+          days: 4,
+        }),
       ]);
     });
 

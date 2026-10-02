@@ -27,7 +27,7 @@ export type FamilyView = {
 };
 
 /** What joining would delete: the caller's own Household of One and its data. */
-export type JoinPreview = FamilyDataCounts & { abandonedFamilyId: string };
+export type JoinPreview = FamilyDataCounts;
 
 /**
  * Every mutation here runs in one transaction that first locks the affected
@@ -92,13 +92,13 @@ export class FamilyService {
   /** Same checks as `join`, no changes: what joining with `code` would delete. */
   async previewJoin(memberId: string, code: string): Promise<JoinPreview> {
     // Read-only: no row locks, so a preview never blocks (or is blocked by) others.
-    const { abandoned, counts } = await this.prepareJoin(
+    const { counts } = await this.prepareJoin(
       this.database,
       memberId,
       code,
       false,
     );
-    return { abandonedFamilyId: abandoned, ...counts };
+    return counts;
   }
 
   /**

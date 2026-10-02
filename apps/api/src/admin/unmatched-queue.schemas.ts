@@ -50,7 +50,6 @@ export type UnmatchedQueueEntry = {
   locales: string[];
   sources: string[];
   dismissed: boolean;
-  lastSeenAt: Date;
   /** Up to MAX_REFERENCES, newest first. */
   references: UnmatchedReference[];
 };

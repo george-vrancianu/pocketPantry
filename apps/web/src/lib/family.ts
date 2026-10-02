@@ -34,7 +34,6 @@ export function useRegenerateInviteCode() {
 }
 
 export type JoinPreview = {
-  abandonedFamilyId: string;
   batches: number;
   shoppingItems: number;
 };

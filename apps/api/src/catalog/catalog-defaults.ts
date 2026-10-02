@@ -1,9 +1,10 @@
 import type { storageLocation } from '../database/schema';
+import type { EntityType } from './display-names';
 
 export type StorageLocation = (typeof storageLocation.enumValues)[number];
 
 export type ExpiryOverride = {
-  entityType: 'parent_category' | 'leaf_category';
+  entityType: EntityType;
   entityId: string;
   days: number;
 };

@@ -11,10 +11,7 @@ const categories: CategoryOptions = {
     {
       id: 'dairy',
       name: 'Dairy',
-      defaultExpiryDays: 10,
-      leaves: [
-        { id: 'hard-cheese', name: 'Hard cheese', defaultExpiryDays: 60 },
-      ],
+      leaves: [{ id: 'hard-cheese', name: 'Hard cheese' }],
     },
   ],
 };
@@ -51,7 +48,6 @@ describe('SettingsPage', () => {
       expiryOverrides: [
         {
           categoryId: 'hard-cheese',
-          kind: 'leaf',
           name: 'Hard cheese',
           days: 14,
         },
@@ -75,7 +71,6 @@ describe('SettingsPage', () => {
       expiryOverrides: [
         {
           categoryId: 'hard-cheese',
-          kind: 'leaf',
           name: 'Brânză tare',
           days: 1,
         },
@@ -119,7 +114,6 @@ describe('SettingsPage', () => {
       expiryOverrides: [
         {
           categoryId: 'hard-cheese',
-          kind: 'leaf',
           name: 'Hard cheese',
           days: 14,
         },

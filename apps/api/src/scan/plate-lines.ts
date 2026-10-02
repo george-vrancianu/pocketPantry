@@ -39,8 +39,6 @@ export function plateLine(
   return {
     name: item.fallbackIngredientName,
     match: matched ? match : null,
-    matchConfidence: matched ? item.matchConfidence : 0,
-    unmatched: !matched,
     lowConfidence: item.confidence < threshold,
     quantity: unit === null ? null : item.quantity,
     unit,

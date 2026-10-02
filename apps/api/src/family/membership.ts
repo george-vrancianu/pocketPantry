@@ -18,7 +18,7 @@ import { withFreshInviteCode } from './invite-code';
 export async function moveToNewHouseholdOfOne(
   tx: Tx,
   memberId: string,
-): Promise<string> {
+): Promise<void> {
   const [created] = await withFreshInviteCode((code) =>
     tx.transaction((savepoint) =>
       savepoint.insert(family).values(code).returning({ id: family.id }),
@@ -28,7 +28,6 @@ export async function moveToNewHouseholdOfOne(
     .update(user)
     .set({ familyId: created.id, familyRole: 'owner' })
     .where(eq(user.id, memberId));
-  return created.id;
 }
 
 export type FamilyDataCounts = { batches: number; shoppingItems: number };

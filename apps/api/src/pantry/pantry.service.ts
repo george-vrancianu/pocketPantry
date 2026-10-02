@@ -16,7 +16,6 @@ import {
   ingredients,
   leafCategories,
   parentCategories,
-  user,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
@@ -49,7 +48,7 @@ export class PantryService {
     locale: CatalogLocale,
     today?: string,
   ): Promise<BatchView[]> {
-    const familyId = await this.familyIdOf(memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database
       .select()
       .from(batches)
@@ -76,7 +75,7 @@ export class PantryService {
     bodies: CreateBatchBody[],
     locale: CatalogLocale,
   ): Promise<BatchView[]> {
-    const familyId = await this.familyIdOf(memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const overrides = await this.settings.expiryOverridesOf(familyId);
     const values: (typeof batches.$inferInsert)[] = [];
     for (const body of bodies) {
@@ -102,8 +101,7 @@ export class PantryService {
       );
       return inserted;
     });
-    // `today` only anchors expiringSoon; a bulk request carries one client date.
-    return this.toViews(rows, locale, familyId, bodies[0]?.today);
+    return this.toViews(rows, locale, familyId);
   }
 
   private async toRow(
@@ -124,10 +122,7 @@ export class PantryService {
         ? body.expiryDate
         : expiryDays === null
           ? null
-          : addDays(
-              body.today ?? new Date().toISOString().slice(0, 10),
-              expiryDays,
-            );
+          : addDays(new Date().toISOString().slice(0, 10), expiryDays);
 
     return {
       familyId,
@@ -149,7 +144,7 @@ export class PantryService {
     body: UpdateBatchBody,
     locale: CatalogLocale,
   ): Promise<BatchView> {
-    const familyId = await this.familyIdOf(memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const [current] = await this.database
       .select()
       .from(batches)
@@ -186,7 +181,7 @@ export class PantryService {
 
   /** Another Family's Batch is indistinguishable from a missing one. */
   async remove(memberId: string, batchId: string): Promise<void> {
-    const familyId = await this.familyIdOf(memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const deleted = await this.database
       .delete(batches)
       .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
@@ -194,16 +189,6 @@ export class PantryService {
     if (deleted.length === 0) {
       throw new ApiException(404, 'pantry.batch_not_found');
     }
-  }
-
-  private async familyIdOf(memberId: string): Promise<string> {
-    const [self] = await this.database
-      .select({ familyId: user.familyId })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .limit(1);
-    if (!self) throw new ApiException(401, 'auth.unauthenticated');
-    return self.familyId;
   }
 
   private async matchedTarget(ingredientId: string) {

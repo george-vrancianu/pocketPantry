@@ -46,8 +46,6 @@ vi.mock('react-easy-crop', async () => {
 const line = (name: string) => ({
   name,
   match: null,
-  matchConfidence: 0,
-  unmatched: true,
   lowConfidence: false,
   quantity: 1,
   unit: 'pcs',

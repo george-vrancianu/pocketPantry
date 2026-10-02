@@ -146,7 +146,6 @@ describe('Receipt Scan (integration)', () => {
       lines: [
         {
           name: 'Lapte',
-          unmatched: false,
           quantity: 2,
           unit: 'l',
           productDescription: 'Lapte UHT',
@@ -154,7 +153,6 @@ describe('Receipt Scan (integration)', () => {
         },
         {
           name: 'SACOSA BIO',
-          unmatched: true,
           match: null,
           excluded: { reason: 'other' },
         },
@@ -184,7 +182,7 @@ describe('Receipt Scan (integration)', () => {
     );
     const body = (await scan(await signUp()).expect(201)).body as unknown;
     expect(body).toMatchObject({
-      lines: [{ match: null, unmatched: true, name: 'Zzyzx mystery' }],
+      lines: [{ match: null, name: 'Zzyzx mystery' }],
     });
   });
 
@@ -203,7 +201,6 @@ describe('Receipt Scan (integration)', () => {
     expect(body).toMatchObject({
       lines: [
         {
-          unmatched: false,
           lowConfidence: false,
           match: { id: seedId.ingredient('milk'), name: 'Lapte' },
         },
@@ -228,12 +225,9 @@ describe('Receipt Scan (integration)', () => {
       ),
     );
     const body = (await scan(await signUp(), 'ro').expect(201)).body as {
-      lines: { unmatched: boolean; match: unknown }[];
+      lines: { match: unknown }[];
     };
-    expect(body.lines.map((l) => [l.unmatched, l.match])).toEqual([
-      [true, null],
-      [true, null],
-    ]);
+    expect(body.lines.map((l) => l.match)).toEqual([null, null]);
   });
 
   it('rejects malformed model output with 502 and does not charge the Scan Cap', async () => {

@@ -40,7 +40,6 @@ const entry: UnmatchedEntry = {
   locales: ['ro'],
   sources: ['manual', 'receipt'],
   dismissed: false,
-  lastSeenAt: '2026-10-01T10:00:00.000Z',
   references: [],
 };
 

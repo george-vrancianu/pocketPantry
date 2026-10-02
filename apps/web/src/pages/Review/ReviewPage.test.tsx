@@ -27,8 +27,6 @@ const milk: CatalogSearchResult = {
 const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   name: 'Grana Padano',
   match: parmesan,
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: null,
   unit: null,
@@ -95,7 +93,7 @@ describe('ReviewPage', () => {
 
   it('flags Unmatched and low-confidence lines', () => {
     renderReview([
-      line({ match: null, unmatched: true, name: 'Mystery' }),
+      line({ match: null, name: 'Mystery' }),
       line({ lowConfidence: true }),
     ]);
     const notes = screen.getAllByRole('note').map((n) => n.textContent);
@@ -129,7 +127,7 @@ describe('ReviewPage', () => {
   it('saves the edited lines as Batches, Unmatched ones under their name', async () => {
     const calls = renderReview([
       line(),
-      line({ match: null, unmatched: true, name: 'Mystery jar' }),
+      line({ match: null, name: 'Mystery jar' }),
     ]);
     const parmesanCard = screen.getByRole('region', { name: 'Parmesan' });
     await userEvent.type(
@@ -168,7 +166,7 @@ describe('ReviewPage', () => {
   it('lets the Member place an Unmatched line in a Parent Category, and not a matched one', async () => {
     const calls = renderReview([
       line(),
-      line({ match: null, unmatched: true, name: 'Mystery jar' }),
+      line({ match: null, name: 'Mystery jar' }),
     ]);
     expect(
       within(screen.getByRole('region', { name: 'Parmesan' })).queryByLabelText(

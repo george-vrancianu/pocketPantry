@@ -438,7 +438,6 @@ export class UnmatchedQueueService {
       locales: [...new Set(group.map((row) => row.locale))].sort(),
       sources: [...new Set(group.map((row) => row.source))].sort(),
       dismissed: group.every((row) => row.dismissedAt !== null),
-      lastSeenAt: latest.createdAt,
       references: group.slice(0, MAX_REFERENCES).map((row) => ({
         type: row.batchId ? 'batch' : 'shopping_item',
         id: (row.batchId ?? row.shoppingItemId) as string,

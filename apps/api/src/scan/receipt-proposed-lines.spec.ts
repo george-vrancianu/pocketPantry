@@ -54,7 +54,6 @@ describe('receiptProposedLines', () => {
     expect(proposed).toMatchObject({
       name: 'Lapte',
       match: milk,
-      unmatched: false,
       lowConfidence: false,
       quantity: 2,
       unit: 'l',
@@ -68,10 +67,10 @@ describe('receiptProposedLines', () => {
     const weak = line({ matchConfidence: 0.4 });
     expect(
       receiptProposedLines(receipt(weak), resolveMilk, 0.6)[0],
-    ).toMatchObject({ match: null, unmatched: true, matchConfidence: 0 });
+    ).toMatchObject({ match: null });
     expect(
       receiptProposedLines(receipt(line()), resolveNothing, 0.6)[0],
-    ).toMatchObject({ match: null, unmatched: true, name: 'Lapte' });
+    ).toMatchObject({ match: null, name: 'Lapte' });
   });
 
   it('keeps an exact-name Match without flagging it', () => {
@@ -82,7 +81,7 @@ describe('receiptProposedLines', () => {
         guess,
         0.6,
       )[0],
-    ).toMatchObject({ match: milk, unmatched: false, lowConfidence: false });
+    ).toMatchObject({ match: milk, lowConfidence: false });
   });
 
   it('flags a shaky read as low confidence', () => {
@@ -110,7 +109,6 @@ describe('receiptProposedLines', () => {
     expect(proposed).toMatchObject({
       name: 'SACOSA BIO',
       match: null,
-      unmatched: true,
       quantity: null,
       excluded: { reason: 'not_food' },
     });

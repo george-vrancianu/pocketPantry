@@ -1,13 +1,12 @@
 import { z } from 'zod';
 
-export const MAX_IMAGE_DATA_URL_LENGTH = 7_000_000;
-export const IMAGE_DATA_URL_PATTERN =
-  /^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/;
-
 export const imageDataUrlSchema = z
   .string()
-  .max(MAX_IMAGE_DATA_URL_LENGTH, 'Image is too large')
-  .regex(IMAGE_DATA_URL_PATTERN, 'Image must be a JPEG, PNG, or WebP data URL');
+  .max(7_000_000, 'Image is too large')
+  .regex(
+    /^data:image\/(?:jpeg|png|webp);base64,[a-zA-Z0-9+/=]+$/,
+    'Image must be a JPEG, PNG, or WebP data URL',
+  );
 
 export const productScanSchema = z.object({
   productImage: imageDataUrlSchema,

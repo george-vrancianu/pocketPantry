@@ -20,8 +20,6 @@ const milk: CatalogSearchResult = {
 const milkLine: ProposedLine = {
   name: 'Milk',
   match: milk,
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: 2,
   unit: 'l',
@@ -32,8 +30,6 @@ const milkLine: ProposedLine = {
 const bagLine: ProposedLine = {
   name: 'SACOSA BIO',
   match: null,
-  matchConfidence: 0,
-  unmatched: true,
   lowConfidence: false,
   quantity: null,
   unit: null,

@@ -30,7 +30,6 @@ const item = (overrides: Record<string, unknown> = {}) => ({
 
 type Line = {
   name: string;
-  unmatched: boolean;
   lowConfidence: boolean;
   quantity: number | null;
   unit: string | null;
@@ -227,8 +226,8 @@ describe('Plate Scan (integration)', () => {
       const { lines } = (await ingredients(await signUp()).expect(201))
         .body as { lines: Line[] };
       expect(lines).toMatchObject([
-        { match: { id: milk }, quantity: 200, unit: 'ml', unmatched: false },
-        { match: { id: flour }, quantity: 60, unit: 'g', unmatched: false },
+        { match: { id: milk }, quantity: 200, unit: 'ml' },
+        { match: { id: flour }, quantity: 60, unit: 'g' },
       ]);
       expect(prompts[0].images ?? []).toEqual([]);
       expect(prompts[0].prompt).toContain('"Pancakes"');
@@ -247,11 +246,7 @@ describe('Plate Scan (integration)', () => {
       });
       const { lines } = (await ingredients(await signUp()).expect(201))
         .body as { lines: Line[] };
-      expect(lines.map((l) => [l.unmatched, l.match])).toEqual([
-        [true, null],
-        [true, null],
-        [true, null],
-      ]);
+      expect(lines.map((l) => l.match)).toEqual([null, null, null]);
       expect(lines[0].name).toBe('Pixie dust');
     });
 

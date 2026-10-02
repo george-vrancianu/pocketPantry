@@ -306,7 +306,6 @@ describe('Pantry (integration)', () => {
       );
       expect(response.body).toMatchObject({ code: 'validation_failed' });
     }
-    await add(cookie, { ingredientId, today: '2026-02-31' }).expect(400);
     for (const quantity of [0.0001, 1.2345, 1_000_001, -1]) {
       const response = await add(cookie, {
         ingredientId,
@@ -327,27 +326,6 @@ describe('Pantry (integration)', () => {
       )
     ).body as Batch;
     expect(fine.quantity).toBe(1.235);
-  });
-
-  it("counts the default expiry from the Member's local `today` when given", async () => {
-    const { cookie } = await signUp();
-    // A Member just past midnight in Bucharest while UTC is still the previous day.
-    const batch = (
-      await add(cookie, {
-        ingredientId: seedId.ingredient('parmesan'),
-        today: '2031-03-01',
-      }).expect(201)
-    ).body as Batch;
-    expect(batch.expiryDate).toBe('2031-04-30');
-    // An explicit expiry wins over `today`.
-    const explicit = (
-      await add(cookie, {
-        ingredientId: seedId.ingredient('parmesan'),
-        today: '2031-03-01',
-        expiryDate: '2031-04-02',
-      }).expect(201)
-    ).body as Batch;
-    expect(explicit.expiryDate).toBe('2031-04-02');
   });
 
   it('enforces "unit null only when quantity null" in the database too', async () => {

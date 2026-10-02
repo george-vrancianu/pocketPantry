@@ -31,8 +31,6 @@ describe('ingredientsLine', () => {
     expect(ingredientsLine(item(), match, 0.6)).toEqual({
       name: 'Milk',
       match,
-      matchConfidence: 0.9,
-      unmatched: false,
       lowConfidence: false,
       quantity: null,
       unit: null,
@@ -44,16 +42,15 @@ describe('ingredientsLine', () => {
   it('makes the line Unmatched below the threshold or without a Catalog Match', () => {
     expect(
       ingredientsLine(item({ matchConfidence: 0.3 }), match, 0.6),
-    ).toMatchObject({ match: null, unmatched: true, matchConfidence: 0 });
+    ).toMatchObject({ match: null });
     expect(ingredientsLine(item(), null, 0.6)).toMatchObject({
       match: null,
-      unmatched: true,
     });
   });
 
   it('flags a shaky image read', () => {
     expect(
       ingredientsLine(item({ confidence: 0.2 }), match, 0.6),
-    ).toMatchObject({ lowConfidence: true, unmatched: false });
+    ).toMatchObject({ match, lowConfidence: true });
   });
 });

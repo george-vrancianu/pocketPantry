@@ -20,8 +20,6 @@ const line = (
     {
       name: 'Milk',
       match: milk,
-      matchConfidence: 0.9,
-      unmatched: false,
       lowConfidence: false,
       quantity: 200,
       unit: 'ml',

@@ -100,7 +100,6 @@ describe('Ingredients Scan (integration)', () => {
       lines: [
         {
           name: 'Parmesan',
-          unmatched: false,
           quantity: null,
           unit: null,
           expiryDate: null,
@@ -110,7 +109,7 @@ describe('Ingredients Scan (integration)', () => {
             defaults: { location: 'fridge', expiryDays: 60 },
           },
         },
-        { name: 'Mystery root', unmatched: true, match: null },
+        { name: 'Mystery root', match: null },
       ],
     });
   });
@@ -143,10 +142,7 @@ describe('Ingredients Scan (integration)', () => {
       await scan(await signUp(), { ingredientsImage: IMAGE }).expect(201)
     ).body as unknown;
     expect(body).toMatchObject({
-      lines: [
-        { match: null, unmatched: true },
-        { match: null, unmatched: true },
-      ],
+      lines: [{ match: null }, { match: null }],
     });
   });
 

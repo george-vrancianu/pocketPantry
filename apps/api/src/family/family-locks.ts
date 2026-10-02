@@ -106,16 +106,11 @@ export async function lockFamilyMember(
   tx: Tx,
   familyId: string,
   memberId: string,
-): Promise<LockedMember> {
+): Promise<void> {
   const [member] = await tx
-    .select({
-      id: user.id,
-      familyId: user.familyId,
-      familyRole: user.familyRole,
-    })
+    .select({ id: user.id })
     .from(user)
     .where(and(eq(user.id, memberId), eq(user.familyId, familyId)))
     .for('update');
   if (!member) throw new ApiException(404, 'family.member_not_found');
-  return member;
 }

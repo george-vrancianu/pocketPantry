@@ -36,8 +36,6 @@ const catalogItem = (id: string, name: string): CatalogSearchResult => ({
 const line = (id: string, name: string): ProposedLine => ({
   name,
   match: catalogItem(id, name),
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: null,
   unit: null,

@@ -96,9 +96,7 @@ describe('Product Scan (integration)', () => {
       lines: [
         {
           name: 'Grana Padano',
-          unmatched: false,
           lowConfidence: false,
-          matchConfidence: 0.92,
           expiryDate: '2026-12-24',
           productDescription: 'Grana Padano 200g',
           match: {
@@ -170,8 +168,6 @@ describe('Product Scan (integration)', () => {
       lines: [
         {
           match: null,
-          unmatched: true,
-          matchConfidence: 0,
           name: 'Grana Padano',
         },
       ],
@@ -183,7 +179,7 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan({ matchedIngredientId: null, matchConfidence: 0 }));
     const none = await scan(cookie, { productImage: IMAGE }).expect(201);
     expect(none.body).toMatchObject({
-      lines: [{ match: null, unmatched: true }],
+      lines: [{ match: null }],
     });
 
     respondWith(
@@ -191,7 +187,7 @@ describe('Product Scan (integration)', () => {
     );
     const invented = await scan(cookie, { productImage: IMAGE }).expect(201);
     expect(invented.body).toMatchObject({
-      lines: [{ match: null, unmatched: true }],
+      lines: [{ match: null }],
     });
   });
 
@@ -203,7 +199,9 @@ describe('Product Scan (integration)', () => {
       }).expect(201)
     ).body as unknown;
     expect(body).toMatchObject({
-      lines: [{ lowConfidence: true, unmatched: false }],
+      lines: [
+        { lowConfidence: true, match: { id: seedId.ingredient('parmesan') } },
+      ],
     });
   });
 

@@ -83,8 +83,6 @@ describe('Receipt Scan on the Scan screen', () => {
             {
               name: 'Eggs',
               match: null,
-              matchConfidence: 0,
-              unmatched: true,
               lowConfidence: false,
               quantity: 10,
               unit: 'pcs',
@@ -94,8 +92,6 @@ describe('Receipt Scan on the Scan screen', () => {
             {
               name: 'SACOSA',
               match: null,
-              matchConfidence: 0,
-              unmatched: true,
               lowConfidence: false,
               quantity: null,
               unit: null,
@@ -149,8 +145,6 @@ describe('Receipt Scan on the Scan screen', () => {
     const eggs = {
       name: 'Eggs',
       match: null,
-      matchConfidence: 0,
-      unmatched: true,
       lowConfidence: false,
       quantity: 10,
       unit: 'pcs',

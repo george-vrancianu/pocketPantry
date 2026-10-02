@@ -12,9 +12,6 @@ export type ProposedLine = {
   name: string;
   /** The Ingredient Match (localised, with Catalog defaults), or null when Unmatched. */
   match: CatalogSearchResult | null;
-  /** Confidence in the Match, 0 to 1; 0 when Unmatched. */
-  matchConfidence: number;
-  unmatched: boolean;
   /** The image read itself was shaky: the Member should check the whole line. */
   lowConfidence: boolean;
   quantity: number | null;
@@ -46,8 +43,6 @@ export function productLine(
   return {
     name: result.fallbackIngredientName,
     match: matched ? match : null,
-    matchConfidence: matched ? result.matchConfidence : 0,
-    unmatched: !matched,
     lowConfidence: result.confidence < threshold,
     quantity: null,
     unit: null,
