@@ -21,18 +21,6 @@ export function useFamily() {
   });
 }
 
-export function useRegenerateInviteCode() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: () =>
-      apiRequest<Family>('/family/invite-code/regenerate', {
-        method: 'POST',
-        body: {},
-      }),
-    onSuccess: (family) => queryClient.setQueryData(familyQueryKey, family),
-  });
-}
-
 export type JoinPreview = {
   abandonedFamilyId: string;
   batches: number;
@@ -59,6 +47,14 @@ function useFamilyMutation<TVariables = void>(
     onSuccess: (family) => queryClient.setQueryData(familyQueryKey, family),
   });
 }
+
+export const useRegenerateInviteCode = () =>
+  useFamilyMutation(() =>
+    apiRequest<Family>('/family/invite-code/regenerate', {
+      method: 'POST',
+      body: {},
+    }),
+  );
 
 export const useJoinFamily = () =>
   useFamilyMutation((code: string) =>

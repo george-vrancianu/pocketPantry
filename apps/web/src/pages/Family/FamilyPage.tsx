@@ -31,8 +31,9 @@ export function FamilyPage() {
             <MemberList
               members={family.members}
               busy={screen.busy}
-              onMakeOwner={isOwner ? (m) => screen.makeOwner(m.id) : undefined}
-              onRemove={isOwner ? (m) => screen.removeMember(m.id) : undefined}
+              isOwner={isOwner}
+              onMakeOwner={(m) => screen.makeOwner(m.id)}
+              onRemove={(m) => screen.removeMember(m.id)}
             />
             <InviteCodePanel
               code={family.inviteCode}

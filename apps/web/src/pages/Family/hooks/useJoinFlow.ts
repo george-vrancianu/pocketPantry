@@ -1,26 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import {
-  useJoinFamily,
-  useJoinPreview,
-  type JoinPreview,
-} from '../../../lib/family';
+import { useJoinFamily, useJoinPreview } from '../../../lib/family';
 
-export type JoinFlow = {
-  code: string;
-  setCode: (code: string) => void;
-  /** Set once the code checked out: what joining will delete. */
-  preview: JoinPreview | undefined;
-  checking: boolean;
-  joining: boolean;
-  error: string | null;
-  check: () => void;
-  confirm: () => void;
-  cancel: () => void;
-};
+export type JoinFlow = ReturnType<typeof useJoinFlow>;
 
-export function useJoinFlow(): JoinFlow {
+export function useJoinFlow() {
   const { t } = useTranslation();
   const [code, setCodeState] = useState('');
   const previewRequest = useJoinPreview();
@@ -34,10 +19,11 @@ export function useJoinFlow(): JoinFlow {
 
   return {
     code,
-    setCode: (next) => {
+    setCode: (next: string) => {
       reset();
       setCodeState(next);
     },
+    // Set once the code checked out: what joining will delete.
     preview: previewRequest.data,
     checking: previewRequest.isPending,
     joining: join.isPending,
