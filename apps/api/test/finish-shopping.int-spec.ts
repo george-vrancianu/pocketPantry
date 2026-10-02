@@ -496,6 +496,9 @@ describe('Finish Shopping (integration)', () => {
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
+        const backend = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
         const { rows } = await client.query<{ id: string }>(
           `SELECT id FROM shopping_lists WHERE family_id = $1 AND status = 'active' FOR UPDATE`,
           [familyId],
@@ -503,6 +506,7 @@ describe('Finish Shopping (integration)', () => {
         const oldId = rows[0].id;
         return {
           oldId,
+          pid: backend.rows[0].pid,
           complete: async () => {
             await client.query(
               `UPDATE shopping_lists SET status = 'archived' WHERE id = $1`,
@@ -530,13 +534,12 @@ describe('Finish Shopping (integration)', () => {
       }
     }
 
-    /** Polls until some other backend in this database is waiting on a lock. */
-    async function waitForBlockedBackend() {
+    /** Polls until some backend is waiting on a lock held by `holder`. */
+    async function waitForBlockedBackend(holder: number) {
       for (let attempt = 0; attempt < 100; attempt++) {
         const { rows } = await pool.query(
-          `SELECT 1 FROM pg_stat_activity
-           WHERE datname = current_database() AND pid <> pg_backend_pid()
-             AND wait_event_type = 'Lock'`,
+          `SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))`,
+          [holder],
         );
         if (rows.length > 0) return;
         await new Promise((resolve) => setTimeout(resolve, 20));
@@ -556,7 +559,7 @@ describe('Finish Shopping (integration)', () => {
           settled = true;
           return response;
         });
-        await waitForBlockedBackend();
+        await waitForBlockedBackend(held.pid);
         expect(settled).toBe(false);
         const newListId = await held.complete();
         const response = await pending;
@@ -652,7 +655,8 @@ describe('Finish Shopping (integration)', () => {
   });
 
   it('does not deadlock when Finish races deleteFamily', async () => {
-    for (let round = 0; round < 15; round++) {
+    const finishStatuses: number[] = [];
+    for (let round = 0; round < 30; round++) {
       const { cookie } = await signUp();
       const list = await addItem(cookie, { name: `Race ${round}` });
       await check(cookie, itemIdByName(list, `Race ${round}`));
@@ -670,11 +674,14 @@ describe('Finish Shopping (integration)', () => {
       // A deadlock victim would surface as a 500; either order is fine.
       expect(deletion.status).toBe(200);
       expect([200, 409]).toContain(finish.status);
+      finishStatuses.push(finish.status);
       if (finish.status === 409) {
         expect((finish.body as { code: string }).code).toMatch(
           /^shopping\.(list_changed|nothing_checked)$/,
         );
       }
     }
+    // If deleteFamily always won outright, Finish never got far enough to race it.
+    expect(finishStatuses).toContain(200);
   }, 30_000);
 });
