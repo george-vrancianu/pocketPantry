@@ -22,8 +22,8 @@
     "g": "g",
     "kg": "kg",
     "ml": "ml",
-    "l": "l",
-    "pcs": "buc"
+    "l": "L",
+    "pcs": "buc."
   },
   "finish": {
     "button": "Termină cumpărăturile",

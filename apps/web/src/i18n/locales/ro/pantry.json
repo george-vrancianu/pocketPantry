@@ -6,14 +6,14 @@
     "fridge": "Frigider",
     "freezer": "Congelator",
     "cupboard": "Dulap",
-    "spices": "Mirodenii"
+    "spices": "Condimente"
   },
   "units": {
     "g": "g",
     "kg": "kg",
     "ml": "ml",
     "l": "L",
-    "pcs": "buc"
+    "pcs": "buc."
   },
   "expiry": {
     "today": "Astăzi",

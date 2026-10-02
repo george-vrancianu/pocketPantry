@@ -1,6 +1,11 @@
 import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation } from './catalog';
-import { defaultExpiryDate, type NewBatch, type Unit } from './pantry';
+import {
+  defaultExpiryDate,
+  parseQuantity,
+  type NewBatch,
+  type Unit,
+} from './pantry';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
 /**
@@ -106,19 +111,8 @@ export function withMatch(
 export const needsAttention = (line: ReviewLine) =>
   line.match === null || line.lowConfidence;
 
-/** numeric(10,3) on the server: at least 0.001, at most 3 decimals. */
-export function isQuantityValid(quantity: string): boolean {
-  if (quantity.trim() === '') return true;
-  const value = Number(quantity);
-  return (
-    Number.isFinite(value) &&
-    value >= 0.001 &&
-    Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6
-  );
-}
-
 export const isLineValid = (line: ReviewLine) =>
-  isQuantityValid(line.quantity) &&
+  parseQuantity(line.quantity).valid &&
   (line.match !== null || line.name.trim() !== '');
 
 export function toNewBatch(line: ReviewLine): NewBatch {

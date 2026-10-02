@@ -10,6 +10,7 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
 import type { CatalogSearchResult } from '../../../lib/catalog';
+import { parseQuantity } from '../../../lib/pantry';
 import {
   SHOPPING_UNITS,
   type NewShoppingItem,
@@ -36,6 +37,7 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
 
   const name = typed.trim();
   const unmatched = name.length > 0 && match === null;
+  const amount = parseQuantity(quantity);
 
   const select = (ingredient: CatalogSearchResult) => {
     setMatch(ingredient);
@@ -45,11 +47,10 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!name) return;
-    const amount = quantity === '' ? undefined : Number(quantity);
+    if (!name || !amount.valid) return;
     const added = await onAdd({
       ...(match ? { ingredientId: match.id } : { name }),
-      ...(amount !== undefined && amount > 0 ? { quantity: amount } : {}),
+      ...(amount.value !== null ? { quantity: amount.value } : {}),
       ...(unit ? { unit } : {}),
     });
     if (!added) return;
@@ -82,6 +83,8 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
             type="number"
             value={quantity}
             onChange={(event) => setQuantity(event.target.value)}
+            error={!amount.valid}
+            helperText={amount.valid ? undefined : t('finish.quantityInvalid')}
             slotProps={{ htmlInput: { min: 0, step: 'any' } }}
           />
           <TextField
@@ -106,7 +109,7 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
         </Stack>
         <Button
           type="submit"
-          disabled={!name || adding}
+          disabled={!name || !amount.valid || adding}
           startIcon={<PlusIcon />}
         >
           {t('add.submit')}

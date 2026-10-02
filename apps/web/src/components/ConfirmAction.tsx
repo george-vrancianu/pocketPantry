@@ -24,7 +24,7 @@ export function ConfirmAction({
   variant = 'secondary',
   onConfirm,
 }: Props) {
-  const { t } = useTranslation('family');
+  const { t } = useTranslation('common');
   const [asking, setAsking] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);

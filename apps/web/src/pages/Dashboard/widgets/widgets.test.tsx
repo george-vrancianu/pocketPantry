@@ -239,6 +239,15 @@ describe('QuickScanWidget', () => {
   });
 });
 
+it.each([
+  ['en', 'Meal plan', 'MTWTFSS'],
+  ['ro', 'Plan de mese', 'LMMJVSD'],
+] as const)('labels the Meal plan days in %s', (locale, name, days) => {
+  renderWithProviders(<MealPlanWidget size="small" columns={2} />, { locale });
+
+  expect(screen.getByRole('region', { name })).toHaveTextContent(days);
+});
+
 describe.each([
   ['Meal plan', MealPlanWidget, 'Plan de mese'],
   ['Budget', BudgetWidget, 'Buget'],

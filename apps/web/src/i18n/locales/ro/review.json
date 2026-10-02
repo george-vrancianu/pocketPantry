@@ -16,7 +16,6 @@
   "matchedAs": "Potrivit cu {{name}}",
   "drop": "Elimină {{name}}",
   "quantity": "Cantitate",
-  "quantityInvalid": "Introdu cel puțin 0,001, cu cel mult 3 zecimale.",
   "unit": "Unitate",
   "location": "Locație",
   "expiry": "Data expirării",

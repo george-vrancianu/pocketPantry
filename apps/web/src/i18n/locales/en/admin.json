@@ -10,7 +10,7 @@
     "g": "g",
     "kg": "kg",
     "ml": "ml",
-    "l": "l",
+    "l": "L",
     "pcs": "pcs"
   },
   "locations": {
@@ -28,7 +28,7 @@
     "save": "Save",
     "saving": "Saving…",
     "delete": "Delete",
-    "confirmDelete": "Confirm delete",
+    "deleteConfirm": "Delete this for good? It cannot be undone.",
     "cancel": "Cancel",
     "add": "Add",
     "remove": "Remove",

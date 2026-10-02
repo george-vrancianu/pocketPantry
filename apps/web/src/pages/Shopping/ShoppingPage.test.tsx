@@ -199,6 +199,30 @@ describe('ShoppingPage', () => {
     ).toHaveValue('');
   });
 
+  it('rejects a zero or negative quantity instead of dropping it', async () => {
+    const { calls } = stubShopping();
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+
+    await screen.findByText('1 to buy');
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    for (const bad of ['0', '-2']) {
+      await user.clear(screen.getByLabelText('Quantity'));
+      await user.type(screen.getByLabelText('Quantity'), bad);
+      expect(
+        screen.getByRole('button', { name: 'Add to list' }),
+      ).toBeDisabled();
+      expect(screen.getByLabelText('Quantity')).toHaveAccessibleDescription(
+        /0.001 to 1,000,000/,
+      );
+    }
+    expect(calls.some((c) => c.key.startsWith('POST'))).toBe(false);
+  });
+
   it('adds a name with no Catalog match as an Unmatched item, flagged visibly', async () => {
     stubShopping({
       'GET /api/catalog/search': () => Response.json({ results: [] }),

@@ -10,7 +10,7 @@
     "g": "g",
     "kg": "kg",
     "ml": "ml",
-    "l": "l",
+    "l": "L",
     "pcs": "buc."
   },
   "locations": {
@@ -28,7 +28,7 @@
     "save": "Salvează",
     "saving": "Se salvează…",
     "delete": "Șterge",
-    "confirmDelete": "Confirmă ștergerea",
+    "deleteConfirm": "Ștergi definitiv? Acțiunea nu poate fi anulată.",
     "cancel": "Anulează",
     "add": "Adaugă",
     "remove": "Elimină",

@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog } from '../../../lib/admin';
@@ -45,6 +45,48 @@ describe('CategoryEditor', () => {
       defaultExpiryDays: 14,
       defaultLocation: null,
     });
+  });
+
+  it('asks before deleting, keeps focus on the prompt, and can be cancelled', async () => {
+    const { fetchMock, calls } = stubApi({
+      'DELETE /api/admin/catalog/parent-categories/p2': () =>
+        new Response(null, { status: 204 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const onDone = vi.fn();
+    renderWithProviders(
+      <CategoryEditor
+        kind="parent"
+        category={{
+          id: 'p2',
+          name: 'Sauces',
+          aisleId: 'a1',
+          defaultExpiryDays: null,
+          defaultLocation: null,
+          translations: [],
+        }}
+        catalog={catalog}
+        onDone={onDone}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    const confirm = screen.getByRole('button', { name: 'Confirm' });
+    expect(confirm).toHaveFocus();
+    // The prompt's own Cancel, not the form's.
+    await user.click(
+      within(confirm.parentElement!).getByRole('button', { name: 'Cancel' }),
+    );
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveFocus();
+    expect(calls).toEqual([]);
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm' }));
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(calls.map((c) => c.key)).toEqual([
+      'DELETE /api/admin/catalog/parent-categories/p2',
+    ]);
   });
 
   it('does not offer to delete or move the Other Leaf Category', () => {
