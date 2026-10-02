@@ -62,6 +62,7 @@
     "canonical_name_managed": "The English name changes with the entry's name, not here."
   },
   "family": {
+    "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
     "owner_required": "Only the Owner of the Family can do this.",
     "invite_code_invalid": "That Invite Code does not exist. Check it and try again.",
     "invite_code_expired": "That Invite Code has expired. Ask the Owner for a new one.",
