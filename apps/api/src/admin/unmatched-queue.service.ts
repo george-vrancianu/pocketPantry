@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { lockFamilies } from '../family/family-locks';
 import { exceedsMaxQuantity } from '../common/quantity';
@@ -71,7 +71,7 @@ export class UnmatchedQueueService {
 
   async dismiss(normalizedName: string): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await this.lockName(tx, normalizedName);
+      await this.catalog.lockName(tx, normalizedName);
       const rows = await tx
         .select({ id: unmatchedEntries.id })
         .from(unmatchedEntries)
@@ -117,14 +117,16 @@ export class UnmatchedQueueService {
     body: UnmatchedResolveBody,
   ): Promise<UnmatchedResolution> {
     const key = body.normalizedName;
-    await this.lockName(tx, key);
+    await this.catalog.lockName(tx, key);
 
     const entries = await this.lockEntries(tx, key);
     if (entries.length === 0) throw notInQueue();
     const latest = entries[0];
     const locale = body.locale ?? latest.locale;
 
-    await this.assertNameFree(tx, key, body.ingredientId);
+    if (!(await this.catalog.isNameFree(tx, key, body.ingredientId))) {
+      throw new ApiException(409, 'unmatched.name_taken');
+    }
 
     const target = body.newIngredient
       ? await this.catalog.createIngredientIn(tx, body.newIngredient)
@@ -319,13 +321,6 @@ export class UnmatchedQueueService {
     return rows.length;
   }
 
-  /** Per-name advisory lock held to the end of the transaction. */
-  private async lockName(tx: Tx, normalizedName: string): Promise<void> {
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`unmatched:${normalizedName}`}, 0))`,
-    );
-  }
-
   /**
    * Locks the Families owning the rows, ascending id, before anything else
    * of theirs: the order deleteFamily and Finish Shopping use
@@ -411,31 +406,6 @@ export class UnmatchedQueueService {
         entity: 'ingredient',
       });
     return row;
-  }
-
-  /** Stage one must stay deterministic: the key may only belong to one Ingredient. */
-  private async assertNameFree(
-    tx: Tx,
-    key: string,
-    ingredientId: string | undefined,
-  ): Promise<void> {
-    const owners = await tx
-      .select({ id: ingredients.id })
-      .from(ingredients)
-      .where(eq(ingredients.normalizedName, key));
-    const translated = await tx
-      .select({ id: catalogTranslations.entityId })
-      .from(catalogTranslations)
-      .where(
-        and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.normalizedValue, key),
-        ),
-      );
-    const others = [...owners, ...translated].filter(
-      (owner) => owner.id !== ingredientId,
-    );
-    if (others.length > 0) throw new ApiException(409, 'unmatched.name_taken');
   }
 
   /** Adds the raw text as a Synonym unless the Ingredient already answers to it. */

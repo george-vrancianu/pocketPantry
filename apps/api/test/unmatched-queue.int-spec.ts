@@ -787,6 +787,69 @@ describe('Unmatched queue (integration)', () => {
       expect(entries).toEqual([]);
     });
 
+    describe('adding the same name from the catalog', () => {
+      const addIngredient = (ingredientName: string) =>
+        call(adminCookie).post('/admin/catalog/ingredients', {
+          name: ingredientName,
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          defaultUnit: 'g',
+        });
+      const addSynonym = (ingredientId: string, value: string) =>
+        call(adminCookie).post('/admin/catalog/translations', {
+          entityType: 'ingredient',
+          entityId: ingredientId,
+          locale: 'en',
+          kind: 'synonym',
+          value,
+        });
+
+      it('waits for a resolve that holds the name lock', async () => {
+        const raw = name('catalog wait');
+        const holder = await pool.connect();
+        let created: Promise<request.Response> | undefined;
+        try {
+          await holder.query('BEGIN');
+          const { rows } = await holder.query<{ pid: number }>(
+            'SELECT pg_backend_pid() AS pid',
+          );
+          await holder.query(
+            'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+            [`catalog-name:${normalise(raw)}`],
+          );
+          created = Promise.resolve(addIngredient(raw).then((r) => r));
+          await waitForBlockedBackend(pool, rows[0].pid);
+        } finally {
+          await holder.query('ROLLBACK').catch(() => undefined);
+          holder.release();
+        }
+        expect((await created)?.status).toBe(201);
+      });
+
+      it('never leaves two Ingredients answering to one resolved name', async () => {
+        const raw = name('catalog race');
+        await saveBatches(await newMember(), [{ rawName: raw }]);
+        const [resolved, added] = await Promise.all([
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: seedId.ingredient('parmesan'),
+          }).then((r) => r),
+          addSynonym(seedId.ingredient('milk'), raw).then((r) => r),
+        ]);
+        const owners = await database
+          .selectDistinct({ id: catalogTranslations.entityId })
+          .from(catalogTranslations)
+          .where(
+            and(
+              eq(catalogTranslations.entityType, 'ingredient'),
+              eq(catalogTranslations.normalizedValue, normalise(raw)),
+            ),
+          );
+        expect(owners).toHaveLength(1);
+        // Exactly one side won.
+        expect([resolved.status, added.status].sort()).toEqual([201, 409]);
+      });
+    });
+
     it('takes the Family lock before any list, item or Batch lock', async () => {
       const raw = name('family lock');
       const member = await newMember();
