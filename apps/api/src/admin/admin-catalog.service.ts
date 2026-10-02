@@ -162,10 +162,12 @@ export class AdminCatalogService {
   updateParentCategory(id: string, input: ParentCategoryUpdate) {
     return this.write(async (tx) => {
       if (input.aisleId) await this.requireRow(tx, 'aisle', input.aisleId);
+      // Locked so a concurrent rename can't change the name the Other Leaf's is derived from.
       const [before] = await tx
         .select({ name: parentCategories.name })
         .from(parentCategories)
-        .where(eq(parentCategories.id, id));
+        .where(eq(parentCategories.id, id))
+        .for('update');
       const [row] = await tx
         .update(parentCategories)
         .set({ ...input, ...this.normalized(input.name) })
