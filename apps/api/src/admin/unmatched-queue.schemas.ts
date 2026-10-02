@@ -2,8 +2,13 @@ import { z } from 'zod';
 import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
 import { ingredientCreate } from './admin-catalog.schemas';
 
+export const MAX_PAGE_SIZE = 100;
+
 export const unmatchedListQuery = z.object({
   status: z.enum(['open', 'dismissed']).default('open'),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(50),
+  /** `nextCursor` of the previous page. */
+  cursor: z.string().max(400).optional(),
 });
 export type UnmatchedListQuery = z.infer<typeof unmatchedListQuery>;
 
@@ -52,6 +57,12 @@ export type UnmatchedQueueEntry = {
   dismissed: boolean;
   /** Up to MAX_REFERENCES, newest first. */
   references: UnmatchedReference[];
+};
+
+export type UnmatchedQueuePage = {
+  entries: UnmatchedQueueEntry[];
+  /** Pass as `cursor` for the next page; null on the last one. */
+  nextCursor: string | null;
 };
 
 export type UnmatchedResolution = {

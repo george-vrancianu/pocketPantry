@@ -110,11 +110,26 @@ describe('Unmatched queue (integration)', () => {
       .expect(200);
   }
 
-  async function queue(status?: 'open' | 'dismissed') {
+  async function queuePage(
+    status?: 'open' | 'dismissed',
+    params: { limit?: number; cursor?: string } = {},
+  ) {
     const response = await call(adminCookie)
-      .get(`/admin/unmatched${status ? `?status=${status}` : ''}`)
+      .get('/admin/unmatched')
+      .query({ ...(status ? { status } : {}), ...params })
       .expect(200);
-    return (response.body as { entries: Entry[] }).entries;
+    return response.body as { entries: Entry[]; nextCursor: string | null };
+  }
+  /** Every entry, following the cursor to the end. */
+  async function queue(status?: 'open' | 'dismissed') {
+    const all: Entry[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await queuePage(status, { limit: 100, cursor });
+      all.push(...page.entries);
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor);
+    return all;
   }
   const entryFor = async (raw: string, status?: 'open' | 'dismissed') =>
     (await queue(status)).find(
@@ -264,6 +279,31 @@ describe('Unmatched queue (integration)', () => {
       expect(
         entry?.references.find((ref) => ref.type === 'batch')?.locale,
       ).toBe('ro');
+    });
+
+    it('pages through the queue newest first, without repeats or gaps', async () => {
+      const raws = ['one', 'two', 'three'].map((label) =>
+        name(`page ${label}`),
+      );
+      const member = await newMember();
+      for (const raw of raws) await saveBatches(member, [{ rawName: raw }]);
+
+      const seen: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await queuePage('open', { limit: 2, cursor });
+        expect(page.entries.length).toBeLessThanOrEqual(2);
+        seen.push(...page.entries.map((entry) => entry.normalizedName));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+
+      expect(new Set(seen).size).toBe(seen.length);
+      const mine = seen.filter((n) => raws.map(normalise).includes(n));
+      expect(mine).toEqual(raws.map(normalise).reverse());
+    });
+
+    it('rejects a page size over the limit', async () => {
+      await call(adminCookie).get('/admin/unmatched?limit=101').expect(400);
     });
 
     it('drops an entry when its Batch is deleted', async () => {

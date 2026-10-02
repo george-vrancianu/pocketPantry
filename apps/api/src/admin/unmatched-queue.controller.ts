@@ -17,7 +17,7 @@ import {
   unmatchedResolveBody,
   type UnmatchedDismissBody,
   type UnmatchedListQuery,
-  type UnmatchedQueueEntry,
+  type UnmatchedQueuePage,
   type UnmatchedResolution,
   type UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
@@ -32,13 +32,13 @@ export class UnmatchedQueueController {
   @Get()
   @ApiOperation({
     summary:
-      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each',
+      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each, newest first, one page at a time',
   })
   async list(
     @Query(new ZodValidationPipe(unmatchedListQuery))
     query: UnmatchedListQuery,
-  ): Promise<{ entries: UnmatchedQueueEntry[] }> {
-    return { entries: await this.queue.list(query.status) };
+  ): Promise<UnmatchedQueuePage> {
+    return this.queue.list(query);
   }
 
   @Post('resolve')

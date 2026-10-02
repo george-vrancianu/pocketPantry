@@ -1,6 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  lte,
+  sql,
+} from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { lockFamilies } from '../family/family-locks';
 import { exceedsMaxQuantity } from '../common/quantity';
@@ -18,7 +27,8 @@ import {
 import { hasPgCode } from '../database/pg-errors';
 import { AdminCatalogService } from './admin-catalog.service';
 import type {
-  UnmatchedQueueEntry,
+  UnmatchedListQuery,
+  UnmatchedQueuePage,
   UnmatchedResolution,
   UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
@@ -48,25 +58,106 @@ export class UnmatchedQueueService {
     private readonly catalog: AdminCatalogService,
   ) {}
 
-  /** Open groups have at least one row not yet dismissed; dismissed groups are all dismissed. */
-  async list(status: 'open' | 'dismissed'): Promise<UnmatchedQueueEntry[]> {
-    const rows = await this.database
-      .select()
-      .from(unmatchedEntries)
-      .orderBy(desc(unmatchedEntries.createdAt), desc(unmatchedEntries.id));
-    const groups = new Map<string, EntryRow[]>();
-    for (const row of rows) {
-      const group = groups.get(row.normalizedName) ?? [];
-      group.push(row);
-      groups.set(row.normalizedName, group);
+  /**
+   * One page of groups, newest first (latest row, then name). Open groups have
+   * at least one row not yet dismissed; dismissed groups are all dismissed.
+   * The cursor is the last group's `<latest created_at>|<name>`: keyset
+   * paging, so a group resolved or added between pages never shifts the next
+   * page. The timestamp travels as Postgres text to keep microseconds.
+   */
+  async list(query: UnmatchedListQuery): Promise<UnmatchedQueuePage> {
+    const dismissed = query.status === 'dismissed';
+    const latest = sql<Date>`max(${unmatchedEntries.createdAt})`;
+    const separator = query.cursor?.indexOf('|') ?? -1;
+    const after =
+      query.cursor && separator > 0
+        ? sql`and (${latest}, ${unmatchedEntries.normalizedName}) < (${query.cursor.slice(0, separator)}::timestamptz, ${query.cursor.slice(separator + 1)})`
+        : sql``;
+    if (query.cursor && separator <= 0) {
+      throw new ApiException(400, 'validation_failed');
     }
-    return [...groups.values()]
-      .map((group) => this.toQueueEntry(group))
-      .filter((entry) => entry.dismissed === (status === 'dismissed'))
-      .sort(
-        (a, b) =>
-          b.count - a.count || a.normalizedName.localeCompare(b.normalizedName),
-      );
+    const groups = await this.database
+      .select({
+        normalizedName: unmatchedEntries.normalizedName,
+        count: sql<number>`count(*)::int`,
+        latest: sql<string>`${latest}::text`,
+        locales: sql<
+          string[]
+        >`array_agg(distinct ${unmatchedEntries.locale} order by ${unmatchedEntries.locale})`,
+        sources: sql<
+          string[]
+        >`array_agg(distinct ${unmatchedEntries.source}::text order by ${unmatchedEntries.source}::text)`,
+      })
+      .from(unmatchedEntries)
+      .groupBy(unmatchedEntries.normalizedName)
+      .having(
+        sql`bool_and(${unmatchedEntries.dismissedAt} is not null) = ${dismissed} ${after}`,
+      )
+      .orderBy(desc(latest), desc(unmatchedEntries.normalizedName))
+      .limit(query.limit + 1);
+    const page = groups.slice(0, query.limit);
+    const last = page.at(-1);
+
+    // References for this page only: each group's newest MAX_REFERENCES rows.
+    const ranked = this.database
+      .select({
+        row: getTableColumns(unmatchedEntries),
+        rank: sql<number>`row_number() over (partition by ${unmatchedEntries.normalizedName} order by ${unmatchedEntries.createdAt} desc, ${unmatchedEntries.id} desc)`.as(
+          'rank',
+        ),
+      })
+      .from(unmatchedEntries)
+      .where(
+        inArray(
+          unmatchedEntries.normalizedName,
+          page.map((group) => group.normalizedName),
+        ),
+      )
+      .as('ranked');
+    const rows =
+      page.length === 0
+        ? []
+        : await this.database
+            .select()
+            .from(ranked)
+            .where(lte(ranked.rank, MAX_REFERENCES))
+            .orderBy(ranked.rank);
+    const rowsOf = new Map<string, EntryRow[]>();
+    for (const { row } of rows) {
+      rowsOf.set(row.normalizedName, [
+        ...(rowsOf.get(row.normalizedName) ?? []),
+        row,
+      ]);
+    }
+    return {
+      entries: page.flatMap((group) => {
+        const references = rowsOf.get(group.normalizedName);
+        // Resolved between the two reads: gone from the queue.
+        if (!references) return [];
+        return [
+          {
+            normalizedName: group.normalizedName,
+            rawName: references[0].rawName,
+            count: group.count,
+            locale: references[0].locale,
+            locales: group.locales,
+            sources: group.sources,
+            dismissed,
+            references: references.map((row) => ({
+              type: row.batchId ? 'batch' : 'shopping_item',
+              id: (row.batchId ?? row.shoppingItemId) as string,
+              source: row.source,
+              locale: row.locale,
+              rawName: row.rawName,
+            })),
+          },
+        ];
+      }),
+      nextCursor:
+        groups.length > query.limit && last
+          ? `${last.latest}|${last.normalizedName}`
+          : null,
+    };
   }
 
   dismiss(normalizedName: string): Promise<void> {
@@ -445,25 +536,5 @@ export class UnmatchedQueueService {
       normalizedValue: key,
     });
     return true;
-  }
-
-  private toQueueEntry(group: EntryRow[]): UnmatchedQueueEntry {
-    const [latest] = group;
-    return {
-      normalizedName: latest.normalizedName,
-      rawName: latest.rawName,
-      count: group.length,
-      locale: latest.locale,
-      locales: [...new Set(group.map((row) => row.locale))].sort(),
-      sources: [...new Set(group.map((row) => row.source))].sort(),
-      dismissed: group.every((row) => row.dismissedAt !== null),
-      references: group.slice(0, MAX_REFERENCES).map((row) => ({
-        type: row.batchId ? 'batch' : 'shopping_item',
-        id: (row.batchId ?? row.shoppingItemId) as string,
-        source: row.source,
-        locale: row.locale,
-        rawName: row.rawName,
-      })),
-    };
   }
 }
