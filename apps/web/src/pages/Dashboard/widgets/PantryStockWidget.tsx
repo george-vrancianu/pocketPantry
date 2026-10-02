@@ -1,8 +1,7 @@
 import { Box, PantryIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { stockByLocation } from '../../../lib/dashboard';
-import { useBatches } from '../../../lib/pantry';
+import { groupByLocation, useBatches } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
@@ -17,8 +16,12 @@ const LOCATION_COLORS = {
 export function PantryStockWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const batches = useBatches(i18n.language, new Date());
-  const stock = stockByLocation(batches.data ?? []).filter(
-    (entry) => entry.count > 0,
+  const stock = groupByLocation(batches.data ?? []).map((group) => ({
+    location: group.location,
+    count: group.batches.length,
+  }));
+  const labels = stock.map(
+    ({ location, count }) => `${t(`common:locations.${location}`)} ${count}`,
   );
   const total = batches.data?.length ?? 0;
 
@@ -55,12 +58,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
       </Box>
       <Box
         role="img"
-        aria-label={stock
-          .map(
-            ({ location, count }) =>
-              `${t(`common:locations.${location}`)} ${count}`,
-          )
-          .join(', ')}
+        aria-label={labels.join(', ')}
         sx={{
           display: 'flex',
           gap: '3px',
@@ -85,12 +83,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
         component="p"
         sx={{ m: 0, mt: '6px', fontSize: 11, color: tokens.color.muted }}
       >
-        {stock
-          .map(
-            ({ location, count }) =>
-              `${t(`common:locations.${location}`)} ${count}`,
-          )
-          .join(' · ')}
+        {labels.join(' · ')}
       </Box>
     </WidgetCard>
   );

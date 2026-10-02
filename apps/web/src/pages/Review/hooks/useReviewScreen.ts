@@ -8,10 +8,10 @@ import {
 } from '../../../lib/catalog';
 import {
   clearReview,
+  readReview,
   isLineValid,
   toNewBatch,
   toReviewLine,
-  useReviewDraft,
   withMatch,
   type ReviewLine,
 } from '../../../lib/review';
@@ -28,9 +28,8 @@ import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
 export function useReviewScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const draft = useReviewDraft();
-  // Captured once: clearing the draft on save must not bounce the page to /scan.
-  const [hadDraft] = useState(draft !== null);
+  // Read once: clearing the draft on save must not bounce the page to /scan.
+  const [draft] = useState(readReview);
   const [lines, setLines] = useState<ReviewLine[]>(() => {
     const today = new Date();
     return (draft?.lines ?? []).map((line, index) =>
@@ -125,7 +124,7 @@ export function useReviewScreen() {
   };
 
   return {
-    hadDraft,
+    hadDraft: draft !== null,
     shopping,
     lines: included,
     excluded,

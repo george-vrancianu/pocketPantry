@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
@@ -12,25 +11,14 @@ import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 export type ReviewDraft = { mode: ScanMode; lines: ProposedLine[] };
 
 let draft: ReviewDraft | null = null;
-const listeners = new Set<() => void>();
 
-function publish(next: ReviewDraft | null) {
+export const startReview = (next: ReviewDraft) => {
   draft = next;
-  listeners.forEach((listener) => listener());
-}
-
-export const startReview = (next: ReviewDraft) => publish(next);
-export const clearReview = () => publish(null);
-
-export function useReviewDraft(): ReviewDraft | null {
-  return useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    () => draft,
-  );
-}
+};
+export const clearReview = () => {
+  draft = null;
+};
+export const readReview = () => draft;
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 const FALLBACK_UNIT: Unit = 'pcs';
@@ -101,10 +89,6 @@ export function withMatch(
       : defaultExpiryDate(match.defaults.expiryDays, today),
   };
 }
-
-/** Unmatched or low-confidence lines are flagged so the Member checks them first. */
-export const needsAttention = (line: ReviewLine) =>
-  line.match === null || line.lowConfidence;
 
 export const isLineValid = (line: ReviewLine) =>
   parseQuantity(line.quantity).valid &&

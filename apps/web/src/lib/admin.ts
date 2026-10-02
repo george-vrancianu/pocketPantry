@@ -88,12 +88,10 @@ export type IngredientInput = {
 };
 export function useSaveIngredient(id?: string) {
   return useAdminWrite((input: IngredientInput) =>
-    id
-      ? apiRequest(`${base}/ingredients/${id}`, {
-          method: 'PATCH',
-          body: input,
-        })
-      : apiRequest(`${base}/ingredients`, { method: 'POST', body: input }),
+    apiRequest(`${base}/ingredients${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
   );
 }
 export function useDeleteIngredient() {
@@ -116,15 +114,10 @@ const categoryPath = (kind: CategoryKind) =>
 
 export function useSaveCategory(kind: CategoryKind, id?: string) {
   return useAdminWrite((input: CategoryInput) =>
-    id
-      ? apiRequest(`${base}/${categoryPath(kind)}/${id}`, {
-          method: 'PATCH',
-          body: input,
-        })
-      : apiRequest(`${base}/${categoryPath(kind)}`, {
-          method: 'POST',
-          body: input,
-        }),
+    apiRequest(`${base}/${categoryPath(kind)}${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
   );
 }
 export function useDeleteCategory(kind: CategoryKind) {

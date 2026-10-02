@@ -5,13 +5,20 @@ import { ConfirmAction } from '../../../components/ConfirmAction';
 
 type Props = {
   members: FamilyMember[];
-  /** Present only for the Owner: shows per-Member actions. */
-  onMakeOwner?: (member: FamilyMember) => void;
-  onRemove?: (member: FamilyMember) => void;
+  /** The viewer is the Owner: shows per-Member actions. */
+  isOwner: boolean;
+  onMakeOwner: (member: FamilyMember) => void;
+  onRemove: (member: FamilyMember) => void;
   busy?: boolean;
 };
 
-export function MemberList({ members, onMakeOwner, onRemove, busy }: Props) {
+export function MemberList({
+  members,
+  isOwner,
+  onMakeOwner,
+  onRemove,
+  busy,
+}: Props) {
   const { t } = useTranslation('family');
   return (
     <Stack spacing={1}>
@@ -33,28 +40,24 @@ export function MemberList({ members, onMakeOwner, onRemove, busy }: Props) {
                 </Typography>
               ) : null}
             </Stack>
-            {!member.isOwner && (onMakeOwner || onRemove) ? (
+            {!member.isOwner && isOwner ? (
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                {onMakeOwner ? (
-                  <ConfirmAction
-                    variant="text"
-                    label={t('makeOwner')}
-                    triggerName={t('makeOwnerNamed', { name: member.name })}
-                    message={t('makeOwnerConfirm', { name: member.name })}
-                    disabled={busy}
-                    onConfirm={() => onMakeOwner(member)}
-                  />
-                ) : null}
-                {onRemove ? (
-                  <ConfirmAction
-                    variant="text"
-                    label={t('remove')}
-                    triggerName={t('removeNamed', { name: member.name })}
-                    message={t('removeConfirm', { name: member.name })}
-                    disabled={busy}
-                    onConfirm={() => onRemove(member)}
-                  />
-                ) : null}
+                <ConfirmAction
+                  variant="text"
+                  label={t('makeOwner')}
+                  triggerName={t('makeOwnerNamed', { name: member.name })}
+                  message={t('makeOwnerConfirm', { name: member.name })}
+                  disabled={busy}
+                  onConfirm={() => onMakeOwner(member)}
+                />
+                <ConfirmAction
+                  variant="text"
+                  label={t('remove')}
+                  triggerName={t('removeNamed', { name: member.name })}
+                  message={t('removeConfirm', { name: member.name })}
+                  disabled={busy}
+                  onConfirm={() => onRemove(member)}
+                />
               </Stack>
             ) : null}
           </Stack>

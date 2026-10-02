@@ -281,7 +281,7 @@ export function CustomisePage() {
       <>
         <AppScreenHeader title={t('title')} />
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <Spinner label={t('loading', { ns: 'dashboard' })} />
+          <Spinner label={t('common:loading')} />
         </Box>
       </>
     );

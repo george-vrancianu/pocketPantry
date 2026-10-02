@@ -63,7 +63,7 @@ export function WidgetCard({
     >
       {isLoading ? (
         <Box sx={{ m: 'auto' }}>
-          <Spinner label={t('loading')} />
+          <Spinner label={t('common:loading')} />
         </Box>
       ) : error ? (
         <Alert severity="error">{error}</Alert>

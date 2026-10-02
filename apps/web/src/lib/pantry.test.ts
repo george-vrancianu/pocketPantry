@@ -41,7 +41,7 @@ describe('expiryChipFor', () => {
     expect(expiryChipFor('2026-10-05', today, false)).toEqual({
       tone: 'ok',
       kind: 'date',
-      days: 4,
+      expiryDate: '2026-10-05',
     });
   });
 

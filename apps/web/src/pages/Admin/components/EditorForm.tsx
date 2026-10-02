@@ -6,6 +6,8 @@ import { translateApiError } from '../../../i18n/translateApiError';
 
 type Props = {
   heading: string;
+  /** A line under the heading. */
+  description?: string;
   /** The last API error of any write in the form, if any. */
   error: unknown;
   canSave: boolean;
@@ -15,6 +17,9 @@ type Props = {
   /** Omit when creating: there is nothing to delete yet. */
   onDelete?: () => void;
   deleting?: boolean;
+  /** Replace Save / Saving… on the submit button. */
+  saveLabel?: string;
+  savingLabel?: string;
   children: ReactNode;
 };
 
@@ -24,6 +29,7 @@ type Props = {
  */
 export function EditorForm({
   heading,
+  description,
   error,
   canSave,
   saving,
@@ -31,6 +37,8 @@ export function EditorForm({
   onCancel,
   onDelete,
   deleting,
+  saveLabel,
+  savingLabel,
   children,
 }: Props) {
   const { t } = useTranslation(['admin', 'errors']);
@@ -56,11 +64,18 @@ export function EditorForm({
       >
         {heading}
       </Typography>
+      {description ? (
+        <Typography variant="body2" color="text.secondary">
+          {description}
+        </Typography>
+      ) : null}
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       {children}
       <Stack direction="row" spacing={1}>
         <Button type="submit" disabled={saving || !canSave}>
-          {saving ? t('admin:common.saving') : t('admin:common.save')}
+          {saving
+            ? (savingLabel ?? t('admin:common.saving'))
+            : (saveLabel ?? t('admin:common.save'))}
         </Button>
         <Button variant="text" onClick={onCancel}>
           {t('admin:common.cancel')}

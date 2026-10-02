@@ -3,13 +3,13 @@ import { apiRequest } from './api';
 import type { CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
-export type ScanMode = 'product' | 'receipt' | 'plate' | 'ingredients';
-export const SCAN_MODES: ScanMode[] = [
+export const SCAN_MODES = [
   'product',
   'receipt',
   'plate',
   'ingredients',
-];
+] as const;
+export type ScanMode = (typeof SCAN_MODES)[number];
 /** Scan Modes that are wired end to end. The others show their pill but cannot scan yet. */
 export const WIRED_SCAN_MODES: ScanMode[] = [
   'product',

@@ -20,8 +20,7 @@
     "deleteConfirm": "Ștergi definitiv? Acțiunea nu poate fi anulată.",
     "cancel": "Anulează",
     "add": "Adaugă",
-    "remove": "Elimină",
-    "close": "Închide"
+    "remove": "Elimină"
   },
   "ingredient": {
     "new": "Ingredient nou",

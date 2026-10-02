@@ -1,4 +1,4 @@
-import { Stack, TextField } from '@pocket-pantry/ui';
+import { Stack } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,9 +7,10 @@ import {
   useSaveIngredient,
   type AdminCatalog,
   type AdminIngredient,
+  type IngredientInput,
 } from '../../../lib/admin';
-import { UNITS, type Unit } from '../../../lib/catalog';
 import { EditorForm } from './EditorForm';
+import { IngredientFields } from './IngredientFields';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {
@@ -24,20 +25,11 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
   const { t, i18n } = useTranslation(['admin', 'errors']);
   const save = useSaveIngredient(ingredient?.id);
   const remove = useDeleteIngredient();
-  const [name, setName] = useState(ingredient?.name ?? '');
-  const [leafCategoryId, setLeafCategoryId] = useState(
-    ingredient?.leafCategoryId ?? catalog.leafCategories[0]?.id ?? '',
-  );
-  const [defaultUnit, setDefaultUnit] = useState<Unit>(
-    ingredient?.defaultUnit ?? 'g',
-  );
-
-  const leaves = catalog.leafCategories.map((leaf) => {
-    const parent = catalog.parentCategories.find((p) => p.id === leaf.parentId);
-    return {
-      id: leaf.id,
-      label: `${parent ? localName(parent, i18n.language) : ''} › ${localName(leaf, i18n.language)}`,
-    };
+  const [fields, setFields] = useState<IngredientInput>({
+    name: ingredient?.name ?? '',
+    leafCategoryId:
+      ingredient?.leafCategoryId ?? catalog.leafCategories[0]?.id ?? '',
+    defaultUnit: ingredient?.defaultUnit ?? 'g',
   });
 
   return (
@@ -51,11 +43,11 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
             : t('admin:ingredient.new')
         }
         error={save.error ?? remove.error}
-        canSave={name.trim() !== ''}
+        canSave={fields.name.trim() !== ''}
         saving={save.isPending}
         onSubmit={() =>
           save.mutate(
-            { name: name.trim(), leafCategoryId, defaultUnit },
+            { ...fields, name: fields.name.trim() },
             { onSuccess: onDone },
           )
         }
@@ -67,38 +59,11 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
         }
         deleting={remove.isPending}
       >
-        <TextField
-          label={t('admin:ingredient.name')}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          required
+        <IngredientFields
+          catalog={catalog}
+          value={fields}
+          onChange={setFields}
         />
-        <TextField
-          select
-          label={t('admin:ingredient.leafCategory')}
-          value={leafCategoryId}
-          onChange={(event) => setLeafCategoryId(event.target.value)}
-          slotProps={{ select: { native: true } }}
-        >
-          {leaves.map((leaf) => (
-            <option key={leaf.id} value={leaf.id}>
-              {leaf.label}
-            </option>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label={t('admin:ingredient.defaultUnit')}
-          value={defaultUnit}
-          onChange={(event) => setDefaultUnit(event.target.value as Unit)}
-          slotProps={{ select: { native: true } }}
-        >
-          {UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {t(`common:units.${unit}`)}
-            </option>
-          ))}
-        </TextField>
       </EditorForm>
       {ingredient ? (
         <TranslationsEditor

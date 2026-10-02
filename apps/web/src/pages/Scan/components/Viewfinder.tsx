@@ -6,18 +6,13 @@ import {
   RECEIPT_VIEW,
 } from '../../../lib/receiptGuide';
 
-const corner = (
-  position: Record<string, number>,
-  borders: Record<string, string>,
-) => ({
-  position: 'absolute' as const,
-  width: 40,
-  height: 40,
-  boxSizing: 'border-box' as const,
-  ...position,
-  ...borders,
-});
 const edge = '3px solid #FFFFFF';
+const CORNERS = [
+  ['Top', 'Left'],
+  ['Top', 'Right'],
+  ['Bottom', 'Left'],
+  ['Bottom', 'Right'],
+] as const;
 
 type Props = {
   videoRef: RefObject<HTMLVideoElement | null>;
@@ -122,42 +117,22 @@ export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
         </Box>
       ) : null}
       <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
-        <Box
-          sx={corner(
-            { left: 0, top: 0 },
-            { borderTop: edge, borderLeft: edge, borderTopLeftRadius: '20px' },
-          )}
-        />
-        <Box
-          sx={corner(
-            { right: 0, top: 0 },
-            {
-              borderTop: edge,
-              borderRight: edge,
-              borderTopRightRadius: '20px',
-            },
-          )}
-        />
-        <Box
-          sx={corner(
-            { left: 0, bottom: 0 },
-            {
-              borderBottom: edge,
-              borderLeft: edge,
-              borderBottomLeftRadius: '20px',
-            },
-          )}
-        />
-        <Box
-          sx={corner(
-            { right: 0, bottom: 0 },
-            {
-              borderBottom: edge,
-              borderRight: edge,
-              borderBottomRightRadius: '20px',
-            },
-          )}
-        />
+        {CORNERS.map(([vertical, horizontal]) => (
+          <Box
+            key={vertical + horizontal}
+            sx={{
+              position: 'absolute',
+              width: 40,
+              height: 40,
+              boxSizing: 'border-box',
+              [vertical.toLowerCase()]: 0,
+              [horizontal.toLowerCase()]: 0,
+              [`border${vertical}`]: edge,
+              [`border${horizontal}`]: edge,
+              [`border${vertical}${horizontal}Radius`]: '20px',
+            }}
+          />
+        ))}
         {receiptGuide ? null : scanLine}
       </Box>
     </Box>

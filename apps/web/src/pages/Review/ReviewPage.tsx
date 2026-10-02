@@ -81,7 +81,7 @@ export function ReviewPage() {
           <Stack direction="row" spacing={1}>
             <Button onClick={screen.save} disabled={!screen.canSave}>
               {screen.saving
-                ? t(screen.shopping ? 'shoppingAdding' : 'saving')
+                ? t(screen.shopping ? 'shoppingAdding' : 'pantry:form.saving')
                 : t(screen.shopping ? 'shoppingSave' : 'save', {
                     count: screen.lines.length,
                   })}

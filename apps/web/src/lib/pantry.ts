@@ -37,7 +37,7 @@ export type NewBatch = {
 export type ExpiryChip =
   | { tone: 'urgent'; kind: 'today' | 'expired' }
   | { tone: 'soon'; kind: 'days'; days: number }
-  | { tone: 'ok'; kind: 'date'; days: number };
+  | { tone: 'ok'; kind: 'date'; expiryDate: string };
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -66,7 +66,7 @@ export function expiryChipFor(
   if (days < 0) return { tone: 'urgent', kind: 'expired' };
   if (days === 0) return { tone: 'urgent', kind: 'today' };
   if (expiringSoon) return { tone: 'soon', kind: 'days', days };
-  return { tone: 'ok', kind: 'date', days };
+  return { tone: 'ok', kind: 'date', expiryDate };
 }
 
 /** The pre-filled expiry (a `YYYY-MM-DD` string, or empty) for a Catalog default in days. */
