@@ -18,14 +18,15 @@ export function PantryPage() {
   const { t } = useTranslation(['pantry', 'common']);
   const screen = usePantryScreen();
 
+  const focusAdd = () =>
+    document
+      .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
+      ?.focus();
+
   // The header's Add button is replaced while the form is open: put focus back on it afterwards.
   const wasAdding = useRef(false);
   useEffect(() => {
-    if (wasAdding.current && !screen.adding) {
-      document
-        .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
-        ?.focus();
-    }
+    if (wasAdding.current && !screen.adding) focusAdd();
     wasAdding.current = screen.adding;
   }, [screen.adding, t]);
 
@@ -79,6 +80,7 @@ export function PantryPage() {
               batchCount={section.batchCount}
               rows={section.rows}
               today={screen.today}
+              onEmptied={focusAdd}
             />
           ))}
         </Stack>

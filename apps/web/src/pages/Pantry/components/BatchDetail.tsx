@@ -10,12 +10,12 @@ import { ExpiryChip } from './ExpiryChip';
 type Props = {
   batch: Batch;
   today: Date;
-  /** Called once the Batch is deleted, so the parent can place focus (this row unmounts). */
-  onDeleted: () => void;
+  /** Called once the Batch is deleted or moved to another Location, so the parent can place focus (this row unmounts). */
+  onLeft: () => void;
 };
 
 /** One Batch inside an expanded roll-up row: its own amount, expiry and Product Description, with Edit and Delete. */
-export function BatchDetail({ batch, today, onDeleted }: Props) {
+export function BatchDetail({ batch, today, onLeft }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [mode, setMode] = useState<'view' | 'edit' | 'confirmDelete'>('view');
   const remove = useDeleteBatch();
@@ -26,24 +26,35 @@ export function BatchDetail({ batch, today, onDeleted }: Props) {
   const deleteButton = useRef<HTMLButtonElement>(null);
   const confirmButton = useRef<HTMLButtonElement>(null);
   const previous = useRef(mode);
+  const moved = useRef(false);
   useEffect(() => {
     const from = previous.current;
     previous.current = mode;
+    const wasMove = moved.current;
+    moved.current = false;
     if (mode === 'confirmDelete') confirmButton.current?.focus();
-    else if (mode === 'view' && from === 'edit') editButton.current?.focus();
+    else if (mode === 'view' && from === 'edit' && !wasMove)
+      editButton.current?.focus();
     else if (mode === 'view' && from === 'confirmDelete')
       deleteButton.current?.focus();
   }, [mode]);
 
   const confirmDelete = () =>
-    remove.mutateAsync(batch.id).then(onDeleted, () => undefined);
+    remove.mutateAsync(batch.id).then(onLeft, () => undefined);
 
   if (mode === 'edit') {
     return (
       <Box component="li" sx={{ listStyle: 'none' }}>
         <EditBatchForm
           batch={batch}
-          onSaved={() => setMode('view')}
+          onSaved={(edit) => {
+            setMode('view');
+            // A `location` in the edit means the Batch moved out of this row.
+            if (edit.location) {
+              moved.current = true;
+              onLeft();
+            }
+          }}
           onCancel={() => setMode('view')}
         />
       </Box>

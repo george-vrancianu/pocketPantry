@@ -205,9 +205,8 @@ export function parseQuantity(text: string): {
   if (text.trim() === '') return { value: null, valid: true };
   const value = Number(text);
   const valid =
-    // `Number` accepts exponents such as 1e3; the user should type the number out.
-    !/e/i.test(text) &&
-    Number.isFinite(value) &&
+    // `Number` also takes 1e3, 0x10, Infinity and padding; only plain digits are valid.
+    /^(\d+(\.\d*)?|\.\d+)$/.test(text) &&
     value >= 0.001 &&
     value <= 1_000_000 &&
     Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;

@@ -9,7 +9,7 @@ import { ExpiryChip } from './ExpiryChip';
 type Props = {
   rollUp: RollUp;
   today: Date;
-  /** Called when deleting a Batch leaves this row with nothing, so focus can go elsewhere. */
+  /** Called when deleting or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
 };
 
@@ -141,7 +141,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
               key={batch.id}
               batch={batch}
               today={today}
-              onDeleted={() =>
+              onLeft={() =>
                 rollUp.batches.length > 1
                   ? toggle.current?.focus()
                   : onRowGone()

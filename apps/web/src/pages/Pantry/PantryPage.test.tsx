@@ -1,4 +1,11 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -335,6 +342,45 @@ describe('PantryPage', () => {
       );
     });
 
+    it("does not revert another Member's change made while the form was open", async () => {
+      const user = userEvent.setup();
+      const initial = stock();
+      let live = initial;
+      const { fetchMock, calls } = stubApi({
+        'GET /api/pantry': () => Response.json({ batches: live }),
+        'PATCH /api/pantry/batches/milk-2': () => Response.json(live[1]),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await user.click(
+        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
+      );
+      const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+
+      // Another Member changes the quantity, and the list refetches under the open form.
+      live = initial.map((b) =>
+        b.id === 'milk-2' ? { ...b, quantity: 0.75 } : b,
+      );
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+      await waitFor(() =>
+        expect(calls.filter((c) => c.key === 'GET /api/pantry').length).toBe(2),
+      );
+
+      await user.type(
+        within(form).getByLabelText('Product description'),
+        ' jar',
+      );
+      await user.click(
+        within(form).getByRole('button', { name: 'Save changes' }),
+      );
+      const patch = calls.find((c) => c.key.startsWith('PATCH'));
+      expect(patch?.body).toEqual({ productDescription: 'Opened jar' });
+    });
+
     it('sends no request when nothing changed', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
@@ -471,6 +517,51 @@ describe('PantryPage', () => {
         await waitFor(() =>
           expect(
             screen.getByRole('heading', { name: 'Freezer · 1' }),
+          ).toHaveFocus(),
+        );
+      });
+
+      it('focuses the Add button when deleting the last Batch of the last section', async () => {
+        const user = userEvent.setup();
+        stubManaged([stock()[2]]);
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Parmesan/ }),
+        );
+        await user.click(
+          screen.getByRole('button', { name: 'Delete Parmesan batch' }),
+        );
+        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await waitFor(() =>
+          expect(screen.queryByRole('heading', { name: /Freezer/ })).toBeNull(),
+        );
+        expect(screen.getByRole('button', { name: 'Add batch' })).toHaveFocus();
+      });
+
+      it('focuses the Add button when a Batch moves out of its only section', async () => {
+        const user = userEvent.setup();
+        let batches = [stock()[2]];
+        const { fetchMock } = stubApi({
+          'GET /api/pantry': () => Response.json({ batches }),
+          'PATCH /api/pantry/batches/cheese': () => {
+            batches = [{ ...batches[0], location: 'fridge' }];
+            return Response.json(batches[0]);
+          },
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Parmesan/ }),
+        );
+        await user.click(
+          screen.getByRole('button', { name: 'Edit Parmesan batch' }),
+        );
+        await user.selectOptions(screen.getByLabelText('Location'), 'fridge');
+        await user.click(screen.getByRole('button', { name: 'Save changes' }));
+        await screen.findByRole('heading', { name: 'Fridge · 1' });
+        await waitFor(() =>
+          expect(
+            screen.getByRole('button', { name: 'Add batch' }),
           ).toHaveFocus(),
         );
       });
