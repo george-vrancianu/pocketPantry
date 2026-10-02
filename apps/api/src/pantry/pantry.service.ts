@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import {
@@ -79,21 +80,24 @@ export class PantryService {
     const overrides = await this.settings.expiryOverridesOf(familyId);
     const values: (typeof batches.$inferInsert)[] = [];
     for (const body of bodies) {
-      values.push(await this.toRow(familyId, body, overrides));
+      values.push({
+        id: randomUUID(),
+        ...(await this.toRow(familyId, body, overrides)),
+      });
     }
     const rows = await this.database.transaction(async (tx) => {
       const inserted = await tx.insert(batches).values(values).returning();
-      // Returned in insertion order, so line `i` is row `i`.
+      // The ids were generated above, so each entry is built from its own line.
       await recordUnmatched(
         tx,
-        inserted.flatMap((row, index) =>
-          row.unmatched
+        values.flatMap((value, index) =>
+          value.unmatched
             ? [
                 {
-                  rawName: row.rawName ?? '',
+                  rawName: value.rawName ?? '',
                   locale,
                   source: bodies[index].source ?? 'manual',
-                  batchId: row.id,
+                  batchId: value.id as string,
                 },
               ]
             : [],

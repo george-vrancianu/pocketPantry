@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { catalogSearchQuery } from '../catalog/catalog.schemas';
 import { ingredientUnit } from '../database/schema';
 import { SHOPPING_ITEM_SOURCES } from '../unmatched/unmatched-entries';
+import { MAX_QUANTITY } from '../common/quantity';
 
 export type ShoppingUnit = (typeof ingredientUnit.enumValues)[number];
 
@@ -13,7 +14,7 @@ export const addShoppingItemBody = z
   .object({
     ingredientId: z.uuid().optional(),
     name: z.string().trim().min(1).max(100).optional(),
-    quantity: z.number().positive().max(999_999).optional(),
+    quantity: z.number().positive().max(MAX_QUANTITY).optional(),
     unit: z.enum(ingredientUnit.enumValues).optional(),
     /** Unmatched names only: where the name came from; defaults to manual. */
     source: z.enum(SHOPPING_ITEM_SOURCES).optional(),

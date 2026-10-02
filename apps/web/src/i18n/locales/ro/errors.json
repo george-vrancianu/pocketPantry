@@ -41,7 +41,8 @@
     "item_not_found": "Nu am găsit acel articol în listă.",
     "ingredient_not_found": "Nu am găsit acel ingredient.",
     "list_changed": "Lista s-a schimbat cât timp ai verificat. Te rugăm să verifici din nou.",
-    "nothing_checked": "Bifează cel puțin un produs înainte de a termina."
+    "nothing_checked": "Bifează cel puțin un produs înainte de a termina.",
+    "quantity_too_large": "Cantitatea ar depăși 1.000.000. Scade cantitatea."
   },
   "pantry": {
     "location_required": "Alege unde este depozitat lotul.",

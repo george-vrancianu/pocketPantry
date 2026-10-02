@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -289,6 +289,9 @@ export class AdminCatalogService {
   /** Creates an Ingredient with its English name inside the caller's transaction. */
   async createIngredientIn(tx: Tx, input: IngredientCreate) {
     await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
+    const key = normalizeName(input.name);
+    await this.lockName(tx, key);
+    await this.assertNameFree(tx, key);
     const id = randomUUID();
     const [row] = await tx
       .insert(ingredients)
@@ -302,6 +305,11 @@ export class AdminCatalogService {
     return this.write(async (tx) => {
       if (input.leafCategoryId) {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
+      }
+      if (input.name) {
+        const key = normalizeName(input.name);
+        await this.lockName(tx, key);
+        await this.assertNameFree(tx, key, id);
       }
       const [row] = await tx
         .update(ingredients)
@@ -339,6 +347,11 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, input.entityType, input.entityId);
+        if (input.entityType === 'ingredient') {
+          const key = normalizeName(input.value);
+          await this.lockName(tx, key);
+          await this.assertNameFree(tx, key, input.entityId);
+        }
         if (input.kind === 'name') {
           const [existing] = await tx
             .select({ id: catalogTranslations.id })
@@ -377,6 +390,11 @@ export class AdminCatalogService {
     return this.write(async (tx) => {
       const existing = await this.requireTranslation(tx, id);
       this.assertEditable(existing.kind, existing.locale);
+      if (existing.entityType === 'ingredient') {
+        const key = normalizeName(input.value);
+        await this.lockName(tx, key);
+        await this.assertNameFree(tx, key, existing.entityId);
+      }
       const [row] = await tx
         .update(catalogTranslations)
         .set({
@@ -398,6 +416,51 @@ export class AdminCatalogService {
   }
 
   // Helpers
+
+  /**
+   * Per-name advisory lock held to the end of the transaction. Everything that
+   * gives an Ingredient a name (an add here, an Unmatched resolve) takes it, so
+   * "is this name free?" and the insert that follows cannot interleave.
+   */
+  async lockName(tx: Tx, normalizedName: string): Promise<void> {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`catalog-name:${normalizedName}`}, 0))`,
+    );
+  }
+
+  /** True unless another Ingredient already answers to the key; call under `lockName`. */
+  async isNameFree(
+    tx: Tx,
+    key: string,
+    ingredientId?: string,
+  ): Promise<boolean> {
+    const owners = await tx
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(eq(ingredients.normalizedName, key));
+    const translated = await tx
+      .select({ id: catalogTranslations.entityId })
+      .from(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.entityType, 'ingredient'),
+          eq(catalogTranslations.normalizedValue, key),
+        ),
+      );
+    return [...owners, ...translated].every(
+      (owner) => owner.id === ingredientId,
+    );
+  }
+
+  private async assertNameFree(
+    tx: Tx,
+    key: string,
+    ingredientId?: string,
+  ): Promise<void> {
+    if (!(await this.isNameFree(tx, key, ingredientId))) {
+      throw new ApiException(409, 'catalog.name_taken');
+    }
+  }
 
   /**
    * Runs `work` in a transaction. A name collision maps to `catalog.name_taken`;

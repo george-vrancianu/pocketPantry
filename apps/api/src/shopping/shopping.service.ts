@@ -4,6 +4,7 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
+import { exceedsMaxQuantity } from '../common/quantity';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -26,7 +27,8 @@ import type {
 /**
  * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
  * the same unit collapse into one and their quantities add up. Different units
- * stay on separate lines. A missing quantity adds nothing.
+ * stay on separate lines. A missing quantity adds nothing. Callers enforce
+ * the quantity cap on the result.
  */
 export function sumQuantities(
   existing: number | null,
@@ -124,6 +126,9 @@ export class ShoppingService {
         existing.quantity === null ? null : Number(existing.quantity),
         quantity,
       );
+      if (exceedsMaxQuantity(merged)) {
+        throw new ApiException(400, 'shopping.quantity_too_large');
+      }
       // Adding something already bought means it is wanted again.
       await tx
         .update(shoppingItems)

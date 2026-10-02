@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
@@ -148,28 +149,38 @@ export class FinishShoppingService {
       const other = await this.otherTarget(tx);
       const byId = new Map(rows.map((row) => [row.id, row]));
       if (body.lines.length > 0) {
-        const inserted = await tx
-          .insert(batches)
-          .values(
-            body.lines.map((line) => {
-              const row = byId.get(line.itemId) as CheckedRow;
-              const unmatched = row.ingredientId === null;
-              return {
-                familyId,
-                ingredientId: row.ingredientId,
-                leafCategoryId: (row.leaf ?? other.leaf).id,
-                unmatched,
-                rawName: unmatched ? row.typedName : null,
-                quantity: line.quantity,
-                unit: line.unit,
-                location: line.location,
-                expiryDate: line.expiryDate,
-                productDescription: line.productDescription || null,
-              };
-            }),
-          )
-          .returning({ id: batches.id, rawName: batches.rawName });
-        await this.queueUnmatchedBatches(tx, body, inserted);
+        const values = body.lines.map((line) => {
+          const row = byId.get(line.itemId) as CheckedRow;
+          const unmatched = row.ingredientId === null;
+          return {
+            id: randomUUID(),
+            familyId,
+            ingredientId: row.ingredientId,
+            leafCategoryId: (row.leaf ?? other.leaf).id,
+            unmatched,
+            rawName: unmatched ? row.typedName : null,
+            quantity: line.quantity,
+            unit: line.unit,
+            location: line.location,
+            expiryDate: line.expiryDate,
+            productDescription: line.productDescription || null,
+          };
+        });
+        await tx.insert(batches).values(values);
+        await this.queueUnmatchedBatches(
+          tx,
+          body.lines.flatMap((line, index) =>
+            values[index].unmatched
+              ? [
+                  {
+                    batchId: values[index].id,
+                    itemId: line.itemId,
+                    rawName: values[index].rawName ?? '',
+                  },
+                ]
+              : [],
+          ),
+        );
       }
 
       // The partial unique index allows one active list per Family: archive first.
@@ -202,14 +213,8 @@ export class FinishShoppingService {
    */
   private async queueUnmatchedBatches(
     tx: Tx,
-    body: FinishShoppingBody,
-    inserted: Array<{ id: string; rawName: string | null }>,
+    unmatched: Array<{ batchId: string; itemId: string; rawName: string }>,
   ): Promise<void> {
-    const unmatched = inserted.flatMap((batch, index) =>
-      batch.rawName === null
-        ? []
-        : [{ batch, itemId: body.lines[index].itemId }],
-    );
     if (unmatched.length === 0) return;
     const locales = await tx
       .select({
@@ -226,11 +231,11 @@ export class FinishShoppingService {
     const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
     await recordUnmatched(
       tx,
-      unmatched.map(({ batch, itemId }) => ({
-        rawName: batch.rawName ?? '',
+      unmatched.map(({ batchId, itemId, rawName }) => ({
+        rawName,
         locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
         source: 'finish_shopping' as const,
-        batchId: batch.id,
+        batchId,
       })),
     );
   }
