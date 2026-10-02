@@ -62,6 +62,10 @@
       "open": "Open",
       "dismissed": "Dismissed"
     },
+    "title": "Unmatched names",
+    "loadMore": "Load more",
+    "restore": "Restore",
+    "restoreName": "Restore {{name}}",
     "empty": "Nothing to review.",
     "rows_one": "{{count}} row",
     "rows_other": "{{count}} rows",

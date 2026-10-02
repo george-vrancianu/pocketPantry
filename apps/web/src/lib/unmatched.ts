@@ -1,4 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
@@ -44,13 +48,22 @@ export type ResolveInput = {
 
 const queueKey = ['admin-unmatched'] as const;
 
+type UnmatchedPage = { entries: UnmatchedEntry[]; nextCursor: string | null };
+
+/** The queue one page at a time; `fetchNextPage` follows the server's cursor. */
 export function useUnmatchedQueue(status: UnmatchedStatus) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [...queueKey, status],
-    queryFn: () =>
-      apiRequest<{ entries: UnmatchedEntry[] }>(
-        `/admin/unmatched?${new URLSearchParams({ status })}`,
-      ).then((body) => body.entries),
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      apiRequest<UnmatchedPage>(
+        `/admin/unmatched?${new URLSearchParams({
+          status,
+          ...(pageParam ? { cursor: pageParam } : {}),
+        })}`,
+      ),
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    select: (data) => data.pages.flatMap((page) => page.entries),
   });
 }
 
@@ -82,6 +95,18 @@ export function useDismissUnmatched() {
   return useMutation({
     mutationFn: (normalizedName: string) =>
       apiRequest('/admin/unmatched/dismiss', {
+        method: 'POST',
+        body: { normalizedName },
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queueKey }),
+  });
+}
+
+export function useUndismissUnmatched() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (normalizedName: string) =>
+      apiRequest('/admin/unmatched/undismiss', {
         method: 'POST',
         body: { normalizedName },
       }),

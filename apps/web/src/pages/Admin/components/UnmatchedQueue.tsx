@@ -12,6 +12,7 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import type { AdminCatalog } from '../../../lib/admin';
 import {
   useDismissUnmatched,
+  useUndismissUnmatched,
   useUnmatchedQueue,
   type UnmatchedEntry,
   type UnmatchedStatus,
@@ -23,7 +24,8 @@ type Props = { catalog: AdminCatalog };
 /**
  * The Admin queue of Unmatched names: one line per distinct normalised name
  * with how many Batches and Shopping Items carry it. Resolve opens the
- * resolver for that name; Dismiss sets it aside (the rows stay Unmatched).
+ * resolver for that name; Dismiss sets it aside (the rows stay Unmatched) and
+ * Restore, in the dismissed tab, puts it back. More pages load on demand.
  */
 export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
@@ -32,6 +34,8 @@ export function UnmatchedQueue({ catalog }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const queue = useUnmatchedQueue(status);
   const dismiss = useDismissUnmatched();
+  const undismiss = useUndismissUnmatched();
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
   // Where focus goes when the resolver closes: back to the row's Resolve
@@ -47,9 +51,11 @@ export function UnmatchedQueue({ catalog }: Props) {
     } else {
       const buttons =
         listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
-      [...(buttons ?? [])]
-        .find((button) => button.dataset.resolveFor === restoreFocus.name)
-        ?.focus();
+      const button = [...(buttons ?? [])].find(
+        (candidate) => candidate.dataset.resolveFor === restoreFocus.name,
+      );
+      // The row can be gone (refetched, resolved by someone else): the heading is always there.
+      (button ?? headingRef.current)?.focus();
     }
     setRestoreFocus(null);
   }, [resolving, restoreFocus, queue.data]);
@@ -73,9 +79,12 @@ export function UnmatchedQueue({ catalog }: Props) {
   }
 
   const entries = queue.data ?? [];
-  const error = queue.error ?? dismiss.error;
+  const error = queue.error ?? dismiss.error ?? undismiss.error;
   return (
     <Stack spacing={2}>
+      <Typography component="h2" variant="h6" ref={headingRef} tabIndex={-1}>
+        {t('admin:unmatched.title')}
+      </Typography>
       <SegmentedControl
         label={t('admin:unmatched.statusLabel')}
         value={status}
@@ -110,16 +119,26 @@ export function UnmatchedQueue({ catalog }: Props) {
             <QueueRow
               entry={entry}
               canDismiss={status === 'open'}
-              dismissing={dismiss.isPending}
+              busy={dismiss.isPending || undismiss.isPending}
               onResolve={() => {
                 setNotice(null);
                 setResolving(entry);
               }}
               onDismiss={() => dismiss.mutate(entry.normalizedName)}
+              onRestore={() => undismiss.mutate(entry.normalizedName)}
             />
           </li>
         ))}
       </Stack>
+      {queue.hasNextPage ? (
+        <Button
+          variant="secondary"
+          disabled={queue.isFetchingNextPage}
+          onClick={() => void queue.fetchNextPage()}
+        >
+          {t('admin:unmatched.loadMore')}
+        </Button>
+      ) : null}
     </Stack>
   );
 }
@@ -127,17 +146,19 @@ export function UnmatchedQueue({ catalog }: Props) {
 type RowProps = {
   entry: UnmatchedEntry;
   canDismiss: boolean;
-  dismissing: boolean;
+  busy: boolean;
   onResolve: () => void;
   onDismiss: () => void;
+  onRestore: () => void;
 };
 
 function QueueRow({
   entry,
   canDismiss,
-  dismissing,
+  busy,
   onResolve,
   onDismiss,
+  onRestore,
 }: RowProps) {
   const { t, i18n } = useTranslation('admin');
   const sources = entry.sources
@@ -163,16 +184,17 @@ function QueueRow({
         >
           {t('unmatched.resolve')}
         </Button>
-        {canDismiss ? (
-          <Button
-            variant="text"
-            disabled={dismissing}
-            aria-label={t('unmatched.dismissName', { name: entry.rawName })}
-            onClick={onDismiss}
-          >
-            {t('unmatched.dismiss')}
-          </Button>
-        ) : null}
+        <Button
+          variant="text"
+          disabled={busy}
+          aria-label={t(
+            canDismiss ? 'unmatched.dismissName' : 'unmatched.restoreName',
+            { name: entry.rawName },
+          )}
+          onClick={canDismiss ? onDismiss : onRestore}
+        >
+          {t(canDismiss ? 'unmatched.dismiss' : 'unmatched.restore')}
+        </Button>
       </Stack>
     </Stack>
   );
