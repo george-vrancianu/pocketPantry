@@ -64,10 +64,10 @@ describe('Invite Code redemption rate limit (integration)', () => {
       .set('cookie', cookie)
       .send({ code: 'ZZZZZZZZ' });
 
-  // Both tests share one app and one IP (supertest's loopback), so the IP
-  // budget carries over. Requests blocked by the per-user limit do not charge
-  // the IP: the first test spends 3 of 5, the second the remaining 2.
-  it('gives each user one budget shared by both routes, without touching others', async () => {
+  // One app and one IP (supertest's loopback) for both checks, so the IP
+  // budget carries over between them; keep them in one test. Requests blocked
+  // by the per-user limit do not charge the IP.
+  it('limits each user across both routes, then the IP across users', async () => {
     const guesser = await signUp();
     await preview(guesser).expect(404);
     await join(guesser).expect(404);
@@ -76,14 +76,16 @@ describe('Invite Code redemption rate limit (integration)', () => {
     expect(blocked.body).toEqual({ code: 'family.rate_limited', params: {} });
     expect(Number(blocked.headers['retry-after'])).toBeGreaterThan(0);
     await preview(guesser).expect(429);
-  });
 
-  it('blocks an IP past the per-IP limit across users', async () => {
+    // A fresh user is unaffected by the first one's budget: the IP has 2 left.
     const other = await signUp();
     await preview(other).expect(404);
     await join(other).expect(404);
+    // The IP is now spent. A forged X-Forwarded-For does not get around it.
     const third = await signUp();
-    const res = await preview(third).expect(429);
+    const res = await preview(third)
+      .set('x-forwarded-for', '203.0.113.7')
+      .expect(429);
     expect(res.body).toEqual({ code: 'family.rate_limited', params: {} });
   });
 });
