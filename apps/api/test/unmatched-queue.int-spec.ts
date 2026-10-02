@@ -37,8 +37,8 @@ describe('Unmatched queue (integration)', () => {
   let adminCookie: string;
   const stamp = Date.now();
   let counter = 0;
-  // The queue is global and other specs add Unmatched rows too: every test
-  // uses names unique to it and only looks at its own entries.
+  // Earlier specs in this worker may leave Unmatched rows: every test uses
+  // names unique to it and only looks at its own entries.
   const name = (label: string) => `Zzq ${label} ${stamp}`;
 
   async function signUp(email: string) {

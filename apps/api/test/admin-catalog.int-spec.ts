@@ -38,7 +38,8 @@ describe('Admin role and Catalog curation (integration)', () => {
       .post('/api/auth/sign-up/email')
       .set('origin', TEST_ORIGIN)
       .send({ name, email, password: 'correct-horse-staple' });
-    // The allow-listed address is fixed, so it may exist from an earlier run.
+    // The allow-listed address is fixed, so another spec in this worker (e.g.
+    // unmatched-queue) may have signed it up already.
     if (response.status === 422) {
       response = await request(app.getHttpServer())
         .post('/api/auth/sign-in/email')
@@ -107,7 +108,7 @@ describe('Admin role and Catalog curation (integration)', () => {
   });
 
   afterAll(async () => {
-    // Leave no rows behind even if a test failed midway: other suites count Catalog rows.
+    // Leave no rows behind even if a test failed midway: later specs in this worker count Catalog rows.
     for (const id of shoppingListIds) {
       await database.delete(shoppingLists).where(eq(shoppingLists.id, id));
     }

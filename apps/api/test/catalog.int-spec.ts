@@ -349,39 +349,24 @@ describe('Catalog (integration)', () => {
   });
 
   describe('seed', () => {
-    const seedParentIds = new Set(
-      SEED_PARENTS.map((parent) => seedId.parent(parent.slug)),
-    );
-    const seedLeafIds = new Set(
-      SEED_LEAVES.map((leaf) => seedId.leaf(leaf.slug)),
-    );
-
-    // Seed ids are deterministic UUIDv5; rows created at runtime (e.g. by the
-    // Admin spec running in parallel) are UUIDv4.
-    const seeded = <T extends { id: string }>(rows: T[]) =>
-      rows.filter((row) => row.id[14] === '5');
     const snapshot = async () => ({
-      // Seed rows only: other suites insert their own Aisles concurrently.
-      aisles: seeded(await database.select().from(aisles).orderBy(aisles.id)),
-      // Seed rows only: other suites add their own Parents/Leaves concurrently.
-      parents: (
-        await database
-          .select()
-          .from(parentCategories)
-          .orderBy(parentCategories.id)
-      ).filter((row) => seedParentIds.has(row.id)),
-      leaves: (
-        await database.select().from(leafCategories).orderBy(leafCategories.id)
-      ).filter((row) => seedLeafIds.has(row.id)),
-      ingredients: seeded(
-        await database.select().from(ingredients).orderBy(ingredients.id),
-      ),
-      translations: seeded(
-        await database
-          .select()
-          .from(catalogTranslations)
-          .orderBy(catalogTranslations.id),
-      ),
+      aisles: await database.select().from(aisles).orderBy(aisles.id),
+      parents: await database
+        .select()
+        .from(parentCategories)
+        .orderBy(parentCategories.id),
+      leaves: await database
+        .select()
+        .from(leafCategories)
+        .orderBy(leafCategories.id),
+      ingredients: await database
+        .select()
+        .from(ingredients)
+        .orderBy(ingredients.id),
+      translations: await database
+        .select()
+        .from(catalogTranslations)
+        .orderBy(catalogTranslations.id),
     });
 
     it('leaves the database unchanged when run twice', async () => {
@@ -470,9 +455,6 @@ describe('Catalog (integration)', () => {
           and(
             eq(catalogTranslations.entityType, 'ingredient'),
             eq(catalogTranslations.kind, 'synonym'),
-            // Seed ids are UUIDv5; the Admin spec adds (UUIDv4) synonyms to
-            // seeded Ingredients concurrently.
-            sql`substr(${catalogTranslations.id}::text, 15, 1) = '5'`,
             inArray(
               catalogTranslations.entityId,
               SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
@@ -523,6 +505,11 @@ describe('Catalog (integration)', () => {
     });
 
     it('loads 18 Parent Categories with Aisles and an Other Leaf under each', async () => {
+      // Seed rows only: other specs in this worker insert Parent Categories
+      // they never delete.
+      const seedParentIds = new Set(
+        SEED_PARENTS.map((parent) => seedId.parent(parent.slug)),
+      );
       const parents = (await database.select().from(parentCategories)).filter(
         (row) => seedParentIds.has(row.id),
       );
