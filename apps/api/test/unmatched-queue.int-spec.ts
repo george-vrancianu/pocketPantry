@@ -296,11 +296,12 @@ describe('Unmatched queue (integration)', () => {
         ['page tie a', 2],
       ];
       const member = await newMember();
-      for (const [label, times] of plan) {
-        for (let i = 0; i < times; i++) {
-          await saveBatches(member, [{ rawName: name(label) }]);
-        }
-      }
+      await saveBatches(
+        member,
+        plan.flatMap(([label, times]) =>
+          Array.from({ length: times }, () => ({ rawName: name(label) })),
+        ),
+      );
 
       const seen: string[] = [];
       let cursor: string | undefined;
