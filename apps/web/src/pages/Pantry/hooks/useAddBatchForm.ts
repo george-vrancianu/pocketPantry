@@ -4,12 +4,12 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import type {
   CatalogSearchResult,
   StorageLocation,
+  Unit,
 } from '../../../lib/catalog';
 import {
   defaultExpiryDate,
   parseQuantity,
   useAddBatch,
-  type Unit,
 } from '../../../lib/pantry';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';

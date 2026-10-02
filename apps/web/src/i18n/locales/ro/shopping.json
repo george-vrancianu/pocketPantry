@@ -18,13 +18,6 @@
   },
   "unmatchedGroup": "În afara catalogului",
   "empty": "Lista ta este goală. Adaugă mai sus ce ai nevoie.",
-  "units": {
-    "g": "g",
-    "kg": "kg",
-    "ml": "ml",
-    "l": "L",
-    "pcs": "buc."
-  },
   "finish": {
     "button": "Termină cumpărăturile",
     "reviewTitle": "Adaugă în cămară",

@@ -2,7 +2,7 @@ import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import { LOCATIONS, UNITS } from '../../../lib/pantry';
+import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useAddBatchForm } from '../hooks/useAddBatchForm';
 
 type Props = { onSaved: () => void; onCancel: () => void };
@@ -72,7 +72,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         >
           {UNITS.map((unit) => (
             <option key={unit} value={unit}>
-              {t(`units.${unit}`)}
+              {t(`common:units.${unit}`)}
             </option>
           ))}
         </TextField>
@@ -90,7 +90,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
       >
         {LOCATIONS.map((location) => (
           <option key={location} value={location}>
-            {t(`locations.${location}`)}
+            {t(`common:locations.${location}`)}
           </option>
         ))}
       </TextField>

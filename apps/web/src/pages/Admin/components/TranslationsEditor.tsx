@@ -8,14 +8,13 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LOCALES, type Locale } from '../../../i18n/resources';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
-  CATALOG_LOCALES,
   useAddTranslation,
   useDeleteTranslation,
   useUpdateTranslation,
   type AdminTranslation,
-  type CatalogLocale,
   type EntityType,
 } from '../../../lib/admin';
 
@@ -56,7 +55,7 @@ export function TranslationsEditor({
       <Typography variant="body2">
         {t('admin:translations.canonicalName', { name })}
       </Typography>
-      {CATALOG_LOCALES.map((locale) => (
+      {LOCALES.map((locale) => (
         <LocaleBlock
           key={locale}
           locale={locale}
@@ -73,7 +72,7 @@ export function TranslationsEditor({
 }
 
 type BlockProps = {
-  locale: CatalogLocale;
+  locale: Locale;
   entityType: EntityType;
   entityId: string;
   translations: AdminTranslation[];

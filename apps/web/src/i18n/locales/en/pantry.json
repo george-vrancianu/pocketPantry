@@ -2,19 +2,6 @@
   "title": "Pantry",
   "add": "Add batch",
   "empty": "Your pantry is empty. Add your first batch with the + button.",
-  "locations": {
-    "fridge": "Fridge",
-    "freezer": "Freezer",
-    "cupboard": "Cupboard",
-    "spices": "Spices"
-  },
-  "units": {
-    "g": "g",
-    "kg": "kg",
-    "ml": "ml",
-    "l": "L",
-    "pcs": "pcs"
-  },
   "expiry": {
     "today": "Today",
     "expired": "Expired",

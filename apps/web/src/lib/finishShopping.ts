@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { StorageLocation } from './catalog';
-import { defaultExpiryDate, type Unit } from './pantry';
+import type { StorageLocation, Unit } from './catalog';
+import { defaultExpiryDate } from './pantry';
 
 /** A proposed Batch for one checked Shopping Item, pre-filled from the Catalog. */
 export type FinishProposalLine = {

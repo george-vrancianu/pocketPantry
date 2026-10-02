@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { CatalogSearchResult } from './catalog';
-import type { Batch, NewBatch, Unit } from './pantry';
+import type { CatalogSearchResult, Unit } from './catalog';
+import type { Batch, NewBatch } from './pantry';
 
 export type ScanMode = 'product' | 'receipt' | 'plate' | 'ingredients';
 export const SCAN_MODES: ScanMode[] = [

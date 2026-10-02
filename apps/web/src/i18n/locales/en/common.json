@@ -3,5 +3,18 @@
   "loading": "Loading",
   "confirm": "Confirm",
   "cancel": "Cancel",
-  "retry": "Try again"
+  "retry": "Try again",
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "pcs": "pcs"
+  },
+  "locations": {
+    "fridge": "Fridge",
+    "freezer": "Freezer",
+    "cupboard": "Cupboard",
+    "spices": "Spices"
+  }
 }

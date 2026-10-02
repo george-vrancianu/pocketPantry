@@ -18,13 +18,6 @@
   },
   "unmatchedGroup": "Not in the catalog",
   "empty": "Your list is empty. Add what you need above.",
-  "units": {
-    "g": "g",
-    "kg": "kg",
-    "ml": "ml",
-    "l": "L",
-    "pcs": "pcs"
-  },
   "finish": {
     "button": "Finish shopping",
     "reviewTitle": "Add to your pantry",

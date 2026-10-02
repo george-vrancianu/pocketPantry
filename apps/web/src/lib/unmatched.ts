@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { adminCatalogQueryKey, type CatalogLocale } from './admin';
+import type { Locale } from '../i18n/resources';
+import { adminCatalogQueryKey } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey, type Unit } from './catalog';
 
@@ -16,7 +17,7 @@ export type UnmatchedReference = {
   type: 'batch' | 'shopping_item';
   id: string;
   source: UnmatchedSource;
-  locale: CatalogLocale;
+  locale: Locale;
   rawName: string;
 };
 
@@ -26,8 +27,8 @@ export type UnmatchedEntry = {
   rawName: string;
   count: number;
   /** Locale of the most recent row: the default language of the Synonym. */
-  locale: CatalogLocale;
-  locales: CatalogLocale[];
+  locale: Locale;
+  locales: Locale[];
   sources: UnmatchedSource[];
   dismissed: boolean;
   lastSeenAt: string;
@@ -36,7 +37,7 @@ export type UnmatchedEntry = {
 
 export type UnmatchedResolution = {
   ingredientId: string;
-  locale: CatalogLocale;
+  locale: Locale;
   relinkedBatches: number;
   relinkedShoppingItems: number;
   synonymAdded: boolean;
@@ -44,7 +45,7 @@ export type UnmatchedResolution = {
 
 export type ResolveInput = {
   normalizedName: string;
-  locale: CatalogLocale;
+  locale: Locale;
 } & (
   | { ingredientId: string }
   | {

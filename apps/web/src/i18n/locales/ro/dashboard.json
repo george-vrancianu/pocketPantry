@@ -26,13 +26,7 @@
       "title": "Cămară",
       "itemsInStock_one": "produs în stoc",
       "itemsInStock_few": "produse în stoc",
-      "itemsInStock_other": "de produse în stoc",
-      "locations": {
-        "fridge": "Frigider",
-        "freezer": "Congelator",
-        "cupboard": "Dulap",
-        "spices": "Condimente"
-      }
+      "itemsInStock_other": "de produse în stoc"
     },
     "quickScan": {
       "title": "Scanare rapidă",

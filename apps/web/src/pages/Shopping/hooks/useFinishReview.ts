@@ -2,13 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../../lib/api';
 import { translateApiError } from '../../../i18n/translateApiError';
-import type { StorageLocation } from '../../../lib/catalog';
+import type { StorageLocation, Unit } from '../../../lib/catalog';
 import {
   useFinishProposal,
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
-import type { Unit } from '../../../lib/pantry';
 
 export type ReviewEdit = {
   quantity: string;

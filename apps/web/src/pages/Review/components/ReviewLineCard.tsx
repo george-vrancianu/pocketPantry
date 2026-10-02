@@ -9,8 +9,13 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
-import { LOCATIONS, UNITS, parseQuantity } from '../../../lib/pantry';
+import {
+  LOCATIONS,
+  UNITS,
+  type CatalogParent,
+  type CatalogSearchResult,
+} from '../../../lib/catalog';
+import { parseQuantity } from '../../../lib/pantry';
 import type { ReviewLine } from '../../../lib/review';
 
 type Props = {
@@ -181,7 +186,7 @@ export function ReviewLineCard({
           >
             {UNITS.map((unit) => (
               <option key={unit} value={unit}>
-                {t(`pantry:units.${unit}`)}
+                {t(`common:units.${unit}`)}
               </option>
             ))}
           </TextField>
@@ -203,7 +208,7 @@ export function ReviewLineCard({
             >
               {LOCATIONS.map((location) => (
                 <option key={location} value={location}>
-                  {t(`pantry:locations.${location}`)}
+                  {t(`common:locations.${location}`)}
                 </option>
               ))}
             </TextField>

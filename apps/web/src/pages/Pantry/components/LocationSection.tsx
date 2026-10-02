@@ -28,7 +28,7 @@ export function LocationSection({ location, batchCount, rows, today }: Props) {
         color="text.secondary"
         sx={{ display: 'block', mx: '4px', mb: 1 }}
       >
-        {`${t(`locations.${location}`)} · ${batchCount}`}
+        {`${t(`common:locations.${location}`)} · ${batchCount}`}
       </Typography>
       <Box
         component="ul"

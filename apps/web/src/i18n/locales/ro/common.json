@@ -3,5 +3,18 @@
   "loading": "Se încarcă",
   "confirm": "Confirmă",
   "cancel": "Anulează",
-  "retry": "Încearcă din nou"
+  "retry": "Încearcă din nou",
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "pcs": "buc."
+  },
+  "locations": {
+    "fridge": "Frigider",
+    "freezer": "Congelator",
+    "cupboard": "Dulap",
+    "spices": "Condimente"
+  }
 }

@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { Unit } from '../../../lib/pantry';
+import type { Unit } from '../../../lib/catalog';
 
 /** "500 g", "2 pcs", or just "3" for a quantity without a unit. */
 export function formatAmount(
@@ -10,7 +10,7 @@ export function formatAmount(
 ): string {
   return [
     new Intl.NumberFormat(language).format(quantity),
-    unit ? t(`units.${unit}`) : null,
+    unit ? t(`common:units.${unit}`) : null,
   ]
     .filter(Boolean)
     .join(' ');

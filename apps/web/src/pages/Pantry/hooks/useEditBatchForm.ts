@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
+import type { Unit } from '../../../lib/catalog';
 import {
   parseQuantity,
   useUpdateBatch,
   type Batch,
   type BatchEdit,
-  type Unit,
 } from '../../../lib/pantry';
 
 /** Only the fields that differ from the Batch: a stale form must not overwrite another Member's edit. */
