@@ -267,8 +267,9 @@ export function CustomisePage() {
     if (!focus || !layout.data) return;
     const ids = layout.data.widgets.map((w) => w.id);
     // The edit applies a moment after the click, so keep waiting until it has.
-    if (focus.kind === 'row' ? !ids.includes(focus.id) : ids.includes(focus.id))
-      return;
+    const pending =
+      focus.kind === 'row' ? !ids.includes(focus.id) : ids.includes(focus.id);
+    if (pending) return;
     const target =
       focus.kind === 'row'
         ? focus.id
@@ -323,6 +324,7 @@ export function CustomisePage() {
         total: widgets.length,
       }),
     );
+    setFocus({ kind: 'row', id });
   };
   const remove = (id: string, index: number) => {
     setStatus(t('announce.removed', { name: nameById(id) }));
@@ -354,6 +356,7 @@ export function CustomisePage() {
         to,
       ),
     );
+    setFocus({ kind: 'row', id: String(active.id) });
   };
 
   const available = availableWidgetTypes(widgets);

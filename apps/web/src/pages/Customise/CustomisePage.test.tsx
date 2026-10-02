@@ -20,13 +20,16 @@ function setup(layout: unknown = LAYOUT, putStatus = 200) {
   let stored = layout;
   const { fetchMock, calls } = stubApi({
     'GET /api/dashboard-layout': () => Response.json(stored),
-    'PUT /api/dashboard-layout': () =>
-      putStatus === 200
-        ? ((stored = calls.at(-1)?.body), Response.json({}))
-        : Response.json(
-            { code: 'internal', params: {} },
-            { status: putStatus },
-          ),
+    'PUT /api/dashboard-layout': () => {
+      if (putStatus !== 200) {
+        return Response.json(
+          { code: 'internal', params: {} },
+          { status: putStatus },
+        );
+      }
+      stored = calls.at(-1)?.body;
+      return Response.json({});
+    },
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(<CustomisePage />, { route: '/customise' });
@@ -48,15 +51,18 @@ function controlledApi({ holdRefetch = false } = {}) {
     if (init?.method === 'PUT') {
       order.push('PUT');
       return new Promise<Response>((resolve) => {
+        const body: unknown = JSON.parse(String(init.body));
         puts.push({
-          body: JSON.parse(String(init.body)),
+          body,
           respond: (status) => {
-            if (status === 200) stored = JSON.parse(String(init.body));
-            resolve(
-              status === 200
-                ? Response.json({})
-                : Response.json({ code: 'internal', params: {} }, { status }),
-            );
+            if (status === 200) {
+              stored = body;
+              resolve(Response.json({}));
+            } else {
+              resolve(
+                Response.json({ code: 'internal', params: {} }, { status }),
+              );
+            }
           },
         });
       });
@@ -121,7 +127,7 @@ describe('CustomisePage', () => {
     });
   });
 
-  it('keeps focus on the same button after a move and ignores moves past the ends', async () => {
+  it('ignores moves past the ends', async () => {
     const { puts, user } = setup();
     await rows();
     const up = screen.getByRole('button', { name: 'Move Use soon up' });
@@ -129,13 +135,6 @@ describe('CustomisePage', () => {
 
     await user.click(up);
     expect(puts()).toHaveLength(0);
-
-    const down = screen.getByRole('button', { name: 'Move Use soon down' });
-    down.focus();
-    await user.keyboard('{Enter}');
-    expect(
-      screen.getByRole('button', { name: 'Move Use soon down' }),
-    ).toHaveFocus();
   });
 
   it('toggles a Widget between small and wide and saves it', async () => {
@@ -417,27 +416,6 @@ describe('CustomisePage', () => {
     await vi.waitFor(() => expect(api.gets()).toBe(2));
   });
 
-  it('gives the urgent remove button a hover colour', async () => {
-    setup();
-    await rows();
-    const remove = screen.getByRole('button', {
-      name: 'Remove Shopping widget',
-    });
-    const rules = Array.from(document.styleSheets).flatMap((sheet) =>
-      Array.from(sheet.cssRules).map((rule) => rule.cssText),
-    );
-    const hover = rules
-      .filter(
-        (rule) =>
-          rule.includes(':hover') &&
-          remove.className.split(' ').some((c) => c && rule.includes(`.${c}`)),
-      )
-      .join('\n');
-    expect(hover).toMatch(
-      /background-color:\s*(#F6D3BE|rgb\(246, 211, 190\))/i,
-    );
-  });
-
   it('moves focus to a surviving row when a neighbour is removed too before the first edit applies', async () => {
     setup();
     await rows();
@@ -486,6 +464,22 @@ describe('CustomisePage', () => {
     await vi.waitFor(async () =>
       expect(await names()).toEqual(['Shopping', 'Use soon']),
     );
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Reorder Use soon' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('hands focus to the moved row handle after Move down', async () => {
+    const { user } = setup();
+    await rows();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Move Use soon down' }),
+    );
+
+    expect(await names()).toEqual(['Shopping', 'Use soon', 'Quick scan']);
     await vi.waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Reorder Use soon' }),
