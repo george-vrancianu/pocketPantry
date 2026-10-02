@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
@@ -148,13 +149,18 @@ export class FinishShoppingService {
       const other = await this.otherTarget(tx);
       const byId = new Map(rows.map((row) => [row.id, row]));
       if (body.lines.length > 0) {
+        const lines = body.lines.map((line) => ({
+          ...line,
+          id: randomUUID(),
+        }));
         const inserted = await tx
           .insert(batches)
           .values(
-            body.lines.map((line) => {
+            lines.map((line) => {
               const row = byId.get(line.itemId) as CheckedRow;
               const unmatched = row.ingredientId === null;
               return {
+                id: line.id,
                 familyId,
                 ingredientId: row.ingredientId,
                 leafCategoryId: (row.leaf ?? other.leaf).id,
@@ -169,7 +175,7 @@ export class FinishShoppingService {
             }),
           )
           .returning({ id: batches.id, rawName: batches.rawName });
-        await this.queueUnmatchedBatches(tx, body, inserted);
+        await this.queueUnmatchedBatches(tx, lines, inserted);
       }
 
       // The partial unique index allows one active list per Family: archive first.
@@ -202,13 +208,14 @@ export class FinishShoppingService {
    */
   private async queueUnmatchedBatches(
     tx: Tx,
-    body: FinishShoppingBody,
+    lines: Array<{ id: string; itemId: string }>,
     inserted: Array<{ id: string; rawName: string | null }>,
   ): Promise<void> {
-    const unmatched = inserted.flatMap((batch, index) =>
+    const itemOf = new Map(lines.map((line) => [line.id, line.itemId]));
+    const unmatched = inserted.flatMap((batch) =>
       batch.rawName === null
         ? []
-        : [{ batch, itemId: body.lines[index].itemId }],
+        : [{ batch, itemId: itemOf.get(batch.id) as string }],
     );
     if (unmatched.length === 0) return;
     const locales = await tx
