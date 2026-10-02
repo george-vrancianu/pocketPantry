@@ -34,7 +34,7 @@
     "include": "Include {{name}}",
     "includeShort": "Include"
   },
-  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} sau exclude-le ca să continui.",
+  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} ca să continui.",
   "saved": {
     "title": "Salvat în cămară",
     "toPantry": "Mergi la cămară"

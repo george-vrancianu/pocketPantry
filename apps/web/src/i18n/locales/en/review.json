@@ -34,7 +34,7 @@
     "include": "Include {{name}}",
     "includeShort": "Include"
   },
-  "tooMany": "You can save up to {{max}} items at once. Drop or exclude {{over}} to continue.",
+  "tooMany": "You can save up to {{max}} items at once. Drop {{over}} to continue.",
   "saved": {
     "title": "Saved to your Pantry",
     "toPantry": "Go to Pantry"
