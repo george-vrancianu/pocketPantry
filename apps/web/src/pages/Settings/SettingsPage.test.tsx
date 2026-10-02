@@ -19,6 +19,7 @@ const categories: CategoryOptions = {
 function stubSettings(
   family: FamilySettings,
   savedLocale: string | null = null,
+  role = 'member',
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () => Response.json(family),
@@ -31,7 +32,12 @@ function stubSettings(
     'PUT /api/settings/preferences': () => Response.json({ locale: 'ro' }),
     'GET /api/settings/preferences': () =>
       Response.json({ locale: savedLocale }),
-    'GET /api/auth/get-session': () => Response.json(null),
+    'GET /api/auth/get-session': () =>
+      Response.json(
+        role === 'admin'
+          ? { user: { id: '1', name: 'Ana', email: 'a@b.c', role } }
+          : null,
+      ),
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
@@ -172,5 +178,17 @@ describe('SettingsPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Setările familiei' }),
     ).toBeInTheDocument();
+  });
+
+  it('labels the Admin block as a Catalog region with a heading for Admins', async () => {
+    stubSettings({ staleThresholdDays: 3, expiryOverrides: [] }, null, 'admin');
+    renderWithProviders(<SettingsPage />);
+
+    const heading = await screen.findByRole('heading', { name: 'Catalog' });
+    const region = screen.getByRole('region', { name: 'Catalog' });
+    expect(region).toContainElement(heading);
+    expect(region).toContainElement(
+      screen.getByRole('link', { name: /curate the catalog/i }),
+    );
   });
 });

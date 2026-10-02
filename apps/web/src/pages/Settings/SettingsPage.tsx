@@ -50,8 +50,17 @@ export function SettingsPage() {
           {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
         </Stack>
         {session.data?.user.role === 'admin' ? (
-          <Stack spacing={1}>
-            <Typography variant="sectionLabel" color="text.secondary">
+          <Stack
+            component="section"
+            spacing={1}
+            aria-labelledby={`${id}-admin`}
+          >
+            <Typography
+              id={`${id}-admin`}
+              variant="sectionLabel"
+              component="h2"
+              color="text.secondary"
+            >
               {t('admin')}
             </Typography>
             <Box>
