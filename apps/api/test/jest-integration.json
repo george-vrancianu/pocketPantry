@@ -3,6 +3,7 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "globalSetup": "<rootDir>/support/global-setup.mjs",
+  "globalTeardown": "<rootDir>/support/global-teardown.mjs",
   "setupFiles": ["<rootDir>/support/env.ts"],
   "testRegex": ".int-spec.ts$",
   "extensionsToTreatAsEsm": [".ts"],

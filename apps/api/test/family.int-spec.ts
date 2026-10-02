@@ -151,10 +151,10 @@ describe('Household of One and the Family (integration)', () => {
   });
 
   it('leaves no Family behind when the Member insert fails during sign-up', async () => {
-    // Sign-up commits the Family just before the Member row, so concurrent
-    // sign-ups in other suites show a Family as childless for a moment. Only
-    // Families created during this test count, and a transient one must clear
-    // within the deadline; a leaked Family never does.
+    // Sign-up commits the Family just before the Member row, so a Family can
+    // look childless for a moment. Only Families created during this test
+    // count, and a transient one must clear within the deadline; a leaked
+    // Family never does.
     const startedAt = (
       (await database.execute(sql`select now() as t`)).rows[0] as { t: Date }
     ).t;
