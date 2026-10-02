@@ -101,6 +101,25 @@ describe('ReviewPage', () => {
     expect(notes[1]).toMatch(/Low confidence/);
   });
 
+  it('tells repeated names apart by position, and only then', async () => {
+    renderReview([
+      line({ match: null, name: 'Tomato' }),
+      line({ match: null, name: 'Tomato' }),
+      line(),
+    ]);
+    const second = screen.getByRole('region', { name: 'Tomato (2 of 2)' });
+    expect(
+      screen.getByRole('region', { name: 'Tomato (1 of 2)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'Parmesan' }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      within(second).getByRole('button', { name: 'Drop Tomato (2 of 2)' }),
+    );
+    expect(screen.getByRole('region', { name: 'Tomato' })).toBeInTheDocument();
+  });
+
   it('changes the Match through Catalog search, taking the new defaults', async () => {
     renderReview([line({ expiryDate: null })]);
     await userEvent.click(screen.getByRole('button', { name: 'Change match' }));

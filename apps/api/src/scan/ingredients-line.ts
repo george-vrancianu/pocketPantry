@@ -1,6 +1,6 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { IngredientsScanResult } from './ingredients-scan.schemas';
-import type { ProposedLine } from './proposed-line';
+import { applyThreshold, type ProposedLine } from './proposed-line';
 
 /**
  * One recognised item of an Ingredients Scan as a proposed line. Loose
@@ -14,11 +14,9 @@ export function ingredientsLine(
   match: CatalogSearchResult | null,
   threshold: number,
 ): ProposedLine {
-  const matched = match !== null && item.matchConfidence >= threshold;
   return {
     name: item.fallbackIngredientName,
-    match: matched ? match : null,
-    lowConfidence: item.confidence < threshold,
+    ...applyThreshold(match, item, threshold),
     quantity: null,
     unit: null,
     expiryDate: null,

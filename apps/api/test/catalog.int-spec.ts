@@ -11,6 +11,7 @@ import {
   seedId,
   stableId,
 } from '../src/catalog/seed/seed-catalog';
+import { CatalogSearchService } from '../src/catalog/catalog-search.service';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -262,6 +263,53 @@ describe('Catalog (integration)', () => {
         .query({ q: 'milk' })
         .set('origin', TEST_ORIGIN)
         .expect(401);
+    });
+  });
+
+  describe('findExact', () => {
+    const exact = (names: string[], locale: 'en' | 'ro' = 'en') =>
+      app.get(CatalogSearchService).findExact(names, locale);
+
+    it('matches names, Synonyms and other-locale names, keyed by the name as given', async () => {
+      const found = await exact([
+        ' MAYO ',
+        'Parmezan',
+        'nothing like it',
+        '!!',
+      ]);
+      expect([...found.keys()].sort()).toEqual([' MAYO ', 'Parmezan']);
+      expect(found.get(' MAYO ')?.name).toBe('Mayonnaise');
+      expect(found.get('Parmezan')?.id).toBe(seedId.ingredient('parmesan'));
+    });
+
+    it('leaves out a name that is exactly the name of more than one Ingredient', async () => {
+      const ids = [seedId.ingredient('milk'), seedId.ingredient('parmesan')];
+      const rows = ids.map((entityId, i) => ({
+        id: `00000000-0000-4000-8000-0000000000a${i}`,
+        entityType: 'ingredient' as const,
+        entityId,
+        locale: 'en',
+        kind: 'synonym' as const,
+        value: 'Zzambig',
+        normalizedValue: 'zzambig',
+      }));
+      await database.insert(catalogTranslations).values(rows);
+      try {
+        const found = await exact(['Zzambig', 'mayo']);
+        expect([...found.keys()]).toEqual(['mayo']);
+      } finally {
+        await database.delete(catalogTranslations).where(
+          inArray(
+            catalogTranslations.id,
+            rows.map((row) => row.id),
+          ),
+        );
+      }
+    });
+
+    it('returns nothing without any usable name', async () => {
+      expect((await exact([])).size).toBe(0);
+      expect((await exact(['  ', '?'])).size).toBe(0);
     });
   });
 

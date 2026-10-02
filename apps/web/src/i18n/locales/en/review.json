@@ -9,10 +9,11 @@
   "keepMatch": "Keep this match",
   "flag": {
     "unmatched": "Unmatched: pick an ingredient, or save it under the name we read.",
-    "lowConfidence": "Low confidence: please check this line.",
+    "lowConfidence": "Low confidence: check this before saving.",
     "unmatchedShopping": "Not in our catalogue: pick an ingredient, or add it to your list under the name we read."
   },
   "dropShort": "Drop",
+  "position": "{{name}} ({{index}} of {{total}})",
   "drop": "Drop {{name}}",
   "save_one": "Save {{count}} item",
   "save_few": "Save {{count}} items",
@@ -24,7 +25,6 @@
   "shoppingAdding": "Adding",
   "excluded": {
     "title": "Excluded ({{count}})",
-    "noReason": "Not a pantry item",
     "reason": {
       "not_food": "Not a food item",
       "fee": "A fee",
@@ -34,7 +34,7 @@
     "include": "Include {{name}}",
     "includeShort": "Include"
   },
-  "tooMany": "You can save up to {{max}} items at once. Drop or exclude {{over}} to continue.",
+  "tooMany": "You can save up to {{max}} items at once. Drop {{over}} to continue.",
   "saved": {
     "title": "Saved to your Pantry",
     "toPantry": "Go to Pantry"

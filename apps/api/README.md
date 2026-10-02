@@ -88,6 +88,20 @@ never reach a client.
 - `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories
   are the categories the AI sees).
 
+## Deployment: single API instance
+
+Two stores live in process memory, so the API must run as a single instance
+until they move to a shared store:
+
+- The Plate token uses (`src/scan/plate-token-uses.ts`), which limit each signed
+  dish title to a few loads per token. With several instances a replay could
+  land on another one and load the title again, defeating the Scan Cap.
+- The Invite Code rate limiter (`InviteCodeRateLimitGuard`, #32,
+  `src/family/invite-code-rate-limit.guard.ts`). Its attempt counts are per
+  instance, so the effective limit multiplies with the instance count.
+
+Both reset on restart.
+
 ## Catalog seed
 
 `npm run db:seed -w @pocket-pantry/api` loads the Catalog from

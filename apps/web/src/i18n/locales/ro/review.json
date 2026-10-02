@@ -9,10 +9,11 @@
   "keepMatch": "Păstrează această potrivire",
   "flag": {
     "unmatched": "Nepotrivit: alege un ingredient sau salvează-l cu numele citit.",
-    "lowConfidence": "Încredere scăzută: verifică această linie.",
+    "lowConfidence": "Încredere scăzută: verifică înainte să salvezi.",
     "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
   },
   "dropShort": "Elimină",
+  "position": "{{name}} ({{index}} din {{total}})",
   "drop": "Elimină {{name}}",
   "save_one": "Salvează {{count}} articol",
   "save_few": "Salvează {{count}} articole",
@@ -24,7 +25,6 @@
   "shoppingAdding": "Se adaugă",
   "excluded": {
     "title": "Excluse ({{count}})",
-    "noReason": "Nu e un articol de cămară",
     "reason": {
       "not_food": "Nu e aliment",
       "fee": "Taxă",
@@ -34,7 +34,7 @@
     "include": "Include {{name}}",
     "includeShort": "Include"
   },
-  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} sau exclude-le ca să continui.",
+  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} ca să continui.",
   "saved": {
     "title": "Salvat în cămară",
     "toPantry": "Mergi la cămară"

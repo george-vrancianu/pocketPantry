@@ -1,9 +1,11 @@
 import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { ExcludedLines } from './components/ExcludedLines';
 import { ReviewLineCard } from './components/ReviewLineCard';
+import type { ReviewLine } from '../../lib/review';
 import { useReviewScreen } from './hooks/useReviewScreen';
 
 /**
@@ -14,12 +16,25 @@ import { useReviewScreen } from './hooks/useReviewScreen';
 export function ReviewPage() {
   const { t } = useTranslation('review');
   const screen = useReviewScreen();
+  // Callback ref: the result heading mounts with the tick-failure screen, so focus it then.
+  const focusHeading = useCallback(
+    (heading: HTMLHeadingElement | null) => heading?.focus(),
+    [],
+  );
+
+  const nameOf = (line: ReviewLine) => line.match?.name ?? line.name;
+  const positionOf = (line: ReviewLine) => {
+    const same = screen.lines.filter((o) => nameOf(o) === nameOf(line));
+    return same.length > 1
+      ? { index: same.indexOf(line) + 1, total: same.length }
+      : undefined;
+  };
 
   if (screen.tickFailures) {
     const { missing, changed, other } = screen.tickFailures;
     return (
       <>
-        <AppScreenHeader title={t('saved.title')} />
+        <AppScreenHeader title={t('saved.title')} titleRef={focusHeading} />
         <Stack spacing={2}>
           <Alert severity="warning">
             <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2 }}>
@@ -62,6 +77,7 @@ export function ReviewPage() {
                 line={line}
                 parents={screen.parents}
                 shopping={screen.shopping}
+                position={positionOf(line)}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}

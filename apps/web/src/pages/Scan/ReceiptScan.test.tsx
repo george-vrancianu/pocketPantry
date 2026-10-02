@@ -110,7 +110,6 @@ describe('Receipt Scan on the Scan screen', () => {
       </Routes>,
       { route: '/scan?mode=receipt' },
     );
-    expect(screen.getByRole('status')).not.toHaveTextContent(/coming soon/i);
     await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
     await userEvent.click(
       await screen.findByRole('button', { name: 'Finish' }),

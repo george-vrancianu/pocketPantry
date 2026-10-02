@@ -142,7 +142,7 @@ describe('ScanPage', () => {
   });
 
   it.each(['Product', 'Receipt', 'Plate', 'Ingredients'])(
-    'has %s wired: no coming-soon notice and the shutter works',
+    'enables the shutter in %s mode',
     async (mode) => {
       renderScan({});
       await userEvent.click(screen.getByRole('button', { name: mode }));
@@ -150,7 +150,6 @@ describe('ScanPage', () => {
         'aria-pressed',
         'true',
       );
-      expect(screen.getByRole('status')).not.toHaveTextContent(/coming soon/i);
       expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),

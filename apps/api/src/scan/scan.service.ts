@@ -38,7 +38,7 @@ export class ScanService {
     input: ProductScanInput,
     locale: CatalogLocale,
   ): Promise<ScanResponse> {
-    const result = await this.withinCap(memberId, () =>
+    const result = await this.cap.withinCap(memberId, () =>
       this.productScan.analyze(input, locale),
     );
     // The Family's Default Expiry overrides shape the proposed expiry, as in search.
@@ -60,7 +60,7 @@ export class ScanService {
     input: ReceiptScanInput,
     locale: CatalogLocale,
   ): Promise<ScanResponse> {
-    const result = await this.withinCap(memberId, () =>
+    const result = await this.cap.withinCap(memberId, () =>
       this.receiptScan.analyze(input, locale),
     );
     return {
@@ -73,7 +73,7 @@ export class ScanService {
     input: IngredientsScanInput,
     locale: CatalogLocale,
   ): Promise<ScanResponse> {
-    const result = await this.withinCap(memberId, () =>
+    const result = await this.cap.withinCap(memberId, () =>
       this.ingredientsScan.analyze(input, locale),
     );
     const ids = [
@@ -105,19 +105,5 @@ export class ScanService {
         ),
       ),
     };
-  }
-
-  /** Counts the Scan before calling the provider, and hands it back if the provider fails. */
-  private async withinCap<T>(
-    memberId: string,
-    run: () => Promise<T>,
-  ): Promise<T> {
-    const day = await this.cap.consume(memberId);
-    try {
-      return await run();
-    } catch (error) {
-      await this.cap.refund(memberId, day);
-      throw error;
-    }
   }
 }

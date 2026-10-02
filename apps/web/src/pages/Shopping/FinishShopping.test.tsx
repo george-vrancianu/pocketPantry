@@ -76,7 +76,7 @@ async function openReview() {
   await userEvent.click(
     await screen.findByRole('button', { name: 'Finish shopping' }),
   );
-  return screen.findByRole('region', { name: 'Add to your pantry' });
+  return screen.findByRole('region', { name: 'Add to your Pantry' });
 }
 
 describe('Finish Shopping review', () => {
@@ -137,12 +137,12 @@ describe('Finish Shopping review', () => {
     await user.clear(parmesan.getByLabelText('Expiry date'));
     await user.click(review.getByRole('button', { name: 'Drop Milk' }));
     await user.click(
-      review.getByRole('button', { name: 'Add 2 items to pantry' }),
+      review.getByRole('button', { name: 'Add 2 items to Pantry' }),
     );
 
     await waitFor(() =>
       expect(
-        screen.queryByRole('region', { name: 'Add to your pantry' }),
+        screen.queryByRole('region', { name: 'Add to your Pantry' }),
       ).not.toBeInTheDocument(),
     );
     expect(
@@ -187,20 +187,20 @@ describe('Finish Shopping review', () => {
     await user.clear(parmesan.getByLabelText('Quantity'));
     await user.type(parmesan.getByLabelText('Quantity'), '0');
     expect(
-      review.getByRole('button', { name: 'Add 3 items to pantry' }),
+      review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     ).toBeDisabled();
 
     await user.clear(parmesan.getByLabelText('Quantity'));
     await user.type(parmesan.getByLabelText('Quantity'), '5');
     await user.click(
-      review.getByRole('button', { name: 'Add 3 items to pantry' }),
+      review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     );
 
     expect(
       await screen.findByText(/The list changed while you were reviewing/),
     ).toBeVisible();
     expect(
-      screen.getByRole('region', { name: 'Add to your pantry' }),
+      screen.getByRole('region', { name: 'Add to your Pantry' }),
     ).toBeVisible();
   });
   it('offers Reload after a 409 that refetches the proposal and clears edits and the error', async () => {
@@ -225,7 +225,7 @@ describe('Finish Shopping review', () => {
     const review = within(await openReview());
     await user.click(await review.findByRole('button', { name: 'Drop Milk' }));
     await user.click(
-      review.getByRole('button', { name: 'Add 2 items to pantry' }),
+      review.getByRole('button', { name: 'Add 2 items to Pantry' }),
     );
     await screen.findByText(/The list changed while you were reviewing/);
 
@@ -258,7 +258,7 @@ describe('Finish Shopping review', () => {
 
     expect(await review.findByText(/Nothing to review/)).toBeVisible();
     expect(
-      review.queryByRole('button', { name: /to pantry/ }),
+      review.queryByRole('button', { name: /to Pantry/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -291,7 +291,7 @@ describe('Finish Shopping review', () => {
     await user.type(parmesan.getByLabelText('Quantity'), '1000001');
 
     expect(
-      review.getByRole('button', { name: 'Add 3 items to pantry' }),
+      review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     ).toBeDisabled();
   });
 });

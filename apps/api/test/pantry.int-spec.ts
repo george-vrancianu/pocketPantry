@@ -1,6 +1,8 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
+import { jest } from '@jest/globals';
+import { Client } from 'pg';
 import request from 'supertest';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
@@ -11,6 +13,7 @@ import {
   parentCategories,
   user,
 } from '../src/database/schema';
+import { PantryService } from '../src/pantry/pantry.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Batch = {
@@ -604,6 +607,30 @@ describe('Pantry (integration)', () => {
         { ingredientId: randomUUID() },
       ]).expect(404);
       expect(await list(cookie)).toEqual([]);
+    });
+
+    it('looks targets up in a constant number of queries, however many lines', async () => {
+      const { userId } = await signUp();
+      const pantry = app.get(PantryService);
+      const queries = jest.spyOn(Client.prototype, 'query');
+      const countFor = async (lines: number) => {
+        queries.mockClear();
+        await pantry.createMany(
+          userId,
+          Array.from({ length: lines }, (_, i) =>
+            i % 2
+              ? { rawName: `Jar ${i}`, location: 'cupboard' as const }
+              : { ingredientId: seedId.ingredient('milk') },
+          ),
+          'en',
+        );
+        return queries.mock.calls.length;
+      };
+      try {
+        expect(await countFor(20)).toBe(await countFor(2));
+      } finally {
+        queries.mockRestore();
+      }
     });
 
     it('rejects an empty list', async () => {

@@ -98,13 +98,14 @@ describe('Receipt Review', () => {
       name: `Milk ${i}`,
     }));
     renderReceiptReview(many);
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'You can save up to 50 items at once. Drop or exclude 1 to continue.',
-    );
+    // Text queries: role queries are slow across 51 cards.
     expect(
-      screen.getByRole('button', { name: 'Save 51 items' }),
-    ).toBeDisabled();
-  }, 30_000);
+      screen.getByText(
+        'You can save up to 50 items at once. Drop 1 to continue.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Save 51 items').closest('button')).toBeDisabled();
+  });
 
   it('sends source receipt on Unmatched Batches only', async () => {
     const calls = renderReceiptReview([
@@ -190,6 +191,9 @@ describe('Receipt Review', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '1 Shopping Item was removed from your list before we could tick it off.',
     );
+    expect(
+      screen.getByRole('heading', { name: 'Saved to your Pantry' }),
+    ).toHaveFocus();
     await userEvent.click(screen.getByRole('button', { name: 'Go to Pantry' }));
     expect(await screen.findByText('pantry screen')).toBeInTheDocument();
   });
