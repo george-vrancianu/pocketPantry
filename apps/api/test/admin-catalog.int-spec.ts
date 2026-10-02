@@ -15,6 +15,7 @@ import {
   parentCategories,
   user,
 } from '../src/database/schema';
+import { normalizeName } from '../src/catalog/normalize';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Body = { id: string; [key: string]: unknown };
@@ -646,37 +647,43 @@ describe('Admin role and Catalog curation (integration)', () => {
         .from(leafCategories)
         .where(eq(leafCategories.parentId, parent.id));
 
-      const client = await app.get<Pool>(DATABASE_POOL).connect();
-      let parentRename: Promise<request.Response> | undefined;
+      const pool = app.get<Pool>(DATABASE_POOL);
+      const client = await pool.connect();
+      let parentRename: Promise<request.Response>;
+      let committed = false;
       try {
         // The Admin's rename holds the Other Leaf's row, uncommitted.
         await client.query('BEGIN');
+        const holder = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
         await client.query(
           'UPDATE leaf_categories SET name = $1, normalized_name = $2 WHERE id = $3',
-          [`Misc ${stamp}`, `misc ${stamp}`, other.id],
+          [`Misc ${stamp}`, normalizeName(`Misc ${stamp}`), other.id],
         );
-        parentRename = Promise.resolve(
-          as(adminCookie)
-            .patch(`/parent-categories/${parent.id}`, {
-              name: `Relishes ${stamp}`,
-            })
-            .then((r) => r),
-        );
-        for (;;) {
-          const waiting = await client.query(
-            `SELECT 1 FROM pg_stat_activity
-             WHERE wait_event_type = 'Lock' AND pid <> pg_backend_pid()
-               AND query ILIKE '%leaf_categories%'`,
+        parentRename = as(adminCookie)
+          .patch(`/parent-categories/${parent.id}`, {
+            name: `Relishes ${stamp}`,
+          })
+          .then((r) => r);
+        // Poll from the pool, not `client`: inside a transaction pg_stat_activity is a frozen snapshot.
+        for (let attempt = 0; ; attempt++) {
+          const { rowCount } = await pool.query(
+            'SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
+            [holder.rows[0].pid],
           );
-          if (waiting.rowCount) break;
+          if (rowCount) break;
+          if (attempt === 250)
+            throw new Error('the Parent rename never blocked');
           await new Promise((done) => setTimeout(done, 20));
         }
         await client.query('COMMIT');
+        committed = true;
       } finally {
-        await client.query('ROLLBACK').catch(() => undefined);
+        if (!committed) await client.query('ROLLBACK').catch(() => undefined);
         client.release();
       }
-      expect((await parentRename)?.status).toBe(200);
+      expect((await parentRename).status).toBe(200);
 
       const [leaf] = await database
         .select({ name: leafCategories.name })
@@ -685,7 +692,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(leaf.name).toBe(`Misc ${stamp}`);
 
       await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
-    }, 20_000);
+    });
 
     it('never deletes the top-level Other Parent', async () => {
       await as(adminCookie)
