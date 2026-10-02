@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { hasPgCode } from '../database/pg-errors';
 
 /** Uppercase alphanumerics without 0/O and 1/I/L, which are easy to misread. */
 export const INVITE_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -15,15 +16,6 @@ export function generateInviteCode(): string {
 
 const MAX_CODE_ATTEMPTS = 5;
 
-export function isUniqueViolation(error: unknown): boolean {
-  let current: unknown = error;
-  while (current && typeof current === 'object') {
-    if ('code' in current && current.code === '23505') return true;
-    current = 'cause' in current ? current.cause : undefined;
-  }
-  return false;
-}
-
 type FreshCode = { inviteCode: string; inviteCodeExpiresAt: Date };
 
 /** Retries on the (vanishingly rare) Invite Code collision with another Family. */
@@ -37,7 +29,7 @@ export async function withFreshInviteCode<T>(
         inviteCodeExpiresAt: inviteCodeExpiry(),
       });
     } catch (error) {
-      if (!isUniqueViolation(error) || attempt >= MAX_CODE_ATTEMPTS) {
+      if (!hasPgCode(error, '23505') || attempt >= MAX_CODE_ATTEMPTS) {
         throw error;
       }
     }

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
 import { family, user } from '../database/schema';
 import {
   lockFamilyMember,
@@ -10,7 +10,6 @@ import {
   lockMemberAndFamily,
   requireOwner,
   runLocked,
-  type Tx,
 } from './family-locks';
 import { withFreshInviteCode } from './invite-code';
 import {
@@ -198,7 +197,7 @@ export class FamilyService {
    * result is authoritative (used by `join`); without, plain reads (preview).
    */
   private async prepareJoin(
-    db: Tx | Database,
+    db: Executor,
     memberId: string,
     rawCode: string,
     lock: boolean,

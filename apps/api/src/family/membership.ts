@@ -6,7 +6,7 @@ import {
   shoppingLists,
   user,
 } from '../database/schema';
-import type { Tx } from './family-locks';
+import type { Tx } from '../database/database.types';
 import { withFreshInviteCode } from './invite-code';
 
 /**

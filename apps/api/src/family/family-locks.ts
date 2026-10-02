@@ -1,9 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
-import type { Database } from '../database/database.types';
+import type { Database, Tx } from '../database/database.types';
 import { family, user } from '../database/schema';
-
-export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 export type LockedMember = {
   id: string;

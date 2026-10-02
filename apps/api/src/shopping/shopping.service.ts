@@ -1,16 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import {
-  FALLBACK_LOCALE,
-  type CatalogLocale,
-} from '../catalog/catalog.schemas';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
+import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
 import {
   aisles,
-  catalogTranslations,
   ingredients,
   leafCategories,
   parentCategories,
@@ -25,9 +22,6 @@ import type {
   ShoppingItemView,
   ShoppingListView,
 } from './shopping.schemas';
-
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
-type Executor = Database | Tx;
 
 /**
  * Merge rule: lines for the same Ingredient (or the same Unmatched name) with
@@ -298,19 +292,13 @@ export class ShoppingService {
       .where(eq(shoppingItems.listId, listId))
       .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
 
-    const names = await this.displayNames(
+    const { pick: display } = await loadDisplayNames(
       executor,
       locale,
-      rows.flatMap((row) => [row.ingredientId, row.aisleId]),
+      rows
+        .flatMap((row) => [row.ingredientId, row.aisleId])
+        .filter((id) => id !== null),
     );
-    const display = (
-      type: 'ingredient' | 'aisle',
-      id: string,
-      canonical: string,
-    ) =>
-      names.get(`${type}:${id}:${locale}`) ??
-      names.get(`${type}:${id}:${FALLBACK_LOCALE}`) ??
-      canonical;
 
     const groups = new Map<string, ShoppingGroupView>();
     const unmatchedItems: ShoppingItemView[] = [];
@@ -358,35 +346,5 @@ export class ShoppingService {
       groups: ordered,
       summary: { remaining: rows.length - checked, checked },
     };
-  }
-
-  private async displayNames(
-    executor: Executor,
-    locale: CatalogLocale,
-    entityIds: Array<string | null>,
-  ): Promise<Map<string, string>> {
-    const ids = [...new Set(entityIds.filter((id) => id !== null))];
-    if (ids.length === 0) return new Map();
-    const rows = await executor
-      .select({
-        entityType: catalogTranslations.entityType,
-        entityId: catalogTranslations.entityId,
-        locale: catalogTranslations.locale,
-        value: catalogTranslations.value,
-      })
-      .from(catalogTranslations)
-      .where(
-        and(
-          eq(catalogTranslations.kind, 'name'),
-          inArray(catalogTranslations.locale, [locale, FALLBACK_LOCALE]),
-          inArray(catalogTranslations.entityId, ids),
-        ),
-      );
-    return new Map(
-      rows.map((row) => [
-        `${row.entityType}:${row.entityId}:${row.locale}`,
-        row.value,
-      ]),
-    );
   }
 }

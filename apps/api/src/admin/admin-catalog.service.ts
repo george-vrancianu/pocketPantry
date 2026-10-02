@@ -3,10 +3,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq } from 'drizzle-orm';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
+import type { EntityType } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
+import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   aisles,
   catalogTranslations,
@@ -25,32 +27,6 @@ import type {
   TranslationUpdate,
 } from './admin-catalog.schemas';
 
-type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
-type Executor = Database | Tx;
-
-export function hasPgCode(error: unknown, code: string): boolean {
-  let current: unknown = error;
-  while (current && typeof current === 'object') {
-    if ('code' in current && current.code === code) return true;
-    current = 'cause' in current ? current.cause : undefined;
-  }
-  return false;
-}
-
-function pgConstraint(error: unknown): string | undefined {
-  let current: unknown = error;
-  while (current && typeof current === 'object') {
-    if ('constraint' in current && typeof current.constraint === 'string') {
-      return current.constraint;
-    }
-    current = 'cause' in current ? current.cause : undefined;
-  }
-  return undefined;
-}
-
-/** The top-level "Other" Parent is the home of Unmatched Batches: never deletable. */
-const PROTECTED_PARENT_IDS = new Set([seedId.parent('other')]);
 const otherLeafProtected = () =>
   new ApiException(409, 'catalog.other_leaf_protected');
 
@@ -155,7 +131,7 @@ export class AdminCatalogService {
 
   createParentCategory(input: ParentCategoryCreate) {
     return this.write(async (tx) => {
-      await this.requireAisle(tx, input.aisleId);
+      await this.requireRow(tx, 'aisle', input.aisleId);
       const id = randomUUID();
       const [row] = await tx
         .insert(parentCategories)
@@ -185,7 +161,7 @@ export class AdminCatalogService {
 
   updateParentCategory(id: string, input: ParentCategoryUpdate) {
     return this.write(async (tx) => {
-      if (input.aisleId) await this.requireAisle(tx, input.aisleId);
+      if (input.aisleId) await this.requireRow(tx, 'aisle', input.aisleId);
       const [before] = await tx
         .select({ name: parentCategories.name })
         .from(parentCategories)
@@ -210,7 +186,8 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, 'parent_category', id);
-        if (PROTECTED_PARENT_IDS.has(id)) throw otherLeafProtected();
+        // The top-level "Other" Parent is the home of Unmatched Batches: never deletable.
+        if (id === seedId.parent('other')) throw otherLeafProtected();
         const leaves = await tx
           .select({ id: leafCategories.id, isOther: leafCategories.isOther })
           .from(leafCategories)
@@ -492,14 +469,6 @@ export class AdminCatalogService {
       .where(eq(catalogTranslations.id, id));
     if (!row) throw notFound('translation');
     return row;
-  }
-
-  private async requireAisle(executor: Executor, id: string): Promise<void> {
-    const [row] = await executor
-      .select({ id: aisles.id })
-      .from(aisles)
-      .where(eq(aisles.id, id));
-    if (!row) throw notFound('aisle');
   }
 
   private async requireRow(
