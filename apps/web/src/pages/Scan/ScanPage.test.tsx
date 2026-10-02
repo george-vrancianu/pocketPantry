@@ -52,8 +52,6 @@ const parmesan: CatalogSearchResult = {
 const proposed: ProposedLine = {
   name: 'Grana Padano',
   match: parmesan,
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: null,
   unit: null,

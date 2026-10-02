@@ -1,5 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm';
-import type { Database } from '../database/database.types';
+import type { Executor } from '../database/database.types';
 import { catalogTranslations } from '../database/schema';
 import { type CatalogLocale, FALLBACK_LOCALE } from './catalog.schemas';
 
@@ -13,7 +13,7 @@ export type DisplayNames = {
 
 /** Loads display names for the given Catalog entities in `locale`, with the English fallback. */
 export async function loadDisplayNames(
-  database: Database,
+  database: Executor,
   locale: CatalogLocale,
   entityIds: string[],
 ): Promise<DisplayNames> {

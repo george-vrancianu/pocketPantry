@@ -32,7 +32,6 @@ describe('productLine', () => {
   it('keeps a confident Match', () => {
     expect(productLine(result(), match, 0.6)).toMatchObject({
       match,
-      unmatched: false,
       lowConfidence: false,
       name: 'Grana Padano',
       productDescription: 'Grana Padano 200g',
@@ -41,14 +40,14 @@ describe('productLine', () => {
 
   it('keeps a Match exactly at the threshold and makes one just below it Unmatched', () => {
     expect(
-      productLine(result({ matchConfidence: 0.6 }), match, 0.6).unmatched,
-    ).toBe(false);
+      productLine(result({ matchConfidence: 0.6 }), match, 0.6).match,
+    ).toBe(match);
     expect(
       productLine(result({ matchConfidence: 0.59 }), match, 0.6),
-    ).toMatchObject({ match: null, unmatched: true, matchConfidence: 0 });
+    ).toMatchObject({ match: null });
   });
 
   it('is Unmatched without a validated Match', () => {
-    expect(productLine(result(), null, 0.6).unmatched).toBe(true);
+    expect(productLine(result(), null, 0.6).match).toBeNull();
   });
 });

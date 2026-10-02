@@ -42,8 +42,6 @@ const flour: CatalogSearchResult = {
 const line = (overrides: Partial<ProposedLine>): ProposedLine => ({
   name: 'Milk',
   match: milk,
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: 200,
   unit: 'ml',
@@ -64,8 +62,6 @@ const lines = [
   line({
     name: 'Pixie dust',
     match: null,
-    unmatched: true,
-    matchConfidence: 0,
     quantity: 2,
     unit: 'pcs',
   }),

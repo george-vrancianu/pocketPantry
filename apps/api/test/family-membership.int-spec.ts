@@ -139,7 +139,6 @@ describe('Family membership: join, leave, remove, transfer, delete (integration)
         `/join-preview?code=${(await familyOf(owner)).inviteCode}`,
       ).expect(200);
       expect(preview.body).toEqual({
-        abandonedFamilyId: before.id,
         batches: 0,
         shoppingItems: 0,
       });
@@ -636,7 +635,6 @@ describe('Family membership: join, leave, remove, transfer, delete (integration)
         `/join-preview?code=${code}`,
       ).expect(200);
       expect(preview.body).toEqual({
-        abandonedFamilyId: mine,
         batches: 3,
         shoppingItems: 4,
       });

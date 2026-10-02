@@ -25,7 +25,6 @@ describe('plateLine', () => {
     expect(plateLine(item(), milk, 0.6)).toMatchObject({
       name: 'Milk',
       match: milk,
-      unmatched: false,
       quantity: 200,
       unit: 'ml',
       expiryDate: null,
@@ -36,10 +35,8 @@ describe('plateLine', () => {
   it('is Unmatched below the threshold or without a Match', () => {
     expect(plateLine(item({ matchConfidence: 0.5 }), milk, 0.6)).toMatchObject({
       match: null,
-      unmatched: true,
-      matchConfidence: 0,
     });
-    expect(plateLine(item(), null, 0.6).unmatched).toBe(true);
+    expect(plateLine(item(), null, 0.6).match).toBeNull();
   });
 
   it('keeps an Unmatched line a name, quantity and unit', () => {

@@ -1,8 +1,6 @@
 import { normalizeName } from '../catalog/normalize';
-import type { Database } from '../database/database.types';
+import type { Tx } from '../database/database.types';
 import { unmatchedEntries } from '../database/schema';
-
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 
 export type UnmatchedSource =
   (typeof unmatchedEntries.source.enumValues)[number];

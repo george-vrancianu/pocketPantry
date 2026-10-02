@@ -25,8 +25,6 @@ const milk: CatalogSearchResult = {
 const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   name: 'Grana Padano',
   match: parmesan,
-  matchConfidence: 0.9,
-  unmatched: false,
   lowConfidence: false,
   quantity: null,
   unit: null,

@@ -22,7 +22,6 @@ export function useFamily() {
 }
 
 export type JoinPreview = {
-  abandonedFamilyId: string;
   batches: number;
   shoppingItems: number;
 };

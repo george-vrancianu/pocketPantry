@@ -7,6 +7,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
 import {
   SEED_AISLES,
@@ -16,7 +17,6 @@ import {
 } from './catalog-seed-data';
 import { assertCatalogSeedValid } from './validate-seed';
 
-type EntityType = (typeof catalogTranslations.entityType.enumValues)[number];
 type TranslationRow = typeof catalogTranslations.$inferInsert;
 
 /** Deterministic UUID from a stable key, so seed rows keep their ids forever. */

@@ -12,7 +12,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
 import {
   batches,
   ingredients,
@@ -38,9 +38,6 @@ function addDays(from: string, days: number): string {
   const result = new Date(Date.parse(`${from}T00:00:00Z`) + days * 86_400_000);
   return result.toISOString().slice(0, 10);
 }
-
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
-type Executor = Database | Tx;
 
 type CheckedRow = {
   id: string;

@@ -26,7 +26,6 @@ export type UnmatchedEntry = {
   locales: Locale[];
   sources: UnmatchedSource[];
   dismissed: boolean;
-  lastSeenAt: string;
   references: UnmatchedReference[];
 };
 

@@ -87,8 +87,6 @@ export function receiptProposedLines(
         return {
           name: (line.productName ?? line.sourceText).slice(0, MAX_RAW_NAME),
           match: null,
-          matchConfidence: 0,
-          unmatched: true,
           lowConfidence: false,
           quantity: null,
           unit: null,
@@ -107,13 +105,6 @@ export function receiptProposedLines(
           MAX_RAW_NAME,
         ),
         match: confident ? resolved.match : null,
-        // An exact name hit has no model confidence; it sits at the threshold.
-        matchConfidence: !confident
-          ? 0
-          : resolved.guessed
-            ? threshold
-            : line.matchConfidence,
-        unmatched: !confident,
         lowConfidence: line.confidence < threshold,
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,

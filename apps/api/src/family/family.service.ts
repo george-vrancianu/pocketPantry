@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
 import { family, user } from '../database/schema';
 import {
   lockFamilyMember,
@@ -10,7 +10,6 @@ import {
   lockMemberAndFamily,
   requireOwner,
   runLocked,
-  type Tx,
 } from './family-locks';
 import { withFreshInviteCode } from './invite-code';
 import {
@@ -28,7 +27,7 @@ export type FamilyView = {
 };
 
 /** What joining would delete: the caller's own Household of One and its data. */
-export type JoinPreview = FamilyDataCounts & { abandonedFamilyId: string };
+export type JoinPreview = FamilyDataCounts;
 
 /**
  * Every mutation here runs in one transaction that first locks the affected
@@ -93,13 +92,13 @@ export class FamilyService {
   /** Same checks as `join`, no changes: what joining with `code` would delete. */
   async previewJoin(memberId: string, code: string): Promise<JoinPreview> {
     // Read-only: no row locks, so a preview never blocks (or is blocked by) others.
-    const { abandoned, counts } = await this.prepareJoin(
+    const { counts } = await this.prepareJoin(
       this.database,
       memberId,
       code,
       false,
     );
-    return { abandonedFamilyId: abandoned, ...counts };
+    return counts;
   }
 
   /**
@@ -198,7 +197,7 @@ export class FamilyService {
    * result is authoritative (used by `join`); without, plain reads (preview).
    */
   private async prepareJoin(
-    db: Tx | Database,
+    db: Executor,
     memberId: string,
     rawCode: string,
     lock: boolean,

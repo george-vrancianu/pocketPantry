@@ -4,7 +4,6 @@ import type { Locale } from '../i18n/resources';
 
 export type ExpiryOverride = {
   categoryId: string;
-  kind: 'parent' | 'leaf';
   name: string;
   days: number;
 };
@@ -18,8 +17,7 @@ export type CategoryOptions = {
   parents: {
     id: string;
     name: string;
-    defaultExpiryDays: number | null;
-    leaves: { id: string; name: string; defaultExpiryDays: number | null }[];
+    leaves: { id: string; name: string }[];
   }[];
 };
 

@@ -5,8 +5,6 @@ import type { ProposedLine } from './scan';
 const line = (name: string, extra: object = {}): ProposedLine => ({
   name,
   match: null,
-  matchConfidence: 0,
-  unmatched: true,
   lowConfidence: false,
   quantity: null,
   unit: null,

@@ -51,15 +51,7 @@ export class SettingsService {
         days: familyExpiryOverrides.days,
       })
       .from(familyExpiryOverrides)
-      .where(eq(familyExpiryOverrides.familyId, familyId))
-      .then((rows) =>
-        rows.flatMap((row) =>
-          row.entityType === 'parent_category' ||
-          row.entityType === 'leaf_category'
-            ? [{ ...row, entityType: row.entityType }]
-            : [],
-        ),
-      );
+      .where(eq(familyExpiryOverrides.familyId, familyId));
   }
 
   async staleThresholdOf(familyId: string): Promise<number> {
@@ -87,7 +79,6 @@ export class SettingsService {
     );
     const views: ExpiryOverrideView[] = overrides.map((o) => ({
       categoryId: o.entityId,
-      kind: o.entityType === 'leaf_category' ? 'leaf' : 'parent',
       name: names.pick(
         o.entityType,
         o.entityId,
@@ -166,13 +157,11 @@ export class SettingsService {
         .map((parent) => ({
           id: parent.id,
           name: names.pick('parent_category', parent.id, parent.name),
-          defaultExpiryDays: parent.defaultExpiryDays,
           leaves: leaves
             .filter((leaf) => leaf.parentId === parent.id)
             .map((leaf) => ({
               id: leaf.id,
               name: names.pick('leaf_category', leaf.id, leaf.name),
-              defaultExpiryDays: leaf.defaultExpiryDays,
             }))
             .sort(byName),
         }))

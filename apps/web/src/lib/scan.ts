@@ -31,8 +31,6 @@ export type ProposedLine = {
   name: string;
   /** The Ingredient Match with its Catalog defaults, or null when Unmatched. */
   match: CatalogSearchResult | null;
-  matchConfidence: number;
-  unmatched: boolean;
   /** The image read was shaky: check the whole line. */
   lowConfidence: boolean;
   quantity: number | null;

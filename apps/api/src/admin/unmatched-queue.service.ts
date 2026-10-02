@@ -4,7 +4,7 @@ import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Tx } from '../database/database.types';
 import {
   batches,
   catalogTranslations,
@@ -13,14 +13,14 @@ import {
   shoppingLists,
   unmatchedEntries,
 } from '../database/schema';
-import { AdminCatalogService, hasPgCode } from './admin-catalog.service';
+import { hasPgCode } from '../database/pg-errors';
+import { AdminCatalogService } from './admin-catalog.service';
 import type {
   UnmatchedQueueEntry,
   UnmatchedResolution,
   UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
 
-type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
 type EntryRow = typeof unmatchedEntries.$inferSelect;
 
 const MAX_REFERENCES = 20;
@@ -438,7 +438,6 @@ export class UnmatchedQueueService {
       locales: [...new Set(group.map((row) => row.locale))].sort(),
       sources: [...new Set(group.map((row) => row.source))].sort(),
       dismissed: group.every((row) => row.dismissedAt !== null),
-      lastSeenAt: latest.createdAt,
       references: group.slice(0, MAX_REFERENCES).map((row) => ({
         type: row.batchId ? 'batch' : 'shopping_item',
         id: (row.batchId ?? row.shoppingItemId) as string,

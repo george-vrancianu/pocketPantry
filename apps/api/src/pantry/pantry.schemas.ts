@@ -25,9 +25,7 @@ const quantity = z
 /**
  * Add a Batch. Exactly one of `ingredientId` (a Catalog match) or `rawName`
  * (an Unmatched name). `location` and `expiryDate` left out take the Catalog
- * defaults; `expiryDate: null` explicitly means no expiry. `today` is the
- * Member's local date (YYYY-MM-DD) the default expiry counts from; it falls back
- * to the server's UTC date, which is wrong near midnight outside UTC.
+ * defaults; `expiryDate: null` explicitly means no expiry.
  */
 export const createBatchBody = z
   .object({
@@ -41,7 +39,6 @@ export const createBatchBody = z
     unit: z.enum(ingredientUnit.enumValues).nullish(),
     location: z.enum(storageLocation.enumValues).optional(),
     expiryDate: isoDate.nullish(),
-    today: isoDate.optional(),
     productDescription: z.string().trim().max(200).nullish(),
   })
   .refine((body) => (body.ingredientId === undefined) !== !body.rawName, {

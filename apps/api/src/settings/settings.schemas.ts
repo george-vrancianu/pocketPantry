@@ -25,7 +25,6 @@ export type UpdatePreferencesBody = z.infer<typeof updatePreferencesBody>;
 
 export type ExpiryOverrideView = {
   categoryId: string;
-  kind: 'parent' | 'leaf';
   /** Localised Category name. */
   name: string;
   days: number;
@@ -40,8 +39,7 @@ export type CategoryOptionsView = {
   parents: {
     id: string;
     name: string;
-    defaultExpiryDays: number | null;
-    leaves: { id: string; name: string; defaultExpiryDays: number | null }[];
+    leaves: { id: string; name: string }[];
   }[];
 };
 

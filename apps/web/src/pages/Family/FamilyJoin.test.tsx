@@ -32,7 +32,6 @@ function stub(routes: Record<string, () => Response> = {}) {
     'GET /api/family': () => Response.json(household),
     'GET /api/family/join-preview': () =>
       Response.json({
-        abandonedFamilyId: 'mine',
         batches: 12,
         shoppingItems: 3,
       }),
@@ -215,7 +214,6 @@ describe('FamilyPage: leaving, removing, transferring and deleting', () => {
     stub({
       'GET /api/family/join-preview': () =>
         Response.json({
-          abandonedFamilyId: 'mine',
           batches: 1,
           shoppingItems: 1,
         }),
