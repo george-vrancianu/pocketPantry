@@ -26,13 +26,7 @@
       "title": "Pantry",
       "itemsInStock_one": "item in stock",
       "itemsInStock_few": "items in stock",
-      "itemsInStock_other": "items in stock",
-      "locations": {
-        "fridge": "Fridge",
-        "freezer": "Freezer",
-        "cupboard": "Cupboard",
-        "spices": "Spices"
-      }
+      "itemsInStock_other": "items in stock"
     },
     "quickScan": {
       "title": "Quick scan",

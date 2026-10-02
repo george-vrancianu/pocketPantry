@@ -2,7 +2,6 @@ import { Stack, TextField } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LOCATIONS,
   localName,
   useDeleteCategory,
   useSaveCategory,
@@ -10,8 +9,8 @@ import {
   type AdminLeafCategory,
   type AdminParentCategory,
   type CategoryKind,
-  type Location,
 } from '../../../lib/admin';
+import { LOCATIONS, type StorageLocation } from '../../../lib/catalog';
 import { EditorForm } from './EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
@@ -55,7 +54,7 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
   const [expiry, setExpiry] = useState(
     category?.defaultExpiryDays?.toString() ?? '',
   );
-  const [location, setLocation] = useState<Location | ''>(
+  const [location, setLocation] = useState<StorageLocation | ''>(
     category?.defaultLocation ?? '',
   );
   const isOther =
@@ -149,13 +148,15 @@ export function CategoryEditor({ kind, category, catalog, onDone }: Props) {
           select
           label={t('admin:category.defaultLocation')}
           value={location}
-          onChange={(event) => setLocation(event.target.value as Location | '')}
+          onChange={(event) =>
+            setLocation(event.target.value as StorageLocation | '')
+          }
           slotProps={{ select: { native: true } }}
         >
           <option value="">{t('admin:locations.none')}</option>
           {LOCATIONS.map((value) => (
             <option key={value} value={value}>
-              {t(`admin:locations.${value}`)}
+              {t(`common:locations.${value}`)}
             </option>
           ))}
         </TextField>

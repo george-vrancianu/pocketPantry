@@ -1,11 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import type { CatalogSearchResult, StorageLocation } from './catalog';
-import {
-  defaultExpiryDate,
-  parseQuantity,
-  type NewBatch,
-  type Unit,
-} from './pantry';
+import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
+import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
 /**

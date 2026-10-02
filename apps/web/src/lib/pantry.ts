@@ -1,16 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { StorageLocation } from './catalog';
-
-export type Unit = 'g' | 'kg' | 'ml' | 'l' | 'pcs';
-
-export const LOCATIONS: StorageLocation[] = [
-  'fridge',
-  'freezer',
-  'cupboard',
-  'spices',
-];
-export const UNITS: Unit[] = ['g', 'kg', 'ml', 'l', 'pcs'];
+import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 
 export type Batch = {
   id: string;

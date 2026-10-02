@@ -56,7 +56,7 @@ export function PantryFilters({
                 cursor: 'pointer',
               }}
             >
-              {`${chip === 'all' ? t('all') : t(`locations.${chip}`)} · ${counts[chip]}`}
+              {`${chip === 'all' ? t('all') : t(`common:locations.${chip}`)} · ${counts[chip]}`}
             </Box>
           );
         })}

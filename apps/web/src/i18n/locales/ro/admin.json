@@ -6,19 +6,8 @@
     "categories": "Categorii",
     "unmatched": "Nepotrivite"
   },
-  "units": {
-    "g": "g",
-    "kg": "kg",
-    "ml": "ml",
-    "l": "L",
-    "pcs": "buc."
-  },
   "locations": {
-    "none": "Moștenit",
-    "fridge": "Frigider",
-    "freezer": "Congelator",
-    "cupboard": "Dulap",
-    "spices": "Condimente"
+    "none": "Moștenit"
   },
   "locales": {
     "en": "Engleză",

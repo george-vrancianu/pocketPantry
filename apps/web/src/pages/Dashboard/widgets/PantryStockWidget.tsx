@@ -58,7 +58,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
         aria-label={stock
           .map(
             ({ location, count }) =>
-              `${t(`widgets.pantryStock.locations.${location}`)} ${count}`,
+              `${t(`common:locations.${location}`)} ${count}`,
           )
           .join(', ')}
         sx={{
@@ -88,7 +88,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
         {stock
           .map(
             ({ location, count }) =>
-              `${t(`widgets.pantryStock.locations.${location}`)} ${count}`,
+              `${t(`common:locations.${location}`)} ${count}`,
           )
           .join(' · ')}
       </Box>

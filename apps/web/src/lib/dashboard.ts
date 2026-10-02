@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { LOCATIONS, daysUntil, type Batch } from './pantry';
-import type { StorageLocation } from './catalog';
+import { daysUntil, type Batch } from './pantry';
+import { LOCATIONS, type StorageLocation } from './catalog';
 import type { ShoppingList } from './shopping';
 
 export type WidgetType =

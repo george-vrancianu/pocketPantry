@@ -95,7 +95,7 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
         >
           {UNITS.map((unit) => (
             <option key={unit} value={unit}>
-              {t(`admin:units.${unit}`)}
+              {t(`common:units.${unit}`)}
             </option>
           ))}
         </TextField>

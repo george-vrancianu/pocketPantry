@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { catalogSearchQueryKey, type Unit } from './catalog';
-
-export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
-export type Location = (typeof LOCATIONS)[number];
-export const CATALOG_LOCALES = ['en', 'ro'] as const;
-export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
+import type { Locale } from '../i18n/resources';
+import {
+  catalogSearchQueryKey,
+  type StorageLocation,
+  type Unit,
+} from './catalog';
 
 export type EntityType =
   'aisle' | 'parent_category' | 'leaf_category' | 'ingredient';
 
 export type AdminTranslation = {
   id: string;
-  locale: CatalogLocale;
+  locale: Locale;
   kind: 'name' | 'synonym';
   value: string;
 };
@@ -27,14 +27,14 @@ export type AdminAisle = Translated & { sortOrder: number };
 export type AdminParentCategory = Translated & {
   aisleId: string;
   defaultExpiryDays: number | null;
-  defaultLocation: Location | null;
+  defaultLocation: StorageLocation | null;
 };
 export type AdminLeafCategory = Translated & {
   parentId: string;
   /** The Parent's catch-all Leaf for Unmatched Batches: cannot be deleted or moved. */
   isOther: boolean;
   defaultExpiryDays: number | null;
-  defaultLocation: Location | null;
+  defaultLocation: StorageLocation | null;
 };
 export type AdminIngredient = Translated & {
   leafCategoryId: string;
@@ -108,7 +108,7 @@ export type CategoryInput = {
   aisleId?: string;
   parentId?: string;
   defaultExpiryDays: number | null;
-  defaultLocation: Location | null;
+  defaultLocation: StorageLocation | null;
 };
 export type CategoryKind = 'parent' | 'leaf';
 const categoryPath = (kind: CategoryKind) =>
@@ -136,7 +136,7 @@ export function useDeleteCategory(kind: CategoryKind) {
 export type TranslationInput = {
   entityType: EntityType;
   entityId: string;
-  locale: CatalogLocale;
+  locale: Locale;
   kind: 'name' | 'synonym';
   value: string;
 };

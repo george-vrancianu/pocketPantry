@@ -8,14 +8,10 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LOCALES, type Locale } from '../../../i18n/resources';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import {
-  CATALOG_LOCALES,
-  localName,
-  type AdminCatalog,
-  type CatalogLocale,
-} from '../../../lib/admin';
+import { localName, type AdminCatalog } from '../../../lib/admin';
 import { UNITS, type Unit } from '../../../lib/catalog';
 import {
   useResolveUnmatched,
@@ -52,7 +48,7 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
       '',
   );
   const [defaultUnit, setDefaultUnit] = useState<Unit>('g');
-  const [locale, setLocale] = useState<CatalogLocale>(entry.locale);
+  const [locale, setLocale] = useState<Locale>(entry.locale);
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -169,7 +165,7 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
           >
             {UNITS.map((unit) => (
               <option key={unit} value={unit}>
-                {t(`admin:units.${unit}`)}
+                {t(`common:units.${unit}`)}
               </option>
             ))}
           </TextField>
@@ -180,10 +176,10 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
         label={t('admin:unmatched.synonymLocale')}
         helperText={t('admin:unmatched.synonymHint', { name: entry.rawName })}
         value={locale}
-        onChange={(event) => setLocale(event.target.value as CatalogLocale)}
+        onChange={(event) => setLocale(event.target.value as Locale)}
         slotProps={{ select: { native: true } }}
       >
-        {CATALOG_LOCALES.map((code) => (
+        {LOCALES.map((code) => (
           <option key={code} value={code}>
             {t(`admin:locales.${code}`)}
           </option>

@@ -9,13 +9,13 @@ import {
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import type { CatalogSearchResult } from '../../../lib/catalog';
-import { parseQuantity } from '../../../lib/pantry';
 import {
-  SHOPPING_UNITS,
-  type NewShoppingItem,
-  type ShoppingUnit,
-} from '../../../lib/shopping';
+  UNITS,
+  type CatalogSearchResult,
+  type Unit,
+} from '../../../lib/catalog';
+import { parseQuantity } from '../../../lib/pantry';
+import type { NewShoppingItem } from '../../../lib/shopping';
 
 export type AddItemFormProps = {
   adding: boolean;
@@ -31,7 +31,7 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
   const [typed, setTyped] = useState('');
   const [match, setMatch] = useState<CatalogSearchResult | null>(null);
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState<ShoppingUnit | ''>('');
+  const [unit, setUnit] = useState<Unit | ''>('');
   // Remounts the search box to clear it after an add.
   const [formKey, setFormKey] = useState(0);
 
@@ -91,18 +91,16 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
             select
             label={t('add.unit')}
             value={unit}
-            onChange={(event) =>
-              setUnit(event.target.value as ShoppingUnit | '')
-            }
+            onChange={(event) => setUnit(event.target.value as Unit | '')}
             slotProps={{
               select: { native: true },
               inputLabel: { shrink: true },
             }}
           >
             <option value="">{t('add.noUnit')}</option>
-            {SHOPPING_UNITS.map((value) => (
+            {UNITS.map((value) => (
               <option key={value} value={value}>
-                {t(`units.${value}`)}
+                {t(`common:units.${value}`)}
               </option>
             ))}
           </TextField>

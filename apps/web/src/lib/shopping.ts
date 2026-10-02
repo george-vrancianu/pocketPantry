@@ -1,14 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-
-export type ShoppingUnit = 'g' | 'kg' | 'ml' | 'l' | 'pcs';
-export const SHOPPING_UNITS: ShoppingUnit[] = ['g', 'kg', 'ml', 'l', 'pcs'];
+import type { Unit } from './catalog';
 
 export type ShoppingItem = {
   id: string;
   name: string;
   quantity: number | null;
-  unit: ShoppingUnit | null;
+  unit: Unit | null;
   checked: boolean;
   /** The typed name never matched a Catalog Ingredient. */
   unmatched: boolean;
@@ -30,7 +28,7 @@ export type NewShoppingItem = {
   ingredientId?: string;
   name?: string;
   quantity?: number;
-  unit?: ShoppingUnit;
+  unit?: Unit;
 };
 
 /** How often the list refetches, so other Members' changes show up without a reload. */

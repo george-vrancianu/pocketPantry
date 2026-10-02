@@ -6,19 +6,8 @@
     "categories": "Categories",
     "unmatched": "Unmatched"
   },
-  "units": {
-    "g": "g",
-    "kg": "kg",
-    "ml": "ml",
-    "l": "L",
-    "pcs": "pcs"
-  },
   "locations": {
-    "none": "Inherit",
-    "fridge": "Fridge",
-    "freezer": "Freezer",
-    "cupboard": "Cupboard",
-    "spices": "Spices"
+    "none": "Inherit"
   },
   "locales": {
     "en": "English",

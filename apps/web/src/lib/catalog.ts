@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
 
-export type StorageLocation = 'fridge' | 'freezer' | 'cupboard' | 'spices';
+export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
+export type StorageLocation = (typeof LOCATIONS)[number];
 export const UNITS = ['g', 'kg', 'ml', 'l', 'pcs'] as const;
 export type Unit = (typeof UNITS)[number];
 

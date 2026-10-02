@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { LOCATIONS, UNITS } from '../../../lib/pantry';
+import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
 
 type Props = { onDone: () => void; onCancel: () => void };
@@ -109,7 +109,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
                 >
                   {UNITS.map((unit) => (
                     <option key={unit} value={unit}>
-                      {t(`shopping:units.${unit}`)}
+                      {t(`common:units.${unit}`)}
                     </option>
                   ))}
                 </TextField>
@@ -127,7 +127,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
               >
                 {LOCATIONS.map((location) => (
                   <option key={location} value={location}>
-                    {t(`pantry:locations.${location}`)}
+                    {t(`common:locations.${location}`)}
                   </option>
                 ))}
               </TextField>

@@ -84,7 +84,7 @@ function ChecklistRow({
     item.quantity === null
       ? null
       : item.unit
-        ? `${item.quantity} ${t(`units.${item.unit}`)}`
+        ? `${item.quantity} ${t(`common:units.${item.unit}`)}`
         : String(item.quantity);
 
   return (

@@ -1,7 +1,8 @@
 import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LOCATIONS, UNITS, type Batch } from '../../../lib/pantry';
+import { LOCATIONS, UNITS } from '../../../lib/catalog';
+import type { Batch } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
 
 type Props = { batch: Batch; onSaved: () => void; onCancel: () => void };
@@ -51,7 +52,7 @@ export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
         >
           {UNITS.map((unit) => (
             <option key={unit} value={unit}>
-              {t(`units.${unit}`)}
+              {t(`common:units.${unit}`)}
             </option>
           ))}
         </TextField>
@@ -68,7 +69,7 @@ export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
       >
         {LOCATIONS.map((location) => (
           <option key={location} value={location}>
-            {t(`locations.${location}`)}
+            {t(`common:locations.${location}`)}
           </option>
         ))}
       </TextField>
