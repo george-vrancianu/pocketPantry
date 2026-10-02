@@ -1,17 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  and,
-  desc,
-  eq,
-  getTableColumns,
-  inArray,
-  isNull,
-  lte,
-  sql,
-} from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
-import { lockFamilies } from '../family/family-locks';
+import {
+  ConcurrentMove,
+  lockFamilies,
+  runLocked,
+} from '../family/family-locks';
+import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
@@ -48,8 +44,10 @@ const notInQueue = () => new ApiException(404, 'unmatched.not_found');
  * Lock order, every time: the per-name advisory lock (serialises Admins
  * working the same name), then the Family rows involved in ascending id (as
  * family-locks.ts requires everywhere), then Shopping List rows in ascending
- * id, then Shopping Item and Batch rows in ascending id. Only this service
- * takes the advisory lock, so it cannot invert with another path.
+ * id, then Shopping Item and Batch rows in ascending id. The other advisory
+ * lock holders (catalog adds and renames) take only the name lock and never a
+ * Family lock first, so they cannot invert with this order. Resolve takes every
+ * name lock it needs up front, sorted.
  */
 @Injectable()
 export class UnmatchedQueueService {
@@ -99,31 +97,25 @@ export class UnmatchedQueueService {
     const last = page.at(-1);
 
     // References for this page only: each group's newest MAX_REFERENCES rows.
-    const ranked = this.database
-      .select({
-        row: getTableColumns(unmatchedEntries),
-        rank: sql<number>`row_number() over (partition by ${unmatchedEntries.normalizedName} order by ${unmatchedEntries.createdAt} desc, ${unmatchedEntries.id} desc)`.as(
-          'rank',
-        ),
-      })
-      .from(unmatchedEntries)
-      .where(
-        inArray(
-          unmatchedEntries.normalizedName,
-          page.map((group) => group.normalizedName),
-        ),
-      )
-      .as('ranked');
-    const rows =
+    const { rows } =
       page.length === 0
-        ? []
-        : await this.database
-            .select()
-            .from(ranked)
-            .where(lte(ranked.rank, MAX_REFERENCES))
-            .orderBy(ranked.rank);
+        ? { rows: [] }
+        : await this.database.execute<EntryRow>(sql`
+            select u.id, u.normalized_name as "normalizedName", u.raw_name as "rawName",
+              u.locale, u.source, u.batch_id as "batchId", u.shopping_item_id as "shoppingItemId"
+            from unnest(array[${sql.join(
+              page.map((group) => sql`${group.normalizedName}`),
+              sql`, `,
+            )}]::text[]) as n(name)
+            cross join lateral (
+              select * from unmatched_entries e
+              where e.normalized_name = n.name
+              order by e.created_at desc, e.id desc
+              limit ${MAX_REFERENCES}
+            ) u
+            order by u.created_at desc, u.id desc`);
     const rowsOf = new Map<string, EntryRow[]>();
-    for (const { row } of rows) {
+    for (const row of rows) {
       rowsOf.set(row.normalizedName, [
         ...(rowsOf.get(row.normalizedName) ?? []),
         row,
@@ -183,13 +175,20 @@ export class UnmatchedQueueService {
       await tx
         .update(unmatchedEntries)
         .set({ dismissedAt })
-        .where(eq(unmatchedEntries.normalizedName, normalizedName));
+        .where(
+          and(
+            eq(unmatchedEntries.normalizedName, normalizedName),
+            dismissedAt
+              ? isNull(unmatchedEntries.dismissedAt)
+              : isNotNull(unmatchedEntries.dismissedAt),
+          ),
+        );
     });
   }
 
   async resolve(body: UnmatchedResolveBody): Promise<UnmatchedResolution> {
     try {
-      return await this.database.transaction((tx) => this.resolveIn(tx, body));
+      return await runLocked(this.database, (tx) => this.resolveIn(tx, body));
     } catch (error) {
       if (hasPgCode(error, '23505')) {
         throw new ApiException(409, 'catalog.name_taken');
@@ -214,7 +213,13 @@ export class UnmatchedQueueService {
     body: UnmatchedResolveBody,
   ): Promise<UnmatchedResolution> {
     const key = body.normalizedName;
-    await this.catalog.lockName(tx, key);
+    // Every name lock up front, sorted: createIngredientIn would otherwise
+    // take the new Ingredient's name lock after the row locks below.
+    const names = new Set([key]);
+    if (body.newIngredient) names.add(normalizeName(body.newIngredient.name));
+    for (const name of [...names].sort()) {
+      await this.catalog.lockName(tx, name);
+    }
 
     const entries = await this.lockEntries(tx, key);
     if (entries.length === 0) throw notInQueue();
@@ -395,8 +400,9 @@ export class UnmatchedQueueService {
             row.quantity === null ? null : Number(row.quantity),
           )
         : null;
-      // A merge past the cap is not possible, and an Admin cannot fix a
-      // Family's quantities: keep the line as its own, relinked.
+      // A merge past the cap is neither rejected nor clamped: an Admin cannot
+      // fix a Family's quantities, and clamping would lose some. The line stays
+      // separate, relinked.
       if (twin && !exceedsMaxQuantity(merged)) {
         await tx
           .update(shoppingItems)
@@ -447,9 +453,12 @@ export class UnmatchedQueueService {
               eq(shoppingLists.id, shoppingItems.listId),
             )
             .where(inArray(shoppingItems.id, itemIds));
-    const missing = [...ofBatches, ...ofItems]
-      .map((row) => row.id)
-      .filter((id) => !locked.has(id));
+    const missing = [
+      ...new Set([...ofBatches, ...ofItems].map((row) => row.id)),
+    ].filter((id) => !locked.has(id));
+    // A Family found after others are held may sort below them: restart so
+    // every Family is locked in ascending order from scratch (runLocked).
+    if (locked.size > 0 && missing.length > 0) throw new ConcurrentMove();
     await lockFamilies(tx, missing);
     missing.forEach((id) => locked.add(id));
   }

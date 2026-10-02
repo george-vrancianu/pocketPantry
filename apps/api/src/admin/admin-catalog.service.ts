@@ -306,6 +306,11 @@ export class AdminCatalogService {
       if (input.leafCategoryId) {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
       }
+      if (input.name) {
+        const key = normalizeName(input.name);
+        await this.lockName(tx, key);
+        await this.assertNameFree(tx, key, id);
+      }
       const [row] = await tx
         .update(ingredients)
         .set({ ...input, ...this.normalized(input.name) })
@@ -385,6 +390,11 @@ export class AdminCatalogService {
     return this.write(async (tx) => {
       const existing = await this.requireTranslation(tx, id);
       this.assertEditable(existing.kind, existing.locale);
+      if (existing.entityType === 'ingredient') {
+        const key = normalizeName(input.value);
+        await this.lockName(tx, key);
+        await this.assertNameFree(tx, key, existing.entityId);
+      }
       const [row] = await tx
         .update(catalogTranslations)
         .set({

@@ -85,21 +85,19 @@ export class PantryService {
         ...(await this.toRow(familyId, body, overrides)),
       });
     }
-    const sourceOf = new Map(
-      values.map((row, index) => [row.id, bodies[index].source ?? 'manual']),
-    );
     const rows = await this.database.transaction(async (tx) => {
       const inserted = await tx.insert(batches).values(values).returning();
+      // The ids were generated above, so each entry is built from its own line.
       await recordUnmatched(
         tx,
-        inserted.flatMap((row) =>
-          row.unmatched
+        values.flatMap((value, index) =>
+          value.unmatched
             ? [
                 {
-                  rawName: row.rawName ?? '',
+                  rawName: value.rawName ?? '',
                   locale,
-                  source: sourceOf.get(row.id) ?? 'manual',
-                  batchId: row.id,
+                  source: bodies[index].source ?? 'manual',
+                  batchId: value.id as string,
                 },
               ]
             : [],

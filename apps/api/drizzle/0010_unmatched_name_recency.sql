@@ -1,0 +1,2 @@
+DROP INDEX "unmatched_entries_normalized_name_idx";--> statement-breakpoint
+CREATE INDEX "unmatched_entries_name_recency_idx" ON "unmatched_entries" USING btree ("normalized_name","created_at" DESC NULLS LAST);

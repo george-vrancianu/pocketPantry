@@ -73,6 +73,12 @@ describe('Unmatched queue (integration)', () => {
         .get(`/api${path}`)
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie),
+    patch: (path: string, body: object = {}) =>
+      request(app.getHttpServer())
+        .patch(`/api${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     post: (path: string, body: object = {}) =>
       request(app.getHttpServer())
         .post(`/api${path}`)
@@ -867,10 +873,13 @@ describe('Unmatched queue (integration)', () => {
           value,
         });
 
-      it('waits for a resolve that holds the name lock', async () => {
-        const raw = name('catalog wait');
+      /** Holds the name lock like a resolve would, and proves `send` waits for it. */
+      async function whileNameHeld(
+        raw: string,
+        send: () => Promise<request.Response>,
+      ) {
         const holder = await pool.connect();
-        let created: Promise<request.Response> | undefined;
+        let pending: Promise<request.Response> | undefined;
         try {
           await holder.query('BEGIN');
           const { rows } = await holder.query<{ pid: number }>(
@@ -880,13 +889,50 @@ describe('Unmatched queue (integration)', () => {
             'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
             [`catalog-name:${normalise(raw)}`],
           );
-          created = Promise.resolve(addIngredient(raw).then((r) => r));
+          pending = send();
           await waitForBlockedBackend(pool, rows[0].pid);
         } finally {
           await holder.query('ROLLBACK').catch(() => undefined);
           holder.release();
         }
-        expect((await created)?.status).toBe(201);
+        return pending;
+      }
+
+      it('waits for a resolve that holds the name lock (Ingredient add)', async () => {
+        const raw = name('catalog wait');
+        const created = await whileNameHeld(raw, () =>
+          addIngredient(raw).then((r) => r),
+        );
+        expect(created.status).toBe(201);
+      });
+
+      it('waits for a resolve that holds the name lock (Synonym add)', async () => {
+        const raw = name('synonym wait');
+        const added = await whileNameHeld(raw, () =>
+          addSynonym(seedId.ingredient('milk'), raw).then((r) => r),
+        );
+        expect(added.status).toBe(201);
+      });
+
+      it('refuses to rename an Ingredient or Synonym onto a name another Ingredient owns', async () => {
+        const taken = name('rename taken');
+        await addSynonym(seedId.ingredient('milk'), taken).expect(201);
+        const own = (await addIngredient(name('rename own')).expect(201))
+          .body as { id: string };
+        const renamed = await call(adminCookie).patch(
+          `/admin/catalog/ingredients/${own.id}`,
+          { name: taken },
+        );
+        expect(renamed.status).toBe(409);
+
+        const synonym = (
+          await addSynonym(own.id, name('rename syn')).expect(201)
+        ).body as { id: string };
+        const retitled = await call(adminCookie).patch(
+          `/admin/catalog/translations/${synonym.id}`,
+          { value: taken },
+        );
+        expect(retitled.status).toBe(409);
       });
 
       it('never leaves two Ingredients answering to one resolved name', async () => {
