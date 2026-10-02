@@ -24,7 +24,6 @@
   "shoppingAdding": "Se adaugă",
   "excluded": {
     "title": "Excluse ({{count}})",
-    "noReason": "Nu e un articol de cămară",
     "reason": {
       "not_food": "Nu e aliment",
       "fee": "Taxă",

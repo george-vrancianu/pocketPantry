@@ -24,7 +24,6 @@
   "shoppingAdding": "Adding",
   "excluded": {
     "title": "Excluded ({{count}})",
-    "noReason": "Not a pantry item",
     "reason": {
       "not_food": "Not a food item",
       "fee": "A fee",
