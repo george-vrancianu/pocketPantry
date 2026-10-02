@@ -4,11 +4,30 @@ import { ingredientCreate } from './admin-catalog.schemas';
 
 export const MAX_PAGE_SIZE = 100;
 
+export type UnmatchedCursor = { count: number; name: string };
+export const encodeCursor = ({ count, name }: UnmatchedCursor): string =>
+  Buffer.from(JSON.stringify([count, name])).toString('base64url');
+
 export const unmatchedListQuery = z.object({
   status: z.enum(['open', 'dismissed']).default('open'),
   limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(50),
-  /** `nextCursor` of the previous page. */
-  cursor: z.string().max(400).optional(),
+  /** `nextCursor` of the previous page; decoded to the last group's count and name. */
+  cursor: z
+    .string()
+    .max(400)
+    .optional()
+    .transform((value, ctx): UnmatchedCursor | undefined => {
+      if (value === undefined) return undefined;
+      try {
+        const parsed = z
+          .tuple([z.number().int().min(1), z.string().min(1).max(200)])
+          .parse(JSON.parse(Buffer.from(value, 'base64url').toString()));
+        return { count: parsed[0], name: parsed[1] };
+      } catch {
+        ctx.addIssue({ code: 'custom', message: 'malformed cursor' });
+        return z.NEVER;
+      }
+    }),
 });
 export type UnmatchedListQuery = z.infer<typeof unmatchedListQuery>;
 

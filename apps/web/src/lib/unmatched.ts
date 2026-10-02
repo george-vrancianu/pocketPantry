@@ -63,7 +63,14 @@ export function useUnmatchedQueue(status: UnmatchedStatus) {
         })}`,
       ),
     getNextPageParam: (last) => last.nextCursor ?? undefined,
-    select: (data) => data.pages.flatMap((page) => page.entries),
+    // Counts move between pages, so a name can repeat: keep its first appearance.
+    select: (data) => [
+      ...new Map(
+        data.pages
+          .flatMap((page) => page.entries)
+          .map((e) => [e.normalizedName, e]),
+      ).values(),
+    ],
   });
 }
 

@@ -21,6 +21,15 @@ import { UnmatchedResolver } from './UnmatchedResolver';
 
 type Props = { catalog: AdminCatalog };
 
+const visuallyHidden = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const;
+
 /**
  * The Admin queue of Unmatched names: one line per distinct normalised name
  * with how many Batches and Shopping Items carry it. Resolve opens the
@@ -40,6 +49,8 @@ export function UnmatchedQueue({ catalog }: Props) {
   const noticeRef = useRef<HTMLDivElement>(null);
   // Where focus goes when the resolver closes: back to the row's Resolve
   // button on Cancel, to the result message on Done (the row is gone).
+  // Index of the first row a Load more brings in, until focus has moved there.
+  const [focusFrom, setFocusFrom] = useState<number | null>(null);
   const [restoreFocus, setRestoreFocus] = useState<
     { to: 'row'; name: string } | { to: 'notice' } | null
   >(null);
@@ -60,6 +71,14 @@ export function UnmatchedQueue({ catalog }: Props) {
     setRestoreFocus(null);
   }, [resolving, restoreFocus, queue.data]);
 
+  useEffect(() => {
+    if (focusFrom === null || queue.isFetchingNextPage) return;
+    const buttons =
+      listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
+    (buttons?.[focusFrom] ?? headingRef.current)?.focus();
+    setFocusFrom(null);
+  }, [focusFrom, queue.isFetchingNextPage]);
+
   if (resolving) {
     return (
       <UnmatchedResolver
@@ -79,10 +98,18 @@ export function UnmatchedQueue({ catalog }: Props) {
   }
 
   const entries = queue.data ?? [];
+  // The row is gone after Dismiss or Restore; keep focus on the page.
+  const focusHeading = () => headingRef.current?.focus();
   const error = queue.error ?? dismiss.error ?? undismiss.error;
   return (
     <Stack spacing={2}>
-      <Typography component="h2" variant="h6" ref={headingRef} tabIndex={-1}>
+      {/* Visually hidden: the focus target when a row or the Load more button goes away. */}
+      <Typography
+        component="h2"
+        ref={headingRef}
+        tabIndex={-1}
+        sx={visuallyHidden}
+      >
         {t('admin:unmatched.title')}
       </Typography>
       <SegmentedControl
@@ -124,8 +151,16 @@ export function UnmatchedQueue({ catalog }: Props) {
                 setNotice(null);
                 setResolving(entry);
               }}
-              onDismiss={() => dismiss.mutate(entry.normalizedName)}
-              onRestore={() => undismiss.mutate(entry.normalizedName)}
+              onDismiss={() =>
+                dismiss.mutate(entry.normalizedName, {
+                  onSuccess: focusHeading,
+                })
+              }
+              onRestore={() =>
+                undismiss.mutate(entry.normalizedName, {
+                  onSuccess: focusHeading,
+                })
+              }
             />
           </li>
         ))}
@@ -133,8 +168,12 @@ export function UnmatchedQueue({ catalog }: Props) {
       {queue.hasNextPage ? (
         <Button
           variant="secondary"
-          disabled={queue.isFetchingNextPage}
-          onClick={() => void queue.fetchNextPage()}
+          aria-disabled={queue.isFetchingNextPage}
+          onClick={() => {
+            if (queue.isFetchingNextPage) return;
+            setFocusFrom(entries.length);
+            void queue.fetchNextPage();
+          }}
         >
           {t('admin:unmatched.loadMore')}
         </Button>

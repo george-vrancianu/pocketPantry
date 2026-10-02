@@ -287,12 +287,20 @@ describe('Unmatched queue (integration)', () => {
       ).toBe('ro');
     });
 
-    it('pages through the queue newest first, without repeats or gaps', async () => {
-      const raws = ['one', 'two', 'three'].map((label) =>
-        name(`page ${label}`),
-      );
+    it('pages most frequent first, breaking ties on name, without repeats or gaps', async () => {
+      // Counts 3, 2, 2, 1: the two ties must come out in name order.
+      const plan: Array<[string, number]> = [
+        ['page low', 1],
+        ['page tie b', 2],
+        ['page top', 3],
+        ['page tie a', 2],
+      ];
       const member = await newMember();
-      for (const raw of raws) await saveBatches(member, [{ rawName: raw }]);
+      for (const [label, times] of plan) {
+        for (let i = 0; i < times; i++) {
+          await saveBatches(member, [{ rawName: name(label) }]);
+        }
+      }
 
       const seen: string[] = [];
       let cursor: string | undefined;
@@ -304,8 +312,24 @@ describe('Unmatched queue (integration)', () => {
       } while (cursor);
 
       expect(new Set(seen).size).toBe(seen.length);
-      const mine = seen.filter((n) => raws.map(normalise).includes(n));
-      expect(mine).toEqual(raws.map(normalise).reverse());
+      const wanted = ['page top', 'page tie a', 'page tie b', 'page low'].map(
+        (label) => normalise(name(label)),
+      );
+      expect(seen.filter((n) => wanted.includes(n))).toEqual(wanted);
+    });
+
+    it('answers 400, not 500, for a malformed cursor', async () => {
+      for (const cursor of [
+        'not-base64-json',
+        Buffer.from('[1]').toString('base64url'),
+        Buffer.from('["x","y"]').toString('base64url'),
+      ]) {
+        const response = await call(adminCookie)
+          .get('/admin/unmatched')
+          .query({ cursor });
+        expect(response.status).toBe(400);
+        expect(response.body).toMatchObject({ code: 'validation_failed' });
+      }
     });
 
     it('rejects a page size over the limit', async () => {

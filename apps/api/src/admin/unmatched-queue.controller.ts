@@ -32,7 +32,7 @@ export class UnmatchedQueueController {
   @Get()
   @ApiOperation({
     summary:
-      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each, newest first, one page at a time',
+      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each, most frequent first, one page at a time',
   })
   async list(
     @Query(new ZodValidationPipe(unmatchedListQuery))

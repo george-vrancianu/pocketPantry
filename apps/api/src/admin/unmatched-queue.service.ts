@@ -22,11 +22,12 @@ import {
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
 import { AdminCatalogService } from './admin-catalog.service';
-import type {
-  UnmatchedListQuery,
-  UnmatchedQueuePage,
-  UnmatchedResolution,
-  UnmatchedResolveBody,
+import {
+  encodeCursor,
+  type UnmatchedListQuery,
+  type UnmatchedQueuePage,
+  type UnmatchedResolution,
+  type UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
 
 type EntryRow = typeof unmatchedEntries.$inferSelect;
@@ -57,28 +58,25 @@ export class UnmatchedQueueService {
   ) {}
 
   /**
-   * One page of groups, newest first (latest row, then name). Open groups have
-   * at least one row not yet dismissed; dismissed groups are all dismissed.
-   * The cursor is the last group's `<latest created_at>|<name>`: keyset
-   * paging, so a group resolved or added between pages never shifts the next
-   * page. The timestamp travels as Postgres text to keep microseconds.
+   * One page of groups, most frequent first (count, then name ascending).
+   * Open groups have at least one row not yet dismissed; dismissed groups are
+   * all dismissed. The cursor encodes the last group's count and name: keyset
+   * paging, so ties on count break on the unique name. Both sides compare the
+   * name with the "C" collation so the order and the comparison agree. Counts
+   * can change between pages, so a name may occasionally repeat or be skipped
+   * until the next refetch.
    */
   async list(query: UnmatchedListQuery): Promise<UnmatchedQueuePage> {
     const dismissed = query.status === 'dismissed';
-    const latest = sql<Date>`max(${unmatchedEntries.createdAt})`;
-    const separator = query.cursor?.indexOf('|') ?? -1;
-    const after =
-      query.cursor && separator > 0
-        ? sql`and (${latest}, ${unmatchedEntries.normalizedName}) < (${query.cursor.slice(0, separator)}::timestamptz, ${query.cursor.slice(separator + 1)})`
-        : sql``;
-    if (query.cursor && separator <= 0) {
-      throw new ApiException(400, 'validation_failed');
-    }
+    const count = sql`count(*)`;
+    const name = sql`${unmatchedEntries.normalizedName} collate "C"`;
+    const after = query.cursor
+      ? sql`and (${count} < ${query.cursor.count} or (${count} = ${query.cursor.count} and ${name} > ${query.cursor.name} collate "C"))`
+      : sql``;
     const groups = await this.database
       .select({
         normalizedName: unmatchedEntries.normalizedName,
         count: sql<number>`count(*)::int`,
-        latest: sql<string>`${latest}::text`,
         locales: sql<
           string[]
         >`array_agg(distinct ${unmatchedEntries.locale} order by ${unmatchedEntries.locale})`,
@@ -91,7 +89,7 @@ export class UnmatchedQueueService {
       .having(
         sql`bool_and(${unmatchedEntries.dismissedAt} is not null) = ${dismissed} ${after}`,
       )
-      .orderBy(desc(latest), desc(unmatchedEntries.normalizedName))
+      .orderBy(desc(count), name)
       .limit(query.limit + 1);
     const page = groups.slice(0, query.limit);
     const last = page.at(-1);
@@ -147,7 +145,7 @@ export class UnmatchedQueueService {
       }),
       nextCursor:
         groups.length > query.limit && last
-          ? `${last.latest}|${last.normalizedName}`
+          ? encodeCursor({ count: last.count, name: last.normalizedName })
           : null,
     };
   }
