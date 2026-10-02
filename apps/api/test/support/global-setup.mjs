@@ -27,13 +27,16 @@ export default async function globalSetup(globalConfig) {
   const admin = new pg.Pool({ connectionString: baseUrl });
   try {
     // Teardown never runs after Ctrl-C or a failed setup: sweep dead runs' databases.
+    // Liveness is checked on this machine, so runs sharing the server must share the host.
     const { rows } = await admin.query(
       'select datname from pg_database where starts_with(datname, $1)',
       [`${name}_`],
     );
     for (const { datname } of rows) {
-      const pid = Number(datname.slice(name.length + 1).split('_')[0]);
-      if (Number.isInteger(pid) && !isAlive(pid)) {
+      const match = /^(\d+)_(template|w\d+)$/.exec(
+        datname.slice(name.length + 1),
+      );
+      if (match && !isAlive(Number(match[1]))) {
         await admin.query(`drop database if exists "${datname}" with (force)`);
       }
     }
