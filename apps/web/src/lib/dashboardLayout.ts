@@ -110,8 +110,8 @@ export function availableWidgetTypes(widgets: WidgetInstance[]): WidgetType[] {
 /**
  * Apply an edit to the Member's layout: the cache updates at once (changes are
  * live) and the whole layout is saved. Saves are serialised so the last edit
- * wins. A failure of any save raises `error`; the stored layout is refetched
- * (rolling the cache back) only when the failed save was the last one in flight.
+ * wins. A failed save raises `error` and a later successful one clears it; the
+ * stored layout is refetched (re-syncing the cache) when the last save in flight settles.
  */
 export function useEditDashboardLayout() {
   const queryClient = useQueryClient();
@@ -124,9 +124,10 @@ export function useEditDashboardLayout() {
         method: 'PUT',
         body: layout,
       }),
-    onError: (failure) => {
-      setError(failure);
-      // The failed save still counts as in flight here; any other means a newer edit is queued.
+    onSuccess: () => setError(null),
+    onError: setError,
+    onSettled: () => {
+      // The settling save still counts as in flight here; any other means a newer edit is queued.
       if (queryClient.isMutating({ mutationKey: DASHBOARD_LAYOUT_KEY }) === 1) {
         void queryClient.invalidateQueries({ queryKey: DASHBOARD_LAYOUT_KEY });
       }

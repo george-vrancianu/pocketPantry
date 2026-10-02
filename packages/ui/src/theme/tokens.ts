@@ -15,6 +15,7 @@ export const tokens = {
     butter: '#F3D27A',
     butterInk: '#4A3B0B',
     urgentBg: '#FBE6DA',
+    urgentHover: '#F6D3BE',
     urgentFg: '#B54A17',
     soonBg: '#F6EBC8',
     soonFg: '#6E5200',

@@ -249,7 +249,9 @@ export function CustomisePage() {
   const columns = useGridColumns();
   const [status, setStatus] = useState('');
   const [focus, setFocus] = useState<
-    { kind: 'row'; id: string } | { kind: 'list' } | null
+    | { kind: 'row'; id: string }
+    | { kind: 'removed'; id: string; index: number }
+    | null
   >(null);
   const listRef = useRef<HTMLUListElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -262,17 +264,19 @@ export function CustomisePage() {
 
   // Adding or removing unmounts the focused control, so hand focus to a sensible neighbour.
   useEffect(() => {
-    if (!focus) return;
-    if (focus.kind === 'row') {
-      const handle = Array.from(
-        listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
-      ).find((candidate) => candidate.dataset.handle === focus.id);
-      // The edit applies a moment after the click, so keep waiting until the row exists.
-      if (!handle) return;
-      handle.focus();
-    } else {
-      headingRef.current?.focus();
-    }
+    if (!focus || !layout.data) return;
+    const ids = layout.data.widgets.map((w) => w.id);
+    // The edit applies a moment after the click, so keep waiting until it has.
+    if (focus.kind === 'row' ? !ids.includes(focus.id) : ids.includes(focus.id))
+      return;
+    const target =
+      focus.kind === 'row'
+        ? focus.id
+        : ids[Math.min(focus.index, ids.length - 1)];
+    const handle = Array.from(
+      listRef.current?.querySelectorAll<HTMLElement>('[data-handle]') ?? [],
+    ).find((candidate) => candidate.dataset.handle === target);
+    (handle ?? headingRef.current)?.focus();
     setFocus(null);
   }, [focus, layout.data]);
 
@@ -321,10 +325,9 @@ export function CustomisePage() {
     );
   };
   const remove = (id: string, index: number) => {
-    const neighbour = widgets[index + 1] ?? widgets[index - 1];
     setStatus(t('announce.removed', { name: nameById(id) }));
     editor.edit((current) => removeWidget(current, id));
-    setFocus(neighbour ? { kind: 'row', id: neighbour.id } : { kind: 'list' });
+    setFocus({ kind: 'removed', id, index });
   };
   const resize = (widget: WidgetInstance, size: WidgetSize) => {
     editor.edit((current) => resizeWidget(current, widget.id, size));

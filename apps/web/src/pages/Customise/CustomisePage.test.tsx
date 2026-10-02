@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -17,11 +17,12 @@ const LAYOUT = {
 };
 
 function setup(layout: unknown = LAYOUT, putStatus = 200) {
+  let stored = layout;
   const { fetchMock, calls } = stubApi({
-    'GET /api/dashboard-layout': () => Response.json(layout),
+    'GET /api/dashboard-layout': () => Response.json(stored),
     'PUT /api/dashboard-layout': () =>
       putStatus === 200
-        ? Response.json({})
+        ? ((stored = calls.at(-1)?.body), Response.json({}))
         : Response.json(
             { code: 'internal', params: {} },
             { status: putStatus },
@@ -41,6 +42,7 @@ function controlledApi({ holdRefetch = false } = {}) {
   const puts: Array<{ body: unknown; respond: (status: number) => void }> = [];
   const order: string[] = [];
   let gets = 0;
+  let stored: unknown = LAYOUT;
   let release: () => void = () => undefined;
   vi.stubGlobal('fetch', (_input: RequestInfo | URL, init?: RequestInit) => {
     if (init?.method === 'PUT') {
@@ -48,12 +50,14 @@ function controlledApi({ holdRefetch = false } = {}) {
       return new Promise<Response>((resolve) => {
         puts.push({
           body: JSON.parse(String(init.body)),
-          respond: (status) =>
+          respond: (status) => {
+            if (status === 200) stored = JSON.parse(String(init.body));
             resolve(
               status === 200
                 ? Response.json({})
                 : Response.json({ code: 'internal', params: {} }, { status }),
-            ),
+            );
+          },
         });
       });
     }
@@ -61,10 +65,10 @@ function controlledApi({ holdRefetch = false } = {}) {
     gets += 1;
     if (holdRefetch && gets > 1) {
       return new Promise<Response>((resolve) => {
-        release = () => resolve(Response.json(LAYOUT));
+        release = () => resolve(Response.json(stored));
       });
     }
-    return Promise.resolve(Response.json(LAYOUT));
+    return Promise.resolve(Response.json(stored));
   });
   renderWithProviders(<CustomisePage />, { route: '/customise' });
   return { puts, order, gets: () => gets, releaseRefetch: () => release() };
@@ -309,7 +313,7 @@ describe('CustomisePage', () => {
     expect(await names()).toEqual(['Use soon']);
   });
 
-  it('still shows the alert when a first save fails while a second is queued, and ends consistent', async () => {
+  it('clears the alert when a first save fails but the queued second succeeds, and ends consistent', async () => {
     const api = controlledApi();
     const user = userEvent.setup();
     await rows();
@@ -327,9 +331,9 @@ describe('CustomisePage', () => {
     expect(api.gets()).toBe(1);
     api.puts[1]!.respond(200);
 
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
     expect(await names()).toEqual(['Use soon']);
-    expect(api.gets()).toBe(1);
+    await vi.waitFor(() => expect(api.gets()).toBe(2));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('refetches the stored layout only after the last failed save has rolled back', async () => {
@@ -368,6 +372,125 @@ describe('CustomisePage', () => {
     api.puts[1]!.respond(200);
 
     expect(await names()).toEqual(['Use soon']);
+  });
+
+  it('clears the alert once a later save succeeds', async () => {
+    const api = controlledApi();
+    const user = userEvent.setup();
+    await rows();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Shopping widget' }),
+    );
+    await vi.waitFor(() => expect(api.puts).toHaveLength(1));
+    api.puts[0]!.respond(500);
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+    );
+    await vi.waitFor(() => expect(api.puts).toHaveLength(2));
+    api.puts[1]!.respond(200);
+
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('refetches once after the last save settles, even when it succeeds after an earlier failure', async () => {
+    const api = controlledApi();
+    const user = userEvent.setup();
+    await rows();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Shopping widget' }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+    );
+    await vi.waitFor(() => expect(api.puts).toHaveLength(1));
+    api.puts[0]!.respond(500);
+    await vi.waitFor(() => expect(api.puts).toHaveLength(2));
+    expect(api.gets()).toBe(1);
+    api.puts[1]!.respond(200);
+
+    await vi.waitFor(() => expect(api.gets()).toBe(2));
+  });
+
+  it('gives the urgent remove button a hover colour', async () => {
+    setup();
+    await rows();
+    const remove = screen.getByRole('button', {
+      name: 'Remove Shopping widget',
+    });
+    const rules = Array.from(document.styleSheets).flatMap((sheet) =>
+      Array.from(sheet.cssRules).map((rule) => rule.cssText),
+    );
+    const hover = rules
+      .filter(
+        (rule) =>
+          rule.includes(':hover') &&
+          remove.className.split(' ').some((c) => c && rule.includes(`.${c}`)),
+      )
+      .join('\n');
+    expect(hover).toMatch(
+      /background-color:\s*(#F6D3BE|rgb\(246, 211, 190\))/i,
+    );
+  });
+
+  it('moves focus to a surviving row when a neighbour is removed too before the first edit applies', async () => {
+    setup();
+    await rows();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Shopping widget' }),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+    );
+
+    await vi.waitFor(async () => expect(await names()).toEqual(['Use soon']));
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Reorder Use soon' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('falls back to the heading when rapid removes empty the list', async () => {
+    setup();
+    await rows();
+
+    for (const name of ['Use soon', 'Shopping', 'Quick scan']) {
+      fireEvent.click(
+        screen.getByRole('button', { name: `Remove ${name} widget` }),
+      );
+    }
+
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: 'On your dashboard' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('never leaves focus on nothing when a row is moved right after its neighbour is removed', async () => {
+    setup();
+    await rows();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Move Use soon down' }));
+
+    await vi.waitFor(async () =>
+      expect(await names()).toEqual(['Shopping', 'Use soon']),
+    );
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Reorder Use soon' }),
+      ).toHaveFocus(),
+    );
   });
 
   it('has a Done link back home', async () => {
