@@ -40,8 +40,7 @@ export class PlateScanFlowService {
     input: PlateScanInput,
     locale: CatalogLocale,
   ): Promise<PlateDishesResponse> {
-    const day = await this.cap.consume(memberId);
-    try {
+    return this.cap.withinCap(memberId, async () => {
       const result = await this.plate.findDishes(input, locale);
       const token = signPlateToken({
         secret: this.config.get('SCAN_TOKEN_SECRET', { infer: true }),
@@ -49,10 +48,7 @@ export class PlateScanFlowService {
         titles: result.dishes.map((dish) => dish.title),
       });
       return { ...result, token };
-    } catch (error) {
-      await this.cap.refund(memberId, day);
-      throw error;
-    }
+    });
   }
 
   async dishLines(
