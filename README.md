@@ -1,0 +1,95 @@
+# Pocket Pantry
+
+**Know what's in your kitchen, buy only what you need, and stop throwing food away.**
+
+You come home from the shop, put everything away, and a week later the spinach has gone off at the back of the fridge. Meanwhile someone buys a third jar of paprika because nobody remembered the other two. The shopping list is in one person's head or lost in a group chat.
+
+Pocket Pantry fixes that for you and everyone you live with. Snap a photo of your receipt and your whole shop is in the app in seconds. Everyone at home sees the same pantry and the same shopping list, and the app tells you what to use up before it goes off.
+
+## Why you'll love it
+
+### Your groceries, in with one photo
+
+Nobody wants to type in a week of shopping. With Pocket Pantry you don't have to:
+
+- **Photograph your receipt** and every item lands in your pantry, with quantities. Long receipt? Fold it and take a few photos. Bags and other non-food items are left out for you.
+- **Photograph a product** and Pocket Pantry reads what it is and its best-before date.
+- **Photograph loose fruit and veg** on the counter and each one is recognised.
+- **Photograph a dish** you love and get the ingredients you need to make it again, ready to add to your shopping list.
+
+You always get a quick look before anything is saved, so a wrong guess takes one tap to fix. Works with receipts and labels in English and Romanian.
+
+### A pantry that keeps itself in order
+
+- See everything you have, sorted by where it lives: fridge, freezer, cupboard, or spice rack.
+- Find anything in a second with search.
+- Bought milk twice this week? Each purchase keeps its own date, so you know which carton to open first.
+- Expiry dates are filled in for you based on the kind of food, and you can change them any time.
+- Items that are about to go off are flagged, so you use them instead of binning them.
+
+### One shopping list for the whole family
+
+- Everyone adds to the same list, and changes show up for everyone straight away.
+- The list is sorted in the order you walk through the shop, so you go round once.
+- Tick things off as they go in the basket and see how many are left.
+- Scan your receipt and the things you bought are ticked off for you.
+- When you're done, one tap moves everything you bought into the pantry and starts a fresh list.
+
+### Made for families
+
+- Start on your own in seconds. When you're ready, share an invite code and your family joins your pantry and shopping list.
+- Family members can come and go, and the person who runs the household stays in control of who's in.
+- Each person picks their own language. English and Romanian are available today.
+
+### A home screen that fits you
+
+- See at a glance what to use soon, how much is left on the shopping list, and what's in each part of the kitchen.
+- Start any kind of scan from the home screen with one tap.
+- Add, remove, rearrange, and resize the cards so the screen shows what matters to you. Your layout follows you from your phone to your tablet or laptop.
+
+### Make it yours
+
+- Think milk lasts longer than the default? Change how long each kind of food lasts for your household.
+- Decide how early you want to be warned before things go off.
+
+### Coming soon
+
+- **Recipes** that use what you already have, with step-by-step instructions.
+- **Cook it, and the pantry updates itself**: ingredients you used are taken out.
+- **Favourites** and a **Want to cook** list for the whole family.
+- **Reminders** when food is about to go off or the shopping list changes.
+
+---
+
+## Installation
+
+### What you need
+
+- [Node.js](https://nodejs.org/) 24.15.0 (if you use `nvm`, run `nvm use`)
+- [Docker](https://www.docker.com/), for the database
+- An OpenAI API key, for scanning
+
+### Run it
+
+```bash
+npm install
+npm run dev
+```
+
+The first run creates a `.env` file from `.env.example`. Open `.env` and set at least:
+
+- `BETTER_AUTH_SECRET`: any string of at least 32 random characters.
+- `AI_API_KEY`: your OpenAI API key.
+- `ADMIN_EMAILS` (optional): emails that get admin access when they sign up.
+
+Then restart `npm run dev`. It starts the database, sets it up, and runs the app at http://localhost:5173.
+
+### Load the ingredient list and test accounts
+
+With the app running, in a second terminal:
+
+```bash
+npm run db:seed -w @pocket-pantry/api
+```
+
+This loads the ingredient catalog. In development it also creates two test accounts, `alice@test.local` and `bob@test.local`, both with the password `password123`.
