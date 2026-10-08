@@ -66,10 +66,15 @@ describe('Ingredients Scan (integration)', () => {
       .join('; ');
   }
 
-  const scan = (cookie: string, body: object, locale = 'en') =>
+  const scan = (
+    cookie: string,
+    body: object,
+    locale = 'en',
+    scanLanguage?: string,
+  ) =>
     request(app.getHttpServer())
       .post('/api/scan/ingredients')
-      .query({ locale })
+      .query({ locale, ...(scanLanguage ? { scanLanguage } : {}) })
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie)
       .send(body);
@@ -130,8 +135,37 @@ describe('Ingredients Scan (integration)', () => {
       await scan(await signUp(), { ingredientsImage: IMAGE }, 'ro').expect(201)
     ).body as { lines: { match: { name: string } }[] };
     expect(prompts[0].images).toEqual([IMAGE]);
-    expect(prompts[0].prompt).toContain('locale is ro');
+    expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
     expect(body.lines[0].match.name).not.toBe('Parmesan');
+  });
+
+  it('reads the labels in the Scan Language while the UI locale still names the Ingredients and the fallback', async () => {
+    respondWith([item()]);
+    prompts.length = 0;
+    const body = (
+      await scan(
+        await signUp(),
+        { ingredientsImage: IMAGE },
+        'ro',
+        'da',
+      ).expect(201)
+    ).body as { lines: { match: { name: string } }[] };
+    expect(prompts[0].prompt).toMatch(/photo is in Danish/);
+    expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+    expect(body.lines[0].match.name).not.toBe('Parmesan');
+  });
+
+  it('reads the labels in the UI locale when no Scan Language is given', async () => {
+    respondWith([item()]);
+    prompts.length = 0;
+    await scan(await signUp(), { ingredientsImage: IMAGE }, 'ro').expect(201);
+    expect(prompts[0].prompt).toMatch(/photo is in Romanian/);
+  });
+
+  it('rejects a Scan Language outside the supported list', async () => {
+    await scan(await signUp(), { ingredientsImage: IMAGE }, 'en', 'fr').expect(
+      400,
+    );
   });
 
   it('never trusts the model: an invented identifier or a low Match becomes Unmatched', async () => {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
+import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 import { ingredientCreate } from './admin-catalog.schemas';
 
 export const unmatchedListQuery = z.object({
@@ -15,15 +15,15 @@ export type UnmatchedDismissBody = z.infer<typeof unmatchedDismissBody>;
 
 /**
  * Resolve a queue entry to exactly one of an existing Ingredient or a new one.
- * `locale` is the language of the Synonym; it defaults to the locale of the
- * most recent Unmatched row.
+ * `locale` is the Scan Language of the Synonym; it defaults to the language tag
+ * of the most recent Unmatched row.
  */
 export const unmatchedResolveBody = z
   .object({
     normalizedName,
     ingredientId: z.uuid().optional(),
     newIngredient: ingredientCreate.optional(),
-    locale: z.enum(CATALOG_LOCALES).optional(),
+    locale: z.enum(SCAN_LANGUAGES).optional(),
   })
   .refine((body) => (body.ingredientId === undefined) !== !body.newIngredient, {
     message: 'exactly one of ingredientId or newIngredient',

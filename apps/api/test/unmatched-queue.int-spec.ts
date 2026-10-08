@@ -85,11 +85,15 @@ describe('Unmatched queue (integration)', () => {
 
   async function saveBatches(
     cookie: string,
-    lines: Array<{ rawName: string; source?: string }>,
+    lines: Array<{ rawName: string; source?: string; scanLanguage?: string }>,
     locale = 'en',
+    scanLanguage?: string,
+    path = '/pantry/batches/bulk',
   ) {
+    const query = new URLSearchParams({ locale });
+    if (scanLanguage) query.set('scanLanguage', scanLanguage);
     const response = await call(cookie)
-      .post(`/pantry/batches/bulk?locale=${locale}`, {
+      .post(`${path}?${query.toString()}`, {
         batches: lines.map((line) => ({
           ...line,
           quantity: 1,
@@ -206,6 +210,68 @@ describe('Unmatched queue (integration)', () => {
           locale: 'en',
         }),
       ]);
+    });
+
+    describe('Scan Language tag', () => {
+      const tagsOf = async (raw: string) =>
+        (await entryFor(raw))?.references.map((ref) => ref.locale);
+
+      it('tags a bulk-saved Unmatched line with the locale when no Scan Language is given', async () => {
+        const raw = name('tag default');
+        await saveBatches(await newMember(), [{ rawName: raw }], 'ro');
+        expect(await tagsOf(raw)).toEqual(['ro']);
+      });
+
+      it('tags a bulk-saved Unmatched line with the query Scan Language, not the locale', async () => {
+        const raw = name('tag query');
+        await saveBatches(await newMember(), [{ rawName: raw }], 'ro', 'da');
+        expect(await tagsOf(raw)).toEqual(['da']);
+      });
+
+      it('lets a per-batch Scan Language win over the query, so one save can mix languages', async () => {
+        const rawDa = name('tag batch da');
+        const rawRo = name('tag batch ro');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: rawDa }, { rawName: rawRo, scanLanguage: 'ro' }],
+          'en',
+          'da',
+        );
+        expect(await tagsOf(rawDa)).toEqual(['da']);
+        expect(await tagsOf(rawRo)).toEqual(['ro']);
+      });
+
+      it('tags Receipt Scan confirm lines the same way: per-batch, then query, then locale', async () => {
+        const rawQuery = name('confirm query');
+        const rawBatch = name('confirm batch');
+        const rawLocale = name('confirm locale');
+        const member = await newMember();
+        await saveBatches(
+          member,
+          [{ rawName: rawQuery }, { rawName: rawBatch, scanLanguage: 'en' }],
+          'ro',
+          'da',
+          '/scan/receipt/confirm',
+        );
+        await saveBatches(
+          member,
+          [{ rawName: rawLocale }],
+          'ro',
+          undefined,
+          '/scan/receipt/confirm',
+        );
+        expect(await tagsOf(rawQuery)).toEqual(['da']);
+        expect(await tagsOf(rawBatch)).toEqual(['en']);
+        expect(await tagsOf(rawLocale)).toEqual(['ro']);
+      });
+
+      it('rejects a Scan Language outside the supported list', async () => {
+        await call(await newMember())
+          .post('/pantry/batches/bulk?scanLanguage=fr', {
+            batches: [{ rawName: name('bad'), quantity: 1, unit: 'pcs' }],
+          })
+          .expect(400);
+      });
     });
 
     it('records plate Shopping Items and Finish Shopping Batches', async () => {
@@ -366,6 +432,47 @@ describe('Unmatched queue (integration)', () => {
         locale: 'ro',
       }).expect(201);
       expect(response.body).toMatchObject({ locale: 'ro' });
+    });
+
+    it('turns a Danish Unmatched name into a da Synonym that matches on the next search', async () => {
+      const raw = name('skyr');
+      await saveBatches(await newMember(), [{ rawName: raw }], 'ro', 'da');
+      const response = await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: seedId.ingredient('parmesan'),
+      }).expect(201);
+      expect(response.body).toMatchObject({ locale: 'da' });
+
+      const synonyms = await database
+        .select()
+        .from(catalogTranslations)
+        .where(
+          and(
+            eq(catalogTranslations.entityId, seedId.ingredient('parmesan')),
+            eq(catalogTranslations.kind, 'synonym'),
+            eq(catalogTranslations.locale, 'da'),
+          ),
+        );
+      expect(synonyms).toHaveLength(1);
+      const search = (
+        await call(await newMember())
+          .get(`/catalog/search?q=${encodeURIComponent(raw)}&locale=ro`)
+          .expect(200)
+      ).body as { results: Array<{ id: string }> };
+      expect(search.results[0]?.id).toBe(seedId.ingredient('parmesan'));
+      await database
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.id, synonyms[0].id));
+    });
+
+    it('rejects a Synonym language outside the Scan Languages', async () => {
+      const raw = name('bad language');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: seedId.ingredient('parmesan'),
+        locale: 'fr',
+      }).expect(400);
     });
 
     it('rejects a name that already matches a different Ingredient', async () => {

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
+import { CATALOG_LOCALES, SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import {
   catalogEntityType,
@@ -64,13 +64,21 @@ export const ingredientUpdate = ingredientCreate
   .partial()
   .refine(atLeastOne, atLeastOneMessage);
 
-export const translationCreate = z.object({
-  entityType: z.enum(catalogEntityType.enumValues),
-  entityId: id,
-  locale: z.enum(CATALOG_LOCALES),
-  kind: z.enum(translationKind.enumValues),
-  value: text,
-});
+/** A Synonym may be in any Scan Language; a display name only in a catalog locale. */
+export const translationCreate = z
+  .object({
+    entityType: z.enum(catalogEntityType.enumValues),
+    entityId: id,
+    locale: z.enum(SCAN_LANGUAGES),
+    kind: z.enum(translationKind.enumValues),
+    value: text,
+  })
+  .refine(
+    (body) =>
+      body.kind === 'synonym' ||
+      (CATALOG_LOCALES as readonly string[]).includes(body.locale),
+    { message: 'a display name needs a catalog locale', path: ['locale'] },
+  );
 export const translationUpdate = z.object({ value: text });
 
 export const idParam = z.object({ id });

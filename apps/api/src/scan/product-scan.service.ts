@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ApiException } from '../common/api-exception';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
+import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
   productScanModelResultSchema,
   type ProductScanInput,
@@ -19,6 +20,7 @@ export class ProductScanService {
   async analyze(
     input: ProductScanInput,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
   ): Promise<ProductScanResult> {
     const catalog = await this.ingredientCatalog.getCatalogIn(locale);
     const catalogPrompt = this.ingredientCatalog.toPrompt(catalog);
@@ -28,13 +30,13 @@ export class ProductScanService {
         type: 'input_text',
         text: [
           'Analyze these grocery package photos.',
-          `The user's locale is ${locale}. Use it as a context hint for product names, abbreviations, and date formats, while prioritizing visible package text. Match catalog ingredients across languages.`,
+          `${scanLanguagePrompt('The text on these packages is', scanLanguage, 'product names, abbreviations, and date formats')} Prioritize visible package text. Match catalog ingredients across languages.`,
           'The first image shows the product. Identify its display name and broad product type.',
           'Match it against the application catalog below. Ingredient tuples are [id, name, category].',
           'Return matchedIngredientId only when that exact ID is present in the catalog and is a reasonable semantic match. Never invent an ID.',
           'Return matchedCategory only from the catalog category list. When an ingredient is matched, use its catalog category.',
           'matchConfidence measures confidence in the catalog ingredient match, not image-reading confidence. Use null for matchedIngredientId when no catalog ingredient is a good match.',
-          'Always return fallbackIngredientName as a short generic ingredient name suitable for catalog search or creation (for example, "Greek yogurt" becomes "Yogurt").',
+          `${fallbackNamePrompt(locale)} (for example, "Greek yogurt" becomes "Yogurt").`,
           'If a second image is present, it shows the printed expiry or best-before area. Read only a clearly visible expiry/best-before/use-by date.',
           'Return expiryDate as YYYY-MM-DD only when the date is unambiguous. Otherwise return null. Do not mistake batch/lot codes or production dates for expiry dates.',
           'confidence is the overall image recognition confidence from 0 to 1.',

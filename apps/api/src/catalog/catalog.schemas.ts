@@ -6,6 +6,14 @@ export const CATALOG_LOCALES = ['en', 'ro'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
 export const FALLBACK_LOCALE: CatalogLocale = 'en';
 
+/**
+ * The languages a Scan can be read in, chosen per Scan and independent of the
+ * UI locale. Wider than the catalog locales: a Synonym may be in any of them,
+ * a display name only in a catalog locale.
+ */
+export const SCAN_LANGUAGES = ['en', 'ro', 'da'] as const;
+export type ScanLanguage = (typeof SCAN_LANGUAGES)[number];
+
 export const catalogSearchQuery = z.object({
   q: z.string().max(100),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),

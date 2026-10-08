@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
+import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import type { BatchView, CreateBatchBody } from '../pantry/pantry.schemas';
 import { PantryService } from '../pantry/pantry.service';
 import { ShoppingService } from '../shopping/shopping.service';
@@ -21,8 +21,14 @@ export class ReceiptConfirmService {
     memberId: string,
     lines: CreateBatchBody[],
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
   ): Promise<ReceiptConfirmation> {
-    const batches = await this.pantry.createMany(memberId, lines, locale);
+    const batches = await this.pantry.createMany(
+      memberId,
+      lines,
+      locale,
+      scanLanguage,
+    );
     const ingredientIds = batches.flatMap((batch) =>
       batch.ingredientId ? [batch.ingredientId] : [],
     );

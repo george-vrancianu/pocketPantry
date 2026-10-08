@@ -1,0 +1,17 @@
+import { unmatchedResolveBody } from './unmatched-queue.schemas';
+
+describe('unmatchedResolveBody', () => {
+  const base = { normalizedName: 'maelk', ingredientId: crypto.randomUUID() };
+
+  it('accepts a Synonym in any Scan Language, including one with no catalog locale', () => {
+    expect(unmatchedResolveBody.parse({ ...base, locale: 'da' }).locale).toBe(
+      'da',
+    );
+  });
+
+  it('rejects a language outside the Scan Languages', () => {
+    expect(
+      unmatchedResolveBody.safeParse({ ...base, locale: 'fr' }).success,
+    ).toBe(false);
+  });
+});

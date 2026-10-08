@@ -4,10 +4,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
-import {
-  pantryLocaleQuery,
-  type PantryLocaleQuery,
-} from '../pantry/pantry.schemas';
+import { scanQuery, type ScanQuery } from '../pantry/pantry.schemas';
 import {
   ingredientsScanSchema,
   type IngredientsScanInput,
@@ -33,11 +30,16 @@ export class ScanController {
   })
   product(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(productScanSchema, ['productImage', 'expiryImage']))
     body: ProductScanInput,
   ): Promise<ScanResponse> {
-    return this.scan.scanProduct(member.id, body, query.locale);
+    return this.scan.scanProduct(
+      member.id,
+      body,
+      query.locale,
+      query.scanLanguage,
+    );
   }
 
   @Post('ingredients')
@@ -47,10 +49,15 @@ export class ScanController {
   })
   ingredients(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(ingredientsScanSchema, ['ingredientsImage']))
     body: IngredientsScanInput,
   ): Promise<ScanResponse> {
-    return this.scan.scanIngredients(member.id, body, query.locale);
+    return this.scan.scanIngredients(
+      member.id,
+      body,
+      query.locale,
+      query.scanLanguage,
+    );
   }
 }

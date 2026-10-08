@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
+import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
 import { SettingsService } from '../settings/settings.service';
 import type { ProductScanInput } from './product-scan.schemas';
@@ -37,9 +37,10 @@ export class ScanService {
     memberId: string,
     input: ProductScanInput,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
     const result = await this.withinCap(memberId, () =>
-      this.productScan.analyze(input, locale),
+      this.productScan.analyze(input, locale, scanLanguage),
     );
     // The Family's Default Expiry overrides shape the proposed expiry, as in search.
     const [match] = result.matchedIngredientId
@@ -59,9 +60,10 @@ export class ScanService {
     memberId: string,
     input: ReceiptScanInput,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
     const result = await this.withinCap(memberId, () =>
-      this.receiptScan.analyze(input, locale),
+      this.receiptScan.analyze(input, locale, scanLanguage),
     );
     return {
       lines: await this.receiptProposal.propose(result, locale, memberId),
@@ -72,9 +74,10 @@ export class ScanService {
     memberId: string,
     input: IngredientsScanInput,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
     const result = await this.withinCap(memberId, () =>
-      this.ingredientsScan.analyze(input, locale),
+      this.ingredientsScan.analyze(input, locale, scanLanguage),
     );
     const ids = [
       ...new Set(

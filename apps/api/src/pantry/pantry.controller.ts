@@ -21,12 +21,14 @@ import {
   createBatchesBody,
   updateBatchBody,
   pantryLocaleQuery,
+  scanQuery,
   type BatchView,
   type BatchIdParam,
   type CreateBatchBody,
   type CreateBatchesBody,
   type UpdateBatchBody,
   type PantryLocaleQuery,
+  type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
 
@@ -69,7 +71,7 @@ export class PantryController {
   })
   async createMany(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<{ batches: BatchView[] }> {
     return {
@@ -77,6 +79,7 @@ export class PantryController {
         member.id,
         body.batches,
         query.locale,
+        query.scanLanguage,
       ),
     };
   }
