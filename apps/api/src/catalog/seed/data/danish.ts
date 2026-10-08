@@ -53,7 +53,7 @@ export const DA_LEAVES: Record<string, string> = {
   melons: 'Meloner',
   'potatoes-and-tubers': 'Kartofler og rodknolde',
   'fresh-herbs': 'Friske krydderurter',
-  'woody-herbs': 'Rosmarin, timian og salvie',
+  'woody-herbs': 'Rosmarin, timian, salvie og oregano',
   bread: 'Frisk brød',
   'sliced-bread': 'Skiveskåret brød og toast',
   'rolls-and-buns': 'Rundstykker og boller',
