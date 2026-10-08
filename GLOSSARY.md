@@ -53,7 +53,7 @@ The ordered shop section a Parent Category maps to. Used to group the Shopping L
 _Avoid_: Section, department
 
 **Synonym**:
-An alternative name for an Ingredient in a given locale, used for matching.
+An alternative name for an Ingredient in a given Scan Language, used for matching. Unlike display names, Synonyms are not limited to the catalog locales.
 _Avoid_: Alias, keyword
 
 **Default Expiry**:
@@ -122,7 +122,11 @@ Recognises a single packaged product and its best-before date from a photo.
 
 **Receipt Scan**:
 Recognises every purchased line on a receipt photo.
-A long receipt can be scanned across several photos, one per **Receipt Section**: the Member folds the receipt about every 20 items and photographs each fold. The sections are read independently and merged into one Review; each counts as one Scan against the **Scan Cap**. It is still one Receipt Scan of one receipt.
+A long receipt can be scanned across several photos, one per **Scan Language**:
+The language the text in a Scan is read in: English, Romanian, or Danish. Chosen per Scan and independent of the Member's UI locale. Plate Scans have none.
+_Avoid_: Scan locale, source language
+
+**Receipt Section**: the Member folds the receipt about every 20 items and photographs each fold. The sections are read independently and merged into one Review; each counts as one Scan against the **Scan Cap**. It is still one Receipt Scan of one receipt.
 
 **Receipt Section**:
 One photo of a folded part of the same receipt. It is read as one **Scan**, and its lines are merged with the other sections into one Review.
