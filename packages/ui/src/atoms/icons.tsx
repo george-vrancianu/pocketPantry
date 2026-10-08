@@ -26,6 +26,11 @@ import {
   ChevronDown,
   Minus,
   GripVertical,
+  TriangleAlert,
+  CircleAlert,
+  CircleCheck,
+  Trash2,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -60,3 +65,8 @@ export const ChevronUpIcon = withDefaults(ChevronUp);
 export const ChevronDownIcon = withDefaults(ChevronDown);
 export const MinusIcon = withDefaults(Minus);
 export const GripIcon = withDefaults(GripVertical);
+export const WarningIcon = withDefaults(TriangleAlert);
+export const AlertIcon = withDefaults(CircleAlert);
+export const CheckCircleIcon = withDefaults(CircleCheck);
+export const DeleteIcon = withDefaults(Trash2);
+export const SwapIcon = withDefaults(ArrowLeftRight);
