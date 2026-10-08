@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { findReviewRow } from '../../test/review';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -74,10 +75,8 @@ describe('Ingredients Scan on the Scan screen', () => {
         }),
     });
     await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    expect(
-      await screen.findByRole('region', { name: 'Tomato' }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Onion' })).toBeInTheDocument();
+    expect(await findReviewRow('Tomato')).toBeInTheDocument();
+    expect(await findReviewRow('Onion')).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'POST /api/scan/ingredients')?.body,
     ).toEqual({ ingredientsImage: IMAGE });

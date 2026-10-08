@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,8 +35,12 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   ...overrides,
 });
 
-function renderReview(lines: ProposedLine[], extra = {}) {
-  startReview({ mode: 'product', lines });
+function renderReview(
+  lines: ProposedLine[],
+  extra = {},
+  mode: 'product' | 'plate' = 'product',
+) {
+  startReview({ mode, lines });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
@@ -47,6 +51,7 @@ function renderReview(lines: ProposedLine[], extra = {}) {
         ],
       }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
+    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
     ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -60,6 +65,20 @@ function renderReview(lines: ProposedLine[], extra = {}) {
   );
   return calls;
 }
+
+/** A confident, complete line: starts shut, in "Confident". */
+const sure = (overrides: Partial<ProposedLine> = {}) =>
+  line({ quantity: 200, unit: 'g', ...overrides });
+
+/** A row's own button (not the Match or Remove buttons that mention the same name). */
+const row = (name: string, index = 0) =>
+  screen
+    .getAllByRole('button')
+    .filter(
+      (button) =>
+        button.hasAttribute('aria-controls') &&
+        button.textContent?.includes(name),
+    )[index];
 
 describe('ReviewPage', () => {
   beforeEach(() => clearReview());
@@ -77,51 +96,248 @@ describe('ReviewPage', () => {
     expect(screen.getByText('scan screen')).toBeInTheDocument();
   });
 
-  it('pre-fills a matched line from the proposal and the Catalog defaults', () => {
-    renderReview([line()]);
-    const card = screen.getByRole('region', { name: 'Parmesan' });
-    expect(within(card).getByLabelText('Location')).toHaveValue('fridge');
-    expect(within(card).getByLabelText('Unit')).toHaveValue('g');
-    expect(within(card).getByLabelText('Expiry date')).toHaveValue(
-      '2026-12-24',
-    );
-    expect(within(card).getByLabelText('Product description')).toHaveValue(
-      'Grana Padano 200g',
-    );
-    expect(within(card).queryByRole('note')).not.toBeInTheDocument();
+  it('says how many lines were read, per Scan Mode', () => {
+    renderReview([sure(), line({ match: null, name: 'Mystery' })]);
+    expect(
+      screen.getByText('Scanned product · 2 lines read'),
+    ).toBeInTheDocument();
   });
 
-  it('flags Unmatched and low-confidence lines', () => {
+  it('shows a confident line as one shut row with its quantity, Location and short date', () => {
+    renderReview([sure()]);
+    const button = row('Parmesan');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveAttribute('aria-controls');
+    expect(button).toHaveTextContent('200 g');
+    expect(button).toHaveTextContent('Fridge');
+    expect(button).toHaveTextContent('24.12.26');
+    expect(button).toHaveTextContent('Grana Padano 200g');
+    expect(
+      screen.getByRole('img', { name: 'High confidence' }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens low-confidence and Unmatched rows, and leaves a missing quantity shut with an amber pill', () => {
     renderReview([
-      line({ match: null, name: 'Mystery' }),
-      line({ lowConfidence: true }),
+      line({ quantity: null }),
+      line({ match: milk, name: 'Beer', lowConfidence: true, quantity: 1 }),
+      line({ match: null, name: 'Mystery', quantity: 1 }),
     ]);
-    const notes = screen.getAllByRole('note').map((n) => n.textContent);
-    expect(notes[0]).toMatch(/Unmatched/);
-    expect(notes[1]).toMatch(/Low confidence/);
+    expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'false');
+    expect(row('Parmesan')).toHaveTextContent('? g');
+    expect(
+      screen.getByRole('img', { name: 'Quantity missing' }),
+    ).toBeInTheDocument();
+    expect(row('Mystery')).toHaveAttribute('aria-expanded', 'true');
+    const buttons = screen.getAllByRole('button', { expanded: true });
+    expect(buttons.filter((b) => b.id.startsWith('review-line-'))).toHaveLength(
+      2,
+    );
+    expect(screen.getAllByRole('note').map((n) => n.textContent)).toEqual([
+      expect.stringMatching(/Low confidence/),
+      expect.stringMatching(/No match/),
+    ]);
+  });
+
+  it('puts rows to check first (low, then missing quantity) and counts them', () => {
+    renderReview([
+      sure({ name: 'Sure one' }),
+      line({ name: 'No qty', quantity: null }),
+      line({ match: milk, name: 'Beer', lowConfidence: true, quantity: 1 }),
+    ]);
+    const labels = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent);
+    expect(labels).toEqual(['To check · 2', 'Confident · 1']);
+    const tiles = screen.getByText('to check').parentElement;
+    expect(tiles).toHaveTextContent('2');
+  });
+
+  it('collapses Confident to one line of names, and shows it again', async () => {
+    renderReview([sure(), sure({ match: milk, name: 'Milk', unit: 'ml' })]);
+    const toggle = screen.getByRole('button', { name: 'Collapse' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(toggle);
+    expect(screen.getByText('Parmesan, Milk')).toBeInTheDocument();
+    expect(row('Parmesan')).toBeUndefined();
+    await userEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(row('Parmesan')).toBeInTheDocument();
+  });
+
+  it('confirming moves a row from To check to Confident and updates the counters', async () => {
+    renderReview([
+      sure({ name: 'Milk', match: milk }),
+      line({ lowConfidence: true, quantity: 1 }),
+    ]);
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'To check · 1' }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      screen.queryByRole('heading', { name: /To check/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Confident · 2' }),
+    ).toBeInTheDocument();
+    expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('keeps an edited confident row confident, and calls its button Done', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.clear(screen.getByLabelText('Quantity'));
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Confident · 1' }),
+    ).toBeInTheDocument();
+  });
+
+  it('removes a row to Excluded and adds it back, focusing it', async () => {
+    renderReview([sure(), sure({ name: 'Other', match: milk })]);
+    expect(
+      screen.getByRole('button', { name: 'Save 2 items' }),
+    ).toBeInTheDocument();
+    await userEvent.click(row('Parmesan'));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove Parmesan' }),
+    );
+    expect(row('Parmesan')).toBeUndefined();
+    expect(
+      screen.getByRole('button', { name: 'Save 1 item' }),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
+    expect(screen.getByText('Removed by you')).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Add Parmesan back' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Save 2 items' }),
+    ).toBeInTheDocument();
+    expect(row('Parmesan')).toHaveFocus();
+    expect(
+      screen.queryByRole('button', { name: /Excluded/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows expiry day-first in full when open, and takes a typed date back as ISO', async () => {
+    const calls = renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const expiry = screen.getByLabelText('Expiry date');
+    expect(expiry).toHaveValue('24.12.2026');
+    expect(expiry).toHaveAttribute('inputmode', 'numeric');
+    expect(expiry).toHaveAttribute('placeholder', 'dd.mm.yyyy');
+    await userEvent.clear(expiry);
+    await userEvent.type(expiry, '01022027');
+    expect(expiry).toHaveValue('01.02.2027');
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
+      ?.body as { batches: object[] };
+    expect(body.batches[0]).toMatchObject({ expiryDate: '2027-02-01' });
+  });
+
+  it('saves no expiry when the date is cleared', async () => {
+    const calls = renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.clear(screen.getByLabelText('Expiry date'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
+      ?.body as { batches: object[] };
+    expect(body.batches[0]).toMatchObject({ expiryDate: null });
+  });
+
+  it('rejects an impossible date inline and focuses it instead of saving', async () => {
+    const calls = renderReview([
+      sure(),
+      sure({ name: 'Milk', match: milk, unit: 'ml' }),
+    ]);
+    await userEvent.click(row('Milk'));
+    const expiry = screen.getByLabelText('Expiry date');
+    await userEvent.clear(expiry);
+    await userEvent.type(expiry, '31022027');
+    expect(
+      screen.getByText('Enter a real date as dd.mm.yyyy.'),
+    ).toBeInTheDocument();
+    await userEvent.click(row('Milk'));
+    expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
+    expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('Expiry date')).toHaveFocus();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
+  it('focuses the first invalid field in display order when Save is blocked', async () => {
+    renderReview([
+      line({ quantity: 5 }),
+      line({ match: milk, name: 'Beer', lowConfidence: true, quantity: 1 }),
+    ]);
+    // Beer is to check (shown first); make both invalid.
+    await userEvent.click(row('Parmesan'));
+    const quantities = screen.getAllByLabelText('Quantity');
+    fireEvent.change(quantities[0], { target: { value: '0' } });
+    fireEvent.change(quantities[1], { target: { value: '0' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
+    expect(screen.getAllByLabelText('Quantity')[0]).toHaveFocus();
+    expect(screen.getAllByText(/Enter an amount from 0.001/)).toHaveLength(2);
+  });
+
+  it('Confirm with an invalid field focuses it instead of shutting the row', async () => {
+    renderReview([line({ lowConfidence: true, quantity: 1 })]);
+    fireEvent.change(screen.getByLabelText('Quantity'), {
+      target: { value: '0' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByLabelText('Quantity')).toHaveFocus();
+  });
+
+  it('pre-fills a matched line from the proposal and the Catalog defaults', async () => {
+    renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const panel = screen.getByRole('group', { name: 'Parmesan' });
+    expect(within(panel).getByLabelText('Location')).toHaveValue('fridge');
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('g');
+    expect(within(panel).getByLabelText('Product description')).toHaveValue(
+      'Grana Padano 200g',
+    );
+    expect(
+      within(panel).getByRole('button', { name: /Parmesan.*Change/ }),
+    ).toBeInTheDocument();
+    expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
   });
 
   it('changes the Match through Catalog search, taking the new defaults', async () => {
-    renderReview([line({ expiryDate: null })]);
-    await userEvent.click(screen.getByRole('button', { name: 'Change match' }));
+    renderReview([
+      line({ expiryDate: null, lowConfidence: true, quantity: 1 }),
+    ]);
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
     await userEvent.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'milk',
     );
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
-    const card = screen.getByRole('region', { name: 'Milk' });
-    expect(within(card).getByLabelText('Unit')).toHaveValue('ml');
+    const panel = screen.getByRole('group', { name: 'Milk' });
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
 
-  it('drops a line', async () => {
-    renderReview([line(), line({ name: 'Other', match: milk })]);
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Drop Parmesan' }),
-    );
+  it('shows an Unmatched line as "No match", with a Name and a Category', async () => {
+    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
+    const panel = screen.getByRole('group', { name: 'Mystery jar' });
     expect(
-      screen.queryByRole('region', { name: 'Parmesan' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Milk' })).toBeInTheDocument();
+      within(panel).getByRole('button', { name: /No match · Choose/ }),
+    ).toBeInTheDocument();
+    expect(within(panel).getByLabelText('Name')).toHaveValue('Mystery jar');
+    await within(panel).findByRole('option', { name: 'Dairy' });
+    expect(within(panel).getByLabelText('Category')).toBeInTheDocument();
   });
 
   it('saves the edited lines as Batches, Unmatched ones under their name', async () => {
@@ -129,11 +345,8 @@ describe('ReviewPage', () => {
       line(),
       line({ match: null, name: 'Mystery jar' }),
     ]);
-    const parmesanCard = screen.getByRole('region', { name: 'Parmesan' });
-    await userEvent.type(
-      within(parmesanCard).getByLabelText('Quantity'),
-      '200',
-    );
+    await userEvent.click(row('Parmesan'));
+    await userEvent.type(screen.getAllByLabelText('Quantity')[1], '200');
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
 
     expect(await screen.findByText('pantry screen')).toBeInTheDocument();
@@ -165,18 +378,19 @@ describe('ReviewPage', () => {
 
   it('lets the Member place an Unmatched line in a Parent Category, and not a matched one', async () => {
     const calls = renderReview([
-      line(),
+      sure(),
       line({ match: null, name: 'Mystery jar' }),
     ]);
+    await userEvent.click(row('Parmesan'));
     expect(
-      within(screen.getByRole('region', { name: 'Parmesan' })).queryByLabelText(
+      within(screen.getByRole('group', { name: 'Parmesan' })).queryByLabelText(
         'Category',
       ),
     ).not.toBeInTheDocument();
-    const card = screen.getByRole('region', { name: 'Mystery jar' });
-    await within(card).findByRole('option', { name: 'Dairy' });
+    const panel = screen.getByRole('group', { name: 'Mystery jar' });
+    await within(panel).findByRole('option', { name: 'Dairy' });
     await userEvent.selectOptions(
-      within(card).getByLabelText('Category'),
+      within(panel).getByLabelText('Category'),
       'Dairy',
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
@@ -190,33 +404,44 @@ describe('ReviewPage', () => {
     });
   });
 
-  it('will not save an invalid quantity', async () => {
-    renderReview([line()]);
-    await userEvent.type(screen.getByLabelText('Quantity'), '0');
-    expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeDisabled();
+  it('flags a blank Unmatched name inline and will not save it', async () => {
+    renderReview([line({ match: null, name: 'Mystery jar' })]);
+    await userEvent.clear(screen.getByLabelText('Name'));
+    expect(screen.getByText('Enter a name.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    expect(screen.getByLabelText('Name')).toHaveFocus();
   });
 
-  it.each(['1e3', '2000000'])(
+  it.each(['0', '1e3', '2000000'])(
     'will not save a quantity the server rejects (%s)',
-    (bad) => {
-      renderReview([line()]);
+    async (bad) => {
+      const calls = renderReview([line({ lowConfidence: true })]);
       fireEvent.change(screen.getByLabelText('Quantity'), {
         target: { value: bad },
       });
-      expect(
+      await userEvent.click(
         screen.getByRole('button', { name: 'Save 1 item' }),
-      ).toBeDisabled();
+      );
+      expect(screen.getByLabelText('Quantity')).toHaveFocus();
+      expect(screen.getByLabelText('Quantity')).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+      expect(calls.map((c) => c.key)).not.toContain(
+        'POST /api/pantry/batches/bulk',
+      );
     },
   );
 
-  it('discards the draft and returns to Scan', async () => {
-    renderReview([line()]);
+  it('shows the action bar in place of the dock, and discards back to Scan', async () => {
+    renderReview([sure()]);
+    expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeEnabled();
     await userEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(screen.getByText('scan screen')).toBeInTheDocument();
   });
 
   it('shows a save error', async () => {
-    renderReview([line()], {
+    renderReview([sure()], {
       'POST /api/pantry/batches/bulk': () =>
         Response.json(
           { code: 'pantry.ingredient_not_found', params: {} },
@@ -227,5 +452,31 @@ describe('ReviewPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'could not find that ingredient',
     );
+  });
+
+  describe('Plate', () => {
+    it('hides Location, expiry and description, and saves to the Shopping List', async () => {
+      const calls = renderReview(
+        [line({ quantity: 2, unit: 'g' })],
+        {},
+        'plate',
+      );
+      await userEvent.click(row('Parmesan'));
+      expect(screen.getByLabelText('Quantity')).toBeInTheDocument();
+      expect(screen.queryByLabelText('Location')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Expiry date')).not.toBeInTheDocument();
+      expect(
+        screen.queryByLabelText('Product description'),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Fridge')).not.toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
+      );
+      await waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'POST /api/shopping-list/items/bulk',
+        ),
+      );
+    });
   });
 });

@@ -1,19 +1,73 @@
 {
   "title": "Verificare",
+  "subtitle": {
+    "mode": {
+      "product": "Produs scanat",
+      "receipt": "Bon scanat",
+      "plate": "Farfurie scanată",
+      "ingredients": "Ingrediente scanate"
+    },
+    "lines_one": "{{mode}} · {{count}} linie citită",
+    "lines_few": "{{mode}} · {{count}} linii citite",
+    "lines_other": "{{mode}} · {{count}} de linii citite"
+  },
   "empty": "Nu e nimic de verificat.",
   "backToScan": "Înapoi la scanare",
-  "name": "Nume",
-  "category": "Categorie",
-  "categoryOther": "Nu sunt sigur",
-  "changeMatch": "Schimbă potrivirea",
-  "keepMatch": "Păstrează această potrivire",
-  "flag": {
-    "unmatched": "Nepotrivit: alege un ingredient sau salvează-l cu numele citit.",
-    "lowConfidence": "Încredere scăzută: verifică această linie.",
+  "counter": {
+    "save": "de salvat",
+    "check": "de verificat",
+    "excluded": "excluse"
+  },
+  "col": {
+    "product": "Produs",
+    "qty": "Cant.",
+    "location": "Locație",
+    "expiry": "Expiră"
+  },
+  "group": {
+    "review": "De verificat",
+    "sure": "Sigure",
+    "collapse": "Restrânge",
+    "expand": "Arată"
+  },
+  "msg": {
+    "low": "Încredere scăzută: verifică potrivirea",
+    "qty": "Lipsește cantitatea",
+    "unmatched": "Fără potrivire: alege un ingredient sau salvează-l cu numele citit.",
     "unmatchedShopping": "Nu e în catalog: alege un ingredient sau adaugă-l în listă cu numele citit."
   },
-  "dropShort": "Elimină",
-  "drop": "Elimină {{name}}",
+  "icon": {
+    "low": "Încredere scăzută",
+    "qty": "Lipsește cantitatea",
+    "ok": "Încredere ridicată"
+  },
+  "field": {
+    "match": "Potrivire în cămară",
+    "name": "Nume",
+    "category": "Categorie",
+    "quantity": "Cantitate",
+    "unit": "Unitate",
+    "location": "Locație",
+    "expiry": "Data expirării",
+    "description": "Descrierea produsului"
+  },
+  "expiryPlaceholder": "zz.ll.aaaa",
+  "error": {
+    "name": "Introdu un nume.",
+    "expiry": "Introdu o dată reală, în formatul zz.ll.aaaa."
+  },
+  "categoryOther": "Nu sunt sigur",
+  "match": {
+    "none": "Fără potrivire",
+    "choose": "Alege",
+    "change": "Schimbă",
+    "keep": "Păstrează această potrivire"
+  },
+  "action": {
+    "remove": "Elimină {{name}}",
+    "confirm": "Confirmă",
+    "done": "Gata"
+  },
   "save_one": "Salvează {{count}} articol",
   "save_few": "Salvează {{count}} articole",
   "save_other": "Salvează {{count}} de articole",
@@ -23,18 +77,21 @@
   "shoppingSave_other": "Adaugă {{count}} de articole în lista de cumpărături",
   "shoppingAdding": "Se adaugă",
   "excluded": {
-    "title": "Excluse ({{count}})",
-    "noReason": "Nu e un articol de cămară",
+    "title": "Excluse · {{count}}",
+    "hint": "Linii nealimentare sau necitite",
+    "show": "Arată",
+    "hide": "Ascunde",
     "reason": {
       "not_food": "Nu e aliment",
       "fee": "Taxă",
       "deposit": "Garanție",
-      "other": "Nu e un articol de cămară"
+      "other": "Nu e un articol de cămară",
+      "removed": "Eliminat de tine"
     },
-    "include": "Include {{name}}",
-    "includeShort": "Include"
+    "restore": "Adaugă înapoi",
+    "restoreFor": "Adaugă {{name}} înapoi"
   },
-  "tooMany": "Poți salva cel mult {{max}} de articole odată. Renunță la {{over}} sau exclude-le ca să continui.",
+  "tooMany": "Poți salva cel mult {{max}} de articole odată. Elimină {{over}} sau exclude-le ca să continui.",
   "saved": {
     "title": "Salvat în cămară",
     "toPantry": "Mergi la cămară"

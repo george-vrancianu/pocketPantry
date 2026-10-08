@@ -62,34 +62,44 @@ describe('Receipt Review', () => {
   beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows excluded lines collapsed, with their reason, apart from the lines to save', () => {
+  it('shows excluded lines collapsed, with their reason, apart from the lines to save', async () => {
     renderReceiptReview([milkLine, bagLine]);
-    expect(screen.getByRole('region', { name: 'Milk' })).toBeInTheDocument();
     expect(
-      screen.queryByRole('region', { name: 'SACOSA BIO' }),
-    ).not.toBeInTheDocument();
-    const excluded = screen.getByRole('group', { name: 'Excluded (1)' });
-    expect(excluded).not.toHaveAttribute('open');
-    expect(within(excluded).getByText('SACOSA BIO')).toBeInTheDocument();
-    expect(within(excluded).getByText('Not a pantry item')).toBeInTheDocument();
+      screen.getByText('Scanned receipt · 2 lines read'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Milk/, expanded: false }),
+    ).toBeInTheDocument();
+    const excluded = screen.getByRole('button', { name: /Excluded · 1/ });
+    expect(excluded).toHaveAttribute('aria-expanded', 'false');
+    expect(excluded).toHaveTextContent('Non-food or unreadable lines');
+    expect(screen.queryByText('SACOSA BIO')).not.toBeInTheDocument();
+    await userEvent.click(excluded);
+    expect(excluded).toHaveAttribute('aria-expanded', 'true');
+    expect(excluded).toHaveTextContent('Hide');
+    expect(screen.getByText('SACOSA BIO')).toBeInTheDocument();
+    expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeEnabled();
   });
 
-  it('says why in the Member language, from the reason code', () => {
+  it('says why in the Member language, from the reason code', async () => {
     renderReceiptReview([
       milkLine,
       { ...bagLine, excluded: { reason: 'deposit' } },
     ]);
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     expect(screen.getByText('A deposit')).toBeInTheDocument();
   });
 
-  it('moves focus to the line card when an excluded line is included', async () => {
+  it('moves focus to the line when an excluded line is added back', async () => {
     renderReceiptReview([milkLine, bagLine]);
-    await userEvent.click(screen.getByText('Excluded (1)'));
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     await userEvent.click(
-      screen.getByRole('button', { name: 'Include SACOSA BIO' }),
+      screen.getByRole('button', { name: 'Add SACOSA BIO back' }),
     );
-    expect(screen.getByRole('region', { name: 'SACOSA BIO' })).toHaveFocus();
+    expect(
+      screen.getByRole('button', { name: /SACOSA BIO/, expanded: true }),
+    ).toHaveFocus();
   });
 
   it('says so and blocks Save when more than 50 entries would be saved', () => {
@@ -99,7 +109,7 @@ describe('Receipt Review', () => {
     }));
     renderReceiptReview(many);
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'You can save up to 50 items at once. Drop or exclude 1 to continue.',
+      'You can save up to 50 items at once. Remove or exclude 1 to continue.',
     );
     expect(
       screen.getByRole('button', { name: 'Save 51 items' }),
@@ -119,17 +129,18 @@ describe('Receipt Review', () => {
     expect(body.batches[1].source).toBe('receipt');
   });
 
-  it('re-includes an excluded line as an editable Unmatched line that is then saved', async () => {
+  it('adds an excluded line back as an open, editable Unmatched line that is then saved', async () => {
     const calls = renderReceiptReview([milkLine, bagLine]);
-    await userEvent.click(screen.getByText('Excluded (1)'));
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     await userEvent.click(
-      screen.getByRole('button', { name: 'Include SACOSA BIO' }),
+      screen.getByRole('button', { name: 'Add SACOSA BIO back' }),
     );
     expect(
-      screen.queryByRole('group', { name: /Excluded/ }),
+      screen.queryByRole('button', { name: /Excluded/ }),
     ).not.toBeInTheDocument();
-    const card = screen.getByRole('region', { name: 'SACOSA BIO' });
-    expect(within(card).getByRole('note')).toHaveTextContent(/Unmatched/);
+    const panel = screen.getByRole('group', { name: 'SACOSA BIO' });
+    expect(within(panel).getByRole('note')).toHaveTextContent(/No match/);
+    expect(screen.getByRole('button', { name: 'Save 2 items' })).toBeEnabled();
 
     await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
     await screen.findByText('pantry screen');
@@ -137,6 +148,24 @@ describe('Receipt Review', () => {
       ?.body as { batches: object[] };
     expect(body.batches).toHaveLength(2);
     expect(body.batches[1]).toMatchObject({ rawName: 'SACOSA BIO' });
+  });
+
+  it('lists a removed line under Excluded, saves without it, and can add it back', async () => {
+    const calls = renderReceiptReview([
+      milkLine,
+      { ...milkLine, name: 'Milk 2' },
+    ]);
+    await userEvent.click(
+      screen.getAllByRole('button', { name: /Milk/, expanded: false })[0],
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Milk' }));
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
+    expect(screen.getByText('Removed by you')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/scan/receipt/confirm')
+      ?.body as { batches: object[] };
+    expect(body.batches).toHaveLength(1);
   });
 
   it('does not save excluded lines', async () => {
@@ -215,7 +244,7 @@ describe('Receipt Review', () => {
   it('with only excluded lines there is nothing to save', () => {
     renderReceiptReview([bagLine]);
     expect(
-      screen.getByRole('group', { name: 'Excluded (1)' }),
+      screen.getByRole('button', { name: /Excluded · 1/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save 0 items' })).toBeDisabled();
   });

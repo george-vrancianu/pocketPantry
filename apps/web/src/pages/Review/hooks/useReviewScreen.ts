@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -9,15 +9,21 @@ import {
 import {
   clearReview,
   readReview,
-  isLineValid,
+  invalidFields,
   toNewBatch,
   toReviewLine,
-  withMatch,
   type ReviewLine,
 } from '../../../lib/review';
+import {
+  initReviewState,
+  reviewCounts,
+  reviewGroups,
+  reviewReducer,
+} from '../../../lib/reviewState';
 import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
+import { fieldId, rowId } from '../components/layout';
 
 /**
  * Review screen state. The Member's edits live here, in client state, until
@@ -30,10 +36,12 @@ export function useReviewScreen() {
   const navigate = useNavigate();
   // Read once: clearing the draft on save must not bounce the page to /scan.
   const [draft] = useState(readReview);
-  const [lines, setLines] = useState<ReviewLine[]>(() => {
+  const [state, dispatch] = useReducer(reviewReducer, draft, (d) => {
     const today = new Date();
-    return (draft?.lines ?? []).map((line, index) =>
-      toReviewLine(line, `line-${index}`, today),
+    return initReviewState(
+      (d?.lines ?? []).map((line, index) =>
+        toReviewLine(line, `line-${index}`, today),
+      ),
     );
   });
   const addBatches = useAddBatches(i18n.language);
@@ -49,9 +57,10 @@ export function useReviewScreen() {
     plate: addShoppingItems,
   };
   const saver = savers[draft?.mode ?? 'product'];
-  // Excluded lines (Receipt Scan) wait outside the list and are never saved.
-  const included = lines.filter((line) => line.excluded === null);
-  const excluded = lines.filter((line) => line.excluded !== null);
+  // Excluded lines (Scan-excluded or removed by the Member) wait outside the list and are never saved.
+  const groups = reviewGroups(state);
+  const counts = reviewCounts(state);
+  const included = state.lines.filter((line) => line.excluded === null);
   // Only Unmatched Pantry lines choose a category; Plate lines go to the Shopping List, which has no category picker.
   const parents = useCatalogParents(
     i18n.language,
@@ -59,35 +68,46 @@ export function useReviewScreen() {
   );
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
-  // Focus follows an included line, whose card replaces the Excluded entry the Member was on.
-  const [focusKey, setFocusKey] = useState<string | null>(null);
+  // Focus lands on an element that only exists after the render that opened or restored it.
+  const [focusId, setFocusId] = useState<string | null>(null);
   useEffect(() => {
-    if (focusKey === null) return;
-    document.getElementById(`review-line-${focusKey}`)?.focus();
-    setFocusKey(null);
-  }, [focusKey, lines]);
+    if (focusId === null) return;
+    document.getElementById(focusId)?.focus();
+    setFocusId(null);
+  }, [focusId, state]);
   const overLimit = shopping
     ? 0
     : Math.max(0, included.length - MAX_BULK_BATCHES);
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
-    setLines((all) =>
-      all.map((line) => (line.key === key ? { ...line, ...patch } : line)),
-    );
+    dispatch({ type: 'update', key, patch });
   const changeMatch = (key: string, match: CatalogSearchResult) =>
-    setLines((all) =>
-      all.map((line) =>
-        line.key === key ? withMatch(line, match, new Date()) : line,
-      ),
-    );
-  const include = (key: string) => {
-    change(key, { excluded: null });
-    setFocusKey(key);
+    dispatch({ type: 'changeMatch', key, match, today: new Date() });
+  const toggle = (key: string) => dispatch({ type: 'toggle', key });
+  const remove = (key: string) => dispatch({ type: 'remove', key });
+  const restore = (key: string) => {
+    dispatch({ type: 'restore', key });
+    setFocusId(rowId(key));
   };
-  const drop = (key: string) =>
-    setLines((all) => all.filter((line) => line.key !== key));
+  /** Open the first line with an invalid value and focus that field. Returns whether there was one. */
+  const focusInvalid = (candidates: ReviewLine[]) => {
+    const line = candidates.find((l) => invalidFields(l).length > 0);
+    if (!line) return false;
+    dispatch({ type: 'open', key: line.key });
+    setFocusId(fieldId(line.key, invalidFields(line)[0]));
+    return true;
+  };
+  // Confirm and Done shut the row; an invalid value keeps it open and takes focus instead.
+  const confirm = (key: string) => {
+    const line = state.lines.find((l) => l.key === key);
+    if (line && focusInvalid([line])) return;
+    dispatch({ type: 'confirm', key });
+    setFocusId(rowId(key));
+  };
 
   const save = () => {
+    // Display order, so the Member lands on the topmost problem.
+    if (focusInvalid([...groups.review, ...groups.sure])) return;
     const to = shopping ? '/shopping' : '/pantry';
     const done = {
       onSuccess: (result?: unknown) => {
@@ -125,25 +145,26 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
+    mode: draft?.mode,
     shopping,
-    lines: included,
-    excluded,
+    state,
+    groups,
+    counts,
     parents: parents.data ?? [],
-    canSave:
-      included.length > 0 &&
-      overLimit === 0 &&
-      included.every(isLineValid) &&
-      !saver.isPending,
+    canSave: included.length > 0 && overLimit === 0 && !saver.isPending,
     overLimit,
     maxItems: MAX_BULK_BATCHES,
     saving: saver.isPending,
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
     toPantry: () => navigate('/pantry'),
+    toggle,
     change,
     changeMatch,
-    drop,
-    include,
+    remove,
+    restore,
+    confirm,
+    toggleSureGroup: () => dispatch({ type: 'toggleSureGroup' }),
     save,
     discard,
   };

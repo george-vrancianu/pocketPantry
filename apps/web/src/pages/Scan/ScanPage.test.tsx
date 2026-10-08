@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { findReviewRow } from '../../test/review';
 import { PantryPage } from '../Pantry/PantryPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -166,13 +167,12 @@ describe('ScanPage', () => {
       screen.getByTestId('gallery-input'),
       new File(['x'], 'cheese.jpg', { type: 'image/jpeg' }),
     );
-    expect(
-      await screen.findByRole('region', { name: 'Parmesan' }),
-    ).toBeInTheDocument();
+    expect(await findReviewRow('Parmesan')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /api/scan/product')?.body).toEqual(
       { productImage: IMAGE },
     );
-    expect(screen.getByLabelText('Expiry date')).toHaveValue('2026-12-24');
+    await userEvent.click(await findReviewRow('Parmesan'));
+    expect(screen.getByLabelText('Expiry date')).toHaveValue('24.12.2026');
   });
 
   it('turns a camera shot into a proposed line on the Review screen', async () => {
@@ -180,9 +180,7 @@ describe('ScanPage', () => {
       'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
     });
     await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    expect(
-      await screen.findByRole('region', { name: 'Parmesan' }),
-    ).toBeInTheDocument();
+    expect(await findReviewRow('Parmesan')).toBeInTheDocument();
   });
 
   it('shows a localised message when the Scan Cap is reached', async () => {

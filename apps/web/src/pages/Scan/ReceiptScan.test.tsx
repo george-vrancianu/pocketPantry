@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
@@ -13,6 +13,7 @@ import {
 } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { findReviewRow, reviewRowNames } from '../../test/review';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -115,9 +116,8 @@ describe('Receipt Scan on the Scan screen', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Finish' }),
     );
-    expect(
-      await screen.findByRole('region', { name: 'Eggs' }),
-    ).toBeInTheDocument();
+    expect(await findReviewRow('Eggs')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /api/scan/receipt')?.body).toEqual(
       { receiptImage: 'data:image/jpeg;base64,Y3JvcA==' },
@@ -235,9 +235,7 @@ describe('Receipt Scan on the Scan screen', () => {
       });
       expect(revokeObjectURL).toHaveBeenCalledWith('blob:photo');
       await click('Finish');
-      expect(
-        await screen.findByRole('region', { name: 'Eggs' }),
-      ).toBeInTheDocument();
+      expect(await findReviewRow('Eggs')).toBeInTheDocument();
     });
 
     it('merges a gallery section with a camera section on Finish', async () => {
@@ -250,9 +248,8 @@ describe('Receipt Scan on the Scan screen', () => {
       await click('Take photo');
       await screen.findByText('Section 2: 1 line found');
       await click('Finish');
-      const names = (await screen.findAllByRole('region')).map((r) =>
-        r.getAttribute('aria-label'),
-      );
+      await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
+      const names = reviewRowNames();
       expect(names).toEqual(['Eggs', 'Rice']);
     });
 

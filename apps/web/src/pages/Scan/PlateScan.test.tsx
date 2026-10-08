@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { findReviewRow } from '../../test/review';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -119,13 +120,11 @@ describe('Plate Scan', () => {
     ]);
 
     await userEvent.click(options[0]);
-    expect(
-      await screen.findByRole('region', { name: 'Milk' }),
-    ).toBeInTheDocument();
+    expect(await findReviewRow('Milk')).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'POST /api/scan/plate/ingredients')?.body,
     ).toEqual({ dishTitle: 'Pancakes', plateToken: 'signed-token' });
-    expect(screen.getByRole('region', { name: 'Pixie dust' })).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Pixie dust' })).toBeVisible();
   });
 
   it('lets the Member retake the photo instead of picking', async () => {
@@ -180,7 +179,8 @@ describe('Plate Scan', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: /Pancakes/ }),
     );
-    const milkCard = await screen.findByRole('region', { name: 'Milk' });
+    await userEvent.click(await findReviewRow('Milk'));
+    const milkCard = screen.getByRole('group', { name: 'Milk' });
     expect(within(milkCard).queryByLabelText('Expiry date')).toBeNull();
     expect(within(milkCard).queryByLabelText('Location')).toBeNull();
     expect(within(milkCard).queryByLabelText('Category')).toBeNull();
@@ -189,9 +189,9 @@ describe('Plate Scan', () => {
     await userEvent.clear(within(milkCard).getByLabelText('Quantity'));
     await userEvent.type(within(milkCard).getByLabelText('Quantity'), '250');
     await userEvent.click(
-      screen.getByRole('button', { name: 'Drop Pixie dust' }),
+      screen.getByRole('button', { name: 'Remove Pixie dust' }),
     );
-    expect(screen.queryByRole('region', { name: 'Pixie dust' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Pixie dust' })).toBeNull();
     expect(
       screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
     ).toBeEnabled();
@@ -203,9 +203,7 @@ describe('Plate Scan', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: /Pancakes/ }),
     );
-    expect(
-      await screen.findByRole('region', { name: 'Pixie dust' }),
-    ).toBeVisible();
+    expect(await findReviewRow('Pixie dust')).toBeVisible();
     expect(calls.map((c) => c.key)).not.toContain('GET /api/catalog/parents');
   });
 
@@ -215,7 +213,7 @@ describe('Plate Scan', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: /Pancakes/ }),
     );
-    await screen.findByRole('region', { name: 'Milk' });
+    await findReviewRow('Milk');
     await userEvent.click(
       screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
     );
@@ -245,11 +243,11 @@ describe('Plate Scan', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: /Pancakes/ }),
     );
-    await screen.findByRole('region', { name: 'Milk' });
+    await findReviewRow('Milk');
     await userEvent.click(
       screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
     );
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Milk' })).toBeInTheDocument();
+    expect(await findReviewRow('Milk')).toBeInTheDocument();
   });
 });
