@@ -1,3 +1,6 @@
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/env';
@@ -276,6 +279,116 @@ describe('StructuredOutputAiService', () => {
       await expect(serviceWith('k').generate(request)).rejects.toMatchObject({
         code: 'scan.result_invalid',
       });
+    });
+  });
+
+  describe('Scan debug capture', () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'ai-debug-'));
+      jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    });
+
+    afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+    const serviceIn = (nodeEnv: string) =>
+      new StructuredOutputAiService({
+        get: (key: string) =>
+          (
+            ({
+              NODE_ENV: nodeEnv,
+              SCAN_DEBUG_DIR: dir,
+              AI_PROVIDER: 'openai',
+              AI_API_KEY: 'k',
+              AI_VISION_MODEL: 'vision-model',
+            }) as Record<string, string>
+          )[key],
+      } as unknown as ConfigService<AppConfig, true>);
+    const request = {
+      prompt: 'Read the receipt',
+      images: ['data:image/jpeg;base64,aGVsbG8='],
+      schemaName: 'grocery_receipt_scan',
+      schema: {},
+      maxOutputTokens: 1,
+    };
+    const saved = (name: string): unknown => {
+      const [folder] = readdirSync(dir);
+      return JSON.parse(readFileSync(join(dir, folder, name), 'utf8'));
+    };
+
+    it('saves the answer of a successful call in development', async () => {
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            status: 'completed',
+            output: [
+              {
+                type: 'message',
+                content: [{ type: 'output_text', text: '{"lines":[]}' }],
+              },
+            ],
+          }),
+          { status: 200, headers: { 'x-request-id': 'req-9' } },
+        ),
+      );
+
+      await serviceIn('development').generate(request);
+
+      expect(saved('request.json')).toMatchObject({
+        model: 'vision-model',
+        images: ['image-1.jpg'],
+      });
+      expect(saved('response.json')).toMatchObject({
+        outcome: 'ok',
+        requestId: 'req-9',
+        data: { lines: [] },
+      });
+    });
+
+    it('saves a provider failure and still fails the call', async () => {
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('upstream exploded', { status: 500 }));
+
+      await expect(
+        serviceIn('development').generate(request),
+      ).rejects.toMatchObject({ code: 'scan.provider_unavailable' });
+      expect(saved('response.json')).toMatchObject({
+        outcome: 'error',
+        httpStatus: 500,
+        body: 'upstream exploded',
+        error: { code: 'scan.provider_unavailable' },
+      });
+    });
+
+    it('keeps a body that is not JSON', async () => {
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response('<html>oops</html>', { status: 200 }));
+
+      await expect(
+        serviceIn('development').generate(request),
+      ).rejects.toMatchObject({ code: 'scan.result_invalid' });
+      expect(saved('response.json')).toMatchObject({
+        body: '<html>oops</html>',
+        error: { code: 'scan.result_invalid' },
+      });
+    });
+
+    it.each(['production', 'test'])('writes nothing in %s', async (env) => {
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ choices: [] }), { status: 200 }),
+        );
+
+      await serviceIn(env)
+        .generate(request)
+        .catch(() => undefined);
+
+      expect(readdirSync(dir)).toEqual([]);
     });
   });
 });

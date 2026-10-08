@@ -38,3 +38,26 @@ describe('SCAN_TOKEN_SECRET', () => {
     );
   });
 });
+
+describe('SCAN_DEBUG_DIR', () => {
+  it.each(['development', 'test'])(
+    'is accepted in %s (the recorder only runs in development)',
+    (NODE_ENV) => {
+      expect(
+        validateEnv({ ...base, NODE_ENV, SCAN_DEBUG_DIR: '.scan-debug' })
+          .SCAN_DEBUG_DIR,
+      ).toBe('.scan-debug');
+    },
+  );
+
+  it('stops the app from starting in production', () => {
+    expect(() =>
+      validateEnv({
+        ...base,
+        NODE_ENV: 'production',
+        SCAN_TOKEN_SECRET: 's'.repeat(32),
+        SCAN_DEBUG_DIR: '.scan-debug',
+      }),
+    ).toThrow(/SCAN_DEBUG_DIR must not be set in production/);
+  });
+});

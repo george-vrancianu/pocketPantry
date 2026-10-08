@@ -3,6 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
+import {
+  createScanDebugRecorder,
+  type ScanDebugCall,
+  type ScanDebugRecorder,
+} from './scan-debug-recorder';
 
 export type StructuredOutputRequest = {
   prompt: string;
@@ -41,6 +46,30 @@ export type AiTokenUsage = {
   outputTokens: number;
   cachedInputTokens?: number;
 };
+
+type CallTrace = Partial<
+  Pick<
+    ScanDebugCall,
+    | 'provider'
+    | 'model'
+    | 'requestId'
+    | 'httpStatus'
+    | 'body'
+    | 'data'
+    | 'error'
+  >
+>;
+
+function describeError(error: unknown): ScanDebugCall['error'] {
+  if (error instanceof StructuredOutputAiError) {
+    return { code: error.code, reason: error.reason };
+  }
+  if (error instanceof ApiException) return { code: error.code };
+  return {
+    code: 'unexpected',
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
 
 const tokenCount = z.number().int().nonnegative();
 
@@ -116,16 +145,55 @@ const chatCompletionsBodySchema = z.object({
 @Injectable()
 export class StructuredOutputAiService {
   private readonly logger = new Logger(StructuredOutputAiService.name);
+  private readonly debug: ScanDebugRecorder | undefined;
 
-  constructor(private readonly config: ConfigService<AppConfig, true>) {}
+  constructor(private readonly config: ConfigService<AppConfig, true>) {
+    this.debug = createScanDebugRecorder(
+      config.get('NODE_ENV', { infer: true }),
+      config.get('SCAN_DEBUG_DIR', { infer: true }),
+    );
+  }
 
   async generate(
     request: StructuredOutputRequest,
+  ): Promise<StructuredOutputResult> {
+    if (!this.debug) return this.call(request, {});
+    const trace: CallTrace = {};
+    const startedAt = new Date();
+    try {
+      const result = await this.call(request, trace);
+      trace.data = result.data;
+      return result;
+    } catch (error) {
+      trace.error = describeError(error);
+      throw error;
+    } finally {
+      await this.debug.record({
+        request,
+        provider: trace.provider ?? 'unknown',
+        model: trace.model ?? 'unknown',
+        startedAt,
+        durationMs: Date.now() - startedAt.getTime(),
+        requestId: trace.requestId ?? null,
+        httpStatus: trace.httpStatus,
+        body: trace.body,
+        data: trace.data,
+        error: trace.error,
+      });
+    }
+  }
+
+  /** The provider call; `trace` collects what the Scan debug capture records. */
+  private async call(
+    request: StructuredOutputRequest,
+    trace: CallTrace,
   ): Promise<StructuredOutputResult> {
     const provider = this.config.get('AI_PROVIDER', { infer: true });
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
     const model = this.config.get('AI_VISION_MODEL', { infer: true });
     const configuredBaseUrl = this.config.get('AI_BASE_URL', { infer: true });
+    trace.provider = provider;
+    trace.model = model;
 
     if (!apiKey) {
       throw new ApiException(503, 'scan.not_configured');
@@ -161,15 +229,22 @@ export class StructuredOutputAiService {
       throw new ApiException(502, 'scan.provider_unavailable');
     }
 
+    const requestId = response.headers.get('x-request-id');
+    trace.httpStatus = response.status;
+    trace.requestId = requestId;
     if (!response.ok) {
+      trace.body = await response.text().catch(() => undefined);
       throw new ApiException(502, 'scan.provider_unavailable', {
         status: response.status,
       });
     }
 
-    const requestId = response.headers.get('x-request-id');
     try {
-      const body: unknown = await response.json();
+      // Read as text first, so the debug capture keeps a body that is not JSON.
+      const raw = await response.text();
+      trace.body = raw;
+      const body: unknown = JSON.parse(raw);
+      trace.body = body;
       this.logUsage(isResponsesApi, body, request.schemaName, requestId);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
