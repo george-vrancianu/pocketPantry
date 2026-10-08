@@ -91,6 +91,30 @@ describe('createScanDebugRecorder', () => {
     });
   });
 
+  it('does not trust an unexpected image type for the file name', async () => {
+    await createScanDebugRecorder('development', dir)!.record(
+      call({
+        request: {
+          ...call().request,
+          images: [
+            'data:image/gif;base64,aGk=',
+            'data:image/../../x;base64,aGk=',
+          ],
+        },
+      }),
+    );
+
+    const folder = onlyFolder();
+    expect(readdirSync(folder).sort()).toEqual([
+      'image-1.bin',
+      'request.json',
+      'response.json',
+    ]);
+    expect(readJson(folder, 'request.json')).toMatchObject({
+      images: ['image-1.bin', 'data:image/../../x;base64,aGk='],
+    });
+  });
+
   it('records a failed call with its error', async () => {
     await createScanDebugRecorder('development', dir)!.record(
       call({

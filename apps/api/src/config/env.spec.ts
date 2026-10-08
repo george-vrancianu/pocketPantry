@@ -40,15 +40,28 @@ describe('SCAN_TOKEN_SECRET', () => {
 });
 
 describe('SCAN_DEBUG_DIR', () => {
-  it.each(['development', 'test'])(
-    'is accepted in %s (the recorder only runs in development)',
-    (NODE_ENV) => {
-      expect(
-        validateEnv({ ...base, NODE_ENV, SCAN_DEBUG_DIR: '.scan-debug' })
-          .SCAN_DEBUG_DIR,
-      ).toBe('.scan-debug');
-    },
-  );
+  it('is kept with an explicit NODE_ENV=development', () => {
+    expect(
+      validateEnv({
+        ...base,
+        NODE_ENV: 'development',
+        SCAN_DEBUG_DIR: '.scan-debug',
+      }).SCAN_DEBUG_DIR,
+    ).toBe('.scan-debug');
+  });
+
+  it('is dropped in test, so a dev .env does not break the suite', () => {
+    expect(
+      validateEnv({ ...base, NODE_ENV: 'test', SCAN_DEBUG_DIR: '.scan-debug' })
+        .SCAN_DEBUG_DIR,
+    ).toBeUndefined();
+  });
+
+  it('is dropped when NODE_ENV is missing, which only defaults to development', () => {
+    expect(
+      validateEnv({ ...base, SCAN_DEBUG_DIR: '.scan-debug' }).SCAN_DEBUG_DIR,
+    ).toBeUndefined();
+  });
 
   it('stops the app from starting in production', () => {
     expect(() =>

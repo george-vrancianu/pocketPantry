@@ -26,7 +26,12 @@ export type ScanDebugRecorder = {
 };
 
 const IMAGE_DATA_URL = /^data:image\/([a-z0-9.+-]+);base64,(.*)$/is;
-const EXTENSIONS: Record<string, string> = { jpeg: 'jpg', 'svg+xml': 'svg' };
+// Scans only accept these; anything else is saved without trusting its type.
+const EXTENSIONS: Record<string, string> = {
+  jpeg: 'jpg',
+  png: 'png',
+  webp: 'webp',
+};
 
 /**
  * Dev-only capture of every Scan's photos and raw AI answer, for improving
@@ -100,7 +105,7 @@ async function writeImage(
   const match = IMAGE_DATA_URL.exec(image);
   if (!match) return image.slice(0, 200);
   const type = match[1].toLowerCase();
-  const name = `image-${index}.${EXTENSIONS[type] ?? type}`;
+  const name = `image-${index}.${EXTENSIONS[type] ?? 'bin'}`;
   await writeFile(join(folder, name), Buffer.from(match[2], 'base64'));
   return name;
 }

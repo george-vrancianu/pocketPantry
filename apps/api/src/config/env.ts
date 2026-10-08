@@ -56,6 +56,9 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
   }
   return {
     ...rest,
+    // Only an explicit NODE_ENV=development counts, never the default for a missing one.
+    SCAN_DEBUG_DIR:
+      present.NODE_ENV === 'development' ? rest.SCAN_DEBUG_DIR : undefined,
     SCAN_TOKEN_SECRET:
       SCAN_TOKEN_SECRET ?? randomBytes(32).toString('base64url'),
   };

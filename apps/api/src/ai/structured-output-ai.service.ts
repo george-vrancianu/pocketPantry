@@ -233,7 +233,9 @@ export class StructuredOutputAiService {
     trace.httpStatus = response.status;
     trace.requestId = requestId;
     if (!response.ok) {
-      trace.body = await response.text().catch(() => undefined);
+      if (this.debug) {
+        trace.body = await response.text().catch(() => undefined);
+      }
       throw new ApiException(502, 'scan.provider_unavailable', {
         status: response.status,
       });
