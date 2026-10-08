@@ -116,6 +116,10 @@ cloudflared tunnel --url http://localhost:5173
 
 Set `CLIENT_ORIGIN` in `.env` to the `https://….trycloudflare.com` address it prints, restart `npm run dev`, and open that address on the phone.
 
+### See what a Scan sent and got back
+
+In development, set `SCAN_DEBUG_DIR=.scan-debug` in `.env` and restart. Every Scan then saves a folder in `apps/api/.scan-debug/` with the photos, the prompt, and the AI's raw answer (or the error). Use it to work out why something was misread. It only works with `NODE_ENV=development` (the API won't start with it in production), the folder is ignored by Git, and you should delete it when you're done, since receipts are personal.
+
 ### Run it in production
 
 Build everything, then start the API with `WEB_DIST_DIR` set. The build and database steps need the dev tools, so install with `--include=dev` even when `NODE_ENV=production` is already set. The API then serves the web app from the same address, which keeps sign-in working in Safari.

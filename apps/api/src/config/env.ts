@@ -24,6 +24,8 @@ const envSchema = z.object({
   SCAN_TOKEN_SECRET: z.string().min(32).optional(),
   /** Built web app (`apps/web/dist`) to serve from the API's origin. Unset: API only. */
   WEB_DIST_DIR: z.string().min(1).optional(),
+  /** Dev-only: save every Scan's photos and raw AI answer here. Refused in production, ignored outside development. */
+  SCAN_DEBUG_DIR: z.string().min(1).optional(),
 });
 
 export type AppConfig = Omit<z.infer<typeof envSchema>, 'SCAN_TOKEN_SECRET'> & {
@@ -45,8 +47,18 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
       'Invalid environment: SCAN_TOKEN_SECRET is required in production (at least 32 characters)',
     );
   }
+  if (rest.SCAN_DEBUG_DIR && rest.NODE_ENV === 'production') {
+    // Receipts are personal data: refuse to start rather than risk capturing them.
+    // Elsewhere outside development (tests reading a dev's .env) it is ignored.
+    throw new Error(
+      'Invalid environment: SCAN_DEBUG_DIR must not be set in production',
+    );
+  }
   return {
     ...rest,
+    // Only an explicit NODE_ENV=development counts, never the default for a missing one.
+    SCAN_DEBUG_DIR:
+      present.NODE_ENV === 'development' ? rest.SCAN_DEBUG_DIR : undefined,
     SCAN_TOKEN_SECRET:
       SCAN_TOKEN_SECRET ?? randomBytes(32).toString('base64url'),
   };

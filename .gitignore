@@ -18,6 +18,9 @@ coverage/
 # scratch
 .scratch/
 
+# Scan debug capture (SCAN_DEBUG_DIR): photos of receipts, never commit
+.scan-debug/
+
 # stray tsc output next to config files
 apps/api/drizzle.config.js
 apps/api/drizzle.config.d.ts
