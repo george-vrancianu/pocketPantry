@@ -684,11 +684,12 @@ export const beverage: SeedSection = {
         ['energizant', 'monster'],
       ],
       [
+        // 'tonic' is left out: it is the Danish name (data/danish.ts).
         'tonic-water',
         'Tonic water',
         'Apă tonică',
         'ml',
-        ['tonic'],
+        undefined,
         ['schweppes'],
       ],
       ['kvass', 'Kvass', 'Kvas', 'ml', undefined, ['bautura kvas']],
@@ -974,7 +975,8 @@ export const beverage: SeedSection = {
       ['vodka', 'Vodka', 'Vodcă', 'ml', undefined, ['votca']],
       ['rum', 'Rum', 'Rom', 'ml'],
       ['whisky', 'Whisky', 'Whisky', 'ml', ['whiskey', 'bourbon'], ['viski']],
-      ['brandy', 'Brandy', 'Coniac', 'ml', ['cognac']],
+      // en/ro Synonyms equal to a Danish name (data/danish.ts) are omitted: the name matches already.
+      ['brandy', 'Brandy', 'Coniac', 'ml'],
       [
         'tuica',
         'Țuică',

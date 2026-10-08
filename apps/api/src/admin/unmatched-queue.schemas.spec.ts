@@ -9,9 +9,15 @@ describe('unmatchedResolveBody', () => {
     );
   });
 
-  it('rejects a Scan Language that is not a catalog locale, since the raw name is UI-locale text', () => {
+  it('takes the raw-name Synonym in Danish, a catalog locale', () => {
+    expect(unmatchedResolveBody.parse({ ...base, locale: 'da' }).locale).toBe(
+      'da',
+    );
+  });
+
+  it('rejects a locale outside the catalog locales', () => {
     expect(
-      unmatchedResolveBody.safeParse({ ...base, locale: 'da' }).success,
+      unmatchedResolveBody.safeParse({ ...base, locale: 'fr' }).success,
     ).toBe(false);
   });
 

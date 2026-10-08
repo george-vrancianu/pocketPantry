@@ -169,6 +169,15 @@ describe('Plate Scan (integration)', () => {
       expect(prompts[0].images).toEqual([IMAGE]);
     });
 
+    it('asks for dish titles in the Member’s UI language, Danish included', async () => {
+      respondWith({ matches: [{ title: 'Æbleskiver', confidence: 0.8 }] });
+      prompts.length = 0;
+      await post(await signUp(), 'scan/plate', { plateImage: IMAGE }, 'da')
+        .query({ locale: 'da' })
+        .expect(201);
+      expect(prompts[0].prompt).toMatch(/recipe titles in Danish/);
+    });
+
     it('rejects a result the model got wrong with a stable code', async () => {
       respondWith({ matches: [{ title: 'Pancakes', confidence: 9 }] });
       const failed = await dishes(await signUp()).expect(502);

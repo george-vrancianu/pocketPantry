@@ -1,3 +1,4 @@
+import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import { normalizeName } from '../normalize';
 import type {
   SeedAisle,
@@ -13,7 +14,7 @@ export type CatalogSeed = {
   ingredients: SeedIngredient[];
 };
 
-type Named = { slug: string; en: string; ro: string };
+type Named = { slug: string } & Record<CatalogLocale, string>;
 
 function duplicatesIn(
   label: string,
@@ -22,16 +23,19 @@ function duplicatesIn(
 ): string[] {
   const problems: string[] = [];
   const slugs = new Set<string>();
-  const names = {
-    en: new Map<string, string>(),
-    ro: new Map<string, string>(),
-  };
+  const names = Object.fromEntries(
+    CATALOG_LOCALES.map((locale) => [locale, new Map<string, string>()]),
+  ) as Record<CatalogLocale, Map<string, string>>;
   for (const row of rows) {
     if (slugs.has(row.slug))
       problems.push(`${label}: duplicate slug "${row.slug}"`);
     slugs.add(row.slug);
+    if (normalizeName(row.da) === '') {
+      problems.push(`${label} "${row.slug}": missing Danish name`);
+    }
     if (!checkNames) continue;
-    for (const locale of ['en', 'ro'] as const) {
+    for (const locale of CATALOG_LOCALES) {
+      if (normalizeName(row[locale]) === '') continue;
       const key = normalizeName(row[locale]);
       const other = names[locale].get(key);
       if (other !== undefined && other !== row.slug) {
@@ -87,12 +91,15 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
 
   const owners = new Map<string, Set<string>>();
   for (const i of seed.ingredients) {
-    const own = new Set([i.en, i.ro].map(normalizeName));
+    const own = new Set(
+      CATALOG_LOCALES.map((locale) => normalizeName(i[locale])).filter(
+        (key) => key !== '',
+      ),
+    );
     const seenSynonyms = new Set<string>();
-    for (const synonym of [
-      ...(i.synonyms?.en ?? []),
-      ...(i.synonyms?.ro ?? []),
-    ]) {
+    for (const synonym of CATALOG_LOCALES.flatMap(
+      (locale) => i.synonyms?.[locale] ?? [],
+    )) {
       const key = normalizeName(synonym);
       if (own.has(key)) {
         problems.push(

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import {
   aisles,
@@ -7,6 +8,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
 import {
@@ -42,11 +44,11 @@ export const seedId = {
 function translationRows(
   entityType: EntityType,
   entityId: string,
-  names: { en: string; ro: string },
-  synonyms: { en?: string[]; ro?: string[] } = {},
+  names: Record<CatalogLocale, string>,
+  synonyms: Partial<Record<CatalogLocale, string[]>> = {},
 ): TranslationRow[] {
   const row = (
-    locale: 'en' | 'ro',
+    locale: CatalogLocale,
     kind: 'name' | 'synonym',
     value: string,
   ): TranslationRow => ({
@@ -64,20 +66,37 @@ function translationRows(
     value,
     normalizedValue: normalizeName(value),
   });
-  return [
-    row('en', 'name', names.en),
-    row('ro', 'name', names.ro),
-    ...(synonyms.en ?? []).map((value) => row('en', 'synonym', value)),
-    ...(synonyms.ro ?? []).map((value) => row('ro', 'synonym', value)),
-  ];
+  return CATALOG_LOCALES.flatMap((locale) => [
+    row(locale, 'name', names[locale]),
+    ...(synonyms[locale] ?? []).map((value) => row(locale, 'synonym', value)),
+  ]);
 }
+
+/**
+ * Seed rows that were shipped once and have since been retired. The seed never
+ * deletes on its own, so a row dropped from the data would live on in
+ * already-seeded databases; list its stable id here to remove it on the next
+ * run. One line per retirement.
+ */
+const RETIRED_SEED_TRANSLATIONS: string[] = [
+  // English "squash" was a Synonym of Pumpkin; it now belongs to Zucchini
+  // (Danish "Squash"), and an Ingredient name must have one owner.
+  stableId(
+    `translation:ingredient:${seedId.ingredient('pumpkin')}:en:synonym:squash`,
+  ),
+];
 
 /**
  * Loads the Catalog seed, after checking it for duplicates and dangling references. Rows have fixed ids and are inserted with
  * ON CONFLICT (id) DO NOTHING, so running it again leaves the database unchanged
- * and keeps in-place Admin edits. Rows an Admin deleted come back; rows an Admin
- * renamed keep their new name. A real collision (e.g. an Admin-made Ingredient with the same normalised
- * name) fails loudly instead of being skipped.
+ * and keeps in-place Admin edits. A locale added to the seed later (Danish) is
+ * just more rows with new ids, so an already-seeded database gains those names
+ * and Synonyms on the next run without touching the existing en/ro rows. Rows an Admin deleted come back; rows an Admin
+ * renamed keep their new name. A real collision on an en/ro row or an
+ * Ingredient (e.g. an Admin-made Ingredient with the same normalised name)
+ * fails loudly. Danish rows that clash with an Admin's are skipped and
+ * counted instead, and names owned by two Ingredients are logged. Rows listed
+ * in RETIRED_SEED_TRANSLATIONS are deleted.
  */
 export async function seedCatalog(
   database: Pick<Database, 'transaction'>,
@@ -163,8 +182,54 @@ export async function seedCatalog(
       ),
     ];
     await tx
+      .delete(catalogTranslations)
+      .where(inArray(catalogTranslations.id, RETIRED_SEED_TRANSLATIONS));
+
+    const isDanish = (row: TranslationRow) => row.locale === 'da';
+    await tx
       .insert(catalogTranslations)
-      .values(translations)
+      .values(translations.filter((row) => !isDanish(row)))
       .onConflictDoNothing({ target: catalogTranslations.id });
+    // Danish arrives after Admins could already add `da` Synonyms (a Synonym
+    // may be in any Scan Language). A seed row that collides with one of those
+    // on the per-locale unique keys is skipped instead of failing the whole
+    // seed: the Admin's row wins and everything else is still inserted.
+    const present = new Set(
+      (
+        await tx
+          .select({ id: catalogTranslations.id })
+          .from(catalogTranslations)
+          .where(eq(catalogTranslations.locale, 'da'))
+      ).map((row) => row.id),
+    );
+    const missing = translations.filter(
+      (row) => isDanish(row) && !present.has(row.id ?? ''),
+    );
+    if (missing.length > 0) {
+      const inserted = await tx
+        .insert(catalogTranslations)
+        .values(missing)
+        .onConflictDoNothing()
+        .returning({ id: catalogTranslations.id });
+      if (inserted.length < missing.length) {
+        console.log(
+          `Danish seed: skipped ${missing.length - inserted.length} of ${missing.length} new rows that clash with an existing row.`,
+        );
+      }
+    }
+
+    // Skipped or hand-made rows can leave a name or Synonym pointing at two
+    // Ingredients, which makes an exact Match ambiguous. Report, never fail.
+    const ambiguous = await tx
+      .select({ key: catalogTranslations.normalizedValue })
+      .from(catalogTranslations)
+      .where(eq(catalogTranslations.entityType, 'ingredient'))
+      .groupBy(catalogTranslations.normalizedValue)
+      .having(sql`count(distinct ${catalogTranslations.entityId}) > 1`);
+    if (ambiguous.length > 0) {
+      console.warn(
+        `Catalog: ${ambiguous.length} name(s) or Synonym(s) belong to more than one Ingredient: ${ambiguous.map((row) => `"${row.key}"`).join(', ')}`,
+      );
+    }
   });
 }

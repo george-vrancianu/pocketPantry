@@ -73,6 +73,8 @@ export const translationCreate = z
     kind: z.enum(translationKind.enumValues),
     value: text,
   })
+  // Unreachable while SCAN_LANGUAGES and CATALOG_LOCALES are the same list;
+  // kept so a future scan-only language cannot get a display name.
   .refine(
     (body) =>
       body.kind === 'synonym' ||

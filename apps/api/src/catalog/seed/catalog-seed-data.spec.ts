@@ -5,6 +5,13 @@ import {
   SEED_LEAVES,
   SEED_PARENTS,
 } from './catalog-seed-data';
+import {
+  DA_AISLES,
+  DA_INGREDIENTS,
+  DA_LEAVES,
+  DA_PARENTS,
+  DA_SYNONYMS,
+} from './data/danish';
 import { seedId, stableId } from './seed-catalog';
 import { findSeedProblems } from './validate-seed';
 
@@ -51,12 +58,44 @@ describe('catalog seed data', () => {
     ).toEqual([]);
   });
 
-  it('has hundreds of Ingredients with English and Romanian names', () => {
+  it('has hundreds of Ingredients with English, Romanian and Danish names', () => {
     expect(SEED_INGREDIENTS.length).toBeGreaterThanOrEqual(400);
     for (const item of SEED_INGREDIENTS) {
       expect(item.en).toBeTruthy();
       expect(item.ro).toBeTruthy();
+      expect(item.da).toBeTruthy();
     }
+  });
+
+  it('gives every Aisle, Parent and Leaf a Danish name, with the Other Leaves named after their Parent', () => {
+    for (const row of [...SEED_AISLES, ...SEED_PARENTS, ...SEED_LEAVES]) {
+      expect([row.slug, row.da.trim() !== '']).toEqual([row.slug, true]);
+    }
+    expect(SEED_LEAVES.find((l) => l.slug === 'dairy-other')?.da).toBe(
+      'Andet (mejeri)',
+    );
+    expect(SEED_LEAVES.find((l) => l.slug === 'other-other')?.da).toBe('Andet');
+  });
+
+  it('has no Danish entry for a slug that does not exist', () => {
+    const known = (rows: { slug: string }[]) =>
+      new Set(rows.map((r) => r.slug));
+    const stray = (
+      entries: Record<string, unknown>,
+      rows: { slug: string }[],
+    ) => Object.keys(entries).filter((slug) => !known(rows).has(slug));
+    expect(stray(DA_AISLES, SEED_AISLES)).toEqual([]);
+    expect(stray(DA_PARENTS, SEED_PARENTS)).toEqual([]);
+    expect(stray(DA_LEAVES, SEED_LEAVES)).toEqual([]);
+    expect(stray(DA_INGREDIENTS, SEED_INGREDIENTS)).toEqual([]);
+    expect(stray(DA_SYNONYMS, SEED_INGREDIENTS)).toEqual([]);
+  });
+
+  it('carries a few Danish Synonyms next to the Danish names', () => {
+    const milk = SEED_INGREDIENTS.find((i) => i.slug === 'milk');
+    expect(milk?.da).toBe('Mælk');
+    expect(milk?.synonyms?.da).toContain('minimælk');
+    expect(milk?.synonyms?.en).toBeDefined();
   });
 
   it('has no slug or normalised-name collisions within an entity type', () => {
@@ -69,6 +108,7 @@ describe('catalog seed data', () => {
       expect(duplicates(rows.map((r) => r.slug))).toEqual([]);
       expect(duplicates(rows.map((r) => normalizeName(r.en)))).toEqual([]);
       expect(duplicates(rows.map((r) => normalizeName(r.ro)))).toEqual([]);
+      expect(duplicates(rows.map((r) => normalizeName(r.da)))).toEqual([]);
     }
   });
 

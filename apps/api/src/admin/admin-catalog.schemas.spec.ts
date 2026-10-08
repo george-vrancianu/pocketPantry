@@ -14,9 +14,16 @@ describe('translationCreate', () => {
     ).toBe(true);
   });
 
-  it('rejects a display name in a Scan Language that is not a catalog locale', () => {
+  it('accepts a Danish display name, since Danish is a catalog locale', () => {
     expect(
       translationCreate.safeParse({ ...base, kind: 'name', locale: 'da' })
+        .success,
+    ).toBe(true);
+  });
+
+  it('rejects a display name in a language outside the Scan Languages (it fails at the locale enum)', () => {
+    expect(
+      translationCreate.safeParse({ ...base, kind: 'name', locale: 'fr' })
         .success,
     ).toBe(false);
   });
