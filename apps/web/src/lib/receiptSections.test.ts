@@ -9,6 +9,7 @@ const line = (name: string, extra: object = {}): ProposedLine => ({
   quantity: null,
   unit: null,
   expiryDate: null,
+  sourceText: null,
   productDescription: null,
   ...extra,
 });

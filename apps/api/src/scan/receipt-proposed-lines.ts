@@ -1,7 +1,11 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
-import type { ExclusionReason, ProposedLine } from './proposed-line';
+import {
+  MAX_RAW_NAME,
+  type ExclusionReason,
+  type ProposedLine,
+} from './proposed-line';
 
 type PantryUnit = (typeof ingredientUnit.enumValues)[number];
 type ReceiptLine = ReceiptScanResult['lines'][number];
@@ -17,9 +21,6 @@ const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([
   'payment',
   'discount',
 ]);
-
-/** The Unmatched raw name limit of the Batch bulk create. */
-const MAX_RAW_NAME = 100;
 
 /** From what kind of line it is, never from the model's wording. */
 function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
@@ -86,6 +87,7 @@ export function receiptProposedLines(
       if (!line.includeInPantry) {
         return {
           name: (line.productName ?? line.sourceText).slice(0, MAX_RAW_NAME),
+          sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
           match: null,
           lowConfidence: false,
           quantity: null,
@@ -104,6 +106,7 @@ export function receiptProposedLines(
           0,
           MAX_RAW_NAME,
         ),
+        sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
         match: confident ? resolved.match : null,
         lowConfidence: line.confidence < threshold,
         ...toPantryQuantity(line.quantity, line.unit),

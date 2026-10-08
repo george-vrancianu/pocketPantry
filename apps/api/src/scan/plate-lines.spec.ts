@@ -24,6 +24,7 @@ describe('plateLine', () => {
   it('proposes the quantity and unit for one serving against a confident Match', () => {
     expect(plateLine(item(), milk, 0.6)).toMatchObject({
       name: 'Milk',
+      sourceText: null,
       match: milk,
       quantity: 200,
       unit: 'ml',

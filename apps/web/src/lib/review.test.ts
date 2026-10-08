@@ -24,6 +24,7 @@ const milk: CatalogSearchResult = {
 
 const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   name: 'Grana Padano',
+  sourceText: 'GRANA PAD 200G',
   match: parmesan,
   lowConfidence: false,
   quantity: null,
@@ -34,6 +35,13 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
 });
 
 describe('toReviewLine', () => {
+  it('carries the source text the Scan read', () => {
+    expect(toReviewLine(line(), 'a', today).sourceText).toBe('GRANA PAD 200G');
+    expect(
+      toReviewLine(line({ sourceText: null }), 'a', today).sourceText,
+    ).toBeNull();
+  });
+
   it('pre-fills unit, Location and expiry from the Match defaults', () => {
     expect(toReviewLine(line(), 'a', today)).toMatchObject({
       unit: 'g',

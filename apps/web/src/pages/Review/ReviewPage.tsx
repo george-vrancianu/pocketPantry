@@ -62,6 +62,7 @@ export function ReviewPage() {
                 line={line}
                 parents={screen.parents}
                 shopping={screen.shopping}
+                mode={screen.mode}
                 onChange={(patch) => screen.change(line.key, patch)}
                 onChangeMatch={(match) => screen.changeMatch(line.key, match)}
                 onDrop={() => screen.drop(line.key)}

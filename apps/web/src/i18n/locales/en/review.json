@@ -5,6 +5,10 @@
   "name": "Name",
   "category": "Category",
   "categoryOther": "Not sure",
+  "row": {
+    "receiptPrefix": "On receipt: {{text}}",
+    "readPrefix": "Read: {{text}}"
+  },
   "changeMatch": "Change match",
   "keepMatch": "Keep this match",
   "flag": {

@@ -56,6 +56,7 @@ const proposed: ProposedLine = {
   quantity: null,
   unit: null,
   expiryDate: '2026-12-24',
+  sourceText: 'GRANA PAD 200G',
   productDescription: 'Grana Padano 200g',
 };
 

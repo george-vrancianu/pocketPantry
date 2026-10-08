@@ -46,6 +46,7 @@ const line = (overrides: Partial<ProposedLine>): ProposedLine => ({
   quantity: 200,
   unit: 'ml',
   expiryDate: null,
+  sourceText: null,
   productDescription: null,
   ...overrides,
 });

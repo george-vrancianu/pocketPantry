@@ -30,6 +30,7 @@ describe('ingredientsLine', () => {
   it('proposes a matched line with no quantity, unit or expiry', () => {
     expect(ingredientsLine(item(), match, 0.6)).toEqual({
       name: 'Milk',
+      sourceText: 'Whole milk',
       match,
       lowConfidence: false,
       quantity: null,
@@ -46,6 +47,13 @@ describe('ingredientsLine', () => {
     expect(ingredientsLine(item(), null, 0.6)).toMatchObject({
       match: null,
     });
+  });
+
+  it('caps the source text at 100 characters', () => {
+    expect(
+      ingredientsLine(item({ productName: 'x'.repeat(120) }), match, 0.6)
+        .sourceText,
+    ).toHaveLength(100);
   });
 
   it('flags a shaky image read', () => {

@@ -146,6 +146,7 @@ describe('Receipt Scan (integration)', () => {
       lines: [
         {
           name: 'Lapte',
+          sourceText: 'LAPTE UHT 1L',
           quantity: 2,
           unit: 'l',
           productDescription: 'Lapte UHT',
@@ -153,6 +154,7 @@ describe('Receipt Scan (integration)', () => {
         },
         {
           name: 'SACOSA BIO',
+          sourceText: 'SACOSA BIO',
           match: null,
           excluded: { reason: 'other' },
         },
