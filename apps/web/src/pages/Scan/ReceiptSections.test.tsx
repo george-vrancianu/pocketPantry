@@ -1,10 +1,11 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppDock } from '../../components/AppDock';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { reviewRowNames } from '../../test/review';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -71,10 +72,10 @@ const shutter = () => screen.getByRole('button', { name: 'Take photo' });
 const click = (name: string) =>
   userEvent.click(screen.getByRole('button', { name }));
 const shoot = () => userEvent.click(shutter());
-const reviewNames = async () =>
-  (await screen.findAllByRole('region')).map((r) =>
-    r.getAttribute('aria-label'),
-  );
+const reviewNames = async () => {
+  await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
+  return reviewRowNames();
+};
 
 describe('Receipt Scan in sections', () => {
   beforeEach(() => clearReview());

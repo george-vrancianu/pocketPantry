@@ -38,6 +38,11 @@ export {
   SettingsIcon,
   ShoppingIcon,
   SignOutIcon,
+  WarningIcon,
+  AlertIcon,
+  CheckCircleIcon,
+  DeleteIcon,
+  SwapIcon,
 } from './atoms/icons';
 
 export {

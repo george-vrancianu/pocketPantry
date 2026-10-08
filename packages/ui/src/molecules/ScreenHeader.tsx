@@ -3,6 +3,7 @@ import type { MouseEventHandler, ReactNode } from 'react';
 import { HomeIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { Typography } from '../atoms/Typography';
+import { tokens } from '../theme/tokens';
 
 export type ScreenHeaderAction = {
   /** Accessible name of the icon-only button. */
@@ -14,6 +15,8 @@ export type ScreenHeaderAction = {
 
 export type ScreenHeaderProps = {
   title: string;
+  /** A muted line under the title. */
+  subtitle?: string;
   /** Accessible name of the Home button. */
   homeLabel: string;
   homeHref?: string;
@@ -24,6 +27,7 @@ export type ScreenHeaderProps = {
 /** Sub-screen header: Home button, H1 title, one action button. */
 export function ScreenHeader({
   title,
+  subtitle,
   homeLabel,
   homeHref = '/',
   action,
@@ -42,9 +46,18 @@ export function ScreenHeader({
       <IconButton label={homeLabel} href={homeHref}>
         <HomeIcon size={20} />
       </IconButton>
-      <Typography variant="h2" component="h1" sx={{ flexGrow: 1, minWidth: 0 }}>
-        {title}
-      </Typography>
+      <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Typography variant="h2" component="h1">
+          {title}
+        </Typography>
+        {subtitle ? (
+          <Typography
+            sx={{ fontSize: 13, color: tokens.color.muted, mt: '2px' }}
+          >
+            {subtitle}
+          </Typography>
+        ) : null}
+      </Box>
       {action ? (
         <IconButton
           label={action.label}

@@ -1,9 +1,10 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { reviewRowNames } from '../../test/review';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -91,10 +92,10 @@ const click = (name: string) =>
 const cropDialog = () => screen.findByRole('dialog', { name: 'Crop receipt' });
 const receiptCalls = (calls: Array<{ key: string }>) =>
   calls.filter((c) => c.key === 'POST /api/scan/receipt');
-const reviewNames = async () =>
-  (await screen.findAllByRole('region')).map((r) =>
-    r.getAttribute('aria-label'),
-  );
+const reviewNames = async () => {
+  await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
+  return reviewRowNames();
+};
 
 describe('Receipt gallery multi-select', () => {
   beforeEach(() => {

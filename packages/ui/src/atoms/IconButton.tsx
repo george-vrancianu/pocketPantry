@@ -11,20 +11,24 @@ export type IconButtonProps = Omit<
   children: ReactNode;
   /**
    * `surface` is the white circle with a border; `accent` is the filled primary action;
-   * `plain` is a bare icon for dense rows; `urgent` is the red destructive action.
+   * `plain` is a bare icon for dense rows; `urgent` is the red destructive action;
+   * `urgentOutline` is the quieter destructive action: white with an urgent border.
    */
-  tone?: 'surface' | 'accent' | 'plain' | 'urgent';
+  tone?: 'surface' | 'accent' | 'plain' | 'urgent' | 'urgentOutline';
+  /** Width and height in px: 44 for headers, 40 inside dense form rows. */
+  size?: 40 | 44;
   href?: string;
   /** Looks and announces as disabled (`aria-disabled`) but stays focusable and ignores clicks. */
   ariaDisabled?: boolean;
   ref?: Ref<HTMLButtonElement>;
 };
 
-/** The 44 px circular icon button used in headers and rows. Renders a link when `href` is set. */
+/** The circular (44 px by default) icon button used in headers and rows. Renders a link when `href` is set. */
 export function IconButton({
   label,
   children,
   tone = 'surface',
+  size = 44,
   href,
   ariaDisabled,
   onClick,
@@ -54,6 +58,12 @@ export function IconButton({
       color: color.urgentFg,
       '&:hover': { backgroundColor: color.urgentHover },
     },
+    urgentOutline: {
+      backgroundColor: color.surface,
+      color: color.urgentFg,
+      border: `1px solid ${color.urgentBorder}`,
+      '&:hover': { backgroundColor: color.urgentRow },
+    },
   }[tone];
   return (
     <MuiIconButton
@@ -64,8 +74,8 @@ export function IconButton({
       {...(href ? { href } : {})}
       onClick={ariaDisabled ? undefined : onClick}
       sx={{
-        width: 44,
-        height: 44,
+        width: size,
+        height: size,
         flexShrink: 0,
         ...toneStyles,
         ...(ariaDisabled ? { opacity: 0.35, cursor: 'default' } : {}),

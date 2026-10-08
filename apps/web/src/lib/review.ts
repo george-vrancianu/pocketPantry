@@ -1,5 +1,6 @@
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
+import { isIsoDate } from './dateFormat';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
 /**
@@ -35,15 +36,15 @@ export type ReviewLine = {
   quantity: string;
   unit: Unit;
   location: StorageLocation;
-  /** `YYYY-MM-DD`, or empty for no expiry. */
+  /** `YYYY-MM-DD`, or empty for no expiry. While the Member is mid-way through typing a date it holds the half-typed text, which is invalid until it parses. */
   expiryDate: string;
   /** The date was read off the packaging or typed by the Member, so changing the Match keeps it instead of re-deriving from Catalog defaults. */
   expiryExplicit: boolean;
   /** Unmatched only: the Parent Category the Batch lands in; '' leaves it to the server's default (top-level Other). */
   parentCategoryId: string;
   description: string;
-  /** Receipt Scan: left out of the Pantry until the Member re-includes it. Excluded lines are never saved. */
-  excluded: { reason: ExclusionReason } | null;
+  /** Left out of the Pantry until the Member adds it back: the Scan excluded it (Receipt) or the Member removed it. Excluded lines are never saved. */
+  excluded: { reason: ExclusionReason | 'removed' } | null;
 };
 
 export function toReviewLine(
@@ -93,9 +94,34 @@ export function withMatch(
   };
 }
 
+/** What the Review screen calls a line: the Ingredient it matched, else the name the Scan read. */
+export const displayName = (line: ReviewLine) => line.match?.name ?? line.name;
+
+/** How sure the Review screen is of a line: `low` needs a look at the Match, `qty` a quantity, `ok` is fine. */
+export type RowStatus = 'low' | 'qty' | 'ok';
+
+/** Unmatched counts as low: the Scan found no Ingredient. A confirmed line is always ok. */
+export function statusOf(line: ReviewLine, confirmed: boolean): RowStatus {
+  if (confirmed) return 'ok';
+  if (line.lowConfidence || line.match === null) return 'low';
+  if (line.quantity.trim() === '') return 'qty';
+  return 'ok';
+}
+
+export type ReviewField = 'name' | 'quantity' | 'expiry';
+
+/** The fields holding an entered value that cannot be saved, in the order they appear on screen. A missing quantity or expiry is fine. */
+export function invalidFields(line: ReviewLine): ReviewField[] {
+  const fields: ReviewField[] = [];
+  if (line.match === null && line.name.trim() === '') fields.push('name');
+  if (!parseQuantity(line.quantity).valid) fields.push('quantity');
+  if (line.expiryDate !== '' && !isIsoDate(line.expiryDate))
+    fields.push('expiry');
+  return fields;
+}
+
 export const isLineValid = (line: ReviewLine) =>
-  parseQuantity(line.quantity).valid &&
-  (line.match !== null || line.name.trim() !== '');
+  invalidFields(line).length === 0;
 
 export function toNewBatch(line: ReviewLine): NewBatch {
   const quantity = line.quantity.trim() === '' ? null : Number(line.quantity);
