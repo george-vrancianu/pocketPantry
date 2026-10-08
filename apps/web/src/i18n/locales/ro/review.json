@@ -5,6 +5,10 @@
   "name": "Nume",
   "category": "Categorie",
   "categoryOther": "Nu sunt sigur",
+  "row": {
+    "receiptPrefix": "Pe bon: {{text}}",
+    "readPrefix": "Citit: {{text}}"
+  },
   "changeMatch": "Schimbă potrivirea",
   "keepMatch": "Păstrează această potrivire",
   "flag": {

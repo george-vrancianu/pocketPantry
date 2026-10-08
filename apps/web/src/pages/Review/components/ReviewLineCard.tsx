@@ -17,6 +17,8 @@ import {
 } from '../../../lib/catalog';
 import { parseQuantity } from '../../../lib/pantry';
 import type { ReviewLine } from '../../../lib/review';
+import type { ScanMode } from '../../../lib/scan';
+import { SourceText } from './SourceText';
 
 type Props = {
   line: ReviewLine;
@@ -27,6 +29,8 @@ type Props = {
   parents: CatalogParent[];
   /** The line goes on the Shopping List: no Category, Location, expiry or description. */
   shopping?: boolean;
+  /** The Scan Mode the line came from; picks the source text's prefix. */
+  mode: ScanMode;
 };
 
 /** One proposed line, editable. Flagged lines (Unmatched or low confidence) are tinted and say why. */
@@ -37,6 +41,7 @@ export function ReviewLineCard({
   onDrop,
   parents,
   shopping = false,
+  mode,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry']);
   const id = useId();
@@ -66,9 +71,10 @@ export function ReviewLineCard({
         sx={{ outline: 'none' }}
       >
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-          <Typography sx={{ flexGrow: 1, fontWeight: 700 }}>
-            {displayName}
-          </Typography>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 700 }}>{displayName}</Typography>
+            <SourceText text={line.sourceText} mode={mode} />
+          </Box>
           <Button
             variant="text"
             type="button"

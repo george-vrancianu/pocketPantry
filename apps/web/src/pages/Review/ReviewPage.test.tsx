@@ -31,6 +31,7 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   quantity: null,
   unit: null,
   expiryDate: '2026-12-24',
+  sourceText: 'GRANA PAD 200G',
   productDescription: 'Grana Padano 200g',
   ...overrides,
 });
@@ -89,6 +90,12 @@ describe('ReviewPage', () => {
       'Grana Padano 200g',
     );
     expect(within(card).queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('shows what the Scan read under the name, and nothing without it', () => {
+    renderReview([line(), line({ name: 'Plate thing', sourceText: null })]);
+    expect(screen.getByText('Read: GRANA PAD 200G')).toBeInTheDocument();
+    expect(screen.getAllByText(/^Read:/)).toHaveLength(1);
   });
 
   it('flags Unmatched and low-confidence lines', () => {

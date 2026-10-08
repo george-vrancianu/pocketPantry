@@ -125,6 +125,7 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
+    mode: draft?.mode ?? 'product',
     shopping,
     lines: included,
     excluded,

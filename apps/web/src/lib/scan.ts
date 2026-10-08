@@ -30,6 +30,8 @@ export type ProposedLine = {
   /** What the Scan read; saved as the raw name when the line stays Unmatched. */
   name: string;
   /** The Ingredient Match with its Catalog defaults, or null when Unmatched. */
+  /** The text the Scan read for this line (receipt text, product label), or null when it has none (Plate). */
+  sourceText: string | null;
   match: CatalogSearchResult | null;
   /** The image read was shaky: check the whole line. */
   lowConfidence: boolean;
