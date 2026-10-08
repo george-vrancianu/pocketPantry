@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { CatalogSearchResult } from './catalog';
 import { defaultExpiryDate } from './pantry';
-import { isLineValid, toNewBatch, toReviewLine, withMatch } from './review';
+import {
+  invalidFields,
+  isLineValid,
+  statusOf,
+  toNewBatch,
+  toReviewLine,
+  withMatch,
+} from './review';
 import type { ProposedLine } from './scan';
 
 const today = new Date(2026, 9, 1);
@@ -91,6 +98,41 @@ describe('validity', () => {
     expect(isLineValid({ ...base, quantity: '2.5' })).toBe(true);
     expect(isLineValid({ ...base, quantity: '' })).toBe(true);
     expect(isLineValid({ ...base, match: null, name: '  ' })).toBe(false);
+  });
+
+  it('rejects an expiry that is half-typed or not a real date, and allows none', () => {
+    const base = toReviewLine(line(), 'a', today);
+    expect(isLineValid({ ...base, expiryDate: '08.10' })).toBe(false);
+    expect(isLineValid({ ...base, expiryDate: '2027-02-29' })).toBe(false);
+    expect(isLineValid({ ...base, expiryDate: '' })).toBe(true);
+  });
+
+  it('names the invalid fields in the order they appear', () => {
+    const base = toReviewLine(line({ match: null }), 'a', today);
+    expect(
+      invalidFields({ ...base, name: '', quantity: '0', expiryDate: '1' }),
+    ).toEqual(['name', 'quantity', 'expiry']);
+    expect(invalidFields(toReviewLine(line(), 'a', today))).toEqual([]);
+  });
+});
+
+describe('statusOf', () => {
+  const base = toReviewLine(line(), 'a', today);
+
+  it('is low for a low-confidence or Unmatched line', () => {
+    expect(statusOf({ ...base, lowConfidence: true }, false)).toBe('low');
+    expect(statusOf({ ...base, match: null, quantity: '2' }, false)).toBe(
+      'low',
+    );
+  });
+
+  it('is qty for a confident line with no quantity', () => {
+    expect(statusOf({ ...base, quantity: ' ' }, false)).toBe('qty');
+  });
+
+  it('is ok for a confident line with a quantity, or any confirmed line', () => {
+    expect(statusOf({ ...base, quantity: '2' }, false)).toBe('ok');
+    expect(statusOf({ ...base, lowConfidence: true }, true)).toBe('ok');
   });
 });
 
