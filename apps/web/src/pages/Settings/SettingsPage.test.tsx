@@ -173,6 +173,24 @@ describe('SettingsPage', () => {
     );
   });
 
+  it('offers Dansk and saves da as the Member locale', async () => {
+    const calls = stubSettings({ staleThresholdDays: 3, expiryOverrides: [] });
+    renderWithProviders(<SettingsPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'DA' }));
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PUT /api/settings/preferences',
+          body: { locale: 'da' },
+        }),
+      ),
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Familieindstillinger' }),
+    ).toBeInTheDocument();
+  });
+
   it('applies the locale saved on the Member when the app loads', async () => {
     stubSettings({ staleThresholdDays: 3, expiryOverrides: [] }, 'ro');
     renderWithProviders(

@@ -1,0 +1,9 @@
+{
+  "search": {
+    "label": "Søg efter ingredienser",
+    "placeholder": "Skriv en ingrediens, f.eks. parmesan",
+    "searching": "Søger",
+    "noResults": "Ingen ingredienser fundet",
+    "resultCount": "Resultater: {{count}}"
+  }
+}

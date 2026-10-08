@@ -1,0 +1,50 @@
+{
+  "customise": "Tilpas oversigten",
+  "greeting": {
+    "morning": "God morgen",
+    "afternoon": "God eftermiddag",
+    "evening": "God aften"
+  },
+  "settings": "Indstillinger",
+  "comingSoon": "Kommer snart",
+  "widgets": {
+    "useSoon": {
+      "title": "Brug snart",
+      "seeAll": "Se alle",
+      "empty": "Intet med udløbsdato i dit spisekammer endnu."
+    },
+    "shopping": {
+      "title": "Indkøb",
+      "itemsToBuy_one": "vare at købe",
+      "itemsToBuy_other": "varer at købe",
+      "empty": "Din liste er tom"
+    },
+    "pantryStock": {
+      "title": "Spisekammer",
+      "itemsInStock_one": "vare på lager",
+      "itemsInStock_other": "varer på lager"
+    },
+    "quickScan": {
+      "title": "Hurtig scanning",
+      "modes": {
+        "product": "Produkt",
+        "receipt": "Kvittering",
+        "plate": "Tallerken",
+        "ingredients": "Ingredienser"
+      }
+    },
+    "mealPlan": {
+      "title": "Madplan"
+    },
+    "budget": {
+      "title": "Budget",
+      "sample": "€0 af €0"
+    },
+    "nutrition": {
+      "title": "Ernæring",
+      "protein": "Protein",
+      "carbs": "Kulhydrater",
+      "fat": "Fedt"
+    }
+  }
+}

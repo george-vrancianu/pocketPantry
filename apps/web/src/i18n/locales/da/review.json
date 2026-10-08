@@ -1,0 +1,126 @@
+{
+  "title": "Gennemgang",
+  "subtitle": {
+    "mode": {
+      "product": "Scannet produkt",
+      "receipt": "Scannet kvittering",
+      "plate": "Scannet tallerken",
+      "ingredients": "Scannede ingredienser"
+    },
+    "lines_one": "{{mode}} · {{count}} linje læst",
+    "lines_other": "{{mode}} · {{count}} linjer læst"
+  },
+  "empty": "Intet at gennemgå.",
+  "backToScan": "Tilbage til scanning",
+  "counter": {
+    "save": "at gemme",
+    "check": "at tjekke",
+    "excluded": "udeladt"
+  },
+  "col": {
+    "product": "Produkt",
+    "qty": "Antal",
+    "location": "Placering",
+    "expiry": "Udløber",
+    "status": "Status",
+    "confidence": "Sikkerhed",
+    "actions": "Handlinger"
+  },
+  "group": {
+    "review": "At tjekke",
+    "sure": "Sikre",
+    "collapse": "Skjul",
+    "expand": "Vis"
+  },
+  "msg": {
+    "low": "Lav sikkerhed: tjek matchet",
+    "qty": "Mængde mangler",
+    "unmatched": "Intet match: vælg en ingrediens, eller gem den under det navn, vi læste.",
+    "unmatchedShopping": "Ikke i vores katalog: vælg en ingrediens, eller føj den til din liste under det navn, vi læste."
+  },
+  "icon": {
+    "low": "Lav sikkerhed",
+    "qty": "Mængde mangler",
+    "ok": "Høj sikkerhed"
+  },
+  "field": {
+    "match": "Matchet ingrediens",
+    "name": "Navn",
+    "category": "Kategori",
+    "quantity": "Mængde",
+    "unit": "Enhed",
+    "location": "Placering",
+    "expiry": "Udløbsdato",
+    "description": "Produktbeskrivelse"
+  },
+  "expiryPlaceholder": "dd.mm.åååå",
+  "error": {
+    "name": "Angiv et navn.",
+    "expiry": "Angiv en gyldig dato som dd.mm.åååå."
+  },
+  "categoryOther": "Usikker",
+  "match": {
+    "none": "Intet match",
+    "choose": "Vælg",
+    "change": "Skift",
+    "dialogTitle": "Skift match for {{name}}"
+  },
+  "action": {
+    "remove": "Fjern {{name}}",
+    "confirm": "Bekræft",
+    "done": "Færdig",
+    "swap": "Skift match for {{name}}",
+    "choose": "Vælg match for {{name}}",
+    "edit": "Rediger {{name}}",
+    "finish": "Afslut redigering af {{name}}",
+    "confirmFor": "Bekræft {{name}}"
+  },
+  "save_one": "Gem {{count}} vare",
+  "save_other": "Gem {{count}} varer",
+  "discard": "Kassér",
+  "shoppingSave_one": "Føj {{count}} vare til indkøbslisten",
+  "shoppingSave_other": "Føj {{count}} varer til indkøbslisten",
+  "shoppingAdding": "Tilføjer",
+  "excluded": {
+    "title": "Udeladt · {{count}}",
+    "hint": "Ikke-fødevarer eller ulæselige linjer",
+    "show": "Vis",
+    "hide": "Skjul",
+    "reason": {
+      "not_food": "Ikke en fødevare",
+      "fee": "Et gebyr",
+      "deposit": "Pant",
+      "other": "Ikke en vare til spisekammeret",
+      "removed": "Fjernet af dig"
+    },
+    "restore": "Tilføj igen",
+    "restoreFor": "Tilføj {{name}} igen"
+  },
+  "tooMany": "Du kan gemme op til {{max}} varer ad gangen. Fjern eller udelad {{over}} for at fortsætte.",
+  "saved": {
+    "title": "Gemt i dit spisekammer",
+    "toPantry": "Gå til spisekammeret"
+  },
+  "tick": {
+    "missing_one": "{{count}} indkøbsvare blev fjernet fra din liste, før vi kunne krydse den af.",
+    "missing_other": "{{count}} indkøbsvarer blev fjernet fra din liste, før vi kunne krydse dem af.",
+    "changed_one": "Indkøbslisten blev ændret, så {{count}} indkøbsvare ikke blev krydset af.",
+    "changed_other": "Indkøbslisten blev ændret, så {{count}} indkøbsvarer ikke blev krydset af.",
+    "failed_one": "{{count}} indkøbsvare kunne ikke krydses af.",
+    "failed_other": "{{count}} indkøbsvarer kunne ikke krydses af."
+  },
+  "row": {
+    "receiptPrefix": "På kvitteringen: {{text}}",
+    "readPrefix": "Læst: {{text}}",
+    "fieldFor": "{{field}}: {{name}}",
+    "categoryNone": "Kategori: usikker"
+  },
+  "confidence": {
+    "low": "Lav",
+    "qty": "Ingen mængde",
+    "ok": "Høj"
+  },
+  "footer": {
+    "helper": "Sikre rækker er skjult. Tryk på en række for at redigere den."
+  }
+}

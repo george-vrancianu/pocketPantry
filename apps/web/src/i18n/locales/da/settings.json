@@ -1,0 +1,32 @@
+{
+  "title": "Indstillinger",
+  "language": "Sprog",
+  "preferences": "Medlemspræferencer",
+  "preferencesPrivate": "Kun du kan se disse. De følger dig på alle enheder.",
+  "admin": "Katalog",
+  "openAdmin": "Kurater kataloget",
+  "account": "Konto",
+  "signedInAs": "Logget ind som {{name}}",
+  "localeSaveFailed": "Dit sprog kunne ikke gemmes. Prøv igen.",
+  "signOut": "Log ud",
+  "family": {
+    "title": "Familieindstillinger",
+    "shared": "Deles af alle i din familie. Alle medlemmer kan ændre dem.",
+    "staleThreshold": "Udløbsgrænse (dage)",
+    "staleThresholdHelp": "Et parti regnes for at udløbe snart, når der er så mange dage til, at det udløber.",
+    "saveThreshold": "Gem grænse",
+    "overrides": "Tilsidesættelser af standardholdbarhed",
+    "overridesHelp": "Bruges til at udfylde udløbsdatoen på forhånd, når du tilføjer et parti. De erstatter katalogets standarder.",
+    "noOverrides": "Ingen tilsidesættelser endnu. Katalogets standarder bruges.",
+    "overrideRow_one": "{{name}}: {{count}} dag",
+    "overrideRow_other": "{{name}}: {{count}} dage",
+    "removeOverride": "Fjern tilsidesættelse for {{name}}",
+    "remove": "Fjern",
+    "category": "Kategori",
+    "chooseCategory": "Vælg en kategori",
+    "wholeParent": "{{name}} (alle)",
+    "days": "Dage til udløb",
+    "saved": "Gemt.",
+    "saveOverride": "Gem tilsidesættelse"
+  }
+}

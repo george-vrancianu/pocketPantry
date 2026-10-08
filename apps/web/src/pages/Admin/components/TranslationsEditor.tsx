@@ -33,7 +33,7 @@ type Props = {
 /**
  * Display names and Synonyms of one Catalog entry. English is the canonical
  * name (edited with the entry); the other catalog locales get a display name and
- * Synonyms. Danish takes Synonyms only: it is a Scan Language, not a catalog locale.
+ * Synonyms. Every catalog locale, Danish included, takes both.
  */
 export function TranslationsEditor({
   entityType,

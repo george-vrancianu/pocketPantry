@@ -12,6 +12,10 @@ describe('scan language choice', () => {
     expect(loadScanLanguage('ro')).toBe('ro');
   });
 
+  it('defaults to Danish under a Danish UI', () => {
+    expect(loadScanLanguage('da')).toBe('da');
+  });
+
   it('remembers the last choice for the same UI language', () => {
     saveScanLanguage('ro', 'da');
     expect(loadScanLanguage('ro')).toBe('da');
@@ -44,6 +48,14 @@ describe('scanLanguageOptions', () => {
       'en',
       'ro',
       'da',
+    ]);
+  });
+
+  it('puts Dansk first under a Danish UI', () => {
+    expect(scanLanguageOptions('da')).toEqual([
+      { value: 'da', label: 'Dansk' },
+      { value: 'en', label: 'English' },
+      { value: 'ro', label: 'Română' },
     ]);
   });
 });

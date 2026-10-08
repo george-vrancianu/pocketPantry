@@ -34,12 +34,12 @@ const unmatchedLine = {
 };
 
 const chip = () =>
-  screen.getByRole('combobox', { name: /Reading as|Citit ca/ });
+  screen.getByRole('combobox', { name: /Reading as|Citit ca|Læses som/ });
 
 function renderScan(
   route: string,
   routes: Record<string, () => Response> = {},
-  locale: 'en' | 'ro' = 'en',
+  locale: 'en' | 'ro' | 'da' = 'en',
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/parents': () => Response.json({ parents: [] }),
@@ -79,6 +79,26 @@ describe('Scan Language on the Scan screen', () => {
     ).toEqual(['Română', 'English', 'Dansk']);
   });
 
+  it('defaults to Dansk under a Danish UI, listed first', () => {
+    renderScan('/scan', {}, 'da');
+    expect(chip()).toHaveValue('da');
+    expect(
+      Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
+    ).toEqual(['Dansk', 'English', 'Română']);
+  });
+
+  it('forgets a Scan Language chosen under a Danish UI when the UI language changes', async () => {
+    const { i18n } = renderWithProviders(<ScanPage />, {
+      route: '/scan',
+      locale: 'da',
+    });
+    await userEvent.selectOptions(chip(), 'ro');
+    await act(() => i18n.changeLanguage('en'));
+    expect(chip()).toHaveValue('en');
+    await act(() => i18n.changeLanguage('da'));
+    expect(chip()).toHaveValue('da');
+  });
+
   it('changes the Scan Language without changing the UI language', async () => {
     renderScan('/scan');
     await userEvent.selectOptions(chip(), 'da');
@@ -113,7 +133,7 @@ describe('Scan Language on the Scan screen', () => {
   it('has no picker for Plate Scan', () => {
     renderScan('/scan?mode=plate');
     expect(
-      screen.queryByRole('combobox', { name: /Reading as|Citit ca/ }),
+      screen.queryByRole('combobox', { name: /Reading as|Citit ca|Læses som/ }),
     ).not.toBeInTheDocument();
   });
 

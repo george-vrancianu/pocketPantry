@@ -1,0 +1,31 @@
+{
+  "title": "Tilpas",
+  "done": "Færdig",
+  "hint": "Træk for at flytte, vælg en størrelse, tilføj eller fjern.",
+  "onDashboard": "På din oversigt",
+  "addWidgets": "Tilføj widgets",
+  "emptyList": "Der er ingen widgets på din oversigt endnu.",
+  "allAdded": "Alle widgets er allerede på din oversigt.",
+  "reorder": "Flyt {{name}}",
+  "moveUp": "Flyt {{name}} op",
+  "moveDown": "Flyt {{name}} ned",
+  "remove": "Fjern widgetten {{name}}",
+  "add": "Tilføj widgetten {{name}}",
+  "size": {
+    "small": "Lille",
+    "wide": "Bred",
+    "tall": "Høj"
+  },
+  "sizeToggle": "Størrelse på {{name}}: {{current}}. Skift til {{next}}.",
+  "sizeLocked": "Størrelse på {{name}}: {{current}}.",
+  "dragInstructions": "Tryk på mellemrumstasten for at samle op, brug piletasterne til at flytte, og tryk på mellemrum igen for at slippe. Tryk på escape for at annullere.",
+  "announce": {
+    "pickedUp": "{{name}} er samlet op.",
+    "movedTo": "{{name}} er flyttet til plads {{position}} af {{total}}.",
+    "dropped": "{{name}} er sluppet på plads {{position}} af {{total}}.",
+    "cancelled": "Flytningen er annulleret.",
+    "added": "{{name}} er tilføjet.",
+    "removed": "{{name}} er fjernet.",
+    "resized": "Størrelsen på {{name}} er sat til {{size}}."
+  }
+}
