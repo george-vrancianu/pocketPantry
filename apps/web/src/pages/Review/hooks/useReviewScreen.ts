@@ -40,7 +40,8 @@ export function useReviewScreen() {
   const confirmReceipt = useReceiptConfirm(i18n.language);
   const addShoppingItems = useAddShoppingItems(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
-  const shopping = draft?.mode === 'plate';
+  const mode = draft?.mode ?? 'product';
+  const shopping = mode === 'plate';
   // Each Scan Mode saves through one mutation; Product and Ingredients share the bulk Batch endpoint.
   const savers = {
     product: addBatches,
@@ -48,7 +49,7 @@ export function useReviewScreen() {
     receipt: confirmReceipt,
     plate: addShoppingItems,
   };
-  const saver = savers[draft?.mode ?? 'product'];
+  const saver = savers[mode];
   // Excluded lines (Receipt Scan) wait outside the list and are never saved.
   const included = lines.filter((line) => line.excluded === null);
   const excluded = lines.filter((line) => line.excluded !== null);
@@ -108,12 +109,9 @@ export function useReviewScreen() {
       addShoppingItems.mutate(included.map(toNewShoppingItem), done);
       return;
     }
-    const mode = draft?.mode;
     const batches = included.map(toNewBatch).map((batch) =>
       // The queue only records the source of Unmatched names.
-      batch.rawName && mode && mode !== 'plate'
-        ? { ...batch, source: mode }
-        : batch,
+      batch.rawName ? { ...batch, source: mode } : batch,
     );
     if (mode === 'receipt') confirmReceipt.mutate(batches, done);
     else addBatches.mutate(batches, done);
@@ -125,7 +123,7 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
-    mode: draft?.mode ?? 'product',
+    mode,
     shopping,
     lines: included,
     excluded,

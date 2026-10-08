@@ -6,7 +6,10 @@ import { SourceText } from './SourceText';
 describe('SourceText', () => {
   it('prefixes receipt text with "On receipt"', () => {
     renderWithProviders(<SourceText text="LAPTE UHT 1L" mode="receipt" />);
-    expect(screen.getByText('On receipt: LAPTE UHT 1L')).toBeInTheDocument();
+    expect(screen.getByText('On receipt: LAPTE UHT 1L')).toHaveAttribute(
+      'title',
+      'LAPTE UHT 1L',
+    );
   });
 
   it.each(['product', 'ingredients'] as const)(
