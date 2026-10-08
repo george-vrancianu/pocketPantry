@@ -1,0 +1,104 @@
+{
+  "title": "Admin",
+  "sections": "Katalogets sektioner",
+  "tabs": {
+    "ingredients": "Ingredienser",
+    "categories": "Kategorier",
+    "unmatched": "Umatchede"
+  },
+  "locations": {
+    "none": "Arvet"
+  },
+  "locales": {
+    "en": "Engelsk",
+    "ro": "Rumænsk",
+    "da": "Dansk"
+  },
+  "common": {
+    "save": "Gem",
+    "saving": "Gemmer…",
+    "delete": "Slet",
+    "deleteConfirm": "Slet dette for altid? Det kan ikke fortrydes.",
+    "cancel": "Annuller",
+    "add": "Tilføj",
+    "remove": "Fjern"
+  },
+  "ingredient": {
+    "new": "Ny ingrediens",
+    "edit": "Rediger {{name}}",
+    "filter": "Filtrer ingredienser",
+    "empty": "Ingen ingredienser matcher.",
+    "name": "Navn (engelsk)",
+    "leafCategory": "Underkategori",
+    "defaultUnit": "Standardenhed"
+  },
+  "category": {
+    "newParent": "Ny overkategori",
+    "newLeaf": "Ny underkategori",
+    "editParent": "Rediger overkategorien {{name}}",
+    "editLeaf": "Rediger underkategorien {{name}}",
+    "name": "Navn (engelsk)",
+    "aisle": "Afdeling",
+    "parent": "Overkategori",
+    "defaultExpiryDays": "Standardholdbarhed (dage)",
+    "defaultLocation": "Standardplacering",
+    "expiryInvalid": "Angiv et helt antal dage fra 0 til {{max}}, eller lad feltet stå tomt for at arve.",
+    "otherLeafNote": "Det er overkategoriens underkategori Andet. Den modtager umatchede partier og kan derfor ikke flyttes eller slettes.",
+    "leafCount": "Underkategorier: {{count}}"
+  },
+  "translations": {
+    "title": "Oversættelser og synonymer",
+    "canonicalName": "Engelsk navn: {{name}}",
+    "displayName": "Navn ({{language}})",
+    "saveName": "Gem navn på {{language}}",
+    "synonyms": "Synonymer ({{language}})",
+    "newSynonym": "Nyt synonym ({{language}})",
+    "addSynonym": "Tilføj synonym på {{language}}",
+    "removeSynonym": "Fjern synonymet {{value}}",
+    "none": "Ingen synonymer endnu."
+  },
+  "unmatched": {
+    "statusLabel": "Kø",
+    "status": {
+      "open": "Åbne",
+      "dismissed": "Afviste"
+    },
+    "empty": "Intet at gennemgå.",
+    "rows_one": "{{count}} række",
+    "rows_other": "{{count}} rækker",
+    "sources": {
+      "product": "Produkt",
+      "receipt": "Kvittering",
+      "plate": "Tallerken",
+      "ingredients": "Ingredienser",
+      "manual": "Indtastet",
+      "finish_shopping": "Afslut indkøb"
+    },
+    "resolve": "Afklar",
+    "resolveName": "Afklar {{name}}",
+    "dismiss": "Afvis",
+    "dismissName": "Afvis {{name}}",
+    "modeLabel": "Afklar som",
+    "mode": {
+      "existing": "Eksisterende ingrediens",
+      "new": "Ny ingrediens"
+    },
+    "picked": "Valgt: {{name}}",
+    "synonymLocale": "Synonymets sprog",
+    "synonymHint": "\"{{name}}\" tilføjes som synonym på dette sprog, så det matcher næste gang.",
+    "confirm": "Afklar",
+    "resolving": "Afklarer…",
+    "resolved_one": "{{count}} række er knyttet til {{name}}.",
+    "resolved_other": "{{count}} rækker er knyttet til {{name}}.",
+    "printed": "Trykt: {{text}}",
+    "printedIn": "Trykt: {{text}} ({{language}})",
+    "sourceSynonym": "Tilføj også den trykte tekst som synonym ({{language}})",
+    "sourceSynonymHint": "Tilføjer \"{{text}}\", så det matcher af sig selv næste gang. Sæt ikke flueben ved et generelt ord: det ville matche alle den slags linjer uden om sikkerhedstjekket.",
+    "sourceSynonymAdded": "\"{{text}}\" er tilføjet som synonym på {{language}}.",
+    "sourceSynonymSkipped": {
+      "exists": "Den trykte tekst blev ikke tilføjet: den er allerede et synonym for denne ingrediens.",
+      "taken": "Den trykte tekst blev ikke tilføjet: den tilhører en anden ingrediens.",
+      "none": "Den trykte tekst blev ikke tilføjet: rækkerne havde ingen trykt tekst."
+    }
+  }
+}

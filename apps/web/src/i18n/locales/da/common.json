@@ -1,0 +1,22 @@
+{
+  "appName": "Pocket Pantry",
+  "loading": "Indlæser",
+  "confirm": "Bekræft",
+  "cancel": "Annuller",
+  "retry": "Prøv igen",
+  "units": {
+    "g": "g",
+    "kg": "kg",
+    "ml": "ml",
+    "l": "L",
+    "pcs": "stk."
+  },
+  "locations": {
+    "fridge": "Køleskab",
+    "freezer": "Fryser",
+    "cupboard": "Skab",
+    "spices": "Krydderier"
+  },
+  "unverified_one": "{{count}} vare er stadig ikke bekræftet",
+  "unverified_other": "{{count}} varer er stadig ikke bekræftet"
+}

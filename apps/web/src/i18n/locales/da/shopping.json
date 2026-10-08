@@ -1,0 +1,35 @@
+{
+  "title": "Indkøb",
+  "summary": {
+    "toBuy": "{{count}} at købe",
+    "inBasket": "{{checked}} af {{total}} i din kurv",
+    "progress": "Fremdrift i kurven"
+  },
+  "add": {
+    "quantity": "Mængde",
+    "unit": "Enhed",
+    "noUnit": "Ingen enhed",
+    "submit": "Føj til listen",
+    "unmatchedHint": "Intet match i kataloget, så den tilføjes som en umatchet vare."
+  },
+  "item": {
+    "remove": "Fjern {{name}}",
+    "unmatched": "Umatchet"
+  },
+  "unmatchedGroup": "Ikke i kataloget",
+  "empty": "Din liste er tom. Tilføj det, du har brug for, ovenfor.",
+  "finish": {
+    "button": "Afslut indkøb",
+    "reviewTitle": "Føj til dit spisekammer",
+    "reviewHint": "Tjek, hvad du har købt. Ret mængde, placering eller udløbsdato, eller fjern en vare.",
+    "drop": "Fravælg {{name}}",
+    "restore": "Behold {{name}}",
+    "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler.",
+    "confirm_one": "Føj {{count}} vare til spisekammeret",
+    "confirm_other": "Føj {{count}} varer til spisekammeret",
+    "confirming": "Gemmer",
+    "empty": "Intet at gennemgå. Et andet medlem har måske allerede afsluttet indkøbet.",
+    "reload": "Genindlæs",
+    "cancel": "Tilbage til listen"
+  }
+}

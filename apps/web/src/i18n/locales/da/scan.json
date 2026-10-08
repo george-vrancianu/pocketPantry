@@ -1,0 +1,72 @@
+{
+  "title": "Scan {{mode}}",
+  "close": "Luk scanner",
+  "flash": "Slå blitz til/fra",
+  "scanLanguage": {
+    "label": "Læses på"
+  },
+  "gallery": "Vælg fra fotos",
+  "shutter": "Tag foto",
+  "manual": "Tilføj manuelt",
+  "modes": "Scanningstilstand",
+  "reading": "Læser dit foto",
+  "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
+  "comingSoon": "Scanning af {{mode}} kommer snart. Scanning af produkt, tallerken og ingredienser virker nu.",
+  "crop": {
+    "title": "Beskær kvittering",
+    "instruction": "Træk og zoom, så hele kvitteringen er i rammen.",
+    "fine": "Ret op: {{degrees}}°",
+    "rotateLeft": "Drej til venstre",
+    "rotateRight": "Drej til højre",
+    "cancel": "Annuller",
+    "confirm": "Brug foto"
+  },
+  "plate": {
+    "pickTitle": "Hvilken ret er det?",
+    "option": "{{title}}, {{percent}} % sandsynlig",
+    "retake": "Tag foto igen"
+  },
+  "mode": {
+    "product": "Produkt",
+    "receipt": "Kvittering",
+    "plate": "Tallerken",
+    "ingredients": "Ingredienser"
+  },
+  "hint": {
+    "product": "Ret kameraet mod en stregkode eller etiket",
+    "receipt": "Få hele kvitteringen med i rammen",
+    "plate": "Hold roligt over din tallerken",
+    "ingredients": "Læg varerne ud på bordet"
+  },
+  "guide": {
+    "receipt": "Hold telefonen cirka 40 cm over kvitteringen, så kanterne rører hjælpelinjen.",
+    "receiptFold": "Ved lange kvitteringer: fold, hvor hjælpelinjen slutter (cirka for hver 20. vare), vend den foldede del om, og tag det næste foto."
+  },
+  "detail": {
+    "product": "Lægger varen i dit spisekammer med datoen for \"mindst holdbar til\".",
+    "receipt": "Tilføjer alle varer fra din indkøbstur på én gang.",
+    "plate": "Viser rettens ingredienser, så du kan føje det, du mangler, til din indkøbsliste.",
+    "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
+  },
+  "sections": {
+    "reading": "Læser del {{number}}…",
+    "section": "Del {{number}}",
+    "open": "Vis del {{number}}",
+    "count": "{{count}} af {{max}} dele",
+    "found_one": "Del {{number}}: {{count}} linje fundet",
+    "found_other": "Del {{number}}: {{count}} linjer fundet",
+    "empty": "Der blev ikke fundet nogen linjer i denne del. Tag den om, eller tag det næste foto.",
+    "retake": "Tag om",
+    "delete": "Slet del",
+    "next": "Næste foto",
+    "finish": "Afslut",
+    "full": "Du har nået grænsen på {{max}} dele. Afslut, eller tag en del om eller slet den.",
+    "readingBatch": "Læser foto {{number}} af {{total}}…",
+    "photoOf": "Foto {{number}} af {{total}}",
+    "queued_one": "Yderligere {{count}} foto venter. Tryk på Næste foto for at beskære det.",
+    "queued_other": "Yderligere {{count}} fotos venter. Tryk på Næste foto for at beskære det næste.",
+    "tooMany_one": "Du valgte {{selected}} fotos, men der er kun 1 del tilbage (grænsen er 10). Vælg færre fotos.",
+    "tooMany_other": "Du valgte {{selected}} fotos, men der er kun {{count}} dele tilbage (grænsen er 10). Vælg færre fotos.",
+    "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
+  }
+}

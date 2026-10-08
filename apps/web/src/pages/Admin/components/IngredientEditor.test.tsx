@@ -182,7 +182,7 @@ describe('IngredientEditor', () => {
     );
   });
 
-  it('takes Danish Synonyms but no Danish display name', async () => {
+  it('takes a Danish display name and Danish Synonyms', async () => {
     const calls = stub({
       'POST /api/admin/catalog/translations': () =>
         Response.json({}, { status: 201 }),
@@ -196,7 +196,17 @@ describe('IngredientEditor', () => {
     );
     const user = userEvent.setup();
 
-    expect(screen.queryByLabelText('Name (Danish)')).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('Name (Danish)'), 'Parmesanost');
+    await user.click(screen.getByRole('button', { name: 'Save Danish name' }));
+    await vi.waitFor(() =>
+      expect(calls.find((c) => c.key.startsWith('POST'))?.body).toEqual({
+        entityType: 'ingredient',
+        entityId: 'i1',
+        locale: 'da',
+        kind: 'name',
+        value: 'Parmesanost',
+      }),
+    );
     await user.type(
       screen.getByLabelText('New Synonym (Danish)'),
       'parmesan ost',
@@ -205,7 +215,9 @@ describe('IngredientEditor', () => {
       screen.getByRole('button', { name: 'Add Danish Synonym' }),
     );
     await vi.waitFor(() =>
-      expect(calls.find((c) => c.key.startsWith('POST'))?.body).toEqual({
+      expect(
+        calls.filter((c) => c.key.startsWith('POST')).at(-1)?.body,
+      ).toEqual({
         entityType: 'ingredient',
         entityId: 'i1',
         locale: 'da',

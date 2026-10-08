@@ -1,0 +1,51 @@
+{
+  "title": "Spisekammer",
+  "add": "Tilføj parti",
+  "empty": "Dit spisekammer er tomt. Tilføj dit første parti med +-knappen.",
+  "expiry": {
+    "today": "I dag",
+    "expired": "Udløbet",
+    "days_one": "{{count}} dag",
+    "days_other": "{{count}} dage"
+  },
+  "unmatched": "Umatchet",
+  "all": "Alle",
+  "filters": "Filtrer efter placering",
+  "search": {
+    "label": "Søg i spisekammeret",
+    "placeholder": "Søg på navn eller produkt"
+  },
+  "noMatches": "Ingen partier matcher.",
+  "batchCount_one": "{{count}} parti",
+  "batchCount_other": "{{count}} partier",
+  "batchesOf": "Partier af {{name}}",
+  "noDetails": "Ingen mængde angivet",
+  "edit": {
+    "label": "Rediger",
+    "action": "Rediger partiet {{name}}",
+    "title": "Rediger partiet {{name}}",
+    "save": "Gem ændringer"
+  },
+  "delete": {
+    "label": "Slet",
+    "action": "Slet partiet {{name}}",
+    "confirm": "Slet dette parti?",
+    "yes": "Ja, slet"
+  },
+  "form": {
+    "title": "Tilføj til spisekammeret",
+    "cancel": "Annuller",
+    "save": "Tilføj til spisekammeret",
+    "saving": "Gemmer",
+    "quantity": "Mængde",
+    "unit": "Enhed",
+    "location": "Placering",
+    "expiry": "Udløbsdato",
+    "description": "Produktbeskrivelse",
+    "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
+    "useUnmatched": "Ikke i kataloget? Tilføj \"{{name}}\" som umatchet",
+    "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
+    "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
+    "pickIngredient": "Vælg en ingrediens blandt søgeresultaterne, eller tilføj dit eget navn som umatchet."
+  }
+}

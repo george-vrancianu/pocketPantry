@@ -393,7 +393,7 @@ describe('UnmatchedQueue', () => {
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
-  it('offers only catalog languages for the Synonym of the raw name', async () => {
+  it('offers every catalog language for the Synonym of the raw name', async () => {
     stub({
       'GET /api/admin/unmatched': () =>
         Response.json({ entries: [printedEntry] }),
@@ -406,6 +406,6 @@ describe('UnmatchedQueue', () => {
     const options = within(screen.getByLabelText('Synonym language'))
       .getAllByRole('option')
       .map((option) => option.textContent);
-    expect(options).toEqual(['English', 'Romanian']);
+    expect(options).toEqual(['English', 'Romanian', 'Danish']);
   });
 });

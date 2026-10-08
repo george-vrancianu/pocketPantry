@@ -1,0 +1,12 @@
+{
+  "title": "Opret din konto",
+  "subtitle": "Start dit eget spisekammer. Du kan invitere din familie senere.",
+  "name": "Navn",
+  "email": "E-mail",
+  "password": "Adgangskode",
+  "passwordHint": "Mindst 8 tegn.",
+  "submit": "Opret konto",
+  "submitting": "Opretter konto",
+  "haveAccount": "Har du allerede en konto?",
+  "signIn": "Log ind"
+}

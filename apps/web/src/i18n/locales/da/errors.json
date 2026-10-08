@@ -1,0 +1,81 @@
+{
+  "unknown": "Noget gik galt. Prøv igen.",
+  "network_error": "Vi kunne ikke nå serveren. Tjek din forbindelse, og prøv igen.",
+  "internal_server_error": "Noget gik galt hos os. Prøv igen.",
+  "unauthorized": "Log ind for at fortsætte.",
+  "forbidden": "Du har ikke adgang til dette.",
+  "not_found": "Vi kunne ikke finde det.",
+  "too_many_requests": "For mange forsøg. Vent et øjeblik, og prøv igen.",
+  "validation_failed": "Tjek dine oplysninger, og prøv igen.",
+  "auth": {
+    "unauthenticated": "Log ind for at fortsætte.",
+    "admin_required": "Dette område er kun for katalogadministratorer.",
+    "invalid_email_or_password": "Forkert e-mail eller adgangskode.",
+    "invalid_email": "Den e-mailadresse ser ikke rigtig ud.",
+    "invalid_password": "Forkert adgangskode.",
+    "user_not_found": "Forkert e-mail eller adgangskode.",
+    "password_too_short": "Din adgangskode er for kort. Brug mindst 8 tegn.",
+    "password_too_long": "Din adgangskode er for lang.",
+    "user_already_exists": "Der findes allerede en konto med denne e-mail.",
+    "user_already_exists_use_another_email": "Der findes allerede en konto med denne e-mail.",
+    "email_not_verified": "Bekræft din e-mail, før du logger ind.",
+    "invalid_origin": "Denne app må ikke tale med serveren fra denne adresse.",
+    "missing_or_null_origin": "Denne app må ikke tale med serveren fra denne adresse.",
+    "unauthorized": "Forkert e-mail eller adgangskode.",
+    "too_many_requests": "For mange forsøg. Vent et øjeblik, og prøv igen."
+  },
+  "scan": {
+    "cap_reached": "Du har brugt alle {{cap}} scanninger i dag. Prøv igen i morgen, eller tilføj varer manuelt.",
+    "image_invalid": "Den fil er ikke et foto, vi kan læse. Brug et JPEG-, PNG- eller WebP-billede.",
+    "image_too_large": "Det foto er for stort. Prøv et mindre.",
+    "too_many_items": "Vi fandt mere end {{max}} varer. Fotografer færre ad gangen.",
+    "nothing_found": "Vi kunne ikke få øje på nogen ingredienser. Læg dem ud i godt lys, og prøv igen.",
+    "provider_unavailable": "Scanning er ikke tilgængelig lige nu. Prøv igen om et øjeblik.",
+    "provider_refused": "Fotoet kunne ikke behandles. Prøv et tydeligere foto af produktet.",
+    "provider_incomplete": "Scanningen blev ikke færdig. Prøv igen.",
+    "result_invalid": "Vi kunne ikke læse det foto. Prøv et tydeligere.",
+    "plate_token_invalid": "Den liste over retter er udløbet. Tag fotoet igen.",
+    "not_configured": "Scanning er ikke sat op på denne server endnu."
+  },
+  "shopping": {
+    "item_not_found": "Vi kunne ikke finde den vare på listen.",
+    "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
+    "list_changed": "Listen blev ændret, mens du gennemgik den. Gennemgå den igen.",
+    "nothing_checked": "Afkryds mindst én vare, før du afslutter."
+  },
+  "pantry": {
+    "location_required": "Vælg, hvor partiet opbevares.",
+    "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
+    "other_leaf_missing": "Den kategori kan endnu ikke modtage umatchede partier.",
+    "category_not_found": "Vi kunne ikke finde den kategori.",
+    "batch_not_found": "Vi kunne ikke finde det parti.",
+    "unit_required": "Vælg en enhed til mængden."
+  },
+  "catalog": {
+    "not_found": "Det katalogpunkt findes ikke længere.",
+    "name_taken": "Det navn er allerede i brug. Navne skal være unikke, uanset store og små bogstaver og accenter.",
+    "category_not_empty": "Denne kategori er stadig i brug eller indeholder punkter. Flyt eller slet dem først.",
+    "ingredient_in_use": "Denne ingrediens bruges stadig af partier eller indkøbsvarer og kan derfor ikke slettes.",
+    "other_leaf_protected": "Kategorien Andet er der, hvor umatchede partier havner, så den kan ikke slettes, flyttes eller fjernes.",
+    "other_leaf_name_taken": "En kategori Andet har allerede det genererede navn (\"Andet <name>\"). Omdøb eller fjern den kategori, der er i konflikt, først.",
+    "translation_exists": "Dette punkt har allerede et navn på det sprog. Rediger det eksisterende i stedet.",
+    "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her."
+  },
+  "family": {
+    "owner_required": "Kun familiens ejer kan gøre dette.",
+    "invite_code_invalid": "Den invitationskode findes ikke. Tjek den, og prøv igen.",
+    "invite_code_expired": "Den invitationskode er udløbet. Bed ejeren om en ny.",
+    "already_member": "Du er allerede med i denne familie.",
+    "not_household_of_one": "Du kan kun blive medlem af en anden familie, mens du er alene i din egen. Forlad den først, eller overdrag ejerskabet som ejer og forlad den, eller slet familien.",
+    "owner_cannot_leave": "Ejeren kan ikke forlade familien. Overdrag først ejerskabet til et andet medlem.",
+    "cannot_remove_self": "Du kan ikke fjerne dig selv. Overdrag ejerskabet og forlad familien, eller slet den.",
+    "cannot_transfer_to_self": "Du er allerede ejer.",
+    "member_not_found": "Den person er ikke medlem af din familie.",
+    "concurrent_change": "Familien blev ændret, mens du gjorde det. Prøv igen."
+  },
+  "unmatched": {
+    "name_taken": "Det navn tilhører allerede en anden ingrediens. Afklar det som den ingrediens, eller omdøb den anden først.",
+    "not_found": "Det navn er ikke længere i køen. Måske har en anden allerede afklaret det.",
+    "concurrent_change": "Listerne blev ændret under afklaringen. Prøv igen."
+  }
+}
