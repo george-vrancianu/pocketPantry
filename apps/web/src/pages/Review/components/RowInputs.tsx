@@ -1,11 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
-import {
-  LOCATIONS,
-  UNITS,
-  type CatalogSearchResult,
-} from '../../../lib/catalog';
+import { LOCATIONS, UNITS, type CatalogParent } from '../../../lib/catalog';
 import {
   formatDate,
   isIsoDate,
@@ -14,7 +9,6 @@ import {
 } from '../../../lib/dateFormat';
 import type { ReviewLine } from '../../../lib/review';
 import { controlSx } from './Field';
-import { focusRing } from './layout';
 
 /**
  * The inputs of a Review line, shared by the phone edit panel and the tablet
@@ -200,40 +194,88 @@ export function ExpiryInput({
   );
 }
 
-/**
- * Swap Match for now: Catalog search opened inline under the row. The swap
- * dialog slice replaces this one component for both layouts.
- */
-export function InlineMatchSearch({
-  onSelect,
-  onCancel,
-}: {
-  onSelect: (match: CatalogSearchResult) => void;
-  onCancel: () => void;
-}) {
-  const { t } = useTranslation('review');
+type TextProps = {
+  line: ReviewLine;
+  onChange: Change;
+  id: string;
+  ariaLabel?: string;
+  /** Extra styling for a layout that wants the control compact or bold. */
+  sx?: object;
+};
+
+/** An Unmatched line's name, as the Scan read it. */
+export function NameInput({
+  line,
+  onChange,
+  id,
+  invalid,
+  errorId,
+  ariaLabel,
+  sx,
+}: TextProps & { invalid: boolean; errorId: string }) {
   return (
-    <Box>
-      <CatalogSearch autoFocus onSelect={onSelect} />
-      <Box
-        component="button"
-        type="button"
-        onClick={onCancel}
-        sx={{
-          mt: '4px',
-          minHeight: 36,
-          border: 0,
-          bgcolor: 'transparent',
-          color: tokens.color.accent,
-          fontFamily: 'inherit',
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: 'pointer',
-          ...focusRing,
-        }}
-      >
-        {t('match.keep')}
-      </Box>
+    <Box
+      id={id}
+      component="input"
+      value={line.name}
+      maxLength={100}
+      aria-label={ariaLabel}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? errorId : undefined}
+      onChange={(event) => onChange({ name: event.target.value })}
+      sx={{ ...controlSx, ...sx }}
+    />
+  );
+}
+
+/** The Product Description saved with the Batch. */
+export function DescriptionInput({
+  line,
+  onChange,
+  id,
+  ariaLabel,
+  placeholder,
+  sx,
+}: TextProps & { placeholder?: string }) {
+  return (
+    <Box
+      id={id}
+      component="input"
+      value={line.description}
+      maxLength={200}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      onChange={(event) => onChange({ description: event.target.value })}
+      sx={{ ...controlSx, ...sx }}
+    />
+  );
+}
+
+/** An Unmatched line's Parent Category; empty leaves it to the server's default. */
+export function CategorySelect({
+  line,
+  onChange,
+  id,
+  parents,
+  ariaLabel,
+  otherLabel,
+  sx,
+}: TextProps & { parents: CatalogParent[]; otherLabel: string }) {
+  return (
+    <Box
+      id={id}
+      component="select"
+      value={line.parentCategoryId}
+      aria-label={ariaLabel}
+      onChange={(event) => onChange({ parentCategoryId: event.target.value })}
+      sx={{ ...controlSx, ...sx }}
+    >
+      <option value="">{otherLabel}</option>
+      {parents.map((parent) => (
+        <option key={parent.id} value={parent.id}>
+          {parent.name}
+        </option>
+      ))}
     </Box>
   );
 }

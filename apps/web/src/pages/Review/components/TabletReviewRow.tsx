@@ -9,7 +9,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent } from '../../../lib/catalog';
 import { formatDate } from '../../../lib/dateFormat';
 import {
   displayName,
@@ -21,14 +21,23 @@ import type { ScanMode } from '../../../lib/scan';
 import { ConfidencePill } from './ConfidencePill';
 import { controlSx } from './Field';
 import {
+  CategorySelect,
+  DescriptionInput,
   ExpiryInput,
-  InlineMatchSearch,
   LocationSelect,
+  NameInput,
   QuantityUnitInput,
 } from './RowInputs';
 import { SourceText } from './SourceText';
 import { StatusIcon } from './StatusIcon';
-import { fieldId, focusRing, rowId, tabletRowSx, titleId } from './layout';
+import {
+  ROW_TINT,
+  fieldId,
+  linkButtonSx,
+  rowId,
+  tabletRowSx,
+  titleId,
+} from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -36,7 +45,7 @@ type Props = {
   status: RowStatus;
   /** Inputs show: a row to check always, a sure row once the Member opens it. */
   editing: boolean;
-  /** The row sits among the rows to check (it has no Done: it stays there until Save). */
+  /** The row sits among the rows to check: it has Confirm, a sure row has Finish editing. */
   toCheck: boolean;
   parents: CatalogParent[];
   shopping: boolean;
@@ -45,18 +54,10 @@ type Props = {
   blocked: boolean;
   onEdit: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onDone: () => void;
-  /** Swap Match: one handler to open the swap, and whether the inline search is showing (until the swap dialog replaces it). */
+  /** Opens the page-level swap dialog for this line. */
   onSwapMatch: () => void;
-  swapping: boolean;
-};
-
-const TINT: Record<RowStatus, string> = {
-  low: tokens.color.urgentRow,
-  qty: tokens.color.soonRow,
-  ok: tokens.color.surface,
 };
 
 const ellipsis = {
@@ -94,11 +95,9 @@ export function TabletReviewRow({
   blocked,
   onEdit,
   onChange,
-  onChangeMatch,
   onRemove,
   onDone,
   onSwapMatch,
-  swapping,
 }: Props) {
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
@@ -118,10 +117,20 @@ export function TabletReviewRow({
       })}
       tone="accentOutline"
       size={40}
-      aria-expanded={swapping}
+      aria-haspopup="dialog"
       onClick={onSwapMatch}
     >
       <SwapIcon size={18} />
+    </IconButton>
+  );
+  const confirm = (
+    <IconButton
+      label={t('review:action.confirmFor', { name })}
+      tone="accentOutline"
+      size={40}
+      onClick={onDone}
+    >
+      <CheckIcon size={18} />
     </IconButton>
   );
   const remove = (
@@ -160,7 +169,7 @@ export function TabletReviewRow({
         minHeight: readOnly ? 52 : 68,
         py: readOnly ? '6px' : '14px',
         borderTop: `1px solid ${tokens.color.divider}`,
-        bgcolor: editing ? TINT[status] : tokens.color.surface,
+        bgcolor: editing ? ROW_TINT[status] : tokens.color.surface,
         cursor: readOnly ? 'pointer' : undefined,
         '&:hover': readOnly ? { bgcolor: tokens.color.subtle } : undefined,
       }}
@@ -205,18 +214,14 @@ export function TabletReviewRow({
           <Box sx={{ display: 'grid', gap: '4px' }}>
             {unmatched ? (
               <Box>
-                <Box
+                <NameInput
+                  line={line}
+                  onChange={onChange}
                   id={id('name')}
-                  component="input"
-                  value={line.name}
-                  maxLength={100}
-                  aria-label={named(t('review:field.name'))}
-                  aria-invalid={invalid.includes('name') || undefined}
-                  aria-describedby={
-                    invalid.includes('name') ? `${id('name')}-error` : undefined
-                  }
-                  onChange={(event) => onChange({ name: event.target.value })}
-                  sx={{ ...controlSx, fontSize: 15, fontWeight: 700 }}
+                  invalid={invalid.includes('name')}
+                  errorId={`${id('name')}-error`}
+                  ariaLabel={named(t('review:field.name'))}
+                  sx={{ fontSize: 15, fontWeight: 700 }}
                 />
                 {invalid.includes('name') ? (
                   <CellError id={`${id('name')}-error`}>
@@ -234,63 +239,40 @@ export function TabletReviewRow({
             )}
             <SourceText text={line.sourceText} mode={mode} />
             {shopping ? null : (
-              <Box
+              <DescriptionInput
+                line={line}
+                onChange={onChange}
                 id={id('description')}
-                component="input"
-                value={line.description}
-                maxLength={200}
                 placeholder={t('review:field.description')}
-                aria-label={named(t('review:field.description'))}
-                onChange={(event) =>
-                  onChange({ description: event.target.value })
-                }
+                ariaLabel={named(t('review:field.description'))}
                 sx={compactSx}
               />
             )}
             {unmatched && !shopping ? (
-              <Box
+              <CategorySelect
+                line={line}
+                onChange={onChange}
                 id={id('category')}
-                component="select"
-                value={line.parentCategoryId}
-                aria-label={named(t('review:field.category'))}
-                onChange={(event) =>
-                  onChange({ parentCategoryId: event.target.value })
-                }
+                parents={parents}
+                otherLabel={t('review:row.categoryNone')}
+                ariaLabel={named(t('review:field.category'))}
                 sx={compactSx}
-              >
-                <option value="">
-                  {`${t('review:field.category')}: ${t('review:categoryOther')}`}
-                </option>
-                {parents.map((parent) => (
-                  <option key={parent.id} value={parent.id}>
-                    {parent.name}
-                  </option>
-                ))}
-              </Box>
+              />
             ) : null}
-            {!toCheck && !unmatched ? (
-              // A sure row's actions are edit and delete only, so Change match lives here while it is open.
+            {!toCheck ? (
+              // A sure row's actions are edit and delete only, so (Change|Choose) match lives here while it is open.
               <Box
                 component="button"
                 type="button"
-                aria-label={t('review:action.swap', { name })}
-                aria-expanded={swapping}
+                aria-label={t(
+                  unmatched ? 'review:action.choose' : 'review:action.swap',
+                  { name },
+                )}
+                aria-haspopup="dialog"
                 onClick={onSwapMatch}
-                sx={{
-                  justifySelf: 'start',
-                  minHeight: 32,
-                  px: 0,
-                  border: 0,
-                  bgcolor: 'transparent',
-                  color: tokens.color.accent,
-                  fontFamily: 'inherit',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  ...focusRing,
-                }}
+                sx={{ ...linkButtonSx, justifySelf: 'start', px: 0 }}
               >
-                {t('review:match.change')}
+                {t(unmatched ? 'review:match.choose' : 'review:match.change')}
               </Box>
             ) : null}
           </Box>
@@ -385,11 +367,12 @@ export function TabletReviewRow({
       <Box
         role="cell"
         onClick={(event) => event.stopPropagation()}
-        sx={{ display: 'flex', gap: '12px' }}
+        sx={{ display: 'flex', gap: '8px' }}
       >
         {toCheck ? (
           <>
             {swap}
+            {confirm}
             {remove}
           </>
         ) : (
@@ -399,16 +382,6 @@ export function TabletReviewRow({
           </>
         )}
       </Box>
-
-      {swapping ? (
-        <Box
-          role="cell"
-          onClick={(event) => event.stopPropagation()}
-          sx={{ gridColumn: '1 / -1', pt: '8px' }}
-        >
-          <InlineMatchSearch onSelect={onChangeMatch} onCancel={onSwapMatch} />
-        </Box>
-      ) : null}
     </Box>
   );
 }

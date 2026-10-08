@@ -1,7 +1,7 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
-type Props = { save: number; check: number; excluded: number };
+export type Counts = { save: number; check: number; excluded: number };
 
 /** How each counter looks, on phone tiles and tablet chips alike. */
 export const COUNTER_TONE = {
@@ -23,7 +23,7 @@ export const COUNTER_TONE = {
 } as const;
 
 /** Three live tiles: lines to save, lines to check, lines excluded. */
-export function ReviewCounters({ save, check, excluded }: Props) {
+export function ReviewCounters({ save, check, excluded }: Counts) {
   const { t } = useTranslation('review');
   const tiles = [
     { key: 'save', value: save },

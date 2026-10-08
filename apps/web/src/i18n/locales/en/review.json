@@ -63,7 +63,7 @@
     "none": "No match",
     "choose": "Choose",
     "change": "Change",
-    "keep": "Keep this match"
+    "dialogTitle": "Change match for {{name}}"
   },
   "action": {
     "remove": "Remove {{name}}",
@@ -72,7 +72,8 @@
     "swap": "Change match for {{name}}",
     "choose": "Choose match for {{name}}",
     "edit": "Edit {{name}}",
-    "finish": "Finish editing {{name}}"
+    "finish": "Finish editing {{name}}",
+    "confirmFor": "Confirm {{name}}"
   },
   "save_one": "Save {{count}} item",
   "save_few": "Save {{count}} items",
@@ -113,7 +114,8 @@
   "row": {
     "receiptPrefix": "On receipt: {{text}}",
     "readPrefix": "Read: {{text}}",
-    "fieldFor": "{{field}}: {{name}}"
+    "fieldFor": "{{field}}: {{name}}",
+    "categoryNone": "Category: not sure"
   },
   "confidence": {
     "low": "Low",

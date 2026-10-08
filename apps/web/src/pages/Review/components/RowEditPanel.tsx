@@ -7,7 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent } from '../../../lib/catalog';
 import {
   displayName,
   invalidFields,
@@ -16,9 +16,11 @@ import {
 } from '../../../lib/review';
 import { Field, controlSx } from './Field';
 import {
+  CategorySelect,
+  DescriptionInput,
   ExpiryInput,
-  InlineMatchSearch,
   LocationSelect,
+  NameInput,
   QuantityUnitInput,
 } from './RowInputs';
 import { fieldId, panelId, titleId } from './layout';
@@ -32,7 +34,7 @@ type Props = {
   shopping: boolean;
   background: string;
   onChange: (patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (match: CatalogSearchResult) => void;
+  onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
   /** A Save or Confirm was blocked on this row: show every error now. */
@@ -48,13 +50,12 @@ export function RowEditPanel({
   shopping,
   background,
   onChange,
-  onChangeMatch,
+  onSwapMatch,
   onRemove,
   onConfirm,
   blocked,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
-  const [searching, setSearching] = useState(false);
   // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
   const [expiryTouched, setExpiryTouched] = useState(false);
   const unmatched = line.match === null;
@@ -111,8 +112,8 @@ export function RowEditPanel({
             type="button"
             // A label alone would name the button "Match in your pantry" and hide which Ingredient is matched.
             aria-label={`${t('review:field.match')}: ${matchText}${unmatched ? '' : ` (${t('review:match.change')})`}`}
-            aria-expanded={searching}
-            onClick={() => setSearching((was) => !was)}
+            aria-haspopup="dialog"
+            onClick={onSwapMatch}
             sx={{
               ...controlSx,
               display: 'flex',
@@ -153,18 +154,6 @@ export function RowEditPanel({
           </Box>
         </Field>
 
-        {searching ? (
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <InlineMatchSearch
-              onSelect={(match) => {
-                onChangeMatch(match);
-                setSearching(false);
-              }}
-              onCancel={() => setSearching(false)}
-            />
-          </Box>
-        ) : null}
-
         {unmatched ? (
           <Field
             htmlFor={id('name')}
@@ -175,17 +164,12 @@ export function RowEditPanel({
             }
             errorId={`${id('name')}-error`}
           >
-            <Box
+            <NameInput
+              line={line}
+              onChange={onChange}
               id={id('name')}
-              component="input"
-              value={line.name}
-              maxLength={100}
-              aria-invalid={invalid.includes('name') || undefined}
-              aria-describedby={
-                invalid.includes('name') ? `${id('name')}-error` : undefined
-              }
-              onChange={(event) => onChange({ name: event.target.value })}
-              sx={controlSx}
+              invalid={invalid.includes('name')}
+              errorId={`${id('name')}-error`}
             />
           </Field>
         ) : null}
@@ -196,22 +180,13 @@ export function RowEditPanel({
             label={t('review:field.category')}
             wide
           >
-            <Box
+            <CategorySelect
+              line={line}
+              onChange={onChange}
               id={id('category')}
-              component="select"
-              value={line.parentCategoryId}
-              onChange={(event) =>
-                onChange({ parentCategoryId: event.target.value })
-              }
-              sx={controlSx}
-            >
-              <option value="">{t('review:categoryOther')}</option>
-              {parents.map((parent) => (
-                <option key={parent.id} value={parent.id}>
-                  {parent.name}
-                </option>
-              ))}
-            </Box>
+              parents={parents}
+              otherLabel={t('review:categoryOther')}
+            />
           </Field>
         ) : null}
 
@@ -221,15 +196,10 @@ export function RowEditPanel({
             label={t('review:field.description')}
             wide
           >
-            <Box
+            <DescriptionInput
+              line={line}
+              onChange={onChange}
               id={id('description')}
-              component="input"
-              value={line.description}
-              maxLength={200}
-              onChange={(event) =>
-                onChange({ description: event.target.value })
-              }
-              sx={controlSx}
             />
           </Field>
         )}

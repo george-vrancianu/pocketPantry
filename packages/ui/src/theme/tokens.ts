@@ -43,6 +43,8 @@ export const tokens = {
     card: 20,
     input: 16,
     field: 12,
+    table: 24,
+    counter: 18,
     chip: 999,
   },
   shadow: {

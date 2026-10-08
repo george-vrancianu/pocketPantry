@@ -61,16 +61,11 @@ function renderReview(
   return calls;
 }
 
-/** The table row whose text mentions the name. */
+/** The table row of a line, found by its Remove button, which every row has and names the line. */
 const rowOf = (name: string) =>
   screen
-    .getAllByRole('row')
-    .find(
-      (r) =>
-        within(r).queryAllByRole('cell').length > 3 &&
-        (r.textContent?.includes(name) ||
-          r.querySelector(`[aria-label$=": ${name}"]`) !== null),
-    ) as HTMLElement;
+    .getByRole('button', { name: `Remove ${name}` })
+    .closest('[role="row"]') as HTMLElement;
 
 describe('Review on a tablet or laptop', () => {
   beforeEach(() => {
@@ -137,7 +132,7 @@ describe('Review on a tablet or laptop', () => {
     );
   });
 
-  it('keeps a missing-quantity row in To check while its quantity is typed, then shows High', async () => {
+  it('keeps a missing-quantity row in To check while typed, then Confirm moves it to Confident', async () => {
     renderReview([line({ quantity: null, unit: null })]);
     const row = rowOf('Parmesan');
     expect(within(row).getByText('No quantity')).toBeInTheDocument();
@@ -152,6 +147,38 @@ describe('Review on a tablet or laptop', () => {
       screen.getByRole('heading', { level: 2, name: 'To check · 1' }),
     ).toBeInTheDocument();
     expect(within(rowOf('Parmesan')).getByText('High')).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm Parmesan' }),
+    );
+    expect(
+      screen.queryByRole('heading', { name: /To check/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Confident · 1' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('to check').parentElement).toHaveTextContent('0');
+    expect(screen.getByRole('button', { name: 'Edit Parmesan' })).toHaveFocus();
+  });
+
+  it('blocks Confirm on an invalid value and focuses it', async () => {
+    renderReview([line({ lowConfidence: true })]);
+    const qty = screen.getByLabelText('Quantity: Parmesan');
+    await userEvent.clear(qty);
+    await userEvent.type(qty, '0');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm Parmesan' }),
+    );
+    expect(screen.getByLabelText('Quantity: Parmesan')).toHaveFocus();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'To check · 1' }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not reopen a collapsed Confident group when a row to check is typed in', async () => {
+    renderReview([line(), line({ name: 'B', match: milk, quantity: null })]);
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+    await userEvent.type(screen.getByLabelText('Quantity: Milk'), '2');
+    expect(screen.getByRole('button', { name: 'Show' })).toBeInTheDocument();
   });
 
   it('shows a sure row as read-only text until the row or its pencil is clicked', async () => {
@@ -210,20 +237,43 @@ describe('Review on a tablet or laptop', () => {
     });
   });
 
-  it('swaps the Match inline and keeps the row in To check', async () => {
+  it('swaps the Match in the dialog, keeps the row in To check and returns focus to the trigger', async () => {
     renderReview([line({ lowConfidence: true })]);
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Change match for Parmesan' }),
-    );
+    const trigger = screen.getByRole('button', {
+      name: 'Change match for Parmesan',
+    });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
+    await userEvent.click(trigger);
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
     await userEvent.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
       'mil',
     );
-    await userEvent.click(await screen.findByText('Milk'));
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     expect(
       screen.getByRole('heading', { level: 2, name: 'To check · 1' }),
     ).toBeInTheDocument();
     expect(rowOf('Milk')).toBeDefined();
+    expect(
+      screen.getByRole('button', { name: 'Change match for Milk' }),
+    ).toHaveFocus();
+  });
+
+  it('lets a sure row, and a confirmed Unmatched row, choose a Match', async () => {
+    renderReview([line(), line({ match: null, name: 'Mystery' })]);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm Mystery' }),
+    );
+    await userEvent.click(rowOf('Mystery'));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Choose match for Mystery' }),
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
   it('removes a row to Excluded and adds it back', async () => {
@@ -302,5 +352,27 @@ describe('Review on a tablet or laptop', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
     await screen.findByText('pantry screen');
     expect(calls.map((c) => c.key)).toContain('POST /api/pantry/batches/bulk');
+  });
+});
+
+describe('Review layout breakpoint', () => {
+  beforeEach(() => clearReview());
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('is the phone layout at 899 px', () => {
+    stubViewport(899);
+    renderReview([line({ lowConfidence: true })]);
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByText('to check')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Discard' })).toBeInTheDocument();
+    expect(
+      screen.queryByText('Sure rows are collapsed. Tap a row to edit it.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('is the table at 900 px', () => {
+    stubViewport(900);
+    renderReview([line({ lowConfidence: true })]);
+    expect(screen.getByRole('table')).toBeInTheDocument();
   });
 });

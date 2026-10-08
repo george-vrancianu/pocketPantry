@@ -45,12 +45,13 @@ function openRow(state: ReviewState, key: string): ReviewState {
   if (state.open[key]) return state;
   const line = state.lines.find((l) => l.key === key);
   if (!line) return state;
+  const group = rowGroup(state, line);
   return {
     ...state,
     open: { ...state.open, [key]: true },
-    // A row opened to fix it must be on screen, so the Sigure group shows.
-    sureOpen: true,
-    held: { ...state.held, [key]: rowGroup(state, line) },
+    // A sure row opened to fix it must be on screen, so the Sigure group shows; a row to check does not need it.
+    sureOpen: group === 'ok' ? true : state.sureOpen,
+    held: { ...state.held, [key]: group },
   };
 }
 

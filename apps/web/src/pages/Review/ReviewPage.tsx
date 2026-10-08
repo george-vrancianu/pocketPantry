@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { MatchDialog } from './components/MatchDialog';
 import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
@@ -105,8 +106,7 @@ export function ReviewPage() {
               onOpen={screen.open}
               onToggle={screen.toggle}
               onChange={screen.change}
-              // Swap Match: inline Catalog search under the row, the same mechanism as the phone panel, until the swap dialog.
-              onChangeMatch={screen.changeMatch}
+              onSwapMatch={screen.openSwap}
               onRemove={screen.remove}
               onConfirm={screen.confirm}
               onRestore={screen.restore}
@@ -115,6 +115,12 @@ export function ReviewPage() {
             <Stack spacing={2} sx={{ mt: 2 }}>
               {notices}
             </Stack>
+            <MatchDialog
+              open={screen.swapOpen}
+              name={screen.swapName}
+              onSelect={screen.changeMatch}
+              onClose={screen.closeSwap}
+            />
             <ReviewTabletFooter
               saveLabel={saveLabel}
               canSave={screen.canSave}
@@ -146,7 +152,7 @@ export function ReviewPage() {
             shopping={screen.shopping}
             onToggle={screen.toggle}
             onChange={screen.change}
-            onChangeMatch={screen.changeMatch}
+            onSwapMatch={screen.openSwap}
             onRemove={screen.remove}
             onConfirm={screen.confirm}
             onRestore={screen.restore}
@@ -157,6 +163,12 @@ export function ReviewPage() {
           <Stack spacing={2} sx={{ mt: 2 }}>
             {notices}
           </Stack>
+          <MatchDialog
+            open={screen.swapOpen}
+            name={screen.swapName}
+            onSelect={screen.changeMatch}
+            onClose={screen.closeSwap}
+          />
           <ReviewActionBar
             saveLabel={saveLabel}
             canSave={screen.canSave}

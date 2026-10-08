@@ -1,4 +1,5 @@
 import { tokens } from '@pocket-pantry/ui';
+import type { RowStatus } from '../../../lib/review';
 
 /**
  * The column grid shared by the header row and the item rows (handoff §4.3).
@@ -26,22 +27,76 @@ export const panelId = (key: string) => `review-line-${key}-panel`;
 export const fieldId = (key: string, field: string) =>
   `review-line-${key}-${field}`;
 
+export type TabletColumnKey =
+  | 'status'
+  | 'product'
+  | 'qty'
+  | 'location'
+  | 'expiry'
+  | 'confidence'
+  | 'actions';
+
 /**
- * The tablet table's columns (handoff §5.2): status icon, Produs, Cantitate,
- * Locație, Expiră, Încredere, actions. Plate drops Location and Expiry. The
- * middle columns may shrink toward their minimum at 900 px.
+ * The tablet table's columns (handoff §5.2), the one source for the grid
+ * template, the header cells and the 12 px text indent that lines read-only
+ * values up with the inputs. The middle columns may shrink toward their
+ * minimum at 900 px; `actions` fits three 40 px buttons.
  */
+export const TABLET_COLUMNS: {
+  key: TabletColumnKey;
+  width: string;
+  indent: boolean;
+}[] = [
+  { key: 'status', width: '24px', indent: false },
+  { key: 'product', width: 'minmax(0,1fr)', indent: false },
+  { key: 'qty', width: 'minmax(120px,150px)', indent: true },
+  { key: 'location', width: 'minmax(96px,150px)', indent: true },
+  { key: 'expiry', width: 'minmax(104px,150px)', indent: true },
+  { key: 'confidence', width: 'minmax(112px,120px)', indent: false },
+  { key: 'actions', width: '144px', indent: false },
+];
+
+/** Plate lines go to the Shopping List, which has no Location or expiry. */
 export const tabletColumnsFor = (shopping: boolean) =>
-  shopping
-    ? '24px minmax(0,1fr) minmax(120px,150px) 120px 92px'
-    : '24px minmax(0,1fr) minmax(120px,150px) minmax(100px,150px) minmax(104px,150px) 120px 92px';
+  TABLET_COLUMNS.filter(
+    (column) =>
+      !shopping || (column.key !== 'location' && column.key !== 'expiry'),
+  );
 
 export const tabletRowSx = (shopping: boolean) => ({
   display: 'grid',
-  gridTemplateColumns: tabletColumnsFor(shopping),
-  columnGap: '16px',
-  px: '20px',
+  gridTemplateColumns: tabletColumnsFor(shopping)
+    .map((column) => column.width)
+    .join(' '),
+  // Tighter below 1024 px so Produs keeps room.
+  columnGap: '8px',
+  px: '12px',
+  '@media (min-width:1024px)': { columnGap: '16px', px: '20px' },
 });
+
+/** Row backgrounds by status: tinted for rows to check. */
+export const ROW_TINT: Record<RowStatus, string> = {
+  low: tokens.color.urgentRow,
+  qty: tokens.color.soonRow,
+  ok: tokens.color.subtle,
+};
+
+/** A borderless accent text button (Collapse, Change match). */
+export const linkButtonSx = {
+  minHeight: 36,
+  px: '8px',
+  border: 0,
+  bgcolor: 'transparent',
+  color: tokens.color.accent,
+  fontFamily: 'inherit',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+  '&:focus-visible': {
+    outline: `3px solid ${tokens.color.accent}`,
+    outlineOffset: -3,
+  },
+} as const;
 
 export const focusRing = {
   '&:focus-visible': {

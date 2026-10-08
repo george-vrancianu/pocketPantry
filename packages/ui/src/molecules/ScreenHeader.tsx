@@ -26,7 +26,7 @@ export type ScreenHeaderProps = {
   trailing?: ReactNode;
 };
 
-/** Sub-screen header: Home button, H1 title, one action button. */
+/** Sub-screen header: Home button, H1 title, optional trailing content (e.g. counter chips), one action button. */
 export function ScreenHeader({
   title,
   subtitle,

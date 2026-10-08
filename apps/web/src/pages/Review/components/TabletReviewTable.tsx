@@ -1,13 +1,13 @@
-import { Box, tokens } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent } from '../../../lib/catalog';
 import { displayName, statusOf, type ReviewLine } from '../../../lib/review';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import type { ScanMode } from '../../../lib/scan';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
-import { focusRing, tabletRowSx } from './layout';
+import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
 
 type Props = {
   state: ReviewState;
@@ -20,21 +20,12 @@ type Props = {
   onOpen: (key: string) => void;
   onToggle: (key: string) => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (key: string, match: CatalogSearchResult) => void;
+  onSwapMatch: (key: string) => void;
   onRemove: (key: string) => void;
   onConfirm: (key: string) => void;
   onRestore: (key: string) => void;
   onToggleSureGroup: () => void;
 };
-
-const visuallyHidden = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
 
 /** A full-width row titling a group; "Sigure" also carries the collapse toggle. */
 function GroupHeaderRow({
@@ -43,12 +34,15 @@ function GroupHeaderRow({
   expanded,
   onToggle,
   controls,
+  span,
 }: {
   kind: 'review' | 'sure';
   count: number;
   expanded?: boolean;
   onToggle?: () => void;
   controls?: string;
+  /** Columns of the table, for the full-width cells. */
+  span: number;
 }) {
   const { t } = useTranslation('review');
   return (
@@ -64,7 +58,7 @@ function GroupHeaderRow({
         borderTop: `1px solid ${tokens.color.divider}`,
       }}
     >
-      <Box role="cell" sx={{ flexGrow: 1 }}>
+      <Box role="cell" aria-colspan={span} sx={{ flexGrow: 1 }}>
         <Box
           component="h2"
           sx={{
@@ -88,18 +82,7 @@ function GroupHeaderRow({
             aria-expanded={expanded}
             aria-controls={expanded ? controls : undefined}
             onClick={onToggle}
-            sx={{
-              minHeight: 36,
-              px: '8px',
-              border: 0,
-              bgcolor: 'transparent',
-              color: tokens.color.accent,
-              fontFamily: 'inherit',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              ...focusRing,
-            }}
+            sx={linkButtonSx}
           >
             {t(expanded ? 'group.collapse' : 'group.expand')}
           </Box>
@@ -123,7 +106,7 @@ export function TabletReviewTable({
   onOpen,
   onToggle,
   onChange,
-  onChangeMatch,
+  onSwapMatch,
   onRemove,
   onConfirm,
   onRestore,
@@ -131,8 +114,7 @@ export function TabletReviewTable({
 }: Props) {
   const { t } = useTranslation('review');
   const sureId = useId();
-  // Inline swap search, one row at a time; the swap dialog slice replaces this with a page-level dialog.
-  const [swapKey, setSwapKey] = useState<string | null>(null);
+  const columns = tabletColumnsFor(shopping);
   const row = (line: ReviewLine) => {
     const toCheck = rowGroup(state, line) !== 'ok';
     return (
@@ -152,33 +134,16 @@ export function TabletReviewTable({
           if (toCheck) onOpen(line.key);
           onChange(line.key, patch);
         }}
-        swapping={swapKey === line.key}
         onSwapMatch={() => {
           // Hold the row in its group: a new Match clears low confidence and must not move it mid-swap.
           if (toCheck) onOpen(line.key);
-          setSwapKey((was) => (was === line.key ? null : line.key));
-        }}
-        onChangeMatch={(match) => {
-          onChangeMatch(line.key, match);
-          setSwapKey(null);
+          onSwapMatch(line.key);
         }}
         onRemove={() => onRemove(line.key)}
         onDone={() => onConfirm(line.key)}
       />
     );
   };
-  const columns = shopping
-    ? ['status', 'product', 'qty', 'confidence', 'actions']
-    : [
-        'status',
-        'product',
-        'qty',
-        'location',
-        'expiry',
-        'confidence',
-        'actions',
-      ];
-
   return (
     <Box
       role="table"
@@ -187,44 +152,48 @@ export function TabletReviewTable({
         mt: '24px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: '24px',
+        borderRadius: `${tokens.radius.table}px`,
         overflow: 'hidden',
       }}
     >
-      <Box
-        role="row"
-        sx={{
-          ...tabletRowSx(shopping),
-          alignItems: 'center',
-          height: 44,
-          fontSize: 11,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: tokens.color.muted,
-        }}
-      >
-        {columns.map((column) => (
-          <Box
-            key={column}
-            role="columnheader"
-            sx={{
-              pl: ['qty', 'location', 'expiry'].includes(column) ? '12px' : 0,
-            }}
-          >
-            {column === 'status' || column === 'actions' ? (
-              <Box component="span" sx={visuallyHidden}>
-                {t(`col.${column}`)}
-              </Box>
-            ) : (
-              t(`col.${column}`)
-            )}
-          </Box>
-        ))}
+      <Box role="rowgroup">
+        <Box
+          role="row"
+          sx={{
+            ...tabletRowSx(shopping),
+            alignItems: 'center',
+            height: 44,
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: tokens.color.muted,
+          }}
+        >
+          {columns.map((column) => (
+            <Box
+              key={column.key}
+              role="columnheader"
+              sx={{ pl: column.indent ? '12px' : 0 }}
+            >
+              {column.key === 'status' || column.key === 'actions' ? (
+                <Box component="span" sx={visuallyHidden}>
+                  {t(`col.${column.key}`)}
+                </Box>
+              ) : (
+                t(`col.${column.key}`)
+              )}
+            </Box>
+          ))}
+        </Box>
       </Box>
       {groups.review.length > 0 ? (
         <Box role="rowgroup" aria-label={t('group.review')}>
-          <GroupHeaderRow kind="review" count={groups.review.length} />
+          <GroupHeaderRow
+            kind="review"
+            count={groups.review.length}
+            span={columns.length}
+          />
           {groups.review.map(row)}
         </Box>
       ) : null}
@@ -236,6 +205,7 @@ export function TabletReviewTable({
             expanded={state.sureOpen}
             onToggle={onToggleSureGroup}
             controls={sureId}
+            span={columns.length}
           />
           {state.sureOpen ? (
             <Box id={sureId}>{groups.sure.map(row)}</Box>
@@ -253,7 +223,7 @@ export function TabletReviewTable({
                 whiteSpace: 'nowrap',
               }}
             >
-              <Box role="cell">
+              <Box role="cell" aria-colspan={columns.length}>
                 {groups.sure.map((line) => displayName(line)).join(', ')}
               </Box>
             </Box>
@@ -262,7 +232,7 @@ export function TabletReviewTable({
       ) : null}
       {groups.excluded.length > 0 ? (
         <Box role="row">
-          <Box role="cell">
+          <Box role="cell" aria-colspan={columns.length}>
             <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
           </Box>
         </Box>
