@@ -1,6 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent } from '../../../lib/catalog';
 import { displayName, statusOf, type ReviewLine } from '../../../lib/review';
 import type { ScanMode } from '../../../lib/scan';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
@@ -16,7 +16,7 @@ type Props = {
   shopping: boolean;
   onToggle: (key: string) => void;
   onChange: (key: string, patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (key: string, match: CatalogSearchResult) => void;
+  onSwapMatch: (key: string) => void;
   onRemove: (key: string) => void;
   onConfirm: (key: string) => void;
   onRestore: (key: string) => void;
@@ -34,7 +34,7 @@ export function ReviewTable({
   shopping,
   onToggle,
   onChange,
-  onChangeMatch,
+  onSwapMatch,
   onRemove,
   onConfirm,
   onRestore,
@@ -56,7 +56,7 @@ export function ReviewTable({
       blocked={!!blocked[line.key]}
       onToggle={() => onToggle(line.key)}
       onChange={(patch) => onChange(line.key, patch)}
-      onChangeMatch={(match) => onChangeMatch(line.key, match)}
+      onSwapMatch={() => onSwapMatch(line.key)}
       onRemove={() => onRemove(line.key)}
       onConfirm={() => onConfirm(line.key)}
     />

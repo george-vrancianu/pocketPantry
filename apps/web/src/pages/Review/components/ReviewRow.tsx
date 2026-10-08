@@ -1,6 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { CatalogParent } from '../../../lib/catalog';
 import type { ScanMode } from '../../../lib/scan';
 import { formatShortDate } from '../../../lib/dateFormat';
 import {
@@ -26,7 +26,7 @@ type Props = {
   blocked: boolean;
   onToggle: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (match: CatalogSearchResult) => void;
+  onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
 };
@@ -53,7 +53,7 @@ export function ReviewRow({
   blocked,
   onToggle,
   onChange,
-  onChangeMatch,
+  onSwapMatch,
   onRemove,
   onConfirm,
 }: Props) {
@@ -172,7 +172,7 @@ export function ReviewRow({
           blocked={blocked}
           background={background}
           onChange={onChange}
-          onChangeMatch={onChangeMatch}
+          onSwapMatch={onSwapMatch}
           onRemove={onRemove}
           onConfirm={onConfirm}
         />

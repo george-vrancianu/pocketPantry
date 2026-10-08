@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubViewport } from '../../test/viewport';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -375,10 +376,48 @@ describe('ReviewPage', () => {
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
   });
 
-  it('changes the Match through Catalog search, taking the new defaults', async () => {
+  it('changes the Match in a dialog, taking the new defaults', async () => {
     renderReview([
       line({ expiryDate: null, lowConfidence: true, quantity: 1 }),
     ]);
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+    const search = within(dialog).getByRole('combobox', {
+      name: 'Search ingredients',
+    });
+    expect(search).toHaveFocus();
+    await userEvent.type(search, 'milk');
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    const panel = screen.getByRole('group', { name: 'Milk' });
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    // The row's Match button keeps focus after the swap.
+    expect(
+      within(panel).getByRole('button', { name: /Milk.*Change/ }),
+    ).toHaveFocus();
+  });
+
+  it('returns focus to the row when the opener was never focused (Safari)', async () => {
+    renderReview([line({ quantity: 1, lowConfidence: true })]);
+    // fireEvent.click does not focus the button, as a tap in Safari does not.
+    fireEvent.click(screen.getByRole('button', { name: /Parmesan.*Change/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
+  });
+
+  it('opens and works as a centred dialog on a wide screen', async () => {
+    stubViewport(1000);
+    renderReview([line({ quantity: 1, lowConfidence: true })]);
     await userEvent.click(
       screen.getByRole('button', { name: /Parmesan.*Change/ }),
     );
@@ -387,10 +426,68 @@ describe('ReviewPage', () => {
       'milk',
     );
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
-    const panel = screen.getByRole('group', { name: 'Milk' });
+    expect(
+      await screen.findByRole('group', { name: 'Milk' }),
+    ).toBeInTheDocument();
+  });
+
+  it('turns an Unmatched line into a matched one when an Ingredient is chosen', async () => {
+    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
+    const opener = screen.getByRole('button', { name: /No match · Choose/ });
+    await userEvent.click(opener);
+    expect(
+      screen.getByRole('dialog', { name: 'Change match for Mystery jar' }),
+    ).toBeInTheDocument();
+    // Cancelling an Unmatched line returns focus to the same button.
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(opener).toHaveFocus();
+    await userEvent.click(opener);
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'milk',
+    );
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    const panel = await screen.findByRole('group', { name: 'Milk' });
+    expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
     expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
+
+  it.each([
+    [
+      'Cancel',
+      () => userEvent.click(screen.getByRole('button', { name: 'Cancel' })),
+    ],
+    ['Escape', () => userEvent.keyboard('{Escape}')],
+  ])(
+    'leaves the line unchanged and returns focus when %s closes the dialog',
+    async (_how, close) => {
+      renderReview([sure({ quantity: 2 })]);
+      await userEvent.click(row('Parmesan'));
+      const before = ['Unit', 'Location', 'Expiry date'].map(
+        (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
+      );
+      const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
+      await userEvent.click(opener);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await close();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(opener).toHaveFocus();
+      expect(
+        screen.getByRole('group', { name: 'Parmesan' }),
+      ).toBeInTheDocument();
+      expect(
+        ['Unit', 'Location', 'Expiry date'].map(
+          (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
+        ),
+      ).toEqual(before);
+    },
+  );
 
   it('shows an Unmatched line as "No match", with a Name and a Category', async () => {
     renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);

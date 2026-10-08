@@ -60,7 +60,7 @@
     "none": "No match",
     "choose": "Choose",
     "change": "Change",
-    "keep": "Keep this match"
+    "dialogTitle": "Change match for {{name}}"
   },
   "action": {
     "remove": "Remove {{name}}",
