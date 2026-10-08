@@ -38,6 +38,7 @@ export function plateLine(
           : null;
   return {
     name: item.fallbackIngredientName,
+    sourceText: null,
     match: matched ? match : null,
     lowConfidence: item.confidence < threshold,
     quantity: unit === null ? null : item.quantity,

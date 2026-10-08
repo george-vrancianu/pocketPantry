@@ -53,6 +53,7 @@ describe('receiptProposedLines', () => {
     const [proposed] = receiptProposedLines(receipt(line()), resolveMilk, 0.6);
     expect(proposed).toMatchObject({
       name: 'Lapte',
+      sourceText: 'LAPTE UHT 1L',
       match: milk,
       lowConfidence: false,
       quantity: 2,
@@ -108,6 +109,7 @@ describe('receiptProposedLines', () => {
     const [proposed] = receiptProposedLines(receipt(bag), resolveMilk, 0.6);
     expect(proposed).toMatchObject({
       name: 'SACOSA BIO',
+      sourceText: 'SACOSA BIO',
       match: null,
       quantity: null,
       excluded: { reason: 'not_food' },
@@ -141,6 +143,7 @@ describe('receiptProposedLines', () => {
       0.6,
     );
     expect(proposed.name).toHaveLength(100);
+    expect(proposed.sourceText).toHaveLength(100);
   });
 
   it('drops subtotal, total, tax, payment and discount lines entirely', () => {

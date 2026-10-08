@@ -1,6 +1,6 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { IngredientsScanResult } from './ingredients-scan.schemas';
-import type { ProposedLine } from './proposed-line';
+import { MAX_RAW_NAME, type ProposedLine } from './proposed-line';
 
 /**
  * One recognised item of an Ingredients Scan as a proposed line. Loose
@@ -17,6 +17,7 @@ export function ingredientsLine(
   const matched = match !== null && item.matchConfidence >= threshold;
   return {
     name: item.fallbackIngredientName,
+    sourceText: item.productName.slice(0, MAX_RAW_NAME),
     match: matched ? match : null,
     lowConfidence: item.confidence < threshold,
     quantity: null,

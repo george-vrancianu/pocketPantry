@@ -96,6 +96,7 @@ describe('Product Scan (integration)', () => {
       lines: [
         {
           name: 'Grana Padano',
+          sourceText: 'Grana Padano 200g',
           lowConfidence: false,
           expiryDate: '2026-12-24',
           productDescription: 'Grana Padano 200g',
