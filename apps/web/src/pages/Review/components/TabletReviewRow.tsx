@@ -169,7 +169,9 @@ export function TabletReviewRow({
         minHeight: readOnly ? 52 : 68,
         py: readOnly ? '6px' : '14px',
         borderTop: `1px solid ${tokens.color.divider}`,
-        bgcolor: editing ? ROW_TINT[status] : tokens.color.surface,
+        // Only a row that still needs a look is tinted, by its live status; sure rows stay white even when open.
+        bgcolor:
+          editing && status !== 'ok' ? ROW_TINT[status] : tokens.color.surface,
         cursor: readOnly ? 'pointer' : undefined,
         '&:hover': readOnly ? { bgcolor: tokens.color.subtle } : undefined,
       }}

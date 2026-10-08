@@ -58,7 +58,11 @@ function GroupHeaderRow({
         borderTop: `1px solid ${tokens.color.divider}`,
       }}
     >
-      <Box role="cell" aria-colspan={span} sx={{ flexGrow: 1 }}>
+      <Box
+        role="cell"
+        aria-colspan={onToggle ? span - 1 : span}
+        sx={{ flexGrow: 1 }}
+      >
         <Box
           component="h2"
           sx={{
@@ -231,9 +235,11 @@ export function TabletReviewTable({
         </Box>
       ) : null}
       {groups.excluded.length > 0 ? (
-        <Box role="row">
-          <Box role="cell" aria-colspan={columns.length}>
-            <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
+        <Box role="rowgroup">
+          <Box role="row">
+            <Box role="cell" aria-colspan={columns.length}>
+              <ExcludedRow lines={groups.excluded} onRestore={onRestore} />
+            </Box>
           </Box>
         </Box>
       ) : null}

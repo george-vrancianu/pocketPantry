@@ -8,6 +8,7 @@ import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { ReviewPage } from './ReviewPage';
+import { tabletTemplate } from './components/layout';
 
 const parmesan: CatalogSearchResult = {
   id: 'parmesan-id',
@@ -374,5 +375,17 @@ describe('Review layout breakpoint', () => {
     stubViewport(900);
     renderReview([line({ lowConfidence: true })]);
     expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+});
+
+describe('tablet column template', () => {
+  it('uses fixed widths so Produs takes the remainder', () => {
+    expect(tabletTemplate(false)).toBe(
+      '24px minmax(0,1fr) 120px 104px 112px 112px 144px',
+    );
+    expect(tabletTemplate(true)).toBe('24px minmax(0,1fr) 120px 112px 144px');
+    expect(tabletTemplate(false, true)).toBe(
+      '24px minmax(0,1fr) 150px 150px 150px 120px 144px',
+    );
   });
 });

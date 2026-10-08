@@ -415,7 +415,7 @@ describe('ReviewPage', () => {
     await waitFor(() => expect(row('Parmesan')).toHaveFocus());
   });
 
-  it('opens and works as a centred dialog on a wide screen', async () => {
+  it('opens and works as a bottom sheet at 899 px, the widest phone layout', async () => {
     stubViewport(899);
     renderReview([line({ quantity: 1, lowConfidence: true })]);
     await userEvent.click(
