@@ -91,7 +91,10 @@ export function useReviewScreen() {
   const [restoreOpener, setRestoreOpener] = useState(false);
   const swapLine = state.lines.find((l) => l.key === swapKey) ?? null;
   const openSwap = (key: string) => {
-    swapOpener.current = document.activeElement as HTMLElement | null;
+    // Safari and macOS Firefox do not focus a clicked button: then there is no opener to return to.
+    const el = document.activeElement;
+    swapOpener.current =
+      el instanceof HTMLElement && el !== document.body ? el : null;
     setSwapKey(key);
     setSwapOpen(true);
   };

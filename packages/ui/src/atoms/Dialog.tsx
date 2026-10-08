@@ -18,8 +18,9 @@ export type DialogProps = {
 
 /**
  * A modal that is a bottom sheet on a phone (anchored to the bottom edge, full
- * width, rounded top) and a centred dialog from the `md` breakpoint up (see `useBreakpointUp`). Focus is trapped
- * while open and returns to the element that opened it on close.
+ * width, rounded top) and a centred dialog from the `md` breakpoint up (see
+ * `useBreakpointUp`). Focus is trapped while open and returns to the element
+ * that opened it on close.
  */
 export function Dialog({
   open,

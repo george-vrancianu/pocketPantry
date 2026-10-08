@@ -404,6 +404,17 @@ describe('ReviewPage', () => {
     ).toHaveFocus();
   });
 
+  it('returns focus to the row when the opener was never focused (Safari)', async () => {
+    renderReview([line({ quantity: 1, lowConfidence: true })]);
+    // fireEvent.click does not focus the button, as a tap in Safari does not.
+    fireEvent.click(screen.getByRole('button', { name: /Parmesan.*Change/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await waitFor(() => expect(row('Parmesan')).toHaveFocus());
+  });
+
   it('opens and works as a centred dialog on a wide screen', async () => {
     stubViewport(1000);
     renderReview([line({ quantity: 1, lowConfidence: true })]);
