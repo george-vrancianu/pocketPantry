@@ -22,6 +22,9 @@ export const SHOPPING_ITEM_SOURCES = [
 export type UnmatchedRecord = {
   rawName: string;
   locale: string;
+  /** The text as printed and the Scan Language it was read in; both or neither. */
+  sourceText?: string;
+  sourceLanguage?: string;
   source: UnmatchedSource;
 } & ({ batchId: string } | { shoppingItemId: string });
 
@@ -40,6 +43,10 @@ export async function recordUnmatched(
       normalizedName: normalizeName(record.rawName),
       rawName: record.rawName,
       locale: record.locale,
+      sourceText: record.sourceText ?? null,
+      sourceLanguage: record.sourceText
+        ? (record.sourceLanguage ?? null)
+        : null,
       source: record.source,
       batchId: 'batchId' in record ? record.batchId : null,
       shoppingItemId: 'shoppingItemId' in record ? record.shoppingItemId : null,

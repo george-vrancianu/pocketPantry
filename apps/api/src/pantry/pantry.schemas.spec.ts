@@ -27,17 +27,34 @@ describe('scanQuery', () => {
   });
 });
 
-describe('createBatchBody scanLanguage', () => {
-  it('accepts a per-batch Scan Language for an Unmatched line', () => {
+describe('createBatchBody sourceText', () => {
+  it('accepts the printed text of an Unmatched line, trimmed', () => {
     expect(
-      createBatchBody.parse({ rawName: 'Skyr', scanLanguage: 'da' }),
-    ).toMatchObject({ scanLanguage: 'da' });
+      createBatchBody.parse({ rawName: 'Yogurt', sourceText: '  Skyr 450g ' }),
+    ).toMatchObject({ rawName: 'Yogurt', sourceText: 'Skyr 450g' });
   });
 
-  it('rejects a per-batch language outside the Scan Languages', () => {
+  it('rejects printed text without an Unmatched name', () => {
     expect(
-      createBatchBody.safeParse({ rawName: 'Skyr', scanLanguage: 'fr' })
-        .success,
+      createBatchBody.safeParse({
+        ingredientId: crypto.randomUUID(),
+        sourceText: 'Skyr',
+      }).success,
     ).toBe(false);
+  });
+
+  it('rejects printed text that is too long', () => {
+    expect(
+      createBatchBody.safeParse({
+        rawName: 'Yogurt',
+        sourceText: 'x'.repeat(201),
+      }).success,
+    ).toBe(false);
+  });
+
+  it('no longer takes a per-batch Scan Language', () => {
+    expect(
+      createBatchBody.parse({ rawName: 'Yogurt', scanLanguage: 'da' }),
+    ).not.toHaveProperty('scanLanguage');
   });
 });

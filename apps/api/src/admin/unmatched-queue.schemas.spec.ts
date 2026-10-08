@@ -9,6 +9,14 @@ describe('unmatchedResolveBody', () => {
     );
   });
 
+  it('asks for the printed-text Synonym only when told to', () => {
+    expect(unmatchedResolveBody.parse(base).sourceSynonym).toBe(false);
+    expect(
+      unmatchedResolveBody.parse({ ...base, sourceSynonym: true })
+        .sourceSynonym,
+    ).toBe(true);
+  });
+
   it('rejects a language outside the Scan Languages', () => {
     expect(
       unmatchedResolveBody.safeParse({ ...base, locale: 'fr' }).success,

@@ -65,8 +65,9 @@ export class PantryService {
     memberId: string,
     body: CreateBatchBody,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage = locale,
   ): Promise<BatchView> {
-    return (await this.createMany(memberId, [body], locale))[0];
+    return (await this.createMany(memberId, [body], locale, scanLanguage))[0];
   }
 
   /** Adds all Batches in one statement, so a bad line saves nothing. Used by the Review screen. */
@@ -92,8 +93,10 @@ export class PantryService {
             ? [
                 {
                   rawName: row.rawName ?? '',
-                  // Per-batch Scan Language, else the Scan's, else the UI locale.
-                  locale: bodies[index].scanLanguage ?? scanLanguage,
+                  // The raw name is UI-locale text; the printed text is in the Scan Language.
+                  locale,
+                  sourceText: bodies[index].sourceText,
+                  sourceLanguage: scanLanguage,
                   source: bodies[index].source ?? 'manual',
                   batchId: row.id,
                 },

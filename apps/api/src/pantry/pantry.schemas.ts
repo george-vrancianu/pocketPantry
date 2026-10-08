@@ -51,8 +51,8 @@ export const createBatchBody = z
     parentCategoryId: z.uuid().optional(),
     /** Unmatched only: where the name came from (a Scan Mode or typed); defaults to manual. */
     source: z.enum(BATCH_SOURCES).optional(),
-    /** Unmatched only: the Scan Language its name was read in; overrides the query's, which defaults to the locale. */
-    scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
+    /** Unmatched only: the text as printed on the receipt or package, in the query's Scan Language. `rawName` stays UI-locale text. */
+    sourceText: z.string().trim().min(1).max(200).optional(),
     quantity: quantity.nullish(),
     unit: z.enum(ingredientUnit.enumValues).nullish(),
     location: z.enum(storageLocation.enumValues).optional(),
@@ -66,6 +66,10 @@ export const createBatchBody = z
   .refine((body) => !body.parentCategoryId || body.rawName, {
     message: 'parentCategoryId only applies to an Unmatched name',
     path: ['parentCategoryId'],
+  })
+  .refine((body) => !body.sourceText || body.rawName, {
+    message: 'sourceText only applies to an Unmatched name',
+    path: ['sourceText'],
   })
   .refine((body) => body.quantity == null || body.unit != null, {
     message: 'unit is required when quantity is set',

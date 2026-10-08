@@ -58,10 +58,15 @@ export class PantryController {
   })
   create(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchBody)) body: CreateBatchBody,
   ): Promise<BatchView> {
-    return this.pantry.create(member.id, body, query.locale);
+    return this.pantry.create(
+      member.id,
+      body,
+      query.locale,
+      query.scanLanguage,
+    );
   }
 
   @Post('batches/bulk')

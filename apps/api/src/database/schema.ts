@@ -388,7 +388,9 @@ export const unmatchedSource = pgEnum('unmatched_source', [
 ]);
 
 // The Admin review queue: one row per Unmatched Batch or Shopping Item, recording the
-// raw text, its locale and source. The queue groups rows by `normalizedName`.
+// raw text, its locale and source. `rawName` is UI-locale text (the AI's fallback name or
+// what the Member typed); `sourceText` is the text as printed, read in `sourceLanguage`
+// (a Scan Language). The queue groups rows by `normalizedName`.
 // Resolving a name deletes its rows; dismissing keeps them with `dismissedAt` set.
 // Rows vanish with the Batch or Shopping Item they were saved on.
 export const unmatchedEntries = pgTable(
@@ -398,6 +400,8 @@ export const unmatchedEntries = pgTable(
     normalizedName: text('normalized_name').notNull(),
     rawName: text('raw_name').notNull(),
     locale: text('locale').notNull(),
+    sourceText: text('source_text'),
+    sourceLanguage: text('source_language'),
     source: unmatchedSource('source').notNull(),
     batchId: uuid('batch_id').references(() => batches.id, {
       onDelete: 'cascade',
