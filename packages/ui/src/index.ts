@@ -4,12 +4,14 @@ export { tokens } from './theme/tokens';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 
 export { Alert, type AlertProps } from './atoms/Alert';
+export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Button, type ButtonProps } from './atoms/Button';
 export { Dialog, type DialogProps } from './atoms/Dialog';
 export { IconButton, type IconButtonProps } from './atoms/IconButton';
 export { Box, Stack, type BoxProps, type StackProps } from './atoms/Layout';
 export { Link, type LinkProps } from './atoms/Link';
 export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
+export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
 export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Typography, type TypographyProps } from './atoms/Typography';

@@ -9,6 +9,7 @@ import {
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
 import { PantryFilters } from './components/PantryFilters';
@@ -32,6 +33,7 @@ export function PantryPage() {
 
   return (
     <>
+      <UnverifiedToast />
       <AppScreenHeader
         title={t('pantry:title')}
         action={

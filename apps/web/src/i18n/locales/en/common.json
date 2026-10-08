@@ -16,5 +16,7 @@
     "freezer": "Freezer",
     "cupboard": "Cupboard",
     "spices": "Spices"
-  }
+  },
+  "unverified_one": "{{count}} item still unverified",
+  "unverified_other": "{{count}} items still unverified"
 }

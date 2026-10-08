@@ -2,6 +2,7 @@ import { Alert, Button, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddItemForm } from './components/AddItemForm';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
@@ -27,6 +28,7 @@ export function ShoppingPage() {
 
   return (
     <>
+      <UnverifiedToast />
       <AppScreenHeader title={t('shopping:title')} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}

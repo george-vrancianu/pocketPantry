@@ -9,12 +9,14 @@ import {
 import {
   clearReview,
   displayName,
+  statusOf,
   readReview,
   invalidFields,
   toNewBatch,
   toReviewLine,
   type ReviewLine,
 } from '../../../lib/review';
+import { firstFocusField } from '../../../lib/reviewFocus';
 import {
   initReviewState,
   reviewCounts,
@@ -24,6 +26,7 @@ import {
 import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
+import { unverifiedState } from '../../../lib/unverifiedToast';
 import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 
 /**
@@ -70,6 +73,8 @@ export function useReviewScreen() {
   );
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
+  // Saved lines the Member never verified, told on the page Save lands on.
+  const [unverified, setUnverified] = useState(0);
   // Focus lands on an element that only exists after the render that opened or restored it.
   const [focusId, setFocusId] = useState<string | null>(null);
   useEffect(() => {
@@ -115,7 +120,16 @@ export function useReviewScreen() {
     dispatch({ type: 'changeMatch', key: swapKey, match, today: new Date() });
     closeSwap();
   };
-  const toggle = (key: string) => dispatch({ type: 'toggle', key });
+  // Opening a row by hand puts focus on its first empty field (else Match); shutting it returns to its button.
+  // Rows open on load never come through here, so they do not steal focus.
+  const toggle = (key: string) => {
+    const line = state.lines.find((l) => l.key === key);
+    dispatch({ type: 'toggle', key });
+    if (!line) return;
+    setFocusId(
+      state.open[key] ? rowId(key) : fieldId(key, firstFocusField(line)),
+    );
+  };
   // Rows whose Save or Confirm was blocked, so their panels show every error.
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
   // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
@@ -154,6 +168,9 @@ export function useReviewScreen() {
     // Display order, so the Member lands on the topmost problem.
     if (focusInvalid([...groups.review, ...groups.sure])) return;
     const to = shopping ? '/shopping' : '/pantry';
+    const unverifiedSaved = included.filter(
+      (l) => statusOf(l, !!state.confirmed[l.key]) === 'low',
+    ).length;
     const done = {
       onSuccess: (result?: unknown) => {
         clearReview();
@@ -164,9 +181,10 @@ export function useReviewScreen() {
           failures.missing + failures.changed + failures.other > 0
         ) {
           setTickFailures(failures);
+          setUnverified(unverifiedSaved);
           return;
         }
-        navigate(to);
+        navigate(to, { state: unverifiedState(unverifiedSaved) });
       },
     };
     if (shopping) {
@@ -199,7 +217,8 @@ export function useReviewScreen() {
     saving: saver.isPending,
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
-    toPantry: () => navigate('/pantry'),
+    // After a tick-failure notice the toast still follows, on the Pantry the lines were saved to.
+    toPantry: () => navigate('/pantry', { state: unverifiedState(unverified) }),
     blocked,
     toggle,
     change,
