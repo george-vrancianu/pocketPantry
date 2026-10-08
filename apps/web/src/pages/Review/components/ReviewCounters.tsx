@@ -47,7 +47,12 @@ export function ReviewCounters({ save, check, excluded }: Props) {
       {tiles.map((tile) => (
         <Box
           key={tile.key}
-          sx={{ borderRadius: '16px', px: '12px', py: '10px', ...tile.sx }}
+          sx={{
+            borderRadius: `${tokens.radius.input}px`,
+            px: '12px',
+            py: '10px',
+            ...tile.sx,
+          }}
         >
           <Box
             sx={{

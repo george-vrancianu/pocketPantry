@@ -1,7 +1,8 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
-import { statusOf, type ReviewLine } from '../../../lib/review';
+import { displayName, statusOf, type ReviewLine } from '../../../lib/review';
+import type { ScanMode } from '../../../lib/scan';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import { ExcludedRow } from './ExcludedRow';
 import { ReviewGroup } from './ReviewGroup';
@@ -20,6 +21,9 @@ type Props = {
   onConfirm: (key: string) => void;
   onRestore: (key: string) => void;
   onToggleSureGroup: () => void;
+  /** Rows whose Save or Confirm was blocked. */
+  blocked: Record<string, boolean>;
+  mode: ScanMode;
 };
 
 /** The card: a column header, the groups to check and the confident ones, then Excluded. */
@@ -35,6 +39,8 @@ export function ReviewTable({
   onConfirm,
   onRestore,
   onToggleSureGroup,
+  blocked,
+  mode,
 }: Props) {
   const { t } = useTranslation('review');
   const row = (line: ReviewLine) => (
@@ -46,6 +52,8 @@ export function ReviewTable({
       open={!!state.open[line.key]}
       parents={parents}
       shopping={shopping}
+      mode={mode}
+      blocked={!!blocked[line.key]}
       onToggle={() => onToggle(line.key)}
       onChange={(patch) => onChange(line.key, patch)}
       onChangeMatch={(match) => onChangeMatch(line.key, match)}
@@ -97,9 +105,7 @@ export function ReviewTable({
           count={groups.sure.length}
           expanded={state.sureOpen}
           onToggle={onToggleSureGroup}
-          summary={groups.sure
-            .map((line) => line.match?.name ?? line.name)
-            .join(', ')}
+          summary={groups.sure.map((line) => displayName(line)).join(', ')}
         >
           {groups.sure.map(row)}
         </ReviewGroup>

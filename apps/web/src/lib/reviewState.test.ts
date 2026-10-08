@@ -36,6 +36,7 @@ const proposed = (overrides: Partial<ProposedLine>): ProposedLine => ({
   unit: 'g',
   expiryDate: null,
   productDescription: null,
+  sourceText: null,
   ...overrides,
 });
 
@@ -156,6 +157,14 @@ describe('reviewReducer', () => {
       { type: 'open', key: 'k0' },
     );
     expect(state.open.k0).toBe(true);
+  });
+
+  it('shows the sure group when a row lands in it, so the row exists to take focus', () => {
+    const collapsed = run(start(), { type: 'toggleSureGroup' });
+    expect(run(collapsed, { type: 'confirm', key: 'k2' }).sureOpen).toBe(true);
+    const removed = run(collapsed, { type: 'remove', key: 'k0' });
+    expect(removed.sureOpen).toBe(false);
+    expect(run(removed, { type: 'restore', key: 'k0' }).sureOpen).toBe(true);
   });
 
   it('collapses and shows the sure group', () => {

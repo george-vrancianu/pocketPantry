@@ -31,6 +31,7 @@ const line = (overrides: Partial<ProposedLine> = {}): ProposedLine => ({
   quantity: null,
   unit: null,
   expiryDate: '2026-12-24',
+  sourceText: 'GRANA PAD 200G',
   productDescription: 'Grana Padano 200g',
   ...overrides,
 });
@@ -76,7 +77,7 @@ const row = (name: string, index = 0) =>
     .getAllByRole('button')
     .filter(
       (button) =>
-        button.hasAttribute('aria-controls') &&
+        button.querySelector('[id$="-title"]') !== null &&
         button.textContent?.includes(name),
     )[index];
 
@@ -107,14 +108,20 @@ describe('ReviewPage', () => {
     renderReview([sure()]);
     const button = row('Parmesan');
     expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(button).toHaveAttribute('aria-controls');
+    expect(button).not.toHaveAttribute('aria-controls');
     expect(button).toHaveTextContent('200 g');
     expect(button).toHaveTextContent('Fridge');
     expect(button).toHaveTextContent('24.12.26');
-    expect(button).toHaveTextContent('Grana Padano 200g');
+    expect(button).toHaveTextContent('Read: GRANA PAD 200G');
     expect(
       screen.getByRole('img', { name: 'High confidence' }),
     ).toBeInTheDocument();
+  });
+
+  it('shows what the Scan read under the name, and nothing without it', () => {
+    renderReview([sure(), sure({ name: 'Plate thing', sourceText: null })]);
+    expect(screen.getAllByText('Read: GRANA PAD 200G')).toHaveLength(1);
+    expect(screen.getAllByText(/^Read:/)).toHaveLength(1);
   });
 
   it('opens low-confidence and Unmatched rows, and leaves a missing quantity shut with an amber pill', () => {
@@ -221,6 +228,32 @@ describe('ReviewPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('adds a confident line back into a collapsed Confident group and focuses it', async () => {
+    renderReview([sure(), sure({ match: milk, name: 'Milk', unit: 'ml' })]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove Parmesan' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+    await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Add Parmesan back' }),
+    );
+    expect(row('Parmesan')).toHaveFocus();
+  });
+
+  it('moves focus to the next row after a Remove, else to the Excluded button', async () => {
+    renderReview([sure(), sure({ match: milk, name: 'Milk', unit: 'ml' })]);
+    await userEvent.click(row('Parmesan'));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove Parmesan' }),
+    );
+    expect(row('Milk')).toHaveFocus();
+    await userEvent.click(row('Milk'));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Milk' }));
+    expect(screen.getByRole('button', { name: /Excluded · 2/ })).toHaveFocus();
+  });
+
   it('shows expiry day-first in full when open, and takes a typed date back as ISO', async () => {
     const calls = renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
@@ -258,6 +291,10 @@ describe('ReviewPage', () => {
     const expiry = screen.getByLabelText('Expiry date');
     await userEvent.clear(expiry);
     await userEvent.type(expiry, '31022027');
+    expect(
+      screen.queryByText('Enter a real date as dd.mm.yyyy.'),
+    ).not.toBeInTheDocument();
+    await userEvent.tab();
     expect(
       screen.getByText('Enter a real date as dd.mm.yyyy.'),
     ).toBeInTheDocument();

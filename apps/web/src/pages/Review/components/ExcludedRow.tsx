@@ -1,8 +1,8 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ReviewLine } from '../../../lib/review';
-import { focusRing } from './layout';
+import { displayName, type ReviewLine } from '../../../lib/review';
+import { EXCLUDED_TOGGLE_ID, focusRing } from './layout';
 
 type Props = {
   lines: ReviewLine[];
@@ -30,7 +30,8 @@ export function ExcludedRow({ lines, onRestore }: Props) {
         component="button"
         type="button"
         aria-expanded={open}
-        aria-controls={listId}
+        id={EXCLUDED_TOGGLE_ID}
+        aria-controls={open ? listId : undefined}
         onClick={() => setOpen((was) => !was)}
         sx={{
           display: 'flex',
@@ -75,7 +76,7 @@ export function ExcludedRow({ lines, onRestore }: Props) {
       >
         {open
           ? lines.map((line) => {
-              const name = line.match?.name ?? line.name;
+              const name = displayName(line);
               return (
                 <Box
                   key={line.key}

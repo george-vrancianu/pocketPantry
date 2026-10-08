@@ -97,8 +97,13 @@ export function reviewReducer(
     case 'open':
       return openRow(state, action.key);
     case 'confirm':
+      // The row moves to Confident, which must show for the row to take focus.
       return shutRow(
-        { ...state, confirmed: { ...state.confirmed, [action.key]: true } },
+        {
+          ...state,
+          sureOpen: true,
+          confirmed: { ...state.confirmed, [action.key]: true },
+        },
         action.key,
       );
     case 'remove':
@@ -117,7 +122,7 @@ export function reviewReducer(
       const line = restored.lines.find((l) => l.key === action.key);
       return line && statusOf(line, !!state.confirmed[action.key]) !== 'ok'
         ? openRow(restored, action.key)
-        : restored;
+        : { ...restored, sureOpen: true };
     }
     case 'update': {
       const line = state.lines.find((l) => l.key === action.key);

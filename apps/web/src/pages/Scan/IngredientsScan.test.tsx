@@ -41,6 +41,7 @@ const line = (id: string, name: string): ProposedLine => ({
   quantity: null,
   unit: null,
   expiryDate: null,
+  sourceText: null,
   productDescription: null,
 });
 

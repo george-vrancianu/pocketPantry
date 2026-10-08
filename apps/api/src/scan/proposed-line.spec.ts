@@ -34,6 +34,7 @@ describe('productLine', () => {
       match,
       lowConfidence: false,
       name: 'Grana Padano',
+      sourceText: 'Grana Padano 200g',
       productDescription: 'Grana Padano 200g',
     });
   });

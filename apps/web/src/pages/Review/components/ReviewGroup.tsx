@@ -1,5 +1,5 @@
 import { Box, tokens } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusRing } from './layout';
 
@@ -24,6 +24,7 @@ export function ReviewGroup({
   children,
 }: Props) {
   const { t } = useTranslation('review');
+  const listId = useId();
   const collapsible = kind === 'sure' && onToggle !== undefined;
   return (
     <Box component="section" aria-label={t(`group.${kind}`)}>
@@ -57,6 +58,7 @@ export function ReviewGroup({
             component="button"
             type="button"
             aria-expanded={expanded}
+            aria-controls={expanded ? listId : undefined}
             onClick={onToggle}
             sx={{
               minHeight: 36,
@@ -76,7 +78,7 @@ export function ReviewGroup({
         ) : null}
       </Box>
       {expanded ? (
-        <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
+        <Box id={listId} component="ul" sx={{ m: 0, p: 0, listStyle: 'none' }}>
           {children}
         </Box>
       ) : (

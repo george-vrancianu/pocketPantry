@@ -13,7 +13,7 @@ export const findReviewRow = (name: string) =>
       .getAllByRole('button')
       .find(
         (button) =>
-          button.hasAttribute('aria-controls') &&
+          button.hasAttribute('aria-expanded') &&
           button.querySelector('[id$="-title"]')?.textContent === name,
       );
     if (!row) throw new Error(`No Review row named ${name}`);

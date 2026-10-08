@@ -21,6 +21,7 @@ import {
   isIsoDate,
 } from '../../../lib/dateFormat';
 import {
+  displayName,
   invalidFields,
   type ReviewLine,
   type RowStatus,
@@ -40,6 +41,8 @@ type Props = {
   onChangeMatch: (match: CatalogSearchResult) => void;
   onRemove: () => void;
   onConfirm: () => void;
+  /** A Save or Confirm was blocked on this row: show every error now. */
+  blocked: boolean;
 };
 
 /** The expanded half of a row: why it needs a look, then every field of the line. */
@@ -54,12 +57,16 @@ export function RowEditPanel({
   onChangeMatch,
   onRemove,
   onConfirm,
+  blocked,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
   const [searching, setSearching] = useState(false);
+  // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
+  const [expiryTouched, setExpiryTouched] = useState(false);
   const unmatched = line.match === null;
-  const name = line.match?.name ?? line.name;
+  const name = displayName(line);
   const invalid = invalidFields(line);
+  const expiryError = invalid.includes('expiry') && (expiryTouched || blocked);
   const matchText = unmatched
     ? `${t('review:match.none')} · ${t('review:match.choose')}`
     : name;
@@ -312,7 +319,7 @@ export function RowEditPanel({
             />
             <Box
               component="select"
-              aria-label={t('pantry:form.unit')}
+              aria-label={t('review:field.unit')}
               value={line.unit}
               onChange={(event) =>
                 onChange({ unit: event.target.value as ReviewLine['unit'] })
@@ -362,11 +369,7 @@ export function RowEditPanel({
             <Field
               htmlFor={id('expiry')}
               label={t('review:field.expiry')}
-              error={
-                invalid.includes('expiry')
-                  ? t('review:error.expiry')
-                  : undefined
-              }
+              error={expiryError ? t('review:error.expiry') : undefined}
               errorId={`${id('expiry')}-error`}
             >
               <Box
@@ -381,11 +384,10 @@ export function RowEditPanel({
                     ? formatDate(line.expiryDate)
                     : line.expiryDate
                 }
-                aria-invalid={invalid.includes('expiry') || undefined}
+                onBlur={() => setExpiryTouched(true)}
+                aria-invalid={expiryError || undefined}
                 aria-describedby={
-                  invalid.includes('expiry')
-                    ? `${id('expiry')}-error`
-                    : undefined
+                  expiryError ? `${id('expiry')}-error` : undefined
                 }
                 onChange={(event) => {
                   const masked = maskDateInput(event.target.value);
@@ -419,7 +421,7 @@ export function RowEditPanel({
               border: 0,
               borderRadius: `${tokens.radius.field}px`,
               bgcolor: tokens.color.accent,
-              color: '#FFFFFF',
+              color: tokens.color.surface,
               fontFamily: 'inherit',
               fontSize: 14,
               fontWeight: 700,

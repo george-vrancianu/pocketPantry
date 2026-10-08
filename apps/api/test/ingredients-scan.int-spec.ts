@@ -100,6 +100,7 @@ describe('Ingredients Scan (integration)', () => {
       lines: [
         {
           name: 'Parmesan',
+          sourceText: 'Parmesan wedge',
           quantity: null,
           unit: null,
           expiryDate: null,

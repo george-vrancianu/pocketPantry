@@ -24,6 +24,7 @@ const line = (
       quantity: 200,
       unit: 'ml',
       expiryDate: null,
+      sourceText: null,
       productDescription: null,
       ...overrides,
     },

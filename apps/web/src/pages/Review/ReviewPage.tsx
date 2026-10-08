@@ -76,6 +76,8 @@ export function ReviewPage() {
             onConfirm={screen.confirm}
             onRestore={screen.restore}
             onToggleSureGroup={screen.toggleSureGroup}
+            blocked={screen.blocked}
+            mode={screen.mode}
           />
           <Stack spacing={2} sx={{ mt: 2 }}>
             {screen.overLimit > 0 ? (

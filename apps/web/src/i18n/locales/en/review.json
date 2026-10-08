@@ -41,7 +41,7 @@
     "ok": "High confidence"
   },
   "field": {
-    "match": "Match in your pantry",
+    "match": "Matched ingredient",
     "name": "Name",
     "category": "Category",
     "quantity": "Quantity",
@@ -102,5 +102,9 @@
     "changed_other": "The Shopping List changed, so {{count}} Shopping Items were not ticked off.",
     "failed_one": "{{count}} Shopping Item could not be ticked off.",
     "failed_other": "{{count}} Shopping Items could not be ticked off."
+  },
+  "row": {
+    "receiptPrefix": "On receipt: {{text}}",
+    "readPrefix": "Read: {{text}}"
   }
 }

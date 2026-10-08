@@ -1,8 +1,14 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
+import type { ScanMode } from '../../../lib/scan';
 import { formatShortDate } from '../../../lib/dateFormat';
-import type { ReviewLine, RowStatus } from '../../../lib/review';
+import {
+  displayName,
+  type ReviewLine,
+  type RowStatus,
+} from '../../../lib/review';
+import { SourceText } from './SourceText';
 import { RowEditPanel } from './RowEditPanel';
 import { StatusIcon } from './StatusIcon';
 import { focusRing, panelId, rowGridSx, rowId, titleId } from './layout';
@@ -16,6 +22,8 @@ type Props = {
   open: boolean;
   parents: CatalogParent[];
   shopping: boolean;
+  mode: ScanMode;
+  blocked: boolean;
   onToggle: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;
   onChangeMatch: (match: CatalogSearchResult) => void;
@@ -41,6 +49,8 @@ export function ReviewRow({
   open,
   parents,
   shopping,
+  mode,
+  blocked,
   onToggle,
   onChange,
   onChangeMatch,
@@ -48,7 +58,7 @@ export function ReviewRow({
   onConfirm,
 }: Props) {
   const { t } = useTranslation(['review', 'common']);
-  const name = line.match?.name ?? line.name;
+  const name = displayName(line);
   const unit = t(`common:units.${line.unit}`);
   const background = open ? TINT[status] : tokens.color.surface;
   const cell = {
@@ -72,7 +82,7 @@ export function ReviewRow({
         component="button"
         type="button"
         aria-expanded={open}
-        aria-controls={panelId(line.key)}
+        aria-controls={open ? panelId(line.key) : undefined}
         onClick={onToggle}
         sx={{
           ...rowGridSx(shopping),
@@ -110,19 +120,7 @@ export function ReviewRow({
             >
               {name}
             </Box>
-            {!shopping && line.description ? (
-              <Box
-                sx={{
-                  fontSize: 11,
-                  color: tokens.color.muted,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {line.description}
-              </Box>
-            ) : null}
+            <SourceText text={line.sourceText} mode={mode} />
           </Box>
         </Box>
         {line.quantity.trim() === '' ? (
@@ -171,6 +169,7 @@ export function ReviewRow({
           sure={groupStatus === 'ok'}
           parents={parents}
           shopping={shopping}
+          blocked={blocked}
           background={background}
           onChange={onChange}
           onChangeMatch={onChangeMatch}

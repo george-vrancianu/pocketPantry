@@ -24,6 +24,7 @@ const milkLine: ProposedLine = {
   quantity: 2,
   unit: 'l',
   expiryDate: null,
+  sourceText: 'LAPTE UHT 1L',
   productDescription: 'Lapte UHT',
 };
 
@@ -34,6 +35,7 @@ const bagLine: ProposedLine = {
   quantity: null,
   unit: null,
   expiryDate: null,
+  sourceText: 'SACOSA BIO',
   productDescription: null,
   excluded: { reason: 'other' },
 };
@@ -80,6 +82,11 @@ describe('Receipt Review', () => {
     expect(screen.getByText('SACOSA BIO')).toBeInTheDocument();
     expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeEnabled();
+  });
+
+  it('shows what the receipt said under the line name', () => {
+    renderReceiptReview([milkLine]);
+    expect(screen.getByText('On receipt: LAPTE UHT 1L')).toBeInTheDocument();
   });
 
   it('says why in the Member language, from the reason code', async () => {

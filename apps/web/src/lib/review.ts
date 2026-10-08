@@ -29,6 +29,8 @@ export type ReviewLine = {
   key: string;
   /** The name the Scan read; the raw name when the line stays Unmatched. */
   name: string;
+  /** The text the Scan read for this line, or null. Shown under the name, never saved. */
+  sourceText: string | null;
   match: CatalogSearchResult | null;
   lowConfidence: boolean;
   quantity: string;
@@ -54,6 +56,7 @@ export function toReviewLine(
   const base = {
     key,
     name: line.name,
+    sourceText: line.sourceText,
     match,
     lowConfidence: line.lowConfidence,
     quantity: line.quantity === null ? '' : String(line.quantity),
@@ -90,6 +93,9 @@ export function withMatch(
       : defaultExpiryDate(match.defaults.expiryDays, today),
   };
 }
+
+/** What the Review screen calls a line: the Ingredient it matched, else the name the Scan read. */
+export const displayName = (line: ReviewLine) => line.match?.name ?? line.name;
 
 /** How sure the Review screen is of a line: `low` needs a look at the Match, `qty` a quantity, `ok` is fine. */
 export type RowStatus = 'low' | 'qty' | 'ok';

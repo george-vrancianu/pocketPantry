@@ -106,5 +106,9 @@
     "failed_one": "{{count}} articol din lista de cumpărături nu a putut fi bifat.",
     "failed_few": "{{count}} articole din lista de cumpărături nu au putut fi bifate.",
     "failed_other": "{{count}} de articole din lista de cumpărături nu au putut fi bifate."
+  },
+  "row": {
+    "receiptPrefix": "Pe bon: {{text}}",
+    "readPrefix": "Citit: {{text}}"
   }
 }

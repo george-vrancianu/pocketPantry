@@ -23,7 +23,7 @@ import {
 import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
-import { fieldId, rowId } from '../components/layout';
+import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 
 /**
  * Review screen state. The Member's edits live here, in client state, until
@@ -48,7 +48,8 @@ export function useReviewScreen() {
   const confirmReceipt = useReceiptConfirm(i18n.language);
   const addShoppingItems = useAddShoppingItems(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
-  const shopping = draft?.mode === 'plate';
+  const mode = draft?.mode ?? 'product';
+  const shopping = mode === 'plate';
   // Each Scan Mode saves through one mutation; Product and Ingredients share the bulk Batch endpoint.
   const savers = {
     product: addBatches,
@@ -56,7 +57,7 @@ export function useReviewScreen() {
     receipt: confirmReceipt,
     plate: addShoppingItems,
   };
-  const saver = savers[draft?.mode ?? 'product'];
+  const saver = savers[mode];
   // Excluded lines (Scan-excluded or removed by the Member) wait outside the list and are never saved.
   const groups = reviewGroups(state);
   const counts = reviewCounts(state);
@@ -84,7 +85,15 @@ export function useReviewScreen() {
   const changeMatch = (key: string, match: CatalogSearchResult) =>
     dispatch({ type: 'changeMatch', key, match, today: new Date() });
   const toggle = (key: string) => dispatch({ type: 'toggle', key });
-  const remove = (key: string) => dispatch({ type: 'remove', key });
+  // Rows whose Save or Confirm was blocked, so their panels show every error.
+  const [blocked, setBlocked] = useState<Record<string, boolean>>({});
+  // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
+  const remove = (key: string) => {
+    const order = [...groups.review, ...groups.sure].map((l) => l.key);
+    const next = order[order.indexOf(key) + 1];
+    dispatch({ type: 'remove', key });
+    setFocusId(next ? rowId(next) : EXCLUDED_TOGGLE_ID);
+  };
   const restore = (key: string) => {
     dispatch({ type: 'restore', key });
     setFocusId(rowId(key));
@@ -94,6 +103,7 @@ export function useReviewScreen() {
     const line = candidates.find((l) => invalidFields(l).length > 0);
     if (!line) return false;
     dispatch({ type: 'open', key: line.key });
+    setBlocked((was) => ({ ...was, [line.key]: true }));
     setFocusId(fieldId(line.key, invalidFields(line)[0]));
     return true;
   };
@@ -128,12 +138,9 @@ export function useReviewScreen() {
       addShoppingItems.mutate(included.map(toNewShoppingItem), done);
       return;
     }
-    const mode = draft?.mode;
     const batches = included.map(toNewBatch).map((batch) =>
       // The queue only records the source of Unmatched names.
-      batch.rawName && mode && mode !== 'plate'
-        ? { ...batch, source: mode }
-        : batch,
+      batch.rawName ? { ...batch, source: mode } : batch,
     );
     if (mode === 'receipt') confirmReceipt.mutate(batches, done);
     else addBatches.mutate(batches, done);
@@ -145,7 +152,7 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
-    mode: draft?.mode,
+    mode,
     shopping,
     state,
     groups,
@@ -158,6 +165,7 @@ export function useReviewScreen() {
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
     toPantry: () => navigate('/pantry'),
+    blocked,
     toggle,
     change,
     changeMatch,
