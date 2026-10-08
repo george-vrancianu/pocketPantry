@@ -7,13 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
-import {
-  LOCATIONS,
-  UNITS,
-  type CatalogParent,
-  type CatalogSearchResult,
-} from '../../../lib/catalog';
+import { LOCATIONS, UNITS, type CatalogParent } from '../../../lib/catalog';
 import {
   formatDate,
   maskDateInput,
@@ -27,7 +21,7 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { Field, controlSx } from './Field';
-import { fieldId, focusRing, panelId, titleId } from './layout';
+import { fieldId, panelId, titleId } from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -38,7 +32,7 @@ type Props = {
   shopping: boolean;
   background: string;
   onChange: (patch: Partial<ReviewLine>) => void;
-  onChangeMatch: (match: CatalogSearchResult) => void;
+  onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
   /** A Save or Confirm was blocked on this row: show every error now. */
@@ -54,13 +48,12 @@ export function RowEditPanel({
   shopping,
   background,
   onChange,
-  onChangeMatch,
+  onSwapMatch,
   onRemove,
   onConfirm,
   blocked,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
-  const [searching, setSearching] = useState(false);
   // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
   const [expiryTouched, setExpiryTouched] = useState(false);
   const unmatched = line.match === null;
@@ -123,8 +116,8 @@ export function RowEditPanel({
             type="button"
             // A label alone would name the button "Match in your pantry" and hide which Ingredient is matched.
             aria-label={`${t('review:field.match')}: ${matchText}${unmatched ? '' : ` (${t('review:match.change')})`}`}
-            aria-expanded={searching}
-            onClick={() => setSearching((was) => !was)}
+            aria-haspopup="dialog"
+            onClick={onSwapMatch}
             sx={{
               ...controlSx,
               display: 'flex',
@@ -164,37 +157,6 @@ export function RowEditPanel({
             )}
           </Box>
         </Field>
-
-        {searching ? (
-          <Box sx={{ gridColumn: '1 / -1' }}>
-            <CatalogSearch
-              autoFocus
-              onSelect={(match) => {
-                onChangeMatch(match);
-                setSearching(false);
-              }}
-            />
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setSearching(false)}
-              sx={{
-                mt: '4px',
-                minHeight: 36,
-                border: 0,
-                bgcolor: 'transparent',
-                color: tokens.color.accent,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                ...focusRing,
-              }}
-            >
-              {t('review:match.keep')}
-            </Box>
-          </Box>
-        ) : null}
 
         {unmatched ? (
           <Field

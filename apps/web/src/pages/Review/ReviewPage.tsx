@@ -2,6 +2,7 @@ import { Alert, Box, Button, Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { MatchDialog } from './components/MatchDialog';
 import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
@@ -71,7 +72,7 @@ export function ReviewPage() {
             shopping={screen.shopping}
             onToggle={screen.toggle}
             onChange={screen.change}
-            onChangeMatch={screen.changeMatch}
+            onSwapMatch={screen.openSwap}
             onRemove={screen.remove}
             onConfirm={screen.confirm}
             onRestore={screen.restore}
@@ -90,6 +91,11 @@ export function ReviewPage() {
             ) : null}
             {screen.error ? <Alert>{screen.error}</Alert> : null}
           </Stack>
+          <MatchDialog
+            name={screen.swapName}
+            onSelect={screen.changeMatch}
+            onClose={screen.closeSwap}
+          />
           <ReviewActionBar
             saveLabel={saveLabel}
             canSave={screen.canSave}

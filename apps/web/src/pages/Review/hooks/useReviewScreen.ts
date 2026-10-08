@@ -8,6 +8,7 @@ import {
 } from '../../../lib/catalog';
 import {
   clearReview,
+  displayName,
   readReview,
   invalidFields,
   toNewBatch,
@@ -82,8 +83,18 @@ export function useReviewScreen() {
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
     dispatch({ type: 'update', key, patch });
-  const changeMatch = (key: string, match: CatalogSearchResult) =>
-    dispatch({ type: 'changeMatch', key, match, today: new Date() });
+  // The line whose Match is being swapped in the one page-level dialog, if any.
+  const [swapKey, setSwapKey] = useState<string | null>(null);
+  const swapLine = state.lines.find((l) => l.key === swapKey) ?? null;
+  const closeSwap = () => {
+    if (swapKey !== null) setFocusId(fieldId(swapKey, 'match'));
+    setSwapKey(null);
+  };
+  const changeMatch = (match: CatalogSearchResult) => {
+    if (swapKey === null) return;
+    dispatch({ type: 'changeMatch', key: swapKey, match, today: new Date() });
+    closeSwap();
+  };
   const toggle = (key: string) => dispatch({ type: 'toggle', key });
   // Rows whose Save or Confirm was blocked, so their panels show every error.
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
@@ -172,6 +183,9 @@ export function useReviewScreen() {
     blocked,
     toggle,
     change,
+    swapName: swapLine ? displayName(swapLine) : null,
+    openSwap: setSwapKey,
+    closeSwap,
     changeMatch,
     remove,
     restore,

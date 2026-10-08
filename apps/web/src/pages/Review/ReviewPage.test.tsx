@@ -375,22 +375,74 @@ describe('ReviewPage', () => {
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
   });
 
-  it('changes the Match through Catalog search, taking the new defaults', async () => {
+  it('changes the Match in a dialog, taking the new defaults', async () => {
     renderReview([
       line({ expiryDate: null, lowConfidence: true, quantity: 1 }),
     ]);
     await userEvent.click(
       screen.getByRole('button', { name: /Parmesan.*Change/ }),
     );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+    const search = within(dialog).getByRole('combobox', {
+      name: 'Search ingredients',
+    });
+    expect(search).toHaveFocus();
+    await userEvent.type(search, 'milk');
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    const panel = screen.getByRole('group', { name: 'Milk' });
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+    // The row's Match button keeps focus after the swap.
+    expect(
+      within(panel).getByRole('button', { name: /Milk.*Change/ }),
+    ).toHaveFocus();
+  });
+
+  it('turns an Unmatched line into a matched one when an Ingredient is chosen', async () => {
+    renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
     await userEvent.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'milk',
     );
     await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
-    const panel = screen.getByRole('group', { name: 'Milk' });
+    const panel = await screen.findByRole('group', { name: 'Milk' });
+    expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
     expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
+
+  it.each([
+    [
+      'Cancel',
+      () => userEvent.click(screen.getByRole('button', { name: 'Cancel' })),
+    ],
+    ['Escape', () => userEvent.keyboard('{Escape}')],
+  ])(
+    'leaves the line unchanged and returns focus when %s closes the dialog',
+    async (_how, close) => {
+      renderReview([sure({ quantity: 2 })]);
+      await userEvent.click(row('Parmesan'));
+      const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
+      await userEvent.click(opener);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      await close();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(opener).toHaveFocus();
+      expect(
+        screen.getByRole('group', { name: 'Parmesan' }),
+      ).toBeInTheDocument();
+    },
+  );
 
   it('shows an Unmatched line as "No match", with a Name and a Category', async () => {
     renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);

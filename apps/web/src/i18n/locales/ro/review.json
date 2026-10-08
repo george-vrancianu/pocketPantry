@@ -61,7 +61,8 @@
     "none": "Fără potrivire",
     "choose": "Alege",
     "change": "Schimbă",
-    "keep": "Păstrează această potrivire"
+    "dialogTitle": "Schimbă potrivirea pentru {{name}}",
+    "cancel": "Anulează"
   },
   "action": {
     "remove": "Elimină {{name}}",
