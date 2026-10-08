@@ -21,7 +21,10 @@
     "product": "Product",
     "qty": "Qty",
     "location": "Location",
-    "expiry": "Expires"
+    "expiry": "Expires",
+    "status": "Status",
+    "confidence": "Confidence",
+    "actions": "Actions"
   },
   "group": {
     "review": "To check",
@@ -65,7 +68,12 @@
   "action": {
     "remove": "Remove {{name}}",
     "confirm": "Confirm",
-    "done": "Done"
+    "done": "Done",
+    "swap": "Change match for {{name}}",
+    "choose": "Choose match for {{name}}",
+    "edit": "Edit {{name}}",
+    "finish": "Finish editing {{name}}",
+    "confirmFor": "Confirm {{name}}"
   },
   "save_one": "Save {{count}} item",
   "save_few": "Save {{count}} items",
@@ -105,6 +113,16 @@
   },
   "row": {
     "receiptPrefix": "On receipt: {{text}}",
-    "readPrefix": "Read: {{text}}"
+    "readPrefix": "Read: {{text}}",
+    "fieldFor": "{{field}}: {{name}}",
+    "categoryNone": "Category: not sure"
+  },
+  "confidence": {
+    "low": "Low",
+    "qty": "No quantity",
+    "ok": "High"
+  },
+  "footer": {
+    "helper": "Sure rows are collapsed. Tap a row to edit it."
   }
 }

@@ -12,6 +12,7 @@ import {
   statusOf,
   readReview,
   invalidFields,
+  type ReviewField,
   toNewBatch,
   toReviewLine,
   type ReviewLine,
@@ -125,14 +126,19 @@ export function useReviewScreen() {
   };
   // Opening a row by hand puts focus on its first empty field (else Match); shutting it returns to its button.
   // Rows open on load never come through here, so they do not steal focus.
-  const toggle = (key: string) => {
+  // The tablet has no Match field to open on, so it names the input to land on instead.
+  const toggle = (key: string, instead?: ReviewField) => {
     const line = state.lines.find((l) => l.key === key);
     dispatch({ type: 'toggle', key });
     if (!line) return;
+    const field = firstFocusField(line);
     setFocusId(
-      state.open[key] ? rowId(key) : fieldId(key, firstFocusField(line)),
+      state.open[key]
+        ? rowId(key)
+        : fieldId(key, field === 'match' ? (instead ?? 'match') : field),
     );
   };
+  const open = (key: string) => dispatch({ type: 'open', key });
   // Rows whose Save or Confirm was blocked, so their panels show every error.
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
   // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
@@ -225,6 +231,7 @@ export function useReviewScreen() {
     toPantry: () => navigate('/pantry', { state: savedState }),
     blocked,
     toggle,
+    open,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
     swapOpen,

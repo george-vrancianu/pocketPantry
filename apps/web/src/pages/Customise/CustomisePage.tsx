@@ -30,6 +30,7 @@ import {
   Typography,
   tokens,
   usePrefersReducedMotion,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -542,16 +543,7 @@ export function CustomisePage() {
           </Box>
         )}
       </Box>
-      <Box
-        role="status"
-        sx={{
-          position: 'absolute',
-          width: 1,
-          height: 1,
-          overflow: 'hidden',
-          clip: 'rect(0 0 0 0)',
-        }}
-      >
+      <Box role="status" sx={visuallyHidden}>
         {status}
       </Box>
     </>

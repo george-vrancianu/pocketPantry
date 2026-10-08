@@ -167,6 +167,12 @@ describe('reviewReducer', () => {
     expect(run(removed, { type: 'restore', key: 'k0' }).sureOpen).toBe(true);
   });
 
+  it('opening a row to check leaves a collapsed sure group collapsed', () => {
+    const collapsed = run(start(), { type: 'toggleSureGroup' });
+    expect(run(collapsed, { type: 'open', key: 'k1' }).sureOpen).toBe(false);
+    expect(run(collapsed, { type: 'open', key: 'k0' }).sureOpen).toBe(true);
+  });
+
   it('collapses and shows the sure group', () => {
     const state = run(start(), { type: 'toggleSureGroup' });
     expect(state.sureOpen).toBe(false);

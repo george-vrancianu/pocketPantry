@@ -7,7 +7,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { stubMotion } from '../../test/viewport';
+import { stubMotion, stubViewport } from '../../test/viewport';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -233,6 +233,36 @@ describe('Review polish: unverified toast', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Go to Pantry' }),
     );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '1 item still unverified',
+    );
+  });
+});
+
+describe('Review polish: tablet', () => {
+  beforeEach(() => {
+    clearReview();
+    stubViewport(1180);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('the pencil focuses the first input of a sure row, and finishing returns to the pencil', async () => {
+    renderReview([line()]);
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Edit Parmesan' }),
+    );
+    expect(
+      document.getElementById('review-line-line-0-quantity'),
+    ).toHaveFocus();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Finish editing Parmesan' }),
+    );
+    expect(screen.getByRole('button', { name: 'Edit Parmesan' })).toHaveFocus();
+  });
+
+  it('shows the toast after a tablet Save', async () => {
+    renderReview([line({ lowConfidence: true }), line({ name: 'Milk' })]);
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
     expect(await screen.findByRole('status')).toHaveTextContent(
       '1 item still unverified',
     );

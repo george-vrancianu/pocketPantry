@@ -12,9 +12,16 @@ export type IconButtonProps = Omit<
   /**
    * `surface` is the white circle with a border; `accent` is the filled primary action;
    * `plain` is a bare icon for dense rows; `urgent` is the red destructive action;
-   * `urgentOutline` is the quieter destructive action: white with an urgent border.
+   * `urgentOutline` is the quieter destructive action: white with an urgent border;
+   * `accentOutline` is the quiet primary action: white with an accent border.
    */
-  tone?: 'surface' | 'accent' | 'plain' | 'urgent' | 'urgentOutline';
+  tone?:
+    | 'surface'
+    | 'accent'
+    | 'plain'
+    | 'urgent'
+    | 'urgentOutline'
+    | 'accentOutline';
   /** Width and height in px: 44 for headers, 40 inside dense form rows. */
   size?: 40 | 44;
   href?: string;
@@ -57,6 +64,12 @@ export function IconButton({
       backgroundColor: color.urgentBg,
       color: color.urgentFg,
       '&:hover': { backgroundColor: color.urgentHover },
+    },
+    accentOutline: {
+      backgroundColor: color.surface,
+      color: color.accent,
+      border: `1px solid ${color.accent}`,
+      '&:hover': { backgroundColor: color.accentTint },
     },
     urgentOutline: {
       backgroundColor: color.surface,

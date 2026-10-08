@@ -4,6 +4,7 @@ export { tokens } from './theme/tokens';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
+export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
 export { Button, type ButtonProps } from './atoms/Button';

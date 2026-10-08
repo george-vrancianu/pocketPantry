@@ -11,7 +11,14 @@ import {
 import { SourceText } from './SourceText';
 import { RowEditPanel } from './RowEditPanel';
 import { StatusIcon } from './StatusIcon';
-import { focusRing, panelId, rowGridSx, rowId, titleId } from './layout';
+import {
+  ROW_TINT,
+  focusRing,
+  panelId,
+  rowGridSx,
+  rowId,
+  titleId,
+} from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -29,12 +36,6 @@ type Props = {
   onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
-};
-
-const TINT: Record<RowStatus, string> = {
-  low: tokens.color.urgentRow,
-  qty: tokens.color.soonRow,
-  ok: tokens.color.subtle,
 };
 
 /**
@@ -60,7 +61,7 @@ export function ReviewRow({
   const { t } = useTranslation(['review', 'common']);
   const name = displayName(line);
   const unit = t(`common:units.${line.unit}`);
-  const background = open ? TINT[status] : tokens.color.surface;
+  const background = open ? ROW_TINT[status] : tokens.color.surface;
   const cell = {
     fontSize: 12,
     minWidth: 0,
