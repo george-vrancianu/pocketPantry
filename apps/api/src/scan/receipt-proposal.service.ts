@@ -54,20 +54,20 @@ export class ReceiptProposalService {
 
     // One query for every line the model left Unmatched. Only an exact
     // normalised name hit counts; anything looser stays Unmatched.
-    const fallbackNames = [
+    // The printed `sourceText` is tried too: a Synonym a curator made from an
+    // Unmatched raw name (in any Scan Language) is that same text.
+    const names = [
       ...new Set(
         pantryLines.flatMap((line) =>
-          !line.matchedIngredientId && line.fallbackIngredientName
-            ? [line.fallbackIngredientName]
-            : [],
+          line.matchedIngredientId
+            ? []
+            : [line.fallbackIngredientName, line.sourceText].filter(
+                (name): name is string => !!name,
+              ),
         ),
       ),
     ];
-    const exact = await this.catalogSearch.findExact(
-      fallbackNames,
-      locale,
-      overrides,
-    );
+    const exact = await this.catalogSearch.findExact(names, locale, overrides);
 
     const resolve = (line: ReceiptScanResult['lines'][number]) => {
       const named = line.matchedIngredientId
@@ -75,9 +75,10 @@ export class ReceiptProposalService {
         : undefined;
       if (named)
         return { match: named, guessed: false } satisfies ResolvedMatch;
-      const hit = line.fallbackIngredientName
-        ? exact.get(line.fallbackIngredientName)
-        : undefined;
+      const hit =
+        (line.fallbackIngredientName
+          ? exact.get(line.fallbackIngredientName)
+          : undefined) ?? exact.get(line.sourceText);
       return hit
         ? ({ match: hit, guessed: true } satisfies ResolvedMatch)
         : null;

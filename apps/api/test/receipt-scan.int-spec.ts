@@ -180,7 +180,7 @@ describe('Receipt Scan (integration)', () => {
       .body as unknown;
     expect(prompts[0].prompt).toMatch(/receipt is in Danish/);
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
-    expect(prompts[0].prompt).toContain('Do not translate productName');
+    expect(prompts[0].prompt).toContain('do not translate it');
     expect(body).toMatchObject({ lines: [{ match: { name: 'Lapte' } }] });
   });
 

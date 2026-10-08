@@ -35,6 +35,8 @@ describe('Unmatched queue (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let adminCookie: string;
+  /** What the stubbed AI provider answers a Scan with. */
+  let scanned: unknown;
   const stamp = Date.now();
   let counter = 0;
   // Earlier specs in this worker may leave Unmatched rows: every test uses
@@ -127,7 +129,9 @@ describe('Unmatched queue (integration)', () => {
     call(adminCookie).post('/admin/unmatched/resolve', body);
 
   beforeAll(async () => {
-    app = await createTestApp();
+    app = await createTestApp([], {
+      generate: () => Promise.resolve({ data: scanned, requestId: 'fake' }),
+    });
     database = app.get<Database>(DATABASE);
     adminCookie = await signUp('chef.admin@example.com');
   });
@@ -263,6 +267,20 @@ describe('Unmatched queue (integration)', () => {
         expect(await tagsOf(rawQuery)).toEqual(['da']);
         expect(await tagsOf(rawBatch)).toEqual(['en']);
         expect(await tagsOf(rawLocale)).toEqual(['ro']);
+      });
+
+      it('honours a per-batch Scan Language on the single Batch endpoint too', async () => {
+        const raw = name('tag single');
+        await call(await newMember())
+          .post('/pantry/batches?locale=en', {
+            rawName: raw,
+            scanLanguage: 'da',
+            quantity: 1,
+            unit: 'pcs',
+            location: 'cupboard',
+          })
+          .expect(201);
+        expect(await tagsOf(raw)).toEqual(['da']);
       });
 
       it('rejects a Scan Language outside the supported list', async () => {
@@ -463,6 +481,54 @@ describe('Unmatched queue (integration)', () => {
       await database
         .delete(catalogTranslations)
         .where(eq(catalogTranslations.id, synonyms[0].id));
+    });
+
+    it('matches the resolved da Synonym on the next Receipt Scan, from the printed text alone', async () => {
+      const raw = name('skyr scan');
+      await saveBatches(await newMember(), [{ rawName: raw }], 'ro', 'da');
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: seedId.ingredient('parmesan'),
+      }).expect(201);
+
+      // The model finds no Match and its fallback name is no Synonym.
+      scanned = {
+        merchantName: null,
+        purchaseDate: null,
+        lines: [
+          {
+            lineNumber: 1,
+            sourceText: raw,
+            lineType: 'product',
+            includeInPantry: true,
+            exclusionReason: null,
+            productName: raw,
+            productType: 'Ost',
+            matchedIngredientId: null,
+            matchedCategory: null,
+            matchConfidence: 0,
+            fallbackIngredientName: `zzyzx ${raw}`,
+            matchExplanation: 'No match.',
+            quantityType: 'count',
+            purchasedCount: 1,
+            quantityPerItem: null,
+            quantityUnit: null,
+            confidence: 0.9,
+          },
+        ],
+      };
+      const response = await call(await newMember())
+        .post('/scan/receipt?locale=ro&scanLanguage=da', {
+          receiptImage: 'data:image/jpeg;base64,YQ==',
+        })
+        .expect(201);
+      expect(response.body).toMatchObject({
+        lines: [{ match: { id: seedId.ingredient('parmesan') } }],
+      });
+
+      await database
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.value, raw));
     });
 
     it('rejects a Synonym language outside the Scan Languages', async () => {

@@ -36,7 +36,7 @@ export class IngredientsScanService {
             ' Match catalog ingredients across languages. Return one item per distinct visible grocery product or ingredient. Do not include packaging, kitchen tools, household items, or obscured products. Do not duplicate items. Return at most ' +
             INGREDIENTS_SCAN_MAX_ITEMS +
             ' items.',
-          'Use a concise consumer-facing productName and broad food productType. Do not invent a brand, quantity, expiry date, or details not visible.',
+          'Use a concise consumer-facing productName (for loose produce with no printed label, name it in the language above) and broad food productType. Do not invent a brand, quantity, expiry date, or details not visible.',
           'Match each item against the application catalog. Ingredient tuples are [id, name, category]. Return matchedIngredientId only when that exact ID is present and is a reasonable match. Never invent IDs. Return matchedCategory only from catalog categories. matchConfidence measures catalog match confidence, not image-reading confidence. Use null when no catalog ingredient is a good match.',
           fallbackNamePrompt(locale) +
             '. confidence is per-item recognition confidence from 0 to 1.',
