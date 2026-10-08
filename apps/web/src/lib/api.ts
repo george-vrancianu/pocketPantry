@@ -1,6 +1,5 @@
-const apiOrigin = (
-  import.meta.env.VITE_API_URL ?? `http://${window.location.hostname}:3000`
-).replace(/\/$/, '');
+// Same origin by default: Vite proxies `/api` in dev, the API serves the app in production.
+const apiOrigin = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
 /** An error response from the API: `{ code, params }`, never user-facing text. */
 export class ApiError extends Error {

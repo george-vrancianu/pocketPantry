@@ -1,0 +1,9 @@
+{
+  "name": "Pocket Pantry",
+  "short_name": "Pantry",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#EEF1EA",
+  "theme_color": "#EEF1EA"
+}

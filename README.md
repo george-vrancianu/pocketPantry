@@ -93,3 +93,46 @@ npm run db:seed -w @pocket-pantry/api
 ```
 
 This loads the ingredient catalog. In development it also creates two test accounts, `alice@test.local` and `bob@test.local`, both with the password `password123`.
+
+### Try it on your phone
+
+`npm run dev` listens on your whole network, and the app talks to the API through the same address, so your phone only needs port 5173.
+
+1. Put your phone on the same Wi-Fi as your computer.
+2. Open `http://<your computer's local IP>:5173` on the phone.
+
+On Windows with WSL2, the phone can't see into WSL by default. Add this to `%UserProfile%\.wslconfig`, run `wsl --shutdown`, and allow port 5173 through the Windows firewall:
+
+```ini
+[wsl2]
+networkingMode=mirrored
+```
+
+Over plain `http://`, iPhone Safari won't give the app the live camera, so scanning falls back to the photo picker (which still offers "Take Photo"). For the live camera, open the app over HTTPS with a tunnel:
+
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+
+Set `CLIENT_ORIGIN` in `.env` to the `https://….trycloudflare.com` address it prints, restart `npm run dev`, and open that address on the phone.
+
+### Run it in production
+
+Build everything, then start the API with `WEB_DIST_DIR` set. The build and database steps need the dev tools, so install with `--include=dev` even when `NODE_ENV=production` is already set. The API then serves the web app from the same address, which keeps sign-in working in Safari.
+
+```bash
+npm ci --include=dev
+npm run build
+npm run db:migrate
+npm run db:seed -w @pocket-pantry/api   # once, loads the ingredient catalog
+WEB_DIST_DIR=../web/dist npm run start:prod -w @pocket-pantry/api
+```
+
+Set these in the environment (see `.env.example`):
+
+- `NODE_ENV=production`
+- `DATABASE_URL`: your Postgres database.
+- `CLIENT_ORIGIN` and `BETTER_AUTH_URL`: both the public address, e.g. `https://pantry.example.com`.
+- `BETTER_AUTH_SECRET` and `SCAN_TOKEN_SECRET`: different random values, e.g. `openssl rand -base64 48`.
+- `AI_API_KEY`: your OpenAI API key.
+- `ADMIN_EMAILS`: sign up with these addresses before you share the link, since there is no email verification yet.

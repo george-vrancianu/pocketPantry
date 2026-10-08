@@ -317,7 +317,10 @@ describe('ShoppingPage', () => {
     renderWithProviders(<ShoppingPage />, { locale: 'ro' });
 
     expect(await screen.findByText('0 de cumpărat')).toBeVisible();
-    const url = new URL(String(fetchSpy.mock.calls[0][0]));
+    const url = new URL(
+      String(fetchSpy.mock.calls[0][0]),
+      window.location.origin,
+    );
     expect(url.searchParams.get('locale')).toBe('ro');
   });
 });
