@@ -15,8 +15,8 @@ export type UnmatchedDismissBody = z.infer<typeof unmatchedDismissBody>;
 
 /**
  * Resolve a queue entry to exactly one of an existing Ingredient or a new one.
- * `locale` is the language of the Synonym; it defaults to the locale of the
- * most recent Unmatched row.
+ * `locale` is the language of the raw-name Synonym (UI-locale text, so a
+ * catalog locale); it defaults to the locale of the most recent Unmatched row.
  */
 export const unmatchedResolveBody = z
   .object({
@@ -24,6 +24,8 @@ export const unmatchedResolveBody = z
     ingredientId: z.uuid().optional(),
     newIngredient: ingredientCreate.optional(),
     locale: z.enum(CATALOG_LOCALES).optional(),
+    /** Also make a Synonym of the printed text, in its own Scan Language. */
+    sourceSynonym: z.boolean().default(false),
   })
   .refine((body) => (body.ingredientId === undefined) !== !body.newIngredient, {
     message: 'exactly one of ingredientId or newIngredient',
@@ -37,6 +39,9 @@ export type UnmatchedReference = {
   source: string;
   locale: string;
   rawName: string;
+  /** The text as printed, and the Scan Language it was read in; null when not recorded. */
+  sourceText: string | null;
+  sourceLanguage: string | null;
 };
 
 export type UnmatchedQueueEntry = {
@@ -48,6 +53,9 @@ export type UnmatchedQueueEntry = {
   /** Locale of the most recent row. */
   locale: string;
   locales: string[];
+  /** Printed text of the most recent row that has one, with its Scan Language. */
+  sourceText: string | null;
+  sourceLanguage: string | null;
   sources: string[];
   dismissed: boolean;
   /** Up to MAX_REFERENCES, newest first. */
@@ -60,4 +68,8 @@ export type UnmatchedResolution = {
   relinkedBatches: number;
   relinkedShoppingItems: number;
   synonymAdded: boolean;
+  /** A Synonym of the printed text was added (needs `sourceSynonym` and printed text). */
+  sourceSynonymAdded: boolean;
+  /** Why no printed-text Synonym was added: no printed text, already a Synonym of the target, or owned by another Ingredient. Null when added or not asked for. */
+  sourceSynonymSkipped: 'none' | 'exists' | 'taken' | null;
 };

@@ -99,6 +99,7 @@ describe('ReceiptScanService', () => {
     const result = await service.analyze(
       { receiptImage: 'data:image/jpeg;base64,YQ==' },
       'ro',
+      'ro',
     );
     expect(result.items[0]).toMatchObject({
       matchedIngredientId: ingredientId,
@@ -198,6 +199,7 @@ describe('ReceiptScanService', () => {
       const result = await service.analyze(
         { receiptImage: 'data:image/jpeg;base64,YQ==' },
         'ro',
+        'ro',
       );
       expect(receiptScanResultSchema.safeParse(result).success).toBe(true);
       expect(result.lines[0]).toMatchObject({
@@ -254,6 +256,7 @@ describe('ReceiptScanService', () => {
     const result = await service.analyze(
       { receiptImage: 'data:image/jpeg;base64,YQ==' },
       'ro',
+      'ro',
     );
     expect(result.items).toEqual([]);
     expect(result.lines[0]).toMatchObject({
@@ -277,7 +280,11 @@ describe('ReceiptScanService', () => {
       ],
     });
     await expect(
-      service.analyze({ receiptImage: 'data:image/jpeg;base64,YQ==' }, 'ro'),
+      service.analyze(
+        { receiptImage: 'data:image/jpeg;base64,YQ==' },
+        'ro',
+        'ro',
+      ),
     ).rejects.toMatchObject({ code: 'scan.provider_incomplete' });
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -303,7 +310,11 @@ describe('ReceiptScanService', () => {
       ],
     });
     await expect(
-      service.analyze({ receiptImage: 'data:image/jpeg;base64,YQ==' }, 'ro'),
+      service.analyze(
+        { receiptImage: 'data:image/jpeg;base64,YQ==' },
+        'ro',
+        'ro',
+      ),
     ).rejects.toMatchObject({
       code: 'scan.result_invalid',
     });

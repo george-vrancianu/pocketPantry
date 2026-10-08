@@ -5,7 +5,7 @@ import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
+import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
@@ -65,8 +65,9 @@ export class PantryService {
     memberId: string,
     body: CreateBatchBody,
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage = locale,
   ): Promise<BatchView> {
-    return (await this.createMany(memberId, [body], locale))[0];
+    return (await this.createMany(memberId, [body], locale, scanLanguage))[0];
   }
 
   /** Adds all Batches in one statement, so a bad line saves nothing. Used by the Review screen. */
@@ -74,6 +75,7 @@ export class PantryService {
     memberId: string,
     bodies: CreateBatchBody[],
     locale: CatalogLocale,
+    scanLanguage: ScanLanguage = locale,
   ): Promise<BatchView[]> {
     const familyId = await this.settings.familyIdOf(memberId);
     const overrides = await this.settings.expiryOverridesOf(familyId);
@@ -91,7 +93,10 @@ export class PantryService {
             ? [
                 {
                   rawName: row.rawName ?? '',
+                  // The raw name is UI-locale text; the printed text is in the Scan Language.
                   locale,
+                  sourceText: bodies[index].sourceText,
+                  sourceLanguage: scanLanguage,
                   source: bodies[index].source ?? 'manual',
                   batchId: row.id,
                 },

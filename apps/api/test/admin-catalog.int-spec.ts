@@ -721,6 +721,22 @@ describe('Admin role and Catalog curation (integration)', () => {
   describe('translations and Synonyms', () => {
     const ingredientId = seedId.ingredient('parmesan');
 
+    it('takes a Synonym in a Scan Language that is not a catalog locale, but never a display name', async () => {
+      const entry = {
+        entityType: 'ingredient',
+        entityId: ingredientId,
+        locale: 'da',
+        value: `Parmesanost ${stamp}`,
+      };
+      await as(adminCookie)
+        .post('/translations', { ...entry, kind: 'name' })
+        .expect(400);
+      const created = await as(adminCookie)
+        .post('/translations', { ...entry, kind: 'synonym' })
+        .expect(201);
+      expect(created.body).toMatchObject({ locale: 'da', kind: 'synonym' });
+    });
+
     it('enforces uniqueness per entity and locale, and display names per locale', async () => {
       // Parmesan already has the Romanian display name "Parmezan".
       await as(adminCookie)

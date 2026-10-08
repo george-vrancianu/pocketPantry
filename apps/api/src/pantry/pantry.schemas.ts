@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
+import {
+  CATALOG_LOCALES,
+  FALLBACK_LOCALE,
+  SCAN_LANGUAGES,
+} from '../catalog/catalog.schemas';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
 
@@ -9,6 +13,18 @@ export const pantryLocaleQuery = z.object({
   today: z.iso.date().optional(),
 });
 export type PantryLocaleQuery = z.infer<typeof pantryLocaleQuery>;
+
+/**
+ * Scan and save-from-Review endpoints: `locale` still names the Ingredients
+ * returned, `scanLanguage` is what the Scan is read in (default: `locale`).
+ */
+export const scanQuery = pantryLocaleQuery
+  .extend({ scanLanguage: z.enum(SCAN_LANGUAGES).optional() })
+  .transform((query) => ({
+    ...query,
+    scanLanguage: query.scanLanguage ?? query.locale,
+  }));
+export type ScanQuery = z.infer<typeof scanQuery>;
 
 /** A real calendar date: `2026-02-31` is rejected rather than rolled over. */
 const isoDate = z.iso.date();
@@ -35,6 +51,8 @@ export const createBatchBody = z
     parentCategoryId: z.uuid().optional(),
     /** Unmatched only: where the name came from (a Scan Mode or typed); defaults to manual. */
     source: z.enum(BATCH_SOURCES).optional(),
+    /** Unmatched only: the text as printed on the receipt or package, in the query's Scan Language. `rawName` stays UI-locale text. */
+    sourceText: z.string().trim().min(1).max(200).optional(),
     quantity: quantity.nullish(),
     unit: z.enum(ingredientUnit.enumValues).nullish(),
     location: z.enum(storageLocation.enumValues).optional(),
@@ -48,6 +66,10 @@ export const createBatchBody = z
   .refine((body) => !body.parentCategoryId || body.rawName, {
     message: 'parentCategoryId only applies to an Unmatched name',
     path: ['parentCategoryId'],
+  })
+  .refine((body) => !body.sourceText || body.rawName, {
+    message: 'sourceText only applies to an Unmatched name',
+    path: ['sourceText'],
   })
   .refine((body) => body.quantity == null || body.unit != null, {
     message: 'unit is required when quantity is set',

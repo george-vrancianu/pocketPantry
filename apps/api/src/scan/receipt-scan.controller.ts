@@ -6,9 +6,9 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   createBatchesBody,
-  pantryLocaleQuery,
+  scanQuery,
   type CreateBatchesBody,
-  type PantryLocaleQuery,
+  type ScanQuery,
 } from '../pantry/pantry.schemas';
 import {
   ReceiptConfirmService,
@@ -38,11 +38,16 @@ export class ReceiptScanController {
   })
   receipt(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ScanImagePipe(receiptScanSchema, ['receiptImage']))
     body: ReceiptScanInput,
   ): Promise<ScanResponse> {
-    return this.scan.scanReceipt(member.id, body, query.locale);
+    return this.scan.scanReceipt(
+      member.id,
+      body,
+      query.locale,
+      query.scanLanguage,
+    );
   }
 
   @Post('confirm')
@@ -52,9 +57,14 @@ export class ReceiptScanController {
   })
   confirm(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
+    @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
     @Body(new ZodValidationPipe(createBatchesBody)) body: CreateBatchesBody,
   ): Promise<ReceiptConfirmation> {
-    return this.confirmation.confirm(member.id, body.batches, query.locale);
+    return this.confirmation.confirm(
+      member.id,
+      body.batches,
+      query.locale,
+      query.scanLanguage,
+    );
   }
 }

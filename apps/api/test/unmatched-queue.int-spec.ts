@@ -35,6 +35,8 @@ describe('Unmatched queue (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let adminCookie: string;
+  /** What the stubbed AI provider answers a Scan with. */
+  let scanned: unknown;
   const stamp = Date.now();
   let counter = 0;
   // Earlier specs in this worker may leave Unmatched rows: every test uses
@@ -85,11 +87,15 @@ describe('Unmatched queue (integration)', () => {
 
   async function saveBatches(
     cookie: string,
-    lines: Array<{ rawName: string; source?: string }>,
+    lines: Array<{ rawName: string; source?: string; sourceText?: string }>,
     locale = 'en',
+    scanLanguage?: string,
+    path = '/pantry/batches/bulk',
   ) {
+    const query = new URLSearchParams({ locale });
+    if (scanLanguage) query.set('scanLanguage', scanLanguage);
     const response = await call(cookie)
-      .post(`/pantry/batches/bulk?locale=${locale}`, {
+      .post(`${path}?${query.toString()}`, {
         batches: lines.map((line) => ({
           ...line,
           quantity: 1,
@@ -123,7 +129,9 @@ describe('Unmatched queue (integration)', () => {
     call(adminCookie).post('/admin/unmatched/resolve', body);
 
   beforeAll(async () => {
-    app = await createTestApp();
+    app = await createTestApp([], {
+      generate: () => Promise.resolve({ data: scanned, requestId: 'fake' }),
+    });
     database = app.get<Database>(DATABASE);
     adminCookie = await signUp('chef.admin@example.com');
   });
@@ -206,6 +214,92 @@ describe('Unmatched queue (integration)', () => {
           locale: 'en',
         }),
       ]);
+    });
+
+    describe('printed text and Scan Language', () => {
+      const entryOf = async (raw: string) =>
+        (await entryFor(raw))?.references[0];
+
+      it('tags the raw name with the UI locale and the printed text with the Scan Language', async () => {
+        const raw = name('printed bulk');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: `${raw} 450g` }],
+          'ro',
+          'da',
+        );
+        expect(await entryOf(raw)).toMatchObject({
+          locale: 'ro',
+          rawName: raw,
+          sourceText: `${raw} 450g`,
+          sourceLanguage: 'da',
+        });
+      });
+
+      it('does the same on Receipt Scan confirm and the single Batch endpoint', async () => {
+        const rawConfirm = name('printed confirm');
+        const rawSingle = name('printed single');
+        const member = await newMember();
+        await saveBatches(
+          member,
+          [{ rawName: rawConfirm, sourceText: 'Skyr naturel' }],
+          'ro',
+          'da',
+          '/scan/receipt/confirm',
+        );
+        await call(member)
+          .post('/pantry/batches?locale=ro&scanLanguage=da', {
+            rawName: rawSingle,
+            sourceText: 'Skyr vanilje',
+            quantity: 1,
+            unit: 'pcs',
+            location: 'cupboard',
+          })
+          .expect(201);
+        expect(await entryOf(rawConfirm)).toMatchObject({
+          locale: 'ro',
+          sourceText: 'Skyr naturel',
+          sourceLanguage: 'da',
+        });
+        expect(await entryOf(rawSingle)).toMatchObject({
+          locale: 'ro',
+          sourceText: 'Skyr vanilje',
+          sourceLanguage: 'da',
+        });
+      });
+
+      it('stores no printed text, and no language, for a line without it', async () => {
+        const raw = name('printed none');
+        await saveBatches(await newMember(), [{ rawName: raw }], 'ro', 'da');
+        expect(await entryOf(raw)).toMatchObject({
+          locale: 'ro',
+          sourceText: null,
+          sourceLanguage: null,
+        });
+      });
+
+      it('shows the latest printed text and its language on the queue entry', async () => {
+        const raw = name('printed queue');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: 'Mælk 1l' }],
+          'ro',
+          'da',
+        );
+        expect(await entryFor(raw)).toMatchObject({
+          locale: 'ro',
+          sourceText: 'Mælk 1l',
+          sourceLanguage: 'da',
+        });
+      });
+
+      it('rejects a Scan Language outside the supported list', async () => {
+        await call(await newMember())
+          .post('/pantry/batches/bulk?scanLanguage=fr', {
+            batches: [{ rawName: name('bad'), quantity: 1, unit: 'pcs' }],
+          })
+          .expect(400);
+      });
     });
 
     it('records plate Shopping Items and Finish Shopping Batches', async () => {
@@ -366,6 +460,197 @@ describe('Unmatched queue (integration)', () => {
         locale: 'ro',
       }).expect(201);
       expect(response.body).toMatchObject({ locale: 'ro' });
+    });
+
+    describe('printed-text Synonym', () => {
+      const parmesan = seedId.ingredient('parmesan');
+      const receiptWith = (sourceText: string, fallback: string) => ({
+        merchantName: null,
+        purchaseDate: null,
+        lines: [
+          {
+            lineNumber: 1,
+            sourceText,
+            lineType: 'product',
+            includeInPantry: true,
+            exclusionReason: null,
+            productName: sourceText,
+            productType: 'Ost',
+            matchedIngredientId: null,
+            matchedCategory: null,
+            matchConfidence: 0,
+            fallbackIngredientName: fallback,
+            matchExplanation: 'No match.',
+            quantityType: 'count',
+            purchasedCount: 1,
+            quantityPerItem: null,
+            quantityUnit: null,
+            confidence: 0.9,
+          },
+        ],
+      });
+      const scanReceipt = async (sourceText: string, fallback: string) => {
+        // The model finds no Match and its fallback name is no Synonym.
+        scanned = receiptWith(sourceText, fallback);
+        return (
+          await call(await newMember())
+            .post('/scan/receipt?locale=ro&scanLanguage=da', {
+              receiptImage: 'data:image/jpeg;base64,YQ==',
+            })
+            .expect(201)
+        ).body as { lines: Array<{ match: { id: string } | null }> };
+      };
+      const synonymsOf = (value: string) =>
+        database
+          .select()
+          .from(catalogTranslations)
+          .where(
+            and(
+              eq(catalogTranslations.entityId, parmesan),
+              eq(catalogTranslations.kind, 'synonym'),
+              eq(catalogTranslations.value, value),
+            ),
+          );
+      const cleanUp = (...values: string[]) =>
+        database
+          .delete(catalogTranslations)
+          .where(inArray(catalogTranslations.value, values));
+
+      it('with sourceSynonym, also makes a da Synonym of the printed text that matches the next Receipt Scan', async () => {
+        const raw = name('skyr');
+        const printed = name('skyr trykt');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: printed }],
+          'ro',
+          'da',
+        );
+        const response = await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(response.body).toMatchObject({
+          locale: 'ro',
+          synonymAdded: true,
+          sourceSynonymAdded: true,
+          sourceSynonymSkipped: null,
+        });
+        expect(await synonymsOf(raw)).toMatchObject([{ locale: 'ro' }]);
+        expect(await synonymsOf(printed)).toMatchObject([{ locale: 'da' }]);
+
+        const scan = await scanReceipt(printed, `zzyzx ${raw}`);
+        expect(scan.lines[0].match?.id).toBe(parmesan);
+        await cleanUp(raw, printed);
+      });
+
+      it('without the flag, makes only the raw-name Synonym', async () => {
+        const raw = name('skyr plain');
+        const printed = name('skyr plain trykt');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: printed }],
+          'ro',
+          'da',
+        );
+        const response = await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+        }).expect(201);
+        expect(response.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: null,
+        });
+        expect(await synonymsOf(raw)).toHaveLength(1);
+        expect(await synonymsOf(printed)).toHaveLength(0);
+
+        const scan = await scanReceipt(printed, `zzyzx ${raw}`);
+        expect(scan.lines[0].match).toBeNull();
+        await cleanUp(raw);
+      });
+
+      it('says why when there is no printed text, or the target already answers to it', async () => {
+        const bare = name('skyr bare');
+        await saveBatches(await newMember(), [{ rawName: bare }], 'ro', 'da');
+        const none = await resolve({
+          normalizedName: normalise(bare),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(none.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'none',
+        });
+
+        const raw = name('skyr exists');
+        const printed = name('skyr exists trykt');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: printed }],
+          'ro',
+          'da',
+        );
+        await call(adminCookie)
+          .post('/admin/catalog/translations', {
+            entityType: 'ingredient',
+            entityId: parmesan,
+            kind: 'synonym',
+            locale: 'da',
+            value: printed,
+          })
+          .expect(201);
+        const exists = await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(exists.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'exists',
+        });
+        await cleanUp(bare, raw, printed);
+      });
+
+      it('skips the printed-text Synonym when another Ingredient already owns that name', async () => {
+        const raw = name('skyr taken');
+        const printed = name('skyr taken trykt');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: printed }],
+          'ro',
+          'da',
+        );
+        await call(adminCookie)
+          .post('/admin/catalog/translations', {
+            entityType: 'ingredient',
+            entityId: seedId.ingredient('milk'),
+            kind: 'synonym',
+            locale: 'da',
+            value: printed,
+          })
+          .expect(201);
+        const response = await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(response.body).toMatchObject({
+          synonymAdded: true,
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'taken',
+        });
+        await cleanUp(raw, printed);
+      });
+    });
+
+    it('rejects a Synonym language outside the Scan Languages', async () => {
+      const raw = name('bad language');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: seedId.ingredient('parmesan'),
+        locale: 'fr',
+      }).expect(400);
     });
 
     it('rejects a name that already matches a different Ingredient', async () => {

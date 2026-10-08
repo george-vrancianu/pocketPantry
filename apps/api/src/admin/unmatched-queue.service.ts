@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
@@ -165,6 +166,33 @@ export class UnmatchedQueueService {
       key,
       locale,
     );
+    // The printed text, in the Scan Language it was read in. A name another
+    // Ingredient already answers to is skipped, never an error.
+    const printed = body.sourceSynonym
+      ? entries.find((e) => e.sourceText && e.sourceLanguage)
+      : undefined;
+    const printedKey = printed?.sourceText
+      ? normalizeName(printed.sourceText)
+      : '';
+    let sourceSynonymAdded = false;
+    let sourceSynonymSkipped: UnmatchedResolution['sourceSynonymSkipped'] =
+      null;
+    if (body.sourceSynonym) {
+      if (!printed?.sourceText || !printed.sourceLanguage || !printedKey) {
+        sourceSynonymSkipped = 'none';
+      } else if (!(await this.isNameFree(tx, printedKey, target.id))) {
+        sourceSynonymSkipped = 'taken';
+      } else {
+        sourceSynonymAdded = await this.addSynonym(
+          tx,
+          target,
+          printed.sourceText,
+          printedKey,
+          printed.sourceLanguage,
+        );
+        if (!sourceSynonymAdded) sourceSynonymSkipped = 'exists';
+      }
+    }
     // Only the entries relinked above: one saved after our read stays queued.
     await tx.delete(unmatchedEntries).where(
       inArray(
@@ -179,6 +207,8 @@ export class UnmatchedQueueService {
       relinkedBatches,
       relinkedShoppingItems,
       synonymAdded,
+      sourceSynonymAdded,
+      sourceSynonymSkipped,
     };
   }
 
@@ -376,6 +406,16 @@ export class UnmatchedQueueService {
     key: string,
     ingredientId: string | undefined,
   ): Promise<void> {
+    if (!(await this.isNameFree(tx, key, ingredientId))) {
+      throw new ApiException(409, 'unmatched.name_taken');
+    }
+  }
+
+  private async isNameFree(
+    tx: Tx,
+    key: string,
+    ingredientId: string | undefined,
+  ): Promise<boolean> {
     const owners = await tx
       .select({ id: ingredients.id })
       .from(ingredients)
@@ -392,7 +432,7 @@ export class UnmatchedQueueService {
     const others = [...owners, ...translated].filter(
       (owner) => owner.id !== ingredientId,
     );
-    if (others.length > 0) throw new ApiException(409, 'unmatched.name_taken');
+    return others.length === 0;
   }
 
   /** Adds the raw text as a Synonym unless the Ingredient already answers to it. */
@@ -430,12 +470,15 @@ export class UnmatchedQueueService {
 
   private toQueueEntry(group: EntryRow[]): UnmatchedQueueEntry {
     const [latest] = group;
+    const printed = group.find((row) => row.sourceText);
     return {
       normalizedName: latest.normalizedName,
       rawName: latest.rawName,
       count: group.length,
       locale: latest.locale,
       locales: [...new Set(group.map((row) => row.locale))].sort(),
+      sourceText: printed?.sourceText ?? null,
+      sourceLanguage: printed?.sourceLanguage ?? null,
       sources: [...new Set(group.map((row) => row.source))].sort(),
       dismissed: group.every((row) => row.dismissedAt !== null),
       references: group.slice(0, MAX_REFERENCES).map((row) => ({
@@ -444,6 +487,8 @@ export class UnmatchedQueueService {
         source: row.source,
         locale: row.locale,
         rawName: row.rawName,
+        sourceText: row.sourceText,
+        sourceLanguage: row.sourceLanguage,
       })),
     };
   }

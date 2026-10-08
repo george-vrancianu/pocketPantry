@@ -69,10 +69,15 @@ describe('Product Scan (integration)', () => {
       .join('; ');
   }
 
-  const scan = (cookie: string, body: object, locale = 'en') =>
+  const scan = (
+    cookie: string,
+    body: object,
+    locale = 'en',
+    scanLanguage?: string,
+  ) =>
     request(app.getHttpServer())
       .post('/api/scan/product')
-      .query({ locale })
+      .query({ locale, ...(scanLanguage ? { scanLanguage } : {}) })
       .set('origin', TEST_ORIGIN)
       .set('cookie', cookie)
       .send(body);
@@ -152,10 +157,34 @@ describe('Product Scan (integration)', () => {
     const body = (
       await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201)
     ).body as unknown;
-    expect(prompts[0].prompt).toContain("The user's locale is ro");
+    expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
     expect(prompts[0].images).toEqual([IMAGE]);
     const lines = (body as { lines: { match: { name: string } }[] }).lines;
     expect(lines[0].match.name).not.toBe('Parmesan');
+  });
+
+  it('reads the package in the Scan Language while the UI locale still names the Ingredients and the fallback', async () => {
+    respondWith(parmesan());
+    prompts.length = 0;
+    const body = (
+      await scan(await signUp(), { productImage: IMAGE }, 'ro', 'da').expect(
+        201,
+      )
+    ).body as { lines: { match: { name: string } }[] };
+    expect(prompts[0].prompt).toMatch(/packages is in Danish/);
+    expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
+    expect(body.lines[0].match.name).not.toBe('Parmesan');
+  });
+
+  it('reads the package in the UI locale when no Scan Language is given', async () => {
+    respondWith(parmesan());
+    prompts.length = 0;
+    await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201);
+    expect(prompts[0].prompt).toMatch(/packages is in Romanian/);
+  });
+
+  it('rejects a Scan Language outside the supported list', async () => {
+    await scan(await signUp(), { productImage: IMAGE }, 'en', 'fr').expect(400);
   });
 
   it('marks a Match below the confidence threshold Unmatched', async () => {
@@ -172,6 +201,38 @@ describe('Product Scan (integration)', () => {
           name: 'Grana Padano',
         },
       ],
+    });
+  });
+
+  it('matches a line the model left Unmatched when the printed product name is exactly a Catalog name or Synonym', async () => {
+    // "Parmezan" is Parmesan's Romanian display name.
+    respondWith(
+      parmesan({
+        productName: 'Parmezan',
+        matchedIngredientId: null,
+        matchConfidence: 0,
+      }),
+    );
+    const response = await scan(await signUp(), {
+      productImage: IMAGE,
+    }).expect(201);
+    expect(response.body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('parmesan') } }],
+    });
+  });
+
+  it('keeps a valid model Match over a different exact hit on the printed name', async () => {
+    respondWith(
+      parmesan({
+        productName: 'Parmezan',
+        matchedIngredientId: seedId.ingredient('milk'),
+      }),
+    );
+    const response = await scan(await signUp(), {
+      productImage: IMAGE,
+    }).expect(201);
+    expect(response.body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('milk') } }],
     });
   });
 
