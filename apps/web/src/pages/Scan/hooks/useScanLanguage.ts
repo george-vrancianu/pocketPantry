@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   FALLBACK_LOCALE,
@@ -28,6 +28,12 @@ export function useScanLanguage(): {
   // A choice made under another UI language no longer applies.
   const scanLanguage =
     chosen.locale === locale ? chosen.language : loadScanLanguage(locale);
+  // Forget it for good, so coming back to the earlier UI language does not bring it back.
+  useEffect(() => {
+    if (chosen.locale === locale) return;
+    saveScanLanguage(locale, scanLanguage);
+    setChosen({ locale, language: scanLanguage });
+  }, [chosen.locale, locale, scanLanguage]);
   return {
     locale,
     scanLanguage,

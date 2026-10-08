@@ -1,6 +1,7 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { Locale, ScanLanguage } from '../../../i18n/resources';
+import { glassControl, glassFocusRing } from './glass';
 import { scanLanguageOptions } from '../../../lib/scanLanguage';
 
 type Props = {
@@ -24,14 +25,10 @@ export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
         height: 36,
         px: '14px',
         borderRadius: '18px',
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        color: '#FFFFFF',
+        ...glassControl(disabled),
+        cursor: 'default',
         fontSize: 13,
-        opacity: disabled ? 0.5 : 1,
-        '&:focus-within': {
-          outline: `2px solid ${tokens.color.accentMid}`,
-          outlineOffset: 2,
-        },
+        '&:focus-within': glassFocusRing,
       }}
     >
       {t('scanLanguage.label')}

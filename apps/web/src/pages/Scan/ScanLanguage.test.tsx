@@ -1,4 +1,4 @@
-import { cleanup, screen } from '@testing-library/react';
+import { act, cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -95,6 +95,18 @@ describe('Scan Language on the Scan screen', () => {
     expect(chip()).toHaveValue('da');
     cleanup();
     renderScan('/scan', {}, 'ro');
+    expect(chip()).toHaveValue('ro');
+  });
+
+  it('forgets the choice when the UI language changes, even if it changes back', async () => {
+    const { i18n } = renderWithProviders(<ScanPage />, {
+      route: '/scan',
+      locale: 'ro',
+    });
+    await userEvent.selectOptions(chip(), 'da');
+    await act(() => i18n.changeLanguage('en'));
+    expect(chip()).toHaveValue('en');
+    await act(() => i18n.changeLanguage('ro'));
     expect(chip()).toHaveValue('ro');
   });
 

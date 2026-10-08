@@ -18,7 +18,7 @@ export function renderWithProviders(
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   const i18n = createI18n(locale);
-  return render(
+  const result = render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <PocketPantryUiProvider linkComponent={RouterLink}>
@@ -27,6 +27,7 @@ export function renderWithProviders(
       </QueryClientProvider>
     </I18nextProvider>,
   );
+  return { ...result, i18n };
 }
 
 /** A fetch stub that answers by method and path, e.g. `'POST /api/auth/sign-in/email'`. */
