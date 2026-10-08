@@ -40,8 +40,12 @@ const bagLine: ProposedLine = {
   excluded: { reason: 'other' },
 };
 
-function renderReceiptReview(lines: ProposedLine[], extra = {}) {
-  startReview({ mode: 'receipt', lines });
+function renderReceiptReview(
+  lines: ProposedLine[],
+  extra = {},
+  scanLanguage?: 'en' | 'ro' | 'da',
+) {
+  startReview({ mode: 'receipt', lines, scanLanguage });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/parents': () =>
       Response.json({ parents: [{ id: 'other-id', name: 'Other' }] }),
@@ -134,6 +138,26 @@ describe('Receipt Review', () => {
       ?.body as { batches: { source?: string }[] };
     expect(body.batches[0].source).toBeUndefined();
     expect(body.batches[1].source).toBe('receipt');
+  });
+
+  it('confirms in the Scan Language of the receipt, with the printed text of Unmatched lines', async () => {
+    const calls = renderReceiptReview(
+      [milkLine, { ...bagLine, excluded: undefined, sourceText: 'POSE' }],
+      {},
+      'da',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
+    await screen.findByText('pantry screen');
+    const confirm = calls.find(
+      (c) => c.key === 'POST /api/scan/receipt/confirm',
+    );
+    expect(new URLSearchParams(confirm?.search).get('scanLanguage')).toBe('da');
+    const { batches } = (confirm?.body ?? {}) as { batches: object[] };
+    expect(batches[0]).not.toHaveProperty('sourceText');
+    expect(batches[1]).toMatchObject({
+      rawName: 'SACOSA BIO',
+      sourceText: 'POSE',
+    });
   });
 
   it('adds an excluded line back as an open, editable Unmatched line that is then saved', async () => {

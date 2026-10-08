@@ -18,8 +18,8 @@ export type ReceiptSection = ReceiptSectionResult & {
  * request, sent one at a time. The next photo goes to `target`: the section being
  * retaken, the one whose request just failed, or a new one at the end.
  */
-export function useReceiptSections(locale: string) {
-  const scan = useReceiptScan(locale);
+export function useReceiptSections(locale: string, scanLanguage: string) {
+  const scan = useReceiptScan(locale, scanLanguage);
   const [sections, setSections] = useState<ReceiptSection[]>([]);
   /** The section whose result the Member is looking at, if any. */
   const [selected, setSelected] = useState<number | null>(null);

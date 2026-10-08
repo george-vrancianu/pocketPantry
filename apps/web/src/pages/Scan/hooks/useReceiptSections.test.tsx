@@ -28,7 +28,9 @@ describe('useReceiptSections', () => {
 
   it('discards a result that arrives after reset', async () => {
     const release = stubDeferred(() => Response.json({ lines: [] }));
-    const { result } = renderHook(() => useReceiptSections('en'), { wrapper });
+    const { result } = renderHook(() => useReceiptSections('en', 'en'), {
+      wrapper,
+    });
     let submitted: Promise<unknown> = Promise.resolve();
     act(() => {
       submitted = result.current.submit(IMAGE);
@@ -51,7 +53,9 @@ describe('useReceiptSections', () => {
         { status: 502 },
       ),
     );
-    const { result } = renderHook(() => useReceiptSections('en'), { wrapper });
+    const { result } = renderHook(() => useReceiptSections('en', 'en'), {
+      wrapper,
+    });
     let submitted: Promise<unknown> = Promise.resolve();
     act(() => {
       submitted = result.current.submit(IMAGE);

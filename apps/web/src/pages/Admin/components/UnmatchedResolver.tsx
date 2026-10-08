@@ -1,4 +1,5 @@
 import {
+  Checkbox,
   SegmentedControl,
   Stack,
   TextField,
@@ -47,6 +48,11 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
     defaultUnit: 'g',
   });
   const [locale, setLocale] = useState<Locale>(entry.locale);
+  // Off unless chosen: a generic printed word would match every such line, skipping the confidence threshold.
+  const [sourceSynonym, setSourceSynonym] = useState(false);
+  const printedLanguage = entry.sourceLanguage
+    ? t(`admin:locales.${entry.sourceLanguage}`)
+    : '';
 
   const canSubmit =
     mode === 'existing'
@@ -67,15 +73,30 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
     const ingredientName =
       mode === 'existing' ? picked?.name : newIngredient.name.trim();
     resolve.mutate(
-      { normalizedName: entry.normalizedName, locale, ...target },
       {
-        onSuccess: (result) =>
-          onDone(
-            t('admin:unmatched.resolved', {
-              count: result.relinkedBatches + result.relinkedShoppingItems,
-              name: ingredientName,
-            }),
-          ),
+        normalizedName: entry.normalizedName,
+        locale,
+        ...(sourceSynonym ? { sourceSynonym } : {}),
+        ...target,
+      },
+      {
+        onSuccess: (result) => {
+          const linked = t('admin:unmatched.resolved', {
+            count: result.relinkedBatches + result.relinkedShoppingItems,
+            name: ingredientName,
+          });
+          const printed = result.sourceSynonymAdded
+            ? t('admin:unmatched.sourceSynonymAdded', {
+                text: entry.sourceText,
+                language: printedLanguage,
+              })
+            : result.sourceSynonymSkipped
+              ? t(
+                  `admin:unmatched.sourceSynonymSkipped.${result.sourceSynonymSkipped}`,
+                )
+              : '';
+          onDone(printed ? `${linked} ${printed}` : linked);
+        },
       },
     );
   };
@@ -138,6 +159,18 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
           </option>
         ))}
       </TextField>
+      {entry.sourceText ? (
+        <Checkbox
+          checked={sourceSynonym}
+          onChange={(event) => setSourceSynonym(event.target.checked)}
+          label={t('admin:unmatched.sourceSynonym', {
+            language: printedLanguage,
+          })}
+          helperText={t('admin:unmatched.sourceSynonymHint', {
+            text: entry.sourceText,
+          })}
+        />
+      ) : null}
     </EditorForm>
   );
 }

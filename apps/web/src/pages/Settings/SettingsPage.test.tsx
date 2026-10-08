@@ -107,10 +107,12 @@ describe('SettingsPage', () => {
     );
 
     await vi.waitFor(() =>
-      expect(calls).toContainEqual({
-        key: 'PATCH /api/settings/family',
-        body: { staleThresholdDays: 5 },
-      }),
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PATCH /api/settings/family',
+          body: { staleThresholdDays: 5 },
+        }),
+      ),
     );
   });
 
@@ -136,10 +138,12 @@ describe('SettingsPage', () => {
       screen.getByRole('button', { name: 'Save override' }),
     );
     await vi.waitFor(() =>
-      expect(calls).toContainEqual({
-        key: 'PUT /api/settings/family/expiry-overrides/hard-cheese',
-        body: { days: 9 },
-      }),
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PUT /api/settings/family/expiry-overrides/hard-cheese',
+          body: { days: 9 },
+        }),
+      ),
     );
 
     await userEvent.click(
@@ -160,10 +164,12 @@ describe('SettingsPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'RO' }));
     await vi.waitFor(() =>
-      expect(calls).toContainEqual({
-        key: 'PUT /api/settings/preferences',
-        body: { locale: 'ro' },
-      }),
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PUT /api/settings/preferences',
+          body: { locale: 'ro' },
+        }),
+      ),
     );
   });
 

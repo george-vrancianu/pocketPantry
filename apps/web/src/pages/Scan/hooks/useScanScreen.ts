@@ -15,6 +15,7 @@ import {
 import { MAX_RECEIPT_SECTIONS } from '../../../lib/receiptSections';
 import type { ReceiptCrop } from '../components/ReceiptCropper';
 import { useReceiptSections } from './useReceiptSections';
+import { useScanLanguage } from './useScanLanguage';
 import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
@@ -34,10 +35,11 @@ export function useScanScreen() {
   const wired = WIRED_SCAN_MODES.includes(mode);
 
   const camera = useCamera(mode === 'receipt');
-  const productScan = useProductScan(i18n.language);
-  const receiptSections = useReceiptSections(i18n.language);
+  const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
+  const productScan = useProductScan(i18n.language, scanLanguage);
+  const receiptSections = useReceiptSections(i18n.language, scanLanguage);
   const plate = usePlateScan();
-  const ingredientsScan = useIngredientsScan(i18n.language);
+  const ingredientsScan = useIngredientsScan(i18n.language, scanLanguage);
   // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
   // own flow, and Receipt photographs the receipt in sections.
   const modeScans = { product: productScan, ingredients: ingredientsScan };
@@ -155,7 +157,7 @@ export function useScanScreen() {
           setLocalError('scan.nothing_found');
           return;
         }
-        startReview({ mode, lines });
+        startReview({ mode, lines, scanLanguage });
         navigate('/scan/review');
       },
     });
@@ -246,7 +248,7 @@ export function useScanScreen() {
       return;
     }
     clearQueue();
-    startReview({ mode: 'receipt', lines });
+    startReview({ mode: 'receipt', lines, scanLanguage });
     navigate('/scan/review');
   };
 
@@ -266,6 +268,13 @@ export function useScanScreen() {
   return {
     mode,
     wired,
+    uiLocale: locale,
+    scanLanguage,
+    setScanLanguage,
+    /** Plate Scan has no Scan Language. */
+    scanLanguageShown: mode !== 'plate',
+    /** A receipt has one Scan Language, fixed by its first section. */
+    scanLanguageLocked: reading || sectionsInProgress,
     camera,
     flash,
     reading,

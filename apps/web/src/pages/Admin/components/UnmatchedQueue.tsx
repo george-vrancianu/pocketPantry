@@ -152,6 +152,16 @@ function QueueRow({
       <Typography component="h3" variant="subtitle1">
         {entry.rawName}
       </Typography>
+      {entry.sourceText ? (
+        <Typography variant="body2">
+          {entry.sourceLanguage
+            ? t('unmatched.printedIn', {
+                text: entry.sourceText,
+                language: t(`locales.${entry.sourceLanguage}`),
+              })
+            : t('unmatched.printed', { text: entry.sourceText })}
+        </Typography>
+      ) : null}
       <Typography variant="body2" color="text.secondary">
         {t('unmatched.rows', { count: entry.count })} · {sources} · {locales}
       </Typography>

@@ -182,6 +182,39 @@ describe('IngredientEditor', () => {
     );
   });
 
+  it('takes Danish Synonyms but no Danish display name', async () => {
+    const calls = stub({
+      'POST /api/admin/catalog/translations': () =>
+        Response.json({}, { status: 201 }),
+    });
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={parmesan}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    expect(screen.queryByLabelText('Name (Danish)')).not.toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText('New Synonym (Danish)'),
+      'parmesan ost',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Add Danish Synonym' }),
+    );
+    await vi.waitFor(() =>
+      expect(calls.find((c) => c.key.startsWith('POST'))?.body).toEqual({
+        entityType: 'ingredient',
+        entityId: 'i1',
+        locale: 'da',
+        kind: 'synonym',
+        value: 'parmesan ost',
+      }),
+    );
+  });
+
   it('explains in the Member language why an Ingredient in use cannot be deleted', async () => {
     stub({
       'DELETE /api/admin/catalog/ingredients/i1': () =>

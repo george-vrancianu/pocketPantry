@@ -24,6 +24,8 @@ export type NewBatch = {
   rawName?: string;
   /** With `rawName` only: the Parent Category whose Other Leaf receives the Batch. */
   parentCategoryId?: string;
+  /** With `rawName` only: the text as printed on the receipt or package, for the Admin queue to turn into a Synonym. */
+  sourceText?: string;
   /** Unmatched only: the Scan Mode (or typed entry) the name came from, for the Admin queue. */
   source?: 'product' | 'receipt' | 'ingredients' | 'manual';
   quantity?: number | null;

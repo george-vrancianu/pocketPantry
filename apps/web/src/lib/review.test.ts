@@ -181,6 +181,7 @@ describe('toNewBatch', () => {
     expect(toNewBatch(toReviewLine(line({ match: null }), 'a', today))).toEqual(
       {
         rawName: 'Grana Padano',
+        sourceText: 'GRANA PAD 200G',
         quantity: null,
         unit: null,
         location: 'cupboard',
@@ -188,5 +189,24 @@ describe('toNewBatch', () => {
         productDescription: 'Grana Padano 200g',
       },
     );
+  });
+
+  it('sends the printed text with an Unmatched line, even after the Member renamed it', () => {
+    const unmatched = toReviewLine(line({ match: null }), 'a', today);
+    expect(toNewBatch({ ...unmatched, name: 'Hard cheese' })).toMatchObject({
+      rawName: 'Hard cheese',
+      sourceText: 'GRANA PAD 200G',
+    });
+  });
+
+  it('sends no printed text for a matched line or a line without any', () => {
+    expect(toNewBatch(toReviewLine(line(), 'a', today))).not.toHaveProperty(
+      'sourceText',
+    );
+    expect(
+      toNewBatch(
+        toReviewLine(line({ match: null, sourceText: null }), 'a', today),
+      ),
+    ).not.toHaveProperty('sourceText');
   });
 });

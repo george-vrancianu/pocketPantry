@@ -11,7 +11,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { SCAN_MODES } from '../../lib/scan';
+import { glassControl, glassFocusRing } from './components/glass';
 import { DishPicker } from './components/DishPicker';
+import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
 import { Viewfinder } from './components/Viewfinder';
@@ -25,14 +27,8 @@ const roundButton = (size: number, disabled: boolean) => ({
   height: size,
   borderRadius: '50%',
   border: 0,
-  backgroundColor: 'rgba(255,255,255,0.12)',
-  color: '#FFFFFF',
-  cursor: disabled ? 'default' : 'pointer',
-  opacity: disabled ? 0.5 : 1,
-  '&:focus-visible': {
-    outline: `2px solid ${tokens.color.accentMid}`,
-    outlineOffset: 2,
-  },
+  ...glassControl(disabled),
+  '&:focus-visible': glassFocusRing,
 });
 
 /** The dark camera screen (handoff section 7). Only Product is wired; the other mode pills show a notice. */
@@ -88,6 +84,17 @@ export function ScanPage() {
           receiptGuide={screen.mode === 'receipt'}
         />
       </Box>
+
+      {screen.scanLanguageShown ? (
+        <Box sx={{ mt: '16px', textAlign: 'center' }}>
+          <ScanLanguageChip
+            value={screen.scanLanguage}
+            locale={screen.uiLocale}
+            disabled={screen.scanLanguageLocked}
+            onChange={screen.setScanLanguage}
+          />
+        </Box>
+      ) : null}
 
       <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>

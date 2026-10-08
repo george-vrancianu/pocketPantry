@@ -11,7 +11,8 @@
   },
   "locales": {
     "en": "Engleză",
-    "ro": "Română"
+    "ro": "Română",
+    "da": "Daneză"
   },
   "common": {
     "save": "Salvează",
@@ -90,6 +91,16 @@
     "resolving": "Se rezolvă…",
     "resolved_one": "{{count}} rând legat de {{name}}.",
     "resolved_few": "{{count}} rânduri legate de {{name}}.",
-    "resolved_other": "{{count}} de rânduri legate de {{name}}."
+    "resolved_other": "{{count}} de rânduri legate de {{name}}.",
+    "printed": "Tipărit: {{text}}",
+    "printedIn": "Tipărit: {{text}} ({{language}})",
+    "sourceSynonym": "Adaugă și textul tipărit ca Sinonim ({{language}})",
+    "sourceSynonymHint": "Adaugă „{{text}}” ca data viitoare să se potrivească singur. Las-o debifată pentru un cuvânt generic: ar potrivi fiecare astfel de rând, ocolind verificarea încrederii.",
+    "sourceSynonymAdded": "„{{text}}” a fost adăugat ca Sinonim ({{language}}).",
+    "sourceSynonymSkipped": {
+      "exists": "Textul tipărit nu a fost adăugat: este deja Sinonim al acestui Ingredient.",
+      "taken": "Textul tipărit nu a fost adăugat: aparține altui Ingredient.",
+      "none": "Textul tipărit nu a fost adăugat: rândurile nu aveau text tipărit."
+    }
   }
 }
