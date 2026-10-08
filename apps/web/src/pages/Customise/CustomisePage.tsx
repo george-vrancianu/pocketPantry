@@ -29,6 +29,7 @@ import {
   Spinner,
   Typography,
   tokens,
+  usePrefersReducedMotion,
   visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
@@ -65,10 +66,6 @@ const FOCUS_RING = {
   },
 };
 
-const prefersReducedMotion = () =>
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 type RowProps = {
   widget: WidgetInstance;
   index: number;
@@ -87,6 +84,7 @@ function WidgetRow({
   onRemove,
 }: RowProps) {
   const { t } = useTranslation(['customise', 'dashboard']);
+  const reduceMotion = usePrefersReducedMotion();
   const definition = WIDGET_REGISTRY[widget.type] as
     (typeof WIDGET_REGISTRY)[typeof widget.type] | undefined;
   const name = definition
@@ -119,7 +117,7 @@ function WidgetRow({
       aria-label={name}
       style={{
         transform: CSS.Transform.toString(transform),
-        transition: prefersReducedMotion() ? undefined : transition,
+        transition: reduceMotion ? undefined : transition,
       }}
       sx={{
         display: 'flex',

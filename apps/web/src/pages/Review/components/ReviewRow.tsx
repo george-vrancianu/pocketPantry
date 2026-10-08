@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, Collapse, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import type { ScanMode } from '../../../lib/scan';
@@ -163,7 +163,7 @@ export function ReviewRow({
           </>
         )}
       </Box>
-      {open ? (
+      <Collapse open={open}>
         <RowEditPanel
           line={line}
           status={status}
@@ -177,7 +177,7 @@ export function ReviewRow({
           onRemove={onRemove}
           onConfirm={onConfirm}
         />
-      ) : null}
+      </Collapse>
     </Box>
   );
 }

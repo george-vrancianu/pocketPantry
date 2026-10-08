@@ -104,7 +104,7 @@ export function ReviewPage() {
               mode={screen.mode}
               blocked={screen.blocked}
               onOpen={screen.open}
-              onToggle={screen.toggle}
+              onToggle={(key) => screen.toggle(key, 'quantity')}
               onChange={screen.change}
               onSwapMatch={screen.openSwap}
               onRemove={screen.remove}
