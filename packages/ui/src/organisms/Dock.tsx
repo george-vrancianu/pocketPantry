@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import type { MouseEvent, ReactNode } from 'react';
 import { DockItem, type DockVariant } from '../molecules/DockItem';
 import { tokens } from '../theme/tokens';
+import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
 
 export type DockEntry = {
   key: string;
@@ -40,12 +41,12 @@ export function Dock({
         position: 'fixed',
         left: 0,
         right: 0,
-        bottom: 16,
+        bottom: DOCK_BOTTOM,
         zIndex: 10,
         mx: 'auto',
         width: 'calc(100% - 32px)',
         maxWidth: { sm: 480, md: 520 },
-        height: { xs: 76, md: 84 },
+        height: DOCK_HEIGHT,
         boxSizing: 'border-box',
         p: '8px',
         display: 'grid',

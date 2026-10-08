@@ -2,10 +2,12 @@ export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme } from './theme/theme';
 export { tokens } from './theme/tokens';
 export { useBreakpointUp } from './theme/useBreakpointUp';
+export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
+export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
 
 export { Alert, type AlertProps } from './atoms/Alert';
-export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Button, type ButtonProps } from './atoms/Button';
+export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
 export { IconButton, type IconButtonProps } from './atoms/IconButton';
 export { Box, Stack, type BoxProps, type StackProps } from './atoms/Layout';

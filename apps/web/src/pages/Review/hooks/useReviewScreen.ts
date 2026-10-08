@@ -26,7 +26,10 @@ import {
 import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
-import { unverifiedState } from '../../../lib/unverifiedToast';
+import {
+  unverifiedState,
+  type UnverifiedState,
+} from '../../../lib/unverifiedState';
 import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 
 /**
@@ -74,7 +77,7 @@ export function useReviewScreen() {
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
   // Saved lines the Member never verified, told on the page Save lands on.
-  const [unverified, setUnverified] = useState(0);
+  const [savedState, setSavedState] = useState<UnverifiedState | undefined>();
   // Focus lands on an element that only exists after the render that opened or restored it.
   const [focusId, setFocusId] = useState<string | null>(null);
   useEffect(() => {
@@ -168,9 +171,10 @@ export function useReviewScreen() {
     // Display order, so the Member lands on the topmost problem.
     if (focusInvalid([...groups.review, ...groups.sure])) return;
     const to = shopping ? '/shopping' : '/pantry';
-    const unverifiedSaved = included.filter(
-      (l) => statusOf(l, !!state.confirmed[l.key]) === 'low',
-    ).length;
+    const navState = unverifiedState(
+      included.filter((l) => statusOf(l, !!state.confirmed[l.key]) === 'low')
+        .length,
+    );
     const done = {
       onSuccess: (result?: unknown) => {
         clearReview();
@@ -181,10 +185,10 @@ export function useReviewScreen() {
           failures.missing + failures.changed + failures.other > 0
         ) {
           setTickFailures(failures);
-          setUnverified(unverifiedSaved);
+          setSavedState(navState);
           return;
         }
-        navigate(to, { state: unverifiedState(unverifiedSaved) });
+        navigate(to, { state: navState });
       },
     };
     if (shopping) {
@@ -218,7 +222,7 @@ export function useReviewScreen() {
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
     // After a tick-failure notice the toast still follows, on the Pantry the lines were saved to.
-    toPantry: () => navigate('/pantry', { state: unverifiedState(unverified) }),
+    toPantry: () => navigate('/pantry', { state: savedState }),
     blocked,
     toggle,
     change,

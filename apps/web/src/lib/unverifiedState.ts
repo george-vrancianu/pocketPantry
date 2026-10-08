@@ -9,3 +9,12 @@ export function unverifiedCount(state: unknown): number {
   const value = (state as Partial<UnverifiedState> | null)?.unverified;
   return typeof value === 'number' && value > 0 ? value : 0;
 }
+
+/** The same state without the count, so unrelated state survives; null when nothing is left. */
+export function withoutUnverified(state: unknown): object | null {
+  const { unverified: _gone, ...rest } = (state ?? {}) as Record<
+    string,
+    unknown
+  >;
+  return Object.keys(rest).length > 0 ? rest : null;
+}

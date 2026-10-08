@@ -1,13 +1,15 @@
-import { invalidFields, type ReviewLine } from './review';
+import { invalidFields, type ReviewField, type ReviewLine } from './review';
 
 /**
- * Which field of a row takes focus when the Member opens it: the first
- * invalid or empty one (an entered bad value, a nameless Unmatched line, a
- * missing quantity), else the Match button.
+ * Which field of a row takes focus when the Member opens it, walking the panel
+ * in screen order: a blank Unmatched name, an invalid or missing quantity, an
+ * invalid expiry; else the Match button.
  */
-export function firstFocusField(line: ReviewLine): string {
-  const invalid = invalidFields(line)[0];
-  if (invalid) return invalid;
-  if (line.quantity.trim() === '') return 'quantity';
+export function firstFocusField(line: ReviewLine): ReviewField | 'match' {
+  const invalid = invalidFields(line);
+  if (invalid.includes('name')) return 'name';
+  if (invalid.includes('quantity') || line.quantity.trim() === '')
+    return 'quantity';
+  if (invalid.includes('expiry')) return 'expiry';
   return 'match';
 }

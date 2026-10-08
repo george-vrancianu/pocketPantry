@@ -7,6 +7,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -36,28 +37,33 @@ function Probe() {
   return <p>{`state:${JSON.stringify(state)}`}</p>;
 }
 
-/** Answer `(prefers-reduced-motion: reduce)` with `reduce`; every other query is false. */
-function stubMotion(reduce: boolean) {
-  vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: reduce && query.includes('prefers-reduced-motion'),
-    media: query,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-  }));
-}
-
-function renderReview(lines: ProposedLine[]) {
-  startReview({ mode: 'product', lines });
+function renderReview(
+  lines: ProposedLine[],
+  mode: 'product' | 'plate' | 'receipt' = 'product',
+  extra: Record<string, () => Response> = {},
+) {
+  startReview({ mode, lines });
   const { fetchMock } = stubApi({
     'GET /api/catalog/parents': () => Response.json({ parents: [] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
+    'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
+    'POST /api/scan/receipt/confirm': () =>
+      Response.json({ batches: [], matchedShoppingItemIds: [] }),
+    ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
       <Route path="/scan/review" element={<ReviewPage />} />
+      <Route
+        path="/shopping"
+        element={
+          <>
+            <UnverifiedToast />
+            <Probe />
+          </>
+        }
+      />
       <Route
         path="/pantry"
         element={
@@ -95,6 +101,15 @@ describe('Review polish: focus', () => {
   });
 
   it('opening a row with a missing quantity focuses Quantity, and shutting it returns to the row', async () => {
+    renderReview([line({ quantity: null })]);
+    await userEvent.click(row('Parmesan'));
+    expect(screen.getByLabelText('Quantity')).toHaveFocus();
+    await userEvent.click(row('Parmesan'));
+    expect(row('Parmesan')).toHaveFocus();
+  });
+
+  it('focuses Quantity with motion enabled too', async () => {
+    stubMotion(false);
     renderReview([line({ quantity: null })]);
     await userEvent.click(row('Parmesan'));
     expect(screen.getByLabelText('Quantity')).toHaveFocus();
@@ -165,7 +180,7 @@ describe('Review polish: unverified toast', () => {
       line({ name: 'Milk' }),
     ]);
     await userEvent.click(screen.getByRole('button', { name: 'Save 3 items' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(await screen.findByRole('status')).toHaveTextContent(
       '2 items still unverified',
     );
     expect(screen.getByText('state:null')).toBeInTheDocument();
@@ -174,7 +189,7 @@ describe('Review polish: unverified toast', () => {
   it('uses the singular for one line', async () => {
     renderReview([line({ lowConfidence: true })]);
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(await screen.findByRole('status')).toHaveTextContent(
       '1 item still unverified',
     );
   });
@@ -184,7 +199,7 @@ describe('Review polish: unverified toast', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
     await screen.findByText('state:null');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('does not count removed lines', async () => {
@@ -194,6 +209,32 @@ describe('Review polish: unverified toast', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
     await screen.findByText('state:null');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('tells a Plate save on the Shopping List', async () => {
+    renderReview([line({ lowConfidence: true })], 'plate');
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '1 item still unverified',
+    );
+  });
+
+  it('follows "Go to Pantry" after a tick failure', async () => {
+    renderReview([line({ lowConfidence: true })], 'receipt', {
+      'POST /api/scan/receipt/confirm': () =>
+        Response.json({ batches: [], matchedShoppingItemIds: ['item-1'] }),
+      'PATCH /api/shopping-list/items/item-1': () =>
+        Response.json({ code: 'shopping.item_not_found' }, { status: 404 }),
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Go to Pantry' }),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '1 item still unverified',
+    );
   });
 });
