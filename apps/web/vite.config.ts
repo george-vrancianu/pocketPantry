@@ -3,7 +3,14 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 // The app calls `/api` on its own origin, so a phone or HTTPS tunnel only needs Vite's port.
-const proxy = { '/api': 'http://localhost:3000' };
+// Only the API's own prefix: a route like `/apiary` stays with the app.
+const proxy = { '^/api(/|\\?|$)': 'http://localhost:3000' };
+// HTTPS tunnels, which iPhone Safari needs before it grants the camera.
+const allowedHosts = [
+  '.trycloudflare.com',
+  '.ngrok-free.app',
+  '.ngrok-free.dev',
+];
 
 export default defineConfig({
   plugins: [react()],
@@ -14,10 +21,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy,
-    // HTTPS tunnels, which iPhone Safari needs before it grants the camera.
-    allowedHosts: ['.trycloudflare.com', '.ngrok-free.app'],
+    allowedHosts,
   },
-  preview: { proxy },
+  preview: { proxy, allowedHosts },
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',

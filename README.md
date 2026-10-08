@@ -118,10 +118,10 @@ Set `CLIENT_ORIGIN` in `.env` to the `https://….trycloudflare.com` address it 
 
 ### Run it in production
 
-Build everything, then start the API with `WEB_DIST_DIR` set. The API then serves the web app from the same address, which keeps sign-in working in Safari.
+Build everything, then start the API with `WEB_DIST_DIR` set. The build and database steps need the dev tools, so install with `--include=dev` even when `NODE_ENV=production` is already set. The API then serves the web app from the same address, which keeps sign-in working in Safari.
 
 ```bash
-npm ci
+npm ci --include=dev
 npm run build
 npm run db:migrate
 npm run db:seed -w @pocket-pantry/api   # once, loads the ingredient catalog
