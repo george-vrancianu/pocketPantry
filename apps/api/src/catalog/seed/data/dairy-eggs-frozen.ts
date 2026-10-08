@@ -124,6 +124,7 @@ export const dairy: SeedSection = {
       ],
       ['gouda', 'Gouda', 'Gouda', 'g'],
       ['edam', 'Edam', 'Edam', 'g'],
+      // 'emmentaler' is left out: it is the Danish name (data/danish.ts).
       ['emmental', 'Emmental', 'Emmental', 'g', ['swiss cheese']],
       ['gruyere', 'Gruyère', 'Gruyère', 'g'],
       [
@@ -376,6 +377,7 @@ export const dairy: SeedSection = {
     ]),
     ...ingredientsOf('yogurt', [
       [
+        // 'yoghurt' is left out: it is the Danish name (data/danish.ts).
         'yogurt',
         'Yogurt',
         'Iaurt',

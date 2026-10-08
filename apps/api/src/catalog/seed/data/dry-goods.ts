@@ -268,6 +268,7 @@ export const grains: SeedSection = {
     ...ingredientsOf('breakfast-cereals', [
       ['muesli', 'Muesli', 'Musli', 'g', ['granola'], ['musli cu fructe']],
       [
+        // 'cornflakes' is left out: it is the Danish name (data/danish.ts).
         'cornflakes',
         'Corn flakes',
         'Fulgi de porumb',

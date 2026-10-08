@@ -202,6 +202,7 @@ export const bakery: SeedSection = {
         ['sweet bread'],
         ['cozonac cu nuca'],
       ],
+      // 'muffins' and 'donut' are left out: they are the Danish names (data/danish.ts).
       ['muffin', 'Muffin', 'Brioșe', 'pcs', undefined, ['briosa']],
       ['doughnut', 'Doughnut', 'Gogoașă', 'pcs', undefined, ['gogosi']],
     ]),

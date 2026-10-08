@@ -144,6 +144,7 @@ export const produce: SeedSection = {
         ['eggplant'],
         ['vânătă', 'patlagele vinete'],
       ],
+      // Pumpkin no longer has the Synonym 'squash': it is the Danish name of Zucchini (data/danish.ts).
       ['pumpkin', 'Pumpkin', 'Dovleac', 'g'],
       [
         'sweetcorn-cob',
@@ -319,6 +320,7 @@ export const produce: SeedSection = {
     ]),
     ...ingredientsOf('mushrooms', [
       [
+        // 'champignon' and 'shiitake' Synonyms are left out: they are the Danish names (data/danish.ts).
         'button-mushrooms',
         'Button mushrooms',
         'Ciuperci champignon',

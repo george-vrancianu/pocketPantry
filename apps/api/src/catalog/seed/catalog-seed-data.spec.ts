@@ -5,6 +5,13 @@ import {
   SEED_LEAVES,
   SEED_PARENTS,
 } from './catalog-seed-data';
+import {
+  DA_AISLES,
+  DA_INGREDIENTS,
+  DA_LEAVES,
+  DA_PARENTS,
+  DA_SYNONYMS,
+} from './data/danish';
 import { seedId, stableId } from './seed-catalog';
 import { findSeedProblems } from './validate-seed';
 
@@ -68,6 +75,20 @@ describe('catalog seed data', () => {
       'Andet (mejeri)',
     );
     expect(SEED_LEAVES.find((l) => l.slug === 'other-other')?.da).toBe('Andet');
+  });
+
+  it('has no Danish entry for a slug that does not exist', () => {
+    const known = (rows: { slug: string }[]) =>
+      new Set(rows.map((r) => r.slug));
+    const stray = (
+      entries: Record<string, unknown>,
+      rows: { slug: string }[],
+    ) => Object.keys(entries).filter((slug) => !known(rows).has(slug));
+    expect(stray(DA_AISLES, SEED_AISLES)).toEqual([]);
+    expect(stray(DA_PARENTS, SEED_PARENTS)).toEqual([]);
+    expect(stray(DA_LEAVES, SEED_LEAVES)).toEqual([]);
+    expect(stray(DA_INGREDIENTS, SEED_INGREDIENTS)).toEqual([]);
+    expect(stray(DA_SYNONYMS, SEED_INGREDIENTS)).toEqual([]);
   });
 
   it('carries a few Danish Synonyms next to the Danish names', () => {

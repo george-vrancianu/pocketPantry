@@ -9,12 +9,12 @@ Until now every Scan sent one `locale`, the Member's UI language, and the API us
 - **UI locale drives:** Ingredient names returned to Review, the AI's `fallbackIngredientName`, and Plate Scan dish titles. Plate Scan has no Scan Language.
 - The Review line name stays as printed on the receipt or package.
 - **Unmatched tagging is per line.** A line whose name is still the scanned text is tagged with the Scan Language. A line the Member renamed or added by hand in Review is tagged with the UI locale.
-- **Synonyms may be in any Scan Language.** Display names stay limited to catalog locales. A `da` Synonym exists only for matching.
+- **A Synonym exists only for matching; display names are limited to catalog locales (currently the same list).**
 - The API takes an optional `scanLanguage` next to `locale` on the scan and save endpoints, defaulting to `locale`.
 
 ## Consequences
 
-- Curators can turn a Danish raw name into a `da` Synonym, so the next Danish receipt matches without relying on the AI.
+- Synonym locale and display-name locale were two different lists when this was decided (now the same list, but kept as separate constants so a future scan-only language is possible). Admin screens and validation must use the right one.
 - Synonym locale and display-name locale are now two different lists. Admin screens and validation must use the right one.
 - Review has to remember each line's original scanned name to choose the tag.
 - Danish is now also a UI and catalog locale (issue #98), so a Danish Synonym can sit beside a Danish display name. The two lists are still separate constants, so a future Scan Language need not become a UI locale.

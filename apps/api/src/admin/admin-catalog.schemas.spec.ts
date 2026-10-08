@@ -21,7 +21,7 @@ describe('translationCreate', () => {
     ).toBe(true);
   });
 
-  it('rejects a display name in a language outside the catalog locales', () => {
+  it('rejects a display name in a language outside the Scan Languages (it fails at the locale enum)', () => {
     expect(
       translationCreate.safeParse({ ...base, kind: 'name', locale: 'fr' })
         .success,

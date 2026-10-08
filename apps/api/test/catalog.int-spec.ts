@@ -511,8 +511,29 @@ describe('Catalog (integration)', () => {
                 adminRow('da-name', 'butter', 'name', 'Smør af Admin'),
                 adminRow('da-synonym', 'milk', 'synonym', 'minimælk'),
               ]);
+            // The English Synonym "squash" the old seed gave Pumpkin.
+            const oldSquash = stableId(
+              `translation:ingredient:${entity('pumpkin')}:en:synonym:squash`,
+            );
+            await tx.insert(catalogTranslations).values({
+              id: oldSquash,
+              entityType: 'ingredient',
+              entityId: entity('pumpkin'),
+              locale: 'en',
+              kind: 'synonym',
+              value: 'squash',
+              normalizedValue: 'squash',
+            });
 
             await expect(seedCatalog(tx)).resolves.toBeUndefined();
+
+            // The retired row is gone, so "squash" has one owner: Zucchini.
+            expect(
+              await tx
+                .select()
+                .from(catalogTranslations)
+                .where(eq(catalogTranslations.id, oldSquash)),
+            ).toEqual([]);
 
             const value = async (
               slug: string,
@@ -526,6 +547,7 @@ describe('Catalog (integration)', () => {
                   .where(rows(slug, locale, kind))
               ).map((row) => row.value);
             expect(await value('milk', 'da', 'name')).toEqual(['Mælk']);
+            expect(await value('zucchini', 'da', 'name')).toEqual(['Squash']);
             expect(await value('parmesan', 'ro', 'name')).toEqual([
               'Parmezan curat',
             ]);
