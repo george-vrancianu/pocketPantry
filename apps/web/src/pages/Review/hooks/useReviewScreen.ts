@@ -85,6 +85,7 @@ export function useReviewScreen() {
   const changeMatch = (key: string, match: CatalogSearchResult) =>
     dispatch({ type: 'changeMatch', key, match, today: new Date() });
   const toggle = (key: string) => dispatch({ type: 'toggle', key });
+  const open = (key: string) => dispatch({ type: 'open', key });
   // Rows whose Save or Confirm was blocked, so their panels show every error.
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
   // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
@@ -171,6 +172,7 @@ export function useReviewScreen() {
     toPantry: () => navigate('/pantry'),
     blocked,
     toggle,
+    open,
     change,
     changeMatch,
     remove,

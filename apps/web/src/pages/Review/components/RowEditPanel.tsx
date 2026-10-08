@@ -7,19 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
-import {
-  LOCATIONS,
-  UNITS,
-  type CatalogParent,
-  type CatalogSearchResult,
-} from '../../../lib/catalog';
-import {
-  formatDate,
-  maskDateInput,
-  parseDateInput,
-  isIsoDate,
-} from '../../../lib/dateFormat';
+import type { CatalogParent, CatalogSearchResult } from '../../../lib/catalog';
 import {
   displayName,
   invalidFields,
@@ -27,7 +15,13 @@ import {
   type RowStatus,
 } from '../../../lib/review';
 import { Field, controlSx } from './Field';
-import { fieldId, focusRing, panelId, titleId } from './layout';
+import {
+  ExpiryInput,
+  InlineMatchSearch,
+  LocationSelect,
+  QuantityUnitInput,
+} from './RowInputs';
+import { fieldId, panelId, titleId } from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -71,7 +65,6 @@ export function RowEditPanel({
     ? `${t('review:match.none')} · ${t('review:match.choose')}`
     : name;
   const id = (field: string) => fieldId(line.key, field);
-  const quantityMissing = line.quantity.trim() === '';
   const message = unmatched
     ? t(shopping ? 'review:msg.unmatchedShopping' : 'review:msg.unmatched')
     : status === 'low'
@@ -79,11 +72,6 @@ export function RowEditPanel({
       : status === 'qty'
         ? t('review:msg.qty')
         : null;
-  const quantityBorder = invalid.includes('quantity')
-    ? tokens.color.urgentFg
-    : quantityMissing
-      ? tokens.color.soonBorder
-      : tokens.color.line;
 
   return (
     <Box
@@ -167,32 +155,13 @@ export function RowEditPanel({
 
         {searching ? (
           <Box sx={{ gridColumn: '1 / -1' }}>
-            <CatalogSearch
-              autoFocus
+            <InlineMatchSearch
               onSelect={(match) => {
                 onChangeMatch(match);
                 setSearching(false);
               }}
+              onCancel={() => setSearching(false)}
             />
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setSearching(false)}
-              sx={{
-                mt: '4px',
-                minHeight: 36,
-                border: 0,
-                bgcolor: 'transparent',
-                color: tokens.color.accent,
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                ...focusRing,
-              }}
-            >
-              {t('review:match.keep')}
-            </Box>
           </Box>
         ) : null}
 
@@ -275,95 +244,23 @@ export function RowEditPanel({
           }
           errorId={`${id('quantity')}-error`}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              height: 40,
-              boxSizing: 'border-box',
-              borderRadius: `${tokens.radius.field}px`,
-              border: `1px solid ${quantityBorder}`,
-              bgcolor: tokens.color.surface,
-              overflow: 'hidden',
-              '&:focus-within': {
-                outline: `3px solid ${tokens.color.accent}`,
-                outlineOffset: 1,
-              },
-            }}
-          >
-            <Box
-              id={id('quantity')}
-              component="input"
-              type="number"
-              value={line.quantity}
-              placeholder="0"
-              aria-invalid={invalid.includes('quantity') || undefined}
-              aria-describedby={
-                invalid.includes('quantity')
-                  ? `${id('quantity')}-error`
-                  : undefined
-              }
-              onChange={(event) => onChange({ quantity: event.target.value })}
-              min={0}
-              step="any"
-              inputMode="decimal"
-              sx={{
-                ...controlSx,
-                flex: '1 1 0',
-                minWidth: 0,
-                width: 'auto',
-                height: '100%',
-                border: 0,
-                borderRadius: 0,
-                '&:focus-visible': { outline: 'none' },
-              }}
-            />
-            <Box
-              component="select"
-              aria-label={t('review:field.unit')}
-              value={line.unit}
-              onChange={(event) =>
-                onChange({ unit: event.target.value as ReviewLine['unit'] })
-              }
-              sx={{
-                ...controlSx,
-                width: 'auto',
-                height: '100%',
-                border: 0,
-                borderRadius: 0,
-                borderLeft: `1px solid ${tokens.color.divider}`,
-                bgcolor: tokens.color.subtle,
-                '&:focus-visible': { outline: 'none' },
-              }}
-            >
-              {UNITS.map((unit) => (
-                <option key={unit} value={unit}>
-                  {t(`common:units.${unit}`)}
-                </option>
-              ))}
-            </Box>
-          </Box>
+          <QuantityUnitInput
+            line={line}
+            onChange={onChange}
+            id={id('quantity')}
+            invalid={invalid.includes('quantity')}
+            errorId={`${id('quantity')}-error`}
+          />
         </Field>
 
         {shopping ? null : (
           <>
             <Field htmlFor={id('location')} label={t('review:field.location')}>
-              <Box
+              <LocationSelect
+                line={line}
+                onChange={onChange}
                 id={id('location')}
-                component="select"
-                value={line.location}
-                onChange={(event) =>
-                  onChange({
-                    location: event.target.value as ReviewLine['location'],
-                  })
-                }
-                sx={controlSx}
-              >
-                {LOCATIONS.map((location) => (
-                  <option key={location} value={location}>
-                    {t(`common:locations.${location}`)}
-                  </option>
-                ))}
-              </Box>
+              />
             </Field>
 
             <Field
@@ -372,31 +269,13 @@ export function RowEditPanel({
               error={expiryError ? t('review:error.expiry') : undefined}
               errorId={`${id('expiry')}-error`}
             >
-              <Box
+              <ExpiryInput
+                line={line}
+                onChange={onChange}
                 id={id('expiry')}
-                component="input"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder={t('review:expiryPlaceholder')}
-                value={
-                  isIsoDate(line.expiryDate)
-                    ? formatDate(line.expiryDate)
-                    : line.expiryDate
-                }
+                error={expiryError}
+                errorId={`${id('expiry')}-error`}
                 onBlur={() => setExpiryTouched(true)}
-                aria-invalid={expiryError || undefined}
-                aria-describedby={
-                  expiryError ? `${id('expiry')}-error` : undefined
-                }
-                onChange={(event) => {
-                  const masked = maskDateInput(event.target.value);
-                  onChange({
-                    expiryDate: parseDateInput(masked) ?? masked,
-                    expiryExplicit: true,
-                  });
-                }}
-                sx={{ ...controlSx, fontVariantNumeric: 'tabular-nums' }}
               />
             </Field>
           </>

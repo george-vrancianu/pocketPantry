@@ -26,6 +26,23 @@ export const panelId = (key: string) => `review-line-${key}-panel`;
 export const fieldId = (key: string, field: string) =>
   `review-line-${key}-${field}`;
 
+/**
+ * The tablet table's columns (handoff §5.2): status icon, Produs, Cantitate,
+ * Locație, Expiră, Încredere, actions. Plate drops Location and Expiry. The
+ * middle columns may shrink toward their minimum at 900 px.
+ */
+export const tabletColumnsFor = (shopping: boolean) =>
+  shopping
+    ? '24px minmax(0,1fr) minmax(120px,150px) 120px 92px'
+    : '24px minmax(0,1fr) minmax(120px,150px) minmax(100px,150px) minmax(104px,150px) 120px 92px';
+
+export const tabletRowSx = (shopping: boolean) => ({
+  display: 'grid',
+  gridTemplateColumns: tabletColumnsFor(shopping),
+  columnGap: '16px',
+  px: '20px',
+});
+
 export const focusRing = {
   '&:focus-visible': {
     outline: `3px solid ${tokens.color.accent}`,

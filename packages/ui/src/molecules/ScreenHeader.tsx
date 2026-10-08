@@ -22,6 +22,8 @@ export type ScreenHeaderProps = {
   homeHref?: string;
   /** The single action on the right: add, search or share. */
   action?: ScreenHeaderAction;
+  /** Content right-aligned in the header, e.g. counter chips on wide screens. */
+  trailing?: ReactNode;
 };
 
 /** Sub-screen header: Home button, H1 title, one action button. */
@@ -31,6 +33,7 @@ export function ScreenHeader({
   homeLabel,
   homeHref = '/',
   action,
+  trailing,
 }: ScreenHeaderProps) {
   return (
     <Box
@@ -58,6 +61,7 @@ export function ScreenHeader({
           </Typography>
         ) : null}
       </Box>
+      {trailing}
       {action ? (
         <IconButton
           label={action.label}

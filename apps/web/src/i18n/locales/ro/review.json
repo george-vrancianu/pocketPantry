@@ -22,7 +22,10 @@
     "product": "Produs",
     "qty": "Cant.",
     "location": "Locație",
-    "expiry": "Expiră"
+    "expiry": "Expiră",
+    "status": "Stare",
+    "confidence": "Încredere",
+    "actions": "Acțiuni"
   },
   "group": {
     "review": "De verificat",
@@ -66,7 +69,11 @@
   "action": {
     "remove": "Elimină {{name}}",
     "confirm": "Confirmă",
-    "done": "Gata"
+    "done": "Gata",
+    "swap": "Schimbă potrivirea pentru {{name}}",
+    "choose": "Alege potrivirea pentru {{name}}",
+    "edit": "Editează {{name}}",
+    "finish": "Termină editarea pentru {{name}}"
   },
   "save_one": "Salvează {{count}} articol",
   "save_few": "Salvează {{count}} articole",
@@ -109,6 +116,15 @@
   },
   "row": {
     "receiptPrefix": "Pe bon: {{text}}",
-    "readPrefix": "Citit: {{text}}"
+    "readPrefix": "Citit: {{text}}",
+    "fieldFor": "{{field}}: {{name}}"
+  },
+  "confidence": {
+    "low": "Scăzută",
+    "qty": "Fără cantitate",
+    "ok": "Ridicată"
+  },
+  "footer": {
+    "helper": "Rândurile sigure sunt restrânse. Atinge un rând ca să-l editezi."
   }
 }
