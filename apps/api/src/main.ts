@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { configureApp, MAX_REQUEST_BODY_BYTES } from './app.setup';
 import type { AppConfig } from './config/env';
 import { allowedOrigins, isAllowedOrigin } from './config/origins';
+import { serveWebApp } from './web-app';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -39,6 +40,9 @@ async function bootstrap() {
     app,
     SwaggerModule.createDocument(app, swaggerConfig),
   );
+
+  const webDistDir = config.get('WEB_DIST_DIR', { infer: true });
+  if (webDistDir) await serveWebApp(app, webDistDir);
 
   const port = config.get('PORT', { infer: true });
   await app.listen(port, '0.0.0.0');

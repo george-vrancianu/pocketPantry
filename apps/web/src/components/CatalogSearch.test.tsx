@@ -33,7 +33,7 @@ const cheddar: CatalogSearchResult = {
 function stubSearch(results: (locale: 'en' | 'ro') => CatalogSearchResult[]) {
   const requests: URL[] = [];
   vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
-    const url = new URL(String(input));
+    const url = new URL(String(input), window.location.origin);
     requests.push(url);
     const locale = url.searchParams.get('locale') === 'ro' ? 'ro' : 'en';
     return Promise.resolve(Response.json({ results: results(locale) }));

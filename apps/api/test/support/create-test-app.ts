@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing';
 import { StructuredOutputAiService } from '../../src/ai/structured-output-ai.service';
 import { AppModule } from '../../src/app.module';
 import { configureApp, MAX_REQUEST_BODY_BYTES } from '../../src/app.setup';
+import { serveWebApp } from '../../src/web-app';
 
 export const TEST_ORIGIN = 'http://localhost:5173';
 
@@ -14,6 +15,8 @@ export async function createTestApp(
   controllers: Type<unknown>[] = [],
   /** Stands in for the AI provider at the structured-output service boundary; no test calls the network. */
   ai?: Pick<StructuredOutputAiService, 'generate'>,
+  /** Built web app to serve alongside the API, as `WEB_DIST_DIR` does. */
+  webDistDir?: string,
 ): Promise<NestFastifyApplication> {
   const builder = Test.createTestingModule({
     imports: [AppModule],
@@ -25,6 +28,7 @@ export async function createTestApp(
     new FastifyAdapter({ bodyLimit: MAX_REQUEST_BODY_BYTES }),
   );
   configureApp(app);
+  if (webDistDir) await serveWebApp(app, webDistDir);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   return app;

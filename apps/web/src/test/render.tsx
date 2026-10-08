@@ -33,7 +33,8 @@ export function renderWithProviders(
 export function stubApi(routes: Record<string, () => Response>) {
   const calls: Array<{ key: string; body: unknown }> = [];
   const fetchMock = (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = new URL(String(input));
+    // The app calls relative `/api/...` paths, as a browser resolves them against the page.
+    const url = new URL(String(input), window.location.origin);
     const key = `${init?.method ?? 'GET'} ${url.pathname}`;
     calls.push({
       key,

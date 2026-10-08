@@ -22,6 +22,8 @@ const envSchema = z.object({
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
   /** Signs the Plate Scan token. Required in production; elsewhere a missing one becomes a random per-process secret (tokens do not survive a restart). */
   SCAN_TOKEN_SECRET: z.string().min(32).optional(),
+  /** Built web app (`apps/web/dist`) to serve from the API's origin. Unset: API only. */
+  WEB_DIST_DIR: z.string().min(1).optional(),
 });
 
 export type AppConfig = Omit<z.infer<typeof envSchema>, 'SCAN_TOKEN_SECRET'> & {
