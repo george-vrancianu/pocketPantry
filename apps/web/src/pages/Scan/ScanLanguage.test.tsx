@@ -34,7 +34,7 @@ const unmatchedLine = {
 };
 
 const chip = () =>
-  screen.getByRole('combobox', { name: /Reading as|Citit ca|Læses som/ });
+  screen.getByRole('combobox', { name: /Reading as|Citit ca|Læses på/ });
 
 function renderScan(
   route: string,
@@ -133,7 +133,7 @@ describe('Scan Language on the Scan screen', () => {
   it('has no picker for Plate Scan', () => {
     renderScan('/scan?mode=plate');
     expect(
-      screen.queryByRole('combobox', { name: /Reading as|Citit ca|Læses som/ }),
+      screen.queryByRole('combobox', { name: /Reading as|Citit ca|Læses på/ }),
     ).not.toBeInTheDocument();
   });
 

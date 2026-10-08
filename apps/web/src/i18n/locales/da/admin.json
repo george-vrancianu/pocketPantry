@@ -7,7 +7,7 @@
     "unmatched": "Umatchede"
   },
   "locations": {
-    "none": "Arv"
+    "none": "Arvet"
   },
   "locales": {
     "en": "Engelsk",
@@ -61,7 +61,7 @@
     "statusLabel": "Kø",
     "status": {
       "open": "Åbne",
-      "dismissed": "Afvist"
+      "dismissed": "Afviste"
     },
     "empty": "Intet at gennemgå.",
     "rows_one": "{{count}} række",
@@ -93,7 +93,7 @@
     "printed": "Trykt: {{text}}",
     "printedIn": "Trykt: {{text}} ({{language}})",
     "sourceSynonym": "Tilføj også den trykte tekst som synonym ({{language}})",
-    "sourceSynonymHint": "Tilføjer \"{{text}}\", så det matcher af sig selv næste gang. Lad være for et almindeligt ord: det ville matche alle den slags linjer og springe sikkerhedstjekket over.",
+    "sourceSynonymHint": "Tilføjer \"{{text}}\", så det matcher af sig selv næste gang. Sæt ikke flueben ved et generelt ord: det ville matche alle den slags linjer uden om sikkerhedstjekket.",
     "sourceSynonymAdded": "\"{{text}}\" er tilføjet som synonym på {{language}}.",
     "sourceSynonymSkipped": {
       "exists": "Den trykte tekst blev ikke tilføjet: den er allerede et synonym for denne ingrediens.",

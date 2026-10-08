@@ -19,7 +19,7 @@
   },
   "col": {
     "product": "Produkt",
-    "qty": "Antal",
+    "qty": "Mængde",
     "location": "Placering",
     "expiry": "Udløber",
     "status": "Status",

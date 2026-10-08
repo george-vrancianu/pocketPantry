@@ -12,9 +12,9 @@
   "family": {
     "title": "Familieindstillinger",
     "shared": "Deles af alle i din familie. Alle medlemmer kan ændre dem.",
-    "staleThreshold": "Udløbsgrænse (dage)",
-    "staleThresholdHelp": "Et parti regnes for at udløbe snart, når der er så mange dage til, at det udløber.",
-    "saveThreshold": "Gem grænse",
+    "staleThreshold": "Varsel før udløb (dage)",
+    "staleThresholdHelp": "Et parti tæller som \"udløber snart\", når der er så mange dage eller færre til udløbsdatoen.",
+    "saveThreshold": "Gem varsel",
     "overrides": "Tilsidesættelser af standardholdbarhed",
     "overridesHelp": "Bruges til at udfylde udløbsdatoen på forhånd, når du tilføjer et parti. De erstatter katalogets standarder.",
     "noOverrides": "Ingen tilsidesættelser endnu. Katalogets standarder bruges.",

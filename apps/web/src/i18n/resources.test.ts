@@ -12,11 +12,15 @@ function keyPaths(value: unknown, prefix = ''): string[] {
   );
 }
 
-function leaves(value: unknown, prefix = ''): [string, string][] {
-  if (typeof value === 'string') return [[pluralBase(prefix), value]];
-  if (typeof value !== 'object' || value === null) return [];
-  return Object.entries(value).flatMap(([key, child]) =>
-    leaves(child, prefix ? `${prefix}.${key}` : key),
+/** Every string under its full key, plural suffix included. */
+function flat(value: unknown, prefix = ''): Record<string, string> {
+  if (typeof value === 'string') return { [prefix]: value };
+  if (typeof value !== 'object' || value === null) return {};
+  return Object.assign(
+    {},
+    ...Object.entries(value).map(([key, child]) =>
+      flat(child, prefix ? `${prefix}.${key}` : key),
+    ),
   );
 }
 
@@ -41,27 +45,24 @@ describe('translation resources', () => {
   );
 
   it.each(LOCALES.filter((locale) => locale !== FALLBACK_LOCALE))(
-    '%s keeps the interpolation placeholders of English',
+    '%s uses exactly the placeholders of English, key by key',
     (locale) => {
       for (const namespace of Object.keys(reference)) {
-        const translated = leaves(resources[locale][namespace]);
-        for (const [key, english] of leaves(reference[namespace])) {
-          // A plural base can hold several variants; every variant must carry the placeholders it can.
-          const variants = translated.filter(([k]) => k === key);
+        const english = flat(reference[namespace]);
+        for (const [key, text] of Object.entries(
+          flat(resources[locale][namespace]),
+        )) {
+          // A plural variant English lacks (ro `_few`) follows English `_other`.
+          const source = english[key] ?? english[`${pluralBase(key)}_other`];
+          expect(source, `${locale} ${namespace}.${key}`).toBeDefined();
+          // `_one` may drop the count: some languages write "one" as a word.
+          const ignore = key.endsWith('_one') ? ['{{count}}'] : [];
+          const clean = (list: string[]) =>
+            list.filter((p) => !ignore.includes(p));
           expect(
-            variants.length,
+            clean(placeholders(text)),
             `${locale} ${namespace}.${key}`,
-          ).toBeGreaterThan(0);
-          const englishCount = placeholders(english).filter(
-            (p) => p !== '{{count}}',
-          );
-          for (const [, text] of variants) {
-            for (const placeholder of englishCount) {
-              expect(text, `${locale} ${namespace}.${key}`).toContain(
-                placeholder,
-              );
-            }
-          }
+          ).toEqual(clean(placeholders(source)));
         }
       }
     },
