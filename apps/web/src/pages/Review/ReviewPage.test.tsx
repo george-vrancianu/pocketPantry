@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubViewport } from '../../test/viewport';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -403,11 +404,36 @@ describe('ReviewPage', () => {
     ).toHaveFocus();
   });
 
+  it('opens and works as a centred dialog on a wide screen', async () => {
+    stubViewport(1000);
+    renderReview([line({ quantity: 1, lowConfidence: true })]);
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'milk',
+    );
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    expect(
+      await screen.findByRole('group', { name: 'Milk' }),
+    ).toBeInTheDocument();
+  });
+
   it('turns an Unmatched line into a matched one when an Ingredient is chosen', async () => {
     renderReview([line({ match: null, name: 'Mystery jar', quantity: 1 })]);
-    await userEvent.click(
-      screen.getByRole('button', { name: /No match · Choose/ }),
+    const opener = screen.getByRole('button', { name: /No match · Choose/ });
+    await userEvent.click(opener);
+    expect(
+      screen.getByRole('dialog', { name: 'Change match for Mystery jar' }),
+    ).toBeInTheDocument();
+    // Cancelling an Unmatched line returns focus to the same button.
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
+    expect(opener).toHaveFocus();
+    await userEvent.click(opener);
     await userEvent.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'milk',
@@ -430,6 +456,9 @@ describe('ReviewPage', () => {
     async (_how, close) => {
       renderReview([sure({ quantity: 2 })]);
       await userEvent.click(row('Parmesan'));
+      const before = ['Unit', 'Location', 'Expiry date'].map(
+        (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
+      );
       const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
       await userEvent.click(opener);
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -441,6 +470,11 @@ describe('ReviewPage', () => {
       expect(
         screen.getByRole('group', { name: 'Parmesan' }),
       ).toBeInTheDocument();
+      expect(
+        ['Unit', 'Location', 'Expiry date'].map(
+          (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
+        ),
+      ).toEqual(before);
     },
   );
 

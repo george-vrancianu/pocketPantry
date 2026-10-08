@@ -92,6 +92,7 @@ export function ReviewPage() {
             {screen.error ? <Alert>{screen.error}</Alert> : null}
           </Stack>
           <MatchDialog
+            open={screen.swapOpen}
             name={screen.swapName}
             onSelect={screen.changeMatch}
             onClose={screen.closeSwap}

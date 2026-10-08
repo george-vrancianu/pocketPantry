@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -83,13 +83,30 @@ export function useReviewScreen() {
 
   const change = (key: string, patch: Partial<ReviewLine>) =>
     dispatch({ type: 'update', key, patch });
-  // The line whose Match is being swapped in the one page-level dialog, if any.
+  // The line whose Match is being swapped in the one page-level dialog. The key
+  // outlives the dialog so its title does not change while it fades out.
   const [swapKey, setSwapKey] = useState<string | null>(null);
+  const [swapOpen, setSwapOpen] = useState(false);
+  const swapOpener = useRef<HTMLElement | null>(null);
+  const [restoreOpener, setRestoreOpener] = useState(false);
   const swapLine = state.lines.find((l) => l.key === swapKey) ?? null;
-  const closeSwap = () => {
-    if (swapKey !== null) setFocusId(fieldId(swapKey, 'match'));
-    setSwapKey(null);
+  const openSwap = (key: string) => {
+    swapOpener.current = document.activeElement as HTMLElement | null;
+    setSwapKey(key);
+    setSwapOpen(true);
   };
+  const closeSwap = () => {
+    setSwapOpen(false);
+    setRestoreOpener(true);
+  };
+  // After the render that closed the dialog: back to the opener, or to the row if a regroup replaced it.
+  useEffect(() => {
+    if (!restoreOpener) return;
+    setRestoreOpener(false);
+    const opener = swapOpener.current;
+    if (opener?.isConnected) opener.focus();
+    else if (swapKey) document.getElementById(rowId(swapKey))?.focus();
+  }, [restoreOpener, swapKey]);
   const changeMatch = (match: CatalogSearchResult) => {
     if (swapKey === null) return;
     dispatch({ type: 'changeMatch', key: swapKey, match, today: new Date() });
@@ -183,8 +200,9 @@ export function useReviewScreen() {
     blocked,
     toggle,
     change,
-    swapName: swapLine ? displayName(swapLine) : null,
-    openSwap: setSwapKey,
+    swapName: swapLine ? displayName(swapLine) : '',
+    swapOpen,
+    openSwap,
     closeSwap,
     changeMatch,
     remove,

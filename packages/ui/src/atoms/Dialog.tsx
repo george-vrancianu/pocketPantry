@@ -2,7 +2,7 @@ import MuiDialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import { useId, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useBreakpointUp } from '../theme/useBreakpointUp';
 import { tokens } from '../theme/tokens';
 
@@ -18,7 +18,7 @@ export type DialogProps = {
 
 /**
  * A modal that is a bottom sheet on a phone (anchored to the bottom edge, full
- * width, rounded top) and a centred dialog from 900 px up. Focus is trapped
+ * width, rounded top) and a centred dialog from the `md` breakpoint up (see `useBreakpointUp`). Focus is trapped
  * while open and returns to the element that opened it on close.
  */
 export function Dialog({
@@ -29,7 +29,6 @@ export function Dialog({
   actions,
 }: DialogProps) {
   const centred = useBreakpointUp('md');
-  const titleId = useId();
   const radius = `${tokens.radius.card}px`;
   return (
     <MuiDialog
@@ -37,7 +36,6 @@ export function Dialog({
       onClose={onClose}
       fullWidth
       maxWidth={centred ? 'sm' : false}
-      aria-labelledby={titleId}
       sx={
         centred
           ? undefined
@@ -56,7 +54,7 @@ export function Dialog({
         },
       }}
     >
-      <DialogTitle id={titleId}>{title}</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>{children}</DialogContent>
       {actions ? <DialogActions>{actions}</DialogActions> : null}
     </MuiDialog>
