@@ -57,7 +57,7 @@ export const user = pgTable(
       .notNull()
       .references(() => family.id),
     familyRole: familyRole('family_role').notNull().default('member'),
-    // Member Preference: 'en' | 'ro' (validated in the API); null until chosen.
+    // Member Preference: 'en' | 'ro' | 'da' (validated in the API); null until chosen.
     locale: text('locale'),
     ...timestamps,
   },

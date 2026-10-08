@@ -7,6 +7,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import type { CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
 import {
@@ -42,11 +43,11 @@ export const seedId = {
 function translationRows(
   entityType: EntityType,
   entityId: string,
-  names: { en: string; ro: string },
-  synonyms: { en?: string[]; ro?: string[] } = {},
+  names: Record<CatalogLocale, string>,
+  synonyms: Partial<Record<CatalogLocale, string[]>> = {},
 ): TranslationRow[] {
   const row = (
-    locale: 'en' | 'ro',
+    locale: CatalogLocale,
     kind: 'name' | 'synonym',
     value: string,
   ): TranslationRow => ({
@@ -67,15 +68,19 @@ function translationRows(
   return [
     row('en', 'name', names.en),
     row('ro', 'name', names.ro),
+    row('da', 'name', names.da),
     ...(synonyms.en ?? []).map((value) => row('en', 'synonym', value)),
     ...(synonyms.ro ?? []).map((value) => row('ro', 'synonym', value)),
+    ...(synonyms.da ?? []).map((value) => row('da', 'synonym', value)),
   ];
 }
 
 /**
  * Loads the Catalog seed, after checking it for duplicates and dangling references. Rows have fixed ids and are inserted with
  * ON CONFLICT (id) DO NOTHING, so running it again leaves the database unchanged
- * and keeps in-place Admin edits. Rows an Admin deleted come back; rows an Admin
+ * and keeps in-place Admin edits. A locale added to the seed later (Danish) is
+ * just more rows with new ids, so an already-seeded database gains those names
+ * and Synonyms on the next run without touching the existing en/ro rows. Rows an Admin deleted come back; rows an Admin
  * renamed keep their new name. A real collision (e.g. an Admin-made Ingredient with the same normalised
  * name) fails loudly instead of being skipped.
  */
@@ -162,9 +167,19 @@ export async function seedCatalog(
         ),
       ),
     ];
+    const inLocale = (danish: boolean) =>
+      translations.filter((row) => (row.locale === 'da') === danish);
     await tx
       .insert(catalogTranslations)
-      .values(translations)
+      .values(inLocale(false))
       .onConflictDoNothing({ target: catalogTranslations.id });
+    // Danish arrives after Admins could already add `da` Synonyms (a Synonym
+    // may be in any Scan Language). A seed row that collides with one of those
+    // on the per-locale unique keys is skipped instead of failing the whole
+    // seed: the Admin's row wins and everything else is still inserted.
+    await tx
+      .insert(catalogTranslations)
+      .values(inLocale(true))
+      .onConflictDoNothing();
   });
 }

@@ -272,7 +272,7 @@ export const grains: SeedSection = {
         'Corn flakes',
         'Fulgi de porumb',
         'g',
-        ['cornflakes'],
+        undefined,
         ['fulgi porumb'],
       ],
       [

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { ingredientUnit } from '../database/schema';
 import type { ResolvedCatalogDefaults } from './catalog-defaults';
 
-export const CATALOG_LOCALES = ['en', 'ro'] as const;
+export const CATALOG_LOCALES = ['en', 'ro', 'da'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
 export const FALLBACK_LOCALE: CatalogLocale = 'en';
 

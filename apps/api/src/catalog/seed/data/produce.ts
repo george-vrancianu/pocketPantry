@@ -144,7 +144,7 @@ export const produce: SeedSection = {
         ['eggplant'],
         ['vânătă', 'patlagele vinete'],
       ],
-      ['pumpkin', 'Pumpkin', 'Dovleac', 'g', ['squash']],
+      ['pumpkin', 'Pumpkin', 'Dovleac', 'g'],
       [
         'sweetcorn-cob',
         'Corn on the cob',
@@ -323,7 +323,7 @@ export const produce: SeedSection = {
         'Button mushrooms',
         'Ciuperci champignon',
         'g',
-        ['mushrooms', 'champignon'],
+        ['mushrooms'],
         ['ciuperci', 'sampinioane', 'ciuperci champ'],
       ],
       [
@@ -334,13 +334,7 @@ export const produce: SeedSection = {
         undefined,
         ['pleurotus'],
       ],
-      [
-        'shiitake',
-        'Shiitake mushrooms',
-        'Ciuperci shiitake',
-        'g',
-        ['shiitake'],
-      ],
+      ['shiitake', 'Shiitake mushrooms', 'Ciuperci shiitake', 'g'],
       [
         'chanterelles',
         'Chanterelles',

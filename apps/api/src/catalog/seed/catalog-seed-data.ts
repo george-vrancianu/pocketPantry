@@ -7,6 +7,13 @@ import { bakery, meat, seafood } from './data/bakery-meat-seafood';
 import { dairy, eggs, frozen } from './data/dairy-eggs-frozen';
 import { grains, legumes, pasta } from './data/dry-goods';
 import { cannedGoods, condiments, oils, spices } from './data/pantry-shelf';
+import {
+  DA_AISLES,
+  DA_INGREDIENTS,
+  DA_LEAVES,
+  DA_PARENTS,
+  DA_SYNONYMS,
+} from './data/danish';
 import { herbs, produce } from './data/produce';
 import { beverage, snacks } from './data/snacks-drinks';
 import type {
@@ -25,7 +32,7 @@ const aisle = (
   en: string,
   ro: string,
   sortOrder: number,
-): SeedAisle => ({ slug, en, ro, sortOrder });
+): SeedAisle => ({ slug, en, ro, da: DA_AISLES[slug] ?? '', sortOrder });
 
 // Shop-walk order. Parent Categories sharing an Aisle share its sort order.
 export const SEED_AISLES: SeedAisle[] = [
@@ -52,6 +59,7 @@ const parent = (
   slug,
   en,
   ro,
+  da: DA_PARENTS[slug] ?? '',
   aisle: aisleSlug,
   defaultExpiryDays,
   defaultLocation,
@@ -130,6 +138,7 @@ const OTHER_LEAVES: SeedLeaf[] = SEED_PARENTS.map((p) =>
         parent: p.slug,
         en: 'Other',
         ro: 'Altele',
+        da: 'Andet',
         isOther: true,
       }
     : {
@@ -137,15 +146,25 @@ const OTHER_LEAVES: SeedLeaf[] = SEED_PARENTS.map((p) =>
         parent: p.slug,
         en: `Other ${p.slug === 'beverage' ? 'drinks' : p.en.toLowerCase()}`,
         ro: `Altele (${p.ro.toLowerCase()})`,
+        da: `Andet (${p.da.toLowerCase()})`,
         isOther: true,
       },
 );
 
 export const SEED_LEAVES: SeedLeaf[] = [
-  ...SECTIONS.flatMap((section) => section.leaves),
+  ...SECTIONS.flatMap((section) => section.leaves).map((l) => ({
+    ...l,
+    da: DA_LEAVES[l.slug] ?? '',
+  })),
   ...OTHER_LEAVES,
 ];
 
 export const SEED_INGREDIENTS: SeedIngredient[] = SECTIONS.flatMap(
   (section) => section.ingredients,
-);
+).map((item) => ({
+  ...item,
+  da: DA_INGREDIENTS[item.slug] ?? '',
+  ...(DA_SYNONYMS[item.slug]
+    ? { synonyms: { ...item.synonyms, da: DA_SYNONYMS[item.slug] } }
+    : {}),
+}));

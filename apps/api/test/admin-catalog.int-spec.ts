@@ -721,20 +721,51 @@ describe('Admin role and Catalog curation (integration)', () => {
   describe('translations and Synonyms', () => {
     const ingredientId = seedId.ingredient('parmesan');
 
-    it('takes a Synonym in a Scan Language that is not a catalog locale, but never a display name', async () => {
+    it('takes a Danish Synonym and a Danish display name, since Danish is a catalog locale', async () => {
+      const entry = {
+        entityType: 'leaf_category',
+        entityId: seedId.leaf('hard-cheese'),
+        locale: 'da',
+      };
+      const synonym = await as(adminCookie)
+        .post('/translations', {
+          ...entry,
+          kind: 'synonym',
+          value: `Hård ost ${stamp}`,
+        })
+        .expect(201);
+      expect(synonym.body).toMatchObject({ locale: 'da', kind: 'synonym' });
+      // The seed already gave this Leaf its Danish name, so a second one is a clash.
+      await as(adminCookie)
+        .post('/translations', {
+          ...entry,
+          kind: 'name',
+          value: `Ost ${stamp}`,
+        })
+        .expect(409);
+    });
+
+    it('creates a Danish display name for an entity that has none, and rejects a locale outside the catalog', async () => {
+      const created = await as(adminCookie)
+        .post('/ingredients', {
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          name: `Danbo ${stamp}`,
+          defaultUnit: 'g',
+        })
+        .expect(201);
       const entry = {
         entityType: 'ingredient',
-        entityId: ingredientId,
-        locale: 'da',
-        value: `Parmesanost ${stamp}`,
+        entityId: (created.body as { id: string }).id,
+        kind: 'name',
+        value: `Danbo ost ${stamp}`,
       };
-      await as(adminCookie)
-        .post('/translations', { ...entry, kind: 'name' })
-        .expect(400);
-      const created = await as(adminCookie)
-        .post('/translations', { ...entry, kind: 'synonym' })
+      const name = await as(adminCookie)
+        .post('/translations', { ...entry, locale: 'da' })
         .expect(201);
-      expect(created.body).toMatchObject({ locale: 'da', kind: 'synonym' });
+      expect(name.body).toMatchObject({ locale: 'da', kind: 'name' });
+      await as(adminCookie)
+        .post('/translations', { ...entry, locale: 'fr' })
+        .expect(400);
     });
 
     it('enforces uniqueness per entity and locale, and display names per locale', async () => {

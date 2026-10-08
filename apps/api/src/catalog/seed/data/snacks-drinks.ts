@@ -688,7 +688,7 @@ export const beverage: SeedSection = {
         'Tonic water',
         'Apă tonică',
         'ml',
-        ['tonic'],
+        undefined,
         ['schweppes'],
       ],
       ['kvass', 'Kvass', 'Kvas', 'ml', undefined, ['bautura kvas']],
@@ -974,7 +974,7 @@ export const beverage: SeedSection = {
       ['vodka', 'Vodka', 'Vodcă', 'ml', undefined, ['votca']],
       ['rum', 'Rum', 'Rom', 'ml'],
       ['whisky', 'Whisky', 'Whisky', 'ml', ['whiskey', 'bourbon'], ['viski']],
-      ['brandy', 'Brandy', 'Coniac', 'ml', ['cognac']],
+      ['brandy', 'Brandy', 'Coniac', 'ml'],
       [
         'tuica',
         'Țuică',

@@ -476,6 +476,21 @@ describe('Settings (integration)', () => {
       });
     });
 
+    it('accepts Danish as a locale', async () => {
+      const { cookie, userId } = await signUp();
+      await call(cookie, 'put', '/preferences')
+        .send({ locale: 'da' })
+        .expect(200);
+      expect(
+        (await call(cookie, 'get', '/preferences').expect(200)).body,
+      ).toEqual({ locale: 'da' });
+      const [row] = await database
+        .select({ locale: user.locale })
+        .from(user)
+        .where(eq(user.id, userId));
+      expect(row.locale).toBe('da');
+    });
+
     it('rejects an unsupported locale', async () => {
       const { cookie } = await signUp();
       await call(cookie, 'put', '/preferences')

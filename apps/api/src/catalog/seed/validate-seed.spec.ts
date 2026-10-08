@@ -7,27 +7,36 @@ import type {
 import { assertCatalogSeedValid, findSeedProblems } from './validate-seed';
 
 const aisles: SeedAisle[] = [
-  { slug: 'a', en: 'Aisle', ro: 'Culoar', sortOrder: 1 },
+  { slug: 'a', en: 'Aisle', ro: 'Culoar', da: 'Gang', sortOrder: 1 },
 ];
 const parents: SeedParent[] = [
   {
     slug: 'p',
     en: 'Parent',
     ro: 'Părinte',
+    da: 'Forælder',
     aisle: 'a',
     defaultExpiryDays: 7,
     defaultLocation: 'fridge',
   },
 ];
 const leaves: SeedLeaf[] = [
-  { slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză', isOther: true },
+  {
+    slug: 'l',
+    parent: 'p',
+    en: 'Leaf',
+    ro: 'Frunză',
+    da: 'Blad',
+    isOther: true,
+  },
 ];
 const ingredient = (
   slug: string,
   en: string,
   ro: string,
   synonyms?: SeedIngredient['synonyms'],
-): SeedIngredient => ({ slug, leaf: 'l', en, ro, unit: 'g', synonyms });
+  da = `da-${slug}`,
+): SeedIngredient => ({ slug, leaf: 'l', en, ro, da, unit: 'g', synonyms });
 
 const problems = (ingredients: SeedIngredient[]) =>
   findSeedProblems({ aisles, parents, leaves, ingredients });
@@ -51,12 +60,26 @@ describe('Catalog seed validation', () => {
         ingredients: [],
       });
     expect(
-      find([{ slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză' }]),
+      find([{ slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză', da: 'Blad' }]),
     ).toEqual([expect.stringContaining('found 0')]);
     expect(
       find([
-        { slug: 'l', parent: 'p', en: 'Leaf', ro: 'Frunză', isOther: true },
-        { slug: 'm', parent: 'p', en: 'Mother', ro: 'Mamă', isOther: true },
+        {
+          slug: 'l',
+          parent: 'p',
+          en: 'Leaf',
+          ro: 'Frunză',
+          da: 'Blad',
+          isOther: true,
+        },
+        {
+          slug: 'm',
+          parent: 'p',
+          en: 'Mother',
+          ro: 'Mamă',
+          da: 'Moder',
+          isOther: true,
+        },
       ]),
     ).toEqual([expect.stringContaining('found 2')]);
   });
@@ -74,6 +97,61 @@ describe('Catalog seed validation', () => {
     expect(
       problems([ingredient('a', 'One', 'Ouă'), ingredient('b', 'Two', 'oua')]),
     ).toEqual([expect.stringContaining('"oua"')]);
+  });
+
+  it('flags two Ingredients whose Danish names normalise the same', () => {
+    expect(
+      problems([
+        ingredient('a', 'One', 'Unu', undefined, 'Æg'),
+        ingredient('b', 'Two', 'Doi', undefined, 'æg!'),
+      ]),
+    ).toEqual([expect.stringMatching(/"æg".*\ba\b.*\bb\b/)]);
+    expect(
+      findSeedProblems({
+        aisles,
+        parents,
+        leaves: [
+          {
+            slug: 'l',
+            parent: 'p',
+            en: 'Leaf',
+            ro: 'Frunză',
+            da: 'Blad',
+            isOther: true,
+          },
+          { slug: 'm', parent: 'p', en: 'Mat', ro: 'Mată', da: 'blad' },
+        ],
+        ingredients: [],
+      }),
+    ).toEqual([expect.stringContaining('share the da name "blad"')]);
+  });
+
+  it('flags any entity without a Danish name', () => {
+    expect(
+      findSeedProblems({
+        aisles: [{ ...aisles[0], da: '' }],
+        parents: [{ ...parents[0], da: ' ' }],
+        leaves: [{ ...leaves[0], da: '' }],
+        ingredients: [ingredient('a', 'Apple', 'Măr', undefined, '')],
+      }),
+    ).toEqual([
+      expect.stringContaining('aisle "a": missing Danish name'),
+      expect.stringContaining('parent "p": missing Danish name'),
+      expect.stringContaining('leaf "l": missing Danish name'),
+      expect.stringContaining('ingredient "a": missing Danish name'),
+    ]);
+  });
+
+  it('flags a Danish Synonym that is another Ingredient’s name, or repeats its own', () => {
+    expect(
+      problems([
+        ingredient('a', 'Apple', 'Măr', undefined, 'Æble'),
+        ingredient('b', 'Pear', 'Pară', { da: ['æble'] }),
+      ]),
+    ).toEqual([expect.stringMatching(/"æble".*\ba\b.*\bb\b/)]);
+    expect(
+      problems([ingredient('a', 'Apple', 'Măr', { da: ['ÆBLE'] }, 'Æble')]),
+    ).toEqual([expect.stringContaining('"ÆBLE" repeats its own name')]);
   });
 
   it('flags a Synonym that is also another Ingredient’s name, in any locale', () => {
@@ -102,7 +180,15 @@ describe('Catalog seed validation', () => {
       findSeedProblems({
         aisles,
         parents,
-        leaves: [{ slug: 'l', parent: 'missing', en: 'Leaf', ro: 'Frunză' }],
+        leaves: [
+          {
+            slug: 'l',
+            parent: 'missing',
+            en: 'Leaf',
+            ro: 'Frunză',
+            da: 'Blad',
+          },
+        ],
         ingredients: [{ ...ingredient('a', 'Apple', 'Măr'), leaf: 'nope' }],
       }),
     ).toEqual([

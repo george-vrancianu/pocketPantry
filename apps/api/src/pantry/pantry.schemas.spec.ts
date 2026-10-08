@@ -12,7 +12,7 @@ describe('scanQuery', () => {
     });
   });
 
-  it('takes a Scan Language that is not a catalog locale, independent of the locale', () => {
+  it('takes a Scan Language that differs from the locale', () => {
     expect(scanQuery.parse({ locale: 'ro', scanLanguage: 'da' })).toMatchObject(
       { locale: 'ro', scanLanguage: 'da' },
     );
@@ -22,8 +22,15 @@ describe('scanQuery', () => {
     expect(scanQuery.safeParse({ scanLanguage: 'fr' }).success).toBe(false);
   });
 
-  it('still rejects a UI locale outside the catalog locales', () => {
-    expect(scanQuery.safeParse({ locale: 'da' }).success).toBe(false);
+  it('takes Danish as a UI locale', () => {
+    expect(scanQuery.parse({ locale: 'da' })).toMatchObject({
+      locale: 'da',
+      scanLanguage: 'da',
+    });
+  });
+
+  it('rejects a UI locale outside the catalog locales', () => {
+    expect(scanQuery.safeParse({ locale: 'fr' }).success).toBe(false);
   });
 });
 

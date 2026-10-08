@@ -202,8 +202,8 @@ export const bakery: SeedSection = {
         ['sweet bread'],
         ['cozonac cu nuca'],
       ],
-      ['muffin', 'Muffin', 'Brioșe', 'pcs', ['muffins'], ['briosa']],
-      ['doughnut', 'Doughnut', 'Gogoașă', 'pcs', ['donut'], ['gogosi']],
+      ['muffin', 'Muffin', 'Brioșe', 'pcs', undefined, ['briosa']],
+      ['doughnut', 'Doughnut', 'Gogoașă', 'pcs', undefined, ['gogosi']],
     ]),
     ...ingredientsOf('fresh-dough', [
       [

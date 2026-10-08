@@ -94,6 +94,20 @@ describe('Catalog (integration)', () => {
       expect(ro.find((p) => p.id === dairyEn?.id)?.name).toBe('Lactate');
     });
 
+    it('lists the Parent Categories in Danish, sorted by the Danish name', async () => {
+      const da = (
+        (await parents('da').expect(200)).body as {
+          parents: { id: string; name: string }[];
+        }
+      ).parents;
+      expect(da.find((p) => p.id === seedId.parent('dairy'))?.name).toBe(
+        'Mejeri',
+      );
+      expect(da.map((p) => p.name)).toEqual(
+        [...da.map((p) => p.name)].sort((a, b) => a.localeCompare(b, 'da')),
+      );
+    });
+
     it('requires authentication', async () => {
       await request(app.getHttpServer())
         .get('/api/catalog/parents')
@@ -148,6 +162,23 @@ describe('Catalog (integration)', () => {
       expect(parmesan.leafCategory.name).toBe('Brânzeturi tari');
       expect(parmesan.parentCategory.name).toBe('Lactate');
       expect(parmesan.parentCategory.aisle).toBe('Lactate și ouă');
+    });
+
+    it('returns Danish display names for locale=da, and finds them by their Danish name', async () => {
+      const [parmesan] = await search('parmesan', 'da');
+      expect(parmesan.name).toBe('Parmesan');
+      expect(parmesan.leafCategory.name).toBe('Hård ost');
+      expect(parmesan.parentCategory.name).toBe('Mejeri');
+      expect(parmesan.parentCategory.aisle).toBe('Mejeri og æg');
+      const [milk] = await search('mælk', 'da');
+      expect(milk).toMatchObject({
+        id: seedId.ingredient('milk'),
+        name: 'Mælk',
+        leafCategory: { name: 'Mælk og fløde' },
+      });
+      // The same Ingredient is found by its Danish name under any UI locale.
+      expect((await search('mælk', 'en'))[0].id).toBe(milk.id);
+      expect((await search('milk', 'da'))[0].name).toBe('Mælk');
     });
 
     it('localises the Aisle name, with English fallback', async () => {
@@ -298,6 +329,29 @@ describe('Catalog (integration)', () => {
     });
   });
 
+  describe('Danish receipt lines', () => {
+    // As on a Danish receipt: upper case, abbreviated, quantities stripped.
+    const lines: [string, string][] = [
+      ['MINIMÆLK', 'Mælk'],
+      ['KYLLINGEBRYST', 'Kyllingebryst'],
+      ['HAKKET OKSEKØD', 'Hakket oksekød'],
+      ['RUGBRØD SKÅRET', 'Rugbrød'],
+      ['AGURK', 'Agurk'],
+      ['ÆG', 'Æg'],
+      ['LØG', 'Løg'],
+      ['SMØR USALTET', 'Smør'],
+      ['CREMEFRAICHE', 'Creme fraiche'],
+      ['HVEDEMEL', 'Hvedemel'],
+      ['HAVREGRYN GROVE', 'Havregryn'],
+      ['PEBERFRUGTER', 'Peberfrugt'],
+    ];
+
+    it.each(lines)('matches "%s" to %s', async (line, expected) => {
+      const results = await search(line, 'da');
+      expect(results[0]?.name).toBe(expected);
+    });
+  });
+
   describe('schema constraints', () => {
     it('rejects an Ingredient whose normalised canonical name already exists', async () => {
       const [leaf] = await database.select().from(leafCategories).limit(1);
@@ -410,6 +464,92 @@ describe('Catalog (integration)', () => {
       expect(restored.value).toBe('Parmesan');
     });
 
+    it('adds the Danish names to a database seeded before Danish, keeping Admin rows and not failing on a clash with one', async () => {
+      const entity = (slug: string) => seedId.ingredient(slug);
+      const rows = (slug: string, locale: string, kind: 'name' | 'synonym') =>
+        and(
+          eq(catalogTranslations.entityId, entity(slug)),
+          eq(catalogTranslations.locale, locale),
+          eq(catalogTranslations.kind, kind),
+        );
+      const adminRow = (
+        id: string,
+        slug: string,
+        kind: 'name' | 'synonym',
+        value: string,
+      ) => ({
+        id: stableId(`test:${id}`),
+        entityType: 'ingredient' as const,
+        entityId: entity(slug),
+        locale: 'da',
+        kind,
+        value,
+        normalizedValue: value.toLowerCase(),
+      });
+      // One transaction, rolled back: other test workers read the seeded rows.
+      class Rollback extends Error {}
+      let failure: Error | undefined;
+      await expect(
+        database.transaction(async (tx) => {
+          try {
+            // Back to how a pre-Danish database looks, plus three Admin edits:
+            // a curated Romanian name, and a Danish name and Synonym that
+            // collide with rows the seed is about to insert.
+            await tx
+              .delete(catalogTranslations)
+              .where(eq(catalogTranslations.locale, 'da'));
+            await tx
+              .update(catalogTranslations)
+              .set({
+                value: 'Parmezan curat',
+                normalizedValue: 'parmezan curat',
+              })
+              .where(rows('parmesan', 'ro', 'name'));
+            await tx
+              .insert(catalogTranslations)
+              .values([
+                adminRow('da-name', 'butter', 'name', 'Smør af Admin'),
+                adminRow('da-synonym', 'milk', 'synonym', 'minimælk'),
+              ]);
+
+            await expect(seedCatalog(tx)).resolves.toBeUndefined();
+
+            const value = async (
+              slug: string,
+              locale: string,
+              kind: 'name' | 'synonym',
+            ) =>
+              (
+                await tx
+                  .select()
+                  .from(catalogTranslations)
+                  .where(rows(slug, locale, kind))
+              ).map((row) => row.value);
+            expect(await value('milk', 'da', 'name')).toEqual(['Mælk']);
+            expect(await value('parmesan', 'ro', 'name')).toEqual([
+              'Parmezan curat',
+            ]);
+            expect(await value('butter', 'da', 'name')).toEqual([
+              'Smør af Admin',
+            ]);
+            // The Admin's Synonym is the only "minimælk"; the seeded copy was skipped.
+            expect(await value('milk', 'da', 'synonym')).toEqual(
+              expect.arrayContaining(['minimælk', 'sødmælk']),
+            );
+            expect(
+              (await value('milk', 'da', 'synonym')).filter(
+                (v) => v.toLowerCase() === 'minimælk',
+              ),
+            ).toEqual(['minimælk']);
+          } catch (error) {
+            failure = error as Error;
+          }
+          throw new Rollback();
+        }),
+      ).rejects.toBeInstanceOf(Rollback);
+      if (failure) throw failure;
+    });
+
     it('loads exactly the seeded Catalog', async () => {
       const count = async (
         table:
@@ -445,7 +585,10 @@ describe('Catalog (integration)', () => {
       ).toBe(18);
       const synonyms = SEED_INGREDIENTS.reduce(
         (n, i) =>
-          n + (i.synonyms?.en?.length ?? 0) + (i.synonyms?.ro?.length ?? 0),
+          n +
+          (i.synonyms?.en?.length ?? 0) +
+          (i.synonyms?.ro?.length ?? 0) +
+          (i.synonyms?.da?.length ?? 0),
         0,
       );
       const [{ stored }] = await database

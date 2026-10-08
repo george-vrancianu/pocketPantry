@@ -124,7 +124,7 @@ export const dairy: SeedSection = {
       ],
       ['gouda', 'Gouda', 'Gouda', 'g'],
       ['edam', 'Edam', 'Edam', 'g'],
-      ['emmental', 'Emmental', 'Emmental', 'g', ['emmentaler', 'swiss cheese']],
+      ['emmental', 'Emmental', 'Emmental', 'g', ['swiss cheese']],
       ['gruyere', 'Gruyère', 'Gruyère', 'g'],
       [
         'cascaval',
@@ -380,7 +380,7 @@ export const dairy: SeedSection = {
         'Yogurt',
         'Iaurt',
         'g',
-        ['yoghurt', 'plain yogurt', 'natural yogurt'],
+        ['plain yogurt', 'natural yogurt'],
         [
           'iaurt natural',
           'iaurt simplu',
