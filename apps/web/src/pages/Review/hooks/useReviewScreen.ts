@@ -89,7 +89,11 @@ export function useReviewScreen() {
   const [blocked, setBlocked] = useState<Record<string, boolean>>({});
   // Focus moves to the next row in display order, else the Excluded button, rather than being lost to the page.
   const remove = (key: string) => {
-    const order = [...groups.review, ...groups.sure].map((l) => l.key);
+    // Confident rows only exist on screen while that group is shown.
+    const rendered = state.sureOpen
+      ? [...groups.review, ...groups.sure]
+      : groups.review;
+    const order = rendered.map((l) => l.key);
     const next = order[order.indexOf(key) + 1];
     dispatch({ type: 'remove', key });
     setFocusId(next ? rowId(next) : EXCLUDED_TOGGLE_ID);

@@ -254,6 +254,32 @@ describe('ReviewPage', () => {
     expect(screen.getByRole('button', { name: /Excluded · 2/ })).toHaveFocus();
   });
 
+  it('after a Remove with Confident collapsed, focus falls back to the Excluded button', async () => {
+    renderReview([
+      line({ match: milk, name: 'Beer', lowConfidence: true, quantity: 1 }),
+      sure(),
+    ]);
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Milk' }));
+    expect(screen.getByRole('button', { name: /Excluded · 1/ })).toHaveFocus();
+  });
+
+  it('blocks Save on a half-typed date without a blur, focusing it and saying why', async () => {
+    const calls = renderReview([sure()]);
+    await userEvent.click(row('Parmesan'));
+    const expiry = screen.getByLabelText('Expiry date');
+    await userEvent.clear(expiry);
+    await userEvent.type(expiry, '0810');
+    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    expect(screen.getByLabelText('Expiry date')).toHaveFocus();
+    expect(
+      screen.getByText('Enter a real date as dd.mm.yyyy.'),
+    ).toBeInTheDocument();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
   it('shows expiry day-first in full when open, and takes a typed date back as ISO', async () => {
     const calls = renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
