@@ -3,10 +3,16 @@ import { unmatchedResolveBody } from './unmatched-queue.schemas';
 describe('unmatchedResolveBody', () => {
   const base = { normalizedName: 'maelk', ingredientId: crypto.randomUUID() };
 
-  it('accepts a Synonym in any Scan Language, including one with no catalog locale', () => {
-    expect(unmatchedResolveBody.parse({ ...base, locale: 'da' }).locale).toBe(
-      'da',
+  it('takes the raw-name Synonym in a catalog locale', () => {
+    expect(unmatchedResolveBody.parse({ ...base, locale: 'ro' }).locale).toBe(
+      'ro',
     );
+  });
+
+  it('rejects a Scan Language that is not a catalog locale, since the raw name is UI-locale text', () => {
+    expect(
+      unmatchedResolveBody.safeParse({ ...base, locale: 'da' }).success,
+    ).toBe(false);
   });
 
   it('asks for the printed-text Synonym only when told to', () => {
@@ -17,7 +23,7 @@ describe('unmatchedResolveBody', () => {
     ).toBe(true);
   });
 
-  it('rejects a language outside the Scan Languages', () => {
+  it('rejects an unknown language', () => {
     expect(
       unmatchedResolveBody.safeParse({ ...base, locale: 'fr' }).success,
     ).toBe(false);

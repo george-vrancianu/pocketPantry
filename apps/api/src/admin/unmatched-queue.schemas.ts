@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
+import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
 import { ingredientCreate } from './admin-catalog.schemas';
 
 export const unmatchedListQuery = z.object({
@@ -15,15 +15,15 @@ export type UnmatchedDismissBody = z.infer<typeof unmatchedDismissBody>;
 
 /**
  * Resolve a queue entry to exactly one of an existing Ingredient or a new one.
- * `locale` is the language of the raw-name Synonym; it defaults to the locale
- * of the most recent Unmatched row.
+ * `locale` is the language of the raw-name Synonym (UI-locale text, so a
+ * catalog locale); it defaults to the locale of the most recent Unmatched row.
  */
 export const unmatchedResolveBody = z
   .object({
     normalizedName,
     ingredientId: z.uuid().optional(),
     newIngredient: ingredientCreate.optional(),
-    locale: z.enum(SCAN_LANGUAGES).optional(),
+    locale: z.enum(CATALOG_LOCALES).optional(),
     /** Also make a Synonym of the printed text, in its own Scan Language. */
     sourceSynonym: z.boolean().default(false),
   })
@@ -70,4 +70,6 @@ export type UnmatchedResolution = {
   synonymAdded: boolean;
   /** A Synonym of the printed text was added (needs `sourceSynonym` and printed text). */
   sourceSynonymAdded: boolean;
+  /** Why no printed-text Synonym was added: no printed text, already a Synonym of the target, or owned by another Ingredient. Null when added or not asked for. */
+  sourceSynonymSkipped: 'none' | 'exists' | 'taken' | null;
 };

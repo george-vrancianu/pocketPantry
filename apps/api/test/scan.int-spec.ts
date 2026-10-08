@@ -204,6 +204,38 @@ describe('Product Scan (integration)', () => {
     });
   });
 
+  it('matches a line the model left Unmatched when the printed product name is exactly a Catalog name or Synonym', async () => {
+    // "Parmezan" is Parmesan's Romanian display name.
+    respondWith(
+      parmesan({
+        productName: 'Parmezan',
+        matchedIngredientId: null,
+        matchConfidence: 0,
+      }),
+    );
+    const response = await scan(await signUp(), {
+      productImage: IMAGE,
+    }).expect(201);
+    expect(response.body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('parmesan') } }],
+    });
+  });
+
+  it('keeps a valid model Match over a different exact hit on the printed name', async () => {
+    respondWith(
+      parmesan({
+        productName: 'Parmezan',
+        matchedIngredientId: seedId.ingredient('milk'),
+      }),
+    );
+    const response = await scan(await signUp(), {
+      productImage: IMAGE,
+    }).expect(201);
+    expect(response.body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('milk') } }],
+    });
+  });
+
   it('marks a line Unmatched when the model gives no identifier, or one not in the Catalog', async () => {
     const cookie = await signUp();
     respondWith(parmesan({ matchedIngredientId: null, matchConfidence: 0 }));

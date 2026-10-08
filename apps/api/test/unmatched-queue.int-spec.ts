@@ -534,6 +534,7 @@ describe('Unmatched queue (integration)', () => {
           locale: 'ro',
           synonymAdded: true,
           sourceSynonymAdded: true,
+          sourceSynonymSkipped: null,
         });
         expect(await synonymsOf(raw)).toMatchObject([{ locale: 'ro' }]);
         expect(await synonymsOf(printed)).toMatchObject([{ locale: 'da' }]);
@@ -556,13 +557,58 @@ describe('Unmatched queue (integration)', () => {
           normalizedName: normalise(raw),
           ingredientId: parmesan,
         }).expect(201);
-        expect(response.body).toMatchObject({ sourceSynonymAdded: false });
+        expect(response.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: null,
+        });
         expect(await synonymsOf(raw)).toHaveLength(1);
         expect(await synonymsOf(printed)).toHaveLength(0);
 
         const scan = await scanReceipt(printed, `zzyzx ${raw}`);
         expect(scan.lines[0].match).toBeNull();
         await cleanUp(raw);
+      });
+
+      it('says why when there is no printed text, or the target already answers to it', async () => {
+        const bare = name('skyr bare');
+        await saveBatches(await newMember(), [{ rawName: bare }], 'ro', 'da');
+        const none = await resolve({
+          normalizedName: normalise(bare),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(none.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'none',
+        });
+
+        const raw = name('skyr exists');
+        const printed = name('skyr exists trykt');
+        await saveBatches(
+          await newMember(),
+          [{ rawName: raw, sourceText: printed }],
+          'ro',
+          'da',
+        );
+        await call(adminCookie)
+          .post('/admin/catalog/translations', {
+            entityType: 'ingredient',
+            entityId: parmesan,
+            kind: 'synonym',
+            locale: 'da',
+            value: printed,
+          })
+          .expect(201);
+        const exists = await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+          sourceSynonym: true,
+        }).expect(201);
+        expect(exists.body).toMatchObject({
+          sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'exists',
+        });
+        await cleanUp(bare, raw, printed);
       });
 
       it('skips the printed-text Synonym when another Ingredient already owns that name', async () => {
@@ -591,6 +637,7 @@ describe('Unmatched queue (integration)', () => {
         expect(response.body).toMatchObject({
           synonymAdded: true,
           sourceSynonymAdded: false,
+          sourceSynonymSkipped: 'taken',
         });
         await cleanUp(raw, printed);
       });

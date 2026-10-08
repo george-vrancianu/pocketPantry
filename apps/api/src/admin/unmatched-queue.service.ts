@@ -174,17 +174,25 @@ export class UnmatchedQueueService {
     const printedKey = printed?.sourceText
       ? normalizeName(printed.sourceText)
       : '';
-    const sourceSynonymAdded =
-      printed?.sourceText && printed.sourceLanguage && printedKey
-        ? (await this.isNameFree(tx, printedKey, target.id)) &&
-          (await this.addSynonym(
-            tx,
-            target,
-            printed.sourceText,
-            printedKey,
-            printed.sourceLanguage,
-          ))
-        : false;
+    let sourceSynonymAdded = false;
+    let sourceSynonymSkipped: UnmatchedResolution['sourceSynonymSkipped'] =
+      null;
+    if (body.sourceSynonym) {
+      if (!printed?.sourceText || !printed.sourceLanguage || !printedKey) {
+        sourceSynonymSkipped = 'none';
+      } else if (!(await this.isNameFree(tx, printedKey, target.id))) {
+        sourceSynonymSkipped = 'taken';
+      } else {
+        sourceSynonymAdded = await this.addSynonym(
+          tx,
+          target,
+          printed.sourceText,
+          printedKey,
+          printed.sourceLanguage,
+        );
+        if (!sourceSynonymAdded) sourceSynonymSkipped = 'exists';
+      }
+    }
     // Only the entries relinked above: one saved after our read stays queued.
     await tx.delete(unmatchedEntries).where(
       inArray(
@@ -200,6 +208,7 @@ export class UnmatchedQueueService {
       relinkedShoppingItems,
       synonymAdded,
       sourceSynonymAdded,
+      sourceSynonymSkipped,
     };
   }
 

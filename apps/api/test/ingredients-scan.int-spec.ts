@@ -128,6 +128,38 @@ describe('Ingredients Scan (integration)', () => {
     expect(response.body).toEqual({ lines: [] });
   });
 
+  it('matches an item the model left Unmatched when its printed name is exactly a Catalog name or Synonym', async () => {
+    // "Parmezan" is Parmesan's Romanian display name.
+    respondWith([
+      item({
+        productName: 'Parmezan',
+        matchedIngredientId: null,
+        matchConfidence: 0,
+      }),
+    ]);
+    const body = (
+      await scan(await signUp(), { ingredientsImage: IMAGE }).expect(201)
+    ).body as unknown;
+    expect(body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('parmesan') } }],
+    });
+  });
+
+  it('keeps a valid model Match over a different exact hit on the printed name', async () => {
+    respondWith([
+      item({
+        productName: 'Parmezan',
+        matchedIngredientId: seedId.ingredient('milk'),
+      }),
+    ]);
+    const body = (
+      await scan(await signUp(), { ingredientsImage: IMAGE }).expect(201)
+    ).body as unknown;
+    expect(body).toMatchObject({
+      lines: [{ match: { id: seedId.ingredient('milk') } }],
+    });
+  });
+
   it('hands the model the photo and the Catalog in the Member locale', async () => {
     respondWith([item()]);
     prompts.length = 0;
