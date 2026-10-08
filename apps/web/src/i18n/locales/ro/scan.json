@@ -2,6 +2,9 @@
   "title": "Scanează {{mode}}",
   "close": "Închide scanerul",
   "flash": "Comută blițul",
+  "scanLanguage": {
+    "label": "Citit ca"
+  },
   "gallery": "Alege din galerie",
   "shutter": "Fă o poză",
   "manual": "Adaugă manual",

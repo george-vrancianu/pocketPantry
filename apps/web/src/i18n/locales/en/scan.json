@@ -2,6 +2,9 @@
   "title": "Scan {{mode}}",
   "close": "Close scanner",
   "flash": "Toggle flash",
+  "scanLanguage": {
+    "label": "Reading as"
+  },
   "gallery": "Choose from photos",
   "shutter": "Take photo",
   "manual": "Add manually",

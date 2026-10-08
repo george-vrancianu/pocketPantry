@@ -8,7 +8,11 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LOCALES, type Locale } from '../../../i18n/resources';
+import {
+  isLocale,
+  SCAN_LANGUAGES,
+  type ScanLanguage,
+} from '../../../i18n/resources';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   useAddTranslation,
@@ -28,7 +32,8 @@ type Props = {
 
 /**
  * Display names and Synonyms of one Catalog entry. English is the canonical
- * name (edited with the entry); other locales get a display name and Synonyms.
+ * name (edited with the entry); the other catalog locales get a display name and
+ * Synonyms. Danish takes Synonyms only: it is a Scan Language, not a catalog locale.
  */
 export function TranslationsEditor({
   entityType,
@@ -55,7 +60,7 @@ export function TranslationsEditor({
       <Typography variant="body2">
         {t('admin:translations.canonicalName', { name })}
       </Typography>
-      {LOCALES.map((locale) => (
+      {SCAN_LANGUAGES.map((locale) => (
         <LocaleBlock
           key={locale}
           locale={locale}
@@ -72,7 +77,7 @@ export function TranslationsEditor({
 }
 
 type BlockProps = {
-  locale: Locale;
+  locale: ScanLanguage;
   entityType: EntityType;
   entityId: string;
   translations: AdminTranslation[];
@@ -125,7 +130,7 @@ function LocaleBlock({
       <Typography component="legend" variant="body2" sx={{ fontWeight: 700 }}>
         {language}
       </Typography>
-      {locale !== 'en' ? (
+      {isLocale(locale) && locale !== 'en' ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
           <TextField
             label={t('translations.displayName', { language })}

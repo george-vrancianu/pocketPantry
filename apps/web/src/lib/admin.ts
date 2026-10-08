@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { Locale } from '../i18n/resources';
+import type { ScanLanguage } from '../i18n/resources';
 import {
   catalogSearchQueryKey,
   type StorageLocation,
@@ -12,7 +12,7 @@ export type EntityType =
 
 export type AdminTranslation = {
   id: string;
-  locale: Locale;
+  locale: ScanLanguage;
   kind: 'name' | 'synonym';
   value: string;
 };
@@ -129,7 +129,8 @@ export function useDeleteCategory(kind: CategoryKind) {
 export type TranslationInput = {
   entityType: EntityType;
   entityId: string;
-  locale: Locale;
+  /** Any Scan Language for a Synonym; a display name takes a catalog locale only. */
+  locale: ScanLanguage;
   kind: 'name' | 'synonym';
   value: string;
 };

@@ -8,6 +8,7 @@ export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
 export { Button, type ButtonProps } from './atoms/Button';
+export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
 export { IconButton, type IconButtonProps } from './atoms/IconButton';

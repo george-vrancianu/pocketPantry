@@ -49,12 +49,20 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = { lines: ProposedLine[] };
 
+/** The query string of a Scan or of saving its lines; `scanLanguage` is left out when the lines were not scanned. */
+export function scanQuery(locale: string, scanLanguage?: string) {
+  return new URLSearchParams({
+    locale,
+    ...(scanLanguage ? { scanLanguage } : {}),
+  });
+}
+
 /** Product Scan: the photo goes up as a data URL and is never stored. */
-export function useProductScan(locale: string) {
+export function useProductScan(locale: string, scanLanguage: string) {
   return useMutation({
     mutationFn: (productImage: string) =>
       apiRequest<ScanResponse>(
-        `/scan/product?${new URLSearchParams({ locale })}`,
+        `/scan/product?${scanQuery(locale, scanLanguage)}`,
         { method: 'POST', body: { productImage } },
       ),
   });
@@ -64,12 +72,12 @@ export function useProductScan(locale: string) {
 export const MAX_BULK_BATCHES = 50;
 
 /** Saves reviewed lines as Batches, all or none. */
-export function useAddBatches(locale: string) {
+export function useAddBatches(locale: string, scanLanguage?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (batches: NewBatch[]) =>
       apiRequest<{ batches: Batch[] }>(
-        `/pantry/batches/bulk?${new URLSearchParams({ locale })}`,
+        `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
         { method: 'POST', body: { batches } },
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),

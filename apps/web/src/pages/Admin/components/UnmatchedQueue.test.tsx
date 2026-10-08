@@ -38,10 +38,44 @@ const entry: UnmatchedEntry = {
   count: 3,
   locale: 'ro',
   locales: ['ro'],
+  sourceText: null,
+  sourceLanguage: null,
   sources: ['manual', 'receipt'],
   dismissed: false,
   references: [],
 };
+
+const printedEntry: UnmatchedEntry = {
+  ...entry,
+  normalizedName: 'ost',
+  rawName: 'Cheese',
+  locale: 'en',
+  locales: ['en'],
+  sourceText: 'OST 200G',
+  sourceLanguage: 'da',
+};
+
+const resolution = {
+  ingredientId: 'i1',
+  locale: 'en',
+  relinkedBatches: 2,
+  relinkedShoppingItems: 0,
+  synonymAdded: true,
+  sourceSynonymAdded: false,
+  sourceSynonymSkipped: null,
+};
+
+/** Opens the resolver of the printed-text entry and picks Parmesan. */
+async function pickParmesan(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(
+    await screen.findByRole('button', { name: 'Resolve Cheese' }),
+  );
+  await user.type(
+    screen.getByRole('combobox', { name: 'Search ingredients' }),
+    'parm',
+  );
+  await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+}
 
 function stub(routes: Parameters<typeof stubApi>[0] = {}) {
   const api = stubApi({
@@ -251,5 +285,127 @@ describe('UnmatchedQueue', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Dismissed' }));
     await vi.waitFor(() => expect(calls.length).toBeGreaterThan(1));
+  });
+
+  it('shows the printed text with its Scan Language next to the raw name', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry] }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const item = await screen.findByRole('listitem');
+    expect(within(item).getByText('Cheese')).toBeVisible();
+    expect(within(item).getByText('Printed: OST 200G (Danish)')).toBeVisible();
+  });
+
+  it('shows no printed text for an entry that has none', async () => {
+    stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const item = await screen.findByRole('listitem');
+    expect(within(item).queryByText(/Printed:/)).not.toBeInTheDocument();
+  });
+
+  it('offers the printed text as a Synonym, unchecked by default, and sends the choice', async () => {
+    const calls = stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry] }),
+      'POST /api/admin/unmatched/resolve': () =>
+        Response.json(
+          { ...resolution, sourceSynonymAdded: true },
+          { status: 201 },
+        ),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+    await pickParmesan(user);
+
+    const box = screen.getByRole('checkbox', {
+      name: 'Also add the printed text as a Synonym (Danish)',
+    });
+    expect(box).not.toBeChecked();
+    await user.click(box);
+    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Linked 2 rows to Parmesan. Added "OST 200G" as a Danish Synonym.',
+    );
+    expect(
+      calls.find((c) => c.key === 'POST /api/admin/unmatched/resolve')?.body,
+    ).toEqual({
+      normalizedName: 'ost',
+      ingredientId: 'i1',
+      locale: 'en',
+      sourceSynonym: true,
+    });
+  });
+
+  it('does not ask for the printed-text Synonym unless it is ticked', async () => {
+    const calls = stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry] }),
+      'POST /api/admin/unmatched/resolve': () =>
+        Response.json(resolution, { status: 201 }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+    await pickParmesan(user);
+    await user.click(screen.getByRole('button', { name: 'Resolve' }));
+    await screen.findByRole('status');
+    expect(
+      calls.find((c) => c.key === 'POST /api/admin/unmatched/resolve')?.body,
+    ).not.toHaveProperty('sourceSynonym');
+  });
+
+  it.each([
+    ['exists', /already a Synonym of this Ingredient/],
+    ['taken', /belongs to another Ingredient/],
+    ['none', /had no printed text/],
+  ] as const)(
+    'says why the printed text was not added as a Synonym (%s)',
+    async (skipped, message) => {
+      stub({
+        'GET /api/admin/unmatched': () =>
+          Response.json({ entries: [printedEntry] }),
+        'POST /api/admin/unmatched/resolve': () =>
+          Response.json(
+            { ...resolution, sourceSynonymSkipped: skipped },
+            { status: 201 },
+          ),
+      });
+      renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+      const user = userEvent.setup();
+      await pickParmesan(user);
+      await user.click(
+        screen.getByRole('checkbox', { name: /Also add the printed text/ }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Resolve' }));
+      expect(await screen.findByRole('status')).toHaveTextContent(message);
+    },
+  );
+
+  it('offers no printed-text Synonym when there is no printed text', async () => {
+    stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
+
+  it('offers only catalog languages for the Synonym of the raw name', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry] }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Cheese' }),
+    );
+    const options = within(screen.getByLabelText('Synonym language'))
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    expect(options).toEqual(['English', 'Romanian']);
   });
 });

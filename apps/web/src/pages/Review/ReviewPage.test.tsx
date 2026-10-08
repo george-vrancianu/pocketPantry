@@ -41,8 +41,9 @@ function renderReview(
   lines: ProposedLine[],
   extra = {},
   mode: 'product' | 'plate' = 'product',
+  scanLanguage?: 'en' | 'ro' | 'da',
 ) {
-  startReview({ mode, lines });
+  startReview({ mode, lines, scanLanguage });
   const { fetchMock, calls } = stubApi({
     'GET /api/catalog/search': () => Response.json({ results: [milk] }),
     'GET /api/catalog/parents': () =>
@@ -298,6 +299,30 @@ describe('ReviewPage', () => {
     expect(body.batches[0]).toMatchObject({ expiryDate: '2027-02-01' });
   });
 
+  it('saves in the Scan Language of the scan, with the printed text of Unmatched lines only', async () => {
+    const calls = renderReview(
+      [
+        line({ name: 'Cheese', match: null, sourceText: 'OST 200G' }),
+        sure(),
+        line({ name: 'Typed', match: null, sourceText: null }),
+      ],
+      {},
+      'product',
+      'da',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save 3 items' }));
+    await screen.findByText('pantry screen');
+    const save = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk');
+    expect(new URLSearchParams(save?.search).get('scanLanguage')).toBe('da');
+    const { batches } = (save?.body ?? {}) as { batches: object[] };
+    expect(batches[0]).toMatchObject({
+      rawName: 'Cheese',
+      sourceText: 'OST 200G',
+    });
+    expect(batches[1]).not.toHaveProperty('sourceText');
+    expect(batches[2]).not.toHaveProperty('sourceText');
+  });
+
   it('saves no expiry when the date is cleared', async () => {
     const calls = renderReview([sure()]);
     await userEvent.click(row('Parmesan'));
@@ -526,6 +551,7 @@ describe('ReviewPage', () => {
         {
           rawName: 'Mystery jar',
           source: 'product',
+          sourceText: 'GRANA PAD 200G',
           quantity: null,
           unit: null,
           location: 'cupboard',

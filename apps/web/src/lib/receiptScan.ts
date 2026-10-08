@@ -1,14 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ApiError, apiRequest } from './api';
+import { scanQuery } from './scan';
 import type { Batch, NewBatch } from './pantry';
 import type { ReceiptSectionResult } from './receiptSections';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
-export function useReceiptScan(locale: string) {
+export function useReceiptScan(locale: string, scanLanguage: string) {
   return useMutation({
     mutationFn: (receiptImage: string) =>
       apiRequest<ReceiptSectionResult>(
-        `/scan/receipt?${new URLSearchParams({ locale })}`,
+        `/scan/receipt?${scanQuery(locale, scanLanguage)}`,
         { method: 'POST', body: { receiptImage } },
       ),
   });
@@ -51,21 +52,23 @@ export function countTickFailures(
  * the save: the Batches are in the Pantry either way. The failures come back
  * counted by kind so Review can say so.
  */
-export function useReceiptConfirm(locale: string) {
+export function useReceiptConfirm(locale: string, scanLanguage?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (batches: NewBatch[]): Promise<ReceiptConfirmResult> => {
-      const query = new URLSearchParams({ locale });
       const result = await apiRequest<ReceiptConfirmation>(
-        `/scan/receipt/confirm?${query}`,
+        `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
         { method: 'POST', body: { batches } },
       );
       const outcomes = await Promise.allSettled(
         result.matchedShoppingItemIds.map((id) =>
-          apiRequest(`/shopping-list/items/${id}?${query}`, {
-            method: 'PATCH',
-            body: { checked: true },
-          }),
+          apiRequest(
+            `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
+            {
+              method: 'PATCH',
+              body: { checked: true },
+            },
+          ),
         ),
       );
       return { ...result, tickFailures: countTickFailures(outcomes) };

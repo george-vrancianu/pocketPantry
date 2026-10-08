@@ -11,7 +11,8 @@
   },
   "locales": {
     "en": "English",
-    "ro": "Romanian"
+    "ro": "Romanian",
+    "da": "Danish"
   },
   "common": {
     "save": "Save",
@@ -88,6 +89,16 @@
     "confirm": "Resolve",
     "resolving": "Resolving…",
     "resolved_one": "Linked {{count}} row to {{name}}.",
-    "resolved_other": "Linked {{count}} rows to {{name}}."
+    "resolved_other": "Linked {{count}} rows to {{name}}.",
+    "printed": "Printed: {{text}}",
+    "printedIn": "Printed: {{text}} ({{language}})",
+    "sourceSynonym": "Also add the printed text as a Synonym ({{language}})",
+    "sourceSynonymHint": "Adds \"{{text}}\" so it matches next time on its own. Leave it off for a generic word: it would match every such line, skipping the confidence check.",
+    "sourceSynonymAdded": "Added \"{{text}}\" as a {{language}} Synonym.",
+    "sourceSynonymSkipped": {
+      "exists": "The printed text was not added: it is already a Synonym of this Ingredient.",
+      "taken": "The printed text was not added: it belongs to another Ingredient.",
+      "none": "The printed text was not added: the rows had no printed text."
+    }
   }
 }

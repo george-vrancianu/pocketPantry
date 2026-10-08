@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { SCAN_MODES } from '../../lib/scan';
 import { DishPicker } from './components/DishPicker';
+import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
 import { Viewfinder } from './components/Viewfinder';
@@ -88,6 +89,17 @@ export function ScanPage() {
           receiptGuide={screen.mode === 'receipt'}
         />
       </Box>
+
+      {screen.scanLanguageShown ? (
+        <Box sx={{ mt: '16px', textAlign: 'center' }}>
+          <ScanLanguageChip
+            value={screen.scanLanguage}
+            locale={screen.uiLocale}
+            disabled={screen.scanLanguageLocked}
+            onChange={screen.setScanLanguage}
+          />
+        </Box>
+      ) : null}
 
       <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
         <Typography sx={{ fontSize: 16, fontWeight: 700 }}>

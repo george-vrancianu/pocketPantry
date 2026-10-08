@@ -31,13 +31,14 @@ export function renderWithProviders(
 
 /** A fetch stub that answers by method and path, e.g. `'POST /api/auth/sign-in/email'`. */
 export function stubApi(routes: Record<string, () => Response>) {
-  const calls: Array<{ key: string; body: unknown }> = [];
+  const calls: Array<{ key: string; search: string; body: unknown }> = [];
   const fetchMock = (input: RequestInfo | URL, init?: RequestInit) => {
     // The app calls relative `/api/...` paths, as a browser resolves them against the page.
     const url = new URL(String(input), window.location.origin);
     const key = `${init?.method ?? 'GET'} ${url.pathname}`;
     calls.push({
       key,
+      search: url.search,
       body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
     });
     const handler = routes[key];

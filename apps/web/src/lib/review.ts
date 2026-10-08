@@ -1,5 +1,6 @@
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
+import type { ScanLanguage } from '../i18n/resources';
 import { isIsoDate } from './dateFormat';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
@@ -9,7 +10,12 @@ import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
  * those lines into editable `ReviewLine`s and, on confirm, saves them.
  * Nothing is saved before that: the draft lives in client state only.
  */
-export type ReviewDraft = { mode: ScanMode; lines: ProposedLine[] };
+export type ReviewDraft = {
+  mode: ScanMode;
+  lines: ProposedLine[];
+  /** What the Scan was read in; travels to the save call. Plate has none. */
+  scanLanguage?: ScanLanguage;
+};
 
 let draft: ReviewDraft | null = null;
 
@@ -29,7 +35,7 @@ export type ReviewLine = {
   key: string;
   /** The name the Scan read; the raw name when the line stays Unmatched. */
   name: string;
-  /** The text the Scan read for this line, or null. Shown under the name, never saved. */
+  /** The text the Scan read for this line, or null. Shown under the name; saved with an Unmatched line as its printed text. */
   sourceText: string | null;
   match: CatalogSearchResult | null;
   lowConfidence: boolean;
@@ -130,6 +136,10 @@ export function toNewBatch(line: ReviewLine): NewBatch {
       ? { ingredientId: line.match.id }
       : {
           rawName: line.name.trim(),
+          // The paper's text, whatever the Member renamed the line to.
+          ...(line.sourceText?.trim()
+            ? { sourceText: line.sourceText.trim() }
+            : {}),
           ...(line.parentCategoryId
             ? { parentCategoryId: line.parentCategoryId }
             : {}),

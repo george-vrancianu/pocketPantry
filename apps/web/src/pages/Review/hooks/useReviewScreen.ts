@@ -52,8 +52,8 @@ export function useReviewScreen() {
       ),
     );
   });
-  const addBatches = useAddBatches(i18n.language);
-  const confirmReceipt = useReceiptConfirm(i18n.language);
+  const addBatches = useAddBatches(i18n.language, draft?.scanLanguage);
+  const confirmReceipt = useReceiptConfirm(i18n.language, draft?.scanLanguage);
   const addShoppingItems = useAddShoppingItems(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
