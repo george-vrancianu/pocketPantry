@@ -2,6 +2,7 @@ export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme } from './theme/theme';
 export { tokens } from './theme/tokens';
 export { useBreakpointUp } from './theme/useBreakpointUp';
+export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
 export { Button, type ButtonProps } from './atoms/Button';

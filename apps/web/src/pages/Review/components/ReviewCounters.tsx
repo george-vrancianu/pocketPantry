@@ -1,40 +1,35 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
-type Props = { save: number; check: number; excluded: number };
+export type Counts = { save: number; check: number; excluded: number };
+
+/** How each counter looks, on phone tiles and tablet chips alike. */
+export const COUNTER_TONE = {
+  save: {
+    bgcolor: tokens.color.surface,
+    border: `1px solid ${tokens.color.line}`,
+    color: tokens.color.ink,
+  },
+  check: {
+    bgcolor: tokens.color.urgentBg,
+    border: '1px solid transparent',
+    color: tokens.color.urgentFg,
+  },
+  excluded: {
+    bgcolor: tokens.color.chipNeutral,
+    border: '1px solid transparent',
+    color: tokens.color.muted,
+  },
+} as const;
 
 /** Three live tiles: lines to save, lines to check, lines excluded. */
-export function ReviewCounters({ save, check, excluded }: Props) {
+export function ReviewCounters({ save, check, excluded }: Counts) {
   const { t } = useTranslation('review');
   const tiles = [
-    {
-      key: 'save',
-      value: save,
-      sx: {
-        bgcolor: tokens.color.surface,
-        border: `1px solid ${tokens.color.line}`,
-        color: tokens.color.ink,
-      },
-    },
-    {
-      key: 'check',
-      value: check,
-      sx: {
-        bgcolor: tokens.color.urgentBg,
-        border: '1px solid transparent',
-        color: tokens.color.urgentFg,
-      },
-    },
-    {
-      key: 'excluded',
-      value: excluded,
-      sx: {
-        bgcolor: tokens.color.chipNeutral,
-        border: '1px solid transparent',
-        color: tokens.color.muted,
-      },
-    },
-  ];
+    { key: 'save', value: save },
+    { key: 'check', value: check },
+    { key: 'excluded', value: excluded },
+  ] as const;
   return (
     <Box
       sx={{
@@ -51,7 +46,7 @@ export function ReviewCounters({ save, check, excluded }: Props) {
             borderRadius: `${tokens.radius.input}px`,
             px: '12px',
             py: '10px',
-            ...tile.sx,
+            ...COUNTER_TONE[tile.key],
           }}
         >
           <Box

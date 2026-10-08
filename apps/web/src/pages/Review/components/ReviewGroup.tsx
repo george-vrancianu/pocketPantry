@@ -1,7 +1,7 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useId, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { focusRing } from './layout';
+import { linkButtonSx } from './layout';
 
 type Props = {
   kind: 'review' | 'sure';
@@ -60,18 +60,7 @@ export function ReviewGroup({
             aria-expanded={expanded}
             aria-controls={expanded ? listId : undefined}
             onClick={onToggle}
-            sx={{
-              minHeight: 36,
-              px: '8px',
-              border: 0,
-              bgcolor: 'transparent',
-              color: tokens.color.accent,
-              fontFamily: 'inherit',
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-              ...focusRing,
-            }}
+            sx={linkButtonSx}
           >
             {t(expanded ? 'group.collapse' : 'group.expand')}
           </Box>
