@@ -39,10 +39,10 @@ export function UnmatchedQueue({ catalog }: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
-  // Where focus goes when the resolver closes: back to the row's Resolve
-  // button on Cancel, to the result message on Done (the row is gone).
   // Index of the first row a Load more brings in, until focus has moved there.
   const [focusFrom, setFocusFrom] = useState<number | null>(null);
+  // Where focus goes when the resolver closes: back to the row's Resolve
+  // button on Cancel, to the result message on Done (the row is gone).
   const [restoreFocus, setRestoreFocus] = useState<
     { to: 'row'; name: string } | { to: 'notice' } | null
   >(null);
@@ -137,7 +137,7 @@ export function UnmatchedQueue({ catalog }: Props) {
           <li key={entry.normalizedName}>
             <QueueRow
               entry={entry}
-              canDismiss={status === 'open'}
+              dismissed={status === 'dismissed'}
               busy={dismiss.isPending || undismiss.isPending}
               onResolve={() => {
                 setNotice(null);
@@ -176,7 +176,8 @@ export function UnmatchedQueue({ catalog }: Props) {
 
 type RowProps = {
   entry: UnmatchedEntry;
-  canDismiss: boolean;
+  /** On the Dismissed tab, where the row offers Restore instead of Dismiss. */
+  dismissed: boolean;
   busy: boolean;
   onResolve: () => void;
   onDismiss: () => void;
@@ -185,7 +186,7 @@ type RowProps = {
 
 function QueueRow({
   entry,
-  canDismiss,
+  dismissed,
   busy,
   onResolve,
   onDismiss,
@@ -229,12 +230,12 @@ function QueueRow({
           variant="text"
           disabled={busy}
           aria-label={t(
-            canDismiss ? 'unmatched.dismissName' : 'unmatched.restoreName',
+            dismissed ? 'unmatched.restoreName' : 'unmatched.dismissName',
             { name: entry.rawName },
           )}
-          onClick={canDismiss ? onDismiss : onRestore}
+          onClick={dismissed ? onRestore : onDismiss}
         >
-          {t(canDismiss ? 'unmatched.dismiss' : 'unmatched.restore')}
+          {t(dismissed ? 'unmatched.restore' : 'unmatched.dismiss')}
         </Button>
       </Stack>
     </Stack>
