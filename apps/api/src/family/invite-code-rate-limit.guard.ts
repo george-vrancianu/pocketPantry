@@ -36,8 +36,8 @@ export class InviteCodeRateLimitGuard implements CanActivate {
     const http = context.switchToHttp();
     const request = http.getRequest<AuthenticatedRequest>();
     const now = Date.now();
-    for (const [key, w] of this.windows) {
-      if (now >= w.resetsAt) this.windows.delete(key);
+    for (const [key, window] of this.windows) {
+      if (now >= window.resetsAt) this.windows.delete(key);
     }
     const retryAfterMs =
       this.hit(
@@ -59,10 +59,13 @@ export class InviteCodeRateLimitGuard implements CanActivate {
 
   /** Counts a request; the ms until the window resets if it is over `limit`. */
   private hit(key: string, limit: number, now: number): number | undefined {
-    const w = this.windows.get(key) ?? { count: 0, resetsAt: now + WINDOW_MS };
-    this.windows.set(key, w);
-    if (w.count >= limit) return w.resetsAt - now;
-    w.count++;
+    const window = this.windows.get(key) ?? {
+      count: 0,
+      resetsAt: now + WINDOW_MS,
+    };
+    this.windows.set(key, window);
+    if (window.count >= limit) return window.resetsAt - now;
+    window.count++;
     return undefined;
   }
 }

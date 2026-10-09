@@ -240,7 +240,7 @@ export class PantryService {
     }
 
     const parents = new Map<string, Parent>();
-    const others = new Map<string, Leaf>();
+    const otherLeaves = new Map<string, Leaf>();
     if (parentIds.length > 0) {
       const rows = await this.database
         .select({ parent: parentCategories, leaf: leafCategories })
@@ -255,7 +255,7 @@ export class PantryService {
         .where(inArray(parentCategories.id, parentIds));
       for (const { parent, leaf } of rows) {
         parents.set(parent.id, parent);
-        if (leaf) others.set(parent.id, leaf);
+        if (leaf) otherLeaves.set(parent.id, leaf);
       }
     }
 
@@ -267,7 +267,7 @@ export class PantryService {
       }
       const parent = parents.get(parentIdOf(body));
       if (!parent) throw new ApiException(404, 'pantry.category_not_found');
-      const leaf = others.get(parent.id);
+      const leaf = otherLeaves.get(parent.id);
       if (!leaf) throw new ApiException(422, 'pantry.other_leaf_missing');
       return { ingredientId: null, leaf, parent };
     });

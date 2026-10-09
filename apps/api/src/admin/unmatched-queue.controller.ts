@@ -12,10 +12,10 @@ import { AdminRoleGuard } from '../auth/admin-role.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
-  unmatchedDismissBody,
+  unmatchedNameBody,
   unmatchedListQuery,
   unmatchedResolveBody,
-  type UnmatchedDismissBody,
+  type UnmatchedNameBody,
   type UnmatchedListQuery,
   type UnmatchedQueuePage,
   type UnmatchedResolution,
@@ -59,8 +59,8 @@ export class UnmatchedQueueController {
     summary: 'Admin only: set a name aside; its rows stay Unmatched',
   })
   async dismiss(
-    @Body(new ZodValidationPipe(unmatchedDismissBody))
-    body: UnmatchedDismissBody,
+    @Body(new ZodValidationPipe(unmatchedNameBody))
+    body: UnmatchedNameBody,
   ): Promise<void> {
     await this.queue.dismiss(body.normalizedName);
   }
@@ -71,8 +71,8 @@ export class UnmatchedQueueController {
     summary: 'Admin only: put a dismissed name back in the open queue',
   })
   async undismiss(
-    @Body(new ZodValidationPipe(unmatchedDismissBody))
-    body: UnmatchedDismissBody,
+    @Body(new ZodValidationPipe(unmatchedNameBody))
+    body: UnmatchedNameBody,
   ): Promise<void> {
     await this.queue.undismiss(body.normalizedName);
   }

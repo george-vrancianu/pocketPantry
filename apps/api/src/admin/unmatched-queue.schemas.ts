@@ -34,8 +34,8 @@ export type UnmatchedListQuery = z.infer<typeof unmatchedListQuery>;
 /** The queue is keyed by the normalised raw name, exactly as the list returns it. */
 const normalizedName = z.string().trim().min(1).max(200);
 
-export const unmatchedDismissBody = z.object({ normalizedName });
-export type UnmatchedDismissBody = z.infer<typeof unmatchedDismissBody>;
+export const unmatchedNameBody = z.object({ normalizedName });
+export type UnmatchedNameBody = z.infer<typeof unmatchedNameBody>;
 
 /**
  * Resolve a queue entry to exactly one of an existing Ingredient or a new one.
