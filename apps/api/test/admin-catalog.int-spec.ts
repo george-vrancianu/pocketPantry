@@ -17,6 +17,7 @@ import {
 } from '../src/database/schema';
 import { normalizeName } from '../src/catalog/normalize';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { promoteToAdmin } from './support/promote-to-admin';
 
 type Body = { id: string; [key: string]: unknown };
 type Overview = {
@@ -32,22 +33,19 @@ describe('Admin role and Catalog curation (integration)', () => {
   let adminCookie: string;
   let memberCookie: string;
   const stamp = Date.now();
+  const adminEmail = `chef-admin-${stamp}@example.com`;
   const shoppingListIds: string[] = [];
   const batchIds: string[] = [];
 
+  let signUps = 0;
   async function signUp(email: string, name: string) {
-    let response = await request(app.getHttpServer())
+    // A fresh client IP per signup keeps clear of Better Auth's sign-up rate limit.
+    const n = ++signUps;
+    const response = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
       .set('origin', TEST_ORIGIN)
+      .set('x-forwarded-for', `10.16.${Math.floor(n / 250)}.${n % 250}`)
       .send({ name, email, password: 'correct-horse-staple' });
-    // The allow-listed address is fixed, so another spec in this worker (e.g.
-    // unmatched-queue) may have signed it up already.
-    if (response.status === 422) {
-      response = await request(app.getHttpServer())
-        .post('/api/auth/sign-in/email')
-        .set('origin', TEST_ORIGIN)
-        .send({ email, password: 'correct-horse-staple' });
-    }
     expect(response.status).toBe(200);
     const cookie = [response.headers['set-cookie'] ?? []]
       .flat()
@@ -103,8 +101,8 @@ describe('Admin role and Catalog curation (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    // Allow-listed in test/support/env.ts (mixed case on purpose).
-    adminCookie = (await signUp('chef.admin@example.com', 'Chef Admin')).cookie;
+    adminCookie = (await signUp(adminEmail, 'Chef Admin')).cookie;
+    await promoteToAdmin(database, adminEmail);
     memberCookie = (await signUp(`member-${stamp}@example.com`, 'Member'))
       .cookie;
   });
@@ -128,16 +126,31 @@ describe('Admin role and Catalog curation (integration)', () => {
   });
 
   describe('role assignment', () => {
-    it('grants Admin to an allow-listed email at signup, and only that', async () => {
-      const rows = await database
-        .select({ email: user.email, role: user.role })
-        .from(user);
-      expect(rows.find((r) => r.email === 'chef.admin@example.com')?.role).toBe(
+    it('never grants Admin at signup, even to a formerly allow-listed email', async () => {
+      // Was on the ADMIN_EMAILS allow-list; signup no longer reads one.
+      const { cookie, body } = await signUp(
+        'chef.admin@example.com',
+        'Chef Admin',
+      );
+      expect((body as { user?: { role?: string } }).user?.role).toBe('regular');
+      await as(cookie).get('').expect(403);
+    });
+
+    it('lets a Member whose role is set to admin in the database through', async () => {
+      const email = `promoted-${stamp}@example.com`;
+      const { cookie } = await signUp(email, 'Promoted');
+      await as(cookie).get('').expect(403);
+      await promoteToAdmin(database, email);
+      await as(cookie).get('').expect(200);
+      // The web RequireAdmin reads the role from the session.
+      const session = await request(app.getHttpServer())
+        .get('/api/auth/get-session')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(200);
+      expect((session.body as { user: { role: string } }).user.role).toBe(
         'admin',
       );
-      expect(
-        rows.find((r) => r.email === `member-${stamp}@example.com`)?.role,
-      ).toBe('regular');
     });
 
     it('ignores a role supplied by the client at signup', async () => {
@@ -145,6 +158,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       await request(app.getHttpServer())
         .post('/api/auth/sign-up/email')
         .set('origin', TEST_ORIGIN)
+        .set('x-forwarded-for', '10.16.250.1')
         .send({
           name: 'Sneaky',
           email,
@@ -344,7 +358,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       const [admin] = await database
         .select({ familyId: user.familyId })
         .from(user)
-        .where(eq(user.email, 'chef.admin@example.com'));
+        .where(eq(user.email, adminEmail));
       const [list] = await database
         .insert(shoppingLists)
         .values({ familyId: admin.familyId, status: 'archived' })
@@ -466,7 +480,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       const [admin] = await database
         .select({ familyId: user.familyId })
         .from(user)
-        .where(eq(user.email, 'chef.admin@example.com'));
+        .where(eq(user.email, adminEmail));
       const [batch] = await database
         .insert(batches)
         .values({

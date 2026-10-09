@@ -6,7 +6,6 @@ import type { Database } from '../database/database.types';
 import { AUTH } from './auth.constants';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AuthGuard } from './auth.guard';
-import { parseAdminEmails } from './admin-emails';
 import { createAuth } from './create-auth';
 
 @Global()
@@ -23,9 +22,6 @@ import { createAuth } from './create-auth';
           baseURL: config.get('BETTER_AUTH_URL', { infer: true }),
           secret: config.get('BETTER_AUTH_SECRET', { infer: true }),
           clientOrigin: config.get('CLIENT_ORIGIN', { infer: true }),
-          adminEmails: parseAdminEmails(
-            config.get('ADMIN_EMAILS', { infer: true }),
-          ),
         }),
     },
     AuthGuard,
