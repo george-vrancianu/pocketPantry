@@ -14,6 +14,7 @@ import {
   unmatchedEntries,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { promoteToAdmin } from './support/promote-to-admin';
 import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Entry = {
@@ -47,7 +48,7 @@ describe('Unmatched queue (integration)', () => {
   const name = (label: string) => `Zzq ${label} ${stamp}`;
 
   async function signUp(email: string) {
-    let response = await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
       .set('origin', TEST_ORIGIN)
       .set(
@@ -55,12 +56,6 @@ describe('Unmatched queue (integration)', () => {
         `10.7.${Math.floor(++counter / 250)}.${counter % 250}`,
       )
       .send({ name: 'Tester', email, password: 'correct-horse-staple' });
-    if (response.status === 422) {
-      response = await request(app.getHttpServer())
-        .post('/api/auth/sign-in/email')
-        .set('origin', TEST_ORIGIN)
-        .send({ email, password: 'correct-horse-staple' });
-    }
     expect(response.status).toBe(200);
     return [response.headers['set-cookie'] ?? []]
       .flat()
@@ -68,6 +63,12 @@ describe('Unmatched queue (integration)', () => {
       .join('; ');
   }
   const newMember = () => signUp(`unmatched-${stamp}-${++counter}@example.com`);
+  async function newAdmin() {
+    const email = `unmatched-admin-${stamp}-${++counter}@example.com`;
+    const cookie = await signUp(email);
+    await promoteToAdmin(database, email);
+    return cookie;
+  }
 
   const call = (cookie: string) => ({
     get: (path: string) =>
@@ -158,7 +159,7 @@ describe('Unmatched queue (integration)', () => {
     });
     pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     database = app.get<Database>(DATABASE);
-    adminCookie = await signUp('chef.admin@example.com');
+    adminCookie = await newAdmin();
   });
 
   afterAll(async () => {
@@ -1074,7 +1075,7 @@ describe('Unmatched queue (integration)', () => {
       const raw = name('race');
       await saveBatches(await newMember(), [{ rawName: raw }]);
       await saveBatches(await newMember(), [{ rawName: raw }]);
-      const second = await signUp('second-admin@example.com');
+      const second = await newAdmin();
       const body = {
         normalizedName: normalise(raw),
         ingredientId: seedId.ingredient('parmesan'),

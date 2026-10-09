@@ -4,14 +4,11 @@ import { allowedOrigins, isAllowedOrigin } from '../config/origins';
 import type { Database } from '../database/database.types';
 import * as schema from '../database/schema';
 import { createHouseholdOfOne } from '../family/household-of-one';
-import { isAdminEmail } from './admin-emails';
 
 export type CreateAuthOptions = {
   baseURL: string;
   secret: string;
   clientOrigin: string;
-  /** Normalised ADMIN_EMAILS allow-list; matching signups get the admin role. */
-  adminEmails: string[];
 };
 
 /** The Better Auth instance; shared by AuthModule and the dev seed. */
@@ -48,7 +45,8 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
     ],
     user: {
       additionalFields: {
-        // Read-only for clients; set only by the signup hook from ADMIN_EMAILS.
+        // Read-only for clients and never set at signup: Admin is granted
+        // only directly in the database (see README, "Admin access").
         role: { type: 'string', defaultValue: 'regular', input: false },
         // Set by the signup hook below, never by clients (the column is NOT NULL).
         familyId: { type: 'string', required: false, input: false },
@@ -68,9 +66,6 @@ export function createAuth(database: Database, options: CreateAuthOptions) {
           before: async (newUser) => ({
             data: {
               ...newUser,
-              role: isAdminEmail(newUser.email, options.adminEmails)
-                ? 'admin'
-                : 'regular',
               familyId: await createHouseholdOfOne(),
               familyRole: 'owner',
             },

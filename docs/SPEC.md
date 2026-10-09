@@ -148,7 +148,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - Invite Code: 8 characters from an unambiguous uppercase alphanumeric alphabet, reusable until it expires 7 days after generation. Regenerating revokes the previous code. Redeeming requires the code to be unexpired and the redeemer not to be in that Family already.
 - Redeeming a code moves the Member to the target Family and deletes their previous Family, which must be a Household of One they own. The client shows a warning naming what will be deleted. Data is not merged.
 - Leaving a Family or being removed creates a fresh Household of One for that Member. An Owner cannot leave until ownership is transferred. Deleting a Family cascades to its Pantry, Shopping Lists, Settings, and memberships; each former Member gets a fresh Household of One.
-- Admin is a role on the Member, granted at signup when the email is in a configured allow-list. It is independent of Family ownership.
+- Admin is a role on the Member. Signup never grants it, and no endpoint does: it is set directly in the database (see README). It is independent of Family ownership.
 
 ### Catalog
 

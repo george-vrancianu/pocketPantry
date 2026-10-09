@@ -27,7 +27,7 @@ A short, reusable, expiring code that lets a Member join a Family.
 _Avoid_: Invite link, token
 
 **Admin**:
-A Member with the catalog-curation role. Unrelated to Family ownership.
+A Member with the catalog-curation role. Unrelated to Family ownership. Never granted at signup; set directly in the database.
 _Avoid_: Owner, superuser
 
 ### Catalog

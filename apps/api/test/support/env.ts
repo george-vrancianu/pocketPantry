@@ -12,4 +12,3 @@ process.env.SCAN_DAILY_CAP = '3';
 process.env.INVITE_CODE_LIMIT_PER_USER = '1000';
 process.env.INVITE_CODE_LIMIT_PER_IP = '1000';
 process.env.SCAN_MATCH_CONFIDENCE_THRESHOLD = '0.6';
-process.env.ADMIN_EMAILS = 'Chef.Admin@example.com, second-admin@example.com';
