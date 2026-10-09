@@ -62,7 +62,6 @@ export class AdminCatalogController {
     return this.catalog.createAisle(body);
   }
 
-  // Declared before `aisles/:id` routes; `order` is not a uuid anyway.
   @Put('aisles/order')
   @ApiOperation({
     summary: 'Admin only: set the shop order of every Aisle at once',

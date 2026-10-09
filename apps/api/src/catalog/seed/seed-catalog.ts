@@ -8,6 +8,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import { lockAisleOrder } from '../aisle-order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
@@ -155,6 +156,7 @@ export async function seedCatalog(
     ingredients: SEED_INGREDIENTS,
   });
   await database.transaction(async (tx) => {
+    await lockAisleOrder(tx);
     const aisleRows = await seedAisleRows(tx);
     if (aisleRows.length > 0) {
       await tx

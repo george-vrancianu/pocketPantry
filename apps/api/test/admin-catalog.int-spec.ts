@@ -829,6 +829,82 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(await translationsOf('aisle', aisle.id)).toEqual([]);
     });
 
+    it('shows an Admin-added Aisle translation on the Shopping List in that locale', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Deli ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `Deli parent ${stamp}`,
+            aisleId: aisle.id,
+          })
+          .expect(201)
+      ).body as Body;
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: parent.id,
+            name: `Deli leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const ingredient = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Pastrami ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/translations', {
+          entityType: 'aisle',
+          entityId: aisle.id,
+          locale: 'da',
+          kind: 'name',
+          value: `Pålæg ${stamp}`,
+        })
+        .expect(201);
+
+      type List = {
+        id: string;
+        groups: Array<{ aisle: { id: string; name: string } | null }>;
+      };
+      const shopping = (method: 'get' | 'post', path: string) =>
+        request(app.getHttpServer())
+          [method](`/api/shopping-list${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', adminCookie);
+      const added = (
+        await shopping('post', '/items?locale=da')
+          .send({ ingredientId: ingredient.id })
+          .expect(200)
+      ).body as List;
+      shoppingListIds.push(added.id);
+      const aisleName = async (locale: string) => {
+        const list = (await shopping('get', `?locale=${locale}`).expect(200))
+          .body as List;
+        return list.groups.find((g) => g.aisle?.id === aisle.id)?.aisle?.name;
+      };
+      try {
+        expect(await aisleName('da')).toBe(`Pålæg ${stamp}`);
+        // Romanian has no name yet: the English one stands in.
+        expect(await aisleName('ro')).toBe(`Deli ${stamp}`);
+      } finally {
+        await database
+          .delete(shoppingItems)
+          .where(eq(shoppingItems.ingredientId, ingredient.id));
+      }
+      await as(adminCookie).del(`/ingredients/${ingredient.id}`).expect(204);
+      await as(adminCookie).del(`/leaf-categories/${leaf.id}`).expect(204);
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+    });
+
     it('reorders the Aisles, and the Shopping List groups follow the new order', async () => {
       const shopping = (method: 'get' | 'post', path = '') =>
         request(app.getHttpServer())
@@ -865,6 +941,59 @@ describe('Admin role and Catalog curation (integration)', () => {
           .expect(200);
       }
       expect(await groupIds()).toEqual([produce, dairy]);
+    });
+
+    it('refuses as stale a reorder naming an Aisle whose delete commits while it runs', async () => {
+      const doomed = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Doomed aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const ids = (await overview()).aisles.map((a) => a.id);
+
+      const pool = app.get<Pool>(DATABASE_POOL);
+      const client = await pool.connect();
+      let reorder: Promise<request.Response>;
+      let committed = false;
+      try {
+        // Another delete of the Aisle, uncommitted, holding its row.
+        await client.query('BEGIN');
+        const holder = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await client.query(
+          'DELETE FROM catalog_translations WHERE entity_id = $1',
+          [doomed.id],
+        );
+        await client.query('DELETE FROM aisles WHERE id = $1', [doomed.id]);
+        reorder = as(adminCookie)
+          .put('/aisles/order', { ids: [...ids].reverse() })
+          .then((r) => r);
+        // Poll from the pool, not `client`: inside a transaction pg_stat_activity is a frozen snapshot.
+        for (let attempt = 0; ; attempt++) {
+          const { rowCount } = await pool.query(
+            'SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
+            [holder.rows[0].pid],
+          );
+          if (rowCount) break;
+          if (attempt === 250) throw new Error('the reorder never blocked');
+          await new Promise((done) => setTimeout(done, 20));
+        }
+        await client.query('COMMIT');
+        committed = true;
+      } finally {
+        if (!committed) await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
+      const response = await reorder;
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        code: 'catalog.aisle_order_stale',
+        params: {},
+      });
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        ids.filter((id) => id !== doomed.id),
+      );
     });
 
     it('refuses a shop order that does not name every Aisle exactly once', async () => {

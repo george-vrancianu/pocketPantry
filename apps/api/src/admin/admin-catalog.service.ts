@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
+import { lockAisleOrder } from '../catalog/aisle-order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -134,7 +135,7 @@ export class AdminCatalogService {
 
   createAisle(input: AisleCreate) {
     return this.write(async (tx) => {
-      await this.lockAisleOrder(tx);
+      await lockAisleOrder(tx);
       const [{ last }] = await tx
         .select({ last: max(aisles.sortOrder) })
         .from(aisles);
@@ -173,8 +174,13 @@ export class AdminCatalogService {
    */
   reorderAisles({ ids }: AisleOrder) {
     return this.write(async (tx) => {
-      await this.lockAisleOrder(tx);
-      const current = await tx.select({ id: aisles.id }).from(aisles);
+      await lockAisleOrder(tx);
+      // Row locks too: a delete that bypassed the advisory lock and commits
+      // after this read would otherwise leave its id silently unmatched.
+      const current = await tx
+        .select({ id: aisles.id })
+        .from(aisles)
+        .for('update');
       const wanted = new Set(ids);
       if (
         current.length !== ids.length ||
@@ -205,6 +211,8 @@ export class AdminCatalogService {
     // with a foreign-key error, mapped to the same code.
     return this.write(
       async (tx) => {
+        // A reorder in flight must see either every Aisle or the set without this one.
+        await lockAisleOrder(tx);
         await this.requireRow(tx, 'aisle', id);
         const [{ parents }] = await tx
           .select({ parents: count() })
@@ -502,13 +510,6 @@ export class AdminCatalogService {
 
   // Helpers
 
-  /** Serialises everything that assigns Aisle sort orders (create, reorder). */
-  private async lockAisleOrder(tx: Tx): Promise<void> {
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-aisle-order', 0))`,
-    );
-  }
-
   /**
    * Per-name advisory lock held to the end of the transaction. Everything that
    * gives an Ingredient a name (an add here, an Unmatched resolve) takes it, so
@@ -563,7 +564,8 @@ export class AdminCatalogService {
   }
 
   /**
-   * Runs `work` in a transaction. A name collision maps to `catalog.name_taken`;
+   * Runs `work` in a transaction. A name collision maps to `catalog.name_taken`
+   * and an Aisle sort-order collision to `catalog.aisle_order_stale`;
    * a foreign-key violation (something still references the row being deleted)
    * maps to `inUse`.
    */
@@ -577,7 +579,13 @@ export class AdminCatalogService {
       return await this.database.transaction(work);
     } catch (error) {
       if (hasPgCode(error, '23505')) {
-        throw new ApiException(409, uniqueCode(pgConstraint(error)));
+        const constraint = pgConstraint(error);
+        throw new ApiException(
+          409,
+          constraint === 'aisles_sort_order_idx'
+            ? 'catalog.aisle_order_stale'
+            : uniqueCode(constraint),
+        );
       }
       if (inUse && hasPgCode(error, '23503')) throw inUse;
       throw error;

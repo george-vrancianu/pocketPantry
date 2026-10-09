@@ -7,6 +7,7 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
+import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
 
 export type UnmatchedStatus = 'open' | 'dismissed';
@@ -104,7 +105,7 @@ export function useResolveUnmatched() {
           adminCatalogQueryKey,
           catalogSearchQueryKey,
           ['pantry'],
-          ['shopping-list'],
+          shoppingListQueryKey,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });

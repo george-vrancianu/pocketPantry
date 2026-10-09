@@ -6,6 +6,7 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
+import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
   'aisle' | 'parent_category' | 'leaf_category' | 'ingredient';
@@ -64,9 +65,6 @@ export function useAdminCatalog() {
     queryFn: () => apiRequest<AdminCatalog>('/admin/catalog'),
   });
 }
-
-/** Every locale's Shopping List: its groups carry Aisle names and order. */
-const shoppingListQueryKey = ['shopping-list'] as const;
 
 /** A write against the admin API that refreshes the Catalog afterwards. */
 function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {

@@ -9,6 +9,7 @@ import {
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
+import { shoppingListQueryKey } from '../../../lib/shopping';
 
 export type ReviewEdit = {
   quantity: string;
@@ -95,7 +96,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
       setDropped(new Set());
       finish.reset();
       void proposal.refetch();
-      void queryClient.invalidateQueries({ queryKey: ['shopping-list'] });
+      void queryClient.invalidateQueries({ queryKey: shoppingListQueryKey });
     },
     confirm: () => {
       if (!canConfirm || listId === undefined) return;
