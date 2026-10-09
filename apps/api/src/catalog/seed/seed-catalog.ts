@@ -106,12 +106,40 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
 ];
 
 /**
+ * The seed Aisles to insert. An Admin may reorder Aisles, so a seed Aisle the
+ * Admin deleted can find its seed sort order taken; it then comes back last in
+ * the shop order instead of failing the run. Aisles that exist are left as the
+ * Admin has them (name and order).
+ */
+async function seedAisleRows(tx: Pick<Database, 'select'>) {
+  const existing = await tx
+    .select({ id: aisles.id, sortOrder: aisles.sortOrder })
+    .from(aisles);
+  const ids = new Set(existing.map((row) => row.id));
+  const taken = new Set(existing.map((row) => row.sortOrder));
+  let last = Math.max(0, ...taken);
+  return SEED_AISLES.filter((aisle) => !ids.has(seedId.aisle(aisle.slug))).map(
+    (aisle) => {
+      const sortOrder = taken.has(aisle.sortOrder) ? ++last : aisle.sortOrder;
+      taken.add(sortOrder);
+      return {
+        id: seedId.aisle(aisle.slug),
+        name: aisle.en,
+        normalizedName: normalizeName(aisle.en),
+        sortOrder,
+      };
+    },
+  );
+}
+
+/**
  * Loads the Catalog seed, after checking it for duplicates and dangling references. Rows have fixed ids and are inserted with
  * ON CONFLICT (id) DO NOTHING, so running it again leaves the database unchanged
  * and keeps in-place Admin edits. A locale added to the seed later (Danish) is
  * just more rows with new ids, so an already-seeded database gains those names
  * and Synonyms on the next run without touching the existing en/ro rows. Rows an Admin deleted come back; rows an Admin
- * renamed keep their new name. A real collision on an en/ro row or an
+ * renamed keep their new name, and Aisles keep the Admin's shop order (a
+ * restored Aisle whose slot is taken goes last). A real collision on an en/ro row or an
  * Ingredient (e.g. an Admin-made Ingredient with the same normalised name)
  * fails loudly. Danish rows that clash with an Admin's are skipped and
  * counted instead, and names owned by two Ingredients are logged. Rows listed
@@ -127,17 +155,13 @@ export async function seedCatalog(
     ingredients: SEED_INGREDIENTS,
   });
   await database.transaction(async (tx) => {
-    await tx
-      .insert(aisles)
-      .values(
-        SEED_AISLES.map((aisle) => ({
-          id: seedId.aisle(aisle.slug),
-          name: aisle.en,
-          normalizedName: normalizeName(aisle.en),
-          sortOrder: aisle.sortOrder,
-        })),
-      )
-      .onConflictDoNothing({ target: aisles.id });
+    const aisleRows = await seedAisleRows(tx);
+    if (aisleRows.length > 0) {
+      await tx
+        .insert(aisles)
+        .values(aisleRows)
+        .onConflictDoNothing({ target: aisles.id });
+    }
 
     await tx
       .insert(parentCategories)

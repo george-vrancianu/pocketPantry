@@ -500,6 +500,53 @@ describe('Catalog (integration)', () => {
       expect(await snapshot()).toEqual(before);
     });
 
+    it('keeps Admin edits to Aisles, and restores a deleted Aisle last when its slot is taken', async () => {
+      const aisleId = seedId.aisle;
+      const order = async (tx: Pick<Database, 'select'>) =>
+        (
+          await tx
+            .select({ id: aisles.id, name: aisles.name })
+            .from(aisles)
+            .orderBy(aisles.sortOrder)
+        ).map((row) => `${row.id === aisleId('frozen') ? row.name : row.id}`);
+      // One transaction, rolled back: other test workers read the seeded rows.
+      class Rollback extends Error {}
+      await expect(
+        database.transaction(async (tx) => {
+          // An Admin renames Frozen, moves Snacks & drinks' Parents to Other,
+          // deletes Snacks & drinks (slot 9) and closes the gap with Other.
+          await tx
+            .update(aisles)
+            .set({ name: 'Freezers', normalizedName: 'freezers' })
+            .where(eq(aisles.id, aisleId('frozen')));
+          await tx
+            .update(parentCategories)
+            .set({ aisleId: aisleId('other') })
+            .where(eq(parentCategories.aisleId, aisleId('snacks-drinks')));
+          await tx
+            .delete(catalogTranslations)
+            .where(eq(catalogTranslations.entityId, aisleId('snacks-drinks')));
+          await tx
+            .delete(aisles)
+            .where(eq(aisles.id, aisleId('snacks-drinks')));
+          await tx
+            .update(aisles)
+            .set({ sortOrder: 9 })
+            .where(eq(aisles.id, aisleId('other')));
+          const edited = await order(tx);
+
+          await expect(seedCatalog(tx)).resolves.toBeUndefined();
+
+          expect(await order(tx)).toEqual([
+            ...edited,
+            aisleId('snacks-drinks'),
+          ]);
+          expect(edited).toContain('Freezers');
+          throw new Rollback();
+        }),
+      ).rejects.toBeInstanceOf(Rollback);
+    });
+
     it('does not fail when a display name was worded differently by an earlier seed', async () => {
       const id = stableId(
         `translation:ingredient:${seedId.ingredient('parmesan')}:en:name`,

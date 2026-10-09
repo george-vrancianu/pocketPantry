@@ -6,6 +6,7 @@ import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE, DATABASE_POOL } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  aisles,
   batches,
   catalogTranslations,
   shoppingItems,
@@ -72,6 +73,12 @@ describe('Admin role and Catalog curation (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
         .send(body),
+    put: (path: string, body: object) =>
+      request(app.getHttpServer())
+        .put(`/api/admin/catalog${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     del: (path: string) =>
       request(app.getHttpServer())
         .delete(`/api/admin/catalog${path}`)
@@ -91,7 +98,8 @@ describe('Admin role and Catalog curation (integration)', () => {
         and(
           eq(
             catalogTranslations.entityType,
-            type as 'ingredient' | 'leaf_category' | 'parent_category',
+            type as
+              'aisle' | 'ingredient' | 'leaf_category' | 'parent_category',
           ),
           eq(catalogTranslations.entityId, id),
         ),
@@ -116,7 +124,12 @@ describe('Admin role and Catalog curation (integration)', () => {
       await database.delete(batches).where(eq(batches.id, id));
     }
     const like = `%${stamp}%`;
-    for (const table of [ingredients, leafCategories, parentCategories]) {
+    for (const table of [
+      ingredients,
+      leafCategories,
+      parentCategories,
+      aisles,
+    ]) {
       await database.delete(table).where(ilike(table.name, like));
     }
     await database
@@ -729,6 +742,164 @@ describe('Admin role and Catalog curation (integration)', () => {
           aisleId: '00000000-0000-4000-8000-000000000000',
         })
         .expect(404);
+    });
+  });
+
+  describe('Aisles', () => {
+    it('creates an Aisle at the end of the shop order, renames it, and keeps its English name in step', async () => {
+      const before = (await overview()).aisles;
+      const made = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Test aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      expect(made).toMatchObject({
+        name: `Test aisle ${stamp}`,
+        sortOrder: Math.max(...before.map((a) => a.sortOrder as number)) + 1,
+      });
+      const after = (await overview()).aisles;
+      expect(after.at(-1)?.id).toBe(made.id);
+
+      await as(adminCookie)
+        .patch(`/aisles/${made.id}`, { name: `Renamed aisle ${stamp}` })
+        .expect(200);
+      const names = await translationsOf('aisle', made.id);
+      expect(names.map((t) => [t.locale, t.kind, t.value])).toEqual([
+        ['en', 'name', `Renamed aisle ${stamp}`],
+      ]);
+
+      await as(adminCookie).del(`/aisles/${made.id}`).expect(204);
+      expect(await translationsOf('aisle', made.id)).toEqual([]);
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        before.map((a) => a.id),
+      );
+    });
+
+    it('refuses to delete an Aisle while a Parent Category uses it', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Busy aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `On busy aisle ${stamp}`,
+            aisleId: aisle.id,
+          })
+          .expect(201)
+      ).body as Body;
+
+      await as(adminCookie)
+        .del(`/aisles/${aisle.id}`)
+        .expect(409)
+        .expect({ code: 'catalog.aisle_in_use', params: { parents: 1 } });
+      expect(await translationsOf('aisle', aisle.id)).toHaveLength(1);
+
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(404);
+    });
+
+    it('translates an Aisle through the translations endpoint', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Spices ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/translations', {
+          entityType: 'aisle',
+          entityId: aisle.id,
+          locale: 'ro',
+          kind: 'name',
+          value: `Condimente ${stamp}`,
+        })
+        .expect(201);
+      const listed = (await overview()).aisles.find((a) => a.id === aisle.id);
+      expect(listed?.translations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            locale: 'ro',
+            value: `Condimente ${stamp}`,
+          }),
+        ]),
+      );
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+      expect(await translationsOf('aisle', aisle.id)).toEqual([]);
+    });
+
+    it('reorders the Aisles, and the Shopping List groups follow the new order', async () => {
+      const shopping = (method: 'get' | 'post', path = '') =>
+        request(app.getHttpServer())
+          [method](`/api/shopping-list${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', adminCookie);
+      for (const slug of ['milk', 'tomato']) {
+        await shopping('post', '/items')
+          .send({ ingredientId: seedId.ingredient(slug) })
+          .expect(200);
+      }
+      type List = { id: string; groups: Array<{ aisle: Body | null }> };
+      const groupIds = async () => {
+        const list = (await shopping('get').expect(200)).body as List;
+        shoppingListIds.push(list.id);
+        return list.groups.map((g) => g.aisle?.id);
+      };
+      const dairy = seedId.aisle('dairy-eggs');
+      const produce = seedId.aisle('fruit-veg');
+      expect(await groupIds()).toEqual([produce, dairy]);
+
+      const original = (await overview()).aisles.map((a) => a.id);
+      const dairyFirst = [dairy, ...original.filter((id) => id !== dairy)];
+      try {
+        const reordered = await as(adminCookie)
+          .put('/aisles/order', { ids: dairyFirst })
+          .expect(200);
+        expect((reordered.body as Body[]).map((a) => a.id)).toEqual(dairyFirst);
+        expect((await overview()).aisles.map((a) => a.id)).toEqual(dairyFirst);
+        expect(await groupIds()).toEqual([dairy, produce]);
+      } finally {
+        await as(adminCookie)
+          .put('/aisles/order', { ids: original })
+          .expect(200);
+      }
+      expect(await groupIds()).toEqual([produce, dairy]);
+    });
+
+    it('refuses a shop order that does not name every Aisle exactly once', async () => {
+      const ids = (await overview()).aisles.map((a) => a.id);
+      await as(adminCookie)
+        .put('/aisles/order', { ids: ids.slice(1) })
+        .expect(409)
+        .expect({ code: 'catalog.aisle_order_stale', params: {} });
+      await as(adminCookie)
+        .put('/aisles/order', {
+          ids: [...ids.slice(1), '00000000-0000-4000-8000-000000000000'],
+        })
+        .expect(409);
+      const duplicate = await as(adminCookie)
+        .put('/aisles/order', { ids: [ids[0], ...ids.slice(0, -1)] })
+        .expect(400);
+      expect((duplicate.body as Body).code).toBe('validation_failed');
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(ids);
+    });
+
+    it('enforces unique Aisle names and valid input', async () => {
+      await as(adminCookie)
+        .post('/aisles', { name: 'BAKERY' })
+        .expect(409)
+        .expect({ code: 'catalog.name_taken', params: {} });
+      await as(adminCookie).post('/aisles', { name: '!!!' }).expect(400);
+      await as(adminCookie)
+        .patch(`/aisles/${seedId.aisle('frozen')}`, { name: 'Bakery' })
+        .expect(409);
+      await as(adminCookie)
+        .patch('/aisles/00000000-0000-4000-8000-000000000000', { name: 'Gone' })
+        .expect(404);
+      await as(adminCookie)
+        .patch(`/aisles/${seedId.aisle('frozen')}`, {})
+        .expect(400);
     });
   });
 

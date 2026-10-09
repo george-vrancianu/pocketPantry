@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -15,6 +16,9 @@ import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { AdminCatalogService } from './admin-catalog.service';
 import {
+  aisleCreate,
+  aisleOrder,
+  aisleUpdate,
   idParam,
   ingredientCreate,
   ingredientUpdate,
@@ -24,6 +28,9 @@ import {
   parentCategoryUpdate,
   translationCreate,
   translationUpdate,
+  type AisleCreate,
+  type AisleOrder,
+  type AisleUpdate,
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
@@ -47,6 +54,38 @@ export class AdminCatalogController {
   @ApiOperation({ summary: 'Admin only: the whole Catalog with translations' })
   overview() {
     return this.catalog.overview();
+  }
+
+  @Post('aisles')
+  @ApiOperation({ summary: 'Admin only: create an Aisle, last in shop order' })
+  createAisle(@Body(new ZodValidationPipe(aisleCreate)) body: AisleCreate) {
+    return this.catalog.createAisle(body);
+  }
+
+  // Declared before `aisles/:id` routes; `order` is not a uuid anyway.
+  @Put('aisles/order')
+  @ApiOperation({
+    summary: 'Admin only: set the shop order of every Aisle at once',
+  })
+  reorderAisles(@Body(new ZodValidationPipe(aisleOrder)) body: AisleOrder) {
+    return this.catalog.reorderAisles(body);
+  }
+
+  @Patch('aisles/:id')
+  updateAisle(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(aisleUpdate)) body: AisleUpdate,
+  ) {
+    return this.catalog.updateAisle(id, body);
+  }
+
+  @Delete('aisles/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete an Aisle unless a Parent Category uses it',
+  })
+  @HttpCode(204)
+  async deleteAisle(@Id() { id }: IdParam) {
+    await this.catalog.deleteAisle(id);
   }
 
   @Post('parent-categories')

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, max, sql } from 'drizzle-orm';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -17,6 +17,9 @@ import {
   parentCategories,
 } from '../database/schema';
 import type {
+  AisleCreate,
+  AisleOrder,
+  AisleUpdate,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -125,6 +128,96 @@ export class AdminCatalogService {
         translations: translations('ingredient', row.id),
       })),
     };
+  }
+
+  // Aisles
+
+  createAisle(input: AisleCreate) {
+    return this.write(async (tx) => {
+      await this.lockAisleOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(aisles.sortOrder) })
+        .from(aisles);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(aisles)
+        .values({
+          id,
+          ...input,
+          normalizedName: normalizeName(input.name),
+          sortOrder: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'aisle', id, input.name);
+      return row;
+    });
+  }
+
+  updateAisle(id: string, input: AisleUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(aisles)
+        .set({ ...input, ...this.normalized(input.name) })
+        .where(eq(aisles.id, id))
+        .returning();
+      if (!row) throw notFound('aisle');
+      await this.renameCanonicalName(tx, 'aisle', id, input.name);
+      return row;
+    });
+  }
+
+  /**
+   * Rewrites the shop order to `ids` (positions 1..n). The list must name
+   * every Aisle exactly once, so a client working from a stale list (an Aisle
+   * added or deleted meanwhile) is refused rather than half-applied.
+   */
+  reorderAisles({ ids }: AisleOrder) {
+    return this.write(async (tx) => {
+      await this.lockAisleOrder(tx);
+      const current = await tx.select({ id: aisles.id }).from(aisles);
+      const wanted = new Set(ids);
+      if (
+        current.length !== ids.length ||
+        !current.every((row) => wanted.has(row.id))
+      ) {
+        throw new ApiException(409, 'catalog.aisle_order_stale');
+      }
+      // The sort order is unique and checked row by row, so park every row on
+      // a free negative slot first, then write the final positions.
+      for (const [index, id] of ids.entries()) {
+        await tx
+          .update(aisles)
+          .set({ sortOrder: -(index + 1) })
+          .where(eq(aisles.id, id));
+      }
+      for (const [index, id] of ids.entries()) {
+        await tx
+          .update(aisles)
+          .set({ sortOrder: index + 1 })
+          .where(eq(aisles.id, id));
+      }
+      return tx.select().from(aisles).orderBy(aisles.sortOrder);
+    });
+  }
+
+  deleteAisle(id: string) {
+    // A Parent Category moved onto the Aisle concurrently fails the delete
+    // with a foreign-key error, mapped to the same code.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, 'aisle', id);
+        const [{ parents }] = await tx
+          .select({ parents: count() })
+          .from(parentCategories)
+          .where(eq(parentCategories.aisleId, id));
+        if (parents > 0) {
+          throw new ApiException(409, 'catalog.aisle_in_use', { parents });
+        }
+        await this.deleteTranslationsOf(tx, 'aisle', id);
+        await tx.delete(aisles).where(eq(aisles.id, id));
+      },
+      new ApiException(409, 'catalog.aisle_in_use'),
+    );
   }
 
   // Parent Categories
@@ -408,6 +501,13 @@ export class AdminCatalogService {
   }
 
   // Helpers
+
+  /** Serialises everything that assigns Aisle sort orders (create, reorder). */
+  private async lockAisleOrder(tx: Tx): Promise<void> {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-aisle-order', 0))`,
+    );
+  }
 
   /**
    * Per-name advisory lock held to the end of the transaction. Everything that
