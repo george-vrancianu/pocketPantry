@@ -3,6 +3,7 @@ import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
+  applyThreshold,
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
@@ -98,17 +99,23 @@ export function receiptProposedLines(
         };
       }
       const resolved = resolve(line);
-      const confident =
-        resolved !== null &&
-        (resolved.guessed || line.matchConfidence >= threshold);
       return {
         name: (line.fallbackIngredientName ?? line.sourceText).slice(
           0,
           MAX_RAW_NAME,
         ),
         sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
-        match: confident ? resolved.match : null,
-        lowConfidence: line.confidence < threshold,
+        ...applyThreshold(
+          resolved?.match ?? null,
+          {
+            // An exact-name Match was looked up, not scored by the model: it always passes.
+            matchConfidence: resolved?.guessed
+              ? Infinity
+              : line.matchConfidence,
+            confidence: line.confidence,
+          },
+          threshold,
+        ),
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,
