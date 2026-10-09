@@ -473,6 +473,8 @@ describe('ReviewPage', () => {
     renderReview([
       line({ lowConfidence: true, quantity: 1 }),
       line({ lowConfidence: true, quantity: 1 }),
+      line({ match: null, name: 'Mystery jar', quantity: 1 }),
+      line({ match: null, name: 'Mystery jar', quantity: 1 }),
     ]);
     expect(
       screen.getByRole('button', {
@@ -482,6 +484,16 @@ describe('ReviewPage', () => {
     expect(
       screen.getByRole('button', {
         name: 'Matched ingredient: Parmesan (2 of 2) (Change)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Matched ingredient: Mystery jar (1 of 2) (No match · Choose)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Matched ingredient: Mystery jar (2 of 2) (No match · Choose)',
       }),
     ).toBeInTheDocument();
   });
