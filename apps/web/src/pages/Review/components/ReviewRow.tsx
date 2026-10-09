@@ -36,6 +36,8 @@ type Props = {
   onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
+  /** Accessible name when other lines share this one's name, e.g. "Tomato (2 of 2)". */
+  label?: string;
 };
 
 /**
@@ -57,6 +59,7 @@ export function ReviewRow({
   onSwapMatch,
   onRemove,
   onConfirm,
+  label,
 }: Props) {
   const { t } = useTranslation(['review', 'common']);
   const name = displayName(line);
@@ -176,6 +179,7 @@ export function ReviewRow({
           onSwapMatch={onSwapMatch}
           onRemove={onRemove}
           onConfirm={onConfirm}
+          label={label}
         />
       </Collapse>
     </Box>

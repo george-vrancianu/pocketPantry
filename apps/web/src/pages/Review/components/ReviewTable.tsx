@@ -1,7 +1,12 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
-import { displayName, statusOf, type ReviewLine } from '../../../lib/review';
+import {
+  displayName,
+  positionsOf,
+  statusOf,
+  type ReviewLine,
+} from '../../../lib/review';
 import type { ScanMode } from '../../../lib/scan';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import { ExcludedRow } from './ExcludedRow';
@@ -43,6 +48,13 @@ export function ReviewTable({
   mode,
 }: Props) {
   const { t } = useTranslation('review');
+  const positions = positionsOf([...groups.review, ...groups.sure]);
+  const labelOf = (line: ReviewLine) => {
+    const position = positions.get(line.key);
+    return position
+      ? t('position', { name: displayName(line), ...position })
+      : undefined;
+  };
   const row = (line: ReviewLine) => (
     <ReviewRow
       key={line.key}
@@ -59,6 +71,7 @@ export function ReviewTable({
       onSwapMatch={() => onSwapMatch(line.key)}
       onRemove={() => onRemove(line.key)}
       onConfirm={() => onConfirm(line.key)}
+      label={labelOf(line)}
     />
   );
   const columns = shopping

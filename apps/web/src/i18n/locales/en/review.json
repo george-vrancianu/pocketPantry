@@ -1,5 +1,6 @@
 {
   "title": "Review",
+  "position": "{{name}} ({{index}} of {{total}})",
   "subtitle": {
     "mode": {
       "product": "Scanned product",
@@ -98,7 +99,7 @@
     "restore": "Add back",
     "restoreFor": "Add {{name}} back"
   },
-  "tooMany": "You can save up to {{max}} items at once. Remove or exclude {{over}} to continue.",
+  "tooMany": "You can save up to {{max}} items at once. Remove {{over}} to continue.",
   "saved": {
     "title": "Saved to your Pantry",
     "toPantry": "Go to Pantry"

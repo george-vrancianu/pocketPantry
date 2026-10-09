@@ -129,7 +129,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - The API and the UI package start as copies of the equivalent retzetar packages, renamed, with git history not carried over. Specifically copied: the NestJS on Fastify server, the Drizzle schema and migration tooling, better-auth integration with email and password, the structured-output AI service and its OpenAI configuration, the four scan services and their schemas and specs, the catalog matching validator, the receipt quantity normaliser, client image resizing, the typed fetch wrapper, and the MUI theme wrapper.
 - The web app is built fresh to the handoff: React, TypeScript, Vite, React Router, TanStack Query for server state, Zustand only for client-only state such as the in-progress Review.
 - Node version matches retzetar. Package scope is `@pocket-pantry`.
-- Postgres runs in Docker Compose locally. No deployment in wave 1.
+- Postgres runs in Docker Compose locally. No deployment in wave 1. When there is one, the API must run as a single instance: the Plate token uses and the Invite Code rate limiter are in memory (see `apps/api/README.md`).
 - All business logic lives in the API. The web client renders, validates input, and calls endpoints. This is what keeps the future Flutter client thin.
 
 ### Design and UI

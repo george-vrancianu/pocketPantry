@@ -11,7 +11,6 @@
   "modes": "Scanningstilstand",
   "reading": "Læser dit foto",
   "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
-  "comingSoon": "Scanning af {{mode}} kommer snart. Scanning af produkt, tallerken og ingredienser virker nu.",
   "crop": {
     "title": "Beskær kvittering",
     "instruction": "Træk og zoom, så hele kvitteringen er i rammen.",

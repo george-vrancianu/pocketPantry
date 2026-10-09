@@ -58,6 +58,8 @@ type Props = {
   onDone: () => void;
   /** Opens the page-level swap dialog for this line. */
   onSwapMatch: () => void;
+  /** Accessible name when other lines share this one's name, e.g. "Tomato (2 of 2)". */
+  label?: string;
 };
 
 const ellipsis = {
@@ -98,10 +100,13 @@ export function TabletReviewRow({
   onRemove,
   onDone,
   onSwapMatch,
+  label,
 }: Props) {
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
-  const name = displayName(line);
+  const shown = displayName(line);
+  // Labels use the position-qualified name; the visible text stays the plain one.
+  const name = label ?? shown;
   const unmatched = line.match === null;
   const invalid = invalidFields(line);
   const expiryError = invalid.includes('expiry') && (expiryTouched || blocked);
@@ -194,7 +199,7 @@ export function TabletReviewRow({
               id={titleId(line.key)}
               sx={{ fontSize: 14, fontWeight: 700 }}
             >
-              {name}
+              {shown}
             </Box>
             {line.sourceText === null ? null : (
               <>
@@ -236,7 +241,7 @@ export function TabletReviewRow({
                 id={titleId(line.key)}
                 sx={{ ...ellipsis, fontSize: 15, fontWeight: 700 }}
               >
-                {name}
+                {shown}
               </Box>
             )}
             <SourceText text={line.sourceText} mode={mode} />

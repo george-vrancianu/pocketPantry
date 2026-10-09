@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+/** Total attempts per title per token, failures included. */
+export const MAX_ATTEMPTS = 3;
+
 /**
  * Remembers which signed dish titles have been spent, so one Plate token
  * loads each title's Ingredients at most once (each load sends the whole
@@ -10,9 +13,6 @@ import { Injectable } from '@nestjs/common';
  * could land on another instance. Entries live as long as their token could
  * still verify, and are pruned on access.
  */
-/** Total attempts per title per token, failures included. */
-export const MAX_ATTEMPTS = 3;
-
 @Injectable()
 export class PlateTokenUses {
   private readonly spent = new Map<

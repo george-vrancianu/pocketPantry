@@ -1,15 +1,18 @@
-import { ScreenHeader, type ScreenHeaderAction } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
+import { ScreenHeader, type ScreenHeaderProps } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
-type Props = {
-  title: string;
-  subtitle?: string;
-  action?: ScreenHeaderAction;
-  trailing?: ReactNode;
-};
+type Props = Pick<
+  ScreenHeaderProps,
+  'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef'
+>;
 
-export function AppScreenHeader({ title, subtitle, action, trailing }: Props) {
+export function AppScreenHeader({
+  title,
+  subtitle,
+  action,
+  trailing,
+  titleRef,
+}: Props) {
   const { t } = useTranslation('screenHeader');
   return (
     <ScreenHeader
@@ -18,6 +21,7 @@ export function AppScreenHeader({ title, subtitle, action, trailing }: Props) {
       homeLabel={t('home')}
       action={action}
       trailing={trailing}
+      titleRef={titleRef}
     />
   );
 }

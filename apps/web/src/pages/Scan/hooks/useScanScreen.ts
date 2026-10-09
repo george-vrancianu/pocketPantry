@@ -17,12 +17,7 @@ import type { ReceiptCrop } from '../components/ReceiptCropper';
 import { useReceiptSections } from './useReceiptSections';
 import { useScanLanguage } from './useScanLanguage';
 import { usePlateScan } from './usePlateScan';
-import {
-  isScanMode,
-  useProductScan,
-  WIRED_SCAN_MODES,
-  type ScanMode,
-} from '../../../lib/scan';
+import { isScanMode, useProductScan, type ScanMode } from '../../../lib/scan';
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
 export function useScanScreen() {
@@ -32,7 +27,6 @@ export function useScanScreen() {
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
   const mode: ScanMode = isScanMode(requested) ? requested : 'product';
-  const wired = WIRED_SCAN_MODES.includes(mode);
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
@@ -120,7 +114,6 @@ export function useScanScreen() {
   const sectionsInProgress = receiptSections.sections.length > 0;
   const busy =
     reading ||
-    !wired ||
     (mode === 'receipt' && (receiptSections.deciding || receiptSections.full));
 
   /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
@@ -267,7 +260,6 @@ export function useScanScreen() {
 
   return {
     mode,
-    wired,
     uiLocale: locale,
     scanLanguage,
     setScanLanguage,

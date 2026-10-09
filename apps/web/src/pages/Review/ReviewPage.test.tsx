@@ -429,6 +429,27 @@ describe('ReviewPage', () => {
     ).toHaveFocus();
   });
 
+  it('tells repeated names apart by position, and only then', async () => {
+    renderReview([
+      line({ match: null, name: 'Tomato', quantity: 1 }),
+      line({ match: null, name: 'Tomato', quantity: 1 }),
+      sure(),
+    ]);
+    expect(
+      screen.getByRole('button', { name: 'Remove Tomato (1 of 2)' }),
+    ).toBeInTheDocument();
+    await userEvent.click(row('Parmesan'));
+    expect(
+      screen.getByRole('button', { name: 'Remove Parmesan' }),
+    ).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Remove Tomato (2 of 2)' }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Remove Tomato' }),
+    ).toBeInTheDocument();
+  });
+
   it('returns focus to the row when the opener was never focused (Safari)', async () => {
     renderReview([line({ quantity: 1, lowConfidence: true })]);
     // fireEvent.click does not focus the button, as a tap in Safari does not.

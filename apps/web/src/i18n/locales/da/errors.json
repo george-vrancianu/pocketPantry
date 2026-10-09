@@ -41,7 +41,8 @@
     "item_not_found": "Vi kunne ikke finde den vare på listen.",
     "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
     "list_changed": "Listen blev ændret, mens du gennemgik den. Gennemgå den igen.",
-    "nothing_checked": "Afkryds mindst én vare, før du afslutter."
+    "nothing_checked": "Afkryds mindst én vare, før du afslutter.",
+    "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden."
   },
   "pantry": {
     "location_required": "Vælg, hvor partiet opbevares.",
@@ -62,6 +63,7 @@
     "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her."
   },
   "family": {
+    "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
     "owner_required": "Kun familiens ejer kan gøre dette.",
     "invite_code_invalid": "Den invitationskode findes ikke. Tjek den, og prøv igen.",
     "invite_code_expired": "Den invitationskode er udløbet. Bed ejeren om en ny.",

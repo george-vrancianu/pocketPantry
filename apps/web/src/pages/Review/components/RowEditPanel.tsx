@@ -39,6 +39,8 @@ type Props = {
   onConfirm: () => void;
   /** A Save or Confirm was blocked on this row: show every error now. */
   blocked: boolean;
+  /** Accessible name when other lines share this one's name, e.g. "Tomato (2 of 2)". */
+  label?: string;
 };
 
 /** The expanded half of a row: why it needs a look, then every field of the line. */
@@ -54,6 +56,7 @@ export function RowEditPanel({
   onRemove,
   onConfirm,
   blocked,
+  label,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
   // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
@@ -253,7 +256,7 @@ export function RowEditPanel({
 
         <Box sx={{ display: 'flex', gap: '8px', alignSelf: 'end' }}>
           <IconButton
-            label={t('review:action.remove', { name })}
+            label={t('review:action.remove', { name: label ?? name })}
             tone="urgentOutline"
             size={40}
             onClick={onRemove}

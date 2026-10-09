@@ -2,7 +2,12 @@ import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
-import { displayName, statusOf, type ReviewLine } from '../../../lib/review';
+import {
+  displayName,
+  positionsOf,
+  statusOf,
+  type ReviewLine,
+} from '../../../lib/review';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import type { ScanMode } from '../../../lib/scan';
 import { ExcludedRow } from './ExcludedRow';
@@ -119,6 +124,13 @@ export function TabletReviewTable({
   const { t } = useTranslation('review');
   const sureId = useId();
   const columns = tabletColumnsFor(shopping);
+  const positions = positionsOf([...groups.review, ...groups.sure]);
+  const labelOf = (line: ReviewLine) => {
+    const position = positions.get(line.key);
+    return position
+      ? t('position', { name: displayName(line), ...position })
+      : undefined;
+  };
   const row = (line: ReviewLine) => {
     const toCheck = rowGroup(state, line) !== 'ok';
     return (
@@ -145,6 +157,7 @@ export function TabletReviewTable({
         }}
         onRemove={() => onRemove(line.key)}
         onDone={() => onConfirm(line.key)}
+        label={labelOf(line)}
       />
     );
   };
