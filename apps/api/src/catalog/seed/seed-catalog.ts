@@ -21,6 +21,20 @@ import { assertCatalogSeedValid } from './validate-seed';
 
 type TranslationRow = typeof catalogTranslations.$inferInsert;
 
+/**
+ * The matching key as it was before æ, ø and å were folded (#104). Synonym ids
+ * are derived from it, so ids written by earlier seed runs never move. Frozen:
+ * never change it along with `normalizeName`.
+ */
+function synonymIdKey(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+}
+
 /** Deterministic UUID from a stable key, so seed rows keep their ids forever. */
 export function stableId(key: string): string {
   const hex = createHash('sha1').update(`pocket-pantry:${key}`).digest('hex');
@@ -57,7 +71,7 @@ function translationRows(
     // Synonyms are many per locale, so their id includes the value.
     id: stableId(
       `translation:${entityType}:${entityId}:${locale}:${kind}` +
-        (kind === 'synonym' ? `:${normalizeName(value)}` : ''),
+        (kind === 'synonym' ? `:${synonymIdKey(value)}` : ''),
     ),
     entityType,
     entityId,
@@ -83,6 +97,11 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   // (Danish "Squash"), and an Ingredient name must have one owner.
   stableId(
     `translation:ingredient:${seedId.ingredient('pumpkin')}:en:synonym:squash`,
+  ),
+  // Danish "guleroedder" spelled carrot's name without ø. Folding ø→oe now
+  // makes it the same key as "Gulerødder", so it is redundant.
+  stableId(
+    `translation:ingredient:${seedId.ingredient('carrot')}:da:synonym:guleroedder`,
   ),
 ];
 

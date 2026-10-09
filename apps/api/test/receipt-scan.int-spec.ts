@@ -232,6 +232,29 @@ describe('Receipt Scan (integration)', () => {
     });
   });
 
+  it('matches a Danish receipt line printed without æ, ø or å', async () => {
+    respondWith(
+      receipt(
+        product({
+          sourceText: 'GULEROEDDER 1KG',
+          matchedIngredientId: null,
+          matchConfidence: 0,
+          fallbackIngredientName: 'GULEROEDDER',
+        }),
+      ),
+    );
+    const body = (await scan(await signUp(), 'da', 'da').expect(201))
+      .body as unknown;
+    expect(body).toMatchObject({
+      lines: [
+        {
+          lowConfidence: false,
+          match: { id: seedId.ingredient('carrot'), name: 'Gulerødder' },
+        },
+      ],
+    });
+  });
+
   it('leaves a line Unmatched when its name only partly matches a Catalog name', async () => {
     respondWith(
       receipt(

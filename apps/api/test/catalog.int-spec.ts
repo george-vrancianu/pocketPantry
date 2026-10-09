@@ -12,6 +12,7 @@ import {
   stableId,
 } from '../src/catalog/seed/seed-catalog';
 import { CatalogSearchService } from '../src/catalog/catalog-search.service';
+import { normalizeName } from '../src/catalog/normalize';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -182,6 +183,21 @@ describe('Catalog (integration)', () => {
       expect((await search('milk', 'da'))[0].name).toBe('Mælk');
     });
 
+    it('folds æ, ø and å to the ASCII spellings Danish receipts print', async () => {
+      const milk = seedId.ingredient('milk');
+      expect((await search('maelk', 'da'))[0]).toMatchObject({
+        id: milk,
+        name: 'Mælk',
+      });
+      expect((await search('SKUMMETMAELK', 'da'))[0].id).toBe(milk);
+      expect((await search('roedbede', 'da'))[0].id).toBe(
+        seedId.ingredient('beetroot'),
+      );
+      expect(
+        (await search('flaaede tomater', 'da')).map((r) => r.id),
+      ).toContain(seedId.ingredient('canned-tomatoes'));
+    });
+
     it('localises the Aisle name, with English fallback', async () => {
       const [ro] = await search('parsley', 'ro');
       expect(ro.parentCategory.aisle).toBe('Legume și fructe');
@@ -311,6 +327,12 @@ describe('Catalog (integration)', () => {
       expect([...found.keys()].sort()).toEqual([' MAYO ', 'Parmezan']);
       expect(found.get(' MAYO ')?.name).toBe('Mayonnaise');
       expect(found.get('Parmezan')?.id).toBe(seedId.ingredient('parmesan'));
+    });
+
+    it('matches a receipt line printed without Danish letters', async () => {
+      const found = await exact(['GULEROEDDER', 'Gulerødder']);
+      expect(found.get('GULEROEDDER')?.id).toBe(seedId.ingredient('carrot'));
+      expect(found.get('Gulerødder')?.id).toBe(seedId.ingredient('carrot'));
     });
 
     it('leaves out a name that is exactly the name of more than one Ingredient', async () => {
@@ -532,7 +554,7 @@ describe('Catalog (integration)', () => {
         locale: 'da',
         kind,
         value,
-        normalizedValue: value.toLowerCase(),
+        normalizedValue: normalizeName(value),
       });
       // One transaction, rolled back: other test workers read the seeded rows.
       class Rollback extends Error {}
@@ -573,14 +595,31 @@ describe('Catalog (integration)', () => {
               normalizedValue: 'squash',
             });
 
+            // The ASCII Synonym the old seed gave carrot, from before Danish
+            // letters were folded.
+            const oldGuleroedder = stableId(
+              `translation:ingredient:${entity('carrot')}:da:synonym:guleroedder`,
+            );
+            await tx.insert(catalogTranslations).values({
+              id: oldGuleroedder,
+              entityType: 'ingredient',
+              entityId: entity('carrot'),
+              locale: 'da',
+              kind: 'synonym',
+              value: 'guleroedder',
+              normalizedValue: 'guleroedder',
+            });
+
             await expect(seedCatalog(tx)).resolves.toBeUndefined();
 
-            // The retired row is gone, so "squash" has one owner: Zucchini.
+            // The retired rows are gone, so "squash" has one owner: Zucchini.
             expect(
               await tx
                 .select()
                 .from(catalogTranslations)
-                .where(eq(catalogTranslations.id, oldSquash)),
+                .where(
+                  inArray(catalogTranslations.id, [oldSquash, oldGuleroedder]),
+                ),
             ).toEqual([]);
 
             const value = async (
@@ -618,6 +657,23 @@ describe('Catalog (integration)', () => {
         }),
       ).rejects.toBeInstanceOf(Rollback);
       if (failure) throw failure;
+    });
+
+    it('keeps the ids of Synonyms with Danish letters that earlier seed runs wrote', async () => {
+      // Ids shipped before æ, ø and å were folded, so a re-seed must not
+      // insert a second copy under a new id.
+      const [row] = await database
+        .select({ value: catalogTranslations.value })
+        .from(catalogTranslations)
+        .where(
+          eq(
+            catalogTranslations.id,
+            stableId(
+              `translation:ingredient:${seedId.ingredient('beetroot')}:da:synonym:rødbede`,
+            ),
+          ),
+        );
+      expect(row?.value).toBe('rødbede');
     });
 
     it('loads exactly the seeded Catalog', async () => {

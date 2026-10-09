@@ -162,7 +162,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 
 ### Matching
 
-- Matching has two stages. Stage one is deterministic: normalise the input (case, diacritics, punctuation, whitespace) and look up against canonical names, display names, and Synonyms across all locales. An exact hit is a confident Match. Stage two, used for images and for stage-one misses, is the retzetar approach: the vision model receives the Catalog in the Member's locale and returns a matched Ingredient identifier, a Leaf Category guess, a confidence, and a fallback name. The validator rejects identifiers not in the Catalog.
+- Matching has two stages. Stage one is deterministic: normalise the input (case, diacritics, punctuation, whitespace; the Danish letters æ, ø, å fold to the receipt spellings ae, oe, aa) and look up against canonical names, display names, and Synonyms across all locales. An exact hit is a confident Match. Stage two, used for images and for stage-one misses, is the retzetar approach: the vision model receives the Catalog in the Member's locale and returns a matched Ingredient identifier, a Leaf Category guess, a confidence, and a fallback name. The validator rejects identifiers not in the Catalog.
 - Confidence below a configured threshold, or no identifier, marks the line as Unmatched on the Review screen. The Member can still save it.
 - Manual entry in Pantry and Shopping uses stage one only, with a Catalog search box as the primary interaction.
 

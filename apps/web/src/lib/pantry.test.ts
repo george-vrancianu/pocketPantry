@@ -157,6 +157,13 @@ describe('matchesSearch', () => {
   it('matches the localised name ignoring case and diacritics', () => {
     expect(matchesSearch(batch, 'MAMALI')).toBe(true);
   });
+  it('matches Danish names typed without æ, ø or å', () => {
+    expect(matchesSearch(make({ name: 'Mælk' }), 'maelk')).toBe(true);
+    expect(matchesSearch(make({ name: 'Rødbeder' }), 'ROEDB')).toBe(true);
+    expect(matchesSearch(make({ name: 'Flåede tomater' }), 'flaaede')).toBe(
+      true,
+    );
+  });
   it('matches the Product Description', () => {
     expect(matchesSearch(batch, 'padano')).toBe(true);
   });

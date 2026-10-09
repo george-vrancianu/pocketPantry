@@ -105,7 +105,7 @@ describe('Catalog seed validation', () => {
         ingredient('a', 'One', 'Unu', undefined, 'Æg'),
         ingredient('b', 'Two', 'Doi', undefined, 'æg!'),
       ]),
-    ).toEqual([expect.stringMatching(/"æg".*\ba\b.*\bb\b/)]);
+    ).toEqual([expect.stringMatching(/"aeg".*\ba\b.*\bb\b/)]);
     expect(
       findSeedProblems({
         aisles,
@@ -148,7 +148,7 @@ describe('Catalog seed validation', () => {
         ingredient('a', 'Apple', 'Măr', undefined, 'Æble'),
         ingredient('b', 'Pear', 'Pară', { da: ['æble'] }),
       ]),
-    ).toEqual([expect.stringMatching(/"æble".*\ba\b.*\bb\b/)]);
+    ).toEqual([expect.stringMatching(/"aeble".*\ba\b.*\bb\b/)]);
     expect(
       problems([ingredient('a', 'Apple', 'Măr', { da: ['ÆBLE'] }, 'Æble')]),
     ).toEqual([expect.stringContaining('"ÆBLE" repeats its own name')]);

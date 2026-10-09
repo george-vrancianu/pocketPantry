@@ -852,7 +852,7 @@ export const DA_SYNONYMS: Record<string, string[]> = {
   brandy: ['cognac'],
   cucumber: ['agurker', 'slangeagurk'],
   'bell-pepper': ['peberfrugter'],
-  carrot: ['gulerod', 'guleroedder'],
+  carrot: ['gulerod'],
   beetroot: ['rødbede'],
   onion: ['gule løg'],
   apple: ['æble'],
