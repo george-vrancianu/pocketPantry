@@ -63,6 +63,10 @@
       "open": "Deschise",
       "dismissed": "Respinse"
     },
+    "title": "Nume nepotrivite",
+    "loadMore": "Încarcă mai multe",
+    "restore": "Restaurează",
+    "restoreName": "Restaurează {{name}}",
     "empty": "Nimic de revizuit.",
     "rows_one": "{{count}} rând",
     "rows_few": "{{count}} rânduri",

@@ -418,7 +418,10 @@ export const unmatchedEntries = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index('unmatched_entries_normalized_name_idx').on(table.normalizedName),
+    index('unmatched_entries_name_recency_idx').on(
+      table.normalizedName,
+      table.createdAt.desc(),
+    ),
     uniqueIndex('unmatched_entries_batch_idx')
       .on(table.batchId)
       .where(sql`${table.batchId} IS NOT NULL`),

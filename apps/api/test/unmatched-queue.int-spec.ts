@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, ilike, inArray, sql } from 'drizzle-orm';
+import pg from 'pg';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
@@ -13,6 +14,7 @@ import {
   unmatchedEntries,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Entry = {
   normalizedName: string;
@@ -34,6 +36,7 @@ type Entry = {
 describe('Unmatched queue (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let pool: pg.Pool;
   let adminCookie: string;
   /** What the stubbed AI provider answers a Scan with. */
   let scanned: unknown;
@@ -72,6 +75,12 @@ describe('Unmatched queue (integration)', () => {
         .get(`/api${path}`)
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie),
+    patch: (path: string, body: object = {}) =>
+      request(app.getHttpServer())
+        .patch(`/api${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     post: (path: string, body: object = {}) =>
       request(app.getHttpServer())
         .post(`/api${path}`)
@@ -113,11 +122,26 @@ describe('Unmatched queue (integration)', () => {
       .expect(200);
   }
 
-  async function queue(status?: 'open' | 'dismissed') {
+  async function queuePage(
+    status?: 'open' | 'dismissed',
+    params: { limit?: number; cursor?: string } = {},
+  ) {
     const response = await call(adminCookie)
-      .get(`/admin/unmatched${status ? `?status=${status}` : ''}`)
+      .get('/admin/unmatched')
+      .query({ ...(status ? { status } : {}), ...params })
       .expect(200);
-    return (response.body as { entries: Entry[] }).entries;
+    return response.body as { entries: Entry[]; nextCursor: string | null };
+  }
+  /** Every entry, following the cursor to the end. */
+  async function queue(status?: 'open' | 'dismissed') {
+    const all: Entry[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await queuePage(status, { limit: 100, cursor });
+      all.push(...page.entries);
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor);
+    return all;
   }
   const entryFor = async (raw: string, status?: 'open' | 'dismissed') =>
     (await queue(status)).find(
@@ -132,11 +156,13 @@ describe('Unmatched queue (integration)', () => {
     app = await createTestApp([], {
       generate: () => Promise.resolve({ data: scanned, requestId: 'fake' }),
     });
+    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     database = app.get<Database>(DATABASE);
     adminCookie = await signUp('chef.admin@example.com');
   });
 
   afterAll(async () => {
+    await pool.end();
     const like = `%${stamp}%`;
     await database.delete(batches).where(ilike(batches.rawName, like));
     // Resolved rows lost their raw name: find them through their Ingredient.
@@ -353,6 +379,56 @@ describe('Unmatched queue (integration)', () => {
       expect(
         entry?.references.find((ref) => ref.type === 'batch')?.locale,
       ).toBe('ro');
+    });
+
+    it('pages most frequent first, breaking ties on name, without repeats or gaps', async () => {
+      // Counts 3, 2, 2, 1: the two ties must come out in name order.
+      const plan: Array<[string, number]> = [
+        ['page low', 1],
+        ['page tie b', 2],
+        ['page top', 3],
+        ['page tie a', 2],
+      ];
+      const member = await newMember();
+      await saveBatches(
+        member,
+        plan.flatMap(([label, times]) =>
+          Array.from({ length: times }, () => ({ rawName: name(label) })),
+        ),
+      );
+
+      const seen: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await queuePage('open', { limit: 2, cursor });
+        expect(page.entries.length).toBeLessThanOrEqual(2);
+        seen.push(...page.entries.map((entry) => entry.normalizedName));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+
+      expect(new Set(seen).size).toBe(seen.length);
+      const wanted = ['page top', 'page tie a', 'page tie b', 'page low'].map(
+        (label) => normalise(name(label)),
+      );
+      expect(seen.filter((n) => wanted.includes(n))).toEqual(wanted);
+    });
+
+    it('answers 400, not 500, for a malformed cursor', async () => {
+      for (const cursor of [
+        'not-base64-json',
+        Buffer.from('[1]').toString('base64url'),
+        Buffer.from('["x","y"]').toString('base64url'),
+      ]) {
+        const response = await call(adminCookie)
+          .get('/admin/unmatched')
+          .query({ cursor });
+        expect(response.status).toBe(400);
+        expect(response.body).toMatchObject({ code: 'validation_failed' });
+      }
+    });
+
+    it('rejects a page size over the limit', async () => {
+      await call(adminCookie).get('/admin/unmatched?limit=101').expect(400);
     });
 
     it('drops an entry when its Batch is deleted', async () => {
@@ -789,6 +865,9 @@ describe('Unmatched queue (integration)', () => {
 
       let response: Promise<request.Response> | undefined;
       await database.transaction(async (tx) => {
+        const { rows } = await tx.execute<{ pid: number }>(
+          sql`SELECT pg_backend_pid() AS pid`,
+        );
         await tx.execute(sql`DELETE FROM ingredients WHERE id = ${created.id}`);
         response = Promise.resolve(
           resolve({
@@ -796,7 +875,7 @@ describe('Unmatched queue (integration)', () => {
             ingredientId: created.id,
           }).then((r) => r),
         );
-        await new Promise((done) => setTimeout(done, 500));
+        await waitForBlockedBackend(pool, rows[0].pid);
       });
       expect((await response)?.status).toBe(404);
       expect(await entryFor(raw)).toBeDefined();
@@ -861,6 +940,28 @@ describe('Unmatched queue (integration)', () => {
       expect(items).toHaveLength(2);
       expect(items.find((i) => i.unit === 'g')?.quantity).toBe(5);
       expect(items.find((i) => i.unit === 'kg')?.quantity).toBe(1);
+      expect(items.every((i) => !i.unmatched)).toBe(true);
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('keeps a separate line instead of merging past the quantity cap', async () => {
+      const raw = name('cap');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      await addTyped(member, {
+        ingredientId: parmesan,
+        quantity: 600_000,
+        unit: 'g',
+      });
+      await addTyped(member, { name: raw, quantity: 500_000, unit: 'g' });
+
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+
+      const items = await itemsOf(member);
+      expect(items.map((i) => i.quantity).sort()).toEqual([500_000, 600_000]);
       expect(items.every((i) => !i.unmatched)).toBe(true);
       expect(await entryFor(raw)).toBeUndefined();
     });
@@ -935,6 +1036,30 @@ describe('Unmatched queue (integration)', () => {
       expect(reopened?.dismissed).toBe(false);
     });
 
+    it('puts a dismissed name back in the open queue on undismiss', async () => {
+      const raw = name('restored');
+      await saveBatches(await newMember(), [{ rawName: raw }]);
+      const body = { normalizedName: normalise(raw) };
+      await call(adminCookie)
+        .post('/admin/unmatched/dismiss', body)
+        .expect(204);
+
+      await call(adminCookie)
+        .post('/admin/unmatched/undismiss', body)
+        .expect(204);
+
+      expect(await entryFor(raw, 'dismissed')).toBeUndefined();
+      expect(await entryFor(raw)).toMatchObject({ count: 1, dismissed: false });
+    });
+
+    it('answers 404 when undismissing a name that is not in the queue', async () => {
+      await call(adminCookie)
+        .post('/admin/unmatched/undismiss', {
+          normalizedName: name('never saved'),
+        })
+        .expect(404);
+    });
+
     it('answers 404 for a name that is not in the queue', async () => {
       await call(adminCookie)
         .post('/admin/unmatched/dismiss', {
@@ -971,7 +1096,7 @@ describe('Unmatched queue (integration)', () => {
       expect(synonyms).toHaveLength(1);
     });
 
-    it('relinks or keeps queued a Batch saved while the resolve waits for the Shopping List lock', async () => {
+    it('relinks or keeps queued a Batch saved while the resolve waits for the Family lock', async () => {
       const raw = name('late batch');
       const member = await newMember();
       const parmesan = seedId.ingredient('parmesan');
@@ -992,17 +1117,20 @@ describe('Unmatched queue (integration)', () => {
       let resolveResponse: Promise<request.Response> | undefined;
       let lateBatchId = '';
       await database.transaction(async (tx) => {
-        await tx.execute(
-          sql`SELECT id FROM shopping_lists WHERE id = ${item.listId} FOR UPDATE`,
+        const { rows } = await tx.execute<{ pid: number }>(
+          sql`SELECT pg_backend_pid() AS pid`,
         );
-        // Resolve reads its entries, then waits for this list.
+        await tx.execute(
+          sql`SELECT id FROM family WHERE id = ${list.familyId} FOR UPDATE`,
+        );
+        // Resolve reads its entries, then waits for this Family.
         resolveResponse = Promise.resolve(
           resolve({
             normalizedName: normalise(raw),
             ingredientId: parmesan,
           }).then((r) => r),
         );
-        await new Promise((done) => setTimeout(done, 500));
+        await waitForBlockedBackend(pool, rows[0].pid);
         const [batch] = await tx
           .insert(batches)
           .values({
@@ -1034,11 +1162,153 @@ describe('Unmatched queue (integration)', () => {
         .select()
         .from(unmatchedEntries)
         .where(eq(unmatchedEntries.batchId, lateBatchId));
-      // Never "Unmatched with no queue entry".
-      expect(late.unmatched === false || entries.length > 0).toBe(true);
       // With the entries read under the locks, the late Batch is relinked.
       expect(late).toMatchObject({ unmatched: false, ingredientId: parmesan });
       expect(entries).toEqual([]);
+    });
+
+    describe('adding the same name from the catalog', () => {
+      const addIngredient = (ingredientName: string) =>
+        call(adminCookie).post('/admin/catalog/ingredients', {
+          name: ingredientName,
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          defaultUnit: 'g',
+        });
+      const addSynonym = (ingredientId: string, value: string) =>
+        call(adminCookie).post('/admin/catalog/translations', {
+          entityType: 'ingredient',
+          entityId: ingredientId,
+          locale: 'en',
+          kind: 'synonym',
+          value,
+        });
+
+      /** Holds the name lock like a resolve would, and proves `send` waits for it. */
+      async function whileNameHeld(
+        raw: string,
+        send: () => Promise<request.Response>,
+      ) {
+        const holder = await pool.connect();
+        let pending: Promise<request.Response> | undefined;
+        try {
+          await holder.query('BEGIN');
+          const { rows } = await holder.query<{ pid: number }>(
+            'SELECT pg_backend_pid() AS pid',
+          );
+          await holder.query(
+            'SELECT pg_advisory_xact_lock(hashtextextended($1, 0))',
+            [`catalog-name:${normalise(raw)}`],
+          );
+          pending = send();
+          await waitForBlockedBackend(pool, rows[0].pid);
+        } finally {
+          await holder.query('ROLLBACK').catch(() => undefined);
+          holder.release();
+        }
+        return pending;
+      }
+
+      it('waits for a resolve that holds the name lock (Ingredient add)', async () => {
+        const raw = name('catalog wait');
+        const created = await whileNameHeld(raw, () =>
+          addIngredient(raw).then((r) => r),
+        );
+        expect(created.status).toBe(201);
+      });
+
+      it('waits for a resolve that holds the name lock (Synonym add)', async () => {
+        const raw = name('synonym wait');
+        const added = await whileNameHeld(raw, () =>
+          addSynonym(seedId.ingredient('milk'), raw).then((r) => r),
+        );
+        expect(added.status).toBe(201);
+      });
+
+      it('refuses to rename an Ingredient or Synonym onto a name another Ingredient owns', async () => {
+        const taken = name('rename taken');
+        await addSynonym(seedId.ingredient('milk'), taken).expect(201);
+        const own = (await addIngredient(name('rename own')).expect(201))
+          .body as { id: string };
+        const renamed = await call(adminCookie).patch(
+          `/admin/catalog/ingredients/${own.id}`,
+          { name: taken },
+        );
+        expect(renamed.status).toBe(409);
+
+        const synonym = (
+          await addSynonym(own.id, name('rename syn')).expect(201)
+        ).body as { id: string };
+        const retitled = await call(adminCookie).patch(
+          `/admin/catalog/translations/${synonym.id}`,
+          { value: taken },
+        );
+        expect(retitled.status).toBe(409);
+      });
+
+      it('never leaves two Ingredients answering to one resolved name', async () => {
+        const raw = name('catalog race');
+        await saveBatches(await newMember(), [{ rawName: raw }]);
+        const [resolved, added] = await Promise.all([
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: seedId.ingredient('parmesan'),
+          }).then((r) => r),
+          addSynonym(seedId.ingredient('milk'), raw).then((r) => r),
+        ]);
+        const owners = await database
+          .selectDistinct({ id: catalogTranslations.entityId })
+          .from(catalogTranslations)
+          .where(
+            and(
+              eq(catalogTranslations.entityType, 'ingredient'),
+              eq(catalogTranslations.normalizedValue, normalise(raw)),
+            ),
+          );
+        expect(owners).toHaveLength(1);
+        // Exactly one side won.
+        expect([resolved.status, added.status].sort()).toEqual([201, 409]);
+      });
+    });
+
+    it('takes the Family lock before any list, item or Batch lock', async () => {
+      const raw = name('family lock');
+      const member = await newMember();
+      const [batch] = await saveBatches(member, [{ rawName: raw }]);
+      const [{ familyId }] = await database
+        .select({ familyId: batches.familyId })
+        .from(batches)
+        .where(eq(batches.id, batch.id));
+
+      // Holds the Family row like deleteFamily does, then touches its Batch.
+      const holder = await pool.connect();
+      let response: Promise<request.Response> | undefined;
+      try {
+        await holder.query('BEGIN');
+        const { rows } = await holder.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await holder.query('SELECT id FROM family WHERE id = $1 FOR UPDATE', [
+          familyId,
+        ]);
+        response = Promise.resolve(
+          resolve({
+            normalizedName: normalise(raw),
+            ingredientId: seedId.ingredient('parmesan'),
+          }).then((r) => r),
+        );
+        await waitForBlockedBackend(pool, rows[0].pid);
+        // Had the resolve taken the Batch lock first, deleteFamily's cascade
+        // would now wait on it while the resolve waits on the Family.
+        const { rows: held } = await holder.query(
+          'SELECT 1 FROM batches WHERE id = $1 FOR UPDATE NOWAIT',
+          [batch.id],
+        );
+        expect(held).toHaveLength(1);
+      } finally {
+        await holder.query('ROLLBACK').catch(() => undefined);
+        holder.release();
+      }
+      expect((await response)?.status).toBe(201);
     });
 
     it('does not deadlock with Finish Shopping and adds on the same rows', async () => {

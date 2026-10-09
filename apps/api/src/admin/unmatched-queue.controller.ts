@@ -17,7 +17,7 @@ import {
   unmatchedResolveBody,
   type UnmatchedDismissBody,
   type UnmatchedListQuery,
-  type UnmatchedQueueEntry,
+  type UnmatchedQueuePage,
   type UnmatchedResolution,
   type UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
@@ -32,13 +32,13 @@ export class UnmatchedQueueController {
   @Get()
   @ApiOperation({
     summary:
-      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each',
+      'Admin only: Unmatched names grouped by normalised raw name, with how many rows carry each, most frequent first, one page at a time',
   })
   async list(
     @Query(new ZodValidationPipe(unmatchedListQuery))
     query: UnmatchedListQuery,
-  ): Promise<{ entries: UnmatchedQueueEntry[] }> {
-    return { entries: await this.queue.list(query.status) };
+  ): Promise<UnmatchedQueuePage> {
+    return this.queue.list(query);
   }
 
   @Post('resolve')
@@ -63,5 +63,17 @@ export class UnmatchedQueueController {
     body: UnmatchedDismissBody,
   ): Promise<void> {
     await this.queue.dismiss(body.normalizedName);
+  }
+
+  @Post('undismiss')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Admin only: put a dismissed name back in the open queue',
+  })
+  async undismiss(
+    @Body(new ZodValidationPipe(unmatchedDismissBody))
+    body: UnmatchedDismissBody,
+  ): Promise<void> {
+    await this.queue.undismiss(body.normalizedName);
   }
 }
