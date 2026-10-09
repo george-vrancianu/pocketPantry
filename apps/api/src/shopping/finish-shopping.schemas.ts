@@ -1,18 +1,9 @@
 import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { ingredientUnit, storageLocation } from '../database/schema';
-import { MAX_QUANTITY } from '../common/quantity';
+import { batchQuantity } from '../common/quantity';
 
 const isoDate = z.iso.date();
-
-/** numeric(10,3) on batches: at least 0.001 and at most 3 decimals. */
-const quantity = z
-  .number()
-  .min(0.001)
-  .max(MAX_QUANTITY)
-  .refine((value) => Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6, {
-    message: 'at most 3 decimals',
-  });
 
 export const finishProposalQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
@@ -25,7 +16,7 @@ export type FinishProposalQuery = z.infer<typeof finishProposalQuery>;
 export const finishLine = z
   .object({
     itemId: z.uuid(),
-    quantity: quantity.nullable(),
+    quantity: batchQuantity.nullable(),
     unit: z.enum(ingredientUnit.enumValues).nullable(),
     location: z.enum(storageLocation.enumValues),
     /** `null` means no expiry. */
