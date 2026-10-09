@@ -60,7 +60,9 @@
     "other_leaf_protected": "Categoria Altele este locul Loturilor nepotrivite, deci nu poate fi ștearsă, mutată sau eliminată.",
     "other_leaf_name_taken": "O categorie Altele are deja acest nume generat („Other <nume>”). Redenumește sau elimină mai întâi categoria în conflict.",
     "translation_exists": "Această intrare are deja un nume în acea limbă. Editează-l pe cel existent.",
-    "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici."
+    "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici.",
+    "aisle_in_use": "Categorii părinte încă folosesc acest Raion, deci nu poate fi șters. Mută-le mai întâi pe alt Raion.",
+    "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",

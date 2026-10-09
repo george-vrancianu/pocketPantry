@@ -49,7 +49,7 @@ A granular grouping under a Parent Category, such as "Hard cheese". Every Ingred
 _Avoid_: Subcategory, type
 
 **Aisle**:
-The ordered shop section a Parent Category maps to. Used to group the Shopping List.
+The ordered shop section a Parent Category maps to. Used to group the Shopping List, in the shop order Admins set.
 _Avoid_: Section, department
 
 **Synonym**:

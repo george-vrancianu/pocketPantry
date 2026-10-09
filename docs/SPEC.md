@@ -39,7 +39,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 16. As a Member, I want Categories granular enough to tell Parmesan from Cheddar, so that matching isn't vague.
 17. As a Member, I want to search the Catalog by name in my locale, so that I can add things manually.
 18. As a Member, I want Catalog names shown in my locale, so that lists read naturally.
-19. As an Admin, I want to create, edit, and delete Ingredients, Categories, Synonyms, and translations, so that I can curate the Catalog.
+19. As an Admin, I want to create, edit, and delete Ingredients, Categories, Aisles, Synonyms, and translations, and to reorder Aisles, so that I can curate the Catalog and the shop order.
 20. As an Admin, I want a list of Unmatched names from Scans and manual entries, so that I can grow the Catalog from real usage.
 21. As an Admin, I want to resolve an Unmatched name to an existing or new Ingredient, so that future matches succeed and existing Batches get relinked.
 
@@ -152,11 +152,11 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 
 ### Catalog
 
-- Two-level Categories. Retzetar's 18 categories become Parent Categories. Each Parent Category has an Aisle with a sort order. Leaf Categories hang under Parents. Every Ingredient belongs to exactly one Leaf Category.
+- Two-level Categories. Retzetar's 18 categories become Parent Categories. Each Parent Category has an Aisle with a sort order. Admins create, rename, translate, reorder (move up or down) and delete Aisles; an Aisle a Parent Category still uses cannot be deleted. Leaf Categories hang under Parents. Every Ingredient belongs to exactly one Leaf Category.
 - Default Expiry in days lives on the Leaf Category, nullable, falling back to the Parent Category. A default Location is on the Leaf Category, nullable, falling back to the Parent, used to pre-fill new Batches.
 - Ingredient and Category rows carry a canonical English name and a normalised key. A translations table keyed by entity, locale, and kind holds display names and Synonyms per locale. Uniqueness is enforced on the normalised canonical name and on normalised display names within a locale.
 - Each Ingredient has a default unit from the unit enum.
-- The seed is generated once with an LLM from the 18 parents, producing Leaf Categories and Ingredients with English and Romanian names and Synonyms, then reviewed by hand before being committed as seed data. Seed rows have fixed identifiers so re-seeding is idempotent.
+- The seed is generated once with an LLM from the 18 parents, producing Leaf Categories and Ingredients with English and Romanian names and Synonyms, then reviewed by hand before being committed as seed data. Seed rows have fixed identifiers so re-seeding is idempotent and keeps Admin edits, Aisle names and shop order included; a seed Aisle an Admin deleted comes back, last in the shop order if its slot is taken.
 - An "Other" Leaf Category exists under every Parent Category, plus a top-level "Other" Parent, so Unmatched Batches always have a home.
 - Unmatched names are recorded in a review queue with the raw text, locale, source (which Scan Mode or manual), and the Batch or Shopping Item they were saved on. Admin resolution either links to an existing Ingredient or creates a new one, then relinks the referencing rows and adds the raw text as a Synonym. A relinked Shopping Item on the active list merges with an existing line for the same Ingredient and unit; on archived lists it only relinks. Unmatched rows saved before the queue existed (migration 0009) are not queued; that is dev data only and no backfill is provided.
 

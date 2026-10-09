@@ -1,6 +1,8 @@
 import { Alert, SegmentedControl, Spinner, Stack } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { AisleEditor } from './components/AisleEditor';
+import { AisleList } from './components/AisleList';
 import { CategoryEditor } from './components/CategoryEditor';
 import { CategoryTree } from './components/CategoryTree';
 import { IngredientEditor } from './components/IngredientEditor';
@@ -20,6 +22,14 @@ export function AdminPage() {
         key={editing.id ?? 'new'}
         ingredient={screen.editedIngredient}
         catalog={catalog}
+        onDone={screen.close}
+      />
+    );
+  } else if (catalog && editing?.type === 'aisle') {
+    body = (
+      <AisleEditor
+        key={editing.id ?? 'new'}
+        aisle={screen.editedAisle}
         onDone={screen.close}
       />
     );
@@ -57,13 +67,20 @@ export function AdminPage() {
         ) : screen.tab === 'unmatched' ? (
           <UnmatchedQueue catalog={catalog} />
         ) : (
-          <CategoryTree
-            catalog={catalog}
-            onCreate={(kind) =>
-              screen.edit({ type: 'category', kind, id: null })
-            }
-            onEdit={(kind, id) => screen.edit({ type: 'category', kind, id })}
-          />
+          <Stack spacing={4}>
+            <AisleList
+              aisles={catalog.aisles}
+              onCreate={() => screen.edit({ type: 'aisle', id: null })}
+              onEdit={(id) => screen.edit({ type: 'aisle', id })}
+            />
+            <CategoryTree
+              catalog={catalog}
+              onCreate={(kind) =>
+                screen.edit({ type: 'category', kind, id: null })
+              }
+              onEdit={(kind, id) => screen.edit({ type: 'category', kind, id })}
+            />
+          </Stack>
         )}
       </>
     );

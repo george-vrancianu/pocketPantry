@@ -32,6 +32,16 @@
     "leafCategory": "Categorie frunză",
     "defaultUnit": "Unitate implicită"
   },
+  "aisle": {
+    "title": "Raioane",
+    "hint": "Ordinea din magazin: Lista de cumpărături este grupată pe Raioane în această ordine.",
+    "new": "Raion nou",
+    "edit": "Editează Raionul {{name}}",
+    "name": "Nume (engleză)",
+    "moveUp": "Mută {{name}} mai sus",
+    "moveDown": "Mută {{name}} mai jos",
+    "moved": "{{name}} este acum pe locul {{position}} din {{total}}."
+  },
   "category": {
     "newParent": "Categorie părinte nouă",
     "newLeaf": "Categorie frunză nouă",

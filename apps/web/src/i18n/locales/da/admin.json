@@ -32,6 +32,16 @@
     "leafCategory": "Underkategori",
     "defaultUnit": "Standardenhed"
   },
+  "aisle": {
+    "title": "Afdelinger",
+    "hint": "Butikkens rækkefølge: indkøbslisten grupperes efter afdeling i denne rækkefølge.",
+    "new": "Ny afdeling",
+    "edit": "Rediger afdelingen {{name}}",
+    "name": "Navn (engelsk)",
+    "moveUp": "Flyt {{name}} op",
+    "moveDown": "Flyt {{name}} ned",
+    "moved": "{{name}} er nu nummer {{position}} af {{total}}."
+  },
   "category": {
     "newParent": "Ny overkategori",
     "newLeaf": "Ny underkategori",
