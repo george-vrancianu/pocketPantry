@@ -122,7 +122,7 @@ describe('ScanPage', () => {
     );
     await userEvent.click(screen.getByRole('button', { name: 'Add manually' }));
     expect(
-      await screen.findByRole('form', { name: 'Add to pantry' }),
+      await screen.findByRole('form', { name: 'Add to Pantry' }),
     ).toBeInTheDocument();
   });
 

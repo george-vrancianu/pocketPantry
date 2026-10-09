@@ -84,7 +84,7 @@ describe('Receipt Review', () => {
     expect(excluded).toHaveAttribute('aria-expanded', 'true');
     expect(excluded).toHaveTextContent('Hide');
     expect(screen.getByText('SACOSA BIO')).toBeInTheDocument();
-    expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
+    expect(screen.getByText('Not for the Pantry')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save 1 item' })).toBeEnabled();
   });
 

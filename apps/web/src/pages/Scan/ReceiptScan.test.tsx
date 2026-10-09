@@ -117,7 +117,7 @@ describe('Receipt Scan on the Scan screen', () => {
     );
     expect(await findReviewRow('Eggs')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
-    expect(screen.getByText('Not a pantry item')).toBeInTheDocument();
+    expect(screen.getByText('Not for the Pantry')).toBeInTheDocument();
     expect(calls.find((c) => c.key === 'POST /api/scan/receipt')?.body).toEqual(
       { receiptImage: 'data:image/jpeg;base64,Y3JvcA==' },
     );
