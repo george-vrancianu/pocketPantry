@@ -383,11 +383,11 @@ export class UnmatchedQueueService {
   }
 
   /**
-   * Relinks Unmatched Shopping Items to the Ingredient. On the active list an
-   * item merges into an existing line for the same Ingredient and unit (the
-   * list's "adding an item for an Ingredient already on it merges" rule);
-   * archived lists are history, so there it only relinks, and so does a merge
-   * that would pass the quantity cap.
+   * Relinks Unmatched Shopping Items to the Ingredient. On the active list a
+   * Shopping Item merges into an existing one for the same Ingredient and
+   * unit (the list's "adding an item for an Ingredient already on it merges"
+   * rule); archived lists are history, so there it only relinks, and so does a
+   * merge that would pass the quantity cap.
    */
   private async relinkShoppingItems(
     tx: Tx,
@@ -442,14 +442,14 @@ export class UnmatchedQueueService {
           )
         : null;
       // A merge past the cap is neither rejected nor clamped: an Admin cannot
-      // fix a Family's quantities, and clamping would lose some. The line stays
-      // separate, relinked.
+      // fix a Family's quantities, and clamping would lose some. The Shopping
+      // Item stays separate, relinked.
       if (twin && !exceedsMaxQuantity(merged)) {
         await tx
           .update(shoppingItems)
           .set({
             quantity: merged === null ? null : String(merged),
-            // Still wanted if either line was.
+            // Still wanted if either Shopping Item was.
             checked: twin.checked && row.checked,
           })
           .where(eq(shoppingItems.id, twin.id));

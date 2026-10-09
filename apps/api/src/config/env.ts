@@ -10,7 +10,6 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.url(),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
-  // Comma-separated emails that become Admins at signup. The only way to get the role.
   AI_PROVIDER: z.enum(['openai', 'openai-compatible']).default('openai'),
   AI_API_KEY: z.string().min(1).optional(),
   AI_BASE_URL: z.url().optional(),
