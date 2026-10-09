@@ -1,7 +1,9 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, ilike } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import type { Pool } from 'pg';
 import request from 'supertest';
+import { lockAisleOrder } from '../src/catalog/aisle-order-lock';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE, DATABASE_POOL } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -943,7 +945,72 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(await groupIds()).toEqual([produce, dairy]);
     });
 
-    it('refuses as stale a reorder naming an Aisle whose delete commits while it runs', async () => {
+    /** Polls until `count` sessions wait on `holderPid`; from the pool, since inside a transaction pg_stat_activity is a frozen snapshot. */
+    async function waitUntilBlocked(
+      holderPid: number,
+      count: number,
+      what: string,
+    ) {
+      const pool = app.get<Pool>(DATABASE_POOL);
+      for (let attempt = 0; ; attempt++) {
+        const { rowCount } = await pool.query(
+          'SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
+          [holderPid],
+        );
+        if ((rowCount ?? 0) >= count) return;
+        if (attempt === 250) throw new Error(`${what} never blocked`);
+        await new Promise((done) => setTimeout(done, 20));
+      }
+    }
+
+    it('serialises an API delete and a reorder on the Aisle order lock', async () => {
+      const doomed = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Queued aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const ids = (await overview()).aisles.map((a) => a.id);
+
+      const client = await app.get<Pool>(DATABASE_POOL).connect();
+      let remove: Promise<request.Response>;
+      let reorder: Promise<request.Response>;
+      let released = false;
+      try {
+        await client.query('BEGIN');
+        const holder = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await lockAisleOrder(drizzle(client));
+        const pid = holder.rows[0].pid;
+        // Queued in this order: the delete first, then the reorder.
+        remove = as(adminCookie)
+          .del(`/aisles/${doomed.id}`)
+          .then((r) => r);
+        await waitUntilBlocked(pid, 1, 'the delete');
+        reorder = as(adminCookie)
+          .put('/aisles/order', { ids: [...ids].reverse() })
+          .then((r) => r);
+        await waitUntilBlocked(pid, 2, 'the reorder');
+        await client.query('COMMIT');
+        released = true;
+      } finally {
+        if (!released) await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
+      expect((await remove).status).toBe(204);
+      // The reorder ran after the delete committed, so its list is stale.
+      const response = await reorder;
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        code: 'catalog.aisle_order_stale',
+        params: {},
+      });
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        ids.filter((id) => id !== doomed.id),
+      );
+    });
+
+    it('refuses as stale a reorder naming an Aisle deleted from outside the service while it runs', async () => {
       const doomed = (
         await as(adminCookie)
           .post('/aisles', { name: `Doomed aisle ${stamp}` })
@@ -951,12 +1018,11 @@ describe('Admin role and Catalog curation (integration)', () => {
       ).body as Body;
       const ids = (await overview()).aisles.map((a) => a.id);
 
-      const pool = app.get<Pool>(DATABASE_POOL);
-      const client = await pool.connect();
+      const client = await app.get<Pool>(DATABASE_POOL).connect();
       let reorder: Promise<request.Response>;
       let committed = false;
       try {
-        // Another delete of the Aisle, uncommitted, holding its row.
+        // A delete that skips the advisory lock, uncommitted, holding the row.
         await client.query('BEGIN');
         const holder = await client.query<{ pid: number }>(
           'SELECT pg_backend_pid() AS pid',
@@ -969,16 +1035,7 @@ describe('Admin role and Catalog curation (integration)', () => {
         reorder = as(adminCookie)
           .put('/aisles/order', { ids: [...ids].reverse() })
           .then((r) => r);
-        // Poll from the pool, not `client`: inside a transaction pg_stat_activity is a frozen snapshot.
-        for (let attempt = 0; ; attempt++) {
-          const { rowCount } = await pool.query(
-            'SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
-            [holder.rows[0].pid],
-          );
-          if (rowCount) break;
-          if (attempt === 250) throw new Error('the reorder never blocked');
-          await new Promise((done) => setTimeout(done, 20));
-        }
+        await waitUntilBlocked(holder.rows[0].pid, 1, 'the reorder');
         await client.query('COMMIT');
         committed = true;
       } finally {

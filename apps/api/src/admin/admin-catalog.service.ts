@@ -175,12 +175,15 @@ export class AdminCatalogService {
   reorderAisles({ ids }: AisleOrder) {
     return this.write(async (tx) => {
       await lockAisleOrder(tx);
-      // Row locks too: a delete that bypassed the advisory lock and commits
-      // after this read would otherwise leave its id silently unmatched.
+      // deleteAisle takes the advisory lock above, so this share lock is a
+      // belt-and-braces guard against deletes from outside this service: one
+      // committing after this read would otherwise leave its id silently
+      // unmatched. Share, not update, so Parent Categories pointing at an
+      // Aisle (a key-share lock) never wait behind a reorder.
       const current = await tx
         .select({ id: aisles.id })
         .from(aisles)
-        .for('update');
+        .for('share');
       const wanted = new Set(ids);
       if (
         current.length !== ids.length ||
