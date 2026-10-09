@@ -29,7 +29,7 @@ const timestamps = {
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
-// A Family owns the Pantry, Shopping List and Family Settings (later tickets).
+// A Family owns the Pantry, Shopping List and Family Settings.
 // The Invite Code is replaced in place on regeneration, which revokes the old one.
 export const family = pgTable('family', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -273,7 +273,7 @@ export const catalogTranslations = pgTable(
   ],
 );
 
-// Shopping: one active Shopping List per Family (archived ones come with Finish Shopping).
+// Shopping: one active Shopping List per Family (Finish Shopping archives the old one).
 export const shoppingListStatus = pgEnum('shopping_list_status', [
   'active',
   'archived',

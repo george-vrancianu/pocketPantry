@@ -18,6 +18,9 @@ const envSchema = z.object({
   AI_VISION_MODEL: z.string().min(1).default('gpt-4o-mini-2024-07-18'),
   /** Scan Cap: Scans per Member per UTC day. 0 disables the cap (unlimited). */
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
+  /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
+  INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
+  INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
   /** Below this a Match counts as Unmatched, and an image read counts as low-confidence. */
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
   /** Signs the Plate Scan token. Required in production; elsewhere a missing one becomes a random per-process secret (tokens do not survive a restart). */

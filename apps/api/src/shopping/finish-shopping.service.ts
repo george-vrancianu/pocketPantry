@@ -23,6 +23,7 @@ import {
   unmatchedEntries,
   user,
 } from '../database/schema';
+import { lockMemberAndFamily, runLocked } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
@@ -111,7 +112,9 @@ export class FinishShoppingService {
     memberId: string,
     body: FinishShoppingBody,
   ): Promise<FinishResult> {
-    return this.database.transaction(async (tx) => {
+    return runLocked(this.database, async (tx) => {
+      // Family lock first, like deleteFamily, so the two cannot deadlock.
+      await lockMemberAndFamily(tx, memberId);
       const { listId, familyId } = await this.activeList(tx, memberId);
       // Serialise against concurrent adds and double submits on one list.
       await tx.execute(
