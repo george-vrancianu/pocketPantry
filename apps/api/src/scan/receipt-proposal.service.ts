@@ -73,15 +73,12 @@ export class ReceiptProposalService {
       const named = line.matchedIngredientId
         ? byId.get(line.matchedIngredientId)
         : undefined;
-      if (named)
-        return { match: named, guessed: false } satisfies ResolvedMatch;
+      if (named) return { match: named, exact: false } satisfies ResolvedMatch;
       const hit =
         (line.fallbackIngredientName
           ? exact.get(line.fallbackIngredientName)
           : undefined) ?? exact.get(line.sourceText);
-      return hit
-        ? ({ match: hit, guessed: true } satisfies ResolvedMatch)
-        : null;
+      return hit ? ({ match: hit, exact: true } satisfies ResolvedMatch) : null;
     };
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,

@@ -45,7 +45,7 @@ const receipt = (...lines: Line[]): ReceiptScanResult => ({
   items: [],
 });
 
-const resolveMilk = () => ({ match: milk, guessed: false });
+const resolveMilk = () => ({ match: milk, exact: false });
 const resolveNothing = () => null;
 
 describe('receiptProposedLines', () => {
@@ -75,11 +75,11 @@ describe('receiptProposedLines', () => {
   });
 
   it('keeps an exact-name Match without flagging it', () => {
-    const guess = () => ({ match: milk, guessed: true });
+    const resolveMilkByName = () => ({ match: milk, exact: true });
     expect(
       receiptProposedLines(
         receipt(line({ matchedIngredientId: null, matchConfidence: 0 })),
-        guess,
+        resolveMilkByName,
         0.6,
       )[0],
     ).toMatchObject({ match: milk, lowConfidence: false });

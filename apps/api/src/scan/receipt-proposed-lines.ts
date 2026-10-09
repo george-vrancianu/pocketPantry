@@ -11,8 +11,8 @@ import {
 type PantryUnit = (typeof ingredientUnit.enumValues)[number];
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
-/** The Catalog Ingredient for a line, and whether it was found by exact name lookup rather than named by the model. */
-export type ResolvedMatch = { match: CatalogSearchResult; guessed: boolean };
+/** The Catalog Ingredient for a line; `exact` when found by exact name lookup rather than named by the model. */
+export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
 
 /** Lines that are part of the receipt's arithmetic, never worth showing on Review. */
 const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([
@@ -108,10 +108,8 @@ export function receiptProposedLines(
         ...applyThreshold(
           resolved?.match ?? null,
           {
-            // An exact-name Match was looked up, not scored by the model: it always passes.
-            matchConfidence: resolved?.guessed
-              ? Infinity
-              : line.matchConfidence,
+            // Not scored by the model, so it always passes.
+            matchConfidence: resolved?.exact ? Infinity : line.matchConfidence,
             confidence: line.confidence,
           },
           threshold,
