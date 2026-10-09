@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,15 +21,6 @@ import {
 import { UnmatchedResolver } from './UnmatchedResolver';
 
 type Props = { catalog: AdminCatalog };
-
-const visuallyHidden = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
 
 /**
  * The Admin queue of Unmatched names: one line per distinct normalised name
