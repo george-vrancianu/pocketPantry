@@ -2,8 +2,8 @@ import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import {
+  accessibleNamesOf,
   displayName,
-  positionsOf,
   statusOf,
   type ReviewLine,
 } from '../../../lib/review';
@@ -48,13 +48,10 @@ export function ReviewTable({
   mode,
 }: Props) {
   const { t } = useTranslation('review');
-  const positions = positionsOf([...groups.review, ...groups.sure]);
-  const labelOf = (line: ReviewLine) => {
-    const position = positions.get(line.key);
-    return position
-      ? t('position', { name: displayName(line), ...position })
-      : undefined;
-  };
+  const accessibleNameOf = accessibleNamesOf(
+    [...groups.review, ...groups.sure],
+    (name, position) => t('position', { name, ...position }),
+  );
   const row = (line: ReviewLine) => (
     <ReviewRow
       key={line.key}
@@ -71,7 +68,7 @@ export function ReviewTable({
       onSwapMatch={() => onSwapMatch(line.key)}
       onRemove={() => onRemove(line.key)}
       onConfirm={() => onConfirm(line.key)}
-      label={labelOf(line)}
+      accessibleName={accessibleNameOf(line)}
     />
   );
   const columns = shopping

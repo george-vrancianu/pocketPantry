@@ -450,6 +450,42 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('gives each repeated row its own name on the row and its open panel', () => {
+    renderReview([
+      line({ match: null, name: 'Tomato', quantity: 1, sourceText: null }),
+      line({ match: null, name: 'Tomato', quantity: 1, sourceText: null }),
+    ]);
+    expect(
+      screen.getByRole('button', { name: /Tomato \(1 of 2\)/, expanded: true }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Tomato \(2 of 2\)/, expanded: true }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: 'Tomato (1 of 2)' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('group', { name: 'Tomato (2 of 2)' }),
+    ).toBeInTheDocument();
+  });
+
+  it('names each repeated row its own Match button', () => {
+    renderReview([
+      line({ lowConfidence: true, quantity: 1 }),
+      line({ lowConfidence: true, quantity: 1 }),
+    ]);
+    expect(
+      screen.getByRole('button', {
+        name: 'Matched ingredient: Parmesan (1 of 2) (Change)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Matched ingredient: Parmesan (2 of 2) (Change)',
+      }),
+    ).toBeInTheDocument();
+  });
+
   it('returns focus to the row when the opener was never focused (Safari)', async () => {
     renderReview([line({ quantity: 1, lowConfidence: true })]);
     // fireEvent.click does not focus the button, as a tap in Safari does not.

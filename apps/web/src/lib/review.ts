@@ -103,12 +103,8 @@ export function withMatch(
 /** What the Review screen calls a line: the Ingredient it matched, else the name the Scan read. */
 export const displayName = (line: ReviewLine) => line.match?.name ?? line.name;
 
-/**
- * Where each line sits among the lines sharing its display name, in the given
- * order. Only lines whose name repeats are present: assistive tech tells them
- * apart as "Tomato (2 of 2)".
- */
-export function positionsOf(
+/** Where each line sits among the lines sharing its display name, in the given order. Only repeated names are present. */
+function positionsOf(
   lines: ReviewLine[],
 ): Map<string, { index: number; total: number }> {
   const byName = new Map<string, ReviewLine[]>();
@@ -124,6 +120,22 @@ export function positionsOf(
     );
   }
   return positions;
+}
+
+/**
+ * Names each of `lines` for assistive tech: its display name, qualified by
+ * position when other lines share it, e.g. "Tomato (2 of 2)", so every
+ * per-line control and landmark is told apart. `qualify` words the position.
+ */
+export function accessibleNamesOf(
+  lines: ReviewLine[],
+  qualify: (name: string, position: { index: number; total: number }) => string,
+): (line: ReviewLine) => string {
+  const positions = positionsOf(lines);
+  return (line) => {
+    const position = positions.get(line.key);
+    return position ? qualify(displayName(line), position) : displayName(line);
+  };
 }
 
 /** How sure the Review screen is of a line: `low` needs a look at the Match, `qty` a quantity, `ok` is fine. */

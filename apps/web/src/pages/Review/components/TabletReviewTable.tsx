@@ -3,8 +3,8 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import {
+  accessibleNamesOf,
   displayName,
-  positionsOf,
   statusOf,
   type ReviewLine,
 } from '../../../lib/review';
@@ -124,13 +124,10 @@ export function TabletReviewTable({
   const { t } = useTranslation('review');
   const sureId = useId();
   const columns = tabletColumnsFor(shopping);
-  const positions = positionsOf([...groups.review, ...groups.sure]);
-  const labelOf = (line: ReviewLine) => {
-    const position = positions.get(line.key);
-    return position
-      ? t('position', { name: displayName(line), ...position })
-      : undefined;
-  };
+  const accessibleNameOf = accessibleNamesOf(
+    [...groups.review, ...groups.sure],
+    (name, position) => t('position', { name, ...position }),
+  );
   const row = (line: ReviewLine) => {
     const toCheck = rowGroup(state, line) !== 'ok';
     return (
@@ -157,7 +154,7 @@ export function TabletReviewTable({
         }}
         onRemove={() => onRemove(line.key)}
         onDone={() => onConfirm(line.key)}
-        label={labelOf(line)}
+        accessibleName={accessibleNameOf(line)}
       />
     );
   };
