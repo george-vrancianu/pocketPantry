@@ -64,6 +64,7 @@
     "none": "Intet match",
     "choose": "Vælg",
     "change": "Skift",
+    "unmatchedLabel": "{{name}}: Intet match · Vælg",
     "dialogTitle": "Skift match for {{name}}"
   },
   "action": {

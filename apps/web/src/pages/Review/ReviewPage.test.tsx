@@ -488,12 +488,12 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: 'Matched ingredient: Mystery jar (1 of 2) (No match · Choose)',
+        name: 'Mystery jar (1 of 2): No match · Choose',
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
-        name: 'Matched ingredient: Mystery jar (2 of 2) (No match · Choose)',
+        name: 'Mystery jar (2 of 2): No match · Choose',
       }),
     ).toBeInTheDocument();
   });

@@ -113,8 +113,13 @@ export function RowEditPanel({
             id={id('match')}
             component="button"
             type="button"
-            // A label alone would name the button "Match in your pantry" and hide which Ingredient is matched.
-            aria-label={`${t('review:field.match')}: ${accessibleName} (${unmatched ? matchText : t('review:match.change')})`}
+            // A label alone would name the button "Matched ingredient" and hide which Ingredient is matched.
+            // An Unmatched line leads with its own name so it never reads as the matched Ingredient.
+            aria-label={
+              unmatched
+                ? t('review:match.unmatchedLabel', { name: accessibleName })
+                : `${t('review:field.match')}: ${accessibleName} (${t('review:match.change')})`
+            }
             aria-haspopup="dialog"
             onClick={onSwapMatch}
             sx={{
