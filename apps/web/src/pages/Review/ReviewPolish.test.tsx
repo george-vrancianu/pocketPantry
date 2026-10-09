@@ -183,7 +183,7 @@ describe('Review polish: unverified toast', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       '2 items still unverified',
     );
-    expect(screen.getByText('state:null')).toBeInTheDocument();
+    expect(await screen.findByText('state:null')).toBeInTheDocument();
   });
 
   it('uses the singular for one line', async () => {

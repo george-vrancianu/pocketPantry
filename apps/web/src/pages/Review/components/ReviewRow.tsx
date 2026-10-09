@@ -1,4 +1,4 @@
-import { Box, Collapse, tokens } from '@pocket-pantry/ui';
+import { Box, Collapse, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import type { ScanMode } from '../../../lib/scan';
@@ -36,6 +36,8 @@ type Props = {
   onSwapMatch: () => void;
   onRemove: () => void;
   onConfirm: () => void;
+  /** From `accessibleNamesOf`: the display name, position-qualified when repeated. */
+  accessibleName: string;
 };
 
 /**
@@ -57,9 +59,12 @@ export function ReviewRow({
   onSwapMatch,
   onRemove,
   onConfirm,
+  accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'common']);
   const name = displayName(line);
+  // A repeated name: assistive tech reads the qualified one, the eye sees the plain one.
+  const qualified = accessibleName !== name;
   const unit = t(`common:units.${line.unit}`);
   const background = open ? ROW_TINT[status] : tokens.color.surface;
   const cell = {
@@ -111,6 +116,7 @@ export function ReviewRow({
           <Box sx={{ minWidth: 0 }}>
             <Box
               id={titleId(line.key)}
+              aria-hidden={qualified || undefined}
               sx={{
                 fontSize: 14,
                 fontWeight: 700,
@@ -121,6 +127,11 @@ export function ReviewRow({
             >
               {name}
             </Box>
+            {qualified ? (
+              <Box component="span" sx={visuallyHidden}>
+                {accessibleName}
+              </Box>
+            ) : null}
             <SourceText text={line.sourceText} mode={mode} />
           </Box>
         </Box>
@@ -176,6 +187,7 @@ export function ReviewRow({
           onSwapMatch={onSwapMatch}
           onRemove={onRemove}
           onConfirm={onConfirm}
+          accessibleName={accessibleName}
         />
       </Collapse>
     </Box>

@@ -1,5 +1,6 @@
 {
   "title": "Verificare",
+  "position": "{{name}} ({{index}} din {{total}})",
   "subtitle": {
     "mode": {
       "product": "Produs scanat",
@@ -64,6 +65,7 @@
     "none": "Fără potrivire",
     "choose": "Alege",
     "change": "Schimbă",
+    "unmatchedLabel": "{{name}}: Fără potrivire · Alege",
     "dialogTitle": "Schimbă potrivirea pentru {{name}}"
   },
   "action": {
@@ -99,7 +101,7 @@
     "restore": "Adaugă înapoi",
     "restoreFor": "Adaugă {{name}} înapoi"
   },
-  "tooMany": "Poți salva cel mult {{max}} de articole odată. Elimină {{over}} sau exclude-le ca să continui.",
+  "tooMany": "Poți salva cel mult {{max}} de articole odată. Elimină {{over}} ca să continui.",
   "saved": {
     "title": "Salvat în cămară",
     "toPantry": "Mergi la cămară"

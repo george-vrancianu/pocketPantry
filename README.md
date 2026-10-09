@@ -80,7 +80,6 @@ The first run creates a `.env` file from `.env.example`. Open `.env` and set at 
 
 - `BETTER_AUTH_SECRET`: any string of at least 32 random characters.
 - `AI_API_KEY`: your OpenAI API key.
-- `ADMIN_EMAILS` (optional): emails that get admin access when they sign up.
 
 Then restart `npm run dev`. It starts the database, sets it up, and runs the app at http://localhost:5173.
 
@@ -93,6 +92,16 @@ npm run db:seed -w @pocket-pantry/api
 ```
 
 This loads the ingredient catalog. In development it also creates two test accounts, `alice@test.local` and `bob@test.local`, both with the password `password123`.
+
+### Give yourself Admin access
+
+Nobody becomes an Admin by signing up, and no screen or endpoint grants the role. Sign up as usual, then set your role directly in the database:
+
+```sql
+UPDATE "user" SET role = 'admin' WHERE email = 'you@example.com';
+```
+
+Locally, run it with `docker compose exec postgres psql -U postgres -d pocket_pantry -c "<the SQL above>"`. In production, run it against `DATABASE_URL`. Reload the app to see the Admin screens. To take the role away, set it back to `'regular'`.
 
 ### Try it on your phone
 
@@ -139,4 +148,3 @@ Set these in the environment (see `.env.example`):
 - `CLIENT_ORIGIN` and `BETTER_AUTH_URL`: both the public address, e.g. `https://pantry.example.com`.
 - `BETTER_AUTH_SECRET` and `SCAN_TOKEN_SECRET`: different random values, e.g. `openssl rand -base64 48`.
 - `AI_API_KEY`: your OpenAI API key.
-- `ADMIN_EMAILS`: sign up with these addresses before you share the link, since there is no email verification yet.

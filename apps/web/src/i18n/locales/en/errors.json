@@ -41,7 +41,8 @@
     "item_not_found": "We could not find that item on the list.",
     "ingredient_not_found": "We could not find that ingredient.",
     "list_changed": "The list changed while you were reviewing. Please review again.",
-    "nothing_checked": "Check at least one item before finishing."
+    "nothing_checked": "Check at least one item before finishing.",
+    "quantity_too_large": "That would take the quantity above 1,000,000. Lower the amount."
   },
   "pantry": {
     "location_required": "Choose where this batch is stored.",
@@ -62,6 +63,7 @@
     "canonical_name_managed": "The English name changes with the entry's name, not here."
   },
   "family": {
+    "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
     "owner_required": "Only the Owner of the Family can do this.",
     "invite_code_invalid": "That Invite Code does not exist. Check it and try again.",
     "invite_code_expired": "That Invite Code has expired. Ask the Owner for a new one.",

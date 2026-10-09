@@ -16,6 +16,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { FamilyService } from './family.service';
+import { InviteCodeRateLimitGuard } from './invite-code-rate-limit.guard';
 
 const joinCode = z.object({ code: z.string().trim().min(1).max(32) });
 const transferBody = z.object({ memberId: z.string().min(1).max(128) });
@@ -40,6 +41,7 @@ export class FamilyController {
   }
 
   @Get('join-preview')
+  @UseGuards(InviteCodeRateLimitGuard)
   @ApiOperation({
     summary:
       'What joining with this Invite Code would delete (counts); validates the code',
@@ -52,6 +54,7 @@ export class FamilyController {
   }
 
   @Post('join')
+  @UseGuards(InviteCodeRateLimitGuard)
   @ApiOperation({
     summary: 'Join a Family by Invite Code, deleting your own Household of One',
   })

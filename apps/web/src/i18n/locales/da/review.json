@@ -1,5 +1,6 @@
 {
   "title": "Gennemgang",
+  "position": "{{name}} ({{index}} af {{total}})",
   "subtitle": {
     "mode": {
       "product": "Scannet produkt",
@@ -63,6 +64,7 @@
     "none": "Intet match",
     "choose": "Vælg",
     "change": "Skift",
+    "unmatchedLabel": "{{name}}: Intet match · Vælg",
     "dialogTitle": "Skift match for {{name}}"
   },
   "action": {
@@ -96,7 +98,7 @@
     "restore": "Tilføj igen",
     "restoreFor": "Tilføj {{name}} igen"
   },
-  "tooMany": "Du kan gemme op til {{max}} varer ad gangen. Fjern eller udelad {{over}} for at fortsætte.",
+  "tooMany": "Du kan gemme op til {{max}} varer ad gangen. Fjern {{over}} for at fortsætte.",
   "saved": {
     "title": "Gemt i dit spisekammer",
     "toPantry": "Gå til spisekammeret"

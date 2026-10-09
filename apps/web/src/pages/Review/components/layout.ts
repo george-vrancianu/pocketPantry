@@ -18,7 +18,7 @@ export const rowGridSx = (shopping: boolean) => ({
 
 /** DOM id of a row's button; also where focus lands after Add back. */
 export const rowId = (key: string) => `review-line-${key}`;
-/** DOM id of the row's name, which also names its edit panel. */
+/** DOM id of the row's name. */
 export const titleId = (key: string) => `review-line-${key}-title`;
 /** DOM id of the Excluded row's button, where focus goes when no row is left after a Remove. */
 export const EXCLUDED_TOGGLE_ID = 'review-excluded-toggle';

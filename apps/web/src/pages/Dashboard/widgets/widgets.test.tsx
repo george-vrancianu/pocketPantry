@@ -112,7 +112,7 @@ describe('UseSoonWidget', () => {
 
     expect(
       await screen.findByText(
-        'Nothing with an expiry date in your pantry yet.',
+        'Nothing with an expiry date in your Pantry yet.',
       ),
     ).toBeInTheDocument();
   });

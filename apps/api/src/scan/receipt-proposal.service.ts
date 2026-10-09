@@ -67,21 +67,22 @@ export class ReceiptProposalService {
         ),
       ),
     ];
-    const exact = await this.catalogSearch.findExact(names, locale, overrides);
+    const byExactName = await this.catalogSearch.findExact(
+      names,
+      locale,
+      overrides,
+    );
 
     const resolve = (line: ReceiptScanResult['lines'][number]) => {
       const named = line.matchedIngredientId
         ? byId.get(line.matchedIngredientId)
         : undefined;
-      if (named)
-        return { match: named, guessed: false } satisfies ResolvedMatch;
+      if (named) return { match: named, exact: false } satisfies ResolvedMatch;
       const hit =
         (line.fallbackIngredientName
-          ? exact.get(line.fallbackIngredientName)
-          : undefined) ?? exact.get(line.sourceText);
-      return hit
-        ? ({ match: hit, guessed: true } satisfies ResolvedMatch)
-        : null;
+          ? byExactName.get(line.fallbackIngredientName)
+          : undefined) ?? byExactName.get(line.sourceText);
+      return hit ? ({ match: hit, exact: true } satisfies ResolvedMatch) : null;
     };
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,

@@ -43,6 +43,17 @@ export class ScanCapService {
     return day;
   }
 
+  /** Counts the Scan before calling the provider, and hands it back if the provider fails. */
+  async withinCap<T>(memberId: string, run: () => Promise<T>): Promise<T> {
+    const day = await this.consume(memberId);
+    try {
+      return await run();
+    } catch (error) {
+      await this.refund(memberId, day);
+      throw error;
+    }
+  }
+
   /**
    * Gives a Scan back when the provider failed, so an outage does not burn the
    * Member's cap. `day` is the day `consume` returned, so a failure after UTC

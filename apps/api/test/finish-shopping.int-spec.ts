@@ -12,6 +12,7 @@ import {
   user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Item = { id: string; name: string; checked: boolean };
 type List = {
@@ -489,36 +490,49 @@ describe('Finish Shopping (integration)', () => {
     /**
      * Holds the active list's row lock like the Finish transaction does, so a
      * request that starts now has to wait; `complete` then does Finish's
-     * archive, new list and carry-over and commits.
+     * archive, new list and carry-over and commits. `release` is safe to call
+     * at any point and always gives the pooled client back.
      */
     async function holdFinish(familyId: string) {
       const client = await pool.connect();
-      await client.query('BEGIN');
-      const { rows } = await client.query<{ id: string }>(
-        `SELECT id FROM shopping_lists WHERE family_id = $1 AND status = 'active' FOR UPDATE`,
-        [familyId],
-      );
-      const oldId = rows[0].id;
-      return {
-        oldId,
-        complete: async () => {
-          await client.query(
-            `UPDATE shopping_lists SET status = 'archived' WHERE id = $1`,
-            [oldId],
-          );
-          const fresh = await client.query<{ id: string }>(
-            `INSERT INTO shopping_lists (family_id) VALUES ($1) RETURNING id`,
-            [familyId],
-          );
-          await client.query(
-            `UPDATE shopping_items SET list_id = $1 WHERE list_id = $2 AND checked = false`,
-            [fresh.rows[0].id, oldId],
-          );
-          await client.query('COMMIT');
-          client.release();
-          return fresh.rows[0].id;
-        },
-      };
+      try {
+        await client.query('BEGIN');
+        const backend = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        const { rows } = await client.query<{ id: string }>(
+          `SELECT id FROM shopping_lists WHERE family_id = $1 AND status = 'active' FOR UPDATE`,
+          [familyId],
+        );
+        const oldId = rows[0].id;
+        return {
+          oldId,
+          pid: backend.rows[0].pid,
+          complete: async () => {
+            await client.query(
+              `UPDATE shopping_lists SET status = 'archived' WHERE id = $1`,
+              [oldId],
+            );
+            const fresh = await client.query<{ id: string }>(
+              `INSERT INTO shopping_lists (family_id) VALUES ($1) RETURNING id`,
+              [familyId],
+            );
+            await client.query(
+              `UPDATE shopping_items SET list_id = $1 WHERE list_id = $2 AND checked = false`,
+              [fresh.rows[0].id, oldId],
+            );
+            await client.query('COMMIT');
+            return fresh.rows[0].id;
+          },
+          release: async () => {
+            await client.query('ROLLBACK').catch(() => undefined);
+            client.release();
+          },
+        };
+      } catch (error) {
+        client.release();
+        throw error;
+      }
     }
 
     /** Starts the request, proves it is blocked behind the lock, then lets Finish commit. */
@@ -527,17 +541,20 @@ describe('Finish Shopping (integration)', () => {
       send: () => Promise<request.Response>,
     ) {
       const held = await holdFinish(familyId);
-      let settled = false;
-      const pending = send().then((response) => {
-        settled = true;
-        return response;
-      });
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      const blocked = !settled;
-      const newListId = await held.complete();
-      const response = await pending;
-      expect(blocked).toBe(true);
-      return { response, oldId: held.oldId, newListId };
+      try {
+        let settled = false;
+        const pending = send().then((response) => {
+          settled = true;
+          return response;
+        });
+        await waitForBlockedBackend(pool, held.pid);
+        expect(settled).toBe(false);
+        const newListId = await held.complete();
+        const response = await pending;
+        return { response, oldId: held.oldId, newListId };
+      } finally {
+        await held.release();
+      }
     }
 
     it('lands an added item on the new active list, not the archived one', async () => {
@@ -624,4 +641,35 @@ describe('Finish Shopping (integration)', () => {
       ).toHaveLength(0);
     });
   });
+
+  it('does not deadlock when Finish races deleteFamily', async () => {
+    const finishStatuses: number[] = [];
+    for (let round = 0; round < 30; round++) {
+      const { cookie } = await signUp();
+      const list = await addItem(cookie, { name: `Race ${round}` });
+      await check(cookie, itemIdByName(list, `Race ${round}`));
+      const { lines, listId } = await proposal(cookie);
+
+      const [finish, deletion] = await Promise.all([
+        api('post', cookie, 'shopping-list/finish').send({
+          listId,
+          lines: lines.map((l) => lineFor(l)),
+          droppedItemIds: [],
+        }),
+        api('delete', cookie, 'family'),
+      ]);
+
+      // A deadlock victim would surface as a 500; either order is fine.
+      expect(deletion.status).toBe(200);
+      expect([200, 409]).toContain(finish.status);
+      finishStatuses.push(finish.status);
+      if (finish.status === 409) {
+        expect((finish.body as { code: string }).code).toMatch(
+          /^shopping\.(list_changed|nothing_checked)$/,
+        );
+      }
+    }
+    // If deleteFamily always won outright, Finish never got far enough to race it.
+    expect(finishStatuses).toContain(200);
+  }, 30_000);
 });

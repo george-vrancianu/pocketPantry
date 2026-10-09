@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +13,7 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import type { AdminCatalog } from '../../../lib/admin';
 import {
   useDismissUnmatched,
+  useUndismissUnmatched,
   useUnmatchedQueue,
   type UnmatchedEntry,
   type UnmatchedStatus,
@@ -23,7 +25,8 @@ type Props = { catalog: AdminCatalog };
 /**
  * The Admin queue of Unmatched names: one line per distinct normalised name
  * with how many Batches and Shopping Items carry it. Resolve opens the
- * resolver for that name; Dismiss sets it aside (the rows stay Unmatched).
+ * resolver for that name; Dismiss sets it aside (the rows stay Unmatched) and
+ * Restore, in the dismissed tab, puts it back. More pages load on demand.
  */
 export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
@@ -32,8 +35,12 @@ export function UnmatchedQueue({ catalog }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   const queue = useUnmatchedQueue(status);
   const dismiss = useDismissUnmatched();
+  const undismiss = useUndismissUnmatched();
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
+  // Index of the first row a Load more brings in, until focus has moved there.
+  const [focusFrom, setFocusFrom] = useState<number | null>(null);
   // Where focus goes when the resolver closes: back to the row's Resolve
   // button on Cancel, to the result message on Done (the row is gone).
   const [restoreFocus, setRestoreFocus] = useState<
@@ -47,12 +54,22 @@ export function UnmatchedQueue({ catalog }: Props) {
     } else {
       const buttons =
         listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
-      [...(buttons ?? [])]
-        .find((button) => button.dataset.resolveFor === restoreFocus.name)
-        ?.focus();
+      const button = [...(buttons ?? [])].find(
+        (candidate) => candidate.dataset.resolveFor === restoreFocus.name,
+      );
+      // The row can be gone (refetched, resolved by someone else): the heading is always there.
+      (button ?? headingRef.current)?.focus();
     }
     setRestoreFocus(null);
   }, [resolving, restoreFocus, queue.data]);
+
+  useEffect(() => {
+    if (focusFrom === null || queue.isFetchingNextPage) return;
+    const buttons =
+      listRef.current?.querySelectorAll<HTMLElement>('[data-resolve-for]');
+    (buttons?.[focusFrom] ?? headingRef.current)?.focus();
+    setFocusFrom(null);
+  }, [focusFrom, queue.isFetchingNextPage]);
 
   if (resolving) {
     return (
@@ -73,9 +90,20 @@ export function UnmatchedQueue({ catalog }: Props) {
   }
 
   const entries = queue.data ?? [];
-  const error = queue.error ?? dismiss.error;
+  // The row is gone after Dismiss or Restore; keep focus on the page.
+  const focusHeading = () => headingRef.current?.focus();
+  const error = queue.error ?? dismiss.error ?? undismiss.error;
   return (
     <Stack spacing={2}>
+      {/* Visually hidden: the focus target when a row or the Load more button goes away. */}
+      <Typography
+        component="h2"
+        ref={headingRef}
+        tabIndex={-1}
+        sx={visuallyHidden}
+      >
+        {t('admin:unmatched.title')}
+      </Typography>
       <SegmentedControl
         label={t('admin:unmatched.statusLabel')}
         value={status}
@@ -109,35 +137,60 @@ export function UnmatchedQueue({ catalog }: Props) {
           <li key={entry.normalizedName}>
             <QueueRow
               entry={entry}
-              canDismiss={status === 'open'}
-              dismissing={dismiss.isPending}
+              dismissed={status === 'dismissed'}
+              busy={dismiss.isPending || undismiss.isPending}
               onResolve={() => {
                 setNotice(null);
                 setResolving(entry);
               }}
-              onDismiss={() => dismiss.mutate(entry.normalizedName)}
+              onDismiss={() =>
+                dismiss.mutate(entry.normalizedName, {
+                  onSuccess: focusHeading,
+                })
+              }
+              onRestore={() =>
+                undismiss.mutate(entry.normalizedName, {
+                  onSuccess: focusHeading,
+                })
+              }
             />
           </li>
         ))}
       </Stack>
+      {queue.hasNextPage ? (
+        <Button
+          variant="secondary"
+          aria-disabled={queue.isFetchingNextPage}
+          onClick={() => {
+            if (queue.isFetchingNextPage) return;
+            setFocusFrom(entries.length);
+            void queue.fetchNextPage();
+          }}
+        >
+          {t('admin:unmatched.loadMore')}
+        </Button>
+      ) : null}
     </Stack>
   );
 }
 
 type RowProps = {
   entry: UnmatchedEntry;
-  canDismiss: boolean;
-  dismissing: boolean;
+  /** On the Dismissed tab, where the row offers Restore instead of Dismiss. */
+  dismissed: boolean;
+  busy: boolean;
   onResolve: () => void;
   onDismiss: () => void;
+  onRestore: () => void;
 };
 
 function QueueRow({
   entry,
-  canDismiss,
-  dismissing,
+  dismissed,
+  busy,
   onResolve,
   onDismiss,
+  onRestore,
 }: RowProps) {
   const { t, i18n } = useTranslation('admin');
   const sources = entry.sources
@@ -173,16 +226,17 @@ function QueueRow({
         >
           {t('unmatched.resolve')}
         </Button>
-        {canDismiss ? (
-          <Button
-            variant="text"
-            disabled={dismissing}
-            aria-label={t('unmatched.dismissName', { name: entry.rawName })}
-            onClick={onDismiss}
-          >
-            {t('unmatched.dismiss')}
-          </Button>
-        ) : null}
+        <Button
+          variant="text"
+          disabled={busy}
+          aria-label={t(
+            dismissed ? 'unmatched.restoreName' : 'unmatched.dismissName',
+            { name: entry.rawName },
+          )}
+          onClick={dismissed ? onRestore : onDismiss}
+        >
+          {t(dismissed ? 'unmatched.restore' : 'unmatched.dismiss')}
+        </Button>
       </Stack>
     </Stack>
   );

@@ -1,7 +1,7 @@
 {
   "title": "Pantry",
   "add": "Add batch",
-  "empty": "Your pantry is empty. Add your first batch with the + button.",
+  "empty": "Your Pantry is empty. Add your first batch with the + button.",
   "expiry": {
     "today": "Today",
     "expired": "Expired",
@@ -13,7 +13,7 @@
   "all": "All",
   "filters": "Filter by location",
   "search": {
-    "label": "Search pantry",
+    "label": "Search Pantry",
     "placeholder": "Search by name or product"
   },
   "noMatches": "No batches match.",
@@ -35,9 +35,9 @@
     "yes": "Yes, delete"
   },
   "form": {
-    "title": "Add to pantry",
+    "title": "Add to Pantry",
     "cancel": "Cancel",
-    "save": "Add to pantry",
+    "save": "Add to Pantry",
     "saving": "Saving",
     "quantity": "Quantity",
     "unit": "Unit",

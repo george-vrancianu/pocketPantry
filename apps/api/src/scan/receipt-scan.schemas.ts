@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_QUANTITY } from '../common/quantity';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
 export const receiptScanSchema = z.object({
@@ -38,7 +39,7 @@ export const receiptScanModelLineSchema = z.object({
   matchExplanation: z.string().trim().min(1).max(300),
   quantityType: receiptScanQuantityTypeSchema.nullable(),
   purchasedCount: z.number().int().positive().max(1_000).nullable(),
-  quantityPerItem: z.number().positive().max(1_000_000).nullable(),
+  quantityPerItem: z.number().positive().max(MAX_QUANTITY).nullable(),
   quantityUnit: z.string().trim().min(1).max(30).nullable(),
   confidence: z.number().min(0).max(1),
 });
@@ -46,7 +47,7 @@ export const receiptScanModelLineSchema = z.object({
 export const receiptScanResultLineSchema = receiptScanModelLineSchema.extend({
   matchedIngredientName: z.string().trim().min(1).max(120).nullable(),
   matchedIngredientDefaultUnit: z.string().trim().min(1).max(30).nullable(),
-  quantity: z.number().positive().max(1_000_000).nullable(),
+  quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
   unit: z.string().trim().min(1).max(30).nullable(),
 });
 
@@ -64,9 +65,9 @@ export const receiptScanResultItemSchema = z.object({
   matchExplanation: z.string().trim().min(1).max(300),
   quantityType: receiptScanQuantityTypeSchema.nullable(),
   purchasedCount: z.number().int().positive().max(1_000).nullable(),
-  quantityPerItem: z.number().positive().max(1_000_000).nullable(),
+  quantityPerItem: z.number().positive().max(MAX_QUANTITY).nullable(),
   quantityUnit: z.string().trim().min(1).max(30).nullable(),
-  quantity: z.number().positive().max(1_000_000).nullable(),
+  quantity: z.number().positive().max(MAX_QUANTITY).nullable(),
   unit: z.string().trim().min(1).max(30).nullable(),
   confidence: z.number().min(0).max(1),
 });

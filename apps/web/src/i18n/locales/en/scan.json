@@ -11,7 +11,6 @@
   "modes": "Scan mode",
   "reading": "Reading your photo",
   "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
-  "comingSoon": "{{mode}} scanning is coming soon. Product, Plate and Ingredients scanning work now.",
   "crop": {
     "title": "Crop receipt",
     "instruction": "Drag and zoom so the whole receipt fits the frame.",
@@ -43,10 +42,10 @@
     "receiptFold": "For long receipts, fold where the guide ends (about every 20 items), flip the folded part over, and take the next photo."
   },
   "detail": {
-    "product": "Adds it to your pantry with its best-before date.",
+    "product": "Adds it to your Pantry with its best-before date.",
     "receipt": "Adds every item from your shop in one go.",
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
-    "ingredients": "Adds each loose item on the counter to your pantry."
+    "ingredients": "Adds each loose item on the counter to your Pantry."
   },
   "sections": {
     "reading": "Reading section {{number}}…",

@@ -41,7 +41,8 @@
     "item_not_found": "Nu am găsit acel articol în listă.",
     "ingredient_not_found": "Nu am găsit acel ingredient.",
     "list_changed": "Lista s-a schimbat cât timp ai verificat. Te rugăm să verifici din nou.",
-    "nothing_checked": "Bifează cel puțin un produs înainte de a termina."
+    "nothing_checked": "Bifează cel puțin un produs înainte de a termina.",
+    "quantity_too_large": "Cantitatea ar depăși 1.000.000. Scade cantitatea."
   },
   "pantry": {
     "location_required": "Alege unde este depozitat lotul.",
@@ -62,6 +63,7 @@
     "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici."
   },
   "family": {
+    "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",
     "owner_required": "Doar Proprietarul Familiei poate face asta.",
     "invite_code_invalid": "Acest cod de invitație nu există. Verifică-l și încearcă din nou.",
     "invite_code_expired": "Acest cod de invitație a expirat. Cere Proprietarului unul nou.",

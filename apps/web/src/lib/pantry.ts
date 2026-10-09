@@ -91,12 +91,19 @@ export type PantryFilter = 'all' | StorageLocation;
 
 export const FILTERS: PantryFilter[] = ['all', ...LOCATIONS];
 
-/** Lower-case and strip diacritics so "mamaliga" finds "Mămăligă". */
+/**
+ * Lower-case and strip diacritics so "mamaliga" finds "Mămăligă". The Danish
+ * letters fold as the API's matching key does (æ→ae, ø→oe, å→aa), so "maelk"
+ * finds "Mælk".
+ */
 function fold(text: string): string {
   return text
     .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLocaleLowerCase();
+    .toLocaleLowerCase()
+    .replace(/a\u030A/g, 'aa')
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'oe')
+    .replace(/\p{Diacritic}/gu, '');
 }
 
 /** Search matches the localised name and the Product Description. */

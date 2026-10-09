@@ -23,7 +23,7 @@ import {
   NameInput,
   QuantityUnitInput,
 } from './RowInputs';
-import { fieldId, panelId, titleId } from './layout';
+import { fieldId, panelId } from './layout';
 
 type Props = {
   line: ReviewLine;
@@ -39,6 +39,8 @@ type Props = {
   onConfirm: () => void;
   /** A Save or Confirm was blocked on this row: show every error now. */
   blocked: boolean;
+  /** From `accessibleNamesOf`: the display name, position-qualified when repeated. */
+  accessibleName: string;
 };
 
 /** The expanded half of a row: why it needs a look, then every field of the line. */
@@ -54,6 +56,7 @@ export function RowEditPanel({
   onRemove,
   onConfirm,
   blocked,
+  accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
   // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
@@ -78,7 +81,7 @@ export function RowEditPanel({
     <Box
       id={panelId(line.key)}
       role="group"
-      aria-labelledby={titleId(line.key)}
+      aria-label={accessibleName}
       sx={{ bgcolor: background, px: '12px', pt: '2px', pb: '14px' }}
     >
       {message ? (
@@ -110,8 +113,13 @@ export function RowEditPanel({
             id={id('match')}
             component="button"
             type="button"
-            // A label alone would name the button "Match in your pantry" and hide which Ingredient is matched.
-            aria-label={`${t('review:field.match')}: ${matchText}${unmatched ? '' : ` (${t('review:match.change')})`}`}
+            // A label alone would name the button "Matched ingredient" and hide which Ingredient is matched.
+            // An Unmatched line leads with its own name so it never reads as the matched Ingredient.
+            aria-label={
+              unmatched
+                ? t('review:match.unmatchedLabel', { name: accessibleName })
+                : `${t('review:field.match')}: ${accessibleName} (${t('review:match.change')})`
+            }
             aria-haspopup="dialog"
             onClick={onSwapMatch}
             sx={{
@@ -253,7 +261,7 @@ export function RowEditPanel({
 
         <Box sx={{ display: 'flex', gap: '8px', alignSelf: 'end' }}>
           <IconButton
-            label={t('review:action.remove', { name })}
+            label={t('review:action.remove', { name: accessibleName })}
             tone="urgentOutline"
             size={40}
             onClick={onRemove}

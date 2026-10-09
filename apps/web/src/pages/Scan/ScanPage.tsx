@@ -31,7 +31,7 @@ const roundButton = (size: number, disabled: boolean) => ({
   '&:focus-visible': glassFocusRing,
 });
 
-/** The dark camera screen (handoff section 7). Only Product is wired; the other mode pills show a notice. */
+/** The dark camera screen (handoff section 7). */
 export function ScanPage() {
   const { t } = useTranslation('scan');
   const screen = useScanScreen();
@@ -144,10 +144,7 @@ export function ScanPage() {
         !screen.receiptSections.deciding
           ? t('sections.full', { max: MAX_RECEIPT_SECTIONS })
           : null}
-        {!screen.wired ? t('comingSoon', { mode: modeLabel }) : null}
-        {screen.camera.status === 'unavailable' && screen.wired
-          ? t('noCamera')
-          : null}
+        {screen.camera.status === 'unavailable' ? t('noCamera') : null}
       </Box>
       {screen.error ? (
         <Box sx={{ mt: 1 }}>

@@ -3,6 +3,7 @@ import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
+  applyThreshold,
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
@@ -10,8 +11,8 @@ import {
 type PantryUnit = (typeof ingredientUnit.enumValues)[number];
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
-/** The Catalog Ingredient for a line, and whether it was found by exact name lookup rather than named by the model. */
-export type ResolvedMatch = { match: CatalogSearchResult; guessed: boolean };
+/** The Catalog Ingredient for a line; `exact` when found by exact name lookup rather than named by the model. */
+export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
 
 /** Lines that are part of the receipt's arithmetic, never worth showing on Review. */
 const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([
@@ -98,17 +99,21 @@ export function receiptProposedLines(
         };
       }
       const resolved = resolve(line);
-      const confident =
-        resolved !== null &&
-        (resolved.guessed || line.matchConfidence >= threshold);
       return {
         name: (line.fallbackIngredientName ?? line.sourceText).slice(
           0,
           MAX_RAW_NAME,
         ),
         sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
-        match: confident ? resolved.match : null,
-        lowConfidence: line.confidence < threshold,
+        ...applyThreshold(
+          resolved?.match ?? null,
+          {
+            // Not scored by the model, so it always passes.
+            matchConfidence: resolved?.exact ? Infinity : line.matchConfidence,
+            confidence: line.confidence,
+          },
+          threshold,
+        ),
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,

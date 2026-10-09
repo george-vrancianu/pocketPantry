@@ -6,6 +6,7 @@ import {
 } from '../catalog/catalog.schemas';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
+import { batchQuantity } from '../common/quantity';
 
 export const pantryLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
@@ -29,15 +30,6 @@ export type ScanQuery = z.infer<typeof scanQuery>;
 /** A real calendar date: `2026-02-31` is rejected rather than rolled over. */
 const isoDate = z.iso.date();
 
-/** numeric(10,3): at least 0.001 and at most 3 decimals, so storage never rounds. */
-const quantity = z
-  .number()
-  .min(0.001)
-  .max(1_000_000)
-  .refine((value) => Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6, {
-    message: 'at most 3 decimals',
-  });
-
 /**
  * Add a Batch. Exactly one of `ingredientId` (a Catalog match) or `rawName`
  * (an Unmatched name). `location` and `expiryDate` left out take the Catalog
@@ -53,7 +45,7 @@ export const createBatchBody = z
     source: z.enum(BATCH_SOURCES).optional(),
     /** Unmatched only: the text as printed on the receipt or package, in the query's Scan Language. `rawName` stays UI-locale text. */
     sourceText: z.string().trim().min(1).max(200).optional(),
-    quantity: quantity.nullish(),
+    quantity: batchQuantity.nullish(),
     unit: z.enum(ingredientUnit.enumValues).nullish(),
     location: z.enum(storageLocation.enumValues).optional(),
     expiryDate: isoDate.nullish(),
@@ -89,7 +81,7 @@ export type CreateBatchesBody = z.infer<typeof createBatchesBody>;
  */
 export const updateBatchBody = z
   .object({
-    quantity: quantity.nullable().optional(),
+    quantity: batchQuantity.nullable().optional(),
     unit: z.enum(ingredientUnit.enumValues).nullable().optional(),
     location: z.enum(storageLocation.enumValues).optional(),
     expiryDate: isoDate.nullable().optional(),

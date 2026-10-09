@@ -106,7 +106,7 @@ describe('PantryPage', () => {
   it('shows an empty state with no Batches', async () => {
     stubPantry([]);
     renderWithProviders(<PantryPage />);
-    expect(await screen.findByText(/Your pantry is empty/)).toBeInTheDocument();
+    expect(await screen.findByText(/Your Pantry is empty/)).toBeInTheDocument();
   });
 
   it('adds a Batch from the Catalog with pre-filled Location and expiry that can be overridden', async () => {
@@ -133,7 +133,7 @@ describe('PantryPage', () => {
       screen.getByLabelText('Product description'),
       'Grana Padano 200g',
     );
-    await user.click(screen.getByRole('button', { name: 'Add to pantry' }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
 
     const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
     expect(post?.body).toEqual({
@@ -177,7 +177,7 @@ describe('PantryPage', () => {
       'Zorblax paste',
     );
     expect(
-      screen.getByRole('button', { name: 'Add to pantry' }),
+      screen.getByRole('button', { name: 'Add to Pantry' }),
     ).toBeDisabled();
 
     await user.click(
@@ -188,7 +188,7 @@ describe('PantryPage', () => {
     expect(
       screen.getByText(/saved as Unmatched and flagged/),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Add to pantry' }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
 
     const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
     expect(post?.body).toMatchObject({
@@ -573,7 +573,7 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
 
       const search = await screen.findByRole('searchbox', {
-        name: 'Search pantry',
+        name: 'Search Pantry',
       });
       await user.type(search, 'grana');
       expect(screen.getByText('Parmesan')).toBeInTheDocument();
@@ -622,7 +622,7 @@ describe('PantryPage', () => {
 
       // Counts follow the search.
       await user.type(
-        screen.getByRole('searchbox', { name: 'Search pantry' }),
+        screen.getByRole('searchbox', { name: 'Search Pantry' }),
         'milk',
       );
       expect(

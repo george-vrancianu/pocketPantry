@@ -129,7 +129,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - The API and the UI package start as copies of the equivalent retzetar packages, renamed, with git history not carried over. Specifically copied: the NestJS on Fastify server, the Drizzle schema and migration tooling, better-auth integration with email and password, the structured-output AI service and its OpenAI configuration, the four scan services and their schemas and specs, the catalog matching validator, the receipt quantity normaliser, client image resizing, the typed fetch wrapper, and the MUI theme wrapper.
 - The web app is built fresh to the handoff: React, TypeScript, Vite, React Router, TanStack Query for server state, Zustand only for client-only state such as the in-progress Review.
 - Node version matches retzetar. Package scope is `@pocket-pantry`.
-- Postgres runs in Docker Compose locally. No deployment in wave 1.
+- Postgres runs in Docker Compose locally. No deployment in wave 1. When there is one, the API must run as a single instance: the Plate token uses and the Invite Code rate limiter are in memory (see `apps/api/README.md`).
 - All business logic lives in the API. The web client renders, validates input, and calls endpoints. This is what keeps the future Flutter client thin.
 
 ### Design and UI
@@ -148,7 +148,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - Invite Code: 8 characters from an unambiguous uppercase alphanumeric alphabet, reusable until it expires 7 days after generation. Regenerating revokes the previous code. Redeeming requires the code to be unexpired and the redeemer not to be in that Family already.
 - Redeeming a code moves the Member to the target Family and deletes their previous Family, which must be a Household of One they own. The client shows a warning naming what will be deleted. Data is not merged.
 - Leaving a Family or being removed creates a fresh Household of One for that Member. An Owner cannot leave until ownership is transferred. Deleting a Family cascades to its Pantry, Shopping Lists, Settings, and memberships; each former Member gets a fresh Household of One.
-- Admin is a role on the Member, granted at signup when the email is in a configured allow-list. It is independent of Family ownership.
+- Admin is a role on the Member. Signup never grants it, and no endpoint does: it is set directly in the database (see README). It is independent of Family ownership.
 
 ### Catalog
 
@@ -162,7 +162,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 
 ### Matching
 
-- Matching has two stages. Stage one is deterministic: normalise the input (case, diacritics, punctuation, whitespace) and look up against canonical names, display names, and Synonyms across all locales. An exact hit is a confident Match. Stage two, used for images and for stage-one misses, is the retzetar approach: the vision model receives the Catalog in the Member's locale and returns a matched Ingredient identifier, a Leaf Category guess, a confidence, and a fallback name. The validator rejects identifiers not in the Catalog.
+- Matching has two stages. Stage one is deterministic: normalise the input (case, diacritics, punctuation, whitespace; the Danish letters æ, ø, å fold to the receipt spellings ae, oe, aa) and look up against canonical names, display names, and Synonyms across all locales. An exact hit is a confident Match. Stage two, used for images and for stage-one misses, is the retzetar approach: the vision model receives the Catalog in the Member's locale and returns a matched Ingredient identifier, a Leaf Category guess, a confidence, and a fallback name. The validator rejects identifiers not in the Catalog.
 - Confidence below a configured threshold, or no identifier, marks the line as Unmatched on the Review screen. The Member can still save it.
 - Manual entry in Pantry and Shopping uses stage one only, with a Catalog search box as the primary interaction.
 

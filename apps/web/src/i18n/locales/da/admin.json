@@ -63,6 +63,10 @@
       "open": "Åbne",
       "dismissed": "Afviste"
     },
+    "title": "Umatchede navne",
+    "loadMore": "Indlæs flere",
+    "restore": "Gendan",
+    "restoreName": "Gendan {{name}}",
     "empty": "Intet at gennemgå.",
     "rows_one": "{{count}} række",
     "rows_other": "{{count}} rækker",

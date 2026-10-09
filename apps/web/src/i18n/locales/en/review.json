@@ -1,5 +1,6 @@
 {
   "title": "Review",
+  "position": "{{name}} ({{index}} of {{total}})",
   "subtitle": {
     "mode": {
       "product": "Scanned product",
@@ -63,6 +64,7 @@
     "none": "No match",
     "choose": "Choose",
     "change": "Change",
+    "unmatchedLabel": "{{name}}: No match · Choose",
     "dialogTitle": "Change match for {{name}}"
   },
   "action": {
@@ -92,13 +94,13 @@
       "not_food": "Not a food item",
       "fee": "A fee",
       "deposit": "A deposit",
-      "other": "Not a pantry item",
+      "other": "Not for the Pantry",
       "removed": "Removed by you"
     },
     "restore": "Add back",
     "restoreFor": "Add {{name}} back"
   },
-  "tooMany": "You can save up to {{max}} items at once. Remove or exclude {{over}} to continue.",
+  "tooMany": "You can save up to {{max}} items at once. Remove {{over}} to continue.",
   "saved": {
     "title": "Saved to your Pantry",
     "toPantry": "Go to Pantry"

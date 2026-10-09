@@ -58,6 +58,8 @@ type Props = {
   onDone: () => void;
   /** Opens the page-level swap dialog for this line. */
   onSwapMatch: () => void;
+  /** From `accessibleNamesOf`: the display name, position-qualified when repeated. */
+  accessibleName: string;
 };
 
 const ellipsis = {
@@ -98,22 +100,25 @@ export function TabletReviewRow({
   onRemove,
   onDone,
   onSwapMatch,
+  accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
+  // Labels use the position-qualified `accessibleName`; the visible text stays the plain one.
   const name = displayName(line);
   const unmatched = line.match === null;
   const invalid = invalidFields(line);
   const expiryError = invalid.includes('expiry') && (expiryTouched || blocked);
   const id = (field: string) => fieldId(line.key, field);
-  const named = (field: string) => t('review:row.fieldFor', { field, name });
+  const named = (field: string) =>
+    t('review:row.fieldFor', { field, name: accessibleName });
   const unit = t(`common:units.${line.unit}`);
 
   const swap = (
     <IconButton
       id={toCheck ? rowId(line.key) : undefined}
       label={t(unmatched ? 'review:action.choose' : 'review:action.swap', {
-        name,
+        name: accessibleName,
       })}
       tone="accentOutline"
       size={40}
@@ -125,7 +130,7 @@ export function TabletReviewRow({
   );
   const confirm = (
     <IconButton
-      label={t('review:action.confirmFor', { name })}
+      label={t('review:action.confirmFor', { name: accessibleName })}
       tone="accentOutline"
       size={40}
       onClick={onDone}
@@ -135,7 +140,7 @@ export function TabletReviewRow({
   );
   const remove = (
     <IconButton
-      label={t('review:action.remove', { name })}
+      label={t('review:action.remove', { name: accessibleName })}
       tone={toCheck ? 'urgentOutline' : 'plain'}
       size={40}
       onClick={onRemove}
@@ -147,7 +152,7 @@ export function TabletReviewRow({
     <IconButton
       id={rowId(line.key)}
       label={t(editing ? 'review:action.finish' : 'review:action.edit', {
-        name,
+        name: accessibleName,
       })}
       tone="plain"
       size={40}
@@ -268,7 +273,7 @@ export function TabletReviewRow({
                 type="button"
                 aria-label={t(
                   unmatched ? 'review:action.choose' : 'review:action.swap',
-                  { name },
+                  { name: accessibleName },
                 )}
                 aria-haspopup="dialog"
                 onClick={onSwapMatch}

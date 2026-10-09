@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { normalizeName } from '../catalog/normalize';
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
+import {
+  ConcurrentMove,
+  lockFamilies,
+  runLocked,
+} from '../family/family-locks';
+import { normalizeName } from '../catalog/normalize';
+import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -16,10 +22,12 @@ import {
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
 import { AdminCatalogService } from './admin-catalog.service';
-import type {
-  UnmatchedQueueEntry,
-  UnmatchedResolution,
-  UnmatchedResolveBody,
+import {
+  encodeCursor,
+  type UnmatchedListQuery,
+  type UnmatchedQueuePage,
+  type UnmatchedResolution,
+  type UnmatchedResolveBody,
 } from './unmatched-queue.schemas';
 
 type EntryRow = typeof unmatchedEntries.$inferSelect;
@@ -35,10 +43,12 @@ const notInQueue = () => new ApiException(404, 'unmatched.not_found');
  * Item carrying the name, add the Synonym, clear the entries).
  *
  * Lock order, every time: the per-name advisory lock (serialises Admins
- * working the same name), then Shopping List rows in ascending id (the same
- * list-first order Finish Shopping and list edits use), then Shopping Item and
- * Batch rows in ascending id. Nothing here ever waits on a Family row, and no
- * other code path takes the advisory lock, so no ordering can invert.
+ * working the same name), then the Family rows involved in ascending id (as
+ * family-locks.ts requires everywhere), then Shopping List rows in ascending
+ * id, then Shopping Item and Batch rows in ascending id. The other advisory
+ * lock holders (catalog adds and renames) take only the name lock and never a
+ * Family lock first, so they cannot invert with this order. Resolve takes every
+ * name lock it needs up front, sorted.
  */
 @Injectable()
 export class UnmatchedQueueService {
@@ -47,43 +57,134 @@ export class UnmatchedQueueService {
     private readonly catalog: AdminCatalogService,
   ) {}
 
-  /** Open groups have at least one row not yet dismissed; dismissed groups are all dismissed. */
-  async list(status: 'open' | 'dismissed'): Promise<UnmatchedQueueEntry[]> {
-    const rows = await this.database
-      .select()
+  /**
+   * One page of groups, most frequent first (count, then name ascending).
+   * Open groups have at least one row not yet dismissed; dismissed groups are
+   * all dismissed. The cursor encodes the last group's count and name: keyset
+   * paging, so ties on count break on the unique name. Both sides compare the
+   * name with the "C" collation so the order and the comparison agree. Counts
+   * can change between pages, so a name may occasionally repeat or be skipped
+   * until the next refetch.
+   */
+  async list(query: UnmatchedListQuery): Promise<UnmatchedQueuePage> {
+    const dismissed = query.status === 'dismissed';
+    const count = sql`count(*)`;
+    const name = sql`${unmatchedEntries.normalizedName} collate "C"`;
+    const after = query.cursor
+      ? sql`and (${count} < ${query.cursor.count} or (${count} = ${query.cursor.count} and ${name} > ${query.cursor.name} collate "C"))`
+      : sql``;
+    const groups = await this.database
+      .select({
+        normalizedName: unmatchedEntries.normalizedName,
+        count: sql<number>`count(*)::int`,
+        locales: sql<
+          string[]
+        >`array_agg(distinct ${unmatchedEntries.locale} order by ${unmatchedEntries.locale})`,
+        sources: sql<
+          string[]
+        >`array_agg(distinct ${unmatchedEntries.source}::text order by ${unmatchedEntries.source}::text)`,
+      })
       .from(unmatchedEntries)
-      .orderBy(desc(unmatchedEntries.createdAt), desc(unmatchedEntries.id));
-    const groups = new Map<string, EntryRow[]>();
+      .groupBy(unmatchedEntries.normalizedName)
+      .having(
+        sql`bool_and(${unmatchedEntries.dismissedAt} is not null) = ${dismissed} ${after}`,
+      )
+      .orderBy(desc(count), name)
+      .limit(query.limit + 1);
+    const page = groups.slice(0, query.limit);
+    const last = page.at(-1);
+
+    // References for this page only: each group's newest MAX_REFERENCES rows.
+    const { rows } =
+      page.length === 0
+        ? { rows: [] }
+        : await this.database.execute<EntryRow>(sql`
+            select u.id, u.normalized_name as "normalizedName", u.raw_name as "rawName",
+              u.locale, u.source, u.batch_id as "batchId", u.shopping_item_id as "shoppingItemId",
+              u.source_text as "sourceText", u.source_language as "sourceLanguage"
+            from unnest(array[${sql.join(
+              page.map((group) => sql`${group.normalizedName}`),
+              sql`, `,
+            )}]::text[]) as n(name)
+            cross join lateral (
+              select * from unmatched_entries e
+              where e.normalized_name = n.name
+              order by e.created_at desc, e.id desc
+              limit ${MAX_REFERENCES}
+            ) u
+            order by u.created_at desc, u.id desc`);
+    const rowsOf = new Map<string, EntryRow[]>();
     for (const row of rows) {
-      const group = groups.get(row.normalizedName) ?? [];
-      group.push(row);
-      groups.set(row.normalizedName, group);
+      rowsOf.set(row.normalizedName, [
+        ...(rowsOf.get(row.normalizedName) ?? []),
+        row,
+      ]);
     }
-    return [...groups.values()]
-      .map((group) => this.toQueueEntry(group))
-      .filter((entry) => entry.dismissed === (status === 'dismissed'))
-      .sort(
-        (a, b) =>
-          b.count - a.count || a.normalizedName.localeCompare(b.normalizedName),
-      );
+    return {
+      entries: page.flatMap((group) => {
+        const references = rowsOf.get(group.normalizedName);
+        // Resolved between the two reads: gone from the queue.
+        if (!references) return [];
+        const printed = references.find((row) => row.sourceText);
+        return [
+          {
+            normalizedName: group.normalizedName,
+            rawName: references[0].rawName,
+            count: group.count,
+            locale: references[0].locale,
+            locales: group.locales,
+            sourceText: printed?.sourceText ?? null,
+            sourceLanguage: printed?.sourceLanguage ?? null,
+            sources: group.sources,
+            dismissed,
+            references: references.map((row) => ({
+              type: row.batchId ? 'batch' : 'shopping_item',
+              id: (row.batchId ?? row.shoppingItemId) as string,
+              source: row.source,
+              locale: row.locale,
+              rawName: row.rawName,
+              sourceText: row.sourceText,
+              sourceLanguage: row.sourceLanguage,
+            })),
+          },
+        ];
+      }),
+      nextCursor:
+        groups.length > query.limit && last
+          ? encodeCursor({ count: last.count, name: last.normalizedName })
+          : null,
+    };
   }
 
-  async dismiss(normalizedName: string): Promise<void> {
+  dismiss(normalizedName: string): Promise<void> {
+    return this.setDismissed(normalizedName, new Date());
+  }
+
+  undismiss(normalizedName: string): Promise<void> {
+    return this.setDismissed(normalizedName, null);
+  }
+
+  /** The Batches and Shopping Items stay Unmatched either way; only the queue entry moves between tabs. */
+  private async setDismissed(
+    normalizedName: string,
+    dismissedAt: Date | null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await this.lockName(tx, normalizedName);
+      await this.catalog.lockName(tx, normalizedName);
       const rows = await tx
         .select({ id: unmatchedEntries.id })
         .from(unmatchedEntries)
         .where(eq(unmatchedEntries.normalizedName, normalizedName));
       if (rows.length === 0) throw notInQueue();
-      // The Batches and Shopping Items stay Unmatched; only the queue entry is set aside.
       await tx
         .update(unmatchedEntries)
-        .set({ dismissedAt: new Date() })
+        .set({ dismissedAt })
         .where(
           and(
             eq(unmatchedEntries.normalizedName, normalizedName),
-            isNull(unmatchedEntries.dismissedAt),
+            dismissedAt
+              ? isNull(unmatchedEntries.dismissedAt)
+              : isNotNull(unmatchedEntries.dismissedAt),
           ),
         );
     });
@@ -91,7 +192,7 @@ export class UnmatchedQueueService {
 
   async resolve(body: UnmatchedResolveBody): Promise<UnmatchedResolution> {
     try {
-      return await this.database.transaction((tx) => this.resolveIn(tx, body));
+      return await runLocked(this.database, (tx) => this.resolveIn(tx, body));
     } catch (error) {
       if (hasPgCode(error, '23505')) {
         throw new ApiException(409, 'catalog.name_taken');
@@ -102,10 +203,8 @@ export class UnmatchedQueueService {
           entity: 'ingredient',
         });
       }
-      // Rare: deleting a Household of One on join cascades over its Batches
-      // and Shopping Lists (and their entries) in an order we cannot control,
-      // so it can deadlock with a resolve touching the same rows. Postgres
-      // aborts one side; the Admin just retries.
+      // Rare: two resolves of different names re-locking after an entry set
+      // grew can still cross; Postgres aborts one side and the Admin retries.
       if (hasPgCode(error, '40P01')) {
         throw new ApiException(409, 'unmatched.concurrent_change');
       }
@@ -118,14 +217,27 @@ export class UnmatchedQueueService {
     body: UnmatchedResolveBody,
   ): Promise<UnmatchedResolution> {
     const key = body.normalizedName;
-    await this.lockName(tx, key);
+    // Every name lock up front, sorted: createIngredientIn would otherwise
+    // take the new Ingredient's name lock after the row locks below.
+    const names = new Set([key]);
+    if (body.newIngredient) names.add(normalizeName(body.newIngredient.name));
+    // The printed text may become a Synonym too: its name lock is taken here
+    // with the others. One that only appears after the row locks is locked late.
+    if (body.sourceSynonym) {
+      for (const name of await this.printedKeys(tx, key)) names.add(name);
+    }
+    for (const name of [...names].sort()) {
+      await this.catalog.lockName(tx, name);
+    }
 
     const entries = await this.lockEntries(tx, key);
     if (entries.length === 0) throw notInQueue();
     const latest = entries[0];
     const locale = body.locale ?? latest.locale;
 
-    await this.assertNameFree(tx, key, body.ingredientId);
+    if (!(await this.catalog.isNameFree(tx, key, body.ingredientId))) {
+      throw new ApiException(409, 'unmatched.name_taken');
+    }
 
     const target = body.newIngredient
       ? await this.catalog.createIngredientIn(tx, body.newIngredient)
@@ -178,9 +290,12 @@ export class UnmatchedQueueService {
     let sourceSynonymSkipped: UnmatchedResolution['sourceSynonymSkipped'] =
       null;
     if (body.sourceSynonym) {
+      if (printedKey && !names.has(printedKey)) {
+        await this.catalog.lockName(tx, printedKey);
+      }
       if (!printed?.sourceText || !printed.sourceLanguage || !printedKey) {
         sourceSynonymSkipped = 'none';
-      } else if (!(await this.isNameFree(tx, printedKey, target.id))) {
+      } else if (!(await this.catalog.isNameFree(tx, printedKey, target.id))) {
         sourceSynonymSkipped = 'taken';
       } else {
         sourceSynonymAdded = await this.addSynonym(
@@ -230,11 +345,13 @@ export class UnmatchedQueueService {
     let entries = await read();
     const lockedItems = new Set<string>();
     const lockedBatches = new Set<string>();
+    const lockedFamilies = new Set<string>();
     for (let attempt = 0; attempt < MAX_LOCK_ATTEMPTS; attempt++) {
       const itemIds = entries.flatMap((e) =>
         e.shoppingItemId ? [e.shoppingItemId] : [],
       );
       const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
+      await this.lockFamiliesOf(tx, itemIds, batchIds, lockedFamilies);
       await this.lockShoppingLists(tx, itemIds);
       if (itemIds.length > 0) {
         await tx
@@ -266,10 +383,11 @@ export class UnmatchedQueueService {
   }
 
   /**
-   * Relinks Unmatched Shopping Items to the Ingredient. On the active list an
-   * item merges into an existing line for the same Ingredient and unit (the
-   * list's "adding an item for an Ingredient already on it merges" rule);
-   * archived lists are history, so there it only relinks.
+   * Relinks Unmatched Shopping Items to the Ingredient. On the active list a
+   * Shopping Item merges into an existing one for the same Ingredient and
+   * unit (the list's "adding an item for an Ingredient already on it merges"
+   * rule); archived lists are history, so there it only relinks, and so does a
+   * merge that would pass the quantity cap.
    */
   private async relinkShoppingItems(
     tx: Tx,
@@ -317,16 +435,21 @@ export class UnmatchedQueueService {
               .limit(1)
               .for('update')
           : [];
-      if (twin) {
-        const merged = sumQuantities(
-          twin.quantity === null ? null : Number(twin.quantity),
-          row.quantity === null ? null : Number(row.quantity),
-        );
+      const merged = twin
+        ? sumQuantities(
+            twin.quantity === null ? null : Number(twin.quantity),
+            row.quantity === null ? null : Number(row.quantity),
+          )
+        : null;
+      // A merge past the cap is neither rejected nor clamped: an Admin cannot
+      // fix a Family's quantities, and clamping would lose some. The Shopping
+      // Item stays separate, relinked.
+      if (twin && !exceedsMaxQuantity(merged)) {
         await tx
           .update(shoppingItems)
           .set({
             quantity: merged === null ? null : String(merged),
-            // Still wanted if either line was.
+            // Still wanted if either Shopping Item was.
             checked: twin.checked && row.checked,
           })
           .where(eq(shoppingItems.id, twin.id));
@@ -342,11 +465,43 @@ export class UnmatchedQueueService {
     return rows.length;
   }
 
-  /** Per-name advisory lock held to the end of the transaction. */
-  private async lockName(tx: Tx, normalizedName: string): Promise<void> {
-    await tx.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`unmatched:${normalizedName}`}, 0))`,
-    );
+  /**
+   * Locks the Families owning the rows, ascending id, before anything else
+   * of theirs: the order deleteFamily and Finish Shopping use
+   * (family-locks.ts), so the cascade cannot deadlock with a relink.
+   */
+  private async lockFamiliesOf(
+    tx: Tx,
+    itemIds: string[],
+    batchIds: string[],
+    locked: Set<string>,
+  ): Promise<void> {
+    const ofBatches =
+      batchIds.length === 0
+        ? []
+        : await tx
+            .select({ id: batches.familyId })
+            .from(batches)
+            .where(inArray(batches.id, batchIds));
+    const ofItems =
+      itemIds.length === 0
+        ? []
+        : await tx
+            .select({ id: shoppingLists.familyId })
+            .from(shoppingItems)
+            .innerJoin(
+              shoppingLists,
+              eq(shoppingLists.id, shoppingItems.listId),
+            )
+            .where(inArray(shoppingItems.id, itemIds));
+    const missing = [
+      ...new Set([...ofBatches, ...ofItems].map((row) => row.id)),
+    ].filter((id) => !locked.has(id));
+    // A Family found after others are held may sort below them: restart so
+    // every Family is locked in ascending order from scratch (runLocked).
+    if (locked.size > 0 && missing.length > 0) throw new ConcurrentMove();
+    await lockFamilies(tx, missing);
+    missing.forEach((id) => locked.add(id));
   }
 
   /**
@@ -386,6 +541,24 @@ export class UnmatchedQueueService {
     throw new ApiException(409, 'unmatched.concurrent_change');
   }
 
+  /** Normalised printed texts of the name's entries, read before any lock. */
+  private async printedKeys(tx: Tx, key: string): Promise<string[]> {
+    const rows = await tx
+      .selectDistinct({ sourceText: unmatchedEntries.sourceText })
+      .from(unmatchedEntries)
+      .where(
+        and(
+          eq(unmatchedEntries.normalizedName, key),
+          isNotNull(unmatchedEntries.sourceText),
+          isNotNull(unmatchedEntries.sourceLanguage),
+        ),
+      );
+    return rows.flatMap((row) => {
+      const printed = row.sourceText ? normalizeName(row.sourceText) : '';
+      return printed ? [printed] : [];
+    });
+  }
+
   private async requireIngredient(tx: Tx, id: string) {
     const [row] = await tx
       .select()
@@ -398,41 +571,6 @@ export class UnmatchedQueueService {
         entity: 'ingredient',
       });
     return row;
-  }
-
-  /** Stage one must stay deterministic: the key may only belong to one Ingredient. */
-  private async assertNameFree(
-    tx: Tx,
-    key: string,
-    ingredientId: string | undefined,
-  ): Promise<void> {
-    if (!(await this.isNameFree(tx, key, ingredientId))) {
-      throw new ApiException(409, 'unmatched.name_taken');
-    }
-  }
-
-  private async isNameFree(
-    tx: Tx,
-    key: string,
-    ingredientId: string | undefined,
-  ): Promise<boolean> {
-    const owners = await tx
-      .select({ id: ingredients.id })
-      .from(ingredients)
-      .where(eq(ingredients.normalizedName, key));
-    const translated = await tx
-      .select({ id: catalogTranslations.entityId })
-      .from(catalogTranslations)
-      .where(
-        and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.normalizedValue, key),
-        ),
-      );
-    const others = [...owners, ...translated].filter(
-      (owner) => owner.id !== ingredientId,
-    );
-    return others.length === 0;
   }
 
   /** Adds the raw text as a Synonym unless the Ingredient already answers to it. */
@@ -466,30 +604,5 @@ export class UnmatchedQueueService {
       normalizedValue: key,
     });
     return true;
-  }
-
-  private toQueueEntry(group: EntryRow[]): UnmatchedQueueEntry {
-    const [latest] = group;
-    const printed = group.find((row) => row.sourceText);
-    return {
-      normalizedName: latest.normalizedName,
-      rawName: latest.rawName,
-      count: group.length,
-      locale: latest.locale,
-      locales: [...new Set(group.map((row) => row.locale))].sort(),
-      sourceText: printed?.sourceText ?? null,
-      sourceLanguage: printed?.sourceLanguage ?? null,
-      sources: [...new Set(group.map((row) => row.source))].sort(),
-      dismissed: group.every((row) => row.dismissedAt !== null),
-      references: group.slice(0, MAX_REFERENCES).map((row) => ({
-        type: row.batchId ? 'batch' : 'shopping_item',
-        id: (row.batchId ?? row.shoppingItemId) as string,
-        source: row.source,
-        locale: row.locale,
-        rawName: row.rawName,
-        sourceText: row.sourceText,
-        sourceLanguage: row.sourceLanguage,
-      })),
-    };
   }
 }

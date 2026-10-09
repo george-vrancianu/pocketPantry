@@ -141,6 +141,34 @@ describe('Shopping List (integration)', () => {
       });
     });
 
+    it('rejects a merge that would pass the quantity cap, leaving the line as it was', async () => {
+      const { cookie } = await signUp('Cap');
+      const parmesan = await ingredientId(cookie, 'parmesan');
+
+      await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 600_000,
+        unit: 'g',
+      });
+      const rejected = await call('post', cookie, '/items').send({
+        ingredientId: parmesan,
+        quantity: 500_000,
+        unit: 'g',
+      });
+      expect(rejected.status).toBe(400);
+      expect((rejected.body as { code: string }).code).toBe(
+        'shopping.quantity_too_large',
+      );
+
+      const list = await add(cookie, {
+        ingredientId: parmesan,
+        quantity: 400_000,
+        unit: 'g',
+      });
+      expect(items(list)).toHaveLength(1);
+      expect(items(list)[0].quantity).toBe(1_000_000);
+    });
+
     it('keeps separate lines when the units differ', async () => {
       const { cookie } = await signUp('Units');
       const milk = await ingredientId(cookie, 'milk');

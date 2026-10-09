@@ -6,6 +6,7 @@ import {
   Typography,
   useBreakpointUp,
 } from '@pocket-pantry/ui';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -31,12 +32,17 @@ export function ReviewPage() {
   const { t } = useTranslation('review');
   const screen = useReviewScreen();
   const wide = useBreakpointUp('md');
+  // Callback ref: the result heading mounts with the tick-failure screen, so focus it then.
+  const focusHeading = useCallback(
+    (heading: HTMLHeadingElement | null) => heading?.focus(),
+    [],
+  );
 
   if (screen.tickFailures) {
     const { missing, changed, other } = screen.tickFailures;
     return (
       <>
-        <AppScreenHeader title={t('saved.title')} />
+        <AppScreenHeader title={t('saved.title')} titleRef={focusHeading} />
         <Stack spacing={2}>
           <Alert severity="warning">
             <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 2 }}>

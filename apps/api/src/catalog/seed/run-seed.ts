@@ -3,7 +3,6 @@
 import { resolve } from 'node:path';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { parseAdminEmails } from '../../auth/admin-emails';
 import {
   seedTestAccounts,
   TEST_ACCOUNT_PASSWORD,
@@ -38,7 +37,6 @@ async function main(): Promise<void> {
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       clientOrigin: env.CLIENT_ORIGIN,
-      adminEmails: parseAdminEmails(env.ADMIN_EMAILS),
     });
     console.log(
       created.length
