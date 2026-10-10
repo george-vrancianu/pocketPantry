@@ -1,5 +1,5 @@
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -64,7 +64,7 @@ describe('Ingredients Scan on the Scan screen', () => {
 
   it('enables the shutter', () => {
     renderIngredients({});
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('sends the photo to the Ingredients endpoint and reviews one card per item', async () => {
@@ -74,7 +74,7 @@ describe('Ingredients Scan on the Scan screen', () => {
           lines: [line('tomato', 'Tomato'), line('onion', 'Onion')],
         }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     expect(await findReviewRow('Tomato')).toBeInTheDocument();
     expect(await findReviewRow('Onion')).toBeInTheDocument();
     expect(
@@ -86,11 +86,11 @@ describe('Ingredients Scan on the Scan screen', () => {
     renderIngredients({
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'We could not spot any ingredients',
     );
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('tells the Member when there were too many items, with the limit', async () => {
@@ -101,7 +101,7 @@ describe('Ingredients Scan on the Scan screen', () => {
           { status: 422 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'more than 50 items',
     );

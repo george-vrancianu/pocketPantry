@@ -1,4 +1,5 @@
 import { act, cleanup, screen } from '@testing-library/react';
+import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -142,7 +143,7 @@ describe('Scan Language on the Scan screen', () => {
     async (mode) => {
       const calls = renderScan(`/scan?mode=${mode}`);
       await userEvent.selectOptions(chip(), 'da');
-      await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+      scanViaGuide();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 1 item' }),
       );
@@ -162,7 +163,7 @@ describe('Scan Language on the Scan screen', () => {
     const calls = renderScan('/scan?mode=receipt');
     await userEvent.selectOptions(chip(), 'da');
     expect(chip()).toBeEnabled();
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Finish' }),
     );
@@ -180,7 +181,7 @@ describe('Scan Language on the Scan screen', () => {
 
   it('disables the picker after the first Receipt Section', async () => {
     renderScan('/scan?mode=receipt');
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await screen.findByRole('button', { name: 'Finish' });
     expect(chip()).toBeDisabled();
   });

@@ -1,4 +1,5 @@
 import { tokens } from '@pocket-pantry/ui';
+import { scanGuide } from '../../test/scan';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -115,7 +116,7 @@ describe('Scan screen shell', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(camera.stops).toBe(0);
     expect(camera.starts).toBe(startsBefore);
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 });
 
@@ -150,11 +151,9 @@ describe('camera feed and overlays', () => {
     expect(style.pointerEvents).toBe('none');
   });
 
-  it('pins the shutter and the mode dial over the feed so they stay reachable', () => {
+  it('pins the guide and the mode dial over the feed so they stay reachable', () => {
     renderScan();
-    expect(pinned(screen.getByRole('button', { name: 'Take photo' }))).toBe(
-      true,
-    );
+    expect(pinned(scanGuide())).toBe(true);
     expect(pinned(screen.getByRole('radiogroup', { name: 'Scan mode' }))).toBe(
       true,
     );

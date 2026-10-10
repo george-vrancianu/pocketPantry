@@ -29,7 +29,7 @@ describe('isDoubleTap', () => {
 
   it('rejects taps further than 60 pt apart, in any direction', () => {
     expect(isDoubleTap(first, { x: 161, y: 200, t: 1100 })).toBe(false);
-    expect(isDoubleTap(first, { x: 100, y: 140.5, t: 1100 })).toBe(false);
+    expect(isDoubleTap(first, { x: 100, y: 139, t: 1100 })).toBe(false);
     expect(isDoubleTap(first, { x: 150, y: 240, t: 1100 })).toBe(false); // ~64 away
   });
 

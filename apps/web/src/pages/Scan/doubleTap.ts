@@ -3,11 +3,21 @@ export const DOUBLE_TAP_DISTANCE = 60;
 
 export type Tap = { x: number; y: number; t: number };
 
-/** Stub: implemented in #112. */
+/**
+ * Whether `next` completes a double-tap after `previous`: within 320 ms and 60 pt. A tap soon after
+ * a dial drag ended (`lastDragEndAt`) is never part of one.
+ */
 export function isDoubleTap(
-  _previous: Tap | null,
-  _next: Tap,
-  _lastDragEndAt?: number | null,
+  previous: Tap | null,
+  next: Tap,
+  lastDragEndAt?: number | null,
 ): boolean {
-  return false;
+  if (!previous) return false;
+  if (lastDragEndAt != null && next.t - lastDragEndAt <= DOUBLE_TAP_MS) {
+    return false;
+  }
+  return (
+    next.t - previous.t <= DOUBLE_TAP_MS &&
+    Math.hypot(next.x - previous.x, next.y - previous.y) <= DOUBLE_TAP_DISTANCE
+  );
 }

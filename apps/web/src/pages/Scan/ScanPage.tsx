@@ -9,7 +9,7 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
@@ -40,6 +40,7 @@ export function ScanPage() {
   const screen = useScanScreen();
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
+  const dragEndedAt = useRef<number | null>(null);
   const closeInfo = useCallback(() => setInfoOpen(false), []);
 
   return (
@@ -80,7 +81,13 @@ export function ScanPage() {
           background: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${tokens.color.camScrim} 100%)`,
         }}
       />
-      <Viewfinder mode={screen.mode} hintShown={!screen.scanned} />
+      <Viewfinder
+        mode={screen.mode}
+        hintShown={!screen.scanned}
+        disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
+        onScan={() => void screen.shoot()}
+        dragEndedAt={dragEndedAt}
+      />
 
       <Box
         sx={{
@@ -243,6 +250,7 @@ export function ScanPage() {
             !!screen.cropping ||
             !!screen.plate.dishes
           }
+          dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
         />
 
@@ -264,41 +272,6 @@ export function ScanPage() {
             sx={roundButton(48)}
           >
             <GalleryIcon size={22} />
-          </Box>
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('shutter')}
-            disabled={
-              screen.controlsDisabled || screen.camera.status !== 'ready'
-            }
-            onClick={() => void screen.shoot()}
-            sx={{
-              width: 76,
-              height: 76,
-              boxSizing: 'border-box',
-              borderRadius: '50%',
-              border: '4px solid #FFFFFF',
-              background: 'transparent',
-              p: '5px',
-              cursor: 'pointer',
-              '&:disabled': { opacity: 0.5, cursor: 'default' },
-              '&:focus-visible': {
-                outline: `2px solid ${tokens.color.accentMid}`,
-                outlineOffset: 2,
-              },
-            }}
-          >
-            <Box
-              component="span"
-              sx={{
-                display: 'block',
-                width: '100%',
-                height: '100%',
-                borderRadius: '50%',
-                backgroundColor: tokens.color.camFg,
-              }}
-            />
           </Box>
           <Box
             component="button"

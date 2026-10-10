@@ -5,14 +5,13 @@
   "info": {
     "label": "Sådan virker scanning",
     "title": "Scan dit spisekammer",
-    "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og tryk på udløseren. Du kan tjekke alt, før det gemmes.",
+    "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og dobbelttryk på guiden. Du kan tjekke alt, før det gemmes.",
     "dismiss": "Luk"
   },
   "scanLanguage": {
     "label": "Læses på"
   },
   "gallery": "Vælg fra fotos",
-  "shutter": "Tag foto",
   "manual": "Tilføj manuelt",
   "modes": "Scanningstilstand",
   "reading": "Læser dit foto",
@@ -44,6 +43,7 @@
     "plate": "Få hele tallerkenen med"
   },
   "guide": {
+    "scan": "Scan: dobbelttryk eller tryk Enter",
     "receipt": "Hold telefonen cirka 40 cm over kvitteringen, så kanterne rører hjælpelinjen.",
     "receiptFold": "Ved lange kvitteringer: fold, hvor hjælpelinjen slutter (cirka for hver 20. vare), vend den foldede del om, og tag det næste foto."
   },

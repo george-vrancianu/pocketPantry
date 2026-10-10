@@ -5,14 +5,13 @@
   "info": {
     "label": "Cum funcționează scanarea",
     "title": "Scanează-ți cămara",
-    "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi apasă declanșatorul. Verifici totul înainte de salvare.",
+    "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi atinge de două ori ghidajul. Verifici totul înainte de salvare.",
     "dismiss": "Închide"
   },
   "scanLanguage": {
     "label": "Citit ca"
   },
   "gallery": "Alege din galerie",
-  "shutter": "Fă o poză",
   "manual": "Adaugă manual",
   "modes": "Mod de scanare",
   "reading": "Citim fotografia",
@@ -44,6 +43,7 @@
     "plate": "Încadrează toată farfuria"
   },
   "guide": {
+    "scan": "Scanează: atinge de două ori sau apasă Enter",
     "receipt": "Ține telefonul la aproximativ 40 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul.",
     "receiptFold": "Pentru bonuri lungi, împăturește bonul unde se termină ghidajul (cam la fiecare 20 de produse), întoarce partea împăturită și fă următoarea poză."
   },

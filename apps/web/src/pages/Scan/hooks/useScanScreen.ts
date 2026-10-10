@@ -174,7 +174,7 @@ export function useScanScreen() {
     return false;
   };
 
-  // A double tap on the shutter must not send the same section twice.
+  // A double tap on the guide must not send the same section twice.
   const shooting = useRef(false);
   const shoot = async () => {
     if (shooting.current) return;
@@ -190,7 +190,7 @@ export function useScanScreen() {
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
-    // The same locks as the shutter: a section being read, a result awaiting a decision, or a
+    // The same locks as the guide: a section being read, a result awaiting a decision, or a
     // full batch (retaking targets an existing section, so it is not full).
     if (picked.length === 0 || busy) return;
     if (!needsCropStep(mode, 'gallery')) {

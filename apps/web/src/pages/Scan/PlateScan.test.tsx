@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -90,8 +91,7 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
   return calls;
 }
 
-const shoot = () =>
-  userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+const shoot = () => scanViaGuide();
 
 describe('Plate Scan', () => {
   beforeEach(() => clearReview());
@@ -99,7 +99,7 @@ describe('Plate Scan', () => {
 
   it('Plate can scan, and says it adds to the shopping list', () => {
     renderPlate();
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
     expect(screen.getByText(/shopping list/i)).toBeInTheDocument();
   });
 
@@ -135,7 +135,7 @@ describe('Plate Scan', () => {
     expect(
       screen.queryByRole('group', { name: 'Which dish is it?' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('goes back to the scan step with a message when the token is rejected', async () => {
@@ -156,7 +156,7 @@ describe('Plate Scan', () => {
     expect(
       screen.queryByRole('group', { name: 'Which dish is it?' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('shows a localised message when the Scan Cap is reached', async () => {
