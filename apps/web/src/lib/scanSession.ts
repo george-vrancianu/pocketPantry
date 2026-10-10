@@ -32,7 +32,9 @@ export type SessionAction =
     }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
-  | { type: 'remove'; id: string };
+  | { type: 'remove'; id: string }
+  | { type: 'merge'; id: string }
+  | { type: 'split'; id: string };
 
 export const emptySession: SessionState = { scans: [] };
 
@@ -69,8 +71,14 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
+    case 'merge':
+    case 'split':
+      return state;
   }
 }
+
+/** Whether the receipt Scan `id` may join the receipt Scan above it. */
+export const canMerge = (_state: SessionState, _id: string) => false;
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>
