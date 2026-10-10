@@ -33,7 +33,8 @@ export function ReviewOverviewPage() {
   const reading = pendingCount(session);
 
   const card = (scan: SessionScan) => {
-    const isReading = scan.status !== 'read';
+    const isFailed = scan.status === 'failed';
+    const isReading = scan.status === 'queued' || scan.status === 'reading';
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines = (scan.lines ?? []).filter((line) => !line.excluded);
     const check = lines.filter(
@@ -100,6 +101,10 @@ export function ReviewOverviewPage() {
               </Box>
               <Typography>{t('overview.reading')}</Typography>
             </Box>
+          ) : isFailed ? (
+            <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
+              {t('overview.failed')}
+            </Typography>
           ) : (
             <>
               <Box

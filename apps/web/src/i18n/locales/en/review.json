@@ -140,6 +140,7 @@
     "check_one": "Check {{count}} item",
     "check_other": "Check {{count}} items",
     "more": "+{{count}}",
-    "empty": "No photos yet."
+    "empty": "No photos yet.",
+    "failed": "Couldn't read, retake"
   }
 }

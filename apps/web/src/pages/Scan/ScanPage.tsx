@@ -6,6 +6,7 @@ import {
   GalleryIcon,
   InfoIcon,
   ManualEntryIcon,
+  Snackbar,
   Typography,
   visuallyHidden,
   tokens,
@@ -90,7 +91,7 @@ export function ScanPage() {
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
       />
-      <ScanQueue scans={screen.scans} />
+      <ScanQueue scans={screen.scans} onRetry={screen.retryScan} />
 
       <Box
         sx={{
@@ -265,6 +266,11 @@ export function ScanPage() {
             : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
         </Box>
+        {screen.capped ? (
+          <Box sx={{ mt: 1 }}>
+            <Alert severity="warning">{t('capReached')}</Alert>
+          </Box>
+        ) : null}
         {screen.error ? (
           <Box sx={{ mt: 1 }}>
             <Alert>{screen.error}</Alert>
@@ -353,6 +359,12 @@ export function ScanPage() {
           onCancel={screen.cancelCrop}
         />
       ) : null}
+
+      <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>
+        <Alert severity="warning" role="status">
+          {t('notAdded')}
+        </Alert>
+      </Snackbar>
 
       {infoOpen ? <InfoSheet onClose={closeInfo} /> : null}
 

@@ -193,7 +193,7 @@ describe('ScanPage', () => {
     expect(await findReviewRow('Parmesan')).toBeInTheDocument();
   });
 
-  it('shows a localised message when the Scan Cap is reached', async () => {
+  it('shows the daily limit and stops scanning when the Scan Cap is reached', async () => {
     renderScan({
       'POST /api/scan/product': () =>
         Response.json(
@@ -202,14 +202,13 @@ describe('ScanPage', () => {
         ),
     });
     await shoot();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'You have used all 30 scans for today',
-    );
-    // Still on the Scan screen.
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+    expect(
+      await screen.findByText('Daily scan limit reached'),
+    ).toBeInTheDocument();
+    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('shows the localised message for a rejected image', async () => {
+  it('fails the Scan for a rejected image', async () => {
     renderScan({
       'POST /api/scan/product': () =>
         Response.json(
@@ -218,8 +217,8 @@ describe('ScanPage', () => {
         ),
     });
     await shoot();
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent('too large'),
-    );
+    expect(
+      await screen.findByRole('button', { name: /retry/i }),
+    ).toBeInTheDocument();
   });
 });

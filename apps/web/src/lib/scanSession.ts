@@ -70,6 +70,22 @@ export function sessionReducer(
             : scan,
         ),
       };
+    case 'fail':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id
+            ? { ...scan, status: 'failed', failure: action.reason }
+            : scan,
+        ),
+      };
+    case 'retry':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id && scan.status === 'failed'
+            ? { ...scan, status: 'queued', failure: undefined }
+            : scan,
+        ),
+      };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
     default:
@@ -79,10 +95,13 @@ export function sessionReducer(
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter((scan) => scan.status !== 'read').length;
+  state.scans.filter(
+    (scan) => scan.status === 'queued' || scan.status === 'reading',
+  ).length;
 
-/** Stub: whether a Scan hit the Scan Cap. */
-export const capReached = (_state: SessionState) => false;
+/** Whether a Scan hit the Scan Cap; no more Scans can be taken until it is retried or removed. */
+export const capReached = (state: SessionState) =>
+  state.scans.some((scan) => scan.failure === 'cap');
 
 let session = emptySession;
 const listeners = new Set<() => void>();

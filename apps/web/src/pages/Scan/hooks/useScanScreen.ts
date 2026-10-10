@@ -6,12 +6,9 @@ import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
+import { readScans } from '../../../lib/scanReads';
 import {
-  clearReadFailure,
-  readScans,
-  useReadFailure,
-} from '../../../lib/scanReads';
-import {
+  capReached,
   dispatchScanSession,
   pendingCount,
   useScanSession,
@@ -122,9 +119,10 @@ export function useScanScreen() {
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
-  // A Scan of the Scan Session that could not be read; the Scan is dropped.
-  const readError = useReadFailure();
+  /** A camera Scan that could not be prepared, so never joined the Scan Session. */
+  const [notAdded, setNotAdded] = useState(false);
   const session = useScanSession();
+  const capped = capReached(session);
   const fileInput = useRef<HTMLInputElement>(null);
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
@@ -154,7 +152,7 @@ export function useScanScreen() {
   ): Promise<boolean> => {
     setScanned(true);
     setLocalError(null);
-    clearReadFailure();
+    setNotAdded(false);
     setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
@@ -162,7 +160,10 @@ export function useScanScreen() {
     try {
       image = await prepare();
     } catch {
-      if (epoch === scanEpoch.current) setLocalError('scan.image_invalid');
+      if (epoch === scanEpoch.current) {
+        if (origin === 'camera' && mode !== 'plate') setNotAdded(true);
+        else setLocalError('scan.image_invalid');
+      }
       return false;
     } finally {
       setResizing(false);
@@ -206,7 +207,7 @@ export function useScanScreen() {
   // A double tap on the guide must not send the same section twice.
   const shooting = useRef(false);
   const shoot = async () => {
-    if (shooting.current) return;
+    if (shooting.current || capped) return;
     shooting.current = true;
     try {
       const frame = await camera.capture();
@@ -297,8 +298,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError =
-    modeScan?.error ?? plate.error ?? receiptSections.error ?? readError;
+  const scanError = modeScan?.error ?? plate.error ?? receiptSections.error;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -323,7 +323,11 @@ export function useScanScreen() {
     scanned,
     /** Switching Scan Mode would reset the batch under an in-flight section. */
     modesDisabled: receiptSections.pending || resizing,
-    controlsDisabled: busy,
+    controlsDisabled: busy || capped,
+    capped,
+    notAdded,
+    dismissNotAdded: () => setNotAdded(false),
+    retryScan: () => readScans(i18n.language),
     fileInput,
     error,
     setMode: (next: ScanMode) => {

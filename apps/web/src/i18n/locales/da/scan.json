@@ -80,6 +80,10 @@
   "queue": {
     "label": "Tagne fotos",
     "reading": "Læser foto",
-    "read": "Foto læst"
-  }
+    "read": "Foto læst",
+    "failed": "Fotoet kunne ikke læses",
+    "retry": "Læs foto igen"
+  },
+  "capReached": "Daglig scanningsgrænse nået",
+  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen."
 }

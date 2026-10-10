@@ -1,6 +1,9 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { SessionScan } from '../../../lib/scanSession';
+import {
+  dispatchScanSession,
+  type SessionScan,
+} from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -9,7 +12,13 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
  * The Scans of the Scan Session as thumbnails down the left edge, newest at the bottom; the
  * oldest fade out under the top bar when they do not fit. Each is spinning while it is read.
  */
-export function ScanQueue({ scans }: { scans: SessionScan[] }) {
+export function ScanQueue({
+  scans,
+  onRetry,
+}: {
+  scans: SessionScan[];
+  onRetry: () => void;
+}) {
   const { t } = useTranslation('scan');
   if (scans.length === 0) return null;
   return (
@@ -34,14 +43,23 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
       }}
     >
       {scans.map((scan) => {
-        const reading = scan.status !== 'read';
+        const failed = scan.status === 'failed';
+        const reading = !failed && scan.status !== 'read';
         return (
           <Box
             component="li"
             key={scan.id}
             data-testid="scan-thumbnail"
-            data-state={reading ? 'reading' : 'read'}
-            aria-label={t(reading ? 'queue.reading' : 'queue.read')}
+            data-state={
+              scan.status === 'failed' ? 'failed' : reading ? 'reading' : 'read'
+            }
+            aria-label={t(
+              failed
+                ? 'queue.failed'
+                : reading
+                  ? 'queue.reading'
+                  : 'queue.read',
+            )}
             sx={{
               position: 'relative',
               flex: 'none',
@@ -49,7 +67,7 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
               height: 60,
               borderRadius: '11px',
               overflow: 'hidden',
-              border: '1.5px solid rgba(255,255,255,.35)',
+              border: `1.5px solid ${failed ? tokens.color.camWarn : 'rgba(255,255,255,.35)'}`,
               backgroundColor: tokens.color.camGlassStrong,
             }}
           >
@@ -112,6 +130,46 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
                   [reducedMotion]: { animation: 'none' },
                 }}
               />
+            ) : failed ? (
+              <Box
+                component="button"
+                type="button"
+                aria-label={t('queue.retry')}
+                onClick={() => {
+                  dispatchScanSession({ type: 'retry', id: scan.id });
+                  onRetry();
+                }}
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  p: 0,
+                  border: 0,
+                  background: 'rgba(0,0,0,.35)',
+                  cursor: 'pointer',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <Box
+                  aria-hidden="true"
+                  sx={{
+                    position: 'absolute',
+                    right: 3,
+                    bottom: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    backgroundColor: tokens.color.camWarn,
+                    color: tokens.color.camAccentInk,
+                  }}
+                >
+                  !
+                </Box>
+              </Box>
             ) : (
               <Box
                 aria-hidden="true"
