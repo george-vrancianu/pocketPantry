@@ -1,8 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import type { ProposedLine } from './scan';
 import {
   MAX_CONCURRENT_READS,
+  MAX_SESSION_SCANS,
+  dispatchScanSession,
+  resetScanSession,
   capReached,
   canMerge,
   emptySession,
@@ -789,5 +792,98 @@ describe('Receipt merge and split', () => {
     let state = sessionReducer(readThree(), { type: 'merge', id: 'b' });
     state = sessionReducer(state, { type: 'remove', id: 'a' });
     expect(state.scans.map((s) => s.id)).toEqual(['c']);
+  });
+});
+
+describe('Scan Cap (epic review #1)', () => {
+  const capped = () =>
+    run(
+      enqueue('a'),
+      enqueue('b'),
+      enqueue('c'),
+      enqueue('d'),
+      { type: 'start' },
+      { type: 'fail', id: 'a', reason: 'cap' },
+    );
+
+  it('fails the Scans waiting behind a capped Scan with the cap too', () => {
+    const state = capped();
+    expect(state.scans.find((s) => s.id === 'c')).toMatchObject({
+      status: 'failed',
+      failure: 'cap',
+    });
+    expect(state.scans.find((s) => s.id === 'd')).toMatchObject({
+      status: 'failed',
+      failure: 'cap',
+    });
+  });
+
+  it('counts only the read still out as pending, so Add is not blocked', () => {
+    expect(pendingCount(capped())).toBe(1);
+  });
+
+  it('re-queues every Scan failed by the cap when one is retried', () => {
+    const state = sessionReducer(capped(), { type: 'retry', id: 'a' });
+    expect(status(state)).toEqual([
+      ['a', 'queued'],
+      ['b', 'reading'],
+      ['c', 'queued'],
+      ['d', 'queued'],
+    ]);
+  });
+
+  it('leaves Scans that failed for another reason failed', () => {
+    const state = sessionReducer(
+      run(
+        enqueue('a'),
+        enqueue('b'),
+        enqueue('c'),
+        { type: 'start' },
+        { type: 'fail', id: 'b', reason: 'error' },
+        { type: 'fail', id: 'a', reason: 'cap' },
+      ),
+      { type: 'retry', id: 'a' },
+    );
+    expect(state.scans.find((s) => s.id === 'b')?.status).toBe('failed');
+  });
+});
+
+describe('Split limit (epic review #21)', () => {
+  it('refuses to split when the result would pass the Scan Session limit', () => {
+    let state = run(
+      enqueue('r1', { mode: 'receipt' }),
+      enqueue('r2', { mode: 'receipt' }),
+      { type: 'start' },
+      { type: 'read', id: 'r1', lines: [line] },
+      { type: 'read', id: 'r2', lines: [line] },
+      { type: 'merge', id: 'r2' },
+    );
+    for (let i = 0; i < MAX_SESSION_SCANS - 1; i += 1)
+      state = sessionReducer(state, enqueue(`p${i}`));
+    expect(state.scans).toHaveLength(MAX_SESSION_SCANS);
+    expect(sessionReducer(state, { type: 'split', id: 'r1' })).toBe(state);
+  });
+});
+
+describe('thumbnails of merged Scans (epic review #6)', () => {
+  const revoke = vi.fn();
+  afterEach(() => {
+    resetScanSession();
+    revoke.mockReset();
+  });
+
+  it('keeps the absorbed receipt thumbnail alive through Merge, so Split can show it', () => {
+    URL.revokeObjectURL = revoke;
+    for (const id of ['r1', 'r2'])
+      dispatchScanSession(
+        enqueue(id, { mode: 'receipt', thumbnail: `blob:${id}` }),
+      );
+    dispatchScanSession({ type: 'start' });
+    dispatchScanSession({ type: 'read', id: 'r1', lines: [line] });
+    dispatchScanSession({ type: 'read', id: 'r2', lines: [line] });
+    dispatchScanSession({ type: 'merge', id: 'r2' });
+    dispatchScanSession({ type: 'split', id: 'r1' });
+    expect(revoke).not.toHaveBeenCalledWith('blob:r2');
+    expect(revoke).not.toHaveBeenCalledWith('blob:r1');
   });
 });
