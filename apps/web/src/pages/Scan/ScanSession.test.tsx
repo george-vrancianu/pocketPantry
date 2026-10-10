@@ -82,7 +82,7 @@ function renderScan(route = '/scan?mode=product') {
 
 const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
 const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
-const done = () => screen.getByRole('button', { name: /Done$/ });
+const done = () => screen.getByRole('button', { name: /^Done/ });
 const flush = () => act(async () => {});
 const scanOnce = async () => {
   scanViaGuide();
@@ -253,6 +253,14 @@ describe('Scan Session on the Scan screen', () => {
   });
 
   describe('Done', () => {
+    it('is named with the number of photos, not the badge', async () => {
+      renderScan();
+      await scanOnce();
+      expect(done()).toHaveAccessibleName('Done, 1 photo');
+      await scanOnce();
+      expect(done()).toHaveAccessibleName('Done, 2 photos');
+    });
+
     it('puts the count badge before the label', async () => {
       renderScan();
       await scanOnce();
