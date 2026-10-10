@@ -8,7 +8,6 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { DockState } from '../lib/dockState';
-import { confirmLeave } from '../lib/leaveGuard';
 
 export function AppDock({
   variant,
@@ -48,9 +47,6 @@ export function AppDock({
       items={items}
       activeKey={activeKey}
       variant={variant}
-      onNavigate={(event) => {
-        if (!confirmLeave()) event.preventDefault();
-      }}
     />
   );
 }

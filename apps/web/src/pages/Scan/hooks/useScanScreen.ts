@@ -61,12 +61,10 @@ export function useScanScreen() {
   const [cropOpen, setCropOpen] = useState(false);
   /** How many photos the current selection had, for the "photo 2 of 4" progress. */
   const [batchTotal, setBatchTotal] = useState(0);
-  const [notice, setNotice] = useState<string | null>(null);
   const clearQueue = () => {
     setQueue([]);
     setCropOpen(false);
     setBatchTotal(0);
-    setNotice(null);
   };
   const cropping = cropOpen ? (queue[0] ?? null) : null;
   const previousMode = useRef(mode);
@@ -106,7 +104,6 @@ export function useScanScreen() {
   const [scanned, setScanned] = useState(false);
 
   const reading = resizing || (modeScan?.isPending ?? false) || plate.pending;
-  const busy = reading;
 
   /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
   const scanImage = async (
@@ -124,7 +121,6 @@ export function useScanScreen() {
     setScanned(true);
     setLocalError(null);
     clearReadFailure();
-    setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
     let image: string;
@@ -187,12 +183,11 @@ export function useScanScreen() {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
     // The same lock as the guide: a photo being prepared or read.
-    if (picked.length === 0 || busy) return;
+    if (picked.length === 0 || reading) return;
     if (!needsCropStep(mode, 'gallery')) {
       void scanImage(picked[0], 'gallery');
       return;
     }
-    setNotice(null);
     setQueue(picked);
     setBatchTotal(picked.length);
     setCropOpen(true);
@@ -200,7 +195,7 @@ export function useScanScreen() {
 
   const confirmCrop = ({ area, rotation }: ReceiptCrop) => {
     const photo = cropping;
-    if (!photo || busy) return;
+    if (!photo || reading) return;
     // On to the next queued photo's crop step, if the selection has one left.
     setQueue((current) => current.slice(1));
     setCropOpen(queue.length > 1);
@@ -242,7 +237,7 @@ export function useScanScreen() {
     reading,
     scanned,
     modesDisabled: resizing,
-    controlsDisabled: busy,
+    controlsDisabled: reading,
     fileInput,
     error,
     setMode: (next: ScanMode) => {
@@ -262,7 +257,6 @@ export function useScanScreen() {
         batchTotal - queue.length + (cropOpen ? 1 : 0),
       ),
     },
-    notice,
     shoot,
     pickFile,
     cropping,

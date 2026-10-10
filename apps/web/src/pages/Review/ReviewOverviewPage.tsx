@@ -52,6 +52,7 @@ export function ReviewOverviewPage() {
     const check = lines.filter(
       (line) => line.lowConfidence || line.match === null,
     ).length;
+    const mergeable = canMerge(session, scan.id);
     const result =
       scan.mode === 'product' && lines.length > 0
         ? nameOf(lines[0])
@@ -172,9 +173,9 @@ export function ReviewOverviewPage() {
                   </Box>
                 ) : null}
               </Box>
-              {scan.sections || canMerge(session, scan.id) ? (
+              {scan.sections || mergeable ? (
                 <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
-                  {canMerge(session, scan.id) ? (
+                  {mergeable ? (
                     <Box
                       component="button"
                       type="button"

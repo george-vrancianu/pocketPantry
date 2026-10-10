@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
-import { MAX_RECEIPT_SECTIONS, mergeReceiptSections } from './receiptSections';
+import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -82,9 +82,7 @@ export function sessionReducer(
         ...sectionsOf(above),
         ...sectionsOf(state.scans[index]),
       ];
-      const { lines } = mergeReceiptSections(
-        sections.map((scan) => ({ lines: scan.lines ?? [] })),
-      );
+      const lines = sections.flatMap((scan) => scan.lines ?? []);
       return {
         scans: state.scans.flatMap((scan, i) =>
           i === index
