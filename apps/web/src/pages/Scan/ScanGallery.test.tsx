@@ -10,7 +10,11 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { resetReads } from '../../lib/scanReads';
-import { resetScanSession } from '../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  resetScanSession,
+} from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
@@ -181,6 +185,29 @@ describe('Gallery import into the Scan Session', () => {
     await pick();
     expect(states()).toEqual(['reading']);
     expect(held).toHaveLength(1);
+  });
+
+  it('takes picks only up to the Scan Session cap and says so', async () => {
+    renderScan();
+    for (let i = 0; i < 19; i += 1) {
+      dispatchScanSession({
+        type: 'enqueue',
+        scan: { id: `s${i}`, mode: 'product', image: 'i', thumbnail: 'i' },
+      });
+    }
+    await pick(3);
+    expect(getScanSession().scans).toHaveLength(20);
+    expect(await screen.findByText(/at most 20 photos/)).toBeInTheDocument();
+  });
+
+  it('keeps Add disabled, waiting on the uncropped receipt, until it is removed', async () => {
+    renderScan('/scan?mode=receipt');
+    await pick();
+    await userEvent.click(done());
+    const add = screen.getByRole('button', { name: /waiting on 1/ });
+    expect(add).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
+    expect(getScanSession().scans).toHaveLength(0);
   });
 
   describe('a receipt from the gallery', () => {

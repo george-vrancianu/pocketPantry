@@ -11,8 +11,11 @@ import {
   useReadFailure,
 } from '../../../lib/scanReads';
 import {
+  MAX_SESSION_SCANS,
   dispatchScanSession,
+  getScanSession,
   pendingCount,
+  resetScanSession,
   useScanSession,
 } from '../../../lib/scanSession';
 import { resizeImage } from '../../../lib/image';
@@ -89,6 +92,31 @@ export function useScanScreen() {
   // A Scan of the Scan Session that could not be read; the Scan is dropped.
   const readError = useReadFailure();
   const session = useScanSession();
+  // A short message at the bottom of the screen: the Scan Session is full, or a Scan Session was just saved.
+  const [toast, setToast] = useState<{
+    text: string;
+    severity: 'success' | 'warning';
+  } | null>(() => {
+    const state = location.state as {
+      added?: number;
+      discarded?: boolean;
+    } | null;
+    if (state?.added)
+      return {
+        text: t('scan:added', { count: state.added }),
+        severity: 'success',
+      };
+    if (state?.discarded)
+      return { text: t('scan:discarded'), severity: 'success' };
+    return null;
+  });
+  useEffect(() => {
+    if (location.state === null) return;
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: null,
+    });
+  }, [location, navigate]);
   const fileInput = useRef<HTMLInputElement>(null);
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
@@ -129,6 +157,13 @@ export function useScanScreen() {
     if (epoch !== scanEpoch.current) return false;
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
     if (origin === 'camera' && mode !== 'plate') {
+      if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+        setToast({
+          text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+          severity: 'warning',
+        });
+        return false;
+      }
       dispatchScanSession({
         type: 'enqueue',
         scan: {
@@ -159,6 +194,7 @@ export function useScanScreen() {
     }
   };
 
+  const resizingPicks = useRef(0);
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
@@ -171,8 +207,19 @@ export function useScanScreen() {
     setScanned(true);
     setLocalError(null);
     clearReadFailure();
+    // Take what fits under the Scan Session's cap, counting photos still being resized.
+    const room = Math.max(
+      0,
+      MAX_SESSION_SCANS - getScanSession().scans.length - resizingPicks.current,
+    );
+    if (picked.length > room) {
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
+    }
     const base = { mode, scanLanguage };
-    for (const file of picked) {
+    for (const file of picked.slice(0, room)) {
       const id = crypto.randomUUID();
       if (mode === 'receipt') {
         // Cropped from its card in Review, then read.
@@ -188,16 +235,21 @@ export function useScanScreen() {
         });
         continue;
       }
-      void resizeImage(file).then(
-        (image) => {
-          dispatchScanSession({
-            type: 'enqueue',
-            scan: { ...base, id, image, thumbnail: image },
-          });
-          readScans(i18n.language);
-        },
-        () => setLocalError('scan.image_invalid'),
-      );
+      resizingPicks.current += 1;
+      void resizeImage(file)
+        .then(
+          (image) => {
+            dispatchScanSession({
+              type: 'enqueue',
+              scan: { ...base, id, image, thumbnail: image },
+            });
+            readScans(i18n.language);
+          },
+          () => setLocalError('scan.image_invalid'),
+        )
+        .finally(() => {
+          resizingPicks.current -= 1;
+        });
     }
   };
 
@@ -269,6 +321,8 @@ export function useScanScreen() {
     },
     plate,
     receiptSections,
+    toast,
+    clearToast: () => setToast(null),
     finishSections,
     shoot,
     pickFile,
@@ -277,6 +331,11 @@ export function useScanScreen() {
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => {
       if (!confirmDiscard()) return;
+      const taken = session.scans.length;
+      if (taken > 0) {
+        if (!window.confirm(t('scan:discardScans', { count: taken }))) return;
+        resetScanSession();
+      }
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },

@@ -87,15 +87,22 @@ export function useProductScan(locale: string, scanLanguage: string) {
 /** The bulk Batch create takes at most this many entries at once. */
 export const MAX_BULK_BATCHES = 50;
 
+export const postBatches = (
+  locale: string,
+  scanLanguage: string | undefined,
+  batches: NewBatch[],
+) =>
+  apiRequest<{ batches: Batch[] }>(
+    `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
+    { method: 'POST', body: { batches } },
+  );
+
 /** Saves reviewed lines as Batches, all or none. */
 export function useAddBatches(locale: string, scanLanguage?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (batches: NewBatch[]) =>
-      apiRequest<{ batches: Batch[] }>(
-        `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
-        { method: 'POST', body: { batches } },
-      ),
+      postBatches(locale, scanLanguage, batches),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
   });
 }

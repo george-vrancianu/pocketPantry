@@ -6,6 +6,7 @@ import {
   GalleryIcon,
   InfoIcon,
   ManualEntryIcon,
+  Snackbar,
   Typography,
   visuallyHidden,
   tokens,
@@ -318,6 +319,16 @@ export function ScanPage() {
           </Box>
         </Box>
       </Box>
+
+      <Snackbar
+        open={screen.toast !== null}
+        onClose={screen.clearToast}
+        bottom={170}
+      >
+        <Alert severity={screen.toast?.severity} role="status">
+          {screen.toast?.text}
+        </Alert>
+      </Snackbar>
 
       {infoOpen ? <InfoSheet onClose={closeInfo} /> : null}
 
