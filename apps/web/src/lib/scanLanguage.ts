@@ -7,11 +7,11 @@ import {
 
 const STORAGE_KEY = 'pocket-pantry.scan-language';
 
-/** Each Scan Language under its own name, whatever the UI language is. */
-export const SCAN_LANGUAGE_NAMES: Record<ScanLanguage, string> = {
-  en: 'English',
-  ro: 'Română',
-  da: 'Dansk',
+/** Each Scan Language as a compact code. */
+const SCAN_LANGUAGE_NAMES: Record<ScanLanguage, string> = {
+  en: 'EN',
+  ro: 'RO',
+  da: 'DA',
 };
 
 /** The UI language first, then the other Scan Languages. */

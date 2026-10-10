@@ -131,6 +131,14 @@ export function ScanPage() {
         >
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
+        {screen.scanLanguageShown ? (
+          <ScanLanguageChip
+            value={screen.scanLanguage}
+            locale={screen.uiLocale}
+            disabled={screen.scanLanguageLocked}
+            onChange={screen.setScanLanguage}
+          />
+        ) : null}
         <Box
           component="button"
           type="button"
@@ -154,17 +162,6 @@ export function ScanPage() {
           pb: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        {screen.scanLanguageShown ? (
-          <Box sx={{ mt: '16px', textAlign: 'center' }}>
-            <ScanLanguageChip
-              value={screen.scanLanguage}
-              locale={screen.uiLocale}
-              disabled={screen.scanLanguageLocked}
-              onChange={screen.setScanLanguage}
-            />
-          </Box>
-        ) : null}
-
         <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
           <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
             {t(`hint.${screen.mode}`)}
