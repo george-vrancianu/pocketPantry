@@ -21,10 +21,16 @@ vi.mock('../../lib/image', async (importActual) => ({
 }));
 
 let fetchCalls: ReturnType<typeof stubApi>['calls'];
-function renderScan(route = '/scan?mode=product') {
-  const { fetchMock, calls } = stubApi({
+function renderScan(route = '/scan?mode=product', hang = false) {
+  const { fetchMock: stubbed, calls } = stubApi({
     'POST /api/scan/product': () => Response.json({ lines: [] }),
   });
+  const fetchMock: typeof stubbed = hang
+    ? (...args) => {
+        void stubbed(...args);
+        return new Promise<Response>(() => {});
+      }
+    : stubbed;
   fetchCalls = calls;
   vi.stubGlobal('fetch', fetchMock);
   return renderWithProviders(
@@ -199,6 +205,129 @@ describe('Scan by double-tapping the guides', () => {
     expect(noAnimation(screen.getByTestId('scan-guide-fill'))).toBe(true);
     expect(vibrate).toHaveBeenCalledWith(12);
   });
+  it('scans once on a click with detail 0 (screen-reader activation)', async () => {
+    renderScan();
+    fireEvent.click(guide(), { detail: 0 });
+    await flush();
+    expect(scans()).toHaveLength(1);
+  });
+
+  it('does not scan again from the clicks of a pointer double-tap', async () => {
+    renderScan();
+    tap(guide());
+    fireEvent.click(guide(), { detail: 1 });
+    tap(guide(), 200, 300, 100);
+    fireEvent.click(guide(), { detail: 2 });
+    await flush();
+    expect(scans()).toHaveLength(1);
+  });
+
+  it('does not scan on a single pointer click', async () => {
+    renderScan();
+    fireEvent.click(guide(), { detail: 1 });
+    await flush();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('stops the browser zooming on a double-tap', () => {
+    renderScan();
+    expect(getComputedStyle(guide()).touchAction).toBe('manipulation');
+  });
+
+  const base = {
+    pointerId: 1,
+    pointerType: 'touch',
+    isPrimary: true,
+    button: 0,
+  };
+
+  it('does not count a drag that starts on the guides followed by a tap', async () => {
+    renderScan();
+    fireEvent.pointerDown(guide(), { ...base, clientX: 200, clientY: 300 });
+    fireEvent.pointerMove(guide(), { ...base, clientX: 230, clientY: 300 });
+    fireEvent.pointerUp(guide(), { ...base, clientX: 230, clientY: 300 });
+    tap(guide(), 230, 300, 100);
+    await flush();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('does not count a press that began outside the guides', async () => {
+    renderScan();
+    tap(guide());
+    now += 100;
+    fireEvent.pointerDown(document.body, {
+      ...base,
+      clientX: 200,
+      clientY: 300,
+    });
+    fireEvent.pointerUp(guide(), { ...base, clientX: 200, clientY: 300 });
+    await flush();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('does not count a second finger or a non-primary pointer', async () => {
+    renderScan();
+    tap(guide());
+    now += 50;
+    const second = { ...base, pointerId: 2, isPrimary: false };
+    fireEvent.pointerDown(guide(), { ...second, clientX: 210, clientY: 300 });
+    fireEvent.pointerUp(guide(), { ...second, clientX: 210, clientY: 300 });
+    await flush();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('needs the two pointer-ups to be consecutive: inside, outside, inside does not scan', async () => {
+    renderScan();
+    tap(guide());
+    tap(document.body, 200, 300, 100);
+    tap(guide(), 200, 300, 100);
+    await flush();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('keeps the brackets white, not accent, during the flash', async () => {
+    renderScan();
+    tap(guide());
+    tap(guide(), 200, 300, 100);
+    await flush();
+    expect(guide()).toHaveAttribute('data-armed', 'true');
+    for (const corner of screen.getAllByTestId('scan-guide-corner')) {
+      expect(getComputedStyle(corner).borderTopColor).toBe('#f4f4f0');
+    }
+  });
+
+  it('still switches the brackets to 6 pt instantly under reduced motion', async () => {
+    renderScan();
+    tap(guide());
+    tap(guide(), 200, 300, 100);
+    await flush();
+    const corner = screen.getAllByTestId('scan-guide-corner')[0];
+    expect(getComputedStyle(corner).borderTopWidth).toBe('6px');
+    expect(
+      classesOf(corner).some((c) =>
+        cssRules().includes(
+          `@media (prefers-reduced-motion: reduce){.${c}{-webkit-transition:none;transition:none;}}`,
+        ),
+      ),
+    ).toBe(true);
+    expect(vibrate).toHaveBeenCalledWith(12);
+  });
+
+  it('gives no flash or haptic while a Scan is already being read', async () => {
+    renderScan('/scan?mode=product', true);
+    tap(guide());
+    tap(guide(), 200, 300, 100);
+    await flush();
+    await advance(500);
+    expect(flash()).toBeNull();
+    vibrate.mockClear();
+    tap(guide(), 200, 300, 100);
+    tap(guide(), 200, 300, 100);
+    await flush();
+    expect(flash()).toBeNull();
+    expect(vibrate).not.toHaveBeenCalled();
+    expect(scans()).toHaveLength(1);
+  });
 });
 
 describe('Scan by keyboard on the guides', () => {
@@ -220,6 +349,14 @@ describe('Scan by keyboard on the guides', () => {
     guide().focus();
     await userEvent.keyboard(key);
     await vi.waitFor(() => expect(scans()).toHaveLength(1));
+  });
+
+  it('does not scan again on a held Enter (key repeat)', async () => {
+    renderScan();
+    guide().focus();
+    fireEvent.keyDown(guide(), { key: 'Enter', repeat: true });
+    await flush();
+    expect(scans()).toHaveLength(0);
   });
 
   it('does not scan on other keys', async () => {

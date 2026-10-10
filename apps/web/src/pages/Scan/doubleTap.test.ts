@@ -10,27 +10,27 @@ describe('isDoubleTap', () => {
   });
 
   it('is false for the first tap', () => {
-    expect(isDoubleTap(null, first)).toBe(false);
+    expect(isDoubleTap(null, first, null)).toBe(false);
   });
 
   it('accepts two taps within 320 ms', () => {
-    expect(isDoubleTap(first, { ...first, t: 1100 })).toBe(true);
-    expect(isDoubleTap(first, { ...first, t: 1320 })).toBe(true);
+    expect(isDoubleTap(first, { ...first, t: 1100 }, null)).toBe(true);
+    expect(isDoubleTap(first, { ...first, t: 1320 }, null)).toBe(true);
   });
 
   it('rejects a second tap after more than 320 ms', () => {
-    expect(isDoubleTap(first, { ...first, t: 1321 })).toBe(false);
+    expect(isDoubleTap(first, { ...first, t: 1321 }, null)).toBe(false);
   });
 
   it('accepts taps within 60 pt of each other', () => {
-    expect(isDoubleTap(first, { x: 160, y: 200, t: 1100 })).toBe(true);
-    expect(isDoubleTap(first, { x: 136, y: 248, t: 1100 })).toBe(true); // 60 away
+    expect(isDoubleTap(first, { x: 160, y: 200, t: 1100 }, null)).toBe(true);
+    expect(isDoubleTap(first, { x: 136, y: 248, t: 1100 }, null)).toBe(true); // 60 away
   });
 
   it('rejects taps further than 60 pt apart, in any direction', () => {
-    expect(isDoubleTap(first, { x: 161, y: 200, t: 1100 })).toBe(false);
-    expect(isDoubleTap(first, { x: 100, y: 139, t: 1100 })).toBe(false);
-    expect(isDoubleTap(first, { x: 150, y: 240, t: 1100 })).toBe(false); // ~64 away
+    expect(isDoubleTap(first, { x: 161, y: 200, t: 1100 }, null)).toBe(false);
+    expect(isDoubleTap(first, { x: 100, y: 139, t: 1100 }, null)).toBe(false);
+    expect(isDoubleTap(first, { x: 150, y: 240, t: 1100 }, null)).toBe(false); // ~64 away
   });
 
   it('ignores a second tap that follows a dial drag within the window', () => {
