@@ -113,6 +113,8 @@ export function useScanScreen() {
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
+  const [scanned, setScanned] = useState(false);
 
   const reading =
     resizing ||
@@ -137,6 +139,7 @@ export function useScanScreen() {
       return IMAGE_PREPARATION[mode](source, origin, view);
     },
   ): Promise<boolean> => {
+    setScanned(true);
     setLocalError(null);
     setNotice(null);
     setResizing(true);
@@ -284,6 +287,7 @@ export function useScanScreen() {
     camera,
     flash,
     reading,
+    scanned,
     /** Switching Scan Mode would reset the batch under an in-flight section. */
     modesDisabled: receiptSections.pending || resizing,
     controlsDisabled: busy,

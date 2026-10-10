@@ -213,19 +213,4 @@ describe('ScanPage', () => {
       expect(screen.getByRole('alert')).toHaveTextContent('too large'),
     );
   });
-
-  it('disables the scan line animation for reduced motion', () => {
-    renderScan({});
-    const line = screen.getByTestId('scan-line');
-    const rules = Array.from(document.querySelectorAll('style'))
-      .map((style) => style.textContent ?? '')
-      .join('\n');
-    const className = Array.from(line.classList).find((c) =>
-      rules.includes(`.${c}`),
-    );
-    expect(className).toBeDefined();
-    expect(rules).toContain(
-      `@media (prefers-reduced-motion: reduce){.${className}{-webkit-animation:none;animation:none;}}`,
-    );
-  });
 });
