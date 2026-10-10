@@ -1,18 +1,41 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
+/** In dial order. */
 export const SCAN_MODES = [
-  'product',
   'receipt',
-  'plate',
+  'product',
   'ingredients',
+  'plate',
 ] as const;
 export type ScanMode = (typeof SCAN_MODES)[number];
 
 export function isScanMode(value: string | null): value is ScanMode {
   return SCAN_MODES.some((mode) => mode === value);
+}
+
+const MODE_KEY = 'pocket-pantry.scan-mode';
+
+/** The Scan Mode used last, else Receipt. */
+export function loadScanMode(): ScanMode {
+  try {
+    const saved = window.localStorage.getItem(MODE_KEY);
+    if (isScanMode(saved)) return saved;
+  } catch {
+    // Storage can be blocked; fall back to Receipt.
+  }
+  return 'receipt';
+}
+
+/** Remember the Scan Mode for the next visit. */
+export function saveScanMode(mode: ScanMode): void {
+  try {
+    window.localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    // Not persisting is acceptable.
+  }
 }
 
 /**
@@ -64,15 +87,13 @@ export function useProductScan(locale: string, scanLanguage: string) {
 /** The bulk Batch create takes at most this many entries at once. */
 export const MAX_BULK_BATCHES = 50;
 
-/** Saves reviewed lines as Batches, all or none. */
-export function useAddBatches(locale: string, scanLanguage?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (batches: NewBatch[]) =>
-      apiRequest<{ batches: Batch[] }>(
-        `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
-        { method: 'POST', body: { batches } },
-      ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-  });
-}
+/** Saves reviewed lines as Batches, all or none; `scanLanguage` is what the lines were scanned in. */
+export const postBatches = (
+  locale: string,
+  scanLanguage: string | undefined,
+  batches: NewBatch[],
+) =>
+  apiRequest<{ batches: Batch[] }>(
+    `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
+    { method: 'POST', body: { batches } },
+  );

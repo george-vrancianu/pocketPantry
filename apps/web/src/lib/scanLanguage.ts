@@ -7,13 +7,6 @@ import {
 
 const STORAGE_KEY = 'pocket-pantry.scan-language';
 
-/** Each Scan Language under its own name, whatever the UI language is. */
-export const SCAN_LANGUAGE_NAMES: Record<ScanLanguage, string> = {
-  en: 'English',
-  ro: 'Română',
-  da: 'Dansk',
-};
-
 /** The UI language first, then the other Scan Languages. */
 export function scanLanguageOptions(locale: Locale) {
   const ordered = [
@@ -22,7 +15,7 @@ export function scanLanguageOptions(locale: Locale) {
   ];
   return ordered.map((value) => ({
     value,
-    label: SCAN_LANGUAGE_NAMES[value],
+    label: value.toUpperCase(),
   }));
 }
 

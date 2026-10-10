@@ -38,6 +38,7 @@ export {
   FlashIcon,
   GalleryIcon,
   ManualEntryIcon,
+  InfoIcon,
   HomeIcon,
   PantryIcon,
   RecipesIcon,
@@ -62,11 +63,7 @@ export {
   type SegmentedControlOption,
   type SegmentedControlProps,
 } from './molecules/SegmentedControl';
-export {
-  DockItem,
-  type DockItemProps,
-  type DockVariant,
-} from './molecules/DockItem';
+export { DockItem, type DockItemProps } from './molecules/DockItem';
 
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
 

@@ -2,11 +2,16 @@
   "title": "Scan {{mode}}",
   "close": "Close scanner",
   "flash": "Toggle flash",
+  "info": {
+    "label": "How scanning works",
+    "title": "Scanning your pantry",
+    "body": "Point the camera at a receipt, a product, loose ingredients or a plate, then double-tap the guide. You can check everything before it is saved.",
+    "dismiss": "Close"
+  },
   "scanLanguage": {
     "label": "Reading as"
   },
   "gallery": "Choose from photos",
-  "shutter": "Take photo",
   "manual": "Add manually",
   "modes": "Scan mode",
   "reading": "Reading your photo",
@@ -20,24 +25,20 @@
     "cancel": "Cancel",
     "confirm": "Use photo"
   },
-  "plate": {
-    "pickTitle": "Which dish is it?",
-    "option": "{{title}}, {{percent}}% likely",
-    "retake": "Retake photo"
-  },
   "mode": {
     "product": "Product",
     "receipt": "Receipt",
     "plate": "Plate",
     "ingredients": "Ingredients"
   },
-  "hint": {
-    "product": "Point at a barcode or label",
-    "receipt": "Fit the whole receipt in the frame",
-    "plate": "Hold steady above your plate",
-    "ingredients": "Spread items out on the counter"
+  "guideHint": {
+    "receipt": "Lay flat, double-tap to scan",
+    "product": "Frame the product and its date",
+    "ingredients": "Lay them out, fit them all in",
+    "plate": "Fit the whole plate"
   },
   "guide": {
+    "scan": "Scan: double-tap or press Enter",
     "receipt": "Hold the phone about 40 cm above the receipt so its edges touch the guide.",
     "receiptFold": "For long receipts, fold where the guide ends (about every 20 items), flip the folded part over, and take the next photo."
   },
@@ -47,25 +48,26 @@
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
-  "sections": {
-    "reading": "Reading section {{number}}…",
-    "section": "Section {{number}}",
-    "open": "Show section {{number}}",
-    "count": "{{count}} of {{max}} sections",
-    "found_one": "Section {{number}}: {{count}} line found",
-    "found_other": "Section {{number}}: {{count}} lines found",
-    "empty": "No lines were found in this section. Retake it, or take the next photo.",
-    "retake": "Retake",
-    "delete": "Delete section",
-    "next": "Next photo",
-    "finish": "Finish",
-    "full": "You have reached the limit of {{max}} sections. Finish, or retake or delete a section.",
-    "readingBatch": "Reading photo {{number}} of {{total}}…",
-    "photoOf": "Photo {{number}} of {{total}}",
-    "queued_one": "{{count}} more photo waiting. Press Next photo to crop it.",
-    "queued_other": "{{count}} more photos waiting. Press Next photo to crop the next one.",
-    "tooMany_one": "You picked {{selected}} photos, but there is only 1 more section left (the limit is 10). Pick fewer photos.",
-    "tooMany_other": "You picked {{selected}} photos, but there are only {{count}} more sections left (the limit is 10). Pick fewer photos.",
-    "discardConfirm": "Leave the scanner? The sections you have taken so far will be lost."
-  }
+  "done": "Done",
+  "doneCount_one": "Done, {{count}} photo",
+  "doneCount_other": "Done, {{count}} photos",
+  "session": {
+    "label": "Photos taken",
+    "reading": "Reading photo",
+    "needsCrop": "Needs crop",
+    "read": "Photo read",
+    "failed": "Could not read photo",
+    "retry": "Retry reading photo"
+  },
+  "photoAdded": "Photo {{count}} added",
+  "tickFailed_one": "{{count}} Shopping Item could not be ticked off.",
+  "tickFailed_other": "{{count}} Shopping Items could not be ticked off.",
+  "added_one": "Added results from {{count}} photo",
+  "added_other": "Added results from {{count}} photos",
+  "limit": "A Scan Session holds at most {{max}} photos. Add or discard these first.",
+  "discardScans_one": "Discard {{count}} photo?",
+  "discardScans_other": "Discard {{count}} photos?",
+  "discarded": "Discarded",
+  "capReached": "Daily scan limit reached",
+  "notAdded": "That photo could not be added. Try again."
 }

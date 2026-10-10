@@ -1,12 +1,12 @@
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -51,7 +51,8 @@ function renderIngredients(routes: Record<string, () => Response>) {
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
     </Routes>,
     { route: '/scan?mode=ingredients' },
   );
@@ -59,12 +60,11 @@ function renderIngredients(routes: Record<string, () => Response>) {
 }
 
 describe('Ingredients Scan on the Scan screen', () => {
-  beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
   it('enables the shutter', () => {
     renderIngredients({});
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('sends the photo to the Ingredients endpoint and reviews one card per item', async () => {
@@ -74,7 +74,8 @@ describe('Ingredients Scan on the Scan screen', () => {
           lines: [line('tomato', 'Tomato'), line('onion', 'Onion')],
         }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
+    await openFirstScanCard();
     expect(await findReviewRow('Tomato')).toBeInTheDocument();
     expect(await findReviewRow('Onion')).toBeInTheDocument();
     expect(
@@ -82,18 +83,21 @@ describe('Ingredients Scan on the Scan screen', () => {
     ).toEqual({ ingredientsImage: IMAGE });
   });
 
-  it('tells the Member when nothing was recognised, and stays on the Scan screen', async () => {
+  it('fails the Scan when nothing was recognised, and stays on the Scan screen', async () => {
     renderIngredients({
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'We could not spot any ingredients',
+    scanViaGuide();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /We could not spot any ingredients/,
     );
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
-  it('tells the Member when there were too many items, with the limit', async () => {
+  it('fails the Scan when there were too many items', async () => {
     renderIngredients({
       'POST /api/scan/ingredients': () =>
         Response.json(
@@ -101,9 +105,12 @@ describe('Ingredients Scan on the Scan screen', () => {
           { status: 422 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'more than 50 items',
+    scanViaGuide();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /more than 50 items/,
     );
+    expect(
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -126,5 +126,34 @@
   },
   "footer": {
     "helper": "Sure rows are collapsed. Tap a row to edit it."
+  },
+  "overview": {
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos",
+    "stillReading": "{{count}} still reading",
+    "allRead": "all read",
+    "camera": "Camera",
+    "reading": "Reading photo…",
+    "crop": "Crop receipt photo",
+    "remove": "Remove photo",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "check_one": "Check {{count}} item",
+    "check_other": "Check {{count}} items",
+    "more": "+{{count}}",
+    "merge": "Merge with previous",
+    "split": "Split",
+    "empty": "No photos yet.",
+    "add": "Add all",
+    "addWaiting": "Add all (waiting on {{count}})",
+    "cropFirst_one": "Crop {{count}} receipt first",
+    "cropFirst_other": "Crop {{count}} receipts first",
+    "fixValues": "Open this card and fix the highlighted values.",
+    "discardAll": "Discard all",
+    "failed": "Couldn't read, retake",
+    "retake": "Retake",
+    "pickDish": "Pick the dish",
+    "dishOption": "{{title}}, {{percent}}% likely",
+    "readAgain": "Read again"
   }
 }

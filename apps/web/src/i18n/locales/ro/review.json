@@ -130,5 +130,38 @@
   },
   "footer": {
     "helper": "Rândurile sigure sunt restrânse. Atinge un rând ca să-l editezi."
+  },
+  "overview": {
+    "photos_one": "{{count}} fotografie",
+    "photos_few": "{{count}} fotografii",
+    "photos_other": "{{count}} de fotografii",
+    "stillReading": "{{count}} în curs de citire",
+    "allRead": "toate citite",
+    "camera": "Cameră",
+    "reading": "Citim fotografia…",
+    "crop": "Decupează fotografia bonului",
+    "remove": "Elimină fotografia",
+    "items_one": "{{count}} articol",
+    "items_few": "{{count}} articole",
+    "items_other": "{{count}} de articole",
+    "check_one": "Verifică {{count}} articol",
+    "check_few": "Verifică {{count}} articole",
+    "check_other": "Verifică {{count}} de articole",
+    "more": "+{{count}}",
+    "merge": "Îmbină cu precedenta",
+    "split": "Separă",
+    "empty": "Încă nu ai fotografii.",
+    "add": "Adaugă tot",
+    "addWaiting": "Adaugă tot (se așteaptă {{count}})",
+    "cropFirst_one": "Decupează mai întâi {{count}} bon",
+    "cropFirst_few": "Decupează mai întâi {{count}} bonuri",
+    "cropFirst_other": "Decupează mai întâi {{count}} de bonuri",
+    "fixValues": "Deschide fișa și corectează valorile marcate.",
+    "discardAll": "Renunță la toate",
+    "failed": "Nu am putut citi, refă poza",
+    "retake": "Refă poza",
+    "pickDish": "Alege preparatul",
+    "dishOption": "{{title}}, {{percent}}% probabil",
+    "readAgain": "Citește din nou"
   }
 }

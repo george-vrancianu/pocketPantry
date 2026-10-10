@@ -1,9 +1,10 @@
 import { act, cleanup, screen } from '@testing-library/react';
+import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -20,7 +21,29 @@ vi.mock('../../lib/camera', () => ({
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
+  cropToReceiptArea: () =>
+    Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
 }));
+// react-easy-crop measures real sizes, which jsdom cannot do: report a fixed crop.
+vi.mock('react-easy-crop', async () => {
+  const { useEffect } = await import('react');
+  return {
+    default: ({
+      onCropComplete,
+    }: {
+      onCropComplete: (
+        area: unknown,
+        pixels: { x: number; y: number; width: number; height: number },
+      ) => void;
+    }) => {
+      useEffect(() => {
+        onCropComplete({}, { x: 10, y: 20, width: 300, height: 900 });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- report once, like the real cropper on load
+      }, []);
+      return <div data-testid="cropper" />;
+    },
+  };
+});
 
 const unmatchedLine = {
   name: 'Cheese',
@@ -56,7 +79,8 @@ function renderScan(
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route path="/pantry" element={<p>pantry screen</p>} />
     </Routes>,
     { route, locale },
@@ -66,7 +90,6 @@ function renderScan(
 
 describe('Scan Language on the Scan screen', () => {
   beforeEach(() => {
-    clearReview();
     window.localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -76,7 +99,7 @@ describe('Scan Language on the Scan screen', () => {
     expect(chip()).toHaveValue('ro');
     expect(
       Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['Română', 'English', 'Dansk']);
+    ).toEqual(['RO', 'EN', 'DA']);
   });
 
   it('defaults to Dansk under a Danish UI, listed first', () => {
@@ -84,7 +107,7 @@ describe('Scan Language on the Scan screen', () => {
     expect(chip()).toHaveValue('da');
     expect(
       Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['Dansk', 'English', 'Română']);
+    ).toEqual(['DA', 'EN', 'RO']);
   });
 
   it('forgets a Scan Language chosen under a Danish UI when the UI language changes', async () => {
@@ -142,7 +165,8 @@ describe('Scan Language on the Scan screen', () => {
     async (mode) => {
       const calls = renderScan(`/scan?mode=${mode}`);
       await userEvent.selectOptions(chip(), 'da');
-      await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+      scanViaGuide();
+      await openFirstScanCard();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 1 item' }),
       );
@@ -158,30 +182,20 @@ describe('Scan Language on the Scan screen', () => {
     },
   );
 
-  it('reads every Receipt Section in the chosen language, locks the picker once one is captured, and confirms in it', async () => {
+  it('reads a Receipt Scan in the chosen language and confirms in it', async () => {
     const calls = renderScan('/scan?mode=receipt');
     await userEvent.selectOptions(chip(), 'da');
-    expect(chip()).toBeEnabled();
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Finish' }),
-    );
-    const scan = calls.find((c) => c.key === 'POST /api/scan/receipt');
-    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
+    scanViaGuide();
+    await openFirstScanCard();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Save 1 item' }),
     );
     await screen.findByText('pantry screen');
+    const scan = calls.find((c) => c.key === 'POST /api/scan/receipt');
+    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
     const confirm = calls.find(
       (c) => c.key === 'POST /api/scan/receipt/confirm',
     );
     expect(new URLSearchParams(confirm?.search).get('scanLanguage')).toBe('da');
-  });
-
-  it('disables the picker after the first Receipt Section', async () => {
-    renderScan('/scan?mode=receipt');
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    await screen.findByRole('button', { name: 'Finish' });
-    expect(chip()).toBeDisabled();
   });
 });

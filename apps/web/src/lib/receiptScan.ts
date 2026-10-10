@@ -1,9 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { ApiError, apiRequest } from './api';
 import { scanQuery } from './scan';
 import type { Batch, NewBatch } from './pantry';
 import type { ReceiptSectionResult } from './receiptSections';
-import { shoppingListQueryKey } from './shopping';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
 export function useReceiptScan(locale: string, scanLanguage: string) {
@@ -53,31 +52,25 @@ export function countTickFailures(
  * the save: the Batches are in the Pantry either way. The failures come back
  * counted by kind so Review can say so.
  */
-export function useReceiptConfirm(locale: string, scanLanguage?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (batches: NewBatch[]): Promise<ReceiptConfirmResult> => {
-      const result = await apiRequest<ReceiptConfirmation>(
-        `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
-        { method: 'POST', body: { batches } },
-      );
-      const outcomes = await Promise.allSettled(
-        result.matchedShoppingItemIds.map((id) =>
-          apiRequest(
-            `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
-            {
-              method: 'PATCH',
-              body: { checked: true },
-            },
-          ),
-        ),
-      );
-      return { ...result, tickFailures: countTickFailures(outcomes) };
-    },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-      ]),
-  });
+export async function postReceiptConfirm(
+  locale: string,
+  scanLanguage: string | undefined,
+  batches: NewBatch[],
+): Promise<ReceiptConfirmResult> {
+  const result = await apiRequest<ReceiptConfirmation>(
+    `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
+    { method: 'POST', body: { batches } },
+  );
+  const outcomes = await Promise.allSettled(
+    result.matchedShoppingItemIds.map((id) =>
+      apiRequest(
+        `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
+        {
+          method: 'PATCH',
+          body: { checked: true },
+        },
+      ),
+    ),
+  );
+  return { ...result, tickFailures: countTickFailures(outcomes) };
 }

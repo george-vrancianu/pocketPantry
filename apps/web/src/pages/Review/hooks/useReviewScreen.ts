@@ -1,20 +1,17 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   useCatalogParents,
   type CatalogSearchResult,
 } from '../../../lib/catalog';
 import {
-  clearReview,
   displayName,
   statusOf,
-  readReview,
   invalidFields,
   type ReviewField,
-  toNewBatch,
-  toReviewLine,
+  reviewLinesOf,
   type ReviewLine,
 } from '../../../lib/review';
 import { firstFocusField } from '../../../lib/reviewFocus';
@@ -24,9 +21,10 @@ import {
   reviewGroups,
   reviewReducer,
 } from '../../../lib/reviewState';
-import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
-import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
-import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
+import { dispatchScanSession, getScanSession } from '../../../lib/scanSession';
+import { useSaveLines } from '../../../lib/saveScan';
+import type { TickFailures } from '../../../lib/receiptScan';
+import { MAX_BULK_BATCHES } from '../../../lib/scan';
 import {
   unverifiedState,
   type UnverifiedState,
@@ -34,38 +32,46 @@ import {
 import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 
 /**
- * Review screen state. The Member's edits live here, in client state, until
- * Save. Batch Scan Modes (Product, Receipt, Ingredients) save through the bulk
- * Batch endpoint; a mode that saves elsewhere (Plate adds Shopping Items)
- * branches on `draft.mode` at `save`.
+ * Review screen state for one card of the Scan Session. The Member's edits live here, and are
+ * written back to the card as they are made, so leaving the editor keeps them. Saving goes
+ * through `saveLines`, which routes by the card's Scan Mode.
  */
 export function useReviewScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  // Read once: clearing the draft on save must not bounce the page to /scan.
-  const [draft] = useState(readReview);
-  const [state, dispatch] = useReducer(reviewReducer, draft, (d) => {
-    const today = new Date();
-    return initReviewState(
-      (d?.lines ?? []).map((line, index) =>
-        toReviewLine(line, `line-${index}`, today),
-      ),
-    );
+  // A card of the Scan Session is edited at /scan/review/:scanId.
+  const { scanId = '' } = useParams();
+  // Read once: saving removes the card, which must not bounce the page back to the overview.
+  const [draft] = useState(() => {
+    const scan = getScanSession().scans.find((s) => s.id === scanId);
+    return scan?.lines
+      ? {
+          mode: scan.mode,
+          lines: reviewLinesOf(scan),
+          scanLanguage: scan.scanLanguage,
+        }
+      : null;
   });
-  const addBatches = useAddBatches(i18n.language, draft?.scanLanguage);
-  const confirmReceipt = useReceiptConfirm(i18n.language, draft?.scanLanguage);
-  const addShoppingItems = useAddShoppingItems(i18n.language);
+  // Saving or discarding a card drops it from the Scan Session; the other cards are still to do.
+  const leaveCard = (fallback: string) => {
+    dispatchScanSession({ type: 'remove', id: scanId });
+    return getScanSession().scans.length > 0 ? '/scan/review' : fallback;
+  };
+  const [state, dispatch] = useReducer(
+    reviewReducer,
+    draft?.lines ?? [],
+    initReviewState,
+  );
+  // Every change goes back to the card, so Add all saves what the Member sees.
+  const initialLines = useRef(state.lines);
+  useEffect(() => {
+    if (state.lines !== initialLines.current)
+      dispatchScanSession({ type: 'edit', id: scanId, lines: state.lines });
+  }, [scanId, state.lines]);
+  const saver = useSaveLines(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
   const shopping = mode === 'plate';
-  // Each Scan Mode saves through one mutation; Product and Ingredients share the bulk Batch endpoint.
-  const savers = {
-    product: addBatches,
-    ingredients: addBatches,
-    receipt: confirmReceipt,
-    plate: addShoppingItems,
-  };
-  const saver = savers[mode];
   // Excluded lines (Scan-excluded or removed by the Member) wait outside the list and are never saved.
   const groups = reviewGroups(state);
   const counts = reviewCounts(state);
@@ -78,7 +84,10 @@ export function useReviewScreen() {
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
   // Saved lines the Member never verified, told on the page Save lands on.
-  const [savedState, setSavedState] = useState<UnverifiedState | undefined>();
+  const [savedState, setSavedState] = useState<{
+    landing: string;
+    state: UnverifiedState | undefined;
+  }>();
   // Focus lands on an element that only exists after the render that opened or restored it.
   const [focusId, setFocusId] = useState<string | null>(null);
   useEffect(() => {
@@ -181,36 +190,26 @@ export function useReviewScreen() {
       included.filter((l) => statusOf(l, !!state.confirmed[l.key]) === 'low')
         .length,
     );
-    const done = {
-      onSuccess: (result?: unknown) => {
-        clearReview();
-        const failures = (result as { tickFailures?: TickFailures } | undefined)
-          ?.tickFailures;
-        if (
-          failures &&
-          failures.missing + failures.changed + failures.other > 0
-        ) {
-          setTickFailures(failures);
-          setSavedState(navState);
-          return;
-        }
-        navigate(to, { state: navState });
+    saver.mutate(
+      { mode, scanLanguage: draft?.scanLanguage, lines: included },
+      {
+        onSuccess: (failures) => {
+          const landing = leaveCard(to);
+          if (
+            failures &&
+            failures.missing + failures.changed + failures.other > 0
+          ) {
+            setTickFailures(failures);
+            setSavedState({ landing, state: navState });
+            return;
+          }
+          navigate(landing, { state: navState });
+        },
       },
-    };
-    if (shopping) {
-      addShoppingItems.mutate(included.map(toNewShoppingItem), done);
-      return;
-    }
-    const batches = included.map(toNewBatch).map((batch) =>
-      // The queue only records the source of Unmatched names.
-      batch.rawName ? { ...batch, source: mode } : batch,
     );
-    if (mode === 'receipt') confirmReceipt.mutate(batches, done);
-    else addBatches.mutate(batches, done);
   };
   const discard = () => {
-    clearReview();
-    navigate('/scan');
+    navigate(leaveCard('/scan'));
   };
 
   return {
@@ -228,7 +227,8 @@ export function useReviewScreen() {
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
     // After a tick-failure notice the toast still follows, on the Pantry the lines were saved to.
-    toPantry: () => navigate('/pantry', { state: savedState }),
+    toPantry: () =>
+      navigate(savedState?.landing ?? '/pantry', { state: savedState?.state }),
     blocked,
     toggle,
     open,

@@ -1,12 +1,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
+import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -60,11 +60,11 @@ function renderReview(
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route path="/scan" element={<p>scan screen</p>} />
       <Route path="/pantry" element={<p>pantry screen</p>} />
     </Routes>,
-    { route: '/scan/review' },
+    { route: REVIEW_ROUTE },
   );
   return calls;
 }
@@ -84,19 +84,18 @@ const row = (name: string, index = 0) =>
     )[index];
 
 describe('ReviewPage', () => {
-  beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
-  it('goes back to Scan when there is nothing to review', () => {
+  it('goes back to the overview when the card is gone', () => {
     vi.stubGlobal('fetch', stubApi({}).fetchMock);
     renderWithProviders(
       <Routes>
-        <Route path="/scan/review" element={<ReviewPage />} />
-        <Route path="/scan" element={<p>scan screen</p>} />
+        <Route path="/scan/review/:scanId" element={<ReviewPage />} />
+        <Route path="/scan/review" element={<p>overview screen</p>} />
       </Routes>,
-      { route: '/scan/review' },
+      { route: REVIEW_ROUTE },
     );
-    expect(screen.getByText('scan screen')).toBeInTheDocument();
+    expect(screen.getByText('overview screen')).toBeInTheDocument();
   });
 
   it('says how many lines were read, per Scan Mode', () => {

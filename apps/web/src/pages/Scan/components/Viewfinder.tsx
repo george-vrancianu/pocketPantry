@@ -1,12 +1,30 @@
-import { Box } from '@pocket-pantry/ui';
-import type { RefObject } from 'react';
+import { Box, tokens } from '@pocket-pantry/ui';
 import {
-  RECEIPT_GUIDE_ASPECT,
-  RECEIPT_GUIDE_HEIGHT_FRACTION,
-  RECEIPT_VIEW,
-} from '../../../lib/receiptGuide';
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type MouseEvent,
+  type MutableRefObject,
+  type PointerEvent,
+} from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ScanMode } from '../../../lib/scan';
+import { GUIDE_CENTER_Y, SCAN_GUIDES } from '../../../lib/scanGuides';
+import { isDoubleTap, type Tap } from '../../../lib/doubleTap';
 
-const edge = '3px solid #FFFFFF';
+const ARMED_MS = 320;
+const PULSE_MS = 360;
+const FLASH_MS = 420;
+const HAPTIC_MS = 12;
+/** Pointer travel between press and release that still counts as a tap. */
+const TAP_SLOP = 10;
+const noMotion = {
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+};
+const noAnimation = {
+  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+};
 const CORNERS = [
   ['Top', 'Left'],
   ['Top', 'Right'],
@@ -15,125 +33,233 @@ const CORNERS = [
 ] as const;
 
 type Props = {
-  videoRef: RefObject<HTMLVideoElement | null>;
-  scanning: boolean;
-  /** Overlay the tall 1:3 receipt guide (and size the preview to match what gets cropped). */
-  receiptGuide?: boolean;
+  mode: ScanMode;
+  /** Show the one-line instruction under the guide; it goes away after the first Scan. */
+  hintShown: boolean;
+  /** Double-tap (or Enter / Space) on the guide. */
+  onScan: () => void;
+  disabled: boolean;
+  /** When the mode dial last finished a drag, so the tail of a drag is not read as a tap. */
+  dragEndedAt: MutableRefObject<number | null>;
 };
 
-/** The camera preview with corner brackets and the sweeping scan line. */
-export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
-  // In receipt mode the line lives inside the guide and sweeps its full height (percentages);
-  // otherwise it sweeps the 300 px box.
-  const sweep = receiptGuide
-    ? { from: { top: '0%' }, to: { top: '100%' } }
-    : {
-        from: { transform: 'translateY(-110px)' },
-        to: { transform: 'translateY(110px)' },
-      };
-  const sweepName = receiptGuide ? 'pp-scan-sweep-guide' : 'pp-scan-sweep';
-  const scanLine = (
-    <Box
-      data-testid="scan-line"
-      sx={{
-        position: 'absolute',
-        left: receiptGuide ? 8 : 24,
-        right: receiptGuide ? 8 : 24,
-        top: receiptGuide ? undefined : 148,
-        height: 2,
-        borderRadius: '1px',
-        backgroundColor: '#8DBBA0',
-        [`@keyframes ${sweepName}`]: {
-          '0%': sweep.from,
-          '100%': sweep.to,
-        },
-        animation: scanning
-          ? `${sweepName} 1.2s ease-in-out infinite alternate`
-          : `${sweepName} 2.4s ease-in-out infinite alternate`,
-        // Handoff section 10: respect prefers-reduced-motion for the scan line.
-        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-      }}
-    />
-  );
+/**
+ * The guide brackets that follow the Scan Mode, centred over the full-screen feed. Double-tapping
+ * the guide takes the Scan, with a white flash and a pulse.
+ */
+export function Viewfinder({
+  mode,
+  hintShown,
+  onScan,
+  disabled,
+  dragEndedAt,
+}: Props) {
+  const { t } = useTranslation('scan');
+  const { width, height } = SCAN_GUIDES[mode];
+  const [armed, setArmed] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  const [pulse, setPulse] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const timers = useRef<number[]>([]);
+  const lastTap = useRef<Tap | null>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
+  /** The press that may become the next tap: primary pointer, started inside the guide. */
+  const press = useRef<{ id: number; x: number; y: number } | null>(null);
+  useEffect(() => {
+    const pending = timers.current;
+    // A press that starts or ends outside the guide breaks the pairing of taps.
+    const outside = (event: globalThis.PointerEvent) => {
+      if (guideRef.current?.contains(event.target as Node)) return;
+      press.current = null;
+      if (event.type === 'pointerup') lastTap.current = null;
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('pointerup', outside);
+    return () => {
+      window.clearTimeout(timer.current);
+      pending.forEach(window.clearTimeout);
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('pointerup', outside);
+    };
+  }, []);
+  const arm = () => {
+    setArmed(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setArmed(false), ARMED_MS);
+  };
+  const scan = () => {
+    if (disabled) return;
+    onScan();
+    navigator.vibrate?.(HAPTIC_MS);
+    setPulse(true);
+    setFlash(true);
+    timers.current.forEach(window.clearTimeout);
+    timers.current = [
+      window.setTimeout(() => setPulse(false), PULSE_MS),
+      window.setTimeout(() => setFlash(false), FLASH_MS),
+    ];
+  };
+  const onPointerDown = (event: PointerEvent) => {
+    arm();
+    press.current =
+      event.isPrimary && event.button === 0
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY }
+        : null;
+  };
+  const onPointerUp = (event: PointerEvent) => {
+    const down = press.current;
+    press.current = null;
+    if (
+      !down ||
+      down.id !== event.pointerId ||
+      Math.hypot(event.clientX - down.x, event.clientY - down.y) > TAP_SLOP
+    ) {
+      lastTap.current = null;
+      return;
+    }
+    const tap = { x: event.clientX, y: event.clientY, t: performance.now() };
+    if (isDoubleTap(lastTap.current, tap, dragEndedAt.current)) {
+      lastTap.current = null;
+      scan();
+    } else {
+      lastTap.current = tap;
+    }
+  };
+  // Screen readers activate a button with a click that has no pointer behind it.
+  const onClick = (event: MouseEvent) => {
+    if (event.detail === 0) scan();
+  };
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.target !== event.currentTarget || event.repeat) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    scan();
+  };
   return (
-    <Box
-      sx={{
-        position: 'relative',
-        // The receipt box keeps its 9:16 shape but shrinks to fit narrow or short screens.
-        width: receiptGuide
-          ? `min(${RECEIPT_VIEW.width}px, calc(55vh * ${RECEIPT_VIEW.width / RECEIPT_VIEW.height}))`
-          : 280,
-        maxWidth: '100%',
-        ...(receiptGuide
-          ? { aspectRatio: `${RECEIPT_VIEW.width} / ${RECEIPT_VIEW.height}` }
-          : { height: 300 }),
-        mx: 'auto',
-      }}
-    >
-      <Box
-        component="video"
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          borderRadius: '20px',
-        }}
-      />
-      {receiptGuide ? (
+    <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {flash ? (
         <Box
+          data-testid="scan-flash"
           aria-hidden="true"
           sx={{
             position: 'absolute',
             inset: 0,
-            overflow: 'hidden',
-            borderRadius: '20px',
+            backgroundColor: '#FFFFFF',
+            opacity: 0,
+            animation: 'pp-scan-flash 280ms ease-out',
+            '@keyframes pp-scan-flash': {
+              from: { opacity: 0.55 },
+              to: { opacity: 0 },
+            },
+            ...noAnimation,
           }}
-        >
-          <Box
-            data-testid="receipt-guide"
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: '50%',
-              height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
-              aspectRatio: String(RECEIPT_GUIDE_ASPECT),
-              transform: 'translate(-50%, -50%)',
-              // An outline sits outside the box, so the visible interior is exactly the crop.
-              outline: edge,
-              borderRadius: '8px',
-              // Dim everything outside the guide: only what is inside is sent.
-              boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
-            }}
-          >
-            {scanLine}
-          </Box>
-        </Box>
+        />
       ) : null}
-      <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
-        {CORNERS.map(([vertical, horizontal]) => (
+      <Box
+        data-testid="scan-guide"
+        data-armed={armed ? 'true' : undefined}
+        data-pulse={pulse ? 'true' : undefined}
+        role="button"
+        tabIndex={0}
+        aria-label={t('guide.scan')}
+        aria-disabled={disabled || undefined}
+        ref={guideRef}
+        onPointerDown={onPointerDown}
+        onClick={onClick}
+        onPointerUp={onPointerUp}
+        onKeyDown={onKeyDown}
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: `${GUIDE_CENTER_Y * 100}%`,
+          width: `${width * 100}%`,
+          height: `${height * 100}%`,
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
+          transition: `width 400ms cubic-bezier(.2,.8,.2,1), height 400ms cubic-bezier(.2,.8,.2,1)`,
+          ...noMotion,
+          '&:focus-visible': {
+            outline: `2px solid ${tokens.color.camAccent}`,
+            outlineOffset: 8,
+          },
+          ...(pulse && {
+            animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
+            '@keyframes pp-scan-pulse': {
+              '0%, 100%': { transform: 'translate(-50%, -50%) scale(1)' },
+              '40%': { transform: 'translate(-50%, -50%) scale(0.965)' },
+            },
+          }),
+          // Nested so it is its own rule next to the transition's.
+          '&': noAnimation,
+        }}
+      >
+        {flash ? (
           <Box
-            key={vertical + horizontal}
+            data-testid="scan-guide-fill"
+            aria-hidden="true"
             sx={{
               position: 'absolute',
-              width: 40,
-              height: 40,
+              inset: 0,
+              backgroundColor: '#FFFFFF',
+              opacity: 0,
+              animation: `pp-scan-fill ${FLASH_MS}ms ease-out`,
+              '@keyframes pp-scan-fill': {
+                from: { opacity: 0.85 },
+                to: { opacity: 0 },
+              },
+              ...noAnimation,
+            }}
+          />
+        ) : null}
+        {CORNERS.map(([v, h]) => (
+          <Box
+            key={v + h}
+            data-testid="scan-guide-corner"
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              width: 30,
+              height: 30,
               boxSizing: 'border-box',
-              [vertical.toLowerCase()]: 0,
-              [horizontal.toLowerCase()]: 0,
-              [`border${vertical}`]: edge,
-              [`border${horizontal}`]: edge,
-              [`border${vertical}${horizontal}Radius`]: '20px',
+              [v.toLowerCase()]: -2,
+              [h.toLowerCase()]: -2,
+              [`border${v}`]: `${flash ? 6 : 3.5}px solid`,
+              [`border${h}`]: `${flash ? 6 : 3.5}px solid`,
+              [`border${v}${h}Radius`]: '10px',
+              borderColor:
+                armed && !flash ? tokens.color.camAccent : tokens.color.camFg,
+              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.5))',
+              transition: 'border-color 200ms',
+              ...noMotion,
             }}
           />
         ))}
-        {receiptGuide ? null : scanLine}
+        {hintShown ? (
+          <Box
+            data-testid="scan-hint"
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '100%',
+              mt: '14px',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap',
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: tokens.color.camDim,
+              backgroundColor: tokens.color.camGlass,
+              backdropFilter: 'blur(10px)',
+              px: '11px',
+              py: '5px',
+              borderRadius: '999px',
+            }}
+          >
+            {t(`guideHint.${mode}`)}
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );

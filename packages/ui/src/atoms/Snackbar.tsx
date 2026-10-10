@@ -5,8 +5,8 @@ import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
 export type SnackbarProps = {
   open: boolean;
   onClose: () => void;
-  /** Sit above the floating Dock (and the device's bottom inset) instead of under it. */
-  aboveDock?: boolean;
+  /** Where it sits: `'aboveDock'` clears the floating Dock (and the device's bottom inset), a number is the distance from the bottom in px. Defaults to the bottom edge. */
+  bottom?: 'aboveDock' | number;
   /** Usually an `Alert`. */
   children: ReactNode;
 };
@@ -16,12 +16,7 @@ const above = (height: number) =>
   `calc(${DOCK_BOTTOM + height + GAP}px + env(safe-area-inset-bottom, 0px))`;
 
 /** A transient message at the bottom of the screen that closes itself after 6 s. A click elsewhere does not dismiss it. */
-export function Snackbar({
-  open,
-  onClose,
-  aboveDock = false,
-  children,
-}: SnackbarProps) {
+export function Snackbar({ open, onClose, bottom, children }: SnackbarProps) {
   return (
     <MuiSnackbar
       open={open}
@@ -31,9 +26,16 @@ export function Snackbar({
       }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       sx={
-        aboveDock
-          ? { bottom: { xs: above(DOCK_HEIGHT.xs), md: above(DOCK_HEIGHT.md) } }
-          : undefined
+        bottom === 'aboveDock'
+          ? {
+              bottom: {
+                xs: above(DOCK_HEIGHT.xs),
+                md: above(DOCK_HEIGHT.md),
+              },
+            }
+          : bottom !== undefined
+            ? { bottom }
+            : undefined
       }
     >
       <div>{children}</div>

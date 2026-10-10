@@ -34,7 +34,7 @@
     "provider_refused": "Fotoet kunne ikke behandles. Prøv et tydeligere foto af produktet.",
     "provider_incomplete": "Scanningen blev ikke færdig. Prøv igen.",
     "result_invalid": "Vi kunne ikke læse det foto. Prøv et tydeligere.",
-    "plate_token_invalid": "Den liste over retter er udløbet. Tag fotoet igen.",
+    "plate_token_invalid": "Den liste over retter er udløbet. Læs det igen.",
     "not_configured": "Scanning er ikke sat op på denne server endnu."
   },
   "shopping": {

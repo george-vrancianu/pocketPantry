@@ -2,11 +2,16 @@
   "title": "Scanează {{mode}}",
   "close": "Închide scanerul",
   "flash": "Comută blițul",
+  "info": {
+    "label": "Cum funcționează scanarea",
+    "title": "Scanează-ți cămara",
+    "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi atinge de două ori ghidajul. Verifici totul înainte de salvare.",
+    "dismiss": "Închide"
+  },
   "scanLanguage": {
     "label": "Citit ca"
   },
   "gallery": "Alege din galerie",
-  "shutter": "Fă o poză",
   "manual": "Adaugă manual",
   "modes": "Mod de scanare",
   "reading": "Citim fotografia",
@@ -20,24 +25,20 @@
     "cancel": "Anulează",
     "confirm": "Folosește fotografia"
   },
-  "plate": {
-    "pickTitle": "Ce preparat este?",
-    "option": "{{title}}, {{percent}}% probabil",
-    "retake": "Fă altă poză"
-  },
   "mode": {
     "product": "Produs",
     "receipt": "Bon",
     "plate": "Farfurie",
     "ingredients": "Ingrediente"
   },
-  "hint": {
-    "product": "Îndreaptă camera spre un cod de bare sau o etichetă",
-    "receipt": "Încadrează tot bonul",
-    "plate": "Ține telefonul stabil deasupra farfuriei",
-    "ingredients": "Întinde produsele pe blat"
+  "guideHint": {
+    "receipt": "Pune-l pe un plan drept, atinge de două ori pentru a scana",
+    "product": "Încadrează produsul și data",
+    "ingredients": "Așază-le și încadrează-le pe toate",
+    "plate": "Încadrează toată farfuria"
   },
   "guide": {
+    "scan": "Scanează: atinge de două ori sau apasă Enter",
     "receipt": "Ține telefonul la aproximativ 40 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul.",
     "receiptFold": "Pentru bonuri lungi, împăturește bonul unde se termină ghidajul (cam la fiecare 20 de produse), întoarce partea împăturită și fă următoarea poză."
   },
@@ -47,28 +48,30 @@
     "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
     "ingredients": "Adaugă în cămară fiecare produs vrac de pe blat."
   },
-  "sections": {
-    "reading": "Citim secțiunea {{number}}…",
-    "section": "Secțiunea {{number}}",
-    "open": "Arată secțiunea {{number}}",
-    "count": "{{count}} din {{max}} secțiuni",
-    "found_one": "Secțiunea {{number}}: o linie găsită",
-    "found_few": "Secțiunea {{number}}: {{count}} linii găsite",
-    "found_other": "Secțiunea {{number}}: {{count}} de linii găsite",
-    "empty": "Nu am găsit nicio linie în această secțiune. Fă altă poză sau treci la următoarea.",
-    "retake": "Refă poza",
-    "delete": "Șterge secțiunea",
-    "next": "Următoarea poză",
-    "finish": "Gata",
-    "full": "Ai ajuns la limita de {{max}} secțiuni. Finalizează sau refă ori șterge o secțiune.",
-    "readingBatch": "Citim poza {{number}} din {{total}}…",
-    "photoOf": "Poza {{number}} din {{total}}",
-    "queued_one": "Mai aștepți {{count}} poză. Apasă Următoarea poză ca s-o decupezi.",
-    "queued_few": "Mai aștepți {{count}} poze. Apasă Următoarea poză ca s-o decupezi pe următoarea.",
-    "queued_other": "Mai aștepți {{count}} de poze. Apasă Următoarea poză ca s-o decupezi pe următoarea.",
-    "tooMany_one": "Ai ales {{selected}} poze, dar mai ai loc doar pentru o secțiune (limita este 10). Alege mai puține poze.",
-    "tooMany_few": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} secțiuni (limita este 10). Alege mai puține poze.",
-    "tooMany_other": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} de secțiuni (limita este 10). Alege mai puține poze.",
-    "discardConfirm": "Părăsești scanerul? Secțiunile făcute până acum se vor pierde."
-  }
+  "done": "Gata",
+  "doneCount_one": "Gata, {{count}} fotografie",
+  "doneCount_few": "Gata, {{count}} fotografii",
+  "doneCount_other": "Gata, {{count}} de fotografii",
+  "session": {
+    "label": "Fotografii făcute",
+    "reading": "Citim fotografia",
+    "needsCrop": "Trebuie decupată",
+    "read": "Fotografie citită",
+    "failed": "Fotografia nu a putut fi citită",
+    "retry": "Citește din nou fotografia"
+  },
+  "photoAdded": "Fotografia {{count}} a fost adăugată",
+  "tickFailed_one": "{{count}} articol din lista de cumpărături nu a putut fi bifat.",
+  "tickFailed_few": "{{count}} articole din lista de cumpărături nu au putut fi bifate.",
+  "tickFailed_other": "{{count}} de articole din lista de cumpărături nu au putut fi bifate.",
+  "added_one": "Rezultate adăugate din {{count}} fotografie",
+  "added_few": "Rezultate adăugate din {{count}} fotografii",
+  "added_other": "Rezultate adăugate din {{count}} de fotografii",
+  "limit": "O sesiune de scanare ține cel mult {{max}} de fotografii. Adaugă sau renunță mai întâi la acestea.",
+  "discardScans_one": "Renunți la {{count}} fotografie?",
+  "discardScans_few": "Renunți la {{count}} fotografii?",
+  "discardScans_other": "Renunți la {{count}} de fotografii?",
+  "discarded": "Eliminate",
+  "capReached": "Limita zilnică de scanări a fost atinsă",
+  "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou."
 }

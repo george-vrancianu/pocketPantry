@@ -1,17 +1,16 @@
 import { screen, waitFor } from '@testing-library/react';
+import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { PantryPage } from '../Pantry/PantryPage';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
-
-const IMAGE = 'data:image/jpeg;base64,YQ==';
 
 // jsdom has no camera or canvas: the camera and the resizer are the seams.
 const camera = vi.hoisted(() => ({ torchSupported: true }));
@@ -41,6 +40,12 @@ vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
 
+/** The camera restarts when the mode changes: wait until the guide takes Scans again. */
+const shoot = async () => {
+  await waitFor(() => expect(scanGuide()).not.toHaveAttribute('aria-disabled'));
+  scanViaGuide();
+};
+
 const parmesan: CatalogSearchResult = {
   id: 'parmesan-id',
   name: 'Parmesan',
@@ -61,51 +66,51 @@ const proposed: ProposedLine = {
   productDescription: 'Grana Padano 200g',
 };
 
-function renderScan(routes: Record<string, () => Response>) {
+function renderScan(
+  routes: Record<string, () => Response>,
+  route = '/scan?mode=product',
+) {
   const { fetchMock, calls } = stubApi(routes);
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
     </Routes>,
-    { route: '/scan' },
+    { route },
   );
   return calls;
 }
 
 describe('ScanPage', () => {
   beforeEach(() => {
-    clearReview();
     camera.torchSupported = true;
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('has the camera controls, with Product selected among all four mode pills', () => {
-    renderScan({});
-    const modes = screen.getByRole('group', { name: 'Scan mode' });
+  it('has the camera controls, with Receipt selected among all four modes', () => {
+    renderScan({}, '/scan');
     expect(
-      Array.from(modes.querySelectorAll('button')).map((b) => b.textContent),
-    ).toEqual(['Product', 'Receipt', 'Plate', 'Ingredients']);
-    expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+      screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label')),
+    ).toEqual(['Receipt', 'Product', 'Ingredients', 'Plate']);
+    expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
       'Toggle flash',
       'Choose from photos',
-      'Take photo',
       'Add manually',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
   });
 
-  it('disables the flash toggle when the camera has no torch', () => {
+  it('hides the flash toggle when the camera has no torch', () => {
     camera.torchSupported = false;
     renderScan({});
-    expect(screen.getByRole('button', { name: 'Toggle flash' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Toggle flash' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens manual entry on the Pantry from the manual-add button', async () => {
@@ -118,7 +123,7 @@ describe('ScanPage', () => {
         <Route path="/scan" element={<ScanPage />} />
         <Route path="/pantry" element={<PantryPage />} />
       </Routes>,
-      { route: '/scan' },
+      { route: '/scan?mode=product' },
     );
     await userEvent.click(screen.getByRole('button', { name: 'Add manually' }));
     expect(
@@ -134,56 +139,32 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('turns the flash off when switching into Receipt mode restarts the camera', async () => {
-    renderScan({});
-    const flash = screen.getByRole('button', { name: 'Toggle flash' });
-    await userEvent.click(flash);
-    expect(flash).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(screen.getByRole('button', { name: 'Receipt' }));
-    await waitFor(() => expect(flash).toHaveAttribute('aria-pressed', 'false'));
-  });
-
   it.each(['Product', 'Receipt', 'Plate', 'Ingredients'])(
     'enables the shutter in %s mode',
     async (mode) => {
       renderScan({});
-      await userEvent.click(screen.getByRole('button', { name: mode }));
-      expect(screen.getByRole('button', { name: mode })).toHaveAttribute(
-        'aria-pressed',
+      await userEvent.click(screen.getByRole('radio', { name: mode }));
+      expect(screen.getByRole('radio', { name: mode })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
-      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+      expect(scanGuide()).not.toHaveAttribute('aria-disabled');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
       ).toBeEnabled();
     },
   );
 
-  it('turns a gallery photo into a proposed line on the Review screen', async () => {
-    const calls = renderScan({
-      'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
-    });
-    await userEvent.upload(
-      screen.getByTestId('gallery-input'),
-      new File(['x'], 'cheese.jpg', { type: 'image/jpeg' }),
-    );
-    expect(await findReviewRow('Parmesan')).toBeInTheDocument();
-    expect(calls.find((c) => c.key === 'POST /api/scan/product')?.body).toEqual(
-      { productImage: IMAGE },
-    );
-    await userEvent.click(await findReviewRow('Parmesan'));
-    expect(screen.getByLabelText('Expiry date')).toHaveValue('24.12.2026');
-  });
-
   it('turns a camera shot into a proposed line on the Review screen', async () => {
     renderScan({
       'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    await shoot();
+    await openFirstScanCard();
     expect(await findReviewRow('Parmesan')).toBeInTheDocument();
   });
 
-  it('shows a localised message when the Scan Cap is reached', async () => {
+  it('shows the daily limit and stops scanning when the Scan Cap is reached', async () => {
     renderScan({
       'POST /api/scan/product': () =>
         Response.json(
@@ -191,15 +172,14 @@ describe('ScanPage', () => {
           { status: 429 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'You have used all 30 scans for today',
-    );
-    // Still on the Scan screen.
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    await shoot();
+    expect(
+      await screen.findByText('Daily scan limit reached'),
+    ).toBeInTheDocument();
+    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
   });
 
-  it('shows the localised message for a rejected image', async () => {
+  it('fails the Scan for a rejected image', async () => {
     renderScan({
       'POST /api/scan/product': () =>
         Response.json(
@@ -207,24 +187,12 @@ describe('ScanPage', () => {
           { status: 413 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent('too large'),
+    await shoot();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /too large/,
     );
-  });
-
-  it('disables the scan line animation for reduced motion', () => {
-    renderScan({});
-    const line = screen.getByTestId('scan-line');
-    const rules = Array.from(document.querySelectorAll('style'))
-      .map((style) => style.textContent ?? '')
-      .join('\n');
-    const className = Array.from(line.classList).find((c) =>
-      rules.includes(`.${c}`),
-    );
-    expect(className).toBeDefined();
-    expect(rules).toContain(
-      `@media (prefers-reduced-motion: reduce){.${className}{-webkit-animation:none;animation:none;}}`,
-    );
+    expect(
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
   });
 });

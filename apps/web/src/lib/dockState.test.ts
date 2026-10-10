@@ -3,11 +3,10 @@ import { dockStateFor } from './dockState';
 
 describe('dockStateFor', () => {
   it.each(['/shopping', '/pantry', '/recipes'])(
-    'highlights %s in the light dock',
+    'highlights %s in the dock',
     (path) => {
       expect(dockStateFor(path)).toEqual({
         visible: true,
-        variant: 'light',
         activeKey: path.slice(1),
       });
     },
@@ -17,12 +16,8 @@ describe('dockStateFor', () => {
     expect(dockStateFor('/pantry/abc').activeKey).toBe('pantry');
   });
 
-  it('uses the dark dock on the scan screen', () => {
-    expect(dockStateFor('/scan')).toEqual({
-      visible: true,
-      variant: 'dark',
-      activeKey: 'scan',
-    });
+  it('hides the dock on the scan screen, where the camera is full screen', () => {
+    expect(dockStateFor('/scan').visible).toBe(false);
   });
 
   it('hides the dock on the Review screen, where the action bar takes its place', () => {

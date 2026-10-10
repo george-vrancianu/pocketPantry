@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** Ask for 1080p where the device can: a receipt's small print is unreadable at the 640x480 browsers often default to. */
+/** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
 export const HIGH_RESOLUTION_VIDEO = {
   width: { ideal: 1920 },
   height: { ideal: 1080 },
 };
 
-export function cameraConstraints(
-  highResolution: boolean,
-): MediaStreamConstraints {
+export function cameraConstraints(): MediaStreamConstraints {
   return {
     video: {
       facingMode: { ideal: 'environment' },
       // `ideal`, never `exact`: lesser cameras still start, at whatever they can do.
-      ...(highResolution && HIGH_RESOLUTION_VIDEO),
+      ...HIGH_RESOLUTION_VIDEO,
     },
   };
 }
@@ -28,7 +26,7 @@ type TorchConstraints = MediaTrackConstraints & {
  * The rear camera as a live preview. `unavailable` covers no camera, a denied
  * permission, and a non-secure page; the Scan screen then leans on the gallery.
  */
-export function useCamera(highResolution = false) {
+export function useCamera() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<CameraStatus>('starting');
@@ -46,7 +44,7 @@ export function useCamera(highResolution = false) {
       return;
     }
     devices
-      .getUserMedia(cameraConstraints(highResolution))
+      .getUserMedia(cameraConstraints())
       .then((stream) => {
         if (cancelled) {
           stream.getTracks().forEach((track) => track.stop());
@@ -68,7 +66,7 @@ export function useCamera(highResolution = false) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     };
-  }, [highResolution]);
+  }, []);
 
   /** The current preview frame as an image, or null when there is no live camera. */
   const capture = useCallback(async (): Promise<Blob | null> => {
