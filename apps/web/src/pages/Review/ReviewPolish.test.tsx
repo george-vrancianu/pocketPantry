@@ -4,10 +4,10 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
+import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
@@ -54,7 +54,7 @@ function renderReview(
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route
         path="/shopping"
         element={
@@ -74,7 +74,7 @@ function renderReview(
         }
       />
     </Routes>,
-    { route: '/scan/review' },
+    { route: REVIEW_ROUTE },
   );
 }
 
@@ -89,7 +89,6 @@ const row = (name: string) =>
 
 describe('Review polish: focus', () => {
   beforeEach(() => {
-    clearReview();
     stubMotion(true);
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -142,7 +141,6 @@ describe('Review polish: focus', () => {
 });
 
 describe('Review polish: motion', () => {
-  beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
   it('shuts the panel at once under reduced motion', async () => {
@@ -168,7 +166,6 @@ describe('Review polish: motion', () => {
 
 describe('Review polish: unverified toast', () => {
   beforeEach(() => {
-    clearReview();
     stubMotion(true);
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -241,7 +238,6 @@ describe('Review polish: unverified toast', () => {
 
 describe('Review polish: tablet', () => {
   beforeEach(() => {
-    clearReview();
     stubViewport(1180);
   });
   afterEach(() => vi.unstubAllGlobals());

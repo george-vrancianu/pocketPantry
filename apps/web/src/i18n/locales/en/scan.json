@@ -51,7 +51,7 @@
   "done": "Done",
   "doneCount_one": "Done, {{count}} photo",
   "doneCount_other": "Done, {{count}} photos",
-  "queue": {
+  "session": {
     "label": "Photos taken",
     "reading": "Reading photo",
     "needsCrop": "Needs crop",
@@ -59,9 +59,12 @@
     "failed": "Could not read photo",
     "retry": "Retry reading photo"
   },
+  "photoAdded": "Photo {{count}} added",
+  "tickFailed_one": "{{count}} Shopping Item could not be ticked off.",
+  "tickFailed_other": "{{count}} Shopping Items could not be ticked off.",
   "added_one": "Added results from {{count}} photo",
   "added_other": "Added results from {{count}} photos",
-  "limit": "A Scan Session holds at most {{max}} photos. Add these to the pantry first.",
+  "limit": "A Scan Session holds at most {{max}} photos. Add or discard these first.",
   "discardScans_one": "Discard {{count}} photo?",
   "discardScans_other": "Discard {{count}} photos?",
   "discarded": "Discarded",

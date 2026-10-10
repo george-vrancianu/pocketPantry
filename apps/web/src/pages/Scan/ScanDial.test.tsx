@@ -2,7 +2,6 @@ import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -38,7 +37,6 @@ const selected = () =>
 
 describe('Scan mode dial', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());

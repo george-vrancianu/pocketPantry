@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
@@ -86,7 +85,6 @@ function renderScan(
 
 describe('ScanPage', () => {
   beforeEach(() => {
-    clearReview();
     camera.torchSupported = true;
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -139,15 +137,6 @@ describe('ScanPage', () => {
     expect(flash).toHaveAttribute('aria-pressed', 'false');
     await userEvent.click(flash);
     expect(flash).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  it('turns the flash off when switching into Receipt mode restarts the camera', async () => {
-    renderScan({});
-    const flash = screen.getByRole('button', { name: 'Toggle flash' });
-    await userEvent.click(flash);
-    expect(flash).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
-    await waitFor(() => expect(flash).toHaveAttribute('aria-pressed', 'false'));
   });
 
   it.each(['Product', 'Receipt', 'Plate', 'Ingredients'])(

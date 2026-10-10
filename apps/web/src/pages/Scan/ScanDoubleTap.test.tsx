@@ -2,7 +2,6 @@ import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { scanGuide as guide } from '../../test/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from './ScanPage';
@@ -75,7 +74,6 @@ const noAnimation = (el: Element) =>
 describe('Scan by double-tapping the guides', () => {
   const vibrate = vi.fn(() => true);
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
     now = 1000;
     vibrate.mockClear();
@@ -312,7 +310,6 @@ describe('Scan by double-tapping the guides', () => {
 
 describe('Scan by keyboard on the guides', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());

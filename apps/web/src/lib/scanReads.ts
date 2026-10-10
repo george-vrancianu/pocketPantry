@@ -21,28 +21,36 @@ const READ: Record<
 
 const inFlight = new Set<string>();
 
+/** A dropped connection gets one more try; any other error is the answer. */
+const withNetworkRetry = <T>(request: () => Promise<T>) =>
+  request().catch((error: unknown) =>
+    error instanceof ApiError && error.code === 'network_error'
+      ? request()
+      : Promise.reject(error),
+  );
+
 /** A Plate Scan has no Scan Language; its photo yields dish guesses to pick from. */
 function readPlate(scan: SessionScan, locale: string) {
-  return apiRequest<PlateDishes>(`/scan/plate?${scanQuery(locale)}`, {
-    method: 'POST',
-    body: { plateImage: scan.image },
-  }).then(({ dishes, token }) =>
+  return withNetworkRetry(() =>
+    apiRequest<PlateDishes>(`/scan/plate?${scanQuery(locale)}`, {
+      method: 'POST',
+      body: { plateImage: scan.image },
+    }),
+  ).then(({ dishes, token }) =>
     dispatchScanSession({ type: 'readDishes', id: scan.id, dishes, token }),
   );
 }
 
-async function send(scan: SessionScan, locale: string) {
-  const target = READ[scan.mode as keyof typeof READ];
-  const request = () =>
+async function send(
+  scan: SessionScan & { mode: keyof typeof READ },
+  locale: string,
+) {
+  const target = READ[scan.mode];
+  const { lines } = await withNetworkRetry(() =>
     apiRequest<ScanResponse>(
       `${target.path}?${scanQuery(locale, scan.scanLanguage)}`,
       { method: 'POST', body: { [target.field]: scan.image } },
-    );
-  // A dropped connection gets one more try; any other error is the answer.
-  const { lines } = await request().catch((error: unknown) =>
-    error instanceof ApiError && error.code === 'network_error'
-      ? request()
-      : Promise.reject(error),
+    ),
   );
   if (lines.length === 0) throw new ApiError('scan.nothing_found', 0);
   return lines;
@@ -70,7 +78,7 @@ export function readScans(locale: string) {
     inFlight.add(scan.id);
     (scan.mode === 'plate'
       ? readPlate(scan, locale)
-      : send(scan, locale).then((lines) =>
+      : send({ ...scan, mode: scan.mode }, locale).then((lines) =>
           dispatchScanSession({ type: 'read', id: scan.id, lines }),
         )
     )

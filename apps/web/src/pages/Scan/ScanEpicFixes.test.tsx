@@ -2,7 +2,6 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { resetReads } from '../../lib/scanReads';
 import {
   dispatchScanSession,
@@ -53,7 +52,6 @@ function renderScan(route = '/scan?mode=product') {
 
 describe('Scan screen, epic review fixes', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     resetReads();
     localStorage.clear();

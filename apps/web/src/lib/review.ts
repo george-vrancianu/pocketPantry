@@ -1,31 +1,8 @@
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
-import type { ScanLanguage } from '../i18n/resources';
 import { isIsoDate } from './dateFormat';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
-
-/**
- * The Review seam. A Scan Mode that is not read through the Scan Session ends by calling
- * `startReview` with its proposed lines and navigating to `/scan/review/draft`; the Review screen turns
- * those lines into editable `ReviewLine`s and, on confirm, saves them.
- * Nothing is saved before that: the draft lives in client state only.
- */
-export type ReviewDraft = {
-  mode: ScanMode;
-  lines: ProposedLine[];
-  /** What the Scan was read in; travels to the save call. Plate has none. */
-  scanLanguage?: ScanLanguage;
-};
-
-let draft: ReviewDraft | null = null;
-
-export const startReview = (next: ReviewDraft) => {
-  draft = next;
-};
-export const clearReview = () => {
-  draft = null;
-};
-export const readReview = () => draft;
+import type { SessionScan } from './scanSession';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 const FALLBACK_UNIT: Unit = 'pcs';
@@ -79,6 +56,22 @@ export function toReviewLine(
       line.expiryDate ??
       (match ? defaultExpiryDate(match.defaults.expiryDays, today) : ''),
   };
+}
+
+/** The lines of a Scan as the Member left them: their edits if any, else what was read; a merged card's sections in order. */
+export function reviewLinesOf(
+  scan: SessionScan,
+  today = new Date(),
+): ReviewLine[] {
+  const lines =
+    scan.edited ??
+    (scan.sections
+      ? scan.sections.flatMap((section) => reviewLinesOf(section, today))
+      : (scan.lines ?? []).map((line, index) =>
+          toReviewLine(line, `line-${index}`, today),
+        ));
+  // Keys only need to differ within the card.
+  return lines.map((line, index) => ({ ...line, key: `line-${index}` }));
 }
 
 /** The Member picked another Ingredient: take its defaults, keep an expiry read off the packaging. */

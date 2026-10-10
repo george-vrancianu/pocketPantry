@@ -26,7 +26,7 @@ export function UnverifiedToast() {
 
   if (count === 0) return null;
   return (
-    <Snackbar open={open} onClose={() => setOpen(false)} aboveDock>
+    <Snackbar open={open} onClose={() => setOpen(false)} bottom="aboveDock">
       <Alert severity="warning" role="status">
         {t('unverified', { count })}
       </Alert>

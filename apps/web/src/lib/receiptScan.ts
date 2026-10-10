@@ -1,9 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { ApiError, apiRequest } from './api';
 import { scanQuery } from './scan';
 import type { Batch, NewBatch } from './pantry';
 import type { ReceiptSectionResult } from './receiptSections';
-import { shoppingListQueryKey } from './shopping';
 
 /** Receipt Scan: the photo goes up as a data URL and is never stored. */
 export function useReceiptScan(locale: string, scanLanguage: string) {
@@ -74,17 +73,4 @@ export async function postReceiptConfirm(
     ),
   );
   return { ...result, tickFailures: countTickFailures(outcomes) };
-}
-
-export function useReceiptConfirm(locale: string, scanLanguage?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (batches: NewBatch[]) =>
-      postReceiptConfirm(locale, scanLanguage, batches),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-      ]),
-  });
 }

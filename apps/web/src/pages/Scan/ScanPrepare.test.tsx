@@ -2,7 +2,6 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -54,7 +53,6 @@ const release = () => act(async () => prep.release());
 
 describe('a camera receipt photo being prepared', () => {
   beforeEach(() => {
-    clearReview();
     resetReads();
     resetScanSession();
     localStorage.clear();

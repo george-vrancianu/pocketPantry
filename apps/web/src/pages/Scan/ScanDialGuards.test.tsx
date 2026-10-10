@@ -2,7 +2,6 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -46,7 +45,6 @@ const checked = () =>
 
 describe('Scan mode dial: when arrows must not change the mode', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
     vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();

@@ -4,7 +4,6 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -47,7 +46,6 @@ function renderScan() {
 
 describe('Scan screen shell', () => {
   beforeEach(() => {
-    clearReview();
     camera.torchSupported = true;
     camera.starts = 0;
     camera.stops = 0;

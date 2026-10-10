@@ -1,6 +1,10 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { canRetry, isRead, type SessionScan } from '../../../lib/scanSession';
+import {
+  canRetry,
+  scanDisplayState,
+  type SessionScan,
+} from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -9,7 +13,7 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
  * The Scans of the Scan Session as thumbnails down the left edge, newest at the bottom; the
  * oldest fade out under the top bar when they do not fit. Each is spinning while it is read.
  */
-export function ScanQueue({
+export function SessionStrip({
   scans,
   onRetry,
 }: {
@@ -21,7 +25,7 @@ export function ScanQueue({
   return (
     <Box
       component="ul"
-      aria-label={t('queue.label')}
+      aria-label={t('session.label')}
       sx={{
         position: 'absolute',
         left: 14,
@@ -40,16 +44,10 @@ export function ScanQueue({
       }}
     >
       {scans.map((scan) => {
-        const uncropped = scan.status === 'uncropped';
-        const failed = scan.status === 'failed';
-        const reading = !uncropped && !failed && !isRead(scan);
-        const state = uncropped
-          ? 'uncropped'
-          : failed
-            ? 'failed'
-            : reading
-              ? 'reading'
-              : 'read';
+        const state = scanDisplayState(scan);
+        const uncropped = state === 'uncropped';
+        const failed = state === 'failed';
+        const reading = state === 'reading';
         return (
           <Box
             component="li"
@@ -63,12 +61,12 @@ export function ScanQueue({
                   ? t(`errors:${scan.errorCode}`, scan.errorParams)
                   : t(
                       uncropped
-                        ? 'queue.needsCrop'
+                        ? 'session.needsCrop'
                         : failed
-                          ? 'queue.failed'
+                          ? 'session.failed'
                           : reading
-                            ? 'queue.reading'
-                            : 'queue.read',
+                            ? 'session.reading'
+                            : 'session.read',
                     )
             }
             sx={{
@@ -134,8 +132,8 @@ export function ScanQueue({
                   borderRadius: '50%',
                   border: '2.5px solid rgba(255,255,255,.3)',
                   borderTopColor: tokens.color.camFg,
-                  animation: 'pp-queue-spin 0.8s linear infinite',
-                  '@keyframes pp-queue-spin': {
+                  animation: 'pp-scan-spin 0.8s linear infinite',
+                  '@keyframes pp-scan-spin': {
                     to: { transform: 'rotate(1turn)' },
                   },
                   [reducedMotion]: { animation: 'none' },
@@ -147,7 +145,7 @@ export function ScanQueue({
                   <Box
                     component="button"
                     type="button"
-                    aria-label={t('queue.retry')}
+                    aria-label={t('session.retry')}
                     onClick={() => onRetry(scan.id)}
                     sx={{
                       position: 'absolute',

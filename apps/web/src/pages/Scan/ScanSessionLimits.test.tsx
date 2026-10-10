@@ -2,7 +2,6 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { resetReads } from '../../lib/scanReads';
 import { getScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -49,7 +48,6 @@ function renderScan() {
 
 describe('Scan Session limits', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     resetReads();
     localStorage.clear();

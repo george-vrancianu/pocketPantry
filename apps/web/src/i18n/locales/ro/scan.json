@@ -52,7 +52,7 @@
   "doneCount_one": "Gata, {{count}} fotografie",
   "doneCount_few": "Gata, {{count}} fotografii",
   "doneCount_other": "Gata, {{count}} de fotografii",
-  "queue": {
+  "session": {
     "label": "Fotografii făcute",
     "reading": "Citim fotografia",
     "needsCrop": "Trebuie decupată",
@@ -60,10 +60,14 @@
     "failed": "Fotografia nu a putut fi citită",
     "retry": "Citește din nou fotografia"
   },
+  "photoAdded": "Fotografia {{count}} a fost adăugată",
+  "tickFailed_one": "{{count}} articol din lista de cumpărături nu a putut fi bifat.",
+  "tickFailed_few": "{{count}} articole din lista de cumpărături nu au putut fi bifate.",
+  "tickFailed_other": "{{count}} de articole din lista de cumpărături nu au putut fi bifate.",
   "added_one": "Rezultate adăugate din {{count}} fotografie",
   "added_few": "Rezultate adăugate din {{count}} fotografii",
   "added_other": "Rezultate adăugate din {{count}} de fotografii",
-  "limit": "O sesiune de scanare ține cel mult {{max}} de fotografii. Adaugă-le mai întâi în cămară.",
+  "limit": "O sesiune de scanare ține cel mult {{max}} de fotografii. Adaugă sau renunță mai întâi la acestea.",
   "discardScans_one": "Renunți la {{count}} fotografie?",
   "discardScans_few": "Renunți la {{count}} fotografii?",
   "discardScans_other": "Renunți la {{count}} de fotografii?",

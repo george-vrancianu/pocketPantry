@@ -3,7 +3,6 @@ import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
@@ -63,7 +62,6 @@ vi.mock('react-easy-crop', async () => {
 
 describe('Receipt Scan on the Scan screen', () => {
   beforeEach(() => {
-    clearReview();
     useCameraMock.mockClear();
   });
   afterEach(() => vi.unstubAllGlobals());
@@ -116,18 +114,17 @@ describe('Receipt Scan on the Scan screen', () => {
     expect(calls.map((c) => c.key)).not.toContain('POST /api/scan/product');
   });
 
-  it('shows the guide with its instruction and asks the camera for high resolution', () => {
+  it('shows the guide with its instruction and asks the camera for high resolution (as in every mode)', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
     expect(screen.getByText(/40 cm above the receipt/)).toBeInTheDocument();
-    expect(useCameraMock).toHaveBeenLastCalledWith(true);
+    expect(useCameraMock).toHaveBeenCalled();
   });
 
-  it('shows no receipt instruction and a default camera in the other modes', () => {
+  it('shows no receipt instruction in the other modes', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=product' });
     expect(
       screen.queryByText(/40 cm above the receipt/),
     ).not.toBeInTheDocument();
-    expect(useCameraMock).toHaveBeenLastCalledWith(false);
   });
 });

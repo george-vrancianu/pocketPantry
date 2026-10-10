@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -116,7 +115,6 @@ const batchesOf = (body: unknown) => (body as { batches: unknown[] }).batches;
 
 describe('Review overview, epic review fixes', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
   });

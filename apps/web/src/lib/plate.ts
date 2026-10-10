@@ -1,12 +1,8 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { ReviewLine } from './review';
 import type { ScanResponse } from './scan';
-import {
-  shoppingListQueryKey,
-  type NewShoppingItem,
-  type ShoppingList,
-} from './shopping';
+import { type NewShoppingItem, type ShoppingList } from './shopping';
 
 /** One guess at the dish in the photo. */
 export type DishGuess = { title: string; confidence: number };
@@ -30,15 +26,6 @@ export const postShoppingItems = (locale: string, items: NewShoppingItem[]) =>
     `/shopping-list/items/bulk?${new URLSearchParams({ locale })}`,
     { method: 'POST', body: { items } },
   );
-
-export function useAddShoppingItems(locale: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (items: NewShoppingItem[]) => postShoppingItems(locale, items),
-    onSuccess: (list) =>
-      queryClient.setQueryData([...shoppingListQueryKey, locale], list),
-  });
-}
 
 /** A reviewed line as a Shopping Item: by Ingredient id when matched, else by name. A blank quantity sends neither quantity nor unit. */
 export function toNewShoppingItem(line: ReviewLine): NewShoppingItem {

@@ -51,7 +51,7 @@
   "done": "Færdig",
   "doneCount_one": "Færdig, {{count}} foto",
   "doneCount_other": "Færdig, {{count}} fotos",
-  "queue": {
+  "session": {
     "label": "Tagne fotos",
     "reading": "Læser foto",
     "needsCrop": "Skal beskæres",
@@ -59,9 +59,12 @@
     "failed": "Fotoet kunne ikke læses",
     "retry": "Læs foto igen"
   },
+  "photoAdded": "Foto {{count}} tilføjet",
+  "tickFailed_one": "{{count}} vare på indkøbslisten kunne ikke afkrydses.",
+  "tickFailed_other": "{{count}} varer på indkøbslisten kunne ikke afkrydses.",
   "added_one": "Resultater tilføjet fra {{count}} foto",
   "added_other": "Resultater tilføjet fra {{count}} fotos",
-  "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj dem til spisekammeret først.",
+  "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj eller kassér dem først.",
   "discardScans_one": "Kasser {{count}} foto?",
   "discardScans_other": "Kasser {{count}} fotos?",
   "discarded": "Kasseret",

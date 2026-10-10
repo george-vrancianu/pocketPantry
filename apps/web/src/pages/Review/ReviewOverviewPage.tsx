@@ -20,8 +20,14 @@ import {
   type ReceiptCrop,
 } from '../../components/ReceiptCropper';
 import { cropToReceiptArea } from '../../lib/image';
-import type { ProposedLine } from '../../lib/scan';
-import { useSaveScan } from '../../lib/saveScan';
+import { MAX_BULK_BATCHES } from '../../lib/scan';
+import {
+  displayName,
+  invalidFields,
+  reviewLinesOf,
+  type ReviewLine,
+} from '../../lib/review';
+import { savableLines, useSaveScan } from '../../lib/saveScan';
 import {
   canRetry,
   canMerge,
@@ -29,6 +35,8 @@ import {
   getScanSession,
   pendingCount,
   resetScanSession,
+  scanDisplayState,
+  uncroppedCount,
   useScanSession,
   type SessionScan,
 } from '../../lib/scanSession';
@@ -47,8 +55,6 @@ const linkButton = {
   cursor: 'pointer',
 };
 
-const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
-
 /**
  * The overview a Member lands on from Done: one card per Scan of the Scan Session, in the order
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
@@ -60,10 +66,12 @@ export function ReviewOverviewPage() {
   const saveScan = useSaveScan(i18n.language);
   const [saving, setSaving] = useState(false);
   // Why each card's last save failed; the card stays until a later Add saves it.
-  const [errors, setErrors] = useState<Record<string, unknown>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const session = useScanSession();
-  const reading = pendingCount(session);
+  const uncropped = uncroppedCount(session);
+  // Uncropped receipts wait for the Member, not for a read.
+  const reading = pendingCount(session) - uncropped;
   /** The gallery receipt being cropped. */
   const [cropping, setCropping] = useState<SessionScan | null>(null);
   const [cropFailed, setCropFailed] = useState<string | null>(null);
@@ -96,27 +104,54 @@ export function ReviewOverviewPage() {
   // Photos saved over every press of Add, for the toast.
   const added = useRef(0);
 
-  /** Saves each read card in turn, trying all of them; the cards that fail stay with their error. */
+  /**
+   * Saves each read card in turn, trying all of them; the cards that fail stay with their error.
+   * A card with nothing to save is dropped; one the API would refuse stays, with the reason.
+   */
   const addAll = async () => {
     setSaving(true);
     setErrors({});
+    let notTicked = 0;
+    const fail = (id: string, message: string) =>
+      setErrors((was) => ({ ...was, [id]: message }));
     for (const scan of getScanSession().scans) {
       // Opened and saved in the editor, or removed, since Add started.
       if (!getScanSession().scans.some((s) => s.id === scan.id)) continue;
       if (!savable(scan)) continue;
+      const lines = savableLines(scan);
+      if (lines.length === 0) {
+        dispatchScanSession({ type: 'remove', id: scan.id });
+        continue;
+      }
+      if (lines.some((line) => invalidFields(line).length > 0)) {
+        fail(scan.id, t('overview.fixValues'));
+        continue;
+      }
+      if (scan.mode !== 'plate' && lines.length > MAX_BULK_BATCHES) {
+        fail(
+          scan.id,
+          t('tooMany', {
+            max: MAX_BULK_BATCHES,
+            over: lines.length - MAX_BULK_BATCHES,
+          }),
+        );
+        continue;
+      }
       try {
-        await saveScan(scan);
+        const failures = await saveScan(scan);
+        if (failures)
+          notTicked += failures.missing + failures.changed + failures.other;
         dispatchScanSession({ type: 'remove', id: scan.id });
         added.current += 1;
       } catch (error) {
-        setErrors((was) => ({ ...was, [scan.id]: error }));
+        fail(scan.id, translateApiError(tAll, error));
       }
     }
     setSaving(false);
     // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
     if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
     resetScanSession();
-    navigate('/scan', { state: { added: added.current } });
+    navigate('/scan', { state: { added: added.current, notTicked } });
   };
   const discardAll = () => {
     resetScanSession();
@@ -124,17 +159,20 @@ export function ReviewOverviewPage() {
   };
 
   const card = (scan: SessionScan) => {
-    const isFailed = scan.status === 'failed';
-    const isReading = scan.status === 'queued' || scan.status === 'reading';
+    const display = scanDisplayState(scan);
+    const isFailed = display === 'failed';
+    const isReading = display === 'reading';
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
-    const lines = (scan.lines ?? []).filter((line) => !line.excluded);
+    const lines: ReviewLine[] = reviewLinesOf(scan).filter(
+      (line) => !line.excluded,
+    );
     const check = lines.filter(
       (line) => line.lowConfidence || line.match === null,
     ).length;
     const mergeable = canMerge(session, scan.id);
     const result =
       scan.mode === 'product' && lines.length > 0
-        ? nameOf(lines[0])
+        ? displayName(lines[0])
         : t('overview.items', { count: lines.length });
     return (
       <Box
@@ -207,13 +245,17 @@ export function ReviewOverviewPage() {
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
                 {t('overview.failed')}
               </Typography>
-              {scan.errorCode && !canRetry(scan) ? (
+              {scan.failure === 'cap' ? (
+                <Typography sx={{ fontSize: 13 }}>
+                  {tScan('capReached')}
+                </Typography>
+              ) : scan.errorCode && !canRetry(scan) ? (
                 <Typography sx={{ fontSize: 13 }}>
                   {tScan(`errors:${scan.errorCode}`, scan.errorParams)}
                 </Typography>
               ) : null}
             </>
-          ) : scan.status === 'uncropped' ? (
+          ) : display === 'uncropped' ? (
             <>
               <Box
                 component="button"
@@ -288,7 +330,7 @@ export function ReviewOverviewPage() {
                       color: tokens.color.accent,
                     }}
                   >
-                    {nameOf(line)}
+                    {displayName(line)}
                   </Box>
                 ))}
                 {lines.length > MAX_CHIPS ? (
@@ -303,9 +345,12 @@ export function ReviewOverviewPage() {
                     <Box
                       component="button"
                       type="button"
-                      onClick={() =>
-                        dispatchScanSession({ type: 'merge', id: scan.id })
-                      }
+                      onClick={() => {
+                        dispatchScanSession({ type: 'merge', id: scan.id });
+                        // The card above takes the merged Scan: focus it.
+                        const index = session.scans.indexOf(scan);
+                        setFocusId(session.scans[index - 1].id);
+                      }}
                       sx={linkButton}
                     >
                       {t('overview.merge')}
@@ -315,9 +360,10 @@ export function ReviewOverviewPage() {
                     <Box
                       component="button"
                       type="button"
-                      onClick={() =>
-                        dispatchScanSession({ type: 'split', id: scan.id })
-                      }
+                      onClick={() => {
+                        dispatchScanSession({ type: 'split', id: scan.id });
+                        setFocusId(scan.sections?.[0].id ?? null);
+                      }}
                       sx={linkButton}
                     >
                       {t('overview.split')}
@@ -339,7 +385,7 @@ export function ReviewOverviewPage() {
               ) : null}
               {errors[scan.id] ? (
                 <Box sx={{ mt: 1 }}>
-                  <Alert>{translateApiError(tAll, errors[scan.id])}</Alert>
+                  <Alert>{errors[scan.id]}</Alert>
                 </Box>
               ) : null}
             </>
@@ -352,7 +398,10 @@ export function ReviewOverviewPage() {
             aria-label={t('overview.remove')}
             disabled={saving}
             onClick={() => {
+              const index = session.scans.indexOf(scan);
+              const next = session.scans[index + 1] ?? session.scans[index - 1];
               dispatchScanSession({ type: 'remove', id: scan.id });
+              setFocusId(next?.id ?? null);
               // Scans held back by the Scan Cap can go on now.
               readScans(i18n.language);
             }}
@@ -381,8 +430,8 @@ export function ReviewOverviewPage() {
         title={t('title')}
         subtitle={[
           t('overview.photos', { count: session.scans.length }),
-          reading > 0
-            ? t('overview.stillReading', { count: reading })
+          reading + uncropped > 0
+            ? t('overview.stillReading', { count: reading + uncropped })
             : t('overview.allRead'),
         ].join(' · ')}
         trailing={<Link href="/scan">{t('overview.camera')}</Link>}
@@ -408,11 +457,13 @@ export function ReviewOverviewPage() {
         <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
           <Button
             onClick={() => void addAll()}
-            disabled={reading > 0 || saving || !anyRead}
+            disabled={reading > 0 || uncropped > 0 || saving || !anyRead}
           >
             {reading > 0
               ? t('overview.addWaiting', { count: reading })
-              : t('overview.add')}
+              : uncropped > 0
+                ? t('overview.cropFirst', { count: uncropped })
+                : t('overview.add')}
           </Button>
           <Button variant="secondary" onClick={discardAll} disabled={saving}>
             {t('overview.discardAll')}
