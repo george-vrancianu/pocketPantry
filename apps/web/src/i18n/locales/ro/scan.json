@@ -67,14 +67,6 @@
     "next": "Următoarea poză",
     "finish": "Gata",
     "full": "Ai ajuns la limita de {{max}} secțiuni. Finalizează sau refă ori șterge o secțiune.",
-    "readingBatch": "Citim poza {{number}} din {{total}}…",
-    "photoOf": "Poza {{number}} din {{total}}",
-    "queued_one": "Mai aștepți {{count}} poză. Apasă Următoarea poză ca s-o decupezi.",
-    "queued_few": "Mai aștepți {{count}} poze. Apasă Următoarea poză ca s-o decupezi pe următoarea.",
-    "queued_other": "Mai aștepți {{count}} de poze. Apasă Următoarea poză ca s-o decupezi pe următoarea.",
-    "tooMany_one": "Ai ales {{selected}} poze, dar mai ai loc doar pentru o secțiune (limita este 10). Alege mai puține poze.",
-    "tooMany_few": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} secțiuni (limita este 10). Alege mai puține poze.",
-    "tooMany_other": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} de secțiuni (limita este 10). Alege mai puține poze.",
     "discardConfirm": "Părăsești scanerul? Secțiunile făcute până acum se vor pierde."
   },
   "done": "Gata",
@@ -84,6 +76,7 @@
   "queue": {
     "label": "Fotografii făcute",
     "reading": "Citim fotografia",
+    "needsCrop": "Trebuie decupată",
     "read": "Fotografie citită"
   }
 }

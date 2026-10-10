@@ -95,17 +95,24 @@ export function sessionReducer(
   }
 }
 
-/** Scans still waiting or being read. */
+/** Whether a Scan's lines are in. */
+export const isRead = (scan: SessionScan) => scan.status === 'read';
+
+/** Scans not read yet: waiting for a crop, waiting for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter(
-    (scan) => scan.status !== 'read' && scan.status !== 'uncropped',
-  ).length;
+  state.scans.filter((scan) => !isRead(scan)).length;
 
 let session = emptySession;
 const listeners = new Set<() => void>();
 
 function setSession(next: SessionState) {
   if (next === session) return;
+  // A gallery receipt's thumbnail is an object URL: free it when the Scan goes or is cropped.
+  const kept = new Set(next.scans.map((scan) => scan.thumbnail));
+  session.scans.forEach(({ thumbnail }) => {
+    if (thumbnail.startsWith('blob:') && !kept.has(thumbnail))
+      URL.revokeObjectURL(thumbnail);
+  });
   session = next;
   listeners.forEach((listener) => listener());
 }

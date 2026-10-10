@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   CloseIcon,
   Link,
@@ -6,14 +7,14 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   ReceiptCropper,
   type ReceiptCrop,
-} from '../Scan/components/ReceiptCropper';
+} from '../../components/ReceiptCropper';
 import { cropToReceiptArea } from '../../lib/image';
 import type { ProposedLine } from '../../lib/scan';
 import { readScans } from '../../lib/scanReads';
@@ -40,14 +41,28 @@ export function ReviewOverviewPage() {
   const reading = pendingCount(session);
   /** The gallery receipt being cropped. */
   const [cropping, setCropping] = useState<SessionScan | null>(null);
+  const [cropFailed, setCropFailed] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // The Crop button is gone once the card is read: keep the focus on the card.
+  useEffect(() => {
+    if (!focusId) return;
+    document.querySelector<HTMLElement>(`[data-scan-id="${focusId}"]`)?.focus();
+    setFocusId(null);
+  }, [focusId]);
 
   const crop = async ({ area, rotation }: ReceiptCrop) => {
     const scan = cropping;
     setCropping(null);
     if (!scan?.source) return;
-    const image = await cropToReceiptArea(scan.source, area, rotation);
-    dispatchScanSession({ type: 'crop', id: scan.id, image });
-    readScans(i18n.language);
+    try {
+      const image = await cropToReceiptArea(scan.source, area, rotation);
+      setCropFailed(null);
+      dispatchScanSession({ type: 'crop', id: scan.id, image });
+      setFocusId(scan.id);
+      readScans(i18n.language);
+    } catch {
+      setCropFailed(scan.id);
+    }
   };
 
   const card = (scan: SessionScan) => {
@@ -66,6 +81,8 @@ export function ReviewOverviewPage() {
         component="li"
         key={scan.id}
         data-testid="review-card"
+        data-scan-id={scan.id}
+        tabIndex={-1}
         sx={{
           position: 'relative',
           display: 'flex',
@@ -119,24 +136,29 @@ export function ReviewOverviewPage() {
               <Typography>{t('overview.reading')}</Typography>
             </Box>
           ) : scan.status === 'uncropped' ? (
-            <Box
-              component="button"
-              type="button"
-              onClick={() => setCropping(scan)}
-              sx={{
-                display: 'block',
-                p: 0,
-                mt: 0.5,
-                border: 0,
-                background: 'none',
-                color: tokens.color.accent,
-                font: 'inherit',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              {t('overview.crop')}
-            </Box>
+            <>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setCropping(scan)}
+                sx={{
+                  display: 'block',
+                  p: 0,
+                  mt: 0.5,
+                  border: 0,
+                  background: 'none',
+                  color: tokens.color.accent,
+                  font: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('overview.crop')}
+              </Box>
+              {cropFailed === scan.id ? (
+                <Alert>{t('errors:scan.image_invalid')}</Alert>
+              ) : null}
+            </>
           ) : (
             <>
               <Box

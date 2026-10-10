@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
-import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
 import {
@@ -25,7 +24,6 @@ import {
   isScanMode,
   loadScanMode,
   saveScanMode,
-  useProductScan,
   type ScanMode,
 } from '../../../lib/scan';
 
@@ -42,16 +40,8 @@ export function useScanScreen() {
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const productScan = useProductScan(i18n.language, scanLanguage);
   const receiptSections = useReceiptSections(i18n.language, scanLanguage);
   const plate = usePlateScan();
-  const ingredientsScan = useIngredientsScan(i18n.language, scanLanguage);
-  // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
-  // own flow, and Receipt photographs the receipt in sections.
-  const modeScans = { product: productScan, ingredients: ingredientsScan };
-  const modeScan =
-    mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
-  const [notice, setNotice] = useState<string | null>(null);
   const resetReceiptSections = useRef(receiptSections.reset);
   resetReceiptSections.current = receiptSections.reset;
   const previousMode = useRef(mode);
@@ -71,7 +61,6 @@ export function useScanScreen() {
   useEffect(() => {
     if (previousMode.current !== mode) {
       scanEpoch.current += 1;
-      setNotice(null);
     }
     if (previousMode.current === 'receipt' && mode !== 'receipt') {
       resetReceiptSections.current();
@@ -104,17 +93,13 @@ export function useScanScreen() {
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
 
-  const reading =
-    resizing ||
-    (modeScan?.isPending ?? false) ||
-    plate.pending ||
-    receiptSections.pending;
+  const reading = resizing || plate.pending || receiptSections.pending;
   const sectionsInProgress = receiptSections.sections.length > 0;
   const busy =
     reading ||
     (mode === 'receipt' && (receiptSections.deciding || receiptSections.full));
 
-  /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
+  /** A camera frame or gallery file: prepare it, then join the Scan Session (Plate: the dish picker). */
   const scanImage = async (
     source: Blob,
     origin: ImageOrigin,
@@ -130,7 +115,6 @@ export function useScanScreen() {
     setScanned(true);
     setLocalError(null);
     clearReadFailure();
-    setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
     let image: string;
@@ -237,7 +221,6 @@ export function useScanScreen() {
       setLocalError('scan.nothing_found');
       return;
     }
-    setNotice(null);
     startReview({ mode: 'receipt', lines, scanLanguage });
     navigate('/scan/review/draft');
   };
@@ -248,8 +231,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError =
-    modeScan?.error ?? plate.error ?? receiptSections.error ?? readError;
+  const scanError = plate.error ?? receiptSections.error ?? readError;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -280,16 +262,13 @@ export function useScanScreen() {
     setMode: (next: ScanMode) => {
       if (next !== mode && !confirmDiscard()) return;
       scanEpoch.current += 1;
-      Object.values(modeScans).forEach((scan) => scan.reset());
       receiptSections.reset();
       plate.reset();
       setLocalError(null);
-      setNotice(null);
       setParams({ mode: next }, { replace: true });
     },
     plate,
     receiptSections,
-    notice,
     finishSections,
     shoot,
     pickFile,

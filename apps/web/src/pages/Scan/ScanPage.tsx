@@ -258,11 +258,6 @@ export function ScanPage() {
             <Alert>{screen.error}</Alert>
           </Box>
         ) : null}
-        {screen.notice ? (
-          <Box sx={{ mt: 1 }}>
-            <Alert severity="warning">{screen.notice}</Alert>
-          </Box>
-        ) : null}
 
         {screen.mode === 'receipt' ? (
           <ReceiptSections

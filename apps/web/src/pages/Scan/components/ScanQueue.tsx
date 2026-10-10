@@ -1,6 +1,6 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { SessionScan } from '../../../lib/scanSession';
+import { isRead, type SessionScan } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -34,14 +34,22 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
       }}
     >
       {scans.map((scan) => {
-        const reading = scan.status !== 'read' && scan.status !== 'uncropped';
+        const uncropped = scan.status === 'uncropped';
+        const reading = !uncropped && !isRead(scan);
+        const state = uncropped ? 'uncropped' : reading ? 'reading' : 'read';
         return (
           <Box
             component="li"
             key={scan.id}
             data-testid="scan-thumbnail"
-            data-state={reading ? 'reading' : 'read'}
-            aria-label={t(reading ? 'queue.reading' : 'queue.read')}
+            data-state={state}
+            aria-label={t(
+              uncropped
+                ? 'queue.needsCrop'
+                : reading
+                  ? 'queue.reading'
+                  : 'queue.read',
+            )}
             sx={{
               position: 'relative',
               flex: 'none',
@@ -112,7 +120,7 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
                   [reducedMotion]: { animation: 'none' },
                 }}
               />
-            ) : (
+            ) : uncropped ? null : (
               <Box
                 aria-hidden="true"
                 sx={{
