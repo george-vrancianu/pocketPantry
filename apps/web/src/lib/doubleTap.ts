@@ -1,6 +1,9 @@
 export const DOUBLE_TAP_MS = 320;
 export const DOUBLE_TAP_DISTANCE = 60;
 
+/** A tap that ends this soon after a dial drag is the drag's tail, not a tap. */
+export const AFTER_DRAG_MS = 320;
+
 export type Tap = { x: number; y: number; t: number };
 
 /**
@@ -10,10 +13,10 @@ export type Tap = { x: number; y: number; t: number };
 export function isDoubleTap(
   previous: Tap | null,
   next: Tap,
-  lastDragEndAt?: number | null,
+  lastDragEndAt: number | null,
 ): boolean {
   if (!previous) return false;
-  if (lastDragEndAt != null && next.t - lastDragEndAt <= DOUBLE_TAP_MS) {
+  if (lastDragEndAt != null && next.t - lastDragEndAt <= AFTER_DRAG_MS) {
     return false;
   }
   return (

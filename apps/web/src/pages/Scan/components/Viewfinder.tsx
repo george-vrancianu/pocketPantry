@@ -4,18 +4,21 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
   type MutableRefObject,
   type PointerEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanMode } from '../../../lib/scan';
 import { GUIDE_CENTER_Y, SCAN_GUIDES } from '../../../lib/scanGuides';
-import { isDoubleTap, type Tap } from '../doubleTap';
+import { isDoubleTap, type Tap } from '../../../lib/doubleTap';
 
 const ARMED_MS = 320;
 const PULSE_MS = 360;
 const FLASH_MS = 420;
 const HAPTIC_MS = 12;
+/** Pointer travel between press and release that still counts as a tap. */
+const TAP_SLOP = 10;
 const noMotion = {
   '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
 };
@@ -42,7 +45,7 @@ type Props = {
 
 /**
  * The guide brackets that follow the Scan Mode, centred over the full-screen feed. Double-tapping
- * the guide takes the Scan, with a shutter flash and a pulse.
+ * the guide takes the Scan, with a white flash and a pulse.
  */
 export function Viewfinder({
   mode,
@@ -59,11 +62,24 @@ export function Viewfinder({
   const [flash, setFlash] = useState(false);
   const timers = useRef<number[]>([]);
   const lastTap = useRef<Tap | null>(null);
+  const guideRef = useRef<HTMLDivElement>(null);
+  /** The press that may become the next tap: primary pointer, started inside the guide. */
+  const press = useRef<{ id: number; x: number; y: number } | null>(null);
   useEffect(() => {
     const pending = timers.current;
+    // A press that starts or ends outside the guide breaks the pairing of taps.
+    const outside = (event: globalThis.PointerEvent) => {
+      if (guideRef.current?.contains(event.target as Node)) return;
+      press.current = null;
+      if (event.type === 'pointerup') lastTap.current = null;
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('pointerup', outside);
     return () => {
       window.clearTimeout(timer.current);
       pending.forEach(window.clearTimeout);
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('pointerup', outside);
     };
   }, []);
   const arm = () => {
@@ -83,7 +99,24 @@ export function Viewfinder({
       window.setTimeout(() => setFlash(false), FLASH_MS),
     ];
   };
+  const onPointerDown = (event: PointerEvent) => {
+    arm();
+    press.current =
+      event.isPrimary && event.button === 0
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY }
+        : null;
+  };
   const onPointerUp = (event: PointerEvent) => {
+    const down = press.current;
+    press.current = null;
+    if (
+      !down ||
+      down.id !== event.pointerId ||
+      Math.hypot(event.clientX - down.x, event.clientY - down.y) > TAP_SLOP
+    ) {
+      lastTap.current = null;
+      return;
+    }
     const tap = { x: event.clientX, y: event.clientY, t: performance.now() };
     if (isDoubleTap(lastTap.current, tap, dragEndedAt.current)) {
       lastTap.current = null;
@@ -92,8 +125,12 @@ export function Viewfinder({
       lastTap.current = tap;
     }
   };
+  // Screen readers activate a button with a click that has no pointer behind it.
+  const onClick = (event: MouseEvent) => {
+    if (event.detail === 0) scan();
+  };
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.target !== event.currentTarget) return;
+    if (event.target !== event.currentTarget || event.repeat) return;
     if (event.key !== 'Enter' && event.key !== ' ') return;
     event.preventDefault();
     scan();
@@ -109,7 +146,7 @@ export function Viewfinder({
             inset: 0,
             backgroundColor: '#FFFFFF',
             opacity: 0,
-            animation: 'pp-scan-flash .28s ease-out',
+            animation: 'pp-scan-flash 280ms ease-out',
             '@keyframes pp-scan-flash': {
               from: { opacity: 0.55 },
               to: { opacity: 0 },
@@ -121,12 +158,14 @@ export function Viewfinder({
       <Box
         data-testid="scan-guide"
         data-armed={armed ? 'true' : undefined}
-        data-shutter={pulse ? 'true' : undefined}
+        data-pulse={pulse ? 'true' : undefined}
         role="button"
         tabIndex={0}
         aria-label={t('guide.scan')}
         aria-disabled={disabled || undefined}
-        onPointerDown={arm}
+        ref={guideRef}
+        onPointerDown={onPointerDown}
+        onClick={onClick}
         onPointerUp={onPointerUp}
         onKeyDown={onKeyDown}
         sx={{
@@ -137,6 +176,9 @@ export function Viewfinder({
           height: `${height * 100}%`,
           transform: 'translate(-50%, -50%)',
           pointerEvents: 'auto',
+          touchAction: 'manipulation',
+          userSelect: 'none',
+          WebkitTapHighlightColor: 'transparent',
           transition: `width 400ms cubic-bezier(.2,.8,.2,1), height 400ms cubic-bezier(.2,.8,.2,1)`,
           ...noMotion,
           '&:focus-visible': {
@@ -144,7 +186,7 @@ export function Viewfinder({
             outlineOffset: 8,
           },
           ...(pulse && {
-            animation: 'pp-scan-pulse .36s ease-out',
+            animation: `pp-scan-pulse ${PULSE_MS}ms ease-out`,
             '@keyframes pp-scan-pulse': {
               '0%, 100%': { transform: 'translate(-50%, -50%) scale(1)' },
               '40%': { transform: 'translate(-50%, -50%) scale(0.965)' },
@@ -163,7 +205,7 @@ export function Viewfinder({
               inset: 0,
               backgroundColor: '#FFFFFF',
               opacity: 0,
-              animation: 'pp-scan-fill .42s ease-out',
+              animation: `pp-scan-fill ${FLASH_MS}ms ease-out`,
               '@keyframes pp-scan-fill': {
                 from: { opacity: 0.85 },
                 to: { opacity: 0 },
@@ -187,7 +229,8 @@ export function Viewfinder({
               [`border${v}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${h}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${v}${h}Radius`]: '10px',
-              borderColor: armed ? tokens.color.camAccent : tokens.color.camFg,
+              borderColor:
+                armed && !flash ? tokens.color.camAccent : tokens.color.camFg,
               filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.5))',
               transition: 'border-color 200ms',
               ...noMotion,

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
+import { scanGuide as guide } from '../../test/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -41,7 +42,6 @@ function renderScan(route = '/scan?mode=product', hang = false) {
   );
 }
 
-const guide = () => screen.getByTestId('scan-guide');
 const scans = () =>
   fetchCalls.filter((c) => c.key === 'POST /api/scan/product');
 const flash = () => screen.queryByTestId('scan-flash');
@@ -160,7 +160,7 @@ describe('Scan by double-tapping the guides', () => {
     tap(guide(), 200, 300, 100);
     await flush();
     expect(flash()).toBeInTheDocument();
-    expect(guide()).toHaveAttribute('data-shutter', 'true');
+    expect(guide()).toHaveAttribute('data-pulse', 'true');
     expect(screen.getByTestId('scan-guide-fill')).toBeInTheDocument();
     expect(
       getComputedStyle(screen.getAllByTestId('scan-guide-corner')[0])
@@ -175,9 +175,9 @@ describe('Scan by double-tapping the guides', () => {
     tap(guide(), 200, 300, 100);
     await flush();
     await advance(359);
-    expect(guide()).toHaveAttribute('data-shutter', 'true');
+    expect(guide()).toHaveAttribute('data-pulse', 'true');
     await advance(2);
-    expect(guide()).not.toHaveAttribute('data-shutter', 'true');
+    expect(guide()).not.toHaveAttribute('data-pulse', 'true');
     await advance(58);
     expect(flash()).toBeInTheDocument();
     await advance(3);
@@ -292,7 +292,9 @@ describe('Scan by double-tapping the guides', () => {
     await flush();
     expect(guide()).toHaveAttribute('data-armed', 'true');
     for (const corner of screen.getAllByTestId('scan-guide-corner')) {
-      expect(getComputedStyle(corner).borderTopColor).toBe('#f4f4f0');
+      expect(getComputedStyle(corner).borderTopColor).toBe(
+        'rgb(244, 244, 240)',
+      );
     }
   });
 
