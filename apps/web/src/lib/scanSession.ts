@@ -41,6 +41,16 @@ export type SessionAction =
   | { type: 'pick'; id: string; lines: ProposedLine[] }
   | { type: 'reread'; id: string };
 
+const update = (
+  state: SessionState,
+  id: string,
+  change: Partial<SessionScan>,
+): SessionState => ({
+  scans: state.scans.map((scan) =>
+    scan.id === id ? { ...scan, ...change } : scan,
+  ),
+});
+
 export const emptySession: SessionState = { scans: [] };
 
 export function sessionReducer(
@@ -76,11 +86,24 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
-    // TODO(#117): stubs, implemented against scanSession.test.ts
     case 'readDishes':
+      return update(state, action.id, {
+        status: 'read',
+        dishes: action.dishes,
+        plateToken: action.token,
+      });
     case 'pick':
+      return update(state, action.id, {
+        lines: action.lines,
+        dishes: undefined,
+        plateToken: undefined,
+      });
     case 'reread':
-      return state;
+      return update(state, action.id, {
+        status: 'queued',
+        dishes: undefined,
+        plateToken: undefined,
+      });
   }
 }
 

@@ -14,7 +14,6 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
-import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
 import { ReceiptCropper } from './components/ReceiptCropper';
@@ -283,15 +282,6 @@ export function ScanPage() {
           />
         ) : null}
 
-        {screen.plate.dishes ? (
-          <DishPicker
-            dishes={screen.plate.dishes}
-            disabled={screen.reading}
-            onPick={screen.plate.pick}
-            onRetake={screen.plate.reset}
-          />
-        ) : null}
-
         <ModeDial
           mode={screen.mode}
           disabled={screen.modesDisabled || infoOpen}
@@ -299,8 +289,7 @@ export function ScanPage() {
             screen.modesDisabled ||
             infoOpen ||
             screen.reading ||
-            !!screen.cropping ||
-            !!screen.plate.dishes
+            !!screen.cropping
           }
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}

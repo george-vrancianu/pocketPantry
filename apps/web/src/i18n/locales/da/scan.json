@@ -25,11 +25,6 @@
     "cancel": "Annuller",
     "confirm": "Brug foto"
   },
-  "plate": {
-    "pickTitle": "Hvilken ret er det?",
-    "option": "{{title}}, {{percent}} % sandsynlig",
-    "retake": "Tag foto igen"
-  },
   "mode": {
     "product": "Produkt",
     "receipt": "Kvittering",

@@ -1,5 +1,4 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -70,23 +69,6 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
       screen.getByRole('dialog', { name: 'Crop receipt' }),
     ).toBeInTheDocument();
     expect(checked()).toEqual(['Receipt']);
-  });
-
-  it('ignores arrows while the dish picker is showing', async () => {
-    setup('/scan?mode=plate', {
-      'POST /api/scan/plate': () =>
-        Response.json({
-          token: 't',
-          dishes: [{ title: 'Pancakes', confidence: 0.7 }],
-        }),
-    });
-    scanViaGuide();
-    await screen.findByRole('group', { name: 'Which dish is it?' });
-    await userEvent.keyboard('{ArrowLeft}');
-    expect(
-      screen.getByRole('group', { name: 'Which dish is it?' }),
-    ).toBeInTheDocument();
-    expect(checked()).toEqual(['Plate']);
   });
 
   it('ignores arrows while the Info sheet is open', async () => {

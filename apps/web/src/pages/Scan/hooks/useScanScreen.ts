@@ -26,7 +26,6 @@ import { MAX_RECEIPT_SECTIONS } from '../../../lib/receiptSections';
 import type { ReceiptCrop } from '../components/ReceiptCropper';
 import { useReceiptSections } from './useReceiptSections';
 import { useScanLanguage } from './useScanLanguage';
-import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
   loadScanMode,
@@ -50,10 +49,9 @@ export function useScanScreen() {
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const productScan = useProductScan(i18n.language, scanLanguage);
   const receiptSections = useReceiptSections(i18n.language, scanLanguage);
-  const plate = usePlateScan();
   const ingredientsScan = useIngredientsScan(i18n.language, scanLanguage);
-  // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
-  // own flow, and Receipt photographs the receipt in sections.
+  // Product and Ingredients have one endpoint and return the same proposed lines. Plate joins the
+  // Scan Session like the camera Scans, and Receipt photographs the receipt in sections.
   const modeScans = { product: productScan, ingredients: ingredientsScan };
   const modeScan =
     mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
@@ -130,10 +128,7 @@ export function useScanScreen() {
   const [scanned, setScanned] = useState(false);
 
   const reading =
-    resizing ||
-    (modeScan?.isPending ?? false) ||
-    plate.pending ||
-    receiptSections.pending;
+    resizing || (modeScan?.isPending ?? false) || receiptSections.pending;
   const sectionsInProgress = receiptSections.sections.length > 0;
   const busy =
     reading ||
@@ -169,13 +164,13 @@ export function useScanScreen() {
     }
     if (epoch !== scanEpoch.current) return false;
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
-    if (origin === 'camera' && mode !== 'plate') {
+    if (origin === 'camera' || mode === 'plate') {
       dispatchScanSession({
         type: 'enqueue',
         scan: {
           id: crypto.randomUUID(),
           mode,
-          scanLanguage,
+          scanLanguage: mode === 'plate' ? undefined : scanLanguage,
           image,
           thumbnail: image,
         },
@@ -186,10 +181,7 @@ export function useScanScreen() {
     if (mode === 'receipt') {
       return (await receiptSections.submit(image)) === 'failed';
     }
-    if (!modeScan) {
-      plate.scan(image);
-      return false;
-    }
+    if (!modeScan) return false;
     modeScan.mutate(image, {
       onSuccess: ({ lines }) => {
         if (lines.length === 0) {
@@ -297,8 +289,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError =
-    modeScan?.error ?? plate.error ?? receiptSections.error ?? readError;
+  const scanError = modeScan?.error ?? receiptSections.error ?? readError;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -331,12 +322,10 @@ export function useScanScreen() {
       scanEpoch.current += 1;
       Object.values(modeScans).forEach((scan) => scan.reset());
       receiptSections.reset();
-      plate.reset();
       setLocalError(null);
       clearQueue();
       setParams({ mode: next }, { replace: true });
     },
-    plate,
     receiptSections: {
       ...receiptSections,
       nextPhoto: () => {

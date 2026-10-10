@@ -25,11 +25,6 @@
     "cancel": "Cancel",
     "confirm": "Use photo"
   },
-  "plate": {
-    "pickTitle": "Which dish is it?",
-    "option": "{{title}}, {{percent}}% likely",
-    "retake": "Retake photo"
-  },
   "mode": {
     "product": "Product",
     "receipt": "Receipt",

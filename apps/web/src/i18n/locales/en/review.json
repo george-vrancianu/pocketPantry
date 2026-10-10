@@ -140,6 +140,9 @@
     "check_one": "Check {{count}} item",
     "check_other": "Check {{count}} items",
     "more": "+{{count}}",
-    "empty": "No photos yet."
+    "empty": "No photos yet.",
+    "pickDish": "Pick the dish",
+    "dishOption": "{{title}}, {{percent}}% likely",
+    "readAgain": "Read again"
   }
 }

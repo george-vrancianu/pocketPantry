@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { PlateChoice } from './components/PlateChoice';
 import type { ProposedLine } from '../../lib/scan';
 import {
   dispatchScanSession,
@@ -100,6 +101,8 @@ export function ReviewOverviewPage() {
               </Box>
               <Typography>{t('overview.reading')}</Typography>
             </Box>
+          ) : scan.dishes ? (
+            <PlateChoice scan={scan} />
           ) : (
             <>
               <Box

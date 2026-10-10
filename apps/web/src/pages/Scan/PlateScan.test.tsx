@@ -8,6 +8,7 @@ import type { ProposedLine } from '../../lib/scan';
 import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { findReviewRow } from '../../test/review';
 import { scanViaGuide } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -90,6 +91,7 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
       <Route path="/scan" element={<ScanPage />} />
       <Route path="/scan/review" element={<ReviewOverviewPage />} />
       <Route path="/scan/review/:scanId" element={<ReviewPage />} />
+      <Route path="/shopping" element={<p>shopping screen</p>} />
     </Routes>,
     { route: '/scan?mode=plate' },
   );
@@ -162,15 +164,15 @@ describe('Plate Scan in the Scan Session', () => {
     await scanThenDone();
     await pick(/Pancakes/);
     await userEvent.click(await screen.findByTestId('card-result'));
-    const milkCard = await screen.findByRole('group', { name: 'Milk' });
+    await userEvent.click(await findReviewRow('Milk'));
+    const milkCard = screen.getByRole('group', { name: 'Milk' });
     expect(within(milkCard).getByLabelText('Quantity')).toHaveValue(200);
     expect(within(milkCard).queryByLabelText('Expiry date')).toBeNull();
     await userEvent.click(
       screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
     );
-    await waitFor(() =>
-      expect(screen.getByTestId('review-overview')).toBeInTheDocument(),
-    );
+    // The only card is saved, so the Member lands on the Shopping List.
+    expect(await screen.findByText('shopping screen')).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')?.body,
     ).toEqual({
@@ -182,7 +184,6 @@ describe('Plate Scan in the Scan Session', () => {
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/pantry/batches/bulk',
     );
-    expect(screen.queryAllByTestId('review-card')).toHaveLength(0);
   });
 
   it('offers "Read again" when the token has expired, and reading again costs a new Plate request', async () => {
