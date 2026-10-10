@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
+import type { DishGuess } from './plate';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -17,6 +18,9 @@ export type SessionScan = {
   status: 'queued' | 'reading' | 'read';
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
+  /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
+  dishes?: DishGuess[];
+  plateToken?: string;
 };
 
 /** The Scans taken since the camera was opened, in the order the Scans were taken. */
@@ -32,7 +36,10 @@ export type SessionAction =
     }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
-  | { type: 'remove'; id: string };
+  | { type: 'remove'; id: string }
+  | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
+  | { type: 'pick'; id: string; lines: ProposedLine[] }
+  | { type: 'reread'; id: string };
 
 export const emptySession: SessionState = { scans: [] };
 
@@ -69,6 +76,11 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
+    // TODO(#117): stubs, implemented against scanSession.test.ts
+    case 'readDishes':
+    case 'pick':
+    case 'reread':
+      return state;
   }
 }
 

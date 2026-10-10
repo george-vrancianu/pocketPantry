@@ -250,3 +250,46 @@ describe('Scan Session reducer', () => {
     });
   });
 });
+
+describe('Scan Session reducer: Plate Scans', () => {
+  const dishes = [{ title: 'Pancakes', confidence: 0.7 }];
+  const plate = enqueue('p', { mode: 'plate', scanLanguage: undefined });
+  const dishesRead = (...rest: SessionAction[]) =>
+    run(
+      plate,
+      { type: 'start' },
+      {
+        type: 'readDishes',
+        id: 'p',
+        dishes,
+        token: 'tok',
+      },
+      ...rest,
+    );
+
+  it('is read once its dish guesses arrive, with no lines yet', () => {
+    const [scan] = dishesRead().scans;
+    expect(scan).toMatchObject({
+      status: 'read',
+      dishes,
+      plateToken: 'tok',
+    });
+    expect(scan.lines).toBeUndefined();
+    expect(pendingCount(dishesRead())).toBe(0);
+  });
+
+  it('gets its lines when a dish is picked, dropping the guesses', () => {
+    const [scan] = dishesRead({ type: 'pick', id: 'p', lines: [line] }).scans;
+    expect(scan.lines).toEqual([line]);
+    expect(scan.dishes).toBeUndefined();
+    expect(scan.plateToken).toBeUndefined();
+  });
+
+  it('is queued again to be read again, without the old guesses', () => {
+    const [scan] = dishesRead({ type: 'reread', id: 'p' }).scans;
+    expect(scan.status).toBe('queued');
+    expect(scan.dishes).toBeUndefined();
+    expect(scan.plateToken).toBeUndefined();
+    expect(scan.image).toBe('image-p');
+  });
+});
