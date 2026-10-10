@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { FamilyPage } from './pages/Family/FamilyPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
+import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
 import { ScanPage } from './pages/Scan/ScanPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
@@ -31,7 +32,8 @@ export function App() {
           <Route path="pantry" element={<PantryPage />} />
           <Route path="shopping" element={<ShoppingPage />} />
           <Route path="scan" element={<ScanPage />} />
-          <Route path="scan/review" element={<ReviewPage />} />
+          <Route path="scan/review" element={<ReviewOverviewPage />} />
+          <Route path="scan/review/:scanId" element={<ReviewPage />} />
           <Route path="recipes" element={<RecipesPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="family" element={<FamilyPage />} />

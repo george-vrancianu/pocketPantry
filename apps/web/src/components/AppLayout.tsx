@@ -4,8 +4,8 @@ import { dockStateFor } from '../lib/dockState';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
 import { AppDock } from './AppDock';
 
-/** Screens whose tablet layout is a wide table. */
-const WIDE_ROUTES = ['/scan/review'];
+/** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
+const isWide = (pathname: string) => pathname.startsWith('/scan/review/');
 
 /** The signed-in shell: page frame plus the Dock for the current route. */
 export function AppLayout() {
@@ -17,7 +17,7 @@ export function AppLayout() {
       <PageLayout
         withDock={dock.visible}
         dark={dock.variant === 'dark'}
-        wide={WIDE_ROUTES.includes(pathname)}
+        wide={isWide(pathname)}
       >
         <Outlet />
       </PageLayout>

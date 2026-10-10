@@ -1,4 +1,228 @@
-// Stub: the implementation follows the tests in ReviewOverview.test.tsx.
+import {
+  Box,
+  CloseIcon,
+  Link,
+  Spinner,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
+import type { ProposedLine } from '../../lib/scan';
+import {
+  dispatchScanSession,
+  pendingCount,
+  useScanSession,
+  type SessionScan,
+} from '../../lib/scanSession';
+
+const MAX_CHIPS = 8;
+
+const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
+
+/**
+ * The overview a Member lands on from Done: one card per Scan of the Scan Session, in capture
+ * order. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
+ */
 export function ReviewOverviewPage() {
-  return null;
+  const { t } = useTranslation('review');
+  const { t: tScan } = useTranslation('scan');
+  const navigate = useNavigate();
+  const session = useScanSession();
+  const reading = pendingCount(session);
+
+  const card = (scan: SessionScan) => {
+    const isReading = scan.status !== 'read';
+    // Lines Receipt Scan left out are not saved, so they are not counted or shown.
+    const lines = (scan.lines ?? []).filter((line) => !line.excluded);
+    const check = lines.filter(
+      (line) => line.lowConfidence || line.match === null,
+    ).length;
+    const result =
+      scan.mode === 'product' && lines.length > 0
+        ? nameOf(lines[0])
+        : t('overview.items', { count: lines.length });
+    return (
+      <Box
+        component="li"
+        key={scan.id}
+        data-testid="review-card"
+        sx={{
+          display: 'flex',
+          gap: 1.5,
+          p: 1.5,
+          borderRadius: `${tokens.radius.card}px`,
+          border: `1px solid ${tokens.color.line}`,
+          backgroundColor: tokens.color.surface,
+        }}
+      >
+        <Box
+          component="img"
+          src={scan.thumbnail}
+          alt=""
+          sx={{
+            flex: 'none',
+            width: 56,
+            height: 72,
+            borderRadius: '10px',
+            objectFit: 'cover',
+          }}
+        />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: tokens.color.accent,
+            }}
+          >
+            {tScan(`mode.${scan.mode}`)}
+          </Typography>
+          {isReading ? (
+            <Box
+              role="status"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  '& .MuiCircularProgress-root': {
+                    width: '18px !important',
+                    height: '18px !important',
+                  },
+                }}
+              >
+                <Spinner label={t('overview.reading')} />
+              </Box>
+              <Typography>{t('overview.reading')}</Typography>
+            </Box>
+          ) : (
+            <>
+              <Box
+                component="button"
+                type="button"
+                data-testid="card-result"
+                onClick={() => navigate(`/scan/review/${scan.id}`)}
+                sx={{
+                  display: 'block',
+                  p: 0,
+                  mt: 0.5,
+                  border: 0,
+                  background: 'none',
+                  color: 'inherit',
+                  font: 'inherit',
+                  fontWeight: 700,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                {result}
+              </Box>
+              <Box
+                component="ul"
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 0.5,
+                  m: 0,
+                  mt: 0.75,
+                  p: 0,
+                  listStyle: 'none',
+                }}
+              >
+                {lines.slice(0, MAX_CHIPS).map((line, index) => (
+                  <Box
+                    component="li"
+                    key={index}
+                    data-testid="card-chip"
+                    sx={{
+                      px: '10px',
+                      py: '2px',
+                      borderRadius: `${tokens.radius.chip}px`,
+                      fontSize: 12,
+                      backgroundColor: tokens.color.accentTint,
+                      color: tokens.color.accent,
+                    }}
+                  >
+                    {nameOf(line)}
+                  </Box>
+                ))}
+                {lines.length > MAX_CHIPS ? (
+                  <Box component="li" sx={{ fontSize: 12 }}>
+                    {t('overview.more', { count: lines.length - MAX_CHIPS })}
+                  </Box>
+                ) : null}
+              </Box>
+              {check > 0 ? (
+                <Typography
+                  sx={{
+                    mt: 0.75,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: tokens.color.urgentFg,
+                  }}
+                >
+                  {t('overview.check', { count: check })}
+                </Typography>
+              ) : null}
+            </>
+          )}
+        </Box>
+        {isReading ? null : (
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('overview.remove')}
+            onClick={() => dispatchScanSession({ type: 'remove', id: scan.id })}
+            sx={{
+              flex: 'none',
+              alignSelf: 'flex-start',
+              p: 0.5,
+              border: 0,
+              background: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+            }}
+          >
+            <CloseIcon size={18} />
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  return (
+    <div data-testid="review-overview">
+      <AppScreenHeader
+        title={t('title')}
+        subtitle={[
+          t('overview.photos', { count: session.scans.length }),
+          reading > 0
+            ? t('overview.stillReading', { count: reading })
+            : t('overview.allRead'),
+        ].join(' · ')}
+        trailing={<Link href="/scan">{t('overview.camera')}</Link>}
+      />
+      {session.scans.length === 0 ? (
+        <Typography color="text.secondary">{t('overview.empty')}</Typography>
+      ) : (
+        <Box
+          component="ul"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+            m: 0,
+            p: 0,
+            listStyle: 'none',
+          }}
+        >
+          {session.scans.map(card)}
+        </Box>
+      )}
+    </div>
+  );
 }

@@ -124,5 +124,20 @@
   },
   "footer": {
     "helper": "Sikre rækker er skjult. Tryk på en række for at redigere den."
+  },
+  "overview": {
+    "photos_one": "{{count}} foto",
+    "photos_other": "{{count}} fotos",
+    "stillReading": "{{count}} læses stadig",
+    "allRead": "alle læst",
+    "camera": "Kamera",
+    "reading": "Læser foto…",
+    "remove": "Fjern foto",
+    "items_one": "{{count}} vare",
+    "items_other": "{{count}} varer",
+    "check_one": "Tjek {{count}} vare",
+    "check_other": "Tjek {{count}} varer",
+    "more": "+{{count}}",
+    "empty": "Ingen fotos endnu."
   }
 }

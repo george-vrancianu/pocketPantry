@@ -126,5 +126,20 @@
   },
   "footer": {
     "helper": "Sure rows are collapsed. Tap a row to edit it."
+  },
+  "overview": {
+    "photos_one": "{{count}} photo",
+    "photos_other": "{{count}} photos",
+    "stillReading": "{{count}} still reading",
+    "allRead": "all read",
+    "camera": "Camera",
+    "reading": "Reading photo…",
+    "remove": "Remove photo",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "check_one": "Check {{count}} item",
+    "check_other": "Check {{count}} items",
+    "more": "+{{count}}",
+    "empty": "No photos yet."
   }
 }
