@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ProposedLine } from './scan';
 import {
   MAX_CONCURRENT_READS,
+  capReached,
   emptySession,
   pendingCount,
   sessionReducer,
@@ -247,6 +248,198 @@ describe('Scan Session reducer', () => {
         },
       );
       expect(pendingCount(state)).toBe(0);
+    });
+  });
+
+  describe('fail', () => {
+    it('marks a reading Scan failed and keeps its image for a retry', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'error',
+        },
+      );
+      expect(state.scans[0]).toMatchObject({
+        status: 'failed',
+        failure: 'error',
+        image: 'image-a',
+        thumbnail: 'thumb-a',
+      });
+    });
+
+    it('records the Scan Cap as its own reason', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'cap',
+        },
+      );
+      expect(state.scans[0]).toMatchObject({
+        status: 'failed',
+        failure: 'cap',
+      });
+    });
+
+    it('leaves the other Scans alone and frees the read slot', () => {
+      const state = run(
+        enqueue('a'),
+        enqueue('b'),
+        enqueue('c'),
+        { type: 'start' },
+        { type: 'fail', id: 'a', reason: 'error' },
+        { type: 'start' },
+      );
+      expect(status(state)).toEqual([
+        ['a', 'failed'],
+        ['b', 'reading'],
+        ['c', 'reading'],
+      ]);
+    });
+
+    it('does not count a failed Scan as pending', () => {
+      const state = run(
+        enqueue('a'),
+        enqueue('b'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'error',
+        },
+      );
+      expect(pendingCount(state)).toBe(1);
+    });
+
+    it('keeps the order of the Scans', () => {
+      const state = run(
+        enqueue('a'),
+        enqueue('b'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'error',
+        },
+      );
+      expect(state.scans.map((scan) => scan.id)).toEqual(['a', 'b']);
+    });
+  });
+
+  describe('retry', () => {
+    const failed = (reason: 'error' | 'cap' = 'error') =>
+      run(enqueue('a'), { type: 'start' }, { type: 'fail', id: 'a', reason });
+
+    it('puts a failed Scan back in line with the same image', () => {
+      const state = sessionReducer(failed(), { type: 'retry', id: 'a' });
+      expect(state.scans[0]).toMatchObject({
+        status: 'queued',
+        image: 'image-a',
+        thumbnail: 'thumb-a',
+      });
+      expect(state.scans[0].failure).toBeUndefined();
+    });
+
+    it('is read again by the next start', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        { type: 'fail', id: 'a', reason: 'error' },
+        { type: 'retry', id: 'a' },
+        { type: 'start' },
+      );
+      expect(status(state)).toEqual([['a', 'reading']]);
+    });
+
+    it('only acts on failed Scans', () => {
+      const reading = run(enqueue('a'), { type: 'start' });
+      expect(sessionReducer(reading, { type: 'retry', id: 'a' })).toEqual(
+        reading,
+      );
+      const read = run(
+        enqueue('b'),
+        { type: 'start' },
+        {
+          type: 'read',
+          id: 'b',
+          lines: [line],
+        },
+      );
+      expect(sessionReducer(read, { type: 'retry', id: 'b' })).toEqual(read);
+    });
+
+    it('does nothing for an unknown Scan', () => {
+      const state = failed();
+      expect(sessionReducer(state, { type: 'retry', id: 'zzz' })).toEqual(
+        state,
+      );
+    });
+
+    it('can fail and be retried again', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        { type: 'fail', id: 'a', reason: 'error' },
+        { type: 'retry', id: 'a' },
+        { type: 'start' },
+        { type: 'fail', id: 'a', reason: 'error' },
+      );
+      expect(status(state)).toEqual([['a', 'failed']]);
+    });
+  });
+
+  describe('capReached', () => {
+    it('is false for an empty Scan Session and for ordinary failures', () => {
+      expect(capReached(emptySession)).toBe(false);
+      expect(
+        capReached(
+          run(
+            enqueue('a'),
+            { type: 'start' },
+            {
+              type: 'fail',
+              id: 'a',
+              reason: 'error',
+            },
+          ),
+        ),
+      ).toBe(false);
+    });
+
+    it('is true while a Scan failed on the Scan Cap', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'cap',
+        },
+      );
+      expect(capReached(state)).toBe(true);
+    });
+
+    it('is lifted by removing that Scan or retrying it', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'cap',
+        },
+      );
+      expect(
+        capReached(sessionReducer(state, { type: 'remove', id: 'a' })),
+      ).toBe(false);
+      expect(
+        capReached(sessionReducer(state, { type: 'retry', id: 'a' })),
+      ).toBe(false);
     });
   });
 });

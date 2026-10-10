@@ -14,7 +14,8 @@ export type SessionScan = {
   /** The prepared photo (a data URL) that is sent for reading. */
   image: string;
   thumbnail: string;
-  status: 'queued' | 'reading' | 'read';
+  status: 'queued' | 'reading' | 'read' | 'failed';
+  failure?: 'error' | 'cap';
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
 };
@@ -32,6 +33,8 @@ export type SessionAction =
     }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
+  | { type: 'fail'; id: string; reason: 'error' | 'cap' }
+  | { type: 'retry'; id: string }
   | { type: 'remove'; id: string };
 
 export const emptySession: SessionState = { scans: [] };
@@ -69,12 +72,17 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
+    default:
+      return state;
   }
 }
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>
   state.scans.filter((scan) => scan.status !== 'read').length;
+
+/** Stub: whether a Scan hit the Scan Cap. */
+export const capReached = (_state: SessionState) => false;
 
 let session = emptySession;
 const listeners = new Set<() => void>();
