@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES, type ScanMode } from '../../../lib/scan';
 import {
-  DIAL_ITEM_WIDTH as ITEM_WIDTH,
+  DIAL_ITEM_WIDTH,
   releaseTarget,
   rubberBand,
   startsHorizontalDrag,
@@ -103,20 +103,33 @@ export function ModeDial({
   // Strip offset in px while a finger is dragging it (0 = first item centred), else null.
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const drag = useRef<{
+    pointerId: number;
     x: number;
     y: number;
     t: number;
+    /** Strip offset in px when the finger went down. */
+    startOffset: number;
+    startIndex: number;
     moved: boolean;
   } | null>(null);
   const justDragged = useRef(false);
-  const offsetNow = (event: PointerEvent, start: { x: number }) =>
+  const clickGuard = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(clickGuard.current), []);
+  const offsetNow = (
+    event: PointerEvent,
+    start: { x: number; startOffset: number },
+  ) =>
     rubberBand(
-      index * ITEM_WIDTH - (event.clientX - start.x),
-      (SCAN_MODES.length - 1) * ITEM_WIDTH,
+      start.startOffset - (event.clientX - start.x),
+      (SCAN_MODES.length - 1) * DIAL_ITEM_WIDTH,
     );
+  const dragging = dragOffset !== null;
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (disabled || !event.isPrimary || event.button !== 0) return;
     drag.current = {
+      pointerId: event.pointerId,
+      startOffset: index * DIAL_ITEM_WIDTH,
+      startIndex: index,
       x: event.clientX,
       y: event.clientY,
       t: performance.now(),
@@ -125,7 +138,7 @@ export function ModeDial({
   };
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     const start = drag.current;
-    if (!start) return;
+    if (!start || start.pointerId !== event.pointerId) return;
     if (
       !start.moved &&
       !startsHorizontalDrag(event.clientX - start.x, event.clientY - start.y)
@@ -144,17 +157,22 @@ export function ModeDial({
   };
   const endDrag = (event: PointerEvent<HTMLElement>, cancelled: boolean) => {
     const start = drag.current;
+    if (!start || start.pointerId !== event.pointerId) return;
     drag.current = null;
-    if (!start?.moved) return;
+    if (!start.moved) return;
     setDragOffset(null);
     justDragged.current = true;
-    setTimeout(() => (justDragged.current = false), CLICK_GUARD_MS);
-    if (cancelled) return;
+    clearTimeout(clickGuard.current);
+    clickGuard.current = setTimeout(
+      () => (justDragged.current = false),
+      CLICK_GUARD_MS,
+    );
+    if (cancelled || disabled) return;
     const target = releaseTarget({
       offset: offsetNow(event, start),
       dx: event.clientX - start.x,
       dt: Math.max(1, performance.now() - start.t),
-      index,
+      index: start.startIndex,
       count: SCAN_MODES.length,
     });
     if (target !== index) onChange(SCAN_MODES[target]);
@@ -184,7 +202,7 @@ export function ModeDial({
         height: 120,
         mt: 1,
         touchAction: 'pan-y',
-        cursor: dragOffset === null ? 'grab' : 'grabbing',
+        cursor: dragging ? 'grabbing' : 'grab',
       }}
     >
       <Box
@@ -219,10 +237,9 @@ export function ModeDial({
           top: 30,
           width: 64,
           height: 64,
-          transform:
-            dragOffset === null
-              ? 'translateX(-50%)'
-              : 'translateX(-50%) scale(.94)',
+          transform: dragging
+            ? 'translateX(-50%) scale(.94)'
+            : 'translateX(-50%)',
           transition: 'transform .15s',
           [reducedMotion]: { transition: 'none' },
           borderRadius: '50%',
@@ -241,11 +258,10 @@ export function ModeDial({
           top: 30,
           height: 64,
           display: 'flex',
-          transform: `translateX(${-ITEM_WIDTH / 2 - (dragOffset ?? index * ITEM_WIDTH)}px)`,
-          transition:
-            dragOffset === null
-              ? 'transform .42s cubic-bezier(.2,.8,.2,1)'
-              : 'none',
+          transform: `translateX(${-DIAL_ITEM_WIDTH / 2 - (dragOffset ?? index * DIAL_ITEM_WIDTH)}px)`,
+          transition: dragging
+            ? 'none'
+            : 'transform .42s cubic-bezier(.2,.8,.2,1)',
           [reducedMotion]: { transition: 'none' },
         }}
       >
@@ -265,7 +281,7 @@ export function ModeDial({
                 if (!justDragged.current) onChange(item);
               }}
               sx={{
-                width: ITEM_WIDTH,
+                width: DIAL_ITEM_WIDTH,
                 height: 64,
                 display: 'grid',
                 placeItems: 'center',
