@@ -76,5 +76,14 @@
     "tooMany_few": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} secțiuni (limita este 10). Alege mai puține poze.",
     "tooMany_other": "Ai ales {{selected}} poze, dar mai ai loc doar pentru {{count}} de secțiuni (limita este 10). Alege mai puține poze.",
     "discardConfirm": "Părăsești scanerul? Secțiunile făcute până acum se vor pierde."
+  },
+  "done": "Gata",
+  "doneCount_one": "Gata, {{count}} fotografie",
+  "doneCount_few": "Gata, {{count}} fotografii",
+  "doneCount_other": "Gata, {{count}} de fotografii",
+  "queue": {
+    "label": "Fotografii făcute",
+    "reading": "Citim fotografia",
+    "read": "Fotografie citită"
   }
 }

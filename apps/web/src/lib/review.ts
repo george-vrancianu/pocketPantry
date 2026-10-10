@@ -5,8 +5,8 @@ import { isIsoDate } from './dateFormat';
 import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
 
 /**
- * The Review seam. Every Scan Mode ends by calling `startReview` with its
- * proposed lines and navigating to `/scan/review`; the Review screen turns
+ * The Review seam. A Scan Mode that is not read through the Scan Session ends by calling
+ * `startReview` with its proposed lines and navigating to `/scan/review/draft`; the Review screen turns
  * those lines into editable `ReviewLine`s and, on confirm, saves them.
  * Nothing is saved before that: the draft lives in client state only.
  */

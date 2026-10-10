@@ -1,10 +1,11 @@
-import { act, cleanup, screen } from '@testing-library/react';
-import { scanViaGuide } from '../../test/scan';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -21,7 +22,29 @@ vi.mock('../../lib/camera', () => ({
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
+  cropToReceiptArea: () =>
+    Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
 }));
+// react-easy-crop measures real sizes, which jsdom cannot do: report a fixed crop.
+vi.mock('react-easy-crop', async () => {
+  const { useEffect } = await import('react');
+  return {
+    default: ({
+      onCropComplete,
+    }: {
+      onCropComplete: (
+        area: unknown,
+        pixels: { x: number; y: number; width: number; height: number },
+      ) => void;
+    }) => {
+      useEffect(() => {
+        onCropComplete({}, { x: 10, y: 20, width: 300, height: 900 });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- report once, like the real cropper on load
+      }, []);
+      return <div data-testid="cropper" />;
+    },
+  };
+});
 
 const unmatchedLine = {
   name: 'Cheese',
@@ -57,7 +80,8 @@ function renderScan(
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route path="/pantry" element={<p>pantry screen</p>} />
     </Routes>,
     { route, locale },
@@ -144,6 +168,7 @@ describe('Scan Language on the Scan screen', () => {
       const calls = renderScan(`/scan?mode=${mode}`);
       await userEvent.selectOptions(chip(), 'da');
       scanViaGuide();
+      await openFirstScanCard();
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 1 item' }),
       );
@@ -159,20 +184,17 @@ describe('Scan Language on the Scan screen', () => {
     },
   );
 
-  it('reads every Receipt Section in the chosen language, locks the picker once one is captured, and confirms in it', async () => {
+  it('reads a Receipt Scan in the chosen language and confirms in it', async () => {
     const calls = renderScan('/scan?mode=receipt');
     await userEvent.selectOptions(chip(), 'da');
-    expect(chip()).toBeEnabled();
     scanViaGuide();
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Finish' }),
-    );
-    const scan = calls.find((c) => c.key === 'POST /api/scan/receipt');
-    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
+    await openFirstScanCard();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Save 1 item' }),
     );
     await screen.findByText('pantry screen');
+    const scan = calls.find((c) => c.key === 'POST /api/scan/receipt');
+    expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('da');
     const confirm = calls.find(
       (c) => c.key === 'POST /api/scan/receipt/confirm',
     );
@@ -181,7 +203,13 @@ describe('Scan Language on the Scan screen', () => {
 
   it('disables the picker after the first Receipt Section', async () => {
     renderScan('/scan?mode=receipt');
-    scanViaGuide();
+    expect(chip()).toBeEnabled();
+    fireEvent.change(screen.getByTestId('gallery-input'), {
+      target: { files: [new File(['x'], 'part.jpg', { type: 'image/jpeg' })] },
+    });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Use photo' }),
+    );
     await screen.findByRole('button', { name: 'Finish' });
     expect(chip()).toBeDisabled();
   });

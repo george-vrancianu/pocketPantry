@@ -1,5 +1,5 @@
-import { screen, within, waitFor } from '@testing-library/react';
-import { scanGuide, scanViaGuide } from '../../test/scan';
+import { fireEvent, screen, within, waitFor } from '@testing-library/react';
+import { scanGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,7 +23,27 @@ vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
+  cropToReceiptArea: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
 }));
+vi.mock('react-easy-crop', async () => {
+  const { useEffect } = await import('react');
+  return {
+    default: ({
+      onCropComplete,
+    }: {
+      onCropComplete: (
+        area: unknown,
+        pixels: { x: number; y: number; width: number; height: number },
+      ) => void;
+    }) => {
+      useEffect(() => {
+        onCropComplete({}, { x: 10, y: 20, width: 300, height: 900 });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- report once, like the real cropper on load
+      }, []);
+      return <div data-testid="cropper" />;
+    },
+  };
+});
 
 const line = (name: string) => ({
   name,
@@ -58,7 +78,7 @@ function setup(responses: Array<() => Response>) {
     <>
       <Routes>
         <Route path="/scan" element={<ScanPage />} />
-        <Route path="/scan/review" element={<ReviewPage />} />
+        <Route path="/scan/review/draft" element={<ReviewPage />} />
         <Route path="/pantry" element={<p>pantry page</p>} />
         <Route path="/" element={<p>home</p>} />
       </Routes>
@@ -71,7 +91,15 @@ function setup(responses: Array<() => Response>) {
 
 const click = (name: string) =>
   userEvent.click(screen.getByRole('button', { name }));
-const shoot = scanViaGuide;
+// Camera receipts join the Scan Session; Receipt Sections are still built from gallery photos.
+const shoot = async () => {
+  fireEvent.change(screen.getByTestId('gallery-input'), {
+    target: { files: [new File(['x'], 'part.jpg', { type: 'image/jpeg' })] },
+  });
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Use photo' }),
+  );
+};
 const reviewNames = async () => {
   await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
   return reviewRowNames();
@@ -82,7 +110,11 @@ const switchLastUsedToProduct = () =>
   localStorage.setItem('pocket-pantry.scan-mode', 'product');
 
 describe('Receipt Scan in sections', () => {
-  beforeEach(() => clearReview());
+  beforeEach(() => {
+    clearReview();
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
+    vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -232,17 +264,6 @@ describe('Receipt Scan in sections', () => {
     expect(screen.queryByText(/limit of 10 sections/)).not.toBeInTheDocument();
     await click('Next photo');
     expect(screen.getByText(/limit of 10 sections/)).toBeInTheDocument();
-  });
-
-  it('sends one request for a double-tapped guide', async () => {
-    const { calls } = setup([() => lines('Eggs'), () => lines('Rice')]);
-    // Two double-taps back to back, before the first scan can finish.
-    scanViaGuide();
-    scanViaGuide();
-    await screen.findByText('Section 1: 1 line found');
-    expect(
-      calls.filter((c) => c.key === 'POST /api/scan/receipt'),
-    ).toHaveLength(1);
   });
 
   it('disables the Scan Mode buttons while a section is being read', async () => {

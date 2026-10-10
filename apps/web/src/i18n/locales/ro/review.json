@@ -130,5 +130,23 @@
   },
   "footer": {
     "helper": "Rândurile sigure sunt restrânse. Atinge un rând ca să-l editezi."
+  },
+  "overview": {
+    "photos_one": "{{count}} fotografie",
+    "photos_few": "{{count}} fotografii",
+    "photos_other": "{{count}} de fotografii",
+    "stillReading": "{{count}} în curs de citire",
+    "allRead": "toate citite",
+    "camera": "Cameră",
+    "reading": "Citim fotografia…",
+    "remove": "Elimină fotografia",
+    "items_one": "{{count}} articol",
+    "items_few": "{{count}} articole",
+    "items_other": "{{count}} de articole",
+    "check_one": "Verifică {{count}} articol",
+    "check_few": "Verifică {{count}} articole",
+    "check_other": "Verifică {{count}} de articole",
+    "more": "+{{count}}",
+    "empty": "Încă nu ai fotografii."
   }
 }

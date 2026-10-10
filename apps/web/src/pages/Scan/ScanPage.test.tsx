@@ -1,5 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
-import { scanGuide, scanViaGuide } from '../../test/scan';
+import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
 import { PantryPage } from '../Pantry/PantryPage';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -77,7 +78,8 @@ function renderScan(
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
     </Routes>,
     { route },
   );
@@ -187,6 +189,7 @@ describe('ScanPage', () => {
       'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
     });
     await shoot();
+    await openFirstScanCard();
     expect(await findReviewRow('Parmesan')).toBeInTheDocument();
   });
 

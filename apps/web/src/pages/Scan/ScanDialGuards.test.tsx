@@ -89,18 +89,6 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     expect(checked()).toEqual(['Plate']);
   });
 
-  it('ignores arrows while a Scan is being read', async () => {
-    setup('/scan?mode=product', {
-      'POST /api/scan/product': () =>
-        // Never answers: the Scan stays in flight.
-        new Promise<Response>(() => undefined) as unknown as Response,
-    });
-    scanViaGuide();
-    await screen.findByText('Reading your photo');
-    await userEvent.keyboard('{ArrowRight}');
-    expect(checked()).toEqual(['Product']);
-  });
-
   it('ignores arrows while the Info sheet is open', async () => {
     setup('/scan?mode=product');
     await userEvent.click(

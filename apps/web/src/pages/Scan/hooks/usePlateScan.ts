@@ -43,7 +43,7 @@ export function usePlateScan() {
         {
           onSuccess: ({ lines }) => {
             startReview({ mode: 'plate', lines });
-            navigate('/scan/review');
+            navigate('/scan/review/draft');
           },
           // The dish list is stale or not ours: back to the scan step, with the error shown.
           onError: (error) => {

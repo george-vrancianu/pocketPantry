@@ -1,6 +1,6 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   useCatalogParents,
@@ -24,6 +24,7 @@ import {
   reviewGroups,
   reviewReducer,
 } from '../../../lib/reviewState';
+import { dispatchScanSession, getScanSession } from '../../../lib/scanSession';
 import { toNewShoppingItem, useAddShoppingItems } from '../../../lib/plate';
 import { useReceiptConfirm, type TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES, useAddBatches } from '../../../lib/scan';
@@ -42,8 +43,25 @@ import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 export function useReviewScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  // A Scan Session card is edited at /scan/review/:scanId; the draft of the old flow (Plate, gallery) has no id.
+  const { scanId } = useParams();
+  const sessionId = scanId === 'draft' ? undefined : scanId;
   // Read once: clearing the draft on save must not bounce the page to /scan.
-  const [draft] = useState(readReview);
+  const [draft] = useState(() => {
+    if (sessionId === undefined) return readReview();
+    const scan = getScanSession().scans.find((s) => s.id === sessionId);
+    return scan?.lines
+      ? { mode: scan.mode, lines: scan.lines, scanLanguage: scan.scanLanguage }
+      : null;
+  });
+  // Saving or discarding a card drops it from the Scan Session; the other cards are still to do.
+  const leaveCard = (fallback: string) => {
+    if (sessionId !== undefined)
+      dispatchScanSession({ type: 'remove', id: sessionId });
+    return sessionId !== undefined && getScanSession().scans.length > 0
+      ? '/scan/review'
+      : fallback;
+  };
   const [state, dispatch] = useReducer(reviewReducer, draft, (d) => {
     const today = new Date();
     return initReviewState(
@@ -78,7 +96,10 @@ export function useReviewScreen() {
   // Receipt Scan: ticking Shopping Items happens after the save; if any tick failed, say so here before leaving.
   const [tickFailures, setTickFailures] = useState<TickFailures | null>(null);
   // Saved lines the Member never verified, told on the page Save lands on.
-  const [savedState, setSavedState] = useState<UnverifiedState | undefined>();
+  const [savedState, setSavedState] = useState<{
+    landing: string;
+    state: UnverifiedState | undefined;
+  }>();
   // Focus lands on an element that only exists after the render that opened or restored it.
   const [focusId, setFocusId] = useState<string | null>(null);
   useEffect(() => {
@@ -184,6 +205,7 @@ export function useReviewScreen() {
     const done = {
       onSuccess: (result?: unknown) => {
         clearReview();
+        const landing = leaveCard(to);
         const failures = (result as { tickFailures?: TickFailures } | undefined)
           ?.tickFailures;
         if (
@@ -191,10 +213,10 @@ export function useReviewScreen() {
           failures.missing + failures.changed + failures.other > 0
         ) {
           setTickFailures(failures);
-          setSavedState(navState);
+          setSavedState({ landing, state: navState });
           return;
         }
-        navigate(to, { state: navState });
+        navigate(landing, { state: navState });
       },
     };
     if (shopping) {
@@ -210,11 +232,13 @@ export function useReviewScreen() {
   };
   const discard = () => {
     clearReview();
-    navigate('/scan');
+    navigate(leaveCard('/scan'));
   };
 
   return {
     hadDraft: draft !== null,
+    /** Where a missing draft sends the Member: the overview for a card that is gone or still being read. */
+    missingTo: sessionId !== undefined ? '/scan/review' : '/scan',
     mode,
     shopping,
     state,
@@ -228,7 +252,8 @@ export function useReviewScreen() {
     error: saver.error ? translateApiError(t, saver.error) : null,
     tickFailures,
     // After a tick-failure notice the toast still follows, on the Pantry the lines were saved to.
-    toPantry: () => navigate('/pantry', { state: savedState }),
+    toPantry: () =>
+      navigate(savedState?.landing ?? '/pantry', { state: savedState?.state }),
     blocked,
     toggle,
     open,

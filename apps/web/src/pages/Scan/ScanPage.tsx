@@ -7,6 +7,7 @@ import {
   InfoIcon,
   ManualEntryIcon,
   Typography,
+  visuallyHidden,
   tokens,
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
@@ -15,6 +16,7 @@ import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
 import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
+import { ScanQueue } from './components/ScanQueue';
 import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
 import { ModeDial } from './components/ModeDial';
@@ -88,6 +90,7 @@ export function ScanPage() {
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
       />
+      <ScanQueue scans={screen.scans} />
 
       <Box
         sx={{
@@ -129,10 +132,7 @@ export function ScanPage() {
             <FlashIcon size={20} />
           </Box>
         ) : null}
-        <Typography
-          component="h1"
-          sx={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700 }}
-        >
+        <Typography component="h1" sx={{ ...visuallyHidden, flex: 'none' }}>
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
         {screen.scanLanguageShown ? (
@@ -151,6 +151,58 @@ export function ScanPage() {
           sx={roundButton(44)}
         >
           <InfoIcon size={20} />
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          disabled={screen.scans.length === 0}
+          onClick={screen.done}
+          aria-label={
+            screen.scans.length > 0
+              ? t('doneCount', { count: screen.scans.length })
+              : undefined
+          }
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            height: 44,
+            px: '14px',
+            borderRadius: '22px',
+            border: 0,
+            fontSize: 14,
+            fontWeight: 800,
+            fontFamily: 'inherit',
+            backgroundColor: tokens.color.camFg,
+            color: '#111',
+            opacity: screen.scans.length === 0 ? 0.45 : 1,
+            cursor: screen.scans.length === 0 ? 'default' : 'pointer',
+            '&:focus-visible': glassFocusRing,
+          }}
+        >
+          {screen.scans.length > 0 ? (
+            <Box
+              component="span"
+              data-testid="done-count"
+              aria-hidden="true"
+              data-reading={screen.pending > 0}
+              sx={{
+                minWidth: 20,
+                height: 20,
+                px: '6px',
+                borderRadius: '10px',
+                fontSize: 12,
+                lineHeight: '20px',
+                textAlign: 'center',
+                backgroundColor:
+                  screen.pending > 0 ? tokens.color.camWarn : '#111',
+                color: screen.pending > 0 ? '#111' : tokens.color.camFg,
+              }}
+            >
+              {screen.scans.length}
+            </Box>
+          ) : null}
+          {t('done')}
         </Box>
       </Box>
 
