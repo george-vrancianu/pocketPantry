@@ -76,7 +76,7 @@ describe('Scan Language on the Scan screen', () => {
     expect(chip()).toHaveValue('ro');
     expect(
       Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['Română', 'English', 'Dansk']);
+    ).toEqual(['RO', 'EN', 'DA']);
   });
 
   it('defaults to Dansk under a Danish UI, listed first', () => {
@@ -84,7 +84,7 @@ describe('Scan Language on the Scan screen', () => {
     expect(chip()).toHaveValue('da');
     expect(
       Array.from(chip().querySelectorAll('option')).map((o) => o.textContent),
-    ).toEqual(['Dansk', 'English', 'Română']);
+    ).toEqual(['DA', 'EN', 'RO']);
   });
 
   it('forgets a Scan Language chosen under a Danish UI when the UI language changes', async () => {
