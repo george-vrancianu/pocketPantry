@@ -1,10 +1,13 @@
-import { Box } from '@pocket-pantry/ui';
-import {
-  RECEIPT_GUIDE_ASPECT,
-  RECEIPT_GUIDE_HEIGHT_FRACTION,
-} from '../../../lib/receiptGuide';
+import { Box, tokens } from '@pocket-pantry/ui';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { ScanMode } from '../../../lib/scan';
+import { GUIDE_CENTER_Y, SCAN_GUIDES } from '../../../lib/scanGuides';
 
-const edge = '3px solid #FFFFFF';
+const ARMED_MS = 320;
+const noMotion = {
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+};
 const CORNERS = [
   ['Top', 'Left'],
   ['Top', 'Right'],
@@ -13,94 +16,87 @@ const CORNERS = [
 ] as const;
 
 type Props = {
-  scanning: boolean;
-  /** Overlay the tall 1:3 receipt guide (and size the preview to match what gets cropped). */
-  receiptGuide?: boolean;
+  mode: ScanMode;
+  /** Show the one-line instruction under the guide; it goes away after the first Scan. */
+  hintShown: boolean;
 };
 
-/** The brackets or receipt guide and the sweeping scan line, centred over the full-screen feed. */
-export function Viewfinder({ scanning, receiptGuide }: Props) {
-  // In receipt mode the line lives inside the guide and sweeps its full height (percentages);
-  // otherwise it sweeps the 300 px box.
-  const sweep = receiptGuide
-    ? { from: { top: '0%' }, to: { top: '100%' } }
-    : {
-        from: { transform: 'translateY(-110px)' },
-        to: { transform: 'translateY(110px)' },
-      };
-  const sweepName = receiptGuide ? 'pp-scan-sweep-guide' : 'pp-scan-sweep';
-  const scanLine = (
-    <Box
-      data-testid="scan-line"
-      sx={{
-        position: 'absolute',
-        left: receiptGuide ? 8 : 24,
-        right: receiptGuide ? 8 : 24,
-        top: receiptGuide ? undefined : 148,
-        height: 2,
-        borderRadius: '1px',
-        backgroundColor: '#8DBBA0',
-        [`@keyframes ${sweepName}`]: {
-          '0%': sweep.from,
-          '100%': sweep.to,
-        },
-        animation: scanning
-          ? `${sweepName} 1.2s ease-in-out infinite alternate`
-          : `${sweepName} 2.4s ease-in-out infinite alternate`,
-        // Handoff section 10: respect prefers-reduced-motion for the scan line.
-        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-      }}
-    />
-  );
+/** The guide brackets that follow the Scan Mode, centred over the full-screen feed. */
+export function Viewfinder({ mode, hintShown }: Props) {
+  const { t } = useTranslation('scan');
+  const { width, height } = SCAN_GUIDES[mode];
+  const [armed, setArmed] = useState(false);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const arm = () => {
+    setArmed(true);
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setArmed(false), ARMED_MS);
+  };
   return (
-    <Box
-      aria-hidden="true"
-      sx={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      {receiptGuide ? (
-        <Box
-          data-testid="receipt-guide"
-          sx={{
-            position: 'relative',
-            height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
-            aspectRatio: String(RECEIPT_GUIDE_ASPECT),
-            // An outline sits outside the box, so the visible interior is exactly the crop.
-            outline: edge,
-            borderRadius: '8px',
-            // Dim everything outside the guide: only what is inside is sent.
-            boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
-          }}
-        >
-          {scanLine}
-        </Box>
-      ) : (
-        <Box sx={{ position: 'relative', width: 280, height: 300 }}>
-          {CORNERS.map(([vertical, horizontal]) => (
-            <Box
-              key={vertical + horizontal}
-              sx={{
-                position: 'absolute',
-                width: 40,
-                height: 40,
-                boxSizing: 'border-box',
-                [vertical.toLowerCase()]: 0,
-                [horizontal.toLowerCase()]: 0,
-                [`border${vertical}`]: edge,
-                [`border${horizontal}`]: edge,
-                [`border${vertical}${horizontal}Radius`]: '20px',
-              }}
-            />
-          ))}
-          {scanLine}
-        </Box>
-      )}
+    <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <Box
+        data-testid="scan-guide"
+        data-armed={armed ? 'true' : undefined}
+        onPointerDown={arm}
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: `${GUIDE_CENTER_Y * 100}%`,
+          width: `${width * 100}%`,
+          height: `${height * 100}%`,
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'auto',
+          transition: `width 400ms cubic-bezier(.2,.8,.2,1), height 400ms cubic-bezier(.2,.8,.2,1)`,
+          ...noMotion,
+        }}
+      >
+        {CORNERS.map(([v, h]) => (
+          <Box
+            key={v + h}
+            data-testid="scan-guide-corner"
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              width: 30,
+              height: 30,
+              boxSizing: 'border-box',
+              [v.toLowerCase()]: -2,
+              [h.toLowerCase()]: -2,
+              [`border${v}`]: '3.5px solid',
+              [`border${h}`]: '3.5px solid',
+              [`border${v}${h}Radius`]: '10px',
+              borderColor: armed ? tokens.color.camAccent : tokens.color.camFg,
+              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.5))',
+              transition: 'border-color 200ms',
+              ...noMotion,
+            }}
+          />
+        ))}
+        {hintShown ? (
+          <Box
+            data-testid="scan-hint"
+            sx={{
+              position: 'absolute',
+              left: '50%',
+              top: '100%',
+              mt: '14px',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap',
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: tokens.color.camDim,
+              backgroundColor: tokens.color.camGlass,
+              backdropFilter: 'blur(10px)',
+              px: '11px',
+              py: '5px',
+              borderRadius: '999px',
+            }}
+          >
+            {t(`guideHint.${mode}`)}
+          </Box>
+        ) : null}
+      </Box>
     </Box>
   );
 }

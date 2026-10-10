@@ -37,11 +37,11 @@
     "plate": "Plate",
     "ingredients": "Ingredients"
   },
-  "hint": {
-    "product": "Point at a barcode or label",
-    "receipt": "Fit the whole receipt in the frame",
-    "plate": "Hold steady above your plate",
-    "ingredients": "Spread items out on the counter"
+  "guideHint": {
+    "receipt": "Lay flat, double-tap to scan",
+    "product": "Frame the product and its date",
+    "ingredients": "Lay them out, fit them all in",
+    "plate": "Fit the whole plate"
   },
   "guide": {
     "receipt": "Hold the phone about 40 cm above the receipt so its edges touch the guide.",

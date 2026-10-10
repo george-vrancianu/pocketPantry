@@ -80,10 +80,7 @@ export function ScanPage() {
           background: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${tokens.color.camScrim} 100%)`,
         }}
       />
-      <Viewfinder
-        scanning={screen.reading}
-        receiptGuide={screen.mode === 'receipt'}
-      />
+      <Viewfinder mode={screen.mode} hintShown={!screen.scanned} />
 
       <Box
         sx={{
@@ -163,9 +160,6 @@ export function ScanPage() {
         }}
       >
         <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
-          <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
-            {t(`hint.${screen.mode}`)}
-          </Typography>
           <Typography
             sx={{ mt: '6px', fontSize: 13, color: tokens.color.cameraMuted }}
           >
