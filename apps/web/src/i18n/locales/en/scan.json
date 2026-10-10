@@ -66,12 +66,6 @@
     "next": "Next photo",
     "finish": "Finish",
     "full": "You have reached the limit of {{max}} sections. Finish, or retake or delete a section.",
-    "readingBatch": "Reading photo {{number}} of {{total}}…",
-    "photoOf": "Photo {{number}} of {{total}}",
-    "queued_one": "{{count}} more photo waiting. Press Next photo to crop it.",
-    "queued_other": "{{count}} more photos waiting. Press Next photo to crop the next one.",
-    "tooMany_one": "You picked {{selected}} photos, but there is only 1 more section left (the limit is 10). Pick fewer photos.",
-    "tooMany_other": "You picked {{selected}} photos, but there are only {{count}} more sections left (the limit is 10). Pick fewer photos.",
     "discardConfirm": "Leave the scanner? The sections you have taken so far will be lost."
   },
   "done": "Done",
@@ -80,6 +74,7 @@
   "queue": {
     "label": "Photos taken",
     "reading": "Reading photo",
+    "needsCrop": "Needs crop",
     "read": "Photo read"
   },
   "added_one": "Added results from {{count}} photo",

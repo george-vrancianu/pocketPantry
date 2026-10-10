@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
-import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
 import {
@@ -19,14 +18,8 @@ import {
   resetScanSession,
   useScanSession,
 } from '../../../lib/scanSession';
-import { cropToReceiptArea } from '../../../lib/image';
-import {
-  IMAGE_PREPARATION,
-  needsCropStep,
-  type ImageOrigin,
-} from '../../../lib/scanImage';
-import { MAX_RECEIPT_SECTIONS } from '../../../lib/receiptSections';
-import type { ReceiptCrop } from '../components/ReceiptCropper';
+import { resizeImage } from '../../../lib/image';
+import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useReceiptSections } from './useReceiptSections';
 import { useScanLanguage } from './useScanLanguage';
 import { usePlateScan } from './usePlateScan';
@@ -34,7 +27,6 @@ import {
   isScanMode,
   loadScanMode,
   saveScanMode,
-  useProductScan,
   type ScanMode,
 } from '../../../lib/scan';
 
@@ -51,35 +43,8 @@ export function useScanScreen() {
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const productScan = useProductScan(i18n.language, scanLanguage);
   const receiptSections = useReceiptSections(i18n.language, scanLanguage);
   const plate = usePlateScan();
-  const ingredientsScan = useIngredientsScan(i18n.language, scanLanguage);
-  // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
-  // own flow, and Receipt photographs the receipt in sections.
-  const modeScans = { product: productScan, ingredients: ingredientsScan };
-  const modeScan =
-    mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
-  /**
-   * Gallery photos picked in Receipt mode that are not sent yet, in the order picked. The first is
-   * the one in the crop step while `cropOpen`. They are read one at a time: the next is cropped
-   * only after the Member has seen the previous result and pressed Next photo.
-   */
-  const [queue, setQueue] = useState<Blob[]>([]);
-  const [cropOpen, setCropOpen] = useState(false);
-  /** How many photos the current selection had, for the "photo 2 of 4" progress. */
-  const [batchTotal, setBatchTotal] = useState(0);
-  /** The photo whose read failed: re-cropped on Retake, then the queue continues. */
-  const [failedPhoto, setFailedPhoto] = useState<Blob | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const clearQueue = () => {
-    setQueue([]);
-    setCropOpen(false);
-    setBatchTotal(0);
-    setFailedPhoto(null);
-    setNotice(null);
-  };
-  const cropping = cropOpen ? (queue[0] ?? null) : null;
   const resetReceiptSections = useRef(receiptSections.reset);
   resetReceiptSections.current = receiptSections.reset;
   const previousMode = useRef(mode);
@@ -99,7 +64,6 @@ export function useScanScreen() {
   useEffect(() => {
     if (previousMode.current !== mode) {
       scanEpoch.current += 1;
-      clearQueue();
     }
     if (previousMode.current === 'receipt' && mode !== 'receipt') {
       resetReceiptSections.current();
@@ -157,17 +121,13 @@ export function useScanScreen() {
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
 
-  const reading =
-    resizing ||
-    (modeScan?.isPending ?? false) ||
-    plate.pending ||
-    receiptSections.pending;
+  const reading = resizing || plate.pending || receiptSections.pending;
   const sectionsInProgress = receiptSections.sections.length > 0;
   const busy =
     reading ||
     (mode === 'receipt' && (receiptSections.deciding || receiptSections.full));
 
-  /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
+  /** A camera frame or gallery file: prepare it, then join the Scan Session (Plate: the dish picker). */
   const scanImage = async (
     source: Blob,
     origin: ImageOrigin,
@@ -183,7 +143,6 @@ export function useScanScreen() {
     setScanned(true);
     setLocalError(null);
     clearReadFailure();
-    setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
     let image: string;
@@ -218,23 +177,7 @@ export function useScanScreen() {
       readScans(i18n.language);
       return false;
     }
-    if (mode === 'receipt') {
-      return (await receiptSections.submit(image)) === 'failed';
-    }
-    if (!modeScan) {
-      plate.scan(image);
-      return false;
-    }
-    modeScan.mutate(image, {
-      onSuccess: ({ lines }) => {
-        if (lines.length === 0) {
-          setLocalError('scan.nothing_found');
-          return;
-        }
-        startReview({ mode, lines, scanLanguage });
-        navigate('/scan/review/draft');
-      },
-    });
+    plate.scan(image);
     return false;
   };
 
@@ -251,54 +194,63 @@ export function useScanScreen() {
     }
   };
 
+  const resizingPicks = useRef(0);
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
-    // The same locks as the guide: a section being read, a result awaiting a decision, or a
-    // full batch (retaking targets an existing section, so it is not full).
-    if (picked.length === 0 || busy) return;
-    if (!needsCropStep(mode, 'gallery')) {
-      void scanImage(picked[0], 'gallery');
+    if (picked.length === 0) return;
+    // Plate keeps its single-photo flow for now.
+    if (mode === 'plate') {
+      if (!busy) void scanImage(picked[0], 'gallery');
       return;
     }
-    // The whole batch counts against the cap: a retaken section is replaced, not added.
-    const room =
-      MAX_RECEIPT_SECTIONS -
-      receiptSections.sections.length +
-      (receiptSections.retaking ? 1 : 0);
+    setScanned(true);
+    setLocalError(null);
+    clearReadFailure();
+    // Take what fits under the Scan Session's cap, counting photos still being resized.
+    const room = Math.max(
+      0,
+      MAX_SESSION_SCANS - getScanSession().scans.length - resizingPicks.current,
+    );
     if (picked.length > room) {
-      setNotice(
-        t('scan:sections.tooMany', { count: room, selected: picked.length }),
-      );
-      return;
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
     }
-    setNotice(null);
-    setQueue(picked);
-    setBatchTotal(picked.length);
-    setFailedPhoto(null);
-    setCropOpen(true);
-  };
-
-  const confirmCrop = ({ area, rotation }: ReceiptCrop) => {
-    const photo = cropping;
-    setCropOpen(false);
-    if (!photo || busy) return;
-    setQueue((current) => current.slice(1));
-    void scanImage(photo, 'gallery', () =>
-      cropToReceiptArea(photo, area, rotation),
-    ).then((failed) => {
-      // Stop here: the Member re-crops this photo, then the rest follows.
-      if (failed) setFailedPhoto(photo);
-    });
-  };
-
-  /** Cancelling a crop abandons the rest of the selection (nothing is sent for it). */
-  const cancelCrop = clearQueue;
-
-  /** On to the next queued photo's crop step, if the selection has one left. */
-  const continueQueue = () => {
-    if (queue.length > 0) setCropOpen(true);
-    else setBatchTotal(0);
+    const base = { mode, scanLanguage };
+    for (const file of picked.slice(0, room)) {
+      const id = crypto.randomUUID();
+      if (mode === 'receipt') {
+        // Cropped from its card in Review, then read.
+        dispatchScanSession({
+          type: 'enqueue',
+          scan: {
+            ...base,
+            id,
+            image: '',
+            thumbnail: URL.createObjectURL(file),
+            source: file,
+          },
+        });
+        continue;
+      }
+      resizingPicks.current += 1;
+      void resizeImage(file)
+        .then(
+          (image) => {
+            dispatchScanSession({
+              type: 'enqueue',
+              scan: { ...base, id, image, thumbnail: image },
+            });
+            readScans(i18n.language);
+          },
+          () => setLocalError('scan.image_invalid'),
+        )
+        .finally(() => {
+          resizingPicks.current -= 1;
+        });
+    }
   };
 
   /** Asks before throwing away Receipt Sections that have not reached Review. */
@@ -321,7 +273,6 @@ export function useScanScreen() {
       setLocalError('scan.nothing_found');
       return;
     }
-    clearQueue();
     startReview({ mode: 'receipt', lines, scanLanguage });
     navigate('/scan/review/draft');
   };
@@ -332,8 +283,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError =
-    modeScan?.error ?? plate.error ?? receiptSections.error ?? readError;
+  const scanError = plate.error ?? receiptSections.error ?? readError;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -364,54 +314,18 @@ export function useScanScreen() {
     setMode: (next: ScanMode) => {
       if (next !== mode && !confirmDiscard()) return;
       scanEpoch.current += 1;
-      Object.values(modeScans).forEach((scan) => scan.reset());
       receiptSections.reset();
       plate.reset();
       setLocalError(null);
-      clearQueue();
       setParams({ mode: next }, { replace: true });
     },
     plate,
-    receiptSections: {
-      ...receiptSections,
-      nextPhoto: () => {
-        receiptSections.nextPhoto();
-        setFailedPhoto(null);
-        continueQueue();
-      },
-      remove: (index: number) => {
-        receiptSections.remove(index);
-        setFailedPhoto(null);
-        continueQueue();
-      },
-      retake: (index: number) => {
-        receiptSections.retake(index);
-        if (failedPhoto) {
-          setQueue((current) => [failedPhoto, ...current]);
-          setFailedPhoto(null);
-          setCropOpen(true);
-        }
-      },
-    },
-    /** Photos of the selection still to be read, and where the Member is in it. */
-    photoQueue: {
-      total: batchTotal,
-      waiting: queue.length,
-      /** 1-based number of the photo in the crop step, or being read or shown. */
-      number: Math.min(
-        batchTotal,
-        batchTotal - queue.length + (cropOpen ? 1 : 0),
-      ),
-    },
-    notice,
+    receiptSections,
     toast,
     clearToast: () => setToast(null),
     finishSections,
     shoot,
     pickFile,
-    cropping,
-    confirmCrop,
-    cancelCrop,
     openGallery: () => fileInput.current?.click(),
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.

@@ -18,8 +18,7 @@ const resizeOnly: ImagePreparation = (source) => resizeImage(source);
 export const IMAGE_PREPARATION: Record<ScanMode, ImagePreparation> = {
   product: resizeOnly,
   // A camera frame is cropped to the viewfinder's guide. A gallery file is cropped by the
-  // Member in the crop step instead, so it never comes through here: callers must check
-  // needsCropStep first and use cropToReceiptArea. Rejecting is deliberate, not a TODO.
+  // Member from its card in Review instead (cropToReceiptArea), so it never comes through here. Rejecting is deliberate, not a TODO.
   receipt: (source, origin, view) =>
     origin === 'camera' && view
       ? cropToReceiptGuide(source, view)
@@ -27,8 +26,3 @@ export const IMAGE_PREPARATION: Record<ScanMode, ImagePreparation> = {
   plate: resizeOnly,
   ingredients: resizeOnly,
 };
-
-/** Whether a photo must go through the Member's crop step before it is prepared and sent. */
-export function needsCropStep(mode: ScanMode, origin: ImageOrigin): boolean {
-  return mode === 'receipt' && origin === 'gallery';
-}
