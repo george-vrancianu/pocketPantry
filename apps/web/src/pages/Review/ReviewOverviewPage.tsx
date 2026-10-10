@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import type { ProposedLine } from '../../lib/scan';
 import {
+  canMerge,
   dispatchScanSession,
   pendingCount,
   useScanSession,
@@ -18,6 +19,18 @@ import {
 } from '../../lib/scanSession';
 
 const MAX_CHIPS = 8;
+
+const linkButton = {
+  mr: 1.5,
+  p: 0,
+  border: 0,
+  background: 'none',
+  color: tokens.color.accent,
+  font: 'inherit',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
 
 const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
 
@@ -159,6 +172,34 @@ export function ReviewOverviewPage() {
                   </Box>
                 ) : null}
               </Box>
+              {scan.sections || canMerge(session, scan.id) ? (
+                <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
+                  {canMerge(session, scan.id) ? (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() =>
+                        dispatchScanSession({ type: 'merge', id: scan.id })
+                      }
+                      sx={linkButton}
+                    >
+                      {t('overview.merge')}
+                    </Box>
+                  ) : null}
+                  {scan.sections ? (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() =>
+                        dispatchScanSession({ type: 'split', id: scan.id })
+                      }
+                      sx={linkButton}
+                    >
+                      {t('overview.split')}
+                    </Box>
+                  ) : null}
+                </Box>
+              ) : null}
               {check > 0 ? (
                 <Typography
                   sx={{

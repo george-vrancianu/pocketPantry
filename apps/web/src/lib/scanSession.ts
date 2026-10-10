@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
+import { MAX_RECEIPT_SECTIONS, mergeReceiptSections } from './receiptSections';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -17,6 +18,8 @@ export type SessionScan = {
   status: 'queued' | 'reading' | 'read';
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
+  /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
+  sections?: SessionScan[];
 };
 
 /** The Scans taken since the camera was opened, in the order the Scans were taken. */
@@ -71,14 +74,50 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
-    case 'merge':
+    case 'merge': {
+      if (!canMerge(state, action.id)) return state;
+      const index = state.scans.findIndex((scan) => scan.id === action.id);
+      const above = state.scans[index - 1];
+      const sections = [
+        ...sectionsOf(above),
+        ...sectionsOf(state.scans[index]),
+      ];
+      const { lines } = mergeReceiptSections(
+        sections.map((scan) => ({ lines: scan.lines ?? [] })),
+      );
+      return {
+        scans: state.scans.flatMap((scan, i) =>
+          i === index
+            ? []
+            : i === index - 1
+              ? [{ ...above, lines, sections }]
+              : [scan],
+        ),
+      };
+    }
     case 'split':
-      return state;
+      if (!state.scans.some((scan) => scan.id === action.id && scan.sections))
+        return state;
+      return {
+        scans: state.scans.flatMap((scan) =>
+          scan.id === action.id && scan.sections ? scan.sections : [scan],
+        ),
+      };
   }
 }
 
-/** Whether the receipt Scan `id` may join the receipt Scan above it. */
-export const canMerge = (_state: SessionState, _id: string) => false;
+const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
+
+/** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */
+export function canMerge(state: SessionState, id: string): boolean {
+  const index = state.scans.findIndex((scan) => scan.id === id);
+  if (index < 1) return false;
+  const [above, scan] = [state.scans[index - 1], state.scans[index]];
+  return (
+    [above, scan].every((s) => s.mode === 'receipt' && s.status === 'read') &&
+    sectionsOf(above).length + sectionsOf(scan).length <= MAX_RECEIPT_SECTIONS
+  );
+}
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>

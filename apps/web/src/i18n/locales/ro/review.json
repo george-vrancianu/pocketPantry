@@ -147,6 +147,8 @@
     "check_few": "Verifică {{count}} articole",
     "check_other": "Verifică {{count}} de articole",
     "more": "+{{count}}",
+    "merge": "Îmbină cu precedenta",
+    "split": "Separă",
     "empty": "Încă nu ai fotografii."
   }
 }

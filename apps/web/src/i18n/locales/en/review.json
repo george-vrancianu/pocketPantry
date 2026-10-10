@@ -140,6 +140,8 @@
     "check_one": "Check {{count}} item",
     "check_other": "Check {{count}} items",
     "more": "+{{count}}",
+    "merge": "Merge with previous",
+    "split": "Split",
     "empty": "No photos yet."
   }
 }

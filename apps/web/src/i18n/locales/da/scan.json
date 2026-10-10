@@ -54,25 +54,7 @@
     "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
   },
   "sections": {
-    "reading": "Læser del {{number}}…",
-    "section": "Del {{number}}",
-    "open": "Vis del {{number}}",
-    "count": "{{count}} af {{max}} dele",
-    "found_one": "Del {{number}}: {{count}} linje fundet",
-    "found_other": "Del {{number}}: {{count}} linjer fundet",
-    "empty": "Der blev ikke fundet nogen linjer i denne del. Tag den om, eller tag det næste foto.",
-    "retake": "Tag om",
-    "delete": "Slet del",
-    "next": "Næste foto",
-    "finish": "Afslut",
-    "full": "Du har nået grænsen på {{max}} dele. Afslut, eller tag en del om eller slet den.",
-    "readingBatch": "Læser foto {{number}} af {{total}}…",
-    "photoOf": "Foto {{number}} af {{total}}",
-    "queued_one": "Yderligere {{count}} foto venter. Tryk på Næste foto for at beskære det.",
-    "queued_other": "Yderligere {{count}} fotos venter. Tryk på Næste foto for at beskære det næste.",
-    "tooMany_one": "Du valgte {{selected}} fotos, men der er kun 1 del tilbage (grænsen er 10). Vælg færre fotos.",
-    "tooMany_other": "Du valgte {{selected}} fotos, men der er kun {{count}} dele tilbage (grænsen er 10). Vælg færre fotos.",
-    "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
+    "photoOf": "Foto {{number}} af {{total}}"
   },
   "done": "Færdig",
   "doneCount_one": "Færdig, {{count}} foto",

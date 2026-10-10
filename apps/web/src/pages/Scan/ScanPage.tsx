@@ -12,13 +12,11 @@ import {
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
 import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
 import { ReceiptCropper } from './components/ReceiptCropper';
-import { ReceiptSections } from './components/ReceiptSections';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
@@ -240,29 +238,7 @@ export function ScanPage() {
           role="status"
           sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
-          {screen.reading
-            ? screen.receiptSections.readingNumber !== null
-              ? screen.photoQueue.total > 1
-                ? t('sections.readingBatch', {
-                    number: screen.photoQueue.number,
-                    total: screen.photoQueue.total,
-                  })
-                : t('sections.reading', {
-                    number: screen.receiptSections.readingNumber,
-                  })
-              : t('reading')
-            : null}
-          {screen.mode === 'receipt' &&
-          !screen.reading &&
-          !screen.cropping &&
-          screen.photoQueue.waiting > 0
-            ? t('sections.queued', { count: screen.photoQueue.waiting })
-            : null}
-          {screen.mode === 'receipt' &&
-          screen.receiptSections.full &&
-          !screen.receiptSections.deciding
-            ? t('sections.full', { max: MAX_RECEIPT_SECTIONS })
-            : null}
+          {screen.reading ? t('reading') : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
         </Box>
         {screen.error ? (
@@ -274,13 +250,6 @@ export function ScanPage() {
           <Box sx={{ mt: 1 }}>
             <Alert severity="warning">{screen.notice}</Alert>
           </Box>
-        ) : null}
-
-        {screen.mode === 'receipt' ? (
-          <ReceiptSections
-            batch={screen.receiptSections}
-            onFinish={screen.finishSections}
-          />
         ) : null}
 
         {screen.plate.dishes ? (

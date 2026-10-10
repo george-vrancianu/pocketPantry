@@ -14,7 +14,7 @@ import {
 } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { findReviewRow, reviewRowNames } from '../../test/review';
+import { findReviewRow } from '../../test/review';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -154,7 +154,6 @@ describe('Receipt Scan on the Scan screen', () => {
       expiryDate: null,
       productDescription: null,
     };
-    const rice = { ...eggs, name: 'Rice' };
     const uploadPhoto = async () => {
       await userEvent.upload(
         screen.getByTestId('gallery-input'),
@@ -163,7 +162,6 @@ describe('Receipt Scan on the Scan screen', () => {
     };
     const cropDialog = () =>
       screen.findByRole('dialog', { name: 'Crop receipt' });
-    // Camera receipts join the Scan Session; Receipt Sections come from gallery photos.
     const takeSection = async () => {
       await uploadPhoto();
       await cropDialog();
@@ -223,16 +221,14 @@ describe('Receipt Scan on the Scan screen', () => {
     });
     afterEach(() => vi.restoreAllMocks());
 
-    it('shows the crop step, then the cropped photo becomes a section (not Review), and Finish lands on Review', async () => {
+    it('shows the crop step, then the cropped photo is read as a Receipt Scan of the Scan Session', async () => {
       const { calls } = renderScan();
       await uploadPhoto();
       expect(await cropDialog()).toBeInTheDocument();
       expect(receiptCalls(calls)).toHaveLength(0);
       await click('Rotate right');
       await click('Use photo');
-      expect(
-        await screen.findByText('Section 1: 1 line found'),
-      ).toBeInTheDocument();
+      await waitFor(() => expect(receiptCalls(calls)).toHaveLength(1));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(cropToReceiptAreaMock).toHaveBeenCalledWith(
         expect.any(File),
@@ -243,69 +239,6 @@ describe('Receipt Scan on the Scan screen', () => {
         receiptImage: 'data:image/jpeg;base64,Z2FsbGVyeQ==',
       });
       expect(revokeObjectURL).toHaveBeenCalledWith('blob:photo');
-      await click('Finish');
-      expect(await findReviewRow('Eggs')).toBeInTheDocument();
-    });
-
-    it('merges two gallery sections on Finish', async () => {
-      renderScan([{ lines: [eggs] }, { lines: [rice] }]);
-      await takeSection();
-      await screen.findByText('Section 1: 1 line found');
-      await click('Next photo');
-      await takeSection();
-      await screen.findByText('Section 2: 1 line found');
-      await click('Finish');
-      await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
-      const names = reviewRowNames();
-      expect(names).toEqual(['Eggs', 'Rice']);
-    });
-
-    it('lets a gallery photo retake a section, replacing only that section', async () => {
-      const { calls } = renderScan([{ lines: [eggs] }, { lines: [rice] }]);
-      await takeSection();
-      await screen.findByText('Section 1: 1 line found');
-      await click('Retake');
-      await uploadPhoto();
-      await cropDialog();
-      await click('Use photo');
-      expect(await screen.findByText('Rice')).toBeInTheDocument();
-      expect(screen.queryByText('Eggs')).not.toBeInTheDocument();
-      expect(screen.getByText('Section 1: 1 line found')).toBeInTheDocument();
-      expect(receiptCalls(calls)).toHaveLength(2);
-    });
-
-    it('does not open the crop step while a result is awaiting a decision', async () => {
-      renderScan();
-      await takeSection();
-      await screen.findByText('Section 1: 1 line found');
-      expect(
-        screen.getByRole('button', { name: 'Choose from photos' }),
-      ).toBeDisabled();
-      await uploadPhoto();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('does not open the crop step while a section is being read', async () => {
-      let release: (r: Response) => void = () => undefined;
-      const pending = new Promise<Response>((resolve) => (release = resolve));
-      const { fetchMock } = stubApi({
-        'GET /api/catalog/parents': () => Response.json({ parents: [] }),
-      });
-      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
-        String(input).includes('/scan/receipt')
-          ? pending
-          : fetchMock(input, init),
-      );
-      renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
-      await takeSection();
-      await screen.findByText('Reading section 1…');
-      expect(
-        screen.getByRole('button', { name: 'Choose from photos' }),
-      ).toBeDisabled();
-      await uploadPhoto();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      release(Response.json({ lines: [eggs] }));
-      await screen.findByText('Section 1: 1 line found');
     });
 
     it('closes the crop step and revokes the photo URL when the Scan Mode changes', async () => {
@@ -406,7 +339,6 @@ describe('Receipt Scan on the Scan screen', () => {
       await click('Use photo');
       expect(screen.getByRole('radio', { name: 'Product' })).toBeDisabled();
       await release();
-      await screen.findByText('Section 1: 1 line found');
     });
 
     it('closes the crop step when the Dock Scan item changes the mode through the URL', async () => {
@@ -416,23 +348,6 @@ describe('Receipt Scan on the Scan screen', () => {
       switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    });
-
-    it('locks the gallery button and ignores a picked file when the batch is full', async () => {
-      const { calls } = renderScreen(
-        Array.from({ length: 11 }, () => ({ lines: [eggs] })),
-      );
-      for (let i = 1; i <= 10; i++) {
-        await takeSection();
-        await screen.findByText(`Section ${i}: 1 line found`);
-        if (i < 10) await click('Next photo');
-      }
-      expect(
-        screen.getByRole('button', { name: 'Choose from photos' }),
-      ).toBeDisabled();
-      await uploadPhoto();
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      expect(receiptCalls(calls)).toHaveLength(10);
     });
 
     it('keeps Tab focus inside the crop step', async () => {

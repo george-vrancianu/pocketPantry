@@ -316,9 +316,8 @@ describe('Review overview', () => {
       await userEvent.click(
         await screen.findByRole('button', { name: 'Save 3 items' }),
       );
-      await waitFor(() =>
-        expect(screen.getByTestId('review-overview')).toBeInTheDocument(),
-      );
+      // It was the only card, so saving it lands on the Pantry.
+      expect(await screen.findByText('pantry screen')).toBeInTheDocument();
       const confirms = calls.filter(
         (c) => c.key === 'POST /api/scan/receipt/confirm',
       );
@@ -326,7 +325,6 @@ describe('Review overview', () => {
       expect((confirms[0].body as { batches: unknown[] }).batches).toHaveLength(
         3,
       );
-      expect(cards()).toHaveLength(0);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { act, cleanup, screen } from '@testing-library/react';
 import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -199,18 +199,5 @@ describe('Scan Language on the Scan screen', () => {
       (c) => c.key === 'POST /api/scan/receipt/confirm',
     );
     expect(new URLSearchParams(confirm?.search).get('scanLanguage')).toBe('da');
-  });
-
-  it('disables the picker after the first Receipt Section', async () => {
-    renderScan('/scan?mode=receipt');
-    expect(chip()).toBeEnabled();
-    fireEvent.change(screen.getByTestId('gallery-input'), {
-      target: { files: [new File(['x'], 'part.jpg', { type: 'image/jpeg' })] },
-    });
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Use photo' }),
-    );
-    await screen.findByRole('button', { name: 'Finish' });
-    expect(chip()).toBeDisabled();
   });
 });
