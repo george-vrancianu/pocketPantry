@@ -3,16 +3,38 @@ import { apiRequest } from './api';
 import type { CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
+/** In dial order. */
 export const SCAN_MODES = [
-  'product',
   'receipt',
-  'plate',
+  'product',
   'ingredients',
+  'plate',
 ] as const;
 export type ScanMode = (typeof SCAN_MODES)[number];
 
 export function isScanMode(value: string | null): value is ScanMode {
   return SCAN_MODES.some((mode) => mode === value);
+}
+
+const MODE_KEY = 'pocket-pantry.scan-mode';
+
+/** The Scan Mode used last, else Receipt. */
+export function loadScanMode(): ScanMode {
+  try {
+    const saved = window.localStorage.getItem(MODE_KEY);
+    if (isScanMode(saved)) return saved;
+  } catch {
+    // Storage can be blocked; fall back to Receipt.
+  }
+  return 'receipt';
+}
+
+export function saveScanMode(mode: ScanMode): void {
+  try {
+    window.localStorage.setItem(MODE_KEY, mode);
+  } catch {
+    // Not persisting is acceptable.
+  }
 }
 
 /**

@@ -77,6 +77,10 @@ const reviewNames = async () => {
   return reviewRowNames();
 };
 
+// The Dock links to plain /scan, which opens the last-used Scan Mode.
+const switchLastUsedToProduct = () =>
+  localStorage.setItem('pocket-pantry.scan-mode', 'product');
+
 describe('Receipt Scan in sections', () => {
   beforeEach(() => clearReview());
   afterEach(() => {
@@ -256,10 +260,10 @@ describe('Receipt Scan in sections', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     await shoot();
     await screen.findByText('Reading section 1…');
-    expect(screen.getByRole('button', { name: 'Product' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Product' })).toBeDisabled();
     release(lines('Eggs'));
     await screen.findByText('Section 1: 1 line found');
-    expect(screen.getByRole('button', { name: 'Product' })).toBeEnabled();
+    expect(screen.getByRole('radio', { name: 'Product' })).toBeEnabled();
   });
 
   it('reports a reached Scan Cap and lets the Member finish what was read', async () => {
@@ -292,10 +296,10 @@ describe('Receipt Scan in sections', () => {
       setup([() => lines('Eggs')]);
       await shoot();
       await screen.findByText('Section 1: 1 line found');
-      await click('Product');
+      await userEvent.click(screen.getByRole('radio', { name: 'Product' }));
       expect(confirm).toHaveBeenCalled();
-      expect(screen.getByRole('button', { name: 'Receipt' })).toHaveAttribute(
-        'aria-pressed',
+      expect(screen.getByRole('radio', { name: 'Receipt' })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
       expect(
@@ -323,10 +327,11 @@ describe('Receipt Scan in sections', () => {
       setup([() => lines('Eggs')]);
       await shoot();
       await screen.findByText('Section 1: 1 line found');
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       expect(confirm).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
-        'aria-pressed',
+      expect(screen.getByRole('radio', { name: 'Product' })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
       // The leave guard is gone: the Dock leaves without asking again.
@@ -340,8 +345,9 @@ describe('Receipt Scan in sections', () => {
       setup([() => lines('Eggs')]);
       await shoot();
       await screen.findByText('Section 1: 1 line found');
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
-      await click('Receipt');
+      await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
       expect(confirm).toHaveBeenCalledTimes(1);
       expect(
         screen.queryByRole('group', { name: 'Section 1' }),
@@ -372,11 +378,12 @@ describe('Receipt Scan in sections', () => {
       );
       await shoot();
       await screen.findByText('Reading section 1…');
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       expect(confirm).not.toHaveBeenCalled();
       release(lines('Eggs'));
       await new Promise((r) => setTimeout(r, 20));
-      await click('Receipt');
+      await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
       expect(confirm).not.toHaveBeenCalled();
       expect(screen.queryByText('Eggs')).not.toBeInTheDocument();
       expect(

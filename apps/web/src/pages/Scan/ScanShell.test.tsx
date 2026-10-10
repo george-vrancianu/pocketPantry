@@ -150,12 +150,14 @@ describe('camera feed and overlays', () => {
     expect(style.pointerEvents).toBe('none');
   });
 
-  it('pins the shutter and the mode pills over the feed so they stay reachable', () => {
+  it('pins the shutter and the mode dial over the feed so they stay reachable', () => {
     renderScan();
     expect(pinned(screen.getByRole('button', { name: 'Take photo' }))).toBe(
       true,
     );
-    expect(pinned(screen.getByRole('group', { name: 'Scan mode' }))).toBe(true);
+    expect(pinned(screen.getByRole('radiogroup', { name: 'Scan mode' }))).toBe(
+      true,
+    );
   });
 });
 

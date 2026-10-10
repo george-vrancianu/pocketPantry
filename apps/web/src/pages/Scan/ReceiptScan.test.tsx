@@ -68,6 +68,10 @@ vi.mock('react-easy-crop', async () => {
   };
 });
 
+// The Dock links to plain /scan, which opens the last-used Scan Mode.
+const switchLastUsedToProduct = () =>
+  localStorage.setItem('pocket-pantry.scan-mode', 'product');
+
 describe('Receipt Scan on the Scan screen', () => {
   beforeEach(() => {
     clearReview();
@@ -305,7 +309,7 @@ describe('Receipt Scan on the Scan screen', () => {
       await uploadPhoto();
       await cropDialog();
       expect(createObjectURL).toHaveBeenCalled();
-      await userEvent.click(screen.getByRole('button', { name: 'Product' }));
+      await userEvent.click(screen.getByRole('radio', { name: 'Product' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(revokeObjectURL).toHaveBeenCalledWith('blob:photo');
     });
@@ -348,14 +352,15 @@ describe('Receipt Scan on the Scan screen', () => {
       await cropDialog();
       const release = holdPreparation();
       await click('Use photo');
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
-      expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
-        'aria-pressed',
+      expect(screen.getByRole('radio', { name: 'Product' })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
       await release();
       expect(receiptCalls(calls)).toHaveLength(0);
-      await click('Receipt');
+      await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
       expect(confirm).not.toHaveBeenCalled();
       expect(
         screen.queryByRole('group', { name: 'Section 1' }),
@@ -367,10 +372,11 @@ describe('Receipt Scan on the Scan screen', () => {
       const { calls } = renderScreen([{ lines: [eggs] }], true);
       const release = holdPreparation();
       await click('Take photo');
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       await release();
       expect(receiptCalls(calls)).toHaveLength(0);
-      await click('Receipt');
+      await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
       expect(confirm).not.toHaveBeenCalled();
       expect(
         screen.queryByRole('group', { name: 'Section 1' }),
@@ -394,7 +400,7 @@ describe('Receipt Scan on the Scan screen', () => {
       await cropDialog();
       const release = holdPreparation();
       await click('Use photo');
-      expect(screen.getByRole('button', { name: 'Product' })).toBeDisabled();
+      expect(screen.getByRole('radio', { name: 'Product' })).toBeDisabled();
       await release();
       await screen.findByText('Section 1: 1 line found');
     });
@@ -403,6 +409,7 @@ describe('Receipt Scan on the Scan screen', () => {
       renderScreen([{ lines: [eggs] }], true);
       await uploadPhoto();
       await cropDialog();
+      switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });

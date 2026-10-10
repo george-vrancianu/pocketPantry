@@ -17,7 +17,13 @@ import type { ReceiptCrop } from '../components/ReceiptCropper';
 import { useReceiptSections } from './useReceiptSections';
 import { useScanLanguage } from './useScanLanguage';
 import { usePlateScan } from './usePlateScan';
-import { isScanMode, useProductScan, type ScanMode } from '../../../lib/scan';
+import {
+  isScanMode,
+  loadScanMode,
+  saveScanMode,
+  useProductScan,
+  type ScanMode,
+} from '../../../lib/scan';
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
 export function useScanScreen() {
@@ -26,7 +32,9 @@ export function useScanScreen() {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
-  const mode: ScanMode = isScanMode(requested) ? requested : 'product';
+  const mode: ScanMode = isScanMode(requested) ? requested : loadScanMode();
+  // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
+  useEffect(() => saveScanMode(mode), [mode]);
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();

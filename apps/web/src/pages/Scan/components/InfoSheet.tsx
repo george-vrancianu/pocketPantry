@@ -1,6 +1,7 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SCAN_MODES } from '../../../lib/scan';
 import { glassFocusRing } from './glass';
 
 const FOCUSABLE =
@@ -89,6 +90,19 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
         <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.camDim }}>
           {t('info.body')}
         </Typography>
+        <Box
+          component="ul"
+          sx={{ mt: 1.5, mb: 0, p: 0, listStyle: 'none', fontSize: 14 }}
+        >
+          {SCAN_MODES.map((mode) => (
+            <Box component="li" key={mode} sx={{ mt: 0.75 }}>
+              <strong>{t(`mode.${mode}`)}</strong>{' '}
+              <Box component="span" sx={{ color: tokens.color.camDim }}>
+                {t(`detail.${mode}`)}
+              </Box>
+            </Box>
+          ))}
+        </Box>
         <Box
           component="button"
           type="button"
