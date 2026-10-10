@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { GUIDE_CENTER_Y } from '../../lib/scanGuides';
 import { ScanPage } from './ScanPage';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
@@ -75,6 +76,11 @@ describe('Scan guides', () => {
     expect(style.left).toBe('50%');
   });
 
+  it('places the guide top from GUIDE_CENTER_Y', () => {
+    renderScan();
+    expect(getComputedStyle(guide()).top).toBe(`${GUIDE_CENTER_Y * 100}%`);
+  });
+
   it('draws four corner brackets', () => {
     renderScan();
     expect(within(guide()).getAllByTestId('scan-guide-corner')).toHaveLength(4);
@@ -116,7 +122,7 @@ describe('Scan guide armed state', () => {
     vi.unstubAllGlobals();
   });
 
-  it('arms while a finger is down and disarms after 320 ms', () => {
+  it('flashes armed on pointer down for 320 ms', () => {
     renderScan();
     expect(guide()).not.toHaveAttribute('data-armed', 'true');
     fireEvent.pointerDown(guide());
@@ -158,6 +164,26 @@ describe('Scan guide hint', () => {
     renderScan();
     await userEvent.click(screen.getByRole('radio', { name: mode }));
     expect(hint()).toHaveTextContent(text);
+  });
+
+  it.each([
+    ['Receipt', 'Fit the whole receipt in the frame'],
+    ['Product', 'Point at a barcode or label'],
+    ['Ingredients', 'Spread items out on the counter'],
+    ['Plate', 'Hold steady above your plate'],
+  ])(
+    'no longer shows the old %s hint in the controls area',
+    async (mode, old) => {
+      renderScan();
+      await userEvent.click(screen.getByRole('radio', { name: mode }));
+      expect(screen.queryByText(old)).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('scan-hint')).toHaveLength(1);
+    },
+  );
+
+  it('exposes the guide hint to assistive tech', () => {
+    renderScan();
+    expect(hint()?.closest('[aria-hidden="true"]')).toBeNull();
   });
 
   it('sits below the guides, not in the controls area', () => {

@@ -66,6 +66,11 @@ describe('receiptOutputSize', () => {
     expect(receiptOutputSize(324, 972)).toEqual({ width: 324, height: 972 });
   });
 
+  it('never rounds a 1:3 downscale up to an extra tile', () => {
+    expect(receiptOutputSize(900, 2701).height).toBeLessThanOrEqual(1536);
+    expect(receiptOutputSize(1500, 4500)).toEqual({ width: 512, height: 1536 });
+  });
+
   it('follows the configured output width', () => {
     expect(receiptOutputSize(2000, 6000, 768)).toEqual({
       width: 768,
