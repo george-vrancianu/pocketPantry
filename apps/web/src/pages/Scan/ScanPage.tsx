@@ -4,10 +4,12 @@ import {
   CloseIcon,
   FlashIcon,
   GalleryIcon,
+  InfoIcon,
   ManualEntryIcon,
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { SCAN_MODES } from '../../lib/scan';
@@ -36,9 +38,23 @@ export function ScanPage() {
   const { t } = useTranslation('scan');
   const screen = useScanScreen();
   const modeLabel = t(`mode.${screen.mode}`);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   return (
-    <Box sx={{ pt: '22px', pb: 2, color: '#FFFFFF' }}>
+    <Box
+      data-testid="scan-screen"
+      sx={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 20,
+        overflow: 'hidden',
+        backgroundColor: tokens.color.cameraBg,
+        color: tokens.color.camFg,
+        px: 2.5,
+        pt: 'calc(22px + env(safe-area-inset-top))',
+        pb: 'calc(16px + env(safe-area-inset-bottom))',
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -58,22 +74,34 @@ export function ScanPage() {
         <Typography component="h1" sx={{ fontSize: 15, fontWeight: 700 }}>
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('flash')}
-          aria-pressed={screen.flash}
-          disabled={!screen.camera.torchSupported}
-          onClick={() => void screen.toggleFlash()}
-          sx={{
-            ...roundButton(44, !screen.camera.torchSupported),
-            ...(screen.flash && {
-              backgroundColor: '#FFFFFF',
-              color: tokens.color.ink,
-            }),
-          }}
-        >
-          <FlashIcon size={20} />
+        <Box sx={{ display: 'flex', gap: '8px' }}>
+          {screen.camera.torchSupported ? (
+            <Box
+              component="button"
+              type="button"
+              aria-label={t('flash')}
+              aria-pressed={screen.flash}
+              onClick={() => void screen.toggleFlash()}
+              sx={{
+                ...roundButton(44, false),
+                ...(screen.flash && {
+                  backgroundColor: tokens.color.camFg,
+                  color: tokens.color.ink,
+                }),
+              }}
+            >
+              <FlashIcon size={20} />
+            </Box>
+          ) : null}
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('info.label')}
+            onClick={() => setInfoOpen(true)}
+            sx={roundButton(44, false)}
+          >
+            <InfoIcon size={20} />
+          </Box>
         </Box>
       </Box>
 
@@ -286,6 +314,71 @@ export function ScanPage() {
           onConfirm={screen.confirmCrop}
           onCancel={screen.cancelCrop}
         />
+      ) : null}
+
+      {infoOpen ? (
+        <Box
+          data-testid="info-scrim"
+          onClick={() => setInfoOpen(false)}
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'flex-end',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+          }}
+        >
+          <Box
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scan-info-title"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.key === 'Escape' && setInfoOpen(false)}
+            sx={{
+              width: '100%',
+              p: 3,
+              pb: 'calc(24px + env(safe-area-inset-bottom))',
+              borderRadius: '24px 24px 0 0',
+              backgroundColor: tokens.color.cameraSurface,
+              color: tokens.color.camFg,
+            }}
+          >
+            <Typography
+              id="scan-info-title"
+              component="h2"
+              sx={{ fontSize: 18, fontWeight: 700 }}
+            >
+              {t('info.title')}
+            </Typography>
+            <Typography
+              sx={{ mt: 1, fontSize: 14, color: tokens.color.camDim }}
+            >
+              {t('info.body')}
+            </Typography>
+            <Box
+              component="button"
+              type="button"
+              autoFocus
+              onClick={() => setInfoOpen(false)}
+              sx={{
+                mt: 2,
+                height: 44,
+                width: '100%',
+                border: 0,
+                borderRadius: '22px',
+                fontFamily: 'inherit',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: 'pointer',
+                backgroundColor: tokens.color.camAccent,
+                color: tokens.color.camAccentInk,
+                '&:focus-visible': glassFocusRing,
+              }}
+            >
+              {t('info.dismiss')}
+            </Box>
+          </Box>
+        </Box>
       ) : null}
 
       <Box

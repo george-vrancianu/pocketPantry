@@ -32,6 +32,14 @@ export const tokens = {
     cameraSurface: '#1C2922',
     cameraLine: '#2E3D34',
     cameraMuted: '#B8C4BC',
+    // The always-dark camera palette (--cam-*): unchanged by the light theme.
+    camFg: '#ffffff',
+    camDim: 'rgba(255,255,255,0.72)',
+    camGlass: 'rgba(255,255,255,0.12)',
+    camGlassStrong: 'rgba(255,255,255,0.22)',
+    camAccent: '#9be38f',
+    camAccentInk: '#0f2a12',
+    camWarn: '#ffcf5a',
   },
   font: {
     display: "'Bricolage Grotesque', sans-serif",

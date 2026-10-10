@@ -15,6 +15,7 @@ import {
   Image,
   Pencil,
   Zap,
+  Info,
   Clock,
   CircleDot,
   Leaf,
@@ -53,6 +54,7 @@ export const PlusIcon = withDefaults(Plus);
 export const CloseIcon = withDefaults(X);
 export const GalleryIcon = withDefaults(Image);
 export const ManualEntryIcon = withDefaults(Pencil);
+export const InfoIcon = withDefaults(Info);
 export const FlashIcon = withDefaults(Zap);
 export const ClockIcon = withDefaults(Clock);
 export const ProductScanIcon = withDefaults(ScanBarcode);

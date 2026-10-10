@@ -187,6 +187,7 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - Receipt confirmation also returns which Shopping Items on the active list matched the saved Batches, and the client ticks them.
   - Known limit: a Shopping Item ticked by a receipt is still checked on the list, so Finish Shopping proposes it again as a Batch. A Member who confirmed the receipt Batches should drop that proposed Batch at Finish Shopping. Not prevented in wave 1.
   - A failed tick does not undo the save; Review tells the Member how many Shopping Items were not ticked (removed from the list, or the list changed).
+- The Scan screen is a full-screen, non-scrolling, always-dark camera view (it stays dark in the light theme), using the `cam-*` camera palette. The top bar holds Close, a torch button (hidden when the camera has no torch) and Info. Info opens a sheet explaining scanning; a tap on the scrim (or Escape or the sheet's button) closes it, and the camera keeps running while it is open.
 - A per-Member daily Scan Cap, from configuration, is enforced in the API before calling the provider. Exceeding it returns a specific error code.
 
 ### Shopping

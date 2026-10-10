@@ -38,6 +38,7 @@ export {
   FlashIcon,
   GalleryIcon,
   ManualEntryIcon,
+  InfoIcon,
   HomeIcon,
   PantryIcon,
   RecipesIcon,
