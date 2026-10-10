@@ -1,11 +1,14 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, ilike } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import type { Pool } from 'pg';
 import request from 'supertest';
+import { lockAisleOrder } from '../src/catalog/aisle-order-lock';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE, DATABASE_POOL } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  aisles,
   batches,
   catalogTranslations,
   shoppingItems,
@@ -72,6 +75,12 @@ describe('Admin role and Catalog curation (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .set('cookie', cookie)
         .send(body),
+    put: (path: string, body: object) =>
+      request(app.getHttpServer())
+        .put(`/api/admin/catalog${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body),
     del: (path: string) =>
       request(app.getHttpServer())
         .delete(`/api/admin/catalog${path}`)
@@ -91,7 +100,8 @@ describe('Admin role and Catalog curation (integration)', () => {
         and(
           eq(
             catalogTranslations.entityType,
-            type as 'ingredient' | 'leaf_category' | 'parent_category',
+            type as
+              'aisle' | 'ingredient' | 'leaf_category' | 'parent_category',
           ),
           eq(catalogTranslations.entityId, id),
         ),
@@ -116,7 +126,12 @@ describe('Admin role and Catalog curation (integration)', () => {
       await database.delete(batches).where(eq(batches.id, id));
     }
     const like = `%${stamp}%`;
-    for (const table of [ingredients, leafCategories, parentCategories]) {
+    for (const table of [
+      ingredients,
+      leafCategories,
+      parentCategories,
+      aisles,
+    ]) {
       await database.delete(table).where(ilike(table.name, like));
     }
     await database
@@ -729,6 +744,348 @@ describe('Admin role and Catalog curation (integration)', () => {
           aisleId: '00000000-0000-4000-8000-000000000000',
         })
         .expect(404);
+    });
+  });
+
+  describe('Aisles', () => {
+    it('creates an Aisle at the end of the shop order, renames it, and keeps its English name in step', async () => {
+      const before = (await overview()).aisles;
+      const made = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Test aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      expect(made).toMatchObject({
+        name: `Test aisle ${stamp}`,
+        sortOrder: Math.max(...before.map((a) => a.sortOrder as number)) + 1,
+      });
+      const after = (await overview()).aisles;
+      expect(after.at(-1)?.id).toBe(made.id);
+
+      await as(adminCookie)
+        .patch(`/aisles/${made.id}`, { name: `Renamed aisle ${stamp}` })
+        .expect(200);
+      const names = await translationsOf('aisle', made.id);
+      expect(names.map((t) => [t.locale, t.kind, t.value])).toEqual([
+        ['en', 'name', `Renamed aisle ${stamp}`],
+      ]);
+
+      await as(adminCookie).del(`/aisles/${made.id}`).expect(204);
+      expect(await translationsOf('aisle', made.id)).toEqual([]);
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        before.map((a) => a.id),
+      );
+    });
+
+    it('refuses to delete an Aisle while a Parent Category uses it', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Busy aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `On busy aisle ${stamp}`,
+            aisleId: aisle.id,
+          })
+          .expect(201)
+      ).body as Body;
+
+      await as(adminCookie)
+        .del(`/aisles/${aisle.id}`)
+        .expect(409)
+        .expect({ code: 'catalog.aisle_in_use', params: { parents: 1 } });
+      expect(await translationsOf('aisle', aisle.id)).toHaveLength(1);
+
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(404);
+    });
+
+    it('translates an Aisle through the translations endpoint', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Spices ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/translations', {
+          entityType: 'aisle',
+          entityId: aisle.id,
+          locale: 'ro',
+          kind: 'name',
+          value: `Condimente ${stamp}`,
+        })
+        .expect(201);
+      const listed = (await overview()).aisles.find((a) => a.id === aisle.id);
+      expect(listed?.translations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            locale: 'ro',
+            value: `Condimente ${stamp}`,
+          }),
+        ]),
+      );
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+      expect(await translationsOf('aisle', aisle.id)).toEqual([]);
+    });
+
+    it('shows an Admin-added Aisle translation on the Shopping List in that locale', async () => {
+      const aisle = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Deli ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const parent = (
+        await as(adminCookie)
+          .post('/parent-categories', {
+            name: `Deli parent ${stamp}`,
+            aisleId: aisle.id,
+          })
+          .expect(201)
+      ).body as Body;
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: parent.id,
+            name: `Deli leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const ingredient = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Pastrami ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      await as(adminCookie)
+        .post('/translations', {
+          entityType: 'aisle',
+          entityId: aisle.id,
+          locale: 'da',
+          kind: 'name',
+          value: `Pålæg ${stamp}`,
+        })
+        .expect(201);
+
+      type List = {
+        id: string;
+        groups: Array<{ aisle: { id: string; name: string } | null }>;
+      };
+      const shopping = (method: 'get' | 'post', path: string) =>
+        request(app.getHttpServer())
+          [method](`/api/shopping-list${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', adminCookie);
+      const added = (
+        await shopping('post', '/items?locale=da')
+          .send({ ingredientId: ingredient.id })
+          .expect(200)
+      ).body as List;
+      shoppingListIds.push(added.id);
+      const aisleName = async (locale: string) => {
+        const list = (await shopping('get', `?locale=${locale}`).expect(200))
+          .body as List;
+        return list.groups.find((g) => g.aisle?.id === aisle.id)?.aisle?.name;
+      };
+      try {
+        expect(await aisleName('da')).toBe(`Pålæg ${stamp}`);
+        // Romanian has no name yet: the English one stands in.
+        expect(await aisleName('ro')).toBe(`Deli ${stamp}`);
+      } finally {
+        await database
+          .delete(shoppingItems)
+          .where(eq(shoppingItems.ingredientId, ingredient.id));
+      }
+      await as(adminCookie).del(`/ingredients/${ingredient.id}`).expect(204);
+      await as(adminCookie).del(`/leaf-categories/${leaf.id}`).expect(204);
+      await as(adminCookie).del(`/parent-categories/${parent.id}`).expect(204);
+      await as(adminCookie).del(`/aisles/${aisle.id}`).expect(204);
+    });
+
+    it('reorders the Aisles, and the Shopping List groups follow the new order', async () => {
+      const shopping = (method: 'get' | 'post', path = '') =>
+        request(app.getHttpServer())
+          [method](`/api/shopping-list${path}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', adminCookie);
+      for (const slug of ['milk', 'tomato']) {
+        await shopping('post', '/items')
+          .send({ ingredientId: seedId.ingredient(slug) })
+          .expect(200);
+      }
+      type List = { id: string; groups: Array<{ aisle: Body | null }> };
+      const groupIds = async () => {
+        const list = (await shopping('get').expect(200)).body as List;
+        shoppingListIds.push(list.id);
+        return list.groups.map((g) => g.aisle?.id);
+      };
+      const dairy = seedId.aisle('dairy-eggs');
+      const produce = seedId.aisle('fruit-veg');
+      expect(await groupIds()).toEqual([produce, dairy]);
+
+      const original = (await overview()).aisles.map((a) => a.id);
+      const dairyFirst = [dairy, ...original.filter((id) => id !== dairy)];
+      try {
+        const reordered = await as(adminCookie)
+          .put('/aisles/order', { ids: dairyFirst })
+          .expect(200);
+        expect((reordered.body as Body[]).map((a) => a.id)).toEqual(dairyFirst);
+        expect((await overview()).aisles.map((a) => a.id)).toEqual(dairyFirst);
+        expect(await groupIds()).toEqual([dairy, produce]);
+      } finally {
+        await as(adminCookie)
+          .put('/aisles/order', { ids: original })
+          .expect(200);
+      }
+      expect(await groupIds()).toEqual([produce, dairy]);
+    });
+
+    /** Polls until `count` sessions wait on `holderPid`; from the pool, since inside a transaction pg_stat_activity is a frozen snapshot. */
+    async function waitUntilBlocked(
+      holderPid: number,
+      count: number,
+      what: string,
+    ) {
+      const pool = app.get<Pool>(DATABASE_POOL);
+      for (let attempt = 0; ; attempt++) {
+        const { rowCount } = await pool.query(
+          'SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))',
+          [holderPid],
+        );
+        if ((rowCount ?? 0) >= count) return;
+        if (attempt === 250) throw new Error(`${what} never blocked`);
+        await new Promise((done) => setTimeout(done, 20));
+      }
+    }
+
+    it('serialises an API delete and a reorder on the Aisle order lock', async () => {
+      const doomed = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Queued aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const ids = (await overview()).aisles.map((a) => a.id);
+
+      const client = await app.get<Pool>(DATABASE_POOL).connect();
+      let remove: Promise<request.Response>;
+      let reorder: Promise<request.Response>;
+      let released = false;
+      try {
+        await client.query('BEGIN');
+        const holder = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await lockAisleOrder(drizzle(client));
+        const pid = holder.rows[0].pid;
+        // Queued in this order: the delete first, then the reorder.
+        remove = as(adminCookie)
+          .del(`/aisles/${doomed.id}`)
+          .then((r) => r);
+        await waitUntilBlocked(pid, 1, 'the delete');
+        reorder = as(adminCookie)
+          .put('/aisles/order', { ids: [...ids].reverse() })
+          .then((r) => r);
+        await waitUntilBlocked(pid, 2, 'the reorder');
+        await client.query('COMMIT');
+        released = true;
+      } finally {
+        if (!released) await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
+      expect((await remove).status).toBe(204);
+      // The reorder ran after the delete committed, so its list is stale.
+      const response = await reorder;
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        code: 'catalog.aisle_order_stale',
+        params: {},
+      });
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        ids.filter((id) => id !== doomed.id),
+      );
+    });
+
+    it('refuses as stale a reorder naming an Aisle deleted from outside the service while it runs', async () => {
+      const doomed = (
+        await as(adminCookie)
+          .post('/aisles', { name: `Doomed aisle ${stamp}` })
+          .expect(201)
+      ).body as Body;
+      const ids = (await overview()).aisles.map((a) => a.id);
+
+      const client = await app.get<Pool>(DATABASE_POOL).connect();
+      let reorder: Promise<request.Response>;
+      let committed = false;
+      try {
+        // A delete that skips the advisory lock, uncommitted, holding the row.
+        await client.query('BEGIN');
+        const holder = await client.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await client.query(
+          'DELETE FROM catalog_translations WHERE entity_id = $1',
+          [doomed.id],
+        );
+        await client.query('DELETE FROM aisles WHERE id = $1', [doomed.id]);
+        reorder = as(adminCookie)
+          .put('/aisles/order', { ids: [...ids].reverse() })
+          .then((r) => r);
+        await waitUntilBlocked(holder.rows[0].pid, 1, 'the reorder');
+        await client.query('COMMIT');
+        committed = true;
+      } finally {
+        if (!committed) await client.query('ROLLBACK').catch(() => undefined);
+        client.release();
+      }
+      const response = await reorder;
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        code: 'catalog.aisle_order_stale',
+        params: {},
+      });
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(
+        ids.filter((id) => id !== doomed.id),
+      );
+    });
+
+    it('refuses a shop order that does not name every Aisle exactly once', async () => {
+      const ids = (await overview()).aisles.map((a) => a.id);
+      await as(adminCookie)
+        .put('/aisles/order', { ids: ids.slice(1) })
+        .expect(409)
+        .expect({ code: 'catalog.aisle_order_stale', params: {} });
+      await as(adminCookie)
+        .put('/aisles/order', {
+          ids: [...ids.slice(1), '00000000-0000-4000-8000-000000000000'],
+        })
+        .expect(409);
+      const duplicate = await as(adminCookie)
+        .put('/aisles/order', { ids: [ids[0], ...ids.slice(0, -1)] })
+        .expect(400);
+      expect((duplicate.body as Body).code).toBe('validation_failed');
+      expect((await overview()).aisles.map((a) => a.id)).toEqual(ids);
+    });
+
+    it('enforces unique Aisle names and valid input', async () => {
+      await as(adminCookie)
+        .post('/aisles', { name: 'BAKERY' })
+        .expect(409)
+        .expect({ code: 'catalog.name_taken', params: {} });
+      await as(adminCookie).post('/aisles', { name: '!!!' }).expect(400);
+      await as(adminCookie)
+        .patch(`/aisles/${seedId.aisle('frozen')}`, { name: 'Bakery' })
+        .expect(409);
+      await as(adminCookie)
+        .patch('/aisles/00000000-0000-4000-8000-000000000000', { name: 'Gone' })
+        .expect(404);
+      await as(adminCookie)
+        .patch(`/aisles/${seedId.aisle('frozen')}`, {})
+        .expect(400);
     });
   });
 

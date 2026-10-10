@@ -2,7 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { ReviewLine } from './review';
 import type { ScanResponse } from './scan';
-import type { NewShoppingItem, ShoppingList } from './shopping';
+import {
+  shoppingListQueryKey,
+  type NewShoppingItem,
+  type ShoppingList,
+} from './shopping';
 
 /** One guess at the dish in the photo. */
 export type DishGuess = { title: string; confidence: number };
@@ -44,7 +48,7 @@ export function useAddShoppingItems(locale: string) {
         { method: 'POST', body: { items } },
       ),
     onSuccess: (list) =>
-      queryClient.setQueryData(['shopping-list', locale], list),
+      queryClient.setQueryData([...shoppingListQueryKey, locale], list),
   });
 }
 

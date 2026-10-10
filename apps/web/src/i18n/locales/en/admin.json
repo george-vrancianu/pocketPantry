@@ -32,6 +32,16 @@
     "leafCategory": "Leaf Category",
     "defaultUnit": "Default unit"
   },
+  "aisle": {
+    "title": "Aisles",
+    "hint": "The shop order: the Shopping List is grouped by Aisle in this order.",
+    "new": "New Aisle",
+    "edit": "Edit Aisle {{name}}",
+    "name": "Name (English)",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "moved": "{{name}} is now number {{position}} of {{total}}."
+  },
   "category": {
     "newParent": "New Parent Category",
     "newLeaf": "New Leaf Category",

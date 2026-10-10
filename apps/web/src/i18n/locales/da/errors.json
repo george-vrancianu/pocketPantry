@@ -60,7 +60,9 @@
     "other_leaf_protected": "Kategorien Andet er der, hvor umatchede partier havner, så den kan ikke slettes, flyttes eller fjernes.",
     "other_leaf_name_taken": "En kategori Andet har allerede det genererede navn (\"Andet <name>\"). Omdøb eller fjern den kategori, der er i konflikt, først.",
     "translation_exists": "Dette punkt har allerede et navn på det sprog. Rediger det eksisterende i stedet.",
-    "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her."
+    "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her.",
+    "aisle_in_use": "Overkategorier bruger stadig denne afdeling, så den kan ikke slettes. Flyt dem først til en anden afdeling.",
+    "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",

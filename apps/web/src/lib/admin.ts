@@ -6,6 +6,7 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
+import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
   'aisle' | 'parent_category' | 'leaf_category' | 'ingredient';
@@ -70,11 +71,13 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: send,
-    // Member-facing Catalog search shows the same names, so refresh it too.
+    // Member-facing Catalog search and Shopping List show the same names (and
+    // Aisle order), so refresh them too.
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
       ]),
   });
 }
@@ -97,6 +100,26 @@ export function useSaveIngredient(id?: string) {
 export function useDeleteIngredient() {
   return useAdminWrite((id: string) =>
     apiRequest(`${base}/ingredients/${id}`, { method: 'DELETE' }),
+  );
+}
+
+export function useSaveAisle(id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/aisles${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+export function useDeleteAisle() {
+  return useAdminWrite((id: string) =>
+    apiRequest(`${base}/aisles/${id}`, { method: 'DELETE' }),
+  );
+}
+/** Sets the shop order: every Aisle id once, first walked first. */
+export function useReorderAisles() {
+  return useAdminWrite((ids: string[]) =>
+    apiRequest(`${base}/aisles/order`, { method: 'PUT', body: { ids } }),
   );
 }
 

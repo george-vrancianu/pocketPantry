@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate } from './pantry';
+import { shoppingListQueryKey } from './shopping';
 
 /** A proposed Batch for one checked Shopping Item, pre-filled from the Catalog. */
 export type FinishProposalLine = {
@@ -57,7 +58,7 @@ export function useFinishShopping() {
       ),
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['shopping-list'] }),
+        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
       ]),
   });

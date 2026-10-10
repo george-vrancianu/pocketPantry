@@ -34,7 +34,10 @@ export type NewShoppingItem = {
 /** How often the list refetches, so other Members' changes show up without a reload. */
 export const SHOPPING_POLL_INTERVAL_MS = 10_000;
 
-const listKey = (locale: string) => ['shopping-list', locale] as const;
+/** Every locale's Shopping List; one locale's is `[...shoppingListQueryKey, locale]`. */
+export const shoppingListQueryKey = ['shopping-list'] as const;
+
+const listKey = (locale: string) => [...shoppingListQueryKey, locale] as const;
 const path = (locale: string, suffix = '') =>
   `/shopping-list${suffix}?${new URLSearchParams({ locale })}`;
 

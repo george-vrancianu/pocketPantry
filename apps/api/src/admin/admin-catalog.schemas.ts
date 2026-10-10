@@ -23,6 +23,16 @@ const atLeastOneMessage = 'at least one field is required';
 const expiryDays = z.number().int().min(0).max(3650).nullable();
 const location = z.enum(storageLocation.enumValues).nullable();
 
+export const aisleCreate = z.object({ name: text });
+export const aisleUpdate = z.object({ name: text });
+/** The full shop order: every Aisle id exactly once, first walked first. */
+export const aisleOrder = z.object({
+  ids: z
+    .array(id)
+    .min(1)
+    .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
+});
+
 export const parentCategoryCreate = z.object({
   name: text,
   aisleId: id,
@@ -85,6 +95,9 @@ export const translationUpdate = z.object({ value: text });
 
 export const idParam = z.object({ id });
 
+export type AisleCreate = z.infer<typeof aisleCreate>;
+export type AisleUpdate = z.infer<typeof aisleUpdate>;
+export type AisleOrder = z.infer<typeof aisleOrder>;
 export type ParentCategoryCreate = z.infer<typeof parentCategoryCreate>;
 export type ParentCategoryUpdate = z.infer<typeof parentCategoryUpdate>;
 export type LeafCategoryCreate = z.infer<typeof leafCategoryCreate>;

@@ -12,6 +12,7 @@ import {
 export type AdminTab = 'ingredients' | 'categories' | 'unmatched';
 export type Editing =
   | { type: 'ingredient'; id: string | null }
+  | { type: 'aisle'; id: string | null }
   | { type: 'category'; kind: CategoryKind; id: string | null };
 
 /** State of the Admin screen: loaded Catalog, tab, Ingredient filter, and which editor is open. */
@@ -37,6 +38,10 @@ export function useAdminScreen() {
     editing?.type === 'ingredient'
       ? catalog?.ingredients.find((item) => item.id === editing.id)
       : undefined;
+  const editedAisle =
+    editing?.type === 'aisle'
+      ? catalog?.aisles.find((item) => item.id === editing.id)
+      : undefined;
   let editedCategory: AdminParentCategory | AdminLeafCategory | undefined;
   if (editing?.type === 'category' && catalog) {
     const list: Array<AdminParentCategory | AdminLeafCategory> =
@@ -57,6 +62,7 @@ export function useAdminScreen() {
     ingredients,
     editing,
     editedIngredient,
+    editedAisle,
     editedCategory,
     edit: setEditing,
     close: () => setEditing(null),

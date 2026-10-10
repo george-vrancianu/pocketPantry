@@ -60,7 +60,9 @@
     "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
     "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
     "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
-    "canonical_name_managed": "The English name changes with the entry's name, not here."
+    "canonical_name_managed": "The English name changes with the entry's name, not here.",
+    "aisle_in_use": "Parent Categories still use this Aisle, so it cannot be deleted. Move them to another Aisle first.",
+    "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
