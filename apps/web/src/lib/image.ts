@@ -1,11 +1,11 @@
 import { RECEIPT_OUTPUT_WIDTH } from './receiptGuide';
-import { guideRect } from './scanGuides';
+import { guideRect, type Rect } from './scanGuides';
+
+export type { Rect };
 
 /** Longest edge sent to the API. Plenty for reading a label, small enough for a phone connection. */
 export const MAX_IMAGE_EDGE = 1600;
 const JPEG_QUALITY = 0.8;
-
-export type Rect = { x: number; y: number; width: number; height: number };
 
 /** The size to scale `width` x `height` to so the longest edge is at most `maxEdge`. Never upscales. */
 export function fitWithin(
@@ -70,10 +70,11 @@ export function receiptOutputSize(
   cropHeight: number,
   outputWidth = RECEIPT_OUTPUT_WIDTH,
 ): { width: number; height: number } {
-  const scale = Math.min(1, outputWidth / cropWidth);
+  if (cropWidth <= outputWidth) return { width: cropWidth, height: cropHeight };
+  // Floor the height: rounding up could add a row, and with it another billed tile.
   return {
-    width: Math.max(1, Math.round(cropWidth * scale)),
-    height: Math.max(1, Math.round(cropHeight * scale)),
+    width: outputWidth,
+    height: Math.max(1, Math.floor((cropHeight * outputWidth) / cropWidth)),
   };
 }
 

@@ -160,9 +160,6 @@ export function ScanPage() {
         }}
       >
         <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
-          <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
-            {t(`hint.${screen.mode}`)}
-          </Typography>
           <Typography
             sx={{ mt: '6px', fontSize: 13, color: tokens.color.cameraMuted }}
           >

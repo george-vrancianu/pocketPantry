@@ -2,19 +2,18 @@ import { Box, tokens } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanMode } from '../../../lib/scan';
-import { SCAN_GUIDES } from '../../../lib/scanGuides';
+import { GUIDE_CENTER_Y, SCAN_GUIDES } from '../../../lib/scanGuides';
 
 const ARMED_MS = 320;
 const noMotion = {
   '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
 };
 const CORNERS = [
-  ['top', 'left'],
-  ['top', 'right'],
-  ['bottom', 'left'],
-  ['bottom', 'right'],
+  ['Top', 'Left'],
+  ['Top', 'Right'],
+  ['Bottom', 'Left'],
+  ['Bottom', 'Right'],
 ] as const;
-const capital = (word: string) => word[0].toUpperCase() + word.slice(1);
 
 type Props = {
   mode: ScanMode;
@@ -35,10 +34,7 @@ export function Viewfinder({ mode, hintShown }: Props) {
     timer.current = window.setTimeout(() => setArmed(false), ARMED_MS);
   };
   return (
-    <Box
-      aria-hidden="true"
-      sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-    >
+    <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
       <Box
         data-testid="scan-guide"
         data-armed={armed ? 'true' : undefined}
@@ -46,7 +42,7 @@ export function Viewfinder({ mode, hintShown }: Props) {
         sx={{
           position: 'absolute',
           left: '50%',
-          top: '46%',
+          top: `${GUIDE_CENTER_Y * 100}%`,
           width: `${width * 100}%`,
           height: `${height * 100}%`,
           transform: 'translate(-50%, -50%)',
@@ -59,16 +55,17 @@ export function Viewfinder({ mode, hintShown }: Props) {
           <Box
             key={v + h}
             data-testid="scan-guide-corner"
+            aria-hidden="true"
             sx={{
               position: 'absolute',
               width: 30,
               height: 30,
               boxSizing: 'border-box',
-              [v]: -2,
-              [h]: -2,
-              [`border${capital(v)}`]: '3.5px solid',
-              [`border${capital(h)}`]: '3.5px solid',
-              [`border${capital(v)}${capital(h)}Radius`]: '10px',
+              [v.toLowerCase()]: -2,
+              [h.toLowerCase()]: -2,
+              [`border${v}`]: '3.5px solid',
+              [`border${h}`]: '3.5px solid',
+              [`border${v}${h}Radius`]: '10px',
               borderColor: armed ? tokens.color.camAccent : tokens.color.camFg,
               filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.5))',
               transition: 'border-color 200ms',

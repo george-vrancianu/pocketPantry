@@ -1,5 +1,7 @@
 import type { ScanMode } from './scan';
 
+export type Rect = { x: number; y: number; width: number; height: number };
+
 /** Each Scan Mode's guide as a fraction of the screen (width x height). */
 export const SCAN_GUIDES: Record<ScanMode, { width: number; height: number }> =
   {
@@ -16,7 +18,7 @@ export const GUIDE_CENTER_Y = 0.46;
 export function guideRect(
   mode: ScanMode,
   view: { width: number; height: number },
-): { x: number; y: number; width: number; height: number } {
+): Rect {
   const width = view.width * SCAN_GUIDES[mode].width;
   const height = view.height * SCAN_GUIDES[mode].height;
   return {

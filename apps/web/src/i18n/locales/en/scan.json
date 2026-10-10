@@ -37,12 +37,6 @@
     "plate": "Plate",
     "ingredients": "Ingredients"
   },
-  "hint": {
-    "product": "Point at a barcode or label",
-    "receipt": "Fit the whole receipt in the frame",
-    "plate": "Hold steady above your plate",
-    "ingredients": "Spread items out on the counter"
-  },
   "guideHint": {
     "receipt": "Lay flat, double-tap to scan",
     "product": "Frame the product and its date",
