@@ -1,11 +1,23 @@
 import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
-import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES, type ScanMode } from '../../../lib/scan';
+import {
+  DIAL_ITEM_WIDTH,
+  releaseTarget,
+  rubberBand,
+  startsHorizontalDrag,
+} from '../dialGesture';
 import { glassFocusRing } from './glass';
 
-const ITEM_WIDTH = 84;
 const HAPTIC_MS = 6;
+const CLICK_GUARD_MS = 50;
 
 const icon = (children: ReactNode) => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -88,6 +100,84 @@ export function ModeDial({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  // Strip offset in px while a finger is dragging it (0 = first item centred), else null.
+  const [dragOffset, setDragOffset] = useState<number | null>(null);
+  const drag = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    t: number;
+    /** Strip offset in px when the finger went down. */
+    startOffset: number;
+    startIndex: number;
+    moved: boolean;
+  } | null>(null);
+  const justDragged = useRef(false);
+  const clickGuard = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(clickGuard.current), []);
+  const offsetNow = (
+    event: PointerEvent,
+    start: { x: number; startOffset: number },
+  ) =>
+    rubberBand(
+      start.startOffset - (event.clientX - start.x),
+      (SCAN_MODES.length - 1) * DIAL_ITEM_WIDTH,
+    );
+  const dragging = dragOffset !== null;
+  const onPointerDown = (event: PointerEvent<HTMLElement>) => {
+    if (disabled || !event.isPrimary || event.button !== 0) return;
+    drag.current = {
+      pointerId: event.pointerId,
+      startOffset: index * DIAL_ITEM_WIDTH,
+      startIndex: index,
+      x: event.clientX,
+      y: event.clientY,
+      t: performance.now(),
+      moved: false,
+    };
+  };
+  const onPointerMove = (event: PointerEvent<HTMLElement>) => {
+    const start = drag.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    if (
+      !start.moved &&
+      !startsHorizontalDrag(event.clientX - start.x, event.clientY - start.y)
+    ) {
+      return;
+    }
+    if (!start.moved) {
+      start.moved = true;
+      try {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+      } catch {
+        // The pointer is already gone; the drag still ends on pointerup/cancel.
+      }
+    }
+    setDragOffset(offsetNow(event, start));
+  };
+  const endDrag = (event: PointerEvent<HTMLElement>, cancelled: boolean) => {
+    const start = drag.current;
+    if (!start || start.pointerId !== event.pointerId) return;
+    drag.current = null;
+    if (!start.moved) return;
+    setDragOffset(null);
+    justDragged.current = true;
+    clearTimeout(clickGuard.current);
+    clickGuard.current = setTimeout(
+      () => (justDragged.current = false),
+      CLICK_GUARD_MS,
+    );
+    if (cancelled || disabled) return;
+    const target = releaseTarget({
+      offset: offsetNow(event, start),
+      dx: event.clientX - start.x,
+      dt: Math.max(1, performance.now() - start.t),
+      index: start.startIndex,
+      count: SCAN_MODES.length,
+    });
+    if (target !== index) onChange(SCAN_MODES[target]);
+  };
+
   const groupRef = useRef<HTMLDivElement>(null);
   const previous = useRef(mode);
   useEffect(() => {
@@ -102,7 +192,19 @@ export function ModeDial({
   }, [mode]);
 
   return (
-    <Box sx={{ position: 'relative', height: 120, mt: 1 }}>
+    <Box
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={(event) => endDrag(event, false)}
+      onPointerCancel={(event) => endDrag(event, true)}
+      sx={{
+        position: 'relative',
+        height: 120,
+        mt: 1,
+        touchAction: 'pan-y',
+        cursor: dragging ? 'grabbing' : 'grab',
+      }}
+    >
       <Box
         key={mode}
         aria-hidden="true"
@@ -135,7 +237,11 @@ export function ModeDial({
           top: 30,
           width: 64,
           height: 64,
-          transform: 'translateX(-50%)',
+          transform: dragging
+            ? 'translateX(-50%) scale(.94)'
+            : 'translateX(-50%)',
+          transition: 'transform .15s',
+          [reducedMotion]: { transition: 'none' },
           borderRadius: '50%',
           border: `2.5px solid ${tokens.color.camAccent}`,
           boxShadow: `0 0 0 6px color-mix(in srgb, ${tokens.color.camAccent} 14%, transparent)`,
@@ -152,8 +258,10 @@ export function ModeDial({
           top: 30,
           height: 64,
           display: 'flex',
-          transform: `translateX(${-ITEM_WIDTH / 2 - index * ITEM_WIDTH}px)`,
-          transition: 'transform .42s cubic-bezier(.2,.8,.2,1)',
+          transform: `translateX(${-DIAL_ITEM_WIDTH / 2 - (dragOffset ?? index * DIAL_ITEM_WIDTH)}px)`,
+          transition: dragging
+            ? 'none'
+            : 'transform .42s cubic-bezier(.2,.8,.2,1)',
           [reducedMotion]: { transition: 'none' },
         }}
       >
@@ -169,9 +277,11 @@ export function ModeDial({
               aria-label={t(`mode.${item}`)}
               tabIndex={active ? 0 : -1}
               disabled={disabled}
-              onClick={() => onChange(item)}
+              onClick={() => {
+                if (!justDragged.current) onChange(item);
+              }}
               sx={{
-                width: ITEM_WIDTH,
+                width: DIAL_ITEM_WIDTH,
                 height: 64,
                 display: 'grid',
                 placeItems: 'center',
