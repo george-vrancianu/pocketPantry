@@ -8,13 +8,19 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { PlateChoice, cardId } from './components/PlateChoice';
+import {
+  ReceiptCropper,
+  type ReceiptCrop,
+} from '../../components/ReceiptCropper';
+import { cropToReceiptArea } from '../../lib/image';
 import type { ProposedLine } from '../../lib/scan';
+import { readScans } from '../../lib/scanReads';
 import { useSaveScan } from '../../lib/saveScan';
 import {
   dispatchScanSession,
@@ -44,6 +50,31 @@ export function ReviewOverviewPage() {
   const navigate = useNavigate();
   const session = useScanSession();
   const reading = pendingCount(session);
+  /** The gallery receipt being cropped. */
+  const [cropping, setCropping] = useState<SessionScan | null>(null);
+  const [cropFailed, setCropFailed] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // The Crop button is gone once the card is read: keep the focus on the card.
+  useEffect(() => {
+    if (!focusId) return;
+    document.querySelector<HTMLElement>(`[data-scan-id="${focusId}"]`)?.focus();
+    setFocusId(null);
+  }, [focusId]);
+
+  const crop = async ({ area, rotation }: ReceiptCrop) => {
+    const scan = cropping;
+    setCropping(null);
+    if (!scan?.source) return;
+    try {
+      const image = await cropToReceiptArea(scan.source, area, rotation);
+      setCropFailed(null);
+      dispatchScanSession({ type: 'crop', id: scan.id, image });
+      setFocusId(scan.id);
+      readScans(i18n.language);
+    } catch {
+      setCropFailed(scan.id);
+    }
+  };
 
   // A Plate Scan still showing its dish guesses has nothing to save yet.
   const savable = (scan: SessionScan) => scan.status === 'read' && !scan.dishes;
@@ -79,7 +110,7 @@ export function ReviewOverviewPage() {
   };
 
   const card = (scan: SessionScan) => {
-    const isReading = scan.status !== 'read';
+    const isReading = scan.status === 'queued' || scan.status === 'reading';
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines = (scan.lines ?? []).filter((line) => !line.excluded);
     const check = lines.filter(
@@ -95,6 +126,7 @@ export function ReviewOverviewPage() {
         key={scan.id}
         data-testid="review-card"
         id={cardId(scan.id)}
+        data-scan-id={scan.id}
         tabIndex={-1}
         sx={{
           '&:focus-visible': {
@@ -154,6 +186,30 @@ export function ReviewOverviewPage() {
             </Box>
           ) : scan.dishes ? (
             <PlateChoice scan={scan} />
+          ) : scan.status === 'uncropped' ? (
+            <>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setCropping(scan)}
+                sx={{
+                  display: 'block',
+                  p: 0,
+                  mt: 0.5,
+                  border: 0,
+                  background: 'none',
+                  color: tokens.color.accent,
+                  font: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('overview.crop')}
+              </Box>
+              {cropFailed === scan.id ? (
+                <Alert>{t('errors:scan.image_invalid')}</Alert>
+              ) : null}
+            </>
           ) : (
             <>
               <Box
@@ -303,6 +359,13 @@ export function ReviewOverviewPage() {
             {t('overview.discardAll')}
           </Button>
         </Box>
+      ) : null}
+      {cropping?.source ? (
+        <ReceiptCropper
+          photo={cropping.source}
+          onConfirm={(value) => void crop(value)}
+          onCancel={() => setCropping(null)}
+        />
       ) : null}
     </div>
   );

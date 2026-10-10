@@ -17,7 +17,6 @@ import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
-import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
@@ -242,21 +241,10 @@ export function ScanPage() {
         >
           {screen.reading
             ? screen.receiptSections.readingNumber !== null
-              ? screen.photoQueue.total > 1
-                ? t('sections.readingBatch', {
-                    number: screen.photoQueue.number,
-                    total: screen.photoQueue.total,
-                  })
-                : t('sections.reading', {
-                    number: screen.receiptSections.readingNumber,
-                  })
+              ? t('sections.reading', {
+                  number: screen.receiptSections.readingNumber,
+                })
               : t('reading')
-            : null}
-          {screen.mode === 'receipt' &&
-          !screen.reading &&
-          !screen.cropping &&
-          screen.photoQueue.waiting > 0
-            ? t('sections.queued', { count: screen.photoQueue.waiting })
             : null}
           {screen.mode === 'receipt' &&
           screen.receiptSections.full &&
@@ -270,11 +258,6 @@ export function ScanPage() {
             <Alert>{screen.error}</Alert>
           </Box>
         ) : null}
-        {screen.notice ? (
-          <Box sx={{ mt: 1 }}>
-            <Alert severity="warning">{screen.notice}</Alert>
-          </Box>
-        ) : null}
 
         {screen.mode === 'receipt' ? (
           <ReceiptSections
@@ -286,12 +269,7 @@ export function ScanPage() {
         <ModeDial
           mode={screen.mode}
           disabled={screen.modesDisabled || infoOpen}
-          keysDisabled={
-            screen.modesDisabled ||
-            infoOpen ||
-            screen.reading ||
-            !!screen.cropping
-          }
+          keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
         />
@@ -327,23 +305,6 @@ export function ScanPage() {
         </Box>
       </Box>
 
-      {screen.cropping ? (
-        <ReceiptCropper
-          key={screen.photoQueue.number}
-          progress={
-            screen.photoQueue.total > 1
-              ? t('sections.photoOf', {
-                  number: screen.photoQueue.number,
-                  total: screen.photoQueue.total,
-                })
-              : undefined
-          }
-          photo={screen.cropping}
-          onConfirm={screen.confirmCrop}
-          onCancel={screen.cancelCrop}
-        />
-      ) : null}
-
       <Snackbar
         open={screen.toast !== null}
         onClose={screen.clearToast}
@@ -361,7 +322,7 @@ export function ScanPage() {
         ref={screen.fileInput}
         type="file"
         accept="image/*"
-        multiple={screen.mode === 'receipt'}
+        multiple
         onChange={screen.pickFile}
         data-testid="gallery-input"
         sx={{ display: 'none' }}

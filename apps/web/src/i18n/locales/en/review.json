@@ -134,6 +134,7 @@
     "allRead": "all read",
     "camera": "Camera",
     "reading": "Reading photo…",
+    "crop": "Crop receipt photo",
     "remove": "Remove photo",
     "items_one": "{{count}} item",
     "items_other": "{{count}} items",

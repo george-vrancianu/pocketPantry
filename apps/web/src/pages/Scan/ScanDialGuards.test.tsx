@@ -56,21 +56,6 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     vi.restoreAllMocks();
   });
 
-  it('ignores arrows while the receipt cropper is open', async () => {
-    setup('/scan?mode=receipt');
-    fireEvent.change(screen.getByTestId('gallery-input'), {
-      target: {
-        files: [new File(['x'], 'a.jpg', { type: 'image/jpeg' })],
-      },
-    });
-    await screen.findByRole('dialog', { name: 'Crop receipt' });
-    await userEvent.keyboard('{ArrowRight}');
-    expect(
-      screen.getByRole('dialog', { name: 'Crop receipt' }),
-    ).toBeInTheDocument();
-    expect(checked()).toEqual(['Receipt']);
-  });
-
   it('ignores arrows while the Info sheet is open', async () => {
     setup('/scan?mode=product');
     await userEvent.click(
