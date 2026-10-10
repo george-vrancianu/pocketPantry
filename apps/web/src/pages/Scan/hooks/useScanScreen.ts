@@ -3,12 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
+import { readScans } from '../../../lib/scanReads';
 import {
-  clearReadFailure,
-  readScans,
-  useReadFailure,
-} from '../../../lib/scanReads';
-import {
+  capReached,
   MAX_SESSION_SCANS,
   dispatchScanSession,
   getScanSession,
@@ -69,9 +66,10 @@ export function useScanScreen() {
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
-  // A Scan of the Scan Session that could not be read; the Scan is dropped.
-  const readError = useReadFailure();
+  /** A camera Scan that could not be prepared, so never joined the Scan Session. */
+  const [notAdded, setNotAdded] = useState(false);
   const session = useScanSession();
+  const capped = capReached(session);
   // A short message at the bottom of the screen: the Scan Session is full, or a Scan Session was just saved.
   const [toast, setToast] = useState<{
     text: string;
@@ -118,14 +116,17 @@ export function useScanScreen() {
   ): Promise<boolean> => {
     setScanned(true);
     setLocalError(null);
-    clearReadFailure();
+    setNotAdded(false);
     setResizing(true);
     const epoch = scanEpoch.current;
     let image: string;
     try {
       image = await prepare();
     } catch {
-      if (epoch === scanEpoch.current) setLocalError('scan.image_invalid');
+      if (epoch === scanEpoch.current) {
+        if (origin === 'camera' && mode !== 'plate') setNotAdded(true);
+        else setLocalError('scan.image_invalid');
+      }
       return false;
     } finally {
       setResizing(false);
@@ -160,7 +161,7 @@ export function useScanScreen() {
   // A double tap on the guide must not send the same photo twice.
   const shooting = useRef(false);
   const shoot = async () => {
-    if (shooting.current) return;
+    if (shooting.current || capped) return;
     shooting.current = true;
     try {
       const frame = await camera.capture();
@@ -182,7 +183,7 @@ export function useScanScreen() {
     }
     setScanned(true);
     setLocalError(null);
-    clearReadFailure();
+    setNotAdded(false);
     // Take what fits under the Scan Session's cap, counting photos still being resized.
     const room = Math.max(
       0,
@@ -235,7 +236,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = plate.error ?? readError;
+  const scanError = plate.error;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -258,7 +259,14 @@ export function useScanScreen() {
     reading,
     scanned,
     modesDisabled: resizing,
-    controlsDisabled: reading,
+    controlsDisabled: reading || capped,
+    capped,
+    notAdded,
+    dismissNotAdded: () => setNotAdded(false),
+    retryScan: (id: string) => {
+      dispatchScanSession({ type: 'retry', id });
+      readScans(i18n.language);
+    },
     fileInput,
     error,
     setMode: (next: ScanMode) => {

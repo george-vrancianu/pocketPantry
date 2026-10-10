@@ -85,18 +85,21 @@ describe('Ingredients Scan on the Scan screen', () => {
     ).toEqual({ ingredientsImage: IMAGE });
   });
 
-  it('tells the Member when nothing was recognised, and stays on the Scan screen', async () => {
+  it('fails the Scan when nothing was recognised, and stays on the Scan screen', async () => {
     renderIngredients({
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
     scanViaGuide();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'We could not spot any ingredients',
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /We could not spot any ingredients/,
     );
+    expect(
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
     expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
-  it('tells the Member when there were too many items, with the limit', async () => {
+  it('fails the Scan when there were too many items', async () => {
     renderIngredients({
       'POST /api/scan/ingredients': () =>
         Response.json(
@@ -105,8 +108,11 @@ describe('Ingredients Scan on the Scan screen', () => {
         ),
     });
     scanViaGuide();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'more than 50 items',
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /more than 50 items/,
     );
+    expect(
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
   });
 });

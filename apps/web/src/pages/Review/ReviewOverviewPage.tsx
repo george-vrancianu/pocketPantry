@@ -9,6 +9,7 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
+import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -19,9 +20,9 @@ import {
 } from '../../components/ReceiptCropper';
 import { cropToReceiptArea } from '../../lib/image';
 import type { ProposedLine } from '../../lib/scan';
-import { readScans } from '../../lib/scanReads';
 import { useSaveScan } from '../../lib/saveScan';
 import {
+  canRetry,
   canMerge,
   dispatchScanSession,
   getScanSession,
@@ -120,6 +121,7 @@ export function ReviewOverviewPage() {
   };
 
   const card = (scan: SessionScan) => {
+    const isFailed = scan.status === 'failed';
     const isReading = scan.status === 'queued' || scan.status === 'reading';
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines = (scan.lines ?? []).filter((line) => !line.excluded);
@@ -190,6 +192,17 @@ export function ReviewOverviewPage() {
               </Box>
               <Typography>{t('overview.reading')}</Typography>
             </Box>
+          ) : isFailed ? (
+            <>
+              <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
+                {t('overview.failed')}
+              </Typography>
+              {scan.errorCode && !canRetry(scan) ? (
+                <Typography sx={{ fontSize: 13 }}>
+                  {tScan(`errors:${scan.errorCode}`, scan.errorParams)}
+                </Typography>
+              ) : null}
+            </>
           ) : scan.status === 'uncropped' ? (
             <>
               <Box
@@ -328,7 +341,11 @@ export function ReviewOverviewPage() {
             type="button"
             aria-label={t('overview.remove')}
             disabled={saving}
-            onClick={() => dispatchScanSession({ type: 'remove', id: scan.id })}
+            onClick={() => {
+              dispatchScanSession({ type: 'remove', id: scan.id });
+              // Scans held back by the Scan Cap can go on now.
+              readScans(i18n.language);
+            }}
             sx={{
               position: 'relative',
               zIndex: 1,

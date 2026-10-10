@@ -88,7 +88,7 @@ export function ScanPage() {
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
       />
-      <ScanQueue scans={screen.scans} />
+      <ScanQueue scans={screen.scans} onRetry={screen.retryScan} />
 
       <Box
         sx={{
@@ -241,6 +241,11 @@ export function ScanPage() {
           {screen.reading ? t('reading') : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
         </Box>
+        {screen.capped ? (
+          <Box sx={{ mt: 1 }}>
+            <Alert severity="warning">{t('capReached')}</Alert>
+          </Box>
+        ) : null}
         {screen.error ? (
           <Box sx={{ mt: 1 }}>
             <Alert>{screen.error}</Alert>
@@ -307,6 +312,18 @@ export function ScanPage() {
       >
         <Alert severity={screen.toast?.severity} role="status">
           {screen.toast?.text}
+        </Alert>
+      </Snackbar>
+
+      <Box role="status" sx={visuallyHidden}>
+        {screen.scans.some((scan) => scan.status === 'failed')
+          ? t('queue.failed')
+          : null}
+      </Box>
+
+      <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>
+        <Alert severity="warning" role="status">
+          {t('notAdded')}
         </Alert>
       </Snackbar>
 

@@ -144,6 +144,7 @@
     "empty": "Ingen fotos endnu.",
     "add": "Tilføj til spisekammer",
     "addWaiting": "Tilføj til spisekammer (venter på {{count}})",
-    "discardAll": "Kasser alle"
+    "discardAll": "Kasser alle",
+    "failed": "Kunne ikke læses, tag om"
   }
 }

@@ -1,6 +1,6 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { isRead, type SessionScan } from '../../../lib/scanSession';
+import { canRetry, isRead, type SessionScan } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -9,7 +9,13 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
  * The Scans of the Scan Session as thumbnails down the left edge, newest at the bottom; the
  * oldest fade out under the top bar when they do not fit. Each is spinning while it is read.
  */
-export function ScanQueue({ scans }: { scans: SessionScan[] }) {
+export function ScanQueue({
+  scans,
+  onRetry,
+}: {
+  scans: SessionScan[];
+  onRetry: (id: string) => void;
+}) {
   const { t } = useTranslation('scan');
   if (scans.length === 0) return null;
   return (
@@ -35,21 +41,36 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
     >
       {scans.map((scan) => {
         const uncropped = scan.status === 'uncropped';
-        const reading = !uncropped && !isRead(scan);
-        const state = uncropped ? 'uncropped' : reading ? 'reading' : 'read';
+        const failed = scan.status === 'failed';
+        const reading = !uncropped && !failed && !isRead(scan);
+        const state = uncropped
+          ? 'uncropped'
+          : failed
+            ? 'failed'
+            : reading
+              ? 'reading'
+              : 'read';
         return (
           <Box
             component="li"
             key={scan.id}
             data-testid="scan-thumbnail"
             data-state={state}
-            aria-label={t(
-              uncropped
-                ? 'queue.needsCrop'
-                : reading
-                  ? 'queue.reading'
-                  : 'queue.read',
-            )}
+            aria-label={
+              scan.failure === 'cap'
+                ? t('capReached')
+                : scan.errorCode && !canRetry(scan)
+                  ? t(`errors:${scan.errorCode}`, scan.errorParams)
+                  : t(
+                      uncropped
+                        ? 'queue.needsCrop'
+                        : failed
+                          ? 'queue.failed'
+                          : reading
+                            ? 'queue.reading'
+                            : 'queue.read',
+                    )
+            }
             sx={{
               position: 'relative',
               flex: 'none',
@@ -57,7 +78,7 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
               height: 60,
               borderRadius: '11px',
               overflow: 'hidden',
-              border: '1.5px solid rgba(255,255,255,.35)',
+              border: `1.5px solid ${failed ? tokens.color.camWarn : 'rgba(255,255,255,.35)'}`,
               backgroundColor: tokens.color.camGlassStrong,
             }}
           >
@@ -120,6 +141,46 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
                   [reducedMotion]: { animation: 'none' },
                 }}
               />
+            ) : failed ? (
+              <>
+                {canRetry(scan) ? (
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-label={t('queue.retry')}
+                    onClick={() => onRetry(scan.id)}
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      p: 0,
+                      border: 0,
+                      background: 'rgba(0,0,0,.35)',
+                      cursor: 'pointer',
+                      pointerEvents: 'auto',
+                    }}
+                  />
+                ) : null}
+                <Box
+                  aria-hidden="true"
+                  sx={{
+                    position: 'absolute',
+                    right: 3,
+                    bottom: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    backgroundColor: tokens.color.camWarn,
+                    color: tokens.color.camAccentInk,
+                  }}
+                >
+                  !
+                </Box>
+              </>
             ) : uncropped ? null : (
               <Box
                 aria-hidden="true"

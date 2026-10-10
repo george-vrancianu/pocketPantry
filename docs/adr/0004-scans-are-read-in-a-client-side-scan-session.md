@@ -4,11 +4,11 @@ A Scan used to be taken, awaited and reviewed one at a time: the Member photogra
 
 ## Decision
 
-- A **Scan Session** is the Scans taken from opening the camera until they are added or discarded. It lives in the client, in memory, as a pure reducer (`enqueue`, `start`, `read`, `remove`) behind a small module store, the same way the Review draft is held.
+- A **Scan Session** is the Scans taken from opening the camera until they are added or discarded. It lives in the client, in memory, as a pure reducer (`enqueue`, `start`, `read`, `fail`, `retry`, `remove`) behind a small module store, the same way the Review draft is held.
 - Each Scan is read over the existing synchronous `/scan/*` endpoints, in the Scan Mode and Scan Language it was taken in. At most 2 reads run at a time; the rest wait in the order the Scans were taken. A read carries on after the Member leaves the Scan screen.
 - The Review screen becomes an overview with one card per Scan. A card opens the existing line editor for that Scan at `/scan/review/:scanId`.
 - **Saving commits one card.** It goes through the endpoint its Scan Mode already used (the bulk Batch endpoint, or Receipt confirm with its Shopping Item ticking) and removes only that card.
-- A Scan whose read fails is dropped for now and the reason is shown on the Scan screen. Retry and the Scan Cap state follow in #115.
+- A Scan whose read fails stays in the Scan Session as failed, with its photo and, for errors a retry cannot fix, the reason. A network error is retried once automatically; tapping a failed thumbnail reads it again. The Scan Cap fails the Scan as `cap` and disables scanning until that Scan is retried or removed.
 - Plate Scans and gallery photos keep their earlier flows until their own slices (#117, #119).
 
 ## Alternatives considered

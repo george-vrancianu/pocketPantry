@@ -153,6 +153,7 @@
     "empty": "Încă nu ai fotografii.",
     "add": "Adaugă în cămară",
     "addWaiting": "Adaugă în cămară (se așteaptă {{count}})",
-    "discardAll": "Renunță la toate"
+    "discardAll": "Renunță la toate",
+    "failed": "Nu am putut citi, refă poza"
   }
 }
