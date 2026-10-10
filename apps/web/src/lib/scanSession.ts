@@ -19,7 +19,7 @@ export type SessionScan = {
   lines?: ProposedLine[];
 };
 
-/** The Scans taken since the camera was opened, in capture order. */
+/** The Scans taken since the camera was opened, in the order the Scans were taken. */
 export type SessionState = { scans: SessionScan[] };
 
 export type SessionAction =

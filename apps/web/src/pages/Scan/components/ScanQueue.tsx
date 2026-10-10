@@ -19,7 +19,7 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
       sx={{
         position: 'absolute',
         left: 14,
-        top: 'calc(96px + env(safe-area-inset-top))',
+        top: 'calc(118px + env(safe-area-inset-top))',
         m: 0,
         p: 0,
         listStyle: 'none',

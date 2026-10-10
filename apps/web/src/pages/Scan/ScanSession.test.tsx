@@ -82,7 +82,7 @@ function renderScan(route = '/scan?mode=product') {
 
 const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
 const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
-const done = () => screen.getByRole('button', { name: /^Done/ });
+const done = () => screen.getByRole('button', { name: /Done$/ });
 const flush = () => act(async () => {});
 const scanOnce = async () => {
   scanViaGuide();

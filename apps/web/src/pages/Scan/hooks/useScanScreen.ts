@@ -6,7 +6,11 @@ import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
-import { readScans } from '../../../lib/scanReads';
+import {
+  clearReadFailure,
+  readScans,
+  useReadFailure,
+} from '../../../lib/scanReads';
 import {
   dispatchScanSession,
   pendingCount,
@@ -119,7 +123,7 @@ export function useScanScreen() {
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
   // A Scan of the Scan Session that could not be read; the Scan is dropped.
-  const [readError, setReadError] = useState<unknown>(null);
+  const readError = useReadFailure();
   const session = useScanSession();
   const fileInput = useRef<HTMLInputElement>(null);
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
@@ -150,7 +154,7 @@ export function useScanScreen() {
   ): Promise<boolean> => {
     setScanned(true);
     setLocalError(null);
-    setReadError(null);
+    clearReadFailure();
     setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
@@ -176,7 +180,7 @@ export function useScanScreen() {
           thumbnail: image,
         },
       });
-      readScans(i18n.language, setReadError);
+      readScans(i18n.language);
       return false;
     }
     if (mode === 'receipt') {

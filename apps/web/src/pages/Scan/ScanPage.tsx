@@ -7,6 +7,7 @@ import {
   InfoIcon,
   ManualEntryIcon,
   Typography,
+  visuallyHidden,
   tokens,
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
@@ -131,10 +132,7 @@ export function ScanPage() {
             <FlashIcon size={20} />
           </Box>
         ) : null}
-        <Typography
-          component="h1"
-          sx={{ flex: 1, textAlign: 'center', fontSize: 15, fontWeight: 700 }}
-        >
+        <Typography component="h1" sx={{ ...visuallyHidden, flex: 'none' }}>
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
         {screen.scanLanguageShown ? (
@@ -168,12 +166,15 @@ export function ScanPage() {
             borderRadius: '22px',
             border: 0,
             fontSize: 14,
-            fontWeight: 700,
-            ...glassControl(screen.scans.length === 0),
+            fontWeight: 800,
+            fontFamily: 'inherit',
+            backgroundColor: tokens.color.camFg,
+            color: '#111',
+            opacity: screen.scans.length === 0 ? 0.45 : 1,
+            cursor: screen.scans.length === 0 ? 'default' : 'pointer',
             '&:focus-visible': glassFocusRing,
           }}
         >
-          {t('done')}
           {screen.scans.length > 0 ? (
             <Box
               component="span"
@@ -188,15 +189,14 @@ export function ScanPage() {
                 lineHeight: '20px',
                 textAlign: 'center',
                 backgroundColor:
-                  screen.pending > 0
-                    ? tokens.color.camWarn
-                    : tokens.color.camAccent,
-                color: tokens.color.camAccentInk,
+                  screen.pending > 0 ? tokens.color.camWarn : '#111',
+                color: screen.pending > 0 ? '#111' : tokens.color.camFg,
               }}
             >
               {screen.scans.length}
             </Box>
           ) : null}
+          {t('done')}
         </Box>
       </Box>
 

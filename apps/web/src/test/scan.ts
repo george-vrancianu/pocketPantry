@@ -20,7 +20,7 @@ export function scanViaGuide() {
 
 /** Done, then the first card once it is read: the line editor for that Scan. */
 export async function openFirstScanCard() {
-  await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+  await userEvent.click(await screen.findByRole('button', { name: /Done$/ }));
   const [card] = await screen.findAllByTestId('card-result');
   await userEvent.click(card);
 }

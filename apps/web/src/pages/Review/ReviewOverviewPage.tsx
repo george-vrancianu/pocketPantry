@@ -22,8 +22,8 @@ const MAX_CHIPS = 8;
 const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
 
 /**
- * The overview a Member lands on from Done: one card per Scan of the Scan Session, in capture
- * order. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
+ * The overview a Member lands on from Done: one card per Scan of the Scan Session, in the order
+ * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {
   const { t } = useTranslation('review');
@@ -49,6 +49,7 @@ export function ReviewOverviewPage() {
         key={scan.id}
         data-testid="review-card"
         sx={{
+          position: 'relative',
           display: 'flex',
           gap: 1.5,
           p: 1.5,
@@ -117,6 +118,8 @@ export function ReviewOverviewPage() {
                   fontWeight: 700,
                   textAlign: 'left',
                   cursor: 'pointer',
+                  // Stretch the button over the whole card.
+                  '&::after': { content: '""', position: 'absolute', inset: 0 },
                 }}
               >
                 {result}
