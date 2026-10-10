@@ -327,7 +327,10 @@ export function useScanScreen() {
     capped,
     notAdded,
     dismissNotAdded: () => setNotAdded(false),
-    retryScan: () => readScans(i18n.language),
+    retryScan: (id: string) => {
+      dispatchScanSession({ type: 'retry', id });
+      readScans(i18n.language);
+    },
     fileInput,
     error,
     setMode: (next: ScanMode) => {

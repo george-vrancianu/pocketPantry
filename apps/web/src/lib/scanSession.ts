@@ -5,6 +5,9 @@ import type { ProposedLine, ScanMode } from './scan';
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
 
+/** Why a read failed: the Scan Cap, or any other error. */
+export type ScanFailure = 'error' | 'cap';
+
 /** One Scan in the Scan Session, from the double-tap until it is saved or removed. */
 export type SessionScan = {
   id: string;
@@ -15,7 +18,7 @@ export type SessionScan = {
   image: string;
   thumbnail: string;
   status: 'queued' | 'reading' | 'read' | 'failed';
-  failure?: 'error' | 'cap';
+  failure?: ScanFailure;
   errorCode?: string;
   errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
@@ -38,7 +41,7 @@ export type SessionAction =
   | {
       type: 'fail';
       id: string;
-      reason: 'error' | 'cap';
+      reason: ScanFailure;
       code?: string;
       params?: Record<string, unknown>;
     }
@@ -82,7 +85,13 @@ export function sessionReducer(
       return {
         scans: state.scans.map((scan) =>
           scan.id === action.id
-            ? { ...scan, status: 'failed', failure: action.reason }
+            ? {
+                ...scan,
+                status: 'failed',
+                failure: action.reason,
+                errorCode: action.code,
+                errorParams: action.params,
+              }
             : scan,
         ),
       };
@@ -90,16 +99,31 @@ export function sessionReducer(
       return {
         scans: state.scans.map((scan) =>
           scan.id === action.id && scan.status === 'failed'
-            ? { ...scan, status: 'queued', failure: undefined }
+            ? {
+                ...scan,
+                status: 'queued',
+                failure: undefined,
+                errorCode: undefined,
+                errorParams: undefined,
+              }
             : scan,
         ),
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
-    default:
-      return state;
   }
 }
+
+/** Errors a retry cannot fix: the same photo would fail the same way. */
+const FINAL_ERRORS = [
+  'scan.too_many_items',
+  'scan.image_too_large',
+  'scan.nothing_found',
+];
+
+/** Whether tapping a failed Scan to read it again can change anything. */
+export const canRetry = (scan: SessionScan) =>
+  !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>

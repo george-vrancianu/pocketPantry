@@ -2,6 +2,7 @@ import { ApiError, apiRequest } from './api';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
   MAX_CONCURRENT_READS,
+  capReached,
   dispatchScanSession,
   getScanSession,
   type SessionScan,
@@ -48,7 +49,9 @@ export function resetReads() {
  * status, so removing a reading Scan does not let a third request start.
  */
 export function readScans(locale: string) {
-  if (inFlight.size >= MAX_CONCURRENT_READS) return;
+  // Past the Scan Cap every read would fail; the rest wait until the capped Scan is retried or removed.
+  if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
+    return;
   dispatchScanSession({ type: 'start' });
   for (const scan of getScanSession().scans) {
     if (inFlight.size >= MAX_CONCURRENT_READS) return;
@@ -58,16 +61,16 @@ export function readScans(locale: string) {
       .then((lines) =>
         dispatchScanSession({ type: 'read', id: scan.id, lines }),
       )
-      .catch((error: unknown) =>
+      .catch((error: unknown) => {
+        const api = error instanceof ApiError ? error : null;
         dispatchScanSession({
           type: 'fail',
           id: scan.id,
-          reason:
-            error instanceof ApiError && error.code === 'scan.cap_reached'
-              ? 'cap'
-              : 'error',
-        }),
-      )
+          reason: api?.code === 'scan.cap_reached' ? 'cap' : 'error',
+          code: api?.code,
+          params: api?.params,
+        });
+      })
       .finally(() => {
         inFlight.delete(scan.id);
         readScans(locale);

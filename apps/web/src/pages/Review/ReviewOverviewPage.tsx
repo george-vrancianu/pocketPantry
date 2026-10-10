@@ -6,11 +6,13 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import type { ProposedLine } from '../../lib/scan';
 import {
+  canRetry,
   dispatchScanSession,
   pendingCount,
   useScanSession,
@@ -26,7 +28,7 @@ const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {
-  const { t } = useTranslation('review');
+  const { t, i18n } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
   const navigate = useNavigate();
   const session = useScanSession();
@@ -102,9 +104,16 @@ export function ReviewOverviewPage() {
               <Typography>{t('overview.reading')}</Typography>
             </Box>
           ) : isFailed ? (
-            <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
-              {t('overview.failed')}
-            </Typography>
+            <>
+              <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
+                {t('overview.failed')}
+              </Typography>
+              {scan.errorCode && !canRetry(scan) ? (
+                <Typography sx={{ fontSize: 13 }}>
+                  {tScan(`errors:${scan.errorCode}`, scan.errorParams)}
+                </Typography>
+              ) : null}
+            </>
           ) : (
             <>
               <Box
@@ -184,7 +193,11 @@ export function ReviewOverviewPage() {
             component="button"
             type="button"
             aria-label={t('overview.remove')}
-            onClick={() => dispatchScanSession({ type: 'remove', id: scan.id })}
+            onClick={() => {
+              dispatchScanSession({ type: 'remove', id: scan.id });
+              // Scans held back by the Scan Cap can go on now.
+              readScans(i18n.language);
+            }}
             sx={{
               position: 'relative',
               zIndex: 1,

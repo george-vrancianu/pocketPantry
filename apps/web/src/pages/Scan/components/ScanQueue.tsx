@@ -1,9 +1,6 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import {
-  dispatchScanSession,
-  type SessionScan,
-} from '../../../lib/scanSession';
+import { canRetry, type SessionScan } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -17,7 +14,7 @@ export function ScanQueue({
   onRetry,
 }: {
   scans: SessionScan[];
-  onRetry: () => void;
+  onRetry: (id: string) => void;
 }) {
   const { t } = useTranslation('scan');
   if (scans.length === 0) return null;
@@ -50,16 +47,20 @@ export function ScanQueue({
             component="li"
             key={scan.id}
             data-testid="scan-thumbnail"
-            data-state={
-              scan.status === 'failed' ? 'failed' : reading ? 'reading' : 'read'
+            data-state={failed ? 'failed' : reading ? 'reading' : 'read'}
+            aria-label={
+              scan.failure === 'cap'
+                ? t('capReached')
+                : scan.errorCode && !canRetry(scan)
+                  ? t(`errors:${scan.errorCode}`, scan.errorParams)
+                  : t(
+                      failed
+                        ? 'queue.failed'
+                        : reading
+                          ? 'queue.reading'
+                          : 'queue.read',
+                    )
             }
-            aria-label={t(
-              failed
-                ? 'queue.failed'
-                : reading
-                  ? 'queue.reading'
-                  : 'queue.read',
-            )}
             sx={{
               position: 'relative',
               flex: 'none',
@@ -131,24 +132,24 @@ export function ScanQueue({
                 }}
               />
             ) : failed ? (
-              <Box
-                component="button"
-                type="button"
-                aria-label={t('queue.retry')}
-                onClick={() => {
-                  dispatchScanSession({ type: 'retry', id: scan.id });
-                  onRetry();
-                }}
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  p: 0,
-                  border: 0,
-                  background: 'rgba(0,0,0,.35)',
-                  cursor: 'pointer',
-                  pointerEvents: 'auto',
-                }}
-              >
+              <>
+                {canRetry(scan) ? (
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-label={t('queue.retry')}
+                    onClick={() => onRetry(scan.id)}
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      p: 0,
+                      border: 0,
+                      background: 'rgba(0,0,0,.35)',
+                      cursor: 'pointer',
+                      pointerEvents: 'auto',
+                    }}
+                  />
+                ) : null}
                 <Box
                   aria-hidden="true"
                   sx={{
@@ -169,7 +170,7 @@ export function ScanQueue({
                 >
                   !
                 </Box>
-              </Box>
+              </>
             ) : (
               <Box
                 aria-hidden="true"

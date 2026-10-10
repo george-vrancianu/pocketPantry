@@ -360,6 +360,12 @@ export function ScanPage() {
         />
       ) : null}
 
+      <Box role="status" sx={visuallyHidden}>
+        {screen.scans.some((scan) => scan.status === 'failed')
+          ? t('queue.failed')
+          : null}
+      </Box>
+
       <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>
         <Alert severity="warning" role="status">
           {t('notAdded')}
