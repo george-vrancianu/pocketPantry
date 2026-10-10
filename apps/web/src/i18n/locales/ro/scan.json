@@ -53,9 +53,6 @@
     "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
     "ingredients": "Adaugă în cămară fiecare produs vrac de pe blat."
   },
-  "sections": {
-    "photoOf": "Poza {{number}} din {{total}}"
-  },
   "done": "Gata",
   "doneCount_one": "Gata, {{count}} fotografie",
   "doneCount_few": "Gata, {{count}} fotografii",
@@ -63,6 +60,15 @@
   "queue": {
     "label": "Fotografii făcute",
     "reading": "Citim fotografia",
+    "needsCrop": "Trebuie decupată",
     "read": "Fotografie citită"
-  }
+  },
+  "added_one": "Rezultate adăugate din {{count}} fotografie",
+  "added_few": "Rezultate adăugate din {{count}} fotografii",
+  "added_other": "Rezultate adăugate din {{count}} de fotografii",
+  "limit": "O sesiune de scanare ține cel mult {{max}} de fotografii. Adaugă-le mai întâi în cămară.",
+  "discardScans_one": "Renunți la {{count}} fotografie?",
+  "discardScans_few": "Renunți la {{count}} fotografii?",
+  "discardScans_other": "Renunți la {{count}} de fotografii?",
+  "discarded": "Eliminate"
 }

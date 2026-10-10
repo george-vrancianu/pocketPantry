@@ -134,6 +134,7 @@
     "allRead": "all read",
     "camera": "Camera",
     "reading": "Reading photo…",
+    "crop": "Crop receipt photo",
     "remove": "Remove photo",
     "items_one": "{{count}} item",
     "items_other": "{{count}} items",
@@ -142,6 +143,9 @@
     "more": "+{{count}}",
     "merge": "Merge with previous",
     "split": "Split",
-    "empty": "No photos yet."
+    "empty": "No photos yet.",
+    "add": "Add to pantry",
+    "addWaiting": "Add to pantry (waiting on {{count}})",
+    "discardAll": "Discard all"
   }
 }

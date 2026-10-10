@@ -3,32 +3,27 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
-import { useIngredientsScan } from '../../../lib/ingredients-scan';
-import { startReview } from '../../../lib/review';
 import {
   clearReadFailure,
   readScans,
   useReadFailure,
 } from '../../../lib/scanReads';
 import {
+  MAX_SESSION_SCANS,
   dispatchScanSession,
+  getScanSession,
   pendingCount,
+  resetScanSession,
   useScanSession,
 } from '../../../lib/scanSession';
-import { cropToReceiptArea } from '../../../lib/image';
-import {
-  IMAGE_PREPARATION,
-  needsCropStep,
-  type ImageOrigin,
-} from '../../../lib/scanImage';
-import type { ReceiptCrop } from '../components/ReceiptCropper';
+import { resizeImage } from '../../../lib/image';
+import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
   loadScanMode,
   saveScanMode,
-  useProductScan,
   type ScanMode,
 } from '../../../lib/scan';
 
@@ -45,28 +40,7 @@ export function useScanScreen() {
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const productScan = useProductScan(i18n.language, scanLanguage);
   const plate = usePlateScan();
-  const ingredientsScan = useIngredientsScan(i18n.language, scanLanguage);
-  // Product and Ingredients have one endpoint and return the same proposed lines. Plate has its
-  // own flow, and Receipt Scans join the Scan Session.
-  const modeScans = { product: productScan, ingredients: ingredientsScan };
-  const modeScan =
-    mode === 'plate' || mode === 'receipt' ? null : modeScans[mode];
-  /**
-   * Gallery photos picked in Receipt mode that are not sent yet, in the order picked. The first is
-   * the one in the crop step while `cropOpen`; each joins the Scan Session once cropped.
-   */
-  const [queue, setQueue] = useState<Blob[]>([]);
-  const [cropOpen, setCropOpen] = useState(false);
-  /** How many photos the current selection had, for the "photo 2 of 4" progress. */
-  const [batchTotal, setBatchTotal] = useState(0);
-  const clearQueue = () => {
-    setQueue([]);
-    setCropOpen(false);
-    setBatchTotal(0);
-  };
-  const cropping = cropOpen ? (queue[0] ?? null) : null;
   const previousMode = useRef(mode);
   /**
    * Bumped whenever what a photo being prepared was meant for goes away (mode change, batch
@@ -80,11 +54,10 @@ export function useScanScreen() {
     [],
   );
   // The mode can also change through the URL (the Dock's Scan item links to plain `/scan`),
-  // bypassing `setMode`: the selection and any photo being prepared are dropped.
+  // bypassing `setMode`: a photo being prepared is dropped.
   useEffect(() => {
     if (previousMode.current !== mode) {
       scanEpoch.current += 1;
-      clearQueue();
     }
     previousMode.current = mode;
   }, [mode]);
@@ -99,13 +72,38 @@ export function useScanScreen() {
   // A Scan of the Scan Session that could not be read; the Scan is dropped.
   const readError = useReadFailure();
   const session = useScanSession();
+  // A short message at the bottom of the screen: the Scan Session is full, or a Scan Session was just saved.
+  const [toast, setToast] = useState<{
+    text: string;
+    severity: 'success' | 'warning';
+  } | null>(() => {
+    const state = location.state as {
+      added?: number;
+      discarded?: boolean;
+    } | null;
+    if (state?.added)
+      return {
+        text: t('scan:added', { count: state.added }),
+        severity: 'success',
+      };
+    if (state?.discarded)
+      return { text: t('scan:discarded'), severity: 'success' };
+    return null;
+  });
+  useEffect(() => {
+    if (location.state === null) return;
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: null,
+    });
+  }, [location, navigate]);
   const fileInput = useRef<HTMLInputElement>(null);
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
 
-  const reading = resizing || (modeScan?.isPending ?? false) || plate.pending;
+  const reading = resizing || plate.pending;
 
-  /** A camera frame or gallery file: prepare it, scan it, and land on Review. */
+  /** A camera frame or gallery file: prepare it, then join the Scan Session (Plate: the dish picker). */
   const scanImage = async (
     source: Blob,
     origin: ImageOrigin,
@@ -133,9 +131,15 @@ export function useScanScreen() {
       setResizing(false);
     }
     if (epoch !== scanEpoch.current) return false;
-    // A camera Scan, or a cropped gallery receipt, joins the Scan Session at once; its read goes on
-    // in the background.
-    if ((origin === 'camera' || mode === 'receipt') && mode !== 'plate') {
+    // A camera Scan joins the Scan Session at once; its read goes on in the background.
+    if (origin === 'camera' && mode !== 'plate') {
+      if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+        setToast({
+          text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+          severity: 'warning',
+        });
+        return false;
+      }
       dispatchScanSession({
         type: 'enqueue',
         scan: {
@@ -149,20 +153,7 @@ export function useScanScreen() {
       readScans(i18n.language);
       return false;
     }
-    if (!modeScan) {
-      plate.scan(image);
-      return false;
-    }
-    modeScan.mutate(image, {
-      onSuccess: ({ lines }) => {
-        if (lines.length === 0) {
-          setLocalError('scan.nothing_found');
-          return;
-        }
-        startReview({ mode, lines, scanLanguage });
-        navigate('/scan/review/draft');
-      },
-    });
+    plate.scan(image);
     return false;
   };
 
@@ -179,34 +170,64 @@ export function useScanScreen() {
     }
   };
 
+  const resizingPicks = useRef(0);
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
-    // The same lock as the guide: a photo being prepared or read.
-    if (picked.length === 0 || reading) return;
-    if (!needsCropStep(mode, 'gallery')) {
-      void scanImage(picked[0], 'gallery');
+    if (picked.length === 0) return;
+    // Plate keeps its single-photo flow for now.
+    if (mode === 'plate') {
+      if (!reading) void scanImage(picked[0], 'gallery');
       return;
     }
-    setQueue(picked);
-    setBatchTotal(picked.length);
-    setCropOpen(true);
-  };
-
-  const confirmCrop = ({ area, rotation }: ReceiptCrop) => {
-    const photo = cropping;
-    if (!photo || reading) return;
-    // On to the next queued photo's crop step, if the selection has one left.
-    setQueue((current) => current.slice(1));
-    setCropOpen(queue.length > 1);
-    if (queue.length <= 1) setBatchTotal(0);
-    void scanImage(photo, 'gallery', () =>
-      cropToReceiptArea(photo, area, rotation),
+    setScanned(true);
+    setLocalError(null);
+    clearReadFailure();
+    // Take what fits under the Scan Session's cap, counting photos still being resized.
+    const room = Math.max(
+      0,
+      MAX_SESSION_SCANS - getScanSession().scans.length - resizingPicks.current,
     );
+    if (picked.length > room) {
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
+    }
+    const base = { mode, scanLanguage };
+    for (const file of picked.slice(0, room)) {
+      const id = crypto.randomUUID();
+      if (mode === 'receipt') {
+        // Cropped from its card in Review, then read.
+        dispatchScanSession({
+          type: 'enqueue',
+          scan: {
+            ...base,
+            id,
+            image: '',
+            thumbnail: URL.createObjectURL(file),
+            source: file,
+          },
+        });
+        continue;
+      }
+      resizingPicks.current += 1;
+      void resizeImage(file)
+        .then(
+          (image) => {
+            dispatchScanSession({
+              type: 'enqueue',
+              scan: { ...base, id, image, thumbnail: image },
+            });
+            readScans(i18n.language);
+          },
+          () => setLocalError('scan.image_invalid'),
+        )
+        .finally(() => {
+          resizingPicks.current -= 1;
+        });
+    }
   };
-
-  /** Cancelling a crop abandons the rest of the selection (nothing is sent for it). */
-  const cancelCrop = clearQueue;
 
   const toggleFlash = async () => {
     const next = !flash;
@@ -214,7 +235,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = modeScan?.error ?? plate.error ?? readError;
+  const scanError = plate.error ?? readError;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -242,30 +263,24 @@ export function useScanScreen() {
     error,
     setMode: (next: ScanMode) => {
       scanEpoch.current += 1;
-      Object.values(modeScans).forEach((scan) => scan.reset());
       plate.reset();
       setLocalError(null);
-      clearQueue();
       setParams({ mode: next }, { replace: true });
     },
     plate,
-    /** Which photo of a gallery selection is in the crop step, and how many were picked. */
-    photoQueue: {
-      total: batchTotal,
-      number: Math.min(
-        batchTotal,
-        batchTotal - queue.length + (cropOpen ? 1 : 0),
-      ),
-    },
+    toast,
+    clearToast: () => setToast(null),
     shoot,
     pickFile,
-    cropping,
-    confirmCrop,
-    cancelCrop,
     openGallery: () => fileInput.current?.click(),
     toggleFlash,
     // Back to wherever the Member came from, or home when this was the first page.
     close: () => {
+      const taken = session.scans.length;
+      if (taken > 0) {
+        if (!window.confirm(t('scan:discardScans', { count: taken }))) return;
+        resetScanSession();
+      }
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },

@@ -6,6 +6,7 @@ import {
   GalleryIcon,
   InfoIcon,
   ManualEntryIcon,
+  Snackbar,
   Typography,
   visuallyHidden,
   tokens,
@@ -16,7 +17,6 @@ import { glassControl, glassFocusRing } from './components/glass';
 import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
-import { ReceiptCropper } from './components/ReceiptCropper';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
@@ -263,7 +263,6 @@ export function ScanPage() {
             screen.modesDisabled ||
             infoOpen ||
             screen.reading ||
-            !!screen.cropping ||
             !!screen.plate.dishes
           }
           dragEndedAt={dragEndedAt}
@@ -301,22 +300,15 @@ export function ScanPage() {
         </Box>
       </Box>
 
-      {screen.cropping ? (
-        <ReceiptCropper
-          key={screen.photoQueue.number}
-          progress={
-            screen.photoQueue.total > 1
-              ? t('sections.photoOf', {
-                  number: screen.photoQueue.number,
-                  total: screen.photoQueue.total,
-                })
-              : undefined
-          }
-          photo={screen.cropping}
-          onConfirm={screen.confirmCrop}
-          onCancel={screen.cancelCrop}
-        />
-      ) : null}
+      <Snackbar
+        open={screen.toast !== null}
+        onClose={screen.clearToast}
+        bottom={170}
+      >
+        <Alert severity={screen.toast?.severity} role="status">
+          {screen.toast?.text}
+        </Alert>
+      </Snackbar>
 
       {infoOpen ? <InfoSheet onClose={closeInfo} /> : null}
 
@@ -325,7 +317,7 @@ export function ScanPage() {
         ref={screen.fileInput}
         type="file"
         accept="image/*"
-        multiple={screen.mode === 'receipt'}
+        multiple
         onChange={screen.pickFile}
         data-testid="gallery-input"
         sx={{ display: 'none' }}

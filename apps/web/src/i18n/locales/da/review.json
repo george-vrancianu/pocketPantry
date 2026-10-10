@@ -132,6 +132,7 @@
     "allRead": "alle læst",
     "camera": "Kamera",
     "reading": "Læser foto…",
+    "crop": "Beskær kvitteringsbilledet",
     "remove": "Fjern foto",
     "items_one": "{{count}} vare",
     "items_other": "{{count}} varer",
@@ -140,6 +141,9 @@
     "more": "+{{count}}",
     "merge": "Flet med forrige",
     "split": "Del op",
-    "empty": "Ingen fotos endnu."
+    "empty": "Ingen fotos endnu.",
+    "add": "Tilføj til spisekammer",
+    "addWaiting": "Tilføj til spisekammer (venter på {{count}})",
+    "discardAll": "Kasser alle"
   }
 }

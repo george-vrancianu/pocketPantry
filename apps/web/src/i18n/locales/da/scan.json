@@ -53,15 +53,19 @@
     "plate": "Viser rettens ingredienser, så du kan føje det, du mangler, til din indkøbsliste.",
     "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
   },
-  "sections": {
-    "photoOf": "Foto {{number}} af {{total}}"
-  },
   "done": "Færdig",
   "doneCount_one": "Færdig, {{count}} foto",
   "doneCount_other": "Færdig, {{count}} fotos",
   "queue": {
     "label": "Tagne fotos",
     "reading": "Læser foto",
+    "needsCrop": "Skal beskæres",
     "read": "Foto læst"
-  }
+  },
+  "added_one": "Resultater tilføjet fra {{count}} foto",
+  "added_other": "Resultater tilføjet fra {{count}} fotos",
+  "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj dem til spisekammeret først.",
+  "discardScans_one": "Kasser {{count}} foto?",
+  "discardScans_other": "Kasser {{count}} fotos?",
+  "discarded": "Kasseret"
 }

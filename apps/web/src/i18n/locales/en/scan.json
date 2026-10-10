@@ -53,15 +53,19 @@
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
-  "sections": {
-    "photoOf": "Photo {{number}} of {{total}}"
-  },
   "done": "Done",
   "doneCount_one": "Done, {{count}} photo",
   "doneCount_other": "Done, {{count}} photos",
   "queue": {
     "label": "Photos taken",
     "reading": "Reading photo",
+    "needsCrop": "Needs crop",
     "read": "Photo read"
-  }
+  },
+  "added_one": "Added results from {{count}} photo",
+  "added_other": "Added results from {{count}} photos",
+  "limit": "A Scan Session holds at most {{max}} photos. Add these to the pantry first.",
+  "discardScans_one": "Discard {{count}} photo?",
+  "discardScans_other": "Discard {{count}} photos?",
+  "discarded": "Discarded"
 }

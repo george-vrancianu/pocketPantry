@@ -6,6 +6,9 @@ import type { ProposedLine, ScanMode } from './scan';
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
 
+/** The most Scans one Scan Session holds. */
+export const MAX_SESSION_SCANS = 20;
+
 /** One Scan in the Scan Session, from the double-tap until it is saved or removed. */
 export type SessionScan = {
   id: string;
@@ -15,7 +18,12 @@ export type SessionScan = {
   /** The prepared photo (a data URL) that is sent for reading. */
   image: string;
   thumbnail: string;
-  status: 'queued' | 'reading' | 'read';
+  /** `uncropped`: a gallery receipt waiting for the Member to crop it in Review. */
+  status: 'uncropped' | 'queued' | 'reading' | 'read' | 'failed';
+  /** The gallery photo an uncropped receipt is cropped from. */
+  source?: Blob;
+  /** Why a failed Scan failed. */
+  failure?: 'error' | 'cap';
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
   /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
@@ -30,11 +38,13 @@ export type SessionAction =
       type: 'enqueue';
       scan: Pick<
         SessionScan,
-        'id' | 'mode' | 'scanLanguage' | 'image' | 'thumbnail'
+        'id' | 'mode' | 'scanLanguage' | 'image' | 'thumbnail' | 'source'
       >;
     }
+  | { type: 'crop'; id: string; image: string }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
+  | { type: 'fail'; id: string; reason: 'error' | 'cap' }
   | { type: 'remove'; id: string }
   | { type: 'merge'; id: string }
   | { type: 'split'; id: string };
@@ -48,7 +58,26 @@ export function sessionReducer(
   switch (action.type) {
     case 'enqueue':
       return {
-        scans: [...state.scans, { ...action.scan, status: 'queued' }],
+        scans: [
+          ...state.scans,
+          {
+            ...action.scan,
+            status: action.scan.source ? 'uncropped' : 'queued',
+          },
+        ],
+      };
+    case 'crop':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id
+            ? {
+                ...scan,
+                image: action.image,
+                status: 'queued',
+                source: undefined,
+              }
+            : scan,
+        ),
       };
     case 'start': {
       // Promote the oldest waiting Scans into the free read slots.
@@ -69,6 +98,14 @@ export function sessionReducer(
         scans: state.scans.map((scan) =>
           scan.id === action.id
             ? { ...scan, status: 'read', lines: action.lines }
+            : scan,
+        ),
+      };
+    case 'fail':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id
+            ? { ...scan, status: 'failed', failure: action.reason }
             : scan,
         ),
       };
@@ -104,6 +141,9 @@ export function sessionReducer(
   }
 }
 
+/** Whether a Scan's lines are in. */
+export const isRead = (scan: SessionScan) => scan.status === 'read';
+
 const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
 
 /** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */
@@ -117,15 +157,22 @@ export function canMerge(state: SessionState, id: string): boolean {
   );
 }
 
-/** Scans still waiting or being read. */
+/** Scans not read yet and not failed: waiting for a crop, for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter((scan) => scan.status !== 'read').length;
+  state.scans.filter((scan) => !isRead(scan) && scan.status !== 'failed')
+    .length;
 
 let session = emptySession;
 const listeners = new Set<() => void>();
 
 function setSession(next: SessionState) {
   if (next === session) return;
+  // A gallery receipt's thumbnail is an object URL: free it when the Scan goes or is cropped.
+  const kept = new Set(next.scans.map((scan) => scan.thumbnail));
+  session.scans.forEach(({ thumbnail }) => {
+    if (thumbnail.startsWith('blob:') && !kept.has(thumbnail))
+      URL.revokeObjectURL(thumbnail);
+  });
   session = next;
   listeners.forEach((listener) => listener());
 }
