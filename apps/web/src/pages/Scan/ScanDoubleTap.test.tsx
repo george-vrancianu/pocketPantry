@@ -22,16 +22,10 @@ vi.mock('../../lib/image', async (importActual) => ({
 }));
 
 let fetchCalls: ReturnType<typeof stubApi>['calls'];
-function renderScan(route = '/scan?mode=product', hang = false) {
-  const { fetchMock: stubbed, calls } = stubApi({
+function renderScan(route = '/scan?mode=product') {
+  const { fetchMock, calls } = stubApi({
     'POST /api/scan/product': () => Response.json({ lines: [] }),
   });
-  const fetchMock: typeof stubbed = hang
-    ? (...args) => {
-        void stubbed(...args);
-        return new Promise<Response>(() => {});
-      }
-    : stubbed;
   fetchCalls = calls;
   vi.stubGlobal('fetch', fetchMock);
   return renderWithProviders(
