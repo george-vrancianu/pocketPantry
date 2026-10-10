@@ -15,7 +15,10 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ScanPage } from './ScanPage';
 
-const camera = vi.hoisted(() => ({ status: 'ready' as string }));
+const camera = vi.hoisted(() => ({
+  status: 'ready' as string,
+  cropFails: false,
+}));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
     videoRef: { current: null },
@@ -30,7 +33,9 @@ vi.mock('../../lib/image', async (importActual) => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
   cropToReceiptArea: () =>
-    Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
+    camera.cropFails
+      ? Promise.reject(new Error('bad photo'))
+      : Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
 }));
 vi.mock('react-easy-crop', async () => {
   const { useEffect } = await import('react');
@@ -119,6 +124,7 @@ describe('Gallery import into the Scan Session', () => {
     resetScanSession();
     localStorage.clear();
     camera.status = 'ready';
+    camera.cropFails = false;
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:photo');
     vi.spyOn(URL, 'revokeObjectURL').mockReturnValue();
   });
@@ -224,6 +230,58 @@ describe('Gallery import into the Scan Session', () => {
       expect(held).toHaveLength(0);
       expect(screen.getAllByTestId('review-card')).toHaveLength(1);
       expect(cropButton()).toBeInTheDocument();
+    });
+
+    it('is not shown as read on its thumbnail until it has been cropped and read', async () => {
+      renderScan('/scan?mode=receipt');
+      await pick();
+      expect(states()).toEqual(['uncropped']);
+      expect(thumbnails()[0]).toHaveAccessibleName(/needs crop/i);
+    });
+
+    it('counts as pending: Done stays amber and Review does not say all read', async () => {
+      renderScan('/scan?mode=receipt');
+      await pick();
+      expect(within(done()).getByTestId('done-count')).toHaveAttribute(
+        'data-reading',
+        'true',
+      );
+      await userEvent.click(done());
+      expect(screen.queryByText(/all read/)).not.toBeInTheDocument();
+    });
+
+    it('says why and keeps the Crop button when the crop fails', async () => {
+      renderScan('/scan?mode=receipt');
+      await pick();
+      await userEvent.click(done());
+      const card = within(screen.getByTestId('review-card'));
+      await userEvent.click(card.getByRole('button', { name: /^Crop/ }));
+      camera.cropFails = true;
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Use photo' }),
+      );
+      expect(await card.findByRole('alert')).toBeInTheDocument();
+      expect(card.getByRole('button', { name: /^Crop/ })).toBeInTheDocument();
+      expect(held).toHaveLength(0);
+    });
+
+    it('returns focus to the card after Use photo', async () => {
+      renderScan('/scan?mode=receipt');
+      await pick();
+      await userEvent.click(done());
+      await userEvent.click(
+        within(screen.getByTestId('review-card')).getByRole('button', {
+          name: /^Crop/,
+        }),
+      );
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Use photo' }),
+      );
+      await waitFor(() =>
+        expect(screen.getByTestId('review-card')).toContainElement(
+          document.activeElement as HTMLElement,
+        ),
+      );
     });
 
     it('makes one card per picked file, each cropped on its own', async () => {
