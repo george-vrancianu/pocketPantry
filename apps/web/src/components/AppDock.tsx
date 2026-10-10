@@ -9,10 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { DockState } from '../lib/dockState';
 
-export function AppDock({
-  variant,
-  activeKey,
-}: Pick<DockState, 'variant' | 'activeKey'>) {
+export function AppDock({ activeKey }: Pick<DockState, 'activeKey'>) {
   const { t } = useTranslation('dock');
   const items: DockEntry[] = [
     {
@@ -41,12 +38,5 @@ export function AppDock({
       emphasis: true,
     },
   ];
-  return (
-    <Dock
-      label={t('label')}
-      items={items}
-      activeKey={activeKey}
-      variant={variant}
-    />
-  );
+  return <Dock label={t('label')} items={items} activeKey={activeKey} />;
 }

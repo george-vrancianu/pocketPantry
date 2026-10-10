@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
@@ -108,7 +107,6 @@ const pick = async (title: RegExp) =>
 
 describe('Plate Scan in the Scan Session', () => {
   beforeEach(() => {
-    clearReview();
     resetReads();
     resetScanSession();
     localStorage.clear();
@@ -159,18 +157,14 @@ describe('Plate Scan in the Scan Session', () => {
     ).toEqual(expect.arrayContaining(['Milk', 'Pixie dust']));
   });
 
-  it('Add to pantry saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {
+  it('Add all saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {
     const calls = renderPlate();
     scanViaGuide();
     await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
     await pick(/Pancakes/);
     await screen.findByTestId('card-result');
-    expect(
-      screen.getByRole('button', { name: /^Add to pantry/ }),
-    ).toBeEnabled();
-    await userEvent.click(
-      screen.getByRole('button', { name: /^Add to pantry/ }),
-    );
+    expect(screen.getByRole('button', { name: /^Add all/ })).toBeEnabled();
+    await userEvent.click(screen.getByRole('button', { name: /^Add all/ }));
     await waitFor(() =>
       expect(calls.map((c) => c.key)).toContain(
         'POST /api/shopping-list/items/bulk',
@@ -181,13 +175,11 @@ describe('Plate Scan in the Scan Session', () => {
     );
   });
 
-  it('Add to pantry does not save a Plate card that is still waiting for a dish', async () => {
+  it('Add all does not save a Plate card that is still waiting for a dish', async () => {
     const calls = renderPlate();
     await scanThenDone();
     await picker();
-    expect(
-      screen.getByRole('button', { name: /^Add to pantry/ }),
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^Add all/ })).toBeDisabled();
     expect(calls.map((c) => c.key)).not.toContain(
       'POST /api/shopping-list/items/bulk',
     );

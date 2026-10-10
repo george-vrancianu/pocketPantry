@@ -15,7 +15,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { glassControl, glassFocusRing } from './components/glass';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
-import { ScanQueue } from './components/ScanQueue';
+import { SessionStrip } from './components/SessionStrip';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
@@ -87,7 +87,7 @@ export function ScanPage() {
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
       />
-      <ScanQueue scans={screen.scans} onRetry={screen.retryScan} />
+      <SessionStrip scans={screen.scans} onRetry={screen.retryScan} />
 
       <Box
         sx={{
@@ -171,7 +171,7 @@ export function ScanPage() {
             fontWeight: 800,
             fontFamily: 'inherit',
             backgroundColor: tokens.color.camFg,
-            color: '#111',
+            color: tokens.color.camAccentInk,
             opacity: screen.scans.length === 0 ? 0.45 : 1,
             cursor: screen.scans.length === 0 ? 'default' : 'pointer',
             '&:focus-visible': glassFocusRing,
@@ -192,8 +192,13 @@ export function ScanPage() {
                 lineHeight: '20px',
                 textAlign: 'center',
                 backgroundColor:
-                  screen.pending > 0 ? tokens.color.camWarn : '#111',
-                color: screen.pending > 0 ? '#111' : tokens.color.camFg,
+                  screen.pending > 0
+                    ? tokens.color.camWarn
+                    : tokens.color.camGlassStrong,
+                color:
+                  screen.pending > 0
+                    ? tokens.color.camAccentInk
+                    : tokens.color.camFg,
               }}
             >
               {screen.scans.length}
@@ -217,7 +222,7 @@ export function ScanPage() {
       >
         <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
           <Typography
-            sx={{ mt: '6px', fontSize: 13, color: tokens.color.cameraMuted }}
+            sx={{ mt: '6px', fontSize: 13, color: tokens.color.camDim }}
           >
             {t(`detail.${screen.mode}`)}
           </Typography>
@@ -302,7 +307,10 @@ export function ScanPage() {
 
       <Box role="status" sx={visuallyHidden}>
         {screen.scans.some((scan) => scan.status === 'failed')
-          ? t('queue.failed')
+          ? t('session.failed')
+          : null}
+        {screen.scans.length > 0
+          ? t('photoAdded', { count: screen.scans.length })
           : null}
       </Box>
 

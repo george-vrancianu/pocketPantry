@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -100,7 +99,6 @@ const cards = () => screen.getAllByTestId('review-card');
 
 describe('Review overview', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
   });

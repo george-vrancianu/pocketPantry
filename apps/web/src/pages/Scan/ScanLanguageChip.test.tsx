@@ -3,7 +3,6 @@ import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -57,7 +56,6 @@ function renderScan(route: string) {
 
 describe('Scan Language chip in the top bar', () => {
   beforeEach(() => {
-    clearReview();
     window.localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());

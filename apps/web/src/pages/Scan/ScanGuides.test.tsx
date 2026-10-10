@@ -3,7 +3,6 @@ import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { GUIDE_CENTER_Y } from '../../lib/scanGuides';
 import { ScanPage } from './ScanPage';
@@ -49,7 +48,6 @@ const classesOf = (el: Element) =>
 
 describe('Scan guides', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
   });
   afterEach(() => {
@@ -114,7 +112,6 @@ describe('Scan guides', () => {
 
 describe('Scan guide armed state', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
     vi.useFakeTimers();
   });
@@ -151,7 +148,6 @@ describe('Scan guide armed state', () => {
 
 describe('Scan guide hint', () => {
   beforeEach(() => {
-    clearReview();
     localStorage.clear();
   });
   afterEach(() => vi.unstubAllGlobals());

@@ -14,16 +14,10 @@ export function AppLayout() {
   return (
     <>
       <ApplyMemberLocale />
-      <PageLayout
-        withDock={dock.visible}
-        dark={dock.variant === 'dark'}
-        wide={isWide(pathname)}
-      >
+      <PageLayout withDock={dock.visible} wide={isWide(pathname)}>
         <Outlet />
       </PageLayout>
-      {dock.visible ? (
-        <AppDock variant={dock.variant} activeKey={dock.activeKey} />
-      ) : null}
+      {dock.visible ? <AppDock activeKey={dock.activeKey} /> : null}
     </>
   );
 }

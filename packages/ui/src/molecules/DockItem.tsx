@@ -1,9 +1,7 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
-import type { MouseEvent, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { tokens } from '../theme/tokens';
-
-export type DockVariant = 'light' | 'dark';
 
 export type DockItemProps = {
   label: string;
@@ -12,9 +10,6 @@ export type DockItemProps = {
   active?: boolean;
   /** Always-filled item (Scan). */
   emphasis?: boolean;
-  variant?: DockVariant;
-  /** Runs before navigating; call `preventDefault()` to stay. */
-  onNavigate?: (event: MouseEvent<HTMLElement>) => void;
 };
 
 export function DockItem({
@@ -23,34 +18,19 @@ export function DockItem({
   icon,
   active = false,
   emphasis = false,
-  variant = 'light',
-  onNavigate,
 }: DockItemProps) {
   const { color } = tokens;
-  const dark = variant === 'dark';
-
   const pill = emphasis
-    ? dark && active
-      ? { backgroundColor: '#FFFFFF', color: color.ink }
-      : { backgroundColor: color.accent, color: '#FFFFFF' }
+    ? { backgroundColor: color.accent, color: '#FFFFFF' }
     : active
       ? { backgroundColor: color.accentTint, color: color.accent }
       : {};
 
-  const labelColor = dark
-    ? emphasis && active
-      ? '#FFFFFF'
-      : color.cameraMuted
-    : emphasis
-      ? color.ink
-      : active
-        ? color.accent
-        : color.muted;
+  const labelColor = emphasis ? color.ink : active ? color.accent : color.muted;
 
   return (
     <ButtonBase
       href={href}
-      onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       sx={{
         flexDirection: 'column',

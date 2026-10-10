@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
 import type { DishGuess } from './plate';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
+import { reviewLinesOf, type ReviewLine } from './review';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -33,6 +34,8 @@ export type SessionScan = {
   errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
+  /** The lines as the Member edited them in the line editor; what Add all saves. */
+  edited?: ReviewLine[];
   /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
   dishes?: DishGuess[];
   plateToken?: string;
@@ -67,7 +70,8 @@ export type SessionAction =
   | { type: 'split'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
   | { type: 'pick'; id: string; lines: ProposedLine[] }
-  | { type: 'reread'; id: string };
+  | { type: 'reread'; id: string }
+  | { type: 'edit'; id: string; lines: ReviewLine[] };
 
 const update = (
   state: SessionState,
@@ -78,6 +82,12 @@ const update = (
     scan.id === id ? { ...scan, ...change } : scan,
   ),
 });
+
+/** A Scan ready to be read, or failed with the Scan Cap when it is already reached. */
+const waiting = (state: SessionState) =>
+  capReached(state)
+    ? ({ status: 'failed', failure: 'cap' } as const)
+    : ({ status: 'queued' } as const);
 
 export const emptySession: SessionState = { scans: [] };
 
@@ -92,7 +102,7 @@ export function sessionReducer(
           ...state.scans,
           {
             ...action.scan,
-            status: action.scan.source ? 'uncropped' : 'queued',
+            ...(action.scan.source ? { status: 'uncropped' } : waiting(state)),
           },
         ],
       };
@@ -103,7 +113,7 @@ export function sessionReducer(
             ? {
                 ...scan,
                 image: action.image,
-                status: 'queued',
+                ...waiting(state),
                 source: undefined,
               }
             : scan,
@@ -142,23 +152,36 @@ export function sessionReducer(
                 errorCode: action.code,
                 errorParams: action.params,
               }
-            : scan,
+            : // Past the Scan Cap every waiting read would fail too: hold them with the cap.
+              action.reason === 'cap' && scan.status === 'queued'
+              ? { ...scan, status: 'failed', failure: 'cap' }
+              : scan,
         ),
       };
-    case 'retry':
+    case 'retry': {
+      const target = state.scans.find((scan) => scan.id === action.id);
+      // Retrying a Scan held by the cap releases every Scan the cap held.
+      const retried = (scan: SessionScan) =>
+        scan.status === 'failed' &&
+        (scan.id === action.id ||
+          (target?.failure === 'cap' && scan.failure === 'cap'));
+      // A cap failure elsewhere keeps a retried Scan held too.
+      const held = target?.failure !== 'cap' && capReached(state);
       return {
         scans: state.scans.map((scan) =>
-          scan.id === action.id && scan.status === 'failed'
+          retried(scan)
             ? {
                 ...scan,
-                status: 'queued',
-                failure: undefined,
+                ...(held
+                  ? { status: 'failed', failure: 'cap' }
+                  : { status: 'queued', failure: undefined }),
                 errorCode: undefined,
                 errorParams: undefined,
               }
             : scan,
         ),
       };
+    }
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
     case 'readDishes':
@@ -170,6 +193,7 @@ export function sessionReducer(
     case 'pick':
       return update(state, action.id, {
         lines: action.lines,
+        edited: undefined,
         dishes: undefined,
         plateToken: undefined,
       });
@@ -179,6 +203,8 @@ export function sessionReducer(
         dishes: undefined,
         plateToken: undefined,
       });
+    case 'edit':
+      return update(state, action.id, { edited: action.lines });
     case 'merge': {
       if (!canMerge(state, action.id)) return state;
       const index = state.scans.findIndex((scan) => scan.id === action.id);
@@ -188,24 +214,35 @@ export function sessionReducer(
         ...sectionsOf(state.scans[index]),
       ];
       const lines = sections.flatMap((scan) => scan.lines ?? []);
+      // Edits made before the merge come along; the editor's lines win over `sections` in reviewLinesOf.
+      const below = state.scans[index];
+      const edited =
+        above.edited || below.edited
+          ? [...reviewLinesOf(above), ...reviewLinesOf(below)]
+          : undefined;
       return {
         scans: state.scans.flatMap((scan, i) =>
           i === index
             ? []
             : i === index - 1
-              ? [{ ...above, lines, sections }]
+              ? [{ ...above, lines, sections, edited }]
               : [scan],
         ),
       };
     }
-    case 'split':
-      if (!state.scans.some((scan) => scan.id === action.id && scan.sections))
+    case 'split': {
+      const card = state.scans.find((scan) => scan.id === action.id);
+      if (
+        !card?.sections ||
+        state.scans.length - 1 + card.sections.length > MAX_SESSION_SCANS
+      )
         return state;
       return {
         scans: state.scans.flatMap((scan) =>
           scan.id === action.id && scan.sections ? scan.sections : [scan],
         ),
       };
+    }
   }
 }
 
@@ -221,9 +258,6 @@ const FINAL_ERRORS = [
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
-/** Whether a Scan's lines are in. */
-export const isRead = (scan: SessionScan) => scan.status === 'read';
-
 const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
 
 /** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */
@@ -237,10 +271,21 @@ export function canMerge(state: SessionState, id: string): boolean {
   );
 }
 
+/** How a Scan shows: waiting for a crop, being read (or waiting for a read slot), failed, or read. */
+export type ScanDisplayState = 'uncropped' | 'reading' | 'failed' | 'read';
+
+export const scanDisplayState = (scan: SessionScan): ScanDisplayState =>
+  scan.status === 'queued' ? 'reading' : scan.status;
+
 /** Scans not read yet and not failed: waiting for a crop, for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter((scan) => !isRead(scan) && scan.status !== 'failed')
-    .length;
+  state.scans.filter(
+    (scan) => scan.status !== 'read' && scan.status !== 'failed',
+  ).length;
+
+/** Gallery receipts waiting for the Member to crop them. */
+export const uncroppedCount = (state: SessionState) =>
+  state.scans.filter((scan) => scan.status === 'uncropped').length;
 
 /** Whether a Scan hit the Scan Cap; no more Scans can be taken until it is retried or removed. */
 export const capReached = (state: SessionState) =>
@@ -252,8 +297,14 @@ const listeners = new Set<() => void>();
 function setSession(next: SessionState) {
   if (next === session) return;
   // A gallery receipt's thumbnail is an object URL: free it when the Scan goes or is cropped.
-  const kept = new Set(next.scans.map((scan) => scan.thumbnail));
-  session.scans.forEach(({ thumbnail }) => {
+  // A merged card keeps its sections' thumbnails for Split.
+  const thumbnailsOf = (scans: SessionScan[]): string[] =>
+    scans.flatMap((scan) => [
+      scan.thumbnail,
+      ...thumbnailsOf(scan.sections ?? []),
+    ]);
+  const kept = new Set(thumbnailsOf(next.scans));
+  thumbnailsOf(session.scans).forEach((thumbnail) => {
     if (thumbnail.startsWith('blob:') && !kept.has(thumbnail))
       URL.revokeObjectURL(thumbnail);
   });

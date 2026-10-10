@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
 import {
   dispatchScanSession,
@@ -97,7 +96,7 @@ function renderOverview({ failSave }: { failSave?: number } = {}) {
 }
 
 const cards = () => screen.queryAllByTestId('review-card');
-const add = () => screen.getByRole('button', { name: /^Add to pantry/ });
+const add = () => screen.getByRole('button', { name: /^Add all/ });
 const saveCalls = (calls: ReturnType<typeof renderOverview>) =>
   calls.filter(
     (c) =>
@@ -105,9 +104,8 @@ const saveCalls = (calls: ReturnType<typeof renderOverview>) =>
       c.key === 'POST /api/scan/receipt/confirm',
   );
 
-describe('Review overview: Add to pantry', () => {
+describe('Review overview: Add all', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
   });
@@ -187,7 +185,7 @@ describe('Review overview: Add to pantry', () => {
       await seed('c', 'product', 'reading');
       const calls = renderOverview();
       const button = screen.getByRole('button', {
-        name: 'Add to pantry (waiting on 2)',
+        name: 'Add all (waiting on 2)',
       });
       expect(button).toBeDisabled();
       await userEvent.setup({ pointerEventsCheck: 0 }).click(button);
@@ -205,9 +203,7 @@ describe('Review overview: Add to pantry', () => {
           lines: [line('Yogurt')],
         }),
       );
-      expect(
-        screen.getByRole('button', { name: 'Add to pantry' }),
-      ).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Add all' })).toBeEnabled();
     });
   });
 
@@ -228,7 +224,6 @@ describe('Review overview: Add to pantry', () => {
 
 describe('Review overview: Discard all', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
   });
@@ -251,7 +246,6 @@ const alertOf = (text: string) =>
 
 describe('Review overview: toasts and saving state', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
   });

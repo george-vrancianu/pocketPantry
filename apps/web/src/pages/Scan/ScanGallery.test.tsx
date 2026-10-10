@@ -8,7 +8,6 @@ import {
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { resetReads } from '../../lib/scanReads';
 import {
   dispatchScanSession,
@@ -123,7 +122,6 @@ const done = () => screen.getByRole('button', { name: /^Done/ });
 
 describe('Gallery import into the Scan Session', () => {
   beforeEach(() => {
-    clearReview();
     resetReads();
     resetScanSession();
     localStorage.clear();
@@ -204,14 +202,15 @@ describe('Gallery import into the Scan Session', () => {
     renderScan('/scan?mode=receipt');
     await pick();
     await userEvent.click(done());
-    const add = screen.getByRole('button', { name: /waiting on 1/ });
+    const add = screen.getByRole('button', { name: /^Crop 1 receipt first/ });
     expect(add).toBeDisabled();
     await userEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
     expect(getScanSession().scans).toHaveLength(0);
   });
 
   describe('a receipt from the gallery', () => {
-    const cropButton = () => screen.getByRole('button', { name: /^Crop/ });
+    const cropButton = () =>
+      screen.getByRole('button', { name: /^Crop receipt photo/ });
 
     it('is not cropped or read on the Scan screen', async () => {
       renderScan('/scan?mode=receipt');

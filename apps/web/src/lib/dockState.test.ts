@@ -3,11 +3,10 @@ import { dockStateFor } from './dockState';
 
 describe('dockStateFor', () => {
   it.each(['/shopping', '/pantry', '/recipes'])(
-    'highlights %s in the light dock',
+    'highlights %s in the dock',
     (path) => {
       expect(dockStateFor(path)).toEqual({
         visible: true,
-        variant: 'light',
         activeKey: path.slice(1),
       });
     },

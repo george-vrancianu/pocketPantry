@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
@@ -87,6 +87,7 @@ export function useProductScan(locale: string, scanLanguage: string) {
 /** The bulk Batch create takes at most this many entries at once. */
 export const MAX_BULK_BATCHES = 50;
 
+/** Saves reviewed lines as Batches, all or none; `scanLanguage` is what the lines were scanned in. */
 export const postBatches = (
   locale: string,
   scanLanguage: string | undefined,
@@ -96,13 +97,3 @@ export const postBatches = (
     `/pantry/batches/bulk?${scanQuery(locale, scanLanguage)}`,
     { method: 'POST', body: { batches } },
   );
-
-/** Saves reviewed lines as Batches, all or none. */
-export function useAddBatches(locale: string, scanLanguage?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (batches: NewBatch[]) =>
-      postBatches(locale, scanLanguage, batches),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-  });
-}

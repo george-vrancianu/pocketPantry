@@ -14,7 +14,7 @@ import {
   releaseTarget,
   rubberBand,
   startsHorizontalDrag,
-} from '../dialGesture';
+} from '../../../lib/dialGesture';
 import { glassFocusRing } from './glass';
 
 const HAPTIC_MS = 6;

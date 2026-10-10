@@ -2,7 +2,6 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { scanViaGuide } from '../../test/scan';
@@ -114,7 +113,6 @@ const scanOnce = async () => {
 
 describe('Scan Session reads that fail', () => {
   beforeEach(() => {
-    clearReview();
     resetScanSession();
     localStorage.clear();
     prepareFails = false;

@@ -1,11 +1,11 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview, startReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const milk: CatalogSearchResult = {
@@ -56,16 +56,15 @@ function renderReceiptReview(
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route path="/pantry" element={<p>pantry screen</p>} />
     </Routes>,
-    { route: '/scan/review' },
+    { route: REVIEW_ROUTE },
   );
   return calls;
 }
 
 describe('Receipt Review', () => {
-  beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows excluded lines collapsed, with their reason, apart from the lines to save', async () => {

@@ -1,7 +1,6 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearReview } from '../../lib/review';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -34,7 +33,6 @@ const selected = () =>
 
 let now = 0;
 beforeEach(() => {
-  clearReview();
   localStorage.clear();
   now = 1000;
   vi.spyOn(performance, 'now').mockImplementation(() => now);

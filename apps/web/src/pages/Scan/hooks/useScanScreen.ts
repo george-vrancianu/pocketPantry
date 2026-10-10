@@ -33,11 +33,11 @@ export function useScanScreen() {
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
   useEffect(() => saveScanMode(mode), [mode]);
 
-  const camera = useCamera(mode === 'receipt');
+  const camera = useCamera();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const previousMode = useRef(mode);
   /**
-   * Bumped whenever what a photo being prepared was meant for goes away (mode change, batch
+   * Bumped whenever what a photo being prepared was meant for goes away (mode change, Scan Session
    * reset, leaving the screen): a photo prepared under an older value is dropped, not sent.
    */
   const scanEpoch = useRef(0);
@@ -55,11 +55,9 @@ export function useScanScreen() {
     }
     previousMode.current = mode;
   }, [mode]);
+  /** Gallery photos still being resized: they will join the Scan Session, so they count against its limit. */
+  const resizingPicks = useRef(0);
   const [flash, setFlash] = useState(false);
-  // A restarted stream (e.g. switching into or out of Receipt mode) has its torch off.
-  useEffect(() => {
-    if (camera.status !== 'ready') setFlash(false);
-  }, [camera.status]);
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
@@ -74,12 +72,20 @@ export function useScanScreen() {
   } | null>(() => {
     const state = location.state as {
       added?: number;
+      notTicked?: number;
       discarded?: boolean;
     } | null;
     if (state?.added)
       return {
-        text: t('scan:added', { count: state.added }),
-        severity: 'success',
+        text: [
+          t('scan:added', { count: state.added }),
+          state.notTicked
+            ? t('scan:tickFailed', { count: state.notTicked })
+            : '',
+        ]
+          .join(' ')
+          .trim(),
+        severity: state.notTicked ? 'warning' : 'success',
       };
     if (state?.discarded)
       return { text: t('scan:discarded'), severity: 'success' };
@@ -131,7 +137,10 @@ export function useScanScreen() {
     if (epoch !== scanEpoch.current) return false;
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
     if (origin === 'camera') {
-      if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+      if (
+        getScanSession().scans.length + resizingPicks.current >=
+        MAX_SESSION_SCANS
+      ) {
         setToast({
           text: t('scan:limit', { max: MAX_SESSION_SCANS }),
           severity: 'warning',
@@ -166,7 +175,6 @@ export function useScanScreen() {
     }
   };
 
-  const resizingPicks = useRef(0);
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
@@ -274,6 +282,9 @@ export function useScanScreen() {
       if (taken > 0) {
         if (!window.confirm(t('scan:discardScans', { count: taken }))) return;
         resetScanSession();
+        // Nothing is left to go back to: the overview and the camera of this Session are empty.
+        navigate('/');
+        return;
       }
       if (location.key === 'default') navigate('/');
       else navigate(-1);

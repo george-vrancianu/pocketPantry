@@ -6,17 +6,14 @@ export type PageLayoutProps = {
   children: ReactNode;
   /** Reserve room at the bottom so content never hides under the Dock. */
   withDock?: boolean;
-  /** Full-bleed dark background for the camera screen. */
-  dark?: boolean;
   /** Lift the ~960 px cap to 1180 px for table screens that need the room. */
   wide?: boolean;
 };
 
-/** Page frame: 20 px gutters on phones, 48 px on wide screens, content capped at ~960 px. The camera screen (`dark`) stays full-bleed. */
+/** Page frame: 20 px gutters on phones, 48 px on wide screens, content capped at ~960 px. */
 export function PageLayout({
   children,
   withDock = true,
-  dark = false,
   wide = false,
 }: PageLayoutProps) {
   return (
@@ -24,16 +21,13 @@ export function PageLayout({
       sx={{
         minHeight: '100vh',
         boxSizing: 'border-box',
-        backgroundColor: dark ? tokens.color.cameraBg : tokens.color.bg,
-        color: dark ? '#FFFFFF' : tokens.color.ink,
+        backgroundColor: tokens.color.bg,
+        color: tokens.color.ink,
         px: { xs: '20px', md: '48px' },
         pb: withDock ? '110px' : '24px',
       }}
     >
-      <Box
-        component="main"
-        sx={{ maxWidth: dark ? 'none' : wide ? 1180 : 960, mx: 'auto' }}
-      >
+      <Box component="main" sx={{ maxWidth: wide ? 1180 : 960, mx: 'auto' }}>
         {children}
       </Box>
     </Box>

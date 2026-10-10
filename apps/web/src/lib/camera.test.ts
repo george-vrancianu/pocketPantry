@@ -2,14 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { cameraConstraints } from './camera';
 
 describe('cameraConstraints', () => {
-  it('asks only for the rear camera by default', () => {
-    expect(cameraConstraints(false)).toEqual({
-      video: { facingMode: { ideal: 'environment' } },
-    });
-  });
-
-  it('asks for an ideal (never exact) 1080p stream in high resolution', () => {
-    expect(cameraConstraints(true)).toEqual({
+  it('asks for the rear camera at an ideal (never exact) 1080p, in every Scan Mode', () => {
+    expect(cameraConstraints()).toEqual({
       video: {
         facingMode: { ideal: 'environment' },
         width: { ideal: 1920 },

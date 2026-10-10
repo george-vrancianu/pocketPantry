@@ -61,7 +61,7 @@ export function ReviewPage() {
     );
   }
 
-  if (!screen.hadDraft) return <Navigate to={screen.missingTo} replace />;
+  if (!screen.hadDraft) return <Navigate to="/scan/review" replace />;
 
   const { counts, groups } = screen;
   const read = counts.save + counts.excluded;

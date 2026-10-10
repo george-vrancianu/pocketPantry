@@ -1,9 +1,8 @@
 import { screen } from '@testing-library/react';
 import { scanGuide, openFirstScanCard, scanViaGuide } from '../../test/scan';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
@@ -61,7 +60,6 @@ function renderIngredients(routes: Record<string, () => Response>) {
 }
 
 describe('Ingredients Scan on the Scan screen', () => {
-  beforeEach(() => clearReview());
   afterEach(() => vi.unstubAllGlobals());
 
   it('enables the shutter', () => {
