@@ -29,6 +29,7 @@ export function loadScanMode(): ScanMode {
   return 'receipt';
 }
 
+/** Remember the Scan Mode for the next visit. */
 export function saveScanMode(mode: ScanMode): void {
   try {
     window.localStorage.setItem(MODE_KEY, mode);

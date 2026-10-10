@@ -50,39 +50,54 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 export function ModeDial({
   mode,
   disabled,
+  keysDisabled,
   onChange,
 }: {
   mode: ScanMode;
   disabled: boolean;
+  /** Also true while an overlay or a read owns the arrow keys. */
+  keysDisabled: boolean;
   onChange: (mode: ScanMode) => void;
 }) {
   const { t } = useTranslation('scan');
   const index = SCAN_MODES.indexOf(mode);
 
-  const latest = useRef({ index, disabled, onChange });
-  latest.current = { index, disabled, onChange };
+  const latest = useRef({ index, keysDisabled, onChange });
+  latest.current = { index, keysDisabled, onChange };
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const step =
         event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-      const { index, disabled, onChange } = latest.current;
+      const { index, keysDisabled, onChange } = latest.current;
       const next = SCAN_MODES[index + step];
-      if (!step || disabled || !next) return;
-      if (event.target instanceof HTMLInputElement) return;
+      if (!step || !next || keysDisabled) return;
+      if (event.defaultPrevented || event.isComposing) return;
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest(
+          'input, select, textarea, [contenteditable], [role=slider]',
+        )
+      ) {
+        return;
+      }
       onChange(next);
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const groupRef = useRef<HTMLDivElement>(null);
   const previous = useRef(mode);
   useEffect(() => {
     if (previous.current === mode) return;
     previous.current = mode;
-    try {
-      navigator.vibrate?.(HAPTIC_MS);
-    } catch {
-      // Haptics are a nicety.
+    navigator.vibrate?.(HAPTIC_MS);
+    // Keep keyboard focus on the radio that is now checked.
+    const group = groupRef.current;
+    if (group?.contains(document.activeElement)) {
+      group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
     }
   }, [mode]);
 
@@ -123,11 +138,12 @@ export function ModeDial({
           transform: 'translateX(-50%)',
           borderRadius: '50%',
           border: `2.5px solid ${tokens.color.camAccent}`,
-          boxShadow: '0 0 0 6px rgba(155,227,143,.14)',
+          boxShadow: `0 0 0 6px color-mix(in srgb, ${tokens.color.camAccent} 14%, transparent)`,
           pointerEvents: 'none',
         }}
       />
       <Box
+        ref={groupRef}
         role="radiogroup"
         aria-label={t('modes')}
         sx={{

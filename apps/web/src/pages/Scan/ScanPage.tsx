@@ -245,6 +245,13 @@ export function ScanPage() {
         <ModeDial
           mode={screen.mode}
           disabled={screen.modesDisabled || infoOpen}
+          keysDisabled={
+            screen.modesDisabled ||
+            infoOpen ||
+            screen.reading ||
+            !!screen.cropping ||
+            !!screen.plate.dishes
+          }
           onChange={screen.setMode}
         />
 
