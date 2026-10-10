@@ -16,6 +16,8 @@ export type SessionScan = {
   thumbnail: string;
   status: 'queued' | 'reading' | 'read' | 'failed';
   failure?: 'error' | 'cap';
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
 };
@@ -33,7 +35,13 @@ export type SessionAction =
     }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
-  | { type: 'fail'; id: string; reason: 'error' | 'cap' }
+  | {
+      type: 'fail';
+      id: string;
+      reason: 'error' | 'cap';
+      code?: string;
+      params?: Record<string, unknown>;
+    }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string };
 

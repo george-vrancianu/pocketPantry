@@ -217,8 +217,11 @@ describe('ScanPage', () => {
         ),
     });
     await shoot();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /too large/,
+    );
     expect(
-      await screen.findByRole('button', { name: /retry/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
   });
 });

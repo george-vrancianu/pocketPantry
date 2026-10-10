@@ -331,6 +331,49 @@ describe('Scan Session reducer', () => {
     });
   });
 
+  describe('fail with an error code', () => {
+    const failedWith = () =>
+      run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'error',
+          code: 'scan.too_many_items',
+          params: { max: 50 },
+        },
+      );
+
+    it('keeps the code and params apart from the failure reason', () => {
+      expect(failedWith().scans[0]).toMatchObject({
+        status: 'failed',
+        failure: 'error',
+        errorCode: 'scan.too_many_items',
+        errorParams: { max: 50 },
+      });
+    });
+
+    it('stores no code when none is given', () => {
+      const state = run(
+        enqueue('a'),
+        { type: 'start' },
+        {
+          type: 'fail',
+          id: 'a',
+          reason: 'error',
+        },
+      );
+      expect(state.scans[0].errorCode).toBeUndefined();
+    });
+
+    it('forgets the code on retry', () => {
+      const state = sessionReducer(failedWith(), { type: 'retry', id: 'a' });
+      expect(state.scans[0].errorCode).toBeUndefined();
+      expect(state.scans[0].errorParams).toBeUndefined();
+    });
+  });
+
   describe('retry', () => {
     const failed = (reason: 'error' | 'cap' = 'error') =>
       run(enqueue('a'), { type: 'start' }, { type: 'fail', id: 'a', reason });

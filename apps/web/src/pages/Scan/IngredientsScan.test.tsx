@@ -90,9 +90,12 @@ describe('Ingredients Scan on the Scan screen', () => {
       'POST /api/scan/ingredients': () => Response.json({ lines: [] }),
     });
     scanViaGuide();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /We could not spot any ingredients/,
+    );
     expect(
-      await screen.findByRole('button', { name: /retry/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
     expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
@@ -105,8 +108,11 @@ describe('Ingredients Scan on the Scan screen', () => {
         ),
     });
     scanViaGuide();
+    expect(await screen.findByTestId('scan-thumbnail')).toHaveAccessibleName(
+      /more than 50 items/,
+    );
     expect(
-      await screen.findByRole('button', { name: /retry/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /retry/i }),
+    ).not.toBeInTheDocument();
   });
 });

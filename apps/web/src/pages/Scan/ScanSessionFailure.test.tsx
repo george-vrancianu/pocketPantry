@@ -39,7 +39,15 @@ const yogurt = {
   productDescription: null,
 };
 
-type Outcome = 'ok' | 'network' | 'server' | 'cap' | 'empty';
+type Outcome =
+  | 'ok'
+  | 'network'
+  | 'server'
+  | 'cap'
+  | 'empty'
+  | 'tooMany'
+  | 'tooLarge'
+  | 'hold';
 
 /** What the Nth scan request (1-based) does. */
 let outcome: (n: number) => Outcome;
@@ -67,6 +75,19 @@ function renderScan(route = '/scan?mode=product') {
             { status: 429 },
           ),
         );
+      case 'tooMany':
+        return Promise.resolve(
+          Response.json(
+            { code: 'scan.too_many_items', params: { max: 50 } },
+            { status: 400 },
+          ),
+        );
+      case 'tooLarge':
+        return Promise.resolve(
+          Response.json({ code: 'scan.image_too_large' }, { status: 413 }),
+        );
+      case 'hold':
+        return new Promise<Response>(() => {});
       case 'empty':
         return Promise.resolve(Response.json({ lines: [] }));
       case 'ok':
@@ -136,6 +157,42 @@ describe('Scan Session reads that fail', () => {
       await scanOnce();
       await waitFor(() => expect(states()).toEqual(['failed']));
       expect(bodies).toHaveLength(1);
+      expect(thumbnails()[0]).toHaveAccessibleName(
+        /We could not spot any ingredients/,
+      );
+      expect(
+        screen.queryByRole('button', { name: /retry/i }),
+      ).not.toBeInTheDocument();
+    });
+
+    it.each([
+      ['tooMany', /more than 50 items/],
+      ['tooLarge', /That photo is too large/],
+    ] as const)(
+      'with a reason that cannot change (%s) say why and offer no retry',
+      async (kind, reason) => {
+        outcome = () => kind;
+        renderScan();
+        await scanOnce();
+        await waitFor(() => expect(states()).toEqual(['failed']));
+        expect(thumbnails()[0]).toHaveAccessibleName(reason);
+        expect(
+          screen.queryByRole('button', { name: /retry/i }),
+        ).not.toBeInTheDocument();
+        expect(bodies).toHaveLength(1);
+      },
+    );
+
+    it('announce themselves politely', async () => {
+      outcome = () => 'server';
+      renderScan();
+      await scanOnce();
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(
+        screen
+          .getAllByRole('status')
+          .some((el) => /could not read photo/i.test(el.textContent ?? '')),
+      ).toBe(true);
     });
 
     it('keep the failed thumbnail in place and do not raise an alert', async () => {
@@ -179,6 +236,21 @@ describe('Scan Session reads that fail', () => {
       expect(bodies).toHaveLength(3);
     });
 
+    it('waits for a free read slot when 2 reads are running', async () => {
+      outcome = (n) => (n === 1 ? 'server' : 'hold');
+      renderScan();
+      await scanOnce();
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      await scanOnce();
+      await scanOnce();
+      await waitFor(() => expect(bodies).toHaveLength(3));
+      await userEvent.click(
+        within(thumbnails()[0]).getByRole('button', { name: /retry/i }),
+      );
+      await flush();
+      expect(bodies).toHaveLength(3);
+    });
+
     it('is not offered on Scans that are reading or read', async () => {
       outcome = () => 'ok';
       renderScan();
@@ -203,6 +275,25 @@ describe('Scan Session reads that fail', () => {
       await flush();
       expect(thumbnails()).toHaveLength(1);
       expect(bodies).toHaveLength(1);
+    });
+
+    it('starts scanning again once the capped Scan is removed in Review', async () => {
+      outcome = (n) => (n === 1 ? 'cap' : 'ok');
+      renderScan();
+      await scanOnce();
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      await userEvent.click(screen.getByRole('button', { name: /^Done/ }));
+      await userEvent.click(
+        within(await screen.findByTestId('review-card')).getByRole('button', {
+          name: 'Remove photo',
+        }),
+      );
+      await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
+      expect(
+        screen.queryByText('Daily scan limit reached'),
+      ).not.toBeInTheDocument();
+      await scanOnce();
+      await waitFor(() => expect(states()).toEqual(['read']));
     });
 
     it('does not show the limit message for other failures', async () => {
@@ -231,7 +322,7 @@ describe('Scan Session reads that fail', () => {
   });
 
   describe('Review', () => {
-    const seedFailed = (id = 'x') =>
+    const seedFailed = (id = 'x', code?: string, params = {}) =>
       act(() => {
         dispatchScanSession({
           type: 'enqueue',
@@ -244,7 +335,13 @@ describe('Scan Session reads that fail', () => {
           },
         });
         dispatchScanSession({ type: 'start' });
-        dispatchScanSession({ type: 'fail', id, reason: 'error' });
+        dispatchScanSession({
+          type: 'fail',
+          id,
+          reason: 'error',
+          code,
+          params,
+        });
       });
 
     it('shows a failed Scan as a card that says to retake, with a remove button', async () => {
@@ -259,6 +356,15 @@ describe('Scan Session reads that fail', () => {
         within(card).getByRole('button', { name: 'Remove photo' }),
       );
       expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
+    });
+
+    it('says why a Scan could not be read, when the reason is known', async () => {
+      outcome = () => 'ok';
+      renderScan('/scan/review');
+      seedFailed('x', 'scan.too_many_items', { max: 50 });
+      const card = await screen.findByTestId('review-card');
+      expect(card).toHaveTextContent("Couldn't read, retake");
+      expect(card).toHaveTextContent(/more than 50 items/);
     });
 
     it('does not count a failed Scan as still reading', async () => {
