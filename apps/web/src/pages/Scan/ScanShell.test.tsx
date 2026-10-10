@@ -1,4 +1,4 @@
-import { tokensAsCssVariables } from '../../../../../packages/ui/src/theme/tokens';
+import { tokens } from '@pocket-pantry/ui';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -119,21 +119,99 @@ describe('Scan screen shell', () => {
   });
 });
 
-describe('camera palette tokens', () => {
-  it('exposes the always-dark cam-* colours as CSS variables', () => {
-    const vars = tokensAsCssVariables();
-    for (const name of [
-      '--cam-fg',
-      '--cam-dim',
-      '--cam-glass',
-      '--cam-glass-strong',
-      '--cam-accent',
-      '--cam-accent-ink',
-      '--cam-warn',
-    ]) {
-      expect(vars[name], name).toBeTruthy();
+describe('camera feed and overlays', () => {
+  const pinned = (el: HTMLElement) => {
+    const shell = screen.getByTestId('scan-screen');
+    for (let n = el.parentElement; n && n !== shell; n = n.parentElement) {
+      if (['absolute', 'fixed'].includes(getComputedStyle(n).position)) {
+        return true;
+      }
     }
-    expect(vars['--cam-accent']).toBe('#9be38f');
-    expect(vars['--cam-warn']).toBe('#ffcf5a');
+    return ['absolute', 'fixed'].includes(getComputedStyle(el).position);
+  };
+
+  it('fills the screen with an aspect-filled feed behind the controls', () => {
+    renderScan();
+    const feed = screen.getByTestId('scan-feed');
+    const style = getComputedStyle(feed);
+    expect(feed.tagName).toBe('VIDEO');
+    expect(feed.parentElement).toBe(screen.getByTestId('scan-screen'));
+    expect(style.objectFit).toBe('cover');
+    expect(style.position).toBe('absolute');
+    expect(style.width).toBe('100%');
+    expect(style.height).toBe('100%');
+  });
+
+  it('lays a radial vignette from transparent to 45% black over the feed', () => {
+    renderScan();
+    const style = getComputedStyle(screen.getByTestId('scan-vignette'));
+    expect(style.backgroundImage).toContain('radial-gradient');
+    expect(style.backgroundImage).toMatch(/rgba\(0,\s*0,\s*0,\s*0\.45\)/);
+    expect(style.pointerEvents).toBe('none');
+  });
+
+  it('pins the shutter and the mode pills over the feed so they stay reachable', () => {
+    renderScan();
+    expect(pinned(screen.getByRole('button', { name: 'Take photo' }))).toBe(
+      true,
+    );
+    expect(pinned(screen.getByRole('group', { name: 'Scan mode' }))).toBe(true);
+  });
+});
+
+describe('Info sheet accessibility', () => {
+  const infoButton = () =>
+    screen.getByRole('button', { name: 'How scanning works' });
+
+  it('keeps Tab and Shift+Tab inside the open sheet', async () => {
+    renderScan();
+    await userEvent.click(infoButton());
+    const dialog = screen.getByRole('dialog');
+    for (let i = 0; i < 4; i += 1) {
+      await userEvent.tab();
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    }
+    for (let i = 0; i < 4; i += 1) {
+      await userEvent.tab({ shift: true });
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    }
+  });
+
+  it('returns focus to the Info button when the sheet closes', async () => {
+    renderScan();
+    await userEvent.click(infoButton());
+    await userEvent.click(screen.getByTestId('info-scrim'));
+    expect(infoButton()).toHaveFocus();
+  });
+
+  it('closes on Escape even when focus is outside the sheet', async () => {
+    renderScan();
+    await userEvent.click(infoButton());
+    (document.activeElement as HTMLElement).blur();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(infoButton()).toHaveFocus();
+  });
+
+  it('dims the camera with a 45% scrim', async () => {
+    renderScan();
+    await userEvent.click(infoButton());
+    expect(
+      getComputedStyle(screen.getByTestId('info-scrim')).backgroundColor,
+    ).toMatch(/rgba\(0,\s*0,\s*0,\s*0\.45\)/);
+  });
+});
+
+describe('camera palette tokens', () => {
+  it('matches the handoff section 9 values exactly', () => {
+    expect(tokens.color).toMatchObject({
+      camFg: '#f4f4f0',
+      camDim: 'rgba(244,244,240,.62)',
+      camGlass: 'rgba(20,22,20,.55)',
+      camGlassStrong: 'rgba(20,22,20,.82)',
+      camAccent: '#9be38f',
+      camAccentInk: '#0c1a0f',
+      camWarn: '#ffcf5a',
+    });
   });
 });
