@@ -4,7 +4,11 @@ import { Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine, ScanMode } from '../../lib/scan';
-import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  resetScanSession,
+} from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from '../Scan/ScanPage';
 import { ReviewOverviewPage } from './ReviewOverviewPage';
@@ -264,6 +268,50 @@ describe('Review overview, epic review fixes', () => {
       await waitFor(() =>
         expect(document.activeElement).not.toBe(document.body),
       );
+    });
+  });
+
+  describe('Retake (#10)', () => {
+    it('removes the failed card and goes back to the camera', async () => {
+      await seed('a', 'product', [line('Yogurt')]);
+      await seed('b', 'product', 'reading');
+      act(() =>
+        dispatchScanSession({ type: 'fail', id: 'b', reason: 'error' }),
+      );
+      renderOverview();
+      await userEvent.click(
+        within(cards()[1]).getByRole('button', { name: /^Retake/ }),
+      );
+      expect(await screen.findByTestId('scan-guide')).toBeInTheDocument();
+      expect(getScanSession().scans.map((scan) => scan.id)).toEqual(['a']);
+    });
+  });
+
+  describe('merging after an edit (N1)', () => {
+    it('saves both receipts lines when the upper card was edited before Merge', async () => {
+      await seed('a', 'receipt', [line('Eggs'), line('Bag')]);
+      await seed('b', 'receipt', [line('Jam')]);
+      const calls = renderOverview({}, '/scan/review/a');
+      await userEvent.click(await findReviewRow('Bag'));
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Remove Bag' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'test back' }));
+      await userEvent.click(
+        await screen.findByRole('button', { name: /merge with previous/i }),
+      );
+      await userEvent.click(
+        await screen.findByRole('button', { name: /^Add/ }),
+      );
+      await waitFor(() =>
+        expect(
+          calls.filter((c) => c.key === 'POST /api/scan/receipt/confirm'),
+        ).toHaveLength(1),
+      );
+      const save = calls.find(
+        (c) => c.key === 'POST /api/scan/receipt/confirm',
+      );
+      expect(batchesOf(save?.body)).toHaveLength(2);
     });
   });
 

@@ -14,6 +14,7 @@ import {
   type SessionAction,
   type SessionState,
 } from './scanSession';
+import { reviewLinesOf, toReviewLine } from './review';
 
 const line: ProposedLine = {
   name: 'Milk',
@@ -885,5 +886,65 @@ describe('thumbnails of merged Scans (epic review #6)', () => {
     dispatchScanSession({ type: 'split', id: 'r1' });
     expect(revoke).not.toHaveBeenCalledWith('blob:r2');
     expect(revoke).not.toHaveBeenCalledWith('blob:r1');
+  });
+});
+
+describe('merging after an edit (N1)', () => {
+  it('keeps the lower receipt lines when the upper one was edited first', () => {
+    const edited = [toReviewLine({ ...line, name: 'Eggs' }, 'k', new Date())];
+    const state = run(
+      enqueue('a', { mode: 'receipt' }),
+      enqueue('b', { mode: 'receipt' }),
+      { type: 'start' },
+      { type: 'read', id: 'a', lines: [line] },
+      { type: 'read', id: 'b', lines: [{ ...line, name: 'Jam' }] },
+      { type: 'edit', id: 'a', lines: edited },
+      { type: 'merge', id: 'b' },
+    );
+    expect(reviewLinesOf(state.scans[0]).map((l) => l.name)).toEqual([
+      'Eggs',
+      'Jam',
+    ]);
+  });
+});
+
+describe('Scans arriving after the Scan Cap (N2)', () => {
+  const capHit = () =>
+    run(
+      enqueue('a'),
+      { type: 'start' },
+      { type: 'fail', id: 'a', reason: 'cap' },
+    );
+
+  it('fails a Scan enqueued after the cap with the cap', () => {
+    const state = sessionReducer(capHit(), enqueue('late'));
+    expect(state.scans[1]).toMatchObject({ status: 'failed', failure: 'cap' });
+  });
+
+  it('fails a cropped receipt with the cap', () => {
+    const state = sessionReducer(
+      sessionReducer(
+        capHit(),
+        enqueue('g', { mode: 'receipt', source: new Blob() }),
+      ),
+      { type: 'crop', id: 'g', image: 'cropped' },
+    );
+    expect(state.scans[1]).toMatchObject({ status: 'failed', failure: 'cap' });
+  });
+
+  it('fails a retried non-cap failure with the cap', () => {
+    const base = run(
+      enqueue('a'),
+      enqueue('b'),
+      { type: 'start' },
+      { type: 'fail', id: 'b', reason: 'error' },
+      { type: 'fail', id: 'a', reason: 'cap' },
+    );
+    const state = sessionReducer(base, { type: 'retry', id: 'b' });
+    expect(state.scans[1]).toMatchObject({ status: 'failed', failure: 'cap' });
+  });
+
+  it('counts none of them as pending', () => {
+    expect(pendingCount(sessionReducer(capHit(), enqueue('late')))).toBe(0);
   });
 });
