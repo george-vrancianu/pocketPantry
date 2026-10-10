@@ -102,10 +102,12 @@ describe('ScanPage', () => {
     }
   });
 
-  it('disables the flash toggle when the camera has no torch', () => {
+  it('hides the flash toggle when the camera has no torch', () => {
     camera.torchSupported = false;
     renderScan({});
-    expect(screen.getByRole('button', { name: 'Toggle flash' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Toggle flash' }),
+    ).not.toBeInTheDocument();
   });
 
   it('opens manual entry on the Pantry from the manual-add button', async () => {
