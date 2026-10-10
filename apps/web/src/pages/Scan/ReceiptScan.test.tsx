@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { scanGuide, scanViaGuide } from '../../test/scan';
+import { openFirstScanCard, scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
@@ -15,6 +15,7 @@ import {
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow, reviewRowNames } from '../../test/review';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -80,7 +81,7 @@ describe('Receipt Scan on the Scan screen', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('sends the cropped receipt photo to the Receipt endpoint and, on Finish, lands on Review with its lines', async () => {
+  it('sends the cropped receipt photo to the Receipt endpoint and reviews its lines on the Scan card', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/catalog/parents': () => Response.json({ parents: [] }),
       'POST /api/scan/receipt': () =>
@@ -112,14 +113,13 @@ describe('Receipt Scan on the Scan screen', () => {
     renderWithProviders(
       <Routes>
         <Route path="/scan" element={<ScanPage />} />
-        <Route path="/scan/review" element={<ReviewPage />} />
+        <Route path="/scan/review" element={<ReviewOverviewPage />} />
+        <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       </Routes>,
       { route: '/scan?mode=receipt' },
     );
     scanViaGuide();
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Finish' }),
-    );
+    await openFirstScanCard();
     expect(await findReviewRow('Eggs')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Excluded · 1/ }));
     expect(screen.getByText('Not for the Pantry')).toBeInTheDocument();
@@ -163,6 +163,12 @@ describe('Receipt Scan on the Scan screen', () => {
     };
     const cropDialog = () =>
       screen.findByRole('dialog', { name: 'Crop receipt' });
+    // Camera receipts join the Scan Session; Receipt Sections come from gallery photos.
+    const takeSection = async () => {
+      await uploadPhoto();
+      await cropDialog();
+      await click('Use photo');
+    };
     const click = (name: string) =>
       userEvent.click(screen.getByRole('button', { name }));
     const renderScan = (
@@ -185,7 +191,7 @@ describe('Receipt Scan on the Scan screen', () => {
         <>
           <Routes>
             <Route path="/scan" element={<ScanPage />} />
-            <Route path="/scan/review" element={<ReviewPage />} />
+            <Route path="/scan/review/draft" element={<ReviewPage />} />
           </Routes>
           {withDock ? <AppDock variant="dark" activeKey="scan" /> : null}
         </>,
@@ -241,14 +247,12 @@ describe('Receipt Scan on the Scan screen', () => {
       expect(await findReviewRow('Eggs')).toBeInTheDocument();
     });
 
-    it('merges a gallery section with a camera section on Finish', async () => {
+    it('merges two gallery sections on Finish', async () => {
       renderScan([{ lines: [eggs] }, { lines: [rice] }]);
-      await uploadPhoto();
-      await cropDialog();
-      await click('Use photo');
+      await takeSection();
       await screen.findByText('Section 1: 1 line found');
       await click('Next photo');
-      scanViaGuide();
+      await takeSection();
       await screen.findByText('Section 2: 1 line found');
       await click('Finish');
       await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
@@ -258,7 +262,7 @@ describe('Receipt Scan on the Scan screen', () => {
 
     it('lets a gallery photo retake a section, replacing only that section', async () => {
       const { calls } = renderScan([{ lines: [eggs] }, { lines: [rice] }]);
-      scanViaGuide();
+      await takeSection();
       await screen.findByText('Section 1: 1 line found');
       await click('Retake');
       await uploadPhoto();
@@ -272,7 +276,7 @@ describe('Receipt Scan on the Scan screen', () => {
 
     it('does not open the crop step while a result is awaiting a decision', async () => {
       renderScan();
-      scanViaGuide();
+      await takeSection();
       await screen.findByText('Section 1: 1 line found');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
@@ -293,7 +297,7 @@ describe('Receipt Scan on the Scan screen', () => {
           : fetchMock(input, init),
       );
       renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
-      scanViaGuide();
+      await takeSection();
       await screen.findByText('Reading section 1…');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
@@ -371,7 +375,7 @@ describe('Receipt Scan on the Scan screen', () => {
       const confirm = vi.spyOn(window, 'confirm');
       const { calls } = renderScreen([{ lines: [eggs] }], true);
       const release = holdPreparation();
-      scanViaGuide();
+      await takeSection();
       switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       await release();
@@ -419,7 +423,7 @@ describe('Receipt Scan on the Scan screen', () => {
         Array.from({ length: 11 }, () => ({ lines: [eggs] })),
       );
       for (let i = 1; i <= 10; i++) {
-        scanViaGuide();
+        await takeSection();
         await screen.findByText(`Section ${i}: 1 line found`);
         if (i < 10) await click('Next photo');
       }

@@ -83,7 +83,7 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review/draft" element={<ReviewPage />} />
       <Route path="/shopping" element={<p>shopping screen</p>} />
     </Routes>,
     { route: '/scan?mode=plate' },

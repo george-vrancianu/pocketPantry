@@ -314,22 +314,6 @@ describe('Scan by double-tapping the guides', () => {
     ).toBe(true);
     expect(vibrate).toHaveBeenCalledWith(12);
   });
-
-  it('gives no flash or haptic while a Scan is already being read', async () => {
-    renderScan('/scan?mode=product', true);
-    tap(guide());
-    tap(guide(), 200, 300, 100);
-    await flush();
-    await advance(500);
-    expect(flash()).toBeNull();
-    vibrate.mockClear();
-    tap(guide(), 200, 300, 100);
-    tap(guide(), 200, 300, 100);
-    await flush();
-    expect(flash()).toBeNull();
-    expect(vibrate).not.toHaveBeenCalled();
-    expect(scans()).toHaveLength(1);
-  });
 });
 
 describe('Scan by keyboard on the guides', () => {

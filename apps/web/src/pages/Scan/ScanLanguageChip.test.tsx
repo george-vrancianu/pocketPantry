@@ -1,10 +1,11 @@
 import { screen, within } from '@testing-library/react';
-import { scanViaGuide } from '../../test/scan';
+import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -46,7 +47,8 @@ function renderScan(route: string) {
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
     </Routes>,
     { route },
   );
@@ -94,6 +96,7 @@ describe('Scan Language chip in the top bar', () => {
     const calls = renderScan('/scan?mode=product');
     await userEvent.selectOptions(chip(), 'ro');
     scanViaGuide();
+    await openFirstScanCard();
     await screen.findByRole('button', { name: /Save 1 item/ });
     const scan = calls.find((c) => c.key === 'POST /api/scan/product');
     expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('ro');

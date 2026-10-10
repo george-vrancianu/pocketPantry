@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { scanGuide, scanViaGuide } from '../../test/scan';
+import { scanGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -72,7 +72,7 @@ function setup(responses: Array<() => Response>, route = '/scan?mode=receipt') {
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review" element={<ReviewPage />} />
+      <Route path="/scan/review/draft" element={<ReviewPage />} />
     </Routes>,
     { route },
   );
@@ -180,7 +180,9 @@ describe('Receipt gallery multi-select', () => {
   it('refuses a selection that does not fit in the remaining room', async () => {
     setup(Array.from({ length: 8 }, (_, i) => () => lines(`Item ${i}`)));
     for (let i = 0; i < 8; i++) {
-      scanViaGuide();
+      pick(1);
+      await cropDialog();
+      await click('Use photo');
       await screen.findByText(`Section ${i + 1}: 1 line found`);
       await click('Next photo');
     }
