@@ -120,8 +120,14 @@ export function useScanScreen() {
   const scanImage = async (
     source: Blob,
     origin: ImageOrigin,
-    prepare: () => Promise<string> = () =>
-      IMAGE_PREPARATION[mode](source, origin),
+    prepare: () => Promise<string> = () => {
+      const feed = camera.videoRef.current;
+      const view = {
+        width: feed?.clientWidth || window.innerWidth,
+        height: feed?.clientHeight || window.innerHeight,
+      };
+      return IMAGE_PREPARATION[mode](source, origin, view);
+    },
   ): Promise<boolean> => {
     setLocalError(null);
     setNotice(null);

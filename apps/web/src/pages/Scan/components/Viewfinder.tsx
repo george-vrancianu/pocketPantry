@@ -1,9 +1,7 @@
 import { Box } from '@pocket-pantry/ui';
-import type { RefObject } from 'react';
 import {
   RECEIPT_GUIDE_ASPECT,
   RECEIPT_GUIDE_HEIGHT_FRACTION,
-  RECEIPT_VIEW,
 } from '../../../lib/receiptGuide';
 
 const edge = '3px solid #FFFFFF';
@@ -15,14 +13,13 @@ const CORNERS = [
 ] as const;
 
 type Props = {
-  videoRef: RefObject<HTMLVideoElement | null>;
   scanning: boolean;
   /** Overlay the tall 1:3 receipt guide (and size the preview to match what gets cropped). */
   receiptGuide?: boolean;
 };
 
-/** The camera preview with corner brackets and the sweeping scan line. */
-export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
+/** The brackets or receipt guide and the sweeping scan line, centred over the full-screen feed. */
+export function Viewfinder({ scanning, receiptGuide }: Props) {
   // In receipt mode the line lives inside the guide and sweeps its full height (percentages);
   // otherwise it sweeps the 300 px box.
   const sweep = receiptGuide
@@ -57,84 +54,53 @@ export function Viewfinder({ videoRef, scanning, receiptGuide }: Props) {
   );
   return (
     <Box
+      aria-hidden="true"
       sx={{
-        position: 'relative',
-        // The receipt box keeps its 9:16 shape but shrinks to fit narrow or short screens.
-        width: receiptGuide
-          ? `min(${RECEIPT_VIEW.width}px, calc(55vh * ${RECEIPT_VIEW.width / RECEIPT_VIEW.height}))`
-          : 280,
-        maxWidth: '100%',
-        ...(receiptGuide
-          ? { aspectRatio: `${RECEIPT_VIEW.width} / ${RECEIPT_VIEW.height}` }
-          : { height: 300 }),
-        mx: 'auto',
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <Box
-        component="video"
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          borderRadius: '20px',
-        }}
-      />
       {receiptGuide ? (
         <Box
-          aria-hidden="true"
+          data-testid="receipt-guide"
           sx={{
-            position: 'absolute',
-            inset: 0,
-            overflow: 'hidden',
-            borderRadius: '20px',
+            position: 'relative',
+            height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
+            aspectRatio: String(RECEIPT_GUIDE_ASPECT),
+            // An outline sits outside the box, so the visible interior is exactly the crop.
+            outline: edge,
+            borderRadius: '8px',
+            // Dim everything outside the guide: only what is inside is sent.
+            boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
           }}
         >
-          <Box
-            data-testid="receipt-guide"
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: '50%',
-              height: `${RECEIPT_GUIDE_HEIGHT_FRACTION * 100}%`,
-              aspectRatio: String(RECEIPT_GUIDE_ASPECT),
-              transform: 'translate(-50%, -50%)',
-              // An outline sits outside the box, so the visible interior is exactly the crop.
-              outline: edge,
-              borderRadius: '8px',
-              // Dim everything outside the guide: only what is inside is sent.
-              boxShadow: '0 0 0 100vmax rgba(0,0,0,0.5)',
-            }}
-          >
-            {scanLine}
-          </Box>
+          {scanLine}
         </Box>
-      ) : null}
-      <Box aria-hidden="true" sx={{ position: 'absolute', inset: 0 }}>
-        {CORNERS.map(([vertical, horizontal]) => (
-          <Box
-            key={vertical + horizontal}
-            sx={{
-              position: 'absolute',
-              width: 40,
-              height: 40,
-              boxSizing: 'border-box',
-              [vertical.toLowerCase()]: 0,
-              [horizontal.toLowerCase()]: 0,
-              [`border${vertical}`]: edge,
-              [`border${horizontal}`]: edge,
-              [`border${vertical}${horizontal}Radius`]: '20px',
-            }}
-          />
-        ))}
-        {receiptGuide ? null : scanLine}
-      </Box>
+      ) : (
+        <Box sx={{ position: 'relative', width: 280, height: 300 }}>
+          {CORNERS.map(([vertical, horizontal]) => (
+            <Box
+              key={vertical + horizontal}
+              sx={{
+                position: 'absolute',
+                width: 40,
+                height: 40,
+                boxSizing: 'border-box',
+                [vertical.toLowerCase()]: 0,
+                [horizontal.toLowerCase()]: 0,
+                [`border${vertical}`]: edge,
+                [`border${horizontal}`]: edge,
+                [`border${vertical}${horizontal}Radius`]: '20px',
+              }}
+            />
+          ))}
+          {scanLine}
+        </Box>
+      )}
     </Box>
   );
 }

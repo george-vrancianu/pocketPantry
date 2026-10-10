@@ -2,7 +2,6 @@ import {
   RECEIPT_GUIDE_ASPECT,
   RECEIPT_GUIDE_HEIGHT_FRACTION,
   RECEIPT_OUTPUT_WIDTH,
-  RECEIPT_VIEW,
 } from './receiptGuide';
 
 /** Longest edge sent to the API. Plenty for reading a label, small enough for a phone connection. */
@@ -163,15 +162,17 @@ function cropReceiptRegion(
   return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
 }
 
-/** Crops a receipt camera frame to the viewfinder's guide and scales it to the receipt output size. */
-export async function cropToReceiptGuide(frame: Blob): Promise<string> {
+/**
+ * Crops a receipt camera frame to the on-screen guide and scales it to the receipt output size.
+ * `view` is the size of the aspect-filled feed on screen, which the guide is centred in.
+ */
+export async function cropToReceiptGuide(
+  frame: Blob,
+  view: { width: number; height: number },
+): Promise<string> {
   const bitmap = await createImageBitmap(frame);
   try {
-    const crop = guideCropRect(
-      bitmap,
-      RECEIPT_VIEW,
-      RECEIPT_GUIDE_HEIGHT_FRACTION,
-    );
+    const crop = guideCropRect(bitmap, view, RECEIPT_GUIDE_HEIGHT_FRACTION);
     return cropReceiptRegion(bitmap, crop, 0);
   } finally {
     bitmap.close();

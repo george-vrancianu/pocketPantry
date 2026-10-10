@@ -4,6 +4,7 @@ import { tokens } from '@pocket-pantry/ui';
 export const glassControl = (disabled: boolean) => ({
   backgroundColor: tokens.color.camGlass,
   color: tokens.color.camFg,
+  backdropFilter: 'blur(14px)',
   cursor: disabled ? 'default' : 'pointer',
   opacity: disabled ? 0.5 : 1,
 });

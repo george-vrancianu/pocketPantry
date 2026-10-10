@@ -8,6 +8,8 @@ export type ImageOrigin = 'camera' | 'gallery';
 export type ImagePreparation = (
   source: Blob,
   origin: ImageOrigin,
+  /** On-screen size of the feed the frame came from; the receipt guide is mapped through it. */
+  view?: { width: number; height: number },
 ) => Promise<string>;
 
 const resizeOnly: ImagePreparation = (source) => resizeImage(source);
@@ -18,9 +20,9 @@ export const IMAGE_PREPARATION: Record<ScanMode, ImagePreparation> = {
   // A camera frame is cropped to the viewfinder's guide. A gallery file is cropped by the
   // Member in the crop step instead, so it never comes through here: callers must check
   // needsCropStep first and use cropToReceiptArea. Rejecting is deliberate, not a TODO.
-  receipt: (source, origin) =>
-    origin === 'camera'
-      ? cropToReceiptGuide(source)
+  receipt: (source, origin, view) =>
+    origin === 'camera' && view
+      ? cropToReceiptGuide(source, view)
       : Promise.reject(new Error('gallery receipts go through the crop step')),
   plate: resizeOnly,
   ingredients: resizeOnly,
