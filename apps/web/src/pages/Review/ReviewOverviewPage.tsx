@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { PlateChoice } from './components/PlateChoice';
+import { PlateChoice, cardId } from './components/PlateChoice';
 import type { ProposedLine } from '../../lib/scan';
 import {
   dispatchScanSession,
@@ -49,7 +49,10 @@ export function ReviewOverviewPage() {
         component="li"
         key={scan.id}
         data-testid="review-card"
+        id={cardId(scan.id)}
+        tabIndex={-1}
         sx={{
+          outline: 'none',
           position: 'relative',
           display: 'flex',
           gap: 1.5,

@@ -43,7 +43,7 @@ import { EXCLUDED_TOGGLE_ID, fieldId, rowId } from '../components/layout';
 export function useReviewScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  // A Scan Session card is edited at /scan/review/:scanId; the draft of the old flow (Plate, gallery) has no id.
+  // A Scan Session card is edited at /scan/review/:scanId; the draft of the old flow (gallery) has no id.
   const { scanId } = useParams();
   const sessionId = scanId === 'draft' ? undefined : scanId;
   // Read once: clearing the draft on save must not bounce the page to /scan.

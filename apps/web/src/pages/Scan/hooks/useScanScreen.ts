@@ -163,7 +163,7 @@ export function useScanScreen() {
       setResizing(false);
     }
     if (epoch !== scanEpoch.current) return false;
-    // A camera Scan joins the Scan Session at once; its read goes on in the background.
+    // A camera Scan, or a Plate photo, joins the Scan Session at once; its read goes on in the background.
     if (origin === 'camera' || mode === 'plate') {
       dispatchScanSession({
         type: 'enqueue',

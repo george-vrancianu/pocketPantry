@@ -26,7 +26,17 @@ const buttonSx = {
   textAlign: 'left',
   cursor: 'pointer',
   '&:disabled': { opacity: 0.5, cursor: 'default' },
+  '&:focus-visible': {
+    outline: `2px solid ${tokens.color.accentMid}`,
+    outlineOffset: 2,
+  },
 } as const;
+
+export const cardId = (id: string) => `review-card-${id}`;
+
+/** The picker leaves the card, so focus goes to the card rather than to the page. */
+const focusCard = (id: string) =>
+  setTimeout(() => document.getElementById(cardId(id))?.focus());
 
 /**
  * A read Plate Scan's dish guesses, most likely first. Picking one loads its ingredients into the
@@ -43,9 +53,11 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
       <Box
         component="button"
         type="button"
+        autoFocus
         onClick={() => {
           dispatchScanSession({ type: 'reread', id: scan.id });
           readScans(i18n.language);
+          focusCard(scan.id);
         }}
         sx={{ ...buttonSx, mt: 0.5 }}
       >
@@ -58,8 +70,10 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
     ingredients.mutate(
       { dishTitle, plateToken: scan.plateToken ?? '' },
       {
-        onSuccess: ({ lines }) =>
-          dispatchScanSession({ type: 'pick', id: scan.id, lines }),
+        onSuccess: ({ lines }) => {
+          dispatchScanSession({ type: 'pick', id: scan.id, lines });
+          focusCard(scan.id);
+        },
         onError: (error) =>
           setExpired(
             error instanceof ApiError &&
@@ -69,7 +83,7 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
     );
 
   return (
-    <Box sx={{ mt: 0.5, position: 'relative', zIndex: 1 }}>
+    <Box sx={{ mt: 0.5 }}>
       <Typography id={headingId} sx={{ fontWeight: 700 }}>
         {t('overview.pickDish')}
       </Typography>
