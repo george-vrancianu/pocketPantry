@@ -53,27 +53,34 @@ export function countTickFailures(
  * the save: the Batches are in the Pantry either way. The failures come back
  * counted by kind so Review can say so.
  */
+export async function postReceiptConfirm(
+  locale: string,
+  scanLanguage: string | undefined,
+  batches: NewBatch[],
+): Promise<ReceiptConfirmResult> {
+  const result = await apiRequest<ReceiptConfirmation>(
+    `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
+    { method: 'POST', body: { batches } },
+  );
+  const outcomes = await Promise.allSettled(
+    result.matchedShoppingItemIds.map((id) =>
+      apiRequest(
+        `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
+        {
+          method: 'PATCH',
+          body: { checked: true },
+        },
+      ),
+    ),
+  );
+  return { ...result, tickFailures: countTickFailures(outcomes) };
+}
+
 export function useReceiptConfirm(locale: string, scanLanguage?: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (batches: NewBatch[]): Promise<ReceiptConfirmResult> => {
-      const result = await apiRequest<ReceiptConfirmation>(
-        `/scan/receipt/confirm?${scanQuery(locale, scanLanguage)}`,
-        { method: 'POST', body: { batches } },
-      );
-      const outcomes = await Promise.allSettled(
-        result.matchedShoppingItemIds.map((id) =>
-          apiRequest(
-            `/shopping-list/items/${id}?${new URLSearchParams({ locale })}`,
-            {
-              method: 'PATCH',
-              body: { checked: true },
-            },
-          ),
-        ),
-      );
-      return { ...result, tickFailures: countTickFailures(outcomes) };
-    },
+    mutationFn: (batches: NewBatch[]) =>
+      postReceiptConfirm(locale, scanLanguage, batches),
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),

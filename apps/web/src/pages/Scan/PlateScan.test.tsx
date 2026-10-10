@@ -159,6 +159,40 @@ describe('Plate Scan in the Scan Session', () => {
     ).toEqual(expect.arrayContaining(['Milk', 'Pixie dust']));
   });
 
+  it('Add to pantry saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {
+    const calls = renderPlate();
+    scanViaGuide();
+    await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+    await pick(/Pancakes/);
+    await screen.findByTestId('card-result');
+    expect(
+      screen.getByRole('button', { name: /^Add to pantry/ }),
+    ).toBeEnabled();
+    await userEvent.click(
+      screen.getByRole('button', { name: /^Add to pantry/ }),
+    );
+    await waitFor(() =>
+      expect(calls.map((c) => c.key)).toContain(
+        'POST /api/shopping-list/items/bulk',
+      ),
+    );
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
+  it('Add to pantry does not save a Plate card that is still waiting for a dish', async () => {
+    const calls = renderPlate();
+    await scanThenDone();
+    await picker();
+    expect(
+      screen.getByRole('button', { name: /^Add to pantry/ }),
+    ).toBeDisabled();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/shopping-list/items/bulk',
+    );
+  });
+
   it('opens the ingredients for editing and adds them to the Shopping List, then drops the card', async () => {
     const calls = renderPlate();
     await scanThenDone();

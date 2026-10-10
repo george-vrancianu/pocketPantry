@@ -141,6 +141,9 @@
     "check_other": "Check {{count}} items",
     "more": "+{{count}}",
     "empty": "No photos yet.",
+    "add": "Add to pantry",
+    "addWaiting": "Add to pantry (waiting on {{count}})",
+    "discardAll": "Discard all",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
     "readAgain": "Read again"

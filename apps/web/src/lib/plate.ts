@@ -25,14 +25,16 @@ export function usePlateIngredients(locale: string) {
 }
 
 /** Adds reviewed Plate lines to the Shopping List, all or none; the server merges. */
+export const postShoppingItems = (locale: string, items: NewShoppingItem[]) =>
+  apiRequest<ShoppingList>(
+    `/shopping-list/items/bulk?${new URLSearchParams({ locale })}`,
+    { method: 'POST', body: { items } },
+  );
+
 export function useAddShoppingItems(locale: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (items: NewShoppingItem[]) =>
-      apiRequest<ShoppingList>(
-        `/shopping-list/items/bulk?${new URLSearchParams({ locale })}`,
-        { method: 'POST', body: { items } },
-      ),
+    mutationFn: (items: NewShoppingItem[]) => postShoppingItems(locale, items),
     onSuccess: (list) =>
       queryClient.setQueryData([...shoppingListQueryKey, locale], list),
   });

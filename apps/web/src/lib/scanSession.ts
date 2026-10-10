@@ -6,6 +6,9 @@ import type { ProposedLine, ScanMode } from './scan';
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
 
+/** The most Scans one Scan Session holds. */
+export const MAX_SESSION_SCANS = 20;
+
 /** One Scan in the Scan Session, from the double-tap until it is saved or removed. */
 export type SessionScan = {
   id: string;
@@ -15,7 +18,9 @@ export type SessionScan = {
   /** The prepared photo (a data URL) that is sent for reading. */
   image: string;
   thumbnail: string;
-  status: 'queued' | 'reading' | 'read';
+  status: 'queued' | 'reading' | 'read' | 'failed';
+  /** Why a failed Scan failed. */
+  failure?: 'error' | 'cap';
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
   /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
@@ -36,6 +41,7 @@ export type SessionAction =
     }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
+  | { type: 'fail'; id: string; reason: 'error' | 'cap' }
   | { type: 'remove'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
   | { type: 'pick'; id: string; lines: ProposedLine[] }
@@ -84,6 +90,14 @@ export function sessionReducer(
             : scan,
         ),
       };
+    case 'fail':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id
+            ? { ...scan, status: 'failed', failure: action.reason }
+            : scan,
+        ),
+      };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
     case 'readDishes':
@@ -109,7 +123,9 @@ export function sessionReducer(
 
 /** Scans still waiting or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter((scan) => scan.status !== 'read').length;
+  state.scans.filter(
+    (scan) => scan.status === 'queued' || scan.status === 'reading',
+  ).length;
 
 let session = emptySession;
 const listeners = new Set<() => void>();

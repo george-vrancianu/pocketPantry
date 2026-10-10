@@ -139,6 +139,9 @@
     "check_other": "Tjek {{count}} varer",
     "more": "+{{count}}",
     "empty": "Ingen fotos endnu.",
+    "add": "Tilføj til spisekammer",
+    "addWaiting": "Tilføj til spisekammer (venter på {{count}})",
+    "discardAll": "Kasser alle",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
     "readAgain": "Læs igen"

@@ -13,7 +13,7 @@ import {
   readReview,
   invalidFields,
   type ReviewField,
-  toNewBatch,
+  toSaveBatches,
   toReviewLine,
   type ReviewLine,
 } from '../../../lib/review';
@@ -223,10 +223,7 @@ export function useReviewScreen() {
       addShoppingItems.mutate(included.map(toNewShoppingItem), done);
       return;
     }
-    const batches = included.map(toNewBatch).map((batch) =>
-      // The queue only records the source of Unmatched names.
-      batch.rawName ? { ...batch, source: mode } : batch,
-    );
+    const batches = toSaveBatches(included, mode);
     if (mode === 'receipt') confirmReceipt.mutate(batches, done);
     else addBatches.mutate(batches, done);
   };
