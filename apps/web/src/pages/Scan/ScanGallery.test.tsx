@@ -208,7 +208,7 @@ describe('Gallery import into the Scan Session', () => {
       expect(await screen.findByTestId('review-overview')).toBeInTheDocument();
       expect(
         within(await screen.findByTestId('review-card')).getByTestId(
-          'card-result',
+          'card-chip',
         ),
       ).toHaveTextContent('Greek yogurt');
     });

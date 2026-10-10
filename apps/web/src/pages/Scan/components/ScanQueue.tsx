@@ -34,7 +34,7 @@ export function ScanQueue({ scans }: { scans: SessionScan[] }) {
       }}
     >
       {scans.map((scan) => {
-        const reading = scan.status !== 'read';
+        const reading = scan.status !== 'read' && scan.status !== 'uncropped';
         return (
           <Box
             component="li"

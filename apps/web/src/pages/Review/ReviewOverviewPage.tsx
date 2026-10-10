@@ -6,10 +6,17 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import {
+  ReceiptCropper,
+  type ReceiptCrop,
+} from '../Scan/components/ReceiptCropper';
+import { cropToReceiptArea } from '../../lib/image';
 import type { ProposedLine } from '../../lib/scan';
+import { readScans } from '../../lib/scanReads';
 import {
   dispatchScanSession,
   pendingCount,
@@ -26,14 +33,25 @@ const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {
-  const { t } = useTranslation('review');
+  const { t, i18n } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
   const navigate = useNavigate();
   const session = useScanSession();
   const reading = pendingCount(session);
+  /** The gallery receipt being cropped. */
+  const [cropping, setCropping] = useState<SessionScan | null>(null);
+
+  const crop = async ({ area, rotation }: ReceiptCrop) => {
+    const scan = cropping;
+    setCropping(null);
+    if (!scan?.source) return;
+    const image = await cropToReceiptArea(scan.source, area, rotation);
+    dispatchScanSession({ type: 'crop', id: scan.id, image });
+    readScans(i18n.language);
+  };
 
   const card = (scan: SessionScan) => {
-    const isReading = scan.status !== 'read';
+    const isReading = scan.status === 'queued' || scan.status === 'reading';
     // Lines Receipt Scan left out are not saved, so they are not counted or shown.
     const lines = (scan.lines ?? []).filter((line) => !line.excluded);
     const check = lines.filter(
@@ -99,6 +117,25 @@ export function ReviewOverviewPage() {
                 <Spinner label={t('overview.reading')} />
               </Box>
               <Typography>{t('overview.reading')}</Typography>
+            </Box>
+          ) : scan.status === 'uncropped' ? (
+            <Box
+              component="button"
+              type="button"
+              onClick={() => setCropping(scan)}
+              sx={{
+                display: 'block',
+                p: 0,
+                mt: 0.5,
+                border: 0,
+                background: 'none',
+                color: tokens.color.accent,
+                font: 'inherit',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              {t('overview.crop')}
             </Box>
           ) : (
             <>
@@ -228,6 +265,13 @@ export function ReviewOverviewPage() {
           {session.scans.map(card)}
         </Box>
       )}
+      {cropping?.source ? (
+        <ReceiptCropper
+          photo={cropping.source}
+          onConfirm={(value) => void crop(value)}
+          onCancel={() => setCropping(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -13,8 +13,6 @@ import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
-const IMAGE = 'data:image/jpeg;base64,YQ==';
-
 // jsdom has no camera or canvas: the camera and the resizer are the seams.
 const camera = vi.hoisted(() => ({ torchSupported: true }));
 vi.mock('../../lib/camera', async () => {
@@ -167,22 +165,6 @@ describe('ScanPage', () => {
       ).toBeEnabled();
     },
   );
-
-  it('turns a gallery photo into a proposed line on the Review screen', async () => {
-    const calls = renderScan({
-      'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
-    });
-    await userEvent.upload(
-      screen.getByTestId('gallery-input'),
-      new File(['x'], 'cheese.jpg', { type: 'image/jpeg' }),
-    );
-    expect(await findReviewRow('Parmesan')).toBeInTheDocument();
-    expect(calls.find((c) => c.key === 'POST /api/scan/product')?.body).toEqual(
-      { productImage: IMAGE },
-    );
-    await userEvent.click(await findReviewRow('Parmesan'));
-    expect(screen.getByLabelText('Expiry date')).toHaveValue('24.12.2026');
-  });
 
   it('turns a camera shot into a proposed line on the Review screen', async () => {
     renderScan({

@@ -132,6 +132,7 @@
     "allRead": "alle læst",
     "camera": "Kamera",
     "reading": "Læser foto…",
+    "crop": "Beskær kvitteringsbilledet",
     "remove": "Fjern foto",
     "items_one": "{{count}} vare",
     "items_other": "{{count}} varer",
