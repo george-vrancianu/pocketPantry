@@ -12,49 +12,34 @@ type Props = {
   onChange: (language: ScanLanguage) => void;
 };
 
-/** "Reading as: Română ▾": the language this Scan is read in, picked without touching the UI language. */
+/** The language this Scan is read in ("EN ▾"), picked without touching the UI language. */
 export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
   const { t } = useTranslation('scan');
   return (
     <Box
-      component="label"
+      component="select"
+      aria-label={t('scanLanguage.label')}
+      value={value}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.value as ScanLanguage)}
       sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '6px',
         height: 36,
-        px: '14px',
+        px: '10px',
         borderRadius: '18px',
         ...glassControl(disabled),
-        cursor: 'default',
+        fontFamily: 'inherit',
         fontSize: 13,
-        '&:focus-within': glassFocusRing,
+        fontWeight: 700,
+        cursor: disabled ? 'default' : 'pointer',
+        '&:focus-visible': glassFocusRing,
+        '& option': { color: tokens.color.ink },
       }}
     >
-      {t('scanLanguage.label')}
-      <Box
-        component="select"
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value as ScanLanguage)}
-        sx={{
-          border: 0,
-          outline: 0,
-          background: 'transparent',
-          color: 'inherit',
-          fontFamily: 'inherit',
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: disabled ? 'default' : 'pointer',
-          '& option': { color: tokens.color.ink },
-        }}
-      >
-        {scanLanguageOptions(locale).map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </Box>
+      {scanLanguageOptions(locale).map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
     </Box>
   );
 }

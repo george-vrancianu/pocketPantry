@@ -38,11 +38,11 @@ describe('scan language choice', () => {
 });
 
 describe('scanLanguageOptions', () => {
-  it('lists the UI language first, each under its own name', () => {
+  it('lists the UI language first, each as a compact code', () => {
     expect(scanLanguageOptions('ro')).toEqual([
-      { value: 'ro', label: 'Română' },
-      { value: 'en', label: 'English' },
-      { value: 'da', label: 'Dansk' },
+      { value: 'ro', label: 'RO' },
+      { value: 'en', label: 'EN' },
+      { value: 'da', label: 'DA' },
     ]);
     expect(scanLanguageOptions('en').map((o) => o.value)).toEqual([
       'en',
@@ -51,11 +51,11 @@ describe('scanLanguageOptions', () => {
     ]);
   });
 
-  it('puts Dansk first under a Danish UI', () => {
+  it('puts DA first under a Danish UI', () => {
     expect(scanLanguageOptions('da')).toEqual([
-      { value: 'da', label: 'Dansk' },
-      { value: 'en', label: 'English' },
-      { value: 'ro', label: 'Română' },
+      { value: 'da', label: 'DA' },
+      { value: 'en', label: 'EN' },
+      { value: 'ro', label: 'RO' },
     ]);
   });
 });
