@@ -67,7 +67,10 @@ describe('Scan Session limits', () => {
     await scanOnce();
     expect(getScanSession().scans).toHaveLength(20);
     expect(screen.getAllByTestId('scan-thumbnail')).toHaveLength(20);
-    expect(await screen.findByText(/20 photos/)).toBeInTheDocument();
+    const toast = await screen.findByText(/20 photos/);
+    expect((toast.closest('.MuiAlert-root') as HTMLElement).className).toMatch(
+      /MuiAlert-\w*Warning/,
+    );
   });
 
   it('takes Scans again once a Scan has left the Scan Session', async () => {
@@ -119,6 +122,54 @@ describe('Scan Session limits', () => {
       );
       expect(confirm).not.toHaveBeenCalled();
       expect(await screen.findByText('home screen')).toBeInTheDocument();
+    });
+  });
+
+  describe('a read that fails after the Scan Session was discarded', () => {
+    const failLater = async () => {
+      let reject!: () => void;
+      vi.stubGlobal('fetch', (input: RequestInfo | URL) =>
+        String(input).includes('/api/scan/')
+          ? new Promise<Response>((resolve) => {
+              reject = () =>
+                resolve(
+                  Response.json(
+                    { code: 'internal_server_error', params: {} },
+                    { status: 500 },
+                  ),
+                );
+            })
+          : Promise.resolve(Response.json({}, { status: 404 })),
+      );
+      renderWithProviders(
+        <Routes>
+          <Route path="/scan" element={<ScanPage />} />
+          <Route path="/" element={<p>home screen</p>} />
+        </Routes>,
+        { route: '/scan?mode=product' },
+      );
+      await scanOnce();
+      return async () => {
+        await act(async () => reject());
+      };
+    };
+    const sorry = /Something went wrong on our side/;
+
+    it('shows no error on the next Scan screen after Discard all', async () => {
+      const fail = await failLater();
+      act(() => resetScanSession());
+      await fail();
+      expect(screen.queryByText(sorry)).not.toBeInTheDocument();
+    });
+
+    it('shows no error after Close was confirmed and the camera is reopened', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      const fail = await failLater();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Close scanner' }),
+      );
+      await fail();
+      expect(screen.queryByText(sorry)).not.toBeInTheDocument();
     });
   });
 });

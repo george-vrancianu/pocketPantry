@@ -245,3 +245,72 @@ describe('Review overview: Discard all', () => {
     expect(screen.queryByText(/^Added results/)).not.toBeInTheDocument();
   });
 });
+
+const alertOf = (text: string) =>
+  screen.getByText(text).closest('.MuiAlert-root') as HTMLElement;
+
+describe('Review overview: toasts and saving state', () => {
+  beforeEach(() => {
+    clearReview();
+    resetScanSession();
+    localStorage.clear();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows "Added results" as a success, not a warning', async () => {
+    await seed('a', 'product', [line('Yogurt')]);
+    renderOverview();
+    await userEvent.click(add());
+    await screen.findByText('Added results from 1 photo');
+    const alert = alertOf('Added results from 1 photo');
+    expect(alert.className).toMatch(/MuiAlert-\w*Success/);
+    expect(alert.className).not.toMatch(/MuiAlert-\w*Warning/);
+  });
+
+  it('says "Discarded" on the camera after Discard all', async () => {
+    await seed('a', 'product', [line('Yogurt')]);
+    renderOverview();
+    await userEvent.click(screen.getByRole('button', { name: 'Discard all' }));
+    expect(await screen.findByText('Discarded')).toBeInTheDocument();
+    expect(alertOf('Discarded').className).not.toMatch(/MuiAlert-\w*Warning/);
+  });
+
+  it('disables opening and removing cards while Add is saving, and saves each card once', async () => {
+    await seed('a', 'product', [line('Yogurt')]);
+    await seed('b', 'ingredients', [line('Rice')]);
+    const releases: Array<() => void> = [];
+    const saves: unknown[] = [];
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), window.location.origin).pathname;
+      if (path === '/api/pantry/batches/bulk') {
+        saves.push(init?.body);
+        return new Promise<Response>((resolve) =>
+          releases.push(() => resolve(Response.json({ batches: [] }))),
+        );
+      }
+      return Promise.resolve(
+        Response.json({ code: 'not_found', params: {} }, { status: 404 }),
+      );
+    });
+    renderWithProviders(
+      <Routes>
+        <Route path="/scan" element={<ScanPage />} />
+        <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      </Routes>,
+      { route: '/scan/review' },
+    );
+    await userEvent.click(add());
+    await waitFor(() => expect(saves).toHaveLength(1));
+    for (const card of cards()) {
+      expect(within(card).getByTestId('card-result')).toBeDisabled();
+      expect(
+        within(card).getByRole('button', { name: /remove/i }),
+      ).toBeDisabled();
+    }
+    await act(async () => releases[0]());
+    await waitFor(() => expect(saves).toHaveLength(2));
+    await act(async () => releases[1]());
+    await screen.findByText('Added results from 2 photos');
+    expect(saves).toHaveLength(2);
+  });
+});
