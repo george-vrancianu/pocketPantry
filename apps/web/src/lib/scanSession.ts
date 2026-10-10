@@ -8,6 +8,9 @@ export const MAX_CONCURRENT_READS = 2;
 /** Why a read failed: the Scan Cap, or any other error. */
 export type ScanFailure = 'error' | 'cap';
 
+/** The most Scans one Scan Session holds. */
+export const MAX_SESSION_SCANS = 20;
+
 /** One Scan in the Scan Session, from the double-tap until it is saved or removed. */
 export type SessionScan = {
   id: string;
@@ -17,8 +20,13 @@ export type SessionScan = {
   /** The prepared photo (a data URL) that is sent for reading. */
   image: string;
   thumbnail: string;
-  status: 'queued' | 'reading' | 'read' | 'failed';
+  /** `uncropped`: a gallery receipt waiting for the Member to crop it in Review. */
+  status: 'uncropped' | 'queued' | 'reading' | 'read' | 'failed';
+  /** The gallery photo an uncropped receipt is cropped from. */
+  source?: Blob;
+  /** Why a failed Scan failed. */
   failure?: ScanFailure;
+  /** The API error code and params of a failed read. */
   errorCode?: string;
   errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
@@ -33,9 +41,10 @@ export type SessionAction =
       type: 'enqueue';
       scan: Pick<
         SessionScan,
-        'id' | 'mode' | 'scanLanguage' | 'image' | 'thumbnail'
+        'id' | 'mode' | 'scanLanguage' | 'image' | 'thumbnail' | 'source'
       >;
     }
+  | { type: 'crop'; id: string; image: string }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
   | {
@@ -57,7 +66,26 @@ export function sessionReducer(
   switch (action.type) {
     case 'enqueue':
       return {
-        scans: [...state.scans, { ...action.scan, status: 'queued' }],
+        scans: [
+          ...state.scans,
+          {
+            ...action.scan,
+            status: action.scan.source ? 'uncropped' : 'queued',
+          },
+        ],
+      };
+    case 'crop':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id
+            ? {
+                ...scan,
+                image: action.image,
+                status: 'queued',
+                source: undefined,
+              }
+            : scan,
+        ),
       };
     case 'start': {
       // Promote the oldest waiting Scans into the free read slots.
@@ -126,11 +154,13 @@ const FINAL_ERRORS = [
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
-/** Scans still waiting or being read. */
+/** Whether a Scan's lines are in. */
+export const isRead = (scan: SessionScan) => scan.status === 'read';
+
+/** Scans not read yet and not failed: waiting for a crop, for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>
-  state.scans.filter(
-    (scan) => scan.status === 'queued' || scan.status === 'reading',
-  ).length;
+  state.scans.filter((scan) => !isRead(scan) && scan.status !== 'failed')
+    .length;
 
 /** Whether a Scan hit the Scan Cap; no more Scans can be taken until it is retried or removed. */
 export const capReached = (state: SessionState) =>
@@ -141,6 +171,12 @@ const listeners = new Set<() => void>();
 
 function setSession(next: SessionState) {
   if (next === session) return;
+  // A gallery receipt's thumbnail is an object URL: free it when the Scan goes or is cropped.
+  const kept = new Set(next.scans.map((scan) => scan.thumbnail));
+  session.scans.forEach(({ thumbnail }) => {
+    if (thumbnail.startsWith('blob:') && !kept.has(thumbnail))
+      URL.revokeObjectURL(thumbnail);
+  });
   session = next;
   listeners.forEach((listener) => listener());
 }

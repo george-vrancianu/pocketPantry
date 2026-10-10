@@ -1,20 +1,32 @@
 import {
+  Alert,
   Box,
+  Button,
   CloseIcon,
   Link,
   Spinner,
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import { useEffect, useRef, useState } from 'react';
 import { readScans } from '../../lib/scanReads';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { translateApiError } from '../../i18n/translateApiError';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import {
+  ReceiptCropper,
+  type ReceiptCrop,
+} from '../../components/ReceiptCropper';
+import { cropToReceiptArea } from '../../lib/image';
 import type { ProposedLine } from '../../lib/scan';
+import { useSaveScan } from '../../lib/saveScan';
 import {
   canRetry,
   dispatchScanSession,
+  getScanSession,
   pendingCount,
+  resetScanSession,
   useScanSession,
   type SessionScan,
 } from '../../lib/scanSession';
@@ -28,11 +40,72 @@ const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
  * the Scans were taken. A card opens the line editor for that Scan alone, at /scan/review/:scanId.
  */
 export function ReviewOverviewPage() {
-  const { t, i18n } = useTranslation('review');
+  const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
+  const { t: tAll, i18n } = useTranslation();
+  const saveScan = useSaveScan(i18n.language);
+  const [saving, setSaving] = useState(false);
+  // Why each card's last save failed; the card stays until a later Add saves it.
+  const [errors, setErrors] = useState<Record<string, unknown>>({});
   const navigate = useNavigate();
   const session = useScanSession();
   const reading = pendingCount(session);
+  /** The gallery receipt being cropped. */
+  const [cropping, setCropping] = useState<SessionScan | null>(null);
+  const [cropFailed, setCropFailed] = useState<string | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  // The Crop button is gone once the card is read: keep the focus on the card.
+  useEffect(() => {
+    if (!focusId) return;
+    document.querySelector<HTMLElement>(`[data-scan-id="${focusId}"]`)?.focus();
+    setFocusId(null);
+  }, [focusId]);
+
+  const crop = async ({ area, rotation }: ReceiptCrop) => {
+    const scan = cropping;
+    setCropping(null);
+    if (!scan?.source) return;
+    try {
+      const image = await cropToReceiptArea(scan.source, area, rotation);
+      setCropFailed(null);
+      dispatchScanSession({ type: 'crop', id: scan.id, image });
+      setFocusId(scan.id);
+      readScans(i18n.language);
+    } catch {
+      setCropFailed(scan.id);
+    }
+  };
+
+  const anyRead = session.scans.some((scan) => scan.status === 'read');
+  // Photos saved over every press of Add, for the toast.
+  const added = useRef(0);
+
+  /** Saves each read card in turn, trying all of them; the cards that fail stay with their error. */
+  const addAll = async () => {
+    setSaving(true);
+    setErrors({});
+    for (const scan of getScanSession().scans) {
+      // Opened and saved in the editor, or removed, since Add started.
+      if (!getScanSession().scans.some((s) => s.id === scan.id)) continue;
+      if (scan.status !== 'read') continue;
+      try {
+        await saveScan(scan);
+        dispatchScanSession({ type: 'remove', id: scan.id });
+        added.current += 1;
+      } catch (error) {
+        setErrors((was) => ({ ...was, [scan.id]: error }));
+      }
+    }
+    setSaving(false);
+    // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
+    if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
+    resetScanSession();
+    navigate('/scan', { state: { added: added.current } });
+  };
+  const discardAll = () => {
+    resetScanSession();
+    navigate('/scan', { state: { discarded: true } });
+  };
 
   const card = (scan: SessionScan) => {
     const isFailed = scan.status === 'failed';
@@ -51,6 +124,8 @@ export function ReviewOverviewPage() {
         component="li"
         key={scan.id}
         data-testid="review-card"
+        data-scan-id={scan.id}
+        tabIndex={-1}
         sx={{
           position: 'relative',
           display: 'flex',
@@ -114,12 +189,37 @@ export function ReviewOverviewPage() {
                 </Typography>
               ) : null}
             </>
+          ) : scan.status === 'uncropped' ? (
+            <>
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setCropping(scan)}
+                sx={{
+                  display: 'block',
+                  p: 0,
+                  mt: 0.5,
+                  border: 0,
+                  background: 'none',
+                  color: tokens.color.accent,
+                  font: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {t('overview.crop')}
+              </Box>
+              {cropFailed === scan.id ? (
+                <Alert>{t('errors:scan.image_invalid')}</Alert>
+              ) : null}
+            </>
           ) : (
             <>
               <Box
                 component="button"
                 type="button"
                 data-testid="card-result"
+                disabled={saving}
                 onClick={() => navigate(`/scan/review/${scan.id}`)}
                 sx={{
                   display: 'block',
@@ -185,6 +285,11 @@ export function ReviewOverviewPage() {
                   {t('overview.check', { count: check })}
                 </Typography>
               ) : null}
+              {errors[scan.id] ? (
+                <Box sx={{ mt: 1 }}>
+                  <Alert>{translateApiError(tAll, errors[scan.id])}</Alert>
+                </Box>
+              ) : null}
             </>
           )}
         </Box>
@@ -193,6 +298,7 @@ export function ReviewOverviewPage() {
             component="button"
             type="button"
             aria-label={t('overview.remove')}
+            disabled={saving}
             onClick={() => {
               dispatchScanSession({ type: 'remove', id: scan.id });
               // Scans held back by the Scan Cap can go on now.
@@ -246,6 +352,28 @@ export function ReviewOverviewPage() {
           {session.scans.map(card)}
         </Box>
       )}
+      {session.scans.length > 0 ? (
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+          <Button
+            onClick={() => void addAll()}
+            disabled={reading > 0 || saving || !anyRead}
+          >
+            {reading > 0
+              ? t('overview.addWaiting', { count: reading })
+              : t('overview.add')}
+          </Button>
+          <Button variant="secondary" onClick={discardAll} disabled={saving}>
+            {t('overview.discardAll')}
+          </Button>
+        </Box>
+      ) : null}
+      {cropping?.source ? (
+        <ReceiptCropper
+          photo={cropping.source}
+          onConfirm={(value) => void crop(value)}
+          onCancel={() => setCropping(null)}
+        />
+      ) : null}
     </div>
   );
 }

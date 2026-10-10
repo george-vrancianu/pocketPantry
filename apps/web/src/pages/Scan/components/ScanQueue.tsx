@@ -1,6 +1,6 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { canRetry, type SessionScan } from '../../../lib/scanSession';
+import { canRetry, isRead, type SessionScan } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
@@ -40,25 +40,35 @@ export function ScanQueue({
       }}
     >
       {scans.map((scan) => {
+        const uncropped = scan.status === 'uncropped';
         const failed = scan.status === 'failed';
-        const reading = !failed && scan.status !== 'read';
+        const reading = !uncropped && !failed && !isRead(scan);
+        const state = uncropped
+          ? 'uncropped'
+          : failed
+            ? 'failed'
+            : reading
+              ? 'reading'
+              : 'read';
         return (
           <Box
             component="li"
             key={scan.id}
             data-testid="scan-thumbnail"
-            data-state={failed ? 'failed' : reading ? 'reading' : 'read'}
+            data-state={state}
             aria-label={
               scan.failure === 'cap'
                 ? t('capReached')
                 : scan.errorCode && !canRetry(scan)
                   ? t(`errors:${scan.errorCode}`, scan.errorParams)
                   : t(
-                      failed
-                        ? 'queue.failed'
-                        : reading
-                          ? 'queue.reading'
-                          : 'queue.read',
+                      uncropped
+                        ? 'queue.needsCrop'
+                        : failed
+                          ? 'queue.failed'
+                          : reading
+                            ? 'queue.reading'
+                            : 'queue.read',
                     )
             }
             sx={{
@@ -171,7 +181,7 @@ export function ScanQueue({
                   !
                 </Box>
               </>
-            ) : (
+            ) : uncropped ? null : (
               <Box
                 aria-hidden="true"
                 sx={{

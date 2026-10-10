@@ -186,3 +186,12 @@ export function toNewBatch(line: ReviewLine): NewBatch {
     productDescription: line.description.trim() || null,
   };
 }
+
+/** The Batches a Scan's lines are saved as; the queue only records the source of Unmatched names. */
+export const toSaveBatches = (
+  lines: ReviewLine[],
+  mode: Exclude<ScanMode, 'plate'>,
+) =>
+  lines
+    .map(toNewBatch)
+    .map((batch) => (batch.rawName ? { ...batch, source: mode } : batch));

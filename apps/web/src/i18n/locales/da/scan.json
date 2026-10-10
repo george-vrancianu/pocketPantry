@@ -66,12 +66,6 @@
     "next": "Næste foto",
     "finish": "Afslut",
     "full": "Du har nået grænsen på {{max}} dele. Afslut, eller tag en del om eller slet den.",
-    "readingBatch": "Læser foto {{number}} af {{total}}…",
-    "photoOf": "Foto {{number}} af {{total}}",
-    "queued_one": "Yderligere {{count}} foto venter. Tryk på Næste foto for at beskære det.",
-    "queued_other": "Yderligere {{count}} fotos venter. Tryk på Næste foto for at beskære det næste.",
-    "tooMany_one": "Du valgte {{selected}} fotos, men der er kun 1 del tilbage (grænsen er 10). Vælg færre fotos.",
-    "tooMany_other": "Du valgte {{selected}} fotos, men der er kun {{count}} dele tilbage (grænsen er 10). Vælg færre fotos.",
     "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
   },
   "done": "Færdig",
@@ -80,10 +74,17 @@
   "queue": {
     "label": "Tagne fotos",
     "reading": "Læser foto",
+    "needsCrop": "Skal beskæres",
     "read": "Foto læst",
     "failed": "Fotoet kunne ikke læses",
     "retry": "Læs foto igen"
   },
+  "added_one": "Resultater tilføjet fra {{count}} foto",
+  "added_other": "Resultater tilføjet fra {{count}} fotos",
+  "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj dem til spisekammeret først.",
+  "discardScans_one": "Kasser {{count}} foto?",
+  "discardScans_other": "Kasser {{count}} fotos?",
+  "discarded": "Kasseret",
   "capReached": "Daglig scanningsgrænse nået",
   "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen."
 }

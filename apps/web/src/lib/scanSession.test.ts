@@ -85,6 +85,66 @@ describe('Scan Session reducer', () => {
     });
   });
 
+  describe('a gallery receipt', () => {
+    const source = new Blob(['x']);
+
+    it('waits uncropped when it is enqueued with its source photo', () => {
+      const state = run(enqueue('a', { mode: 'receipt', source }));
+      expect(status(state)).toEqual([['a', 'uncropped']]);
+    });
+
+    it('is not started by start', () => {
+      const state = run(enqueue('a', { mode: 'receipt', source }), {
+        type: 'start',
+      });
+      expect(status(state)).toEqual([['a', 'uncropped']]);
+    });
+
+    it('does not use up a read slot', () => {
+      const state = run(
+        enqueue('a', { mode: 'receipt', source }),
+        enqueue('b'),
+        enqueue('c'),
+        { type: 'start' },
+      );
+      expect(status(state)).toEqual([
+        ['a', 'uncropped'],
+        ['b', 'reading'],
+        ['c', 'reading'],
+      ]);
+    });
+
+    it('is pending until it is cropped and read', () => {
+      expect(pendingCount(run(enqueue('a', { source })))).toBe(1);
+    });
+
+    it('crop gives it the cropped image and queues it for reading', () => {
+      const state = run(enqueue('a', { mode: 'receipt', source }), {
+        type: 'crop',
+        id: 'a',
+        image: 'cropped',
+      });
+      expect(status(state)).toEqual([['a', 'queued']]);
+      expect(state.scans[0].image).toBe('cropped');
+      expect(state.scans[0].source).toBeUndefined();
+      expect(sessionReducer(state, { type: 'start' }).scans[0].status).toBe(
+        'reading',
+      );
+    });
+
+    it('crop leaves the other Scans alone', () => {
+      const state = run(enqueue('a', { source }), enqueue('b', { source }), {
+        type: 'crop',
+        id: 'b',
+        image: 'cropped',
+      });
+      expect(status(state)).toEqual([
+        ['a', 'uncropped'],
+        ['b', 'queued'],
+      ]);
+    });
+  });
+
   describe('start', () => {
     it('starts the oldest waiting Scans, at most 2 reading at once', () => {
       const state = run(

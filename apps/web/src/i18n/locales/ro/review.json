@@ -139,6 +139,7 @@
     "allRead": "toate citite",
     "camera": "Cameră",
     "reading": "Citim fotografia…",
+    "crop": "Decupează fotografia bonului",
     "remove": "Elimină fotografia",
     "items_one": "{{count}} articol",
     "items_few": "{{count}} articole",
@@ -148,6 +149,9 @@
     "check_other": "Verifică {{count}} de articole",
     "more": "+{{count}}",
     "empty": "Încă nu ai fotografii.",
+    "add": "Adaugă în cămară",
+    "addWaiting": "Adaugă în cămară (se așteaptă {{count}})",
+    "discardAll": "Renunță la toate",
     "failed": "Nu am putut citi, refă poza"
   }
 }
