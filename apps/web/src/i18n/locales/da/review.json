@@ -145,6 +145,7 @@
     "add": "Tilføj til spisekammer",
     "addWaiting": "Tilføj til spisekammer (venter på {{count}})",
     "discardAll": "Kasser alle",
+    "failed": "Kunne ikke læses, tag om",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
     "readAgain": "Læs igen"

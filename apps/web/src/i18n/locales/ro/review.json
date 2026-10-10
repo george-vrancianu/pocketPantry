@@ -154,6 +154,7 @@
     "add": "Adaugă în cămară",
     "addWaiting": "Adaugă în cămară (se așteaptă {{count}})",
     "discardAll": "Renunță la toate",
+    "failed": "Nu am putut citi, refă poza",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
     "readAgain": "Citește din nou"

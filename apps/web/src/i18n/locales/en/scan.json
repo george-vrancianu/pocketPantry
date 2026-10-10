@@ -55,12 +55,16 @@
     "label": "Photos taken",
     "reading": "Reading photo",
     "needsCrop": "Needs crop",
-    "read": "Photo read"
+    "read": "Photo read",
+    "failed": "Could not read photo",
+    "retry": "Retry reading photo"
   },
   "added_one": "Added results from {{count}} photo",
   "added_other": "Added results from {{count}} photos",
   "limit": "A Scan Session holds at most {{max}} photos. Add these to the pantry first.",
   "discardScans_one": "Discard {{count}} photo?",
   "discardScans_other": "Discard {{count}} photos?",
-  "discarded": "Discarded"
+  "discarded": "Discarded",
+  "capReached": "Daily scan limit reached",
+  "notAdded": "That photo could not be added. Try again."
 }

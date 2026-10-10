@@ -7,6 +7,9 @@ import type { ProposedLine, ScanMode } from './scan';
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
 
+/** Why a read failed: the Scan Cap, or any other error. */
+export type ScanFailure = 'error' | 'cap';
+
 /** The most Scans one Scan Session holds. */
 export const MAX_SESSION_SCANS = 20;
 
@@ -24,7 +27,10 @@ export type SessionScan = {
   /** The gallery photo an uncropped receipt is cropped from. */
   source?: Blob;
   /** Why a failed Scan failed. */
-  failure?: 'error' | 'cap';
+  failure?: ScanFailure;
+  /** The API error code and params of a failed read. */
+  errorCode?: string;
+  errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
   /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
@@ -48,7 +54,14 @@ export type SessionAction =
   | { type: 'crop'; id: string; image: string }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
-  | { type: 'fail'; id: string; reason: 'error' | 'cap' }
+  | {
+      type: 'fail';
+      id: string;
+      reason: ScanFailure;
+      code?: string;
+      params?: Record<string, unknown>;
+    }
+  | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'merge'; id: string }
   | { type: 'split'; id: string }
@@ -122,7 +135,27 @@ export function sessionReducer(
       return {
         scans: state.scans.map((scan) =>
           scan.id === action.id
-            ? { ...scan, status: 'failed', failure: action.reason }
+            ? {
+                ...scan,
+                status: 'failed',
+                failure: action.reason,
+                errorCode: action.code,
+                errorParams: action.params,
+              }
+            : scan,
+        ),
+      };
+    case 'retry':
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id && scan.status === 'failed'
+            ? {
+                ...scan,
+                status: 'queued',
+                failure: undefined,
+                errorCode: undefined,
+                errorParams: undefined,
+              }
             : scan,
         ),
       };
@@ -176,6 +209,18 @@ export function sessionReducer(
   }
 }
 
+/** Errors a retry cannot fix: the same photo would fail the same way. */
+const FINAL_ERRORS = [
+  'scan.too_many_items',
+  'scan.image_too_large',
+  'scan.image_invalid',
+  'scan.nothing_found',
+];
+
+/** Whether tapping a failed Scan to read it again can change anything. */
+export const canRetry = (scan: SessionScan) =>
+  !FINAL_ERRORS.includes(scan.errorCode ?? '');
+
 /** Whether a Scan's lines are in. */
 export const isRead = (scan: SessionScan) => scan.status === 'read';
 
@@ -196,6 +241,10 @@ export function canMerge(state: SessionState, id: string): boolean {
 export const pendingCount = (state: SessionState) =>
   state.scans.filter((scan) => !isRead(scan) && scan.status !== 'failed')
     .length;
+
+/** Whether a Scan hit the Scan Cap; no more Scans can be taken until it is retried or removed. */
+export const capReached = (state: SessionState) =>
+  state.scans.some((scan) => scan.failure === 'cap');
 
 let session = emptySession;
 const listeners = new Set<() => void>();

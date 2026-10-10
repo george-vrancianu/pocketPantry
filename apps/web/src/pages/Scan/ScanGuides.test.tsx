@@ -202,7 +202,7 @@ describe('Scan guide hint', () => {
     });
     expect(hint()).toBeInTheDocument();
     scanViaGuide();
-    await screen.findByRole('alert');
+    await screen.findByTestId('scan-thumbnail');
     expect(hint()).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('radio', { name: 'Plate' }));
     expect(hint()).not.toBeInTheDocument();

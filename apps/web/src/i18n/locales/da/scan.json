@@ -55,12 +55,16 @@
     "label": "Tagne fotos",
     "reading": "Læser foto",
     "needsCrop": "Skal beskæres",
-    "read": "Foto læst"
+    "read": "Foto læst",
+    "failed": "Fotoet kunne ikke læses",
+    "retry": "Læs foto igen"
   },
   "added_one": "Resultater tilføjet fra {{count}} foto",
   "added_other": "Resultater tilføjet fra {{count}} fotos",
   "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj dem til spisekammeret først.",
   "discardScans_one": "Kasser {{count}} foto?",
   "discardScans_other": "Kasser {{count}} fotos?",
-  "discarded": "Kasseret"
+  "discarded": "Kasseret",
+  "capReached": "Daglig scanningsgrænse nået",
+  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen."
 }

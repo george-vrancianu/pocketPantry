@@ -228,27 +228,13 @@ describe('Scan Session on the Scan screen', () => {
   });
 
   describe('a read that fails', () => {
-    const nothingFound = /We could not spot any ingredients/;
-
-    it('is reported on the Scan screen the Member returns to', async () => {
+    it('leaves the Scan as a failed thumbnail, also after leaving the screen', async () => {
       renderScan();
       await scanOnce();
       await userEvent.click(done());
       await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
       await answer(0, []);
-      expect(await screen.findByText(nothingFound)).toBeInTheDocument();
-      expect(thumbnails()).toHaveLength(0);
-    });
-
-    it('is reported when the Member comes back after it failed', async () => {
-      renderScan();
-      await scanOnce();
-      await userEvent.click(done());
-      await answer(0, []);
-      // An empty overview may send the Member back on its own.
-      const camera = screen.queryByRole('link', { name: 'Camera' });
-      if (camera) await userEvent.click(camera);
-      expect(await screen.findByText(nothingFound)).toBeInTheDocument();
+      await waitFor(() => expect(states()).toEqual(['failed']));
     });
   });
 

@@ -56,7 +56,9 @@
     "label": "Fotografii făcute",
     "reading": "Citim fotografia",
     "needsCrop": "Trebuie decupată",
-    "read": "Fotografie citită"
+    "read": "Fotografie citită",
+    "failed": "Fotografia nu a putut fi citită",
+    "retry": "Citește din nou fotografia"
   },
   "added_one": "Rezultate adăugate din {{count}} fotografie",
   "added_few": "Rezultate adăugate din {{count}} fotografii",
@@ -65,5 +67,7 @@
   "discardScans_one": "Renunți la {{count}} fotografie?",
   "discardScans_few": "Renunți la {{count}} fotografii?",
   "discardScans_other": "Renunți la {{count}} de fotografii?",
-  "discarded": "Eliminate"
+  "discarded": "Eliminate",
+  "capReached": "Limita zilnică de scanări a fost atinsă",
+  "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou."
 }
