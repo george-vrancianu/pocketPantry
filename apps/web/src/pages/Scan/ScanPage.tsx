@@ -1,6 +1,7 @@
 import {
   Alert,
   Box,
+  Snackbar,
   CloseIcon,
   FlashIcon,
   GalleryIcon,
@@ -353,6 +354,16 @@ export function ScanPage() {
           onCancel={screen.cancelCrop}
         />
       ) : null}
+
+      <Snackbar
+        open={screen.toast !== null}
+        onClose={screen.clearToast}
+        bottom={170}
+      >
+        <Alert severity="warning" role="status">
+          {screen.toast}
+        </Alert>
+      </Snackbar>
 
       {infoOpen ? <InfoSheet onClose={closeInfo} /> : null}
 

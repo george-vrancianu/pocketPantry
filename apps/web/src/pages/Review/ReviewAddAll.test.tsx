@@ -9,8 +9,6 @@ import {
   dispatchScanSession,
   getScanSession,
   resetScanSession,
-  sessionReducer,
-  type SessionAction,
 } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from '../Scan/ScanPage';
@@ -192,7 +190,7 @@ describe('Review overview: Add to pantry', () => {
         name: 'Add to pantry (waiting on 2)',
       });
       expect(button).toBeDisabled();
-      await userEvent.click(button);
+      await userEvent.setup({ pointerEventsCheck: 0 }).click(button);
       expect(saveCalls(calls)).toHaveLength(0);
     });
 
@@ -213,19 +211,10 @@ describe('Review overview: Add to pantry', () => {
     });
   });
 
-  // Failed reads belong to #115; its Scan shape is assumed here (a `failed` status set by a `fail`
-  // action) and this test should be adjusted to whatever #115 landed.
   it('does not wait on a failed card and drops it, uncounted, on Add', async () => {
     await seed('a', 'product', [line('Yogurt')]);
     await seed('b', 'product', 'reading');
-    act(() =>
-      dispatchScanSession({
-        type: 'fail',
-        id: 'b',
-        error: new Error('nope'),
-      } as unknown as SessionAction),
-    );
-    expect(sessionReducer).toBeDefined();
+    act(() => dispatchScanSession({ type: 'fail', id: 'b', reason: 'error' }));
     const calls = renderOverview();
     expect(add()).toBeEnabled();
     await userEvent.click(add());

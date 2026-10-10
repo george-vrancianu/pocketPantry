@@ -7,6 +7,8 @@ export type SnackbarProps = {
   onClose: () => void;
   /** Sit above the floating Dock (and the device's bottom inset) instead of under it. */
   aboveDock?: boolean;
+  /** Distance from the bottom of the screen in px, instead of the default. */
+  bottom?: number;
   /** Usually an `Alert`. */
   children: ReactNode;
 };
@@ -20,6 +22,7 @@ export function Snackbar({
   open,
   onClose,
   aboveDock = false,
+  bottom,
   children,
 }: SnackbarProps) {
   return (
@@ -31,9 +34,16 @@ export function Snackbar({
       }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       sx={
-        aboveDock
-          ? { bottom: { xs: above(DOCK_HEIGHT.xs), md: above(DOCK_HEIGHT.md) } }
-          : undefined
+        bottom !== undefined
+          ? { bottom }
+          : aboveDock
+            ? {
+                bottom: {
+                  xs: above(DOCK_HEIGHT.xs),
+                  md: above(DOCK_HEIGHT.md),
+                },
+              }
+            : undefined
       }
     >
       <div>{children}</div>

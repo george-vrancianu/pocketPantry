@@ -1,18 +1,25 @@
 import {
+  Alert,
   Box,
+  Button,
   CloseIcon,
   Link,
   Spinner,
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { translateApiError } from '../../i18n/translateApiError';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import type { ProposedLine } from '../../lib/scan';
+import { useSaveScan } from '../../lib/saveScan';
 import {
   dispatchScanSession,
+  getScanSession,
   pendingCount,
+  resetScanSession,
   useScanSession,
   type SessionScan,
 } from '../../lib/scanSession';
@@ -28,9 +35,42 @@ const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
 export function ReviewOverviewPage() {
   const { t } = useTranslation('review');
   const { t: tScan } = useTranslation('scan');
+  const { t: tAll, i18n } = useTranslation();
+  const saveScan = useSaveScan(i18n.language);
+  const [saving, setSaving] = useState(false);
+  // Why each card's last save failed; the card stays until a later Add saves it.
+  const [errors, setErrors] = useState<Record<string, unknown>>({});
   const navigate = useNavigate();
   const session = useScanSession();
   const reading = pendingCount(session);
+
+  const readCards = session.scans.filter((scan) => scan.status === 'read');
+
+  /** Saves each read card in turn, trying all of them; the cards that fail stay with their error. */
+  const addAll = async () => {
+    setSaving(true);
+    setErrors({});
+    let saved = 0;
+    for (const scan of getScanSession().scans) {
+      if (scan.status !== 'read') continue;
+      try {
+        await saveScan(scan);
+        dispatchScanSession({ type: 'remove', id: scan.id });
+        saved += 1;
+      } catch (error) {
+        setErrors((was) => ({ ...was, [scan.id]: error }));
+      }
+    }
+    setSaving(false);
+    // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
+    if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
+    resetScanSession();
+    navigate('/scan', { state: { added: saved } });
+  };
+  const discardAll = () => {
+    resetScanSession();
+    navigate('/scan');
+  };
 
   const card = (scan: SessionScan) => {
     const isReading = scan.status !== 'read';
@@ -171,6 +211,11 @@ export function ReviewOverviewPage() {
                   {t('overview.check', { count: check })}
                 </Typography>
               ) : null}
+              {errors[scan.id] ? (
+                <Box sx={{ mt: 1 }}>
+                  <Alert>{translateApiError(tAll, errors[scan.id])}</Alert>
+                </Box>
+              ) : null}
             </>
           )}
         </Box>
@@ -228,6 +273,21 @@ export function ReviewOverviewPage() {
           {session.scans.map(card)}
         </Box>
       )}
+      {session.scans.length > 0 ? (
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
+          <Button
+            onClick={() => void addAll()}
+            disabled={reading > 0 || saving || readCards.length === 0}
+          >
+            {reading > 0
+              ? t('overview.addWaiting', { count: reading })
+              : t('overview.add')}
+          </Button>
+          <Button variant="secondary" onClick={discardAll} disabled={saving}>
+            {t('overview.discardAll')}
+          </Button>
+        </Box>
+      ) : null}
     </div>
   );
 }
