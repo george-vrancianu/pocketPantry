@@ -3,7 +3,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { glassFocusRing } from './glass';
 
-const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]';
+const FOCUSABLE =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
  * The Info bottom sheet over the camera. Tab stays inside it, Escape or a scrim tap closes it,
