@@ -78,6 +78,8 @@
     "discardConfirm": "Părăsești scanerul? Secțiunile făcute până acum se vor pierde."
   },
   "done": "Gata",
+  "doneCount_one": "Gata, {{count}} fotografie",
+  "doneCount_other": "Gata, {{count}} de fotografii",
   "queue": {
     "label": "Fotografii făcute",
     "reading": "Citim fotografia",

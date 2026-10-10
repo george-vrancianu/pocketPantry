@@ -157,6 +157,11 @@ export function ScanPage() {
           type="button"
           disabled={screen.scans.length === 0}
           onClick={screen.done}
+          aria-label={
+            screen.scans.length > 0
+              ? t('doneCount', { count: screen.scans.length })
+              : undefined
+          }
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -179,6 +184,7 @@ export function ScanPage() {
             <Box
               component="span"
               data-testid="done-count"
+              aria-hidden="true"
               data-reading={screen.pending > 0}
               sx={{
                 minWidth: 20,

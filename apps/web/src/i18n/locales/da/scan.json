@@ -75,6 +75,8 @@
     "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
   },
   "done": "Færdig",
+  "doneCount_one": "Færdig, {{count}} foto",
+  "doneCount_other": "Færdig, {{count}} fotos",
   "queue": {
     "label": "Tagne fotos",
     "reading": "Læser foto",

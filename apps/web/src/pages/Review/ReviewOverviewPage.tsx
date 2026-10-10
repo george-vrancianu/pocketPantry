@@ -181,6 +181,8 @@ export function ReviewOverviewPage() {
             aria-label={t('overview.remove')}
             onClick={() => dispatchScanSession({ type: 'remove', id: scan.id })}
             sx={{
+              position: 'relative',
+              zIndex: 1,
               flex: 'none',
               alignSelf: 'flex-start',
               p: 0.5,
