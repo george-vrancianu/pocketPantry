@@ -14,7 +14,6 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { glassControl, glassFocusRing } from './components/glass';
-import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
 import { ModeDial } from './components/ModeDial';
@@ -252,24 +251,10 @@ export function ScanPage() {
           </Box>
         ) : null}
 
-        {screen.plate.dishes ? (
-          <DishPicker
-            dishes={screen.plate.dishes}
-            disabled={screen.reading}
-            onPick={screen.plate.pick}
-            onRetake={screen.plate.reset}
-          />
-        ) : null}
-
         <ModeDial
           mode={screen.mode}
           disabled={screen.modesDisabled || infoOpen}
-          keysDisabled={
-            screen.modesDisabled ||
-            infoOpen ||
-            screen.reading ||
-            !!screen.plate.dishes
-          }
+          keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
         />

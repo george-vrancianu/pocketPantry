@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ApiException } from '../common/api-exception';
 
 /** How long a Plate Scan's dish list can be used to load Ingredients. */
-export const PLATE_TOKEN_TTL_MS = 10 * 60_000;
+export const PLATE_TOKEN_TTL_MS = 60 * 60_000;
 
 type Payload = { m: string; t: string[]; e: number };
 

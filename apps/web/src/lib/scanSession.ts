@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
+import type { DishGuess } from './plate';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import type { ProposedLine, ScanMode } from './scan';
 
@@ -32,6 +33,9 @@ export type SessionScan = {
   errorParams?: Record<string, unknown>;
   /** The proposed lines, once the Scan is read. */
   lines?: ProposedLine[];
+  /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
+  dishes?: DishGuess[];
+  plateToken?: string;
   /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
   sections?: SessionScan[];
 };
@@ -60,7 +64,20 @@ export type SessionAction =
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
   | { type: 'merge'; id: string }
-  | { type: 'split'; id: string };
+  | { type: 'split'; id: string }
+  | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
+  | { type: 'pick'; id: string; lines: ProposedLine[] }
+  | { type: 'reread'; id: string };
+
+const update = (
+  state: SessionState,
+  id: string,
+  change: Partial<SessionScan>,
+): SessionState => ({
+  scans: state.scans.map((scan) =>
+    scan.id === id ? { ...scan, ...change } : scan,
+  ),
+});
 
 export const emptySession: SessionState = { scans: [] };
 
@@ -144,6 +161,24 @@ export function sessionReducer(
       };
     case 'remove':
       return { scans: state.scans.filter((scan) => scan.id !== action.id) };
+    case 'readDishes':
+      return update(state, action.id, {
+        status: 'read',
+        dishes: action.dishes,
+        plateToken: action.token,
+      });
+    case 'pick':
+      return update(state, action.id, {
+        lines: action.lines,
+        dishes: undefined,
+        plateToken: undefined,
+      });
+    case 'reread':
+      return update(state, action.id, {
+        status: 'queued',
+        dishes: undefined,
+        plateToken: undefined,
+      });
     case 'merge': {
       if (!canMerge(state, action.id)) return state;
       const index = state.scans.findIndex((scan) => scan.id === action.id);

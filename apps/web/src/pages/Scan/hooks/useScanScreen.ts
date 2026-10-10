@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { translateApiError } from '../../../i18n/translateApiError';
 import { useCamera } from '../../../lib/camera';
 import { readScans } from '../../../lib/scanReads';
 import {
@@ -16,7 +15,6 @@ import {
 import { resizeImage } from '../../../lib/image';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
-import { usePlateScan } from './usePlateScan';
 import {
   isScanMode,
   loadScanMode,
@@ -37,7 +35,6 @@ export function useScanScreen() {
 
   const camera = useCamera(mode === 'receipt');
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const plate = usePlateScan();
   const previousMode = useRef(mode);
   /**
    * Bumped whenever what a photo being prepared was meant for goes away (mode change, batch
@@ -99,9 +96,9 @@ export function useScanScreen() {
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
 
-  const reading = resizing || plate.pending;
+  const reading = resizing;
 
-  /** A camera frame or gallery file: prepare it, then join the Scan Session (Plate: the dish picker). */
+  /** A camera frame or gallery file: prepare it, then join the Scan Session. */
   const scanImage = async (
     source: Blob,
     origin: ImageOrigin,
@@ -133,7 +130,7 @@ export function useScanScreen() {
     }
     if (epoch !== scanEpoch.current) return false;
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
-    if (origin === 'camera' && mode !== 'plate') {
+    if (origin === 'camera') {
       if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
         setToast({
           text: t('scan:limit', { max: MAX_SESSION_SCANS }),
@@ -146,15 +143,13 @@ export function useScanScreen() {
         scan: {
           id: crypto.randomUUID(),
           mode,
-          scanLanguage,
+          scanLanguage: mode === 'plate' ? undefined : scanLanguage,
           image,
           thumbnail: image,
         },
       });
       readScans(i18n.language);
-      return false;
     }
-    plate.scan(image);
     return false;
   };
 
@@ -176,11 +171,6 @@ export function useScanScreen() {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
     if (picked.length === 0) return;
-    // Plate keeps its single-photo flow for now.
-    if (mode === 'plate') {
-      if (!reading) void scanImage(picked[0], 'gallery');
-      return;
-    }
     setScanned(true);
     setLocalError(null);
     setNotAdded(false);
@@ -195,7 +185,10 @@ export function useScanScreen() {
         severity: 'warning',
       });
     }
-    const base = { mode, scanLanguage };
+    const base = {
+      mode,
+      scanLanguage: mode === 'plate' ? undefined : scanLanguage,
+    };
     for (const file of picked.slice(0, room)) {
       const id = crypto.randomUUID();
       if (mode === 'receipt') {
@@ -236,12 +229,7 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = plate.error;
-  const error = localError
-    ? t(`errors:${localError}`)
-    : scanError
-      ? translateApiError(t, scanError)
-      : null;
+  const error = localError ? t(`errors:${localError}`) : null;
 
   return {
     mode,
@@ -271,11 +259,9 @@ export function useScanScreen() {
     error,
     setMode: (next: ScanMode) => {
       scanEpoch.current += 1;
-      plate.reset();
       setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },
-    plate,
     toast,
     clearToast: () => setToast(null),
     shoot,

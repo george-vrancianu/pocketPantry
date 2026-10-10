@@ -115,7 +115,7 @@ describe('Plate token', () => {
     const token = sign();
     expect(verify(token)).toEqual({
       signature: token.split('.')[1],
-      expiresAt: T0 + 10 * 60_000,
+      expiresAt: T0 + 60 * 60_000,
     });
   });
 
@@ -127,9 +127,9 @@ describe('Plate token', () => {
     invalid(() => verify(sign({ secret: 'x'.repeat(40) })));
   });
 
-  it('expires after about ten minutes, by the injected clock', () => {
+  it('expires after about an hour, by the injected clock', () => {
     const token = sign();
-    expect(() => verify(token, { now: T0 + 9 * 60_000 })).not.toThrow();
-    invalid(() => verify(token, { now: T0 + 10 * 60_000 + 1 }));
+    expect(() => verify(token, { now: T0 + 59 * 60_000 })).not.toThrow();
+    invalid(() => verify(token, { now: T0 + 60 * 60_000 + 1 }));
   });
 });

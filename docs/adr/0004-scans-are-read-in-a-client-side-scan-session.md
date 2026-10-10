@@ -9,7 +9,7 @@ A Scan used to be taken, awaited and reviewed one at a time: the Member photogra
 - The Review screen becomes an overview with one card per Scan. A card opens the existing line editor for that Scan at `/scan/review/:scanId`.
 - **Saving commits one card.** It goes through the endpoint its Scan Mode already used (the bulk Batch endpoint, or Receipt confirm with its Shopping Item ticking) and removes only that card.
 - A Scan whose read fails stays in the Scan Session as failed, with its photo and, for errors a retry cannot fix, the reason. A network error is retried once automatically; tapping a failed thumbnail reads it again. The Scan Cap fails the Scan as `cap` and disables scanning until that Scan is retried or removed.
-- Plate Scans and gallery photos keep their earlier flows until their own slices (#117, #119).
+- Plate Scans join the Scan Session too: the photo is read for dish guesses, the Member picks the dish on its Review card, and the card then holds the ingredients (#117).
 
 ## Alternatives considered
 
@@ -23,4 +23,4 @@ A Scan used to be taken, awaited and reviewed one at a time: the Member photogra
 - Every read counts against the Scan Cap on its own, so a long session can reach the cap part-way; the cards read before that stay usable.
 - The images of the Scans in the Scan Session stay in memory until the card is saved or removed, so the session is limited in size (#116).
 - Leaving `/scan` unmounts the camera, which stops the stream. Returning with the Camera link starts it again; the Scan Session is untouched.
-- Review has two shapes: the per-card editor for a Scan Session, and the single draft of the earlier flow for Plate and gallery photos (`/scan/review/draft`).
+- Review has two shapes: the per-card editor for a Scan Session, and the single draft of the earlier flow for gallery photos (`/scan/review/draft`).

@@ -147,6 +147,9 @@
     "add": "Add to pantry",
     "addWaiting": "Add to pantry (waiting on {{count}})",
     "discardAll": "Discard all",
-    "failed": "Couldn't read, retake"
+    "failed": "Couldn't read, retake",
+    "pickDish": "Pick the dish",
+    "dishOption": "{{title}}, {{percent}}% likely",
+    "readAgain": "Read again"
   }
 }

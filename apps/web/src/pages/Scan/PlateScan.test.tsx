@@ -1,13 +1,16 @@
-import { screen, within } from '@testing-library/react';
-import { scanGuide, scanViaGuide } from '../../test/scan';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { clearReview } from '../../lib/review';
 import type { ProposedLine } from '../../lib/scan';
+import { resetReads } from '../../lib/scanReads';
+import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
+import { scanViaGuide } from '../../test/scan';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
 
@@ -22,7 +25,8 @@ vi.mock('../../lib/camera', () => ({
     setTorch: () => Promise.resolve(true),
   }),
 }));
-vi.mock('../../lib/image', () => ({
+vi.mock('../../lib/image', async (importActual) => ({
+  ...(await importActual<typeof import('../../lib/image')>()),
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
 
@@ -34,47 +38,49 @@ const milk: CatalogSearchResult = {
   parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy' },
   defaults: { expiryDays: 7, location: 'fridge' },
 };
-const flour: CatalogSearchResult = {
-  ...milk,
-  id: 'flour-id',
-  name: 'Flour',
-  defaultUnit: 'g',
-};
 
-const line = (overrides: Partial<ProposedLine>): ProposedLine => ({
-  name: 'Milk',
-  match: milk,
-  lowConfidence: false,
-  quantity: 200,
-  unit: 'ml',
-  expiryDate: null,
-  sourceText: null,
-  productDescription: null,
-  ...overrides,
-});
+const lines: ProposedLine[] = [
+  {
+    name: 'Milk',
+    match: milk,
+    lowConfidence: false,
+    quantity: 200,
+    unit: 'ml',
+    expiryDate: null,
+    sourceText: null,
+    productDescription: null,
+  },
+  {
+    name: 'Pixie dust',
+    match: null,
+    lowConfidence: false,
+    quantity: 2,
+    unit: 'pcs',
+    expiryDate: null,
+    sourceText: null,
+    productDescription: null,
+  },
+];
 
-const dishes = {
-  token: 'signed-token',
+const dishes = (token: string) => ({
+  token,
   dishes: [
     { title: 'Pancakes', confidence: 0.72 },
     { title: 'Crepes', confidence: 0.2 },
   ],
-};
-const lines = [
-  line({}),
-  line({
-    name: 'Pixie dust',
-    match: null,
-    quantity: 2,
-    unit: 'pcs',
-  }),
-];
+});
+
+const expired = () =>
+  Response.json(
+    { code: 'scan.plate_token_invalid', params: {} },
+    { status: 400 },
+  );
 
 function renderPlate(extra: Record<string, () => Response> = {}) {
+  let reads = 0;
   const { fetchMock, calls } = stubApi({
-    'POST /api/scan/plate': () => Response.json(dishes),
+    'POST /api/scan/plate': () => Response.json(dishes(`token-${++reads}`)),
     'POST /api/scan/plate/ingredients': () => Response.json({ lines }),
-    'GET /api/catalog/search': () => Response.json({ results: [flour] }),
     'POST /api/shopping-list/items/bulk': () =>
       Response.json({ id: 'l', groups: [], summary: {} }),
     ...extra,
@@ -83,7 +89,8 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
   renderWithProviders(
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
-      <Route path="/scan/review/draft" element={<ReviewPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
       <Route path="/shopping" element={<p>shopping screen</p>} />
     </Routes>,
     { route: '/scan?mode=plate' },
@@ -91,132 +98,114 @@ function renderPlate(extra: Record<string, () => Response> = {}) {
   return calls;
 }
 
-const shoot = () => scanViaGuide();
+const scanThenDone = async () => {
+  scanViaGuide();
+  await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+};
+const picker = () => screen.findByRole('group', { name: 'Pick the dish' });
+const pick = async (title: RegExp) =>
+  userEvent.click(within(await picker()).getByRole('button', { name: title }));
 
-describe('Plate Scan', () => {
-  beforeEach(() => clearReview());
+describe('Plate Scan in the Scan Session', () => {
+  beforeEach(() => {
+    clearReview();
+    resetReads();
+    resetScanSession();
+    localStorage.clear();
+  });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('Plate can scan, and says it adds to the shopping list', () => {
-    renderPlate();
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
-    expect(screen.getByText(/shopping list/i)).toBeInTheDocument();
+  it('queues like the other modes: stays on the camera, no picker there', async () => {
+    const calls = renderPlate();
+    scanViaGuide();
+    expect(await screen.findAllByTestId('scan-thumbnail')).toHaveLength(1);
+    expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(calls.map((c) => c.key)).toContain('POST /api/scan/plate'),
+    );
+    const read = calls.find((c) => c.key === 'POST /api/scan/plate');
+    expect(read?.body).toEqual({ plateImage: IMAGE });
+    expect(new URLSearchParams(read?.search).has('scanLanguage')).toBe(false);
+    expect(screen.queryByRole('group', { name: 'Pick the dish' })).toBeNull();
   });
 
-  it('shows the dish guesses with confidence, then loads the picked dish into Review', async () => {
-    const calls = renderPlate();
-    await shoot();
-
-    const picker = await screen.findByRole('group', {
-      name: 'Which dish is it?',
-    });
-    expect(calls.find((c) => c.key === 'POST /api/scan/plate')?.body).toEqual({
-      plateImage: IMAGE,
-    });
-    const options = within(picker).getAllByRole('button');
+  it('shows "Pick the dish" on the card, with each guess and its confidence', async () => {
+    renderPlate();
+    await scanThenDone();
+    const options = within(await picker()).getAllByRole('button');
     expect(options.map((b) => b.getAttribute('aria-label'))).toEqual([
       'Pancakes, 72% likely',
       'Crepes, 20% likely',
     ]);
+    expect(within(screen.getByTestId('review-card')).getByRole('group')).toBe(
+      screen.getByRole('group', { name: 'Pick the dish' }),
+    );
+  });
 
-    await userEvent.click(options[0]);
-    expect(await findReviewRow('Milk')).toBeInTheDocument();
+  it('picking a dish fetches its ingredients into the card', async () => {
+    const calls = renderPlate();
+    await scanThenDone();
+    await pick(/Pancakes/);
+    const result = await screen.findByTestId('card-result');
+    expect(result).toHaveTextContent('2 items');
     expect(
       calls.find((c) => c.key === 'POST /api/scan/plate/ingredients')?.body,
-    ).toEqual({ dishTitle: 'Pancakes', plateToken: 'signed-token' });
-    expect(screen.getByRole('group', { name: 'Pixie dust' })).toBeVisible();
-  });
-
-  it('lets the Member retake the photo instead of picking', async () => {
-    renderPlate();
-    await shoot();
-    await screen.findByRole('group', { name: 'Which dish is it?' });
-    await userEvent.click(screen.getByRole('button', { name: 'Retake photo' }));
+    ).toEqual({ dishTitle: 'Pancakes', plateToken: 'token-1' });
+    expect(screen.queryByRole('group', { name: 'Pick the dish' })).toBeNull();
     expect(
-      screen.queryByRole('group', { name: 'Which dish is it?' }),
-    ).not.toBeInTheDocument();
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
+      within(screen.getByTestId('review-card'))
+        .getAllByTestId('card-chip')
+        .map((chip) => chip.textContent),
+    ).toEqual(expect.arrayContaining(['Milk', 'Pixie dust']));
   });
 
-  it('goes back to the scan step with a message when the token is rejected', async () => {
-    renderPlate({
-      'POST /api/scan/plate/ingredients': () =>
-        Response.json(
-          { code: 'scan.plate_token_invalid', params: {} },
-          { status: 400 },
-        ),
-    });
-    await shoot();
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Pancakes/ }),
-    );
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'That dish list has expired. Take the photo again.',
-    );
+  it('Add to pantry saves a picked Plate card to the Shopping List and leaves an unpicked one', async () => {
+    const calls = renderPlate();
+    scanViaGuide();
+    await userEvent.click(await screen.findByRole('button', { name: /^Done/ }));
+    await pick(/Pancakes/);
+    await screen.findByTestId('card-result');
     expect(
-      screen.queryByRole('group', { name: 'Which dish is it?' }),
-    ).not.toBeInTheDocument();
-    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
-  });
-
-  it('shows a localised message when the Scan Cap is reached', async () => {
-    renderPlate({
-      'POST /api/scan/plate': () =>
-        Response.json(
-          { code: 'scan.cap_reached', params: { cap: 30 } },
-          { status: 429 },
-        ),
-    });
-    await shoot();
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'You have used all 30 scans for today',
-    );
-  });
-
-  it('Review for a dish edits quantity, unit, Match and drops lines, with no pantry-only fields', async () => {
-    renderPlate();
-    await shoot();
+      screen.getByRole('button', { name: /^Add to pantry/ }),
+    ).toBeEnabled();
     await userEvent.click(
-      await screen.findByRole('button', { name: /Pancakes/ }),
+      screen.getByRole('button', { name: /^Add to pantry/ }),
     );
+    await waitFor(() =>
+      expect(calls.map((c) => c.key)).toContain(
+        'POST /api/shopping-list/items/bulk',
+      ),
+    );
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/pantry/batches/bulk',
+    );
+  });
+
+  it('Add to pantry does not save a Plate card that is still waiting for a dish', async () => {
+    const calls = renderPlate();
+    await scanThenDone();
+    await picker();
+    expect(
+      screen.getByRole('button', { name: /^Add to pantry/ }),
+    ).toBeDisabled();
+    expect(calls.map((c) => c.key)).not.toContain(
+      'POST /api/shopping-list/items/bulk',
+    );
+  });
+
+  it('opens the ingredients for editing and adds them to the Shopping List, then drops the card', async () => {
+    const calls = renderPlate();
+    await scanThenDone();
+    await pick(/Pancakes/);
+    await userEvent.click(await screen.findByTestId('card-result'));
     await userEvent.click(await findReviewRow('Milk'));
     const milkCard = screen.getByRole('group', { name: 'Milk' });
-    expect(within(milkCard).queryByLabelText('Expiry date')).toBeNull();
-    expect(within(milkCard).queryByLabelText('Location')).toBeNull();
-    expect(within(milkCard).queryByLabelText('Category')).toBeNull();
     expect(within(milkCard).getByLabelText('Quantity')).toHaveValue(200);
-
-    await userEvent.clear(within(milkCard).getByLabelText('Quantity'));
-    await userEvent.type(within(milkCard).getByLabelText('Quantity'), '250');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove Pixie dust' }),
-    );
-    expect(screen.queryByRole('group', { name: 'Pixie dust' })).toBeNull();
-    expect(
-      screen.getByRole('button', { name: 'Add 1 item to shopping list' }),
-    ).toBeEnabled();
-  });
-
-  it('does not load the Parent Category list for Plate lines, even Unmatched ones', async () => {
-    const calls = renderPlate();
-    await shoot();
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Pancakes/ }),
-    );
-    expect(await findReviewRow('Pixie dust')).toBeVisible();
-    expect(calls.map((c) => c.key)).not.toContain('GET /api/catalog/parents');
-  });
-
-  it('confirm adds the lines to the Shopping List: matched by id, Unmatched by name', async () => {
-    const calls = renderPlate();
-    await shoot();
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Pancakes/ }),
-    );
-    await findReviewRow('Milk');
+    expect(within(milkCard).queryByLabelText('Expiry date')).toBeNull();
     await userEvent.click(
       screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
     );
+    // The only card is saved, so the Member lands on the Shopping List.
     expect(await screen.findByText('shopping screen')).toBeInTheDocument();
     expect(
       calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')?.body,
@@ -231,23 +220,36 @@ describe('Plate Scan', () => {
     );
   });
 
-  it('keeps the lines on screen when adding fails, with a localised error', async () => {
-    renderPlate({
-      'POST /api/shopping-list/items/bulk': () =>
-        Response.json(
-          { code: 'shopping.ingredient_not_found', params: {} },
-          { status: 404 },
-        ),
+  it('offers "Read again" when the token has expired, and reading again costs a new Plate request', async () => {
+    const calls = renderPlate({
+      'POST /api/scan/plate/ingredients': expired,
     });
-    await shoot();
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Pancakes/ }),
-    );
-    await findReviewRow('Milk');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Add 2 items to shopping list' }),
-    );
+    await scanThenDone();
+    await pick(/Pancakes/);
+    const again = await screen.findByRole('button', { name: 'Read again' });
+    expect(screen.queryByRole('group', { name: 'Pick the dish' })).toBeNull();
+    expect(screen.queryByTestId('card-result')).toBeNull();
+
+    await userEvent.click(again);
+    const plateReads = () =>
+      calls.filter((c) => c.key === 'POST /api/scan/plate');
+    await waitFor(() => expect(plateReads()).toHaveLength(2));
+    expect(plateReads()[1].body).toEqual({ plateImage: IMAGE });
+    // The new guesses carry the new token.
+    expect(await picker()).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Read again' })).toBeNull();
+    expect(screen.getAllByTestId('review-card')).toHaveLength(1);
+  });
+
+  it('keeps the dish guesses when picking fails for another reason', async () => {
+    renderPlate({
+      'POST /api/scan/plate/ingredients': () =>
+        Response.json({ code: 'internal', params: {} }, { status: 500 }),
+    });
+    await scanThenDone();
+    await pick(/Pancakes/);
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(await findReviewRow('Milk')).toBeInTheDocument();
+    expect(await picker()).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Read again' })).toBeNull();
   });
 });

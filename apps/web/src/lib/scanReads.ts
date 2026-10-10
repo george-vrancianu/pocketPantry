@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from './api';
+import type { PlateDishes } from './plate';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
   MAX_CONCURRENT_READS,
@@ -8,7 +9,7 @@ import {
   type SessionScan,
 } from './scanSession';
 
-/** Where each Scan Mode's photo is sent, and the body field it goes in. Plate keeps its own flow. */
+/** Where each Scan Mode's photo is sent, and the body field it goes in. Plate is read apart: it yields dish guesses, not lines. */
 const READ: Record<
   Exclude<ScanMode, 'plate'>,
   { path: string; field: string }
@@ -19,6 +20,16 @@ const READ: Record<
 };
 
 const inFlight = new Set<string>();
+
+/** A Plate Scan has no Scan Language; its photo yields dish guesses to pick from. */
+function readPlate(scan: SessionScan, locale: string) {
+  return apiRequest<PlateDishes>(`/scan/plate?${scanQuery(locale)}`, {
+    method: 'POST',
+    body: { plateImage: scan.image },
+  }).then(({ dishes, token }) =>
+    dispatchScanSession({ type: 'readDishes', id: scan.id, dishes, token }),
+  );
+}
 
 async function send(scan: SessionScan, locale: string) {
   const target = READ[scan.mode as keyof typeof READ];
@@ -57,10 +68,12 @@ export function readScans(locale: string) {
     if (inFlight.size >= MAX_CONCURRENT_READS) return;
     if (scan.status !== 'reading' || inFlight.has(scan.id)) continue;
     inFlight.add(scan.id);
-    send(scan, locale)
-      .then((lines) =>
-        dispatchScanSession({ type: 'read', id: scan.id, lines }),
-      )
+    (scan.mode === 'plate'
+      ? readPlate(scan, locale)
+      : send(scan, locale).then((lines) =>
+          dispatchScanSession({ type: 'read', id: scan.id, lines }),
+        )
+    )
       .catch((error: unknown) => {
         const api = error instanceof ApiError ? error : null;
         dispatchScanSession({

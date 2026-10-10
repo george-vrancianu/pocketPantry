@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { PlateChoice, cardId } from './components/PlateChoice';
 import {
   ReceiptCropper,
   type ReceiptCrop,
@@ -89,7 +90,9 @@ export function ReviewOverviewPage() {
     }
   };
 
-  const anyRead = session.scans.some((scan) => scan.status === 'read');
+  // A Plate Scan still showing its dish guesses has nothing to save yet.
+  const savable = (scan: SessionScan) => scan.status === 'read' && !scan.dishes;
+  const anyRead = session.scans.some(savable);
   // Photos saved over every press of Add, for the toast.
   const added = useRef(0);
 
@@ -100,7 +103,7 @@ export function ReviewOverviewPage() {
     for (const scan of getScanSession().scans) {
       // Opened and saved in the editor, or removed, since Add started.
       if (!getScanSession().scans.some((s) => s.id === scan.id)) continue;
-      if (scan.status !== 'read') continue;
+      if (!savable(scan)) continue;
       try {
         await saveScan(scan);
         dispatchScanSession({ type: 'remove', id: scan.id });
@@ -138,9 +141,14 @@ export function ReviewOverviewPage() {
         component="li"
         key={scan.id}
         data-testid="review-card"
+        id={cardId(scan.id)}
         data-scan-id={scan.id}
         tabIndex={-1}
         sx={{
+          '&:focus-visible': {
+            outline: `2px solid ${tokens.color.accentMid}`,
+            outlineOffset: 2,
+          },
           position: 'relative',
           display: 'flex',
           gap: 1.5,
@@ -192,6 +200,8 @@ export function ReviewOverviewPage() {
               </Box>
               <Typography>{t('overview.reading')}</Typography>
             </Box>
+          ) : scan.dishes ? (
+            <PlateChoice scan={scan} />
           ) : isFailed ? (
             <>
               <Typography sx={{ mt: 0.5, fontWeight: 700 }}>
