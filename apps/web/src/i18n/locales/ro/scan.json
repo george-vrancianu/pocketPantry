@@ -92,5 +92,6 @@
   "limit": "O sesiune de scanare ține cel mult {{max}} de fotografii. Adaugă-le mai întâi în cămară.",
   "discardScans_one": "Renunți la {{count}} fotografie?",
   "discardScans_few": "Renunți la {{count}} fotografii?",
-  "discardScans_other": "Renunți la {{count}} de fotografii?"
+  "discardScans_other": "Renunți la {{count}} de fotografii?",
+  "discarded": "Eliminate"
 }

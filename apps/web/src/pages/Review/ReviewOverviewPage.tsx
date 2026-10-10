@@ -8,7 +8,7 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -44,19 +44,22 @@ export function ReviewOverviewPage() {
   const session = useScanSession();
   const reading = pendingCount(session);
 
-  const readCards = session.scans.filter((scan) => scan.status === 'read');
+  const anyRead = session.scans.some((scan) => scan.status === 'read');
+  // Photos saved over every press of Add, for the toast.
+  const added = useRef(0);
 
   /** Saves each read card in turn, trying all of them; the cards that fail stay with their error. */
   const addAll = async () => {
     setSaving(true);
     setErrors({});
-    let saved = 0;
     for (const scan of getScanSession().scans) {
+      // Opened and saved in the editor, or removed, since Add started.
+      if (!getScanSession().scans.some((s) => s.id === scan.id)) continue;
       if (scan.status !== 'read') continue;
       try {
         await saveScan(scan);
         dispatchScanSession({ type: 'remove', id: scan.id });
-        saved += 1;
+        added.current += 1;
       } catch (error) {
         setErrors((was) => ({ ...was, [scan.id]: error }));
       }
@@ -65,11 +68,11 @@ export function ReviewOverviewPage() {
     // Failed reads are dropped with the rest; only a card whose save failed keeps the Member here.
     if (getScanSession().scans.some((scan) => scan.status === 'read')) return;
     resetScanSession();
-    navigate('/scan', { state: { added: saved } });
+    navigate('/scan', { state: { added: added.current } });
   };
   const discardAll = () => {
     resetScanSession();
-    navigate('/scan');
+    navigate('/scan', { state: { discarded: true } });
   };
 
   const card = (scan: SessionScan) => {
@@ -146,6 +149,7 @@ export function ReviewOverviewPage() {
                 component="button"
                 type="button"
                 data-testid="card-result"
+                disabled={saving}
                 onClick={() => navigate(`/scan/review/${scan.id}`)}
                 sx={{
                   display: 'block',
@@ -224,6 +228,7 @@ export function ReviewOverviewPage() {
             component="button"
             type="button"
             aria-label={t('overview.remove')}
+            disabled={saving}
             onClick={() => dispatchScanSession({ type: 'remove', id: scan.id })}
             sx={{
               position: 'relative',
@@ -277,7 +282,7 @@ export function ReviewOverviewPage() {
         <Box sx={{ display: 'flex', gap: 1.5, mt: 2 }}>
           <Button
             onClick={() => void addAll()}
-            disabled={reading > 0 || saving || readCards.length === 0}
+            disabled={reading > 0 || saving || !anyRead}
           >
             {reading > 0
               ? t('overview.addWaiting', { count: reading })

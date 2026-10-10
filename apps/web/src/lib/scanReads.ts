@@ -77,6 +77,8 @@ export function readScans(locale: string) {
         dispatchScanSession({ type: 'read', id: scan.id, lines }),
       )
       .catch((error: unknown) => {
+        // A Scan the Member discarded meanwhile has no one to tell.
+        if (!getScanSession().scans.some((s) => s.id === scan.id)) return;
         dispatchScanSession({ type: 'remove', id: scan.id });
         setFailure(error);
       })

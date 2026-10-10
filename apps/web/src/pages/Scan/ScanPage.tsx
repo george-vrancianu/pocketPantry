@@ -1,12 +1,12 @@
 import {
   Alert,
   Box,
-  Snackbar,
   CloseIcon,
   FlashIcon,
   GalleryIcon,
   InfoIcon,
   ManualEntryIcon,
+  Snackbar,
   Typography,
   visuallyHidden,
   tokens,
@@ -360,8 +360,8 @@ export function ScanPage() {
         onClose={screen.clearToast}
         bottom={170}
       >
-        <Alert severity="warning" role="status">
-          {screen.toast}
+        <Alert severity={screen.toast?.severity} role="status">
+          {screen.toast?.text}
         </Alert>
       </Snackbar>
 

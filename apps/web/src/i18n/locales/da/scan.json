@@ -86,5 +86,6 @@
   "added_other": "Resultater tilføjet fra {{count}} fotos",
   "limit": "En scanningssession rummer højst {{max}} fotos. Tilføj dem til spisekammeret først.",
   "discardScans_one": "Kasser {{count}} foto?",
-  "discardScans_other": "Kasser {{count}} fotos?"
+  "discardScans_other": "Kasser {{count}} fotos?",
+  "discarded": "Kasseret"
 }

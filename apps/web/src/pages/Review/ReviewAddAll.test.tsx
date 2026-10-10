@@ -175,7 +175,7 @@ describe('Review overview: Add to pantry', () => {
     await waitFor(() => expect(cards()).toHaveLength(1));
     await userEvent.click(add());
     expect(
-      await screen.findByText('Added results from 1 photo'),
+      await screen.findByText('Added results from 2 photos'),
     ).toBeInTheDocument();
     expect(saveCalls(calls)).toHaveLength(3);
   });

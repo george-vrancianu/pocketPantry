@@ -129,9 +129,22 @@ export function useScanScreen() {
   const readError = useReadFailure();
   const session = useScanSession();
   // A short message at the bottom of the screen: the Scan Session is full, or a Scan Session was just saved.
-  const [toast, setToast] = useState<string | null>(() => {
-    const added = (location.state as { added?: number } | null)?.added;
-    return added ? t('scan:added', { count: added }) : null;
+  const [toast, setToast] = useState<{
+    text: string;
+    severity: 'success' | 'warning';
+  } | null>(() => {
+    const state = location.state as {
+      added?: number;
+      discarded?: boolean;
+    } | null;
+    if (state?.added)
+      return {
+        text: t('scan:added', { count: state.added }),
+        severity: 'success',
+      };
+    if (state?.discarded)
+      return { text: t('scan:discarded'), severity: 'success' };
+    return null;
   });
   useEffect(() => {
     if (location.state === null) return;
@@ -186,7 +199,10 @@ export function useScanScreen() {
     // A camera Scan joins the Scan Session at once; its read goes on in the background.
     if (origin === 'camera' && mode !== 'plate') {
       if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
-        setToast(t('scan:limit', { max: MAX_SESSION_SCANS }));
+        setToast({
+          text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+          severity: 'warning',
+        });
         return false;
       }
       dispatchScanSession({
