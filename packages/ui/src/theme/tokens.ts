@@ -32,6 +32,15 @@ export const tokens = {
     cameraSurface: '#1C2922',
     cameraLine: '#2E3D34',
     cameraMuted: '#B8C4BC',
+    // The always-dark camera palette (--cam-*), unchanged by the light theme. The camera* colours above are the older Review-era palette; new camera UI uses cam*.
+    camFg: '#f4f4f0',
+    camDim: 'rgba(244,244,240,.62)',
+    camGlass: 'rgba(20,22,20,.55)',
+    camGlassStrong: 'rgba(20,22,20,.82)',
+    camScrim: 'rgba(0,0,0,0.45)',
+    camAccent: '#9be38f',
+    camAccentInk: '#0c1a0f',
+    camWarn: '#ffcf5a',
   },
   font: {
     display: "'Bricolage Grotesque', sans-serif",

@@ -2,6 +2,12 @@
   "title": "Scan {{mode}}",
   "close": "Close scanner",
   "flash": "Toggle flash",
+  "info": {
+    "label": "How scanning works",
+    "title": "Scanning your pantry",
+    "body": "Point the camera at a receipt, a product, loose ingredients or a plate, then press the shutter. You can check everything before it is saved.",
+    "dismiss": "Close"
+  },
   "scanLanguage": {
     "label": "Reading as"
   },

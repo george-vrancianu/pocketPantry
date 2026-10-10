@@ -2,6 +2,12 @@
   "title": "Scan {{mode}}",
   "close": "Luk scanner",
   "flash": "Slå blitz til/fra",
+  "info": {
+    "label": "Sådan virker scanning",
+    "title": "Scan dit spisekammer",
+    "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og tryk på udløseren. Du kan tjekke alt, før det gemmes.",
+    "dismiss": "Luk"
+  },
   "scanLanguage": {
     "label": "Læses på"
   },

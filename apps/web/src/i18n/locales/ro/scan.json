@@ -2,6 +2,12 @@
   "title": "Scanează {{mode}}",
   "close": "Închide scanerul",
   "flash": "Comută blițul",
+  "info": {
+    "label": "Cum funcționează scanarea",
+    "title": "Scanează-ți cămara",
+    "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi apasă declanșatorul. Verifici totul înainte de salvare.",
+    "dismiss": "Închide"
+  },
   "scanLanguage": {
     "label": "Citit ca"
   },

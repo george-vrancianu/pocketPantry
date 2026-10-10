@@ -10,7 +10,5 @@ export const RECEIPT_TILES_DOWN = 3;
 export const RECEIPT_OUTPUT_WIDTH = OPENAI_TILE_EDGE;
 /** Guide width / height. One tile wide by three tall. */
 export const RECEIPT_GUIDE_ASPECT = 1 / RECEIPT_TILES_DOWN;
-/** The receipt viewfinder box (CSS px; 9:16 portrait, like a phone frame) the camera preview fills. */
-export const RECEIPT_VIEW = { width: 270, height: 480 };
-/** How much of the viewfinder's height the guide takes up. */
-export const RECEIPT_GUIDE_HEIGHT_FRACTION = 0.92;
+/** How much of the screen's height the receipt guide takes up; it is centred on the full-screen feed. */
+export const RECEIPT_GUIDE_HEIGHT_FRACTION = 0.64;

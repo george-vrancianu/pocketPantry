@@ -9,7 +9,6 @@ import {
 import {
   RECEIPT_GUIDE_ASPECT,
   RECEIPT_GUIDE_HEIGHT_FRACTION,
-  RECEIPT_VIEW,
 } from './receiptGuide';
 
 describe('fitWithin', () => {
@@ -72,27 +71,45 @@ describe('receiptOutputSize', () => {
   });
 });
 
-describe('receipt guide with the shipped constants', () => {
-  const crop = (width: number, height: number) => {
+describe('receipt guide on a full-screen aspect-fill feed', () => {
+  const phone = { width: 390, height: 844 };
+  const crop = (width: number, height: number, view = phone) => {
     const rect = guideCropRect(
       { width, height },
-      RECEIPT_VIEW,
+      view,
       RECEIPT_GUIDE_HEIGHT_FRACTION,
       RECEIPT_GUIDE_ASPECT,
     );
     return { rect, out: receiptOutputSize(rect.width, rect.height) };
   };
 
-  it('turns a 1080 x 1920 portrait frame into exactly 512 x 1536', () => {
+  it('keeps the guide aspect for a portrait frame and never upscales', () => {
     const { rect, out } = crop(1080, 1920);
-    expect(rect.width).toBeGreaterThanOrEqual(512);
-    expect(out).toEqual({ width: 512, height: 1536 });
+    expect(out).toEqual({ width: rect.width, height: rect.height });
+    expect(out.height / out.width).toBeCloseTo(3, 1);
   });
 
-  it('keeps a 1920 x 1080 landscape frame at the guide aspect, never upscaled', () => {
-    const { rect, out } = crop(1920, 1080);
-    expect(out.width).toBe(rect.width);
-    expect(out.height / out.width).toBeCloseTo(3, 1);
+  it('maps the centred on-screen guide through cover scaling for a landscape frame', () => {
+    // 1920 x 1080 on a 390 x 844 view: scale = 844 / 1080, the sides are cut off.
+    const { rect } = crop(1920, 1080);
+    const scale = 844 / 1080;
+    expect(rect.height).toBeCloseTo(
+      (844 * RECEIPT_GUIDE_HEIGHT_FRACTION) / scale,
+      -1,
+    );
+    expect(rect.x + rect.width / 2).toBeCloseTo(1920 / 2, -1);
+    expect(rect.y + rect.height / 2).toBeCloseTo(1080 / 2, -1);
+  });
+
+  it('maps the guide of a tall frame on a wider view by the other axis', () => {
+    // 1080 x 2400 on 390 x 700: scale = 390 / 1080, top and bottom are cut off.
+    const { rect } = crop(1080, 2400, { width: 390, height: 700 });
+    const scale = 390 / 1080;
+    expect(rect.height).toBeCloseTo(
+      (700 * RECEIPT_GUIDE_HEIGHT_FRACTION) / scale,
+      -1,
+    );
+    expect(rect.y + rect.height / 2).toBeCloseTo(2400 / 2, -1);
   });
 });
 

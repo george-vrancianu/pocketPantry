@@ -2,8 +2,9 @@ import { tokens } from '@pocket-pantry/ui';
 
 /** The translucent control look on the dark camera screen: round buttons and the Scan Language chip. */
 export const glassControl = (disabled: boolean) => ({
-  backgroundColor: 'rgba(255,255,255,0.12)',
-  color: '#FFFFFF',
+  backgroundColor: tokens.color.camGlass,
+  color: tokens.color.camFg,
+  backdropFilter: 'blur(14px)',
   cursor: disabled ? 'default' : 'pointer',
   opacity: disabled ? 0.5 : 1,
 });
