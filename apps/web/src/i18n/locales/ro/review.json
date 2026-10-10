@@ -147,6 +147,9 @@
     "check_few": "Verifică {{count}} articole",
     "check_other": "Verifică {{count}} de articole",
     "more": "+{{count}}",
-    "empty": "Încă nu ai fotografii."
+    "empty": "Încă nu ai fotografii.",
+    "add": "Adaugă în cămară",
+    "addWaiting": "Adaugă în cămară (se așteaptă {{count}})",
+    "discardAll": "Renunță la toate"
   }
 }
