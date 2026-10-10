@@ -6,10 +6,7 @@ import {
   rotatedBounds,
   rotatedCropTransform,
 } from './image';
-import {
-  RECEIPT_GUIDE_ASPECT,
-  RECEIPT_GUIDE_HEIGHT_FRACTION,
-} from './receiptGuide';
+import { guideRect } from './scanGuides';
 
 describe('fitWithin', () => {
   it('scales the longest edge down to the limit, keeping the aspect ratio', () => {
@@ -23,22 +20,23 @@ describe('fitWithin', () => {
 });
 
 describe('guideCropRect', () => {
-  // A 100 x 200 view with a 1:3 guide filling 90% of its height (so 60 wide).
+  // A 100 x 200 view with a 60 x 180 guide, centred, given as an on-screen rectangle.
   const view = { width: 100, height: 200 };
+  const guide = { x: 20, y: 10, width: 60, height: 180 };
 
   it('maps the guide onto a frame with the same aspect as the view', () => {
-    const rect = guideCropRect({ width: 1000, height: 2000 }, view, 0.9);
+    const rect = guideCropRect({ width: 1000, height: 2000 }, view, guide);
     expect(rect).toEqual({ x: 200, y: 100, width: 600, height: 1800 });
   });
 
   it('accounts for the preview cropping a wider frame to fill the view', () => {
     // Cover scale is 0.2 view px per frame px: the view shows 500 x 1000 of the frame, centred.
-    const rect = guideCropRect({ width: 1500, height: 1000 }, view, 0.9);
+    const rect = guideCropRect({ width: 1500, height: 1000 }, view, guide);
     expect(rect).toEqual({ x: 600, y: 50, width: 300, height: 900 });
   });
 
   it('handles a landscape frame delivered to a portrait view', () => {
-    const rect = guideCropRect({ width: 1920, height: 1080 }, view, 0.9);
+    const rect = guideCropRect({ width: 1920, height: 1080 }, view, guide);
     expect(rect.height).toBeCloseTo(972, 0);
     expect(rect.width).toBeCloseTo(324, 0);
     expect(rect.x + rect.width / 2).toBeCloseTo(960, 0);
@@ -46,7 +44,12 @@ describe('guideCropRect', () => {
   });
 
   it('keeps the crop inside the frame', () => {
-    const rect = guideCropRect({ width: 640, height: 480 }, view, 1);
+    const rect = guideCropRect({ width: 640, height: 480 }, view, {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 200,
+    });
     expect(rect.x).toBeGreaterThanOrEqual(0);
     expect(rect.y).toBeGreaterThanOrEqual(0);
     expect(rect.x + rect.width).toBeLessThanOrEqual(640);
@@ -71,45 +74,57 @@ describe('receiptOutputSize', () => {
   });
 });
 
-describe('receipt guide on a full-screen aspect-fill feed', () => {
+describe('receipt crop follows the on-screen guide on an aspect-fill feed', () => {
   const phone = { width: 390, height: 844 };
   const crop = (width: number, height: number, view = phone) => {
-    const rect = guideCropRect(
-      { width, height },
-      view,
-      RECEIPT_GUIDE_HEIGHT_FRACTION,
-      RECEIPT_GUIDE_ASPECT,
-    );
-    return { rect, out: receiptOutputSize(rect.width, rect.height) };
+    const guide = guideRect('receipt', view);
+    const rect = guideCropRect({ width, height }, view, guide);
+    return { guide, rect, out: receiptOutputSize(rect.width, rect.height) };
   };
 
-  it('keeps the guide aspect for a portrait frame and never upscales', () => {
-    const { rect, out } = crop(1080, 1920);
-    expect(out).toEqual({ width: rect.width, height: rect.height });
-    expect(out.height / out.width).toBeCloseTo(3, 1);
+  it('maps the guide rectangle through cover scaling (height-bound frame)', () => {
+    // 1080 x 1920 on 390 x 844: scale = 844 / 1920, the sides are cut off.
+    const { guide, rect } = crop(1080, 1920);
+    const scale = 844 / 1920;
+    const visibleX = (1080 - 390 / scale) / 2;
+    expect(rect.x).toBeCloseTo(visibleX + guide.x / scale, -1);
+    expect(rect.y).toBeCloseTo(guide.y / scale, -1);
+    expect(rect.width).toBeCloseTo(guide.width / scale, -1);
+    expect(rect.height).toBeCloseTo(guide.height / scale, -1);
   });
 
-  it('maps the centred on-screen guide through cover scaling for a landscape frame', () => {
-    // 1920 x 1080 on a 390 x 844 view: scale = 844 / 1080, the sides are cut off.
+  it('keeps the on-screen guide aspect (0.52 x 0.64 of the screen)', () => {
+    const { guide, rect } = crop(1080, 1920);
+    expect(rect.width / rect.height).toBeCloseTo(guide.width / guide.height, 1);
+  });
+
+  it('is centred at 46% of the height, not the middle of the frame', () => {
+    // 1920 x 1080 on 390 x 844: scale = 844 / 1080, the sides are cut off.
     const { rect } = crop(1920, 1080);
-    const scale = 844 / 1080;
-    expect(rect.height).toBeCloseTo(
-      (844 * RECEIPT_GUIDE_HEIGHT_FRACTION) / scale,
-      -1,
-    );
     expect(rect.x + rect.width / 2).toBeCloseTo(1920 / 2, -1);
-    expect(rect.y + rect.height / 2).toBeCloseTo(1080 / 2, -1);
+    expect(rect.y + rect.height / 2).toBeCloseTo(1080 * 0.46, -1);
   });
 
   it('maps the guide of a tall frame on a wider view by the other axis', () => {
     // 1080 x 2400 on 390 x 700: scale = 390 / 1080, top and bottom are cut off.
-    const { rect } = crop(1080, 2400, { width: 390, height: 700 });
+    const view = { width: 390, height: 700 };
+    const { guide, rect } = crop(1080, 2400, view);
     const scale = 390 / 1080;
-    expect(rect.height).toBeCloseTo(
-      (700 * RECEIPT_GUIDE_HEIGHT_FRACTION) / scale,
+    const visibleY = (2400 - 700 / scale) / 2;
+    expect(rect.y).toBeCloseTo(visibleY + guide.y / scale, -1);
+    expect(rect.height).toBeCloseTo(guide.height / scale, -1);
+    expect(rect.y + rect.height / 2).toBeCloseTo(
+      visibleY + (700 * 0.46) / scale,
       -1,
     );
-    expect(rect.y + rect.height / 2).toBeCloseTo(2400 / 2, -1);
+  });
+
+  it('is sent at the crop aspect rather than a forced 1:3, one tile wide, never upscaled', () => {
+    expect(receiptOutputSize(800, 1980)).toEqual({
+      width: 512,
+      height: Math.round((512 * 1980) / 800),
+    });
+    expect(receiptOutputSize(300, 742)).toEqual({ width: 300, height: 742 });
   });
 });
 
