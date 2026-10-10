@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
-import { resetScanSession } from '../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  resetScanSession,
+} from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { scanViaGuide } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
@@ -198,7 +202,66 @@ describe('Scan Session on the Scan screen', () => {
     expect(thumbnails()).toHaveLength(1);
   });
 
+  it('keeps the title for screen readers but hides it visually', () => {
+    renderScan();
+    const title = screen.getByRole('heading', { level: 1 });
+    const style = getComputedStyle(title);
+    expect(style.position).toBe('absolute');
+    expect(style.width).toBe('1px');
+    expect(style.height).toBe('1px');
+    expect(style.overflow).toBe('hidden');
+  });
+
+  it('does not start a third read when a reading Scan is removed but its request is still out', async () => {
+    renderScan();
+    await scanOnce();
+    await scanOnce();
+    await scanOnce();
+    expect(held).toHaveLength(2);
+    await act(async () =>
+      dispatchScanSession({ type: 'remove', id: getScanSession().scans[0].id }),
+    );
+    await scanOnce();
+    expect(held).toHaveLength(2);
+    await answer(0);
+    await waitFor(() => expect(held).toHaveLength(3));
+  });
+
+  describe('a read that fails', () => {
+    const nothingFound = /We could not spot any ingredients/;
+
+    it('is reported on the Scan screen the Member returns to', async () => {
+      renderScan();
+      await scanOnce();
+      await userEvent.click(done());
+      await userEvent.click(screen.getByRole('link', { name: 'Camera' }));
+      await answer(0, []);
+      expect(await screen.findByText(nothingFound)).toBeInTheDocument();
+      expect(thumbnails()).toHaveLength(0);
+    });
+
+    it('is reported when the Member comes back after it failed', async () => {
+      renderScan();
+      await scanOnce();
+      await userEvent.click(done());
+      await answer(0, []);
+      // An empty overview may send the Member back on its own.
+      const camera = screen.queryByRole('link', { name: 'Camera' });
+      if (camera) await userEvent.click(camera);
+      expect(await screen.findByText(nothingFound)).toBeInTheDocument();
+    });
+  });
+
   describe('Done', () => {
+    it('puts the count badge before the label', async () => {
+      renderScan();
+      await scanOnce();
+      expect(done().firstElementChild).toBe(
+        within(done()).getByTestId('done-count'),
+      );
+      expect(done().textContent).toMatch(/^1\s*Done/);
+    });
+
     it('is disabled while the Scan Session is empty', () => {
       renderScan();
       expect(done()).toBeDisabled();

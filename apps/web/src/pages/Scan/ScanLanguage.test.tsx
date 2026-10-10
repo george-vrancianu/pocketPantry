@@ -1,4 +1,4 @@
-import { act, cleanup, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { openFirstScanCard, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
@@ -22,7 +22,29 @@ vi.mock('../../lib/camera', () => ({
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
   cropToReceiptGuide: () => Promise.resolve('data:image/jpeg;base64,Y3JvcA=='),
+  cropToReceiptArea: () =>
+    Promise.resolve('data:image/jpeg;base64,Z2FsbGVyeQ=='),
 }));
+// react-easy-crop measures real sizes, which jsdom cannot do: report a fixed crop.
+vi.mock('react-easy-crop', async () => {
+  const { useEffect } = await import('react');
+  return {
+    default: ({
+      onCropComplete,
+    }: {
+      onCropComplete: (
+        area: unknown,
+        pixels: { x: number; y: number; width: number; height: number },
+      ) => void;
+    }) => {
+      useEffect(() => {
+        onCropComplete({}, { x: 10, y: 20, width: 300, height: 900 });
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- report once, like the real cropper on load
+      }, []);
+      return <div data-testid="cropper" />;
+    },
+  };
+});
 
 const unmatchedLine = {
   name: 'Cheese',
@@ -177,5 +199,18 @@ describe('Scan Language on the Scan screen', () => {
       (c) => c.key === 'POST /api/scan/receipt/confirm',
     );
     expect(new URLSearchParams(confirm?.search).get('scanLanguage')).toBe('da');
+  });
+
+  it('disables the picker after the first Receipt Section', async () => {
+    renderScan('/scan?mode=receipt');
+    expect(chip()).toBeEnabled();
+    fireEvent.change(screen.getByTestId('gallery-input'), {
+      target: { files: [new File(['x'], 'part.jpg', { type: 'image/jpeg' })] },
+    });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Use photo' }),
+    );
+    await screen.findByRole('button', { name: 'Finish' });
+    expect(chip()).toBeDisabled();
   });
 });
