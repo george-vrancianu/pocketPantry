@@ -52,7 +52,10 @@ export function ReviewOverviewPage() {
         id={cardId(scan.id)}
         tabIndex={-1}
         sx={{
-          outline: 'none',
+          '&:focus-visible': {
+            outline: `2px solid ${tokens.color.accentMid}`,
+            outlineOffset: 2,
+          },
           position: 'relative',
           display: 'flex',
           gap: 1.5,
