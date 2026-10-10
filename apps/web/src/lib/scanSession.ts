@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
 import type { DishGuess } from './plate';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
-import type { ReviewLine } from './review';
+import { reviewLinesOf, type ReviewLine } from './review';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -83,6 +83,12 @@ const update = (
   ),
 });
 
+/** A Scan ready to be read, or failed with the Scan Cap when it is already reached. */
+const waiting = (state: SessionState) =>
+  capReached(state)
+    ? ({ status: 'failed', failure: 'cap' } as const)
+    : ({ status: 'queued' } as const);
+
 export const emptySession: SessionState = { scans: [] };
 
 export function sessionReducer(
@@ -96,7 +102,7 @@ export function sessionReducer(
           ...state.scans,
           {
             ...action.scan,
-            status: action.scan.source ? 'uncropped' : 'queued',
+            ...(action.scan.source ? { status: 'uncropped' } : waiting(state)),
           },
         ],
       };
@@ -107,7 +113,7 @@ export function sessionReducer(
             ? {
                 ...scan,
                 image: action.image,
-                status: 'queued',
+                ...waiting(state),
                 source: undefined,
               }
             : scan,
@@ -159,13 +165,16 @@ export function sessionReducer(
         scan.status === 'failed' &&
         (scan.id === action.id ||
           (target?.failure === 'cap' && scan.failure === 'cap'));
+      // A cap failure elsewhere keeps a retried Scan held too.
+      const held = target?.failure !== 'cap' && capReached(state);
       return {
         scans: state.scans.map((scan) =>
           retried(scan)
             ? {
                 ...scan,
-                status: 'queued',
-                failure: undefined,
+                ...(held
+                  ? { status: 'failed', failure: 'cap' }
+                  : { status: 'queued', failure: undefined }),
                 errorCode: undefined,
                 errorParams: undefined,
               }
@@ -205,12 +214,18 @@ export function sessionReducer(
         ...sectionsOf(state.scans[index]),
       ];
       const lines = sections.flatMap((scan) => scan.lines ?? []);
+      // Edits made before the merge come along; the editor's lines win over `sections` in reviewLinesOf.
+      const below = state.scans[index];
+      const edited =
+        above.edited || below.edited
+          ? [...reviewLinesOf(above), ...reviewLinesOf(below)]
+          : undefined;
       return {
         scans: state.scans.flatMap((scan, i) =>
           i === index
             ? []
             : i === index - 1
-              ? [{ ...above, lines, sections }]
+              ? [{ ...above, lines, sections, edited }]
               : [scan],
         ),
       };
@@ -243,9 +258,6 @@ const FINAL_ERRORS = [
 export const canRetry = (scan: SessionScan) =>
   !FINAL_ERRORS.includes(scan.errorCode ?? '');
 
-/** Whether a Scan's lines are in. */
-export const isRead = (scan: SessionScan) => scan.status === 'read';
-
 const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
 
 /** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */
@@ -268,7 +280,7 @@ export const scanDisplayState = (scan: SessionScan): ScanDisplayState =>
 /** Scans not read yet and not failed: waiting for a crop, for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>
   state.scans.filter(
-    (scan) => scanDisplayState(scan) !== 'read' && scan.status !== 'failed',
+    (scan) => scan.status !== 'read' && scan.status !== 'failed',
   ).length;
 
 /** Gallery receipts waiting for the Member to crop them. */

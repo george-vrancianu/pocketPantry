@@ -254,6 +254,22 @@ export function ReviewOverviewPage() {
                   {tScan(`errors:${scan.errorCode}`, scan.errorParams)}
                 </Typography>
               ) : null}
+              <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
+                <Box
+                  component="button"
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    dispatchScanSession({ type: 'remove', id: scan.id });
+                    // Scans held back by the Scan Cap can go on now.
+                    readScans(i18n.language);
+                    navigate('/scan');
+                  }}
+                  sx={linkButton}
+                >
+                  {t('overview.retake')}
+                </Box>
+              </Box>
             </>
           ) : display === 'uncropped' ? (
             <>

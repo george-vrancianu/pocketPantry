@@ -149,6 +149,7 @@
     "fixValues": "Åbn kortet og ret de markerede værdier.",
     "discardAll": "Kasser alle",
     "failed": "Kunne ikke læses, tag om",
+    "retake": "Tag om",
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
     "readAgain": "Læs igen"

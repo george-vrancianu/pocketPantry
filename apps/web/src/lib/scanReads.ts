@@ -42,10 +42,11 @@ function readPlate(scan: SessionScan, locale: string) {
 }
 
 async function send(
-  scan: SessionScan & { mode: keyof typeof READ },
+  scan: SessionScan,
+  mode: keyof typeof READ,
   locale: string,
 ) {
-  const target = READ[scan.mode];
+  const target = READ[mode];
   const { lines } = await withNetworkRetry(() =>
     apiRequest<ScanResponse>(
       `${target.path}?${scanQuery(locale, scan.scanLanguage)}`,
@@ -78,7 +79,7 @@ export function readScans(locale: string) {
     inFlight.add(scan.id);
     (scan.mode === 'plate'
       ? readPlate(scan, locale)
-      : send({ ...scan, mode: scan.mode }, locale).then((lines) =>
+      : send(scan, scan.mode, locale).then((lines) =>
           dispatchScanSession({ type: 'read', id: scan.id, lines }),
         )
     )

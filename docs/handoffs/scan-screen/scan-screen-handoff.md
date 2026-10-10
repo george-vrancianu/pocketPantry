@@ -38,10 +38,10 @@ Settled in a design review against the current app. **These override the body be
 ### Review
 
 - `/scan/review` is the card overview; tapping a card opens the existing line editor for that Scan at `/scan/review/:scanId`. Cards with low-confidence or unmatched lines show "Check N items". Leaving `/scan` pauses the camera; the "Camera" link returns without losing the Scan Session.
-- Failed cards don't block "Add to pantry"; they have a ×, are dropped on Add and are not counted in the toast. "Retake" means remove the card and go back to the camera.
+- Failed cards don't block "Add to pantry"; they have a ×, are dropped on Add and are not counted in the toast. Each has a "Retake" button: it removes the card and goes back to the camera.
 - Add commits **per card, in order**, through the existing endpoints (`/pantry/batches/bulk`, `/scan/receipt/confirm`). Saved cards leave; failed cards stay with their error.
 - **Plate**: queued like the others; the dish picker lives on the card ("Pick the dish"). Plate token TTL goes to 60 min; if still expired, the card offers "Read again".
-- **Receipt Sections** (§10 said long receipts are out of scope; they already exist): each receipt photo is its own card; "Merge with previous" joins adjacent receipt cards (≤ 10 sections, not while reading) into one Receipt Scan with lines merged and lines merged in order; "Split" undoes it.
+- **Receipt Sections** (§10 said long receipts are out of scope; they already exist): each receipt photo is its own card; "Merge with previous" joins adjacent receipt cards (≤ 10 sections, not while reading) into one Receipt Scan with their lines joined in order; "Split" undoes it.
 
 ### Delivery
 

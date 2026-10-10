@@ -249,8 +249,6 @@ export function useScanScreen() {
     scanLanguageLocked: reading,
     camera,
     scans: session.scans,
-    /** How many Scans the Scan Session holds, for announcing a Scan that just joined. */
-    joined: session.scans.length,
     pending: pendingCount(session),
     done: () => navigate('/scan/review'),
     flash,

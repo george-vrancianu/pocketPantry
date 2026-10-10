@@ -40,7 +40,7 @@ export function useReviewScreen() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   // A card of the Scan Session is edited at /scan/review/:scanId.
-  const { scanId } = useParams();
+  const { scanId = '' } = useParams();
   // Read once: saving removes the card, which must not bounce the page back to the overview.
   const [draft] = useState(() => {
     const scan = getScanSession().scans.find((s) => s.id === scanId);
@@ -54,8 +54,7 @@ export function useReviewScreen() {
   });
   // Saving or discarding a card drops it from the Scan Session; the other cards are still to do.
   const leaveCard = (fallback: string) => {
-    if (scanId !== undefined)
-      dispatchScanSession({ type: 'remove', id: scanId });
+    dispatchScanSession({ type: 'remove', id: scanId });
     return getScanSession().scans.length > 0 ? '/scan/review' : fallback;
   };
   const [state, dispatch] = useReducer(
@@ -66,7 +65,7 @@ export function useReviewScreen() {
   // Every change goes back to the card, so Add all saves what the Member sees.
   const initialLines = useRef(state.lines);
   useEffect(() => {
-    if (scanId !== undefined && state.lines !== initialLines.current)
+    if (state.lines !== initialLines.current)
       dispatchScanSession({ type: 'edit', id: scanId, lines: state.lines });
   }, [scanId, state.lines]);
   const saver = useSaveLines(i18n.language);

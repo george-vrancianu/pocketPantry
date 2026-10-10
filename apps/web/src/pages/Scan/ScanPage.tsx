@@ -20,7 +20,6 @@ import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
-import { scanDisplayState } from '../../lib/scanSession';
 
 const roundButton = (size: number) => ({
   display: 'flex',
@@ -307,10 +306,12 @@ export function ScanPage() {
       </Snackbar>
 
       <Box role="status" sx={visuallyHidden}>
-        {screen.scans.some((scan) => scanDisplayState(scan) === 'failed')
+        {screen.scans.some((scan) => scan.status === 'failed')
           ? t('session.failed')
           : null}
-        {screen.joined > 0 ? t('photoAdded', { count: screen.joined }) : null}
+        {screen.scans.length > 0
+          ? t('photoAdded', { count: screen.scans.length })
+          : null}
       </Box>
 
       <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>

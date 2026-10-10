@@ -159,6 +159,7 @@
     "fixValues": "Deschide fișa și corectează valorile marcate.",
     "discardAll": "Renunță la toate",
     "failed": "Nu am putut citi, refă poza",
+    "retake": "Refă poza",
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
     "readAgain": "Citește din nou"

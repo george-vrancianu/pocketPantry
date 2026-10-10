@@ -151,6 +151,7 @@
     "fixValues": "Open this card and fix the highlighted values.",
     "discardAll": "Discard all",
     "failed": "Couldn't read, retake",
+    "retake": "Retake",
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
     "readAgain": "Read again"
