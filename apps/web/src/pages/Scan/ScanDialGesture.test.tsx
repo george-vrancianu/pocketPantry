@@ -1,5 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearReview } from '../../lib/review';
@@ -50,11 +49,18 @@ function drag(
     dy = 0,
     ms = 600,
     release = true,
-  }: { dx: number; dy?: number; ms?: number; release?: boolean },
+    pointerType = 'touch',
+  }: {
+    dx: number;
+    dy?: number;
+    ms?: number;
+    release?: boolean;
+    pointerType?: string;
+  },
 ) {
   const base = {
     pointerId: 1,
-    pointerType: 'touch',
+    pointerType,
     isPrimary: true,
     button: 0,
   };
@@ -152,13 +158,19 @@ describe('Scan mode dial gestures', () => {
     expect(selected()).toEqual(['Receipt']);
   });
 
-  it('selects by tap again once the drag is over', async () => {
-    renderScan('/scan?mode=product');
-    drag(item('Product'), { dx: 120 });
-    now += 500;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    await userEvent.click(item('Plate'));
-    expect(selected()).toEqual(['Plate']);
+  it('selects by tap again once the drag is over', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      renderScan('/scan?mode=product');
+      drag(item('Product'), { dx: 120 });
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      fireEvent.click(item('Plate'));
+      expect(selected()).toEqual(['Plate']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a pointer cancel snaps back and changes nothing', () => {
@@ -167,5 +179,86 @@ describe('Scan mode dial gestures', () => {
     fireEvent.pointerCancel(item('Product'), { pointerId: 1 });
     expect(selected()).toEqual(['Product']);
     expect(dial()).toHaveStyle({ transform: 'translateX(-126px)' });
+  });
+
+  it('works with a mouse pointer', () => {
+    renderScan('/scan?mode=product');
+    drag(item('Product'), { dx: -50, pointerType: 'mouse' });
+    expect(selected()).toEqual(['Ingredients']);
+  });
+
+  it('ignores a second pointer: it neither moves the strip nor ends the drag', () => {
+    renderScan('/scan?mode=product');
+    const radio = item('Product');
+    const first = {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+    };
+    const second = {
+      pointerId: 2,
+      pointerType: 'touch',
+      isPrimary: false,
+      button: 0,
+    };
+    fireEvent.pointerDown(radio, { ...first, clientX: 200, clientY: 500 });
+    now += 300;
+    fireEvent.pointerMove(radio, { ...first, clientX: 150, clientY: 500 });
+    expect(dial()).toHaveStyle({ transform: 'translateX(-176px)' });
+    fireEvent.pointerDown(radio, { ...second, clientX: 300, clientY: 500 });
+    fireEvent.pointerMove(radio, { ...second, clientX: 0, clientY: 500 });
+    expect(dial()).toHaveStyle({ transform: 'translateX(-176px)' });
+    fireEvent.pointerUp(radio, { ...second, clientX: 0, clientY: 500 });
+    expect(selected()).toEqual(['Product']);
+    // the first finger is still dragging and decides the release
+    now += 300;
+    fireEvent.pointerUp(radio, { ...first, clientX: 150, clientY: 500 });
+    expect(selected()).toEqual(['Ingredients']);
+  });
+
+  it('keeps the strip and the release target relative to where the drag began when the mode changes mid-drag', () => {
+    renderScan('/scan?mode=product');
+    const radio = item('Product');
+    const mouse = {
+      pointerId: 1,
+      pointerType: 'mouse',
+      isPrimary: true,
+      button: 0,
+    };
+    fireEvent.pointerDown(radio, { ...mouse, clientX: 200, clientY: 500 });
+    now += 600;
+    fireEvent.pointerMove(radio, { ...mouse, clientX: 180, clientY: 500 });
+    expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    expect(selected()).toEqual(['Ingredients']);
+    expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
+    fireEvent.pointerUp(radio, { ...mouse, clientX: 180, clientY: 500 });
+    // 20 px from where the drag began snaps back to where it began
+    expect(selected()).toEqual(['Product']);
+  });
+
+  it('does not start a drag while the dial is disabled', () => {
+    renderScan('/scan?mode=product');
+    fireEvent.click(screen.getByRole('button', { name: 'How scanning works' }));
+    drag(dial(), { dx: -150 });
+    expect(selected()).toEqual(['Product']);
+  });
+
+  it('does not change mode on release if the dial became disabled mid-drag', () => {
+    renderScan('/scan?mode=product');
+    const radio = item('Product');
+    const touch = {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+    };
+    fireEvent.pointerDown(radio, { ...touch, clientX: 200, clientY: 500 });
+    now += 600;
+    fireEvent.pointerMove(radio, { ...touch, clientX: 120, clientY: 500 });
+    fireEvent.click(screen.getByRole('button', { name: 'How scanning works' }));
+    fireEvent.pointerUp(radio, { ...touch, clientX: 120, clientY: 500 });
+    expect(selected()).toEqual(['Product']);
   });
 });
