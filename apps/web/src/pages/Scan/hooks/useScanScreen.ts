@@ -6,6 +6,12 @@ import { useCamera } from '../../../lib/camera';
 import { useIngredientsScan } from '../../../lib/ingredients-scan';
 import { registerLeaveGuard } from '../../../lib/leaveGuard';
 import { startReview } from '../../../lib/review';
+import { readScans } from '../../../lib/scanReads';
+import {
+  dispatchScanSession,
+  pendingCount,
+  useScanSession,
+} from '../../../lib/scanSession';
 import { cropToReceiptArea } from '../../../lib/image';
 import {
   IMAGE_PREPARATION,
@@ -112,6 +118,9 @@ export function useScanScreen() {
   const [resizing, setResizing] = useState(false);
   // Problems found on this screen itself (bad image, nothing recognised), as `errors` keys.
   const [localError, setLocalError] = useState<string | null>(null);
+  // A Scan of the Scan Session that could not be read; the Scan is dropped.
+  const [readError, setReadError] = useState<unknown>(null);
+  const session = useScanSession();
   const fileInput = useRef<HTMLInputElement>(null);
   /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
   const [scanned, setScanned] = useState(false);
@@ -141,6 +150,7 @@ export function useScanScreen() {
   ): Promise<boolean> => {
     setScanned(true);
     setLocalError(null);
+    setReadError(null);
     setNotice(null);
     setResizing(true);
     const epoch = scanEpoch.current;
@@ -154,6 +164,21 @@ export function useScanScreen() {
       setResizing(false);
     }
     if (epoch !== scanEpoch.current) return false;
+    // A camera Scan joins the Scan Session at once; its read goes on in the background.
+    if (origin === 'camera' && mode !== 'plate') {
+      dispatchScanSession({
+        type: 'enqueue',
+        scan: {
+          id: crypto.randomUUID(),
+          mode,
+          scanLanguage,
+          image,
+          thumbnail: image,
+        },
+      });
+      readScans(i18n.language, setReadError);
+      return false;
+    }
     if (mode === 'receipt') {
       return (await receiptSections.submit(image)) === 'failed';
     }
@@ -168,7 +193,7 @@ export function useScanScreen() {
           return;
         }
         startReview({ mode, lines, scanLanguage });
-        navigate('/scan/review');
+        navigate('/scan/review/draft');
       },
     });
     return false;
@@ -259,7 +284,7 @@ export function useScanScreen() {
     }
     clearQueue();
     startReview({ mode: 'receipt', lines, scanLanguage });
-    navigate('/scan/review');
+    navigate('/scan/review/draft');
   };
 
   const toggleFlash = async () => {
@@ -268,7 +293,8 @@ export function useScanScreen() {
     if (await camera.setTorch(next)) setFlash(next);
   };
 
-  const scanError = modeScan?.error ?? plate.error ?? receiptSections.error;
+  const scanError =
+    modeScan?.error ?? plate.error ?? receiptSections.error ?? readError;
   const error = localError
     ? t(`errors:${localError}`)
     : scanError
@@ -285,6 +311,9 @@ export function useScanScreen() {
     /** A receipt has one Scan Language, fixed by its first section. */
     scanLanguageLocked: reading || sectionsInProgress,
     camera,
+    scans: session.scans,
+    pending: pendingCount(session),
+    done: () => navigate('/scan/review'),
     flash,
     reading,
     scanned,

@@ -73,5 +73,11 @@
     "tooMany_one": "You picked {{selected}} photos, but there is only 1 more section left (the limit is 10). Pick fewer photos.",
     "tooMany_other": "You picked {{selected}} photos, but there are only {{count}} more sections left (the limit is 10). Pick fewer photos.",
     "discardConfirm": "Leave the scanner? The sections you have taken so far will be lost."
+  },
+  "done": "Done",
+  "queue": {
+    "label": "Photos taken",
+    "reading": "Reading photo",
+    "read": "Photo read"
   }
 }

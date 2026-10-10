@@ -26,7 +26,7 @@ const icon = (children: ReactNode) => (
   </svg>
 );
 
-const ICONS: Record<ScanMode, ReactNode> = {
+export const MODE_ICONS: Record<ScanMode, ReactNode> = {
   receipt: icon(
     <>
       <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
@@ -314,7 +314,7 @@ export function ModeDial({
                 [reducedMotion]: { transition: 'none' },
               }}
             >
-              {ICONS[item]}
+              {MODE_ICONS[item]}
             </Box>
           );
         })}

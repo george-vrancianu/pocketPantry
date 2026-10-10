@@ -73,5 +73,11 @@
     "tooMany_one": "Du valgte {{selected}} fotos, men der er kun 1 del tilbage (grænsen er 10). Vælg færre fotos.",
     "tooMany_other": "Du valgte {{selected}} fotos, men der er kun {{count}} dele tilbage (grænsen er 10). Vælg færre fotos.",
     "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
+  },
+  "done": "Færdig",
+  "queue": {
+    "label": "Tagne fotos",
+    "reading": "Læser foto",
+    "read": "Foto læst"
   }
 }
