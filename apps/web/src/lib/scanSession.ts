@@ -118,6 +118,7 @@ export function sessionReducer(
 const FINAL_ERRORS = [
   'scan.too_many_items',
   'scan.image_too_large',
+  'scan.image_invalid',
   'scan.nothing_found',
 ];
 
