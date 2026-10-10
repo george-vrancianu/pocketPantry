@@ -1,0 +1,323 @@
+<title>PocketPantry Scan Dial</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: one large phone frame centred, short notes beside it (stack on narrow). Dark camera chrome inside the phone. */
+:root{
+  --bg:#f3f1ec; --fg:#1d1b17; --muted:#6c675d; --line:#dcd7cc;
+  --accent:#2f7a4f; --accent-ink:#fff;
+  --ui:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --cam-glass:rgba(20,22,20,.55); --cam-glass-strong:rgba(20,22,20,.82); --cam-fg:#f4f4f0; --cam-dim:rgba(244,244,240,.62);
+  --cam-accent:#9be38f; --cam-accent-ink:#0c1a0f; --cam-warn:#ffcf5a;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15161a;--fg:#ecebe6;--muted:#9a978f;--line:#2b2d33;--accent:#8fd68f;--accent-ink:#0c1a0f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15161a;--fg:#ecebe6;--muted:#9a978f;--line:#2b2d33;--accent:#8fd68f;--accent-ink:#0c1a0f;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:15px;line-height:1.45;padding-inline:16px;padding-block:28px 48px}
+h1{font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+.lede{max-width:62ch;color:var(--muted);margin:0 0 28px}
+.lede b{color:var(--fg);font-weight:700}
+.stage{display:flex;flex-wrap:wrap;gap:36px 48px;justify-content:center;align-items:flex-start}
+.phone-wrap{width:min(100%,390px);display:flex;justify-content:center}
+.notes{max-width:40ch;color:var(--muted);font-size:14px;display:flex;flex-direction:column;gap:14px;padding-top:8px}
+.notes h3{color:var(--fg);font-size:13px;margin:0;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.notes p{margin:0}
+.notes b{color:var(--fg)}
+.notes .kbd{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12px;font-weight:700;color:var(--fg)}
+
+.phone{position:relative;width:390px;height:820px;border-radius:50px;background:#000;overflow:hidden;box-shadow:0 30px 60px -30px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4),inset 0 0 0 7px #0a0a0a;transform-origin:top center;user-select:none;-webkit-user-select:none;touch-action:none;font-family:var(--ui);color:var(--cam-fg)}
+.phone canvas.feed{position:absolute;inset:0;width:100%;height:100%;display:block}
+.island{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:116px;height:32px;border-radius:20px;background:#000;z-index:9}
+.vignette{position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(0,0,0,.45) 100%)}
+.whiteflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4}
+.whiteflash.go{animation:wf .28s ease-out}
+@keyframes wf{0%{opacity:.55}100%{opacity:0}}
+
+.topbar{position:absolute;top:0;left:0;right:0;padding:56px 18px 0;display:flex;justify-content:space-between;align-items:center;z-index:5}
+.iconbtn{width:40px;height:40px;border-radius:50%;background:var(--cam-glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.12);color:var(--cam-fg);display:grid;place-items:center;cursor:pointer;font-weight:800;font-size:15px;transition:transform .15s}
+.iconbtn:active{transform:scale(.92)}
+.iconbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.topmid{display:flex;align-items:center;gap:8px}
+.iconbtn.info{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45);box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.iconbtn.info svg{width:21px;height:21px;stroke-width:2}
+.done{display:flex;align-items:center;gap:8px;background:var(--cam-fg);color:#111;border:0;border-radius:999px;padding:10px 15px;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px -8px rgba(0,0,0,.6);transition:transform .15s,opacity .3s}
+.done:active{transform:scale(.96)}
+.done[disabled]{opacity:.45;cursor:default}
+.done .n{background:#111;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:grid;place-items:center;font-size:12px;font-variant-numeric:tabular-nums}
+.done .n.busy{background:var(--cam-warn);color:#111}
+
+/* guides */
+.guide{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:3;cursor:pointer;transition:width .4s cubic-bezier(.2,.8,.2,1),height .4s cubic-bezier(.2,.8,.2,1)}
+.guide .c{position:absolute;width:30px;height:30px;border:3.5px solid var(--cam-fg);transition:border-color .2s,border-width .12s;filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
+.guide .c.tl{left:-2px;top:-2px;border-right:0;border-bottom:0;border-radius:10px 0 0 0}
+.guide .c.tr{right:-2px;top:-2px;border-left:0;border-bottom:0;border-radius:0 10px 0 0}
+.guide .c.bl{left:-2px;bottom:-2px;border-right:0;border-top:0;border-radius:0 0 0 10px}
+.guide .c.br{right:-2px;bottom:-2px;border-left:0;border-top:0;border-radius:0 0 10px 0}
+.guide .fill{position:absolute;inset:0;border-radius:14px;background:#fff;opacity:0;pointer-events:none}
+.guide .hint{position:absolute;left:50%;bottom:-40px;transform:translateX(-50%);white-space:nowrap;font-size:12.5px;font-weight:600;color:var(--cam-dim);background:var(--cam-glass);padding:5px 11px;border-radius:999px;backdrop-filter:blur(10px);transition:opacity .5s}
+.guide.armed .c{border-color:var(--cam-accent)}
+.guide.flash .c{border-color:#fff;border-width:6px}
+.guide.flash .fill{animation:flashfill .42s ease-out}
+.guide.flash{animation:shutter .36s ease-out}
+.guide .scanline{position:absolute;left:8%;right:8%;height:2px;top:50%;background:linear-gradient(90deg,transparent,var(--cam-accent),transparent);opacity:0;pointer-events:none}
+.guide[data-mode="barcode"] .scanline{opacity:.9;animation:scan 1.6s ease-in-out infinite}
+@keyframes flashfill{0%{opacity:.85}100%{opacity:0}}
+@keyframes shutter{0%{transform:translate(-50%,-50%) scale(1)}35%{transform:translate(-50%,-50%) scale(.965)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes scan{0%,100%{top:22%}50%{top:78%}}
+
+/* queue column, left */
+.queue{position:absolute;left:14px;top:118px;display:flex;flex-direction:column;gap:8px;z-index:5;max-height:400px;overflow:hidden;mask-image:linear-gradient(180deg,#000 82%,transparent)}
+.thumb{position:relative;width:46px;height:60px;border-radius:11px;overflow:hidden;background:#222;border:1.5px solid rgba(255,255,255,.35);flex:none;animation:pop .35s cubic-bezier(.2,1.4,.4,1)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .st{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35)}
+.thumb .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .8s linear infinite}
+.thumb.done .st{background:transparent;align-items:end;justify-items:end}
+.thumb.done .spin{display:none}
+.thumb .ok{display:none;width:16px;height:16px;border-radius:50%;background:var(--cam-accent);color:var(--cam-accent-ink);margin:3px;place-items:center}
+.thumb .ok svg{width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.thumb.done .ok{display:grid}
+.thumb .tag{position:absolute;left:0;right:0;top:0;display:grid;place-items:center;padding:3px 0}
+.thumb .tag svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 2px rgba(0,0,0,.8))}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* ===== the dial ===== */
+.dial{position:absolute;left:0;right:0;bottom:0;height:150px;z-index:5;padding-bottom:env(safe-area-inset-bottom,0px);background:linear-gradient(180deg,transparent,rgba(0,0,0,.5) 35%,rgba(0,0,0,.8));cursor:grab}
+.dial.drag{cursor:grabbing}
+.dial .label{position:absolute;left:0;right:0;top:28px;text-align:center;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cam-accent);text-shadow:0 1px 6px rgba(0,0,0,.6);transition:opacity .2s,transform .2s}
+.dial .label.swap{animation:lbl .32s ease-out}
+@keyframes lbl{0%{opacity:0;transform:translateY(5px)}100%{opacity:1;transform:none}}
+.dial .ring{position:absolute;left:50%;top:58px;width:64px;height:64px;transform:translateX(-50%);border-radius:50%;border:2.5px solid var(--cam-accent);box-shadow:0 0 0 6px rgba(155,227,143,.14);pointer-events:none;transition:transform .15s}
+.dial.drag .ring{transform:translateX(-50%) scale(.94)}
+.dial .track{position:absolute;left:50%;top:58px;height:64px;display:flex;gap:0;will-change:transform;transition:transform .42s cubic-bezier(.2,.8,.2,1)}
+.dial.drag .track{transition:none}
+.dial .item{width:84px;height:64px;display:grid;place-items:center;color:var(--cam-fg);cursor:pointer;transition:color .25s,transform .25s,opacity .25s;opacity:.75;transform:scale(.82)}
+.dial .item svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 3px rgba(0,0,0,.7))}
+.dial .item.on{color:var(--cam-accent);opacity:1;transform:scale(1)}
+.dial .edge{position:absolute;left:0;right:0;top:50px;height:80px;z-index:3;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.55),transparent 24%,transparent 76%,rgba(0,0,0,.55))}
+.dial .track{z-index:2}
+
+/* info sheet */
+.sheet{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-end;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s}
+.sheet.open{opacity:1;pointer-events:auto}
+.sheet .panel{width:100%;background:#161816;color:var(--cam-fg);border-radius:28px 28px 0 0;padding:14px 22px 40px;transform:translateY(30px);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.sheet.open .panel{transform:none}
+.sheet .grab{width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.25);margin:0 auto 16px}
+.sheet h3{margin:0 0 12px;font-size:17px;font-weight:800}
+.sheet dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:10px 14px;font-size:13.5px}
+.sheet dt{font-weight:800;color:var(--cam-accent)}
+.sheet dd{margin:0;color:var(--cam-dim)}
+.sheet .tip{margin:16px 0 0;padding:12px 14px;border-radius:14px;background:rgba(155,227,143,.1);font-size:13px;color:var(--cam-dim)}
+.sheet .tip b{color:var(--cam-fg)}
+
+/* review */
+.review{position:absolute;inset:0;z-index:30;background:#121412;color:var(--cam-fg);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .38s cubic-bezier(.2,.8,.2,1)}
+.review.open{transform:none}
+.review header{padding:64px 20px 12px;display:flex;align-items:center;justify-content:space-between}
+.review header h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.01em}
+.review header small{display:block;color:var(--cam-dim);font-weight:600;font-size:12.5px;margin-top:2px}
+.review .back{background:none;border:0;color:var(--cam-accent);font:inherit;font-weight:800;cursor:pointer;padding:8px 0}
+.review .list{flex:1;overflow:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.rcard{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;background:#1c1f1c;border-radius:16px;padding:10px}
+.rcard img{width:56px;height:56px;border-radius:10px;object-fit:cover;display:block}
+.rcard .mode{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cam-accent)}
+.rcard .res{font-size:13.5px;font-weight:600;line-height:1.3}
+.rcard .res.wait{color:var(--cam-dim)}
+.rcard .items{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.rcard .items span{font-size:11px;font-weight:700;background:rgba(255,255,255,.08);border-radius:6px;padding:2px 7px}
+.rcard .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.2);border-top-color:var(--cam-accent);animation:spin .8s linear infinite}
+.rcard .x{background:none;border:0;color:var(--cam-dim);font-size:18px;cursor:pointer;padding:6px}
+.review footer{padding:12px 16px 36px;display:flex;flex-direction:column;gap:8px}
+.review .primary{background:var(--cam-accent);color:var(--cam-accent-ink);border:0;border-radius:16px;padding:16px;font:inherit;font-weight:800;font-size:15px;cursor:pointer}
+.review .primary[disabled]{opacity:.5}
+.review .ghost{background:none;border:0;color:var(--cam-dim);font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;padding:8px}
+.toast{position:absolute;left:50%;bottom:170px;transform:translateX(-50%) translateY(10px);background:var(--cam-glass-strong);color:var(--cam-fg);padding:9px 14px;border-radius:999px;font-size:12.5px;font-weight:700;opacity:0;transition:all .3s;z-index:40;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<h1>Scan dial</h1>
+<p class="lede">Variant B, refined. The mode picker is now an <b>icon dial</b>: the selected icon sits in the ring with its name above, and you <b>swipe left or right</b> anywhere on the lower half (or on the viewfinder) to change mode, or tap an icon. <b>Double-tap inside the frame</b> to capture.</p>
+
+<div class="stage">
+  <div class="phone-wrap">
+    <div class="phone" id="phone">
+      <canvas class="feed" width="390" height="820"></canvas>
+      <div class="vignette"></div>
+      <div class="whiteflash"></div>
+      <div class="island"></div>
+      <div class="topbar">
+        <div class="iconbtn close" title="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+        <div class="topmid">
+          <div class="iconbtn info" title="How scanning works"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg></div>
+          <button class="done" disabled><span class="n">0</span> Done</button>
+        </div>
+      </div>
+      <div class="guide" data-mode="receipt">
+        <div class="fill"></div>
+        <div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div>
+        <div class="scanline"></div>
+        <div class="hint">Double-tap to capture</div>
+      </div>
+      <div class="queue"></div>
+      <div class="dial">
+        <div class="label">Receipt</div>
+        <div class="ring"></div>
+        <div class="edge"></div>
+        <div class="track"></div>
+      </div>
+      <div class="toast"></div>
+      <div class="sheet">
+        <div class="panel">
+          <div class="grab"></div>
+          <h3>Scanning your pantry</h3>
+          <dl>
+            <dt>Receipt</dt><dd>Lay the whole receipt flat inside the frame. Long ones can be shot in two parts.</dd>
+            <dt>Barcode</dt><dd>Fill the strip with the code. Works on blurry and curved packs too.</dd>
+            <dt>Label</dt><dd>Point at the ingredients or best-before text to read dates and allergens.</dd>
+            <dt>Shelf</dt><dd>Step back and frame a whole shelf. We spot items we already know.</dd>
+          </dl>
+          <p class="tip"><b>Swipe</b> to change mode, <b>double-tap</b> the frame to shoot. Every photo is read in the background and everything lands in one review when you tap Done.</p>
+        </div>
+      </div>
+      <div class="review">
+        <header>
+          <div><h3>Review</h3><small></small></div>
+          <button class="back">Camera</button>
+        </header>
+        <div class="list"></div>
+        <footer>
+          <button class="primary">Add to pantry</button>
+          <button class="ghost">Discard all</button>
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <aside class="notes">
+    <h3>How the dial behaves</h3>
+    <p><b>Selected = centred.</b> Only the icon in the ring carries its name, in the accent colour above it. Neighbours are dimmed and smaller, and the strip fades at the edges so it reads as a wheel, not a toolbar.</p>
+    <p><b>Swipe anywhere low.</b> A horizontal drag on the dial or the viewfinder scrolls the strip live under the finger and snaps to the nearest icon on release; a quick flick advances one step. A tap on any icon jumps straight to it. On desktop, <span class="kbd">←</span> <span class="kbd">→</span> also work.</p>
+    <p><b>Guides follow the mode</b> with a 400&nbsp;ms morph, so the swipe has visible consequence in the frame, not only in the strip.</p>
+    <h3>Everything else from round 1</h3>
+    <p>Queue column on the left with per-photo spinner → check, mode icon on each thumbnail. Done lives top-right next to the info button so the bottom stays reserved for the dial, and its badge turns amber while photos are still being read.</p>
+  </aside>
+</div>
+
+<script>
+(function(){
+const ICONS={
+  receipt:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+  barcode:'<svg viewBox="0 0 24 24"><path d="M4 6v12M8 6v12M11 6v12M15 6v12M18 6v12M20 6v12"/></svg>',
+  label:'<svg viewBox="0 0 24 24"><path d="M4 7a3 3 0 013-3h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3z"/><path d="M8 9h8M8 12.5h8M8 16h5"/></svg>',
+  shelf:'<svg viewBox="0 0 24 24"><path d="M3 10h18M3 18h18"/><path d="M6 10V6h3v4M12 10V5h4v5M7 18v-4h4v4M14 18v-5h3v5"/></svg>'
+};
+const MODES=[
+  {id:'receipt',name:'Receipt',w:.52,h:.64,hint:'Lay flat, double-tap to capture'},
+  {id:'barcode',name:'Barcode',w:.74,h:.18,hint:'Fill the strip, double-tap'},
+  {id:'label',name:'Label',w:.6,h:.48,hint:'Frame the date or ingredients'},
+  {id:'shelf',name:'Shelf',w:.88,h:.42,hint:'Step back, fit the shelf'}
+];
+const RESULTS={
+  receipt:[{t:'14 items · €43.20 · Mega Image',items:['Milk 1L','Eggs ×10','Spinach','Feta','Bread','+9']},{t:'7 items · €18.65 · Lidl',items:['Oats','Bananas','Yogurt ×4','Butter','+3']}],
+  barcode:[{t:'Oat milk, Alpro 1L',items:['Fridge','Opens 7 days']},{t:'Chickpeas, Sun Food 400g',items:['Pantry']},{t:'Dark chocolate 85%',items:['Pantry']}],
+  label:[{t:'Greek yogurt · best before 18 Oct 2026',items:['Milk','Live cultures']},{t:'Rice cakes · best before 02 Mar 2027',items:['Gluten-free']}],
+  shelf:[{t:'9 items spotted on this shelf',items:['Pasta ×2','Tomato sauce','Olive oil','Honey','+5']},{t:'5 items spotted',items:['Coffee','Tea','Sugar','Flour','Cocoa']}]
+};
+const JARS=['#c9742b','#d9b84a','#7d9d4a','#b5443a','#e8d8b0','#5f7f9a','#9a6b3f','#d49a6a','#6c8c5a','#efe4c6'];
+const W=390,H=820,ITEM=84;
+function rand(a,b){return a+Math.random()*(b-a)}
+
+class Feed{
+  constructor(canvas){this.c=canvas;this.ctx=canvas.getContext('2d');this.t=0;this.items=[];
+    for(let s=0;s<3;s++){let x=10;while(x<W-20){const w=rand(34,70),h=rand(70,150);this.items.push({x,y:140+s*240,w,h,col:JARS[Math.floor(Math.random()*JARS.length)],lid:Math.random()>.5});x+=w+rand(6,16)}}
+    this.loop=this.loop.bind(this);requestAnimationFrame(this.loop)}
+  draw(){const {ctx}=this,t=this.t;const sway=Math.sin(t/900)*4,bob=Math.cos(t/1300)*3;
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#3a3330');g.addColorStop(1,'#1b1715');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    ctx.save();ctx.translate(sway,bob);
+    for(let s=0;s<3;s++){const y=140+s*240;ctx.fillStyle='#5a4634';ctx.fillRect(-20,y+150,W+40,14);ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(-20,y+164,W+40,10)}
+    for(const it of this.items){const y=it.y+150-it.h;ctx.fillStyle=it.col;ctx.beginPath();ctx.roundRect(it.x,y,it.w,it.h,8);ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(it.x+4,y+8,it.w*.22,it.h-16);
+      ctx.fillStyle='rgba(255,255,255,.55)';ctx.fillRect(it.x+6,y+it.h*.4,it.w-12,it.h*.22);
+      ctx.fillStyle='rgba(0,0,0,.35)';for(let k=0;k<3;k++)ctx.fillRect(it.x+10,y+it.h*.45+k*6,it.w-20-k*8,2);
+      if(it.lid){ctx.fillStyle='#2a2320';ctx.fillRect(it.x+3,y-6,it.w-6,10)}}
+    ctx.restore();
+    ctx.fillStyle=`rgba(255,240,220,${0.03+0.02*Math.sin(t/700)})`;ctx.fillRect(0,0,W,H);
+    for(let i=0;i<60;i++){ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(Math.random()*W,Math.random()*H,2,2)}}
+  loop(ts){this.t=ts;this.draw();requestAnimationFrame(this.loop)}
+  snapshot(){const o=document.createElement('canvas');o.width=120;o.height=156;const g=o.getContext('2d');g.drawImage(this.c,75,220,240,312,0,0,120,156);return o.toDataURL('image/jpeg',.7)}
+}
+
+const root=document.getElementById('phone');
+const feed=new Feed(root.querySelector('.feed'));
+const guide=root.querySelector('.guide'),hint=root.querySelector('.hint'),queue=root.querySelector('.queue');
+const doneBtn=root.querySelector('.done'),toast=root.querySelector('.toast'),review=root.querySelector('.review'),sheet=root.querySelector('.sheet');
+const dial=root.querySelector('.dial'),track=dial.querySelector('.track'),label=dial.querySelector('.label');
+let shots=[],idx=0,captured=false,lastTap=0,lastXY=null,toastT;
+
+/* ---- dial ---- */
+MODES.forEach((m,i)=>{const el=document.createElement('div');el.className='item';el.dataset.i=i;el.innerHTML=ICONS[m.id];el.addEventListener('click',e=>{if(dragMoved)return;select(i)});track.appendChild(el)});
+let offset=0; // px, 0 = first item centred
+function trackX(o){return -ITEM/2 - o}
+function render(o){track.style.transform=`translateX(${trackX(o)}px)`}
+function select(i,{announce=true}={}){i=Math.max(0,Math.min(MODES.length-1,i));const changed=i!==idx;idx=i;offset=i*ITEM;render(offset);
+  track.querySelectorAll('.item').forEach(el=>el.classList.toggle('on',+el.dataset.i===i));
+  const m=MODES[i];guide.dataset.mode=m.id;guide.style.width=(W*m.w)+'px';guide.style.height=(H*m.h)+'px';
+  if(changed&&announce){label.classList.remove('swap');void label.offsetWidth;label.classList.add('swap');if(navigator.vibrate)try{navigator.vibrate(6)}catch(_){}}
+  label.textContent=m.name;if(!captured)hint.textContent=m.hint}
+select(0,{announce:false});
+
+/* swipe: on the dial and on the viewfinder (below the top bar) */
+let drag=null,dragMoved=false;
+function onDown(e){if(e.target.closest('.topbar,.queue,.sheet,.review'))return;drag={x:e.clientX,y:e.clientY,t:performance.now(),start:offset,scale:currentScale()};dragMoved=false}
+function onMove(e){if(!drag)return;const dx=(e.clientX-drag.x)/drag.scale,dy=(e.clientY-drag.y)/drag.scale;
+  if(!dragMoved){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)){dragMoved=true;dial.classList.add('drag')}else return}
+  let o=drag.start-dx;const max=(MODES.length-1)*ITEM;if(o<0)o=o*.35;if(o>max)o=max+(o-max)*.35;offset=o;render(o)}
+function onUp(e){if(!drag)return;const d=drag;drag=null;dial.classList.remove('drag');if(!dragMoved)return;
+  const dx=(e.clientX-d.x)/d.scale,dt=performance.now()-d.t,v=dx/dt;let target=Math.round(offset/ITEM);
+  if(Math.abs(v)>.45&&Math.abs(dx)<ITEM*.6)target=idx+(v<0?1:-1);
+  select(target);setTimeout(()=>{dragMoved=false},50)}
+root.addEventListener('pointerdown',onDown);root.addEventListener('pointermove',onMove);root.addEventListener('pointerup',onUp);root.addEventListener('pointercancel',()=>{drag=null;dial.classList.remove('drag');select(idx)});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')select(idx+1);if(e.key==='ArrowLeft')select(idx-1)});
+
+/* double-tap capture on the guide */
+guide.addEventListener('pointerdown',()=>{guide.classList.add('armed');setTimeout(()=>guide.classList.remove('armed'),320)});
+guide.addEventListener('pointerup',e=>{if(dragMoved)return;const now=performance.now(),xy=[e.clientX,e.clientY];
+  const close=lastXY&&Math.hypot(xy[0]-lastXY[0],xy[1]-lastXY[1])<60;
+  if(now-lastTap<320&&close){lastTap=0;lastXY=null;capture()}else{lastTap=now;lastXY=xy}});
+
+function capture(){
+  guide.classList.remove('flash');void guide.offsetWidth;guide.classList.add('flash');
+  const wf=root.querySelector('.whiteflash');wf.classList.remove('go');void wf.offsetWidth;wf.classList.add('go');
+  if(navigator.vibrate)try{navigator.vibrate(12)}catch(_){}
+  if(!captured){captured=true;hint.style.opacity='0'}
+  const src=feed.snapshot(),mode=MODES[idx],pool=RESULTS[mode.id],res=pool[Math.floor(Math.random()*pool.length)];
+  const shot={src,mode,res,done:false,el:null};shots.push(shot);
+  const th=document.createElement('div');th.className='thumb';th.innerHTML=`<img src="${src}" alt=""><div class="st"><div class="spin"></div><div class="ok"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></div></div><div class="tag">${ICONS[mode.id]}</div>`;
+  shot.el=th;queue.appendChild(th);updateDone();
+  setTimeout(()=>{shot.done=true;th.classList.add('done');updateDone();renderReview()},rand(1800,4200))}
+function updateDone(){const n=shots.length,busy=shots.filter(s=>!s.done).length;const N=doneBtn.querySelector('.n');N.textContent=n;N.classList.toggle('busy',busy>0);doneBtn.disabled=n===0}
+function renderReview(){if(!review.classList.contains('open'))return;const list=review.querySelector('.list'),busy=shots.filter(s=>!s.done).length;
+  review.querySelector('small').textContent=busy?`${shots.length} photos · ${busy} still reading`:`${shots.length} photos · all read`;
+  list.innerHTML='';shots.forEach((s,i)=>{const c=document.createElement('div');c.className='rcard';
+    c.innerHTML=`<img src="${s.src}" alt=""><div><div class="mode">${s.mode.name}</div>${s.done?`<div class="res">${s.res.t}</div><div class="items">${s.res.items.map(x=>`<span>${x}</span>`).join('')}</div>`:`<div class="res wait">Reading photo…</div>`}</div>${s.done?`<button class="x" title="Remove">×</button>`:`<div class="spin"></div>`}`;
+    const x=c.querySelector('.x');if(x)x.addEventListener('click',()=>{shots.splice(i,1);s.el.remove();updateDone();renderReview();if(!shots.length)review.classList.remove('open')});
+    list.appendChild(c)});
+  const p=review.querySelector('.primary');p.disabled=busy>0;p.textContent=busy?`Add to pantry (waiting on ${busy})`:'Add to pantry'}
+function say(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>toast.classList.remove('show'),1800)}
+function clearAll(){shots=[];queue.innerHTML='';updateDone();review.classList.remove('open')}
+
+root.querySelector('.info').addEventListener('click',()=>sheet.classList.add('open'));
+sheet.addEventListener('click',e=>{if(e.target===sheet)sheet.classList.remove('open')});
+root.querySelector('.close').addEventListener('click',()=>say('Close scanner (prototype)'));
+doneBtn.addEventListener('click',()=>{review.classList.add('open');renderReview()});
+root.querySelector('.back').addEventListener('click',()=>review.classList.remove('open'));
+root.querySelector('.ghost').addEventListener('click',()=>{clearAll();say('Discarded')});
+root.querySelector('.primary').addEventListener('click',()=>{const n=shots.length;clearAll();say(`Added results from ${n} photo${n>1?'s':''}`)});
+
+/* fit */
+let scale=1;function currentScale(){return scale}
+function fit(){const w=Math.min(W,window.innerWidth-32);scale=w/W;root.style.transform=`scale(${scale})`;root.parentElement.style.height=(H*scale)+'px'}
+fit();window.addEventListener('resize',fit);
+})();
+</script>
