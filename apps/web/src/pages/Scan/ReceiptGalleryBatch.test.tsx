@@ -255,8 +255,8 @@ describe('Receipt gallery multi-select', () => {
     await cropDialog();
     await click('Use photo');
     await screen.findByText('Section 1: 1 line found');
-    await click('Product');
-    await click('Receipt');
+    await userEvent.click(screen.getByRole('radio', { name: 'Product' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByText(/photos? waiting/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Next photo' })).toBeNull();

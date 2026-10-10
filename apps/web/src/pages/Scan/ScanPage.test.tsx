@@ -61,7 +61,10 @@ const proposed: ProposedLine = {
   productDescription: 'Grana Padano 200g',
 };
 
-function renderScan(routes: Record<string, () => Response>) {
+function renderScan(
+  routes: Record<string, () => Response>,
+  route = '/scan?mode=product',
+) {
   const { fetchMock, calls } = stubApi(routes);
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
@@ -69,7 +72,7 @@ function renderScan(routes: Record<string, () => Response>) {
       <Route path="/scan" element={<ScanPage />} />
       <Route path="/scan/review" element={<ReviewPage />} />
     </Routes>,
-    { route: '/scan' },
+    { route },
   );
   return calls;
 }
@@ -81,16 +84,12 @@ describe('ScanPage', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('has the camera controls, with Product selected among all four mode pills', () => {
-    renderScan({});
-    const modes = screen.getByRole('group', { name: 'Scan mode' });
+  it('has the camera controls, with Receipt selected among all four modes', () => {
+    renderScan({}, '/scan');
     expect(
-      Array.from(modes.querySelectorAll('button')).map((b) => b.textContent),
-    ).toEqual(['Product', 'Receipt', 'Plate', 'Ingredients']);
-    expect(screen.getByRole('button', { name: 'Product' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+      screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label')),
+    ).toEqual(['Receipt', 'Product', 'Ingredients', 'Plate']);
+    expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
       'Toggle flash',
@@ -120,7 +119,7 @@ describe('ScanPage', () => {
         <Route path="/scan" element={<ScanPage />} />
         <Route path="/pantry" element={<PantryPage />} />
       </Routes>,
-      { route: '/scan' },
+      { route: '/scan?mode=product' },
     );
     await userEvent.click(screen.getByRole('button', { name: 'Add manually' }));
     expect(
@@ -141,7 +140,7 @@ describe('ScanPage', () => {
     const flash = screen.getByRole('button', { name: 'Toggle flash' });
     await userEvent.click(flash);
     expect(flash).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(screen.getByRole('button', { name: 'Receipt' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Receipt' }));
     await waitFor(() => expect(flash).toHaveAttribute('aria-pressed', 'false'));
   });
 
@@ -149,9 +148,9 @@ describe('ScanPage', () => {
     'enables the shutter in %s mode',
     async (mode) => {
       renderScan({});
-      await userEvent.click(screen.getByRole('button', { name: mode }));
-      expect(screen.getByRole('button', { name: mode })).toHaveAttribute(
-        'aria-pressed',
+      await userEvent.click(screen.getByRole('radio', { name: mode }));
+      expect(screen.getByRole('radio', { name: mode })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
       expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();

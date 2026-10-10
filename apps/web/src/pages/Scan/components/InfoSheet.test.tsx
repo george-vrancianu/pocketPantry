@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../../test/render';
@@ -17,5 +17,25 @@ describe('InfoSheet focus trap', () => {
     await userEvent.tab();
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
     expect(document.activeElement).toBe(buttons[0]);
+  });
+});
+
+describe('InfoSheet mode list', () => {
+  it('describes the four Scan Modes in dial order', () => {
+    renderWithProviders(<InfoSheet onClose={vi.fn()} />);
+    const items = within(
+      screen.getByRole('dialog').querySelector('ul') as HTMLElement,
+    ).getAllByRole('listitem');
+    expect(items.map((li) => li.textContent)).toEqual([
+      expect.stringContaining('Receipt'),
+      expect.stringContaining('Product'),
+      expect.stringContaining('Ingredients'),
+      expect.stringContaining('Plate'),
+    ]);
+    // One line each, reusing the mode descriptions.
+    expect(items[0]).toHaveTextContent(
+      'Adds every item from your shop in one go.',
+    );
+    expect(items[3]).toHaveTextContent('Lists its ingredients');
   });
 });

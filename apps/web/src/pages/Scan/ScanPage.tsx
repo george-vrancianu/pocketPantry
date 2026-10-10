@@ -12,12 +12,12 @@ import {
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
-import { SCAN_MODES } from '../../lib/scan';
 import { glassControl, glassFocusRing } from './components/glass';
 import { DishPicker } from './components/DishPicker';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ReceiptCropper } from './components/ReceiptCropper';
 import { ReceiptSections } from './components/ReceiptSections';
+import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
@@ -239,42 +239,18 @@ export function ScanPage() {
           />
         ) : null}
 
-        <Box
-          role="group"
-          aria-label={t('modes')}
-          sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: '6px' }}
-        >
-          {SCAN_MODES.map((mode) => {
-            const active = mode === screen.mode;
-            return (
-              <Box
-                key={mode}
-                component="button"
-                type="button"
-                aria-pressed={active}
-                disabled={screen.modesDisabled}
-                onClick={() => screen.setMode(mode)}
-                sx={{
-                  height: 40,
-                  px: '14px',
-                  borderRadius: '20px',
-                  border: 0,
-                  fontFamily: 'inherit',
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 600,
-                  cursor: 'pointer',
-                  '&:disabled': { opacity: 0.5, cursor: 'default' },
-                  backgroundColor: active
-                    ? tokens.color.camFg
-                    : tokens.color.camGlass,
-                  color: active ? tokens.color.ink : '#D5DED8',
-                }}
-              >
-                {t(`mode.${mode}`)}
-              </Box>
-            );
-          })}
-        </Box>
+        <ModeDial
+          mode={screen.mode}
+          disabled={screen.modesDisabled || infoOpen}
+          keysDisabled={
+            screen.modesDisabled ||
+            infoOpen ||
+            screen.reading ||
+            !!screen.cropping ||
+            !!screen.plate.dishes
+          }
+          onChange={screen.setMode}
+        />
 
         <Box
           sx={{
