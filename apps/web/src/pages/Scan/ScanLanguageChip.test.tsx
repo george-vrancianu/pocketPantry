@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -92,7 +93,7 @@ describe('Scan Language chip in the top bar', () => {
   it('sends the chosen Scan Language with the next Scan', async () => {
     const calls = renderScan('/scan?mode=product');
     await userEvent.selectOptions(chip(), 'ro');
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await screen.findByRole('button', { name: /Save 1 item/ });
     const scan = calls.find((c) => c.key === 'POST /api/scan/product');
     expect(new URLSearchParams(scan?.search).get('scanLanguage')).toBe('ro');

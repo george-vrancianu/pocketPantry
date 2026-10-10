@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -79,7 +80,7 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
           dishes: [{ title: 'Pancakes', confidence: 0.7 }],
         }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await screen.findByRole('group', { name: 'Which dish is it?' });
     await userEvent.keyboard('{ArrowLeft}');
     expect(
@@ -94,7 +95,7 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
         // Never answers: the Scan stays in flight.
         new Promise<Response>(() => undefined) as unknown as Response,
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await screen.findByText('Reading your photo');
     await userEvent.keyboard('{ArrowRight}');
     expect(checked()).toEqual(['Product']);

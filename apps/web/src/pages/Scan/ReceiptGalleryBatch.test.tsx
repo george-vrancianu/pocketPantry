@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -179,7 +180,7 @@ describe('Receipt gallery multi-select', () => {
   it('refuses a selection that does not fit in the remaining room', async () => {
     setup(Array.from({ length: 8 }, (_, i) => () => lines(`Item ${i}`)));
     for (let i = 0; i < 8; i++) {
-      await click('Take photo');
+      scanViaGuide();
       await screen.findByText(`Section ${i + 1}: 1 line found`);
       await click('Next photo');
     }
@@ -235,7 +236,7 @@ describe('Receipt gallery multi-select', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByText(/photos? waiting/)).not.toBeInTheDocument();
     expect(receiptCalls(calls)).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('Finish drops the photos still waiting', async () => {

@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -200,7 +201,7 @@ describe('Scan guide hint', () => {
         ),
     });
     expect(hint()).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await screen.findByRole('alert');
     expect(hint()).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('radio', { name: 'Plate' }));

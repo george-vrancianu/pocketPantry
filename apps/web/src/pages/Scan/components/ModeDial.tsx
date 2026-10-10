@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type MutableRefObject,
   type PointerEvent,
   type ReactNode,
 } from 'react';
@@ -63,12 +64,15 @@ export function ModeDial({
   mode,
   disabled,
   keysDisabled,
+  dragEndedAt,
   onChange,
 }: {
   mode: ScanMode;
   disabled: boolean;
   /** Also true while an overlay or a read owns the arrow keys. */
   keysDisabled: boolean;
+  /** Set to the time a drag ends, so the guide ignores the tap that can follow it. */
+  dragEndedAt: MutableRefObject<number | null>;
   onChange: (mode: ScanMode) => void;
 }) {
   const { t } = useTranslation('scan');
@@ -161,6 +165,7 @@ export function ModeDial({
     drag.current = null;
     if (!start.moved) return;
     setDragOffset(null);
+    dragEndedAt.current = performance.now();
     justDragged.current = true;
     clearTimeout(clickGuard.current);
     clickGuard.current = setTimeout(

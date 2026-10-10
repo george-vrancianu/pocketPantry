@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { AppDock } from '../../components/AppDock';
@@ -115,7 +116,7 @@ describe('Receipt Scan on the Scan screen', () => {
       </Routes>,
       { route: '/scan?mode=receipt' },
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    scanViaGuide();
     await userEvent.click(
       await screen.findByRole('button', { name: 'Finish' }),
     );
@@ -247,7 +248,7 @@ describe('Receipt Scan on the Scan screen', () => {
       await click('Use photo');
       await screen.findByText('Section 1: 1 line found');
       await click('Next photo');
-      await click('Take photo');
+      scanViaGuide();
       await screen.findByText('Section 2: 1 line found');
       await click('Finish');
       await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
@@ -257,7 +258,7 @@ describe('Receipt Scan on the Scan screen', () => {
 
     it('lets a gallery photo retake a section, replacing only that section', async () => {
       const { calls } = renderScan([{ lines: [eggs] }, { lines: [rice] }]);
-      await click('Take photo');
+      scanViaGuide();
       await screen.findByText('Section 1: 1 line found');
       await click('Retake');
       await uploadPhoto();
@@ -271,7 +272,7 @@ describe('Receipt Scan on the Scan screen', () => {
 
     it('does not open the crop step while a result is awaiting a decision', async () => {
       renderScan();
-      await click('Take photo');
+      scanViaGuide();
       await screen.findByText('Section 1: 1 line found');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
@@ -292,7 +293,7 @@ describe('Receipt Scan on the Scan screen', () => {
           : fetchMock(input, init),
       );
       renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
-      await click('Take photo');
+      scanViaGuide();
       await screen.findByText('Reading section 1…');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
@@ -332,7 +333,7 @@ describe('Receipt Scan on the Scan screen', () => {
       expect(galleryButton).toHaveFocus();
       expect(revokeObjectURL).toHaveBeenCalledWith('blob:photo');
       expect(receiptCalls(calls)).toHaveLength(0);
-      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+      expect(scanGuide()).not.toHaveAttribute('aria-disabled');
     });
 
     it('sends nothing when the crop step is cancelled', async () => {
@@ -370,7 +371,7 @@ describe('Receipt Scan on the Scan screen', () => {
       const confirm = vi.spyOn(window, 'confirm');
       const { calls } = renderScreen([{ lines: [eggs] }], true);
       const release = holdPreparation();
-      await click('Take photo');
+      scanViaGuide();
       switchLastUsedToProduct();
       await userEvent.click(screen.getByRole('link', { name: 'Scan' }));
       await release();
@@ -418,7 +419,7 @@ describe('Receipt Scan on the Scan screen', () => {
         Array.from({ length: 11 }, () => ({ lines: [eggs] })),
       );
       for (let i = 1; i <= 10; i++) {
-        await click('Take photo');
+        scanViaGuide();
         await screen.findByText(`Section ${i}: 1 line found`);
         if (i < 10) await click('Next photo');
       }

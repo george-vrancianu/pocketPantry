@@ -1,4 +1,5 @@
-import { fireEvent, screen, within, waitFor } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/react';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -68,10 +69,9 @@ function setup(responses: Array<() => Response>) {
   return { calls };
 }
 
-const shutter = () => screen.getByRole('button', { name: 'Take photo' });
 const click = (name: string) =>
   userEvent.click(screen.getByRole('button', { name }));
-const shoot = () => userEvent.click(shutter());
+const shoot = scanViaGuide;
 const reviewNames = async () => {
   await waitFor(() => expect(reviewRowNames()).not.toHaveLength(0));
   return reviewRowNames();
@@ -95,7 +95,7 @@ describe('Receipt Scan in sections', () => {
       await screen.findByText('Section 1: 2 lines found'),
     ).toBeInTheDocument();
     expect(screen.getByText('Eggs')).toBeInTheDocument();
-    expect(shutter()).toBeDisabled();
+    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
 
     await click('Next photo');
     await shoot();
@@ -124,7 +124,7 @@ describe('Receipt Scan in sections', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
     await shoot();
     expect(await screen.findByText('Reading section 1…')).toBeInTheDocument();
-    expect(shutter()).toBeDisabled();
+    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
     release(lines('Eggs'));
     expect(
       await screen.findByText('Section 1: 1 line found'),
@@ -191,7 +191,7 @@ describe('Receipt Scan in sections', () => {
     await shoot();
     expect(await screen.findByText(/No lines were found/)).toBeInTheDocument();
     await click('Next photo');
-    expect(shutter()).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
     await shoot();
     await screen.findByText('Section 2: 1 line found');
     await click('Finish');
@@ -217,7 +217,7 @@ describe('Receipt Scan in sections', () => {
       await click('Next photo');
     }
     expect(screen.getByText(/limit of 10 sections/)).toBeInTheDocument();
-    expect(shutter()).toBeDisabled();
+    expect(scanGuide()).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('does not announce the limit while the 10th result is still on screen', async () => {
@@ -234,12 +234,11 @@ describe('Receipt Scan in sections', () => {
     expect(screen.getByText(/limit of 10 sections/)).toBeInTheDocument();
   });
 
-  it('sends one request for a double-tapped shutter', async () => {
+  it('sends one request for a double-tapped guide', async () => {
     const { calls } = setup([() => lines('Eggs'), () => lines('Rice')]);
-    // Two clicks back to back, as a double tap: userEvent's delays between clicks let a slow
-    // runner finish the first scan before the second click, which is then a real second photo.
-    fireEvent.click(shutter());
-    fireEvent.click(shutter());
+    // Two double-taps back to back, before the first scan can finish.
+    scanViaGuide();
+    scanViaGuide();
     await screen.findByText('Section 1: 1 line found');
     expect(
       calls.filter((c) => c.key === 'POST /api/scan/receipt'),

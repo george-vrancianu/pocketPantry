@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import { scanGuide, scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -40,6 +41,12 @@ vi.mock('../../lib/camera', async () => {
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
+
+/** The camera restarts when the mode changes: wait until the guide takes Scans again. */
+const shoot = async () => {
+  await waitFor(() => expect(scanGuide()).not.toHaveAttribute('aria-disabled'));
+  scanViaGuide();
+};
 
 const parmesan: CatalogSearchResult = {
   id: 'parmesan-id',
@@ -94,7 +101,6 @@ describe('ScanPage', () => {
       'Close scanner',
       'Toggle flash',
       'Choose from photos',
-      'Take photo',
       'Add manually',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
@@ -153,7 +159,7 @@ describe('ScanPage', () => {
         'aria-checked',
         'true',
       );
-      expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+      expect(scanGuide()).not.toHaveAttribute('aria-disabled');
       expect(
         screen.getByRole('button', { name: 'Choose from photos' }),
       ).toBeEnabled();
@@ -180,7 +186,7 @@ describe('ScanPage', () => {
     renderScan({
       'POST /api/scan/product': () => Response.json({ lines: [proposed] }),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    await shoot();
     expect(await findReviewRow('Parmesan')).toBeInTheDocument();
   });
 
@@ -192,12 +198,12 @@ describe('ScanPage', () => {
           { status: 429 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    await shoot();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'You have used all 30 scans for today',
     );
     // Still on the Scan screen.
-    expect(screen.getByRole('button', { name: 'Take photo' })).toBeEnabled();
+    expect(scanGuide()).not.toHaveAttribute('aria-disabled');
   });
 
   it('shows the localised message for a rejected image', async () => {
@@ -208,7 +214,7 @@ describe('ScanPage', () => {
           { status: 413 },
         ),
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+    await shoot();
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('too large'),
     );
