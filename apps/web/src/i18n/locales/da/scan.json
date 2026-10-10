@@ -48,21 +48,6 @@
     "plate": "Viser rettens ingredienser, så du kan føje det, du mangler, til din indkøbsliste.",
     "ingredients": "Lægger hver enkelt vare på bordet i dit spisekammer."
   },
-  "sections": {
-    "reading": "Læser del {{number}}…",
-    "section": "Del {{number}}",
-    "open": "Vis del {{number}}",
-    "count": "{{count}} af {{max}} dele",
-    "found_one": "Del {{number}}: {{count}} linje fundet",
-    "found_other": "Del {{number}}: {{count}} linjer fundet",
-    "empty": "Der blev ikke fundet nogen linjer i denne del. Tag den om, eller tag det næste foto.",
-    "retake": "Tag om",
-    "delete": "Slet del",
-    "next": "Næste foto",
-    "finish": "Afslut",
-    "full": "Du har nået grænsen på {{max}} dele. Afslut, eller tag en del om eller slet den.",
-    "discardConfirm": "Forlad scanneren? De dele, du har taget indtil nu, går tabt."
-  },
   "done": "Færdig",
   "doneCount_one": "Færdig, {{count}} foto",
   "doneCount_other": "Færdig, {{count}} fotos",

@@ -48,21 +48,6 @@
     "plate": "Lists its ingredients so you can add what you are missing to your shopping list.",
     "ingredients": "Adds each loose item on the counter to your Pantry."
   },
-  "sections": {
-    "reading": "Reading section {{number}}…",
-    "section": "Section {{number}}",
-    "open": "Show section {{number}}",
-    "count": "{{count}} of {{max}} sections",
-    "found_one": "Section {{number}}: {{count}} line found",
-    "found_other": "Section {{number}}: {{count}} lines found",
-    "empty": "No lines were found in this section. Retake it, or take the next photo.",
-    "retake": "Retake",
-    "delete": "Delete section",
-    "next": "Next photo",
-    "finish": "Finish",
-    "full": "You have reached the limit of {{max}} sections. Finish, or retake or delete a section.",
-    "discardConfirm": "Leave the scanner? The sections you have taken so far will be lost."
-  },
   "done": "Done",
   "doneCount_one": "Done, {{count}} photo",
   "doneCount_other": "Done, {{count}} photos",

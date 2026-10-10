@@ -23,6 +23,7 @@ import type { ProposedLine } from '../../lib/scan';
 import { readScans } from '../../lib/scanReads';
 import { useSaveScan } from '../../lib/saveScan';
 import {
+  canMerge,
   dispatchScanSession,
   getScanSession,
   pendingCount,
@@ -32,6 +33,18 @@ import {
 } from '../../lib/scanSession';
 
 const MAX_CHIPS = 8;
+
+const linkButton = {
+  mr: 1.5,
+  p: 0,
+  border: 0,
+  background: 'none',
+  color: tokens.color.accent,
+  font: 'inherit',
+  fontSize: 13,
+  fontWeight: 700,
+  cursor: 'pointer',
+};
 
 const nameOf = (line: ProposedLine) => line.match?.name ?? line.name;
 
@@ -116,6 +129,7 @@ export function ReviewOverviewPage() {
     const check = lines.filter(
       (line) => line.lowConfidence || line.match === null,
     ).length;
+    const mergeable = canMerge(session, scan.id);
     const result =
       scan.mode === 'product' && lines.length > 0
         ? nameOf(lines[0])
@@ -270,6 +284,34 @@ export function ReviewOverviewPage() {
                   </Box>
                 ) : null}
               </Box>
+              {scan.sections || mergeable ? (
+                <Box sx={{ position: 'relative', zIndex: 1, mt: 0.75 }}>
+                  {mergeable ? (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() =>
+                        dispatchScanSession({ type: 'merge', id: scan.id })
+                      }
+                      sx={linkButton}
+                    >
+                      {t('overview.merge')}
+                    </Box>
+                  ) : null}
+                  {scan.sections ? (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() =>
+                        dispatchScanSession({ type: 'split', id: scan.id })
+                      }
+                      sx={linkButton}
+                    >
+                      {t('overview.split')}
+                    </Box>
+                  ) : null}
+                </Box>
+              ) : null}
               {check > 0 ? (
                 <Typography
                   sx={{

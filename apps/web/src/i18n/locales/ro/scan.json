@@ -48,22 +48,6 @@
     "plate": "Îi listează ingredientele ca să adaugi ce îți lipsește în lista de cumpărături.",
     "ingredients": "Adaugă în cămară fiecare produs vrac de pe blat."
   },
-  "sections": {
-    "reading": "Citim secțiunea {{number}}…",
-    "section": "Secțiunea {{number}}",
-    "open": "Arată secțiunea {{number}}",
-    "count": "{{count}} din {{max}} secțiuni",
-    "found_one": "Secțiunea {{number}}: o linie găsită",
-    "found_few": "Secțiunea {{number}}: {{count}} linii găsite",
-    "found_other": "Secțiunea {{number}}: {{count}} de linii găsite",
-    "empty": "Nu am găsit nicio linie în această secțiune. Fă altă poză sau treci la următoarea.",
-    "retake": "Refă poza",
-    "delete": "Șterge secțiunea",
-    "next": "Următoarea poză",
-    "finish": "Gata",
-    "full": "Ai ajuns la limita de {{max}} secțiuni. Finalizează sau refă ori șterge o secțiune.",
-    "discardConfirm": "Părăsești scanerul? Secțiunile făcute până acum se vor pierde."
-  },
   "done": "Gata",
   "doneCount_one": "Gata, {{count}} fotografie",
   "doneCount_few": "Gata, {{count}} fotografii",

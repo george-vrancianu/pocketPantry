@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { ScanLanguage } from '../i18n/resources';
 import type { DishGuess } from './plate';
+import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import type { ProposedLine, ScanMode } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
@@ -29,6 +30,8 @@ export type SessionScan = {
   /** A Plate Scan once read: the dish guesses to pick from, and the token that proves they are ours. */
   dishes?: DishGuess[];
   plateToken?: string;
+  /** For a card made by merging receipts: the Scans it was made of, as they were, for Split. */
+  sections?: SessionScan[];
 };
 
 /** The Scans taken since the camera was opened, in the order the Scans were taken. */
@@ -47,6 +50,8 @@ export type SessionAction =
   | { type: 'read'; id: string; lines: ProposedLine[] }
   | { type: 'fail'; id: string; reason: 'error' | 'cap' }
   | { type: 'remove'; id: string }
+  | { type: 'merge'; id: string }
+  | { type: 'split'; id: string }
   | { type: 'readDishes'; id: string; dishes: DishGuess[]; token: string }
   | { type: 'pick'; id: string; lines: ProposedLine[] }
   | { type: 'reread'; id: string };
@@ -141,11 +146,51 @@ export function sessionReducer(
         dishes: undefined,
         plateToken: undefined,
       });
+    case 'merge': {
+      if (!canMerge(state, action.id)) return state;
+      const index = state.scans.findIndex((scan) => scan.id === action.id);
+      const above = state.scans[index - 1];
+      const sections = [
+        ...sectionsOf(above),
+        ...sectionsOf(state.scans[index]),
+      ];
+      const lines = sections.flatMap((scan) => scan.lines ?? []);
+      return {
+        scans: state.scans.flatMap((scan, i) =>
+          i === index
+            ? []
+            : i === index - 1
+              ? [{ ...above, lines, sections }]
+              : [scan],
+        ),
+      };
+    }
+    case 'split':
+      if (!state.scans.some((scan) => scan.id === action.id && scan.sections))
+        return state;
+      return {
+        scans: state.scans.flatMap((scan) =>
+          scan.id === action.id && scan.sections ? scan.sections : [scan],
+        ),
+      };
   }
 }
 
 /** Whether a Scan's lines are in. */
 export const isRead = (scan: SessionScan) => scan.status === 'read';
+
+const sectionsOf = (scan: SessionScan) => scan.sections ?? [scan];
+
+/** Whether the receipt Scan `id` may join the receipt Scan above it: both read, within the section limit. */
+export function canMerge(state: SessionState, id: string): boolean {
+  const index = state.scans.findIndex((scan) => scan.id === id);
+  if (index < 1) return false;
+  const [above, scan] = [state.scans[index - 1], state.scans[index]];
+  return (
+    [above, scan].every((s) => s.mode === 'receipt' && s.status === 'read') &&
+    sectionsOf(above).length + sectionsOf(scan).length <= MAX_RECEIPT_SECTIONS
+  );
+}
 
 /** Scans not read yet and not failed: waiting for a crop, for a read slot, or being read. */
 export const pendingCount = (state: SessionState) =>

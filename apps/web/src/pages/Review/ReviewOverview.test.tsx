@@ -250,4 +250,81 @@ describe('Review overview', () => {
       expect(cards()).toHaveLength(1);
     });
   });
+
+  describe('merging receipt cards', () => {
+    it('offers Merge with previous only on a receipt card below another receipt card', async () => {
+      await seed('a', 'receipt', receipt);
+      await seed('b', 'receipt', [line('Jam')]);
+      await seed('c', 'product', [yogurt]);
+      renderOverview();
+      const merge = /merge with previous/i;
+      expect(
+        within(cards()[0]).queryByRole('button', { name: merge }),
+      ).toBeNull();
+      expect(
+        within(cards()[1]).getByRole('button', { name: merge }),
+      ).toBeInTheDocument();
+      expect(
+        within(cards()[2]).queryByRole('button', { name: merge }),
+      ).toBeNull();
+    });
+
+    it('does not offer it while a receipt is still reading', async () => {
+      await seed('a', 'receipt', receipt);
+      await seed('b', 'receipt', 'reading');
+      renderOverview();
+      expect(
+        screen.queryByRole('button', { name: /merge with previous/i }),
+      ).toBeNull();
+    });
+
+    it('joins the cards into one with the lines of both, and Split undoes it', async () => {
+      await seed('a', 'receipt', receipt);
+      await seed('b', 'receipt', [line('Jam')]);
+      renderOverview();
+      await userEvent.click(
+        within(cards()[1]).getByRole('button', {
+          name: /merge with previous/i,
+        }),
+      );
+      expect(cards()).toHaveLength(1);
+      expect(within(cards()[0]).getByTestId('card-result')).toHaveTextContent(
+        '3 items',
+      );
+      await userEvent.click(
+        within(cards()[0]).getByRole('button', { name: 'Split' }),
+      );
+      expect(cards()).toHaveLength(2);
+      expect(within(cards()[0]).getByTestId('card-result')).toHaveTextContent(
+        '2 items',
+      );
+      expect(within(cards()[1]).getByTestId('card-result')).toHaveTextContent(
+        '1 item',
+      );
+    });
+
+    it('confirms a merged receipt as one Receipt Scan', async () => {
+      await seed('a', 'receipt', receipt);
+      await seed('b', 'receipt', [line('Jam')]);
+      const calls = renderOverview();
+      await userEvent.click(
+        within(cards()[1]).getByRole('button', {
+          name: /merge with previous/i,
+        }),
+      );
+      await userEvent.click(within(cards()[0]).getByTestId('card-result'));
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Save 3 items' }),
+      );
+      // It was the only card, so saving it lands on the Pantry.
+      expect(await screen.findByText('pantry screen')).toBeInTheDocument();
+      const confirms = calls.filter(
+        (c) => c.key === 'POST /api/scan/receipt/confirm',
+      );
+      expect(confirms).toHaveLength(1);
+      expect((confirms[0].body as { batches: unknown[] }).batches).toHaveLength(
+        3,
+      );
+    });
+  });
 });

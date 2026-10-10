@@ -139,6 +139,8 @@
     "check_one": "Tjek {{count}} vare",
     "check_other": "Tjek {{count}} varer",
     "more": "+{{count}}",
+    "merge": "Flet med forrige",
+    "split": "Del op",
     "empty": "Ingen fotos endnu.",
     "add": "Tilføj til spisekammer",
     "addWaiting": "Tilføj til spisekammer (venter på {{count}})",

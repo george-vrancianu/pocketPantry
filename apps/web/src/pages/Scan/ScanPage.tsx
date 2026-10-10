@@ -13,11 +13,9 @@ import {
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MAX_RECEIPT_SECTIONS } from '../../lib/receiptSections';
 import { glassControl, glassFocusRing } from './components/glass';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { ScanQueue } from './components/ScanQueue';
-import { ReceiptSections } from './components/ReceiptSections';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
@@ -239,31 +237,13 @@ export function ScanPage() {
           role="status"
           sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
-          {screen.reading
-            ? screen.receiptSections.readingNumber !== null
-              ? t('sections.reading', {
-                  number: screen.receiptSections.readingNumber,
-                })
-              : t('reading')
-            : null}
-          {screen.mode === 'receipt' &&
-          screen.receiptSections.full &&
-          !screen.receiptSections.deciding
-            ? t('sections.full', { max: MAX_RECEIPT_SECTIONS })
-            : null}
+          {screen.reading ? t('reading') : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
         </Box>
         {screen.error ? (
           <Box sx={{ mt: 1 }}>
             <Alert>{screen.error}</Alert>
           </Box>
-        ) : null}
-
-        {screen.mode === 'receipt' ? (
-          <ReceiptSections
-            batch={screen.receiptSections}
-            onFinish={screen.finishSections}
-          />
         ) : null}
 
         <ModeDial
