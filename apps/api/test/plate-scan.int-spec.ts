@@ -8,6 +8,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { unmatchedEntries } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
+import { PLATE_TOKEN_TTL_MS } from '../src/scan/plate-token';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
@@ -347,7 +348,7 @@ describe('Plate Scan (integration)', () => {
         const now = Date.now();
         const clock = jest
           .spyOn(Date, 'now')
-          .mockReturnValue(now + 11 * 60_000);
+          .mockReturnValue(now + PLATE_TOKEN_TTL_MS + 60_000);
         try {
           await refuse(cookie, 'Pancakes', token);
         } finally {
