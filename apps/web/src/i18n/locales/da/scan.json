@@ -43,6 +43,12 @@
     "plate": "Hold roligt over din tallerken",
     "ingredients": "Læg varerne ud på bordet"
   },
+  "guideHint": {
+    "receipt": "Læg fladt, dobbelttryk for at scanne",
+    "product": "Ramm produktet og dato ind",
+    "ingredients": "Læg dem ud, få dem alle med",
+    "plate": "Få hele tallerkenen med"
+  },
   "guide": {
     "receipt": "Hold telefonen cirka 40 cm over kvitteringen, så kanterne rører hjælpelinjen.",
     "receiptFold": "Ved lange kvitteringer: fold, hvor hjælpelinjen slutter (cirka for hver 20. vare), vend den foldede del om, og tag det næste foto."

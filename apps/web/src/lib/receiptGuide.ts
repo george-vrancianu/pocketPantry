@@ -10,5 +10,3 @@ export const RECEIPT_TILES_DOWN = 3;
 export const RECEIPT_OUTPUT_WIDTH = OPENAI_TILE_EDGE;
 /** Guide width / height. One tile wide by three tall. */
 export const RECEIPT_GUIDE_ASPECT = 1 / RECEIPT_TILES_DOWN;
-/** How much of the screen's height the receipt guide takes up; it is centred on the full-screen feed. */
-export const RECEIPT_GUIDE_HEIGHT_FRACTION = 0.64;

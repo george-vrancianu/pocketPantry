@@ -128,16 +128,15 @@ describe('Receipt Scan on the Scan screen', () => {
     expect(calls.map((c) => c.key)).not.toContain('POST /api/scan/product');
   });
 
-  it('shows the 1:3 guide with its instruction and asks the camera for high resolution', () => {
+  it('shows the guide with its instruction and asks the camera for high resolution', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=receipt' });
-    expect(screen.getByTestId('receipt-guide')).toBeInTheDocument();
+    expect(screen.getByTestId('scan-guide')).toBeInTheDocument();
     expect(screen.getByText(/40 cm above the receipt/)).toBeInTheDocument();
     expect(useCameraMock).toHaveBeenLastCalledWith(true);
   });
 
-  it('shows no guide and a default camera in the other modes', () => {
+  it('shows no receipt instruction and a default camera in the other modes', () => {
     renderWithProviders(<ScanPage />, { route: '/scan?mode=product' });
-    expect(screen.queryByTestId('receipt-guide')).not.toBeInTheDocument();
     expect(
       screen.queryByText(/40 cm above the receipt/),
     ).not.toBeInTheDocument();

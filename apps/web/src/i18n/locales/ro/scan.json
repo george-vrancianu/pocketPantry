@@ -43,6 +43,12 @@
     "plate": "Ține telefonul stabil deasupra farfuriei",
     "ingredients": "Întinde produsele pe blat"
   },
+  "guideHint": {
+    "receipt": "Pune-l pe un plan drept, atinge de două ori pentru a scana",
+    "product": "Încadrează produsul și data",
+    "ingredients": "Așază-le și încadrează-le pe toate",
+    "plate": "Încadrează toată farfuria"
+  },
   "guide": {
     "receipt": "Ține telefonul la aproximativ 40 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul.",
     "receiptFold": "Pentru bonuri lungi, împăturește bonul unde se termină ghidajul (cam la fiecare 20 de produse), întoarce partea împăturită și fă următoarea poză."
