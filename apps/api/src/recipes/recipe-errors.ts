@@ -21,6 +21,7 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.bad_hidden_tip` (400): hiding a Tip that is not a Recipe-level Tip of the Variant's base,
  *   or hiding on a Base Recipe.
  * - `recipes.tip_not_found` (404): no such Tip on this Recipe.
+ * - `recipes.tips_too_many` (400, `{ max }`): the Recipe already has the most Tips it can hold.
  * - `recipes.tip_order_stale` (409): the Tip order does not name every Tip of the Recipe.
  * - `recipes.source_locale` (400): translating into the source language.
  * - `recipes.pairings_too_many` (400, `{ max }`) / `recipes.eating_moments_too_many` (400, `{ max }`): over 10.

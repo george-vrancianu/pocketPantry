@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
@@ -7,8 +8,10 @@ import {
   ingredients,
   recipeStepTranslations,
   recipes,
+  recipeTips,
 } from '../src/database/schema';
 import { loadCatalogRecipe } from '../src/recipes/recipe-view';
+import { MAX_TIPS } from '../src/recipes/recipes.schemas';
 import type { AdminRecipeDetail } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
@@ -287,6 +290,22 @@ describe('Recipe Variants, Tips and translations (integration)', () => {
         .patch(`/${a.id}/tips/${tip.id}`, { stepId: b.steps[0].id })
         .expect(400);
       expect(code(move)).toBe('recipes.bad_step_anchor');
+    });
+
+    it('refuses a Tip past the per-Recipe cap', async () => {
+      const base = await baseWithTips();
+      const have = base.tips.length;
+      await database.insert(recipeTips).values(
+        Array.from({ length: MAX_TIPS - have }, (_, i) => ({
+          id: randomUUID(),
+          recipeId: base.id,
+          text: `filler ${i}`,
+          position: have + i,
+        })),
+      );
+      const res = await admin.post(`/${base.id}/tips`, { text: 'one more' });
+      expect(res.status).toBe(400);
+      expect(code(res)).toBe('recipes.tips_too_many');
     });
 
     it('updates, moves, reorders and deletes Tips', async () => {

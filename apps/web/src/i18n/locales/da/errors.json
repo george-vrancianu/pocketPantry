@@ -104,6 +104,7 @@
     "bad_hidden_tip": "Kun tip på opskriftsniveau fra grundopskriften kan skjules, og kun på en variant.",
     "tip_not_found": "Det tip findes ikke længere.",
     "tip_order_stale": "Tippene blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
+    "tips_too_many": "En opskrift kan højst have {{max}} tips.",
     "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den.",
     "line_name_conflict": "En ingredienslinje har både en ingrediens fra kataloget og et skrevet navn. Brug kun den ene.",
     "pairings_too_many": "En opskrift kan højst have 10 forslag.",

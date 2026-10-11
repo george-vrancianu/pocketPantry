@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, isNull, max } from 'drizzle-orm';
+import { and, count, eq, inArray, isNull, max } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -13,12 +13,13 @@ import {
 import { recipeNotFound } from './recipe-errors';
 import { lockRecipeForWrite } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
-import type {
-  AdminRecipeDetail,
-  HiddenTipsBody,
-  TipCreate,
-  TipOrder,
-  TipUpdate,
+import {
+  MAX_TIPS,
+  type AdminRecipeDetail,
+  type HiddenTipsBody,
+  type TipCreate,
+  type TipOrder,
+  type TipUpdate,
 } from './recipes.schemas';
 
 const tipNotFound = () => new ApiException(404, 'recipes.tip_not_found');
@@ -50,6 +51,13 @@ export class RecipeTipsService {
     await this.database.transaction(async (tx) => {
       await lockRecipeForWrite(tx, recipeId, familyId);
       await this.assertStepOf(tx, recipeId, input.stepId);
+      const [{ total }] = await tx
+        .select({ total: count() })
+        .from(recipeTips)
+        .where(eq(recipeTips.recipeId, recipeId));
+      if (total >= MAX_TIPS) {
+        throw new ApiException(400, 'recipes.tips_too_many', { max: MAX_TIPS });
+      }
       const [{ last }] = await tx
         .select({ last: max(recipeTips.position) })
         .from(recipeTips)

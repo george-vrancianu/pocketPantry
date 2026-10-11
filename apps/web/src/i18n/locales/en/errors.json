@@ -104,6 +104,7 @@
     "bad_hidden_tip": "Only Recipe-level Tips of the Base Recipe can be hidden, and only on a Variant.",
     "tip_not_found": "That Tip no longer exists.",
     "tip_order_stale": "The Tips changed while you were reordering. Check the order and try again.",
+    "tips_too_many": "A Recipe can have at most {{max}} Tips.",
     "source_locale": "English is the source language of Recipes. Edit the Recipe itself instead of translating it.",
     "line_name_conflict": "An Ingredient Line has both a Catalog Ingredient and a typed name. Use one of them.",
     "pairings_too_many": "A Recipe can have at most 10 Pairings.",

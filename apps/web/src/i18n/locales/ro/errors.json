@@ -104,6 +104,7 @@
     "bad_hidden_tip": "Doar Sfaturile la nivel de Rețetă ale Rețetei de bază pot fi ascunse, și doar pe o Variantă.",
     "tip_not_found": "Acest Sfat nu mai există.",
     "tip_order_stale": "Sfaturile s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
+    "tips_too_many": "O Rețetă poate avea cel mult {{max}} Sfaturi.",
     "source_locale": "Engleza este limba sursă a Rețetelor. Editează Rețeta în sine, nu o traduce.",
     "line_name_conflict": "O linie de ingrediente are și un Ingredient din Catalog, și un nume scris. Folosește doar unul.",
     "pairings_too_many": "O Rețetă poate avea cel mult 10 Asocieri.",
