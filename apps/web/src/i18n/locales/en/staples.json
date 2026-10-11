@@ -22,6 +22,8 @@
     "heading_other": "Suggested, {{count}} staples missing",
     "add": "Add {{name}} to the list",
     "addShort": "Add",
-    "dismiss": "Dismiss {{name}}"
+    "dismiss": "Dismiss {{name}}",
+    "usedUpHeading_one": "Recently used up, {{count}} ingredient",
+    "usedUpHeading_other": "Recently used up, {{count}} ingredients"
   }
 }

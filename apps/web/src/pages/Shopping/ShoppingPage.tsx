@@ -61,7 +61,8 @@ export function ShoppingPage() {
               checked={screen.list.summary.checked}
             />
             <SuggestionsSection
-              suggestions={screen.suggestions}
+              staples={screen.staples}
+              usedUp={screen.usedUp}
               onAdd={screen.add}
             />
             <AddItemForm adding={screen.adding} onAdd={screen.add} />

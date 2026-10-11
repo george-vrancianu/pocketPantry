@@ -30,7 +30,7 @@ export class SuggestionsController {
   @Get()
   @ApiOperation({
     summary:
-      'List Suggestions: missing Staples in Aisle order, hidden while dismissed or on the list',
+      'List Suggestions: missing Staples, then Used Up Ingredients, each in Aisle order, hidden while dismissed or on the list',
   })
   list(
     @CurrentUser() member: CurrentUserValue,

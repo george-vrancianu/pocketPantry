@@ -35,9 +35,9 @@
     },
     "suggestions": {
       "title": "Forslag",
-      "missing_one": "basisvare mangler",
-      "missing_other": "basisvarer mangler",
-      "empty": "Intet mangler"
+      "empty": "Ingen forslag",
+      "count_one": "forslag",
+      "count_other": "forslag"
     },
     "mealPlan": {
       "title": "Madplan"

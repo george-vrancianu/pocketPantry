@@ -21,6 +21,8 @@
     "heading_other": "Forslag, {{count}} basisvarer mangler",
     "add": "Føj {{name}} til listen",
     "addShort": "Tilføj",
-    "dismiss": "Afvis {{name}}"
+    "dismiss": "Afvis {{name}}",
+    "usedUpHeading_one": "Brugt op for nylig, {{count}} ingrediens",
+    "usedUpHeading_other": "Brugt op for nylig, {{count}} ingredienser"
   }
 }

@@ -15,7 +15,6 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
-  batches,
   ingredients,
   leafCategories,
   parentCategories,
@@ -25,6 +24,7 @@ import {
   user,
 } from '../database/schema';
 import { lockMemberAndFamily, runLocked } from '../family/family-locks';
+import { PantryService } from '../pantry/pantry.service';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
@@ -32,7 +32,6 @@ import type {
   FinishResult,
   FinishShoppingBody,
 } from './finish-shopping.schemas';
-import { clearDismissals } from './suggestion-dismissals';
 
 const FALLBACK_LOCATION = 'cupboard' as const;
 const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
@@ -60,6 +59,7 @@ export class FinishShoppingService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly settings: SettingsService,
+    private readonly pantry: PantryService,
   ) {}
 
   async propose(
@@ -167,12 +167,7 @@ export class FinishShoppingService {
             productDescription: line.productDescription || null,
           };
         });
-        await tx.insert(batches).values(values);
-        await clearDismissals(
-          tx,
-          familyId,
-          values.map((value) => value.ingredientId),
-        );
+        await this.pantry.insertBatches(tx, familyId, values);
         await this.queueUnmatchedBatches(
           tx,
           body.lines.flatMap((line, index) =>

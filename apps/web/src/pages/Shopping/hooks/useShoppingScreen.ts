@@ -19,7 +19,8 @@ export function useShoppingScreen() {
 
   return {
     list: list.data,
-    suggestions: suggestions.data?.staples ?? [],
+    staples: suggestions.data?.staples ?? [],
+    usedUp: suggestions.data?.usedUp ?? [],
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,

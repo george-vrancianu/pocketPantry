@@ -10,7 +10,7 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
-import { clearDismissals } from '../shopping/suggestion-dismissals';
+import { PantryService } from '../pantry/pantry.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
@@ -57,6 +57,7 @@ export class UnmatchedQueueService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly catalog: AdminCatalogService,
+    private readonly pantry: PantryService,
   ) {}
 
   /**
@@ -283,7 +284,7 @@ export class UnmatchedQueueService {
     const relinkedBatches = relinked.length;
     // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
     for (const familyId of new Set(relinked.map((row) => row.familyId))) {
-      await clearDismissals(tx, familyId, [target.id]);
+      await this.pantry.relinked(tx, familyId, target.id);
     }
 
     const synonymAdded = await this.addSynonym(

@@ -37,10 +37,9 @@
     },
     "suggestions": {
       "title": "Suggestions",
-      "missing_one": "staple missing",
-      "missing_few": "staples missing",
-      "missing_other": "staples missing",
-      "empty": "Nothing missing"
+      "empty": "Nothing suggested",
+      "count_one": "suggestion",
+      "count_other": "suggestions"
     },
     "mealPlan": {
       "title": "Meal plan"
