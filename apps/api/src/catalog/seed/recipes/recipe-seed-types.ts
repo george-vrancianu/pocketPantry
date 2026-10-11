@@ -25,9 +25,15 @@ export type SeedNamed = {
   da: string;
 };
 
-/** One Ingredient Line. `ingredient` is a Catalog Ingredient slug (unique per Recipe). */
+/** One Ingredient Line. `ingredient` is a Catalog Ingredient slug. */
 export type LineSeed = {
   ingredient: string;
+  /**
+   * Stable identity of the line within its Recipe (its id derives from it);
+   * defaults to the Ingredient slug. Set it to list one Ingredient twice.
+   * Unique per Recipe.
+   */
+  key?: string;
   /** Quantity and unit come together; leave both out for "to taste". */
   quantity?: number;
   unit?: Unit;
@@ -87,8 +93,13 @@ export type RecipeSeed = {
 };
 
 /** A Variant is either a Cuisine Variant or a Method Variant, never both. */
-export type VariantSeed = RecipeSeed &
-  (
+export type VariantSeed = RecipeSeed & {
+  /**
+   * Indexes into the base's `tips` (Recipe-level Tips) this Variant does not
+   * inherit. Unique and in range.
+   */
+  hideBaseTips?: number[];
+} & (
     | { cuisine: string; method?: undefined }
     | { method: string; cuisine?: undefined }
   );

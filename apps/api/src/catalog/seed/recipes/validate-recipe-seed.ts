@@ -1,5 +1,8 @@
+import type { z } from 'zod';
 import { normalizeName } from '../../normalize';
+import { recipeDocument, tipCreate } from '../../../recipes/recipes.schemas';
 import {
+  guidanceBody,
   MAX_EATING_MOMENTS,
   MAX_NUTRITION_NOTE,
   MAX_PAIRINGS,
@@ -70,15 +73,14 @@ function recipeProblems(
     add('servings must be a positive integer');
   }
 
-  const ingredients = new Set<string>();
+  const lineKeys = new Set<string>();
   for (const line of recipe.lines) {
     if (!input.ingredientSlugs.has(line.ingredient)) {
       add(`line uses unknown Ingredient "${line.ingredient}"`);
     }
-    if (ingredients.has(line.ingredient)) {
-      add(`lists Ingredient "${line.ingredient}" twice`);
-    }
-    ingredients.add(line.ingredient);
+    const key = line.key ?? line.ingredient;
+    if (lineKeys.has(key)) add(`duplicate line key "${key}"`);
+    lineKeys.add(key);
     if ((line.quantity === undefined) !== (line.unit === undefined)) {
       add(`line "${line.ingredient}": quantity and unit come together`);
     }
@@ -165,6 +167,86 @@ function recipeProblems(
       ),
     );
   }
+  problems.push(...apiLimitProblems(recipe, where));
+  return problems;
+}
+
+const DUMMY_ID = '00000000-0000-4000-8000-000000000000';
+
+/**
+ * The Admin API's own schemas, run per locale on what the seed would write, so
+ * the seed cannot hold text or numbers the API would refuse (length limits,
+ * quantity range, line and step caps, minutes). Blank text is reported by
+ * `textProblems`; these checks add what only the schemas know.
+ */
+function apiLimitProblems(recipe: RecipeSeed, where: string): string[] {
+  const problems: string[] = [];
+  const report = (
+    locale: string,
+    label: string,
+    result: z.ZodSafeParseResult<unknown>,
+  ) => {
+    if (result.success) return;
+    for (const issue of result.error.issues) {
+      const path = issue.path.join('.');
+      problems.push(
+        `${where}: [${locale}] ${label}${path ? ` ${path}` : ''}: ${issue.message}`,
+      );
+    }
+  };
+  for (const locale of ['en', 'ro'] as const) {
+    const text = (value: Text | undefined) => value?.[locale] ?? '';
+    report(
+      locale,
+      'document',
+      recipeDocument.safeParse({
+        title: text(recipe.title),
+        servings: recipe.servings,
+        prepMinutes: recipe.prepMinutes ?? null,
+        cookMinutes: recipe.cookMinutes ?? null,
+        difficulty: recipe.difficulty ?? null,
+        lines: recipe.lines.map((line) => ({
+          ingredientId: DUMMY_ID,
+          quantity: line.quantity ?? null,
+          unit: line.unit ?? null,
+          optional: line.optional ?? false,
+          note: line.note ? text(line.note) : null,
+        })),
+        steps: recipe.steps.map((step) => ({
+          text: text(step.text),
+          timerSeconds: step.timerSeconds ?? null,
+        })),
+      }),
+    );
+    report(
+      locale,
+      'guidance',
+      guidanceBody.safeParse({
+        nutritionNote: text(recipe.nutritionNote),
+        pairings: recipe.pairings.map((p) => ({
+          kind: p.kind,
+          label: text(p.label),
+          reason: text(p.reason),
+          principle: p.principle ?? null,
+        })),
+        eatingMoments: recipe.eatingMoments.map((use) => ({
+          eatingMomentId: DUMMY_ID,
+          polarity: use.polarity,
+          reason: text(use.reason),
+        })),
+      }),
+    );
+    for (const [i, tip] of (recipe.tips ?? []).entries()) {
+      report(locale, `tip ${i + 1}`, tipCreate.safeParse({ text: text(tip) }));
+    }
+    for (const [i, tip] of (recipe.stepTips ?? []).entries()) {
+      report(
+        locale,
+        `step tip ${i + 1}`,
+        tipCreate.safeParse({ text: text(tip.text) }),
+      );
+    }
+  }
   return problems;
 }
 
@@ -209,6 +291,24 @@ export function findRecipeSeedProblems(input: RecipeSeedInput): string[] {
         problems.push(
           `recipe "${variant.slug}": unknown Method "${variant.method}"`,
         );
+      }
+      const hidden = new Set<number>();
+      for (const index of variant.hideBaseTips ?? []) {
+        if (hidden.has(index)) {
+          problems.push(
+            `recipe "${variant.slug}": hideBaseTips lists ${index} twice`,
+          );
+        }
+        hidden.add(index);
+        if (
+          !Number.isInteger(index) ||
+          index < 0 ||
+          index >= (base.tips ?? []).length
+        ) {
+          problems.push(
+            `recipe "${variant.slug}": hideBaseTips index ${index} is not a base Tip`,
+          );
+        }
       }
     }
   }
@@ -269,13 +369,24 @@ export function findAcceptanceGaps(
     }
   }
   if (options.requireCrossLinks) {
-    const linked = bases
-      .flatMap((b) => [b, ...b.variants])
-      .flatMap((r) => r.pairings)
-      .filter((p) => p.recipe !== undefined).length;
+    const familyOf = new Map<string, string>();
+    for (const base of bases) {
+      for (const recipe of [base, ...base.variants]) {
+        familyOf.set(recipe.slug, base.slug);
+      }
+    }
+    const linked = bases.flatMap((base) =>
+      [base, ...base.variants].flatMap((recipe) =>
+        recipe.pairings.filter((p) => {
+          const family =
+            p.recipe === undefined ? undefined : familyOf.get(p.recipe);
+          return family !== undefined && family !== base.slug;
+        }),
+      ),
+    ).length;
     if (linked < MIN_CROSS_RECIPE_PAIRINGS) {
       gaps.push(
-        `at least ${MIN_CROSS_RECIPE_PAIRINGS} Pairings link another seeded Recipe, found ${linked}`,
+        `at least ${MIN_CROSS_RECIPE_PAIRINGS} Pairings link a Recipe of another base, found ${linked}`,
       );
     }
   }

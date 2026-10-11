@@ -61,8 +61,8 @@ export const omelette: BaseRecipeSeed = {
     {
       step: 'whisk',
       text: t(
-        'Season just before the eggs go into the pan; salt left in the bowl makes them watery.',
-        'Sărează chiar înainte să torni ouăle în tigaie; sarea lăsată în bol le face apoase.',
+        'Salt the eggs when you whisk them, even a few minutes ahead: it keeps them tender.',
+        'Sărează ouăle când le bați, chiar cu câteva minute înainte: rămân mai fragede.',
       ),
     },
   ],
@@ -86,7 +86,7 @@ export const omelette: BaseRecipeSeed = {
       label: t('Ripe tomato', 'Roșie coaptă'),
       reason: t(
         'Its acidity lifts the richness of the butter and yolks.',
-        'Aciditatea ei ridică bogăția untului și a gălbenușurilor.',
+        'Aciditatea ei înviorează bogăția untului și a gălbenușurilor.',
       ),
       principle: 'acid_cuts_fat',
       ingredient: 'tomato',
@@ -106,7 +106,7 @@ export const omelette: BaseRecipeSeed = {
       label: t('Fresh orange juice', 'Suc proaspăt de portocale'),
       reason: t(
         'The bright acidity refreshes the palate between rich bites.',
-        'Aciditatea vie împrospătează gura între înghițituri bogate.',
+        'Aciditatea vie împrospătează gustul între îmbucături bogate.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'fresh-orange-juice',
@@ -273,7 +273,7 @@ export const omelette: BaseRecipeSeed = {
           label: t('Sparkling water with lemon', 'Apă minerală cu lămâie'),
           reason: t(
             'Bubbles and citrus refresh the palate between salty bites.',
-            'Bulele și citricele împrospătează gura între îmbucături sărate.',
+            'Bulele și citricele împrospătează gustul între îmbucături sărate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-water',
@@ -309,6 +309,8 @@ export const omelette: BaseRecipeSeed = {
     {
       slug: 'omelette-middle-eastern',
       cuisine: 'middle-eastern',
+      // Cooked through and thick, not left slightly wet.
+      hideBaseTips: [0],
       title: t(
         'Middle Eastern spiced omelette',
         'Omletă orientală cu condimente',
@@ -372,7 +374,7 @@ export const omelette: BaseRecipeSeed = {
           key: 'serve',
           text: t(
             "Slide onto a plate, scatter with parsley and the remaining za'atar and serve in wedges with spoonfuls of yogurt.",
-            "Treci omleta pe o farfurie, presar-o cu pătrunjel și cu restul de za'atar și servește-o felii, cu linguri de iaurt.",
+            "Treci omleta pe o farfurie, presar-o cu pătrunjel și cu restul de za'atar și servește-o tăiată felii, cu iaurt alături.",
           ),
         },
       ],
@@ -425,7 +427,7 @@ export const omelette: BaseRecipeSeed = {
           label: t('Mint tea', 'Ceai de mentă'),
           reason: t(
             'A traditional hot drink whose fresh mint cleanses the palate.',
-            'O băutură caldă tradițională, a cărei mentă proaspătă curăță gura.',
+            'O băutură caldă tradițională, a cărei mentă proaspătă împrospătează gustul.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'mint-tea',
@@ -497,7 +499,7 @@ export const omelette: BaseRecipeSeed = {
           key: 'mushrooms',
           text: t(
             'Heat the sunflower oil in a non-stick pan over medium-high heat and fry the shiitake for 2 minutes until golden. Add the spring onion for the last 20 seconds.',
-            'Încinge uleiul de floarea-soarelui într-o tigaie antiaderentă la foc potrivit-mare și prăjește ciupercile shiitake 2 minute, până se rumenesc. Adaugă ceapa verde în ultimele 20 de secunde.',
+            'Încinge uleiul de floarea-soarelui într-o tigaie antiaderentă la foc mediu spre mare și prăjește ciupercile shiitake 2 minute, până se rumenesc. Adaugă ceapa verde în ultimele 20 de secunde.',
           ),
           timerSeconds: 120,
         },
@@ -546,7 +548,7 @@ export const omelette: BaseRecipeSeed = {
           label: t('Sweet chilli sauce', 'Sos dulce-iute'),
           reason: t(
             'A little sweetness and heat set off the savoury eggs.',
-            'Puțină dulceață și iuțeală pun în valoare ouăle sărate.',
+            'Puțină dulceață și iuțeală pun în valoare gustul sărat al ouălor.',
           ),
           principle: 'salt_balances_sweet',
           ingredient: 'sweet-chili-sauce',
@@ -556,7 +558,7 @@ export const omelette: BaseRecipeSeed = {
           label: t('Green tea', 'Ceai verde'),
           reason: t(
             'Its light bitterness cleanses the palate after the oil and soy.',
-            'Amăreala ușoară curăță gura după ulei și soia.',
+            'Amăreala ușoară împrospătează gustul după ulei și soia.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'green-tea',
@@ -628,7 +630,7 @@ export const omelette: BaseRecipeSeed = {
           key: 'whisk',
           text: t(
             'Whisk the eggs with the pepper. Do not salt: the telemea will season the omelette.',
-            'Bate ouăle cu piper. Nu sărăra: telemeaua va potrivi gustul omletei.',
+            'Bate ouăle cu piper. Nu săra: telemeaua va potrivi gustul omletei.',
           ),
         },
         {
@@ -767,7 +769,7 @@ export const omelette: BaseRecipeSeed = {
           key: 'heat',
           text: t(
             'Melt the butter in a 20 cm non-stick pan over medium-high heat until it foams, then pour in the eggs.',
-            'Topește untul într-o tigaie antiaderentă de 20 cm la foc potrivit-mare, până face spumă, apoi toarnă ouăle.',
+            'Topește untul într-o tigaie antiaderentă de 20 cm la foc mediu spre mare, până face spumă, apoi toarnă ouăle.',
           ),
         },
         {
@@ -835,7 +837,7 @@ export const omelette: BaseRecipeSeed = {
           ),
           reason: t(
             'The bubbles and acidity refresh the palate between rich bites.',
-            'Bulele și aciditatea împrospătează gura între îmbucături bogate.',
+            'Bulele și aciditatea împrospătează gustul între îmbucături bogate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-wine',
@@ -936,8 +938,8 @@ export const omelette: BaseRecipeSeed = {
       ],
       tips: [
         t(
-          'Let the fillings cool slightly before folding; piping hot fillings can make the eggs weep.',
-          'Lasă umplutura să se răcească puțin înainte de a plia; o umplutură fierbinte poate face ouăle să lase apă.',
+          'Cook the fillings first; raw peppers release water into the eggs.',
+          'Gătește mai întâi umplutura; ardeiul crud eliberează apă în ouă.',
         ),
       ],
       nutritionNote: t(
@@ -1006,6 +1008,8 @@ export const omelette: BaseRecipeSeed = {
     {
       slug: 'omelette-frittata',
       method: 'frittata',
+      // Finished under the grill: the base's "slightly wet" rule does not apply.
+      hideBaseTips: [0],
       title: t(
         'Spinach and parmesan frittata',
         'Frittata cu spanac și parmezan',
@@ -1038,8 +1042,8 @@ export const omelette: BaseRecipeSeed = {
         {
           key: 'preheat',
           text: t(
-            'Heat the grill (or oven to 200 C) with a rack in the upper third.',
-            'Încinge grill-ul (sau cuptorul la 200 C) cu grătarul în treimea de sus.',
+            'Heat the grill to high with a rack in the upper third.',
+            'Încinge grill-ul la maximum, cu grătarul în treimea de sus.',
           ),
         },
         {
@@ -1061,8 +1065,8 @@ export const omelette: BaseRecipeSeed = {
         {
           key: 'grill',
           text: t(
-            'Sprinkle with the remaining parmesan and put the pan under the grill for 2 to 3 minutes until set and lightly golden. Rest for 5 minutes, then cut into wedges.',
-            'Presară parmezanul rămas și pune tigaia sub grill 2-3 minute, până se prinde și capătă o culoare ușor aurie. Lasă-o 5 minute, apoi taie felii.',
+            'Sprinkle with the remaining parmesan and put the pan under the grill for 2 to 3 minutes (or in an oven at 200 °C for 8 to 10 minutes) until set and lightly golden. Rest for 5 minutes, then cut into wedges.',
+            'Presară parmezanul rămas și pune tigaia sub grill 2-3 minute (sau în cuptor la 200 °C, 8-10 minute), până se prinde și capătă o culoare ușor aurie. Lasă-o 5 minute, apoi taie felii.',
           ),
           timerSeconds: 150,
         },
@@ -1077,8 +1081,8 @@ export const omelette: BaseRecipeSeed = {
         {
           step: 'onion',
           text: t(
-            'Squeeze out as much liquid from the spinach as you can; wet spinach makes the frittata soggy.',
-            'Stoarce cât mai mult lichid din spanac; spanacul ud face frittata moale.',
+            'Press the wilted spinach against the side of the pan with a spatula and pour off the liquid; wet spinach makes the frittata soggy.',
+            'Apasă spanacul ofilit pe marginea tigăii cu o spatulă și scurge lichidul; spanacul ud face frittata moale.',
           ),
         },
       ],
@@ -1101,8 +1105,8 @@ export const omelette: BaseRecipeSeed = {
           kind: 'food',
           label: t('Ciabatta', 'Ciabatta'),
           reason: t(
-            'Airy, crusty bread to soak up the olive oil.',
-            'Pâine aerată și crocantă, care absoarbe uleiul de măsline.',
+            'The crisp crust and chewy crumb contrast with the soft, tender slice.',
+            'Crusta crocantă și miezul elastic contrastează cu felia moale și fragedă.',
           ),
           principle: 'contrast_texture',
           ingredient: 'ciabatta',

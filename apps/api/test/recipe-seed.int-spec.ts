@@ -1,7 +1,11 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
+import {
+  seedCatalog,
+  seedId,
+  stableId,
+} from '../src/catalog/seed/seed-catalog';
 import { SEED_BASE_RECIPES } from '../src/catalog/seed/recipes/recipe-seed-data';
 import { seedRecipes } from '../src/catalog/seed/recipes/seed-recipes';
 import {
@@ -17,6 +21,7 @@ import {
   eatingMoments,
   methods,
   recipeEatingMomentTranslations,
+  recipeHiddenTips,
   recipeEatingMoments,
   recipeIngredientLines,
   recipeNutritionNoteTranslations,
@@ -29,6 +34,7 @@ import {
   recipeTipTranslations,
   recipeTranslations,
 } from '../src/database/schema';
+import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
 jest.setTimeout(60_000);
@@ -130,6 +136,55 @@ describe('Recipe seed (integration)', () => {
     expect(translated[0].n).toBe(
       (SEED_CUISINES.length + SEED_METHODS.length) * 3,
     );
+  });
+
+  it('reads a seeded Variant through the Member API, in Romanian, with inherited Tips and guidance', async () => {
+    const member = client(
+      app,
+      await signUp(app, `recipe-seed-${Date.now()}@example.com`, 'Seed Reader'),
+      '/api/recipes',
+    );
+    const res = await member
+      .get(`/${seedId.recipe('omelette-mediterranean')}?locale=ro`)
+      .expect(200);
+    const body = res.body as {
+      title: string;
+      tips: { inherited: boolean }[];
+      guidance: {
+        nutritionNote: string;
+        pairings: unknown[];
+        eatingMoments: { name: string }[];
+      };
+    };
+    expect(body.title).toBe('Omletă mediteraneană');
+    expect(body.guidance.nutritionNote).toContain('Uleiul de măsline');
+    expect(body.guidance.pairings.length).toBeGreaterThanOrEqual(1);
+    expect(body.guidance.eatingMoments[0].name).toBeTruthy();
+    expect(body.tips.filter((t) => t.inherited)).toHaveLength(
+      omelette?.tips?.length ?? -1,
+    );
+  });
+
+  it('hides the base Tips a Variant opts out of and keeps one position sequence per Recipe', async () => {
+    const variantId = seedId.recipe('omelette-middle-eastern');
+    const hidden = await database
+      .select()
+      .from(recipeHiddenTips)
+      .where(eq(recipeHiddenTips.recipeId, variantId));
+    expect(hidden.map((h) => h.tipId)).toEqual([
+      stableId('recipe-tip:omelette:0'),
+    ]);
+    const tips = await database
+      .select()
+      .from(recipeTips)
+      .where(inArray(recipeTips.recipeId, recipeIds));
+    for (const id of recipeIds) {
+      const positions = tips
+        .filter((t) => t.recipeId === id)
+        .map((t) => t.position)
+        .sort((a, b) => a - b);
+      expect(positions).toEqual(positions.map((_, i) => i));
+    }
   });
 
   it('seeds the Omelette base with its Cuisine and Method Variants', async () => {
@@ -406,6 +461,30 @@ describe('Recipe seed (integration)', () => {
         }),
       ).rejects.toBeInstanceOf(Rollback);
       expect((await tipsOf(database)).length).toBeGreaterThan(0);
+    });
+
+    it('skips a Variant whose base is archived, as the API refuses new Variants there', async () => {
+      const baseId = seedId.recipe('omelette');
+      const variantId = seedId.recipe('omelette-frittata');
+      const log = jest.spyOn(console, 'log').mockImplementation(() => {});
+      await expect(
+        database.transaction(async (tx) => {
+          await tx.delete(recipes).where(eq(recipes.id, variantId));
+          await tx
+            .update(recipes)
+            .set({ archivedAt: new Date() })
+            .where(eq(recipes.id, baseId));
+          await seedRecipes(tx);
+          expect(
+            await tx.select().from(recipes).where(eq(recipes.id, variantId)),
+          ).toHaveLength(0);
+          expect(log).toHaveBeenCalledWith(
+            expect.stringContaining('omelette-frittata'),
+          );
+          throw new Rollback();
+        }),
+      ).rejects.toBeInstanceOf(Rollback);
+      log.mockRestore();
     });
 
     it('restores a deleted seed Recipe with all its content', async () => {

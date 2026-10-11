@@ -30,6 +30,7 @@ async function main(): Promise<void> {
     await seedCatalog(database);
     console.log('Catalog seeded.');
     await seedRecipes(database);
+    console.log('Recipes seeded.');
 
     // Opt-in on an explicit development env (as in .env.example), so CI,
     // tests, and any env that forgets NODE_ENV never get known credentials.

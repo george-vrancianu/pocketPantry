@@ -120,3 +120,19 @@ ambiguous Synonyms, or dangling references. Slugs are permanent once merged.
 - Seed changes to an existing row's Leaf, Default Expiry, or unit do not reach
   databases that are already seeded (existing rows are never updated). An
   upsert strategy is needed before the first real deployment.
+
+### Recipe seed
+
+`src/catalog/seed/recipes/` seeds the starter Recipes (Base Recipes with their
+Variants, the Cuisine, Method and Eating Moment lists, Tips and guidance) right
+after the Catalog seed, from one data file per Base Recipe. It is validated
+first (`validate-recipe-seed.ts`), including the Admin API's own limits.
+
+- Slugs are permanent: ids derive from them.
+- A Recipe's lines, steps, Tips, guidance and Romanian text are written only
+  when its row is new. Fixing seed content therefore does not reach databases
+  that are already seeded without a reset, and an Admin's edits or deletions are
+  never undone.
+- Recipes are never hard-deleted (they are archived), and there is no RETIRED
+  mechanism as in the Catalog seed. New Variants under an archived base are
+  skipped, as the API refuses them.

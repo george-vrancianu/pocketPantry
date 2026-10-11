@@ -11,11 +11,11 @@ const named = (
 ): SeedNamed => ({ slug, en, ro, da });
 
 export const SEED_CUISINES: SeedNamed[] = [
-  named('mediterranean', 'Mediterranean', 'Mediteraneană', 'Middelhavs'),
+  named('mediterranean', 'Mediterranean', 'Mediteraneană', 'Middelhavsk'),
   named(
     'middle-eastern',
     'Middle Eastern',
-    'Orientul Mijlociu',
+    'Din Orientul Mijlociu',
     'Mellemøstlig',
   ),
   named('asian', 'Asian', 'Asiatică', 'Asiatisk'),
@@ -24,7 +24,12 @@ export const SEED_CUISINES: SeedNamed[] = [
 
 export const SEED_METHODS: SeedNamed[] = [
   named('rolled', 'French rolled', 'Rulată franțuzește', 'Fransk rullet'),
-  named('folded', 'American folded', 'Pliată american', 'Amerikansk foldet'),
+  named(
+    'folded',
+    'American folded',
+    'Pliată americănește',
+    'Amerikansk foldet',
+  ),
   named('frittata', 'Frittata', 'Frittata', 'Frittata'),
 ];
 

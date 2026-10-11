@@ -71,13 +71,22 @@ describe('findRecipeSeedProblems', () => {
     expect(problems([b])).toContain('unknown Ingredient "nope"');
   });
 
-  it('rejects a repeated Ingredient on one Recipe', () => {
+  it('rejects a repeated line key, which defaults to the Ingredient slug', () => {
     const b = base();
     b.lines = [
       { ingredient: 'eggs', quantity: 1, unit: 'pcs' },
       { ingredient: 'eggs', quantity: 2, unit: 'pcs' },
     ];
-    expect(problems([b])).toContain('Ingredient "eggs" twice');
+    expect(problems([b])).toContain('duplicate line key "eggs"');
+  });
+
+  it('lets one Ingredient appear twice under different keys', () => {
+    const b = base();
+    b.lines = [
+      { ingredient: 'salt', key: 'salt-eggs', quantity: 1, unit: 'g' },
+      { ingredient: 'salt', key: 'salt-pan', quantity: 1, unit: 'g' },
+    ];
+    expect(problems([b])).toBe('');
   });
 
   it('rejects a quantity without a unit and the reverse', () => {
@@ -180,6 +189,43 @@ describe('findRecipeSeedProblems', () => {
     expect(text.split('\n')).toHaveLength(4);
   });
 
+  it('applies the Admin API limits to each locale', () => {
+    const b = base();
+    b.title = t('x'.repeat(201), 'ok');
+    b.steps = [{ key: 'cook', text: t('ok', 'y'.repeat(2001)) }];
+    b.lines = [
+      {
+        ingredient: 'eggs',
+        quantity: 1,
+        unit: 'pcs',
+        note: t('n'.repeat(201), 'ok'),
+      },
+    ];
+    b.tips = [t('ok', 'z'.repeat(2001))];
+    b.pairings = [{ ...b.pairings[0], reason: t('r'.repeat(1001), 'ok') }];
+    b.prepMinutes = -1;
+    const text = problems([b]);
+    expect(text).toContain('recipe "base": [en] document title:');
+    expect(text).toContain('[ro] document steps.0.text');
+    expect(text).toContain('[en] document lines.0.note');
+    expect(text).toContain('[ro] tip 1 text');
+    expect(text).toContain('[en] guidance pairings.0.reason');
+    expect(text).toContain('prepMinutes');
+  });
+
+  it("checks the Variants' hidden base Tips are in range and unique", () => {
+    const b = base('b', [
+      { ...variant('v1'), hideBaseTips: [0, 0] },
+      { ...variant('v2'), hideBaseTips: [3] },
+      { ...variant('v3'), hideBaseTips: [0] },
+    ]);
+    b.tips = [t('Tip.')];
+    const text = problems([b]);
+    expect(text).toContain('"v1": hideBaseTips lists 0 twice');
+    expect(text).toContain('"v2": hideBaseTips index 3 is not a base Tip');
+    expect(text).not.toContain('"v3"');
+  });
+
   it('requires a positive serving count', () => {
     const b = base();
     b.servings = 0;
@@ -246,12 +292,17 @@ describe('findAcceptanceGaps', () => {
     ).toContain('appetizer-platter: needs at least 5 Cuisine Variants, has 4');
   });
 
-  it('wants at least three Pairings that link another seeded Recipe', () => {
+  it('counts only Pairings that link into another base family', () => {
     const a = base('a', [variant('a1')]);
-    a.pairings = [{ ...a.pairings[0], recipe: 'a1' }];
-    expect(
-      findAcceptanceGaps([a], { requireCrossLinks: true }).join('\n'),
-    ).toContain('at least 3 Pairings link another seeded Recipe, found 1');
+    a.pairings = [
+      { ...a.pairings[0], recipe: 'a1' },
+      { ...a.pairings[0], recipe: 'c' },
+    ];
+    const c = base('c');
+    const gaps = findAcceptanceGaps([a, c], { requireCrossLinks: true });
+    expect(gaps.join('\n')).toContain(
+      'at least 3 Pairings link a Recipe of another base, found 1',
+    );
   });
 
   // TODO(lead): once all five bases are merged and the cross-link pass is done,

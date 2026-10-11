@@ -1,9 +1,11 @@
+import { and, inArray, isNotNull } from 'drizzle-orm';
 import type { Database, Tx } from '../../../database/database.types';
 import {
   catalogTranslations,
   cuisines,
   eatingMoments,
   methods,
+  recipeHiddenTips,
   recipeIngredientLines,
   recipeIngredientLineTranslations,
   recipes,
@@ -211,13 +213,15 @@ async function insertRecipes(
 async function insertContent(tx: Tx, fresh: RecipeSeed[]) {
   if (fresh.length === 0) return;
   const known = new Set(SEED_INGREDIENTS.map((i) => i.slug));
+  const lineKey = (line: RecipeSeed['lines'][number]) =>
+    line.key ?? line.ingredient;
   const lines = fresh.flatMap((recipe) =>
     recipe.lines.map((line, position) => {
       if (!known.has(line.ingredient)) {
         throw new Error(`Unknown Ingredient "${line.ingredient}"`);
       }
       return {
-        id: id.line(recipe.slug, line.ingredient),
+        id: id.line(recipe.slug, lineKey(line)),
         recipeId: seedId.recipe(recipe.slug),
         position,
         ingredientId: seedId.ingredient(line.ingredient),
@@ -234,7 +238,7 @@ async function insertContent(tx: Tx, fresh: RecipeSeed[]) {
       line.note
         ? [
             {
-              lineId: id.line(recipe.slug, line.ingredient),
+              lineId: id.line(recipe.slug, lineKey(line)),
               locale: RO,
               note: line.note.ro,
             },
@@ -267,31 +271,32 @@ async function insertContent(tx: Tx, fresh: RecipeSeed[]) {
     ),
   );
 
+  // One position sequence per Recipe, as the API keeps it: Recipe-level Tips
+  // first, then the Step Tips.
   const tips = fresh.flatMap((recipe) => {
     const recipeId = seedId.recipe(recipe.slug);
     const perStep = new Map<string, number>();
-    return [
-      ...(recipe.tips ?? []).map((tip, position) => ({
-        id: id.tip(recipe.slug, position),
-        recipeId,
-        stepId: null as string | null,
-        position,
-        en: tip.en,
-        ro: tip.ro,
-      })),
-      ...(recipe.stepTips ?? []).map((tip) => {
-        const position = perStep.get(tip.step) ?? 0;
-        perStep.set(tip.step, position + 1);
-        return {
-          id: id.stepTip(recipe.slug, tip.step, position),
-          recipeId,
-          stepId: id.step(recipe.slug, tip.step),
-          position,
-          en: tip.text.en,
-          ro: tip.text.ro,
-        };
-      }),
-    ];
+    const own = (recipe.tips ?? []).map((tip, n) => ({
+      id: id.tip(recipe.slug, n),
+      stepId: null as string | null,
+      en: tip.en,
+      ro: tip.ro,
+    }));
+    const onSteps = (recipe.stepTips ?? []).map((tip) => {
+      const n = perStep.get(tip.step) ?? 0;
+      perStep.set(tip.step, n + 1);
+      return {
+        id: id.stepTip(recipe.slug, tip.step, n),
+        stepId: id.step(recipe.slug, tip.step),
+        en: tip.text.en,
+        ro: tip.text.ro,
+      };
+    });
+    return [...own, ...onSteps].map((tip, position) => ({
+      ...tip,
+      recipeId,
+      position,
+    }));
   });
   if (tips.length > 0) {
     await tx.insert(recipeTips).values(
@@ -317,11 +322,44 @@ async function insertContent(tx: Tx, fresh: RecipeSeed[]) {
   );
 }
 
+/** The base Tips a fresh Variant does not inherit (only those that still exist). */
+async function insertHiddenTips(
+  tx: Tx,
+  variants: { variant: VariantSeed; base: RecipeSeed }[],
+) {
+  const wanted = variants.flatMap(({ variant, base }) =>
+    (variant.hideBaseTips ?? []).map((index) => ({
+      recipeId: seedId.recipe(variant.slug),
+      tipId: id.tip(base.slug, index),
+    })),
+  );
+  if (wanted.length === 0) return;
+  // An Admin may have deleted a base Tip since it was seeded.
+  const existing = new Set(
+    (
+      await tx
+        .select({ id: recipeTips.id })
+        .from(recipeTips)
+        .where(
+          inArray(
+            recipeTips.id,
+            wanted.map((w) => w.tipId),
+          ),
+        )
+    ).map((row) => row.id),
+  );
+  const rows = wanted.filter((w) => existing.has(w.tipId));
+  if (rows.length > 0) {
+    await tx.insert(recipeHiddenTips).values(rows).onConflictDoNothing();
+  }
+}
+
 /** Pairings, Nutrition Note and Eating Moment uses, English and Romanian, via the #159 writers. */
 async function insertGuidance(
   tx: Tx,
   recipe: RecipeSeed,
   registries: Registries,
+  skipped: Set<string>,
 ) {
   const recipeId = seedId.recipe(recipe.slug);
   const pairingId = (index: number) => id.pairing(recipe.slug, index);
@@ -340,7 +378,9 @@ async function insertGuidance(
         linkedIngredientId: p.ingredient
           ? seedId.ingredient(p.ingredient)
           : null,
-        linkedRecipeId: p.recipe ? seedId.recipe(p.recipe) : null,
+        // A Variant skipped under an archived base has no row to link.
+        linkedRecipeId:
+          p.recipe && !skipped.has(p.recipe) ? seedId.recipe(p.recipe) : null,
       })),
       eatingMoments: recipe.eatingMoments.map((use) => ({
         eatingMomentId: momentId(use.moment),
@@ -393,24 +433,75 @@ export async function seedRecipes(
         row: recipeRow(base, registries),
       })),
     );
+    // The API refuses new Variants under an archived base, so does the seed.
+    const archived = new Set(
+      (
+        await tx
+          .select({ id: recipes.id })
+          .from(recipes)
+          .where(
+            and(
+              inArray(
+                recipes.id,
+                bases.map((base) => seedId.recipe(base.slug)),
+              ),
+              isNotNull(recipes.archivedAt),
+            ),
+          )
+      ).map((row) => row.id),
+    );
+    const allVariants = bases.flatMap((base) =>
+      base.variants.map((variant) => ({ variant, base })),
+    );
+    const open = allVariants.filter(
+      ({ base }) => !archived.has(seedId.recipe(base.slug)),
+    );
+    const skipped = new Set<string>();
+    if (open.length < allVariants.length) {
+      const inserted = await tx
+        .select({ id: recipes.id })
+        .from(recipes)
+        .where(
+          inArray(
+            recipes.id,
+            allVariants.map(({ variant }) => seedId.recipe(variant.slug)),
+          ),
+        );
+      const present = new Set(inserted.map((row) => row.id));
+      for (const { variant, base } of allVariants) {
+        if (
+          archived.has(seedId.recipe(base.slug)) &&
+          !present.has(seedId.recipe(variant.slug))
+        ) {
+          skipped.add(variant.slug);
+        }
+      }
+      if (skipped.size > 0) {
+        console.log(
+          `Recipe seed: skipped Variants of archived base Recipes: ${[...skipped].join(', ')}`,
+        );
+      }
+    }
     const freshVariants = await insertRecipes(
       tx,
-      bases.flatMap((base) =>
-        base.variants.map((variant) => ({
-          slug: variant.slug,
-          row: recipeRow(variant, registries, { id: seedId.recipe(base.slug) }),
-        })),
-      ),
+      open.map(({ variant, base }) => ({
+        slug: variant.slug,
+        row: recipeRow(variant, registries, { id: seedId.recipe(base.slug) }),
+      })),
     );
     const fresh = [
       ...bases.filter((base) => freshBases.has(base.slug)),
-      ...bases.flatMap((base) =>
-        base.variants.filter((v) => freshVariants.has(v.slug)),
-      ),
+      ...open
+        .filter(({ variant }) => freshVariants.has(variant.slug))
+        .map(({ variant }) => variant),
     ];
     await insertContent(tx, fresh);
+    await insertHiddenTips(
+      tx,
+      open.filter(({ variant }) => freshVariants.has(variant.slug)),
+    );
     for (const recipe of fresh) {
-      await insertGuidance(tx, recipe, registries);
+      await insertGuidance(tx, recipe, registries, skipped);
     }
   });
 }
