@@ -4,5 +4,16 @@
     "easy": "Easy",
     "medium": "Medium",
     "hard": "Hard"
-  }
+  },
+  "principles": {
+    "acid_cuts_fat": "Acid cuts fat",
+    "salt_balances_sweet": "Salt balances sweet",
+    "fat_carries_flavour": "Fat carries flavour",
+    "contrast_texture": "Contrast in texture",
+    "complement_flavour": "Complementary flavour",
+    "bitter_balances_rich": "Bitter balances rich",
+    "cleanses_palate": "Cleanses the palate",
+    "regional_tradition": "Regional tradition"
+  },
+  "disclaimer": "General guidance, not medical or dietary advice."
 }

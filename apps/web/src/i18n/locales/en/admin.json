@@ -237,7 +237,80 @@
       "tip": "Tip {{position}} ({{group}}, {{language}})",
       "source": "English: {{text}}",
       "save": "Save {{language}} translations",
-      "saved": "{{language}} translations saved."
+      "saved": "{{language}} translations saved.",
+      "pairingLabel": "Pairing {{position}} label ({{language}})",
+      "pairingReason": "Pairing {{position}} reason ({{language}})",
+      "eatingMomentReason": "Reason for {{name}} ({{language}})",
+      "nutritionNote": "Nutrition Note ({{language}})"
+    },
+    "guidance": {
+      "title": "Guidance",
+      "hint": "Pairings, a Nutrition Note and Eating Moments. Saved together with the Save guidance button.",
+      "save": "Save guidance",
+      "saving": "Saving…",
+      "saved": "Guidance saved.",
+      "pairings": {
+        "title": "Pairings",
+        "hint": "What this Recipe goes well with, and why. Up to {{max}}.",
+        "empty": "No Pairings yet.",
+        "add": "Add a Pairing",
+        "limit": "A Recipe can have at most {{max}} Pairings.",
+        "kind": "Kind of Pairing {{position}}",
+        "kindFood": "Food",
+        "kindDrink": "Drink",
+        "label": "Label of Pairing {{position}}",
+        "reason": "Reason for Pairing {{position}}",
+        "principle": "Principle of Pairing {{position}}",
+        "principleNone": "No Principle",
+        "linkType": "Link of Pairing {{position}}",
+        "linkNone": "No link",
+        "linkIngredient": "An Ingredient",
+        "linkRecipe": "A Recipe",
+        "linkIngredientTarget": "Linked Ingredient of Pairing {{position}}",
+        "linkRecipeTarget": "Linked Recipe of Pairing {{position}}",
+        "choose": "Choose…",
+        "moveUp": "Move Pairing {{position}} up",
+        "moveDown": "Move Pairing {{position}} down",
+        "remove": "Remove Pairing {{position}}",
+        "invalid": "Every Pairing needs a label and a reason."
+      },
+      "nutrition": {
+        "title": "Nutrition Note",
+        "label": "Nutrition Note",
+        "helper": "Give a general direction, never values. Cover both the good and the bad.",
+        "counter": "{{count}} of {{max}} characters",
+        "tooLong": "The Nutrition Note is over {{max}} characters."
+      },
+      "eatingMoments": {
+        "title": "Eating Moments",
+        "hint": "When this Recipe is best, or worst, to eat. Up to {{max}}.",
+        "empty": "No Eating Moments yet.",
+        "pick": "Add an Eating Moment",
+        "pickNone": "Choose…",
+        "limit": "A Recipe can use at most {{max}} Eating Moments.",
+        "polarity": "Good for or Avoid: {{name}}",
+        "goodFor": "Good for",
+        "avoid": "Avoid",
+        "reason": "Reason for {{name}}",
+        "remove": "Remove {{name}}",
+        "moveUp": "Move {{name}} up",
+        "moveDown": "Move {{name}} down"
+      }
     }
+  },
+  "eatingMoment": {
+    "title": "Eating Moments",
+    "hint": "When a Recipe is best, or worst, to eat, e.g. breakfast or before bed. Archived ones are hidden from the picker and from display.",
+    "new": "New Eating Moment",
+    "edit": "Edit Eating Moment {{name}}",
+    "name": "Name (English)",
+    "empty": "No Eating Moments yet.",
+    "moveUp": "Move {{name}} up",
+    "moveDown": "Move {{name}} down",
+    "moved": "{{name}} is now number {{position}} of {{total}}.",
+    "archivedBadge": "Archived",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "archivedNote": "This Eating Moment is archived. It is hidden from the picker and from display, and stays on the Recipes that use it."
   }
 }

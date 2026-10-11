@@ -240,7 +240,80 @@
       "tip": "Sfatul {{position}} ({{group}}, {{language}})",
       "source": "Engleză: {{text}}",
       "save": "Salvează traducerile în {{language}}",
-      "saved": "Traducerile în {{language}} au fost salvate."
+      "saved": "Traducerile în {{language}} au fost salvate.",
+      "pairingLabel": "Eticheta Asocierii {{position}} ({{language}})",
+      "pairingReason": "Motivul Asocierii {{position}} ({{language}})",
+      "eatingMomentReason": "Motivul pentru {{name}} ({{language}})",
+      "nutritionNote": "Notă nutrițională ({{language}})"
+    },
+    "guidance": {
+      "title": "Recomandări",
+      "hint": "Asocieri, o Notă nutrițională și Momente de consum. Se salvează împreună cu butonul Salvează recomandările.",
+      "save": "Salvează recomandările",
+      "saving": "Se salvează…",
+      "saved": "Recomandările au fost salvate.",
+      "pairings": {
+        "title": "Asocieri",
+        "hint": "Cu ce se potrivește această Rețetă și de ce. Cel mult {{max}}.",
+        "empty": "Nicio Asociere încă.",
+        "add": "Adaugă o Asociere",
+        "limit": "O Rețetă poate avea cel mult {{max}} Asocieri.",
+        "kind": "Tipul Asocierii {{position}}",
+        "kindFood": "Mâncare",
+        "kindDrink": "Băutură",
+        "label": "Eticheta Asocierii {{position}}",
+        "reason": "Motivul Asocierii {{position}}",
+        "principle": "Principiul Asocierii {{position}}",
+        "principleNone": "Fără principiu",
+        "linkType": "Legătura Asocierii {{position}}",
+        "linkNone": "Fără legătură",
+        "linkIngredient": "Un Ingredient",
+        "linkRecipe": "O Rețetă",
+        "linkIngredientTarget": "Ingredientul legat de Asocierea {{position}}",
+        "linkRecipeTarget": "Rețeta legată de Asocierea {{position}}",
+        "choose": "Alege…",
+        "moveUp": "Mută Asocierea {{position}} mai sus",
+        "moveDown": "Mută Asocierea {{position}} mai jos",
+        "remove": "Elimină Asocierea {{position}}",
+        "invalid": "Fiecare Asociere are nevoie de o etichetă și de un motiv."
+      },
+      "nutrition": {
+        "title": "Notă nutrițională",
+        "label": "Notă nutrițională",
+        "helper": "Dă o direcție generală, niciodată valori. Include atât partea bună, cât și cea rea.",
+        "counter": "{{count}} din {{max}} caractere",
+        "tooLong": "Nota nutrițională depășește {{max}} de caractere."
+      },
+      "eatingMoments": {
+        "title": "Momente de consum",
+        "hint": "Când este cel mai bine, sau cel mai rău, să mănânci această Rețetă. Cel mult {{max}}.",
+        "empty": "Niciun Moment de consum încă.",
+        "pick": "Adaugă un Moment de consum",
+        "pickNone": "Alege…",
+        "limit": "O Rețetă poate folosi cel mult {{max}} Momente de consum.",
+        "polarity": "Bun pentru sau Evită: {{name}}",
+        "goodFor": "Bun pentru",
+        "avoid": "Evită",
+        "reason": "Motivul pentru {{name}}",
+        "remove": "Elimină {{name}}",
+        "moveUp": "Mută {{name}} mai sus",
+        "moveDown": "Mută {{name}} mai jos"
+      }
     }
+  },
+  "eatingMoment": {
+    "title": "Momente de consum",
+    "hint": "Când este cel mai bine, sau cel mai rău, să mănânci o Rețetă, de exemplu la micul dejun sau înainte de culcare. Cele arhivate sunt ascunse din selector și din afișare.",
+    "new": "Moment de consum nou",
+    "edit": "Editează Momentul de consum {{name}}",
+    "name": "Nume (engleză)",
+    "empty": "Niciun Moment de consum încă.",
+    "moveUp": "Mută {{name}} mai sus",
+    "moveDown": "Mută {{name}} mai jos",
+    "moved": "{{name}} este acum numărul {{position}} din {{total}}.",
+    "archivedBadge": "Arhivat",
+    "archive": "Arhivează",
+    "unarchive": "Dezarhivează",
+    "archivedNote": "Acest Moment de consum este arhivat. Este ascuns din selector și din afișare și rămâne pe Rețetele care îl folosesc."
   }
 }

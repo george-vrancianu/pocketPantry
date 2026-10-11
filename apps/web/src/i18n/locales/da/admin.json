@@ -237,7 +237,80 @@
       "tip": "Tip {{position}} ({{group}}, {{language}})",
       "source": "Engelsk: {{text}}",
       "save": "Gem oversættelser på {{language}}",
-      "saved": "Oversættelserne på {{language}} er gemt."
+      "saved": "Oversættelserne på {{language}} er gemt.",
+      "pairingLabel": "Navn på Parring {{position}} ({{language}})",
+      "pairingReason": "Begrundelse for Parring {{position}} ({{language}})",
+      "eatingMomentReason": "Begrundelse for {{name}} ({{language}})",
+      "nutritionNote": "Ernæringsnote ({{language}})"
+    },
+    "guidance": {
+      "title": "Vejledning",
+      "hint": "Parringer, en Ernæringsnote og Spisetidspunkter. Gemmes samlet med knappen Gem vejledning.",
+      "save": "Gem vejledning",
+      "saving": "Gemmer…",
+      "saved": "Vejledningen er gemt.",
+      "pairings": {
+        "title": "Parringer",
+        "hint": "Hvad denne Opskrift passer godt til, og hvorfor. Højst {{max}}.",
+        "empty": "Ingen Parringer endnu.",
+        "add": "Tilføj en Parring",
+        "limit": "En Opskrift kan have højst {{max}} Parringer.",
+        "kind": "Type for Parring {{position}}",
+        "kindFood": "Mad",
+        "kindDrink": "Drikke",
+        "label": "Navn på Parring {{position}}",
+        "reason": "Begrundelse for Parring {{position}}",
+        "principle": "Princip for Parring {{position}}",
+        "principleNone": "Intet princip",
+        "linkType": "Link for Parring {{position}}",
+        "linkNone": "Intet link",
+        "linkIngredient": "En Ingrediens",
+        "linkRecipe": "En Opskrift",
+        "linkIngredientTarget": "Linket Ingrediens for Parring {{position}}",
+        "linkRecipeTarget": "Linket Opskrift for Parring {{position}}",
+        "choose": "Vælg…",
+        "moveUp": "Flyt Parring {{position}} op",
+        "moveDown": "Flyt Parring {{position}} ned",
+        "remove": "Fjern Parring {{position}}",
+        "invalid": "Hver Parring skal have et navn og en begrundelse."
+      },
+      "nutrition": {
+        "title": "Ernæringsnote",
+        "label": "Ernæringsnote",
+        "helper": "Giv en generel retning, aldrig værdier. Dæk både det gode og det dårlige.",
+        "counter": "{{count}} af {{max}} tegn",
+        "tooLong": "Ernæringsnoten er over {{max}} tegn."
+      },
+      "eatingMoments": {
+        "title": "Spisetidspunkter",
+        "hint": "Hvornår denne Opskrift er bedst, eller værst, at spise. Højst {{max}}.",
+        "empty": "Ingen Spisetidspunkter endnu.",
+        "pick": "Tilføj et Spisetidspunkt",
+        "pickNone": "Vælg…",
+        "limit": "En Opskrift kan bruge højst {{max}} Spisetidspunkter.",
+        "polarity": "Godt til eller Undgå: {{name}}",
+        "goodFor": "Godt til",
+        "avoid": "Undgå",
+        "reason": "Begrundelse for {{name}}",
+        "remove": "Fjern {{name}}",
+        "moveUp": "Flyt {{name}} op",
+        "moveDown": "Flyt {{name}} ned"
+      }
     }
+  },
+  "eatingMoment": {
+    "title": "Spisetidspunkter",
+    "hint": "Hvornår en Opskrift er bedst, eller værst, at spise, fx til morgenmad eller før sengetid. Arkiverede skjules i vælgeren og i visningen.",
+    "new": "Nyt Spisetidspunkt",
+    "edit": "Redigér Spisetidspunktet {{name}}",
+    "name": "Navn (engelsk)",
+    "empty": "Ingen Spisetidspunkter endnu.",
+    "moveUp": "Flyt {{name}} op",
+    "moveDown": "Flyt {{name}} ned",
+    "moved": "{{name}} er nu nummer {{position}} af {{total}}.",
+    "archivedBadge": "Arkiveret",
+    "archive": "Arkivér",
+    "unarchive": "Fjern fra arkiv",
+    "archivedNote": "Dette Spisetidspunkt er arkiveret. Det skjules i vælgeren og i visningen og bliver på de Opskrifter, der bruger det."
   }
 }

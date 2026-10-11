@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
   methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  eatingMoments: [],
   parentCategories: [],
   leafCategories: [],
   ingredients: [
@@ -74,6 +75,9 @@ const saved: AdminRecipe = {
   ],
   tips: [],
   parentTips: null,
+  nutritionNote: null,
+  pairings: [],
+  eatingMoments: [],
   translations: {},
 };
 

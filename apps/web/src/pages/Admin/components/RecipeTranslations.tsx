@@ -14,7 +14,7 @@ type Props = { recipe: AdminRecipe; catalog: AdminCatalog };
 
 /**
  * Per-locale text of a saved Recipe: title, Steps, Ingredient Line notes and
- * Tips. English is the source; a blank field falls back to it. Each locale
+ * Tips, plus guidance (Pairings, Eating Moment reasons, Nutrition Note). English is the source; a blank field falls back to it. Each locale
  * saves in one request with only what changed (blanking a field deletes it).
  */
 export function RecipeTranslations({ recipe, catalog }: Props) {
@@ -96,12 +96,49 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
     const value = change(`tip:${tip.id}`, saved?.tips[tip.id]);
     if (value !== undefined) input.tips![tip.id] = value;
   }
+  const note = change('nutritionNote', saved?.nutritionNote);
+  if (note !== undefined) input.nutritionNote = note;
+  const pairings: NonNullable<TranslationsInput['pairings']> = {};
+  let pairingIncomplete = false;
+  for (const pairing of recipe.pairings) {
+    const savedPairing = saved?.pairings[pairing.id];
+    const label = change(`pairing:${pairing.id}:label`, savedPairing?.label);
+    const reason = change(`pairing:${pairing.id}:reason`, savedPairing?.reason);
+    if (label === undefined && reason === undefined) continue;
+    const nextLabel =
+      label === undefined ? (savedPairing?.label ?? null) : label;
+    const nextReason =
+      reason === undefined ? (savedPairing?.reason ?? null) : reason;
+    if (nextLabel === null && nextReason === null) {
+      pairings[pairing.id] = null;
+    } else if (nextLabel === null || nextReason === null) {
+      // Label and reason are saved together: wait until both are filled.
+      pairingIncomplete = true;
+    } else {
+      pairings[pairing.id] = { label: nextLabel, reason: nextReason };
+    }
+  }
+  if (Object.keys(pairings).length > 0) input.pairings = pairings;
+  const moments: NonNullable<TranslationsInput['eatingMoments']> = {};
+  for (const use of recipe.eatingMoments) {
+    if (use.reason === null) continue;
+    const value = change(
+      `moment:${use.eatingMomentId}`,
+      saved?.eatingMoments[use.eatingMomentId],
+    );
+    if (value !== undefined) moments[use.eatingMomentId] = value;
+  }
+  if (Object.keys(moments).length > 0) input.eatingMoments = moments;
   const changed =
-    input.title !== undefined ||
-    Object.keys(input.steps!).length +
-      Object.keys(input.lines!).length +
-      Object.keys(input.tips!).length >
-      0;
+    !pairingIncomplete &&
+    (input.title !== undefined ||
+      input.nutritionNote !== undefined ||
+      input.pairings !== undefined ||
+      input.eatingMoments !== undefined ||
+      Object.keys(input.steps!).length +
+        Object.keys(input.lines!).length +
+        Object.keys(input.tips!).length >
+        0);
 
   const field = (
     key: string,
@@ -177,6 +214,45 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
           }),
           tip.text,
           saved?.tips[tip.id],
+        );
+      })}
+      {recipe.nutritionNote !== null
+        ? field(
+            'nutritionNote',
+            t('recipe.translations.nutritionNote', { language }),
+            recipe.nutritionNote,
+            saved?.nutritionNote,
+          )
+        : null}
+      {recipe.pairings.map((pairing, index) => {
+        const savedPairing = saved?.pairings[pairing.id];
+        const position = index + 1;
+        return [
+          field(
+            `pairing:${pairing.id}:label`,
+            t('recipe.translations.pairingLabel', { position, language }),
+            pairing.label,
+            savedPairing?.label,
+          ),
+          field(
+            `pairing:${pairing.id}:reason`,
+            t('recipe.translations.pairingReason', { position, language }),
+            pairing.reason,
+            savedPairing?.reason,
+          ),
+        ];
+      })}
+      {recipe.eatingMoments.map((use) => {
+        if (use.reason === null) return null;
+        const moment = catalog.eatingMoments.find(
+          (item) => item.id === use.eatingMomentId,
+        );
+        const name = moment ? localName(moment, i18n.language) : '';
+        return field(
+          `moment:${use.eatingMomentId}`,
+          t('recipe.translations.eatingMomentReason', { name, language }),
+          use.reason,
+          saved?.eatingMoments[use.eatingMomentId],
         );
       })}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
