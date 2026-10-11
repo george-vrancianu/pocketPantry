@@ -433,6 +433,14 @@ export const cannedGoods: SeedSection = {
         undefined,
         ['chutney mango'],
       ],
+      [
+        'dolmades',
+        'Stuffed vine leaves',
+        'Foi de viță umplute',
+        'g',
+        ['dolmas'],
+        ['foi de vita cu orez'],
+      ],
     ]),
   ],
 };
@@ -615,6 +623,14 @@ export const condiments: SeedSection = {
         'g',
         ['korean chilli paste', 'korean chili paste'],
         ['pasta coreeana de ardei'],
+      ],
+      [
+        'nori',
+        'Nori sheets',
+        'Foi de nori',
+        'g',
+        ['seaweed sheets'],
+        ['alge nori', 'foi nori'],
       ],
     ]),
     ...ingredientsOf('pasta-sauces-and-pesto', [

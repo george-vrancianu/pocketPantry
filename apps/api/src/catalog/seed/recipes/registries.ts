@@ -28,6 +28,9 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('british', 'British', 'Britanică', 'Britisk'),
   named('korean', 'Korean', 'Coreeană', 'Koreansk'),
   named('japanese', 'Japanese', 'Japoneză', 'Japansk'),
+  named('italian', 'Italian', 'Italiană', 'Italiensk'),
+  named('spanish', 'Spanish', 'Spaniolă', 'Spansk'),
+  named('scandinavian', 'Scandinavian', 'Scandinavă', 'Skandinavisk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [
