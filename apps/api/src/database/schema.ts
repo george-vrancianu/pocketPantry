@@ -576,3 +576,24 @@ export const suggestionDismissals = pgTable(
   },
   (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
 );
+
+// One row per Family and Ingredient: when it was last stocked and when its last Batch
+// was removed (null while stocked or after a dismissal). Written only by the Pantry
+// service's Batch create and delete paths. See ADR 0005.
+export const ingredientStockHistory = pgTable(
+  'ingredient_stock_history',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    lastStockedAt: timestamp('last_stocked_at', {
+      withTimezone: true,
+    }).notNull(),
+    usedUpAt: timestamp('used_up_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
+);

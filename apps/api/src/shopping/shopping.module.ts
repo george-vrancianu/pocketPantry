@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PantryModule } from '../pantry/pantry.module';
 import { SettingsModule } from '../settings/settings.module';
 import { FinishShoppingController } from './finish-shopping.controller';
 import { FinishShoppingService } from './finish-shopping.service';
@@ -12,7 +13,7 @@ import { ShoppingTemplatesController } from './shopping-templates.controller';
 import { ShoppingTemplatesService } from './shopping-templates.service';
 
 @Module({
-  imports: [SettingsModule],
+  imports: [SettingsModule, PantryModule],
   controllers: [
     ShoppingController,
     FinishShoppingController,

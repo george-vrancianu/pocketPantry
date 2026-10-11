@@ -64,5 +64,8 @@ export type SuggestionView = {
   aisle: AisleView | null;
 };
 
-/** One key per group; the Used Up group joins `staples` in its own ticket. */
-export type SuggestionsView = { staples: SuggestionView[] };
+/** One key per group: missing Staples first, then Used Up Ingredients (no quantity). */
+export type SuggestionsView = {
+  staples: SuggestionView[];
+  usedUp: SuggestionView[];
+};
