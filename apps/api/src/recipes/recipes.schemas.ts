@@ -2,6 +2,12 @@ import { z } from 'zod';
 import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
+import {
+  guidanceTranslationsBody,
+  type AdminGuidance,
+  type GuidanceTranslationsView,
+  type ResolvedGuidance,
+} from './recipe-guidance.schemas';
 
 const id = z.uuid();
 const title = z.string().trim().min(1).max(200);
@@ -112,6 +118,7 @@ export const translationsBody = z
     steps: z.record(id, optionalText(longText)).default({}),
     lines: z.record(id, optionalText(note)).default({}),
     tips: z.record(id, optionalText(longText)).default({}),
+    ...guidanceTranslationsBody,
   })
   .strict();
 
@@ -166,11 +173,11 @@ export type RecipeTranslationsView = Record<
     steps: Record<string, string>;
     lines: Record<string, string>;
     tips: Record<string, string>;
-  }
+  } & GuidanceTranslationsView
 >;
 
 /** The Admin's view of a Catalog Recipe: source text plus every translation. */
-export type AdminRecipeDetail = {
+export type AdminRecipeDetail = AdminGuidance & {
   id: string;
   parentId: string | null;
   title: string;
@@ -219,4 +226,6 @@ export type ResolvedRecipe = {
   steps: RecipeStepView[];
   /** Own Tips plus, on a Variant, the base's non-hidden Recipe-level Tips (`inherited`). */
   tips: (RecipeTipView & { inherited: boolean })[];
+  /** Pairings, Eating Moments and the Nutrition Note, resolved for the locale. */
+  guidance: ResolvedGuidance;
 };

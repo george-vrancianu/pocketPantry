@@ -19,9 +19,19 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.tip_not_found` (404): no such Tip on this Recipe.
  * - `recipes.tip_order_stale` (409): the Tip order does not name every Tip of the Recipe.
  * - `recipes.source_locale` (400): translating into the source language.
+ * - `recipes.pairings_too_many` (400, `{ max }`) / `recipes.eating_moments_too_many` (400, `{ max }`): over 10.
+ * - `recipes.eating_moment_duplicate` (400): the same Eating Moment twice on one Recipe.
+ * - `recipes.eating_moment_not_found` (404): an unknown Eating Moment.
+ * - `recipes.pairing_link_conflict` (400): a Pairing linking both an Ingredient and a Recipe.
+ * - `recipes.pairing_link_not_allowed` (409): a link to a Recipe the Recipe may not link (Catalog to Family, Family to another Family).
+ * - `recipes.pairing_link_not_found` (404): the linked Ingredient or Recipe does not exist.
+ * - `recipes.pairing_self_link` (400): a Pairing linking its own Recipe.
+ * - `recipes.nutrition_note_too_long` (400, `{ max }`): over 500 characters, source or translation.
  * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient, Cuisine or Method.
  */
 export const recipeNotFound = () => new ApiException(404, 'recipes.not_found');
 
-export const itemNotFound = (kind: 'line' | 'step' | 'tip') =>
-  new ApiException(400, 'recipes.item_not_found', { kind });
+export const itemNotFound = (
+  kind:
+    'line' | 'step' | 'tip' | 'pairing' | 'eating_moment' | 'nutrition_note',
+) => new ApiException(400, 'recipes.item_not_found', { kind });
