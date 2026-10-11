@@ -8,10 +8,13 @@ import {
   eatingMoments,
   family,
   ingredients,
+  recipePairings,
   recipes,
 } from '../src/database/schema';
 import { writeGuidance } from '../src/recipes/recipe-guidance-write';
+import { loadResolvedGuidance } from '../src/recipes/recipe-guidance';
 import { loadCatalogRecipe } from '../src/recipes/recipe-view';
+import type { ResolvedGuidance } from '../src/recipes/recipe-guidance.schemas';
 import type { AdminRecipeDetail } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
@@ -26,6 +29,7 @@ describe('Recipe guidance (integration)', () => {
   let database: Database;
   let admin: ReturnType<typeof client>;
   let catalog: ReturnType<typeof client>;
+  let member: ReturnType<typeof client>;
   let flour: string;
   let familyId: string;
   let familyRecipeId: string;
@@ -68,6 +72,7 @@ describe('Recipe guidance (integration)', () => {
     const cookie = await signUp(app, email, 'Guidance Admin');
     admin = client(app, cookie, '/api/admin/recipes');
     catalog = client(app, cookie, '/api/admin/catalog');
+    member = client(app, cookie, '/api/recipes');
     await promoteToAdmin(database, email);
     [{ id: flour }] = await database
       .select({ id: ingredients.id })
@@ -558,6 +563,94 @@ describe('Recipe guidance (integration)', () => {
       const admined = await detail(base.id);
       expect(admined.pairings[1].linkedRecipeId).toBe(other.id);
       expect(admined.eatingMoments).toHaveLength(2);
+    });
+
+    it('serves guidance on GET /api/recipes/:id in the Member locale, hiding archived targets', async () => {
+      const other = await createBase();
+      const { base, snack } = await guided({ linkedRecipeId: other.id });
+      await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: 'Bogat in grasimi.',
+        })
+        .expect(200);
+      const open = (await member.get(`/${base.id}?locale=ro`).expect(200))
+        .body as { guidance: ResolvedGuidance };
+      expect(open.guidance.nutritionNote).toBe('Bogat in grasimi.');
+      expect(open.guidance.pairings[1].link).toMatchObject({
+        type: 'recipe',
+        id: other.id,
+      });
+      expect(open.guidance.eatingMoments).toHaveLength(2);
+
+      await admin.post(`/${other.id}/archive`).expect(200);
+      await catalog.post(`/eating-moments/${snack}/archive`).expect(200);
+      const hidden = (await member.get(`/${base.id}?locale=en`).expect(200))
+        .body as { guidance: ResolvedGuidance };
+      expect(hidden.guidance.pairings[1]).toMatchObject({
+        label: 'steamed greens',
+        link: null,
+      });
+      expect(hidden.guidance.eatingMoments).toHaveLength(1);
+    });
+
+    it('does not expose a link to a Recipe of another Family', async () => {
+      const otherFamilyId = crypto.randomUUID();
+      await database.insert(family).values({
+        id: otherFamilyId,
+        inviteCode: `h${stamp}`,
+        inviteCodeExpiresAt: new Date(),
+      });
+      const foreign = crypto.randomUUID();
+      const mine = crypto.randomUUID();
+      await database.insert(recipes).values([
+        {
+          id: foreign,
+          familyId: otherFamilyId,
+          title: title('Foreign dish'),
+          servings: 2,
+        },
+        {
+          id: mine,
+          familyId,
+          title: title('Own dish'),
+          servings: 2,
+        },
+      ]);
+      const ownId = crypto.randomUUID();
+      await database.insert(recipePairings).values([
+        {
+          id: crypto.randomUUID(),
+          recipeId: mine,
+          position: 0,
+          kind: 'food',
+          label: 'foreign side',
+          reason: 'r',
+          linkedRecipeId: foreign,
+        },
+        {
+          id: ownId,
+          recipeId: mine,
+          position: 1,
+          kind: 'food',
+          label: 'own side',
+          reason: 'r',
+          linkedRecipeId: familyRecipeId,
+        },
+      ]);
+      try {
+        const view = await loadResolvedGuidance(database, mine, 'en');
+        expect(view.pairings[0]).toMatchObject({
+          label: 'foreign side',
+          link: null,
+        });
+        expect(view.pairings[1].link).toMatchObject({
+          type: 'recipe',
+          id: familyRecipeId,
+        });
+      } finally {
+        await database.delete(recipes).where(eq(recipes.id, mine));
+        await database.delete(family).where(eq(family.id, otherFamilyId));
+      }
     });
 
     it('is empty for a Recipe without guidance', async () => {

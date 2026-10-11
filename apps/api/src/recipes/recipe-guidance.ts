@@ -121,7 +121,7 @@ export { emptyTranslations as emptyGuidanceTranslations };
 /**
  * A Recipe's guidance resolved for `locale`: translated text where there is
  * some, else the source text. Takes a Recipe id only, so Family Recipes reuse
- * it. A link to an archived Recipe is dropped (the label stays), and archived
+ * it. A link to an archived Recipe, or to one the owner's Family can't see, is dropped (the label stays), and archived
  * Eating Moments are left out.
  */
 export async function loadResolvedGuidance(
@@ -131,7 +131,10 @@ export async function loadResolvedGuidance(
 ): Promise<ResolvedGuidance> {
   const [[owner], pairings, uses] = await Promise.all([
     executor
-      .select({ nutritionNote: recipes.nutritionNote })
+      .select({
+        nutritionNote: recipes.nutritionNote,
+        familyId: recipes.familyId,
+      })
       .from(recipes)
       .where(eq(recipes.id, recipeId)),
     executor
@@ -211,6 +214,7 @@ export async function loadResolvedGuidance(
               id: recipes.id,
               title: recipes.title,
               archivedAt: recipes.archivedAt,
+              familyId: recipes.familyId,
               translated: recipeTranslations.title,
             })
             .from(recipes)
@@ -259,7 +263,12 @@ export async function loadResolvedGuidance(
             ingredientName.get(p.linkedIngredientId) ?? '',
           ),
         };
-      } else if (linked && !linked.archivedAt) {
+      } else if (
+        linked &&
+        !linked.archivedAt &&
+        // Catalog Recipes, or the owner's own Family's: never another Family's.
+        (linked.familyId === null || linked.familyId === owner?.familyId)
+      ) {
         link = {
           type: 'recipe',
           id: linked.id,
