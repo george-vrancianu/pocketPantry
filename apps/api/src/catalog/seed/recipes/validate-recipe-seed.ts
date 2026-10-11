@@ -355,6 +355,12 @@ export function findAcceptanceGaps(
       if (options.requireBases) gaps.push(`${slug}: base Recipe is missing`);
       continue;
     }
+    if ((base.tips ?? []).length === 0) {
+      gaps.push(`${slug}: needs at least one Recipe-level Tip`);
+    }
+    if ((base.stepTips ?? []).length === 0) {
+      gaps.push(`${slug}: needs at least one step Tip`);
+    }
     const count = (kind: 'cuisine' | 'method') =>
       base.variants.filter((v: VariantSeed) => v[kind] !== undefined).length;
     if (count('cuisine') < min.cuisine) {

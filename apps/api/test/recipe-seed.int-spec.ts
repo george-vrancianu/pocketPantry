@@ -340,26 +340,29 @@ describe('Recipe seed (integration)', () => {
     );
   });
 
-  it('gives the Omelette base Recipe-level Tips and a Step Tip on an existing step', async () => {
-    const baseId = seedId.recipe('omelette');
-    const tips = await database
-      .select()
-      .from(recipeTips)
-      .where(eq(recipeTips.recipeId, baseId));
-    expect(tips.filter((t) => t.stepId === null).length).toBeGreaterThanOrEqual(
-      1,
-    );
-    const stepTips = tips.filter((t) => t.stepId !== null);
-    expect(stepTips.length).toBeGreaterThanOrEqual(1);
-    const stepIds = (
-      await database
-        .select({ id: recipeSteps.id })
-        .from(recipeSteps)
-        .where(eq(recipeSteps.recipeId, baseId))
-    ).map((s) => s.id);
-    expect(stepTips.every((t) => stepIds.includes(t.stepId as string))).toBe(
-      true,
-    );
+  it('gives every base Recipe-level Tips and a Step Tip on an existing step', async () => {
+    for (const seed of SEED_BASE_RECIPES) {
+      const baseId = seedId.recipe(seed.slug);
+      const tips = await database
+        .select()
+        .from(recipeTips)
+        .where(eq(recipeTips.recipeId, baseId));
+      expect([
+        seed.slug,
+        tips.filter((t) => t.stepId === null).length > 0,
+      ]).toEqual([seed.slug, true]);
+      const stepTips = tips.filter((t) => t.stepId !== null);
+      expect([seed.slug, stepTips.length > 0]).toEqual([seed.slug, true]);
+      const stepIds = (
+        await database
+          .select({ id: recipeSteps.id })
+          .from(recipeSteps)
+          .where(eq(recipeSteps.recipeId, baseId))
+      ).map((s) => s.id);
+      expect(stepTips.every((t) => stepIds.includes(t.stepId as string))).toBe(
+        true,
+      );
+    }
   });
 
   it('gives every seeded Recipe Pairings, a Nutrition Note and Eating Moment uses in en and ro', async () => {

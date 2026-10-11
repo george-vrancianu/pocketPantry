@@ -35,6 +35,8 @@ const variant = (slug: string): VariantSeed => ({
 
 const base = (slug = 'base', variants: VariantSeed[] = []): BaseRecipeSeed => ({
   ...recipe(slug),
+  tips: [t('Tip.')],
+  stepTips: [{ step: 'cook', text: t('Step tip.') }],
   variants,
 });
 
@@ -281,6 +283,19 @@ describe('findAcceptanceGaps', () => {
 
   it('is satisfied by a base that meets its minimums', () => {
     expect(findAcceptanceGaps([withVariants('omelette', 3, 2)])).toEqual([]);
+  });
+
+  it('wants Recipe-level Tips and a step Tip on every base', () => {
+    const noTips = withVariants('omelette', 3, 2);
+    noTips.tips = [];
+    expect(findAcceptanceGaps([noTips]).join('\n')).toContain(
+      'omelette: needs at least one Recipe-level Tip',
+    );
+    const noStepTips = withVariants('omelette', 3, 2);
+    delete noStepTips.stepTips;
+    expect(findAcceptanceGaps([noStepTips]).join('\n')).toContain(
+      'omelette: needs at least one step Tip',
+    );
   });
 
   it('counts only the bases that exist in the seed (the others arrive later)', () => {
