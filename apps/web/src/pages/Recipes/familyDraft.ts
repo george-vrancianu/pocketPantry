@@ -11,9 +11,9 @@ import {
   type LineDraft,
   type RecipeDraft,
   type StepDraft,
-} from '../Admin/recipeDraft';
+} from '../../lib/recipeDraft';
 
-export { hasProblems, moved, newKey, problemsOf } from '../Admin/recipeDraft';
+export { hasProblems, moved, newKey, problemsOf } from '../../lib/recipeDraft';
 
 /**
  * The form state is the Admin's `RecipeDraft`. A line with an `ingredientId` is

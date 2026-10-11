@@ -3,8 +3,8 @@ import type {
   GuidanceInput,
   PairingKind,
   PairingPrinciple,
-} from '../../lib/adminRecipes';
-import { MAX_NUTRITION_NOTE } from '../../lib/adminRecipes';
+} from './adminRecipes';
+import { MAX_NUTRITION_NOTE } from './adminRecipes';
 
 export type LinkType = 'none' | 'ingredient' | 'recipe';
 

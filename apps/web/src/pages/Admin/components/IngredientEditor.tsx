@@ -9,7 +9,7 @@ import {
   type AdminIngredient,
   type IngredientInput,
 } from '../../../lib/admin';
-import { EditorForm } from './EditorForm';
+import { EditorForm } from '../../../components/EditorForm';
 import { IngredientFields } from './IngredientFields';
 import { TranslationsEditor } from './TranslationsEditor';
 

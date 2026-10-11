@@ -13,8 +13,11 @@ import {
   toGuidanceDraft,
   toGuidanceInput,
   type GuidanceDraft,
-} from '../guidanceDraft';
-import { GuidanceFields, type RecipePickerProps } from './GuidanceFields';
+} from '../../../lib/guidanceDraft';
+import {
+  GuidanceFields,
+  type RecipePickerProps,
+} from '../../../components/recipeEditor/GuidanceFields';
 
 type Props = { recipe: AdminRecipe; catalog: AdminCatalog };
 

@@ -1,7 +1,7 @@
 import { Stack, TextField, Typography, Button } from '@pocket-pantry/ui';
 import { useId, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../CatalogSearch';
 import {
   MAX_EATING_MOMENTS,
   MAX_NUTRITION_NOTE,
@@ -11,7 +11,7 @@ import {
   type EatingMomentPolarity,
   type PairingKind,
   type PairingPrinciple,
-} from '../../../lib/adminRecipes';
+} from '../../lib/adminRecipes';
 import {
   MAX_PAIRING_LABEL,
   MAX_PAIRING_REASON,
@@ -22,9 +22,9 @@ import {
   type GuidanceDraft,
   type LinkType,
   type PairingDraft,
-} from '../guidanceDraft';
-import { moved } from '../recipeDraft';
-import { RowControls } from './RowControls';
+} from '../../lib/guidanceDraft';
+import { moved } from '../../lib/recipeDraft';
+import { RowControls } from '../RowControls';
 
 export type MomentOption = { id: string; name: string; archived: boolean };
 

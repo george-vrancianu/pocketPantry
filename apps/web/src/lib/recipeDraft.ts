@@ -1,10 +1,6 @@
-import { localName, type AdminCatalog } from '../../lib/admin';
-import type {
-  AdminRecipe,
-  Difficulty,
-  RecipeDocument,
-} from '../../lib/adminRecipes';
-import type { Unit } from '../../lib/catalog';
+import { localName, type AdminCatalog } from './admin';
+import type { AdminRecipe, Difficulty, RecipeDocument } from './adminRecipes';
+import type { Unit } from './catalog';
 
 export type LineDraft = {
   /** Stable React key; not sent. */

@@ -11,13 +11,13 @@ import {
   GuidanceFields,
   type MomentOption,
   type RecipePickerProps,
-} from '../../Admin/components/GuidanceFields';
+} from '../../../components/recipeEditor/GuidanceFields';
 import {
   guidanceProblems,
   toGuidanceDraft,
   toGuidanceInput,
   type GuidanceDraft,
-} from '../../Admin/guidanceDraft';
+} from '../../../lib/guidanceDraft';
 
 /** The live Eating Moments the Member can pick, named in their locale. */
 export function useMomentOptions(): MomentOption[] {

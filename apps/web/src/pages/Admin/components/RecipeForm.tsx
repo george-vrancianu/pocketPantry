@@ -30,9 +30,9 @@ import {
   type LineDraft,
   type RecipeDraft,
   type StepDraft,
-} from '../recipeDraft';
-import { EditorForm } from './EditorForm';
-import { RowControls } from './RowControls';
+} from '../../../lib/recipeDraft';
+import { EditorForm } from '../../../components/EditorForm';
+import { RowControls } from '../../../components/RowControls';
 
 type Props = {
   /** Omit to create a new Base Recipe. */

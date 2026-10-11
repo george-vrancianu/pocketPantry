@@ -12,8 +12,8 @@ import {
   useVariantDraft,
   type FamilyRecipeDraft,
 } from '../../lib/familyRecipes';
-import { TipsEditor } from '../Admin/components/RecipeTips';
-import { toGuidanceDraft, type GuidanceDraft } from '../Admin/guidanceDraft';
+import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
+import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
 import { useRecipe, type RecipeDetail } from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import { draftOfEdit, draftOfVariantDraft } from './familyDraft';

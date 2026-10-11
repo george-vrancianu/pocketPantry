@@ -6,7 +6,7 @@ import { useAdminRecipe } from '../../../lib/adminRecipes';
 import { RecipeActions } from './RecipeActions';
 import { RecipeGuidance } from './RecipeGuidance';
 import { RecipeForm } from './RecipeForm';
-import { RecipeTips } from './RecipeTips';
+import { RecipeTips } from '../../../components/recipeEditor/RecipeTips';
 import { RecipeTranslations } from './RecipeTranslations';
 
 type Props = {

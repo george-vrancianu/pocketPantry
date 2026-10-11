@@ -18,11 +18,11 @@ import {
   guidanceProblems,
   toGuidanceInput,
   type GuidanceDraft,
-} from '../../Admin/guidanceDraft';
-import type { MomentOption } from '../../Admin/components/GuidanceFields';
+} from '../../../lib/guidanceDraft';
+import type { MomentOption } from '../../../components/recipeEditor/GuidanceFields';
 import { FamilyGuidanceFields } from './FamilyGuidance';
-import { EditorForm } from '../../Admin/components/EditorForm';
-import { RowControls } from '../../Admin/components/RowControls';
+import { EditorForm } from '../../../components/EditorForm';
+import { RowControls } from '../../../components/RowControls';
 import {
   documentOf,
   hasProblems,
@@ -31,7 +31,7 @@ import {
   problemsOf,
   type FamilyDraft,
 } from '../familyDraft';
-import type { LineDraft, StepDraft } from '../../Admin/recipeDraft';
+import type { LineDraft, StepDraft } from '../../../lib/recipeDraft';
 
 type Props = {
   heading: string;
