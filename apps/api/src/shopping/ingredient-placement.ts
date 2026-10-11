@@ -1,5 +1,4 @@
-import { inArray } from 'drizzle-orm';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { Executor } from '../database/database.types';

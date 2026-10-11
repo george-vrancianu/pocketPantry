@@ -1,10 +1,16 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
+import { normalizeName } from '../src/catalog/normalize';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredients, staples, user } from '../src/database/schema';
+import {
+  catalogTranslations,
+  ingredients,
+  staples,
+  user,
+} from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
@@ -358,6 +364,47 @@ describe('Staples and Suggestions (integration)', () => {
         204,
       );
       expect((await suggestions(owner.cookie)).staples).toHaveLength(1);
+    });
+
+    it('shows the Suggestion again when an Admin relinks an Unmatched Batch to the Staple Ingredient', async () => {
+      const admin = await signUp('Admin');
+      await promoteToAdmin(database, admin.email);
+      await addStaple(admin.cookie, { ingredientId: milk }).expect(201);
+      await api(
+        'post',
+        admin.cookie,
+        `/shopping-list/suggestions/${milk}/dismiss`,
+      ).expect(204);
+      expect((await suggestions(admin.cookie)).staples).toEqual([]);
+
+      const rawName = `Zzq staple relink ${Date.now()}-${counter}`;
+      const created = (
+        await api('post', admin.cookie, '/pantry/batches?locale=en')
+          .send({
+            rawName,
+            quantity: 1,
+            unit: 'pcs',
+            location: 'fridge',
+          })
+          .expect(201)
+      ).body as { id: string };
+      // An Unmatched Batch is not Milk: the dismissal still holds.
+      expect((await suggestions(admin.cookie)).staples).toEqual([]);
+
+      await api('post', admin.cookie, '/admin/unmatched/resolve')
+        .send({
+          normalizedName: normalizeName(rawName),
+          ingredientId: milk,
+        })
+        .expect(201);
+      await api('delete', admin.cookie, `/pantry/batches/${created.id}`).expect(
+        204,
+      );
+
+      expect((await suggestions(admin.cookie)).staples).toHaveLength(1);
+      await database
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.value, rawName));
     });
 
     it('clears the dismissal when the Batch is created by Finish Shopping', async () => {

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Collapse,
@@ -9,6 +10,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../lib/shopping';
 import { useDismissSuggestion, type Suggestion } from '../../../lib/staples';
 
@@ -61,6 +63,11 @@ export function SuggestionsSection({
           {open ? '−' : '+'}
         </Typography>
       </Box>
+      {dismiss.error ? (
+        <Box sx={{ mb: 1 }}>
+          <Alert>{translateApiError(t, dismiss.error)}</Alert>
+        </Box>
+      ) : null}
       <Collapse open={open}>
         <Box
           component="ul"

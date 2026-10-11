@@ -46,7 +46,7 @@ export function useStaples(locale: string) {
 /** Refreshed on an interval, like the list, so other Members' changes show up. */
 export function useSuggestions(locale: string, today: string) {
   return useQuery({
-    queryKey: [...suggestionsQueryKey, locale],
+    queryKey: [...suggestionsQueryKey, locale, today],
     queryFn: () =>
       apiRequest<Suggestions>(
         `/shopping-list/suggestions?${new URLSearchParams({ locale, today })}`,

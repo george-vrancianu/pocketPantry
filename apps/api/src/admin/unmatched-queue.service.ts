@@ -1,4 +1,3 @@
-import { clearDismissals } from '../shopping/suggestion-dismissals';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
@@ -11,6 +10,7 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
+import { clearDismissals } from '../shopping/suggestion-dismissals';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
