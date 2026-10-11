@@ -1,12 +1,16 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { eq, sql } from 'drizzle-orm';
+import pg from 'pg';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredients } from '../src/database/schema';
+import { batches, ingredients } from '../src/database/schema';
+import { PantryService } from '../src/pantry/pantry.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 type Suggestion = {
   ingredientId: string;
@@ -21,14 +25,17 @@ const DAY = 86_400_000;
 describe('Used Up Suggestions (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let pool: pg.Pool;
   let counter = 0;
 
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
+    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   });
 
   afterAll(async () => {
+    await pool.end();
     await app.close();
   });
 
@@ -325,17 +332,43 @@ describe('Used Up Suggestions (integration)', () => {
     expect(await usedUpIds(cookie)).toEqual([]);
   });
 
-  it('marks an Ingredient Used Up when its last two Batches are deleted at once', async () => {
+  it('marks an Ingredient Used Up when its last two Batches are deleted concurrently', async () => {
     const cookie = await signUp();
     const first = await addBatch(cookie, milk);
     const second = await addBatch(cookie, milk);
+    const [{ familyId }] = await database
+      .select({ familyId: batches.familyId })
+      .from(batches)
+      .where(eq(batches.id, first.id));
+    const pantry = app.get(PantryService);
 
-    await after(11 * MINUTE, () =>
-      Promise.all([
-        removeBatch(cookie, first.id),
-        removeBatch(cookie, second.id),
-      ]),
-    );
+    const real = Date.now();
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(real + 11 * MINUTE);
+    try {
+      let request: Promise<unknown> | undefined;
+      let settled = false;
+      await database.transaction(async (tx) => {
+        const { rows } = await tx.execute<{ pid: number }>(
+          sql`SELECT pg_backend_pid() AS pid`,
+        );
+        // The first delete is uncommitted, so the second cannot see it gone.
+        await pantry.deleteBatches(tx, familyId, [first.id]);
+        request = removeBatch(cookie, second.id).then(() => {
+          settled = true;
+        });
+        // With the history lock the second delete waits on this transaction;
+        // without it, it finishes at once and the race is lost.
+        await Promise.race([
+          waitForBlockedBackend(pool, rows[0].pid),
+          (async () => {
+            while (!settled) await new Promise((r) => setTimeout(r, 20));
+          })(),
+        ]);
+      });
+      await request;
+    } finally {
+      clock.mockRestore();
+    }
 
     expect(await usedUpIds(cookie)).toEqual([milk]);
   });
