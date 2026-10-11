@@ -1,3 +1,4 @@
+import { clearDismissals } from '../shopping/suggestion-dismissals';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
@@ -252,24 +253,27 @@ export class UnmatchedQueueService {
       itemIds,
       target.id,
     );
-    const relinkedBatches =
+    const relinked =
       batchIds.length === 0
-        ? 0
-        : (
-            await tx
-              .update(batches)
-              .set({
-                ingredientId: target.id,
-                // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
-                leafCategoryId: target.leafCategoryId,
-                unmatched: false,
-                rawName: null,
-              })
-              .where(
-                and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
-              )
-              .returning({ id: batches.id })
-          ).length;
+        ? []
+        : await tx
+            .update(batches)
+            .set({
+              ingredientId: target.id,
+              // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
+              leafCategoryId: target.leafCategoryId,
+              unmatched: false,
+              rawName: null,
+            })
+            .where(
+              and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
+            )
+            .returning({ id: batches.id, familyId: batches.familyId });
+    const relinkedBatches = relinked.length;
+    // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
+    for (const familyId of new Set(relinked.map((row) => row.familyId))) {
+      await clearDismissals(tx, familyId, [target.id]);
+    }
 
     const synonymAdded = await this.addSynonym(
       tx,

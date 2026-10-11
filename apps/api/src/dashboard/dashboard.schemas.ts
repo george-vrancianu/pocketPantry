@@ -9,6 +9,7 @@ export const widgetInstance = z.object({
     'shopping',
     'pantry-stock',
     'quick-scan',
+    'suggestions',
     'meal-plan',
     'budget',
     'nutrition',

@@ -39,6 +39,8 @@ export const itemIdParam = z.object({ id: z.uuid() });
 
 export type ShoppingItemView = {
   id: string;
+  /** The Catalog Ingredient, or null for an Unmatched item. */
+  ingredientId: string | null;
   name: string;
   quantity: number | null;
   unit: ShoppingUnit | null;

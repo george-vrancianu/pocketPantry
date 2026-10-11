@@ -487,3 +487,51 @@ export const familyExpiryOverrides = pgTable(
     ),
   ],
 );
+
+// Quick List: an Ingredient the Family always wants in stock, with an optional preferred
+// quantity and unit. The foreign key has no cascade, so a Staple keeps its Ingredient in use.
+export const staples = pgTable(
+  'staples',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    quantity: numeric('quantity', { precision: 12, scale: 3, mode: 'number' }),
+    unit: ingredientUnit('unit'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('staples_family_ingredient_idx').on(
+      table.familyId,
+      table.ingredientId,
+    ),
+    check(
+      'staples_unit_with_quantity',
+      sql`${table.quantity} IS NULL OR ${table.unit} IS NOT NULL`,
+    ),
+    check(
+      'staples_quantity_positive',
+      sql`${table.quantity} IS NULL OR ${table.quantity} > 0`,
+    ),
+  ],
+);
+
+// A dismissed Suggestion, hidden for the whole Family. Creating any Batch of the
+// Ingredient deletes the row. Not tied to Staples, so Used Up Suggestions can share it.
+export const suggestionDismissals = pgTable(
+  'suggestion_dismissals',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
+);
