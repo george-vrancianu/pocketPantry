@@ -9,6 +9,7 @@ import {
   ingredients,
   recipeIngredientLines,
   recipes,
+  shoppingItemSourceRecipes,
   user,
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
@@ -344,6 +345,185 @@ describe('Recipe Pantry matching (integration)', () => {
       await client(app, '', '/api/recipes')
         .get(`/${r.id}/pantry-match`)
         .expect(401);
+    });
+  });
+
+  describe('POST /api/recipes/:id/add-missing', () => {
+    // Each test gets its own Family, so Batches and the list start empty.
+    async function newMember(label: string) {
+      const email = `pantry-${label}-${stamp}@example.com`;
+      const cookie = await signUp(app, email, label);
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      const recipesApi = client(app, cookie, '/api/recipes');
+      const list = client(app, cookie, '/api/shopping-list');
+      return {
+        familyId,
+        add: (id: string, body: object = { today }) =>
+          recipesApi.post(`/${id}/add-missing?locale=en`, body),
+        items: async () =>
+          (
+            (await list.get('?locale=en').expect(200)).body as ListView
+          ).groups.flatMap((g) => g.items),
+        check: (id: string) =>
+          list.patch(`/items/${id}`, { checked: true }).expect(200),
+        addItem: (body: object) =>
+          list.post('/items?locale=en', body).expect(200),
+      };
+    }
+    const sourcesOf = async (recipeId: string) =>
+      (
+        await database
+          .select({ itemId: shoppingItemSourceRecipes.shoppingItemId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.recipeId, recipeId))
+      ).map((row) => row.itemId);
+    const summary = (items: ListView['groups'][number]['items']) =>
+      items.map((i) => [i.name, i.quantity, i.unit] as const);
+
+    it('adds the shortfall, the full missing quantity and a quantity-less item, with the Recipe as Source Recipe', async () => {
+      const m = await newMember('add');
+      const r = await makeRecipe([
+        { ingredientId: feta, quantity: 200, unit: 'g' }, // short by 150 g
+        { ingredientId: milk, quantity: 500, unit: 'ml' }, // missing
+        { ingredientId: parmesan }, // missing, no quantity
+        { ingredientId: butter, quantity: 50, unit: 'g' }, // covered
+        { ingredientId: buttermilk, quantity: 1, unit: 'l' }, // Pantry Basic
+        { ingredientId: carrot, quantity: 2, unit: 'pcs', optional: true },
+      ]);
+      await stock(m.familyId, feta, { quantity: 50, unit: 'g' });
+      await stock(m.familyId, butter, { quantity: 1, unit: 'kg' });
+
+      const view = (await m.add(r.id).expect(200)).body as ListView;
+      const items = view.groups.flatMap((g) => g.items);
+      expect(summary(items).sort()).toEqual(
+        [
+          ['Feta', 150, 'g'],
+          ['Milk', 500, 'ml'],
+          ['Parmesan', null, null],
+        ].sort(),
+      );
+      expect((await sourcesOf(r.id)).sort()).toEqual(
+        items.map((i) => i.id).sort(),
+      );
+    });
+
+    it('scales to the Servings asked for and skips everything when nothing is lacking', async () => {
+      const m = await newMember('scale');
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 250, unit: 'ml' },
+      ]);
+      await m.add(r.id, { today, servings: 6 }).expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 750, 'ml']]);
+
+      const done = await makeRecipe([{ ingredientId: buttermilk }]);
+      const before = await m.items();
+      await m.add(done.id).expect(200);
+      expect(await m.items()).toEqual(before);
+      expect(await sourcesOf(done.id)).toEqual([]);
+    });
+
+    it('adds an Unmatched line by name', async () => {
+      const m = await newMember('unmatched');
+      const r = await makeRecipe(
+        [{ name: `Zzq Dulse ${stamp}`, quantity: 3, unit: 'g' }],
+        { familyId: m.familyId },
+      );
+      const view = (await m.add(r.id).expect(200)).body as ListView;
+      const items = view.groups.flatMap((g) => g.items);
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        name: `Zzq Dulse ${stamp}`,
+        quantity: 3,
+        unit: 'g',
+        unmatched: true,
+      });
+      expect(await sourcesOf(r.id)).toEqual([items[0].id]);
+    });
+
+    it('merges into an item with the same unit, keeping both Source Recipes, and keeps another unit apart', async () => {
+      const m = await newMember('merge');
+      const first = await makeRecipe([
+        { ingredientId: milk, quantity: 300, unit: 'ml' },
+      ]);
+      const second = await makeRecipe([
+        { ingredientId: milk, quantity: 200, unit: 'ml' },
+      ]);
+      const third = await makeRecipe([
+        { ingredientId: milk, quantity: 1, unit: 'l' },
+      ]);
+      await m.add(first.id).expect(200);
+      await m.add(second.id).expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 500, 'ml']]);
+      const [merged] = await m.items();
+      expect(await sourcesOf(first.id)).toEqual([merged.id]);
+      expect(await sourcesOf(second.id)).toEqual([merged.id]);
+
+      // The same Recipe again adds the quantity again but not a second Source Recipe row.
+      await m.add(second.id).expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 700, 'ml']]);
+      expect(await sourcesOf(second.id)).toEqual([merged.id]);
+
+      // Litres do not merge into millilitres.
+      await m.add(third.id).expect(200);
+      expect(summary(await m.items()).sort()).toEqual(
+        [
+          ['Milk', 700, 'ml'],
+          ['Milk', 1, 'l'],
+        ].sort(),
+      );
+      const [litre] = (await m.items()).filter((i) => i.unit === 'l');
+      expect(await sourcesOf(third.id)).toEqual([litre.id]);
+    });
+
+    it('wants a checked item again when it merges', async () => {
+      const m = await newMember('uncheck');
+      await m.addItem({ ingredientId: milk, quantity: 100, unit: 'ml' });
+      const [item] = await m.items();
+      await m.check(item.id);
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 100, unit: 'ml' },
+      ]);
+      await m.add(r.id).expect(200);
+      const [after] = await m.items();
+      expect(after).toMatchObject({
+        id: item.id,
+        quantity: 200,
+        checked: false,
+      });
+    });
+
+    it('refuses a total above the quantity cap and changes nothing', async () => {
+      const m = await newMember('cap');
+      await m.addItem({ ingredientId: milk, quantity: 999_999, unit: 'ml' });
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 5, unit: 'ml' },
+      ]);
+      const res = await m.add(r.id);
+      expect(res.status).toBe(400);
+      expect(code(res)).toBe('shopping.quantity_too_large');
+      expect(summary(await m.items())).toEqual([['Milk', 999_999, 'ml']]);
+      expect(await sourcesOf(r.id)).toEqual([]);
+
+      // A scaled amount past the cap is refused too, even on an empty list.
+      const huge = await makeRecipe([
+        { ingredientId: carrot, quantity: 900_000, unit: 'pcs' },
+      ]);
+      const big = await m.add(huge.id, { today, servings: 4 });
+      expect(code(big)).toBe('shopping.quantity_too_large');
+    });
+
+    it("hides other Families' Recipes and validates the body", async () => {
+      const m = await newMember('guard');
+      const theirs = await makeRecipe([{ ingredientId: milk }], {
+        familyId: anaFamily,
+      });
+      expect(code(await m.add(theirs.id))).toBe('recipes.not_found');
+      const own = await makeRecipe([{ ingredientId: milk }]);
+      await m.add(own.id, { today: 'soon' }).expect(400);
+      await m.add(own.id, { today, servings: 0 }).expect(400);
     });
   });
 });

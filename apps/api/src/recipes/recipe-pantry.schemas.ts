@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { shoppingLocaleQuery } from '../shopping/shopping.schemas';
 import type { LineMatch } from './matching/pantry-match';
 
 /** The most Servings a Member can ask a match or add-missing for. */
@@ -14,6 +15,14 @@ export const pantryMatchQuery = z.object({
   servings: z.coerce.number().pipe(servings).optional(),
 });
 export type PantryMatchQuery = z.infer<typeof pantryMatchQuery>;
+
+export const addMissingQuery = shoppingLocaleQuery;
+
+export const addMissingBody = z.object({
+  today: z.iso.date().optional(),
+  servings: servings.optional(),
+});
+export type AddMissingBody = z.infer<typeof addMissingBody>;
 
 export type PantryLineView = LineMatch & {
   /** An unchecked Shopping Item for the same Ingredient (or Unmatched name) is on the Family's list. It never changes `status`. */
