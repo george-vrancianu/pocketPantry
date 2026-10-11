@@ -24,7 +24,7 @@ type Props = {
 };
 
 /**
- * Shared frame of the Admin editors: a heading that takes focus when the
+ * Shared frame of the editors (Admin and Recipes): a heading that takes focus when the
  * editor opens, the error, the fields, and Save / Cancel / two-step Delete.
  */
 export function EditorForm({

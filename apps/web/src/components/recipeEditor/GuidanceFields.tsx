@@ -6,12 +6,14 @@ import {
   MAX_EATING_MOMENTS,
   MAX_NUTRITION_NOTE,
   MAX_PAIRINGS,
+  type EatingMomentPolarity,
+} from '../../lib/adminRecipes';
+import {
   PAIRING_KINDS,
   PAIRING_PRINCIPLES,
-  type EatingMomentPolarity,
   type PairingKind,
   type PairingPrinciple,
-} from '../../lib/adminRecipes';
+} from '../../lib/recipeVocabulary';
 import {
   MAX_PAIRING_LABEL,
   MAX_PAIRING_REASON,

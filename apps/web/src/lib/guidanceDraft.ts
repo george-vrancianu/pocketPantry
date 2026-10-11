@@ -1,9 +1,5 @@
-import type {
-  EatingMomentPolarity,
-  GuidanceInput,
-  PairingKind,
-  PairingPrinciple,
-} from './adminRecipes';
+import type { EatingMomentPolarity, GuidanceInput } from './adminRecipes';
+import type { PairingKind, PairingPrinciple } from './recipeVocabulary';
 import { MAX_NUTRITION_NOTE } from './adminRecipes';
 import { newKey } from './recipeDraft';
 

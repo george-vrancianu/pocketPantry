@@ -1,5 +1,6 @@
 import { localName, type AdminCatalog } from './admin';
-import type { AdminRecipe, Difficulty, RecipeDocument } from './adminRecipes';
+import type { AdminRecipe, RecipeDocument } from './adminRecipes';
+import type { Difficulty } from './recipeVocabulary';
 import type { Unit } from './catalog';
 
 export type LineDraft = {

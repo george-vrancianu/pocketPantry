@@ -5,7 +5,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { Difficulty, PairingKind, PairingPrinciple } from './adminRecipes';
+import type {
+  Difficulty,
+  PairingKind,
+  PairingPrinciple,
+} from './recipeVocabulary';
 import type { Unit } from './catalog';
 import { useDebounced } from './catalog';
 import { localIso } from './pantry';

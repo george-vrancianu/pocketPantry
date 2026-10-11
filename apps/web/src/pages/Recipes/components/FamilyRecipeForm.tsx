@@ -16,14 +16,13 @@ import { EditorForm } from '../../../components/EditorForm';
 import { RecipeLinesSection } from '../../../components/recipeEditor/RecipeLinesSection';
 import { RecipeMetaFields } from '../../../components/recipeEditor/RecipeMetaFields';
 import { RecipeStepsSection } from '../../../components/recipeEditor/RecipeStepsSection';
+import { documentOf, type FamilyDraft } from '../familyDraft';
 import {
-  documentOf,
   hasProblems,
   newKey,
   problemsOf,
-  type FamilyDraft,
-} from '../familyDraft';
-import type { LineDraft } from '../../../lib/recipeDraft';
+  type LineDraft,
+} from '../../../lib/recipeDraft';
 
 type Props = {
   heading: string;

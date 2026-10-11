@@ -1,12 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-import type {
-  Difficulty,
-  GuidanceInput,
-  RecipeStep,
-  RecipeTip,
-} from './adminRecipes';
+import type { GuidanceInput, RecipeStep, RecipeTip } from './adminRecipes';
+import type { Difficulty } from './recipeVocabulary';
 import { recipesQueryKey } from './recipes';
 
 type GuidanceInputWithIds = {

@@ -13,8 +13,6 @@ import {
   type StepDraft,
 } from '../../lib/recipeDraft';
 
-export { hasProblems, moved, newKey, problemsOf } from '../../lib/recipeDraft';
-
 /**
  * The form state is the Admin's `RecipeDraft`. A line with an `ingredientId` is
  * a Catalog Ingredient; one without is a free-text name kept in `name`.

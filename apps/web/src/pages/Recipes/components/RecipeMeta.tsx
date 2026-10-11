@@ -1,6 +1,6 @@
 import { Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { Difficulty } from '../../../lib/adminRecipes';
+import type { Difficulty } from '../../../lib/recipeVocabulary';
 import type { NamedRef } from '../../../lib/recipes';
 import { Servings } from './Servings';
 

@@ -1,6 +1,6 @@
 import { Stack, TextField } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { DIFFICULTIES, type Difficulty } from '../../lib/adminRecipes';
+import { DIFFICULTIES, type Difficulty } from '../../lib/recipeVocabulary';
 import type { DraftProblems, RecipeDraft } from '../../lib/recipeDraft';
 
 type Option = { id: string; name: string };
