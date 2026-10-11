@@ -3,6 +3,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { PantryMatchingService } from './matching/pantry-matching.service';
+import { PlateRecipesService } from './plate-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import { RecipeGuidanceService } from './recipe-guidance.service';
@@ -24,6 +25,7 @@ import { RecipesService } from './recipes.service';
     RecipeBrowseService,
     FamilyRecipesService,
     CookTonightService,
+    PlateRecipesService,
     PantryMatchingService,
     RecipePantryService,
   ],

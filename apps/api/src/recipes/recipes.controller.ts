@@ -19,12 +19,16 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
+import { PlateRecipesService } from './plate-recipes.service';
+import type { PlateSuggestion } from './plate-suggestions';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
   cookTonightQuery,
   familyRecipeCreate,
   familyRecipeUpdate,
+  fromPlateBody,
+  plateSuggestionsBody,
   hiddenTipsBody,
   localeQuery,
   recipeParam,
@@ -36,6 +40,8 @@ import {
   type FamilyRecipeDraft,
   type FamilyRecipeEdit,
   type FamilyRecipeUpdate,
+  type FromPlateBody,
+  type PlateSuggestionsBody,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
@@ -61,6 +67,7 @@ export class RecipesController {
     private readonly browse: RecipeBrowseService,
     private readonly family: FamilyRecipesService,
     private readonly cookTonight: CookTonightService,
+    private readonly plate: PlateRecipesService,
   ) {}
 
   @Get()
@@ -112,6 +119,30 @@ export class RecipesController {
   ): Promise<FamilyRecipeEdit> {
     const { locale, ...document } = body;
     return this.family.create(member.id, document, locale);
+  }
+
+  @Post('plate-suggestions')
+  @ApiOperation({
+    summary:
+      'The Catalog Base Recipes closest to a Plate Scan dish, best first (at most five)',
+  })
+  async plateSuggestions(
+    @Body(new ZodValidationPipe(plateSuggestionsBody))
+    body: PlateSuggestionsBody,
+  ): Promise<{ suggestions: PlateSuggestion[] }> {
+    return { suggestions: await this.plate.suggest(body) };
+  }
+
+  @Post('from-plate')
+  @ApiOperation({
+    summary:
+      'Save a Plate Scan as a Family Recipe for one serving: a Variant (parentId) or a standalone Recipe',
+  })
+  saveFromPlate(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(fromPlateBody)) body: FromPlateBody,
+  ): Promise<FamilyRecipeEdit> {
+    return this.plate.save(member.id, body);
   }
 
   @Get(':id/variant-draft')

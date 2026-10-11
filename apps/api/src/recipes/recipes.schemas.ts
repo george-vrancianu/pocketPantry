@@ -105,6 +105,25 @@ export const familyRecipeCreate = familyRecipeUpdate.extend({
   guidance: guidanceBody.optional(),
 });
 
+/** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
+export const plateSuggestionsBody = z
+  .object({
+    locale: memberLocale,
+    dishTitle: z.string().trim().max(200),
+    ingredientIds: z.array(id).max(100),
+  })
+  .strict();
+
+/** Saving a Plate Scan as a Family Recipe: one serving, ingredient lines only. */
+export const fromPlateBody = z
+  .object({
+    locale: memberLocale,
+    title,
+    parentId: id.nullable(),
+    lines: z.array(familyLineInput).max(MAX_LINES),
+  })
+  .strict();
+
 export const tipCreate = z
   .object({ text: longText, stepId: id.nullable().default(null) })
   .strict();
@@ -176,6 +195,8 @@ export type StepInput = z.infer<typeof stepInput>;
 export type FamilyLineInput = z.infer<typeof familyLineInput>;
 export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
 export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
+export type PlateSuggestionsBody = z.infer<typeof plateSuggestionsBody>;
+export type FromPlateBody = z.infer<typeof fromPlateBody>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;
 export type TipUpdate = z.infer<typeof tipUpdate>;
