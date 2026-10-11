@@ -190,7 +190,9 @@ export async function loadAdminDetail(
     steps: parts.steps.map(stepView),
     tips: parts.tips.map(tipView),
     parentTips,
-    translations: await loadTranslations(executor, id, parts),
+    // Family Recipes are never translated.
+    translations:
+      familyId === null ? await loadTranslations(executor, id, parts) : {},
   };
 }
 

@@ -82,8 +82,8 @@ export const familyLineInput = lineInput.extend({
   rawName: z.string().trim().min(1).max(100).nullable().default(null),
 });
 
-/** The Member's locale: the Unmatched queue entries of new names record it. */
-const memberLocale = z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE);
+/** The Member's locale (required): the Unmatched queue entries of new names record it. */
+const memberLocale = z.enum(CATALOG_LOCALES);
 
 /** Replacing a Family Recipe's document; its base is fixed at creation. */
 export const familyRecipeUpdate = recipeDocument

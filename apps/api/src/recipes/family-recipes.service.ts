@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, notInArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -10,6 +10,7 @@ import type { Database, Executor, Tx } from '../database/database.types';
 import { lockFamilies } from '../family/family-locks';
 import {
   cuisines,
+  family,
   ingredients,
   methods,
   recipeIngredientLines,
@@ -42,8 +43,8 @@ import type {
 type LineDocument = FamilyRecipeDocument['lines'][number];
 
 /**
- * A Family's own Recipes: Variants under a Base Recipe the Family can see, or
- * standalone Base Recipes. Every rule about writing one lives here, so the
+ * A Family's own Recipes: Variants under a Catalog Base Recipe, or standalone
+ * Base Recipes (which have no Variants). Every rule about writing one lives here, so the
  * Member editor and the Plate Scan save (`createIn`) behave the same. Every
  * write locks the Family row, then the Recipe row (the order the Unmatched
  * queue uses). Family Recipes are never translated and the Admin paths never
@@ -58,7 +59,13 @@ export class FamilyRecipesService {
     private readonly tips: RecipeTipsService,
   ) {}
 
-  /** The unsaved "Make a variant" draft from any Recipe the Family can see. */
+  /**
+   * The unsaved "Make a variant" draft from a Recipe the Family can see. The
+   * parent is the source's Catalog base: the source itself, or the base of a
+   * Variant (Catalog or the Family's own). A Family standalone Recipe has no
+   * Catalog base, so it is refused (404 `recipes.parent_not_found`); a base
+   * that is archived is refused too (409 `recipes.parent_archived`).
+   */
   async variantDraft(
     memberId: string,
     id: string,
@@ -67,9 +74,20 @@ export class FamilyRecipesService {
     const familyId = await this.settings.familyIdOf(memberId);
     const row = await findVisibleRecipe(this.database, id, familyId);
     if (!row) throw recipeNotFound();
+    const parentId = row.parentId ?? row.id;
+    if (row.familyId !== null && row.parentId === null) {
+      throw new ApiException(404, 'recipes.parent_not_found');
+    }
+    const [base] = await this.database
+      .select({ archivedAt: recipes.archivedAt })
+      .from(recipes)
+      .where(eq(recipes.id, parentId));
+    if (base?.archivedAt) {
+      throw new ApiException(409, 'recipes.parent_archived');
+    }
     const source = await resolveRecipe(this.database, row, locale);
     return {
-      parentId: row.parentId ?? row.id,
+      parentId,
       title: source.title,
       servings: source.servings,
       prepMinutes: source.prepMinutes,
@@ -115,7 +133,7 @@ export class FamilyRecipesService {
     document: FamilyRecipeDocument,
     locale: string,
   ): Promise<string> {
-    await lockFamilies(tx, [familyId]);
+    await this.lockFamily(tx, familyId);
     await this.validate(tx, document);
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
@@ -157,7 +175,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await lockFamilies(tx, [familyId]);
+      await this.lockFamily(tx, familyId);
       await lockRecipe(tx, id, familyId);
       await this.validate(tx, document);
       const existingLines = await tx
@@ -205,12 +223,19 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await lockFamilies(tx, [familyId]);
+      await this.lockFamily(tx, familyId);
       await lockRecipe(tx, id, familyId);
+      // Archiving twice keeps the first time.
       await tx
         .update(recipes)
         .set({ archivedAt: new Date() })
-        .where(and(eq(recipes.id, id), eq(recipes.familyId, familyId)));
+        .where(
+          and(
+            eq(recipes.id, id),
+            eq(recipes.familyId, familyId),
+            isNull(recipes.archivedAt),
+          ),
+        );
     });
     return this.edit(familyId, id, locale);
   }
@@ -270,36 +295,49 @@ export class FamilyRecipesService {
     id: string,
     locale: CatalogLocale,
   ): Promise<FamilyRecipeEdit> {
-    const detail = await loadAdminDetail(this.database, id, familyId);
-    if (!detail) throw recipeNotFound();
-    const { translations, ...rest } = detail;
-    void translations; // Family Recipes are never translated
-    const rows = await this.database
-      .select()
-      .from(recipeIngredientLines)
-      .where(eq(recipeIngredientLines.recipeId, id));
-    const ingredientIds = rows.flatMap((r) =>
-      r.ingredientId ? [r.ingredientId] : [],
-    );
-    const names = await this.ingredientNames(
-      this.database,
-      ingredientIds,
-      locale,
-    );
-    const byId = new Map(rows.map((row) => [row.id, row]));
-    return {
-      ...rest,
-      lines: detail.lines.map((line) => {
-        const row = byId.get(line.id)!;
+    // One snapshot, so the lines and their raw names always agree.
+    return this.database.transaction(
+      async (tx) => {
+        const detail = await loadAdminDetail(tx, id, familyId);
+        if (!detail) throw recipeNotFound();
+        const { translations, ...rest } = detail;
+        void translations; // Family Recipes are never translated
+        const rows = await tx
+          .select()
+          .from(recipeIngredientLines)
+          .where(eq(recipeIngredientLines.recipeId, id));
+        const names = await this.ingredientNames(
+          tx,
+          rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
+          locale,
+        );
+        const byId = new Map(rows.map((row) => [row.id, row]));
         return {
-          ...line,
-          rawName: row.rawName,
-          ingredientName: row.ingredientId
-            ? (names.get(row.ingredientId) ?? '')
-            : (row.rawName ?? ''),
+          ...rest,
+          lines: detail.lines.map((line) => {
+            const row = byId.get(line.id);
+            return {
+              ...line,
+              rawName: row?.rawName ?? null,
+              ingredientName: row?.ingredientId
+                ? (names.get(row.ingredientId) ?? '')
+                : (row?.rawName ?? ''),
+            };
+          }),
         };
-      }),
-    };
+      },
+      { isolationLevel: 'repeatable read', accessMode: 'read only' },
+    );
+  }
+
+  /** Locks the Family row; a Family deleted in the meantime is a 404, not a foreign key error. */
+  private async lockFamily(tx: Tx, familyId: string) {
+    await lockFamilies(tx, [familyId]);
+    const [row] = await tx
+      .select({ id: family.id })
+      .from(family)
+      .where(eq(family.id, familyId));
+    if (!row) throw recipeNotFound();
   }
 
   private async ingredientNames(
@@ -323,9 +361,10 @@ export class FamilyRecipesService {
   }
 
   /**
-   * The base must be a live Base Recipe the Family can see: the Catalog's or
-   * its own. A shared lock makes an archive of the base wait for us. Existing
-   * Variants of an archived base keep working; only new ones are refused.
+   * The parent must be a live Catalog Base Recipe: Variants go under Catalog
+   * bases only (a Family standalone Recipe has no Variants). A shared lock
+   * makes an archive of the base wait for us. Existing Variants of an archived
+   * base keep working; only new ones are refused.
    */
   private async assertParent(tx: Tx, familyId: string, parentId: string) {
     const [parent] = await tx
@@ -338,6 +377,9 @@ export class FamilyRecipesService {
     }
     if (parent.parentId) {
       throw new ApiException(409, 'recipes.variant_of_variant');
+    }
+    if (parent.familyId !== null) {
+      throw new ApiException(404, 'recipes.parent_not_found');
     }
     if (parent.archivedAt) {
       throw new ApiException(409, 'recipes.parent_archived');
@@ -422,7 +464,8 @@ export class FamilyRecipesService {
    * Writes the Ingredient Lines and keeps the Unmatched queue in step: a line
    * whose name is new or changed gets a fresh entry, a line that is now
    * matched loses its entry, and an unchanged name keeps its entry (and any
-   * dismissal). Deleted lines take their entries with them (cascade).
+   * dismissal). A change of case or spacing only keeps the existing entry too
+   * (the normalised name is what counts). Deleted lines take their entries with them (cascade).
    */
   private async writeLines(
     tx: Tx,

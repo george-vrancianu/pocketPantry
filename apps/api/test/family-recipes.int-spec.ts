@@ -63,6 +63,7 @@ describe('Family Recipes (integration)', () => {
   const doc = (parentId: string | null, overrides = {}) => ({
     title: title('Fam'),
     servings: 2,
+    locale: 'en',
     parentId,
     lines: [line(0, 50)],
     steps: [{ text: 'Whisk' }],
@@ -237,6 +238,7 @@ describe('Family Recipes (integration)', () => {
           .put(`/${created.id}`, {
             title: `${created.title} v2`,
             servings: 3,
+            locale: 'en',
             lines: [
               {
                 id: edit.lines[0].id,
@@ -327,6 +329,7 @@ describe('Family Recipes (integration)', () => {
         .put(`/${fv.id}`, {
           title: `${fv.title} edited`,
           servings: 2,
+          locale: 'en',
           lines: [],
           steps: [],
         })
@@ -367,7 +370,13 @@ describe('Family Recipes (integration)', () => {
       await b.get(`/${fv.id}`).expect(404);
       await b.get(`/${fv.id}/edit`).expect(404);
       await b
-        .put(`/${fv.id}`, { title: 'x', servings: 1, lines: [], steps: [] })
+        .put(`/${fv.id}`, {
+          title: 'x',
+          servings: 1,
+          locale: 'en',
+          lines: [],
+          steps: [],
+        })
         .expect(404);
       await b.post(`/${fv.id}/archive`).expect(404);
       await b.post(`/${fv.id}/tips`, { text: 'x' }).expect(404);
@@ -378,7 +387,13 @@ describe('Family Recipes (integration)', () => {
       const base = await catalogBase();
       await a1.get(`/${base.id}/edit`).expect(404);
       await a1
-        .put(`/${base.id}`, { title: 'x', servings: 1, lines: [], steps: [] })
+        .put(`/${base.id}`, {
+          title: 'x',
+          servings: 1,
+          locale: 'en',
+          lines: [],
+          steps: [],
+        })
         .expect(404);
       await a1.post(`/${base.id}/archive`).expect(404);
       await a1.post(`/${base.id}/tips`, { text: 'x' }).expect(404);
@@ -533,6 +548,97 @@ describe('Family Recipes (integration)', () => {
         unit: 'pcs',
       });
       expect(await unmatchedFor(created.lines[0].id)).toHaveLength(0);
+    });
+  });
+
+  describe('review rules', () => {
+    it('only takes Catalog bases as parents and drafts', async () => {
+      const base = await catalogBase();
+      const standalone = await familyRecipe(a1, null);
+      expect(code(await a1.post('', doc(standalone.id)).expect(404))).toBe(
+        'recipes.parent_not_found',
+      );
+      expect(
+        code(await a1.get(`/${standalone.id}/variant-draft`).expect(404)),
+      ).toBe('recipes.parent_not_found');
+      const fv = await familyRecipe(a1, base.id);
+      const draft = (await a1.get(`/${fv.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft.parentId).toBe(base.id);
+    });
+
+    it('refuses a draft under an archived base', async () => {
+      const base = await catalogBase();
+      const fv = await familyRecipe(a1, base.id);
+      await admin.post(`/${base.id}/archive`, {}).expect(200);
+      for (const id of [base.id, fv.id]) {
+        expect(code(await a1.get(`/${id}/variant-draft`).expect(409))).toBe(
+          'recipes.parent_archived',
+        );
+      }
+    });
+
+    it('keeps the first archive time', async () => {
+      const created = await familyRecipe(a1, null);
+      const first = (await a1.post(`/${created.id}/archive`).expect(200))
+        .body as FamilyRecipeEdit;
+      const second = (await a2.post(`/${created.id}/archive`).expect(200))
+        .body as FamilyRecipeEdit;
+      expect(second.archivedAt).toBe(first.archivedAt);
+    });
+
+    it('requires the locale in Family bodies', async () => {
+      const { locale, ...noLocale } = doc(null);
+      void locale;
+      await a1.post('', noLocale).expect(400);
+    });
+
+    it('refuses bad hidden Tips and foreign Tips with coded errors', async () => {
+      const base = await catalogBase();
+      const baseStepTip = (
+        await admin.post(`/${base.id}/tips`, {
+          text: 'Step',
+          stepId: base.steps[0].id,
+        })
+      ).body as AdminRecipeDetail;
+      const fv = await familyRecipe(a1, base.id);
+      const own = (await a1.post(`/${fv.id}/tips`, { text: 'Own' }).expect(201))
+        .body as FamilyRecipeEdit;
+      const sibling = await familyRecipe(a1, base.id);
+      const siblingTip = (
+        await a1.post(`/${sibling.id}/tips`, { text: 'Other' }).expect(201)
+      ).body as FamilyRecipeEdit;
+
+      for (const tipId of [
+        baseStepTip.tips[0].id,
+        own.tips[0].id,
+        siblingTip.tips[0].id,
+      ]) {
+        expect(
+          code(
+            await a1
+              .put(`/${fv.id}/hidden-tips`, { tipIds: [tipId] })
+              .expect(400),
+          ),
+        ).toBe('recipes.bad_hidden_tip');
+      }
+      expect(
+        code(
+          await a1
+            .patch(`/${fv.id}/tips/${siblingTip.tips[0].id}`, { text: 'x' })
+            .expect(404),
+        ),
+      ).toBe('recipes.tip_not_found');
+      await a1.del(`/${fv.id}/tips/${siblingTip.tips[0].id}`).expect(404);
+      expect(
+        code(
+          await a1
+            .put(`/${fv.id}/tips/order`, {
+              ids: [own.tips[0].id, siblingTip.tips[0].id],
+            })
+            .expect(409),
+        ),
+      ).toBe('recipes.tip_order_stale');
     });
   });
 
