@@ -47,12 +47,12 @@
       "seeAll": "Vezi tot",
       "empty": "Nimic de gătit din Cămara ta încă. Adaugă Loturi sau Rețete ca să vezi idei.",
       "missing": "Lipsește: {{name}}",
-      "expiring_one": "folosește {{count}} care expiră",
-      "expiring_few": "folosește {{count}} care expiră",
-      "expiring_other": "folosește {{count}} care expiră",
-      "otherVariants_one": "+{{count}} altă variantă pe care o poți face",
-      "otherVariants_few": "+{{count}} alte variante pe care le poți face",
-      "otherVariants_other": "+{{count}} de alte variante pe care le poți face"
+      "expiring_one": "folosește {{count}} ingredient care expiră curând",
+      "expiring_few": "folosește {{count}} ingrediente care expiră curând",
+      "expiring_other": "folosește {{count}} de ingrediente care expiră curând",
+      "otherVariants_one": "+{{count}} altă variantă pe care o poți găti",
+      "otherVariants_few": "+{{count}} alte variante pe care le poți găti",
+      "otherVariants_other": "+{{count}} de alte variante pe care le poți găti"
     },
     "mealPlan": {
       "title": "Plan de mese"

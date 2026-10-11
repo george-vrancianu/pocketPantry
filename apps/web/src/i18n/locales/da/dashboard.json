@@ -42,10 +42,10 @@
     "cookTonight": {
       "title": "Lav mad i aften",
       "seeAll": "Se alle",
-      "empty": "Intet at lave af dit Pantry endnu. Tilføj Partier eller Opskrifter for at få idéer.",
+      "empty": "Intet at lave af dit spisekammer endnu. Tilføj Partier eller Opskrifter for at få idéer.",
       "missing": "Mangler: {{name}}",
-      "expiring_one": "bruger {{count}} der snart udløber",
-      "expiring_other": "bruger {{count}} der snart udløber",
+      "expiring_one": "bruger {{count}} vare, der snart udløber",
+      "expiring_other": "bruger {{count}} varer, der snart udløber",
       "otherVariants_one": "+{{count}} anden variant du kan lave",
       "otherVariants_other": "+{{count}} andre varianter du kan lave"
     },

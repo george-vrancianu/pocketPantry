@@ -1,3 +1,9 @@
+/** Every Cook Tonight view and Recipe Pantry match; refetch after anything that changes the Pantry. */
+export const recipeMatchingQueryKeys = [
+  ['recipes', 'cook-tonight'],
+  ['recipes', 'pantry-match'],
+] as const;
+
 /** Every locale's Suggestions; refetch after anything that changes the Pantry, the list or the Staples. */
 export const suggestionsQueryKey = ['suggestions'] as const;
 

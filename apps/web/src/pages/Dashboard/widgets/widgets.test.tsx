@@ -322,9 +322,8 @@ describe('CookTonightWidget', () => {
     });
     expect(link).toHaveAttribute('href', '/recipes/r1');
     expect(within(link).getByText('variant of Base r1')).toBeInTheDocument();
-    expect(within(link).getByText('30 min')).toBeInTheDocument();
     expect(
-      within(link).getByText('+2 other variants you can make'),
+      within(link).getByText('30 min · +2 other variants you can make'),
     ).toBeInTheDocument();
     expect(
       within(region).getByRole('link', { name: 'See all' }),
@@ -372,13 +371,108 @@ describe('CookTonightWidget', () => {
     expect(within(link).queryByText(/variant of/)).not.toBeInTheDocument();
   });
 
-  it('shows as many cards as the size allows', async () => {
-    stub(cookTonight([card('1'), card('2'), card('3')]));
+  it.each([
+    ['small', 2, 1],
+    ['wide', 2, 2],
+    ['tall', 2, 2],
+    ['tall', 3, 2],
+    ['tall', 4, 3],
+  ] as const)(
+    'shows as many cards as a %s Widget at %i columns allows',
+    async (size, columns, shown) => {
+      stub(cookTonight([card('1'), card('2'), card('3'), card('4')]));
 
-    renderWithProviders(<CookTonightWidget size="small" columns={2} />);
+      renderWithProviders(<CookTonightWidget size={size} columns={columns} />);
 
-    expect(await screen.findByText('Recipe 1')).toBeInTheDocument();
-    expect(screen.queryByText('Recipe 2')).not.toBeInTheDocument();
+      expect(await screen.findAllByRole('heading', { level: 3 })).toHaveLength(
+        shown,
+      );
+    },
+  );
+
+  it('shows the expiring hint only when something expiring is used', async () => {
+    stub(cookTonight([card('1', { expiringCount: 2 }), card('2')]));
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByText('uses 2 Expiring Soon items'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Expiring Soon/)).toHaveLength(1);
+  });
+
+  it('shows no extra lines for a base Recipe with nothing else to say', async () => {
+    stub(cookTonight([card('1')]));
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: 'Recipe 1' });
+    expect(link).toHaveTextContent(/^Recipe 1$/);
+  });
+
+  it('names the link by all of its parts', async () => {
+    stub(
+      cookTonight([
+        card('1', {
+          otherVariantsCount: 1,
+          missing: { ingredientId: null, name: 'Saffron' },
+          recipe: {
+            id: '1',
+            title: 'Paella',
+            parentId: 'b-1',
+            owner: 'family',
+            servings: 2,
+            prepMinutes: 5,
+            cookMinutes: null,
+          },
+        }),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByRole('link', {
+        name: 'Paella, variant of Base 1, Missing: Saffron, 5 min · +1 other variant you can make',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows an error when the cards fail to load', async () => {
+    stub({
+      'GET /api/recipes/cook-tonight': () =>
+        Response.json({ message: 'boom' }, { status: 500 }),
+    });
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('speaks Romanian plurals', async () => {
+    stub(
+      cookTonight([
+        card('1', { otherVariantsCount: 1, expiringCount: 1 }),
+        card('2', { otherVariantsCount: 3, expiringCount: 3 }),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />, {
+      locale: 'ro',
+    });
+
+    expect(
+      await screen.findByText(/\+1 altă variantă pe care o poți găti/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/\+3 alte variante pe care le poți găti/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/folosește 1 ingredient care expiră curând/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/folosește 3 ingrediente care expiră curând/),
+    ).toBeInTheDocument();
   });
 
   it('says so when nothing can be made tonight', async () => {

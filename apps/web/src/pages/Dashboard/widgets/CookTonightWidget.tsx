@@ -4,22 +4,30 @@ import { Link } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
+import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-/** How many cards each size has room for; the API ranks them, the Widget only cuts. */
-const CARDS_BY_SIZE: Record<WidgetSize, number> = {
-  small: 1,
-  wide: 2,
-  tall: 4,
-};
+/**
+ * How many cards a Widget has room for; the API ranks them, the Widget only cuts.
+ * Cards are about 70 px tall: a small or wide Widget fits one or two, a tall one
+ * (two rows, four-column grid only) three.
+ */
+function cardsFor(size: WidgetSize, columns: GridColumns): number {
+  const { columns: span, rows } = widgetSpan(size, columns);
+  if (size === 'small') return 1;
+  return rows === 2 && span === 2 ? 3 : 2;
+}
 
 /** Cards for the Recipes the Family can make tonight (or nearly), one per Base Recipe. */
 export function CookTonightWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const cookTonight = useCookTonight(i18n.language, localIso(new Date()));
-  const cards = (cookTonight.data?.cards ?? []).slice(0, CARDS_BY_SIZE[size]);
+  const cards = (cookTonight.data?.cards ?? []).slice(
+    0,
+    cardsFor(size, columns),
+  );
 
   return (
     <WidgetCard
@@ -94,17 +102,30 @@ function CookCard({ card }: { card: CookTonightCard }) {
     recipe.prepMinutes === null && recipe.cookMinutes === null
       ? null
       : (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
-  const hints = [
+  const missing = card.missing
+    ? t('widgets.cookTonight.missing', { name: card.missing.name })
+    : null;
+  const meta = [
     minutes === null ? null : t('recipes:minutes', { count: minutes }),
     card.expiringCount > 0
       ? t('widgets.cookTonight.expiring', { count: card.expiringCount })
       : null,
-  ].filter((hint) => hint !== null);
+    card.otherVariantsCount > 0
+      ? t('widgets.cookTonight.otherVariants', {
+          count: card.otherVariantsCount,
+        })
+      : null,
+  ].filter((part) => part !== null);
+  // Block elements carry no spaces for a screen reader, so name the link explicitly.
+  const name = [heading, secondary, missing, meta.join(' · ')]
+    .filter(Boolean)
+    .join(', ');
 
   return (
     <Box
       component={Link}
       to={`/recipes/${recipe.id}`}
+      aria-label={name}
       sx={{
         display: 'block',
         p: '8px 10px',
@@ -114,7 +135,10 @@ function CookCard({ card }: { card: CookTonightCard }) {
         textDecoration: 'none',
       }}
     >
-      <Box component="span" sx={{ display: 'block', fontWeight: 700 }}>
+      <Box
+        component="h3"
+        sx={{ m: 0, fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}
+      >
         {heading}
       </Box>
       {secondary && (
@@ -122,24 +146,17 @@ function CookCard({ card }: { card: CookTonightCard }) {
           {secondary}
         </Box>
       )}
-      {card.missing && (
+      {missing && (
         <Box
           component="span"
           sx={{ ...line, color: tokens.color.ink, fontWeight: 600 }}
         >
-          {t('widgets.cookTonight.missing', { name: card.missing.name })}
+          {missing}
         </Box>
       )}
-      {hints.length > 0 && (
+      {meta.length > 0 && (
         <Box component="span" sx={line}>
-          {hints.join(' · ')}
-        </Box>
-      )}
-      {card.otherVariantsCount > 0 && (
-        <Box component="span" sx={line}>
-          {t('widgets.cookTonight.otherVariants', {
-            count: card.otherVariantsCount,
-          })}
+          {meta.join(' · ')}
         </Box>
       )}
     </Box>
