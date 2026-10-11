@@ -31,7 +31,8 @@
     "empty": "Niciun Ingredient găsit.",
     "name": "Nume (engleză)",
     "leafCategory": "Categorie frunză",
-    "defaultUnit": "Unitate implicită"
+    "defaultUnit": "Unitate implicită",
+    "pantryBasic": "Produs de bază (mereu considerat în Cămară)"
   },
   "aisle": {
     "title": "Raioane",

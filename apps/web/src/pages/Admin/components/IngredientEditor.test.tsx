@@ -49,6 +49,7 @@ const parmesan: AdminIngredient = {
   name: 'Parmesan',
   leafCategoryId: 'l1',
   defaultUnit: 'g',
+  pantryBasic: false,
   translations: [
     { id: 't1', locale: 'en', kind: 'name', value: 'Parmesan' },
     { id: 't2', locale: 'ro', kind: 'name', value: 'Parmezan' },
@@ -89,6 +90,7 @@ describe('IngredientEditor', () => {
       name: 'Gouda',
       leafCategoryId: 'l2',
       defaultUnit: 'kg',
+      pantryBasic: false,
     });
     // No translation controls until the Ingredient exists.
     expect(screen.queryByText('Translations and Synonyms')).toBeNull();
@@ -125,7 +127,49 @@ describe('IngredientEditor', () => {
       name: 'Parmigiano Reggiano',
       leafCategoryId: 'l1',
       defaultUnit: 'g',
+      pantryBasic: false,
     });
+  });
+
+  it('flags an Ingredient as a Pantry Basic', async () => {
+    const calls = stub({
+      'PATCH /api/admin/catalog/ingredients/i1': () => Response.json({}),
+    });
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={parmesan}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    const toggle = screen.getByLabelText('Pantry Basic');
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() =>
+      expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
+        name: 'Parmesan',
+        leafCategoryId: 'l1',
+        defaultUnit: 'g',
+        pantryBasic: true,
+      }),
+    );
+  });
+
+  it('shows an existing Pantry Basic as checked and labels it in Romanian', () => {
+    stub();
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={{ ...parmesan, pantryBasic: true }}
+        catalog={catalog}
+        onDone={vi.fn()}
+      />,
+      { locale: 'ro' },
+    );
+    expect(screen.getByLabelText(/Produs de bază/)).toBeChecked();
   });
 
   it('adds a Synonym, saves a translated name, and removes a Synonym', async () => {

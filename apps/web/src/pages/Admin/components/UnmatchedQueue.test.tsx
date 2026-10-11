@@ -262,6 +262,7 @@ describe('UnmatchedQueue', () => {
         name: 'Odd cheese',
         leafCategoryId: 'l1',
         defaultUnit: 'kg',
+        pantryBasic: false,
       },
       locale: 'en',
     });

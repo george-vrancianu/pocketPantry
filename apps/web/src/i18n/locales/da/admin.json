@@ -31,7 +31,8 @@
     "empty": "Ingen ingredienser matcher.",
     "name": "Navn (engelsk)",
     "leafCategory": "Underkategori",
-    "defaultUnit": "Standardenhed"
+    "defaultUnit": "Standardenhed",
+    "pantryBasic": "Basisvare (regnes altid som på lager)"
   },
   "aisle": {
     "title": "Afdelinger",
