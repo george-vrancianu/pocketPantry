@@ -75,8 +75,20 @@ export async function findFamilyRecipe(
   return row;
 }
 
+/**
+ * Awaits lazy query builders one after the other. A transaction has a single
+ * connection, which must not run two queries at once.
+ */
+export async function inOrder<const T extends readonly unknown[]>(
+  queries: T,
+): Promise<{ -readonly [K in keyof T]: Awaited<T[K]> }> {
+  const results: unknown[] = [];
+  for (const query of queries) results.push(await query);
+  return results as { -readonly [K in keyof T]: Awaited<T[K]> };
+}
+
 async function loadParts(executor: Executor, recipeId: string) {
-  const [lines, steps, tips] = await Promise.all([
+  const [lines, steps, tips] = await inOrder([
     executor
       .select()
       .from(recipeIngredientLines)
@@ -102,7 +114,7 @@ async function loadTranslations(
   parts: Awaited<ReturnType<typeof loadParts>>,
 ): Promise<RecipeTranslationsView> {
   const ids = (rows: { id: string }[]) => rows.map((row) => row.id);
-  const [titles, stepRows, lineRows, tipRows] = await Promise.all([
+  const [titles, stepRows, lineRows, tipRows] = await inOrder([
     executor
       .select()
       .from(recipeTranslations)
@@ -155,7 +167,7 @@ export async function loadAdminDetail(
   const parts = await loadParts(executor, id);
   let parentTips: AdminRecipeDetail['parentTips'] = null;
   if (row.parentId) {
-    const [baseTips, hidden] = await Promise.all([
+    const [baseTips, hidden] = await inOrder([
       executor
         .select()
         .from(recipeTips)

@@ -347,13 +347,11 @@ export class FamilyRecipesService {
   ) {
     const result = new Map<string, string>();
     if (ids.length === 0) return result;
-    const [canonical, display] = await Promise.all([
-      executor
-        .select({ id: ingredients.id, name: ingredients.name })
-        .from(ingredients)
-        .where(inArray(ingredients.id, ids)),
-      loadDisplayNames(executor, locale, ids),
-    ]);
+    const canonical = await executor
+      .select({ id: ingredients.id, name: ingredients.name })
+      .from(ingredients)
+      .where(inArray(ingredients.id, ids));
+    const display = await loadDisplayNames(executor, locale, ids);
     for (const row of canonical) {
       result.set(row.id, display.pick('ingredient', row.id, row.name));
     }
