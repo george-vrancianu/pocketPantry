@@ -93,10 +93,10 @@ describe('GuidanceSection', () => {
         }),
       ],
     });
-    expect(screen.getByRole('link', { name: /Green salad/ })).toHaveAttribute(
-      'href',
-      '/recipes/r-1',
-    );
+    const link = screen.getByRole('link', { name: 'A salad' });
+    expect(link).toHaveAttribute('href', '/recipes/r-1');
+    expect(link).toHaveAttribute('title', 'Green salad');
+    expect(screen.queryByText('Green salad')).toBeNull();
   });
 
   it('shows a linked Ingredient as plain text', () => {
@@ -111,6 +111,26 @@ describe('GuidanceSection', () => {
     expect(screen.getByText(/Lemon on the side/)).toBeInTheDocument();
     expect(screen.queryByRole('link')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('adds the linked Ingredient name unless the label already has it', () => {
+    show({
+      pairings: [
+        pairing({
+          id: '1',
+          label: 'A squeeze of citrus',
+          link: { type: 'ingredient', id: 'i-1', name: 'Lemon' },
+        }),
+        pairing({
+          id: '2',
+          label: 'Fresh LEMON wedges',
+          link: { type: 'ingredient', id: 'i-1', name: 'Lemon' },
+        }),
+      ],
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('A squeeze of citrus · Lemon');
+    expect(items[1]).not.toHaveTextContent('·');
   });
 
   it('shows the label only when the link was hidden', () => {
@@ -164,6 +184,26 @@ describe('GuidanceSection', () => {
     });
     expect(screen.getAllByText(DISCLAIMER)).toHaveLength(1);
     expect(screen.getAllByRole('region')).toHaveLength(3);
+  });
+
+  it('orders Pairings, When to Eat, Nutrition, then the disclaimer', () => {
+    show({
+      nutritionNote: 'Note',
+      pairings: [pairing({})],
+      eatingMoments: [moment({})],
+    });
+    const order = [
+      screen.getByRole('heading', { name: 'Pairings' }),
+      screen.getByRole('heading', { name: 'When to eat' }),
+      screen.getByRole('heading', { name: 'Nutrition' }),
+      screen.getByText(DISCLAIMER),
+    ];
+    order.slice(1).forEach((node, i) => {
+      expect(
+        order[i]!.compareDocumentPosition(node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
   });
 
   it('uses the Member locale for the fixed strings', () => {

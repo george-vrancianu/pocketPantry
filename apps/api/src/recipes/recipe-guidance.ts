@@ -121,8 +121,8 @@ export { emptyTranslations as emptyGuidanceTranslations };
 /**
  * A Recipe's guidance resolved for `locale`: translated text where there is
  * some, else the source text. Takes a Recipe id only, so Family Recipes reuse
- * it. A link to an archived Recipe, or to one the owner's Family can't see, is dropped (the label stays), and archived
- * Eating Moments are left out.
+ * it. A link to an archived Recipe, or to one the owner's Family can't see, is
+ * dropped (the label stays), and archived Eating Moments are left out.
  */
 export async function loadResolvedGuidance(
   executor: Executor,

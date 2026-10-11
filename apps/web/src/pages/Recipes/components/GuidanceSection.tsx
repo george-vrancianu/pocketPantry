@@ -1,4 +1,4 @@
-import { Box, Link, Stack, Typography } from '@pocket-pantry/ui';
+import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -17,14 +17,25 @@ function PairingItem({ pairing }: { pairing: DetailPairing }) {
   const { link } = pairing;
   return (
     <Box component="li">
-      <Typography component="span" sx={{ fontWeight: 600 }}>
-        {pairing.label}
-      </Typography>
       {link?.type === 'recipe' ? (
-        <>
-          {' '}
-          <Link href={`/recipes/${link.id}`}>{link.title}</Link>
-        </>
+        <Link
+          href={`/recipes/${link.id}`}
+          title={link.title}
+          sx={{ fontWeight: 600 }}
+        >
+          {pairing.label}
+        </Link>
+      ) : (
+        <Typography component="span" sx={{ fontWeight: 600 }}>
+          {pairing.label}
+        </Typography>
+      )}
+      {link?.type === 'ingredient' &&
+      !pairing.label.toLowerCase().includes(link.name.toLowerCase()) ? (
+        <Typography variant="meta" color="text.secondary" component="span">
+          {' · '}
+          {link.name}
+        </Typography>
       ) : null}
       {pairing.principle ? (
         <Typography variant="meta" color="text.secondary" component="p">
@@ -98,14 +109,19 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
                       component="span"
                       sx={{
                         display: 'inline-block',
-                        px: 1.5,
-                        py: 0.25,
-                        borderRadius: 4,
-                        border: 1,
-                        borderColor:
-                          polarity === 'avoid' ? 'warning.main' : 'divider',
-                        bgcolor: 'action.selected',
-                        fontWeight: 600,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        px: '10px',
+                        py: '4px',
+                        borderRadius: `${tokens.radius.chip}px`,
+                        bgcolor:
+                          polarity === 'avoid'
+                            ? tokens.color.soonBg
+                            : tokens.color.okBg,
+                        color:
+                          polarity === 'avoid'
+                            ? tokens.color.soonFg
+                            : tokens.color.okFg,
                       }}
                     >
                       {moment.name}
