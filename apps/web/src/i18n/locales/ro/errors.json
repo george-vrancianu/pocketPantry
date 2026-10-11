@@ -81,5 +81,14 @@
     "name_taken": "Acest nume aparține deja altui Ingredient. Rezolvă-l către acel Ingredient sau redenumește-l mai întâi pe celălalt.",
     "not_found": "Numele nu mai este în coadă. Poate că cineva l-a rezolvat deja.",
     "concurrent_change": "Listele s-au schimbat în timpul rezolvării. Încearcă din nou."
+  },
+  "staples": {
+    "not_found": "Nu am găsit acel produs de bază.",
+    "ingredient_not_found": "Nu am găsit acel ingredient.",
+    "already_exists": "Acel ingredient este deja un produs de bază.",
+    "limit_reached": "Poți avea cel mult {{limit}} de produse de bază. Scoate unul ca să adaugi altul."
+  },
+  "suggestions": {
+    "ingredient_not_found": "Nu am găsit acel ingredient."
   }
 }

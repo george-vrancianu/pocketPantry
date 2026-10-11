@@ -1,6 +1,7 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StapleToggle } from '../../../components/StapleToggle';
 import { expiryChipFor, type RollUp } from '../../../lib/pantry';
 import { formatAmount } from './amount';
 import { BatchDetail } from './BatchDetail';
@@ -46,88 +47,96 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
         '&:first-of-type': { borderTop: 0 },
       }}
     >
-      <Box
-        component="button"
-        type="button"
-        ref={toggle}
-        aria-expanded={expanded}
-        aria-controls={expanded ? panelId : undefined}
-        onClick={() => setExpanded((open) => !open)}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          width: '100%',
-          minHeight: 60,
-          p: 0,
-          border: 0,
-          bgcolor: 'transparent',
-          color: 'inherit',
-          font: 'inherit',
-          textAlign: 'left',
-          cursor: 'pointer',
-        }}
-      >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
         <Box
-          aria-hidden="true"
+          component="button"
+          type="button"
+          ref={toggle}
+          aria-expanded={expanded}
+          aria-controls={expanded ? panelId : undefined}
+          onClick={() => setExpanded((open) => !open)}
           sx={{
-            flexShrink: 0,
-            width: 36,
-            height: 36,
-            borderRadius: '12px',
-            bgcolor: rollUp.unmatched
-              ? tokens.color.soonBg
-              : tokens.color.accentTint,
-            color: rollUp.unmatched ? tokens.color.soonFg : tokens.color.accent,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: tokens.font.display,
-            fontWeight: 700,
-            fontSize: 15,
+            gap: '12px',
+            flexGrow: 1,
+            minWidth: 0,
+            minHeight: 60,
+            p: 0,
+            border: 0,
+            bgcolor: 'transparent',
+            color: 'inherit',
+            font: 'inherit',
+            textAlign: 'left',
+            cursor: 'pointer',
           }}
         >
-          {rollUp.name.charAt(0).toLocaleUpperCase(i18n.language)}
-        </Box>
-        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Typography
-            component="span"
-            sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}
+          <Box
+            aria-hidden="true"
+            sx={{
+              flexShrink: 0,
+              width: 36,
+              height: 36,
+              borderRadius: '12px',
+              bgcolor: rollUp.unmatched
+                ? tokens.color.soonBg
+                : tokens.color.accentTint,
+              color: rollUp.unmatched
+                ? tokens.color.soonFg
+                : tokens.color.accent,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: tokens.font.display,
+              fontWeight: 700,
+              fontSize: 15,
+            }}
           >
-            {rollUp.name}
-            {rollUp.unmatched ? (
-              <Box
-                component="span"
-                sx={{
-                  ml: 1,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  px: '8px',
-                  py: '2px',
-                  borderRadius: `${tokens.radius.chip}px`,
-                  bgcolor: tokens.color.soonBg,
-                  color: tokens.color.soonFg,
-                }}
-              >
-                {t('unmatched')}
-              </Box>
-            ) : null}
-          </Typography>
-          {detail ? (
+            {rollUp.name.charAt(0).toLocaleUpperCase(i18n.language)}
+          </Box>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography
               component="span"
-              sx={{
-                display: 'block',
-                fontSize: 12,
-                color: tokens.color.muted,
-                mt: '2px',
-              }}
+              sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}
             >
-              {detail}
+              {rollUp.name}
+              {rollUp.unmatched ? (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: 1,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    px: '8px',
+                    py: '2px',
+                    borderRadius: `${tokens.radius.chip}px`,
+                    bgcolor: tokens.color.soonBg,
+                    color: tokens.color.soonFg,
+                  }}
+                >
+                  {t('unmatched')}
+                </Box>
+              ) : null}
             </Typography>
-          ) : null}
+            {detail ? (
+              <Typography
+                component="span"
+                sx={{
+                  display: 'block',
+                  fontSize: 12,
+                  color: tokens.color.muted,
+                  mt: '2px',
+                }}
+              >
+                {detail}
+              </Typography>
+            ) : null}
+          </Box>
+          {chip ? <ExpiryChip chip={chip} /> : null}
         </Box>
-        {chip ? <ExpiryChip chip={chip} /> : null}
+        {!rollUp.unmatched ? (
+          <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+        ) : null}
       </Box>
       {expanded ? (
         <Box

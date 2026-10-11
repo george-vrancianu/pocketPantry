@@ -13,6 +13,7 @@ import { ShoppingPage } from './ShoppingPage';
 const item = (
   overrides: Partial<ShoppingItem> & { id: string },
 ): ShoppingItem => ({
+  ingredientId: null,
   name: 'Item',
   quantity: null,
   unit: null,

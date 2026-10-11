@@ -35,6 +35,13 @@
         "ingredients": "Ingrediente"
       }
     },
+    "suggestions": {
+      "title": "Sugestii",
+      "missing_one": "produs de bază lipsește",
+      "missing_few": "produse de bază lipsesc",
+      "missing_other": "de produse de bază lipsesc",
+      "empty": "Nu lipsește nimic"
+    },
     "mealPlan": {
       "title": "Plan de mese"
     },

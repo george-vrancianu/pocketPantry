@@ -81,5 +81,14 @@
     "name_taken": "Det navn tilhører allerede en anden ingrediens. Afklar det som den ingrediens, eller omdøb den anden først.",
     "not_found": "Det navn er ikke længere i køen. Måske har en anden allerede afklaret det.",
     "concurrent_change": "Listerne blev ændret under afklaringen. Prøv igen."
+  },
+  "staples": {
+    "not_found": "Vi kunne ikke finde den basisvare.",
+    "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
+    "already_exists": "Den ingrediens er allerede en basisvare.",
+    "limit_reached": "Du kan have op til {{limit}} basisvarer. Fjern en for at tilføje en anden."
+  },
+  "suggestions": {
+    "ingredient_not_found": "Vi kunne ikke finde den ingrediens."
   }
 }

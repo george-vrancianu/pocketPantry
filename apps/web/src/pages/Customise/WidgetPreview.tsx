@@ -34,6 +34,7 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
   shopping: centred(<ShoppingIcon size={30} />),
   'pantry-stock': centred(<PantryIcon size={30} />),
   'quick-scan': centred(<ScanIcon size={30} />),
+  suggestions: centred(<ShoppingIcon size={30} />),
   'meal-plan': (
     <Box
       sx={{

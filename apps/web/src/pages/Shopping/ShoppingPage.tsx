@@ -1,4 +1,11 @@
-import { Alert, Button, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Button,
+  Link,
+  Spinner,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -6,6 +13,7 @@ import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddItemForm } from './components/AddItemForm';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
+import { SuggestionsSection } from './components/SuggestionsSection';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
@@ -29,7 +37,10 @@ export function ShoppingPage() {
   return (
     <>
       <UnverifiedToast />
-      <AppScreenHeader title={t('shopping:title')} />
+      <AppScreenHeader
+        title={t('shopping:title')}
+        trailing={<Link href="/shopping/staples">{t('shopping:staples')}</Link>}
+      />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
@@ -41,6 +52,10 @@ export function ShoppingPage() {
             <SummaryCard
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
+            />
+            <SuggestionsSection
+              suggestions={screen.suggestions}
+              onAdd={screen.add}
             />
             <AddItemForm adding={screen.adding} onAdd={screen.add} />
             {screen.list.groups.length === 0 ? (

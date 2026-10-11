@@ -81,5 +81,14 @@
     "name_taken": "That name already belongs to another Ingredient. Resolve it to that Ingredient, or rename the other one first.",
     "not_found": "That name is no longer in the queue. Someone may have resolved it already.",
     "concurrent_change": "The lists changed while resolving. Please try again."
+  },
+  "staples": {
+    "not_found": "We could not find that staple.",
+    "ingredient_not_found": "We could not find that ingredient.",
+    "already_exists": "That ingredient is already a staple.",
+    "limit_reached": "You can have up to {{limit}} staples. Remove one to add another."
+  },
+  "suggestions": {
+    "ingredient_not_found": "We could not find that ingredient."
   }
 }
