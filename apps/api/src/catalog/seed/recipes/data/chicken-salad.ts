@@ -108,16 +108,16 @@ export const chickenSalad: BaseRecipeSeed = {
   ],
   tips: [
     t(
-      'Flatten the breasts to an even thickness so they cook through at the same pace; a thick end dries out while the middle catches up.',
-      'Aplatizează piepții la o grosime uniformă ca să se gătească deodată; capătul gros se usucă până se face mijlocul.',
+      'Flatten the breasts to an even thickness so they cook through at the same pace; otherwise the thin end dries out while the thick part catches up.',
+      'Aplatizează piepții la o grosime uniformă, ca să se gătească în același timp; altfel capătul subțire se usucă până se pătrunde partea groasă.',
     ),
     t(
       'Dress the leaves only at the last moment; vinaigrette wilts them within minutes.',
-      'Condimentează frunzele abia în ultimul moment; vinegreta le ofilește în câteva minute.',
+      'Pune dressingul pe frunze abia în ultimul moment; vinegreta le ofilește în câteva minute.',
     ),
     t(
       'A probe thermometer removes the guesswork: 74 °C in the thickest part means safe and still juicy.',
-      'Un termometru cu sondă elimină ghicitul: 74 °C în partea cea mai groasă înseamnă pui sigur și totuși suculent.',
+      'Cu un termometru cu sondă nu mai ghicești: 74 °C în partea cea mai groasă înseamnă pui gătit în siguranță și încă suculent.',
     ),
   ],
   stepTips: [
@@ -130,23 +130,23 @@ export const chickenSalad: BaseRecipeSeed = {
     },
   ],
   nutritionNote: t(
-    'Lean protein with plenty of fresh vegetables, so it is light yet filling; the olive oil is a healthy fat but adds calories fast, and a heavy hand with the dressing or little bread leaves it less filling than it looks.',
-    'Proteine slabe și multe legume proaspete, deci e ușoară, dar săturătoare; uleiul de măsline e o grăsime sănătoasă, dar adaugă repede calorii, iar un dressing turnat din belșug sau lipsa pâinii o fac mai puțin sățioasă decât pare.',
+    'Lean protein with plenty of fresh vegetables, so it is light yet filling; the olive oil is a healthy fat but adds calories fast, so go easy on the dressing, and without bread it may leave you hungry sooner.',
+    'Proteine slabe și multe legume proaspete, deci e ușoară, dar săturătoare; uleiul de măsline e o grăsime sănătoasă, dar adaugă repede calorii, așa că nu exagera cu dressingul, iar fără pâine s-ar putea să ți se facă foame mai repede.',
   ),
   pairings: [
     {
       kind: 'food',
-      label: t('Crusty bread', 'Pâine cu crustă'),
+      label: t('Crusty bread', 'Pâine cu coajă crocantă'),
       reason: t(
         'Crisp crust against tender chicken and soft leaves, and it mops up the vinaigrette.',
-        'Crusta crocantă contrastează cu puiul fraged și frunzele moi și șterge vinegreta din farfurie.',
+        'Coaja crocantă contrastează cu puiul fraged și frunzele moi, iar cu miezul ștergi vinegreta din farfurie.',
       ),
       principle: 'contrast_texture',
       ingredient: 'country-bread',
     },
     {
       kind: 'food',
-      label: t('Shaved parmesan', 'Parmezan ras în așchii'),
+      label: t('Shaved parmesan', 'Așchii de parmezan'),
       reason: t(
         'Salty, nutty shavings echo the grilled flavour of the chicken.',
         'Așchiile sărate, cu gust de nucă, se potrivesc cu aroma de grătar a puiului.',
@@ -159,9 +159,9 @@ export const chickenSalad: BaseRecipeSeed = {
       label: t('Olives', 'Măsline'),
       reason: t(
         'Briny bites that sharpen the mild chicken.',
-        'Înghițituri sărate care dau vlagă cărnii delicate de pui.',
+        'Bucăți sărate care înviorează gustul blând al puiului.',
       ),
-      principle: 'salt_balances_sweet',
+      principle: 'complement_flavour',
       ingredient: 'olives',
     },
     {
@@ -169,7 +169,7 @@ export const chickenSalad: BaseRecipeSeed = {
       label: t('Dry white wine', 'Vin alb sec'),
       reason: t(
         'Crisp acidity matches the lemony vinaigrette and cleans the palate.',
-        'Aciditatea fină se potrivește cu vinegreta cu lămâie și curăță gura.',
+        'Aciditatea fină se potrivește cu vinegreta cu lămâie și împrospătează gustul.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'white-wine',
@@ -179,7 +179,7 @@ export const chickenSalad: BaseRecipeSeed = {
       label: t('Sparkling water with lemon', 'Apă minerală cu lămâie'),
       reason: t(
         'Light and refreshing, it keeps a lean meal feeling clean.',
-        'Ușoară și răcoritoare, păstrează o masă ușoară fină și curată.',
+        'Ușoară și răcoritoare, lasă senzația unei mese curate, fără greutate.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'sparkling-water',
@@ -284,7 +284,7 @@ export const chickenSalad: BaseRecipeSeed = {
           key: 'croutons',
           text: t(
             'Heat the oven to 190 °C. Toss the bread cubes with 25 ml of olive oil and a pinch of salt, spread on a tray and bake for 10 minutes, turning once, until golden and crisp.',
-            'Încălzește cuptorul la 190 °C. Amestecă cuburile de pâine cu 25 ml de ulei de măsline și un praf de sare, întinde-le pe o tavă și coace-le 10 minute, întorcându-le o dată, până se aurește și devin crocante.',
+            'Încălzește cuptorul la 190 °C. Amestecă cuburile de pâine cu 25 ml de ulei de măsline și un praf de sare, întinde-le pe o tavă și coace-le 10 minute, întorcându-le o dată, până se auresc și devin crocante.',
           ),
           timerSeconds: 600,
         },
@@ -327,20 +327,20 @@ export const chickenSalad: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
-          label: t('Garlic bread', 'Pâine cu usturoi'),
+          label: t('Cherry tomatoes', 'Roșii cherry'),
           reason: t(
-            'More crunch and garlic for a hearty plate.',
-            'Mai multă textură crocantă și usturoi pentru o farfurie consistentă.',
+            'Sweet, juicy acidity beside the rich, salty dressing.',
+            'Aciditate dulce și suculentă lângă dressingul bogat și sărat.',
           ),
-          principle: 'complement_flavour',
-          ingredient: 'bread',
+          principle: 'acid_cuts_fat',
+          ingredient: 'cherry-tomato',
         },
         {
           kind: 'food',
           label: t('Lemon wedge', 'Felie de lămâie'),
           reason: t(
             'A squeeze of acidity cuts through the creamy dressing.',
-            'Câteva picături de aciditate taie din dressingul cremos.',
+            'Câteva picături de lămâie echilibrează dressingul cremos.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'lemon',
@@ -360,7 +360,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Sparkling water', 'Apă minerală'),
           reason: t(
             'Bubbles reset the palate between creamy bites.',
-            'Bulele curăță gura între înghițituri cremoase.',
+            'Bulele împrospătează gustul între înghițituri cremoase.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-water',
@@ -430,10 +430,7 @@ export const chickenSalad: BaseRecipeSeed = {
           ingredient: 'cucumber',
           quantity: 1,
           unit: 'pcs',
-          note: t(
-            'cut in thick half-moons',
-            'tăiat în jumătăți de rondele groase',
-          ),
+          note: t('cut in thick half-moons', 'tăiat în semicercuri groase'),
         },
         {
           ingredient: 'cherry-tomato',
@@ -463,7 +460,10 @@ export const chickenSalad: BaseRecipeSeed = {
           ingredient: 'feta',
           quantity: 100,
           unit: 'g',
-          note: t('in a block or large cubes', 'bloc sau cuburi mari'),
+          note: t(
+            'in a block or large cubes',
+            'o bucată întreagă sau cuburi mari',
+          ),
         },
         { ingredient: 'salt', quantity: 2, unit: 'g' },
         { ingredient: 'black-pepper', quantity: 1, unit: 'g' },
@@ -505,13 +505,13 @@ export const chickenSalad: BaseRecipeSeed = {
           step: 'assemble',
           text: t(
             'Keep the feta in a block and add it last; stirred in, it crumbles and turns the dressing cloudy.',
-            'Păstrează feta bucată și pune-o la sfârșit; dacă o amesteci, se sfărâmă și tulbură dressingul.',
+            'Lasă feta bucată întreagă și pune-o la sfârșit; dacă o amesteci, se sfărâmă și tulbură dressingul.',
           ),
         },
       ],
       nutritionNote: t(
-        'Lean protein, lots of vegetables and olive oil make it light and filling; feta and olives add a good deal of salt and saturated fat, so go easy on them if you watch your salt.',
-        'Proteine slabe, multe legume și ulei de măsline o fac ușoară și săturătoare; feta și măslinele aduc multă sare și grăsimi saturate, așa că folosește-le cu măsură dacă ții cont de sare.',
+        'Lean protein, lots of vegetables and olive oil make it light and filling; feta brings salt and saturated fat and the olives add more salt, so go easy on them if you watch your salt.',
+        'Proteine slabe, multe legume și ulei de măsline o fac ușoară și săturătoare; feta aduce sare și grăsimi saturate, iar măslinele și mai multă sare, așa că folosește-le cu măsură dacă ții cont de sare.',
       ),
       pairings: [
         {
@@ -522,16 +522,16 @@ export const chickenSalad: BaseRecipeSeed = {
             'Pâine moale și caldă cu care aduni sosul cu ulei și lămâie.',
           ),
           principle: 'regional_tradition',
-          ingredient: 'bread',
+          ingredient: 'pita',
         },
         {
           kind: 'food',
-          label: t('Greek yogurt', 'Iaurt grecesc'),
+          label: t('Tzatziki', 'Tzatziki'),
           reason: t(
-            'Cool and creamy against the salty feta and olives.',
-            'Răcoros și cremos pe lângă feta și măslinele sărate.',
+            'Cool garlicky yogurt dip beside grilled chicken, as on a Greek souvlaki plate.',
+            'Sos rece de iaurt cu usturoi lângă puiul la grătar, ca la souvlaki grecesc.',
           ),
-          principle: 'salt_balances_sweet',
+          principle: 'regional_tradition',
           ingredient: 'greek-yogurt',
         },
         {
@@ -623,7 +623,7 @@ export const chickenSalad: BaseRecipeSeed = {
           ingredient: 'cucumber',
           quantity: 1,
           unit: 'pcs',
-          note: t('cut in half-moons', 'tăiat în jumătăți de rondele'),
+          note: t('cut in half-moons', 'tăiat în semicercuri'),
         },
         {
           ingredient: 'cherry-tomato',
@@ -710,7 +710,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Sweet chilli sauce', 'Sos dulce-picant de chili'),
           reason: t(
             'Sweet heat for dipping the chicken.',
-            'Dulceață cu iuțeală, pentru a înmuia puiul.',
+            'Dulce și iute, bun de înmuiat bucățile de pui.',
           ),
           principle: 'salt_balances_sweet',
           ingredient: 'sweet-chili-sauce',
@@ -720,7 +720,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Iced tea with lime', 'Ceai rece cu lime'),
           reason: t(
             'Cooling and citrusy against chilli heat.',
-            'Răcoritor și citric față de iuțeala ardeiului.',
+            'Răcoritor, cu note de citrice, potolește iuțeala ardeiului.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'iced-tea',
@@ -730,7 +730,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Off-dry Riesling', 'Riesling demisec'),
           reason: t(
             'A touch of sweetness calms the chilli while acidity matches the lime.',
-            'O undă de dulceață potolește iuțeala, iar aciditatea se potrivește cu limea.',
+            'O undă de dulceață potolește iuțeala, iar aciditatea se potrivește cu sucul de lime.',
           ),
           principle: 'salt_balances_sweet',
           ingredient: 'white-wine',
@@ -758,7 +758,7 @@ export const chickenSalad: BaseRecipeSeed = {
           polarity: 'avoid',
           reason: t(
             'Chilli and a lot of raw vegetables can unsettle the stomach before bed.',
-            'Ardeiul iute și multele legume crude pot deranja stomacul înainte de culcare.',
+            'Ardeiul iute și multe legume crude pot deranja stomacul înainte de culcare.',
           ),
         },
       ],
@@ -766,7 +766,7 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-coronation',
       cuisine: 'british',
-      title: t('Coronation chicken', 'Pui Coronation'),
+      title: t('Coronation chicken', 'Salată de pui Coronation'),
       servings: 2,
       prepMinutes: 15,
       cookMinutes: 20,
@@ -775,11 +775,12 @@ export const chickenSalad: BaseRecipeSeed = {
         { ingredient: 'chicken-breast', quantity: 400, unit: 'g' },
         { ingredient: 'mayonnaise', quantity: 80, unit: 'g' },
         { ingredient: 'greek-yogurt', quantity: 60, unit: 'g' },
+        { ingredient: 'sunflower-oil', quantity: 5, unit: 'ml' },
         {
           ingredient: 'curry-powder',
           quantity: 6,
           unit: 'g',
-          note: t('mild', 'dulce'),
+          note: t('mild', 'blând (nu iute)'),
         },
         {
           ingredient: 'mango-chutney',
@@ -796,7 +797,7 @@ export const chickenSalad: BaseRecipeSeed = {
           ingredient: 'almonds',
           quantity: 20,
           unit: 'g',
-          note: t('flaked, toasted', 'felii subțiri, prăjite'),
+          note: t('flaked, toasted', 'fulgi, prăjiți'),
         },
         {
           ingredient: 'coriander',
@@ -823,10 +824,18 @@ export const chickenSalad: BaseRecipeSeed = {
           timerSeconds: 1020,
         },
         {
+          key: 'spice',
+          text: t(
+            'Warm the oil in a small pan over low heat, stir in the curry powder for 1 minute until fragrant, and cool completely.',
+            'Încălzește uleiul într-o tigaie mică, la foc mic, adaugă pudra de curry și amestec-o 1 minut, până se simte aroma, apoi las-o să se răcească complet.',
+          ),
+          timerSeconds: 60,
+        },
+        {
           key: 'sauce',
           text: t(
-            'Mix the mayonnaise, yogurt, curry powder, chutney, lemon juice, salt and pepper until smooth.',
-            'Amestecă maioneza, iaurtul, pudra de curry, chutney-ul, sucul de lămâie, sarea și piperul până se omogenizează.',
+            'Mix the mayonnaise, yogurt, the cooled curry powder, chutney, lemon juice, salt and pepper until smooth.',
+            'Amestecă maioneza, iaurtul, pudra de curry răcită, chutney-ul, sucul de lămâie, sarea și piperul până se omogenizează.',
           ),
         },
         {
@@ -843,7 +852,7 @@ export const chickenSalad: BaseRecipeSeed = {
           step: 'poach',
           text: t(
             'Cool the chicken before it meets the sauce; warm chicken thins the mayonnaise and makes it greasy.',
-            'Lasă puiul să se răcească înainte de sos; puiul cald subțiază maioneza și o face grasă.',
+            'Lasă puiul să se răcească bine înainte să-l amesteci cu sosul; cald, face maioneza să se subțieze și să se separe.',
           ),
         },
       ],
@@ -854,12 +863,12 @@ export const chickenSalad: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
-          label: t('Crusty bread', 'Pâine cu crustă'),
+          label: t('Crusty bread', 'Pâine cu coajă crocantă'),
           reason: t(
             'A neutral, starchy base for the rich creamy chicken.',
             'O bază neutră și amidonoasă pentru puiul cremos și bogat.',
           ),
-          principle: 'contrast_texture',
+          principle: 'complement_flavour',
           ingredient: 'country-bread',
         },
         {
@@ -887,7 +896,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Lemonade', 'Limonadă'),
           reason: t(
             'Tart and cold, it freshens the palate after the creamy curry.',
-            'Acidulată și rece, împrospătează gura după curry-ul cremos.',
+            'Acrișoară și rece, împrospătează gustul după curry-ul cremos.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'lemonade',
@@ -907,7 +916,7 @@ export const chickenSalad: BaseRecipeSeed = {
           polarity: 'good_for',
           reason: t(
             'A classic for a spread, with bread and salad.',
-            'Un clasic pentru o masă cu mai multe feluri, cu pâine și salată.',
+            'Un clasic pe o masă tip bufet, cu pâine și salată.',
           ),
         },
         {
@@ -939,7 +948,7 @@ export const chickenSalad: BaseRecipeSeed = {
           ingredient: 'celery',
           quantity: 60,
           unit: 'g',
-          note: t('finely diced', 'tăiat cubulețe mici'),
+          note: t('finely diced', 'tulpini, tăiate cubulețe mici'),
         },
         {
           ingredient: 'red-onion',
@@ -956,7 +965,7 @@ export const chickenSalad: BaseRecipeSeed = {
           note: t('chopped', 'tocat'),
         },
         {
-          ingredient: 'bread',
+          ingredient: 'toast-bread',
           quantity: 4,
           unit: 'pcs',
           note: t('slices, lightly toasted', 'felii, prăjite ușor'),
@@ -990,7 +999,7 @@ export const chickenSalad: BaseRecipeSeed = {
           key: 'bind',
           text: t(
             'Mix the mayonnaise, yogurt, mustard, lemon juice, salt and pepper. Fold in the chicken, celery, onion and dill until everything is coated and holds together. Chill for 20 minutes.',
-            'Amestecă maioneza, iaurtul, muștarul, sucul de lămâie, sarea și piperul. Încorporează puiul, țelina, ceapa și mărarul până se acoperă totul și compoziția se leagă. Ține la rece 20 de minute.',
+            'Amestecă maioneza, iaurtul, muștarul, sucul de lămâie, sarea și piperul. Încorporează puiul, tulpinile de țelină, ceapa și mărarul până se acoperă totul și compoziția se leagă. Ține la rece 20 de minute.',
           ),
           timerSeconds: 1200,
         },
@@ -1007,13 +1016,13 @@ export const chickenSalad: BaseRecipeSeed = {
           step: 'bind',
           text: t(
             'Chilling lets the flavours meld and the mixture firm up, so it stays in the sandwich instead of sliding out.',
-            'Răcirea lasă aromele să se împrumute și compoziția să se întărească, așa că rămâne în sandviș și nu se scurge.',
+            'Cât stă la rece, aromele se armonizează și compoziția se închegă, așa că rămâne în sandviș în loc să curgă.',
           ),
         },
       ],
       nutritionNote: t(
         'Good protein and a convenient, filling lunch; the mayonnaise binder and bread make it energy-dense, high in fat, and light on vegetables unless you add leaves and crunchy celery.',
-        'Proteine bune și un prânz practic și săturător; maioneza și pâinea o fac bogată în energie, cu multe grăsimi și puține legume, dacă nu adaugi frunze și țelină crocantă.',
+        'Proteine bune și un prânz practic și săturător; maioneza și pâinea o fac bogată în energie, cu multe grăsimi și puține legume, dacă nu adaugi frunze și tulpini de țelină crocante.',
       ),
       pairings: [
         {
@@ -1071,7 +1080,7 @@ export const chickenSalad: BaseRecipeSeed = {
           polarity: 'good_for',
           reason: t(
             'Easy to serve to a table as finger food.',
-            'Ușor de servit la masă, ca să mănânci cu mâna.',
+            'Tăiat în triunghiuri, se servește ușor și se mănâncă cu mâna.',
           ),
         },
         {
@@ -1158,7 +1167,7 @@ export const chickenSalad: BaseRecipeSeed = {
           step: 'wilt',
           text: t(
             'Dress and serve straight away; the leaves should be barely wilted, not soggy.',
-            'Condimentează și servește imediat; frunzele trebuie să fie abia ofilite, nu moi.',
+            'Toarnă dressingul și servește imediat; frunzele trebuie să fie abia ofilite, nu înmuiate.',
           ),
         },
       ],
@@ -1169,12 +1178,12 @@ export const chickenSalad: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
-          label: t('Warm crusty bread', 'Pâine caldă cu crustă'),
+          label: t('Warm crusty bread', 'Pâine caldă, cu coajă crocantă'),
           reason: t(
             'Soaks up the warm dressing from the plate.',
             'Absoarbe dressingul cald din farfurie.',
           ),
-          principle: 'contrast_texture',
+          principle: 'complement_flavour',
           ingredient: 'country-bread',
         },
         {
@@ -1182,7 +1191,7 @@ export const chickenSalad: BaseRecipeSeed = {
           label: t('Goat cheese', 'Brânză de capră'),
           reason: t(
             'Tangy and creamy against the sweet-sour balsamic.',
-            'Acidulată și cremoasă pe lângă balsamicul dulce-acrișor.',
+            'Acrișoară și cremoasă, pe lângă balsamicul dulce-acrișor.',
           ),
           principle: 'complement_flavour',
         },
@@ -1213,7 +1222,7 @@ export const chickenSalad: BaseRecipeSeed = {
           polarity: 'good_for',
           reason: t(
             'Warm chicken and dressing make a salad feel like a proper meal.',
-            'Puiul și dressingul calde fac din salată o masă adevărată.',
+            'Puiul cald și dressingul cald fac din salată o masă adevărată.',
           ),
         },
         {

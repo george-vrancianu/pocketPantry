@@ -33,8 +33,8 @@ export const SEED_METHODS: SeedNamed[] = [
   named(
     'creamy-bound',
     'Creamy bound salad',
-    'Salată legată cu cremă',
-    'Cremet bundet salat',
+    'Salată cu maioneză',
+    'Cremet salat',
   ),
   named('warm-salad', 'Warm salad', 'Salată caldă', 'Varm salat'),
 ];
