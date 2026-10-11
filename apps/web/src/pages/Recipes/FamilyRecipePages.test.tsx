@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -151,14 +151,11 @@ function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
 describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('prefills from the draft and saves a Variant under the draft parent', async () => {
-    const user = userEvent.setup({ delay: null });
-    const calls = setup('/recipes/x/variant/new', {
+  it('prefills from the draft', async () => {
+    setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
-      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
-    const title = await screen.findByLabelText(/^Title/);
-    expect(title).toHaveValue('Omelette');
+    expect(await screen.findByLabelText(/^Title/)).toHaveValue('Omelette');
     expect(
       screen.getByText(/Add your own Tips after saving the variant\./),
     ).toBeInTheDocument();
@@ -167,14 +164,23 @@ describe('NewVariantPage', () => {
     expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
       '1.5',
     );
+  });
 
-    await user.clear(title);
-    await user.type(title, "Grandma's omelette");
-    await user.selectOptions(screen.getByLabelText('Cuisine'), 'c-fr');
-    await user.type(
-      screen.getByLabelText('Or add an ingredient by name'),
-      'Gran’s herbs',
-    );
+  it('saves a Variant under the draft parent and opens it', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    fireEvent.change(await screen.findByLabelText(/^Title/), {
+      target: { value: "Grandma's omelette" },
+    });
+    fireEvent.change(screen.getByLabelText('Cuisine'), {
+      target: { value: 'c-fr' },
+    });
+    fireEvent.change(screen.getByLabelText('Or add an ingredient by name'), {
+      target: { value: 'Gran’s herbs' },
+    });
     await user.click(screen.getByRole('button', { name: 'Add name' }));
     await user.click(screen.getByRole('button', { name: 'Save variant' }));
 
@@ -317,12 +323,11 @@ describe('EditFamilyRecipePage', () => {
       'PUT /api/recipes/g': () => Response.json(saved),
     });
     const title = await screen.findByLabelText(/^Title/);
-    await user.clear(title);
-    await user.type(title, 'Better omelette');
+    fireEvent.change(title, { target: { value: 'Better omelette' } });
     // Unsaved guidance edits must survive the document save.
-    const note = screen.getByLabelText('Nutrition Note');
-    await user.clear(note);
-    await user.type(note, 'Still here');
+    fireEvent.change(screen.getByLabelText('Nutrition Note'), {
+      target: { value: 'Still here' },
+    });
     await user.click(screen.getByRole('button', { name: 'Save recipe' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Still here');

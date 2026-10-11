@@ -30,10 +30,13 @@ function namedGuidance(
     ...guidance,
     pairings: guidance.pairings.map((pairing, index) => {
       const link = pairings[index]?.link;
-      if (!link) return pairing;
-      return link.type === 'ingredient'
-        ? { ...pairing, linkName: link.name }
-        : { ...pairing, linkTitle: link.title };
+      if (link?.type === 'ingredient' && link.id === pairing.linkTarget) {
+        return { ...pairing, linkName: link.name };
+      }
+      if (link?.type === 'recipe' && link.id === pairing.linkTarget) {
+        return { ...pairing, linkTitle: link.title };
+      }
+      return pairing;
     }),
   };
 }
