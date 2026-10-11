@@ -195,6 +195,9 @@
       "remove": "Remove step {{number}}",
       "tipsWarning_one": "Removing step {{number}} deletes its {{count}} Tip when you save.",
       "tipsWarning_other": "Removing step {{number}} deletes its {{count}} Tips when you save.",
+      "draftTips": "Tips for step {{number}}",
+      "removeTip": "Remove Tip: {{text}}",
+      "removeTipShort": "Remove",
       "removeWithTips": "Remove step and Tips",
       "keep": "Keep step"
     },

@@ -77,7 +77,7 @@
     "save": "Gem opskrift",
     "title": "Titel",
     "copyHint": "Det her er en kopi, du kan ændre. Intet gemmes, før du gemmer den.",
-    "tipsHint": "Tilføj dine egne Tips, når varianten er gemt.",
+    "tipsHint": "Kopierede tips følger deres trin; tilføj dine egne, når varianten er gemt.",
     "freeTextLabel": "Eller tilføj en ingrediens med navn",
     "freeTextAdd": "Tilføj navn",
     "freeTextNote": "Ikke i kataloget",

@@ -36,6 +36,8 @@ export type FamilyRecipeDraft = {
     note: string | null;
   }[];
   steps: { text: string; timerSeconds: number | null }[];
+  /** The source's own step Tips; `stepIndex` is an index into `steps`. */
+  tips: { stepIndex: number; text: string }[];
   /** The source's guidance in the Member's locale, ready to post (Pairings without ids). */
   guidance: GuidanceInput;
 };
@@ -86,6 +88,8 @@ export type FamilyRecipeDocument = {
     note: string | null;
   }>;
   steps: Array<{ id?: string; text: string; timerSeconds: number | null }>;
+  /** Only on create: a Variant draft brings its step Tips (`stepIndex` into `steps`), in order. */
+  tips?: { stepIndex: number; text: string }[];
   /** Only on create: a saved draft brings its guidance along. */
   guidance?: GuidanceInput;
 };

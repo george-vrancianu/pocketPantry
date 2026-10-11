@@ -39,6 +39,7 @@ const draft: FamilyRecipeDraft = {
     },
   ],
   steps: [{ text: 'Whisk the eggs', timerSeconds: 90 }],
+  tips: [],
   guidance: {
     nutritionNote: 'Rich in protein',
     pairings: [
@@ -157,13 +158,62 @@ describe('NewVariantPage', () => {
     });
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Omelette');
     expect(
-      screen.getByText(/Add your own Tips after saving the variant\./),
+      screen.getByText(
+        /Copied Tips stay with their steps; add your own after saving the variant\./,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('3');
     expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the eggs');
     expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
       '1.5',
     );
+  });
+
+  it('shows the copied step Tips, keeps them with their step and sends them', async () => {
+    const user = userEvent.setup({ delay: null });
+    const twoSteps: FamilyRecipeDraft = {
+      ...draft,
+      steps: [
+        { text: 'Whisk the eggs', timerSeconds: null },
+        { text: 'Fry', timerSeconds: null },
+        { text: 'Plate', timerSeconds: null },
+      ],
+      tips: [
+        { stepIndex: 0, text: 'Room-temperature eggs' },
+        { stepIndex: 1, text: 'Medium heat' },
+        { stepIndex: 1, text: 'Do not stir' },
+        { stepIndex: 2, text: 'Warm plate' },
+      ],
+    };
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(twoSteps),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    expect(await screen.findByText('Room-temperature eggs')).toBeVisible();
+    expect(screen.getByText('Medium heat')).toBeVisible();
+
+    // Reordering moves the Tips with their step.
+    await user.click(screen.getByRole('button', { name: 'Move step 2 up' }));
+    // The step "Plate" and its Tip are dropped together.
+    await user.click(screen.getByRole('button', { name: 'Remove step 3' }));
+    expect(screen.queryByText('Warm plate')).not.toBeInTheDocument();
+    expect(screen.queryByText('Do not stir')).toBeInTheDocument();
+    // The Member removes one Tip before saving.
+    await user.click(
+      screen.getByRole('button', { name: 'Remove Tip: Medium heat' }),
+    );
+    expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save variant' }));
+
+    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+    const post = calls.find((call) => call.key === 'POST /api/recipes')!;
+    expect(post.body).toMatchObject({
+      steps: [{ text: 'Fry' }, { text: 'Whisk the eggs' }],
+      tips: [
+        { stepIndex: 0, text: 'Do not stir' },
+        { stepIndex: 1, text: 'Room-temperature eggs' },
+      ],
+    });
   });
 
   it('saves a Variant under the draft parent and opens it', async () => {

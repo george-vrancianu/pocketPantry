@@ -88,6 +88,43 @@ export function RecipeStepsSection({
                 }
                 slotProps={{ htmlInput: { inputMode: 'decimal' } }}
               />
+              {step.tips && step.tips.length > 0 ? (
+                <Stack
+                  component="ul"
+                  spacing={0.5}
+                  aria-label={t('admin:recipe.steps.draftTips', { number })}
+                  sx={{ m: 0, p: 0, listStyle: 'none' }}
+                >
+                  {step.tips.map((tip) => (
+                    <Stack
+                      component="li"
+                      key={tip.key}
+                      direction="row"
+                      spacing={1}
+                      sx={{ alignItems: 'center' }}
+                    >
+                      <Typography variant="body2" sx={{ flex: 1 }}>
+                        {tip.text}
+                      </Typography>
+                      <Button
+                        variant="text"
+                        aria-label={t('admin:recipe.steps.removeTip', {
+                          text: tip.text,
+                        })}
+                        onClick={() =>
+                          changeStep(step.key, {
+                            tips: (step.tips ?? []).filter(
+                              (item) => item.key !== tip.key,
+                            ),
+                          })
+                        }
+                      >
+                        {t('admin:recipe.steps.removeTipShort')}
+                      </Button>
+                    </Stack>
+                  ))}
+                </Stack>
+              ) : null}
               <RowControls
                 moveUp={t('admin:recipe.steps.moveUp', { number })}
                 moveDown={t('admin:recipe.steps.moveDown', { number })}

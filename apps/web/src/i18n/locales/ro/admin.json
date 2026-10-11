@@ -198,6 +198,9 @@
       "tipsWarning_one": "Eliminarea pasului {{number}} șterge Sfatul lui la salvare.",
       "tipsWarning_other": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
       "tipsWarning_few": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
+      "draftTips": "Sfaturi pentru pasul {{number}}",
+      "removeTip": "Elimină Sfatul: {{text}}",
+      "removeTipShort": "Elimină",
       "removeWithTips": "Elimină pasul și Sfaturile",
       "keep": "Păstrează pasul"
     },

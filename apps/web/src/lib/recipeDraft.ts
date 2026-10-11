@@ -15,9 +15,13 @@ export type LineDraft = {
   optional: boolean;
   note: string;
 };
+/** A step Tip copied into an unsaved draft; saved Recipes manage Tips through the Tips editor. */
+export type StepTipDraft = { key: number; text: string };
 export type StepDraft = {
   key: number;
   id?: string;
+  /** Only on a new Variant draft: the copied Tips of this step, sent on create. */
+  tips?: StepTipDraft[];
   text: string;
   /** Minutes, decimals allowed; blank for no timer. */
   timer: string;

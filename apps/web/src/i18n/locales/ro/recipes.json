@@ -79,7 +79,7 @@
     "save": "Salvează rețeta",
     "title": "Titlu",
     "copyHint": "Aceasta este o copie pe care o poți schimba. Nu se salvează nimic până nu o salvezi.",
-    "tipsHint": "Adaugă propriile Sfaturi după ce salvezi varianta.",
+    "tipsHint": "Sfaturile copiate rămân la pașii lor; adaugă-le pe ale tale după ce salvezi varianta.",
     "freeTextLabel": "Sau adaugă un ingredient după nume",
     "freeTextAdd": "Adaugă numele",
     "freeTextNote": "Nu e în Catalog",

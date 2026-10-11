@@ -77,7 +77,7 @@
     "save": "Save recipe",
     "title": "Title",
     "copyHint": "This is a copy to change. Nothing is saved until you save it.",
-    "tipsHint": "Add your own Tips after saving the variant.",
+    "tipsHint": "Copied Tips stay with their steps; add your own after saving the variant.",
     "freeTextLabel": "Or add an ingredient by name",
     "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
