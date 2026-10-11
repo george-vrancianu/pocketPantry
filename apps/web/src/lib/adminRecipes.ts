@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ScanLanguage } from '../i18n/resources';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
+import { recipesQueryKey } from './recipes';
 import type {
   Difficulty,
   PairingKind,
@@ -164,7 +165,11 @@ function useRecipeWrite<Input>(send: (input: Input) => Promise<unknown>) {
       if (detail?.id && detail.lines) {
         queryClient.setQueryData(recipeKey(detail.id), detail);
       }
-      return queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey });
+      // Members browse the same Recipes.
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey }),
+        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+      ]);
     },
   });
 }

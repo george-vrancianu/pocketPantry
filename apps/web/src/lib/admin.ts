@@ -6,6 +6,7 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
+import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
@@ -93,12 +94,13 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
   return useMutation({
     mutationFn: send,
     // Member-facing Catalog search and Shopping List show the same names (and
-    // Aisle order), so refresh them too.
+    // Aisle order, and Recipes show Ingredient names), so refresh them too.
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
       ]),
   });
 }
