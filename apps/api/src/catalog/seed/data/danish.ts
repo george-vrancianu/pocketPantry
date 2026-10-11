@@ -615,6 +615,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'pickled-mixed-vegetables': 'Syltede grøntsager',
   'pickled-mushrooms': 'Syltede svampe',
   'horseradish-beetroot': 'Rødbeder med peberrod',
+  'mango-chutney': 'Mangochutney',
   // Condiments
   ketchup: 'Ketchup',
   mustard: 'Sennep',

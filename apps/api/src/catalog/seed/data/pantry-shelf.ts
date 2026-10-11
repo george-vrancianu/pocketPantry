@@ -368,7 +368,7 @@ export const cannedGoods: SeedSection = {
         'Ardei murați',
         'g',
         ['pickled chillies'],
-        ['ardei iuti murati', 'gogosari muraţi', 'gogosari', 'ardei in otet'],
+        ['ardei iuti murati', 'gogosari murați', 'gogosari', 'ardei in otet'],
       ],
       [
         'olives',
@@ -424,6 +424,14 @@ export const cannedGoods: SeedSection = {
         'g',
         undefined,
         ['hrean cu sfecla'],
+      ],
+      [
+        'mango-chutney',
+        'Mango chutney',
+        'Chutney de mango',
+        'g',
+        undefined,
+        ['chutney mango'],
       ],
     ]),
   ],
