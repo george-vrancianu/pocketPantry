@@ -100,8 +100,8 @@ export function PlateRecipeSave({
     { searchOnly: true },
   );
 
-  const closeBases = matches.data ?? [];
-  const listed = new Set(closeBases.map((s) => s.id));
+  const closestBases = matches.data ?? [];
+  const listed = new Set(closestBases.map((s) => s.id));
   const results = !searching
     ? []
     : (found.data ?? []).filter(
@@ -125,7 +125,7 @@ export function PlateRecipeSave({
   const selected =
     chosen !== null && available.has(chosen)
       ? chosen
-      : (closeBases[0]?.id ?? STANDALONE);
+      : (closestBases[0]?.id ?? STANDALONE);
 
   if (!open)
     return (
@@ -184,7 +184,7 @@ export function PlateRecipeSave({
             {t('plateRecipe.loading')}
           </Typography>
         ) : null}
-        {closeBases.map((match, index) => (
+        {closestBases.map((match, index) => (
           <BaseOption
             key={match.id}
             name={groupName}

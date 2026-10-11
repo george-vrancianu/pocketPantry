@@ -111,7 +111,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       ).body as FamilyRecipeEdit;
 
       const { matches } = await closestBases(word, [ing[0], ing[1]]);
-      const ids = matches.map((s) => s.id);
+      const ids = matches.map((m) => m.id);
       expect(ids).not.toContain(archived.id);
       expect(ids).not.toContain(variant.id);
       expect(ids).not.toContain(own.id);
@@ -119,7 +119,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       expect(ids.indexOf(near.id)).toBeLessThan(
         ids.includes(far.id) ? ids.indexOf(far.id) : Infinity,
       );
-      expect(matches.find((s) => s.id === near.id)).toMatchObject({
+      expect(matches.find((m) => m.id === near.id)).toMatchObject({
         title: `${word} near`,
       });
       expect(matches.length).toBeLessThanOrEqual(5);
