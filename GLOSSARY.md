@@ -215,6 +215,22 @@ _Avoid_: Instruction, direction
 A Recipe whose required Ingredient Lines are all covered by the Pantry's unexpired Batches. Optional lines and Pantry Basics never block it.
 _Avoid_: Cookable, available, in stock
 
+**Pairing**:
+A food or drink that goes well with a Recipe, with a reason why. It may link to a Catalog Ingredient or another Recipe.
+_Avoid_: Match, side, suggestion
+
+**Pairing Principle**:
+The general rule behind a Pairing, such as acid cuts fat or salt balances sweet. Optional, from a fixed list.
+_Avoid_: Flavour rule
+
+**Nutrition Note**:
+A short, free-text recommendation on how nourishing a Recipe is, covering both the good and the bad, such as "Rich in protein and filling; fairly high in fat from the butter and cheese." A general direction, never values.
+_Avoid_: Macros, nutrition facts, calories
+
+**Eating Moment**:
+A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
+_Avoid_: Occasion, meal time, timing
+
 ### Dashboard
 
 **Dashboard**:
