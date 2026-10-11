@@ -18,6 +18,7 @@ import {
   useRecipePantryMatch,
 } from '../../lib/recipes';
 import { OwnerBadge } from './components/OwnerBadge';
+import { RecipeActions } from './components/RecipeActions';
 import { RecipeMeta } from './components/RecipeMeta';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS } from './components/sections';
@@ -78,6 +79,7 @@ function RecipeDetail({ id }: { id: string }) {
                 </Typography>
               ) : null}
             </Stack>
+            <RecipeActions recipe={recipe} />
             {DETAIL_SECTIONS.map(({ key, Component }) => (
               <Component
                 key={key}

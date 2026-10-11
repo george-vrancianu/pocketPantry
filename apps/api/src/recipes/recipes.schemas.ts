@@ -4,8 +4,10 @@ import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { RecipeDiff } from './recipe-diff';
 import {
+  guidanceBody,
   guidanceTranslationsBody,
   type AdminGuidance,
+  type GuidanceBody,
   type GuidanceTranslationsView,
   type ResolvedGuidance,
 } from './recipe-guidance.schemas';
@@ -82,6 +84,27 @@ export const variantCreate = z
   })
   .strict();
 
+/** A Family line: an Ingredient or an Unmatched name, exactly one (the service checks, with a coded error). */
+export const familyLineInput = lineInput.extend({
+  ingredientId: id.nullable().default(null),
+  rawName: z.string().trim().min(1).max(100).nullable().default(null),
+});
+
+/** The Member's locale (required): the Unmatched queue entries of new names record it. */
+const memberLocale = z.enum(CATALOG_LOCALES);
+
+/** Replacing a Family Recipe's document; its base is fixed at creation. */
+export const familyRecipeUpdate = recipeDocument
+  .extend({ lines: z.array(familyLineInput).max(MAX_LINES).default([]) })
+  .extend({ locale: memberLocale });
+
+/** Creating a Family Recipe: `parentId` makes it a Variant, null/absent a standalone Base Recipe. */
+export const familyRecipeCreate = familyRecipeUpdate.extend({
+  parentId: id.nullable().default(null),
+  /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
+  guidance: guidanceBody.optional(),
+});
+
 export const tipCreate = z
   .object({ text: longText, stepId: id.nullable().default(null) })
   .strict();
@@ -150,6 +173,9 @@ export const recipeTipParam = z.object({ id, tipId: id });
 export type RecipeDocument = z.infer<typeof recipeDocument>;
 export type LineInput = z.infer<typeof lineInput>;
 export type StepInput = z.infer<typeof stepInput>;
+export type FamilyLineInput = z.infer<typeof familyLineInput>;
+export type FamilyRecipeUpdate = z.infer<typeof familyRecipeUpdate>;
+export type FamilyRecipeCreate = z.infer<typeof familyRecipeCreate>;
 export type VariantCreate = z.infer<typeof variantCreate>;
 export type TipCreate = z.infer<typeof tipCreate>;
 export type TipUpdate = z.infer<typeof tipUpdate>;
@@ -288,8 +314,61 @@ export type RecipeDetail = ResolvedRecipe & {
   diff: RecipeDiff | null;
 };
 
-export type RecipeFilters = { cuisines: NamedRef[]; methods: NamedRef[] };
+export type RecipeFilters = {
+  cuisines: NamedRef[];
+  methods: NamedRef[];
+  /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
+  eatingMoments: NamedRef[];
+};
 
+/** What `createIn` takes: the create body without the transport-level locale default. */
+export type FamilyRecipeDocument = Omit<FamilyRecipeCreate, 'locale'>;
+
+/**
+ * The editable view of a Family Recipe (`GET /api/recipes/:id/edit` and the
+ * response of every Family write). Lines carry ids, the Ingredient's name in
+ * the requested locale (or the raw name) and `rawName` for Unmatched lines.
+ */
+export type FamilyRecipeEdit = Omit<
+  AdminRecipeDetail,
+  'translations' | 'lines' | 'pairings'
+> & {
+  /** Pairings with display names for their links: null without a link, or when the Recipe is archived or not visible. */
+  pairings: (AdminGuidance['pairings'][number] & {
+    linkedIngredientName: string | null;
+    linkedRecipeTitle: string | null;
+  })[];
+  lines: (RecipeLineView & {
+    rawName: string | null;
+    ingredientName: string;
+  })[];
+};
+
+/** An unsaved "Make a variant" draft: a document to edit and POST to `/api/recipes`. No ids. */
+export type FamilyRecipeDraft = {
+  /** The Base Recipe the draft goes under: the source itself, or the source's base. */
+  parentId: string;
+  title: string;
+  servings: number;
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+  difficulty: AdminRecipeDetail['difficulty'];
+  cuisineId: string | null;
+  methodId: string | null;
+  /** `ingredientName` is for display only; drop it when posting. */
+  lines: {
+    ingredientId: string | null;
+    rawName: string | null;
+    ingredientName: string;
+    quantity: number | null;
+    unit: RecipeLineView['unit'];
+    optional: boolean;
+    note: string | null;
+  }[];
+  steps: { text: string; timerSeconds: number | null }[];
+  /** The source's guidance in the requested locale, ready to post (no ids). */
+  guidance: GuidanceBody;
+};
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const cookTonightQuery = localeQuery.extend({
   today: z.iso.date().optional(),

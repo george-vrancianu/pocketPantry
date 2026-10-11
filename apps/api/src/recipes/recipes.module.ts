@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SettingsModule } from '../settings/settings.module';
+import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { PantryMatchingService } from './matching/pantry-matching.service';
 import { CookTonightService } from './cook-tonight.service';
@@ -21,11 +22,13 @@ import { RecipesService } from './recipes.service';
     RecipeTranslationsService,
     RecipeGuidanceService,
     RecipeBrowseService,
+    FamilyRecipesService,
     CookTonightService,
     PantryMatchingService,
     RecipePantryService,
   ],
   exports: [
+    FamilyRecipesService,
     RecipesService,
     RecipeTipsService,
     RecipeTranslationsService,

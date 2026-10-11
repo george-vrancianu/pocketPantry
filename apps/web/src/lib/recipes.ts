@@ -129,7 +129,12 @@ export type RecipeDetail = {
   guidance: RecipeGuidance;
 };
 
-export type RecipeFilterOptions = { cuisines: NamedRef[]; methods: NamedRef[] };
+/** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */
+export type RecipeFilterOptions = {
+  cuisines: NamedRef[];
+  methods: NamedRef[];
+  eatingMoments: NamedRef[];
+};
 
 export type RecipeBrowse = {
   search: string;

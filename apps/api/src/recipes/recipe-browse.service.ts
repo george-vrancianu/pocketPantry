@@ -5,7 +5,7 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
-import { cuisines, methods, recipes } from '../database/schema';
+import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
@@ -167,13 +167,19 @@ export class RecipeBrowseService {
 
   /** Cuisines and Methods for the filter pickers, named in `locale`, sorted by name. */
   async filters(locale: CatalogLocale): Promise<RecipeFilters> {
-    const [cuisineRows, methodRows] = await Promise.all([
+    const [cuisineRows, methodRows, momentRows] = await Promise.all([
       this.database.select().from(cuisines),
       this.database.select().from(methods),
+      this.database
+        .select()
+        .from(eatingMoments)
+        .where(isNull(eatingMoments.archivedAt))
+        .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id)),
     ]);
     const names = await loadDisplayNames(this.database, locale, [
       ...cuisineRows.map((r) => r.id),
       ...methodRows.map((r) => r.id),
+      ...momentRows.map((r) => r.id),
     ]);
     const named = (
       type: 'cuisine' | 'method',
@@ -188,6 +194,10 @@ export class RecipeBrowseService {
     return {
       cuisines: named('cuisine', cuisineRows),
       methods: named('method', methodRows),
+      eatingMoments: momentRows.map((r) => ({
+        id: r.id,
+        name: names.pick('eating_moment', r.id, r.name),
+      })),
     };
   }
 

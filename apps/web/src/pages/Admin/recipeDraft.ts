@@ -49,8 +49,11 @@ export type DraftProblems = {
 let nextKey = 1;
 export const newKey = () => nextKey++;
 
-const minutesText = (value: number | null) =>
+export const minutesText = (value: number | null) =>
   value === null ? '' : String(value);
+
+export const timerText = (seconds: number | null) =>
+  seconds === null ? '' : String(Math.round((seconds / 60) * 100) / 100);
 
 export function emptyDraft(): RecipeDraft {
   return {
@@ -106,7 +109,7 @@ export function draftOf(
   };
 }
 
-const decimal = (text: string) => Number(text.trim().replace(',', '.'));
+export const decimal = (text: string) => Number(text.trim().replace(',', '.'));
 // Bounds mirror the API's recipe schema (MAX_QUANTITY, minutes, timer seconds).
 const MAX_MINUTES = 100_000;
 const MAX_QUANTITY = 1_000_000;

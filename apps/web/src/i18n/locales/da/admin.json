@@ -301,7 +301,8 @@
         "reason": "Begrundelse for {{name}}",
         "remove": "Fjern {{name}}",
         "moveUp": "Flyt {{name}} op",
-        "moveDown": "Flyt {{name}} ned"
+        "moveDown": "Flyt {{name}} ned",
+        "unknown": "Spisetidspunkt"
       }
     }
   },

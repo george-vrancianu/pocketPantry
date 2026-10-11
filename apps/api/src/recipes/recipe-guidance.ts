@@ -13,6 +13,7 @@ import {
   recipes,
   recipeTranslations,
 } from '../database/schema';
+import { inOrder } from './recipe-queries';
 import type {
   AdminGuidance,
   GuidanceTranslationsView,
@@ -25,7 +26,7 @@ export async function loadAdminGuidance(
   recipeId: string,
   nutritionNote: string | null,
 ): Promise<AdminGuidance> {
-  const [pairings, uses] = await Promise.all([
+  const [pairings, uses] = await inOrder([
     executor
       .select()
       .from(recipePairings)
@@ -67,7 +68,7 @@ export async function loadGuidanceTranslations(
   executor: Executor,
   recipeId: string,
 ): Promise<Record<string, GuidanceTranslationsView>> {
-  const [notes, pairingRows, useRows] = await Promise.all([
+  const [notes, pairingRows, useRows] = await inOrder([
     executor
       .select()
       .from(recipeNutritionNoteTranslations)
@@ -129,7 +130,7 @@ export async function loadResolvedGuidance(
   recipeId: string,
   locale: CatalogLocale,
 ): Promise<ResolvedGuidance> {
-  const [[owner], pairings, uses] = await Promise.all([
+  const [[owner], pairings, uses] = await inOrder([
     executor
       .select({
         nutritionNote: recipes.nutritionNote,
@@ -171,8 +172,8 @@ export async function loadResolvedGuidance(
   const linkedIngredientIds = pairings.flatMap(
     (p) => p.linkedIngredientId ?? [],
   );
-  const [noteT, pairingT, useT, linkedRecipes, linkedIngredients, names] =
-    await Promise.all([
+  const [noteT, pairingT, useT, linkedRecipes, linkedIngredients] =
+    await inOrder([
       executor
         .select()
         .from(recipeNutritionNoteTranslations)
@@ -232,11 +233,11 @@ export async function loadResolvedGuidance(
             .select({ id: ingredients.id, name: ingredients.name })
             .from(ingredients)
             .where(inArray(ingredients.id, linkedIngredientIds)),
-      loadDisplayNames(executor, locale, [
-        ...linkedIngredientIds,
-        ...uses.map((u) => u.eatingMomentId),
-      ]),
     ]);
+  const names = await loadDisplayNames(executor, locale, [
+    ...linkedIngredientIds,
+    ...uses.map((u) => u.eatingMomentId),
+  ]);
   const pairingText = new Map(pairingT.map((t) => [t.pairingId, t]));
   const useReason = new Map(
     useT.map((t) => [t.recipeEatingMomentId, t.reason]),

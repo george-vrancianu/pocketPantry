@@ -121,6 +121,35 @@ describe('UnmatchedQueue', () => {
     expect(within(item).getByText(/Romanian/)).toBeVisible();
   });
 
+  it('names a Recipe as a source of a row', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({
+          entries: [
+            {
+              ...entry,
+              sources: ['recipe'],
+              references: [
+                {
+                  type: 'recipe_line',
+                  id: 'l1',
+                  source: 'recipe',
+                  locale: 'ro',
+                  rawName: 'Brânză ciudată',
+                  sourceText: null,
+                  sourceLanguage: null,
+                },
+              ],
+            },
+          ],
+          nextCursor: null,
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const item = await screen.findByRole('listitem');
+    expect(within(item).getByText(/Recipe/)).toBeVisible();
+  });
+
   it('shows an empty state', async () => {
     stub({
       'GET /api/admin/unmatched': () =>
