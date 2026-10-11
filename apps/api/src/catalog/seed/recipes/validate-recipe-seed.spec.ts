@@ -1,5 +1,6 @@
 import { SEED_INGREDIENTS } from '../catalog-seed-data';
 import {
+  assertAcceptance,
   findAcceptanceGaps,
   findRecipeSeedProblems,
   type RecipeSeedInput,
@@ -305,8 +306,19 @@ describe('findAcceptanceGaps', () => {
     );
   });
 
-  // TODO(lead): once all five bases are merged and the cross-link pass is done,
-  // switch seed-recipes.ts to assertAcceptance (requireBases + requireCrossLinks)
-  // and un-skip this test so the real seed has to meet every acceptance count.
-  it.todo('the final seed has all five bases and meets every acceptance count');
+  it('is met by the real seed: all five bases, their Variant counts and the cross-Recipe Pairings', () => {
+    expect(
+      findAcceptanceGaps(SEED_BASE_RECIPES, {
+        requireBases: true,
+        requireCrossLinks: true,
+      }),
+    ).toEqual([]);
+    expect(() => assertAcceptance(SEED_BASE_RECIPES)).not.toThrow();
+  });
+
+  it('assertAcceptance throws listing what is missing', () => {
+    expect(() => assertAcceptance([withVariants('omelette', 3, 2)])).toThrow(
+      /potato-puree: base Recipe is missing/,
+    );
+  });
 });

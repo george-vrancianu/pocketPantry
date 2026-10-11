@@ -101,6 +101,15 @@ export const appetizerPlatter: BaseRecipeSeed = {
   pairings: [
     {
       kind: 'food',
+      label: t('Chicken salad', 'Salată cu pui'),
+      reason: t(
+        'A light platter to nibble before a main-course salad.',
+        'Un platou ușor, din care ciugulești înainte de o salată servită ca fel principal.',
+      ),
+      recipe: 'chicken-salad',
+    },
+    {
+      kind: 'food',
       label: t('Pickled cucumbers', 'Castraveți murați'),
       reason: t(
         'Their sharp acidity cuts through the fat of the cheese and salami.',
@@ -290,7 +299,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
             'A crunchy, fiery bite cuts through the slănină and winter salami.',
             'O mușcătură crocantă și iute taie grăsimea slăninii și a salamului.',
           ),
-          principle: 'contrast_texture',
+          principle: 'complement_flavour',
           ingredient: 'hot-pepper',
         },
         {
@@ -717,6 +726,16 @@ export const appetizerPlatter: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
+          label: t('Greek chicken salad', 'Salată grecească cu pui'),
+          reason: t(
+            'The meze starter leads into the Greek salad with the same flavours.',
+            'Mezeurile deschid masa și duc la salata grecească, cu aceleași arome.',
+          ),
+          principle: 'complement_flavour',
+          recipe: 'chicken-salad-greek',
+        },
+        {
+          kind: 'food',
           label: t('Fresh tomato wedges', 'Felii de roșii proaspete'),
           reason: t(
             'Their juice and acidity lighten the salty feta and olives.',
@@ -807,6 +826,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-levantine',
       cuisine: 'middle-eastern',
+      // Cured fish or no cheese and meat: not served at room temperature.
+      hideBaseTips: [0],
       title: t('Levantine mezze platter', 'Platou levantin de mezze'),
       servings: 4,
       prepMinutes: 20,
@@ -1136,6 +1157,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-scandinavian',
       cuisine: 'scandinavian',
+      // Cured fish or no cheese and meat: not served at room temperature.
+      hideBaseTips: [0],
       title: t(
         'Scandinavian smørrebrød platter',
         'Platou scandinav de smørrebrød',
@@ -1319,6 +1342,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-japanese',
       cuisine: 'japanese',
+      // Cured fish or no cheese and meat: not served at room temperature.
+      hideBaseTips: [0],
       title: t('Japanese otsumami platter', 'Platou japonez otsumami'),
       servings: 4,
       prepMinutes: 20,
@@ -1408,6 +1433,16 @@ export const appetizerPlatter: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
+          label: t('Karaage', 'Karaage'),
+          reason: t(
+            'Otsumami and karaage are both izakaya fare.',
+            'Otsumami și karaage fac parte, amândouă, din bucătăria izakaya.',
+          ),
+          principle: 'regional_tradition',
+          recipe: 'fried-chicken-karaage',
+        },
+        {
+          kind: 'food',
           label: t('Wasabi', 'Wasabi'),
           reason: t(
             'A little heat cuts through the soft tofu and keeps the palate lively.',
@@ -1450,7 +1485,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Sake', 'Sake'),
           reason: t(
             'Cold or warm, its gentle sweetness suits tofu, edamame and salty snacks.',
-            'Rece sau caldă, dulceața ei blândă se potrivește cu tofu, edamame și gustări sărate.',
+            'Rece sau cald, dulceața lui blândă se potrivește cu tofu, edamame și gustări sărate.',
           ),
           principle: 'regional_tradition',
         },
@@ -1485,7 +1520,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           polarity: 'avoid',
           reason: t(
             'Soy sauce and salted crackers are salty and can make you thirsty at night.',
-            'Sosul de soia și biscuiții sărați sunt sărați și pot provoca sete noaptea.',
+            'Sosul de soia și biscuiții sărați conțin multă sare și pot provoca sete noaptea.',
           ),
         },
       ],

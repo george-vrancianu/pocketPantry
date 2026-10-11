@@ -766,6 +766,8 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-coronation',
       cuisine: 'british',
+      // Bound with mayonnaise, not dressed with a vinaigrette.
+      hideBaseTips: [1],
       title: t('Coronation chicken', 'Salată de pui Coronation'),
       servings: 2,
       prepMinutes: 15,
@@ -834,8 +836,8 @@ export const chickenSalad: BaseRecipeSeed = {
         {
           key: 'sauce',
           text: t(
-            'Mix the mayonnaise, yogurt, the cooled curry powder, chutney, lemon juice, salt and pepper until smooth.',
-            'Amestecă maioneza, iaurtul, pudra de curry răcită, chutney-ul, sucul de lămâie, sarea și piperul până se omogenizează.',
+            'Mix the mayonnaise, yogurt, the cooled curry paste, chutney, lemon juice, salt and pepper until smooth.',
+            'Amestecă maioneza, iaurtul, pasta de curry răcită, chutney-ul, sucul de lămâie, sarea și piperul până se omogenizează.',
           ),
         },
         {
@@ -932,6 +934,8 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-creamy-bound',
       method: 'creamy-bound',
+      // Bound with mayonnaise, not dressed with a vinaigrette.
+      hideBaseTips: [1],
       title: t(
         'Creamy chicken salad sandwich',
         'Sandviș cu salată cremoasă de pui',

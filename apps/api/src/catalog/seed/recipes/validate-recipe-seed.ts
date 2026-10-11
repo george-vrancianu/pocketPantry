@@ -392,3 +392,16 @@ export function findAcceptanceGaps(
   }
   return gaps;
 }
+
+/** Throws unless the seed meets every acceptance count of #136 (all five bases, cross-Recipe Pairings). */
+export function assertAcceptance(bases: BaseRecipeSeed[]): void {
+  const gaps = findAcceptanceGaps(bases, {
+    requireBases: true,
+    requireCrossLinks: true,
+  });
+  if (gaps.length > 0) {
+    throw new Error(
+      `Recipe seed misses its acceptance counts:\n${gaps.map((g) => `  - ${g}`).join('\n')}`,
+    );
+  }
+}

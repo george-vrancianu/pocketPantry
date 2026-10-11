@@ -213,6 +213,68 @@ describe('Recipe seed (integration)', () => {
     expect(variants.every((v) => v.familyId === null)).toBe(true);
   });
 
+  it('meets the acceptance counts: five bases with their Variant minimums', async () => {
+    const minimums: Record<string, [number, number]> = {
+      omelette: [3, 2],
+      'potato-puree': [3, 1],
+      'fried-chicken': [3, 1],
+      'chicken-salad': [3, 1],
+      'appetizer-platter': [5, 0],
+    };
+    for (const [slug, [cuisineMin, methodMin]] of Object.entries(minimums)) {
+      const baseId = seedId.recipe(slug);
+      const [base] = await database
+        .select()
+        .from(recipes)
+        .where(eq(recipes.id, baseId));
+      expect(base?.parentId).toBeNull();
+      const variants = await database
+        .select()
+        .from(recipes)
+        .where(eq(recipes.parentId, baseId));
+      expect(
+        variants.filter((v) => v.cuisineId !== null).length,
+      ).toBeGreaterThanOrEqual(cuisineMin);
+      expect(
+        variants.filter((v) => v.methodId !== null).length,
+      ).toBeGreaterThanOrEqual(methodMin);
+    }
+  });
+
+  it('links at least three Pairings to a Recipe of another base', async () => {
+    const rows = await database
+      .select({
+        from: recipes.id,
+        fromParent: recipes.parentId,
+        link: recipePairings.linkedRecipeId,
+      })
+      .from(recipePairings)
+      .innerJoin(recipes, eq(recipes.id, recipePairings.recipeId))
+      .where(
+        and(
+          inArray(recipePairings.recipeId, recipeIds),
+          isNotNull(recipePairings.linkedRecipeId),
+        ),
+      );
+    const targets = await database
+      .select({ id: recipes.id, parentId: recipes.parentId })
+      .from(recipes)
+      .where(
+        inArray(
+          recipes.id,
+          rows.map((r) => r.link as string),
+        ),
+      );
+    const family = (id: string, parentId: string | null) => parentId ?? id;
+    const familyOf = new Map(
+      targets.map((t) => [t.id, family(t.id, t.parentId)]),
+    );
+    const crossing = rows.filter(
+      (r) => familyOf.get(r.link as string) !== family(r.from, r.fromParent),
+    );
+    expect(crossing.length).toBeGreaterThanOrEqual(3);
+  });
+
   it('resolves every seeded Ingredient Line to a Catalog Ingredient', async () => {
     const lines = await database
       .select()
@@ -467,24 +529,27 @@ describe('Recipe seed (integration)', () => {
       const baseId = seedId.recipe('omelette');
       const variantId = seedId.recipe('omelette-frittata');
       const log = jest.spyOn(console, 'log').mockImplementation(() => {});
-      await expect(
-        database.transaction(async (tx) => {
-          await tx.delete(recipes).where(eq(recipes.id, variantId));
-          await tx
-            .update(recipes)
-            .set({ archivedAt: new Date() })
-            .where(eq(recipes.id, baseId));
-          await seedRecipes(tx);
-          expect(
-            await tx.select().from(recipes).where(eq(recipes.id, variantId)),
-          ).toHaveLength(0);
-          expect(log).toHaveBeenCalledWith(
-            expect.stringContaining('omelette-frittata'),
-          );
-          throw new Rollback();
-        }),
-      ).rejects.toBeInstanceOf(Rollback);
-      log.mockRestore();
+      try {
+        await expect(
+          database.transaction(async (tx) => {
+            await tx.delete(recipes).where(eq(recipes.id, variantId));
+            await tx
+              .update(recipes)
+              .set({ archivedAt: new Date() })
+              .where(eq(recipes.id, baseId));
+            await seedRecipes(tx);
+            expect(
+              await tx.select().from(recipes).where(eq(recipes.id, variantId)),
+            ).toHaveLength(0);
+            expect(log).toHaveBeenCalledWith(
+              expect.stringContaining('omelette-frittata'),
+            );
+            throw new Rollback();
+          }),
+        ).rejects.toBeInstanceOf(Rollback);
+      } finally {
+        log.mockRestore();
+      }
     });
 
     it('restores a deleted seed Recipe with all its content', async () => {

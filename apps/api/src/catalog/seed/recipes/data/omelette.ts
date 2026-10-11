@@ -86,7 +86,7 @@ export const omelette: BaseRecipeSeed = {
       label: t('Ripe tomato', 'Roșie coaptă'),
       reason: t(
         'Its acidity lifts the richness of the butter and yolks.',
-        'Aciditatea ei înviorează bogăția untului și a gălbenușurilor.',
+        'Aciditatea ei echilibrează bogăția untului și a gălbenușurilor.',
       ),
       principle: 'acid_cuts_fat',
       ingredient: 'tomato',

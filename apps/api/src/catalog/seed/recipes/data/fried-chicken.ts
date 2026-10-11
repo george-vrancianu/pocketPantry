@@ -135,6 +135,16 @@ export const friedChicken: BaseRecipeSeed = {
   pairings: [
     {
       kind: 'food',
+      label: t('Mashed potatoes', 'Piure de cartofi'),
+      reason: t(
+        'Creamy mash against the crisp crust: a classic comfort plate.',
+        'Piureul cremos contrastează cu crusta crocantă: o farfurie clasică, reconfortantă.',
+      ),
+      principle: 'contrast_texture',
+      recipe: 'potato-puree',
+    },
+    {
+      kind: 'food',
       label: t('Creamy coleslaw', 'Salată de varză cu maioneză'),
       reason: t(
         'Cool, crunchy cabbage cuts through the rich crust and refreshes each bite.',
@@ -320,6 +330,16 @@ export const friedChicken: BaseRecipeSeed = {
         'Zara înmoaie carnea și aduce puțin calciu, iar condimentele dau gust fără multă grăsime în plus; în schimb, crusta groasă și zgrunțuroasă absoarbe mult ulei, iar sarea din marinadă și din crustă se adună.',
       ),
       pairings: [
+        {
+          kind: 'food',
+          label: t('Mashed potatoes with gravy', 'Piure de cartofi cu sos'),
+          reason: t(
+            'Southern fried chicken is traditionally served with mashed potatoes, often with gravy.',
+            'Puiul prăjit în stil sudic se servește în mod tradițional cu piure de cartofi, adesea cu sos.',
+          ),
+          principle: 'fat_carries_flavour',
+          recipe: 'potato-puree',
+        },
         {
           kind: 'food',
           label: t('Coleslaw', 'Salată coleslaw'),
@@ -861,6 +881,16 @@ export const friedChicken: BaseRecipeSeed = {
         'Pieptul slab e bogat în proteine, iar prăjitul în strat subțire folosește mai puțin ulei decât baia de ulei; totuși pesmetul absoarbe grăsime, iar pieptul se usucă ușor, așa că nu-l găti prea mult și servește-l cu salată proaspătă sau legume.',
       ),
       pairings: [
+        {
+          kind: 'food',
+          label: t('Mashed potatoes (piure)', 'Piure de cartofi'),
+          reason: t(
+            'Șnițel cu piure is the Romanian home classic.',
+            'Șnițelul cu piure este un clasic al bucătăriei românești de acasă.',
+          ),
+          principle: 'regional_tradition',
+          recipe: 'potato-puree-romanian',
+        },
         {
           kind: 'food',
           label: t('Cabbage salad', 'Salată de varză'),

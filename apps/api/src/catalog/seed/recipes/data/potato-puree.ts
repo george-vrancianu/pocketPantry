@@ -95,6 +95,16 @@ export const potatoPuree: BaseRecipeSeed = {
   pairings: [
     {
       kind: 'food',
+      label: t('Fried chicken', 'Pui prăjit'),
+      reason: t(
+        'Crisp fried chicken is a classic partner for creamy mash.',
+        'Puiul prăjit crocant este un partener clasic pentru piureul cremos.',
+      ),
+      principle: 'contrast_texture',
+      recipe: 'fried-chicken',
+    },
+    {
+      kind: 'food',
       label: t('Grilled steak', 'Friptură la grătar'),
       reason: t(
         'The soft, mild puree soaks up the meat juices and tempers the char.',
@@ -438,6 +448,16 @@ export const potatoPuree: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
+          label: t('Omelette', 'Omletă'),
+          reason: t(
+            'Colcannon with an omelette on the side makes a hearty brunch.',
+            'Colcannon cu o omletă alături face un brunch consistent.',
+          ),
+          principle: 'complement_flavour',
+          recipe: 'omelette',
+        },
+        {
+          kind: 'food',
           label: t('Boiled or fried bacon', 'Bacon fiert sau prăjit'),
           reason: t(
             'Salty, smoky bacon is the traditional partner for the mild mash.',
@@ -595,6 +615,16 @@ export const potatoPuree: BaseRecipeSeed = {
         'Ceapa adaugă aromă și puține fibre, iar cu mai puțin unt e mai ușor decât varianta franțuzească; uleiul și untul adaugă totuși grăsime, iar sarea se adună, așa că nu exagera cu porția.',
       ),
       pairings: [
+        {
+          kind: 'food',
+          label: t('Chicken schnitzel', 'Șnițel de pui'),
+          reason: t(
+            'Piure with șnițel is the Romanian home classic.',
+            'Piureul cu șnițel este un clasic al bucătăriei românești de acasă.',
+          ),
+          principle: 'regional_tradition',
+          recipe: 'fried-chicken-snitel',
+        },
         {
           kind: 'food',
           label: t('Grilled sausages', 'Cârnați la grătar'),

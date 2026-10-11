@@ -24,7 +24,10 @@ import { seedId, stableId, translationRows } from '../seed-catalog';
 import { SEED_BASE_RECIPES } from './recipe-seed-data';
 import type { RecipeSeed, SeedNamed, VariantSeed } from './recipe-seed-types';
 import { SEED_CUISINES, SEED_EATING_MOMENTS, SEED_METHODS } from './registries';
-import { assertRecipeSeedValid } from './validate-recipe-seed';
+import {
+  assertAcceptance,
+  assertRecipeSeedValid,
+} from './validate-recipe-seed';
 
 /** The Locale the Romanian text is stored under; English is the source text on the rows. */
 const RO = 'ro';
@@ -424,6 +427,7 @@ export async function seedRecipes(
     eatingMoments: SEED_EATING_MOMENTS,
     ingredientSlugs: new Set(SEED_INGREDIENTS.map((i) => i.slug)),
   });
+  assertAcceptance(bases);
   await database.transaction(async (tx) => {
     const registries = await seedRegistries(tx);
     const freshBases = await insertRecipes(
