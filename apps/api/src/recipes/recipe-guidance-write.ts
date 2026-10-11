@@ -14,6 +14,7 @@ import {
   recipes,
 } from '../database/schema';
 import { itemNotFound } from './recipe-errors';
+import { visibleTo } from './recipe-view';
 import {
   MAX_EATING_MOMENTS,
   MAX_NUTRITION_NOTE,
@@ -81,21 +82,24 @@ export async function assertPairingLinks(
     const found = await tx
       .select({ id: recipes.id, familyId: recipes.familyId })
       .from(recipes)
-      .where(inArray(recipes.id, recipeIds))
+      .where(
+        and(
+          inArray(recipes.id, recipeIds),
+          // A Family Recipe never learns that another Family's Recipe exists,
+          // so those rows are neither read nor locked: they answer like an
+          // unknown id. A Catalog Recipe (admin) is told why instead.
+          recipe.familyId === null ? undefined : visibleTo(recipe.familyId),
+        ),
+      )
       .orderBy(recipes.id)
       .for('key share');
     if (found.length !== recipeIds.length) {
       throw new ApiException(404, 'recipes.pairing_link_not_found');
     }
-    // A Family Recipe never learns that another Family's Recipe exists: it gets
-    // the same answer as for an unknown id. A Catalog Recipe (admin) is told why.
-    const foreign = found.filter(
-      (r) => r.familyId !== null && r.familyId !== recipe.familyId,
-    );
-    if (foreign.length > 0) {
-      throw recipe.familyId === null
-        ? new ApiException(409, 'recipes.pairing_link_not_allowed')
-        : new ApiException(404, 'recipes.pairing_link_not_found');
+    if (
+      found.some((r) => r.familyId !== null && r.familyId !== recipe.familyId)
+    ) {
+      throw new ApiException(409, 'recipes.pairing_link_not_allowed');
     }
   }
 }

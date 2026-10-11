@@ -994,6 +994,25 @@ describe('Family Recipes (integration)', () => {
         })
         .expect(404);
       expect(code(res)).toBe('recipes.pairing_link_not_found');
+      const unknown = await a1
+        .post('', {
+          ...doc(null),
+          ...emptyDoc,
+          guidance: {
+            nutritionNote: null,
+            eatingMoments: [],
+            pairings: [
+              {
+                kind: 'food',
+                label: 'X',
+                reason: 'r',
+                linkedRecipeId: crypto.randomUUID(),
+              },
+            ],
+          },
+        })
+        .expect(404);
+      expect(res.body).toEqual(unknown.body);
     });
   });
 

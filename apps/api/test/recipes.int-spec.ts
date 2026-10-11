@@ -290,6 +290,14 @@ describe('Recipes browsing and detail (integration)', () => {
           cuisineId,
         },
       ]);
+      await database.insert(recipes).values({
+        id: crypto.randomUUID(),
+        familyId: familyA,
+        parentId: b.id,
+        title: `HMethod ${stamp}`,
+        servings: 2,
+        methodId,
+      });
       await archive(gone.id);
       expect(titles(await list(`search=HLive ${stamp}`))).toEqual([live.title]);
       expect(await list('search=HGone')).toEqual([]);
@@ -314,6 +322,15 @@ describe('Recipes browsing and detail (integration)', () => {
           .filter(onlyH)
           .sort(),
       ).toEqual([live.title, `HTheirs ${stamp}`].sort());
+      // the filters alone, without a search, find them as well
+      expect(
+        titles(await list(`cuisineId=${cuisineId}`))
+          .filter(onlyH)
+          .sort(),
+      ).toEqual([live.title, `HMine ${stamp}`].sort());
+      expect(titles(await list(`methodId=${methodId}`)).filter(onlyH)).toEqual([
+        `HMethod ${stamp}`,
+      ]);
       // still reachable by id
       await memberA.get(`/${live.id}`).expect(200);
     });
