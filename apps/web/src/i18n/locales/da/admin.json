@@ -32,7 +32,8 @@
     "name": "Navn (engelsk)",
     "leafCategory": "Underkategori",
     "defaultUnit": "Standardenhed",
-    "pantryBasic": "Basisvare (regnes altid som på lager)"
+    "pantryBasic": "Altid på lager",
+    "pantryBasicHint": "Opskriftsmatchning regner den altid som på lager"
   },
   "aisle": {
     "title": "Afdelinger",

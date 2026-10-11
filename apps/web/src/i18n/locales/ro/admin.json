@@ -32,7 +32,8 @@
     "name": "Nume (engleză)",
     "leafCategory": "Categorie frunză",
     "defaultUnit": "Unitate implicită",
-    "pantryBasic": "Produs de bază (mereu considerat în Cămară)"
+    "pantryBasic": "Nelipsit din Cămară",
+    "pantryBasicHint": "Potrivirea rețetelor îl consideră mereu în stoc"
   },
   "aisle": {
     "title": "Raioane",

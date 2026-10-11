@@ -32,7 +32,8 @@
     "name": "Name (English)",
     "leafCategory": "Leaf Category",
     "defaultUnit": "Default unit",
-    "pantryBasic": "Pantry Basic"
+    "pantryBasic": "Pantry Basic",
+    "pantryBasicHint": "Recipe matching always counts it as in stock"
   },
   "aisle": {
     "title": "Aisles",

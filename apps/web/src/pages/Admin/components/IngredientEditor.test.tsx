@@ -169,7 +169,7 @@ describe('IngredientEditor', () => {
       />,
       { locale: 'ro' },
     );
-    expect(screen.getByLabelText(/Produs de bază/)).toBeChecked();
+    expect(screen.getByLabelText(/Nelipsit din Cămară/)).toBeChecked();
   });
 
   it('adds a Synonym, saves a translated name, and removes a Synonym', async () => {

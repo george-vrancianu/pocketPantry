@@ -64,6 +64,7 @@ export function IngredientFields({ catalog, value, onChange }: Props) {
       </TextField>
       <Checkbox
         label={t('admin:ingredient.pantryBasic')}
+        helperText={t('admin:ingredient.pantryBasicHint')}
         checked={value.pantryBasic}
         onChange={(event) =>
           onChange({ ...value, pantryBasic: event.target.checked })

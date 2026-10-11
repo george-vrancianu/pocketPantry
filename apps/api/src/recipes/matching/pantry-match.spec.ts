@@ -162,6 +162,73 @@ describe('matchRecipe line status', () => {
   });
 });
 
+describe('matchRecipe edge cases', () => {
+  it('keeps a shortfall of at least 0.001 after rounding', () => {
+    const result = match(
+      [line({ quantity: 1, unit: 'kg' })],
+      [batch({ quantity: 999.999, unit: 'g' })],
+    );
+    expect(result.lines[0]).toMatchObject({
+      status: 'short',
+      shortfall: { quantity: 0.001, unit: 'kg' },
+    });
+  });
+
+  it('does not round a tiny scaled quantity down to zero', () => {
+    const result = match([line({ quantity: 1 })], [batch()], {
+      recipeServings: 4000,
+      requestedServings: 1,
+    });
+    expect(result.lines[0].quantity).toBe(0.001);
+  });
+
+  it('adds float-prone Batches up exactly', () => {
+    expect(
+      statusOf(
+        [line({ quantity: 300, unit: 'g' })],
+        [
+          batch({ quantity: 0.1, unit: 'kg' }),
+          batch({ quantity: 0.2, unit: 'kg' }),
+        ],
+      ),
+    ).toBe('covered');
+  });
+
+  it('covers a Pantry Basic that is also optional without counting it', () => {
+    const result = match(
+      [line({ ingredientId: SALT, pantryBasic: true, optional: true })],
+      [],
+    );
+    expect(result.lines[0]).toMatchObject({
+      status: 'covered',
+      optional: true,
+      pantryBasic: true,
+    });
+    expect(result.coverageRatio).toBe(1);
+  });
+
+  it('is missing for an Unmatched line with no name', () => {
+    expect(
+      statusOf(
+        [line({ ingredientId: null, normalizedName: null })],
+        [batch({ ingredientId: null, normalizedName: null })],
+      ),
+    ).toBe('missing');
+  });
+
+  it('keeps quantities as written when the Recipe servings are 0', () => {
+    const result = match(
+      [line({ quantity: 200 })],
+      [batch({ quantity: 200 })],
+      {
+        recipeServings: 0,
+        requestedServings: 6,
+      },
+    );
+    expect(result.lines[0]).toMatchObject({ quantity: 200, status: 'covered' });
+  });
+});
+
 describe('matchRecipe Pantry Basics and optional lines', () => {
   it('covers a Pantry Basic with no Batch at all', () => {
     const result = match([line({ ingredientId: SALT, pantryBasic: true })], []);

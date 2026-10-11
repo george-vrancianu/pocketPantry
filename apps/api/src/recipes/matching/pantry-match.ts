@@ -49,7 +49,7 @@ export type LineMatch = {
   /** The line's quantity scaled to the requested Servings. */
   quantity: number | null;
   unit: Unit | null;
-  /** Only for a short line whose units compare, in the line's unit. */
+  /** Set whenever the line is short (its units always compare then), in the line's unit. */
   shortfall: { quantity: number; unit: Unit } | null;
   /** A covered line whose stock includes an Expiring Soon Batch. */
   usesExpiringSoon: boolean;
@@ -77,6 +77,10 @@ export type MatchInput = {
 
 /** Numeric columns hold three decimals; keep scaled amounts there. */
 const round = (value: number) => Math.round(value * 1000) / 1000;
+/** A positive quantity never rounds down to nothing. */
+const scale = (value: number) => Math.max(round(value), 0.001);
+/** Rounds up, so a short line always has a shortfall of at least 0.001. */
+const roundUp = (value: number) => Math.ceil(value * 1000 - 1e-9) / 1000;
 const EPSILON = 1e-9;
 
 function stockFor(line: MatchLine, stock: MatchBatch[]): MatchBatch[] {
@@ -99,7 +103,11 @@ function matchLine(
   factor: number,
 ): LineMatch {
   const quantity =
-    line.quantity === null ? null : round(line.quantity * factor);
+    line.quantity === null
+      ? null
+      : line.quantity > 0
+        ? scale(line.quantity * factor)
+        : 0;
   const result: LineMatch = {
     lineId: line.id,
     status: 'covered',
@@ -134,18 +142,13 @@ function matchLine(
   const have = comparable.reduce((sum, c) => sum + c.amount, 0);
   if (have + EPSILON >= required.amount) return covered;
 
-  const missing = fromComparable(
-    required.amount - have,
-    required.dimension,
-    line.unit as Unit,
-  );
+  // A comparable line always has a unit of the Batches' dimension.
+  const unit = line.unit as Unit;
+  const gap = fromComparable(required.amount - have, required.dimension, unit);
   return {
     ...result,
     status: 'short',
-    shortfall:
-      missing === null
-        ? null
-        : { quantity: round(missing), unit: line.unit as Unit },
+    shortfall: { quantity: roundUp(gap as number), unit },
   };
 }
 
