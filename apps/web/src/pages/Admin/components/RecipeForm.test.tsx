@@ -121,7 +121,7 @@ describe('RecipeForm', () => {
 
     await user.click(screen.getByRole('button', { name: 'Add a Step' }));
     await user.type(screen.getByLabelText('Step 1'), 'Whisk it');
-    await user.type(screen.getByLabelText(/Timer for step 1/), '1.5');
+    await user.type(screen.getByLabelText(/Timer for Step 1/), '1.5');
     await user.click(screen.getByRole('button', { name: 'Create Recipe' }));
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalledWith(saved));
@@ -166,12 +166,12 @@ describe('RecipeForm', () => {
 
     // The unit of a line without a quantity still shows the Ingredient's default.
     expect(screen.getByLabelText('Unit of Salt')).toHaveValue('g');
-    expect(screen.getByLabelText('Timer for step 2 (minutes)')).toHaveValue(
+    expect(screen.getByLabelText('Timer for Step 2 (minutes)')).toHaveValue(
       '10',
     );
-    await user.click(screen.getByRole('button', { name: 'Move step 2 up' }));
+    await user.click(screen.getByRole('button', { name: 'Move Step 2 up' }));
     await user.click(screen.getByRole('button', { name: 'Move Milk up' }));
-    await user.click(screen.getByRole('button', { name: 'Remove step 2' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Step 2' }));
     await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
 
     await vi.waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -247,7 +247,7 @@ describe('RecipeForm', () => {
     expect(screen.getByText('Enter the Step text.')).toBeInTheDocument();
     await user.type(screen.getByLabelText('Step 1'), 'Chop');
 
-    const timer = screen.getByLabelText('Timer for step 1 (minutes)');
+    const timer = screen.getByLabelText('Timer for Step 1 (minutes)');
     await user.type(timer, '0.001');
     expect(save).toBeDisabled();
     await user.clear(timer);
@@ -277,7 +277,7 @@ describe('RecipeForm', () => {
         onCancel={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
+    expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '1.67',
     );
   });
@@ -297,16 +297,16 @@ describe('RecipeForm', () => {
     );
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: 'Remove step 2' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Step 2' }));
     expect(screen.queryByLabelText('Step 2')).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Remove step 1' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Step 1' }));
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Removing step 1 deletes its 1 Tip when you save.',
+      'Removing Step 1 deletes its 1 Tip when you save.',
     );
     expect(screen.getByLabelText('Step 1')).toBeInTheDocument();
     await user.click(
-      screen.getByRole('button', { name: 'Remove step and Tips' }),
+      screen.getByRole('button', { name: 'Remove Step and Tips' }),
     );
     expect(screen.queryByLabelText('Step 1')).toBeNull();
   });

@@ -48,8 +48,8 @@
       "missing": "Missing: {{name}}",
       "expiring_one": "uses {{count}} Expiring Soon item",
       "expiring_other": "uses {{count}} Expiring Soon items",
-      "otherVariants_one": "+{{count}} other variant you can make",
-      "otherVariants_other": "+{{count}} other variants you can make"
+      "otherVariants_one": "+{{count}} other Variant you can make",
+      "otherVariants_other": "+{{count}} other Variants you can make"
     },
     "mealPlan": {
       "title": "Meal plan"

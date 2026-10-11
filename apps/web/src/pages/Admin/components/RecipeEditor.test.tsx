@@ -121,7 +121,7 @@ describe('RecipeEditor', () => {
       await screen.findByLabelText('Variant title'),
       'Spicy soup',
     );
-    await user.click(screen.getByRole('button', { name: 'Make a variant' }));
+    await user.click(screen.getByRole('button', { name: 'Make a Variant' }));
 
     await vi.waitFor(() => expect(onOpen).toHaveBeenCalledWith('r2'));
     expect(
@@ -132,7 +132,7 @@ describe('RecipeEditor', () => {
   it('does not offer a variant of a Variant or of an archived base', async () => {
     open(variant);
     await screen.findByRole('heading', { name: /Spicy soup/ });
-    expect(screen.queryByRole('button', { name: 'Make a variant' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Make a Variant' })).toBeNull();
   });
 
   it('archives a Recipe after confirmation, then drops the archive and variant actions', async () => {
@@ -154,7 +154,7 @@ describe('RecipeEditor', () => {
 
     expect(await screen.findByText('This Recipe is archived.')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Archive Recipe' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Make a variant' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Make a Variant' })).toBeNull();
   });
 
   it('adds Tips to the Recipe and to a Step, and deletes one', async () => {
@@ -176,9 +176,9 @@ describe('RecipeEditor', () => {
     );
 
     const stepTips = within(
-      screen.getByRole('group', { name: 'Tips for step 2' }),
+      screen.getByRole('group', { name: 'Tips for Step 2' }),
     );
-    await user.type(stepTips.getByLabelText('New Tip for step 2'), 'Low heat');
+    await user.type(stepTips.getByLabelText('New Tip for Step 2'), 'Low heat');
     await user.click(stepTips.getByRole('button', { name: 'Add Tip' }));
     await vi.waitFor(() =>
       expect(
@@ -251,7 +251,7 @@ describe('RecipeEditor', () => {
     expect(danish.getByLabelText('Title (Danish)')).toHaveValue('Suppe');
     expect(danish.getByText('English: warm')).toBeInTheDocument();
     expect(danish.getByLabelText('Tip 1 (Recipe, Danish)')).toBeInTheDocument();
-    expect(danish.getByLabelText('Tip 1 (step 1, Danish)')).toBeInTheDocument();
+    expect(danish.getByLabelText('Tip 1 (Step 1, Danish)')).toBeInTheDocument();
     await user.clear(danish.getByLabelText('Step 1 (Danish)'));
     await user.type(danish.getByLabelText('Step 2 (Danish)'), 'Simre');
     await user.type(danish.getByLabelText('Note for Milk (Danish)'), 'varm');

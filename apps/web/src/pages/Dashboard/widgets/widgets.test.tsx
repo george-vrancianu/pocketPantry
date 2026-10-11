@@ -323,7 +323,7 @@ describe('CookTonightWidget', () => {
     expect(link).toHaveAttribute('href', '/recipes/r1');
     expect(within(link).getByText('Variant of Base r1')).toBeInTheDocument();
     expect(
-      within(link).getByText('30 min · +2 other variants you can make'),
+      within(link).getByText('30 min · +2 other Variants you can make'),
     ).toBeInTheDocument();
     expect(
       within(region).getByRole('link', { name: 'See all' }),
@@ -433,7 +433,7 @@ describe('CookTonightWidget', () => {
 
     expect(
       await screen.findByRole('link', {
-        name: 'Paella, Variant of Base 1, Missing: Saffron, 5 min · +1 other variant you can make',
+        name: 'Paella, Variant of Base 1, Missing: Saffron, 5 min · +1 other Variant you can make',
       }),
     ).toBeInTheDocument();
   });

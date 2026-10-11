@@ -164,7 +164,7 @@ describe('NewVariantPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('3');
     expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the eggs');
-    expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
+    expect(screen.getByLabelText('Timer for Step 1 (minutes)')).toHaveValue(
       '1.5',
     );
   });
@@ -193,20 +193,20 @@ describe('NewVariantPage', () => {
     expect(screen.getByText('Medium heat')).toBeVisible();
 
     // Reordering moves the Tips with their step.
-    await user.click(screen.getByRole('button', { name: 'Move step 2 up' }));
+    await user.click(screen.getByRole('button', { name: 'Move Step 2 up' }));
     // The step "Plate" and its Tip are dropped together.
-    await user.click(screen.getByRole('button', { name: 'Remove step 3' }));
+    await user.click(screen.getByRole('button', { name: 'Remove Step 3' }));
     // Its copied Tip is counted in the warning before anything is dropped.
     expect(
-      screen.getByText('Removing step 3 deletes its 1 Tip when you save.'),
+      screen.getByText('Removing Step 3 deletes its 1 Tip when you save.'),
     ).toBeVisible();
     expect(screen.getByText('Warm plate')).toBeVisible();
-    await user.click(screen.getByRole('button', { name: /^Remove step and/ }));
+    await user.click(screen.getByRole('button', { name: /^Remove Step and/ }));
     expect(screen.queryByText('Warm plate')).not.toBeInTheDocument();
     expect(screen.queryByText('Do not stir')).toBeInTheDocument();
     // The Member removes one Tip before saving.
     await user.click(
-      screen.getByRole('button', { name: 'Remove Tip 1 of step 1' }),
+      screen.getByRole('button', { name: 'Remove Tip 1 of Step 1' }),
     );
     expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save Variant' }));

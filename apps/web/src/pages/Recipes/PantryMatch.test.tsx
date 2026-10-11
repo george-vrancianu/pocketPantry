@@ -167,7 +167,7 @@ describe('Recipe detail Pantry status', () => {
     expect(first.search).toMatch(/today=\d{4}-\d{2}-\d{2}/);
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'More servings' }));
+      .click(screen.getByRole('button', { name: 'More Servings' }));
     await waitFor(() =>
       expect(
         calls.some(
@@ -177,7 +177,7 @@ describe('Recipe detail Pantry status', () => {
         ),
       ).toBe(true),
     );
-    expect(screen.getByText('3 servings')).toBeVisible();
+    expect(screen.getByText('3 Servings')).toBeVisible();
   });
 
   it('shows the quantities the match scaled to the Servings', async () => {
@@ -196,7 +196,7 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText(/200 g Flour/);
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'More servings' }));
+      .click(screen.getByRole('button', { name: 'More Servings' }));
     expect(await screen.findByText(/300 g Flour/)).toBeVisible();
   });
 
@@ -204,7 +204,7 @@ describe('Recipe detail Pantry status', () => {
     const calls = setup();
     const user = userEvent.setup();
     await screen.findByText('Short 150 g');
-    await user.click(screen.getByRole('button', { name: 'More servings' }));
+    await user.click(screen.getByRole('button', { name: 'More Servings' }));
     await user.click(
       screen.getByRole('button', { name: 'Add missing to Shopping List' }),
     );
@@ -324,8 +324,8 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText('Short 150 g');
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Fewer servings' }));
-    expect(screen.getByText('1 serving')).toBeVisible();
+      .click(screen.getByRole('button', { name: 'Fewer Servings' }));
+    expect(screen.getByText('1 Serving')).toBeVisible();
     expect(calls.some((c) => c.search.includes('servings=0'))).toBe(false);
   });
 
@@ -344,8 +344,8 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText('Short 150 g');
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'More servings' }));
-    expect(screen.getByText('100 servings')).toBeVisible();
+      .click(screen.getByRole('button', { name: 'More Servings' }));
+    expect(screen.getByText('100 Servings')).toBeVisible();
     expect(calls.some((c) => c.search.includes('servings=101'))).toBe(false);
   });
 
@@ -379,10 +379,10 @@ describe('Recipe detail Pantry status', () => {
     );
     const user = userEvent.setup();
     await screen.findByText('Short 150 g');
-    await user.click(screen.getByRole('button', { name: 'More servings' }));
-    expect(screen.getByText('5 servings')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'More Servings' }));
+    expect(screen.getByText('5 Servings')).toBeVisible();
     await user.click(screen.getByRole('link', { name: /Variant of Pancakes/ }));
-    expect(await screen.findByText('2 servings')).toBeVisible();
+    expect(await screen.findByText('2 Servings')).toBeVisible();
     const baseMatches = calls.filter(
       (c) => c.key === 'GET /api/recipes/r1/pantry-match',
     );

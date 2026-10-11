@@ -189,23 +189,23 @@
       "empty": "No Steps yet.",
       "add": "Add a Step",
       "text": "Step {{number}}",
-      "timer": "Timer for step {{number}} (minutes)",
-      "moveUp": "Move step {{number}} up",
-      "moveDown": "Move step {{number}} down",
-      "remove": "Remove step {{number}}",
-      "tipsWarning_one": "Removing step {{number}} deletes its {{count}} Tip when you save.",
-      "tipsWarning_other": "Removing step {{number}} deletes its {{count}} Tips when you save.",
-      "draftTips": "Tips for step {{number}}",
-      "removeTip": "Remove Tip {{n}} of step {{step}}",
+      "timer": "Timer for Step {{number}} (minutes)",
+      "moveUp": "Move Step {{number}} up",
+      "moveDown": "Move Step {{number}} down",
+      "remove": "Remove Step {{number}}",
+      "tipsWarning_one": "Removing Step {{number}} deletes its {{count}} Tip when you save.",
+      "tipsWarning_other": "Removing Step {{number}} deletes its {{count}} Tips when you save.",
+      "draftTips": "Tips for Step {{number}}",
+      "removeTip": "Remove Tip {{n}} of Step {{step}}",
       "removeTipShort": "Remove",
-      "removeWithTips": "Remove step and Tips",
-      "keep": "Keep step"
+      "removeWithTips": "Remove Step and Tips",
+      "keep": "Keep Step"
     },
     "variant": {
-      "title": "Make a variant",
+      "title": "Make a Variant",
       "hint": "Copies the Ingredient Lines, Steps and Step Tips as a draft. After that, the Variant is edited on its own.",
       "name": "Variant title",
-      "make": "Make a variant",
+      "make": "Make a Variant",
       "making": "Making…"
     },
     "archive": {
@@ -217,10 +217,10 @@
       "title": "Tips",
       "hint": "Tips are saved as soon as you change them. To add a Tip to a new Step, save the Recipe first.",
       "recipeLevel": "Recipe Tips",
-      "forStep": "Tips for step {{number}}",
+      "forStep": "Tips for Step {{number}}",
       "none": "No Tips yet.",
       "new": "New Tip",
-      "newForStep": "New Tip for step {{number}}",
+      "newForStep": "New Tip for Step {{number}}",
       "add": "Add Tip",
       "text": "Tip {{position}} ({{group}})",
       "save": "Save Tip {{position}} ({{group}})",
@@ -232,7 +232,7 @@
       "show": "Show: {{text}}",
       "noInherited": "The Base Recipe has no Recipe Tips.",
       "groupRecipe": "Recipe",
-      "groupStep": "step {{number}}"
+      "groupStep": "Step {{number}}"
     },
     "translations": {
       "title": "Recipe translations",

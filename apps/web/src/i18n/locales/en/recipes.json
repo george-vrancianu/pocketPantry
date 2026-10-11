@@ -30,8 +30,8 @@
   "minutes": "{{count}} min",
   "prep": "Prep {{time}}",
   "cook": "Cook {{time}}",
-  "servings_one": "{{count}} serving",
-  "servings_other": "{{count}} servings",
+  "servings_one": "{{count}} Serving",
+  "servings_other": "{{count}} Servings",
   "archived": "This Recipe is archived.",
   "backToList": "All Recipes",
   "notFound": "This Recipe could not be found.",
@@ -87,8 +87,8 @@
     "saved": "Recipe saved.",
     "viewRecipe": "View the Recipe"
   },
-  "fewerServings": "Fewer servings",
-  "moreServings": "More servings",
+  "fewerServings": "Fewer Servings",
+  "moreServings": "More Servings",
   "pantry": {
     "canMake": "You can make this",
     "missingCount_one": "Missing {{count}} ingredient",

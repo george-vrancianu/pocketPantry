@@ -87,7 +87,7 @@ describe('RecipeDetailPage', () => {
     ).toBeInTheDocument();
     expect(calls[0]!.search).toContain('locale=en');
     expect(screen.getByText(/French/)).toBeInTheDocument();
-    expect(screen.getByText(/2 servings/)).toBeInTheDocument();
+    expect(screen.getByText(/2 Servings/)).toBeInTheDocument();
     expect(screen.getByText(/Easy/)).toBeInTheDocument();
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
