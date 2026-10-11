@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
 
@@ -52,6 +52,9 @@ export function useCatalogSearch(query: string, locale: string) {
         `/catalog/search?${new URLSearchParams({ q: debounced, locale })}`,
       ).then((body) => body.results),
     enabled: debounced.length > 0,
+    // Keep the shown options (and their nodes) while the next query loads, so
+    // a click mid-refresh still lands.
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
   return {

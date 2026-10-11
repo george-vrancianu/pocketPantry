@@ -100,6 +100,36 @@ describe('CatalogSearch', () => {
     expect(onSelect).toHaveBeenCalledWith(parmesan('en'));
   });
 
+  it('keeps a visible option clickable while newer results load', async () => {
+    const requests: URL[] = [];
+    let releaseNewer = () => {};
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin);
+      requests.push(url);
+      const response = () => Response.json({ results: [parmesan('en')] });
+      if (url.searchParams.get('q') === 'parm') {
+        return Promise.resolve(response());
+      }
+      return new Promise<Response>((resolve) => {
+        releaseNewer = () => resolve(response());
+      });
+    });
+    const onSelect = vi.fn();
+    renderWithProviders(<CatalogSearch onSelect={onSelect} />);
+    const user = userEvent.setup();
+
+    await user.type(screen.getByRole('combobox'), 'parm');
+    await screen.findByRole('option', { name: /Parmesan/ });
+    await user.keyboard('a');
+    await vi.waitFor(() =>
+      expect(requests.at(-1)?.searchParams.get('q')).toBe('parma'),
+    );
+
+    await user.click(screen.getByRole('option', { name: /Parmesan/ }));
+    expect(onSelect).toHaveBeenCalledWith(parmesan('en'));
+    releaseNewer();
+  });
+
   it('says so when nothing matches', async () => {
     stubSearch(() => []);
     renderWithProviders(<CatalogSearch onSelect={() => {}} />);
