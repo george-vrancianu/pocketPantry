@@ -21,7 +21,10 @@ export type SectionProps = {
   onServingsChange: (servings: number) => void;
   /** The Pantry match at `servings`; undefined until the first answer. */
   match: PantryMatch | undefined;
+  /** The match shown is not for the Servings picked yet. */
+  stale: boolean;
   adding: boolean;
+  addError: string | null;
   onAddMissing: () => void;
 };
 
@@ -30,7 +33,9 @@ function IngredientsSection({
   servings,
   onServingsChange,
   match,
+  stale,
   adding,
+  addError,
   onAddMissing,
 }: SectionProps) {
   const { t } = useTranslation('recipes');
@@ -56,7 +61,9 @@ function IngredientsSection({
         />
         <PantrySummary
           match={match}
+          stale={stale}
           adding={adding}
+          error={addError}
           onAddMissing={onAddMissing}
         />
       </Stack>

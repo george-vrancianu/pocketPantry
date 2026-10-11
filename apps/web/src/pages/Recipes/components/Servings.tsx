@@ -1,7 +1,7 @@
 import { IconButton, MinusIcon, PlusIcon, Stack } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
-/** The most Servings the API will match or add for. */
+/** The most Servings the API will match or add for (keep in step with MAX_MATCH_SERVINGS in apps/api/src/recipes/recipe-pantry.schemas.ts). */
 export const MAX_SERVINGS = 100;
 
 /** How many servings a Recipe makes. */

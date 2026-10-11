@@ -1,9 +1,11 @@
 import {
+  Alert,
   Box,
   Button,
   CheckCircleIcon,
   Stack,
   Typography,
+  visuallyHidden,
   WarningIcon,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +16,9 @@ import type { PantryLine, PantryMatch } from '../../../lib/recipes';
 const addable = (line: PantryLine) =>
   !line.optional && !line.pantryBasic && line.status !== 'covered';
 
-/** The lines "Add missing" would add now: lines already on the list are left alone. */
+/** The lines "Add missing" adds. The Shopping List is not stock, so lines already on it count (the server sums them). */
 export function linesToAdd(match: PantryMatch | undefined): PantryLine[] {
-  return (match?.lines ?? []).filter(
-    (line) => addable(line) && !line.onShoppingList,
-  );
+  return (match?.lines ?? []).filter(addable);
 }
 
 /** The status after one Ingredient Line: words first, so colour is never the only cue. */
@@ -52,7 +52,13 @@ export function LineStatus({ line }: { line: PantryLine }) {
       )}
       <span>{label}</span>
       {line.onShoppingList && !covered ? (
-        <span>{t('recipes:pantry.onList')}</span>
+        <span>
+          <span aria-hidden> · </span>
+          <Box component="span" sx={visuallyHidden}>
+            ,{' '}
+          </Box>
+          {t('recipes:pantry.onList')}
+        </span>
       ) : null}
     </Typography>
   );
@@ -60,16 +66,25 @@ export function LineStatus({ line }: { line: PantryLine }) {
 
 type SummaryProps = {
   match: PantryMatch | undefined;
+  /** The answer is for another Servings or Recipe; wait for the current one. */
+  stale: boolean;
   adding: boolean;
+  /** Why the last add failed, shown beside the button. */
+  error: string | null;
   onAddMissing: () => void;
 };
 
 /** Can Make (or how many ingredients are missing) and the Add missing button. */
-export function PantrySummary({ match, adding, onAddMissing }: SummaryProps) {
+export function PantrySummary({
+  match,
+  stale,
+  adding,
+  error,
+  onAddMissing,
+}: SummaryProps) {
   const { t } = useTranslation('recipes');
   if (!match) return null;
-  const toAdd = linesToAdd(match).length;
-  const allOnList = toAdd === 0 && match.lines.some((line) => addable(line));
+  const toAdd = linesToAdd(match);
   return (
     <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
       <Typography role="status" sx={{ fontWeight: 600 }}>
@@ -77,22 +92,19 @@ export function PantrySummary({ match, adding, onAddMissing }: SummaryProps) {
           ? t('pantry.canMake')
           : t('pantry.missingCount', { count: match.shortOrMissingCount })}
       </Typography>
-      {
-        <Box>
-          <Button
-            variant="secondary"
-            disabled={adding || toAdd === 0}
-            onClick={onAddMissing}
-          >
-            {t('pantry.addMissing')}
-          </Button>
-          {allOnList ? (
-            <Typography variant="meta" color="text.secondary">
-              {t('pantry.allOnList')}
-            </Typography>
-          ) : null}
-        </Box>
-      }
+      <Button
+        variant="secondary"
+        disabled={adding || stale || toAdd.length === 0}
+        onClick={onAddMissing}
+      >
+        {t('pantry.addMissing')}
+      </Button>
+      {toAdd.some((line) => line.onShoppingList) ? (
+        <Typography variant="meta" color="text.secondary">
+          {t('pantry.someOnList')}
+        </Typography>
+      ) : null}
+      {error ? <Alert>{error}</Alert> : null}
     </Stack>
   );
 }

@@ -1,6 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, Routes } from 'react-router-dom';
+import { apiRequest } from '../../lib/api';
+import { suggestionsQueryKey } from '../../lib/queryKeys';
+import { shoppingListQueryKey } from '../../lib/shopping';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { PantryLine, PantryMatch } from '../../lib/recipes';
 import type { RecipeDetail } from '../../lib/recipes';
@@ -211,7 +215,7 @@ describe('Recipe detail Pantry status', () => {
     expect(post.body).toMatchObject({ servings: 3 });
     expect(post.search).toContain('locale=en');
     expect(
-      await screen.findByText('Added 2 items to your Shopping List'),
+      await screen.findByText('Added 3 items to your Shopping List'),
     ).toBeVisible();
   });
 
@@ -258,7 +262,7 @@ describe('Recipe detail Pantry status', () => {
     ).toBeDisabled();
   });
 
-  it('disables the button when every missing line is already on the list', async () => {
+  it('still allows adding lines already on the list, with a warning', async () => {
     setup(() =>
       match({
         lines: [
@@ -269,7 +273,20 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText('Missing 2 ingredients');
     expect(
       screen.getByRole('button', { name: 'Add missing to Shopping List' }),
-    ).toBeDisabled();
+    ).toBeEnabled();
+    expect(
+      screen.getByText(
+        'Some of these are already on your list; adding them again increases the amount.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('does not warn when none of the missing lines is on the list', async () => {
+    setup(() =>
+      match({ lines: [line({ lineId: 'l-egg', status: 'missing' })] }),
+    );
+    await screen.findByText('Missing 2 ingredients');
+    expect(screen.queryByText(/already on your list/)).toBeNull();
   });
 
   it('shows the error when adding fails', async () => {
@@ -283,6 +300,146 @@ describe('Recipe detail Pantry status', () => {
       .click(
         screen.getByRole('button', { name: 'Add missing to Shopping List' }),
       );
-    expect(await screen.findByRole('alert')).toBeVisible();
+    const summary = (await screen.findByRole('alert')).parentElement!;
+    expect(
+      within(summary).getByRole('button', {
+        name: 'Add missing to Shopping List',
+      }),
+    ).toBeVisible();
+  });
+
+  it('keeps the stepper within 1 and the API maximum', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/r1': () => Response.json({ ...detail, servings: 1 }),
+      'GET /api/recipes/r1/pantry-match': () => Response.json(match()),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Routes>
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      </Routes>,
+      { route: '/recipes/r1' },
+    );
+    await screen.findByText('Short 150 g');
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Fewer servings' }));
+    expect(screen.getByText('1 serving')).toBeVisible();
+    expect(calls.some((c) => c.search.includes('servings=0'))).toBe(false);
+  });
+
+  it('stops at the maximum Servings', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/r1': () => Response.json({ ...detail, servings: 100 }),
+      'GET /api/recipes/r1/pantry-match': () => Response.json(match()),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Routes>
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      </Routes>,
+      { route: '/recipes/r1' },
+    );
+    await screen.findByText('Short 150 g');
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More servings' }));
+    expect(screen.getByText('100 servings')).toBeVisible();
+    expect(calls.some((c) => c.search.includes('servings=101'))).toBe(false);
+  });
+
+  it('starts a Recipe fresh when navigating from a Variant to its base', async () => {
+    const variant = {
+      ...detail,
+      id: 'v1',
+      parentId: 'r1',
+      title: 'Vegan pancakes',
+      servings: 4,
+      base: { id: 'r1', title: 'Pancakes', archived: false },
+    };
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/r1': () => Response.json(detail),
+      'GET /api/recipes/v1': () => Response.json(variant),
+      'GET /api/recipes/r1/pantry-match': (url) =>
+        Response.json(
+          match({ servings: Number(url.searchParams.get('servings')) }),
+        ),
+      'GET /api/recipes/v1/pantry-match': (url) =>
+        Response.json(
+          match({ servings: Number(url.searchParams.get('servings')) }),
+        ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <Routes>
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      </Routes>,
+      { route: '/recipes/v1' },
+    );
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(screen.getByRole('button', { name: 'More servings' }));
+    expect(screen.getByText('5 servings')).toBeVisible();
+    await user.click(screen.getByRole('link', { name: /variant of Pancakes/ }));
+    expect(await screen.findByText('2 servings')).toBeVisible();
+    const baseMatches = calls.filter(
+      (c) => c.key === 'GET /api/recipes/r1/pantry-match',
+    );
+    expect(baseMatches.every((c) => c.search.includes('servings=2'))).toBe(
+      true,
+    );
+  });
+
+  it('puts the answer in the Shopping List cache and refreshes the match and Suggestions', async () => {
+    let suggestionFetches = 0;
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/r1': () => Response.json(detail),
+      'GET /api/recipes/r1/pantry-match': () => Response.json(match()),
+      'GET /api/shopping-list/suggestions': () => {
+        suggestionFetches += 1;
+        return Response.json({ staples: [], usedUp: [] });
+      },
+      'POST /api/recipes/r1/add-missing': () =>
+        Response.json({ items: [{ id: 'i1' }] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <>
+        <CacheProbe />
+        <Routes>
+          <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+        </Routes>
+      </>,
+      { route: '/recipes/r1' },
+    );
+    await screen.findByText('Short 150 g');
+    await vi.waitFor(() => expect(suggestionFetches).toBe(1));
+    const matchFetches = () =>
+      calls.filter((c) => c.key === 'GET /api/recipes/r1/pantry-match').length;
+    const before = matchFetches();
+    await userEvent
+      .setup()
+      .click(
+        screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+      );
+    expect(await screen.findByText('list items: 1')).toBeVisible();
+    await vi.waitFor(() => expect(suggestionFetches).toBe(2));
+    await vi.waitFor(() => expect(matchFetches()).toBeGreaterThan(before));
   });
 });
+
+/** Reads the cached English Shopping List and keeps a Suggestions query mounted. */
+function CacheProbe() {
+  const queryClient = useQueryClient();
+  useQuery({
+    queryKey: [...suggestionsQueryKey, 'en', 'today'],
+    queryFn: () => apiRequest('/shopping-list/suggestions'),
+  });
+  const list = useQuery({
+    queryKey: [...shoppingListQueryKey, 'en'],
+    queryFn: () => new Promise<{ items: unknown[] }>(() => {}),
+    enabled: false,
+  });
+  void queryClient;
+  return <p>list items: {list.data?.items.length ?? 0}</p>;
+}

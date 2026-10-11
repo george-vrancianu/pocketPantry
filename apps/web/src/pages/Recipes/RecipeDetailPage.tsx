@@ -22,15 +22,21 @@ import { RecipeMeta } from './components/RecipeMeta';
 import { linesToAdd } from './components/PantryStatus';
 import { DETAIL_SECTIONS } from './components/sections';
 
-/** One Recipe: header, then its sections; a Variant links back to its base. */
+/** One Recipe. Keyed by id so Servings and add results never leak across a Variant <-> base link. */
 export function RecipeDetailPage() {
-  const { t, i18n } = useTranslation(['recipes', 'common']);
   const { id = '' } = useParams();
+  return <RecipeDetail key={id} id={id} />;
+}
+
+/** Header, then the sections; a Variant links back to its base. */
+function RecipeDetail({ id }: { id: string }) {
+  const { t, i18n } = useTranslation(['recipes', 'common']);
   const query = useRecipe(id, i18n.language);
   const recipe = query.data;
   const [picked, setPicked] = useState<number | null>(null);
   const servings = picked ?? recipe?.servings ?? 1;
-  const match = useRecipePantryMatch(id, servings, recipe !== undefined).data;
+  const matchQuery = useRecipePantryMatch(id, servings, recipe !== undefined);
+  const match = matchQuery.data;
   const addMissing = useAddMissingToShoppingList(id, i18n.language);
   const [added, setAdded] = useState<number | null>(null);
   const onAddMissing = () => {
@@ -48,9 +54,6 @@ export function RecipeDetailPage() {
               ? t('recipes:notFound')
               : translateApiError(t, query.error)}
           </Alert>
-        ) : null}
-        {addMissing.error ? (
-          <Alert>{translateApiError(t, addMissing.error)}</Alert>
         ) : null}
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe ? (
@@ -82,7 +85,13 @@ export function RecipeDetailPage() {
                 servings={servings}
                 onServingsChange={setPicked}
                 match={match}
+                stale={matchQuery.isPlaceholderData}
                 adding={addMissing.isPending}
+                addError={
+                  addMissing.error
+                    ? translateApiError(t, addMissing.error)
+                    : null
+                }
                 onAddMissing={onAddMissing}
               />
             ))}

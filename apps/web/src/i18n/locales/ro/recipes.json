@@ -54,14 +54,14 @@
     "missingCount_few": "Lipsesc {{count}} ingrediente",
     "missingCount_other": "Lipsesc {{count}} de ingrediente",
     "covered": "În Cămară",
-    "short": "Lipsesc {{amount}}",
+    "short": "Mai trebuie {{amount}}",
     "missing": "Lipsește",
     "basic": "Nelipsit din Cămară",
     "onList": "Pe listă",
     "addMissing": "Adaugă ce lipsește în lista de cumpărături",
-    "allOnList": "Tot ce lipsește e deja pe listă.",
     "added_one": "{{count}} articol adăugat în lista de cumpărături",
     "added_few": "{{count}} articole adăugate în lista de cumpărături",
-    "added_other": "{{count}} de articole adăugate în lista de cumpărături"
+    "added_other": "{{count}} de articole adăugate în lista de cumpărături",
+    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește."
   }
 }

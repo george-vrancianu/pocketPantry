@@ -194,7 +194,12 @@ export function useRecipePantryMatch(
         `/recipes/${id}/pantry-match?${new URLSearchParams({ today, servings: String(servings) })}`,
       ),
     enabled,
-    placeholderData: keepPreviousData,
+    // Only the same Recipe's previous answer may stand in (another Servings).
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === 'pantry-match' &&
+      previousQuery.queryKey[2] === id
+        ? previous
+        : undefined,
   });
 }
 

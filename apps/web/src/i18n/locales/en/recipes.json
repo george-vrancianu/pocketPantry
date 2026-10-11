@@ -56,8 +56,8 @@
     "basic": "Pantry Basic",
     "onList": "On your list",
     "addMissing": "Add missing to Shopping List",
-    "allOnList": "Everything missing is already on your list.",
     "added_one": "Added {{count}} item to your Shopping List",
-    "added_other": "Added {{count}} items to your Shopping List"
+    "added_other": "Added {{count}} items to your Shopping List",
+    "someOnList": "Some of these are already on your list; adding them again increases the amount."
   }
 }
