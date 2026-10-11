@@ -5,9 +5,6 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
-  cuisines,
-  ingredients,
-  methods,
   recipeIngredientLines,
   recipeIngredientLineTranslations,
   recipes,
@@ -17,6 +14,11 @@ import {
   recipeTips,
 } from '../database/schema';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
+import {
+  assertLiveCatalogBase,
+  recipeColumns,
+  validateRecipeDocument,
+} from './recipe-document-rules';
 import { copyGuidance } from './recipe-guidance-write';
 import { lockCatalogRecipe } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
@@ -75,13 +77,7 @@ export class RecipesService {
       await this.validate(tx, document);
       await tx.insert(recipes).values({
         id,
-        title: document.title,
-        servings: document.servings,
-        prepMinutes: document.prepMinutes,
-        cookMinutes: document.cookMinutes,
-        difficulty: document.difficulty,
-        cuisineId: document.cuisineId,
-        methodId: document.methodId,
+        ...recipeColumns(document),
       });
       await this.writeLines(tx, id, document, new Set());
       await this.writeSteps(tx, id, document, new Set());
@@ -109,15 +105,7 @@ export class RecipesService {
         .where(eq(recipeSteps.recipeId, id));
       await tx
         .update(recipes)
-        .set({
-          title: document.title,
-          servings: document.servings,
-          prepMinutes: document.prepMinutes,
-          cookMinutes: document.cookMinutes,
-          difficulty: document.difficulty,
-          cuisineId: document.cuisineId,
-          methodId: document.methodId,
-        })
+        .set(recipeColumns(document))
         .where(eq(recipes.id, id));
       await this.writeLines(
         tx,
@@ -166,15 +154,7 @@ export class RecipesService {
         .from(recipes)
         .where(and(eq(recipes.id, parentId), isNull(recipes.familyId)))
         .for('share');
-      if (!parent) {
-        throw new ApiException(404, 'recipes.parent_not_found');
-      }
-      if (parent.parentId) {
-        throw new ApiException(409, 'recipes.variant_of_variant');
-      }
-      if (parent.archivedAt) {
-        throw new ApiException(409, 'recipes.parent_archived');
-      }
+      assertLiveCatalogBase(parent);
       await tx.insert(recipes).values({
         id,
         parentId,
@@ -295,65 +275,14 @@ export class RecipesService {
   }
 
   /** The coded rules a Catalog Recipe document must meet, checked before any write. */
-  private async validate(tx: Tx, document: RecipeDocument) {
-    document.lines.forEach((line, index) => {
-      if ((line.quantity === null) !== (line.unit === null)) {
-        throw new ApiException(400, 'recipes.quantity_unit_mismatch', {
-          line: index,
-        });
-      }
+  private validate(tx: Tx, document: RecipeDocument) {
+    return validateRecipeDocument(tx, document, (line, index) => {
       if (line.ingredientId === null) {
         throw new ApiException(400, 'recipes.ingredient_required', {
           line: index,
         });
       }
     });
-    for (const [kind, items] of [
-      ['line', document.lines],
-      ['step', document.steps],
-    ] as const) {
-      const given = items.flatMap((item) => (item.id ? [item.id] : []));
-      if (new Set(given).size !== given.length) {
-        throw new ApiException(400, 'recipes.duplicate_item', { kind });
-      }
-    }
-    const wanted = [
-      ...new Set(document.lines.flatMap((l) => l.ingredientId ?? [])),
-    ];
-    if (wanted.length > 0) {
-      const found = await tx
-        .select({ id: ingredients.id })
-        .from(ingredients)
-        .where(inArray(ingredients.id, wanted))
-        .orderBy(ingredients.id)
-        // Blocks a concurrent Ingredient delete until we commit.
-        .for('key share');
-      if (found.length !== wanted.length) {
-        throw new ApiException(404, 'catalog.not_found', {
-          entity: 'ingredient',
-        });
-      }
-    }
-    if (document.cuisineId) {
-      const [row] = await tx
-        .select({ id: cuisines.id })
-        .from(cuisines)
-        .where(eq(cuisines.id, document.cuisineId))
-        .for('key share');
-      if (!row) {
-        throw new ApiException(404, 'catalog.not_found', { entity: 'cuisine' });
-      }
-    }
-    if (document.methodId) {
-      const [row] = await tx
-        .select({ id: methods.id })
-        .from(methods)
-        .where(eq(methods.id, document.methodId))
-        .for('key share');
-      if (!row) {
-        throw new ApiException(404, 'catalog.not_found', { entity: 'method' });
-      }
-    }
   }
 
   private async writeLines(
