@@ -160,7 +160,7 @@
     "title": "Opskriftens titel",
     "base": "Grundopskrift",
     "loading": "Finder grundopskrifter…",
-    "suggested": "{{title}} (foreslået)",
+    "closest": "{{title}} (nærmeste)",
     "standalone": "Selvstændig opskrift (uden grundopskrift)",
     "search": "Find en anden grundopskrift",
     "cancel": "Annuller",

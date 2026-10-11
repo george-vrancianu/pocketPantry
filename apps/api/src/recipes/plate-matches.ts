@@ -1,6 +1,6 @@
 import { normalizeName } from '../catalog/normalize';
 
-export const MAX_PLATE_SUGGESTIONS = 5;
+export const MAX_PLATE_MATCHES = 5;
 /** How much the title counts next to the Ingredient overlap. */
 const TITLE_WEIGHT = 0.5;
 
@@ -11,7 +11,7 @@ export type PlateCandidate = {
   ingredientIds: string[];
 };
 
-export type PlateSuggestion = { id: string; title: string; score: number };
+export type PlateMatch = { id: string; title: string; score: number };
 
 const jaccard = (a: ReadonlySet<string>, b: ReadonlySet<string>): number => {
   if (a.size === 0 || b.size === 0) return 0;
@@ -28,10 +28,10 @@ const words = (text: string): Set<string> =>
  * (Jaccard) plus half the word overlap of the titles (best title wins). Only
  * positive scores, best first, ties by title, at most five.
  */
-export function rankPlateSuggestions(
+export function rankPlateMatches(
   dish: { dishTitle: string; ingredientIds: readonly string[] },
   candidates: readonly PlateCandidate[],
-): PlateSuggestion[] {
+): PlateMatch[] {
   const dishIngredients = new Set(dish.ingredientIds);
   const dishWords = words(dish.dishTitle);
   return candidates
@@ -55,5 +55,5 @@ export function rankPlateSuggestions(
         a.title.localeCompare(b.title) ||
         a.id.localeCompare(b.id),
     )
-    .slice(0, MAX_PLATE_SUGGESTIONS);
+    .slice(0, MAX_PLATE_MATCHES);
 }

@@ -16,8 +16,8 @@ const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 
 jest.setTimeout(30_000);
 
-type Suggestions = {
-  suggestions: { id: string; title: string; score: number }[];
+type Matches = {
+  matches: { id: string; title: string; score: number }[];
 };
 
 describe('Plate Scan as a Family Recipe (integration)', () => {
@@ -45,12 +45,12 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
     return res.body as AdminRecipeDetail;
   }
 
-  const suggest = async (dishTitle: string, ingredientIds: string[]) =>
+  const closestBases = async (dishTitle: string, ingredientIds: string[]) =>
     (
       await member
-        .post('/plate-suggestions', { locale: 'en', dishTitle, ingredientIds })
+        .post('/plate-matches', { locale: 'en', dishTitle, ingredientIds })
         .expect(200)
-    ).body as Suggestions;
+    ).body as Matches;
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -86,7 +86,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
     await app.close();
   });
 
-  describe('suggestions', () => {
+  describe('matches', () => {
     it('ranks a Recipe sharing Ingredients above one that does not, and skips archived, Family and Variant Recipes', async () => {
       const word = `Qzx${stamp}`;
       const near = await catalogBase(`${word} near`, [0, 1]);
@@ -110,8 +110,8 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
           .expect(201)
       ).body as FamilyRecipeEdit;
 
-      const { suggestions } = await suggest(word, [ing[0], ing[1]]);
-      const ids = suggestions.map((s) => s.id);
+      const { matches } = await closestBases(word, [ing[0], ing[1]]);
+      const ids = matches.map((m) => m.id);
       expect(ids).not.toContain(archived.id);
       expect(ids).not.toContain(variant.id);
       expect(ids).not.toContain(own.id);
@@ -119,10 +119,10 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       expect(ids.indexOf(near.id)).toBeLessThan(
         ids.includes(far.id) ? ids.indexOf(far.id) : Infinity,
       );
-      expect(suggestions.find((s) => s.id === near.id)).toMatchObject({
+      expect(matches.find((m) => m.id === near.id)).toMatchObject({
         title: `${word} near`,
       });
-      expect(suggestions.length).toBeLessThanOrEqual(5);
+      expect(matches.length).toBeLessThanOrEqual(5);
     });
 
     it('shows the locale title and still ranks on the source title', async () => {
@@ -131,28 +131,28 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       await admin
         .put(`/${base.id}/translations/ro`, { title: `Tocana ${stamp}` })
         .expect(200);
-      const { suggestions } = await member
-        .post('/plate-suggestions', {
+      const { matches } = await member
+        .post('/plate-matches', {
           locale: 'ro',
           dishTitle: `${word} source`,
           ingredientIds: [],
         })
         .expect(200)
-        .then((r) => r.body as Suggestions);
-      expect(suggestions.find((s) => s.id === base.id)).toMatchObject({
+        .then((r) => r.body as Matches);
+      expect(matches.find((s) => s.id === base.id)).toMatchObject({
         title: `Tocana ${stamp}`,
       });
     });
 
     it('is empty when nothing matches', async () => {
       expect(
-        await suggest(`nothingmatches${stamp}`, [crypto.randomUUID()]),
-      ).toEqual({ suggestions: [] });
+        await closestBases(`nothingmatches${stamp}`, [crypto.randomUUID()]),
+      ).toEqual({ matches: [] });
     });
 
     it('refuses a malformed body', async () => {
       await member
-        .post('/plate-suggestions', { locale: 'en', dishTitle: 'x' })
+        .post('/plate-matches', { locale: 'en', dishTitle: 'x' })
         .expect(400);
     });
   });

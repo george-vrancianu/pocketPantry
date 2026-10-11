@@ -20,7 +20,7 @@ import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { PlateRecipesService } from './plate-recipes.service';
-import type { PlateSuggestion } from './plate-suggestions';
+import type { PlateMatch } from './plate-matches';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
@@ -28,7 +28,7 @@ import {
   familyRecipeCreate,
   familyRecipeUpdate,
   fromPlateBody,
-  plateSuggestionsBody,
+  plateMatchesBody,
   hiddenTipsBody,
   localeQuery,
   recipeParam,
@@ -41,7 +41,7 @@ import {
   type FamilyRecipeEdit,
   type FamilyRecipeUpdate,
   type FromPlateBody,
-  type PlateSuggestionsBody,
+  type PlateMatchesBody,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
@@ -121,17 +121,17 @@ export class RecipesController {
     return this.family.create(member.id, document, locale);
   }
 
-  @Post('plate-suggestions')
+  @Post('plate-matches')
   @HttpCode(200)
   @ApiOperation({
     summary:
       'The Catalog Base Recipes closest to a Plate Scan dish, best first (at most five)',
   })
-  async plateSuggestions(
-    @Body(new ZodValidationPipe(plateSuggestionsBody))
-    body: PlateSuggestionsBody,
-  ): Promise<{ suggestions: PlateSuggestion[] }> {
-    return { suggestions: await this.plate.suggest(body) };
+  async plateMatches(
+    @Body(new ZodValidationPipe(plateMatchesBody))
+    body: PlateMatchesBody,
+  ): Promise<{ matches: PlateMatch[] }> {
+    return { matches: await this.plate.closestBases(body) };
   }
 
   @Post('from-plate')

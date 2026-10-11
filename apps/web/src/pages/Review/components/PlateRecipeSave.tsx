@@ -12,7 +12,7 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import {
   matchedIngredientIds,
   useSaveFromPlate,
-  usePlateSuggestions,
+  usePlateMatches,
 } from '../../../lib/plateRecipe';
 import { useRecipes } from '../../../lib/recipes';
 import type { ReviewLine } from '../../../lib/review';
@@ -67,11 +67,11 @@ export function PlateRecipeSave({
 }: Props) {
   const { t, i18n } = useTranslation('review');
   const groupName = useId();
-  // The Ingredients are read when the panel opens, so editing lines does not reshuffle the suggestions.
+  // The Ingredients are read when the panel opens, so editing lines does not reshuffle the matches.
   const [ingredientIds, setIngredientIds] = useState<string[] | null>(null);
   const open = ingredientIds !== null;
   const [title, setTitle] = useState(dishTitle);
-  // Until the Member chooses, the top suggestion (if any) is the base.
+  // Until the Member chooses, the top match (if any) is the base.
   const [chosen, setChosen] = useState<string | null>(null);
   const [another, setAnother] = useState<Base | null>(null);
   const [search, setSearch] = useState('');
@@ -85,7 +85,7 @@ export function PlateRecipeSave({
     wasOpen.current = open;
   }, [open]);
   const save = useSaveFromPlate(i18n.language);
-  const suggestions = usePlateSuggestions(
+  const matches = usePlateMatches(
     {
       locale: i18n.language,
       dishTitle,
@@ -100,8 +100,8 @@ export function PlateRecipeSave({
     { searchOnly: true },
   );
 
-  const suggested = suggestions.data ?? [];
-  const listed = new Set(suggested.map((s) => s.id));
+  const closestBases = matches.data ?? [];
+  const listed = new Set(closestBases.map((s) => s.id));
   const results = !searching
     ? []
     : (found.data ?? []).filter(
@@ -125,7 +125,7 @@ export function PlateRecipeSave({
   const selected =
     chosen !== null && available.has(chosen)
       ? chosen
-      : (suggested[0]?.id ?? STANDALONE);
+      : (closestBases[0]?.id ?? STANDALONE);
 
   if (!open)
     return (
@@ -179,22 +179,22 @@ export function PlateRecipeSave({
         <Box component="legend" sx={{ fontWeight: 600, p: 0 }}>
           {t('plateRecipe.base')}
         </Box>
-        {suggestions.isPending ? (
+        {matches.isPending ? (
           <Typography role="status" color="text.secondary">
             {t('plateRecipe.loading')}
           </Typography>
         ) : null}
-        {suggested.map((suggestion, index) => (
+        {closestBases.map((match, index) => (
           <BaseOption
-            key={suggestion.id}
+            key={match.id}
             name={groupName}
-            checked={selected === suggestion.id}
+            checked={selected === match.id}
             label={
               index === 0
-                ? t('plateRecipe.suggested', { title: suggestion.title })
-                : suggestion.title
+                ? t('plateRecipe.closest', { title: match.title })
+                : match.title
             }
-            onSelect={() => setChosen(suggestion.id)}
+            onSelect={() => setChosen(match.id)}
           />
         ))}
         {extra ? (
@@ -241,7 +241,7 @@ export function PlateRecipeSave({
           onClick={submit}
           disabled={
             save.isPending ||
-            suggestions.isPending ||
+            matches.isPending ||
             title.trim() === '' ||
             lines.length === 0
           }

@@ -170,7 +170,7 @@
     "title": "Titlul rețetei",
     "base": "Rețetă de bază",
     "loading": "Se caută rețete de bază…",
-    "suggested": "{{title}} (sugerată)",
+    "closest": "{{title}} (cea mai apropiată)",
     "standalone": "Rețetă de sine stătătoare (fără bază)",
     "search": "Caută altă rețetă de bază",
     "cancel": "Anulează",

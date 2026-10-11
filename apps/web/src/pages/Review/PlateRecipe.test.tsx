@@ -41,20 +41,19 @@ const lines: ProposedLine[] = [
   },
 ];
 
-const suggestions = [
+const matches = [
   { id: 'pilaf-id', title: 'Pilaf', score: 0.9 },
   { id: 'risotto-id', title: 'Risotto', score: 0.4 },
 ];
 
 function renderPlate(
   extra: Record<string, (url: URL) => Response> = {},
-  found = suggestions,
+  found = matches,
   scanLines = lines,
 ) {
   startReview({ mode: 'plate', lines: scanLines, dishTitle: 'Rice bowl' });
   const { fetchMock, calls } = stubApi({
-    'POST /api/recipes/plate-suggestions': () =>
-      Response.json({ suggestions: found }),
+    'POST /api/recipes/plate-matches': () => Response.json({ matches: found }),
     'POST /api/recipes/from-plate': () => Response.json({ id: 'new-id' }),
     'GET /api/recipes': (url) => {
       const term = url.searchParams.get('search')?.toLowerCase() ?? '';
@@ -115,13 +114,13 @@ describe('Plate Scan: save as a Recipe', () => {
     ).toBeNull();
   });
 
-  it('preselects the suggested Base Recipe and saves a Variant with the edited lines', async () => {
+  it('preselects the closest Base Recipe and saves a Variant with the edited lines', async () => {
     const calls = renderPlate();
     const bases = await openPanel();
-    const suggested = await within(bases).findByRole('radio', {
-      name: 'Pilaf (suggested)',
+    const closestRadio = await within(bases).findByRole('radio', {
+      name: 'Pilaf (closest match)',
     });
-    expect(suggested).toBeChecked();
+    expect(closestRadio).toBeChecked();
     expect(within(bases).getByRole('radio', { name: 'Risotto' })).toBeVisible();
     const title = screen.getByLabelText('Recipe title');
     expect(title).toHaveValue('Rice bowl');
@@ -129,10 +128,10 @@ describe('Plate Scan: save as a Recipe', () => {
     await userEvent.type(title, 'Our rice bowl');
     await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
     expect(await screen.findByText('recipe screen')).toBeVisible();
-    const suggest = calls.find(
-      (c) => c.key === 'POST /api/recipes/plate-suggestions',
+    const matchCall = calls.find(
+      (c) => c.key === 'POST /api/recipes/plate-matches',
     );
-    expect(suggest?.body).toEqual({
+    expect(matchCall?.body).toEqual({
       locale: 'en',
       dishTitle: 'Rice bowl',
       ingredientIds: ['rice-id'],
@@ -178,7 +177,7 @@ describe('Plate Scan: save as a Recipe', () => {
     expect(savedParent(calls)).toBeNull();
   });
 
-  it('defaults to standalone when nothing is suggested', async () => {
+  it('defaults to standalone when nothing matches', async () => {
     renderPlate({}, []);
     const bases = await openPanel();
     expect(
@@ -191,7 +190,7 @@ describe('Plate Scan: save as a Recipe', () => {
   it('picks another Base Recipe from the Catalog only', async () => {
     const calls = renderPlate();
     const bases = await openPanel();
-    await within(bases).findByRole('radio', { name: 'Pilaf (suggested)' });
+    await within(bases).findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.type(
       screen.getByRole('searchbox', { name: 'Find another Base Recipe' }),
       'pae',
@@ -213,7 +212,7 @@ describe('Plate Scan: save as a Recipe', () => {
         ),
     });
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
     expect(await screen.findByRole('alert')).toBeVisible();
     await waitFor(() => expect(getScanSession().scans).toHaveLength(1));
@@ -222,7 +221,7 @@ describe('Plate Scan: save as a Recipe', () => {
   it('does not list the full Recipe list before the search term is typed', async () => {
     const calls = renderPlate();
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.type(screen.getByRole('searchbox'), 'p');
     expect(screen.queryByRole('radio', { name: 'Paella' })).toBeNull();
     await screen.findByRole('radio', { name: 'Paella' });
@@ -230,10 +229,10 @@ describe('Plate Scan: save as a Recipe', () => {
       expect(new URLSearchParams(call.search).get('search')).not.toBe(null);
   });
 
-  it('does not repeat a suggestion among the search results', async () => {
+  it('does not repeat a match among the search results', async () => {
     const calls = renderPlate();
     const bases = await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.type(screen.getByRole('searchbox'), 'risotto');
     await waitFor(() =>
       expect(
@@ -261,7 +260,7 @@ describe('Plate Scan: save as a Recipe', () => {
 
   it('announces the search for Base Recipes as a status', async () => {
     renderPlate({
-      'POST /api/recipes/plate-suggestions': () =>
+      'POST /api/recipes/plate-matches': () =>
         new Promise<Response>(() => {}) as never,
     });
     await openPanel();
@@ -273,7 +272,7 @@ describe('Plate Scan: save as a Recipe', () => {
   it('sends the edited quantity, unit and Unmatched name', async () => {
     const calls = renderPlate();
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     const name = screen.getByLabelText('Name');
     await userEvent.clear(name);
     await userEvent.type(name, 'House sauce');
@@ -300,7 +299,7 @@ describe('Plate Scan: save as a Recipe', () => {
   it('leaves out excluded lines', async () => {
     const calls = renderPlate();
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.click(
       screen.getByRole('button', { name: 'Remove Secret sauce' }),
     );
@@ -312,9 +311,9 @@ describe('Plate Scan: save as a Recipe', () => {
   });
 
   it('does not save while a line is invalid, and focuses the field', async () => {
-    const calls = renderPlate({}, suggestions, lines.slice(0, 1));
+    const calls = renderPlate({}, matches, lines.slice(0, 1));
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     const row = await screen.findByRole('button', { name: /Rice/ });
     await userEvent.click(row);
     const quantity = screen.getByLabelText('Quantity');
@@ -329,9 +328,9 @@ describe('Plate Scan: save as a Recipe', () => {
   });
 
   it('sends the quantity the Member edited', async () => {
-    const calls = renderPlate({}, suggestions, lines.slice(0, 1));
+    const calls = renderPlate({}, matches, lines.slice(0, 1));
     await openPanel();
-    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    await screen.findByRole('radio', { name: 'Pilaf (closest match)' });
     await userEvent.click(await screen.findByRole('button', { name: /Rice/ }));
     const quantity = screen.getByLabelText('Quantity');
     await userEvent.clear(quantity);
