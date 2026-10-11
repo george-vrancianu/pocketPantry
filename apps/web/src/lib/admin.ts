@@ -46,6 +46,8 @@ export type AdminLeafCategory = Translated & {
 export type AdminIngredient = Translated & {
   leafCategoryId: string;
   defaultUnit: Unit;
+  /** Recipe matching always counts a Pantry Basic as covered. */
+  pantryBasic: boolean;
 };
 
 /** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
@@ -107,6 +109,7 @@ export type IngredientInput = {
   name: string;
   leafCategoryId: string;
   defaultUnit: Unit;
+  pantryBasic: boolean;
 };
 export function useSaveIngredient(id?: string) {
   return useAdminWrite((input: IngredientInput) =>

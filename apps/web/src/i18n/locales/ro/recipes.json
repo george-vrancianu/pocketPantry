@@ -67,5 +67,23 @@
     "none": "Aceleași ingrediente ca la {{base}}."
   },
   "stepTips": "Sfaturi pentru acest pas",
-  "tipLabel": "Sfat"
+  "tipLabel": "Sfat",
+  "fewerServings": "Mai puține porții",
+  "moreServings": "Mai multe porții",
+  "pantry": {
+    "canMake": "Poți face rețeta",
+    "missingCount_one": "Lipsește {{count}} ingredient",
+    "missingCount_few": "Lipsesc {{count}} ingrediente",
+    "missingCount_other": "Lipsesc {{count}} de ingrediente",
+    "covered": "În Cămară",
+    "short": "Mai trebuie {{amount}}",
+    "missing": "Lipsește",
+    "basic": "Nelipsit din Cămară",
+    "onList": "Pe listă",
+    "addMissing": "Adaugă ce lipsește în lista de cumpărături",
+    "added_one": "{{count}} articol adăugat în lista de cumpărături",
+    "added_few": "{{count}} articole adăugate în lista de cumpărături",
+    "added_other": "{{count}} de articole adăugate în lista de cumpărături",
+    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește."
+  }
 }

@@ -1,26 +1,33 @@
 import { Module } from '@nestjs/common';
 import { SettingsModule } from '../settings/settings.module';
+import { ShoppingModule } from '../shopping/shopping.module';
+import { PantryMatchingService } from './matching/pantry-matching.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import { RecipeGuidanceService } from './recipe-guidance.service';
+import { RecipePantryController } from './recipe-pantry.controller';
+import { RecipePantryService } from './recipe-pantry.service';
 import { RecipeTipsService } from './recipe-tips.service';
 import { RecipeTranslationsService } from './recipe-translations.service';
 import { RecipesController } from './recipes.controller';
 import { RecipesService } from './recipes.service';
 
 @Module({
-  imports: [SettingsModule],
-  controllers: [RecipesController],
+  imports: [SettingsModule, ShoppingModule],
+  controllers: [RecipesController, RecipePantryController],
   providers: [
     RecipesService,
     RecipeTipsService,
     RecipeTranslationsService,
     RecipeGuidanceService,
     RecipeBrowseService,
+    PantryMatchingService,
+    RecipePantryService,
   ],
   exports: [
     RecipesService,
     RecipeTipsService,
     RecipeTranslationsService,
+    PantryMatchingService,
     RecipeGuidanceService,
   ],
 })

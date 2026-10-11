@@ -31,7 +31,9 @@
     "empty": "Niciun Ingredient găsit.",
     "name": "Nume (engleză)",
     "leafCategory": "Categorie frunză",
-    "defaultUnit": "Unitate implicită"
+    "defaultUnit": "Unitate implicită",
+    "pantryBasic": "Nelipsit din Cămară",
+    "pantryBasicHint": "Potrivirea rețetelor îl consideră mereu în stoc"
   },
   "aisle": {
     "title": "Raioane",
@@ -89,7 +91,8 @@
       "plate": "Farfurie",
       "ingredients": "Ingrediente",
       "manual": "Scris de mână",
-      "finish_shopping": "Finalizare cumpărături"
+      "finish_shopping": "Finalizare cumpărături",
+      "recipe": "Rețetă"
     },
     "resolve": "Rezolvă",
     "resolveName": "Rezolvă {{name}}",

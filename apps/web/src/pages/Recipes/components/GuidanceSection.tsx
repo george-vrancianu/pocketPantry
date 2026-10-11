@@ -146,7 +146,7 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
  * Pairings, When to Eat and Nutrition, then the fixed guidance disclaimer.
  * Empty parts are left out; with no guidance at all nothing renders.
  */
-export function GuidanceSection({ recipe }: SectionProps) {
+export function GuidanceSection({ recipe }: Pick<SectionProps, 'recipe'>) {
   const { t } = useTranslation('recipes');
   const { pairings, eatingMoments, nutritionNote } = recipe.guidance;
   if (pairings.length + eatingMoments.length === 0 && !nutritionNote) {

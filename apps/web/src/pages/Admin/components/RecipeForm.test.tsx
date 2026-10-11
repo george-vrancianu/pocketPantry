@@ -19,6 +19,7 @@ const catalog: AdminCatalog = {
       name: 'Salt',
       leafCategoryId: 'l1',
       defaultUnit: 'g',
+      pantryBasic: false,
       translations: [],
     },
     {
@@ -26,6 +27,7 @@ const catalog: AdminCatalog = {
       name: 'Milk',
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
+      pantryBasic: false,
       translations: [],
     },
   ],

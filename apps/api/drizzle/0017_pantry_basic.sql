@@ -1,0 +1,1 @@
+ALTER TABLE "ingredients" ADD COLUMN "pantry_basic" boolean DEFAULT false NOT NULL;

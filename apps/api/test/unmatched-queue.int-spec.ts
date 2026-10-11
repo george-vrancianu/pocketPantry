@@ -12,6 +12,7 @@ import {
   shoppingItems,
   recipeIngredientLines,
   recipes,
+  shoppingItemSourceRecipes,
   shoppingLists,
   unmatchedEntries,
   user,
@@ -968,6 +969,57 @@ describe('Unmatched queue (integration)', () => {
       expect(items.map((i) => i.quantity).sort()).toEqual([500_000, 600_000]);
       expect(items.every((i) => !i.unmatched)).toBe(true);
       expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('moves the Source Recipes of a merged Shopping Item onto the item it merged into', async () => {
+      const raw = name('sources');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      const [first, second] = [crypto.randomUUID(), crypto.randomUUID()];
+      await database.insert(recipes).values(
+        [first, second].map((id, i) => ({
+          id,
+          title: `Sources ${stamp} ${i}`,
+          servings: 2,
+        })),
+      );
+      try {
+        await addTyped(member, {
+          ingredientId: parmesan,
+          quantity: 2,
+          unit: 'g',
+        });
+        await addTyped(member, { name: raw, quantity: 3, unit: 'g' });
+        const before = await itemsOf(member);
+        const twin = before.find((i) => !i.unmatched)?.id as string;
+        const typed = before.find((i) => i.unmatched)?.id as string;
+        // The first Recipe sits on both items (kept once); the second only on the typed one.
+        await database.insert(shoppingItemSourceRecipes).values([
+          { shoppingItemId: twin, recipeId: first },
+          { shoppingItemId: typed, recipeId: first },
+          { shoppingItemId: typed, recipeId: second },
+        ]);
+
+        await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+        }).expect(201);
+
+        const items = await itemsOf(member);
+        expect(items).toHaveLength(1);
+        expect(items[0].id).toBe(twin);
+        const rows = await database
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, twin));
+        expect(rows.map((r) => r.recipeId).sort()).toEqual(
+          [first, second].sort(),
+        );
+      } finally {
+        await database
+          .delete(recipes)
+          .where(inArray(recipes.id, [first, second]));
+      }
     });
 
     it('only relinks on an archived list', async () => {

@@ -84,8 +84,17 @@ export const ingredientCreate = z.object({
   leafCategoryId: id,
   name: text,
   defaultUnit: z.enum(ingredientUnit.enumValues),
+  pantryBasic: z.boolean().default(false),
 });
-export const ingredientUpdate = ingredientCreate
+// Spelled out: `.partial()` on the create schema would keep the default and
+// reset the flag on every edit that leaves it out.
+export const ingredientUpdate = z
+  .object({
+    leafCategoryId: id,
+    name: text,
+    defaultUnit: z.enum(ingredientUnit.enumValues),
+    pantryBasic: z.boolean(),
+  })
   .partial()
   .refine(atLeastOne, atLeastOneMessage);
 

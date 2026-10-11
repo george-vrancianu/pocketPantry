@@ -19,6 +19,7 @@ const catalog: AdminCatalog = {
       name: 'Milk',
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
+      pantryBasic: false,
       translations: [],
     },
   ],
