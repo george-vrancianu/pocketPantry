@@ -376,8 +376,9 @@ export class RecipesService {
             : undefined,
         ),
       );
-    // Lines here are Catalog lines: rawName/normalizedName stay null. The Family
-    // Recipe path (#137) must set them for Unmatched lines (matched xor named check).
+    // Lines here are Catalog lines: always matched, so rawName/normalizedName
+    // stay null. Family Recipes write their lines in FamilyRecipesService, which
+    // sets them for Unmatched lines.
     for (const [position, line] of document.lines.entries()) {
       const values = {
         position,
