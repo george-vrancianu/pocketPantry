@@ -180,6 +180,17 @@ describe('Scan by double-tapping the guides', () => {
     ).toBe('3.5px');
   });
 
+  it('clears the pulse and flash timers when unmounted mid-feedback', async () => {
+    const { unmount } = renderScan();
+    // jsdom queues its own timer to fire the storage event when the Scan Mode is saved.
+    const before = vi.getTimerCount();
+    tap(guide());
+    tap(guide(), 200, 300, 100);
+    await flush();
+    unmount();
+    expect(vi.getTimerCount()).toBe(before);
+  });
+
   it('removes the shutter button', () => {
     renderScan();
     expect(
