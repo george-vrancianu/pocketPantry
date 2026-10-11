@@ -368,6 +368,23 @@ describe('Staples and Suggestions (integration)', () => {
       expect((await suggestions(owner.cookie)).staples).toHaveLength(1);
     });
 
+    it('drops the dismissal with its Staple, so a re-added Staple is suggested', async () => {
+      const ana = await signUp();
+      const staple = (
+        await addStaple(ana.cookie, { ingredientId: milk }).expect(201)
+      ).body as Staple;
+      await api(
+        'post',
+        ana.cookie,
+        `/shopping-list/suggestions/${milk}/dismiss`,
+      ).expect(204);
+      expect((await suggestions(ana.cookie)).staples).toEqual([]);
+
+      await api('delete', ana.cookie, `/staples/${staple.id}`).expect(204);
+      await addStaple(ana.cookie, { ingredientId: milk }).expect(201);
+      expect((await suggestions(ana.cookie)).staples).toHaveLength(1);
+    });
+
     it('shows the Suggestion again when an Admin relinks an Unmatched Batch to the Staple Ingredient', async () => {
       const admin = await signUp('Admin');
       await promoteToAdmin(database, admin.email);

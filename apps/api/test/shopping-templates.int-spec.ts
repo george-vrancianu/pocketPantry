@@ -429,12 +429,13 @@ describe('Shopping Templates (integration)', () => {
         .post('/shopping-list/items?locale=en', { name: raw })
         .expect(200);
 
-      await as(admin)
+      const resolved = await as(admin)
         .post('/admin/unmatched/resolve', {
           normalizedName: raw.toLowerCase(),
           ingredientId: parmesan,
         })
         .expect(201);
+      expect(resolved.body).toMatchObject({ relinkedTemplateLines: 1 });
 
       expect((await read(ana, made.id)).lines).toMatchObject([
         {

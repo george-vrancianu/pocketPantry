@@ -256,7 +256,7 @@ export class UnmatchedQueueService {
       target.id,
     );
     // Unmatched Template lines carry the same matching key; they have no queue entry of their own.
-    await tx
+    const relinkedTemplateLines = await tx
       .update(shoppingTemplateLines)
       .set({ ingredientId: target.id, name: null, normalizedName: null })
       .where(
@@ -264,8 +264,9 @@ export class UnmatchedQueueService {
           eq(shoppingTemplateLines.normalizedName, key),
           isNull(shoppingTemplateLines.ingredientId),
         ),
-      );
-    const relinked =
+      )
+      .returning({ id: shoppingTemplateLines.id });
+    const relinkedBatchRows =
       batchIds.length === 0
         ? []
         : await tx
@@ -281,9 +282,10 @@ export class UnmatchedQueueService {
               and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
             )
             .returning({ id: batches.id, familyId: batches.familyId });
-    const relinkedBatches = relinked.length;
     // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
-    for (const familyId of new Set(relinked.map((row) => row.familyId))) {
+    for (const familyId of new Set(
+      relinkedBatchRows.map((row) => row.familyId),
+    )) {
       await this.pantry.relinked(tx, familyId, target.id);
     }
 
@@ -335,8 +337,9 @@ export class UnmatchedQueueService {
     return {
       ingredientId: target.id,
       locale,
-      relinkedBatches,
+      relinkedBatches: relinkedBatchRows.length,
       relinkedShoppingItems,
+      relinkedTemplateLines: relinkedTemplateLines.length,
       synonymAdded,
       sourceSynonymAdded,
       sourceSynonymSkipped,

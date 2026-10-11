@@ -45,6 +45,7 @@ export type UnmatchedResolution = {
   locale: Locale;
   relinkedBatches: number;
   relinkedShoppingItems: number;
+  relinkedTemplateLines: number;
   synonymAdded: boolean;
   /** A Synonym of the printed text was added. */
   sourceSynonymAdded: boolean;

@@ -82,7 +82,10 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
       {
         onSuccess: (result) => {
           const linked = t('admin:unmatched.resolved', {
-            count: result.relinkedBatches + result.relinkedShoppingItems,
+            count:
+              result.relinkedBatches +
+              result.relinkedShoppingItems +
+              result.relinkedTemplateLines,
             name: ingredientName,
           });
           const printed = result.sourceSynonymAdded

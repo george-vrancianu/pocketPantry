@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
-import { family, ingredients, staples } from '../database/schema';
+import { ingredients, staples, suggestionDismissals } from '../database/schema';
+import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import { byShopOrder, loadIngredientPlacements } from './ingredient-placement';
 import {
@@ -53,9 +54,7 @@ export class StaplesService {
           throw new ApiException(404, 'shopping.ingredient_not_found');
         }
         // Serialises concurrent adds so the cap cannot be overshot.
-        await tx.execute(
-          sql`SELECT ${family.id} FROM ${family} WHERE ${family.id} = ${familyId} FOR UPDATE`,
-        );
+        await lockFamilies(tx, [familyId]);
         const [{ total }] = await tx
           .select({ total: count() })
           .from(staples)
@@ -103,11 +102,22 @@ export class StaplesService {
 
   async remove(memberId: string, stapleId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const removed = await this.database
-      .delete(staples)
-      .where(and(eq(staples.id, stapleId), eq(staples.familyId, familyId)))
-      .returning({ id: staples.id });
-    if (removed.length === 0) throw stapleNotFound();
+    await this.database.transaction(async (tx) => {
+      const [removed] = await tx
+        .delete(staples)
+        .where(and(eq(staples.id, stapleId), eq(staples.familyId, familyId)))
+        .returning({ ingredientId: staples.ingredientId });
+      if (!removed) throw stapleNotFound();
+      // A dismissal only hides a Staple; it must not outlive it and hide a re-added one.
+      await tx
+        .delete(suggestionDismissals)
+        .where(
+          and(
+            eq(suggestionDismissals.familyId, familyId),
+            eq(suggestionDismissals.ingredientId, removed.ingredientId),
+          ),
+        );
+    });
   }
 
   private async toViews(
