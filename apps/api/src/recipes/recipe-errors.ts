@@ -27,7 +27,7 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.eating_moment_duplicate` (400): the same Eating Moment twice on one Recipe.
  * - `recipes.eating_moment_not_found` (404): an unknown Eating Moment.
  * - `recipes.pairing_link_conflict` (400): a Pairing linking both an Ingredient and a Recipe.
- * - `recipes.pairing_link_not_allowed` (409): a link to a Recipe the Recipe may not link (Catalog to Family, Family to another Family).
+ * - `recipes.pairing_link_not_allowed` (409): a Catalog Recipe linking a Family Recipe (a Family Recipe linking another Family's Recipe gets `pairing_link_not_found`, so ids never leak).
  * - `recipes.pairing_link_not_found` (404): the linked Ingredient or Recipe does not exist.
  * - `recipes.pairing_self_link` (400): a Pairing linking its own Recipe.
  * - `recipes.nutrition_note_too_long` (400, `{ max }`): over 500 characters, source or translation.

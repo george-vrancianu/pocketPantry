@@ -764,8 +764,11 @@ describe('Family Recipes (integration)', () => {
         });
       await link(base.id).expect(200);
       await link(mine.id).expect(200);
-      const refused = await link(theirs.id).expect(409);
-      expect(code(refused)).toBe('recipes.pairing_link_not_allowed');
+      // another Family's Recipe answers exactly like an id that does not exist
+      const refused = await link(theirs.id).expect(404);
+      const unknown = await link(crypto.randomUUID()).expect(404);
+      expect(code(refused)).toBe('recipes.pairing_link_not_found');
+      expect(refused.body).toEqual(unknown.body);
     });
 
     it('copies guidance into the draft and saves it with the Variant', async () => {
@@ -989,8 +992,8 @@ describe('Family Recipes (integration)', () => {
             ],
           },
         })
-        .expect(409);
-      expect(code(res)).toBe('recipes.pairing_link_not_allowed');
+        .expect(404);
+      expect(code(res)).toBe('recipes.pairing_link_not_found');
     });
   });
 

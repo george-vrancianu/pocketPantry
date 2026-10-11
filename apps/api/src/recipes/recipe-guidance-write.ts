@@ -87,10 +87,15 @@ export async function assertPairingLinks(
     if (found.length !== recipeIds.length) {
       throw new ApiException(404, 'recipes.pairing_link_not_found');
     }
-    if (
-      found.some((r) => r.familyId !== null && r.familyId !== recipe.familyId)
-    ) {
-      throw new ApiException(409, 'recipes.pairing_link_not_allowed');
+    // A Family Recipe never learns that another Family's Recipe exists: it gets
+    // the same answer as for an unknown id. A Catalog Recipe (admin) is told why.
+    const foreign = found.filter(
+      (r) => r.familyId !== null && r.familyId !== recipe.familyId,
+    );
+    if (foreign.length > 0) {
+      throw recipe.familyId === null
+        ? new ApiException(409, 'recipes.pairing_link_not_allowed')
+        : new ApiException(404, 'recipes.pairing_link_not_found');
     }
   }
 }
