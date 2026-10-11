@@ -12,7 +12,7 @@ The retzetar MVP proved that photographing a receipt, a product, a plate, or a p
 
 Pocket Pantry is a mobile-first web app, with a Flutter mobile app planned later against the same API. A Member belongs to one Family. The Family shares a Pantry, a Shopping List, and Family Settings. Groceries enter the Pantry by Scan, by Finish Shopping, or by manual entry, and every entry is matched to the Catalog so the app can reason about what the family actually has. Expiry is tracked per Batch, and Expiring Soon items surface on the Dashboard.
 
-Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping List, Dashboard, Family Settings, Admin catalog curation, and full internationalisation. Recipes, alerts, and push come in wave 2.
+Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping List, Dashboard, Family Settings, Admin catalog curation, and full internationalisation. Recipes, alerts, and push come in wave 2. Suggestions on the Shopping List (see Quick List) are not alerts: they are derived at read time and never pushed or stored as notifications.
 
 ## User Stories
 
@@ -91,6 +91,21 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 59. As a Member, I want to Finish Shopping and have checked items become Batches with Default Expiry, so that putting things away is one tap.
 60. As a Member, I want to review the Batches Finish Shopping is about to create, so that I can set Locations and fix quantities before saving.
 61. As a Member, I want a fresh empty list after Finish Shopping, so that the next shop starts clean.
+
+### Quick List
+
+These stories were added on 2026-10-10 after a grilling session and number on from the end of the list.
+
+79. As a Member, I want to mark an Ingredient as a Staple, so that the app knows we always want it in stock.
+80. As a Member, I want to set a preferred quantity and unit on a Staple, so that adding it to the list needs no typing.
+81. As a Member, I want to manage our Staples on one screen, and toggle a Staple from a Pantry Ingredient row or a Shopping Item, so that keeping the list current is cheap.
+82. As a Member, I want missing Staples suggested at the top of the Shopping List, so that we don't run out of things we always need.
+83. As a Member, I want Ingredients we recently Used Up suggested on the Shopping List, so that rebuying what we finished is one tap.
+84. As a Member, I want to add a Suggestion with one tap, so that building the list is fast.
+85. As a Member, I want to dismiss a Suggestion for the Family, so that something we don't need right now stops showing until it is restocked and runs out again.
+86. As a Member, I want a Suggestions Widget on the Dashboard, so that I see missing Staples without opening the list.
+87. As a Member, I want to create named Shopping Templates, from scratch or from the current Shopping List, so that recurring shops are reusable.
+88. As a Member, I want to apply a Shopping Template through a picker where items already in the Pantry start unticked, so that I only add what we lack.
 
 ### Dashboard
 
@@ -205,10 +220,24 @@ Wave 1 is a vertical slice: auth, Family, Pantry, the four Scan Modes, Shopping 
 - Reads return items grouped by Aisle in Aisle sort order. The client polls on an interval and refetches on window focus.
 - Finish Shopping takes the checked items, returns a proposed list of Batches with Default Expiry and default Location, lets the Member adjust on a Review screen, then creates the Batches, archives the list, and creates a new empty one in a single transaction.
 
+### Quick List
+
+Staples, Used Up Suggestions, and Shopping Templates make adding Shopping Items fast. All three are Family data, and any Member may edit them.
+
+- **Staples.** A Staple references a Catalog Ingredient (never an Unmatched name) and has an optional preferred quantity and unit. At most 200 per Family. A Staple is missing when the Family has no Batch of that Ingredient that is unexpired: an expired Batch counts as missing, an Expiring Soon Batch counts as present. Quantity is ignored, so there is no minimum-stock threshold.
+- **Used Up.** Batches are hard-deleted and the Pantry keeps no history, so a per-Family, per-Ingredient stock history row records when the Ingredient was last stocked and when its last Batch was removed. See [ADR 0005](adr/0005-used-up-from-stock-history.md). An Ingredient is Used Up when its last Batch was removed within the past 30 days, it has no Batches now, and it is not a Staple. Deleting a Batch less than 10 minutes after it was created does not make the Ingredient Used Up, so mistaken entries do not become Suggestions. Unmatched Batches have no Ingredient and are not tracked until an Admin resolves them.
+- **Suggestions.** The API derives Suggestions on read: missing Staples first, then Used Up Ingredients, each group in Aisle order. A Suggestion is hidden while its Ingredient is on the active Shopping List, checked or not. Adding a Staple Suggestion uses the Staple's preferred quantity and unit when set. Adding a Used Up Suggestion adds no quantity. Adding goes through the normal add endpoint and its merge rule. Nothing is ever added automatically.
+- **Dismissal.** Dismissing a Suggestion hides it for the whole Family until a new Batch of the Ingredient is created and it then goes missing or Used Up again. There is no timed snooze. To stop suggesting a Staple for good, the Member removes the Staple.
+- **Where Suggestions show.** A collapsible Suggestions section at the top of the Shopping List, and a new `suggestions` Dashboard Widget with the missing-Staples count and the first few Suggestions. No badges elsewhere.
+- **Shopping Templates.** A Shopping Template has a name and up to 100 lines. Each line is an Ingredient or an Unmatched name with optional quantity and unit, the same shape as a Shopping Item. At most 50 per Family. A Template is created from scratch or by saving the current Shopping List. Archived lists cannot be read yet, so they cannot be saved as Templates.
+- **Applying a Template.** A picker lists the lines grouped by Aisle. Lines whose Ingredient is present in the Pantry (as for Staples, an unexpired Batch) start unticked. Unmatched lines and missing Ingredients start ticked. The ticked lines are added through the existing bulk-add endpoint, all or none, and merge with the list by the usual rule: quantities sum when units agree.
+- **Provenance.** Items added from a Staple, a Suggestion, or a Template carry no source marker. Source Recipe stays recipe-only.
+- **Catalog curation.** When an Admin resolves an Unmatched name, Unmatched Shopping Template lines are relinked along with Batches and Shopping Items, and relinked Batches update the stock history. A Staple or a Template line keeps an Ingredient in use, so the Admin cannot delete it (`catalog.ingredient_in_use`). Stock history rows do not, and are deleted with the Ingredient.
+
 ### Dashboard
 
 - Widget layout is per Member, stored as an ordered list of widget instances with type and size, persisted via the API as in retzetar's dashboard table.
-- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Quick Scan, and the placeholder Meal Plan, Budget, and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
+- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Quick Scan, Suggestions (see Quick List), and the placeholder Meal Plan, Budget, and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
 - Customise screen uses dnd-kit for reorder, with size toggle, remove, and an add gallery, as in the handoff.
 
 ### Settings
@@ -244,11 +273,11 @@ No end-to-end browser tests in wave 1.
 ## Out of Scope
 
 - Recipes, favourites, Want to Cook, cook confirmation with Pantry deduction, recipe suggestions from Ingredients Scan, user recipes from Plate Scan.
-- Alerts and notifications of any kind, in-app or push. The notifications table is not created in wave 1.
+- Alerts and notifications, in-app or push: anything pushed to a Member or stored as a notification. The notifications table is not created in wave 1. Suggestions (see Quick List) are derived at read time and are not alerts.
 - Progressive web app installability, service worker, offline.
 - Barcode scanning and external product databases.
 - Multiple Families per Member, merging Pantries on join.
-- Multiple named Shopping Lists.
+- Multiple named Shopping Lists. Shopping Templates are not Shopping Lists: applying one adds items to the single active list.
 - Unit conversions between mass, volume, and count.
 - Meal planning, budget tracking, and nutrition as real features. Their Widgets are static placeholders.
 - Image storage.
