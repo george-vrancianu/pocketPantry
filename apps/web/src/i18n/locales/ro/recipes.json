@@ -38,11 +38,22 @@
   "backToList": "Toate rețetele",
   "notFound": "Rețeta nu a fost găsită.",
   "sections": {
+    "pairings": "Asocieri",
+    "whenToEat": "Când să mănânci",
+    "nutrition": "Nutriție",
     "ingredients": "Ingrediente",
     "steps": "Pași",
     "tips": "Sfaturi",
     "variants": "Variante",
     "whatsDifferent": "Ce e diferit"
+  },
+  "pairingKind": {
+    "food": "Mâncare",
+    "drink": "Băutură"
+  },
+  "eatingPolarity": {
+    "good_for": "Bun pentru",
+    "avoid": "De evitat"
   },
   "optional": "opțional",
   "timer": "Cronometru {{time}}",

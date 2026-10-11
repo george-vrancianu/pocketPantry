@@ -36,11 +36,22 @@
   "backToList": "Alle opskrifter",
   "notFound": "Opskriften blev ikke fundet.",
   "sections": {
+    "pairings": "Forslag til servering",
+    "whenToEat": "Hvornår skal det spises",
+    "nutrition": "Ernæring",
     "ingredients": "Ingredienser",
     "steps": "Trin",
     "tips": "Tips",
     "variants": "Varianter",
     "whatsDifferent": "Hvad er anderledes"
+  },
+  "pairingKind": {
+    "food": "Mad",
+    "drink": "Drikke"
+  },
+  "eatingPolarity": {
+    "good_for": "Godt til",
+    "avoid": "Undgå"
   },
   "optional": "valgfri",
   "timer": "Timer {{time}}",

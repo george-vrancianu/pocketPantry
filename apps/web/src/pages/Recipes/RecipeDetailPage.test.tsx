@@ -52,6 +52,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   base: null,
   variants: [],
   diff: null,
+  guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   ...over,
 });
 

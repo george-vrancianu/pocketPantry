@@ -36,11 +36,22 @@
   "backToList": "All recipes",
   "notFound": "This recipe could not be found.",
   "sections": {
+    "pairings": "Pairings",
+    "whenToEat": "When to eat",
+    "nutrition": "Nutrition",
     "ingredients": "Ingredients",
     "steps": "Steps",
     "tips": "Tips",
     "variants": "Variants",
     "whatsDifferent": "What's different"
+  },
+  "pairingKind": {
+    "food": "Food",
+    "drink": "Drink"
+  },
+  "eatingPolarity": {
+    "good_for": "Good for",
+    "avoid": "Avoid"
   },
   "optional": "optional",
   "timer": "Timer {{time}}",

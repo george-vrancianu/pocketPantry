@@ -64,6 +64,41 @@ export type RecipeDiff = {
   swapped: { from: DiffEntry; to: DiffEntry }[];
 };
 
+export type PairingKind = 'food' | 'drink';
+export type PairingPrinciple =
+  | 'acid_cuts_fat'
+  | 'salt_balances_sweet'
+  | 'fat_carries_flavour'
+  | 'contrast_texture'
+  | 'complement_flavour'
+  | 'bitter_balances_rich'
+  | 'cleanses_palate'
+  | 'regional_tradition';
+export type PairingLink =
+  | { type: 'ingredient'; id: string; name: string }
+  | { type: 'recipe'; id: string; title: string };
+export type DetailPairing = {
+  id: string;
+  kind: PairingKind;
+  label: string;
+  reason: string;
+  principle: PairingPrinciple | null;
+  /** Null for no link, or when the linked Recipe is archived or not visible. */
+  link: PairingLink | null;
+};
+export type DetailEatingMoment = {
+  eatingMomentId: string;
+  name: string;
+  polarity: 'good_for' | 'avoid';
+  reason: string | null;
+};
+/** Recipe guidance in the Member's locale (mirror of the API's `ResolvedGuidance`). */
+export type RecipeGuidance = {
+  nutritionNote: string | null;
+  pairings: DetailPairing[];
+  eatingMoments: DetailEatingMoment[];
+};
+
 /** The Member's Recipe detail (mirror of the API's `RecipeDetail`). */
 export type RecipeDetail = {
   id: string;
@@ -83,6 +118,7 @@ export type RecipeDetail = {
   base: { id: string; title: string; archived: boolean } | null;
   variants: RecipeVariantItem[];
   diff: RecipeDiff | null;
+  guidance: RecipeGuidance;
 };
 
 export type RecipeFilterOptions = { cuisines: NamedRef[]; methods: NamedRef[] };
