@@ -42,6 +42,18 @@
       "count_few": "produse de bază lipsă",
       "count_other": "de produse de bază lipsă"
     },
+    "cookTonight": {
+      "title": "Gătește diseară",
+      "seeAll": "Vezi tot",
+      "empty": "Nimic de gătit din Cămara ta încă. Adaugă Loturi sau Rețete ca să vezi idei.",
+      "missing": "Lipsește: {{name}}",
+      "expiring_one": "folosește {{count}} care expiră",
+      "expiring_few": "folosește {{count}} care expiră",
+      "expiring_other": "folosește {{count}} care expiră",
+      "otherVariants_one": "+{{count}} altă variantă pe care o poți face",
+      "otherVariants_few": "+{{count}} alte variante pe care le poți face",
+      "otherVariants_other": "+{{count}} de alte variante pe care le poți face"
+    },
     "mealPlan": {
       "title": "Plan de mese"
     },

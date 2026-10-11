@@ -11,7 +11,9 @@ import {
 import { PantryStockWidget } from './PantryStockWidget';
 import { QuickScanWidget } from './QuickScanWidget';
 import { ShoppingWidget } from './ShoppingWidget';
+import { CookTonightWidget } from './CookTonightWidget';
 import { UseSoonWidget } from './UseSoonWidget';
+import type { CookTonightCard } from '../../../lib/cookTonight';
 
 const isoIn = (days: number) => {
   const date = new Date();
@@ -266,5 +268,139 @@ describe.each([
 
     const region = screen.getByRole('region', { name: roName });
     expect(within(region).getByText('În curând')).toBeInTheDocument();
+  });
+});
+
+describe('CookTonightWidget', () => {
+  const card = (
+    id: string,
+    overrides: Partial<CookTonightCard> = {},
+  ): CookTonightCard => ({
+    base: { id: `b-${id}`, title: `Base ${id}`, archived: false },
+    recipe: {
+      id,
+      title: `Recipe ${id}`,
+      parentId: null,
+      owner: 'catalog',
+      servings: 2,
+      prepMinutes: null,
+      cookMinutes: null,
+    },
+    canMake: true,
+    missing: null,
+    expiringCount: 0,
+    otherVariantsCount: 0,
+    ...overrides,
+  });
+  const cookTonight = (cards: CookTonightCard[]) => ({
+    'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
+  });
+
+  it('shows one card linking to the Recipe, with the other Variants count and time', async () => {
+    stub(
+      cookTonight([
+        card('r1', {
+          otherVariantsCount: 2,
+          recipe: {
+            id: 'r1',
+            title: 'Spicy Pasta',
+            parentId: 'b-r1',
+            owner: 'family',
+            servings: 2,
+            prepMinutes: 10,
+            cookMinutes: 20,
+          },
+        }),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    const region = await screen.findByRole('region', { name: 'Cook tonight' });
+    const link = await within(region).findByRole('link', {
+      name: /Spicy Pasta/,
+    });
+    expect(link).toHaveAttribute('href', '/recipes/r1');
+    expect(within(link).getByText('variant of Base r1')).toBeInTheDocument();
+    expect(within(link).getByText('30 min')).toBeInTheDocument();
+    expect(
+      within(link).getByText('+2 other variants you can make'),
+    ).toBeInTheDocument();
+    expect(
+      within(region).getByRole('link', { name: 'See all' }),
+    ).toHaveAttribute('href', '/recipes');
+  });
+
+  it('labels a near miss with the missing Ingredient', async () => {
+    stub(
+      cookTonight([
+        card('r1', {
+          canMake: false,
+          missing: { ingredientId: 'i1', name: 'Saffron' },
+        }),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(await screen.findByText('Missing: Saffron')).toBeInTheDocument();
+  });
+
+  it('titles a card by the archived base and shows the Variant as secondary', async () => {
+    stub(
+      cookTonight([
+        card('r1', {
+          base: { id: 'b1', title: 'Old Stew', archived: true },
+          recipe: {
+            id: 'r1',
+            title: 'Vegan Stew',
+            parentId: 'b1',
+            owner: 'family',
+            servings: 2,
+            prepMinutes: null,
+            cookMinutes: null,
+          },
+        }),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: /Old Stew/ });
+    expect(link).toHaveAttribute('href', '/recipes/r1');
+    expect(within(link).getByText('Vegan Stew')).toBeInTheDocument();
+    expect(within(link).queryByText(/variant of/)).not.toBeInTheDocument();
+  });
+
+  it('shows as many cards as the size allows', async () => {
+    stub(cookTonight([card('1'), card('2'), card('3')]));
+
+    renderWithProviders(<CookTonightWidget size="small" columns={2} />);
+
+    expect(await screen.findByText('Recipe 1')).toBeInTheDocument();
+    expect(screen.queryByText('Recipe 2')).not.toBeInTheDocument();
+  });
+
+  it('says so when nothing can be made tonight', async () => {
+    stub(cookTonight([]));
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByText(/Nothing to cook from your Pantry yet/),
+    ).toBeInTheDocument();
+  });
+
+  it('asks the API with the locale and today', async () => {
+    const { fetchMock, calls } = stubApi(cookTonight([]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    await screen.findByText(/Nothing to cook/);
+    const search = new URLSearchParams(calls[0]?.search);
+    expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
+    expect(search.get('locale')).toBe('en');
+    expect(search.get('today')).toBe(isoIn(0));
   });
 });
