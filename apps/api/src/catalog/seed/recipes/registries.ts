@@ -20,12 +20,16 @@ export const SEED_CUISINES: SeedNamed[] = [
   ),
   named('asian', 'Asian', 'Asiatică', 'Asiatisk'),
   named('romanian', 'Romanian', 'Românească', 'Rumænsk'),
+  named('french', 'French', 'Franțuzească', 'Fransk'),
+  named('irish', 'Irish', 'Irlandeză', 'Irsk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [
   named('rolled', 'French rolled', 'Rulată franțuzește', 'Fransk rullet'),
   named('folded', 'American folded', 'Pliată american', 'Amerikansk foldet'),
   named('frittata', 'Frittata', 'Frittata', 'Frittata'),
+  named('riced', 'Riced', 'Pasat prin presă', 'Presset'),
+  named('gratin-topped', 'Gratin-topped', 'Gratinat', 'Gratineret'),
 ];
 
 /** In display order. Exactly the list from the ticket. */
