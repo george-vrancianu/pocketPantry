@@ -7,6 +7,7 @@ import { AddItemForm } from './components/AddItemForm';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SummaryCard } from './components/SummaryCard';
+import { TemplateActions } from './templates/TemplateActions';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
@@ -43,6 +44,7 @@ export function ShoppingPage() {
               checked={screen.list.summary.checked}
             />
             <AddItemForm adding={screen.adding} onAdd={screen.add} />
+            <TemplateActions />
             {screen.list.groups.length === 0 ? (
               <Typography color="text.secondary">
                 {t('shopping:empty')}

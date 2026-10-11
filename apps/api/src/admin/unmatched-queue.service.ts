@@ -18,6 +18,7 @@ import {
   ingredients,
   shoppingItems,
   shoppingLists,
+  shoppingTemplateLines,
   unmatchedEntries,
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
@@ -252,6 +253,16 @@ export class UnmatchedQueueService {
       itemIds,
       target.id,
     );
+    // Unmatched Template lines carry the same matching key; they have no queue entry of their own.
+    await tx
+      .update(shoppingTemplateLines)
+      .set({ ingredientId: target.id, name: null, normalizedName: null })
+      .where(
+        and(
+          eq(shoppingTemplateLines.normalizedName, key),
+          isNull(shoppingTemplateLines.ingredientId),
+        ),
+      );
     const relinkedBatches =
       batchIds.length === 0
         ? 0

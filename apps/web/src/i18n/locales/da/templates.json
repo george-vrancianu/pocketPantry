@@ -1,0 +1,42 @@
+{
+  "title": "Indkøbsskabeloner",
+  "open": "Skabeloner",
+  "save": {
+    "button": "Gem som skabelon",
+    "name": "Skabelonens navn",
+    "submit": "Gem skabelon",
+    "saving": "Gemmer"
+  },
+  "apply": {
+    "button": "Tilføj fra skabelon",
+    "choose": "Vælg en skabelon",
+    "none": "Ingen skabeloner endnu. Gem din liste som skabelon, eller opret en under Skabeloner.",
+    "title": "Tilføj fra {{name}}",
+    "hint": "Varer, du allerede har i spisekammeret, starter uafkrydsede.",
+    "empty": "Denne skabelon har ingen linjer.",
+    "confirm_one": "Tilføj {{count}} vare til listen",
+    "confirm_other": "Tilføj {{count}} varer til listen",
+    "confirming": "Tilføjer",
+    "inPantry": "I spisekammeret",
+    "unmatchedGroup": "Ikke i kataloget",
+    "cancel": "Tilbage"
+  },
+  "list": {
+    "empty": "Ingen skabeloner endnu. Opret en for at genbruge en indkøbstur.",
+    "name": "Navn på ny skabelon",
+    "create": "Opret skabelon",
+    "lines_one": "{{count}} linje",
+    "lines_other": "{{count}} linjer",
+    "back": "Tilbage til indkøb"
+  },
+  "editor": {
+    "name": "Navn",
+    "rename": "Omdøb",
+    "remove": "Fjern {{name}}",
+    "delete": "Slet skabelon",
+    "deleteConfirm": "Slet denne skabelon for hele familien?",
+    "empty": "Ingen linjer endnu. Tilføj, hvad skabelonen skal bruge, nedenfor.",
+    "back": "Tilbage til skabeloner",
+    "apply": "Tilføj til listen"
+  }
+}

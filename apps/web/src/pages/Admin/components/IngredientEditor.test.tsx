@@ -251,9 +251,7 @@ describe('IngredientEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Șterge' }));
     await user.click(screen.getByRole('button', { name: 'Confirmă' }));
 
-    expect(
-      await screen.findByText(/încă folosit de Loturi sau Articole/),
-    ).toBeVisible();
+    expect(await screen.findByText(/încă folosit în Cămară/)).toBeVisible();
   });
 
   it('shows the duplicate-name error from the API', async () => {
