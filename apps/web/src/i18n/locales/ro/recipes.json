@@ -44,8 +44,6 @@
     "swap": "{{from}} cu {{to}}",
     "none": "Aceleași ingrediente ca la {{base}}."
   },
-  "stepNumber": "Pasul {{number}}",
   "stepTips": "Sfaturi pentru acest pas",
-  "noIngredients": "Niciun ingredient listat.",
-  "noSteps": "Niciun pas încă."
+  "tipLabel": "Sfat"
 }

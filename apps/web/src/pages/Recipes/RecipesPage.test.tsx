@@ -113,8 +113,11 @@ describe('RecipesPage', () => {
       const last = calls.filter((c) => c.key === 'GET /api/recipes').at(-1)!;
       expect(last.search).toContain('search=frit');
     });
-    const requests = calls.filter((c) => c.key === 'GET /api/recipes');
-    expect(requests.some((c) => c.search.includes('search=f&'))).toBe(false);
+    const searched = calls
+      .filter((c) => c.key === 'GET /api/recipes')
+      .map((c) => new URLSearchParams(c.search).get('search'))
+      .filter(Boolean);
+    expect(new Set(searched)).toEqual(new Set(['frit']));
   });
 
   it('badges a Family Recipe', async () => {

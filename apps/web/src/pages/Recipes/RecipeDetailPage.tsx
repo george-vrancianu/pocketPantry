@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
+import { ApiError } from '../../lib/api';
 import { useRecipe } from '../../lib/recipes';
 import { OwnerBadge } from './components/OwnerBadge';
 import { RecipeMeta } from './components/RecipeMeta';
@@ -20,7 +21,11 @@ export function RecipeDetailPage() {
       <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
       <Stack spacing={2.5}>
         {query.error ? (
-          <Alert>{translateApiError(t, query.error)}</Alert>
+          <Alert>
+            {query.error instanceof ApiError && query.error.status === 404
+              ? t('recipes:notFound')
+              : translateApiError(t, query.error)}
+          </Alert>
         ) : null}
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe ? (

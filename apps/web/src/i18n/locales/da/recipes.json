@@ -42,8 +42,6 @@
     "swap": "{{from}} til {{to}}",
     "none": "Samme ingredienser som {{base}}."
   },
-  "stepNumber": "Trin {{number}}",
   "stepTips": "Tips til dette trin",
-  "noIngredients": "Ingen ingredienser opført.",
-  "noSteps": "Ingen trin endnu."
+  "tipLabel": "Tip"
 }

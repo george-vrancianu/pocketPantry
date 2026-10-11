@@ -2,7 +2,7 @@ import { Box, Link, Stack, Typography } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { DiffEntry, RecipeDetail } from '../../../lib/recipes';
-import { IngredientList } from './IngredientList';
+import { IngredientList, lineAmount } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
 import { Section } from './Section';
@@ -65,7 +65,13 @@ function TipsSection({ recipe }: SectionProps) {
   );
 }
 
-const entryText = (entry: DiffEntry) => entry.ingredientName;
+function useEntryText() {
+  const { t, i18n } = useTranslation(['recipes', 'common']);
+  return (entry: DiffEntry) => {
+    const amount = lineAmount(entry, i18n.language, t);
+    return amount ? `${entry.ingredientName} ${amount}` : entry.ingredientName;
+  };
+}
 
 function DiffGroup({ label, items }: { label: string; items: ReactNode[] }) {
   if (items.length === 0) return null;
@@ -74,7 +80,7 @@ function DiffGroup({ label, items }: { label: string; items: ReactNode[] }) {
       <Typography variant="meta" color="text.secondary" component="p">
         {label}
       </Typography>
-      <Stack component="ul" sx={{ m: 0, pl: 3 }}>
+      <Stack component="ul" aria-label={label} sx={{ m: 0, pl: 3 }}>
         {items.map((item, index) => (
           <Box component="li" key={index}>
             {item}
@@ -88,6 +94,7 @@ function DiffGroup({ label, items }: { label: string; items: ReactNode[] }) {
 /** A Variant's ingredient diff against its base. */
 function WhatsDifferentSection({ recipe }: SectionProps) {
   const { t } = useTranslation('recipes');
+  const entryText = useEntryText();
   const { diff, base } = recipe;
   if (!diff) return null;
   const empty =

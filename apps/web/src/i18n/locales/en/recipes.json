@@ -33,7 +33,7 @@
   },
   "optional": "optional",
   "timer": "Timer {{time}}",
-  "inheritedTip": "from the base recipe",
+  "inheritedTip": "from the Base Recipe",
   "noVariants": "No variants yet.",
   "diff": {
     "added": "Added",
@@ -42,8 +42,6 @@
     "swap": "{{from}} to {{to}}",
     "none": "Same ingredients as {{base}}."
   },
-  "stepNumber": "Step {{number}}",
   "stepTips": "Tips for this step",
-  "noIngredients": "No ingredients listed.",
-  "noSteps": "No steps yet."
+  "tipLabel": "Tip"
 }

@@ -31,19 +31,33 @@ export function StepList({
               {t('timer', { time: formatTimer(step.timerSeconds) })}
             </Typography>
           ) : null}
-          {tips
-            .filter((tip) => tip.stepId === step.id)
-            .map((tip) => (
-              <Typography
-                key={tip.id}
-                variant="meta"
-                color="text.secondary"
-                component="p"
-              >
-                {tip.text}
-              </Typography>
-            ))}
+          <StepTips tips={tips.filter((tip) => tip.stepId === step.id)} />
         </Box>
+      ))}
+    </Stack>
+  );
+}
+
+/** The Tips anchored to one Step, each labelled so they read apart from the Step text. */
+function StepTips({ tips }: { tips: RecipeDetailTip[] }) {
+  const { t } = useTranslation('recipes');
+  if (tips.length === 0) return null;
+  return (
+    <Stack
+      component="ul"
+      aria-label={t('stepTips')}
+      sx={{ listStyle: 'none', m: 0, p: 0 }}
+    >
+      {tips.map((tip) => (
+        <Typography
+          key={tip.id}
+          component="li"
+          variant="meta"
+          color="text.secondary"
+        >
+          <strong>{t('tipLabel')}: </strong>
+          {tip.text}
+        </Typography>
       ))}
     </Stack>
   );

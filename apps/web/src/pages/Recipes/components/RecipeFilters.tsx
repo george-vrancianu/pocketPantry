@@ -17,6 +17,7 @@ export function RecipeFilters({ value, onChange, options }: Props) {
         type="search"
         label={t('search')}
         value={value.search}
+        slotProps={{ htmlInput: { maxLength: 100 } }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
       />
       <Picker

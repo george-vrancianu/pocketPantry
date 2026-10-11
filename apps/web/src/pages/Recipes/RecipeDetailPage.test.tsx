@@ -5,12 +5,12 @@ import type { RecipeDetail } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { RecipeDetailPage } from './RecipeDetailPage';
 
-const entry = (id: string, ingredientName: string) => ({
-  id,
-  ingredientName,
-  quantity: null,
-  unit: null,
-});
+const entry = (
+  id: string,
+  ingredientName: string,
+  quantity: number | null = null,
+  unit: 'g' | 'ml' | null = null,
+) => ({ id, ingredientName, quantity, unit });
 
 const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   id: 'o',
@@ -126,9 +126,11 @@ describe('RecipeDetailPage', () => {
         parentId: 'o',
         base: { id: 'o', title: 'Omelette', archived: false },
         diff: {
-          added: [entry('a1', 'Feta')],
-          removed: [entry('r1', 'Butter')],
-          swapped: [{ from: entry('w1', 'Chives'), to: entry('w2', 'Dill') }],
+          added: [entry('a1', 'Feta', 100, 'g')],
+          removed: [entry('r1', 'Butter', 20, 'g')],
+          swapped: [
+            { from: entry('w1', 'Chives', 5, 'ml'), to: entry('w2', 'Dill') },
+          ],
         },
       }),
     );
@@ -139,13 +141,15 @@ describe('RecipeDetailPage', () => {
     const section = screen
       .getByRole('heading', { name: "What's different" })
       .closest('section')!;
-    const added = within(section).getByText('Added').closest('div')!;
-    expect(within(added).getByText(/Feta/)).toBeInTheDocument();
-    const removed = within(section).getByText('Removed').closest('div')!;
-    expect(within(removed).getByText(/Butter/)).toBeInTheDocument();
-    const swapped = within(section).getByText('Swapped').closest('div')!;
-    expect(within(swapped).getByText('Chives to Dill')).toBeInTheDocument();
-    // A base has no diff section.
+    const added = within(section).getByRole('list', { name: 'Added' });
+    expect(within(added).getByText('Feta 100 g')).toBeInTheDocument();
+    const removed = within(section).getByRole('list', { name: 'Removed' });
+    expect(within(removed).getByText('Butter 20 g')).toBeInTheDocument();
+    const swapped = within(section).getByRole('list', { name: 'Swapped' });
+    expect(
+      within(swapped).getByText('Chives 5 ml to Dill'),
+    ).toBeInTheDocument();
+    // A Variant has no Variants section.
     expect(screen.queryByRole('heading', { name: 'Variants' })).toBeNull();
   });
 
@@ -182,7 +186,7 @@ describe('RecipeDetailPage', () => {
     )!;
     expect(within(tips).getByText('Use a nonstick pan')).toBeInTheDocument();
     expect(within(tips).getByText('Salt at the end')).toBeInTheDocument();
-    expect(within(tips).getAllByText(/from the base recipe/)).toHaveLength(1);
+    expect(within(tips).getAllByText(/from the Base Recipe/)).toHaveLength(1);
     expect(within(tips).queryByText('Keep the heat low')).toBeNull();
     const step = screen.getByText('Fry gently').closest('li')!;
     expect(within(step).getByText('Keep the heat low')).toBeInTheDocument();
@@ -205,6 +209,8 @@ describe('RecipeDetailPage', () => {
       </Routes>,
       { route: '/recipes/nope' },
     );
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This recipe could not be found.',
+    );
   });
 });
