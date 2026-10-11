@@ -5,7 +5,8 @@ import { ApiException } from '../common/api-exception';
  * (`errors:<code>`). Statuses: 404 for a missing thing, 409 for a rule about
  * the Recipe hierarchy or a stale view, 400 for an invalid request body.
  *
- * - `recipes.not_found` (404): no Catalog Recipe with that id.
+ * - `recipes.not_found` (404): no Catalog Recipe with that id (Admin), or, for a Member, no Recipe
+ *   with that id that is the Catalog's or their own Family's (unknown or another Family's).
  * - `recipes.parent_not_found` (404): the Variant's base is not a Catalog Recipe.
  * - `recipes.variant_of_variant` (409): the base is itself a Variant.
  * - `recipes.parent_archived` (409): the base is archived; new Variants are refused.

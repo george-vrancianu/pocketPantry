@@ -8,6 +8,7 @@ import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { FamilyPage } from './pages/Family/FamilyPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
+import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
@@ -44,6 +45,7 @@ export function App() {
           <Route path="scan/review" element={<ReviewOverviewPage />} />
           <Route path="scan/review/:scanId" element={<ReviewPage />} />
           <Route path="recipes" element={<RecipesPage />} />
+          <Route path="recipes/:id" element={<RecipeDetailPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="family" element={<FamilyPage />} />
           <Route element={<RequireAdmin />}>

@@ -15,5 +15,46 @@
     "cleanses_palate": "Curăță palatul",
     "regional_tradition": "Tradiție regională"
   },
-  "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice."
+  "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
+  "search": "Caută rețete",
+  "cuisine": "Bucătărie",
+  "method": "Metodă",
+  "anyCuisine": "Toate bucătăriile",
+  "anyMethod": "Toate metodele",
+  "empty": "Nicio rețetă încă.",
+  "noMatches": "Nicio rețetă nu se potrivește.",
+  "variantCount_one": "{{count}} variantă",
+  "variantCount_few": "{{count}} variante",
+  "variantCount_other": "{{count}} de variante",
+  "variantOf": "variantă a rețetei {{base}}",
+  "familyBadge": "A familiei tale",
+  "minutes": "{{count}} min",
+  "prep": "Pregătire {{time}}",
+  "cook": "Gătit {{time}}",
+  "servings_one": "{{count}} porție",
+  "servings_few": "{{count}} porții",
+  "servings_other": "{{count}} de porții",
+  "archived": "Această rețetă este arhivată.",
+  "backToList": "Toate rețetele",
+  "notFound": "Rețeta nu a fost găsită.",
+  "sections": {
+    "ingredients": "Ingrediente",
+    "steps": "Pași",
+    "tips": "Sfaturi",
+    "variants": "Variante",
+    "whatsDifferent": "Ce e diferit"
+  },
+  "optional": "opțional",
+  "timer": "Cronometru {{time}}",
+  "inheritedTip": "din rețeta de bază",
+  "noVariants": "Nicio variantă încă.",
+  "diff": {
+    "added": "Adăugate",
+    "removed": "Eliminate",
+    "swapped": "Înlocuite",
+    "swap": "{{from}} cu {{to}}",
+    "none": "Aceleași ingrediente ca la {{base}}."
+  },
+  "stepTips": "Sfaturi pentru acest pas",
+  "tipLabel": "Sfat"
 }
