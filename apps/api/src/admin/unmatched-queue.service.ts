@@ -10,6 +10,7 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
+import { clearDismissals } from '../shopping/suggestion-dismissals';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
@@ -263,24 +264,27 @@ export class UnmatchedQueueService {
           isNull(shoppingTemplateLines.ingredientId),
         ),
       );
-    const relinkedBatches =
+    const relinked =
       batchIds.length === 0
-        ? 0
-        : (
-            await tx
-              .update(batches)
-              .set({
-                ingredientId: target.id,
-                // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
-                leafCategoryId: target.leafCategoryId,
-                unmatched: false,
-                rawName: null,
-              })
-              .where(
-                and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
-              )
-              .returning({ id: batches.id })
-          ).length;
+        ? []
+        : await tx
+            .update(batches)
+            .set({
+              ingredientId: target.id,
+              // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
+              leafCategoryId: target.leafCategoryId,
+              unmatched: false,
+              rawName: null,
+            })
+            .where(
+              and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
+            )
+            .returning({ id: batches.id, familyId: batches.familyId });
+    const relinkedBatches = relinked.length;
+    // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
+    for (const familyId of new Set(relinked.map((row) => row.familyId))) {
+      await clearDismissals(tx, familyId, [target.id]);
+    }
 
     const synonymAdded = await this.addSynonym(
       tx,

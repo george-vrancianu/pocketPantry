@@ -14,6 +14,7 @@ import { ReviewPage } from './pages/Review/ReviewPage';
 import { ScanPage } from './pages/Scan/ScanPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { ShoppingPage } from './pages/Shopping/ShoppingPage';
+import { StaplesPage } from './pages/Shopping/StaplesPage';
 import { TemplateEditorPage } from './pages/Shopping/templates/TemplateEditorPage';
 import { TemplatesPage } from './pages/Shopping/templates/TemplatesPage';
 import { SignInPage } from './pages/SignIn/SignInPage';
@@ -33,6 +34,7 @@ export function App() {
           <Route path="customise" element={<CustomisePage />} />
           <Route path="pantry" element={<PantryPage />} />
           <Route path="shopping" element={<ShoppingPage />} />
+          <Route path="shopping/staples" element={<StaplesPage />} />
           <Route path="shopping/templates" element={<TemplatesPage />} />
           <Route
             path="shopping/templates/:id"

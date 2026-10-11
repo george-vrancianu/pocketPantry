@@ -8,6 +8,7 @@ export type WidgetType =
   | 'shopping'
   | 'pantry-stock'
   | 'quick-scan'
+  | 'suggestions'
   | 'meal-plan'
   | 'budget'
   | 'nutrition';

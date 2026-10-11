@@ -60,6 +60,7 @@ export function useFinishShopping() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
       ]),
   });
 }

@@ -32,6 +32,7 @@ import type {
   FinishResult,
   FinishShoppingBody,
 } from './finish-shopping.schemas';
+import { clearDismissals } from './suggestion-dismissals';
 
 const FALLBACK_LOCATION = 'cupboard' as const;
 const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
@@ -167,6 +168,11 @@ export class FinishShoppingService {
           };
         });
         await tx.insert(batches).values(values);
+        await clearDismissals(
+          tx,
+          familyId,
+          values.map((value) => value.ingredientId),
+        );
         await this.queueUnmatchedBatches(
           tx,
           body.lines.flatMap((line, index) =>

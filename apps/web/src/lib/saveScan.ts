@@ -45,6 +45,7 @@ export function useSaveLines(locale: string) {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
       ]),
   });
 }

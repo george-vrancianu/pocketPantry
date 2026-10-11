@@ -7,6 +7,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
 
 export type ShoppingGroupsProps = {
@@ -180,6 +181,9 @@ function ChecklistRow({
           </Typography>
         ) : null}
       </Box>
+      {item.ingredientId !== null ? (
+        <StapleToggle ingredientId={item.ingredientId} name={item.name} />
+      ) : null}
       <IconButton
         label={t('item.remove', { name: item.name })}
         onClick={() => onRemove(item.id)}

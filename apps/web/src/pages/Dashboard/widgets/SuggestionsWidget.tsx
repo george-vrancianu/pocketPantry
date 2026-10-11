@@ -1,0 +1,63 @@
+import { Box, ShoppingIcon, tokens } from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../../i18n/translateApiError';
+import { localIso } from '../../../lib/pantry';
+import { useSuggestions, WIDGET_SUGGESTION_COUNT } from '../../../lib/staples';
+import { WidgetCard, WidgetTitle } from './WidgetCard';
+import type { WidgetProps } from './types';
+
+/** How many missing Staples there are, and the first few by name; the card opens the Shopping List. */
+export function SuggestionsWidget({ size, columns }: WidgetProps) {
+  const { t, i18n } = useTranslation('dashboard');
+  const suggestions = useSuggestions(i18n.language, localIso(new Date()));
+  const all = suggestions.data?.staples ?? [];
+  const names = all.slice(0, WIDGET_SUGGESTION_COUNT).map((s) => s.name);
+
+  return (
+    <WidgetCard
+      label={t('widgets.suggestions.title')}
+      size={size}
+      columns={columns}
+      to="/shopping"
+      isLoading={suggestions.isPending}
+      error={suggestions.error ? translateApiError(t, suggestions.error) : null}
+    >
+      <WidgetTitle icon={<ShoppingIcon size={16} />}>
+        {t('widgets.suggestions.title')}
+      </WidgetTitle>
+      <Box
+        component="p"
+        sx={{
+          m: 0,
+          mt: '8px',
+          fontFamily: tokens.font.display,
+          fontSize: 40,
+          fontWeight: 700,
+          lineHeight: 1,
+        }}
+      >
+        {all.length}
+      </Box>
+      <Box
+        component="p"
+        sx={{ m: 0, mt: '2px', fontSize: 13, fontWeight: 600 }}
+      >
+        {t('widgets.suggestions.missing', { count: all.length })}
+      </Box>
+      <Box
+        component="p"
+        sx={{
+          m: 0,
+          mt: 'auto',
+          pt: '8px',
+          fontSize: 12,
+          color: tokens.color.muted,
+        }}
+      >
+        {names.length === 0
+          ? t('widgets.suggestions.empty')
+          : `${names.join(', ')}${all.length > names.length ? '…' : ''}`}
+      </Box>
+    </WidgetCard>
+  );
+}

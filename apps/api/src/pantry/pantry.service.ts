@@ -19,6 +19,7 @@ import {
   parentCategories,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
+import { clearDismissals } from '../shopping/suggestion-dismissals';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import type {
   BatchView,
@@ -90,6 +91,11 @@ export class PantryService {
     }));
     const rows = await this.database.transaction(async (tx) => {
       const inserted = await tx.insert(batches).values(values).returning();
+      await clearDismissals(
+        tx,
+        familyId,
+        values.map((value) => value.ingredientId ?? null),
+      );
       // The ids were generated above, so each entry is built from its own line.
       await recordUnmatched(
         tx,

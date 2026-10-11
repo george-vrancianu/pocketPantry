@@ -4,6 +4,7 @@ import type { Unit } from './catalog';
 import { localIso } from './pantry';
 import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
+import { suggestionsQueryKey } from './staples';
 
 export type TemplateSummary = { id: string; name: string; lineCount: number };
 
@@ -110,7 +111,11 @@ export function useApplyTemplate(locale: string) {
   return useMutation({
     mutationFn: (lines: TemplateLine[]) =>
       postShoppingItems(locale, lines.map(toLineBody)),
+    // Suggestions hide while the Ingredient is on the list.
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      ]),
   });
 }
