@@ -33,6 +33,10 @@ export const aisleOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
+/** A Cuisine or Method: just a name; its translations are catalog translations. */
+export const listEntryCreate = z.object({ name: text });
+export const listEntryUpdate = z.object({ name: text });
+
 export const parentCategoryCreate = z.object({
   name: text,
   aisleId: id,
@@ -106,3 +110,5 @@ export type IngredientCreate = z.infer<typeof ingredientCreate>;
 export type IngredientUpdate = z.infer<typeof ingredientUpdate>;
 export type TranslationCreate = z.infer<typeof translationCreate>;
 export type TranslationUpdate = z.infer<typeof translationUpdate>;
+export type ListEntryCreate = z.infer<typeof listEntryCreate>;
+export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;

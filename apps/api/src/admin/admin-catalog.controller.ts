@@ -23,6 +23,8 @@ import {
   ingredientCreate,
   ingredientUpdate,
   leafCategoryCreate,
+  listEntryCreate,
+  listEntryUpdate,
   leafCategoryUpdate,
   parentCategoryCreate,
   parentCategoryUpdate,
@@ -34,6 +36,8 @@ import {
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
+  type ListEntryCreate,
+  type ListEntryUpdate,
   type LeafCategoryUpdate,
   type ParentCategoryCreate,
   type ParentCategoryUpdate,
@@ -85,6 +89,56 @@ export class AdminCatalogController {
   @HttpCode(204)
   async deleteAisle(@Id() { id }: IdParam) {
     await this.catalog.deleteAisle(id);
+  }
+
+  @Post('cuisines')
+  @ApiOperation({ summary: 'Admin only: create a Cuisine for Recipes' })
+  createCuisine(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createCuisine(body);
+  }
+
+  @Patch('cuisines/:id')
+  updateCuisine(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateCuisine(id, body);
+  }
+
+  @Delete('cuisines/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete a Cuisine unless a Recipe uses it',
+  })
+  @HttpCode(204)
+  async deleteCuisine(@Id() { id }: IdParam) {
+    await this.catalog.deleteCuisine(id);
+  }
+
+  @Post('methods')
+  @ApiOperation({ summary: 'Admin only: create a Method for Recipes' })
+  createMethod(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createMethod(body);
+  }
+
+  @Patch('methods/:id')
+  updateMethod(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateMethod(id, body);
+  }
+
+  @Delete('methods/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete a Method unless a Recipe uses it',
+  })
+  @HttpCode(204)
+  async deleteMethod(@Id() { id }: IdParam) {
+    await this.catalog.deleteMethod(id);
   }
 
   @Post('parent-categories')

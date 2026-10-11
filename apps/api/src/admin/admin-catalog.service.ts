@@ -13,12 +13,16 @@ import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   aisles,
   catalogTranslations,
+  cuisines,
   ingredients,
   leafCategories,
+  methods,
   parentCategories,
 } from '../database/schema';
 import type {
   AisleCreate,
+  ListEntryCreate,
+  ListEntryUpdate,
   AisleOrder,
   AisleUpdate,
   IngredientCreate,
@@ -48,6 +52,9 @@ export function otherLeafName(parentName: string): string {
 const otherLeafNameTaken = () =>
   new ApiException(409, 'catalog.other_leaf_name_taken');
 
+type ListType = 'cuisine' | 'method';
+const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
+
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
 
@@ -64,23 +71,32 @@ export class AdminCatalogService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   async overview() {
-    const [aisleRows, parentRows, leafRows, ingredientRows, translationRows] =
-      await Promise.all([
-        this.database.select().from(aisles).orderBy(aisles.sortOrder),
-        this.database
-          .select()
-          .from(parentCategories)
-          .orderBy(parentCategories.normalizedName),
-        this.database
-          .select()
-          .from(leafCategories)
-          .orderBy(leafCategories.normalizedName),
-        this.database
-          .select()
-          .from(ingredients)
-          .orderBy(ingredients.normalizedName),
-        this.database.select().from(catalogTranslations),
-      ]);
+    const [
+      aisleRows,
+      parentRows,
+      leafRows,
+      ingredientRows,
+      translationRows,
+      cuisineRows,
+      methodRows,
+    ] = await Promise.all([
+      this.database.select().from(aisles).orderBy(aisles.sortOrder),
+      this.database
+        .select()
+        .from(parentCategories)
+        .orderBy(parentCategories.normalizedName),
+      this.database
+        .select()
+        .from(leafCategories)
+        .orderBy(leafCategories.normalizedName),
+      this.database
+        .select()
+        .from(ingredients)
+        .orderBy(ingredients.normalizedName),
+      this.database.select().from(catalogTranslations),
+      this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
+      this.database.select().from(methods).orderBy(methods.normalizedName),
+    ]);
 
     const byEntity = new Map<string, unknown[]>();
     for (const row of translationRows) {
@@ -98,6 +114,16 @@ export class AdminCatalogService {
       byEntity.get(`${type}:${entityId}`) ?? [];
 
     return {
+      cuisines: cuisineRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        translations: translations('cuisine', row.id),
+      })),
+      methods: methodRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        translations: translations('method', row.id),
+      })),
       aisles: aisleRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -228,6 +254,78 @@ export class AdminCatalogService {
         await tx.delete(aisles).where(eq(aisles.id, id));
       },
       new ApiException(409, 'catalog.aisle_in_use'),
+    );
+  }
+
+  // Cuisines and Methods: Admin-curated Recipe lists, translated like Aisles.
+  // Deleting one a Recipe uses is refused; Recipes keep a reference, never a copy.
+
+  createCuisine(input: ListEntryCreate) {
+    return this.createListEntry('cuisine', input);
+  }
+
+  updateCuisine(id: string, input: ListEntryUpdate) {
+    return this.updateListEntry('cuisine', id, input);
+  }
+
+  deleteCuisine(id: string) {
+    return this.deleteListEntry('cuisine', id);
+  }
+
+  createMethod(input: ListEntryCreate) {
+    return this.createListEntry('method', input);
+  }
+
+  updateMethod(id: string, input: ListEntryUpdate) {
+    return this.updateListEntry('method', id, input);
+  }
+
+  deleteMethod(id: string) {
+    return this.deleteListEntry('method', id);
+  }
+
+  private createListEntry(type: ListType, input: ListEntryCreate) {
+    const table = LIST_TABLES[type];
+    return this.write(async (tx) => {
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(table)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+        })
+        .returning();
+      await this.addCanonicalName(tx, type, id, input.name);
+      return row;
+    });
+  }
+
+  private updateListEntry(type: ListType, id: string, input: ListEntryUpdate) {
+    const table = LIST_TABLES[type];
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(table)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(table.id, id))
+        .returning();
+      if (!row) throw notFound(type);
+      await this.renameCanonicalName(tx, type, id, input.name);
+      return row;
+    });
+  }
+
+  private deleteListEntry(type: ListType, id: string) {
+    const table = LIST_TABLES[type];
+    // The Recipe foreign key is the guard, so a Recipe pointing at the entry
+    // concurrently fails the delete atomically.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, type, id);
+        await this.deleteTranslationsOf(tx, type, id);
+        await tx.delete(table).where(eq(table.id, id));
+      },
+      new ApiException(409, `catalog.${type}_in_use`),
     );
   }
 
@@ -425,8 +523,8 @@ export class AdminCatalogService {
   }
 
   deleteIngredient(id: string) {
-    // Batches, Shopping Items, Staples and Shopping Template lines reference
-    // Ingredients with a foreign key, so
+    // Batches, Shopping Items, Staples, Shopping Template lines and Recipe
+    // Ingredient Lines reference Ingredients with a foreign key, so
     // the database is the guard: a referenced Ingredient fails the delete
     // atomically (no check-then-delete race) and is mapped to a stable code.
     return this.write(
@@ -654,6 +752,8 @@ export class AdminCatalogService {
       parent_category: parentCategories,
       leaf_category: leafCategories,
       ingredient: ingredients,
+      cuisine: cuisines,
+      method: methods,
     }[type];
     const [row] = await executor
       .select({ id: table.id })

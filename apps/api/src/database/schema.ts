@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  type AnyPgColumn,
   boolean,
   check,
   date,
@@ -155,6 +156,8 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'parent_category',
   'leaf_category',
   'ingredient',
+  'cuisine',
+  'method',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -323,15 +326,17 @@ export const shoppingItems = pgTable(
   ],
 );
 
-// Created now, empty until recipes land in wave 2. `recipeId` has no foreign
-// key yet because the recipes table does not exist.
+// Which Recipes added a Shopping Item (its Source Recipes). Recipes are never
+// hard-deleted; the cascade only matters when a Family (and its Family Recipes) goes.
 export const shoppingItemSourceRecipes = pgTable(
   'shopping_item_source_recipes',
   {
     shoppingItemId: uuid('shopping_item_id')
       .notNull()
       .references(() => shoppingItems.id, { onDelete: 'cascade' }),
-    recipeId: uuid('recipe_id').notNull(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
     ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.shoppingItemId, table.recipeId] })],
@@ -426,6 +431,7 @@ export const unmatchedSource = pgEnum('unmatched_source', [
   'ingredients',
   'manual',
   'finish_shopping',
+  'recipe',
 ]);
 
 // The Admin review queue: one row per Unmatched Batch or Shopping Item, recording the
@@ -453,6 +459,11 @@ export const unmatchedEntries = pgTable(
         onDelete: 'cascade',
       },
     ),
+    // A Family Recipe's Unmatched Ingredient Line (source `recipe`).
+    ingredientLineId: uuid('ingredient_line_id').references(
+      () => recipeIngredientLines.id,
+      { onDelete: 'cascade' },
+    ),
     dismissedAt: timestamp('dismissed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
@@ -469,9 +480,12 @@ export const unmatchedEntries = pgTable(
     uniqueIndex('unmatched_entries_shopping_item_idx')
       .on(table.shoppingItemId)
       .where(sql`${table.shoppingItemId} IS NOT NULL`),
+    uniqueIndex('unmatched_entries_ingredient_line_idx')
+      .on(table.ingredientLineId)
+      .where(sql`${table.ingredientLineId} IS NOT NULL`),
     check(
       'unmatched_entries_one_target',
-      sql`(${table.batchId} IS NOT NULL) <> (${table.shoppingItemId} IS NOT NULL)`,
+      sql`num_nonnulls(${table.batchId}, ${table.shoppingItemId}, ${table.ingredientLineId}) = 1`,
     ),
   ],
 );
@@ -596,4 +610,221 @@ export const ingredientStockHistory = pgTable(
     ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
+);
+
+// Recipes. Cuisine and Method are Admin-curated lists like Aisles; display names
+// live in catalog_translations (entity types `cuisine` and `method`).
+export const cuisines = pgTable(
+  'cuisines',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('cuisines_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+export const methods = pgTable(
+  'methods',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('methods_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+export const recipeDifficulty = pgEnum('recipe_difficulty', [
+  'easy',
+  'medium',
+  'hard',
+]);
+
+// A Recipe: Catalog-owned (`familyId` null) or Family-owned. `parentId` makes it a
+// Variant of a Base Recipe (a Recipe without a parent); it is set at creation and
+// never changes. `title` is the source text; translations live in recipe_translations.
+// Never hard-deleted: `archivedAt` hides it.
+export const recipes = pgTable(
+  'recipes',
+  {
+    id: uuid('id').primaryKey(),
+    parentId: uuid('parent_id').references((): AnyPgColumn => recipes.id),
+    familyId: uuid('family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
+    title: text('title').notNull(),
+    servings: integer('servings').notNull(),
+    prepMinutes: integer('prep_minutes'),
+    cookMinutes: integer('cook_minutes'),
+    difficulty: recipeDifficulty('difficulty'),
+    cuisineId: uuid('cuisine_id').references(() => cuisines.id),
+    methodId: uuid('method_id').references(() => methods.id),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipes_parent_idx').on(table.parentId),
+    index('recipes_family_idx').on(table.familyId),
+    index('recipes_cuisine_idx').on(table.cuisineId),
+    index('recipes_method_idx').on(table.methodId),
+    check('recipes_servings_positive', sql`${table.servings} > 0`),
+    check(
+      'recipes_minutes_non_negative',
+      sql`(${table.prepMinutes} IS NULL OR ${table.prepMinutes} >= 0) AND (${table.cookMinutes} IS NULL OR ${table.cookMinutes} >= 0)`,
+    ),
+  ],
+);
+
+// An Ingredient Line: a Catalog Ingredient, or (Family Recipes only) an Unmatched name.
+// Quantity and unit are both set or both null. `note` is the preparation note.
+export const recipeIngredientLines = pgTable(
+  'recipe_ingredient_lines',
+  {
+    id: uuid('id').primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id),
+    rawName: text('raw_name'),
+    normalizedName: text('normalized_name'),
+    quantity: numeric('quantity', { precision: 10, scale: 3, mode: 'number' }),
+    unit: ingredientUnit('unit'),
+    optional: boolean('optional').notNull().default(false),
+    note: text('note'),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipe_ingredient_lines_recipe_idx').on(table.recipeId),
+    index('recipe_ingredient_lines_ingredient_idx').on(table.ingredientId),
+    index('recipe_ingredient_lines_name_idx').on(table.normalizedName),
+    check(
+      'recipe_ingredient_lines_quantity_with_unit',
+      sql`(${table.quantity} IS NULL) = (${table.unit} IS NULL)`,
+    ),
+    check(
+      'recipe_ingredient_lines_quantity_positive',
+      sql`${table.quantity} IS NULL OR ${table.quantity} > 0`,
+    ),
+    check(
+      'recipe_ingredient_lines_matched_or_named',
+      sql`(${table.ingredientId} IS NOT NULL) <> (${table.rawName} IS NOT NULL AND ${table.normalizedName} IS NOT NULL)`,
+    ),
+  ],
+);
+
+export const recipeSteps = pgTable(
+  'recipe_steps',
+  {
+    id: uuid('id').primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    text: text('text').notNull(),
+    timerSeconds: integer('timer_seconds'),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipe_steps_recipe_idx').on(table.recipeId),
+    check(
+      'recipe_steps_timer_non_negative',
+      sql`${table.timerSeconds} IS NULL OR ${table.timerSeconds} >= 0`,
+    ),
+  ],
+);
+
+// A Tip is on the Recipe (stepId null) or on one of its Steps. Step Tips are never inherited.
+export const recipeTips = pgTable(
+  'recipe_tips',
+  {
+    id: uuid('id').primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    stepId: uuid('step_id').references(() => recipeSteps.id, {
+      onDelete: 'cascade',
+    }),
+    position: integer('position').notNull(),
+    text: text('text').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipe_tips_recipe_idx').on(table.recipeId),
+    index('recipe_tips_step_idx').on(table.stepId),
+  ],
+);
+
+// A Variant hides base Recipe-level Tips it does not want to inherit.
+export const recipeHiddenTips = pgTable(
+  'recipe_hidden_tips',
+  {
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    tipId: uuid('tip_id')
+      .notNull()
+      .references(() => recipeTips.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.recipeId, table.tipId] })],
+);
+
+// Translations of Catalog Recipe text, one table per translated field group; the
+// source text lives on the row itself and is the fallback. They cascade with their row.
+export const recipeTranslations = pgTable(
+  'recipe_translations',
+  {
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    title: text('title').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.recipeId, table.locale] })],
+);
+
+export const recipeStepTranslations = pgTable(
+  'recipe_step_translations',
+  {
+    stepId: uuid('step_id')
+      .notNull()
+      .references(() => recipeSteps.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    text: text('text').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.stepId, table.locale] })],
+);
+
+export const recipeIngredientLineTranslations = pgTable(
+  'recipe_ingredient_line_translations',
+  {
+    lineId: uuid('line_id')
+      .notNull()
+      .references(() => recipeIngredientLines.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    note: text('note').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.lineId, table.locale] })],
+);
+
+export const recipeTipTranslations = pgTable(
+  'recipe_tip_translations',
+  {
+    tipId: uuid('tip_id')
+      .notNull()
+      .references(() => recipeTips.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    text: text('text').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.tipId, table.locale] })],
 );
