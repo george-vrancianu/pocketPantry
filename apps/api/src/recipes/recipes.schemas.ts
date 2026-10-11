@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES } from '../catalog/catalog.schemas';
+import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
+import type { RecipeDiff } from './recipe-diff';
 
 const id = z.uuid();
 const title = z.string().trim().min(1).max(200);
@@ -127,6 +128,15 @@ export const recipeListQuery = z.object({
   archived: z.enum(['include', 'exclude']).default('include'),
 });
 
+/** Member browsing: no search or filter lists Base Recipes only. */
+export const browseQuery = z.object({
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  search: z.string().trim().max(100).optional(),
+  cuisineId: id.optional(),
+  methodId: id.optional(),
+});
+export const localeQuery = browseQuery.pick({ locale: true });
+
 export const recipeParam = z.object({ id });
 export const recipeTipParam = z.object({ id, tipId: id });
 
@@ -140,6 +150,8 @@ export type TipOrder = z.infer<typeof tipOrder>;
 export type HiddenTipsBody = z.infer<typeof hiddenTipsBody>;
 export type TranslationsBody = z.infer<typeof translationsBody>;
 export type RecipeListQuery = z.infer<typeof recipeListQuery>;
+export type BrowseQuery = z.infer<typeof browseQuery>;
+export type LocaleQuery = z.infer<typeof localeQuery>;
 
 export type RecipeLineView = {
   id: string;
@@ -202,10 +214,14 @@ export type AdminRecipeListItem = {
   archived: boolean;
 };
 
-/** A Catalog Recipe with its text resolved for one locale (source text as fallback). */
+export type RecipeOwner = 'catalog' | 'family';
+
+/** A Recipe with its text resolved for one locale (source text as fallback). */
 export type ResolvedRecipe = {
   id: string;
   parentId: string | null;
+  /** Whose Recipe it is: the Catalog's, or the Member's Family's own. */
+  owner: RecipeOwner;
   locale: string;
   title: string;
   servings: number;
@@ -220,3 +236,47 @@ export type ResolvedRecipe = {
   /** Own Tips plus, on a Variant, the base's non-hidden Recipe-level Tips (`inherited`). */
   tips: (RecipeTipView & { inherited: boolean })[];
 };
+
+type NamedRef = { id: string; name: string };
+
+/** One row of the Member's Recipe list. */
+export type RecipeListItem = {
+  id: string;
+  title: string;
+  parentId: string | null;
+  /** The base of a Variant (its title in the requested locale), null on a Base Recipe. */
+  base: { id: string; title: string } | null;
+  cuisine: NamedRef | null;
+  method: NamedRef | null;
+  /** Live Variants of a Base Recipe; 0 on a Variant. */
+  variantCount: number;
+  servings: number;
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+  difficulty: AdminRecipeDetail['difficulty'];
+  owner: RecipeOwner;
+};
+
+/** A Variant as listed on its base's detail. */
+export type RecipeVariantItem = {
+  id: string;
+  title: string;
+  cuisine: NamedRef | null;
+  method: NamedRef | null;
+  owner: RecipeOwner;
+};
+
+/**
+ * The Member's Recipe detail. Extend with more sections (guidance, Pantry
+ * status per line id) by adding fields here.
+ */
+export type RecipeDetail = ResolvedRecipe & {
+  /** Null on a Base Recipe. */
+  base: { id: string; title: string; archived: boolean } | null;
+  /** The live Variants of a Base Recipe, ordered by title; empty on a Variant. */
+  variants: RecipeVariantItem[];
+  /** Ingredients that differ from the base; null on a Base Recipe. */
+  diff: RecipeDiff | null;
+};
+
+export type RecipeFilters = { cuisines: NamedRef[]; methods: NamedRef[] };

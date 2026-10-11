@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
@@ -174,6 +174,23 @@ export async function loadAdminDetail(
   };
 }
 
+/** A Recipe the Family may see: a Catalog one or one of its own. */
+export const visibleTo = (familyId: string) =>
+  or(isNull(recipes.familyId), eq(recipes.familyId, familyId));
+
+/** The Recipe row when it is a Catalog Recipe or owned by `familyId`, else undefined. */
+export async function findVisibleRecipe(
+  executor: Executor,
+  id: string,
+  familyId: string,
+): Promise<RecipeRow | undefined> {
+  const [row] = await executor
+    .select()
+    .from(recipes)
+    .where(and(eq(recipes.id, id), visibleTo(familyId)));
+  return row;
+}
+
 /**
  * A Catalog Recipe with its text resolved for `locale`: a translation when
  * there is one, else the source text. A Variant also shows its base's
@@ -187,27 +204,43 @@ export async function loadCatalogRecipe(
   locale: CatalogLocale,
 ): Promise<ResolvedRecipe | null> {
   const row = await findCatalogRecipe(executor, id);
-  if (!row) return null;
+  return row ? resolveRecipe(executor, row, locale) : null;
+}
+
+/**
+ * A Recipe row with its text resolved for `locale`. Family Recipes are never
+ * translated, so they always show their source text; a Variant of a Catalog
+ * Recipe still shows the base's inherited Tips in the locale.
+ */
+export async function resolveRecipe(
+  executor: Executor,
+  row: RecipeRow,
+  locale: CatalogLocale,
+): Promise<ResolvedRecipe> {
+  const id = row.id;
+  const translated = row.familyId === null;
   const parts = await loadParts(executor, id);
-  const lineIds = parts.lines.map((l) => l.id);
-  const stepIds = parts.steps.map((s) => s.id);
+  const lineIds = translated ? parts.lines.map((l) => l.id) : [];
+  const stepIds = translated ? parts.steps.map((s) => s.id) : [];
 
   const inherited = row.parentId
     ? await loadInheritedTips(executor, id, row.parentId)
     : [];
-  const tipRows = [...parts.tips, ...inherited];
+  const tipRows = [...(translated ? parts.tips : []), ...inherited];
   const tipIds = tipRows.map((t) => t.id);
 
   const [titleRow, lineT, stepT, tipT, names] = await Promise.all([
-    executor
-      .select()
-      .from(recipeTranslations)
-      .where(
-        and(
-          eq(recipeTranslations.recipeId, id),
-          eq(recipeTranslations.locale, locale),
-        ),
-      ),
+    translated
+      ? executor
+          .select()
+          .from(recipeTranslations)
+          .where(
+            and(
+              eq(recipeTranslations.recipeId, id),
+              eq(recipeTranslations.locale, locale),
+            ),
+          )
+      : [],
     lineIds.length === 0
       ? []
       : executor
@@ -270,6 +303,7 @@ export async function loadCatalogRecipe(
   return {
     id: row.id,
     parentId: row.parentId,
+    owner: row.familyId === null ? 'catalog' : 'family',
     locale,
     title: titleRow[0]?.title ?? row.title,
     servings: row.servings,

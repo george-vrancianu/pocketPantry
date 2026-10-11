@@ -16,7 +16,7 @@ export type CatalogSearchResult = {
   parentCategory: { id: string; name: string; aisle: string };
 };
 
-function useDebounced<T>(value: T, delayMs: number): T {
+export function useDebounced<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebounced(value), delayMs);
