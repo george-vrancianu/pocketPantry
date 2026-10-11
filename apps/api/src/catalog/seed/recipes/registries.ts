@@ -28,7 +28,7 @@ export const SEED_METHODS: SeedNamed[] = [
   named('rolled', 'French rolled', 'Rulată franțuzește', 'Fransk rullet'),
   named('folded', 'American folded', 'Pliată american', 'Amerikansk foldet'),
   named('frittata', 'Frittata', 'Frittata', 'Frittata'),
-  named('riced', 'Riced', 'Pasat prin presă', 'Presset'),
+  named('riced', 'Riced', 'Trecut prin presă', 'Presset'),
   named('gratin-topped', 'Gratin-topped', 'Gratinat', 'Gratineret'),
 ];
 

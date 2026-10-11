@@ -38,7 +38,7 @@ export const potatoPuree: BaseRecipeSeed = {
       key: 'boil',
       text: t(
         'Add 8 g of the salt to the pot, bring to a boil, then lower to a steady simmer and cook for 15 to 20 minutes, until a knife slides in with no resistance.',
-        'Adaugă 8 g din sare în oală, adu la fierbere, apoi redu focul la o fierbere constantă și gătește 15-20 de minute, până când cuțitul intră fără rezistență.',
+        'Adaugă 8 g din sare în oală, adu la fierbere, apoi redu focul și lasă să fiarbă domol 15-20 de minute, până când cuțitul intră fără rezistență.',
       ),
       timerSeconds: 1000,
     },
@@ -84,13 +84,13 @@ export const potatoPuree: BaseRecipeSeed = {
       step: 'dry',
       text: t(
         'Letting the steam escape is what keeps the puree rich and fluffy instead of watery.',
-        'Lăsând aburul să iasă, piureul rămâne pufos și bogat, nu apos.',
+        'Dacă lași aburul să iasă, piureul rămâne pufos și bogat, nu apos.',
       ),
     },
   ],
   nutritionNote: t(
     'Potatoes give filling carbohydrates, potassium and some vitamin C, and the dish is gentle on the stomach; the butter and milk add saturated fat and the salt adds up, and it has little fibre or protein unless you leave the skins on or serve it with something else.',
-    'Cartofii aduc carbohidrați care săturează, potasiu și puțină vitamina C, iar preparatul e blând cu stomacul; untul și laptele adaugă grăsimi saturate, sarea se adună, iar fibrele și proteinele sunt puține, dacă nu lași coaja sau nu îl servești cu altceva.',
+    'Cartofii aduc carbohidrați care săturează, potasiu și puțină vitamina C, iar preparatul e blând cu stomacul; untul și laptele adaugă grăsimi saturate, sarea se adună, iar fibrele și proteinele sunt puține, dacă nu lași coaja sau nu-l servești cu altceva.',
   ),
   pairings: [
     {
@@ -100,7 +100,7 @@ export const potatoPuree: BaseRecipeSeed = {
         'The soft, mild puree soaks up the meat juices and tempers the char.',
         'Piureul moale și blând absoarbe sosul cărnii și domolește aroma de grătar.',
       ),
-      principle: 'contrast_texture',
+      principle: 'complement_flavour',
       ingredient: 'beef-steak',
     },
     {
@@ -118,7 +118,7 @@ export const potatoPuree: BaseRecipeSeed = {
       label: t('Pickled cucumbers', 'Castraveți murați'),
       reason: t(
         'Their sharp acidity cuts through the buttery richness.',
-        'Aciditatea lor tăioasă taie din bogăția untului.',
+        'Aciditatea lor echilibrează gustul gras al untului.',
       ),
       principle: 'acid_cuts_fat',
       ingredient: 'pickled-cucumbers',
@@ -138,7 +138,7 @@ export const potatoPuree: BaseRecipeSeed = {
       label: t('Red wine', 'Vin roșu'),
       reason: t(
         'Its tannins and fruit stand up to roast and grilled meats served with mash.',
-        'Taninii și fructul lui țin piept cărnurilor la grătar sau la cuptor, servite cu piure.',
+        'Taninii și aromele fructate țin piept cărnii la grătar sau la cuptor, servite cu piure.',
       ),
       principle: 'bitter_balances_rich',
       ingredient: 'red-wine',
@@ -196,8 +196,8 @@ export const potatoPuree: BaseRecipeSeed = {
           quantity: 800,
           unit: 'g',
           note: t(
-            'waxy-floury, such as Ratte or Yukon Gold, unpeeled',
-            'cu amidon mediu, de tip Ratte sau Yukon Gold, nedecojiți',
+            'waxy, such as Ratte, or Yukon Gold, unpeeled',
+            'cu pulpă fermă (cerați), de tip Ratte, sau Yukon Gold, nedecojiți',
           ),
         },
         {
@@ -252,7 +252,7 @@ export const potatoPuree: BaseRecipeSeed = {
       tips: [
         t(
           'Taste for butter at the end; the aim is a puree that is nearly a sauce, so it should be soft and slightly loose.',
-          'Gustă la final; scopul e un piure aproape ca un sos, deci moale și ușor curgător.',
+          'Gustă la final și potrivește untul; piureul trebuie să fie aproape ca un sos: moale și ușor curgător.',
         ),
       ],
       stepTips: [
@@ -301,7 +301,7 @@ export const potatoPuree: BaseRecipeSeed = {
         },
         {
           kind: 'food',
-          label: t('Dijon-style mustard', 'Muștar fin'),
+          label: t('Dijon-style mustard', 'Muștar de Dijon'),
           reason: t(
             'A sharp spoonful cuts the richness of the butter.',
             'O lingură de muștar ascuțit taie din bogăția untului.',
@@ -314,7 +314,7 @@ export const potatoPuree: BaseRecipeSeed = {
           label: t('Dry white wine', 'Vin alb sec'),
           reason: t(
             'Its crisp acidity refreshes the palate between buttery spoonfuls.',
-            'Aciditatea lui proaspătă împrospătează gura între linguri unsuroase.',
+            'Aciditatea lui proaspătă împrospătează gustul între îmbucăturile bogate în unt.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'white-wine',
@@ -387,7 +387,7 @@ export const potatoPuree: BaseRecipeSeed = {
           key: 'boil',
           text: t(
             'Cut the peeled potatoes into even pieces and boil in cold, salted water (8 g of the salt) for 15 to 20 minutes, until tender. Drain and let them steam dry for a minute.',
-            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă-i un minut să se usuce în aburi.',
+            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă-i un minut să iasă aburul din ei.',
           ),
           timerSeconds: 1000,
         },
@@ -454,7 +454,7 @@ export const potatoPuree: BaseRecipeSeed = {
             'O farfurie consistentă și savuroasă, cu cârnați și piure.',
           ),
           principle: 'complement_flavour',
-          ingredient: 'smoked-sausages',
+          ingredient: 'fresh-sausages',
         },
         {
           kind: 'food',
@@ -471,7 +471,7 @@ export const potatoPuree: BaseRecipeSeed = {
           label: t('Stout', 'Bere stout'),
           reason: t(
             'Its roasted bitterness balances the rich butter.',
-            'Amăreala ei prăjită echilibrează untul bogat.',
+            'Amăreala de malț prăjit echilibrează untul bogat.',
           ),
           principle: 'bitter_balances_rich',
           ingredient: 'dark-beer',
@@ -547,7 +547,7 @@ export const potatoPuree: BaseRecipeSeed = {
           key: 'boil',
           text: t(
             'Cut the peeled potatoes into even pieces and boil in cold, salted water (8 g of the salt) for 15 to 20 minutes, until tender. Drain and let them steam dry.',
-            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă-i să se usuce în aburi.',
+            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă să iasă aburul din ei.',
           ),
           timerSeconds: 1000,
         },
@@ -591,18 +591,19 @@ export const potatoPuree: BaseRecipeSeed = {
         },
       ],
       nutritionNote: t(
-        'The onion adds flavour and a little fibre, and less butter plus oil means a lighter plate than the French version; the oil and butter together still add fat, and the milk and salt make it a fairly heavy side, so keep the portion in check.',
-        'Ceapa adaugă aromă și puține fibre, iar mai puțin unt plus ulei înseamnă o farfurie mai ușoară decât cea franțuzească; uleiul și untul adaugă totuși grăsime, iar laptele și sarea fac din el o garnitură destul de grea, deci ține porția în frâu.',
+        'The onion adds flavour and a little fibre, and with less butter it is lighter than the French version; the oil and butter still add fat and the salt adds up, so keep the portion moderate.',
+        'Ceapa adaugă aromă și puține fibre, iar cu mai puțin unt e mai ușor decât varianta franțuzească; uleiul și untul adaugă totuși grăsime, iar sarea se adună, așa că nu exagera cu porția.',
       ),
       pairings: [
         {
           kind: 'food',
-          label: t('Grilled mici (mititei)', 'Mici (mititei) la grătar'),
+          label: t('Grilled sausages', 'Cârnați la grătar'),
           reason: t(
-            'A well-loved Romanian pairing, with the soft mash cooling the garlicky meat.',
-            'Un duo românesc îndrăgit, în care piureul moale îmblânzește carnea cu usturoi.',
+            'Juicy, well-seasoned sausage gives the soft, mild puree a savoury counterpoint.',
+            'Cârnații suculenți și bine condimentați dau piureului moale și blând un contrapunct savuros.',
           ),
-          principle: 'regional_tradition',
+          principle: 'complement_flavour',
+          ingredient: 'fresh-sausages',
         },
         {
           kind: 'food',
@@ -618,7 +619,7 @@ export const potatoPuree: BaseRecipeSeed = {
           label: t('Pickled cucumbers', 'Castraveți murați'),
           reason: t(
             'The sour crunch cuts through the fat of the oil and butter.',
-            'Crocanțeala acră taie grăsimea uleiului și a untului.',
+            'Castraveții acri și crocanți echilibrează grăsimea din ulei și unt.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'pickled-cucumbers',
@@ -628,7 +629,7 @@ export const potatoPuree: BaseRecipeSeed = {
           label: t('Lager', 'Bere blondă'),
           reason: t(
             'Cold, crisp beer is the usual companion to grilled meat and mash.',
-            'Berea rece și proaspătă e tovarășul obișnuit al cărnii la grătar cu piure.',
+            'Berea rece și proaspătă e însoțitorul obișnuit al cărnii la grătar cu piure.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'beer',
@@ -655,8 +656,8 @@ export const potatoPuree: BaseRecipeSeed = {
           moment: 'late-evening',
           polarity: 'avoid',
           reason: t(
-            'Fried onion and fat can cause heartburn before bed.',
-            'Ceapa prăjită și grăsimea pot provoca arsuri la stomac înainte de culcare.',
+            'Sautéed onion and fat can cause heartburn before bed.',
+            'Ceapa călită și grăsimea pot provoca arsuri la stomac înainte de culcare.',
           ),
         },
       ],
@@ -685,16 +686,16 @@ export const potatoPuree: BaseRecipeSeed = {
         {
           key: 'boil',
           text: t(
-            'Cut the potatoes into even pieces and boil in cold, salted water (8 g of the salt) for 15 to 20 minutes, until a knife slides in easily.',
-            'Taie cartofii în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până când cuțitul intră ușor.',
+            'Peel the potatoes, cut them into even pieces and boil in cold, salted water (8 g of the salt) for 15 to 20 minutes, until a knife slides in easily.',
+            'Curăță cartofii, taie-i în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până când cuțitul intră ușor.',
           ),
           timerSeconds: 1000,
         },
         {
           key: 'drain',
           text: t(
-            'Drain and leave the potatoes in the colander for 2 minutes, until the steam stops rising. Peel them if you boiled them in their skins.',
-            'Scurge cartofii și lasă-i în strecurătoare 2 minute, până nu mai iese abur. Curăță-i de coajă dacă i-ai fiert nedecojiți.',
+            'Drain and leave the potatoes in the colander for 2 minutes, until the steam stops rising.',
+            'Scurge cartofii și lasă-i în strecurătoare 2 minute, până nu mai iese abur.',
           ),
           timerSeconds: 120,
         },
@@ -730,7 +731,7 @@ export const potatoPuree: BaseRecipeSeed = {
       ],
       nutritionNote: t(
         'Ricing gives a light, lump-free puree with less butter and milk than the French style, so it is a gentler choice on fat; it is still mostly starchy carbohydrate with little fibre or protein, and the butter still adds saturated fat.',
-        'Pasarea prin presă dă un piure ușor, fără cocoloașe, cu mai puțin unt și lapte decât în stilul franțuzesc, deci e mai blând cu grăsimile; rămâne totuși mai ales amidon, cu puține fibre sau proteine, iar untul adaugă grăsimi saturate.',
+        'Pasarea prin presă dă un piure ușor, fără cocoloașe, cu mai puțin unt și lapte decât în stilul franțuzesc, deci are mai puțină grăsime; rămâne totuși mai ales amidon, cu puține fibre sau proteine, iar untul adaugă grăsimi saturate.',
       ),
       pairings: [
         {
@@ -745,7 +746,7 @@ export const potatoPuree: BaseRecipeSeed = {
         },
         {
           kind: 'food',
-          label: t('Roasted mushrooms', 'Ciuperci coapte'),
+          label: t('Roasted mushrooms', 'Ciuperci la cuptor'),
           reason: t(
             'Earthy, browned mushrooms against the airy puree add depth and texture.',
             'Ciupercile coapte, rumenite, lângă piureul pufos adaugă profunzime și textură.',
@@ -796,7 +797,7 @@ export const potatoPuree: BaseRecipeSeed = {
           polarity: 'avoid',
           reason: t(
             'A hot, starchy side feels heavy in the heat.',
-            'O garnitură caldă și amidonoasă se simte grea pe căldură.',
+            'O garnitură caldă și bogată în amidon se simte grea pe căldură.',
           ),
         },
       ],
@@ -844,7 +845,7 @@ export const potatoPuree: BaseRecipeSeed = {
           key: 'boil',
           text: t(
             'Cut the peeled potatoes into even pieces and boil in cold, salted water (8 g of the salt) for 15 to 20 minutes, until tender. Drain and let them steam dry.',
-            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă-i să se usuce în aburi.',
+            'Taie cartofii curățați în bucăți egale și fierbe-i în apă rece cu sare (8 g din sare) 15-20 de minute, până se înmoaie. Scurge-i și lasă să iasă aburul din ei.',
           ),
           timerSeconds: 1000,
         },
@@ -859,7 +860,7 @@ export const potatoPuree: BaseRecipeSeed = {
           key: 'top',
           text: t(
             'Spread the puree evenly in the dish and rake the surface with a fork to make ridges. Mix the remaining cheese with the breadcrumbs, scatter over the top and dot with the remaining butter.',
-            'Întinde piureul uniform în tavă și zgârie suprafața cu o furculiță, ca să formezi dungi. Amestecă restul de brânză cu pesmetul, presară deasupra și presară bucățele din untul rămas.',
+            'Întinde piureul uniform în tavă și trage cu furculița dungi pe suprafață. Amestecă restul de brânză cu pesmetul, presară amestecul deasupra și pune bucățele din untul rămas.',
           ),
         },
         {
@@ -873,8 +874,8 @@ export const potatoPuree: BaseRecipeSeed = {
       ],
       tips: [
         t(
-          'Let the puree cool for a few minutes before spreading, so the cheese does not melt into it and the top browns better.',
-          'Lasă piureul să se răcorească câteva minute înainte să-l întinzi, ca brânza să nu se topească în el și suprafața să se rumenească mai bine.',
+          'Let the puree cool for a few minutes before spreading, so the topping sits on the surface and browns rather than sinking in.',
+          'Lasă piureul să se răcorească câteva minute înainte să-l întinzi, ca stratul de deasupra să nu se scufunde în el și să se rumenească mai bine.',
         ),
       ],
       stepTips: [
@@ -926,7 +927,7 @@ export const potatoPuree: BaseRecipeSeed = {
           label: t('Dry white wine', 'Vin alb sec'),
           reason: t(
             'Acidity refreshes the palate after the melted cheese.',
-            'Aciditatea împrospătează gura după brânza topită.',
+            'Aciditatea împrospătează gustul după brânza topită.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'white-wine',
