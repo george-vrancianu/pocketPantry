@@ -96,13 +96,14 @@
     "variant_of_variant": "En variant kan ikke have egne varianter. Lav varianten ud fra grundopskriften i stedet.",
     "parent_archived": "Denne grundopskrift er arkiveret, så den kan ikke få nye varianter.",
     "quantity_unit_mismatch": "En ingredienslinje skal have både mængde og enhed, eller ingen af dem.",
-    "ingredient_required": "En ingredienslinje skal have en ingrediens fra kataloget.",
+    "ingredient_required": "En ingredienslinje skal have en ingrediens fra kataloget (eller, i en familieopskrift, et skrevet navn).",
     "item_not_found": "En linje, et trin eller et tip i ændringen er ikke længere en del af opskriften. Genindlæs opskriften og prøv igen.",
     "duplicate_item": "Den samme linje eller det samme trin står to gange. Genindlæs opskriften og prøv igen.",
     "bad_step_anchor": "Det tip peger på et trin, der ikke hører til denne opskrift.",
     "bad_hidden_tip": "Kun tip på opskriftsniveau fra grundopskriften kan skjules, og kun på en variant.",
     "tip_not_found": "Det tip findes ikke længere.",
     "tip_order_stale": "Tippene blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
-    "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den."
+    "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den.",
+    "line_name_conflict": "En ingredienslinje har både en ingrediens fra kataloget og et skrevet navn. Brug kun den ene."
   }
 }

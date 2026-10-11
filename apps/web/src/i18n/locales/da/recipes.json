@@ -43,5 +43,24 @@
     "none": "Samme ingredienser som {{base}}."
   },
   "stepTips": "Tips til dette trin",
-  "tipLabel": "Tip"
+  "tipLabel": "Tip",
+  "family": {
+    "makeVariant": "Lav en variant",
+    "edit": "Rediger",
+    "delete": "Slet",
+    "deleteConfirm": "Slet denne opskrift? Den forsvinder for hele din familie.",
+    "newHeading": "Lav en variant",
+    "editHeading": "Rediger {{title}}",
+    "create": "Gem variant",
+    "save": "Gem opskrift",
+    "loading": "Henter opskriften",
+    "title": "Titel",
+    "copyHint": "Det her er en kopi, du kan ændre. Intet gemmes, før du gemmer den.",
+    "tipsHint": "Tilføj dine egne Tips, når varianten er gemt.",
+    "freeTextLabel": "Eller tilføj en ingrediens med navn",
+    "freeTextAdd": "Tilføj navn",
+    "freeTextNote": "Ikke i kataloget",
+    "cancelled": "Tilbage til opskriften",
+    "unavailable": "Denne opskrift kan ikke redigeres."
+  }
 }

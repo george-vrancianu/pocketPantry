@@ -1,4 +1,5 @@
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RecipeDetail } from '../../lib/recipes';
@@ -55,13 +56,19 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   ...over,
 });
 
-function setup(detail: RecipeDetail, route = `/recipes/${detail.id}`) {
+function setup(
+  detail: RecipeDetail,
+  route = `/recipes/${detail.id}`,
+  extra: Parameters<typeof stubApi>[0] = {},
+) {
   const { fetchMock, calls } = stubApi({
     [`GET /api/recipes/${detail.id}`]: () => Response.json(detail),
+    ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
+      <Route path="/recipes" element={<p>All recipes page</p>} />
       <Route path="/recipes/:id" element={<RecipeDetailPage />} />
     </Routes>,
     { route },
@@ -116,6 +123,41 @@ describe('RecipeDetailPage', () => {
     ).toHaveAttribute('href', '/recipes/f');
     expect(within(section).getByText(/Italian/)).toBeInTheDocument();
     expect(within(section).getByText(/Baking/)).toBeInTheDocument();
+  });
+
+  it("marks the Family's own Variants under their base", async () => {
+    setup(
+      recipe({
+        variants: [
+          {
+            id: 'f',
+            title: 'Frittata',
+            cuisine: null,
+            method: null,
+            owner: 'catalog',
+          },
+          {
+            id: 'g',
+            title: "Grandma's omelette",
+            cuisine: null,
+            method: null,
+            owner: 'family',
+          },
+        ],
+      }),
+    );
+    const section = (
+      await screen.findByRole('heading', { name: 'Variants' })
+    ).closest('section')!;
+    const own = within(section).getByRole('link', {
+      name: "Grandma's omelette",
+    });
+    expect(own.closest('li')!).toHaveTextContent("Your family's");
+    expect(
+      within(
+        within(section).getByRole('link', { name: 'Frittata' }).closest('li')!,
+      ).queryByText("Your family's"),
+    ).toBeNull();
   });
 
   it("shows a Variant's base link and What's different", async () => {
@@ -212,5 +254,101 @@ describe('RecipeDetailPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'This recipe could not be found.',
     );
+  });
+
+  describe('Family actions', () => {
+    it('offers Make a variant on a Catalog Recipe but not Edit or Delete', async () => {
+      setup(recipe({}));
+      const make = await screen.findByRole('link', { name: 'Make a variant' });
+      expect(make).toHaveAttribute('href', '/recipes/o/variant/new');
+      expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    });
+
+    it("offers Edit, Delete and Make a variant on the Family's own Recipe", async () => {
+      setup(
+        recipe({
+          id: 'g',
+          owner: 'family',
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: false },
+        }),
+      );
+      expect(await screen.findByRole('link', { name: 'Edit' })).toHaveAttribute(
+        'href',
+        '/recipes/g/edit',
+      );
+      expect(
+        screen.getByRole('link', { name: 'Make a variant' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Delete' }),
+      ).toBeInTheDocument();
+    });
+
+    it('hides Make a variant on a Family standalone Recipe', async () => {
+      setup(recipe({ id: 'g', owner: 'family' }));
+      await screen.findByRole('link', { name: 'Edit' });
+      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+    });
+
+    it('hides Make a variant when the Recipe or its base is archived', async () => {
+      setup(recipe({ archived: true }));
+      await screen.findByRole('heading', { name: 'Omelette' });
+      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+    });
+
+    it('hides Make a variant when the base is archived', async () => {
+      setup(
+        recipe({
+          id: 'v',
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: true },
+        }),
+      );
+      await screen.findByRole('heading', { name: 'Omelette' });
+      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+    });
+
+    it('archives after a confirm and goes back to the base', async () => {
+      const user = userEvent.setup();
+      const calls = setup(
+        recipe({
+          id: 'g',
+          owner: 'family',
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: false },
+        }),
+        '/recipes/g',
+        {
+          'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }),
+          'GET /api/recipes/o': () =>
+            Response.json(recipe({ id: 'o', title: 'Omelette' })),
+        },
+      );
+      await user.click(await screen.findByRole('button', { name: 'Delete' }));
+      expect(
+        calls.some((call) => call.key === 'POST /api/recipes/g/archive'),
+      ).toBe(false);
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('link', { name: 'Make a variant' }),
+        ).toHaveAttribute('href', '/recipes/o/variant/new'),
+      );
+      expect(calls.map((call) => call.key)).toContain(
+        'POST /api/recipes/g/archive',
+      );
+    });
+
+    it('goes to the list after deleting a standalone Family Recipe', async () => {
+      const user = userEvent.setup();
+      setup(recipe({ id: 'g', owner: 'family' }), '/recipes/g', {
+        'POST /api/recipes/g/archive': () => Response.json({ id: 'g' }),
+      });
+      await user.click(await screen.findByRole('button', { name: 'Delete' }));
+      await user.click(screen.getByRole('button', { name: 'Confirm' }));
+      expect(await screen.findByText('All recipes page')).toBeInTheDocument();
+    });
   });
 });

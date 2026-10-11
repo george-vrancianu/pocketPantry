@@ -12,10 +12,11 @@ import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
 
 export type UnmatchedStatus = 'open' | 'dismissed';
-export type UnmatchedSource = ScanMode | 'manual' | 'finish_shopping';
+export type UnmatchedSource =
+  ScanMode | 'manual' | 'finish_shopping' | 'recipe';
 
 export type UnmatchedReference = {
-  type: 'batch' | 'shopping_item';
+  type: 'batch' | 'shopping_item' | 'recipe_line';
   id: string;
   source: UnmatchedSource;
   locale: Locale;

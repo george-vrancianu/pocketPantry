@@ -1,0 +1,102 @@
+import { Alert, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { translateApiError } from '../../i18n/translateApiError';
+import {
+  useCreateFamilyRecipe,
+  useFamilyRecipeEdit,
+  useFamilyTipWrites,
+  useUpdateFamilyRecipe,
+  useVariantDraft,
+} from '../../lib/familyRecipes';
+import { TipsEditor } from '../Admin/components/RecipeTips';
+import { draftOfEdit, draftOfVariantDraft } from './familyDraft';
+import { FamilyRecipeForm } from './components/FamilyRecipeForm';
+
+/** "Make a variant": the editor opens on a copy of the Recipe being viewed. */
+export function NewVariantPage() {
+  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const draft = useVariantDraft(id, i18n.language);
+  const create = useCreateFamilyRecipe(i18n.language);
+
+  return (
+    <>
+      <AppScreenHeader title={t('recipes:family.newHeading')} />
+      <Stack spacing={2.5}>
+        {draft.error ? (
+          <Alert>{translateApiError(t, draft.error)}</Alert>
+        ) : null}
+        {draft.isPending ? <Spinner label={t('common:loading')} /> : null}
+        {draft.data ? (
+          <FamilyRecipeForm
+            heading={t('recipes:family.newHeading')}
+            description={t('recipes:family.copyHint')}
+            initial={draftOfVariantDraft(draft.data)}
+            saveLabel={t('recipes:family.create')}
+            saving={create.isPending}
+            error={create.error}
+            onSave={(document) =>
+              create.mutate(
+                { parentId: draft.data.parentId, document },
+                { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
+              )
+            }
+            onCancel={() => navigate(`/recipes/${id}`)}
+          />
+        ) : null}
+      </Stack>
+    </>
+  );
+}
+
+/** Edit one of the Family's own Recipes, with its own Tips below. */
+export function EditFamilyRecipePage() {
+  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const { id = '' } = useParams();
+  const navigate = useNavigate();
+  const query = useFamilyRecipeEdit(id, i18n.language);
+  const update = useUpdateFamilyRecipe(id, i18n.language);
+  const tipWrites = useFamilyTipWrites(id, i18n.language);
+  const recipe = query.data;
+
+  return (
+    <>
+      <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
+      <Stack spacing={3}>
+        {query.error ? (
+          <Alert>{translateApiError(t, query.error)}</Alert>
+        ) : null}
+        {query.isPending ? <Spinner label={t('common:loading')} /> : null}
+        {recipe ? (
+          <>
+            <FamilyRecipeForm
+              // A fresh form when the saved Recipe changes under it.
+              key={recipe.steps.map((step) => step.id).join()}
+              heading={t('recipes:family.editHeading', { title: recipe.title })}
+              initial={draftOfEdit(recipe)}
+              saveLabel={t('recipes:family.save')}
+              saving={update.isPending}
+              error={update.error}
+              stepTipCount={(stepId) =>
+                recipe.tips.filter((tip) => tip.stepId === stepId).length
+              }
+              onSave={(document) =>
+                update.mutate(document, {
+                  onSuccess: () => navigate(`/recipes/${id}`),
+                })
+              }
+              onCancel={() => navigate(`/recipes/${id}`)}
+            />
+            <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
+          </>
+        ) : null}
+        {!recipe && !query.isPending && !query.error ? (
+          <Typography>{t('recipes:family.unavailable')}</Typography>
+        ) : null}
+      </Stack>
+    </>
+  );
+}

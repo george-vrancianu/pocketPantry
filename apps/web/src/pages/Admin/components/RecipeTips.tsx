@@ -17,7 +17,9 @@ import {
 import { moved } from '../recipeDraft';
 import { RowControls } from './RowControls';
 
-type Props = { recipe: AdminRecipe };
+type TipsRecipe = Pick<AdminRecipe, 'id' | 'steps' | 'tips' | 'parentTips'>;
+export type TipWrites = ReturnType<typeof useTipWrites>;
+type Props = { recipe: TipsRecipe };
 
 /**
  * Tips of a saved Recipe: Recipe-level ones and one group per Step, plus (on
@@ -26,8 +28,13 @@ type Props = { recipe: AdminRecipe };
  * they anchor to the Step id.
  */
 export function RecipeTips({ recipe }: Props) {
-  const { t } = useTranslation(['admin', 'errors']);
   const writes = useTipWrites(recipe.id);
+  return <TipsEditor recipe={recipe} writes={writes} />;
+}
+
+/** The Tips editor over any Tip writes of the same shape (Admin or Family). */
+export function TipsEditor({ recipe, writes }: Props & { writes: TipWrites }) {
+  const { t } = useTranslation(['admin', 'errors']);
   const error =
     writes.add.error ??
     writes.update.error ??

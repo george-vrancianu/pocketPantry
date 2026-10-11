@@ -6,6 +6,7 @@ import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
 import { useRecipe } from '../../lib/recipes';
 import { OwnerBadge } from './components/OwnerBadge';
+import { RecipeActions } from './components/RecipeActions';
 import { RecipeMeta } from './components/RecipeMeta';
 import { DETAIL_SECTIONS } from './components/sections';
 
@@ -51,6 +52,7 @@ export function RecipeDetailPage() {
                 </Typography>
               ) : null}
             </Stack>
+            <RecipeActions recipe={recipe} />
             {DETAIL_SECTIONS.map(({ key, Component }) => (
               <Component key={key} recipe={recipe} />
             ))}
