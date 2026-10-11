@@ -11,19 +11,15 @@ import {
   PantryMatchingService,
   type PantryRecipeMatch,
 } from './matching/pantry-matching.service';
-import { recipeTitles, visibleTo } from './recipe-view';
+import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
   CookTonightCard,
   CookTonightQuery,
   CookTonightView,
-  RecipeOwner,
 } from './recipes.schemas';
 
 type RecipeRow = typeof recipes.$inferSelect;
 type Candidate = { row: RecipeRow; title: string; match: PantryRecipeMatch };
-
-const ownerOf = (row: RecipeRow): RecipeOwner =>
-  row.familyId === null ? 'catalog' : 'family';
 
 /** Cook Tonight: what the Family's Pantry can make, one card per Base Recipe. */
 @Injectable()

@@ -11,6 +11,7 @@ import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
   findVisibleRecipe,
+  ownerOf,
   recipeTitles,
   resolveRecipe,
   visibleTo,
@@ -20,15 +21,11 @@ import type {
   RecipeDetail,
   RecipeFilters,
   RecipeListItem,
-  RecipeOwner,
   RecipeVariantItem,
   ResolvedRecipe,
 } from './recipes.schemas';
 
 type RecipeRow = typeof recipes.$inferSelect;
-
-const ownerOf = (row: RecipeRow): RecipeOwner =>
-  row.familyId === null ? 'catalog' : 'family';
 
 const byTitle =
   (locale: string) => (a: { title: string }, b: { title: string }) =>
