@@ -12,7 +12,7 @@ import {
 } from '../../lib/familyRecipes';
 import { TipsEditor } from '../Admin/components/RecipeTips';
 import { toGuidanceDraft } from '../Admin/guidanceDraft';
-import { FamilyGuidance, useMomentNames } from './components/FamilyGuidance';
+import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
 import { draftOfEdit, draftOfVariantDraft } from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
@@ -23,7 +23,7 @@ export function NewVariantPage() {
   const navigate = useNavigate();
   const draft = useVariantDraft(id, i18n.language);
   const create = useCreateFamilyRecipe(i18n.language);
-  const momentOptions = useMomentNames(id);
+  const momentOptions = useMomentOptions();
 
   return (
     <>

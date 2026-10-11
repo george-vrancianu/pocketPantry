@@ -11,7 +11,12 @@ import { recipesQueryKey } from './recipes';
 
 type GuidanceInputWithIds = {
   nutritionNote: string | null;
-  pairings: (GuidanceInput['pairings'][number] & { id: string })[];
+  pairings: (GuidanceInput['pairings'][number] & {
+    id: string;
+    linkedIngredientName: string | null;
+    /** Null when the linked Recipe is archived or not visible. */
+    linkedRecipeTitle: string | null;
+  })[];
   eatingMoments: GuidanceInput['eatingMoments'];
 };
 

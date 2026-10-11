@@ -22,6 +22,8 @@ export type PairingDraft = {
   linkTarget: string;
   /** Name of a just-picked linked Ingredient, to show before saving. */
   linkName?: string;
+  /** Title of the linked Recipe, when the server named it. */
+  linkTitle?: string;
 };
 export type EatingMomentDraft = {
   eatingMomentId: string;
@@ -63,6 +65,8 @@ type GuidanceSource = {
     principle: PairingPrinciple | null;
     linkedIngredientId: string | null;
     linkedRecipeId: string | null;
+    linkedIngredientName?: string | null;
+    linkedRecipeTitle?: string | null;
   }>;
   eatingMoments: Array<{
     eatingMomentId: string;
@@ -87,6 +91,8 @@ export function toGuidanceDraft(recipe: GuidanceSource): GuidanceDraft {
           ? 'recipe'
           : 'none',
       linkTarget: p.linkedIngredientId ?? p.linkedRecipeId ?? '',
+      linkName: p.linkedIngredientName ?? undefined,
+      linkTitle: p.linkedRecipeTitle ?? undefined,
     })),
     eatingMoments: recipe.eatingMoments.map((m) => ({
       eatingMomentId: m.eatingMomentId,

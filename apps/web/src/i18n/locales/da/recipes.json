@@ -82,7 +82,8 @@
     "freeTextAdd": "Tilføj navn",
     "freeTextNote": "Ikke i kataloget",
     "unavailable": "Denne opskrift kan ikke redigeres.",
-    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med varianten."
+    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med varianten.",
+    "linkedRecipeUnavailable": "En opskrift, du ikke kan se, eller som er arkiveret"
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",

@@ -6,7 +6,7 @@ import {
   useSetFamilyGuidance,
   type FamilyRecipeEdit,
 } from '../../../lib/familyRecipes';
-import { useRecipe, useRecipes } from '../../../lib/recipes';
+import { useRecipeFilters, useRecipes } from '../../../lib/recipes';
 import {
   GuidanceFields,
   type MomentOption,
@@ -19,16 +19,12 @@ import {
   type GuidanceDraft,
 } from '../../Admin/guidanceDraft';
 
-/**
- * The names of the Eating Moments a Recipe already uses, read from the
- * Member's own view of it. The Member has no list of all Eating Moments yet,
- * so new ones cannot be added from here.
- */
-export function useMomentNames(recipeId: string): MomentOption[] {
+/** The live Eating Moments the Member can pick, named in their locale. */
+export function useMomentOptions(): MomentOption[] {
   const { i18n } = useTranslation();
-  const detail = useRecipe(recipeId, i18n.language).data;
-  return (detail?.guidance.eatingMoments ?? []).map((m) => ({
-    id: m.eatingMomentId,
+  const filters = useRecipeFilters(i18n.language).data;
+  return (filters?.eatingMoments ?? []).map((m) => ({
+    id: m.id,
     name: m.name,
     archived: false,
   }));
@@ -38,6 +34,7 @@ export function useMomentNames(recipeId: string): MomentOption[] {
 function FamilyRecipePicker({
   label,
   value,
+  valueLabel,
   onChange,
   excludeId,
 }: RecipePickerProps & { excludeId?: string }) {
@@ -47,7 +44,6 @@ function FamilyRecipePicker({
     { search, cuisineId: '', methodId: '' },
     i18n.language,
   );
-  const current = useRecipe(value, i18n.language);
   const options = (results.data ?? []).filter((r) => r.id !== excludeId);
   const known = options.some((r) => r.id === value);
   return (
@@ -61,12 +57,19 @@ function FamilyRecipePicker({
         select
         label={label}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) =>
+          onChange(
+            event.target.value,
+            options.find((r) => r.id === event.target.value)?.title,
+          )
+        }
         slotProps={{ select: { native: true } }}
       >
         <option value="">{t('admin:recipe.guidance.pairings.choose')}</option>
         {value && !known ? (
-          <option value={value}>{current.data?.title ?? value}</option>
+          <option value={value}>
+            {valueLabel ?? t('recipes:family.linkedRecipeUnavailable')}
+          </option>
         ) : null}
         {options.map((r) => (
           <option key={r.id} value={r.id}>
@@ -86,7 +89,7 @@ type FieldsProps = {
   recipeId?: string;
 };
 
-/** The shared guidance fields with the Family's Recipe picker and no Eating Moment picker. */
+/** The shared guidance fields with the Family's Recipe picker and Eating Moment list. */
 export function FamilyGuidanceFields({
   draft,
   onChange,
@@ -105,7 +108,6 @@ export function FamilyGuidanceFields({
       draft={draft}
       onChange={onChange}
       momentOptions={momentOptions}
-      canAddMoments={false}
       RecipePicker={RecipePicker}
     />
   );
@@ -115,7 +117,7 @@ export function FamilyGuidanceFields({
 export function FamilyGuidance({ recipe }: { recipe: FamilyRecipeEdit }) {
   const { t, i18n } = useTranslation(['admin', 'errors']);
   const save = useSetFamilyGuidance(recipe.id, i18n.language);
-  const momentOptions = useMomentNames(recipe.id);
+  const momentOptions = useMomentOptions();
   const [draft, setDraft] = useState<GuidanceDraft>(() =>
     toGuidanceDraft(recipe),
   );

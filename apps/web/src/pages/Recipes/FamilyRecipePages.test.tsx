@@ -12,6 +12,10 @@ import { EditFamilyRecipePage, NewVariantPage } from './FamilyRecipePages';
 const filters = {
   cuisines: [{ id: 'c-fr', name: 'French' }],
   methods: [{ id: 'm-pan', name: 'Pan frying' }],
+  eatingMoments: [
+    { id: 'em1', name: 'Breakfast' },
+    { id: 'em2', name: 'Lunch' },
+  ],
 };
 
 const draft: FamilyRecipeDraft = {
@@ -99,29 +103,26 @@ const saved: FamilyRecipeEdit = {
       label: 'Orange juice',
       reason: 'Fresh against the butter',
       principle: null,
-      linkedIngredientId: null,
+      linkedIngredientId: 'i-oj',
       linkedRecipeId: null,
+      linkedIngredientName: 'Orange',
+      linkedRecipeTitle: null,
+    },
+    {
+      id: 'p2',
+      kind: 'food',
+      label: 'Toast',
+      reason: 'Soaks it up',
+      principle: null,
+      linkedIngredientId: null,
+      linkedRecipeId: 'r-toast',
+      linkedIngredientName: null,
+      linkedRecipeTitle: 'Buttered toast',
     },
   ],
   eatingMoments: [
     { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Quick start' },
   ],
-};
-
-const sourceDetail = {
-  id: 'x',
-  guidance: {
-    nutritionNote: null,
-    pairings: [],
-    eatingMoments: [
-      {
-        eatingMomentId: 'em1',
-        name: 'Breakfast',
-        polarity: 'good_for',
-        reason: null,
-      },
-    ],
-  },
 };
 
 function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
@@ -190,7 +191,6 @@ describe('NewVariantPage', () => {
     const user = userEvent.setup();
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
-      'GET /api/recipes/x': () => Response.json(sourceDetail),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     const note = await screen.findByLabelText('Nutrition Note');
@@ -201,8 +201,13 @@ describe('NewVariantPage', () => {
     expect(await screen.findByLabelText('Reason for Breakfast')).toHaveValue(
       'Quick start',
     );
-    // The Member has no Eating Moment list, so none can be added here.
-    expect(screen.queryByLabelText('Add an Eating Moment')).toBeNull();
+    // Breakfast is used already; only Lunch is left to add.
+    const pick = screen.getByLabelText('Add an Eating Moment');
+    expect(
+      within(pick).queryByRole('option', { name: 'Breakfast' }),
+    ).toBeNull();
+    await user.selectOptions(pick, 'em2');
+    expect(screen.getByLabelText('Reason for Lunch')).toBeVisible();
 
     await user.clear(note);
     await user.type(note, 'Light');
@@ -220,6 +225,7 @@ describe('NewVariantPage', () => {
               polarity: 'good_for',
               reason: 'Quick start',
             },
+            { eatingMomentId: 'em2', polarity: 'good_for', reason: null },
           ],
         },
       }),
@@ -308,7 +314,6 @@ describe('EditFamilyRecipePage', () => {
     const user = userEvent.setup();
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
-      'GET /api/recipes/g': () => Response.json({ ...sourceDetail, id: 'g' }),
       'PUT /api/recipes/g/guidance': () => Response.json(saved),
     });
     const note = await screen.findByLabelText('Nutrition Note');
@@ -328,8 +333,17 @@ describe('EditFamilyRecipePage', () => {
           label: 'Orange juice',
           reason: 'Fresh against the butter',
           principle: null,
-          linkedIngredientId: null,
+          linkedIngredientId: 'i-oj',
           linkedRecipeId: null,
+        },
+        {
+          id: 'p2',
+          kind: 'food',
+          label: 'Toast',
+          reason: 'Soaks it up',
+          principle: null,
+          linkedIngredientId: null,
+          linkedRecipeId: 'r-toast',
         },
       ],
       eatingMoments: [
@@ -338,6 +352,18 @@ describe('EditFamilyRecipePage', () => {
     });
     // The document save does not carry guidance.
     expect(calls.some((c) => c.key === 'PUT /api/recipes/g')).toBe(false);
+  });
+
+  it('names the linked Ingredient and Recipe of saved Pairings', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+    });
+    expect(
+      await screen.findByText('Linked Ingredient: Orange'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'Buttered toast' }),
+    ).toBeInTheDocument();
   });
 
   it('links a Pairing to a Recipe found by search', async () => {
@@ -377,7 +403,12 @@ describe('EditFamilyRecipePage', () => {
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')?.body,
-      ).toMatchObject({ pairings: [{ id: 'p1', linkedRecipeId: 'r9' }] }),
+      ).toMatchObject({
+        pairings: [
+          { id: 'p1', linkedRecipeId: 'r9', linkedIngredientId: null },
+          { id: 'p2', linkedRecipeId: 'r-toast' },
+        ],
+      }),
     );
   });
 

@@ -32,7 +32,10 @@ export type MomentOption = { id: string; name: string; archived: boolean };
 export type RecipePickerProps = {
   label: string;
   value: string;
-  onChange: (recipeId: string) => void;
+  /** Title of the current value, when already known. */
+  valueLabel?: string;
+  /** `title` is the chosen Recipe's title, when the picker knows it. */
+  onChange: (recipeId: string, title?: string) => void;
 };
 export type RecipePickerComponent = ComponentType<RecipePickerProps>;
 
@@ -455,7 +458,10 @@ function PairingRow({
         <RecipePicker
           label={t('admin:recipe.guidance.pairings.linkRecipeTarget', p)}
           value={pairing.linkTarget}
-          onChange={(linkTarget) => onChange({ linkTarget })}
+          valueLabel={pairing.linkTitle}
+          onChange={(linkTarget, linkTitle) =>
+            onChange({ linkTarget, linkTitle })
+          }
         />
       ) : null}
       <RowControls
