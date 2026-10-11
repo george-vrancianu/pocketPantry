@@ -10,6 +10,7 @@ import {
 import { validateEnv } from '../../config/env';
 import * as schema from '../../database/schema';
 import { seedCatalog } from './seed-catalog';
+import { seedRecipes } from './recipes/seed-recipes';
 
 try {
   process.loadEnvFile(resolve(process.cwd(), '../../.env'));
@@ -28,6 +29,7 @@ async function main(): Promise<void> {
     const database = drizzle(pool, { schema });
     await seedCatalog(database);
     console.log('Catalog seeded.');
+    await seedRecipes(database);
 
     // Opt-in on an explicit development env (as in .env.example), so CI,
     // tests, and any env that forgets NODE_ENV never get known credentials.

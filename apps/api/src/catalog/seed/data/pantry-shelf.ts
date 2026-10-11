@@ -1314,6 +1314,7 @@ export const spices: SeedSection = {
         undefined,
         ['curry pudra', 'condiment curry'],
       ],
+      ['za-atar', "Za'atar", "Za'atar", 'g', ['zaatar', 'zatar']],
       [
         'gyros-seasoning',
         'Gyros seasoning',

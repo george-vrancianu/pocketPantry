@@ -719,6 +719,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'italian-herbs': 'Italienske krydderurter',
   'dried-tarragon': 'Tørret estragon',
   'curry-powder': 'Karry',
+  'za-atar': "Za'atar",
   'gyros-seasoning': 'Gyroskrydderi',
   'chicken-seasoning': 'Kyllingekrydderi',
   'grill-seasoning': 'Grillkrydderi',
