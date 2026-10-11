@@ -200,7 +200,7 @@ describe('NewVariantPage', () => {
     expect(screen.queryByText('Do not stir')).toBeInTheDocument();
     // The Member removes one Tip before saving.
     await user.click(
-      screen.getByRole('button', { name: 'Remove Tip: Medium heat' }),
+      screen.getByRole('button', { name: 'Remove Tip 1 of step 1' }),
     );
     expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Save variant' }));

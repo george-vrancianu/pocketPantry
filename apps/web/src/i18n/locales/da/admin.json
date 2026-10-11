@@ -196,7 +196,7 @@
       "tipsWarning_one": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tip, når du gemmer.",
       "tipsWarning_other": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tips, når du gemmer.",
       "draftTips": "Tips til trin {{number}}",
-      "removeTip": "Fjern tip: {{text}}",
+      "removeTip": "Fjern tip {{n}} til trin {{step}}",
       "removeTipShort": "Fjern",
       "removeWithTips": "Fjern trin og tips",
       "keep": "Behold trin"

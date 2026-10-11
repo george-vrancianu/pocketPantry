@@ -95,7 +95,7 @@ export function RecipeStepsSection({
                   aria-label={t('admin:recipe.steps.draftTips', { number })}
                   sx={{ m: 0, p: 0, listStyle: 'none' }}
                 >
-                  {step.tips.map((tip) => (
+                  {step.tips.map((tip, tipIndex) => (
                     <Stack
                       component="li"
                       key={tip.key}
@@ -109,7 +109,8 @@ export function RecipeStepsSection({
                       <Button
                         variant="text"
                         aria-label={t('admin:recipe.steps.removeTip', {
-                          text: tip.text,
+                          n: tipIndex + 1,
+                          step: number,
                         })}
                         onClick={() =>
                           changeStep(step.key, {

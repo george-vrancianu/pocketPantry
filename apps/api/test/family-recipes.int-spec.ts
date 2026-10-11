@@ -250,9 +250,14 @@ describe('Family Recipes (integration)', () => {
       );
       expect(res.status).toBe(400);
       expect(code(res)).toBe('recipes.bad_step_anchor');
-      await a1
-        .post('', doc(null, { tips: [{ stepIndex: 0, text: '' }] }))
-        .expect(400);
+      for (const tip of [
+        { stepIndex: 0, text: '' },
+        { stepIndex: -1, text: 'Before the steps' },
+      ]) {
+        const invalid = await a1.post('', doc(null, { tips: [tip] }));
+        expect(invalid.status).toBe(400);
+        expect(code(invalid)).toBe('validation_failed');
+      }
     });
 
     it('from a Variant copies the Variant content but points at its base', async () => {

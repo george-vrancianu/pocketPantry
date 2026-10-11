@@ -23,7 +23,7 @@ import {
   recipeColumns,
   validateRecipeDocument,
 } from './recipe-document-rules';
-import { lockRecipeForWrite, lockFamilyRow } from './recipe-locks';
+import { lockFamilyRow, lockRecipeForWrite } from './recipe-locks';
 import type { GuidanceBody } from './recipe-guidance.schemas';
 import { writeGuidanceChecked } from './recipe-guidance-write';
 import { loadResolvedGuidance } from './recipe-guidance';
@@ -177,18 +177,13 @@ export class FamilyRecipesService {
       ...recipeColumns(document),
     });
     await this.writeLines(tx, id, document, new Map(), locale);
-    await this.recipes.writeSteps(tx, id, document, new Set());
+    const stepIds = await this.recipes.writeSteps(tx, id, document, new Set());
     if (tips.length > 0) {
-      const stepRows = await tx
-        .select({ id: recipeSteps.id, position: recipeSteps.position })
-        .from(recipeSteps)
-        .where(eq(recipeSteps.recipeId, id));
-      const stepIds = new Map(stepRows.map((s) => [s.position, s.id]));
       await tx.insert(recipeTips).values(
         tips.map((tip, position) => ({
           id: randomUUID(),
           recipeId: id,
-          stepId: stepIds.get(tip.stepIndex) as string,
+          stepId: stepIds[tip.stepIndex],
           text: tip.text,
           position,
         })),

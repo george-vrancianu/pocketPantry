@@ -342,7 +342,7 @@ export class RecipesService {
     recipeId: string,
     document: RecipeDocument,
     existing: Set<string>,
-  ) {
+  ): Promise<string[]> {
     const kept = document.steps.flatMap((s) => (s.id ? [s.id] : []));
     if (kept.some((stepId) => !existing.has(stepId))) {
       throw itemNotFound('step');
@@ -356,6 +356,7 @@ export class RecipesService {
           kept.length > 0 ? notInArray(recipeSteps.id, kept) : undefined,
         ),
       );
+    const ids: string[] = [];
     for (const [position, step] of document.steps.entries()) {
       const values = {
         position,
@@ -367,11 +368,15 @@ export class RecipesService {
           .update(recipeSteps)
           .set(values)
           .where(eq(recipeSteps.id, step.id));
+        ids.push(step.id);
       } else {
+        const stepId = randomUUID();
         await tx
           .insert(recipeSteps)
-          .values({ id: randomUUID(), recipeId, ...values });
+          .values({ id: stepId, recipeId, ...values });
+        ids.push(stepId);
       }
     }
+    return ids;
   }
 }
