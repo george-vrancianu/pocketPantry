@@ -11,7 +11,7 @@ import {
   recipeTips,
 } from '../database/schema';
 import { recipeNotFound } from './recipe-errors';
-import { lockFamilyRecipe } from './recipe-locks';
+import { lockRecipeForWrite } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
 import type {
   AdminRecipeDetail,
@@ -48,7 +48,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, recipeId, familyId);
+      await lockRecipeForWrite(tx, recipeId, familyId);
       await this.assertStepOf(tx, recipeId, input.stepId);
       const [{ last }] = await tx
         .select({ last: max(recipeTips.position) })
@@ -82,7 +82,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, recipeId, familyId);
+      await lockRecipeForWrite(tx, recipeId, familyId);
       const tip = await this.requireTip(tx, recipeId, tipId);
       if (input.stepId !== undefined) {
         await this.assertStepOf(tx, recipeId, input.stepId);
@@ -106,7 +106,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, recipeId, familyId);
+      await lockRecipeForWrite(tx, recipeId, familyId);
       await this.requireTip(tx, recipeId, tipId);
       await tx.delete(recipeTips).where(eq(recipeTips.id, tipId));
     });
@@ -129,7 +129,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, recipeId, familyId);
+      await lockRecipeForWrite(tx, recipeId, familyId);
       const current = await tx
         .select({ id: recipeTips.id })
         .from(recipeTips)
@@ -171,7 +171,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const recipe = await lockFamilyRecipe(tx, recipeId, familyId);
+      const recipe = await lockRecipeForWrite(tx, recipeId, familyId);
       if (!recipe.parentId)
         throw new ApiException(400, 'recipes.bad_hidden_tip');
       // Serialise with Tip changes on the base (they lock the base row).
