@@ -5,8 +5,14 @@ import { AisleEditor } from './components/AisleEditor';
 import { AisleList } from './components/AisleList';
 import { CategoryEditor } from './components/CategoryEditor';
 import { CategoryTree } from './components/CategoryTree';
+import { EatingMomentEditor } from './components/EatingMomentEditor';
+import { EatingMomentList } from './components/EatingMomentList';
 import { IngredientEditor } from './components/IngredientEditor';
 import { IngredientList } from './components/IngredientList';
+import { ListEntryEditor } from './components/ListEntryEditor';
+import { ListSection } from './components/ListSection';
+import { RecipeEditor } from './components/RecipeEditor';
+import { RecipeList } from './components/RecipeList';
 import { UnmatchedQueue } from './components/UnmatchedQueue';
 import { useAdminScreen } from './hooks/useAdminScreen';
 
@@ -33,6 +39,33 @@ export function AdminPage() {
         onDone={screen.close}
       />
     );
+  } else if (catalog && editing?.type === 'recipe') {
+    body = (
+      <RecipeEditor
+        key={editing.id ?? 'new'}
+        recipeId={editing.id}
+        catalog={catalog}
+        onOpen={(id) => screen.edit({ type: 'recipe', id })}
+        onClose={screen.close}
+      />
+    );
+  } else if (catalog && editing?.type === 'eatingMoment') {
+    body = (
+      <EatingMomentEditor
+        key={editing.id ?? 'new'}
+        moment={screen.editedEatingMoment}
+        onDone={screen.close}
+      />
+    );
+  } else if (catalog && editing?.type === 'list') {
+    body = (
+      <ListEntryEditor
+        key={`${editing.kind}-${editing.id ?? 'new'}`}
+        kind={editing.kind}
+        entry={screen.editedListEntry}
+        onDone={screen.close}
+      />
+    );
   } else if (catalog && editing?.type === 'category') {
     body = (
       <CategoryEditor
@@ -53,6 +86,7 @@ export function AdminPage() {
           options={[
             { value: 'ingredients', label: t('admin:tabs.ingredients') },
             { value: 'categories', label: t('admin:tabs.categories') },
+            { value: 'recipes', label: t('admin:tabs.recipes') },
             { value: 'unmatched', label: t('admin:tabs.unmatched') },
           ]}
         />
@@ -64,6 +98,36 @@ export function AdminPage() {
             onCreate={() => screen.edit({ type: 'ingredient', id: null })}
             onEdit={(id) => screen.edit({ type: 'ingredient', id })}
           />
+        ) : screen.tab === 'recipes' ? (
+          <Stack spacing={4}>
+            <RecipeList
+              onCreate={() => screen.edit({ type: 'recipe', id: null })}
+              onEdit={(id) => screen.edit({ type: 'recipe', id })}
+            />
+            <ListSection
+              kind="cuisine"
+              entries={catalog.cuisines}
+              onCreate={() =>
+                screen.edit({ type: 'list', kind: 'cuisine', id: null })
+              }
+              onEdit={(id) =>
+                screen.edit({ type: 'list', kind: 'cuisine', id })
+              }
+            />
+            <ListSection
+              kind="method"
+              entries={catalog.methods}
+              onCreate={() =>
+                screen.edit({ type: 'list', kind: 'method', id: null })
+              }
+              onEdit={(id) => screen.edit({ type: 'list', kind: 'method', id })}
+            />
+            <EatingMomentList
+              moments={catalog.eatingMoments}
+              onCreate={() => screen.edit({ type: 'eatingMoment', id: null })}
+              onEdit={(id) => screen.edit({ type: 'eatingMoment', id })}
+            />
+          </Stack>
         ) : screen.tab === 'unmatched' ? (
           <UnmatchedQueue catalog={catalog} />
         ) : (

@@ -1,3 +1,106 @@
 {
-  "title": "Recipes"
+  "title": "Recipes",
+  "difficulty": {
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard"
+  },
+  "principles": {
+    "acid_cuts_fat": "Acid cuts fat",
+    "salt_balances_sweet": "Salt balances sweet",
+    "fat_carries_flavour": "Fat carries flavour",
+    "contrast_texture": "Contrast in texture",
+    "complement_flavour": "Complementary flavour",
+    "bitter_balances_rich": "Bitter balances rich",
+    "cleanses_palate": "Cleanses the palate",
+    "regional_tradition": "Regional tradition"
+  },
+  "disclaimer": "General guidance, not medical or dietary advice.",
+  "search": "Search Recipes",
+  "cuisine": "Cuisine",
+  "method": "Method",
+  "anyCuisine": "All cuisines",
+  "anyMethod": "All methods",
+  "empty": "No Recipes yet.",
+  "noMatches": "No Recipes match.",
+  "variantCount_one": "{{count}} Variant",
+  "variantCount_other": "{{count}} Variants",
+  "variantOf": "Variant of {{base}}",
+  "familyBadge": "Your family's",
+  "minutes": "{{count}} min",
+  "prep": "Prep {{time}}",
+  "cook": "Cook {{time}}",
+  "servings_one": "{{count}} Serving",
+  "servings_other": "{{count}} Servings",
+  "archived": "This Recipe is archived.",
+  "backToList": "All Recipes",
+  "notFound": "This Recipe could not be found.",
+  "sections": {
+    "pairings": "Pairings",
+    "whenToEat": "When to eat",
+    "nutrition": "Nutrition",
+    "ingredients": "Ingredients",
+    "steps": "Steps",
+    "tips": "Tips",
+    "variants": "Variants",
+    "whatsDifferent": "What's different"
+  },
+  "pairingKind": {
+    "food": "Food",
+    "drink": "Drink"
+  },
+  "eatingPolarity": {
+    "good_for": "Good for",
+    "avoid": "Avoid"
+  },
+  "optional": "optional",
+  "timer": "Timer {{time}}",
+  "inheritedTip": "from the Base Recipe",
+  "noVariants": "No Variants yet.",
+  "diff": {
+    "added": "Added",
+    "removed": "Removed",
+    "swapped": "Swapped",
+    "swap": "{{from}} to {{to}}",
+    "none": "Same ingredients as {{base}}."
+  },
+  "stepTips": "Tips for this Step",
+  "tipLabel": "Tip",
+  "family": {
+    "makeVariant": "Make a Variant",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this Recipe? It disappears for your whole family.",
+    "newHeading": "Make a Variant",
+    "editHeading": "Edit Recipe",
+    "create": "Save Variant",
+    "save": "Save Recipe",
+    "title": "Title",
+    "copyHint": "This is a copy to change. Nothing is saved until you save it.",
+    "tipsHint": "Copied Tips stay with their Steps; add your own after saving the Variant.",
+    "freeTextLabel": "Or add an ingredient by name",
+    "freeTextAdd": "Add name",
+    "freeTextNote": "Not in the Catalog",
+    "unavailable": "This Recipe cannot be edited.",
+    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Variant.",
+    "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
+    "saved": "Recipe saved.",
+    "viewRecipe": "View the Recipe"
+  },
+  "fewerServings": "Fewer Servings",
+  "moreServings": "More Servings",
+  "pantry": {
+    "canMake": "You can make this",
+    "missingCount_one": "Missing {{count}} ingredient",
+    "missingCount_other": "Missing {{count}} ingredients",
+    "covered": "In your Pantry",
+    "short": "Short {{amount}}",
+    "missing": "Missing",
+    "basic": "Pantry Basic",
+    "onList": "On your list",
+    "addMissing": "Add missing to Shopping List",
+    "added_one": "Added {{count}} item to your Shopping List",
+    "added_other": "Added {{count}} items to your Shopping List",
+    "someOnList": "Some of these are already on your list; adding them again increases the amount."
+  }
 }

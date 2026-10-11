@@ -33,6 +33,18 @@ export const aisleOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
+/** A Cuisine, Method or Eating Moment: just a name; its translations are catalog translations. */
+export const listEntryCreate = z.object({ name: text });
+export const listEntryUpdate = z.object({ name: text });
+
+/** The full order: every Eating Moment id (archived included) exactly once. */
+export const eatingMomentOrder = z.object({
+  ids: z
+    .array(id)
+    .min(1)
+    .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
+});
+
 export const parentCategoryCreate = z.object({
   name: text,
   aisleId: id,
@@ -69,8 +81,17 @@ export const ingredientCreate = z.object({
   leafCategoryId: id,
   name: text,
   defaultUnit: z.enum(ingredientUnit.enumValues),
+  pantryBasic: z.boolean().default(false),
 });
-export const ingredientUpdate = ingredientCreate
+// Spelled out: `.partial()` on the create schema would keep the default and
+// reset the flag on every edit that leaves it out.
+export const ingredientUpdate = z
+  .object({
+    leafCategoryId: id,
+    name: text,
+    defaultUnit: z.enum(ingredientUnit.enumValues),
+    pantryBasic: z.boolean(),
+  })
   .partial()
   .refine(atLeastOne, atLeastOneMessage);
 
@@ -106,3 +127,6 @@ export type IngredientCreate = z.infer<typeof ingredientCreate>;
 export type IngredientUpdate = z.infer<typeof ingredientUpdate>;
 export type TranslationCreate = z.infer<typeof translationCreate>;
 export type TranslationUpdate = z.infer<typeof translationUpdate>;
+export type ListEntryCreate = z.infer<typeof listEntryCreate>;
+export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;
+export type EatingMomentOrder = z.infer<typeof eatingMomentOrder>;

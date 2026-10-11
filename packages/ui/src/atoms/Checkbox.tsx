@@ -10,6 +10,7 @@ export type CheckboxProps = {
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   /** Explains the choice; read out with the label. */
   helperText?: string;
+  disabled?: boolean;
 };
 
 /** A labelled checkbox with optional helper text underneath. */
@@ -18,6 +19,7 @@ export function Checkbox({
   checked,
   onChange,
   helperText,
+  disabled,
 }: CheckboxProps) {
   const helperId = useId();
   return (
@@ -27,6 +29,7 @@ export function Checkbox({
         control={
           <MuiCheckbox
             checked={checked}
+            disabled={disabled}
             onChange={onChange}
             slotProps={{
               input: { 'aria-describedby': helperText ? helperId : undefined },

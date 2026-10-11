@@ -9,7 +9,7 @@ import {
   type AdminIngredient,
   type IngredientInput,
 } from '../../../lib/admin';
-import { EditorForm } from './EditorForm';
+import { EditorForm } from '../../../components/EditorForm';
 import { IngredientFields } from './IngredientFields';
 import { TranslationsEditor } from './TranslationsEditor';
 
@@ -20,7 +20,7 @@ type Props = {
   onDone: () => void;
 };
 
-/** Create or edit one Ingredient: name, Leaf Category, default unit, translations and Synonyms. */
+/** Create or edit one Ingredient: name, Leaf Category, default unit, Pantry Basic flag, translations and Synonyms. */
 export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
   const { t, i18n } = useTranslation(['admin', 'errors']);
   const save = useSaveIngredient(ingredient?.id);
@@ -30,6 +30,7 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
     leafCategoryId:
       ingredient?.leafCategoryId ?? catalog.leafCategories[0]?.id ?? '',
     defaultUnit: ingredient?.defaultUnit ?? 'g',
+    pantryBasic: ingredient?.pantryBasic ?? false,
   });
 
   return (

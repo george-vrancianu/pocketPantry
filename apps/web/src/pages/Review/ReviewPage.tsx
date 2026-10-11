@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { MatchDialog } from './components/MatchDialog';
+import { PlateRecipeSave } from './components/PlateRecipeSave';
 import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';
 import { ReviewTable } from './components/ReviewTable';
@@ -84,6 +85,14 @@ export function ReviewPage() {
         </Alert>
       ) : null}
       {screen.error ? <Alert>{screen.error}</Alert> : null}
+      {screen.mode === 'plate' ? (
+        <PlateRecipeSave
+          dishTitle={screen.dishTitle}
+          lines={screen.included}
+          hasInvalidLine={screen.hasInvalidLine}
+          onSaved={screen.openSavedRecipe}
+        />
+      ) : null}
     </>
   );
 

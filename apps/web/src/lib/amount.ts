@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import type { Unit } from '../../../lib/catalog';
+import type { Unit } from './catalog';
 
 /** "500 g", "2 pcs". */
 export function formatAmount(

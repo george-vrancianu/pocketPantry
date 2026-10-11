@@ -49,6 +49,7 @@ export function useReviewScreen() {
           mode: scan.mode,
           lines: reviewLinesOf(scan),
           scanLanguage: scan.scanLanguage,
+          dishTitle: scan.dishTitle ?? '',
         }
       : null;
   });
@@ -182,6 +183,9 @@ export function useReviewScreen() {
     setFocusId(rowId(key));
   };
 
+  /** Opens and focuses the first line with an invalid value; true when there was one. */
+  const hasInvalidLine = () => focusInvalid([...groups.review, ...groups.sure]);
+
   const save = () => {
     // Display order, so the Member lands on the topmost problem.
     if (focusInvalid([...groups.review, ...groups.sure])) return;
@@ -214,6 +218,14 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
+    dishTitle: draft?.dishTitle ?? '',
+    included,
+    hasInvalidLine,
+    // The dish is now a Recipe: the card is done, and the Member lands on it.
+    openSavedRecipe: (id: string) => {
+      dispatchScanSession({ type: 'remove', id: scanId });
+      navigate(`/recipes/${id}`);
+    },
     mode,
     shopping,
     state,

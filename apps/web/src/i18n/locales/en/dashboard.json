@@ -41,6 +41,16 @@
       "count_one": "missing staple",
       "count_other": "missing staples"
     },
+    "cookTonight": {
+      "title": "Cook tonight",
+      "seeAll": "See all",
+      "empty": "Nothing to cook from your Pantry yet. Add Batches or Recipes to see ideas.",
+      "missing": "Missing: {{name}}",
+      "expiring_one": "uses {{count}} Expiring Soon item",
+      "expiring_other": "uses {{count}} Expiring Soon items",
+      "otherVariants_one": "+{{count}} other Variant you can make",
+      "otherVariants_other": "+{{count}} other Variants you can make"
+    },
     "mealPlan": {
       "title": "Meal plan"
     },

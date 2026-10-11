@@ -100,6 +100,7 @@ describe('CustomisePage', () => {
     ).toEqual([
       'Add Pantry widget',
       'Add Suggestions widget',
+      'Add Cook tonight widget',
       'Add Meal plan widget',
       'Add Budget widget',
       'Add Nutrition widget',

@@ -39,6 +39,16 @@
       "count_one": "manglende basisvare",
       "count_other": "manglende basisvarer"
     },
+    "cookTonight": {
+      "title": "Lav mad i aften",
+      "seeAll": "Se alle",
+      "empty": "Intet at lave af dit spisekammer endnu. Tilføj partier eller opskrifter for at få idéer.",
+      "missing": "Mangler: {{name}}",
+      "expiring_one": "bruger {{count}} vare, der snart udløber",
+      "expiring_other": "bruger {{count}} varer, der snart udløber",
+      "otherVariants_one": "+{{count}} anden variant du kan lave",
+      "otherVariants_other": "+{{count}} andre varianter du kan lave"
+    },
     "mealPlan": {
       "title": "Madplan"
     },

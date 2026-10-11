@@ -6,10 +6,17 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
+import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
-  'aisle' | 'parent_category' | 'leaf_category' | 'ingredient';
+  | 'aisle'
+  | 'parent_category'
+  | 'leaf_category'
+  | 'ingredient'
+  | 'cuisine'
+  | 'method'
+  | 'eating_moment';
 
 export type AdminTranslation = {
   id: string;
@@ -40,10 +47,25 @@ export type AdminLeafCategory = Translated & {
 export type AdminIngredient = Translated & {
   leafCategoryId: string;
   defaultUnit: Unit;
+  /** Recipe matching always counts a Pantry Basic as covered. */
+  pantryBasic: boolean;
+};
+
+/** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
+export type AdminListEntry = Translated;
+export type ListKind = 'cuisine' | 'method';
+
+/** An Eating Moment: an ordered, archivable name list like Aisles. */
+export type AdminEatingMoment = Translated & {
+  sortOrder: number;
+  archived: boolean;
 };
 
 export type AdminCatalog = {
   aisles: AdminAisle[];
+  cuisines: AdminListEntry[];
+  methods: AdminListEntry[];
+  eatingMoments: AdminEatingMoment[];
   parentCategories: AdminParentCategory[];
   leafCategories: AdminLeafCategory[];
   ingredients: AdminIngredient[];
@@ -72,12 +94,13 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
   return useMutation({
     mutationFn: send,
     // Member-facing Catalog search and Shopping List show the same names (and
-    // Aisle order), so refresh them too.
+    // Aisle order, and Recipes show Ingredient names), so refresh them too.
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
       ]),
   });
 }
@@ -88,6 +111,7 @@ export type IngredientInput = {
   name: string;
   leafCategoryId: string;
   defaultUnit: Unit;
+  pantryBasic: boolean;
 };
 export function useSaveIngredient(id?: string) {
   return useAdminWrite((input: IngredientInput) =>
@@ -120,6 +144,48 @@ export function useDeleteAisle() {
 export function useReorderAisles() {
   return useAdminWrite((ids: string[]) =>
     apiRequest(`${base}/aisles/order`, { method: 'PUT', body: { ids } }),
+  );
+}
+
+const listPath = (kind: ListKind) =>
+  kind === 'cuisine' ? 'cuisines' : 'methods';
+export function useSaveListEntry(kind: ListKind, id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/${listPath(kind)}${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+export function useDeleteListEntry(kind: ListKind) {
+  return useAdminWrite((id: string) =>
+    apiRequest(`${base}/${listPath(kind)}/${id}`, { method: 'DELETE' }),
+  );
+}
+
+export function useSaveEatingMoment(id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/eating-moments${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+/** Sets the order: every Eating Moment id once, archived included. */
+export function useReorderEatingMoments() {
+  return useAdminWrite((ids: string[]) =>
+    apiRequest(`${base}/eating-moments/order`, {
+      method: 'PUT',
+      body: { ids },
+    }),
+  );
+}
+export function useArchiveEatingMoment() {
+  return useAdminWrite(({ id, archive }: { id: string; archive: boolean }) =>
+    apiRequest(
+      `${base}/eating-moments/${id}/${archive ? 'archive' : 'unarchive'}`,
+      { method: 'POST' },
+    ),
   );
 }
 

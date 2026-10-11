@@ -3,11 +3,7 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import {
-  shoppingItemSourceRecipes,
-  shoppingLists,
-  user,
-} from '../src/database/schema';
+import { shoppingLists, user } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Item = {
@@ -357,10 +353,5 @@ describe('Shopping List (integration)', () => {
         .set('origin', TEST_ORIGIN)
         .expect(401);
     });
-  });
-
-  it('has a Source Recipe join table that stays empty', async () => {
-    const rows = await database.select().from(shoppingItemSourceRecipes);
-    expect(rows).toEqual([]);
   });
 });

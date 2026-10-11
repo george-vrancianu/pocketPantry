@@ -37,6 +37,8 @@ describe('App shell', () => {
       'GET /api/admin/catalog': () =>
         Response.json({
           aisles: [],
+          cuisines: [],
+          methods: [],
           parentCategories: [],
           leafCategories: [],
           ingredients: [],

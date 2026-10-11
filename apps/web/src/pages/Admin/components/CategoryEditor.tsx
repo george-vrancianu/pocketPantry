@@ -11,7 +11,7 @@ import {
   type CategoryKind,
 } from '../../../lib/admin';
 import { LOCATIONS, type StorageLocation } from '../../../lib/catalog';
-import { EditorForm } from './EditorForm';
+import { EditorForm } from '../../../components/EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
-import { lockAisleOrder } from '../catalog/aisle-order-lock';
+import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -13,14 +13,20 @@ import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   aisles,
   catalogTranslations,
+  cuisines,
+  eatingMoments,
   ingredients,
   leafCategories,
+  methods,
   parentCategories,
 } from '../database/schema';
 import type {
   AisleCreate,
+  ListEntryCreate,
+  ListEntryUpdate,
   AisleOrder,
   AisleUpdate,
+  EatingMomentOrder,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -48,6 +54,9 @@ export function otherLeafName(parentName: string): string {
 const otherLeafNameTaken = () =>
   new ApiException(409, 'catalog.other_leaf_name_taken');
 
+type ListType = 'cuisine' | 'method';
+const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
+
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
 
@@ -64,23 +73,37 @@ export class AdminCatalogService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   async overview() {
-    const [aisleRows, parentRows, leafRows, ingredientRows, translationRows] =
-      await Promise.all([
-        this.database.select().from(aisles).orderBy(aisles.sortOrder),
-        this.database
-          .select()
-          .from(parentCategories)
-          .orderBy(parentCategories.normalizedName),
-        this.database
-          .select()
-          .from(leafCategories)
-          .orderBy(leafCategories.normalizedName),
-        this.database
-          .select()
-          .from(ingredients)
-          .orderBy(ingredients.normalizedName),
-        this.database.select().from(catalogTranslations),
-      ]);
+    const [
+      aisleRows,
+      parentRows,
+      leafRows,
+      ingredientRows,
+      translationRows,
+      cuisineRows,
+      methodRows,
+      eatingMomentRows,
+    ] = await Promise.all([
+      this.database.select().from(aisles).orderBy(aisles.sortOrder),
+      this.database
+        .select()
+        .from(parentCategories)
+        .orderBy(parentCategories.normalizedName),
+      this.database
+        .select()
+        .from(leafCategories)
+        .orderBy(leafCategories.normalizedName),
+      this.database
+        .select()
+        .from(ingredients)
+        .orderBy(ingredients.normalizedName),
+      this.database.select().from(catalogTranslations),
+      this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
+      this.database.select().from(methods).orderBy(methods.normalizedName),
+      this.database
+        .select()
+        .from(eatingMoments)
+        .orderBy(eatingMoments.sortOrder),
+    ]);
 
     const byEntity = new Map<string, unknown[]>();
     for (const row of translationRows) {
@@ -98,6 +121,23 @@ export class AdminCatalogService {
       byEntity.get(`${type}:${entityId}`) ?? [];
 
     return {
+      cuisines: cuisineRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        translations: translations('cuisine', row.id),
+      })),
+      methods: methodRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        translations: translations('method', row.id),
+      })),
+      eatingMoments: eatingMomentRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sortOrder: row.sortOrder,
+        archived: row.archivedAt !== null,
+        translations: translations('eating_moment', row.id),
+      })),
       aisles: aisleRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -126,6 +166,7 @@ export class AdminCatalogService {
         name: row.name,
         leafCategoryId: row.leafCategoryId,
         defaultUnit: row.defaultUnit,
+        pantryBasic: row.pantryBasic,
         translations: translations('ingredient', row.id),
       })),
     };
@@ -228,6 +269,151 @@ export class AdminCatalogService {
         await tx.delete(aisles).where(eq(aisles.id, id));
       },
       new ApiException(409, 'catalog.aisle_in_use'),
+    );
+  }
+
+  // Eating Moments: an ordered, translated, archivable list like Aisles. Never
+  // deleted: Recipes keep their uses, archiving only hides it.
+
+  createEatingMoment(input: ListEntryCreate) {
+    return this.write(async (tx) => {
+      await lockEatingMomentOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(eatingMoments.sortOrder) })
+        .from(eatingMoments);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(eatingMoments)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+          sortOrder: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'eating_moment', id, input.name);
+      return row;
+    });
+  }
+
+  updateEatingMoment(id: string, input: ListEntryUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(eatingMoments)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(eatingMoments.id, id))
+        .returning();
+      if (!row) throw notFound('eating_moment');
+      await this.renameCanonicalName(tx, 'eating_moment', id, input.name);
+      return row;
+    });
+  }
+
+  /** Rewrites the order to `ids` (1..n); the list must name every Eating Moment once. */
+  reorderEatingMoments({ ids }: EatingMomentOrder) {
+    return this.write(async (tx) => {
+      await lockEatingMomentOrder(tx);
+      const current = await tx
+        .select({ id: eatingMoments.id })
+        .from(eatingMoments);
+      const wanted = new Set(ids);
+      if (
+        current.length !== ids.length ||
+        !current.every((row) => wanted.has(row.id))
+      ) {
+        throw new ApiException(409, 'catalog.eating_moment_order_stale');
+      }
+      for (const [index, id] of ids.entries()) {
+        await tx
+          .update(eatingMoments)
+          .set({ sortOrder: index + 1 })
+          .where(eq(eatingMoments.id, id));
+      }
+      return tx.select().from(eatingMoments).orderBy(eatingMoments.sortOrder);
+    });
+  }
+
+  setEatingMomentArchived(id: string, archived: boolean) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(eatingMoments)
+        .set({ archivedAt: archived ? new Date() : null })
+        .where(eq(eatingMoments.id, id))
+        .returning();
+      if (!row) throw notFound('eating_moment');
+      return row;
+    });
+  }
+
+  // Cuisines and Methods: Admin-curated Recipe lists, translated like Aisles.
+  // Deleting one a Recipe uses is refused; Recipes keep a reference, never a copy.
+
+  createCuisine(input: ListEntryCreate) {
+    return this.createListEntry('cuisine', input);
+  }
+
+  updateCuisine(id: string, input: ListEntryUpdate) {
+    return this.updateListEntry('cuisine', id, input);
+  }
+
+  deleteCuisine(id: string) {
+    return this.deleteListEntry('cuisine', id);
+  }
+
+  createMethod(input: ListEntryCreate) {
+    return this.createListEntry('method', input);
+  }
+
+  updateMethod(id: string, input: ListEntryUpdate) {
+    return this.updateListEntry('method', id, input);
+  }
+
+  deleteMethod(id: string) {
+    return this.deleteListEntry('method', id);
+  }
+
+  private createListEntry(type: ListType, input: ListEntryCreate) {
+    const table = LIST_TABLES[type];
+    return this.write(async (tx) => {
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(table)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+        })
+        .returning();
+      await this.addCanonicalName(tx, type, id, input.name);
+      return row;
+    });
+  }
+
+  private updateListEntry(type: ListType, id: string, input: ListEntryUpdate) {
+    const table = LIST_TABLES[type];
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(table)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(table.id, id))
+        .returning();
+      if (!row) throw notFound(type);
+      await this.renameCanonicalName(tx, type, id, input.name);
+      return row;
+    });
+  }
+
+  private deleteListEntry(type: ListType, id: string) {
+    const table = LIST_TABLES[type];
+    // The Recipe foreign key is the guard, so a Recipe pointing at the entry
+    // concurrently fails the delete atomically.
+    return this.write(
+      async (tx) => {
+        await this.requireRow(tx, type, id);
+        await this.deleteTranslationsOf(tx, type, id);
+        await tx.delete(table).where(eq(table.id, id));
+      },
+      new ApiException(409, `catalog.${type}_in_use`),
     );
   }
 
@@ -425,8 +611,8 @@ export class AdminCatalogService {
   }
 
   deleteIngredient(id: string) {
-    // Batches, Shopping Items, Staples and Shopping Template lines reference
-    // Ingredients with a foreign key, so
+    // Batches, Shopping Items, Staples, Shopping Template lines and Recipe
+    // Ingredient Lines and Recipe Pairing links reference Ingredients with a foreign key, so
     // the database is the guard: a referenced Ingredient fails the delete
     // atomically (no check-then-delete race) and is mapped to a stable code.
     return this.write(
@@ -654,6 +840,9 @@ export class AdminCatalogService {
       parent_category: parentCategories,
       leaf_category: leafCategories,
       ingredient: ingredients,
+      cuisine: cuisines,
+      method: methods,
+      eating_moment: eatingMoments,
     }[type];
     const [row] = await executor
       .select({ id: table.id })

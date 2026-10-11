@@ -1,4 +1,4 @@
-import { TextField } from '@pocket-pantry/ui';
+import { Checkbox, TextField } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import {
   localName,
@@ -13,7 +13,7 @@ type Props = {
   onChange: (value: IngredientInput) => void;
 };
 
-/** An Ingredient's name, Leaf Category and default unit, as the Admin editors edit them. */
+/** An Ingredient's name, Leaf Category, default unit and Pantry Basic flag, as the Admin editors edit them. */
 export function IngredientFields({ catalog, value, onChange }: Props) {
   const { t, i18n } = useTranslation('admin');
   const leaves = catalog.leafCategories.map((leaf) => {
@@ -62,6 +62,14 @@ export function IngredientFields({ catalog, value, onChange }: Props) {
           </option>
         ))}
       </TextField>
+      <Checkbox
+        label={t('admin:ingredient.pantryBasic')}
+        helperText={t('admin:ingredient.pantryBasicHint')}
+        checked={value.pantryBasic}
+        onChange={(event) =>
+          onChange({ ...value, pantryBasic: event.target.checked })
+        }
+      />
     </>
   );
 }

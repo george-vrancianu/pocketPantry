@@ -19,10 +19,13 @@ import {
   aisleCreate,
   aisleOrder,
   aisleUpdate,
+  eatingMomentOrder,
   idParam,
   ingredientCreate,
   ingredientUpdate,
   leafCategoryCreate,
+  listEntryCreate,
+  listEntryUpdate,
   leafCategoryUpdate,
   parentCategoryCreate,
   parentCategoryUpdate,
@@ -31,9 +34,12 @@ import {
   type AisleCreate,
   type AisleOrder,
   type AisleUpdate,
+  type EatingMomentOrder,
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
+  type ListEntryCreate,
+  type ListEntryUpdate,
   type LeafCategoryUpdate,
   type ParentCategoryCreate,
   type ParentCategoryUpdate,
@@ -85,6 +91,103 @@ export class AdminCatalogController {
   @HttpCode(204)
   async deleteAisle(@Id() { id }: IdParam) {
     await this.catalog.deleteAisle(id);
+  }
+
+  @Post('cuisines')
+  @ApiOperation({ summary: 'Admin only: create a Cuisine for Recipes' })
+  createCuisine(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createCuisine(body);
+  }
+
+  @Patch('cuisines/:id')
+  updateCuisine(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateCuisine(id, body);
+  }
+
+  @Delete('cuisines/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete a Cuisine unless a Recipe uses it',
+  })
+  @HttpCode(204)
+  async deleteCuisine(@Id() { id }: IdParam) {
+    await this.catalog.deleteCuisine(id);
+  }
+
+  @Post('methods')
+  @ApiOperation({ summary: 'Admin only: create a Method for Recipes' })
+  createMethod(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createMethod(body);
+  }
+
+  @Patch('methods/:id')
+  updateMethod(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateMethod(id, body);
+  }
+
+  @Delete('methods/:id')
+  @ApiOperation({
+    summary: 'Admin only: delete a Method unless a Recipe uses it',
+  })
+  @HttpCode(204)
+  async deleteMethod(@Id() { id }: IdParam) {
+    await this.catalog.deleteMethod(id);
+  }
+
+  @Post('eating-moments')
+  @ApiOperation({
+    summary: 'Admin only: create an Eating Moment, last in the list',
+  })
+  createEatingMoment(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createEatingMoment(body);
+  }
+
+  @Put('eating-moments/order')
+  @ApiOperation({
+    summary:
+      'Admin only: set the order of every Eating Moment (archived included) at once',
+  })
+  reorderEatingMoments(
+    @Body(new ZodValidationPipe(eatingMomentOrder)) body: EatingMomentOrder,
+  ) {
+    return this.catalog.reorderEatingMoments(body);
+  }
+
+  @Patch('eating-moments/:id')
+  @ApiOperation({ summary: 'Admin only: rename an Eating Moment' })
+  updateEatingMoment(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateEatingMoment(id, body);
+  }
+
+  @Post('eating-moments/:id/archive')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin only: archive an Eating Moment (hidden from the picker and display, kept on Recipes)',
+  })
+  archiveEatingMoment(@Id() { id }: IdParam) {
+    return this.catalog.setEatingMomentArchived(id, true);
+  }
+
+  @Post('eating-moments/:id/unarchive')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin only: bring an Eating Moment back' })
+  unarchiveEatingMoment(@Id() { id }: IdParam) {
+    return this.catalog.setEatingMomentArchived(id, false);
   }
 
   @Post('parent-categories')

@@ -113,6 +113,27 @@
       "when": 1791729437139,
       "tag": "0015_stock_history",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791748270051,
+      "tag": "0016_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791750710594,
+      "tag": "0017_pantry_basic",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791753449110,
+      "tag": "0018_recipe_guidance",
+      "breakpoints": true
     }
   ]
 }

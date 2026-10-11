@@ -17,7 +17,10 @@ import {
   batches,
   catalogTranslations,
   ingredients,
+  recipeIngredientLines,
+  recipes,
   shoppingItems,
+  shoppingItemSourceRecipes,
   shoppingLists,
   shoppingTemplateLines,
   unmatchedEntries,
@@ -47,7 +50,7 @@ const notInQueue = () => new ApiException(404, 'unmatched.not_found');
  * Lock order, every time: the per-name advisory lock (serialises Admins
  * working the same name), then the Family rows involved in ascending id (as
  * family-locks.ts requires everywhere), then Shopping List rows in ascending
- * id, then Shopping Item and Batch rows in ascending id. The other advisory
+ * id, then Shopping Item, Batch and Recipe Ingredient Line rows in ascending id. The other advisory
  * lock holders (catalog adds and renames) take only the name lock and never a
  * Family lock first, so they cannot invert with this order. Resolve takes every
  * name lock it needs up front, sorted.
@@ -103,7 +106,7 @@ export class UnmatchedQueueService {
         ? { rows: [] }
         : await this.database.execute<EntryRow>(sql`
             select u.id, u.normalized_name as "normalizedName", u.raw_name as "rawName",
-              u.locale, u.source, u.batch_id as "batchId", u.shopping_item_id as "shoppingItemId",
+              u.locale, u.source, u.batch_id as "batchId", u.shopping_item_id as "shoppingItemId", u.ingredient_line_id as "ingredientLineId",
               u.source_text as "sourceText", u.source_language as "sourceLanguage"
             from unnest(array[${sql.join(
               page.map((group) => sql`${group.normalizedName}`),
@@ -141,8 +144,14 @@ export class UnmatchedQueueService {
             sources: group.sources,
             dismissed,
             references: references.map((row) => ({
-              type: row.batchId ? 'batch' : 'shopping_item',
-              id: (row.batchId ?? row.shoppingItemId) as string,
+              type: row.batchId
+                ? 'batch'
+                : row.shoppingItemId
+                  ? 'shopping_item'
+                  : 'recipe_line',
+              id: (row.batchId ??
+                row.shoppingItemId ??
+                row.ingredientLineId) as string,
               source: row.source,
               locale: row.locale,
               rawName: row.rawName,
@@ -250,6 +259,9 @@ export class UnmatchedQueueService {
       e.shoppingItemId ? [e.shoppingItemId] : [],
     );
     const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
+    const lineIds = entries.flatMap((e) =>
+      e.ingredientLineId ? [e.ingredientLineId] : [],
+    );
     const relinkedShoppingItems = await this.relinkShoppingItems(
       tx,
       itemIds,
@@ -288,6 +300,25 @@ export class UnmatchedQueueService {
     )) {
       await this.pantry.relinked(tx, familyId, target.id);
     }
+
+    // Family Recipe lines: the line keeps its quantity, unit, note and position.
+    const relinkedLines =
+      lineIds.length === 0
+        ? []
+        : await tx
+            .update(recipeIngredientLines)
+            .set({
+              ingredientId: target.id,
+              rawName: null,
+              normalizedName: null,
+            })
+            .where(
+              and(
+                inArray(recipeIngredientLines.id, lineIds),
+                isNull(recipeIngredientLines.ingredientId),
+              ),
+            )
+            .returning({ id: recipeIngredientLines.id });
 
     const synonymAdded = await this.addSynonym(
       tx,
@@ -340,6 +371,7 @@ export class UnmatchedQueueService {
       relinkedBatches: relinkedBatchRows.length,
       relinkedShoppingItems,
       relinkedTemplateLines: relinkedTemplateLines.length,
+      relinkedRecipeLines: relinkedLines.length,
       synonymAdded,
       sourceSynonymAdded,
       sourceSynonymSkipped,
@@ -364,13 +396,17 @@ export class UnmatchedQueueService {
     let entries = await read();
     const lockedItems = new Set<string>();
     const lockedBatches = new Set<string>();
+    const lockedLines = new Set<string>();
     const lockedFamilies = new Set<string>();
     for (let attempt = 0; attempt < MAX_LOCK_ATTEMPTS; attempt++) {
       const itemIds = entries.flatMap((e) =>
         e.shoppingItemId ? [e.shoppingItemId] : [],
       );
       const batchIds = entries.flatMap((e) => (e.batchId ? [e.batchId] : []));
-      await this.lockFamiliesOf(tx, itemIds, batchIds, lockedFamilies);
+      const lineIds = entries.flatMap((e) =>
+        e.ingredientLineId ? [e.ingredientLineId] : [],
+      );
+      await this.lockFamiliesOf(tx, itemIds, batchIds, lineIds, lockedFamilies);
       await this.lockShoppingLists(tx, itemIds);
       if (itemIds.length > 0) {
         await tx
@@ -388,13 +424,24 @@ export class UnmatchedQueueService {
           .orderBy(batches.id)
           .for('update');
       }
+      if (lineIds.length > 0) {
+        await tx
+          .select({ id: recipeIngredientLines.id })
+          .from(recipeIngredientLines)
+          .where(inArray(recipeIngredientLines.id, lineIds))
+          .orderBy(recipeIngredientLines.id)
+          .for('update');
+      }
+      lineIds.forEach((id) => lockedLines.add(id));
       itemIds.forEach((id) => lockedItems.add(id));
       batchIds.forEach((id) => lockedBatches.add(id));
       entries = await read();
       const covered = entries.every((e) =>
         e.batchId
           ? lockedBatches.has(e.batchId)
-          : lockedItems.has(e.shoppingItemId as string),
+          : e.ingredientLineId
+            ? lockedLines.has(e.ingredientLineId)
+            : lockedItems.has(e.shoppingItemId as string),
       );
       if (covered) return entries;
     }
@@ -472,6 +519,23 @@ export class UnmatchedQueueService {
             checked: twin.checked && row.checked,
           })
           .where(eq(shoppingItems.id, twin.id));
+        // Its Source Recipes move to the twin first, or the delete would
+        // cascade them away.
+        const sources = await tx
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, row.id));
+        if (sources.length > 0) {
+          await tx
+            .insert(shoppingItemSourceRecipes)
+            .values(
+              sources.map(({ recipeId }) => ({
+                shoppingItemId: twin.id,
+                recipeId,
+              })),
+            )
+            .onConflictDoNothing();
+        }
         // Its queue entry goes with it (cascade) and is also deleted by id.
         await tx.delete(shoppingItems).where(eq(shoppingItems.id, row.id));
       } else {
@@ -493,6 +557,7 @@ export class UnmatchedQueueService {
     tx: Tx,
     itemIds: string[],
     batchIds: string[],
+    lineIds: string[],
     locked: Set<string>,
   ): Promise<void> {
     const ofBatches =
@@ -513,8 +578,21 @@ export class UnmatchedQueueService {
               eq(shoppingLists.id, shoppingItems.listId),
             )
             .where(inArray(shoppingItems.id, itemIds));
+    // Family Recipes only: Catalog Recipes have no Family and no Unmatched lines.
+    const ofLines =
+      lineIds.length === 0
+        ? []
+        : await tx
+            .select({ id: recipes.familyId })
+            .from(recipeIngredientLines)
+            .innerJoin(recipes, eq(recipes.id, recipeIngredientLines.recipeId))
+            .where(inArray(recipeIngredientLines.id, lineIds));
     const missing = [
-      ...new Set([...ofBatches, ...ofItems].map((row) => row.id)),
+      ...new Set(
+        [...ofBatches, ...ofItems, ...ofLines].flatMap((row) =>
+          row.id ? [row.id] : [],
+        ),
+      ),
     ].filter((id) => !locked.has(id));
     // A Family found after others are held may sort below them: restart so
     // every Family is locked in ascending order from scratch (runLocked).

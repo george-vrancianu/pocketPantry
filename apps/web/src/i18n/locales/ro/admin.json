@@ -4,7 +4,8 @@
   "tabs": {
     "ingredients": "Ingrediente",
     "categories": "Categorii",
-    "unmatched": "Nepotrivite"
+    "unmatched": "Nepotrivite",
+    "recipes": "Rețete"
   },
   "locations": {
     "none": "Moștenit"
@@ -30,7 +31,9 @@
     "empty": "Niciun Ingredient găsit.",
     "name": "Nume (engleză)",
     "leafCategory": "Categorie frunză",
-    "defaultUnit": "Unitate implicită"
+    "defaultUnit": "Unitate implicită",
+    "pantryBasic": "Nelipsit din Cămară",
+    "pantryBasicHint": "Potrivirea rețetelor îl consideră mereu în stoc"
   },
   "aisle": {
     "title": "Raioane",
@@ -65,7 +68,8 @@
     "newSynonym": "Sinonim nou ({{language}})",
     "addSynonym": "Adaugă Sinonim în {{language}}",
     "removeSynonym": "Elimină Sinonimul {{value}}",
-    "none": "Încă niciun Sinonim."
+    "none": "Încă niciun Sinonim.",
+    "namesTitle": "Traduceri"
   },
   "unmatched": {
     "statusLabel": "Coadă",
@@ -87,7 +91,8 @@
       "plate": "Farfurie",
       "ingredients": "Ingrediente",
       "manual": "Scris de mână",
-      "finish_shopping": "Finalizare cumpărături"
+      "finish_shopping": "Finalizare cumpărături",
+      "recipe": "Rețetă"
     },
     "resolve": "Rezolvă",
     "resolveName": "Rezolvă {{name}}",
@@ -116,5 +121,210 @@
       "taken": "Textul tipărit nu a fost adăugat: aparține altui Ingredient.",
       "none": "Textul tipărit nu a fost adăugat: rândurile nu aveau text tipărit."
     }
+  },
+  "list": {
+    "cuisine": {
+      "title": "Bucătării",
+      "hint": "Rețetele pot primi o singură Bucătărie.",
+      "new": "Bucătărie nouă",
+      "edit": "Editează Bucătăria {{name}}",
+      "name": "Nume (engleză)",
+      "empty": "Nicio Bucătărie încă."
+    },
+    "method": {
+      "title": "Metode",
+      "hint": "Rețetele pot primi o singură Metodă, de exemplu la cuptor sau la grătar.",
+      "new": "Metodă nouă",
+      "edit": "Editează Metoda {{name}}",
+      "name": "Nume (engleză)",
+      "empty": "Nicio Metodă încă."
+    }
+  },
+  "recipe": {
+    "title": "Rețete",
+    "new": "Rețetă de bază nouă",
+    "edit": "Editează Rețeta {{title}}",
+    "editHeading": "Rețeta: {{title}}",
+    "empty": "Nicio Rețetă încă.",
+    "archivedBadge": "Arhivată",
+    "variantOf": "Variantă a Rețetei {{base}}",
+    "variantsOf": "Variante ale Rețetei {{title}}",
+    "loading": "Se încarcă Rețeta",
+    "save": "Salvează Rețeta",
+    "create": "Creează Rețeta",
+    "saved": "Rețeta a fost salvată.",
+    "fields": {
+      "title": "Titlu (engleză)",
+      "servings": "Porții",
+      "prepMinutes": "Pregătire (minute)",
+      "cookMinutes": "Gătire (minute)",
+      "difficulty": "Dificultate",
+      "difficultyNone": "Nesetată",
+      "cuisine": "Bucătărie",
+      "method": "Metodă",
+      "none": "Niciuna"
+    },
+    "invalid": {
+      "servings": "Porțiile trebuie să fie un număr întreg de la 1 la 1000.",
+      "minutes": "Minutele trebuie să fie un număr întreg sau să rămână goale.",
+      "quantity": "Cantitatea trebuie să fie un număr pozitiv cu cel mult trei zecimale, sau goală.",
+      "timer": "Cronometrul trebuie să fie un număr pozitiv de minute, sau gol.",
+      "title": "Introdu un titlu.",
+      "stepText": "Introdu textul Pasului."
+    },
+    "lines": {
+      "title": "Linii de ingredient",
+      "hint": "Lasă cantitatea goală pentru o linie precum „sare, după gust”.",
+      "empty": "Nicio linie de ingredient încă.",
+      "add": "Adaugă un Ingredient",
+      "quantity": "Cantitate pentru {{name}}",
+      "unit": "Unitate pentru {{name}}",
+      "optional": "Opțional: {{name}}",
+      "note": "Notă pentru {{name}}",
+      "remove": "Elimină {{name}}",
+      "moveUp": "Mută {{name}} mai sus",
+      "moveDown": "Mută {{name}} mai jos",
+      "unknown": "Ingredient necunoscut"
+    },
+    "steps": {
+      "title": "Pași",
+      "empty": "Niciun Pas încă.",
+      "add": "Adaugă un Pas",
+      "text": "Pasul {{number}}",
+      "timer": "Cronometru pentru pasul {{number}} (minute)",
+      "moveUp": "Mută pasul {{number}} mai sus",
+      "moveDown": "Mută pasul {{number}} mai jos",
+      "remove": "Elimină pasul {{number}}",
+      "tipsWarning_one": "Eliminarea pasului {{number}} șterge Sfatul lui la salvare.",
+      "tipsWarning_other": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
+      "tipsWarning_few": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
+      "draftTips": "Sfaturi pentru pasul {{number}}",
+      "removeTip": "Elimină Sfatul {{n}} al pasului {{step}}",
+      "removeTipShort": "Elimină",
+      "removeWithTips": "Elimină pasul și Sfaturile",
+      "keep": "Păstrează pasul"
+    },
+    "variant": {
+      "title": "Creează o variantă",
+      "hint": "Copiază liniile de ingredient, Pașii și Sfaturile pe pas ca schiță. Apoi Varianta se editează separat.",
+      "name": "Titlul Variantei",
+      "make": "Creează o variantă",
+      "making": "Se creează…"
+    },
+    "archive": {
+      "label": "Arhivează Rețeta",
+      "confirm": "Arhivezi această Rețetă? Dispare din navigare și din lista pentru Variante noi. Variantele ei continuă să funcționeze.",
+      "note": "Această Rețetă este arhivată."
+    },
+    "tips": {
+      "title": "Sfaturi",
+      "hint": "Sfaturile se salvează imediat ce le schimbi. Pentru a adăuga un Sfat la un Pas nou, salvează mai întâi Rețeta.",
+      "recipeLevel": "Sfaturi ale Rețetei",
+      "forStep": "Sfaturi pentru pasul {{number}}",
+      "none": "Niciun Sfat încă.",
+      "new": "Sfat nou",
+      "newForStep": "Sfat nou pentru pasul {{number}}",
+      "add": "Adaugă Sfat",
+      "text": "Sfatul {{position}} ({{group}})",
+      "save": "Salvează Sfatul {{position}} ({{group}})",
+      "remove": "Șterge Sfatul {{position}} ({{group}})",
+      "moveUp": "Mută Sfatul {{position}} mai sus ({{group}})",
+      "moveDown": "Mută Sfatul {{position}} mai jos ({{group}})",
+      "inherited": "Sfaturi din Rețeta de bază",
+      "inheritedHint": "Debifează un Sfat ca să-l ascunzi pe această Variantă.",
+      "show": "Afișează: {{text}}",
+      "noInherited": "Rețeta de bază nu are Sfaturi la nivel de Rețetă.",
+      "groupRecipe": "Rețetă",
+      "groupStep": "pasul {{number}}"
+    },
+    "translations": {
+      "title": "Traducerile Rețetei",
+      "hint": "Engleza este sursa. Un câmp gol folosește engleza. Salvează mai întâi Rețeta, ca liniile, Pașii și Sfaturile noi să apară aici.",
+      "title_field": "Titlu ({{language}})",
+      "step": "Pasul {{number}} ({{language}})",
+      "line": "Notă pentru {{name}} ({{language}})",
+      "tip": "Sfatul {{position}} ({{group}}, {{language}})",
+      "source": "Engleză: {{text}}",
+      "save": "Salvează traducerile în {{language}}",
+      "saved": "Traducerile în {{language}} au fost salvate.",
+      "pairingLabel": "Eticheta Asocierii {{position}} ({{language}})",
+      "pairingReason": "Motivul Asocierii {{position}} ({{language}})",
+      "eatingMomentReason": "Motivul pentru {{name}} ({{language}})",
+      "nutritionNote": "Notă nutrițională ({{language}})",
+      "pairingIncomplete": "Asocierea {{position}} are nevoie atât de etichetă, cât și de motiv ({{language}})."
+    },
+    "guidance": {
+      "title": "Recomandări",
+      "hint": "Asocieri, o Notă nutrițională și Momente de consum. Se salvează împreună cu butonul Salvează recomandările.",
+      "save": "Salvează recomandările",
+      "saving": "Se salvează…",
+      "saved": "Recomandările au fost salvate.",
+      "pairings": {
+        "title": "Asocieri",
+        "hint": "Cu ce se potrivește această Rețetă și de ce. Cel mult {{max}}.",
+        "empty": "Nicio Asociere încă.",
+        "add": "Adaugă o Asociere",
+        "limit": "O Rețetă poate avea cel mult {{max}} Asocieri.",
+        "kind": "Tipul Asocierii {{position}}",
+        "kindFood": "Mâncare",
+        "kindDrink": "Băutură",
+        "label": "Eticheta Asocierii {{position}}",
+        "reason": "Motivul Asocierii {{position}}",
+        "principle": "Principiul Asocierii {{position}}",
+        "principleNone": "Fără principiu",
+        "linkType": "Legătura Asocierii {{position}}",
+        "linkNone": "Fără legătură",
+        "linkIngredient": "Un Ingredient",
+        "linkRecipe": "O Rețetă",
+        "linkRecipeTarget": "Rețeta legată de Asocierea {{position}}",
+        "linkIngredientTarget": "Ingredientul legat de Asocierea {{position}}",
+        "choose": "Alege…",
+        "moveUp": "Mută Asocierea {{position}} mai sus",
+        "moveDown": "Mută Asocierea {{position}} mai jos",
+        "remove": "Elimină Asocierea {{position}}",
+        "invalid": "Fiecare Asociere are nevoie de o etichetă și de un motiv.",
+        "heading": "Asocierea {{position}}",
+        "linkedIngredient": "Ingredient legat: {{name}}",
+        "linkIncomplete": "Alege la ce se leagă Asocierea {{position}} sau setează legătura la Fără legătură."
+      },
+      "nutrition": {
+        "title": "Notă nutrițională",
+        "label": "Notă nutrițională",
+        "helper": "Dă o direcție generală, niciodată valori. Include atât partea bună, cât și cea rea.",
+        "counter": "{{count}} din {{max}} caractere",
+        "tooLong": "Nota nutrițională depășește {{max}} de caractere."
+      },
+      "eatingMoments": {
+        "title": "Momente de consum",
+        "hint": "Când este cel mai bine, sau cel mai rău, să mănânci această Rețetă. Cel mult {{max}}.",
+        "empty": "Niciun Moment de consum încă.",
+        "pick": "Adaugă un Moment de consum",
+        "pickNone": "Alege…",
+        "limit": "O Rețetă poate folosi cel mult {{max}} Momente de consum.",
+        "polarity": "Bun pentru sau Evită: {{name}}",
+        "goodFor": "Bun pentru",
+        "avoid": "Evită",
+        "reason": "Motivul pentru {{name}}",
+        "remove": "Elimină {{name}}",
+        "moveUp": "Mută {{name}} mai sus",
+        "moveDown": "Mută {{name}} mai jos",
+        "unknown": "Moment de servire"
+      }
+    }
+  },
+  "eatingMoment": {
+    "title": "Momente de consum",
+    "hint": "Când este cel mai bine, sau cel mai rău, să mănânci o Rețetă, de exemplu la micul dejun sau înainte de culcare. Cele arhivate sunt ascunse din selector și din afișare.",
+    "new": "Moment de consum nou",
+    "edit": "Editează Momentul de consum {{name}}",
+    "name": "Nume (engleză)",
+    "empty": "Niciun Moment de consum încă.",
+    "moveUp": "Mută {{name}} mai sus",
+    "moveDown": "Mută {{name}} mai jos",
+    "moved": "{{name}} este acum numărul {{position}} din {{total}}.",
+    "archivedBadge": "Arhivat",
+    "archive": "Arhivează",
+    "unarchive": "Dezarhivează",
+    "archivedNote": "Acest Moment de consum este arhivat. Este ascuns din selector și din afișare și rămâne pe Rețetele care îl folosesc."
   }
 }

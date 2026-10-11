@@ -2,6 +2,7 @@ import {
   Box,
   ClockIcon,
   PantryIcon,
+  RecipesIcon,
   ScanIcon,
   ShoppingIcon,
   tokens,
@@ -35,6 +36,7 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
   'pantry-stock': centred(<PantryIcon size={30} />),
   'quick-scan': centred(<ScanIcon size={30} />),
   suggestions: centred(<ShoppingIcon size={30} />),
+  'cook-tonight': centred(<RecipesIcon size={30} />),
   'meal-plan': (
     <Box
       sx={{

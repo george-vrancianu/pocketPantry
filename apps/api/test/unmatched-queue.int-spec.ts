@@ -10,8 +10,12 @@ import {
   catalogTranslations,
   ingredients,
   shoppingItems,
+  recipeIngredientLines,
+  recipes,
+  shoppingItemSourceRecipes,
   shoppingLists,
   unmatchedEntries,
+  user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -26,7 +30,7 @@ type Entry = {
   sources: string[];
   dismissed: boolean;
   references: Array<{
-    type: 'batch' | 'shopping_item';
+    type: 'batch' | 'shopping_item' | 'recipe_line';
     id: string;
     source: string;
     locale: string;
@@ -967,6 +971,57 @@ describe('Unmatched queue (integration)', () => {
       expect(await entryFor(raw)).toBeUndefined();
     });
 
+    it('moves the Source Recipes of a merged Shopping Item onto the item it merged into', async () => {
+      const raw = name('sources');
+      const member = await newMember();
+      const parmesan = seedId.ingredient('parmesan');
+      const [first, second] = [crypto.randomUUID(), crypto.randomUUID()];
+      await database.insert(recipes).values(
+        [first, second].map((id, i) => ({
+          id,
+          title: `Sources ${stamp} ${i}`,
+          servings: 2,
+        })),
+      );
+      try {
+        await addTyped(member, {
+          ingredientId: parmesan,
+          quantity: 2,
+          unit: 'g',
+        });
+        await addTyped(member, { name: raw, quantity: 3, unit: 'g' });
+        const before = await itemsOf(member);
+        const twin = before.find((i) => !i.unmatched)?.id as string;
+        const typed = before.find((i) => i.unmatched)?.id as string;
+        // The first Recipe sits on both items (kept once); the second only on the typed one.
+        await database.insert(shoppingItemSourceRecipes).values([
+          { shoppingItemId: twin, recipeId: first },
+          { shoppingItemId: typed, recipeId: first },
+          { shoppingItemId: typed, recipeId: second },
+        ]);
+
+        await resolve({
+          normalizedName: normalise(raw),
+          ingredientId: parmesan,
+        }).expect(201);
+
+        const items = await itemsOf(member);
+        expect(items).toHaveLength(1);
+        expect(items[0].id).toBe(twin);
+        const rows = await database
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, twin));
+        expect(rows.map((r) => r.recipeId).sort()).toEqual(
+          [first, second].sort(),
+        );
+      } finally {
+        await database
+          .delete(recipes)
+          .where(inArray(recipes.id, [first, second]));
+      }
+    });
+
     it('only relinks on an archived list', async () => {
       const raw = name('archived');
       const member = await newMember();
@@ -1358,6 +1413,97 @@ describe('Unmatched queue (integration)', () => {
           .where(and(eq(batches.rawName, raw), eq(batches.unmatched, true)));
         expect(stillUnmatched).toEqual([]);
       }
+    });
+  });
+  describe('Family Recipe lines', () => {
+    /** A Family Recipe with one Unmatched line, inserted directly (Family Recipes arrive with #137). */
+    async function familyRecipeWithUnmatchedLine(raw: string) {
+      const email = `unmatched-recipe-${stamp}-${++counter}@example.com`;
+      await signUp(email);
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      const recipeId = crypto.randomUUID();
+      const lineId = crypto.randomUUID();
+      await database.insert(recipes).values({
+        id: recipeId,
+        familyId,
+        title: `Family ${raw}`,
+        servings: 2,
+      });
+      await database.insert(recipeIngredientLines).values({
+        id: lineId,
+        recipeId,
+        position: 0,
+        rawName: raw,
+        normalizedName: normalise(raw),
+        quantity: 2,
+        unit: 'pcs',
+      });
+      await database.insert(unmatchedEntries).values({
+        normalizedName: normalise(raw),
+        rawName: raw,
+        locale: 'en',
+        source: 'recipe',
+        ingredientLineId: lineId,
+      });
+      return { recipeId, lineId };
+    }
+
+    afterAll(async () => {
+      await database
+        .delete(recipes)
+        .where(ilike(recipes.title, `Family Zzq%${stamp}%`));
+    });
+
+    it('lists the line in the queue and relinks it, keeping quantity and unit', async () => {
+      const raw = name('line one');
+      const { lineId } = await familyRecipeWithUnmatchedLine(raw);
+      const entry = await entryFor(raw);
+      expect(entry?.sources).toEqual(['recipe']);
+      expect(entry?.references).toMatchObject([
+        { type: 'recipe_line', id: lineId, source: 'recipe' },
+      ]);
+
+      const parmesan = seedId.ingredient('parmesan');
+      const response = await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+      expect(response.body).toMatchObject({ relinkedRecipeLines: 1 });
+
+      const [line] = await database
+        .select()
+        .from(recipeIngredientLines)
+        .where(eq(recipeIngredientLines.id, lineId));
+      expect(line).toMatchObject({
+        ingredientId: parmesan,
+        rawName: null,
+        normalizedName: null,
+        quantity: 2,
+        unit: 'pcs',
+      });
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('drops the entry when its Recipe goes', async () => {
+      const raw = name('line two');
+      const { recipeId } = await familyRecipeWithUnmatchedLine(raw);
+      expect(await entryFor(raw)).toBeDefined();
+      await database.delete(recipes).where(eq(recipes.id, recipeId));
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('refuses an entry that points at nothing or at two things', async () => {
+      await expect(
+        database.insert(unmatchedEntries).values({
+          normalizedName: 'zzq nothing',
+          rawName: 'x',
+          locale: 'en',
+          source: 'recipe',
+        }),
+      ).rejects.toThrow();
     });
   });
 });

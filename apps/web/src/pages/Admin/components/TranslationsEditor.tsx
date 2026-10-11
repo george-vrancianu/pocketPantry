@@ -28,6 +28,8 @@ type Props = {
   /** Canonical English name; it follows the entry's own name field. */
   name: string;
   translations: AdminTranslation[];
+  /** Set false for entries that only have display names (Cuisines, Methods). */
+  synonyms?: boolean;
 };
 
 /**
@@ -40,21 +42,21 @@ export function TranslationsEditor({
   entityId,
   name,
   translations,
+  synonyms = true,
 }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
   const add = useAddTranslation();
   const update = useUpdateTranslation();
   const remove = useDeleteTranslation();
   const error = add.error ?? update.error ?? remove.error;
+  const title = synonyms
+    ? t('admin:translations.title')
+    : t('admin:translations.namesTitle');
 
   return (
-    <Stack
-      spacing={2}
-      component="section"
-      aria-label={t('admin:translations.title')}
-    >
+    <Stack spacing={2} component="section" aria-label={title}>
       <Typography variant="sectionLabel" color="text.secondary">
-        {t('admin:translations.title')}
+        {title}
       </Typography>
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       <Typography variant="body2">
@@ -67,6 +69,7 @@ export function TranslationsEditor({
           entityType={entityType}
           entityId={entityId}
           translations={translations.filter((tr) => tr.locale === locale)}
+          synonyms={synonyms}
           add={add.mutateAsync}
           update={update.mutateAsync}
           remove={remove.mutateAsync}
@@ -81,6 +84,7 @@ type BlockProps = {
   entityType: EntityType;
   entityId: string;
   translations: AdminTranslation[];
+  synonyms: boolean;
   add: ReturnType<typeof useAddTranslation>['mutateAsync'];
   update: ReturnType<typeof useUpdateTranslation>['mutateAsync'];
   remove: ReturnType<typeof useDeleteTranslation>['mutateAsync'];
@@ -91,6 +95,7 @@ function LocaleBlock({
   entityType,
   entityId,
   translations,
+  synonyms: withSynonyms,
   add,
   update,
   remove,
@@ -146,53 +151,57 @@ function LocaleBlock({
           </Button>
         </Stack>
       ) : null}
-      <Box
-        component="ul"
-        aria-label={t('translations.synonyms', { language })}
-        sx={{ m: 0, p: 0, listStyle: 'none' }}
-      >
-        {synonyms.map((item) => (
-          <Stack
-            component="li"
-            key={item.id}
-            direction="row"
-            spacing={1}
-            sx={{ alignItems: 'center' }}
+      {withSynonyms ? (
+        <>
+          <Box
+            component="ul"
+            aria-label={t('translations.synonyms', { language })}
+            sx={{ m: 0, p: 0, listStyle: 'none' }}
           >
-            <Typography variant="body1" sx={{ flex: 1 }}>
-              {item.value}
+            {synonyms.map((item) => (
+              <Stack
+                component="li"
+                key={item.id}
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'center' }}
+              >
+                <Typography variant="body1" sx={{ flex: 1 }}>
+                  {item.value}
+                </Typography>
+                <Button
+                  variant="text"
+                  aria-label={t('translations.removeSynonym', {
+                    value: item.value,
+                  })}
+                  onClick={() => void remove(item.id).catch(() => {})}
+                >
+                  {t('common.remove')}
+                </Button>
+              </Stack>
+            ))}
+          </Box>
+          {synonyms.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              {t('translations.none')}
             </Typography>
+          ) : null}
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+            <TextField
+              label={t('translations.newSynonym', { language })}
+              value={synonym}
+              onChange={(event) => setSynonym(event.target.value)}
+            />
             <Button
-              variant="text"
-              aria-label={t('translations.removeSynonym', {
-                value: item.value,
-              })}
-              onClick={() => void remove(item.id).catch(() => {})}
+              variant="secondary"
+              onClick={() => void addSynonym()}
+              aria-label={t('translations.addSynonym', { language })}
             >
-              {t('common.remove')}
+              {t('common.add')}
             </Button>
           </Stack>
-        ))}
-      </Box>
-      {synonyms.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('translations.none')}
-        </Typography>
+        </>
       ) : null}
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-        <TextField
-          label={t('translations.newSynonym', { language })}
-          value={synonym}
-          onChange={(event) => setSynonym(event.target.value)}
-        />
-        <Button
-          variant="secondary"
-          onClick={() => void addSynonym()}
-          aria-label={t('translations.addSynonym', { language })}
-        >
-          {t('common.add')}
-        </Button>
-      </Stack>
     </Stack>
   );
 }

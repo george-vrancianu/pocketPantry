@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { expiryChipFor, useDeleteBatch, type Batch } from '../../../lib/pantry';
-import { formatAmount } from './amount';
+import { formatAmount } from '../../../lib/amount';
 import { EditBatchForm } from './EditBatchForm';
 import { ExpiryChip } from './ExpiryChip';
 

@@ -300,6 +300,14 @@ export const snacks: SeedSection = {
         ['bagel chips'],
         ['chipsuri paine', 'chips paine'],
       ],
+      [
+        'rice-crackers',
+        'Rice crackers',
+        'Biscuiți de orez',
+        'g',
+        ['senbei'],
+        ['biscuiti orez sarati'],
+      ],
     ]),
     ...ingredientsOf('nuts-and-seeds', [
       [

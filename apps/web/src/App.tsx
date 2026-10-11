@@ -8,6 +8,11 @@ import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { FamilyPage } from './pages/Family/FamilyPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
+import {
+  EditFamilyRecipePage,
+  NewVariantPage,
+} from './pages/Recipes/FamilyRecipePages';
+import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
 import { RecipesPage } from './pages/Recipes/RecipesPage';
 import { ReviewOverviewPage } from './pages/Review/ReviewOverviewPage';
 import { ReviewPage } from './pages/Review/ReviewPage';
@@ -44,6 +49,9 @@ export function App() {
           <Route path="scan/review" element={<ReviewOverviewPage />} />
           <Route path="scan/review/:scanId" element={<ReviewPage />} />
           <Route path="recipes" element={<RecipesPage />} />
+          <Route path="recipes/:id" element={<RecipeDetailPage />} />
+          <Route path="recipes/:id/edit" element={<EditFamilyRecipePage />} />
+          <Route path="recipes/:id/variant/new" element={<NewVariantPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="family" element={<FamilyPage />} />
           <Route element={<RequireAdmin />}>

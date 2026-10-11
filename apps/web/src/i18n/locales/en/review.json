@@ -155,5 +155,18 @@
     "pickDish": "Pick the dish",
     "dishOption": "{{title}}, {{percent}}% likely",
     "readAgain": "Read again"
+  },
+  "plateRecipe": {
+    "open": "Save as a Recipe",
+    "heading": "Save as a Recipe",
+    "title": "Recipe title",
+    "base": "Base Recipe",
+    "loading": "Finding Base Recipes…",
+    "closest": "{{title}} (closest match)",
+    "standalone": "Standalone Recipe (no base)",
+    "search": "Find another Base Recipe",
+    "cancel": "Cancel",
+    "save": "Save Recipe",
+    "saving": "Saving"
   }
 }

@@ -9,6 +9,9 @@ import { UnmatchedQueue } from './UnmatchedQueue';
 
 const catalog: AdminCatalog = {
   aisles: [],
+  cuisines: [],
+  methods: [],
+  eatingMoments: [],
   parentCategories: [
     {
       id: 'p1',
@@ -116,6 +119,35 @@ describe('UnmatchedQueue', () => {
     expect(within(item).getByText(/3 rows/)).toBeVisible();
     expect(within(item).getByText(/Receipt, Typed/)).toBeVisible();
     expect(within(item).getByText(/Romanian/)).toBeVisible();
+  });
+
+  it('names a Recipe as a source of a row', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({
+          entries: [
+            {
+              ...entry,
+              sources: ['recipe'],
+              references: [
+                {
+                  type: 'recipe_line',
+                  id: 'l1',
+                  source: 'recipe',
+                  locale: 'ro',
+                  rawName: 'Brânză ciudată',
+                  sourceText: null,
+                  sourceLanguage: null,
+                },
+              ],
+            },
+          ],
+          nextCursor: null,
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const item = await screen.findByRole('listitem');
+    expect(within(item).getByText(/Recipe/)).toBeVisible();
   });
 
   it('shows an empty state', async () => {
@@ -260,6 +292,7 @@ describe('UnmatchedQueue', () => {
         name: 'Odd cheese',
         leafCategoryId: 'l1',
         defaultUnit: 'kg',
+        pantryBasic: false,
       },
       locale: 'en',
     });
