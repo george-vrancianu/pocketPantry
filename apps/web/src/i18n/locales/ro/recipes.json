@@ -85,7 +85,9 @@
     "freeTextNote": "Nu e în Catalog",
     "unavailable": "Această rețetă nu poate fi editată.",
     "guidanceHint": "Recomandări, o Notă nutrițională și Momente de consum. Se salvează odată cu varianta.",
-    "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată"
+    "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
+    "saved": "Rețeta a fost salvată.",
+    "viewRecipe": "Vezi rețeta"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",

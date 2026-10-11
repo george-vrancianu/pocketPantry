@@ -83,7 +83,9 @@
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This recipe cannot be edited.",
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the variant.",
-    "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived"
+    "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
+    "saved": "Recipe saved.",
+    "viewRecipe": "View the recipe"
   },
   "fewerServings": "Fewer servings",
   "moreServings": "More servings",

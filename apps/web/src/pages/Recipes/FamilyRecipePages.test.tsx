@@ -125,6 +125,12 @@ const saved: FamilyRecipeEdit = {
   ],
 };
 
+/** The source Recipe's own view, which names the links of a Variant draft. */
+const sourceDetail = {
+  id: 'x',
+  guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+};
+
 function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes/filters': () => Response.json(filters),
@@ -146,7 +152,7 @@ describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('prefills from the draft and saves a Variant under the draft parent', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
@@ -188,7 +194,7 @@ describe('NewVariantPage', () => {
   });
 
   it('shows the draft guidance and posts it with the Variant', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
@@ -207,7 +213,7 @@ describe('NewVariantPage', () => {
       within(pick).queryByRole('option', { name: 'Breakfast' }),
     ).toBeNull();
     await user.selectOptions(pick, 'em2');
-    expect(screen.getByLabelText('Reason for Lunch')).toBeVisible();
+    expect(await screen.findByLabelText('Reason for Lunch')).toBeVisible();
 
     await user.clear(note);
     await user.type(note, 'Light');
@@ -230,6 +236,51 @@ describe('NewVariantPage', () => {
         },
       }),
     );
+  });
+
+  it('names the draft Pairing links from the source Recipe', async () => {
+    const linked = {
+      ...draft,
+      guidance: {
+        ...draft.guidance,
+        pairings: [
+          { ...draft.guidance.pairings[0]!, linkedIngredientId: 'i-oj' },
+          {
+            ...draft.guidance.pairings[0]!,
+            label: 'Toast',
+            linkedRecipeId: 'r-toast',
+          },
+        ],
+      },
+    };
+    setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(linked),
+      'GET /api/recipes/x': () =>
+        Response.json({
+          ...sourceDetail,
+          guidance: {
+            ...sourceDetail.guidance,
+            pairings: [
+              {
+                link: { type: 'ingredient', id: 'i-oj', name: 'Orange' },
+              },
+              {
+                link: {
+                  type: 'recipe',
+                  id: 'r-toast',
+                  title: 'Buttered toast',
+                },
+              },
+            ],
+          },
+        }),
+    });
+    expect(
+      await screen.findByText('Linked Ingredient: Orange'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'Buttered toast' }),
+    ).toBeInTheDocument();
   });
 
   it('shows a coded error in the Member locale', async () => {
@@ -260,7 +311,7 @@ describe('EditFamilyRecipePage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('saves the edited document keeping line and Step ids', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g': () => Response.json(saved),
@@ -268,8 +319,16 @@ describe('EditFamilyRecipePage', () => {
     const title = await screen.findByLabelText(/^Title/);
     await user.clear(title);
     await user.type(title, 'Better omelette');
+    // Unsaved guidance edits must survive the document save.
+    const note = screen.getByLabelText('Nutrition Note');
+    await user.clear(note);
+    await user.type(note, 'Still here');
     await user.click(screen.getByRole('button', { name: 'Save recipe' }));
-    expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
+    expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Still here');
+    expect(
+      screen.getByRole('link', { name: 'View the recipe' }),
+    ).toHaveAttribute('href', '/recipes/g');
     const put = calls.find((call) => call.key === 'PUT /api/recipes/g')!;
     expect(put.body).toMatchObject({
       title: 'Better omelette',
@@ -294,7 +353,7 @@ describe('EditFamilyRecipePage', () => {
   });
 
   it('sends no unit when a Catalog line has its quantity cleared', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g': () => Response.json(saved),
@@ -311,7 +370,7 @@ describe('EditFamilyRecipePage', () => {
   });
 
   it('saves guidance on its own, keeping Pairing ids and Eating Moments', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'PUT /api/recipes/g/guidance': () => Response.json(saved),
@@ -367,7 +426,7 @@ describe('EditFamilyRecipePage', () => {
   });
 
   it('links a Pairing to a Recipe found by search', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'GET /api/recipes': () =>
@@ -413,7 +472,7 @@ describe('EditFamilyRecipePage', () => {
   });
 
   it('adds a Tip and hides an inherited one straight away', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
       'GET /api/recipes/g/edit': () => Response.json(saved),
       'POST /api/recipes/g/tips': () => Response.json(saved, { status: 201 }),

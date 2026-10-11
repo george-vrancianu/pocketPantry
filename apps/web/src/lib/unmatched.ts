@@ -7,11 +7,7 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
-import {
-  recipeMatchingQueryKeys,
-  suggestionsQueryKey,
-  templateDetailsQueryKey,
-} from './queryKeys';
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
@@ -117,7 +113,6 @@ export function useResolveUnmatched() {
           suggestionsQueryKey,
           templateDetailsQueryKey,
           recipesQueryKey,
-          ...recipeMatchingQueryKeys,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });
