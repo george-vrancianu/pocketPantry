@@ -46,7 +46,7 @@ export class RecipeBrowseService {
    * With no search or filter: live Base Recipes with their Variant counts.
    * With one: matching live Recipes, bases and Variants, each Variant labelled
    * with its base. A base matches on its own fields only. Variants of an
-   * archived base are left out too.
+   * archived base stay listed (the archived base itself does not).
    */
   async list(memberId: string, query: BrowseQuery): Promise<RecipeListItem[]> {
     const familyId = await this.settings.familyIdOf(memberId);
@@ -71,16 +71,13 @@ export class RecipeBrowseService {
       )
       .orderBy(asc(recipes.id));
 
-    // Variants whose base is archived (or gone from view) stay out of browsing.
+    // Variants keep working under an archived base; only one whose base is not
+    // visible to the Family stays out.
     const parentIds = [
       ...new Set(rows.flatMap((r) => (r.parentId ? [r.parentId] : []))),
     ];
     const parents = await this.rowsById(this.database, parentIds, familyId);
-    const live = rows.filter(
-      (r) =>
-        !r.parentId ||
-        (parents.get(r.parentId) && !parents.get(r.parentId)!.archivedAt),
-    );
+    const live = rows.filter((r) => !r.parentId || parents.has(r.parentId));
 
     const titles = await recipeTitles(
       this.database,

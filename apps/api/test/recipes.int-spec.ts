@@ -266,16 +266,54 @@ describe('Recipes browsing and detail (integration)', () => {
       expect(titles(byMethod)).toEqual([`FBoth ${stamp}`]);
     });
 
-    it('hides archived Variants and Variants of archived bases', async () => {
-      const b = await base({ title: `HBase ${stamp}` });
-      const live = await variant(b.id, { title: `HLive ${stamp}` });
-      const gone = await variant(b.id, { title: `HGone ${stamp}` });
+    it('hides archived Variants but keeps Variants of an archived base, labelled with it', async () => {
+      const b = await base({ title: `HBase ${stamp}`, cuisineId });
+      const live = await variant(b.id, { title: `HLive ${stamp}`, cuisineId });
+      const gone = await variant(b.id, { title: `HGone ${stamp}`, cuisineId });
+      const familyVariantId = crypto.randomUUID();
+      const otherVariantId = crypto.randomUUID();
+      await database.insert(recipes).values([
+        {
+          id: familyVariantId,
+          familyId: familyA,
+          parentId: b.id,
+          title: `HMine ${stamp}`,
+          servings: 2,
+          cuisineId,
+        },
+        {
+          id: otherVariantId,
+          familyId: familyB,
+          parentId: b.id,
+          title: `HTheirs ${stamp}`,
+          servings: 2,
+          cuisineId,
+        },
+      ]);
       await archive(gone.id);
-      expect(titles(await list('search=HLive'))).toEqual([live.title]);
+      expect(titles(await list(`search=HLive ${stamp}`))).toEqual([live.title]);
       expect(await list('search=HGone')).toEqual([]);
       await archive(b.id);
+      const label = { id: b.id, title: `HBase ${stamp}` };
+      // the archived base itself stays hidden
       expect(await list('search=HBase')).toEqual([]);
-      expect(await list('search=HLive')).toEqual([]);
+      const found = await list(`search=HLive ${stamp}`);
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatchObject({ id: live.id, base: label });
+      // filters show them too, Family Variants only to their own Family
+      const onlyH = (t: string) => t.startsWith('H');
+      const byCuisine = await list(`cuisineId=${cuisineId}&search=${stamp}`);
+      expect(titles(byCuisine).filter(onlyH).sort()).toEqual(
+        [live.title, `HMine ${stamp}`].sort(),
+      );
+      expect(byCuisine.find((r) => r.id === familyVariantId)?.base).toEqual(
+        label,
+      );
+      expect(
+        titles(await list(`cuisineId=${cuisineId}&search=${stamp}`, memberB))
+          .filter(onlyH)
+          .sort(),
+      ).toEqual([live.title, `HTheirs ${stamp}`].sort());
       // still reachable by id
       await memberA.get(`/${live.id}`).expect(200);
     });
