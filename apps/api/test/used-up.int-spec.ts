@@ -3,6 +3,7 @@ import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
+import { ingredients } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -313,5 +314,54 @@ describe('Used Up Suggestions (integration)', () => {
 
     // The dismissal ended the stock cycle: nothing is suggested.
     expect((await suggestions(cookie)).usedUp).toEqual([]);
+  });
+
+  it('counts the 10 minutes from the Batch the app created, on the same clock', async () => {
+    const cookie = await signUp();
+    const batch = await after(12 * MINUTE, () => addBatch(cookie, milk));
+
+    await after(17 * MINUTE, () => removeBatch(cookie, batch.id));
+
+    expect(await usedUpIds(cookie)).toEqual([]);
+  });
+
+  it('marks an Ingredient Used Up when its last two Batches are deleted at once', async () => {
+    const cookie = await signUp();
+    const first = await addBatch(cookie, milk);
+    const second = await addBatch(cookie, milk);
+
+    await after(11 * MINUTE, () =>
+      Promise.all([
+        removeBatch(cookie, first.id),
+        removeBatch(cookie, second.id),
+      ]),
+    );
+
+    expect(await usedUpIds(cookie)).toEqual([milk]);
+  });
+
+  it('lets an Admin delete an Ingredient that only has a stock history row', async () => {
+    const adminEmail = `usedup-admin-${Date.now()}-${++counter}@example.com`;
+    const admin = await signUp(adminEmail);
+    await promoteToAdmin(database, adminEmail);
+    const [leaf] = await database
+      .select({ id: ingredients.leafCategoryId })
+      .from(ingredients)
+      .limit(1);
+    const made = (
+      await api('post', admin, '/admin/catalog/ingredients')
+        .send({
+          leafCategoryId: leaf.id,
+          name: `Stock history ${Date.now()}`,
+          defaultUnit: 'pcs',
+        })
+        .expect(201)
+    ).body as { id: string };
+    const batch = await addBatch(admin, made.id);
+    await after(11 * MINUTE, () => removeBatch(admin, batch.id));
+
+    await api('delete', admin, `/admin/catalog/ingredients/${made.id}`).expect(
+      204,
+    );
   });
 });

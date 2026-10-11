@@ -69,6 +69,19 @@ export async function recordRemoved(
       .map((batch) => batch.ingredientId),
   );
   if (settled.length === 0) return;
+  // Two deletes of the last Batches must not both see the other's uncommitted Batch:
+  // lock the history rows, in a fixed order, so the second waits and then sees it gone.
+  await executor
+    .select({ ingredientId: ingredientStockHistory.ingredientId })
+    .from(ingredientStockHistory)
+    .where(
+      and(
+        eq(ingredientStockHistory.familyId, familyId),
+        inArray(ingredientStockHistory.ingredientId, settled),
+      ),
+    )
+    .orderBy(ingredientStockHistory.ingredientId)
+    .for('update');
   const stillStocked = await executor
     .selectDistinct({ ingredientId: batches.ingredientId })
     .from(batches)

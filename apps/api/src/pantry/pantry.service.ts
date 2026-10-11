@@ -208,11 +208,18 @@ export class PantryService {
     familyId: string,
     values: Array<typeof batches.$inferInsert>,
   ): Promise<BatchRow[]> {
-    const inserted = await executor.insert(batches).values(values).returning();
+    // One clock reading for the Batch and its history, so the 10-minute rule
+    // never compares the app clock with the database's.
+    const now = new Date(Date.now());
+    const inserted = await executor
+      .insert(batches)
+      .values(values.map((value) => ({ ...value, createdAt: now })))
+      .returning();
     await recordStocked(
       executor,
       familyId,
       inserted.map((row) => row.ingredientId),
+      now,
     );
     return inserted;
   }

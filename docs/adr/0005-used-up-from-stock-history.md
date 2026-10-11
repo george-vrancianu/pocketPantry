@@ -18,5 +18,6 @@ Used Up Suggestions need to know that an Ingredient was in the Pantry and no lon
 ## Consequences
 
 - Every place that creates or deletes Batches must update the table. The writes belong in the Pantry service's create and delete paths, not in each caller.
+- A mistaken re-stock (add, then delete within 10 minutes) is not a use, but the add already cleared any existing `used_up_at` and Staple dismissal, and they stay cleared.
 - The table records only the latest stock cycle per Ingredient. It is not a consumption log, and analytics like "how often do we buy milk" need something else.
 - Wave 2 cook confirmation with Pantry deduction will remove Batches too, and must go through the same delete path so Used Up keeps working.
