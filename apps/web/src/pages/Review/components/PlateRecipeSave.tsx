@@ -1,0 +1,214 @@
+import {
+  Alert,
+  Box,
+  Button,
+  Stack,
+  TextField,
+  Typography,
+} from '@pocket-pantry/ui';
+import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../../i18n/translateApiError';
+import {
+  matchedIngredientIds,
+  useSaveFromPlate,
+  usePlateSuggestions,
+} from '../../../lib/plateRecipe';
+import { useRecipes } from '../../../lib/recipes';
+import type { ReviewLine } from '../../../lib/review';
+
+const STANDALONE = 'standalone';
+
+type Base = { id: string; title: string };
+
+type Props = {
+  dishTitle: string;
+  /** The Review's current lines, for one serving. */
+  lines: ReviewLine[];
+  onSaved: (recipeId: string) => void;
+};
+
+function BaseOption({
+  checked,
+  label,
+  name,
+  onSelect,
+}: {
+  checked: boolean;
+  label: string;
+  name: string;
+  onSelect: () => void;
+}) {
+  return (
+    <Box
+      component="label"
+      sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 44 }}
+    >
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={onSelect}
+        style={{ width: 20, height: 20 }}
+      />
+      {label}
+    </Box>
+  );
+}
+
+/** Saves a Plate Scan's dish as a Family Recipe: a Variant of a Catalog Base Recipe, or standalone. */
+export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
+  const { t, i18n } = useTranslation('review');
+  const groupName = useId();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState(dishTitle);
+  // Until the Member chooses, the top suggestion (if any) is the base.
+  const [chosen, setChosen] = useState<string | null>(null);
+  const [another, setAnother] = useState<Base | null>(null);
+  const [search, setSearch] = useState('');
+  const save = useSaveFromPlate(i18n.language);
+  const suggestions = usePlateSuggestions(
+    {
+      locale: i18n.language,
+      dishTitle,
+      ingredientIds: matchedIngredientIds(lines),
+    },
+    open,
+  );
+  const found = useRecipes(
+    { search: open ? search : '', cuisineId: '', methodId: '' },
+    i18n.language,
+  );
+
+  const suggested = suggestions.data ?? [];
+  const selected = chosen ?? suggested[0]?.id ?? STANDALONE;
+  const results =
+    search.trim() === ''
+      ? []
+      : (found.data ?? []).filter(
+          (recipe) => recipe.owner === 'catalog' && recipe.parentId === null,
+        );
+  const listed = new Set(suggested.map((s) => s.id));
+
+  if (!open)
+    return (
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        {t('plateRecipe.open')}
+      </Button>
+    );
+
+  const submit = () =>
+    save.mutate(
+      {
+        title,
+        parentId: selected === STANDALONE ? null : selected,
+        lines,
+      },
+      { onSuccess: (recipe) => onSaved(recipe.id) },
+    );
+  const pick = (base: Base) => {
+    if (!listed.has(base.id)) setAnother(base);
+    setChosen(base.id);
+  };
+
+  return (
+    <Stack
+      component="section"
+      aria-labelledby={`${groupName}-heading`}
+      spacing={1.5}
+    >
+      <Typography
+        id={`${groupName}-heading`}
+        component="h2"
+        sx={{ fontWeight: 700 }}
+      >
+        {t('plateRecipe.heading')}
+      </Typography>
+      <TextField
+        label={t('plateRecipe.title')}
+        value={title}
+        slotProps={{ htmlInput: { maxLength: 200 } }}
+        onChange={(event) => setTitle(event.target.value)}
+      />
+      <Box
+        component="fieldset"
+        role="group"
+        aria-labelledby={`${groupName}-bases`}
+        sx={{ border: 0, p: 0, m: 0 }}
+      >
+        <Typography id={`${groupName}-bases`} sx={{ fontWeight: 600 }}>
+          {t('plateRecipe.base')}
+        </Typography>
+        {suggestions.isPending ? (
+          <Typography color="text.secondary">
+            {t('plateRecipe.loading')}
+          </Typography>
+        ) : null}
+        {suggested.map((suggestion, index) => (
+          <BaseOption
+            key={suggestion.id}
+            name={groupName}
+            checked={selected === suggestion.id}
+            label={
+              index === 0
+                ? t('plateRecipe.suggested', { title: suggestion.title })
+                : suggestion.title
+            }
+            onSelect={() => setChosen(suggestion.id)}
+          />
+        ))}
+        {another && !listed.has(another.id) ? (
+          <BaseOption
+            name={groupName}
+            checked={selected === another.id}
+            label={another.title}
+            onSelect={() => setChosen(another.id)}
+          />
+        ) : null}
+        {results.map((recipe) => (
+          <BaseOption
+            key={recipe.id}
+            name={groupName}
+            checked={selected === recipe.id}
+            label={recipe.title}
+            onSelect={() => pick(recipe)}
+          />
+        ))}
+        <BaseOption
+          name={groupName}
+          checked={selected === STANDALONE}
+          label={t('plateRecipe.standalone')}
+          onSelect={() => setChosen(STANDALONE)}
+        />
+      </Box>
+      <TextField
+        type="search"
+        label={t('plateRecipe.search')}
+        value={search}
+        slotProps={{ htmlInput: { maxLength: 100 } }}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+      {save.error ? <Alert>{translateApiError(t, save.error)}</Alert> : null}
+      <Stack direction="row" spacing={1}>
+        <Button
+          variant="text"
+          onClick={() => setOpen(false)}
+          disabled={save.isPending}
+        >
+          {t('plateRecipe.cancel')}
+        </Button>
+        <Button
+          onClick={submit}
+          disabled={
+            save.isPending ||
+            suggestions.isPending ||
+            title.trim() === '' ||
+            lines.length === 0
+          }
+        >
+          {save.isPending ? t('plateRecipe.saving') : t('plateRecipe.save')}
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}

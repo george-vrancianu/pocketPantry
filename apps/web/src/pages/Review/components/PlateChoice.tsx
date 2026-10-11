@@ -71,7 +71,7 @@ export function PlateChoice({ scan }: { scan: SessionScan }) {
       { dishTitle, plateToken: scan.plateToken ?? '' },
       {
         onSuccess: ({ lines }) => {
-          dispatchScanSession({ type: 'pick', id: scan.id, lines });
+          dispatchScanSession({ type: 'pick', id: scan.id, lines, dishTitle });
           focusCard(scan.id);
         },
         onError: (error) =>

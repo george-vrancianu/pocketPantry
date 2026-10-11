@@ -153,5 +153,18 @@
     "pickDish": "Vælg retten",
     "dishOption": "{{title}}, {{percent}} % sandsynlig",
     "readAgain": "Læs igen"
+  },
+  "plateRecipe": {
+    "open": "Gem som opskrift",
+    "heading": "Gem som opskrift",
+    "title": "Opskriftens titel",
+    "base": "Grundopskrift",
+    "loading": "Finder grundopskrifter…",
+    "suggested": "{{title}} (foreslået)",
+    "standalone": "Selvstændig opskrift (uden grundopskrift)",
+    "search": "Find en anden grundopskrift",
+    "cancel": "Annuller",
+    "save": "Gem opskrift",
+    "saving": "Gemmer"
   }
 }

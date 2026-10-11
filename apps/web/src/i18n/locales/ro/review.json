@@ -163,5 +163,18 @@
     "pickDish": "Alege preparatul",
     "dishOption": "{{title}}, {{percent}}% probabil",
     "readAgain": "Citește din nou"
+  },
+  "plateRecipe": {
+    "open": "Salvează ca rețetă",
+    "heading": "Salvează ca rețetă",
+    "title": "Titlul rețetei",
+    "base": "Rețetă de bază",
+    "loading": "Se caută rețete de bază…",
+    "suggested": "{{title}} (sugerată)",
+    "standalone": "Rețetă de sine stătătoare (fără bază)",
+    "search": "Caută altă rețetă de bază",
+    "cancel": "Anulează",
+    "save": "Salvează rețeta",
+    "saving": "Se salvează"
   }
 }

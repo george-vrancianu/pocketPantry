@@ -49,6 +49,7 @@ export function useReviewScreen() {
           mode: scan.mode,
           lines: reviewLinesOf(scan),
           scanLanguage: scan.scanLanguage,
+          dishTitle: scan.dishTitle ?? '',
         }
       : null;
   });
@@ -214,6 +215,13 @@ export function useReviewScreen() {
 
   return {
     hadDraft: draft !== null,
+    dishTitle: draft?.dishTitle ?? '',
+    included,
+    // The dish is now a Recipe: the card is done, and the Member lands on it.
+    openSavedRecipe: (id: string) => {
+      dispatchScanSession({ type: 'remove', id: scanId });
+      navigate(`/recipes/${id}`);
+    },
     mode,
     shopping,
     state,
