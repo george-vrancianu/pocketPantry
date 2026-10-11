@@ -43,5 +43,21 @@
     "none": "Samme ingredienser som {{base}}."
   },
   "stepTips": "Tips til dette trin",
-  "tipLabel": "Tip"
+  "tipLabel": "Tip",
+  "fewerServings": "Færre portioner",
+  "moreServings": "Flere portioner",
+  "pantry": {
+    "canMake": "Du kan lave den",
+    "missingCount_one": "Mangler {{count}} ingrediens",
+    "missingCount_other": "Mangler {{count}} ingredienser",
+    "covered": "I dit spisekammer",
+    "short": "Mangler {{amount}}",
+    "missing": "Mangler",
+    "basic": "Basisvare",
+    "onList": "På din liste",
+    "addMissing": "Føj det manglende til indkøbslisten",
+    "allOnList": "Alt det manglende er allerede på din liste.",
+    "added_one": "{{count}} vare føjet til indkøbslisten",
+    "added_other": "{{count}} varer føjet til indkøbslisten"
+  }
 }

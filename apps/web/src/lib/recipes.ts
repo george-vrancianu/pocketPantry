@@ -1,7 +1,15 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
 import { useDebounced } from './catalog';
+import { localIso } from './pantry';
+import { suggestionsQueryKey } from './queryKeys';
+import { shoppingListQueryKey, type ShoppingList } from './shopping';
 
 export type RecipeDifficulty = 'easy' | 'medium' | 'hard';
 export type RecipeOwner = 'catalog' | 'family';
@@ -139,5 +147,75 @@ export function useRecipe(id: string, locale: string) {
       apiRequest<RecipeDetail>(
         `/recipes/${id}?${new URLSearchParams({ locale })}`,
       ),
+  });
+}
+
+export type PantryLineStatus = 'covered' | 'short' | 'missing';
+
+/** One Ingredient Line against the Pantry (mirror of the API's `PantryLineView`). */
+export type PantryLine = {
+  lineId: string;
+  ingredientId: string | null;
+  name: string | null;
+  status: PantryLineStatus;
+  optional: boolean;
+  pantryBasic: boolean;
+  /** The line's quantity scaled to the match's Servings. */
+  quantity: number | null;
+  unit: Unit | null;
+  shortfall: { quantity: number; unit: Unit } | null;
+  usesExpiringSoon: boolean;
+  onShoppingList: boolean;
+};
+
+export type PantryMatch = {
+  servings: number;
+  canMake: boolean;
+  shortOrMissingCount: number;
+  expiringCoveredCount: number;
+  coverageRatio: number;
+  lines: PantryLine[];
+};
+
+const matchKey = (id: string) =>
+  [...recipesQueryKey, 'pantry-match', id] as const;
+
+/** A Recipe's per-line Pantry status at `servings`; the last answer stays while the next loads. */
+export function useRecipePantryMatch(
+  id: string,
+  servings: number,
+  enabled = true,
+) {
+  const today = localIso(new Date());
+  return useQuery({
+    queryKey: [...matchKey(id), servings, today],
+    queryFn: () =>
+      apiRequest<PantryMatch>(
+        `/recipes/${id}/pantry-match?${new URLSearchParams({ today, servings: String(servings) })}`,
+      ),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Adds the Recipe's short and missing lines to the Shopping List; the answer is the updated list. */
+export function useAddMissingToShoppingList(id: string, locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (servings: number) =>
+      apiRequest<ShoppingList>(
+        `/recipes/${id}/add-missing?${new URLSearchParams({ locale })}`,
+        {
+          method: 'POST',
+          body: { today: localIso(new Date()), servings },
+        },
+      ),
+    onSuccess: (list) => {
+      queryClient.setQueryData([...shoppingListQueryKey, locale], list);
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: matchKey(id) }),
+      ]);
+    },
   });
 }

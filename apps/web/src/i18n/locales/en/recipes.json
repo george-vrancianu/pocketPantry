@@ -43,5 +43,21 @@
     "none": "Same ingredients as {{base}}."
   },
   "stepTips": "Tips for this step",
-  "tipLabel": "Tip"
+  "tipLabel": "Tip",
+  "fewerServings": "Fewer servings",
+  "moreServings": "More servings",
+  "pantry": {
+    "canMake": "You can make this",
+    "missingCount_one": "Missing {{count}} ingredient",
+    "missingCount_other": "Missing {{count}} ingredients",
+    "covered": "In your Pantry",
+    "short": "Short {{amount}}",
+    "missing": "Missing",
+    "basic": "Pantry Basic",
+    "onList": "On your list",
+    "addMissing": "Add missing to Shopping List",
+    "allOnList": "Everything missing is already on your list.",
+    "added_one": "Added {{count}} item to your Shopping List",
+    "added_other": "Added {{count}} items to your Shopping List"
+  }
 }
