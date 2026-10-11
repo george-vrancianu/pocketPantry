@@ -271,6 +271,7 @@
         "linkIngredient": "Un Ingredient",
         "linkRecipe": "O Rețetă",
         "linkRecipeTarget": "Rețeta legată de Asocierea {{position}}",
+        "linkIngredientTarget": "Ingredientul legat de Asocierea {{position}}",
         "choose": "Alege…",
         "moveUp": "Mută Asocierea {{position}} mai sus",
         "moveDown": "Mută Asocierea {{position}} mai jos",

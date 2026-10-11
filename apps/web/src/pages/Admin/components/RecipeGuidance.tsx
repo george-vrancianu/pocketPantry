@@ -1,5 +1,5 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -380,6 +380,7 @@ function PairingRow({
   const { t, i18n } = useTranslation(['admin', 'recipes']);
   const recipes = useAdminRecipes();
   const p = { position };
+  const linkedId = `${useId()}-linked-ingredient`;
   // The picker hides archived Recipes and this Recipe, except a link already saved.
   const recipeOptions = (recipes.data ?? [])
     .filter(
@@ -472,13 +473,15 @@ function PairingRow({
       {pairing.linkType === 'ingredient' ? (
         <Stack spacing={0.5}>
           {linkedIngredient ? (
-            <Typography variant="body2">
+            <Typography variant="body2" id={linkedId}>
               {t('admin:recipe.guidance.pairings.linkedIngredient', {
                 name: localName(linkedIngredient, i18n.language),
               })}
             </Typography>
           ) : null}
           <CatalogSearch
+            label={t('admin:recipe.guidance.pairings.linkIngredientTarget', p)}
+            describedBy={linkedIngredient ? linkedId : undefined}
             onSelect={(ingredient) => onChange({ linkTarget: ingredient.id })}
           />
         </Stack>

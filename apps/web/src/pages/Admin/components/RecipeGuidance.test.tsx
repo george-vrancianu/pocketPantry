@@ -235,11 +235,14 @@ describe('RecipeGuidance', () => {
       'An Ingredient',
     );
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
       'milk',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));
     expect(screen.getByText('Linked Ingredient: Milk')).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+    ).toHaveAccessibleDescription('Linked Ingredient: Milk');
     await user.selectOptions(
       screen.getByLabelText('Link of Pairing 1'),
       'A Recipe',
@@ -269,7 +272,7 @@ describe('RecipeGuidance', () => {
       'An Ingredient',
     );
     await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
       'milk',
     );
     await user.click(await screen.findByRole('option', { name: /Milk/ }));

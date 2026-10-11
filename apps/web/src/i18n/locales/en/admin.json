@@ -268,6 +268,7 @@
         "linkIngredient": "An Ingredient",
         "linkRecipe": "A Recipe",
         "linkRecipeTarget": "Linked Recipe of Pairing {{position}}",
+        "linkIngredientTarget": "Linked Ingredient of Pairing {{position}}",
         "choose": "Choose…",
         "moveUp": "Move Pairing {{position}} up",
         "moveDown": "Move Pairing {{position}} down",

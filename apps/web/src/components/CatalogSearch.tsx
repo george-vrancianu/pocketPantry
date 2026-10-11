@@ -8,6 +8,10 @@ export type CatalogSearchProps = {
   autoFocus?: boolean;
   /** Called with the text as the Member types it (not on selection). */
   onQueryChange?: (query: string) => void;
+  /** Accessible name of the input and its listbox; defaults to the generic search label. */
+  label?: string;
+  /** Id of an element that describes the input. */
+  describedBy?: string;
 };
 
 /**
@@ -18,9 +22,12 @@ export function CatalogSearch({
   onSelect,
   autoFocus,
   onQueryChange,
+  label,
+  describedBy,
 }: CatalogSearchProps) {
   const { t, i18n } = useTranslation('catalog');
   const id = useId();
+  const name = label ?? t('search.label');
   const listId = `${id}-list`;
   const optionId = (index: number) => `${id}-option-${index}`;
 
@@ -78,7 +85,7 @@ export function CatalogSearch({
   return (
     <Box sx={{ position: 'relative' }}>
       <TextField
-        label={t('search.label')}
+        label={name}
         placeholder={t('search.placeholder')}
         value={query}
         onChange={change}
@@ -91,6 +98,7 @@ export function CatalogSearch({
             'aria-autocomplete': 'list',
             'aria-expanded': expanded,
             'aria-controls': listId,
+            'aria-describedby': describedBy,
             'aria-activedescendant':
               expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined,
           },
@@ -108,7 +116,7 @@ export function CatalogSearch({
         component="ul"
         id={listId}
         role="listbox"
-        aria-label={t('search.label')}
+        aria-label={name}
         hidden={!expanded}
         sx={{ listStyle: 'none', m: 0, p: 0 }}
       >
