@@ -32,10 +32,12 @@ export const lineKey = (line: {
 
 /**
  * Compares a base's lines with a Variant's. Lines are aligned by key in order
- * (longest common subsequence, like a text diff); in each gap between common
- * lines, removed and added lines pair up in order as `swapped`, and what is
- * left over is `added` or `removed`. A common line with another quantity is
- * not reported.
+ * (longest common subsequence, like a text diff). Reordered lines are not
+ * changes: a removed and an added line with the same key cancel one-to-one
+ * (duplicates are counted) before anything is reported. In each gap between
+ * common lines, the removed and added lines that are left pair up in order as
+ * `swapped`, and what is left over is `added` or `removed`. A common line
+ * with another quantity is not reported.
  */
 export function diffIngredients(
   base: DiffLine[],
@@ -67,6 +69,9 @@ export function diffIngredients(
 
   let i = 0;
   let j = 0;
+  // On a tie in the alignment the Variant's line goes first, so a line moved
+  // forward in the Variant is the one treated as moved. Known limitation: the
+  // mirrored case [c,a,b] vs [a,x,c] reports added x / removed b, not a swap.
   while (i < n || j < m) {
     if (i < n && j < m && base[i].key === variant[j].key) {
       flush();
