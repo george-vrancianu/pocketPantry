@@ -345,7 +345,7 @@ describe('Used Up Suggestions (integration)', () => {
     const real = Date.now();
     const clock = jest.spyOn(Date, 'now').mockReturnValue(real + 11 * MINUTE);
     try {
-      let request: Promise<unknown> | undefined;
+      let secondDelete: Promise<unknown> | undefined;
       let settled = false;
       await database.transaction(async (tx) => {
         const { rows } = await tx.execute<{ pid: number }>(
@@ -353,7 +353,7 @@ describe('Used Up Suggestions (integration)', () => {
         );
         // The first delete is uncommitted, so the second cannot see it gone.
         await pantry.deleteBatches(tx, familyId, [first.id]);
-        request = removeBatch(cookie, second.id).then(() => {
+        secondDelete = removeBatch(cookie, second.id).then(() => {
           settled = true;
         });
         // With the history lock the second delete waits on this transaction;
@@ -365,7 +365,7 @@ describe('Used Up Suggestions (integration)', () => {
           })(),
         ]);
       });
-      await request;
+      await secondDelete;
     } finally {
       clock.mockRestore();
     }
