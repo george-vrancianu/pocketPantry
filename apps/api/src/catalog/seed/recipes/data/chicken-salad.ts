@@ -396,6 +396,8 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-greek',
       cuisine: 'greek',
+      // No leaves: a horiatiki can be dressed ahead.
+      hideBaseTips: [1],
       title: t('Greek chicken salad', 'Salată grecească cu pui'),
       servings: 2,
       prepMinutes: 15,
@@ -766,8 +768,8 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-coronation',
       cuisine: 'british',
-      // Bound with mayonnaise, not dressed with a vinaigrette.
-      hideBaseTips: [1],
+      // Poached whole and bound with mayonnaise: no flattening, no vinaigrette.
+      hideBaseTips: [0, 1],
       title: t('Coronation chicken', 'Salată de pui Coronation'),
       servings: 2,
       prepMinutes: 15,
@@ -934,8 +936,8 @@ export const chickenSalad: BaseRecipeSeed = {
     {
       slug: 'chicken-salad-creamy-bound',
       method: 'creamy-bound',
-      // Bound with mayonnaise, not dressed with a vinaigrette.
-      hideBaseTips: [1],
+      // Poached whole and bound with mayonnaise: no flattening, no vinaigrette.
+      hideBaseTips: [0, 1],
       title: t(
         'Creamy chicken salad sandwich',
         'Sandviș cu salată cremoasă de pui',

@@ -269,9 +269,10 @@ describe('Recipe seed (integration)', () => {
     const familyOf = new Map(
       targets.map((t) => [t.id, family(t.id, t.parentId)]),
     );
-    const crossing = rows.filter(
-      (r) => familyOf.get(r.link as string) !== family(r.from, r.fromParent),
-    );
+    const crossing = rows.filter((r) => {
+      const target = familyOf.get(r.link as string);
+      return target !== undefined && target !== family(r.from, r.fromParent);
+    });
     expect(crossing.length).toBeGreaterThanOrEqual(3);
   });
 

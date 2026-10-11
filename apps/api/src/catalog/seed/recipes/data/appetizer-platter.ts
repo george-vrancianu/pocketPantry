@@ -103,8 +103,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
       kind: 'food',
       label: t('Chicken salad', 'Salată cu pui'),
       reason: t(
-        'A light platter to nibble before a main-course salad.',
-        'Un platou ușor, din care ciugulești înainte de o salată servită ca fel principal.',
+        'A few bites from the platter, then a salad as the main course: a meal that stays fresh.',
+        'Câteva bucăți de pe platou, apoi o salată ca fel principal: o masă care rămâne proaspătă.',
       ),
       recipe: 'chicken-salad',
     },
@@ -729,7 +729,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Greek chicken salad', 'Salată grecească cu pui'),
           reason: t(
             'The meze starter leads into the Greek salad with the same flavours.',
-            'Mezeurile deschid masa și duc la salata grecească, cu aceleași arome.',
+            'Platoul de meze deschide masa și pregătește salata grecească, cu aceleași arome.',
           ),
           principle: 'complement_flavour',
           recipe: 'chicken-salad-greek',
@@ -826,7 +826,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-levantine',
       cuisine: 'middle-eastern',
-      // Cured fish or no cheese and meat: not served at room temperature.
+      // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t('Levantine mezze platter', 'Platou levantin de mezze'),
       servings: 4,
@@ -1157,7 +1157,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-scandinavian',
       cuisine: 'scandinavian',
-      // Cured fish or no cheese and meat: not served at room temperature.
+      // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t(
         'Scandinavian smørrebrød platter',
@@ -1342,7 +1342,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-japanese',
       cuisine: 'japanese',
-      // Cured fish or no cheese and meat: not served at room temperature.
+      // No cheese or cured meat to bring to room temperature (cold fish or none at all).
       hideBaseTips: [0],
       title: t('Japanese otsumami platter', 'Platou japonez otsumami'),
       servings: 4,
@@ -1435,8 +1435,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
           kind: 'food',
           label: t('Karaage', 'Karaage'),
           reason: t(
-            'Otsumami and karaage are both izakaya fare.',
-            'Otsumami și karaage fac parte, amândouă, din bucătăria izakaya.',
+            'Otsumami and karaage are both typical izakaya bar snacks.',
+            'Otsumami și karaage sunt amândouă gustări tipice de izakaya, barul japonez.',
           ),
           principle: 'regional_tradition',
           recipe: 'fried-chicken-karaage',

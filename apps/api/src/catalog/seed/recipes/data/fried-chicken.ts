@@ -335,9 +335,9 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Mashed potatoes with gravy', 'Piure de cartofi cu sos'),
           reason: t(
             'Southern fried chicken is traditionally served with mashed potatoes, often with gravy.',
-            'Puiul prăjit în stil sudic se servește în mod tradițional cu piure de cartofi, adesea cu sos.',
+            'Puiul prăjit în stil sudist se servește în mod tradițional cu piure de cartofi, adesea cu sos.',
           ),
-          principle: 'fat_carries_flavour',
+          principle: 'regional_tradition',
           recipe: 'potato-puree',
         },
         {
@@ -1187,8 +1187,8 @@ export const friedChicken: BaseRecipeSeed = {
       ],
       tips: [
         t(
-          'Cook in batches if the basket is crowded; touching pieces steam instead of crisp.',
-          'Gătește în serii dacă sertarul e plin; bucățile care se ating se aburesc în loc să devină crocante.',
+          'Shake the basket or turn the pieces halfway so the crust colours evenly.',
+          'Scutură coșul sau întoarce bucățile la jumătatea timpului, ca crusta să se rumenească uniform.',
         ),
       ],
       nutritionNote: t(
