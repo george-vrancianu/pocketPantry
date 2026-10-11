@@ -466,6 +466,29 @@ describe('Recipe Variants, Tips and translations (integration)', () => {
       expect(rows).toEqual([]);
     });
 
+    it("drops a line's note translations when its note is cleared, and refuses one for a line without a note", async () => {
+      const base = await baseWithTips();
+      const line = base.lines[0];
+      await admin
+        .put(`/${base.id}/translations/ro`, { lines: { [line.id]: 'cernuta' } })
+        .expect(200);
+      const cleared = (
+        await admin
+          .put(`/${base.id}`, {
+            title: base.title,
+            servings: 4,
+            lines: [{ id: line.id, ingredientId: flour, note: null }],
+            steps: [],
+          })
+          .expect(200)
+      ).body as AdminRecipeDetail;
+      expect(cleared.translations.ro?.lines ?? {}).toEqual({});
+      const res = await admin
+        .put(`/${base.id}/translations/ro`, { lines: { [line.id]: 'x' } })
+        .expect(400);
+      expect(code(res)).toBe('recipes.item_not_found');
+    });
+
     it('returns null for an unknown Recipe', async () => {
       expect(
         await loadCatalogRecipe(database, crypto.randomUUID(), 'en'),

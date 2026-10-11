@@ -290,7 +290,7 @@ export async function loadCatalogRecipe(
     archived: row.archivedAt !== null,
     lines: parts.lines.map((line) => ({
       ...lineView(line),
-      note: lineNote.get(line.id) ?? line.note,
+      note: line.note === null ? null : (lineNote.get(line.id) ?? line.note),
       ingredientName: line.ingredientId
         ? names.pick(
             'ingredient',

@@ -321,7 +321,10 @@ export class RecipesService {
       const found = await tx
         .select({ id: ingredients.id })
         .from(ingredients)
-        .where(inArray(ingredients.id, wanted));
+        .where(inArray(ingredients.id, wanted))
+        .orderBy(ingredients.id)
+        // Blocks a concurrent Ingredient delete until we commit.
+        .for('key share');
       if (found.length !== wanted.length) {
         throw new ApiException(404, 'catalog.not_found', {
           entity: 'ingredient',
@@ -370,6 +373,8 @@ export class RecipesService {
             : undefined,
         ),
       );
+    // Lines here are Catalog lines: rawName/normalizedName stay null. The Family
+    // Recipe path (#137) must set them for Unmatched lines (matched xor named check).
     for (const [position, line] of document.lines.entries()) {
       const values = {
         position,
@@ -384,6 +389,12 @@ export class RecipesService {
           .update(recipeIngredientLines)
           .set(values)
           .where(eq(recipeIngredientLines.id, line.id));
+        // A cleared note leaves nothing to translate.
+        if (line.note === null) {
+          await tx
+            .delete(recipeIngredientLineTranslations)
+            .where(eq(recipeIngredientLineTranslations.lineId, line.id));
+        }
       } else {
         await tx
           .insert(recipeIngredientLines)

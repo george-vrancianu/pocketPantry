@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -130,6 +130,8 @@ export class RecipeTranslationsService {
         and(
           eq(recipeIngredientLines.recipeId, recipeId),
           inArray(recipeIngredientLines.id, ids),
+          // A line without a source note has nothing to translate.
+          isNotNull(recipeIngredientLines.note),
         ),
       );
     if (owned.length !== ids.length) throw itemNotFound('line');

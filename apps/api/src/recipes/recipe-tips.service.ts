@@ -4,7 +4,12 @@ import { and, eq, inArray, isNull, max } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
-import { recipeHiddenTips, recipeSteps, recipeTips } from '../database/schema';
+import {
+  recipeHiddenTips,
+  recipes,
+  recipeSteps,
+  recipeTips,
+} from '../database/schema';
 import { recipeNotFound } from './recipe-errors';
 import { lockCatalogRecipe } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
@@ -117,6 +122,12 @@ export class RecipeTipsService {
       const recipe = await lockCatalogRecipe(tx, recipeId);
       if (!recipe.parentId)
         throw new ApiException(400, 'recipes.bad_hidden_tip');
+      // Serialise with Tip changes on the base (they lock the base row).
+      await tx
+        .select({ id: recipes.id })
+        .from(recipes)
+        .where(eq(recipes.id, recipe.parentId))
+        .for('share');
       if (input.tipIds.length > 0) {
         const valid = await tx
           .select({ id: recipeTips.id })
