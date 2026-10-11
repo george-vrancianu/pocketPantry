@@ -60,13 +60,13 @@ export function Viewfinder({
   const timer = useRef<number | undefined>(undefined);
   const [pulse, setPulse] = useState(false);
   const [flash, setFlash] = useState(false);
-  const timers = useRef<number[]>([]);
+  /** Counts Scans so each one restarts the pulse and flash. */
+  const [shot, setShot] = useState(0);
   const lastTap = useRef<Tap | null>(null);
   const guideRef = useRef<HTMLDivElement>(null);
   /** The press that may become the next tap: primary pointer, started inside the guide. */
   const press = useRef<{ id: number; x: number; y: number } | null>(null);
   useEffect(() => {
-    const pending = timers.current;
     // A press that starts or ends outside the guide breaks the pairing of taps.
     const outside = (event: globalThis.PointerEvent) => {
       if (guideRef.current?.contains(event.target as Node)) return;
@@ -77,11 +77,20 @@ export function Viewfinder({
     document.addEventListener('pointerup', outside);
     return () => {
       window.clearTimeout(timer.current);
-      pending.forEach(window.clearTimeout);
       document.removeEventListener('pointerdown', outside);
       document.removeEventListener('pointerup', outside);
     };
   }, []);
+  useEffect(() => {
+    if (!shot) return;
+    setPulse(true);
+    setFlash(true);
+    const pending = [
+      window.setTimeout(() => setPulse(false), PULSE_MS),
+      window.setTimeout(() => setFlash(false), FLASH_MS),
+    ];
+    return () => pending.forEach(window.clearTimeout);
+  }, [shot]);
   const arm = () => {
     setArmed(true);
     window.clearTimeout(timer.current);
@@ -91,13 +100,7 @@ export function Viewfinder({
     if (disabled) return;
     onScan();
     navigator.vibrate?.(HAPTIC_MS);
-    setPulse(true);
-    setFlash(true);
-    timers.current.forEach(window.clearTimeout);
-    timers.current = [
-      window.setTimeout(() => setPulse(false), PULSE_MS),
-      window.setTimeout(() => setFlash(false), FLASH_MS),
-    ];
+    setShot((n) => n + 1);
   };
   const onPointerDown = (event: PointerEvent) => {
     arm();
