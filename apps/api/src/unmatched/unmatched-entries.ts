@@ -26,7 +26,11 @@ export type UnmatchedRecord = {
   sourceText?: string;
   sourceLanguage?: string;
   source: UnmatchedSource;
-} & ({ batchId: string } | { shoppingItemId: string });
+} & (
+  | { batchId: string }
+  | { shoppingItemId: string }
+  | { ingredientLineId: string }
+);
 
 /**
  * Queues Unmatched names for Admin curation. Call it in the same transaction
@@ -50,6 +54,8 @@ export async function recordUnmatched(
       source: record.source,
       batchId: 'batchId' in record ? record.batchId : null,
       shoppingItemId: 'shoppingItemId' in record ? record.shoppingItemId : null,
+      ingredientLineId:
+        'ingredientLineId' in record ? record.ingredientLineId : null,
     })),
   );
 }

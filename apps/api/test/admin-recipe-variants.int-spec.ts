@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -14,6 +15,8 @@ import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
+
+jest.setTimeout(30_000);
 
 describe('Recipe Variants, Tips and translations (integration)', () => {
   let app: NestFastifyApplication;

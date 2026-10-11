@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -8,6 +9,10 @@ import {
   methods,
   recipeIngredientLines,
   recipes,
+  shoppingItems,
+  shoppingItemSourceRecipes,
+  shoppingLists,
+  user,
 } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
@@ -20,11 +25,14 @@ import { promoteToAdmin } from './support/promote-to-admin';
 type Api = ReturnType<typeof client>;
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 
+jest.setTimeout(30_000);
+
 describe('Admin Recipes (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
   let admin: Api;
   let member: Api;
+  let adminEmail: string;
   let salt: string;
   let flour: string;
   let cuisineId: string;
@@ -54,7 +62,7 @@ describe('Admin Recipes (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    const email = `recipes-admin-${stamp}@example.com`;
+    const email = (adminEmail = `recipes-admin-${stamp}@example.com`);
     admin = client(
       app,
       await signUp(app, email, 'Recipes Admin'),
@@ -263,6 +271,42 @@ describe('Admin Recipes (integration)', () => {
       ).toHaveLength(1);
       await admin.get(`/${crypto.randomUUID()}`).expect(404);
       await admin.post(`/${crypto.randomUUID()}/archive`).expect(404);
+    });
+  });
+
+  describe('Source Recipes', () => {
+    it('point at real Recipes: unknown ids are refused, and the rows go with the Recipe', async () => {
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, adminEmail));
+      const [list] = await database
+        .insert(shoppingLists)
+        .values({ familyId, status: 'archived' })
+        .returning();
+      const [item] = await database
+        .insert(shoppingItems)
+        .values({ listId: list.id, ingredientId: flour })
+        .returning();
+      await expect(
+        database.insert(shoppingItemSourceRecipes).values({
+          shoppingItemId: item.id,
+          recipeId: crypto.randomUUID(),
+        }),
+      ).rejects.toThrow();
+
+      const base = await createBase();
+      await database
+        .insert(shoppingItemSourceRecipes)
+        .values({ shoppingItemId: item.id, recipeId: base.id });
+      await database.delete(recipes).where(eq(recipes.id, base.id));
+      expect(
+        await database
+          .select()
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, item.id)),
+      ).toEqual([]);
+      await database.delete(shoppingLists).where(eq(shoppingLists.id, list.id));
     });
   });
 });

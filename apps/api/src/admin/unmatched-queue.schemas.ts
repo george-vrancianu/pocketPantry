@@ -58,7 +58,7 @@ export const unmatchedResolveBody = z
 export type UnmatchedResolveBody = z.infer<typeof unmatchedResolveBody>;
 
 export type UnmatchedReference = {
-  type: 'batch' | 'shopping_item';
+  type: 'batch' | 'shopping_item' | 'recipe_line';
   id: string;
   source: string;
   locale: string;
@@ -72,7 +72,7 @@ export type UnmatchedQueueEntry = {
   normalizedName: string;
   /** The raw text as most recently saved. */
   rawName: string;
-  /** Batches and Shopping Items carrying the name. */
+  /** Batches, Shopping Items and Recipe Ingredient Lines carrying the name. */
   count: number;
   /** Locale of the most recent row. */
   locale: string;
@@ -98,6 +98,7 @@ export type UnmatchedResolution = {
   relinkedBatches: number;
   relinkedShoppingItems: number;
   relinkedTemplateLines: number;
+  relinkedRecipeLines: number;
   synonymAdded: boolean;
   /** A Synonym of the printed text was added (needs `sourceSynonym` and printed text). */
   sourceSynonymAdded: boolean;

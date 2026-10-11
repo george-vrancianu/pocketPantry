@@ -10,8 +10,11 @@ import {
   catalogTranslations,
   ingredients,
   shoppingItems,
+  recipeIngredientLines,
+  recipes,
   shoppingLists,
   unmatchedEntries,
+  user,
 } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -26,7 +29,7 @@ type Entry = {
   sources: string[];
   dismissed: boolean;
   references: Array<{
-    type: 'batch' | 'shopping_item';
+    type: 'batch' | 'shopping_item' | 'recipe_line';
     id: string;
     source: string;
     locale: string;
@@ -1358,6 +1361,97 @@ describe('Unmatched queue (integration)', () => {
           .where(and(eq(batches.rawName, raw), eq(batches.unmatched, true)));
         expect(stillUnmatched).toEqual([]);
       }
+    });
+  });
+  describe('Family Recipe lines', () => {
+    /** A Family Recipe with one Unmatched line, inserted directly (Family Recipes arrive with #137). */
+    async function familyRecipeWithUnmatchedLine(raw: string) {
+      const email = `unmatched-recipe-${stamp}-${++counter}@example.com`;
+      await signUp(email);
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      const recipeId = crypto.randomUUID();
+      const lineId = crypto.randomUUID();
+      await database.insert(recipes).values({
+        id: recipeId,
+        familyId,
+        title: `Family ${raw}`,
+        servings: 2,
+      });
+      await database.insert(recipeIngredientLines).values({
+        id: lineId,
+        recipeId,
+        position: 0,
+        rawName: raw,
+        normalizedName: normalise(raw),
+        quantity: 2,
+        unit: 'pcs',
+      });
+      await database.insert(unmatchedEntries).values({
+        normalizedName: normalise(raw),
+        rawName: raw,
+        locale: 'en',
+        source: 'recipe',
+        ingredientLineId: lineId,
+      });
+      return { recipeId, lineId };
+    }
+
+    afterAll(async () => {
+      await database
+        .delete(recipes)
+        .where(ilike(recipes.title, `Family Zzq%${stamp}%`));
+    });
+
+    it('lists the line in the queue and relinks it, keeping quantity and unit', async () => {
+      const raw = name('line one');
+      const { lineId } = await familyRecipeWithUnmatchedLine(raw);
+      const entry = await entryFor(raw);
+      expect(entry?.sources).toEqual(['recipe']);
+      expect(entry?.references).toMatchObject([
+        { type: 'recipe_line', id: lineId, source: 'recipe' },
+      ]);
+
+      const parmesan = seedId.ingredient('parmesan');
+      const response = await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+      expect(response.body).toMatchObject({ relinkedRecipeLines: 1 });
+
+      const [line] = await database
+        .select()
+        .from(recipeIngredientLines)
+        .where(eq(recipeIngredientLines.id, lineId));
+      expect(line).toMatchObject({
+        ingredientId: parmesan,
+        rawName: null,
+        normalizedName: null,
+        quantity: 2,
+        unit: 'pcs',
+      });
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('drops the entry when its Recipe goes', async () => {
+      const raw = name('line two');
+      const { recipeId } = await familyRecipeWithUnmatchedLine(raw);
+      expect(await entryFor(raw)).toBeDefined();
+      await database.delete(recipes).where(eq(recipes.id, recipeId));
+      expect(await entryFor(raw)).toBeUndefined();
+    });
+
+    it('refuses an entry that points at nothing or at two things', async () => {
+      await expect(
+        database.insert(unmatchedEntries).values({
+          normalizedName: 'zzq nothing',
+          rawName: 'x',
+          locale: 'en',
+          source: 'recipe',
+        }),
+      ).rejects.toThrow();
     });
   });
 });

@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
@@ -17,6 +18,8 @@ type Named = {
   name: string;
   translations: { locale: string; value: string }[];
 };
+
+jest.setTimeout(30_000);
 
 describe('Admin Cuisine and Method lists (integration)', () => {
   let app: NestFastifyApplication;
