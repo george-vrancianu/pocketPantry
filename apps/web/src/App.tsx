@@ -15,6 +15,8 @@ import { ScanPage } from './pages/Scan/ScanPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { ShoppingPage } from './pages/Shopping/ShoppingPage';
 import { StaplesPage } from './pages/Shopping/StaplesPage';
+import { TemplateEditorPage } from './pages/Shopping/templates/TemplateEditorPage';
+import { TemplatesPage } from './pages/Shopping/templates/TemplatesPage';
 import { SignInPage } from './pages/SignIn/SignInPage';
 import { SignUpPage } from './pages/SignUp/SignUpPage';
 import { Navigate } from 'react-router-dom';
@@ -33,6 +35,11 @@ export function App() {
           <Route path="pantry" element={<PantryPage />} />
           <Route path="shopping" element={<ShoppingPage />} />
           <Route path="shopping/staples" element={<StaplesPage />} />
+          <Route path="shopping/templates" element={<TemplatesPage />} />
+          <Route
+            path="shopping/templates/:id"
+            element={<TemplateEditorPage />}
+          />
           <Route path="scan" element={<ScanPage />} />
           <Route path="scan/review" element={<ReviewOverviewPage />} />
           <Route path="scan/review/:scanId" element={<ReviewPage />} />

@@ -8,6 +8,8 @@ import { SuggestionsController } from './suggestions.controller';
 import { SuggestionsService } from './suggestions.service';
 import { ShoppingController } from './shopping.controller';
 import { ShoppingService } from './shopping.service';
+import { ShoppingTemplatesController } from './shopping-templates.controller';
+import { ShoppingTemplatesService } from './shopping-templates.service';
 
 @Module({
   imports: [SettingsModule],
@@ -16,12 +18,14 @@ import { ShoppingService } from './shopping.service';
     FinishShoppingController,
     StaplesController,
     SuggestionsController,
+    ShoppingTemplatesController,
   ],
   providers: [
     ShoppingService,
     FinishShoppingService,
     StaplesService,
     SuggestionsService,
+    ShoppingTemplatesService,
   ],
   exports: [ShoppingService],
 })

@@ -1,5 +1,5 @@
 {
-  "id": "68b10be9-59c7-43cb-840c-b5e51cf20fe1",
+  "id": "5b3acc2d-896c-40d7-ba55-492c2169f7de",
   "prevId": "fa51c9c3-afce-4a63-9f69-eb2c037fb68c",
   "version": "7",
   "dialect": "postgresql",
@@ -1541,8 +1541,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.staples": {
-      "name": "staples",
+    "public.shopping_template_lines": {
+      "name": "shopping_template_lines",
       "schema": "",
       "columns": {
         "id": {
@@ -1552,9 +1552,15 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "family_id": {
-          "name": "family_id",
+        "template_id": {
+          "name": "template_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -1562,7 +1568,19 @@
           "name": "ingredient_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "normalized_name": {
+          "name": "normalized_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "quantity": {
           "name": "quantity",
@@ -1593,15 +1611,24 @@
         }
       },
       "indexes": {
-        "staples_family_ingredient_idx": {
-          "name": "staples_family_ingredient_idx",
+        "shopping_template_lines_template_idx": {
+          "name": "shopping_template_lines_template_idx",
           "columns": [
             {
-              "expression": "family_id",
+              "expression": "template_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            },
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shopping_template_lines_ingredient_idx": {
+          "name": "shopping_template_lines_ingredient_idx",
+          "columns": [
             {
               "expression": "ingredient_id",
               "isExpression": false,
@@ -1609,19 +1636,19 @@
               "nulls": "last"
             }
           ],
-          "isUnique": true,
+          "isUnique": false,
           "concurrently": false,
           "method": "btree",
           "with": {}
         }
       },
       "foreignKeys": {
-        "staples_family_id_family_id_fk": {
-          "name": "staples_family_id_family_id_fk",
-          "tableFrom": "staples",
-          "tableTo": "family",
+        "shopping_template_lines_template_id_shopping_templates_id_fk": {
+          "name": "shopping_template_lines_template_id_shopping_templates_id_fk",
+          "tableFrom": "shopping_template_lines",
+          "tableTo": "shopping_templates",
           "columnsFrom": [
-            "family_id"
+            "template_id"
           ],
           "columnsTo": [
             "id"
@@ -1629,9 +1656,9 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "staples_ingredient_id_ingredients_id_fk": {
-          "name": "staples_ingredient_id_ingredients_id_fk",
-          "tableFrom": "staples",
+        "shopping_template_lines_ingredient_id_ingredients_id_fk": {
+          "name": "shopping_template_lines_ingredient_id_ingredients_id_fk",
+          "tableFrom": "shopping_template_lines",
           "tableTo": "ingredients",
           "columnsFrom": [
             "ingredient_id"
@@ -1647,30 +1674,33 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "staples_unit_with_quantity": {
-          "name": "staples_unit_with_quantity",
-          "value": "\"staples\".\"quantity\" IS NULL OR \"staples\".\"unit\" IS NOT NULL"
-        },
-        "staples_quantity_positive": {
-          "name": "staples_quantity_positive",
-          "value": "\"staples\".\"quantity\" IS NULL OR \"staples\".\"quantity\" > 0"
+        "shopping_template_lines_matched_or_named": {
+          "name": "shopping_template_lines_matched_or_named",
+          "value": "(\"shopping_template_lines\".\"ingredient_id\" IS NOT NULL) <> (\"shopping_template_lines\".\"name\" IS NOT NULL)"
         }
       },
       "isRLSEnabled": false
     },
-    "public.suggestion_dismissals": {
-      "name": "suggestion_dismissals",
+    "public.shopping_templates": {
+      "name": "shopping_templates",
       "schema": "",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
         "family_id": {
           "name": "family_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "ingredient_id": {
-          "name": "ingredient_id",
-          "type": "uuid",
+        "name": {
+          "name": "name",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -1689,11 +1719,27 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "shopping_templates_family_idx": {
+          "name": "shopping_templates_family_idx",
+          "columns": [
+            {
+              "expression": "family_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
-        "suggestion_dismissals_family_id_family_id_fk": {
-          "name": "suggestion_dismissals_family_id_family_id_fk",
-          "tableFrom": "suggestion_dismissals",
+        "shopping_templates_family_id_family_id_fk": {
+          "name": "shopping_templates_family_id_family_id_fk",
+          "tableFrom": "shopping_templates",
           "tableTo": "family",
           "columnsFrom": [
             "family_id"
@@ -1703,30 +1749,9 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
-        },
-        "suggestion_dismissals_ingredient_id_ingredients_id_fk": {
-          "name": "suggestion_dismissals_ingredient_id_ingredients_id_fk",
-          "tableFrom": "suggestion_dismissals",
-          "tableTo": "ingredients",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "suggestion_dismissals_family_id_ingredient_id_pk": {
-          "name": "suggestion_dismissals_family_id_ingredient_id_pk",
-          "columns": [
-            "family_id",
-            "ingredient_id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

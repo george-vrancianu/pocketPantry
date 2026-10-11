@@ -44,6 +44,11 @@
     "nothing_checked": "Check at least one item before finishing.",
     "quantity_too_large": "That would take the quantity above 1,000,000. Lower the amount."
   },
+  "shopping_template": {
+    "not_found": "We could not find that template.",
+    "limit_reached": "A family can have up to {{max}} templates. Delete one first.",
+    "too_many_lines": "A template can have up to {{max}} lines."
+  },
   "pantry": {
     "location_required": "Choose where this batch is stored.",
     "ingredient_not_found": "We could not find that ingredient.",
@@ -56,7 +61,7 @@
     "not_found": "That Catalog entry no longer exists.",
     "name_taken": "That name is already used. Names must be unique, ignoring case and accents.",
     "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
-    "ingredient_in_use": "This Ingredient is still used by Batches or Shopping Items, so it cannot be deleted.",
+    "ingredient_in_use": "This Ingredient is still used in the Pantry, on the Shopping List, as a Staple or in a Shopping Template, so it cannot be deleted.",
     "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
     "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
     "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",

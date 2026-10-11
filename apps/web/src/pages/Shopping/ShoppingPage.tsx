@@ -19,6 +19,7 @@ import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SuggestionsSection } from './components/SuggestionsSection';
 import { SummaryCard } from './components/SummaryCard';
+import { TemplateActions } from './templates/TemplateActions';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
@@ -64,6 +65,7 @@ export function ShoppingPage() {
               onAdd={screen.add}
             />
             <AddItemForm adding={screen.adding} onAdd={screen.add} />
+            <TemplateActions />
             {screen.list.groups.length === 0 ? (
               <Typography color="text.secondary">
                 {t('shopping:empty')}

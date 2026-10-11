@@ -337,6 +337,47 @@ export const shoppingItemSourceRecipes = pgTable(
   (table) => [primaryKey({ columns: [table.shoppingItemId, table.recipeId] })],
 );
 
+// Shopping Templates: named, reusable lists a Family applies to its Shopping List.
+// A line has the shape of a Shopping Item: an Ingredient (which it keeps in use) or an
+// Unmatched `name`, with an optional quantity and unit. `position` keeps the saved order.
+export const shoppingTemplates = pgTable(
+  'shopping_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    ...timestamps,
+  },
+  (table) => [index('shopping_templates_family_idx').on(table.familyId)],
+);
+
+export const shoppingTemplateLines = pgTable(
+  'shopping_template_lines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => shoppingTemplates.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id),
+    name: text('name'),
+    normalizedName: text('normalized_name'),
+    quantity: numeric('quantity', { precision: 12, scale: 3 }),
+    unit: ingredientUnit('unit'),
+    ...timestamps,
+  },
+  (table) => [
+    index('shopping_template_lines_template_idx').on(table.templateId),
+    index('shopping_template_lines_ingredient_idx').on(table.ingredientId),
+    check(
+      'shopping_template_lines_matched_or_named',
+      sql`(${table.ingredientId} IS NOT NULL) <> (${table.name} IS NOT NULL)`,
+    ),
+  ],
+);
+
 // Pantry: one Batch is one purchase of one Ingredient, owned by a Family (not a Member).
 // An Unmatched Batch has no Ingredient: it keeps the typed `rawName` and sits under an
 // "Other" Leaf Category (`leafCategoryId` is always set so Admin curation can find it).
