@@ -81,7 +81,8 @@
     "freeTextLabel": "Or add an ingredient by name",
     "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
-    "unavailable": "This recipe cannot be edited."
+    "unavailable": "This recipe cannot be edited.",
+    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the variant."
   },
   "fewerServings": "Fewer servings",
   "moreServings": "More servings",

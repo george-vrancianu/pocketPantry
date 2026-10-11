@@ -35,6 +35,22 @@ const draft: FamilyRecipeDraft = {
     },
   ],
   steps: [{ text: 'Whisk the eggs', timerSeconds: 90 }],
+  guidance: {
+    nutritionNote: 'Rich in protein',
+    pairings: [
+      {
+        kind: 'drink',
+        label: 'Orange juice',
+        reason: 'Fresh against the butter',
+        principle: null,
+        linkedIngredientId: null,
+        linkedRecipeId: null,
+      },
+    ],
+    eatingMoments: [
+      { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Quick start' },
+    ],
+  },
 };
 
 const saved: FamilyRecipeEdit = {
@@ -75,6 +91,37 @@ const saved: FamilyRecipeEdit = {
   parentTips: [
     { id: 'bt1', stepId: null, text: 'Nonstick pan', hidden: false },
   ],
+  nutritionNote: 'Rich in protein',
+  pairings: [
+    {
+      id: 'p1',
+      kind: 'drink',
+      label: 'Orange juice',
+      reason: 'Fresh against the butter',
+      principle: null,
+      linkedIngredientId: null,
+      linkedRecipeId: null,
+    },
+  ],
+  eatingMoments: [
+    { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Quick start' },
+  ],
+};
+
+const sourceDetail = {
+  id: 'x',
+  guidance: {
+    nutritionNote: null,
+    pairings: [],
+    eatingMoments: [
+      {
+        eatingMomentId: 'em1',
+        name: 'Breakfast',
+        polarity: 'good_for',
+        reason: null,
+      },
+    ],
+  },
 };
 
 function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
@@ -137,6 +184,46 @@ describe('NewVariantPage', () => {
       ],
       steps: [{ text: 'Whisk the eggs', timerSeconds: 90 }],
     });
+  });
+
+  it('shows the draft guidance and posts it with the Variant', async () => {
+    const user = userEvent.setup();
+    const calls = setup('/recipes/x/variant/new', {
+      'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/recipes/x': () => Response.json(sourceDetail),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    const note = await screen.findByLabelText('Nutrition Note');
+    expect(note).toHaveValue('Rich in protein');
+    expect(screen.getByLabelText('Label of Pairing 1')).toHaveValue(
+      'Orange juice',
+    );
+    expect(await screen.findByLabelText('Reason for Breakfast')).toHaveValue(
+      'Quick start',
+    );
+    // The Member has no Eating Moment list, so none can be added here.
+    expect(screen.queryByLabelText('Add an Eating Moment')).toBeNull();
+
+    await user.clear(note);
+    await user.type(note, 'Light');
+    await user.click(screen.getByRole('button', { name: 'Save variant' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        guidance: {
+          nutritionNote: 'Light',
+          pairings: [{ kind: 'drink', label: 'Orange juice' }],
+          eatingMoments: [
+            {
+              eatingMomentId: 'em1',
+              polarity: 'good_for',
+              reason: 'Quick start',
+            },
+          ],
+        },
+      }),
+    );
   });
 
   it('shows a coded error in the Member locale', async () => {
@@ -214,6 +301,83 @@ describe('EditFamilyRecipePage', () => {
       ).toMatchObject({
         lines: [{ id: 'l1', quantity: null, unit: null }, {}],
       }),
+    );
+  });
+
+  it('saves guidance on its own, keeping Pairing ids and Eating Moments', async () => {
+    const user = userEvent.setup();
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/recipes/g': () => Response.json({ ...sourceDetail, id: 'g' }),
+      'PUT /api/recipes/g/guidance': () => Response.json(saved),
+    });
+    const note = await screen.findByLabelText('Nutrition Note');
+    await user.clear(note);
+    await user.type(note, 'Light');
+    expect(await screen.findByLabelText('Reason for Breakfast')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    expect(await screen.findByText('Guidance saved.')).toBeInTheDocument();
+    const put = calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')!;
+    expect(put.search).toContain('locale=en');
+    expect(put.body).toEqual({
+      nutritionNote: 'Light',
+      pairings: [
+        {
+          id: 'p1',
+          kind: 'drink',
+          label: 'Orange juice',
+          reason: 'Fresh against the butter',
+          principle: null,
+          linkedIngredientId: null,
+          linkedRecipeId: null,
+        },
+      ],
+      eatingMoments: [
+        { eatingMomentId: 'em1', polarity: 'good_for', reason: 'Quick start' },
+      ],
+    });
+    // The document save does not carry guidance.
+    expect(calls.some((c) => c.key === 'PUT /api/recipes/g')).toBe(false);
+  });
+
+  it('links a Pairing to a Recipe found by search', async () => {
+    const user = userEvent.setup();
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/recipes': () =>
+        Response.json({
+          recipes: [
+            {
+              id: 'r9',
+              title: 'Pancakes',
+              parentId: null,
+              base: null,
+              cuisine: null,
+              method: null,
+              variantCount: 0,
+              servings: 4,
+              prepMinutes: null,
+              cookMinutes: null,
+              difficulty: null,
+              owner: 'catalog',
+            },
+          ],
+        }),
+      'PUT /api/recipes/g/guidance': () => Response.json(saved),
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'recipe',
+    );
+    await user.selectOptions(
+      await screen.findByLabelText('Linked Recipe of Pairing 1'),
+      'r9',
+    );
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PUT /api/recipes/g/guidance')?.body,
+      ).toMatchObject({ pairings: [{ id: 'p1', linkedRecipeId: 'r9' }] }),
     );
   });
 

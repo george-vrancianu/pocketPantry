@@ -81,7 +81,8 @@
     "freeTextLabel": "Eller tilføj en ingrediens med navn",
     "freeTextAdd": "Tilføj navn",
     "freeTextNote": "Ikke i kataloget",
-    "unavailable": "Denne opskrift kan ikke redigeres."
+    "unavailable": "Denne opskrift kan ikke redigeres.",
+    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med varianten."
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",

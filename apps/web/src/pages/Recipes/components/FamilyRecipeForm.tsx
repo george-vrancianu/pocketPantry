@@ -13,6 +13,14 @@ import { DIFFICULTIES, type Difficulty } from '../../../lib/adminRecipes';
 import { UNITS, type Unit } from '../../../lib/catalog';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
 import { useRecipeFilters } from '../../../lib/recipes';
+import type { GuidanceInput } from '../../../lib/adminRecipes';
+import {
+  guidanceProblems,
+  toGuidanceInput,
+  type GuidanceDraft,
+} from '../../Admin/guidanceDraft';
+import type { MomentOption } from '../../Admin/components/GuidanceFields';
+import { FamilyGuidanceFields } from './FamilyGuidance';
 import { EditorForm } from '../../Admin/components/EditorForm';
 import { RowControls } from '../../Admin/components/RowControls';
 import {
@@ -34,7 +42,9 @@ type Props = {
   error: unknown;
   /** How many own Tips a saved Step carries, for the warning before removing it. */
   stepTipCount?: (stepId: string) => number;
-  onSave: (document: FamilyRecipeDocument) => void;
+  /** A Variant draft brings its guidance, edited and saved with the document. */
+  guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
+  onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
   onCancel: () => void;
 };
 
@@ -51,6 +61,7 @@ export function FamilyRecipeForm({
   saving,
   error,
   stepTipCount,
+  guidance,
   onSave,
   onCancel,
 }: Props) {
@@ -58,11 +69,19 @@ export function FamilyRecipeForm({
   const filters = useRecipeFilters(i18n.language);
   const [draft, setDraft] = useState<FamilyDraft>(initial);
   const [searchKey, setSearchKey] = useState(0);
+  const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(
+    guidance?.initial ?? null,
+  );
   const [freeName, setFreeName] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const [touchedSteps, setTouchedSteps] = useState<Set<number>>(new Set());
   const [removing, setRemoving] = useState<number | null>(null);
   const problems = problemsOf(draft);
+  const guidanceBad = guidanceDraft
+    ? Object.values(guidanceProblems(guidanceDraft)).some(
+        (problem) => problem !== false && problem !== null,
+      )
+    : false;
   const showTitleError = problems.title && titleTouched;
 
   const change = (patch: Partial<FamilyDraft>) =>
@@ -98,9 +117,14 @@ export function FamilyRecipeForm({
       heading={heading}
       description={description}
       error={error}
-      canSave={!hasProblems(problems)}
+      canSave={!hasProblems(problems) && !guidanceBad}
       saving={saving}
-      onSubmit={() => onSave(documentOf(draft))}
+      onSubmit={() =>
+        onSave(
+          documentOf(draft),
+          guidanceDraft ? toGuidanceInput(guidanceDraft) : undefined,
+        )
+      }
       onCancel={onCancel}
       saveLabel={saveLabel}
     >
@@ -460,6 +484,25 @@ export function FamilyRecipeForm({
           </Button>
         </div>
       </Stack>
+      {guidance && guidanceDraft ? (
+        <Stack
+          spacing={2}
+          component="section"
+          aria-label={t('admin:recipe.guidance.title')}
+        >
+          <Typography variant="sectionLabel" color="text.secondary">
+            {t('admin:recipe.guidance.title')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {t('recipes:family.guidanceHint')}
+          </Typography>
+          <FamilyGuidanceFields
+            draft={guidanceDraft}
+            onChange={setGuidanceDraft}
+            momentOptions={guidance.momentOptions}
+          />
+        </Stack>
+      ) : null}
     </EditorForm>
   );
 }

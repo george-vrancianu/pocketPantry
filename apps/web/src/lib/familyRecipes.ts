@@ -1,8 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-import type { Difficulty, RecipeStep, RecipeTip } from './adminRecipes';
+import type {
+  Difficulty,
+  GuidanceInput,
+  RecipeStep,
+  RecipeTip,
+} from './adminRecipes';
 import { recipesQueryKey } from './recipes';
+
+type GuidanceInputWithIds = {
+  nutritionNote: string | null;
+  pairings: (GuidanceInput['pairings'][number] & { id: string })[];
+  eatingMoments: GuidanceInput['eatingMoments'];
+};
 
 /** An unsaved "Make a variant" draft (mirror of the API's `FamilyRecipeDraft`). */
 export type FamilyRecipeDraft = {
@@ -24,6 +35,8 @@ export type FamilyRecipeDraft = {
     note: string | null;
   }[];
   steps: { text: string; timerSeconds: number | null }[];
+  /** The source's guidance in the Member's locale, ready to post (Pairings without ids). */
+  guidance: GuidanceInput;
 };
 
 /** The editable view of a Family Recipe (mirror of the API's `FamilyRecipeEdit`). */
@@ -51,7 +64,7 @@ export type FamilyRecipeEdit = {
   steps: RecipeStep[];
   tips: RecipeTip[];
   parentTips: (RecipeTip & { hidden: boolean })[] | null;
-};
+} & GuidanceInputWithIds;
 
 /** The document a Member saves: each line has an Ingredient or a free-text name. */
 export type FamilyRecipeDocument = {
@@ -72,6 +85,8 @@ export type FamilyRecipeDocument = {
     note: string | null;
   }>;
   steps: Array<{ id?: string; text: string; timerSeconds: number | null }>;
+  /** Only on create: a saved draft brings its guidance along. */
+  guidance?: GuidanceInput;
 };
 
 const localeQuery = (locale: string) => new URLSearchParams({ locale });
@@ -194,4 +209,14 @@ export function useFamilyTipWrites(id: string, locale: string) {
     }),
   );
   return { add, update, remove, reorder, hide };
+}
+
+/** Replace the guidance of the Family's own Recipe (its own save, apart from the document). */
+export function useSetFamilyGuidance(id: string, locale: string) {
+  return useFamilyWrite((input: GuidanceInput) =>
+    apiRequest<FamilyRecipeEdit>(
+      `/recipes/${id}/guidance?${localeQuery(locale)}`,
+      { method: 'PUT', body: input },
+    ),
+  );
 }

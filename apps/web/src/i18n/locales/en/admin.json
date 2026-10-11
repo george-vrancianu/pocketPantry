@@ -301,7 +301,8 @@
         "reason": "Reason for {{name}}",
         "remove": "Remove {{name}}",
         "moveUp": "Move {{name}} up",
-        "moveDown": "Move {{name}} down"
+        "moveDown": "Move {{name}} down",
+        "unknown": "Eating Moment"
       }
     }
   },

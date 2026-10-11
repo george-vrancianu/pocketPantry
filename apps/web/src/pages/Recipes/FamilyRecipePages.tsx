@@ -11,6 +11,8 @@ import {
   useVariantDraft,
 } from '../../lib/familyRecipes';
 import { TipsEditor } from '../Admin/components/RecipeTips';
+import { toGuidanceDraft } from '../Admin/guidanceDraft';
+import { FamilyGuidance, useMomentNames } from './components/FamilyGuidance';
 import { draftOfEdit, draftOfVariantDraft } from './familyDraft';
 import { FamilyRecipeForm } from './components/FamilyRecipeForm';
 
@@ -21,6 +23,7 @@ export function NewVariantPage() {
   const navigate = useNavigate();
   const draft = useVariantDraft(id, i18n.language);
   const create = useCreateFamilyRecipe(i18n.language);
+  const momentOptions = useMomentNames(id);
 
   return (
     <>
@@ -38,9 +41,16 @@ export function NewVariantPage() {
             saveLabel={t('recipes:family.create')}
             saving={create.isPending}
             error={create.error}
-            onSave={(document) =>
+            guidance={{
+              initial: toGuidanceDraft(draft.data.guidance),
+              momentOptions,
+            }}
+            onSave={(document, guidance) =>
               create.mutate(
-                { parentId: draft.data.parentId, document },
+                {
+                  parentId: draft.data.parentId,
+                  document: { ...document, guidance },
+                },
                 { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
               )
             }
@@ -91,6 +101,7 @@ export function EditFamilyRecipePage() {
               onCancel={() => navigate(`/recipes/${id}`)}
             />
             <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
+            <FamilyGuidance recipe={recipe} />
           </>
         ) : null}
         {recipe?.archived ? (

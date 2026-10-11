@@ -314,6 +314,63 @@ describe('RecipeDetailPage', () => {
       expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
     });
 
+    it('renders a Family Recipe with a typed-name line, its Pantry status and the actions', async () => {
+      setup(
+        recipe({
+          id: 'g',
+          owner: 'family',
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: false },
+          lines: [
+            {
+              id: 'l9',
+              ingredientId: null,
+              ingredientName: 'Gran’s herbs',
+              quantity: null,
+              unit: null,
+              optional: false,
+              note: null,
+            },
+          ],
+        }),
+        '/recipes/g',
+        {
+          'GET /api/recipes/g/pantry-match': () =>
+            Response.json({
+              servings: 2,
+              canMake: false,
+              shortOrMissingCount: 1,
+              expiringCoveredCount: 0,
+              coverageRatio: 0,
+              lines: [
+                {
+                  lineId: 'l9',
+                  ingredientId: null,
+                  name: 'Gran’s herbs',
+                  status: 'missing',
+                  optional: false,
+                  pantryBasic: false,
+                  quantity: null,
+                  unit: null,
+                  shortfall: null,
+                  usesExpiringSoon: false,
+                  onShoppingList: false,
+                },
+              ],
+            }),
+        },
+      );
+      const list = await screen.findByRole('list', { name: 'Ingredients' });
+      const row = within(list)
+        .getByText(/Gran’s herbs/)
+        .closest('li')!;
+      expect(await within(row).findByText('Missing')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: 'Make a variant' }),
+      ).toBeInTheDocument();
+    });
+
     it('hides Make a variant on a Family standalone Recipe', async () => {
       setup(recipe({ id: 'g', owner: 'family' }));
       await screen.findByRole('link', { name: 'Edit' });

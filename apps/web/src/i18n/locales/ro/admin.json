@@ -304,7 +304,8 @@
         "reason": "Motivul pentru {{name}}",
         "remove": "Elimină {{name}}",
         "moveUp": "Mută {{name}} mai sus",
-        "moveDown": "Mută {{name}} mai jos"
+        "moveDown": "Mută {{name}} mai jos",
+        "unknown": "Moment de servire"
       }
     }
   },

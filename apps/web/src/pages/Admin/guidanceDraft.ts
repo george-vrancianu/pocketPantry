@@ -1,5 +1,4 @@
 import type {
-  AdminRecipe,
   EatingMomentPolarity,
   GuidanceInput,
   PairingKind,
@@ -21,6 +20,8 @@ export type PairingDraft = {
   /** One link at a time: switching the type clears the target. */
   linkType: LinkType;
   linkTarget: string;
+  /** Name of a just-picked linked Ingredient, to show before saving. */
+  linkName?: string;
 };
 export type EatingMomentDraft = {
   eatingMomentId: string;
@@ -51,7 +52,26 @@ export function emptyPairing(): PairingDraft {
   };
 }
 
-export function toGuidanceDraft(recipe: AdminRecipe): GuidanceDraft {
+/** Anything carrying guidance: a saved Recipe, or a Variant draft (Pairings without ids). */
+type GuidanceSource = {
+  nutritionNote: string | null;
+  pairings: Array<{
+    id?: string;
+    kind: PairingKind;
+    label: string;
+    reason: string;
+    principle: PairingPrinciple | null;
+    linkedIngredientId: string | null;
+    linkedRecipeId: string | null;
+  }>;
+  eatingMoments: Array<{
+    eatingMomentId: string;
+    polarity: EatingMomentPolarity;
+    reason: string | null;
+  }>;
+};
+
+export function toGuidanceDraft(recipe: GuidanceSource): GuidanceDraft {
   return {
     nutritionNote: recipe.nutritionNote ?? '',
     pairings: recipe.pairings.map((p) => ({
