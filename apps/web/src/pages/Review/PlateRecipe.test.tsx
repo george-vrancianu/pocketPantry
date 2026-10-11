@@ -83,12 +83,10 @@ const openPanel = async () => {
   return screen.findByRole('group', { name: 'Base Recipe' });
 };
 
-const savedParent = (calls: ReturnType<typeof stubApi>['calls']) =>
-  (
-    calls.find((c) => c.key === 'POST /api/recipes/from-plate')?.body as {
-      parentId: unknown;
-    }
-  ).parentId;
+const savedParent = (calls: ReturnType<typeof stubApi>['calls']) => {
+  const save = calls.find((c) => c.key === 'POST /api/recipes/from-plate');
+  return (save?.body as { parentId: unknown } | undefined)?.parentId;
+};
 
 afterEach(() => vi.unstubAllGlobals());
 
