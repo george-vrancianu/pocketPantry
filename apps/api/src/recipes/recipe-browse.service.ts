@@ -75,7 +75,7 @@ export class RecipeBrowseService {
     const parentIds = [
       ...new Set(rows.flatMap((r) => (r.parentId ? [r.parentId] : []))),
     ];
-    const parents = await this.rowsById(this.database, parentIds);
+    const parents = await this.rowsById(this.database, parentIds, familyId);
     const live = rows.filter(
       (r) =>
         !r.parentId ||
@@ -248,12 +248,13 @@ export class RecipeBrowseService {
   private async rowsById(
     executor: Executor,
     ids: string[],
+    familyId: string,
   ): Promise<Map<string, RecipeRow>> {
     if (ids.length === 0) return new Map();
     const rows = await executor
       .select()
       .from(recipes)
-      .where(inArray(recipes.id, ids));
+      .where(and(inArray(recipes.id, ids), visibleTo(familyId)));
     return new Map(rows.map((r) => [r.id, r]));
   }
 

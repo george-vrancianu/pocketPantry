@@ -96,4 +96,48 @@ describe('diffIngredients', () => {
       },
     ]);
   });
+
+  it('handles duplicate keys', () => {
+    const result = diffIngredients([line('a'), line('a')], [line('a')]);
+    expect(result.removed.map((e) => e.key)).toEqual(['a']);
+    expect(result.added).toEqual([]);
+    expect(result.swapped).toEqual([]);
+  });
+
+  it('reports every Variant line as added against an empty base', () => {
+    const result = diffIngredients([], [line('a'), line('b')]);
+    expect(result.added.map((e) => e.key)).toEqual(['a', 'b']);
+    expect(result.removed).toEqual([]);
+    expect(result.swapped).toEqual([]);
+  });
+
+  it('reports every base line as removed against an empty Variant', () => {
+    const result = diffIngredients([line('a'), line('b')], []);
+    expect(result.removed.map((e) => e.key)).toEqual(['a', 'b']);
+    expect(result.added).toEqual([]);
+    expect(result.swapped).toEqual([]);
+  });
+
+  it('swaps in order across fully disjoint lists and keeps the leftovers', () => {
+    const result = diffIngredients(
+      [line('a'), line('b'), line('c')],
+      [line('x'), line('y')],
+    );
+    expect(result.swapped.map((s) => [s.from.key, s.to.key])).toEqual([
+      ['a', 'x'],
+      ['b', 'y'],
+    ]);
+    expect(result.removed.map((e) => e.key)).toEqual(['c']);
+    expect(result.added).toEqual([]);
+  });
+
+  it('treats a reorder as a removal and an addition of one line', () => {
+    const result = diffIngredients(
+      [line('a'), line('b')],
+      [line('b'), line('a')],
+    );
+    expect(result.swapped).toEqual([]);
+    expect(result.removed.map((e) => e.key)).toEqual(['a']);
+    expect(result.added.map((e) => e.key)).toEqual(['a']);
+  });
 });

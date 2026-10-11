@@ -10,6 +10,7 @@ import {
   localeQuery,
   recipeParam,
   type BrowseQuery,
+  type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
   type RecipeListItem,
@@ -55,7 +56,7 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Param(new ZodValidationPipe(recipeParam)) params: { id: string },
     @Query(new ZodValidationPipe(localeQuery))
-    query: { locale: BrowseQuery['locale'] },
+    query: LocaleQuery,
   ): Promise<RecipeDetail> {
     return this.browse.detail(member.id, params.id, query.locale);
   }

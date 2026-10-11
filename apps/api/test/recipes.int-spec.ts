@@ -320,6 +320,56 @@ describe('Recipes browsing and detail (integration)', () => {
     });
   });
 
+  describe('Family Variants under a Catalog base', () => {
+    it('shows a Family only its own Variants of a Catalog base', async () => {
+      const b = await base({ title: `CBase ${stamp}` });
+      await admin
+        .put(`/${b.id}/translations/ro`, { title: `CBaza ${stamp}` })
+        .expect(200);
+      await admin.post(`/${b.id}/tips`, { text: 'Catalog tip' }).expect(201);
+      const mine = crypto.randomUUID();
+      const theirs = crypto.randomUUID();
+      await database.insert(recipes).values([
+        {
+          id: mine,
+          parentId: b.id,
+          familyId: familyA,
+          title: `FamMine ${stamp}`,
+          servings: 2,
+        },
+        {
+          id: theirs,
+          parentId: b.id,
+          familyId: familyB,
+          title: `FamTheirs ${stamp}`,
+          servings: 2,
+        },
+      ]);
+
+      const item = (await list()).find((r) => r.id === b.id)!;
+      expect(item.variantCount).toBe(1);
+      const baseDetail = await detail(b.id);
+      expect(baseDetail.variants.map((v) => [v.id, v.owner])).toEqual([
+        [mine, 'family'],
+      ]);
+      const found = await list('search=FamMine');
+      expect(found.map((r) => r.id)).toEqual([mine]);
+      expect(found[0].base).toEqual({ id: b.id, title: b.title });
+      expect(await list('search=FamTheirs')).toEqual([]);
+
+      const d = await detail(mine, '?locale=ro');
+      expect(d.owner).toBe('family');
+      expect(d.base).toEqual({
+        id: b.id,
+        title: `CBaza ${stamp}`,
+        archived: false,
+      });
+      expect(d.tips.map((t) => [t.text, t.inherited])).toEqual([
+        ['Catalog tip', true],
+      ]);
+    });
+  });
+
   describe('detail', () => {
     it('returns a base with its live Variants, and no diff', async () => {
       const b = await base({ cuisineId });

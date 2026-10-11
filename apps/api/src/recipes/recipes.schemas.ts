@@ -151,6 +151,7 @@ export type HiddenTipsBody = z.infer<typeof hiddenTipsBody>;
 export type TranslationsBody = z.infer<typeof translationsBody>;
 export type RecipeListQuery = z.infer<typeof recipeListQuery>;
 export type BrowseQuery = z.infer<typeof browseQuery>;
+export type LocaleQuery = z.infer<typeof localeQuery>;
 
 export type RecipeLineView = {
   id: string;
