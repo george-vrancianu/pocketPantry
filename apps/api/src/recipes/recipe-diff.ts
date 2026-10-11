@@ -56,16 +56,11 @@ export function diffIngredients(
     }
   }
 
-  const result: RecipeDiff = { added: [], removed: [], swapped: [] };
+  const gaps: { removed: DiffLine[]; added: DiffLine[] }[] = [];
   let removed: DiffLine[] = [];
   let added: DiffLine[] = [];
   const flush = () => {
-    const pairs = Math.min(removed.length, added.length);
-    for (let k = 0; k < pairs; k++) {
-      result.swapped.push({ from: removed[k], to: added[k] });
-    }
-    result.removed.push(...removed.slice(pairs));
-    result.added.push(...added.slice(pairs));
+    if (removed.length > 0 || added.length > 0) gaps.push({ removed, added });
     removed = [];
     added = [];
   };
@@ -77,12 +72,46 @@ export function diffIngredients(
       flush();
       i++;
       j++;
-    } else if (j >= m || (i < n && lcs[i + 1][j] >= lcs[i][j + 1])) {
+    } else if (j >= m || (i < n && lcs[i + 1][j] > lcs[i][j + 1])) {
       removed.push(base[i++]);
     } else {
       added.push(variant[j++]);
     }
   }
   flush();
+
+  // A line removed in one gap and added in another is a reorder, not a change:
+  // cancel such pairs one-to-one before pairing what is left.
+  const unmatchedAdded = new Map<string, DiffLine[]>();
+  for (const gap of gaps) {
+    for (const line of gap.added) {
+      unmatchedAdded.set(line.key, [
+        ...(unmatchedAdded.get(line.key) ?? []),
+        line,
+      ]);
+    }
+  }
+  const cancelled = new Set<DiffLine>();
+  for (const gap of gaps) {
+    for (const line of gap.removed) {
+      const twin = unmatchedAdded.get(line.key)?.shift();
+      if (twin) {
+        cancelled.add(line);
+        cancelled.add(twin);
+      }
+    }
+  }
+
+  const result: RecipeDiff = { added: [], removed: [], swapped: [] };
+  for (const gap of gaps) {
+    const out = gap.removed.filter((line) => !cancelled.has(line));
+    const inn = gap.added.filter((line) => !cancelled.has(line));
+    const pairs = Math.min(out.length, inn.length);
+    for (let k = 0; k < pairs; k++) {
+      result.swapped.push({ from: out[k], to: inn[k] });
+    }
+    result.removed.push(...out.slice(pairs));
+    result.added.push(...inn.slice(pairs));
+  }
   return result;
 }

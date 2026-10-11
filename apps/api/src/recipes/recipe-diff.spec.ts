@@ -131,13 +131,31 @@ describe('diffIngredients', () => {
     expect(result.added).toEqual([]);
   });
 
-  it('treats a reorder as a removal and an addition of one line', () => {
+  it('does not report a reorder', () => {
+    expect(
+      diffIngredients([line('a'), line('b')], [line('b'), line('a')]),
+    ).toEqual({ added: [], removed: [], swapped: [] });
+  });
+
+  it('cancels reordered lines one-to-one, counting duplicates', () => {
     const result = diffIngredients(
-      [line('a'), line('b')],
+      [line('a'), line('a'), line('b')],
       [line('b'), line('a')],
     );
-    expect(result.swapped).toEqual([]);
     expect(result.removed.map((e) => e.key)).toEqual(['a']);
-    expect(result.added.map((e) => e.key)).toEqual(['a']);
+    expect(result.added).toEqual([]);
+    expect(result.swapped).toEqual([]);
+  });
+
+  it('swaps what is left after cancelling a reorder', () => {
+    const result = diffIngredients(
+      [line('a'), line('b'), line('c')],
+      [line('c'), line('a'), line('x')],
+    );
+    expect(result.swapped.map((s) => [s.from.key, s.to.key])).toEqual([
+      ['b', 'x'],
+    ]);
+    expect(result.added).toEqual([]);
+    expect(result.removed).toEqual([]);
   });
 });
