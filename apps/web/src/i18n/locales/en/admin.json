@@ -31,7 +31,9 @@
     "empty": "No Ingredients match.",
     "name": "Name (English)",
     "leafCategory": "Leaf Category",
-    "defaultUnit": "Default unit"
+    "defaultUnit": "Default unit",
+    "pantryBasic": "Pantry Basic",
+    "pantryBasicHint": "Recipe matching always counts it as in stock"
   },
   "aisle": {
     "title": "Aisles",

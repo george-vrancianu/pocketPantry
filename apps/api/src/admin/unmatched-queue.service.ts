@@ -20,6 +20,7 @@ import {
   recipeIngredientLines,
   recipes,
   shoppingItems,
+  shoppingItemSourceRecipes,
   shoppingLists,
   shoppingTemplateLines,
   unmatchedEntries,
@@ -518,6 +519,23 @@ export class UnmatchedQueueService {
             checked: twin.checked && row.checked,
           })
           .where(eq(shoppingItems.id, twin.id));
+        // Its Source Recipes move to the twin first, or the delete would
+        // cascade them away.
+        const sources = await tx
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, row.id));
+        if (sources.length > 0) {
+          await tx
+            .insert(shoppingItemSourceRecipes)
+            .values(
+              sources.map(({ recipeId }) => ({
+                shoppingItemId: twin.id,
+                recipeId,
+              })),
+            )
+            .onConflictDoNothing();
+        }
         // Its queue entry goes with it (cascade) and is also deleted by id.
         await tx.delete(shoppingItems).where(eq(shoppingItems.id, row.id));
       } else {

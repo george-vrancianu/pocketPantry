@@ -1,24 +1,72 @@
 import { Box, Link, Stack, Typography } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { DiffEntry, RecipeDetail } from '../../../lib/recipes';
+import type {
+  DiffEntry,
+  PantryMatch,
+  RecipeDetail,
+} from '../../../lib/recipes';
 import { IngredientList, lineAmount } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
+import { LineStatus, PantrySummary } from './PantryStatus';
 import { Section } from './Section';
+import { ServingsStepper } from './Servings';
 import { StepList } from './StepList';
 
-export type SectionProps = { recipe: RecipeDetail };
+export type SectionProps = {
+  recipe: RecipeDetail;
+  /** The Servings picked; the Recipe's own until the Member steps it. */
+  servings: number;
+  onServingsChange: (servings: number) => void;
+  /** The Pantry match at `servings`; undefined until the first answer. */
+  match: PantryMatch | undefined;
+  /** The match shown is not for the Servings picked yet. */
+  stale: boolean;
+  adding: boolean;
+  addError: string | null;
+  onAddMissing: () => void;
+};
 
-function IngredientsSection({ recipe }: SectionProps) {
+function IngredientsSection({
+  recipe,
+  servings,
+  onServingsChange,
+  match,
+  stale,
+  adding,
+  addError,
+  onAddMissing,
+}: SectionProps) {
   const { t } = useTranslation('recipes');
+  const byLine = new Map(match?.lines.map((line) => [line.lineId, line]));
+  // The match carries quantities scaled to its Servings; the Recipe's own are for the first load.
+  const lines = recipe.lines.map((line) => {
+    const scaled = byLine.get(line.id);
+    return scaled
+      ? { ...line, quantity: scaled.quantity, unit: scaled.unit }
+      : line;
+  });
   return (
     <Section title={t('sections.ingredients')}>
-      {/* #157: pass renderLineStatus here for the per-line Pantry status. */}
-      <IngredientList
-        lines={recipe.lines}
-        aria-label={t('sections.ingredients')}
-      />
+      <Stack spacing={1.5}>
+        <ServingsStepper servings={servings} onChange={onServingsChange} />
+        <IngredientList
+          lines={lines}
+          aria-label={t('sections.ingredients')}
+          renderLineStatus={(line) => {
+            const status = byLine.get(line.id);
+            return status ? <LineStatus line={status} /> : null;
+          }}
+        />
+        <PantrySummary
+          match={match}
+          stale={stale}
+          adding={adding}
+          error={addError}
+          onAddMissing={onAddMissing}
+        />
+      </Stack>
     </Section>
   );
 }

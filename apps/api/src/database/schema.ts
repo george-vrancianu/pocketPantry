@@ -239,6 +239,8 @@ export const ingredients = pgTable(
     name: text('name').notNull(),
     normalizedName: text('normalized_name').notNull(),
     defaultUnit: ingredientUnit('default_unit').notNull(),
+    // Water, salt, pepper: Recipe matching always counts them as covered.
+    pantryBasic: boolean('pantry_basic').notNull().default(false),
     ...timestamps,
   },
   (table) => [

@@ -4,6 +4,7 @@ import { eq, ilike, inArray } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
+  batches,
   family,
   ingredients,
   recipeIngredientLines,
@@ -639,6 +640,43 @@ describe('Family Recipes (integration)', () => {
             .expect(409),
         ),
       ).toBe('recipes.tip_order_stale');
+    });
+  });
+
+  describe('Pantry matching', () => {
+    it('matches a Family line saved by name against the Family Pantry only', async () => {
+      const raw = `Zq pantry sumac ${stamp}`;
+      const created = await familyRecipe(a1, null, {
+        lines: [{ rawName: raw, quantity: 1, unit: 'pcs' }, line(0)],
+      });
+      const [{ leaf }] = await database
+        .select({ leaf: ingredients.leafCategoryId })
+        .from(ingredients)
+        .where(eq(ingredients.id, ing[0]));
+      await database.insert(batches).values({
+        familyId: familyA,
+        ingredientId: null,
+        unmatched: true,
+        rawName: ` ${raw.toUpperCase()} `,
+        leafCategoryId: leaf,
+        location: 'fridge',
+        quantity: 2,
+        unit: 'pcs',
+      });
+      const matchFor = async (who: typeof a1) =>
+        who.get(`/${created.id}/pantry-match?today=2026-10-12`);
+      const mine = await matchFor(a2);
+      expect(mine.status).toBe(200);
+      const lines = (
+        mine.body as { lines: { lineId: string; status: string }[] }
+      ).lines;
+      expect(lines.find((l) => l.lineId === created.lines[0].id)?.status).toBe(
+        'covered',
+      );
+      expect((await matchFor(b)).status).toBe(404);
+      await b
+        .post(`/${created.id}/add-missing?locale=en`, { today: '2026-10-12' })
+        .expect(404);
     });
   });
 

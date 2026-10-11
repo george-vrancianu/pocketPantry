@@ -46,6 +46,7 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
       catalog.leafCategories[0]?.id ??
       '',
     defaultUnit: 'g',
+    pantryBasic: false,
   });
   const [locale, setLocale] = useState<Locale>(entry.locale);
   // Off unless chosen: a generic printed word would match every such line, skipping the confidence threshold.

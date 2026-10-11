@@ -10,6 +10,7 @@ import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
+import { addDays } from '../common/dates';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import {
@@ -33,12 +34,6 @@ type BatchRow = typeof batches.$inferSelect;
 type Leaf = typeof leafCategories.$inferSelect;
 type Parent = typeof parentCategories.$inferSelect;
 type Target = { ingredientId: string | null; leaf: Leaf; parent: Parent };
-
-/** `from` is a YYYY-MM-DD date; the result is that date plus `days`. */
-function addDays(from: string, days: number): string {
-  const result = new Date(Date.parse(`${from}T00:00:00Z`) + days * 86_400_000);
-  return result.toISOString().slice(0, 10);
-}
 
 @Injectable()
 export class PantryService {

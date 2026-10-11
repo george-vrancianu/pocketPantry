@@ -13,10 +13,14 @@ import {
   leafCategories,
   parentCategories,
   shoppingItems,
+  shoppingItemSourceRecipes,
   shoppingLists,
   user,
 } from '../database/schema';
-import { recordUnmatched } from '../unmatched/unmatched-entries';
+import {
+  recordUnmatched,
+  type UnmatchedSource,
+} from '../unmatched/unmatched-entries';
 import type {
   AddShoppingItemBody,
   ShoppingGroupView,
@@ -38,6 +42,11 @@ export function sumQuantities(
   if (added === null) return existing;
   return Math.round((existing + added) * 1000) / 1000;
 }
+
+/** An item to merge; the server may claim any Unmatched source, a client only `SHOPPING_ITEM_SOURCES`. */
+export type MergeItemInput = Omit<AddShoppingItemBody, 'source'> & {
+  source?: UnmatchedSource;
+};
 
 const itemNotFound = () => new ApiException(404, 'shopping.item_not_found');
 
@@ -75,12 +84,37 @@ export class ShoppingService {
     });
   }
 
+  /**
+   * Adds Shopping Items for a Recipe (add missing), merging as for any add,
+   * and records the Recipe as a Source Recipe of each target item, whether
+   * merged into or newly inserted. All in one transaction under the list lock.
+   */
+  async addItemsFromRecipe(
+    memberId: string,
+    recipeId: string,
+    bodies: MergeItemInput[],
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    return this.database.transaction(async (tx) => {
+      const listId = await this.lockActiveList(tx, memberId);
+      for (const body of bodies) {
+        const itemId = await this.mergeItem(tx, listId, body, locale);
+        await tx
+          .insert(shoppingItemSourceRecipes)
+          .values({ shoppingItemId: itemId, recipeId })
+          .onConflictDoNothing();
+      }
+      return this.view(tx, listId, locale);
+    });
+  }
+
+  /** Merges or inserts the item and returns the id of the Shopping Item it ended up on. */
   private async mergeItem(
     tx: Tx,
     listId: string,
-    body: AddShoppingItemBody,
+    body: MergeItemInput,
     locale: CatalogLocale,
-  ): Promise<void> {
+  ): Promise<string> {
     const unit = body.unit ?? null;
     const quantity = body.quantity ?? null;
     let identity;
@@ -137,28 +171,30 @@ export class ShoppingService {
           checked: false,
         })
         .where(eq(shoppingItems.id, existing.id));
-    } else {
-      const [inserted] = await tx
-        .insert(shoppingItems)
-        .values({
-          listId,
-          ...insertValues,
-          quantity: quantity === null ? null : String(quantity),
-          unit,
-        })
-        .returning({ id: shoppingItems.id });
-      // Only newly inserted Unmatched names are queued; merges add no entry.
-      if ('name' in insertValues) {
-        await recordUnmatched(tx, [
-          {
-            rawName: insertValues.name,
-            locale,
-            source: body.source ?? 'manual',
-            shoppingItemId: inserted.id,
-          },
-        ]);
-      }
+      return existing.id;
     }
+
+    const [inserted] = await tx
+      .insert(shoppingItems)
+      .values({
+        listId,
+        ...insertValues,
+        quantity: quantity === null ? null : String(quantity),
+        unit,
+      })
+      .returning({ id: shoppingItems.id });
+    // Only newly inserted Unmatched names are queued; merges add no entry.
+    if ('name' in insertValues) {
+      await recordUnmatched(tx, [
+        {
+          rawName: insertValues.name,
+          locale,
+          source: body.source ?? 'manual',
+          shoppingItemId: inserted.id,
+        },
+      ]);
+    }
+    return inserted.id;
   }
 
   /** Ids of unchecked Shopping Items on the Family's active list for any of these Ingredients. */
