@@ -75,7 +75,7 @@ describe('Recipe Pantry matching (integration)', () => {
   const butter = seedId.ingredient('butter');
   const milk = seedId.ingredient('milk');
   const parmesan = seedId.ingredient('parmesan');
-  let buttermilk: string;
+  let pantryBasicId: string;
   const carrot = seedId.ingredient('carrot');
 
   async function makeRecipe(
@@ -161,14 +161,14 @@ describe('Recipe Pantry matching (integration)', () => {
       .from(user)
       .where(eq(user.email, benEmail));
     // A stamped Pantry Basic of our own, so no seed Ingredient is touched.
-    buttermilk = crypto.randomUUID();
+    pantryBasicId = crypto.randomUUID();
     const [sample] = await database
       .select()
       .from(ingredients)
       .where(eq(ingredients.id, milk));
     await database.insert(ingredients).values({
       ...sample,
-      id: buttermilk,
+      id: pantryBasicId,
       name: `Pantry Basic ${stamp}`,
       normalizedName: `pantry basic ${stamp}`,
       pantryBasic: true,
@@ -177,7 +177,7 @@ describe('Recipe Pantry matching (integration)', () => {
 
   afterAll(async () => {
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
-    await database.delete(ingredients).where(eq(ingredients.id, buttermilk));
+    await database.delete(ingredients).where(eq(ingredients.id, pantryBasicId));
     await app.close();
   });
 
@@ -249,7 +249,7 @@ describe('Recipe Pantry matching (integration)', () => {
 
     it('treats Pantry Basics as covered and optional lines as outside the score', async () => {
       const r = await makeRecipe([
-        { ingredientId: buttermilk, quantity: 1, unit: 'l' },
+        { ingredientId: pantryBasicId, quantity: 1, unit: 'l' },
         { ingredientId: carrot, quantity: 2, unit: 'pcs', optional: true },
       ]);
       const match = await matchOf(ana, r.id);
@@ -428,7 +428,7 @@ describe('Recipe Pantry matching (integration)', () => {
         { ingredientId: milk, quantity: 500, unit: 'ml' }, // missing
         { ingredientId: parmesan }, // missing, no quantity
         { ingredientId: butter, quantity: 50, unit: 'g' }, // covered
-        { ingredientId: buttermilk, quantity: 1, unit: 'l' }, // Pantry Basic
+        { ingredientId: pantryBasicId, quantity: 1, unit: 'l' }, // Pantry Basic
         { ingredientId: carrot, quantity: 2, unit: 'pcs', optional: true },
       ]);
       await stock(m.familyId, feta, { quantity: 50, unit: 'g' });
@@ -456,7 +456,7 @@ describe('Recipe Pantry matching (integration)', () => {
       await m.add(r.id, { today, servings: 6 }).expect(200);
       expect(summary(await m.items())).toEqual([['Milk', 750, 'ml']]);
 
-      const done = await makeRecipe([{ ingredientId: buttermilk }]);
+      const done = await makeRecipe([{ ingredientId: pantryBasicId }]);
       const before = await m.items();
       await m.add(done.id).expect(200);
       expect(await m.items()).toEqual(before);

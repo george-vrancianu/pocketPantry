@@ -84,8 +84,11 @@ export type StockIndex = {
 export function indexStock(stock: readonly MatchBatch[]): StockIndex {
   const byIngredient = new Map<string, MatchBatch[]>();
   const byName = new Map<string, MatchBatch[]>();
-  const push = (map: Map<string, MatchBatch[]>, key: string, b: MatchBatch) =>
-    map.set(key, [...(map.get(key) ?? []), b]);
+  const push = (map: Map<string, MatchBatch[]>, key: string, b: MatchBatch) => {
+    const batches = map.get(key) ?? [];
+    batches.push(b);
+    map.set(key, batches);
+  };
   for (const batch of stock) {
     if (batch.ingredientId !== null) {
       push(byIngredient, batch.ingredientId, batch);
