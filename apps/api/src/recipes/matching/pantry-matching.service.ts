@@ -13,6 +13,7 @@ import { SettingsService } from '../../settings/settings.service';
 import { recipeNotFound } from '../recipe-errors';
 import { isExpiringSoon } from './batch-freshness';
 import {
+  indexStock,
   matchRecipe,
   type MatchBatch,
   type MatchLine,
@@ -42,9 +43,10 @@ export class PantryMatchingService {
   ) {}
 
   /**
-   * One match per requested Recipe, keyed by Recipe id. A Recipe that is not a
-   * Catalog Recipe or one of the Family's own (or does not exist) fails the
-   * whole call with `recipes.not_found`: callers choose the ids to ask for.
+   * One match per requested Recipe, keyed by Recipe id. Ids the Family cannot
+   * see are left out of the map, not an error: only Catalog Recipes and the
+   * Family's own are visible. Archived Recipes still match (they open by id);
+   * leaving them out of a candidate list (Cook Tonight) is the caller's job.
    */
   async matchRecipes(
     familyId: string,
@@ -64,14 +66,15 @@ export class PantryMatchingService {
           or(isNull(recipes.familyId), eq(recipes.familyId, familyId)),
         ),
       );
-    if (recipeRows.length !== ids.length) throw recipeNotFound();
+    if (recipeRows.length === 0) return result;
+    const visibleIds = recipeRows.map((row) => row.id);
 
     const lineRows = await this.database
       .select({
         id: recipeIngredientLines.id,
         recipeId: recipeIngredientLines.recipeId,
         ingredientId: recipeIngredientLines.ingredientId,
-        normalizedName: recipeIngredientLines.normalizedName,
+        name: recipeIngredientLines.rawName,
         quantity: recipeIngredientLines.quantity,
         unit: recipeIngredientLines.unit,
         optional: recipeIngredientLines.optional,
@@ -82,7 +85,7 @@ export class PantryMatchingService {
         ingredients,
         eq(ingredients.id, recipeIngredientLines.ingredientId),
       )
-      .where(inArray(recipeIngredientLines.recipeId, ids))
+      .where(inArray(recipeIngredientLines.recipeId, visibleIds))
       .orderBy(recipeIngredientLines.position);
     const linesOf = new Map<string, MatchLine[]>();
     for (const row of lineRows) {
@@ -90,7 +93,7 @@ export class PantryMatchingService {
       list.push({
         id: row.id,
         ingredientId: row.ingredientId,
-        normalizedName: row.normalizedName,
+        name: row.name,
         quantity: row.quantity,
         unit: row.unit,
         optional: row.optional,
@@ -99,7 +102,7 @@ export class PantryMatchingService {
       linesOf.set(row.recipeId, list);
     }
 
-    const stock = await this.stockOf(familyId, options.today);
+    const stock = indexStock(await this.stockOf(familyId, options.today));
     for (const recipe of recipeRows) {
       const requested = options.servings ?? recipe.servings;
       result.set(recipe.id, {
@@ -115,7 +118,7 @@ export class PantryMatchingService {
     return result;
   }
 
-  /** `matchRecipes` for one Recipe. */
+  /** `matchRecipes` for one Recipe; `recipes.not_found` when the Family cannot see it. */
   async matchRecipeFor(
     familyId: string,
     recipeId: string,
@@ -145,7 +148,7 @@ export class PantryMatchingService {
       .where(and(eq(batches.familyId, familyId), unexpiredBatch(today)));
     return rows.map((row) => ({
       ingredientId: row.ingredientId,
-      normalizedName: row.rawName,
+      name: row.rawName,
       quantity: row.quantity,
       unit: row.unit,
       expiringSoon: isExpiringSoon(row.expiryDate, today, threshold),

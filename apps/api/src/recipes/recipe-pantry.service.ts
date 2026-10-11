@@ -1,16 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
+import { Inject, Injectable } from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import {
-  recipeIngredientLines,
-  shoppingItems,
-  shoppingLists,
-} from '../database/schema';
+import { shoppingItems, shoppingLists } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
 import type { ShoppingListView } from '../shopping/shopping.schemas';
@@ -46,15 +42,12 @@ export class RecipePantryService {
       today: query.today ?? utcToday(),
       servings: query.servings,
     });
-    const lines = await this.linesOf(recipeId);
     const onList = await this.onShoppingList(familyId);
     const lineViews: PantryLineView[] = match.lines.map((line) => {
-      const source = lines.get(line.lineId);
       const listed =
-        source?.ingredientId != null
-          ? onList.ingredientIds.has(source.ingredientId)
-          : source?.normalizedName != null &&
-            onList.names.has(normalizeName(source.normalizedName));
+        line.ingredientId !== null
+          ? onList.ingredientIds.has(line.ingredientId)
+          : line.name !== null && onList.names.has(normalizeName(line.name));
       return { ...line, onShoppingList: listed };
     });
     return { ...match, lines: lineViews };
@@ -65,6 +58,9 @@ export class RecipePantryService {
    * the shortfall of a short line, the whole quantity of a missing line, a
    * quantity-less item for a quantity-less line. Pantry Basics, optional and
    * covered lines are skipped. Returns the updated Shopping List.
+   *
+   * The match is computed before the list lock is taken, so a double submit
+   * adds twice (the web app disables the button while the request is pending).
    */
   async addMissing(
     memberId: string,
@@ -77,11 +73,8 @@ export class RecipePantryService {
       today: body.today ?? utcToday(),
       servings: body.servings,
     });
-    const lines = await this.linesOf(recipeId);
     const items: MergeItemInput[] = [];
     for (const line of match.lines) {
-      const source = lines.get(line.lineId);
-      if (!source) continue;
       if (line.optional || line.pantryBasic || line.status === 'covered') {
         continue;
       }
@@ -96,27 +89,13 @@ export class RecipePantryService {
         throw new ApiException(400, 'shopping.quantity_too_large');
       }
       items.push({
-        ...(source.ingredientId !== null
-          ? { ingredientId: source.ingredientId }
-          : { name: source.rawName ?? '', source: 'recipe' as const }),
+        ...(line.ingredientId !== null
+          ? { ingredientId: line.ingredientId }
+          : { name: line.name ?? '', source: 'recipe' as const }),
         ...(amount ?? {}),
       });
     }
     return this.shopping.addItemsFromRecipe(memberId, recipeId, items, locale);
-  }
-
-  private async linesOf(recipeId: string) {
-    const rows = await this.database
-      .select({
-        id: recipeIngredientLines.id,
-        ingredientId: recipeIngredientLines.ingredientId,
-        rawName: recipeIngredientLines.rawName,
-        normalizedName: recipeIngredientLines.normalizedName,
-      })
-      .from(recipeIngredientLines)
-      .where(eq(recipeIngredientLines.recipeId, recipeId))
-      .orderBy(asc(recipeIngredientLines.position));
-    return new Map(rows.map((row) => [row.id, row]));
   }
 
   /** The Family's unchecked Shopping Items, by Ingredient and by Unmatched name. No list is created. */

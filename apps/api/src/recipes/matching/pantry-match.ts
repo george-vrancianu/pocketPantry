@@ -17,8 +17,8 @@ export type MatchLine = {
   id: string;
   /** Null for an Unmatched line on a Family Recipe. */
   ingredientId: string | null;
-  /** The Unmatched line's name; normalised here, so raw text works too. */
-  normalizedName: string | null;
+  /** The Unmatched line's name as typed (normalised inside the matcher). */
+  name: string | null;
   quantity: number | null;
   unit: Unit | null;
   optional: boolean;
@@ -32,8 +32,8 @@ export type MatchLine = {
  */
 export type MatchBatch = {
   ingredientId: string | null;
-  /** The Unmatched Batch's name; normalised here. */
-  normalizedName: string | null;
+  /** The Unmatched Batch's name as typed (normalised when indexed). */
+  name: string | null;
   quantity: number | null;
   unit: Unit | null;
   expiringSoon: boolean;
@@ -43,6 +43,10 @@ export type LineStatus = 'covered' | 'short' | 'missing';
 
 export type LineMatch = {
   lineId: string;
+  /** The line's identity, copied from the input: the Ingredient, or null for an Unmatched line. */
+  ingredientId: string | null;
+  /** The Unmatched line's name as typed; null for a matched line. */
+  name: string | null;
   status: LineStatus;
   optional: boolean;
   pantryBasic: boolean;
@@ -67,12 +71,38 @@ export type RecipeMatch = {
   coverageRatio: number;
 };
 
+/** A Family's stock indexed by Ingredient and by normalised Unmatched name. */
+export type StockIndex = {
+  byIngredient: Map<string, MatchBatch[]>;
+  byName: Map<string, MatchBatch[]>;
+};
+
+/**
+ * Indexes the Family's Batches once, so matching many Recipes does not rescan
+ * them per line. Unmatched Batch names are normalised here.
+ */
+export function indexStock(stock: readonly MatchBatch[]): StockIndex {
+  const byIngredient = new Map<string, MatchBatch[]>();
+  const byName = new Map<string, MatchBatch[]>();
+  const push = (map: Map<string, MatchBatch[]>, key: string, b: MatchBatch) =>
+    map.set(key, [...(map.get(key) ?? []), b]);
+  for (const batch of stock) {
+    if (batch.ingredientId !== null) {
+      push(byIngredient, batch.ingredientId, batch);
+    } else if (batch.name !== null) {
+      push(byName, normalizeName(batch.name), batch);
+    }
+  }
+  return { byIngredient, byName };
+}
+
 export type MatchInput = {
   lines: MatchLine[];
   recipeServings: number;
   /** Defaults to the Recipe's own Servings. */
   requestedServings?: number;
-  stock: MatchBatch[];
+  /** Batches, or an index built once with `indexStock` and shared across Recipes. */
+  stock: readonly MatchBatch[] | StockIndex;
 };
 
 /** Numeric columns hold three decimals; keep scaled amounts there. */
@@ -83,23 +113,17 @@ const scale = (value: number) => Math.max(round(value), 0.001);
 const roundUp = (value: number) => Math.ceil(value * 1000 - 1e-9) / 1000;
 const EPSILON = 1e-9;
 
-function stockFor(line: MatchLine, stock: MatchBatch[]): MatchBatch[] {
+function stockFor(line: MatchLine, stock: StockIndex): MatchBatch[] {
   if (line.ingredientId !== null) {
-    return stock.filter((batch) => batch.ingredientId === line.ingredientId);
+    return stock.byIngredient.get(line.ingredientId) ?? [];
   }
-  if (line.normalizedName === null) return [];
-  const key = normalizeName(line.normalizedName);
-  return stock.filter(
-    (batch) =>
-      batch.ingredientId === null &&
-      batch.normalizedName !== null &&
-      normalizeName(batch.normalizedName) === key,
-  );
+  if (line.name === null) return [];
+  return stock.byName.get(normalizeName(line.name)) ?? [];
 }
 
 function matchLine(
   line: MatchLine,
-  stock: MatchBatch[],
+  stock: StockIndex,
   factor: number,
 ): LineMatch {
   const quantity =
@@ -110,6 +134,8 @@ function matchLine(
         : 0;
   const result: LineMatch = {
     lineId: line.id,
+    ingredientId: line.ingredientId,
+    name: line.name,
     status: 'covered',
     optional: line.optional,
     pantryBasic: line.pantryBasic,
@@ -155,7 +181,10 @@ function matchLine(
 export function matchRecipe(input: MatchInput): RecipeMatch {
   const { recipeServings, requestedServings = recipeServings } = input;
   const factor = recipeServings > 0 ? requestedServings / recipeServings : 1;
-  const lines = input.lines.map((line) => matchLine(line, input.stock, factor));
+  const stock = Array.isArray(input.stock)
+    ? indexStock(input.stock)
+    : (input.stock as StockIndex);
+  const lines = input.lines.map((line) => matchLine(line, stock, factor));
 
   const required = lines.filter((line) => !line.optional);
   const covered = required.filter((line) => line.status === 'covered');

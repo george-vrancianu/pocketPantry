@@ -12,6 +12,7 @@ import {
   shoppingItemSourceRecipes,
   user,
 } from '../src/database/schema';
+import { PantryMatchingService } from '../src/recipes/matching/pantry-matching.service';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -74,7 +75,7 @@ describe('Recipe Pantry matching (integration)', () => {
   const butter = seedId.ingredient('butter');
   const milk = seedId.ingredient('milk');
   const parmesan = seedId.ingredient('parmesan');
-  const buttermilk = seedId.ingredient('buttermilk');
+  let buttermilk: string;
   const carrot = seedId.ingredient('carrot');
 
   async function makeRecipe(
@@ -159,18 +160,24 @@ describe('Recipe Pantry matching (integration)', () => {
       .select({ familyId: user.familyId })
       .from(user)
       .where(eq(user.email, benEmail));
-    await database
-      .update(ingredients)
-      .set({ pantryBasic: true })
-      .where(eq(ingredients.id, buttermilk));
+    // A stamped Pantry Basic of our own, so no seed Ingredient is touched.
+    buttermilk = crypto.randomUUID();
+    const [sample] = await database
+      .select()
+      .from(ingredients)
+      .where(eq(ingredients.id, milk));
+    await database.insert(ingredients).values({
+      ...sample,
+      id: buttermilk,
+      name: `Pantry Basic ${stamp}`,
+      normalizedName: `pantry basic ${stamp}`,
+      pantryBasic: true,
+    });
   });
 
   afterAll(async () => {
-    await database
-      .update(ingredients)
-      .set({ pantryBasic: false })
-      .where(eq(ingredients.id, buttermilk));
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
+    await database.delete(ingredients).where(eq(ingredients.id, buttermilk));
     await app.close();
   });
 
@@ -328,6 +335,37 @@ describe('Recipe Pantry matching (integration)', () => {
         `/${crypto.randomUUID()}/pantry-match?today=${today}`,
       );
       expect(code(missing)).toBe('recipes.not_found');
+    });
+
+    it('still matches an archived Recipe, which opens by id', async () => {
+      const r = await makeRecipe([{ ingredientId: butter }]);
+      await database
+        .update(recipes)
+        .set({ archivedAt: new Date() })
+        .where(eq(recipes.id, r.id));
+      const match = await matchOf(ana, r.id);
+      expect(match.lines).toHaveLength(1);
+      await ana.post(`/${r.id}/add-missing?locale=en`, { today }).expect(200);
+    });
+
+    it('matches many Recipes at once and leaves out the ones the Family cannot see or that do not exist', async () => {
+      const service = app.get(PantryMatchingService);
+      const visible = await makeRecipe([{ ingredientId: butter }]);
+      const own = await makeRecipe([{ ingredientId: butter }], {
+        familyId: anaFamily,
+      });
+      const foreign = await makeRecipe([{ ingredientId: butter }], {
+        familyId: benFamily,
+      });
+      const ids = [visible.id, own.id, foreign.id, crypto.randomUUID()];
+      const found = await service.matchRecipes(anaFamily, ids, { today });
+      expect([...found.keys()].sort()).toEqual([visible.id, own.id].sort());
+      await expect(
+        service.matchRecipeFor(anaFamily, foreign.id, { today }),
+      ).rejects.toMatchObject({ response: { code: 'recipes.not_found' } });
+      expect(await service.matchRecipes(anaFamily, [], { today })).toEqual(
+        new Map(),
+      );
     });
 
     it('validates the query and requires a Member', async () => {

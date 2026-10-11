@@ -12,6 +12,7 @@ import {
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
+import { addDays } from '../common/dates';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -35,11 +36,6 @@ import type {
 
 const FALLBACK_LOCATION = 'cupboard' as const;
 const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
-
-function addDays(from: string, days: number): string {
-  const result = new Date(Date.parse(`${from}T00:00:00Z`) + days * 86_400_000);
-  return result.toISOString().slice(0, 10);
-}
 
 type CheckedRow = {
   id: string;

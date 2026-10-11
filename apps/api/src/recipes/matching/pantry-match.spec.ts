@@ -1,5 +1,6 @@
 import {
   compareRecipeMatches,
+  indexStock,
   matchRecipe,
   rankRecipeMatches,
   type MatchBatch,
@@ -16,7 +17,7 @@ let lineCount = 0;
 const line = (over: Partial<MatchLine> = {}): MatchLine => ({
   id: `line-${++lineCount}`,
   ingredientId: FLOUR,
-  normalizedName: null,
+  name: null,
   quantity: 100,
   unit: 'g',
   optional: false,
@@ -25,7 +26,7 @@ const line = (over: Partial<MatchLine> = {}): MatchLine => ({
 });
 const batch = (over: Partial<MatchBatch> = {}): MatchBatch => ({
   ingredientId: FLOUR,
-  normalizedName: null,
+  name: null,
   quantity: 100,
   unit: 'g',
   expiringSoon: false,
@@ -210,8 +211,8 @@ describe('matchRecipe edge cases', () => {
   it('is missing for an Unmatched line with no name', () => {
     expect(
       statusOf(
-        [line({ ingredientId: null, normalizedName: null })],
-        [batch({ ingredientId: null, normalizedName: null })],
+        [line({ ingredientId: null, name: null })],
+        [batch({ ingredientId: null, name: null })],
       ),
     ).toBe('missing');
   });
@@ -276,13 +277,13 @@ describe('matchRecipe Pantry Basics and optional lines', () => {
 
 describe('matchRecipe Unmatched lines', () => {
   const unmatchedLine = (name: string, over: Partial<MatchLine> = {}) =>
-    line({ ingredientId: null, normalizedName: name, ...over });
+    line({ ingredientId: null, name: name, ...over });
 
   it('matches an Unmatched Batch with the same normalised name', () => {
     expect(
       statusOf(
         [unmatchedLine('branza de vaci')],
-        [batch({ ingredientId: null, normalizedName: 'Brânză  de vaci!' })],
+        [batch({ ingredientId: null, name: 'Brânză  de vaci!' })],
       ),
     ).toBe('covered');
   });
@@ -291,7 +292,7 @@ describe('matchRecipe Unmatched lines', () => {
     expect(
       statusOf(
         [unmatchedLine('branza de vaci')],
-        [batch({ ingredientId: null, normalizedName: 'smantana' })],
+        [batch({ ingredientId: null, name: 'smantana' })],
       ),
     ).toBe('missing');
   });
@@ -300,7 +301,7 @@ describe('matchRecipe Unmatched lines', () => {
     expect(
       statusOf(
         [unmatchedLine('flour')],
-        [batch({ ingredientId: FLOUR, normalizedName: 'flour' })],
+        [batch({ ingredientId: FLOUR, name: 'flour' })],
       ),
     ).toBe('missing');
   });
@@ -308,8 +309,8 @@ describe('matchRecipe Unmatched lines', () => {
   it('does not match an Unmatched Batch to a catalogued line', () => {
     expect(
       statusOf(
-        [line({ ingredientId: FLOUR, normalizedName: 'flour' })],
-        [batch({ ingredientId: null, normalizedName: 'flour' })],
+        [line({ ingredientId: FLOUR, name: 'flour' })],
+        [batch({ ingredientId: null, name: 'flour' })],
       ),
     ).toBe('missing');
   });
@@ -321,7 +322,7 @@ describe('matchRecipe Unmatched lines', () => {
         [
           batch({
             ingredientId: null,
-            normalizedName: 'zacusca',
+            name: 'zacusca',
             quantity: 100,
           }),
         ],
@@ -504,5 +505,43 @@ describe('ranking', () => {
       'twoShort',
     ]);
     expect(items[0].name).toBe('ratioLow');
+  });
+});
+
+describe('line identity and a prebuilt stock index', () => {
+  it('copies the line Ingredient and Unmatched name onto its match', () => {
+    const result = match(
+      [
+        line({ id: 'a', ingredientId: FLOUR }),
+        line({ id: 'b', ingredientId: null, name: 'Zacusca' }),
+      ],
+      [],
+    );
+    expect(result.lines.map((l) => [l.lineId, l.ingredientId, l.name])).toEqual(
+      [
+        ['a', FLOUR, null],
+        ['b', null, 'Zacusca'],
+      ],
+    );
+  });
+
+  it('gives the same result from an index built once as from the Batches', () => {
+    const lines = [
+      line({ ingredientId: FLOUR, quantity: 300 }),
+      line({ ingredientId: null, name: 'zacusca', quantity: null, unit: null }),
+    ];
+    const stock = [
+      batch({ quantity: 100 }),
+      batch({ quantity: 100 }),
+      batch({ ingredientId: null, name: ' Zacusca ', quantity: null }),
+    ];
+    const index = indexStock(stock);
+    expect(matchRecipe({ lines, stock: index, recipeServings: 4 })).toEqual(
+      matchRecipe({ lines, stock, recipeServings: 4 }),
+    );
+    // Reusable across Recipes.
+    expect(
+      matchRecipe({ lines, stock: index, recipeServings: 4 }).lines[0].status,
+    ).toBe('short');
   });
 });

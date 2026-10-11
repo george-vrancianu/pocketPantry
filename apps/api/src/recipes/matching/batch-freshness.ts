@@ -1,3 +1,5 @@
+import { addDays } from '../../common/dates';
+
 /**
  * Batch freshness against a Member's `today`, as ISO `YYYY-MM-DD` strings.
  * The caller uses these to drop expired Batches before matching and to flag
@@ -16,7 +18,5 @@ export function isExpiringSoon(
   staleThresholdDays: number,
 ): boolean {
   if (expiryDate === null || !isUnexpired(expiryDate, today)) return false;
-  const limit = new Date(`${today}T00:00:00Z`);
-  limit.setUTCDate(limit.getUTCDate() + staleThresholdDays);
-  return expiryDate <= limit.toISOString().slice(0, 10);
+  return expiryDate <= addDays(today, staleThresholdDays);
 }
