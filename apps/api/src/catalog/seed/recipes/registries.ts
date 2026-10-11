@@ -20,6 +20,12 @@ export const SEED_CUISINES: SeedNamed[] = [
   ),
   named('asian', 'Asian', 'Asiatică', 'Asiatisk'),
   named('romanian', 'Romanian', 'Românească', 'Rumænsk'),
+  named('french', 'French', 'Franțuzească', 'Fransk'),
+  named('japanese', 'Japanese', 'Japoneză', 'Japansk'),
+  named('greek', 'Greek', 'Grecească', 'Græsk'),
+  named('italian', 'Italian', 'Italiană', 'Italiensk'),
+  named('spanish', 'Spanish', 'Spaniolă', 'Spansk'),
+  named('scandinavian', 'Scandinavian', 'Scandinavă', 'Skandinavisk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [
