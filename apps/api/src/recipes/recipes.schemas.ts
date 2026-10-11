@@ -314,7 +314,12 @@ export type RecipeDetail = ResolvedRecipe & {
   diff: RecipeDiff | null;
 };
 
-export type RecipeFilters = { cuisines: NamedRef[]; methods: NamedRef[] };
+export type RecipeFilters = {
+  cuisines: NamedRef[];
+  methods: NamedRef[];
+  /** Live Eating Moments in sort order. They feed the guidance editor's picker, not a browsing filter. */
+  eatingMoments: NamedRef[];
+};
 
 /** What `createIn` takes: the create body without the transport-level locale default. */
 export type FamilyRecipeDocument = Omit<FamilyRecipeCreate, 'locale'>;
@@ -326,8 +331,13 @@ export type FamilyRecipeDocument = Omit<FamilyRecipeCreate, 'locale'>;
  */
 export type FamilyRecipeEdit = Omit<
   AdminRecipeDetail,
-  'translations' | 'lines'
+  'translations' | 'lines' | 'pairings'
 > & {
+  /** Pairings with display names for their links: null without a link, or when the Recipe is archived or not visible. */
+  pairings: (AdminGuidance['pairings'][number] & {
+    linkedIngredientName: string | null;
+    linkedRecipeTitle: string | null;
+  })[];
   lines: (RecipeLineView & {
     rawName: string | null;
     ingredientName: string;

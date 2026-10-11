@@ -18,6 +18,7 @@ import type {
   FamilyRecipeDraft,
   FamilyRecipeEdit,
   RecipeDetail,
+  RecipeFilters,
   RecipeListItem,
 } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
@@ -144,7 +145,7 @@ describe('Family Recipes (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
-    await database.delete(eatingMoments).where(eq(eatingMoments.id, momentId));
+    await database.delete(eatingMoments).where(ilike(eatingMoments.name, like));
     await app.close();
   });
 
@@ -827,6 +828,169 @@ describe('Family Recipes (integration)', () => {
       await admin.put(`/${created.id}/guidance`, body).expect(404);
       const base = await catalogBase();
       await a1.put(`/${base.id}/guidance`, body).expect(404);
+    });
+  });
+
+  describe('guidance extras', () => {
+    const emptyDoc = { lines: [], steps: [], locale: 'en' };
+
+    it('offers live Eating Moments to Members, in sort order', async () => {
+      const archivedId = crypto.randomUUID();
+      await database.insert(eatingMoments).values({
+        id: archivedId,
+        name: `Gone ${stamp}`,
+        normalizedName: `gone ${stamp}`,
+        sortOrder: 1001,
+        archivedAt: new Date(),
+      });
+      const filters = (await a1.get('/filters').expect(200))
+        .body as RecipeFilters;
+      const ids = filters.eatingMoments.map((m) => m.id);
+      expect(ids).toContain(momentId);
+      expect(ids).not.toContain(archivedId);
+      expect(filters.eatingMoments.find((m) => m.id === momentId)?.name).toBe(
+        `Moment ${stamp}`,
+      );
+      await database
+        .delete(eatingMoments)
+        .where(eq(eatingMoments.id, archivedId));
+    });
+
+    it('names the links of Pairings in the edit view, null when archived', async () => {
+      const target = await familyRecipe(a1, null);
+      const linked = await familyRecipe(a1, null);
+      const view = (
+        await a1
+          .put(`/${target.id}/guidance?locale=en`, {
+            nutritionNote: null,
+            eatingMoments: [],
+            pairings: [
+              {
+                kind: 'food',
+                label: 'A',
+                reason: 'r',
+                linkedIngredientId: ing[0],
+              },
+              {
+                kind: 'food',
+                label: 'B',
+                reason: 'r',
+                linkedRecipeId: linked.id,
+              },
+              { kind: 'food', label: 'C', reason: 'r' },
+            ],
+          })
+          .expect(200)
+      ).body as FamilyRecipeEdit;
+      expect(view.pairings[0].linkedIngredientName).toBeTruthy();
+      expect(view.pairings[1]).toMatchObject({
+        linkedRecipeTitle: linked.title,
+      });
+      expect(view.pairings[2]).toMatchObject({
+        linkedIngredientName: null,
+        linkedRecipeTitle: null,
+      });
+      await a1.post(`/${linked.id}/archive`).expect(200);
+      const after = (await a1.get(`/${target.id}/edit`).expect(200))
+        .body as FamilyRecipeEdit;
+      expect(after.pairings[1]).toMatchObject({
+        linkedRecipeId: linked.id,
+        linkedRecipeTitle: null,
+      });
+    });
+
+    it('drops archived links and Eating Moments from the draft, keeping labels', async () => {
+      const base = await catalogBase();
+      const linked = await catalogBase();
+      const archivedMoment = crypto.randomUUID();
+      await database.insert(eatingMoments).values({
+        id: archivedMoment,
+        name: `Old ${stamp}`,
+        normalizedName: `old ${stamp}`,
+        sortOrder: 1002,
+      });
+      await admin
+        .put(`/${base.id}/guidance`, {
+          nutritionNote: null,
+          pairings: [
+            {
+              kind: 'food',
+              label: 'Side',
+              reason: 'r',
+              linkedRecipeId: linked.id,
+            },
+          ],
+          eatingMoments: [
+            { eatingMomentId: momentId, polarity: 'good_for', reason: null },
+            { eatingMomentId: archivedMoment, polarity: 'avoid', reason: null },
+          ],
+        })
+        .expect(200);
+      await admin.post(`/${linked.id}/archive`, {}).expect(200);
+      await database
+        .update(eatingMoments)
+        .set({ archivedAt: new Date() })
+        .where(eq(eatingMoments.id, archivedMoment));
+      const draft = (await a1.get(`/${base.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft.guidance.pairings).toMatchObject([
+        { label: 'Side', linkedRecipeId: null, linkedIngredientId: null },
+      ]);
+      expect(draft.guidance.eatingMoments.map((m) => m.eatingMomentId)).toEqual(
+        [momentId],
+      );
+    });
+
+    it('resolves draft guidance in the requested locale', async () => {
+      const base = await catalogBase();
+      const withGuidance = (
+        await admin
+          .put(`/${base.id}/guidance`, {
+            nutritionNote: 'Note',
+            pairings: [{ kind: 'drink', label: 'Wine', reason: 'Nice' }],
+            eatingMoments: [],
+          })
+          .expect(200)
+      ).body as AdminRecipeDetail;
+      await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: 'Notă',
+          pairings: {
+            [withGuidance.pairings[0].id]: { label: 'Vin', reason: 'Frumos' },
+          },
+        })
+        .expect(200);
+      const draft = (
+        await a1.get(`/${base.id}/variant-draft?locale=ro`).expect(200)
+      ).body as FamilyRecipeDraft;
+      expect(draft.guidance.nutritionNote).toBe('Notă');
+      expect(draft.guidance.pairings[0]).toMatchObject({
+        label: 'Vin',
+        reason: 'Frumos',
+      });
+    });
+
+    it("refuses to create with guidance linking another Family's Recipe", async () => {
+      const theirs = await familyRecipe(b, null);
+      const res = await a1
+        .post('', {
+          ...doc(null),
+          ...emptyDoc,
+          guidance: {
+            nutritionNote: null,
+            eatingMoments: [],
+            pairings: [
+              {
+                kind: 'food',
+                label: 'X',
+                reason: 'r',
+                linkedRecipeId: theirs.id,
+              },
+            ],
+          },
+        })
+        .expect(409);
+      expect(code(res)).toBe('recipes.pairing_link_not_allowed');
     });
   });
 

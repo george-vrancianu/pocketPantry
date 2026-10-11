@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, notInArray } from 'drizzle-orm';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
+import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   eatingMoments,
   ingredients,
@@ -125,6 +126,29 @@ async function validateGuidance(tx: Tx, guidance: GuidanceBody) {
     if (found.length !== momentIds.length) {
       throw new ApiException(404, 'recipes.eating_moment_not_found');
     }
+  }
+}
+
+/**
+ * `writeGuidance` with the unique-index backstop mapped to its coded error:
+ * the Recipe lock serialises writers, so a duplicate Eating Moment normally
+ * fails validation first. Used by the Family paths (edit and create).
+ */
+export async function writeGuidanceChecked(
+  tx: Tx,
+  recipe: GuidanceRecipe,
+  guidance: GuidanceBody,
+) {
+  try {
+    await writeGuidance(tx, recipe, guidance);
+  } catch (error) {
+    if (
+      hasPgCode(error, '23505') &&
+      pgConstraint(error) === 'recipe_eating_moments_recipe_moment_idx'
+    ) {
+      throw new ApiException(400, 'recipes.eating_moment_duplicate');
+    }
+    throw error;
   }
 }
 

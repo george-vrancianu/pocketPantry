@@ -18,13 +18,12 @@ import {
   recipeSteps,
   unmatchedEntries,
 } from '../database/schema';
-import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import { lockRecipe } from './recipe-locks';
 import type { GuidanceBody } from './recipe-guidance.schemas';
-import { writeGuidance } from './recipe-guidance-write';
+import { writeGuidanceChecked } from './recipe-guidance-write';
 import { loadResolvedGuidance } from './recipe-guidance';
 import { RecipesService } from './recipes.service';
 import { RecipeTipsService } from './recipe-tips.service';
@@ -174,7 +173,7 @@ export class FamilyRecipesService {
     await this.writeLines(tx, id, document, new Map(), locale);
     await this.recipes.writeSteps(tx, id, document, new Set());
     if (document.guidance) {
-      await writeGuidance(tx, { id, familyId }, document.guidance);
+      await writeGuidanceChecked(tx, { id, familyId }, document.guidance);
     }
     return id;
   }
@@ -278,21 +277,11 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
-    try {
-      await this.database.transaction(async (tx) => {
-        await this.lockFamily(tx, familyId);
-        const recipe = await lockRecipe(tx, id, familyId);
-        await writeGuidance(tx, recipe, body);
-      });
-    } catch (error) {
-      if (
-        hasPgCode(error, '23505') &&
-        pgConstraint(error) === 'recipe_eating_moments_recipe_moment_idx'
-      ) {
-        throw new ApiException(400, 'recipes.eating_moment_duplicate');
-      }
-      throw error;
-    }
+    await this.database.transaction(async (tx) => {
+      await this.lockFamily(tx, familyId);
+      const recipe = await lockRecipe(tx, id, familyId);
+      await writeGuidanceChecked(tx, recipe, body);
+    });
     return this.edit(familyId, id, locale);
   }
 
@@ -358,6 +347,8 @@ export class FamilyRecipesService {
         if (!detail) throw recipeNotFound();
         const { translations, ...rest } = detail;
         void translations; // Family Recipes are never translated
+        const resolved = await loadResolvedGuidance(tx, id, locale);
+        const links = new Map(resolved.pairings.map((p) => [p.id, p.link]));
         const rows = await tx
           .select()
           .from(recipeIngredientLines)
@@ -370,6 +361,15 @@ export class FamilyRecipesService {
         const byId = new Map(rows.map((row) => [row.id, row]));
         return {
           ...rest,
+          pairings: detail.pairings.map((p) => {
+            const link = links.get(p.id) ?? null;
+            return {
+              ...p,
+              linkedIngredientName:
+                link?.type === 'ingredient' ? link.name : null,
+              linkedRecipeTitle: link?.type === 'recipe' ? link.title : null,
+            };
+          }),
           lines: detail.lines.map((line) => {
             const row = byId.get(line.id);
             return {
