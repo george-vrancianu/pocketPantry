@@ -22,6 +22,9 @@
     "heading_other": "Sugestii, lipsesc {{count}} de produse de bază",
     "add": "Adaugă {{name}} în listă",
     "addShort": "Adaugă",
-    "dismiss": "Ignoră {{name}}"
+    "dismiss": "Ignoră {{name}}",
+    "usedUpHeading_one": "Epuizat recent, {{count}} ingredient",
+    "usedUpHeading_few": "Epuizate recent, {{count}} ingrediente",
+    "usedUpHeading_other": "Epuizate recent, {{count}} de ingrediente"
   }
 }

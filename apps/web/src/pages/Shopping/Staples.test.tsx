@@ -150,6 +150,92 @@ describe('Suggestions section on the Shopping List', () => {
     );
   });
 
+  it('lists Used Up Ingredients below the Staples, adds one with no quantity and dismisses one', async () => {
+    let usedUp = [
+      suggestion({
+        ingredientId: 'eggs-id',
+        name: 'Eggs',
+        quantity: null,
+        unit: null,
+      }),
+      suggestion({
+        ingredientId: 'rice-id',
+        name: 'Rice',
+        quantity: null,
+        unit: null,
+      }),
+    ];
+    const { fetchMock, calls } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [suggestion()], usedUp }),
+      'POST /api/shopping-list/items': () => {
+        usedUp = usedUp.slice(1);
+        return Response.json(emptyList());
+      },
+      'POST /api/shopping-list/suggestions/rice-id/dismiss': () => {
+        usedUp = [];
+        return new Response(null, { status: 204 });
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+
+    const section = await screen.findByRole('region', { name: 'Suggestions' });
+    const rows = within(section).getAllByRole('listitem');
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Milk'),
+      expect.stringContaining('Eggs'),
+      expect.stringContaining('Rice'),
+    ]);
+    expect(
+      within(section).getByRole('button', {
+        name: /Recently used up, 2 ingredients/,
+      }),
+    ).toBeVisible();
+
+    await userEvent.click(
+      within(section).getByRole('button', { name: 'Add Eggs to the list' }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/shopping-list/items')?.body,
+      ).toEqual({ ingredientId: 'eggs-id' }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Add Eggs to the list' }),
+      ).not.toBeInTheDocument(),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Dismiss Rice' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Dismiss Rice' }),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it('shows the section when only Used Up Ingredients are suggested', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [],
+          usedUp: [suggestion({ name: 'Eggs', quantity: null, unit: null })],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+
+    const section = await screen.findByRole('region', { name: 'Suggestions' });
+    expect(
+      within(section).getByRole('button', {
+        name: /Recently used up, 1 ingredient$/,
+      }),
+    ).toBeVisible();
+  });
+
   it('shows nothing when there are no Suggestions', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
@@ -310,13 +396,14 @@ describe('StaplesPage', () => {
 });
 
 describe('SuggestionsWidget', () => {
-  it('shows the missing count and the first few names, and links to Shopping', async () => {
+  it('shows the count of missing Staples and Used Up Ingredients, and the first few names, and links to Shopping', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
-          staples: ['A', 'B', 'C', 'D', 'E'].map((name) =>
+          staples: ['A', 'B', 'C', 'D'].map((name) =>
             suggestion({ ingredientId: name, name }),
           ),
+          usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -325,7 +412,7 @@ describe('SuggestionsWidget', () => {
     const link = await screen.findByRole('link', { name: 'Suggestions' });
     expect(link).toHaveAttribute('href', '/shopping');
     expect(link).toHaveTextContent('5');
-    expect(link).toHaveTextContent('staples missing');
+    expect(link).toHaveTextContent('suggestions');
     expect(link).toHaveTextContent('A, B, C…');
   });
 
@@ -337,6 +424,6 @@ describe('SuggestionsWidget', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
 
-    expect(await screen.findByText('Nothing missing')).toBeVisible();
+    expect(await screen.findByText('Nothing suggested')).toBeVisible();
   });
 });

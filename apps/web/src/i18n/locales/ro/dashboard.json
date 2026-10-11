@@ -37,10 +37,10 @@
     },
     "suggestions": {
       "title": "Sugestii",
-      "missing_one": "produs de bază lipsește",
-      "missing_few": "produse de bază lipsesc",
-      "missing_other": "de produse de bază lipsesc",
-      "empty": "Nu lipsește nimic"
+      "empty": "Nicio sugestie",
+      "count_one": "sugestie",
+      "count_few": "sugestii",
+      "count_other": "de sugestii"
     },
     "mealPlan": {
       "title": "Plan de mese"

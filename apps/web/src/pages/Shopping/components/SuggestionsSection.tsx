@@ -16,25 +16,67 @@ import { useDismissSuggestion, type Suggestion } from '../../../lib/staples';
 
 export type SuggestionsSectionProps = {
   /** Missing Staples in Aisle order. */
-  suggestions: Suggestion[];
+  staples: Suggestion[];
+  /** Ingredients recently used up, in Aisle order. */
+  usedUp: Suggestion[];
   /** Adds through the normal add endpoint; resolves true when added. */
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
 };
 
-/** A collapsible group at the top of the Shopping List: one tap adds, the cross dismisses for the Family. */
+/** Collapsible groups at the top of the Shopping List: one tap adds, the cross dismisses for the Family. */
 export function SuggestionsSection({
-  suggestions,
+  staples,
+  usedUp,
   onAdd,
 }: SuggestionsSectionProps) {
   const { t } = useTranslation('staples');
+  const dismiss = useDismissSuggestion();
+
+  if (staples.length === 0 && usedUp.length === 0) return null;
+
+  return (
+    <Box
+      component="section"
+      aria-label={t('suggestions.title')}
+      sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}
+    >
+      {dismiss.error ? (
+        <Alert>{translateApiError(t, dismiss.error)}</Alert>
+      ) : null}
+      <SuggestionGroup
+        heading={t('suggestions.heading', { count: staples.length })}
+        suggestions={staples}
+        onAdd={onAdd}
+        onDismiss={(id) => dismiss.mutate(id)}
+      />
+      <SuggestionGroup
+        heading={t('suggestions.usedUpHeading', { count: usedUp.length })}
+        suggestions={usedUp}
+        onAdd={onAdd}
+        onDismiss={(id) => dismiss.mutate(id)}
+      />
+    </Box>
+  );
+}
+
+function SuggestionGroup({
+  heading,
+  suggestions,
+  onAdd,
+  onDismiss,
+}: {
+  heading: string;
+  suggestions: Suggestion[];
+  onAdd: SuggestionsSectionProps['onAdd'];
+  onDismiss: (ingredientId: string) => void;
+}) {
   const [open, setOpen] = useState(true);
   const panelId = useId();
-  const dismiss = useDismissSuggestion();
 
   if (suggestions.length === 0) return null;
 
   return (
-    <Box component="section" aria-label={t('suggestions.title')}>
+    <Box>
       <Box
         component="button"
         type="button"
@@ -57,17 +99,12 @@ export function SuggestionsSection({
         }}
       >
         <Typography component="h2" variant="sectionLabel">
-          {t('suggestions.heading', { count: suggestions.length })}
+          {heading}
         </Typography>
         <Typography component="span" variant="meta" aria-hidden="true">
           {open ? '−' : '+'}
         </Typography>
       </Box>
-      {dismiss.error ? (
-        <Box sx={{ mb: 1 }}>
-          <Alert>{translateApiError(t, dismiss.error)}</Alert>
-        </Box>
-      ) : null}
       <Collapse open={open}>
         <Box
           component="ul"
@@ -89,7 +126,7 @@ export function SuggestionsSection({
               key={suggestion.ingredientId}
               suggestion={suggestion}
               onAdd={onAdd}
-              onDismiss={(id) => dismiss.mutate(id)}
+              onDismiss={onDismiss}
             />
           ))}
         </Box>

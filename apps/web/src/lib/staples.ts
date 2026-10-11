@@ -15,7 +15,7 @@ export type Staple = {
   aisle: Aisle | null;
 };
 
-/** A missing Staple, offered at the top of the Shopping List. */
+/** A missing Staple or a Used Up Ingredient (no quantity), offered at the top of the Shopping List. */
 export type Suggestion = {
   ingredientId: string;
   name: string;
@@ -24,8 +24,8 @@ export type Suggestion = {
   aisle: Aisle | null;
 };
 
-/** One key per group; a Used Up group will join `staples`. */
-export type Suggestions = { staples: Suggestion[] };
+/** One key per group: missing Staples first, then Ingredients recently used up. */
+export type Suggestions = { staples: Suggestion[]; usedUp: Suggestion[] };
 
 export const staplesQueryKey = ['staples'] as const;
 /** Every locale's Suggestions; refetch after anything that changes the Pantry, the list or the Staples. */
