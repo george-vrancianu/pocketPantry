@@ -22,7 +22,9 @@ import {
 import {
   createTemplateBody,
   createTemplateFromListBody,
+  templateGetQuery,
   templateIdParam,
+  type TemplateGetQuery,
   updateTemplateBody,
   type CreateTemplateBody,
   type CreateTemplateFromListBody,
@@ -33,6 +35,7 @@ import {
 import { ShoppingTemplatesService } from './shopping-templates.service';
 
 const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
+const getQuery = new ZodValidationPipe(templateGetQuery);
 const idParam = new ZodValidationPipe(templateIdParam);
 
 /** Every route works on the signed-in Member's Family Templates. */
@@ -80,10 +83,10 @@ export class ShoppingTemplatesController {
   })
   get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
+    @Query(getQuery) { locale, today }: TemplateGetQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<TemplateView> {
-    return this.templates.get(member.id, id, locale);
+    return this.templates.get(member.id, id, locale, today);
   }
 
   @Patch(':id')

@@ -153,6 +153,47 @@ describe('Shopping Template screens', () => {
     ).toEqual({ name: 'Burrito night' });
   });
 
+  it('disables the remove buttons while an edit is saving', async () => {
+    const eggs = { ...milk, id: 'l2', ingredientId: 'eggs-id', name: 'Eggs' };
+    const two: Template = { ...taco, lines: [milk, eggs] };
+    let finish: () => void = () => undefined;
+    const saved = new Promise<void>((resolve) => (finish = resolve));
+    const { fetchMock, calls } = stubApi({
+      'GET /api/shopping-templates/t1': () => Response.json(two),
+      'PATCH /api/shopping-templates/t1': () =>
+        Response.json({ ...two, lines: [eggs] }),
+    });
+    // Hold the save open so the in-flight state can be observed.
+    vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
+      const response = fetchMock(...args);
+      if (args[1]?.method === 'PATCH') await saved;
+      return response;
+    });
+    renderWithProviders(
+      <Routes>
+        <Route path="/:id" element={<TemplateEditorPage />} />
+      </Routes>,
+      { route: '/t1' },
+    );
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Remove Milk' }),
+    );
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Remove Eggs' }),
+      ).toBeDisabled(),
+    );
+    finish();
+    await vi.waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Remove Eggs' })).toBeEnabled(),
+    );
+    expect(
+      calls.filter((c) => c.key === 'PATCH /api/shopping-templates/t1'),
+    ).toHaveLength(1);
+  });
+
   it('deletes a template after confirming', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/shopping-templates/t1': () => Response.json(taco),

@@ -142,6 +142,7 @@ function Editor({
               </Typography>
               <IconButton
                 label={t('templates:editor.remove', { name: line.name })}
+                disabled={update.isPending}
                 onClick={() =>
                   void replaceLines(
                     lines.filter((l) => l.id !== line.id).map(toLineBody),

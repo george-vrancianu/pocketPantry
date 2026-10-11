@@ -68,9 +68,10 @@ export class ShoppingTemplatesService {
     memberId: string,
     id: string,
     locale: CatalogLocale,
+    today?: string,
   ): Promise<TemplateView> {
     const familyId = await this.familyOf(this.database, memberId);
-    return this.view(this.database, familyId, id, locale);
+    return this.view(this.database, familyId, id, locale, today);
   }
 
   async create(
@@ -263,6 +264,7 @@ export class ShoppingTemplatesService {
     familyId: string,
     id: string,
     locale: CatalogLocale,
+    today?: string,
   ): Promise<TemplateView> {
     const [template] = await executor
       .select({ id: shoppingTemplates.id, name: shoppingTemplates.name })
@@ -315,6 +317,7 @@ export class ShoppingTemplatesService {
       executor,
       familyId,
       rows.flatMap((row) => (row.ingredientId ? [row.ingredientId] : [])),
+      today,
     );
 
     const lines: TemplateLineView[] = rows.map((row) => ({
@@ -344,14 +347,15 @@ export class ShoppingTemplatesService {
     return { id: template.id, name: template.name, lines };
   }
 
-  /** Ingredients the Family holds an unexpired Batch of (quantity is ignored). */
+  /** Ingredients the Family holds an unexpired Batch of (quantity is ignored); `localToday` is the Member's date, default the server's UTC date. */
   private async presentIngredients(
     executor: Executor,
     familyId: string,
     ingredientIds: string[],
+    localToday?: string,
   ): Promise<Set<string>> {
     if (ingredientIds.length === 0) return new Set();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localToday ?? new Date().toISOString().slice(0, 10);
     const rows = await executor
       .selectDistinct({ id: batches.ingredientId })
       .from(batches)

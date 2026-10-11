@@ -4,7 +4,12 @@ import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { shoppingTemplates } from '../src/database/schema';
+import {
+  batches,
+  ingredients,
+  shoppingTemplates,
+  user,
+} from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
@@ -215,8 +220,20 @@ describe('Shopping Templates (integration)', () => {
     });
 
     it('allows 50 Templates per Family and refuses the 51st', async () => {
-      const ana = await signUp();
-      for (let i = 0; i < 50; i++) await create(ana, `T${i}`);
+      const email = `tpl-limit-${stamp}@example.com`;
+      const ana = await signUp(email);
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      await database
+        .insert(shoppingTemplates)
+        .values(
+          Array.from({ length: 49 }, (_, i) => ({ familyId, name: `T${i}` })),
+        );
+      // The 50th goes through the API so the success path stays covered.
+      await create(ana, 'T49');
+
       const over = await as(ana)
         .post('/shopping-templates?locale=en', { name: 'T50' })
         .expect(409);
@@ -230,7 +247,7 @@ describe('Shopping Templates (integration)', () => {
       expect((fromList.body as Body).code).toBe(
         'shopping_template.limit_reached',
       );
-    }, 30_000);
+    });
   });
 
   describe('save current list as template', () => {
@@ -340,6 +357,60 @@ describe('Shopping Templates (integration)', () => {
         Milk: false,
         [`Zzq nothing ${stamp}`]: false,
       });
+    });
+
+    it('counts a Batch with no expiry date or expiring today as present', async () => {
+      const email = `tpl-presence-${stamp}@example.com`;
+      const ana = await signUp(email);
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      const made = await create(ana, 'Edges', [
+        { ingredientId: parmesan },
+        { ingredientId: milk },
+      ]);
+      const leafOf = async (ingredientId: string) =>
+        (
+          await database
+            .select({ leaf: ingredients.leafCategoryId })
+            .from(ingredients)
+            .where(eq(ingredients.id, ingredientId))
+        )[0].leaf;
+      const today = new Date().toISOString().slice(0, 10);
+      await database.insert(batches).values([
+        {
+          familyId,
+          ingredientId: parmesan,
+          leafCategoryId: await leafOf(parmesan),
+          location: 'fridge',
+          expiryDate: null,
+        },
+        {
+          familyId,
+          ingredientId: milk,
+          leafCategoryId: await leafOf(milk),
+          location: 'fridge',
+          expiryDate: today,
+        },
+      ]);
+
+      const flags = (template: Template) =>
+        Object.fromEntries(template.lines.map((l) => [l.name, l.inPantry]));
+      expect(flags(await read(ana, made.id))).toEqual({
+        Parmesan: true,
+        Milk: true,
+      });
+      // The Member's own date decides: tomorrow, today's milk has expired.
+      const tomorrow = new Date(Date.now() + 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+      const later = (
+        await as(ana)
+          .get(`/shopping-templates/${made.id}?locale=en&today=${tomorrow}`)
+          .expect(200)
+      ).body as Template;
+      expect(flags(later)).toEqual({ Parmesan: true, Milk: false });
     });
   });
 

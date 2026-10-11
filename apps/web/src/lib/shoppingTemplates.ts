@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
+import { localIso } from './pantry';
 import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
 
@@ -41,7 +42,9 @@ export function useTemplate(id: string, locale: string) {
   return useQuery({
     queryKey: [...templatesKey, id, locale],
     queryFn: () =>
-      apiRequest<Template>(`/shopping-templates/${id}${withLocale(locale)}`),
+      apiRequest<Template>(
+        `/shopping-templates/${id}?${new URLSearchParams({ locale, today: localIso(new Date()) })}`,
+      ),
   });
 }
 

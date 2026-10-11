@@ -61,7 +61,7 @@
     "not_found": "Det katalogpunkt findes ikke længere.",
     "name_taken": "Det navn er allerede i brug. Navne skal være unikke, uanset store og små bogstaver og accenter.",
     "category_not_empty": "Denne kategori er stadig i brug eller indeholder punkter. Flyt eller slet dem først.",
-    "ingredient_in_use": "Denne ingrediens bruges stadig af partier eller indkøbsvarer og kan derfor ikke slettes.",
+    "ingredient_in_use": "Denne ingrediens bruges stadig i spisekammeret, på indkøbslisten, som basisvare eller i en indkøbsskabelon og kan derfor ikke slettes.",
     "other_leaf_protected": "Kategorien Andet er der, hvor umatchede partier havner, så den kan ikke slettes, flyttes eller fjernes.",
     "other_leaf_name_taken": "En kategori Andet har allerede det genererede navn (\"Andet <name>\"). Omdøb eller fjern den kategori, der er i konflikt, først.",
     "translation_exists": "Dette punkt har allerede et navn på det sprog. Rediger det eksisterende i stedet.",
