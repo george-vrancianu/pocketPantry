@@ -64,6 +64,10 @@ _Avoid_: Shelf life
 The state of a scanned or typed name that could not be matched to an Ingredient with confidence. Unmatched Batches are saved under an "Other" Leaf Category and queued for Admin curation.
 _Avoid_: Unknown, custom, uncategorised
 
+**Pantry Basic**:
+An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List.
+_Avoid_: Staple (a Family's always-wanted Ingredient), essential, cupboard item
+
 ### Pantry
 
 **Pantry**:
@@ -101,7 +105,7 @@ One Ingredient wanted on the Shopping List, with a quantity, a checked state, an
 _Avoid_: Cart item, line
 
 **Source Recipe**:
-A recipe whose missing ingredients added a Shopping Item. One Shopping Item may have several.
+A Recipe whose missing ingredients added a Shopping Item. Always a specific Base Recipe or Variant. One Shopping Item may have several.
 _Avoid_: Recipe tag, origin
 
 **Finish Shopping**:
@@ -168,6 +172,48 @@ _Avoid_: Confirm sheet, preview
 **Scan Cap**:
 The maximum number of Scans a Member may run per day.
 _Avoid_: Quota, rate limit
+
+### Recipes
+
+**Recipe**:
+Something a Member can cook, with its own ingredients and steps. Either a Base Recipe or a Variant.
+_Avoid_: Dish, meal
+
+**Base Recipe**:
+A Recipe with no parent, such as "Omelette". Cookable on its own, and the starting point its Variants branch from.
+_Avoid_: Category, recipe family, parent recipe
+
+**Variant**:
+A Recipe that branches from exactly one Base Recipe, such as "Mediterranean omelette" or "Frittata". A Variant never has Variants of its own.
+_Avoid_: Sub-recipe, version, child recipe
+
+**Cuisine**:
+An optional tag for the culinary region a Recipe comes from, such as Mediterranean. At most one per Recipe.
+_Avoid_: Region, style, origin
+
+**Method**:
+An optional tag for the cooking technique that sets a Recipe apart, such as rolled, folded, or frittata. At most one per Recipe.
+_Avoid_: Technique, style, pro tip
+
+**Tip**:
+A short piece of cooking advice attached to a Recipe or to one of its steps. It doesn't change the dish.
+_Avoid_: Pro tip, hint, note
+
+**Servings**:
+The number of people a Recipe's quantities are written for. A Member can pick another number on the Recipe, and quantities scale in proportion.
+_Avoid_: Portions, yield
+
+**Ingredient Line**:
+One ingredient of a Recipe: an Ingredient (or, on a Family Recipe, an Unmatched name), an optional quantity and unit, an optional preparation note, and whether it is optional.
+_Avoid_: Recipe item, component
+
+**Step**:
+One ordered instruction in a Recipe, optionally with a timer. Step Tips attach to a Step.
+_Avoid_: Instruction, direction
+
+**Can Make**:
+A Recipe whose required Ingredient Lines are all covered by the Pantry's unexpired Batches. Optional lines and Pantry Basics never block it.
+_Avoid_: Cookable, available, in stock
 
 ### Dashboard
 
