@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { ilike } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { catalogTranslations, eatingMoments } from '../src/database/schema';

@@ -49,7 +49,6 @@ export async function loadAdminGuidance(
       linkedRecipeId: p.linkedRecipeId,
     })),
     eatingMoments: uses.map((u) => ({
-      id: u.id,
       eatingMomentId: u.eatingMomentId,
       polarity: u.polarity,
       reason: u.reason,

@@ -81,8 +81,8 @@ export type PairingView = {
   linkedIngredientId: string | null;
   linkedRecipeId: string | null;
 };
+/** Keyed by `eatingMomentId` (unique per Recipe), so it round-trips into the guidance body. */
 export type EatingMomentUseView = {
-  id: string;
   eatingMomentId: string;
   polarity: EatingMomentPolarity;
   reason: string | null;

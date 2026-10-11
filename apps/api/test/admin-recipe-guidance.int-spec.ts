@@ -360,6 +360,282 @@ describe('Recipe guidance (integration)', () => {
     });
   });
 
+  /** A Recipe with a note, a food and a drink Pairing and two Eating Moments. */
+  async function guided(extra: { linkedRecipeId?: string } = {}) {
+    const base = await createBase();
+    const dinner = await moment('Dinner');
+    const snack = await moment('Snack');
+    const res = await admin
+      .put(`/${base.id}/guidance`, {
+        nutritionNote: 'Rich in fat; fine as a treat.',
+        pairings: [
+          pairing({ principle: 'acid_cuts_fat', linkedIngredientId: flour }),
+          pairing({
+            kind: 'food',
+            label: 'steamed greens',
+            reason: 'light',
+            ...extra,
+          }),
+        ],
+        eatingMoments: [
+          { eatingMomentId: dinner, polarity: 'good_for', reason: 'filling' },
+          { eatingMomentId: snack, polarity: 'avoid' },
+        ],
+      })
+      .expect(200);
+    return { base, dinner, snack, detail: res.body as AdminRecipeDetail };
+  }
+
+  describe('translations', () => {
+    it('round-trips guidance translations per locale, with null deleting', async () => {
+      const { base, dinner, detail: d } = await guided();
+      const [wine, greens] = d.pairings;
+      const res = await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: 'Bogat in grasimi.',
+          pairings: {
+            [wine.id]: { label: 'un pahar de vin alb', reason: 'aciditate' },
+          },
+          eatingMoments: { [dinner]: 'satios' },
+        })
+        .expect(200);
+      expect((res.body as AdminRecipeDetail).translations.ro).toMatchObject({
+        nutritionNote: 'Bogat in grasimi.',
+        pairings: {
+          [wine.id]: { label: 'un pahar de vin alb', reason: 'aciditate' },
+        },
+        eatingMoments: { [dinner]: 'satios' },
+      });
+      // Saving the guidance again keeps the translations of what stays.
+      await admin
+        .put(`/${base.id}/guidance`, {
+          nutritionNote: d.nutritionNote,
+          pairings: d.pairings.map(({ id, ...rest }) => ({ id, ...rest })),
+          eatingMoments: d.eatingMoments,
+        })
+        .expect(200);
+      expect((await detail(base.id)).translations.ro.pairings).toHaveProperty(
+        wine.id,
+      );
+      const cleared = await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: null,
+          pairings: { [wine.id]: null },
+          eatingMoments: { [dinner]: null },
+        })
+        .expect(200);
+      const ro = (cleared.body as AdminRecipeDetail).translations.ro;
+      expect(ro?.nutritionNote ?? null).toBeNull();
+      expect(ro?.pairings ?? {}).toEqual({});
+      expect(ro?.eatingMoments ?? {}).toEqual({});
+      expect(greens.id).toBeDefined();
+    });
+
+    it('refuses a translated Nutrition Note over 500 characters', async () => {
+      const { base } = await guided();
+      const res = await admin
+        .put(`/${base.id}/translations/da`, { nutritionNote: 'x'.repeat(501) })
+        .expect(400);
+      expect(code(res)).toBe('recipes.nutrition_note_too_long');
+    });
+
+    it('refuses translations of things the Recipe does not have', async () => {
+      const { base, snack } = await guided();
+      const stranger = await admin
+        .put(`/${base.id}/translations/ro`, {
+          pairings: {
+            [crypto.randomUUID()]: { label: 'x', reason: 'y' },
+          },
+        })
+        .expect(400);
+      expect(code(stranger)).toBe('recipes.item_not_found');
+      // The `snack` use has no source reason, so there is nothing to translate.
+      await admin
+        .put(`/${base.id}/translations/ro`, { eatingMoments: { [snack]: 'x' } })
+        .expect(400);
+      await admin
+        .put(`/${base.id}/translations/ro`, {
+          eatingMoments: { [crypto.randomUUID()]: 'x' },
+        })
+        .expect(400);
+    });
+  });
+
+  describe('the member read model', () => {
+    it('resolves guidance for the locale, falling back to the source text', async () => {
+      const other = await createBase();
+      const {
+        base,
+        dinner,
+        detail: d,
+      } = await guided({
+        linkedRecipeId: other.id,
+      });
+      await admin
+        .put(`/${other.id}/translations/ro`, { title: 'Alta reteta' })
+        .expect(200);
+      await catalog
+        .post('/translations', {
+          entityType: 'eating_moment',
+          entityId: dinner,
+          locale: 'ro',
+          kind: 'name',
+          value: `Cina ${stamp}`,
+        })
+        .expect(201);
+      await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: 'Bogat in grasimi.',
+          pairings: {
+            [d.pairings[0].id]: { label: 'vin alb', reason: 'acid' },
+          },
+          eatingMoments: { [dinner]: 'satios' },
+        })
+        .expect(200);
+
+      const en = await loadCatalogRecipe(database, base.id, 'en');
+      expect(en?.guidance.nutritionNote).toBe('Rich in fat; fine as a treat.');
+      expect(en?.guidance.pairings.map((p) => [p.kind, p.label])).toEqual([
+        ['drink', 'a glass of dry white wine'],
+        ['food', 'steamed greens'],
+      ]);
+      expect(en?.guidance.pairings[0].principle).toBe('acid_cuts_fat');
+      expect(en?.guidance.pairings[0].link).toMatchObject({
+        type: 'ingredient',
+        id: flour,
+      });
+      expect(en?.guidance.pairings[1].link).toMatchObject({
+        type: 'recipe',
+        id: other.id,
+        title: other.title,
+      });
+      expect(
+        en?.guidance.eatingMoments.map((m) => [m.polarity, m.reason]),
+      ).toEqual([
+        ['good_for', 'filling'],
+        ['avoid', null],
+      ]);
+
+      const ro = await loadCatalogRecipe(database, base.id, 'ro');
+      expect(ro?.guidance.nutritionNote).toBe('Bogat in grasimi.');
+      expect(ro?.guidance.pairings[0]).toMatchObject({
+        label: 'vin alb',
+        reason: 'acid',
+      });
+      // No translation: the source text shows.
+      expect(ro?.guidance.pairings[1]).toMatchObject({
+        label: 'steamed greens',
+        link: { type: 'recipe', title: 'Alta reteta' },
+      });
+      expect(ro?.guidance.eatingMoments[0]).toMatchObject({
+        name: `Cina ${stamp}`,
+        reason: 'satios',
+      });
+      // No Romanian name for the second moment: the English one shows.
+      expect(ro?.guidance.eatingMoments[1].name).toContain('Snack');
+    });
+
+    it('hides the link of an archived Recipe but keeps the label, and hides archived Eating Moments', async () => {
+      const other = await createBase();
+      const { base, snack } = await guided({ linkedRecipeId: other.id });
+      await admin.post(`/${other.id}/archive`).expect(200);
+      await catalog.post(`/eating-moments/${snack}/archive`).expect(200);
+      const view = await loadCatalogRecipe(database, base.id, 'en');
+      expect(view?.guidance.pairings[1]).toMatchObject({
+        label: 'steamed greens',
+        link: null,
+      });
+      expect(view?.guidance.eatingMoments).toHaveLength(1);
+      expect(view?.guidance.eatingMoments[0].polarity).toBe('good_for');
+      // The Admin still sees everything.
+      const admined = await detail(base.id);
+      expect(admined.pairings[1].linkedRecipeId).toBe(other.id);
+      expect(admined.eatingMoments).toHaveLength(2);
+    });
+
+    it('is empty for a Recipe without guidance', async () => {
+      const base = await createBase();
+      const view = await loadCatalogRecipe(database, base.id, 'en');
+      expect(view?.guidance).toEqual({
+        nutritionNote: null,
+        pairings: [],
+        eatingMoments: [],
+      });
+    });
+  });
+
+  describe('Make a variant', () => {
+    it('copies all guidance with its translations; later base edits do not reach the Variant', async () => {
+      const other = await createBase();
+      const {
+        base,
+        dinner,
+        detail: d,
+      } = await guided({
+        linkedRecipeId: other.id,
+      });
+      await admin
+        .put(`/${base.id}/translations/ro`, {
+          nutritionNote: 'Bogat in grasimi.',
+          pairings: {
+            [d.pairings[0].id]: { label: 'vin alb', reason: 'acid' },
+          },
+          eatingMoments: { [dinner]: 'satios' },
+        })
+        .expect(200);
+
+      const variant = (
+        await admin
+          .post(`/${base.id}/variants`, { title: title('Variant') })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      expect(variant.nutritionNote).toBe(d.nutritionNote);
+      const content = (p: AdminRecipeDetail['pairings'][number]) => ({
+        ...p,
+        id: undefined,
+      });
+      expect(variant.pairings.map(content)).toEqual(d.pairings.map(content));
+      expect(variant.pairings.map((p) => p.id)).not.toContain(d.pairings[0].id);
+      expect(
+        variant.eatingMoments.map((m) => [
+          m.eatingMomentId,
+          m.polarity,
+          m.reason,
+        ]),
+      ).toEqual(
+        d.eatingMoments.map((m) => [m.eatingMomentId, m.polarity, m.reason]),
+      );
+      expect(variant.translations.ro).toMatchObject({
+        nutritionNote: 'Bogat in grasimi.',
+        pairings: {
+          [variant.pairings[0].id]: { label: 'vin alb', reason: 'acid' },
+        },
+        eatingMoments: { [dinner]: 'satios' },
+      });
+
+      // Independent from here on, in both directions.
+      await admin
+        .put(`/${base.id}/guidance`, {
+          nutritionNote: 'Changed.',
+          pairings: [],
+          eatingMoments: [],
+        })
+        .expect(200);
+      const after = await detail(variant.id);
+      expect(after.nutritionNote).toBe(d.nutritionNote);
+      expect(after.pairings).toHaveLength(2);
+      expect(after.eatingMoments).toHaveLength(2);
+      await admin
+        .put(`/${variant.id}/guidance`, {
+          nutritionNote: null,
+          pairings: [],
+          eatingMoments: [],
+        })
+        .expect(200);
+      expect((await detail(base.id)).nutritionNote).toBe('Changed.');
+    });
+  });
+
   describe('Admin only', () => {
     it('refuses a Member', async () => {
       const member = client(

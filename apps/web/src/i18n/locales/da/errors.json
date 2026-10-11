@@ -98,12 +98,21 @@
     "parent_archived": "Denne grundopskrift er arkiveret, så den kan ikke få nye varianter.",
     "quantity_unit_mismatch": "En ingredienslinje skal have både mængde og enhed, eller ingen af dem.",
     "ingredient_required": "En ingredienslinje skal have en ingrediens fra kataloget.",
-    "item_not_found": "En linje, et trin eller et tip i ændringen er ikke længere en del af opskriften. Genindlæs opskriften og prøv igen.",
-    "duplicate_item": "Den samme linje eller det samme trin står to gange. Genindlæs opskriften og prøv igen.",
+    "item_not_found": "En linje, et trin, et tip eller en parring i ændringen er ikke længere en del af opskriften. Genindlæs opskriften og prøv igen.",
+    "duplicate_item": "Den samme linje, det samme trin eller den samme parring står to gange. Genindlæs opskriften og prøv igen.",
     "bad_step_anchor": "Det tip peger på et trin, der ikke hører til denne opskrift.",
     "bad_hidden_tip": "Kun tip på opskriftsniveau fra grundopskriften kan skjules, og kun på en variant.",
     "tip_not_found": "Det tip findes ikke længere.",
     "tip_order_stale": "Tippene blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
-    "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den."
+    "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den.",
+    "pairings_too_many": "En opskrift kan højst have 10 parringer.",
+    "eating_moments_too_many": "En opskrift kan højst bruge 10 spisetidspunkter.",
+    "eating_moment_duplicate": "Det spisetidspunkt er allerede på denne opskrift.",
+    "eating_moment_not_found": "Det spisetidspunkt findes ikke længere.",
+    "pairing_link_conflict": "En parring kan pege på en ingrediens eller en opskrift, ikke begge.",
+    "pairing_link_not_allowed": "En parring kan ikke pege på den opskrift. Katalogopskrifter peger kun på katalogindhold.",
+    "pairing_link_not_found": "Den ingrediens eller opskrift, parringen peger på, findes ikke længere.",
+    "pairing_self_link": "En parring kan ikke pege på sin egen opskrift.",
+    "nutrition_note_too_long": "Ernæringsnoten kan højst være 500 tegn."
   }
 }
