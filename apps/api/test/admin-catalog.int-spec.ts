@@ -244,6 +244,7 @@ describe('Admin role and Catalog curation (integration)', () => {
           .expect(201)
       ).body as Body;
       expect(created.id).toEqual(expect.any(String));
+      expect(created.pantryBasic).toBe(false);
 
       // The English display name exists from the start.
       expect(await translationsOf('ingredient', created.id)).toEqual([
@@ -295,6 +296,7 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(listed).toMatchObject({
         name: `Emmental ${stamp}`,
         defaultUnit: 'kg',
+        pantryBasic: false,
       });
 
       await as(adminCookie)
@@ -306,6 +308,46 @@ describe('Admin role and Catalog curation (integration)', () => {
       expect(
         (await overview()).ingredients.some((i) => i.id === created.id),
       ).toBe(false);
+    });
+
+    it('flags and unflags an Ingredient as a Pantry Basic', async () => {
+      const created = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leafId,
+            name: `Basic salt ${stamp}`,
+            defaultUnit: 'g',
+            pantryBasic: true,
+          })
+          .expect(201)
+      ).body as Body;
+      expect(created.pantryBasic).toBe(true);
+      const flagOf = async () =>
+        (await overview()).ingredients.find((i) => i.id === created.id)
+          ?.pantryBasic;
+      expect(await flagOf()).toBe(true);
+
+      // An edit that leaves the flag out keeps it.
+      await as(adminCookie)
+        .patch(`/ingredients/${created.id}`, { defaultUnit: 'kg' })
+        .expect(200);
+      expect(await flagOf()).toBe(true);
+
+      await as(adminCookie)
+        .patch(`/ingredients/${created.id}`, { pantryBasic: false })
+        .expect(200);
+      expect(await flagOf()).toBe(false);
+
+      await as(adminCookie)
+        .post('/ingredients', {
+          leafCategoryId: leafId,
+          name: `Bad flag ${stamp}`,
+          defaultUnit: 'g',
+          pantryBasic: 'yes',
+        })
+        .expect(400);
+
+      await as(adminCookie).del(`/ingredients/${created.id}`).expect(204);
     });
 
     it('enforces unique names, ignoring case and diacritics', async () => {

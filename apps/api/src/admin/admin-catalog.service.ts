@@ -152,6 +152,7 @@ export class AdminCatalogService {
         name: row.name,
         leafCategoryId: row.leafCategoryId,
         defaultUnit: row.defaultUnit,
+        pantryBasic: row.pantryBasic,
         translations: translations('ingredient', row.id),
       })),
     };
