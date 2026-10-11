@@ -4,5 +4,46 @@
     "easy": "Easy",
     "medium": "Medium",
     "hard": "Hard"
-  }
+  },
+  "search": "Search recipes",
+  "cuisine": "Cuisine",
+  "method": "Method",
+  "anyCuisine": "All cuisines",
+  "anyMethod": "All methods",
+  "empty": "No recipes yet.",
+  "noMatches": "No recipes match.",
+  "variantCount_one": "{{count}} variant",
+  "variantCount_other": "{{count}} variants",
+  "variantOf": "variant of {{base}}",
+  "familyBadge": "Your family's",
+  "minutes": "{{count}} min",
+  "prep": "Prep {{time}}",
+  "cook": "Cook {{time}}",
+  "servings_one": "{{count}} serving",
+  "servings_other": "{{count}} servings",
+  "archived": "This recipe is archived.",
+  "backToList": "All recipes",
+  "notFound": "This recipe could not be found.",
+  "sections": {
+    "ingredients": "Ingredients",
+    "steps": "Steps",
+    "tips": "Tips",
+    "variants": "Variants",
+    "whatsDifferent": "What's different"
+  },
+  "optional": "optional",
+  "timer": "Timer {{time}}",
+  "inheritedTip": "from the base recipe",
+  "noVariants": "No variants yet.",
+  "diff": {
+    "added": "Added",
+    "removed": "Removed",
+    "swapped": "Swapped",
+    "swap": "{{from}} to {{to}}",
+    "none": "Same ingredients as {{base}}."
+  },
+  "stepNumber": "Step {{number}}",
+  "stepTips": "Tips for this step",
+  "noIngredients": "No ingredients listed.",
+  "noSteps": "No steps yet."
 }

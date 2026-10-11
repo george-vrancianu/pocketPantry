@@ -4,5 +4,46 @@
     "easy": "Let",
     "medium": "Mellem",
     "hard": "Svær"
-  }
+  },
+  "search": "Søg opskrifter",
+  "cuisine": "Køkken",
+  "method": "Metode",
+  "anyCuisine": "Alle køkkener",
+  "anyMethod": "Alle metoder",
+  "empty": "Ingen opskrifter endnu.",
+  "noMatches": "Ingen opskrifter passer.",
+  "variantCount_one": "{{count}} variant",
+  "variantCount_other": "{{count}} varianter",
+  "variantOf": "variant af {{base}}",
+  "familyBadge": "Din families",
+  "minutes": "{{count}} min",
+  "prep": "Forberedelse {{time}}",
+  "cook": "Tilberedning {{time}}",
+  "servings_one": "{{count}} portion",
+  "servings_other": "{{count}} portioner",
+  "archived": "Denne opskrift er arkiveret.",
+  "backToList": "Alle opskrifter",
+  "notFound": "Opskriften blev ikke fundet.",
+  "sections": {
+    "ingredients": "Ingredienser",
+    "steps": "Trin",
+    "tips": "Tips",
+    "variants": "Varianter",
+    "whatsDifferent": "Hvad er anderledes"
+  },
+  "optional": "valgfri",
+  "timer": "Timer {{time}}",
+  "inheritedTip": "fra grundopskriften",
+  "noVariants": "Ingen varianter endnu.",
+  "diff": {
+    "added": "Tilføjet",
+    "removed": "Fjernet",
+    "swapped": "Byttet",
+    "swap": "{{from}} til {{to}}",
+    "none": "Samme ingredienser som {{base}}."
+  },
+  "stepNumber": "Trin {{number}}",
+  "stepTips": "Tips til dette trin",
+  "noIngredients": "Ingen ingredienser opført.",
+  "noSteps": "Ingen trin endnu."
 }
