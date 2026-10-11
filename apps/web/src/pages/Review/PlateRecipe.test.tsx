@@ -231,13 +231,20 @@ describe('Plate Scan: save as a Recipe', () => {
   });
 
   it('does not repeat a suggestion among the search results', async () => {
-    renderPlate();
-    await openPanel();
+    const calls = renderPlate();
+    const bases = await openPanel();
     await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
     await userEvent.type(screen.getByRole('searchbox'), 'risotto');
-    await screen.findByRole('radio', { name: 'Paella' }).catch(() => null);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    expect(screen.getAllByRole('radio', { name: 'Risotto' })).toHaveLength(1);
+    await waitFor(() =>
+      expect(
+        calls.some(
+          (c) => c.key === 'GET /api/recipes' && c.search.includes('risotto'),
+        ),
+      ).toBe(true),
+    );
+    expect(
+      await within(bases).findAllByRole('radio', { name: 'Risotto' }),
+    ).toHaveLength(1);
   });
 
   it('puts focus on the panel heading and back on the button when cancelled', async () => {
@@ -263,7 +270,34 @@ describe('Plate Scan: save as a Recipe', () => {
     );
   });
 
-  it('leaves out excluded lines and sends the edited quantity, unit and Unmatched name', async () => {
+  it('sends the edited quantity, unit and Unmatched name', async () => {
+    const calls = renderPlate();
+    await openPanel();
+    await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
+    const name = screen.getByLabelText('Name');
+    await userEvent.clear(name);
+    await userEvent.type(name, 'House sauce');
+    await userEvent.click(await screen.findByRole('button', { name: /Rice/ }));
+    // The Unmatched row is to check, so it is shown first; Rice's inputs come last.
+    const quantities = screen.getAllByLabelText('Quantity');
+    fireEvent.change(quantities[quantities.length - 1], {
+      target: { value: '120' },
+    });
+    const units = screen.getAllByLabelText('Unit');
+    await userEvent.selectOptions(units[units.length - 1], 'kg');
+    await userEvent.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await screen.findByText('recipe screen');
+    const body = calls.find((c) => c.key === 'POST /api/recipes/from-plate')
+      ?.body as { lines: Record<string, unknown>[] };
+    expect(body.lines[0]).toMatchObject({
+      ingredientId: 'rice-id',
+      quantity: 120,
+      unit: 'kg',
+    });
+    expect(body.lines[1]).toMatchObject({ rawName: 'House sauce' });
+  });
+
+  it('leaves out excluded lines', async () => {
     const calls = renderPlate();
     await openPanel();
     await screen.findByRole('radio', { name: 'Pilaf (suggested)' });
