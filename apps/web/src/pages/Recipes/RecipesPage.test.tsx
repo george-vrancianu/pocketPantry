@@ -57,8 +57,8 @@ describe('RecipesPage', () => {
   it('lists Base Recipes with their pluralised Variant counts', async () => {
     setup(() => [omelette, item({ id: 's', title: 'Soup', variantCount: 1 })]);
     expect(await screen.findByText('Omelette')).toBeInTheDocument();
-    expect(screen.getByText('3 variants')).toBeInTheDocument();
-    expect(screen.getByText('1 variant')).toBeInTheDocument();
+    expect(screen.getByText('3 Variants')).toBeInTheDocument();
+    expect(screen.getByText('1 Variant')).toBeInTheDocument();
   });
 
   it('opens a Recipe when tapped', async () => {
@@ -71,7 +71,7 @@ describe('RecipesPage', () => {
 
   it('shows an empty state', async () => {
     setup(() => []);
-    expect(await screen.findByText('No recipes yet.')).toBeInTheDocument();
+    expect(await screen.findByText('No Recipes yet.')).toBeInTheDocument();
   });
 
   it('shows an error when the list fails to load', async () => {
@@ -93,7 +93,7 @@ describe('RecipesPage', () => {
     await screen.findByText('Omelette');
 
     await user.selectOptions(screen.getByLabelText('Cuisine'), 'Italian');
-    expect(await screen.findByText('variant of Omelette')).toBeInTheDocument();
+    expect(await screen.findByText('Variant of Omelette')).toBeInTheDocument();
     const last = calls.filter((c) => c.key === 'GET /api/recipes').at(-1)!;
     expect(last.search).toContain('cuisineId=c-it');
     expect(last.search).toContain('locale=en');
@@ -108,7 +108,7 @@ describe('RecipesPage', () => {
   it('sends the search text after a pause', async () => {
     const calls = setup(() => [omelette]);
     await screen.findByText('Omelette');
-    await userEvent.type(screen.getByLabelText('Search recipes'), 'frit');
+    await userEvent.type(screen.getByLabelText('Search Recipes'), 'frit');
     await vi.waitFor(() => {
       const last = calls.filter((c) => c.key === 'GET /api/recipes').at(-1)!;
       expect(last.search).toContain('search=frit');

@@ -98,7 +98,7 @@ describe('RecipeDetailPage', () => {
   it('notes an archived Recipe', async () => {
     setup(recipe({ archived: true }));
     expect(
-      await screen.findByText('This recipe is archived.'),
+      await screen.findByText('This Recipe is archived.'),
     ).toBeInTheDocument();
   });
 
@@ -178,7 +178,7 @@ describe('RecipeDetailPage', () => {
       }),
     );
     const back = await screen.findByRole('link', {
-      name: /variant of Omelette/,
+      name: /Variant of Omelette/,
     });
     expect(back).toHaveAttribute('href', '/recipes/o');
     const section = screen
@@ -273,14 +273,14 @@ describe('RecipeDetailPage', () => {
       { route: '/recipes/nope' },
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'This recipe could not be found.',
+      'This Recipe could not be found.',
     );
   });
 
   describe('Family actions', () => {
     it('offers Make a variant on a Catalog Recipe but not Edit or Delete', async () => {
       setup(recipe({}));
-      const make = await screen.findByRole('link', { name: 'Make a variant' });
+      const make = await screen.findByRole('link', { name: 'Make a Variant' });
       expect(make).toHaveAttribute('href', '/recipes/o/variant/new');
       expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
       expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
@@ -300,7 +300,7 @@ describe('RecipeDetailPage', () => {
         '/recipes/g/edit',
       );
       expect(
-        screen.getByRole('link', { name: 'Make a variant' }),
+        screen.getByRole('link', { name: 'Make a Variant' }),
       ).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'Delete' }),
@@ -309,7 +309,7 @@ describe('RecipeDetailPage', () => {
 
     it('offers no Edit or Delete on an archived own Recipe', async () => {
       setup(recipe({ id: 'g', owner: 'family', archived: true }));
-      await screen.findByText('This recipe is archived.');
+      await screen.findByText('This Recipe is archived.');
       expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
       expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
     });
@@ -367,20 +367,20 @@ describe('RecipeDetailPage', () => {
       expect(await within(row).findByText('Missing')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Edit' })).toBeInTheDocument();
       expect(
-        screen.getByRole('link', { name: 'Make a variant' }),
+        screen.getByRole('link', { name: 'Make a Variant' }),
       ).toBeInTheDocument();
     });
 
     it('hides Make a variant on a Family standalone Recipe', async () => {
       setup(recipe({ id: 'g', owner: 'family' }));
       await screen.findByRole('link', { name: 'Edit' });
-      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
     it('hides Make a variant when the Recipe or its base is archived', async () => {
       setup(recipe({ archived: true }));
       await screen.findByRole('heading', { name: 'Omelette' });
-      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
     it('hides Make a variant when the base is archived', async () => {
@@ -392,7 +392,7 @@ describe('RecipeDetailPage', () => {
         }),
       );
       await screen.findByRole('heading', { name: 'Omelette' });
-      expect(screen.queryByRole('link', { name: 'Make a variant' })).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Make a Variant' })).toBeNull();
     });
 
     it('archives after a confirm and goes back to the base', async () => {
@@ -418,7 +418,7 @@ describe('RecipeDetailPage', () => {
       await user.click(screen.getByRole('button', { name: 'Confirm' }));
       await vi.waitFor(() =>
         expect(
-          screen.getByRole('link', { name: 'Make a variant' }),
+          screen.getByRole('link', { name: 'Make a Variant' }),
         ).toHaveAttribute('href', '/recipes/o/variant/new'),
       );
       expect(calls.map((call) => call.key)).toContain(

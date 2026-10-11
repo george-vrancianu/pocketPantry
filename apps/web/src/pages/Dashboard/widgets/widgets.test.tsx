@@ -321,7 +321,7 @@ describe('CookTonightWidget', () => {
       name: /Spicy Pasta/,
     });
     expect(link).toHaveAttribute('href', '/recipes/r1');
-    expect(within(link).getByText('variant of Base r1')).toBeInTheDocument();
+    expect(within(link).getByText('Variant of Base r1')).toBeInTheDocument();
     expect(
       within(link).getByText('30 min · +2 other variants you can make'),
     ).toBeInTheDocument();
@@ -368,7 +368,7 @@ describe('CookTonightWidget', () => {
     const link = await screen.findByRole('link', { name: /Old Stew/ });
     expect(link).toHaveAttribute('href', '/recipes/r1');
     expect(within(link).getByText('Vegan Stew')).toBeInTheDocument();
-    expect(within(link).queryByText(/variant of/)).not.toBeInTheDocument();
+    expect(within(link).queryByText(/Variant of/)).not.toBeInTheDocument();
   });
 
   it.each([
@@ -433,7 +433,7 @@ describe('CookTonightWidget', () => {
 
     expect(
       await screen.findByRole('link', {
-        name: 'Paella, variant of Base 1, Missing: Saffron, 5 min · +1 other variant you can make',
+        name: 'Paella, Variant of Base 1, Missing: Saffron, 5 min · +1 other variant you can make',
       }),
     ).toBeInTheDocument();
   });

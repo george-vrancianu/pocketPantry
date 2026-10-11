@@ -159,7 +159,7 @@ describe('NewVariantPage', () => {
     expect(await screen.findByLabelText(/^Title/)).toHaveValue('Omelette');
     expect(
       screen.getByText(
-        /Copied Tips stay with their steps; add your own after saving the variant\./,
+        /Copied Tips stay with their Steps; add your own after saving the Variant\./,
       ),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('3');
@@ -209,7 +209,7 @@ describe('NewVariantPage', () => {
       screen.getByRole('button', { name: 'Remove Tip 1 of step 1' }),
     );
     expect(screen.queryByText('Medium heat')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Save variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     const post = calls.find((call) => call.key === 'POST /api/recipes')!;
@@ -238,7 +238,7 @@ describe('NewVariantPage', () => {
       target: { value: 'Gran’s herbs' },
     });
     await user.click(screen.getByRole('button', { name: 'Add name' }));
-    await user.click(screen.getByRole('button', { name: 'Save variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
     const post = calls.find((call) => call.key === 'POST /api/recipes')!;
@@ -279,7 +279,7 @@ describe('NewVariantPage', () => {
 
     await user.clear(note);
     await user.type(note, 'Light');
-    await user.click(screen.getByRole('button', { name: 'Save variant' }));
+    await user.click(screen.getByRole('button', { name: 'Save Variant' }));
     await vi.waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/recipes')?.body,
@@ -364,7 +364,7 @@ describe('NewVariantPage', () => {
         Response.json({ ...draft, title: '' }),
     });
     expect(
-      await screen.findByRole('button', { name: 'Save variant' }),
+      await screen.findByRole('button', { name: 'Save Variant' }),
     ).toBeDisabled();
   });
 });
@@ -384,11 +384,11 @@ describe('EditFamilyRecipePage', () => {
     fireEvent.change(screen.getByLabelText('Nutrition Note'), {
       target: { value: 'Still here' },
     });
-    await user.click(screen.getByRole('button', { name: 'Save recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
     expect(await screen.findByText('Recipe saved.')).toBeInTheDocument();
     expect(screen.getByLabelText('Nutrition Note')).toHaveValue('Still here');
     expect(
-      screen.getByRole('link', { name: 'View the recipe' }),
+      screen.getByRole('link', { name: 'View the Recipe' }),
     ).toHaveAttribute('href', '/recipes/g');
     const put = calls.find((call) => call.key === 'PUT /api/recipes/g')!;
     expect(put.body).toMatchObject({
@@ -408,7 +408,7 @@ describe('EditFamilyRecipePage', () => {
         Response.json({ ...saved, archived: true }),
     });
     expect(
-      await screen.findByText('This recipe cannot be edited.'),
+      await screen.findByText('This Recipe cannot be edited.'),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText(/^Title/)).toBeNull();
   });
@@ -420,7 +420,7 @@ describe('EditFamilyRecipePage', () => {
       'PUT /api/recipes/g': () => Response.json(saved),
     });
     await user.clear(await screen.findByLabelText('Quantity of Egg'));
-    await user.click(screen.getByRole('button', { name: 'Save recipe' }));
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
     await vi.waitFor(() =>
       expect(
         calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,

@@ -381,7 +381,7 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText('Short 150 g');
     await user.click(screen.getByRole('button', { name: 'More servings' }));
     expect(screen.getByText('5 servings')).toBeVisible();
-    await user.click(screen.getByRole('link', { name: /variant of Pancakes/ }));
+    await user.click(screen.getByRole('link', { name: /Variant of Pancakes/ }));
     expect(await screen.findByText('2 servings')).toBeVisible();
     const baseMatches = calls.filter(
       (c) => c.key === 'GET /api/recipes/r1/pantry-match',
