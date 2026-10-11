@@ -62,13 +62,15 @@
     "not_found": "That Catalog entry no longer exists.",
     "name_taken": "That name is already used. Names must be unique, ignoring case and accents.",
     "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
-    "ingredient_in_use": "This Ingredient is still used in the Pantry, on the Shopping List, as a Staple or in a Shopping Template, so it cannot be deleted.",
+    "ingredient_in_use": "This Ingredient is still used in the Pantry, on the Shopping List, as a Staple, in a Shopping Template or in a Recipe, so it cannot be deleted.",
     "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
     "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
     "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
     "canonical_name_managed": "The English name changes with the entry's name, not here.",
     "aisle_in_use": "Parent Categories still use this Aisle, so it cannot be deleted. Move them to another Aisle first.",
-    "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again."
+    "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
+    "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
+    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
@@ -87,5 +89,20 @@
     "name_taken": "That name already belongs to another Ingredient. Resolve it to that Ingredient, or rename the other one first.",
     "not_found": "That name is no longer in the queue. Someone may have resolved it already.",
     "concurrent_change": "The lists changed while resolving. Please try again."
+  },
+  "recipes": {
+    "not_found": "That Recipe no longer exists.",
+    "parent_not_found": "The Base Recipe for this Variant no longer exists.",
+    "variant_of_variant": "A Variant cannot have Variants of its own. Make the Variant from the Base Recipe instead.",
+    "parent_archived": "This Base Recipe is archived, so it cannot get new Variants.",
+    "quantity_unit_mismatch": "An Ingredient Line needs both a quantity and a unit, or neither.",
+    "ingredient_required": "An Ingredient Line needs an Ingredient from the Catalog.",
+    "item_not_found": "A line, Step or Tip in this change is no longer part of the Recipe. Reload the Recipe and try again.",
+    "duplicate_item": "The same line or Step appears twice. Reload the Recipe and try again.",
+    "bad_step_anchor": "That Tip points at a Step that is not in this Recipe.",
+    "bad_hidden_tip": "Only Recipe-level Tips of the Base Recipe can be hidden, and only on a Variant.",
+    "tip_not_found": "That Tip no longer exists.",
+    "tip_order_stale": "The Tips changed while you were reordering. Check the order and try again.",
+    "source_locale": "English is the source language of Recipes. Edit the Recipe itself instead of translating it."
   }
 }

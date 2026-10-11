@@ -1,3 +1,8 @@
 {
-  "title": "Opskrifter"
+  "title": "Opskrifter",
+  "difficulty": {
+    "easy": "Let",
+    "medium": "Mellem",
+    "hard": "Svær"
+  }
 }

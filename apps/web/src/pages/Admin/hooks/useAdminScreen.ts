@@ -5,14 +5,18 @@ import {
   localName,
   useAdminCatalog,
   type AdminLeafCategory,
+  type AdminListEntry,
   type AdminParentCategory,
   type CategoryKind,
+  type ListKind,
 } from '../../../lib/admin';
 
-export type AdminTab = 'ingredients' | 'categories' | 'unmatched';
+export type AdminTab = 'ingredients' | 'categories' | 'recipes' | 'unmatched';
 export type Editing =
   | { type: 'ingredient'; id: string | null }
   | { type: 'aisle'; id: string | null }
+  | { type: 'recipe'; id: string | null }
+  | { type: 'list'; kind: ListKind; id: string | null }
   | { type: 'category'; kind: CategoryKind; id: string | null };
 
 /** State of the Admin screen: loaded Catalog, tab, Ingredient filter, and which editor is open. */
@@ -42,6 +46,12 @@ export function useAdminScreen() {
     editing?.type === 'aisle'
       ? catalog?.aisles.find((item) => item.id === editing.id)
       : undefined;
+  let editedListEntry: AdminListEntry | undefined;
+  if (editing?.type === 'list' && catalog) {
+    const list =
+      editing.kind === 'cuisine' ? catalog.cuisines : catalog.methods;
+    editedListEntry = list.find((item) => item.id === editing.id);
+  }
   let editedCategory: AdminParentCategory | AdminLeafCategory | undefined;
   if (editing?.type === 'category' && catalog) {
     const list: Array<AdminParentCategory | AdminLeafCategory> =
@@ -64,6 +74,7 @@ export function useAdminScreen() {
     editedIngredient,
     editedAisle,
     editedCategory,
+    editedListEntry,
     edit: setEditing,
     close: () => setEditing(null),
   };

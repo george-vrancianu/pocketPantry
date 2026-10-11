@@ -4,7 +4,8 @@
   "tabs": {
     "ingredients": "Ingredienser",
     "categories": "Kategorier",
-    "unmatched": "Umatchede"
+    "unmatched": "Umatchede",
+    "recipes": "Opskrifter"
   },
   "locations": {
     "none": "Arvet"
@@ -65,7 +66,8 @@
     "newSynonym": "Nyt synonym ({{language}})",
     "addSynonym": "Tilføj synonym på {{language}}",
     "removeSynonym": "Fjern synonymet {{value}}",
-    "none": "Ingen synonymer endnu."
+    "none": "Ingen synonymer endnu.",
+    "namesTitle": "Oversættelser"
   },
   "unmatched": {
     "statusLabel": "Kø",
@@ -113,6 +115,121 @@
       "exists": "Den trykte tekst blev ikke tilføjet: den er allerede et synonym for denne ingrediens.",
       "taken": "Den trykte tekst blev ikke tilføjet: den tilhører en anden ingrediens.",
       "none": "Den trykte tekst blev ikke tilføjet: rækkerne havde ingen trykt tekst."
+    }
+  },
+  "list": {
+    "cuisine": {
+      "title": "Køkkener",
+      "hint": "Opskrifter kan mærkes med ét køkken.",
+      "new": "Nyt køkken",
+      "edit": "Redigér køkkenet {{name}}",
+      "name": "Navn (engelsk)",
+      "empty": "Ingen køkkener endnu."
+    },
+    "method": {
+      "title": "Metoder",
+      "hint": "Opskrifter kan mærkes med én metode, fx bagning eller grill.",
+      "new": "Ny metode",
+      "edit": "Redigér metoden {{name}}",
+      "name": "Navn (engelsk)",
+      "empty": "Ingen metoder endnu."
+    }
+  },
+  "recipe": {
+    "title": "Opskrifter",
+    "new": "Ny grundopskrift",
+    "edit": "Redigér opskriften {{title}}",
+    "editHeading": "Opskrift: {{title}}",
+    "empty": "Ingen opskrifter endnu.",
+    "archivedBadge": "Arkiveret",
+    "variantOf": "Variant af {{base}}",
+    "variantsOf": "Varianter af {{title}}",
+    "loading": "Indlæser opskriften",
+    "save": "Gem opskrift",
+    "create": "Opret opskrift",
+    "saved": "Opskriften er gemt.",
+    "fields": {
+      "title": "Titel (engelsk)",
+      "servings": "Portioner",
+      "prepMinutes": "Forberedelse (minutter)",
+      "cookMinutes": "Tilberedning (minutter)",
+      "difficulty": "Sværhedsgrad",
+      "difficultyNone": "Ikke angivet",
+      "cuisine": "Køkken",
+      "method": "Metode",
+      "none": "Ingen"
+    },
+    "invalid": {
+      "servings": "Portioner skal være et helt tal fra 1 til 1000.",
+      "minutes": "Minutter skal være et helt tal eller stå tomme.",
+      "quantity": "Mængden skal være et positivt tal med højst tre decimaler, eller tom.",
+      "timer": "Timeren skal være et positivt antal minutter, eller tom."
+    },
+    "lines": {
+      "title": "Ingredienslinjer",
+      "hint": "Lad mængden stå tom for en linje som \"salt, efter smag\".",
+      "empty": "Ingen ingredienslinjer endnu.",
+      "add": "Tilføj en ingrediens",
+      "quantity": "Mængde af {{name}}",
+      "unit": "Enhed for {{name}}",
+      "optional": "Valgfri: {{name}}",
+      "note": "Note til {{name}}",
+      "remove": "Fjern {{name}}",
+      "moveUp": "Flyt {{name}} op",
+      "moveDown": "Flyt {{name}} ned",
+      "unknown": "Ukendt ingrediens"
+    },
+    "steps": {
+      "title": "Trin",
+      "empty": "Ingen trin endnu.",
+      "add": "Tilføj et trin",
+      "text": "Trin {{number}}",
+      "timer": "Timer til trin {{number}} (minutter)",
+      "moveUp": "Flyt trin {{number}} op",
+      "moveDown": "Flyt trin {{number}} ned",
+      "remove": "Fjern trin {{number}}"
+    },
+    "variant": {
+      "title": "Lav en variant",
+      "hint": "Kopierer ingredienslinjer, trin og trin-tips som et udkast. Derefter redigeres varianten for sig.",
+      "name": "Variantens titel",
+      "make": "Lav en variant",
+      "making": "Opretter…"
+    },
+    "archive": {
+      "label": "Arkivér opskrift",
+      "confirm": "Arkivér denne opskrift? Den forsvinder fra browsing og fra listen til nye varianter. Dens varianter virker stadig.",
+      "note": "Denne opskrift er arkiveret."
+    },
+    "tips": {
+      "title": "Tips",
+      "hint": "Tips gemmes, så snart du ændrer dem. Gem opskriften først for at tilføje et tip til et nyt trin.",
+      "recipeLevel": "Opskriftens tips",
+      "forStep": "Tips til trin {{number}}",
+      "none": "Ingen tips endnu.",
+      "new": "Nyt tip",
+      "newForStep": "Nyt tip til trin {{number}}",
+      "add": "Tilføj tip",
+      "text": "Tip {{position}}",
+      "save": "Gem tip {{position}}",
+      "remove": "Slet tip {{position}}",
+      "moveUp": "Flyt tip {{position}} op",
+      "moveDown": "Flyt tip {{position}} ned",
+      "inherited": "Tips fra grundopskriften",
+      "inheritedHint": "Fjern fluebenet ved et tip for at skjule det på denne variant.",
+      "show": "Vis: {{text}}",
+      "noInherited": "Grundopskriften har ingen tips på opskriftsniveau."
+    },
+    "translations": {
+      "title": "Oversættelser af opskriften",
+      "hint": "Engelsk er kilden. Et tomt felt falder tilbage til engelsk. Gem opskriften først, så nye linjer, trin og tips vises her.",
+      "title_field": "Titel ({{language}})",
+      "step": "Trin {{number}} ({{language}})",
+      "line": "Note til {{name}} ({{language}})",
+      "tip": "Tip {{position}} ({{language}})",
+      "source": "Engelsk: {{text}}",
+      "save": "Gem oversættelser på {{language}}",
+      "saved": "Oversættelserne på {{language}} er gemt."
     }
   }
 }

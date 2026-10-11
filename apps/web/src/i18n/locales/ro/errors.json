@@ -62,13 +62,15 @@
     "not_found": "Această intrare din Catalog nu mai există.",
     "name_taken": "Numele este deja folosit. Numele trebuie să fie unice, indiferent de majuscule și diacritice.",
     "category_not_empty": "Această Categorie este încă folosită sau conține intrări. Mută-le sau șterge-le mai întâi.",
-    "ingredient_in_use": "Acest Ingredient este încă folosit în Cămară, în lista de cumpărături, ca Produs de bază sau într-un Șablon de cumpărături, deci nu poate fi șters.",
+    "ingredient_in_use": "Acest Ingredient este încă folosit în Cămară, în lista de cumpărături, ca Produs de bază, într-un Șablon de cumpărături sau într-o Rețetă, deci nu poate fi șters.",
     "other_leaf_protected": "Categoria Altele este locul Loturilor nepotrivite, deci nu poate fi ștearsă, mutată sau eliminată.",
     "other_leaf_name_taken": "O categorie Altele are deja acest nume generat („Other <nume>”). Redenumește sau elimină mai întâi categoria în conflict.",
     "translation_exists": "Această intrare are deja un nume în acea limbă. Editează-l pe cel existent.",
     "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici.",
     "aisle_in_use": "Categorii părinte încă folosesc acest Raion, deci nu poate fi șters. Mută-le mai întâi pe alt Raion.",
-    "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou."
+    "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
+    "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
+    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",
@@ -87,5 +89,20 @@
     "name_taken": "Acest nume aparține deja altui Ingredient. Rezolvă-l către acel Ingredient sau redenumește-l mai întâi pe celălalt.",
     "not_found": "Numele nu mai este în coadă. Poate că cineva l-a rezolvat deja.",
     "concurrent_change": "Listele s-au schimbat în timpul rezolvării. Încearcă din nou."
+  },
+  "recipes": {
+    "not_found": "Această Rețetă nu mai există.",
+    "parent_not_found": "Rețeta de bază a acestei Variante nu mai există.",
+    "variant_of_variant": "O Variantă nu poate avea Variante proprii. Creeaz-o din Rețeta de bază.",
+    "parent_archived": "Această Rețetă de bază este arhivată, deci nu poate primi Variante noi.",
+    "quantity_unit_mismatch": "O linie de ingredient are nevoie de cantitate și unitate, sau de niciuna.",
+    "ingredient_required": "O linie de ingredient are nevoie de un Ingredient din Catalog.",
+    "item_not_found": "O linie, un Pas sau un Sfat din această modificare nu mai face parte din Rețetă. Reîncarcă Rețeta și încearcă din nou.",
+    "duplicate_item": "Aceeași linie sau același Pas apare de două ori. Reîncarcă Rețeta și încearcă din nou.",
+    "bad_step_anchor": "Acest Sfat trimite la un Pas care nu aparține acestei Rețete.",
+    "bad_hidden_tip": "Doar Sfaturile la nivel de Rețetă ale Rețetei de bază pot fi ascunse, și doar pe o Variantă.",
+    "tip_not_found": "Acest Sfat nu mai există.",
+    "tip_order_stale": "Sfaturile s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
+    "source_locale": "Engleza este limba sursă a Rețetelor. Editează Rețeta în sine, nu o traduce."
   }
 }

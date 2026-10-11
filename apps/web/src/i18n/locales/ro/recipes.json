@@ -1,3 +1,8 @@
 {
-  "title": "Rețete"
+  "title": "Rețete",
+  "difficulty": {
+    "easy": "Ușor",
+    "medium": "Mediu",
+    "hard": "Dificil"
+  }
 }

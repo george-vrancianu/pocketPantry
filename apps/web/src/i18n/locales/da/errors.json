@@ -62,13 +62,15 @@
     "not_found": "Det katalogpunkt findes ikke længere.",
     "name_taken": "Det navn er allerede i brug. Navne skal være unikke, uanset store og små bogstaver og accenter.",
     "category_not_empty": "Denne kategori er stadig i brug eller indeholder punkter. Flyt eller slet dem først.",
-    "ingredient_in_use": "Denne ingrediens bruges stadig i spisekammeret, på indkøbslisten, som basisvare eller i en indkøbsskabelon og kan derfor ikke slettes.",
+    "ingredient_in_use": "Denne ingrediens bruges stadig i spisekammeret, på indkøbslisten, som basisvare, i en indkøbsskabelon eller i en opskrift og kan derfor ikke slettes.",
     "other_leaf_protected": "Kategorien Andet er der, hvor umatchede partier havner, så den kan ikke slettes, flyttes eller fjernes.",
     "other_leaf_name_taken": "En kategori Andet har allerede det genererede navn (\"Andet <name>\"). Omdøb eller fjern den kategori, der er i konflikt, først.",
     "translation_exists": "Dette punkt har allerede et navn på det sprog. Rediger det eksisterende i stedet.",
     "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her.",
     "aisle_in_use": "Overkategorier bruger stadig denne afdeling, så den kan ikke slettes. Flyt dem først til en anden afdeling.",
-    "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen."
+    "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
+    "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
+    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
@@ -87,5 +89,20 @@
     "name_taken": "Det navn tilhører allerede en anden ingrediens. Afklar det som den ingrediens, eller omdøb den anden først.",
     "not_found": "Det navn er ikke længere i køen. Måske har en anden allerede afklaret det.",
     "concurrent_change": "Listerne blev ændret under afklaringen. Prøv igen."
+  },
+  "recipes": {
+    "not_found": "Den opskrift findes ikke længere.",
+    "parent_not_found": "Grundopskriften til denne variant findes ikke længere.",
+    "variant_of_variant": "En variant kan ikke have egne varianter. Lav varianten ud fra grundopskriften i stedet.",
+    "parent_archived": "Denne grundopskrift er arkiveret, så den kan ikke få nye varianter.",
+    "quantity_unit_mismatch": "En ingredienslinje skal have både mængde og enhed, eller ingen af dem.",
+    "ingredient_required": "En ingredienslinje skal have en ingrediens fra kataloget.",
+    "item_not_found": "En linje, et trin eller et tip i ændringen er ikke længere en del af opskriften. Genindlæs opskriften og prøv igen.",
+    "duplicate_item": "Den samme linje eller det samme trin står to gange. Genindlæs opskriften og prøv igen.",
+    "bad_step_anchor": "Det tip peger på et trin, der ikke hører til denne opskrift.",
+    "bad_hidden_tip": "Kun tip på opskriftsniveau fra grundopskriften kan skjules, og kun på en variant.",
+    "tip_not_found": "Det tip findes ikke længere.",
+    "tip_order_stale": "Tippene blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
+    "source_locale": "Engelsk er opskrifternes kildesprog. Redigér selve opskriften i stedet for at oversætte den."
   }
 }

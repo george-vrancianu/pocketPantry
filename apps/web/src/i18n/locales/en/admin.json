@@ -4,7 +4,8 @@
   "tabs": {
     "ingredients": "Ingredients",
     "categories": "Categories",
-    "unmatched": "Unmatched"
+    "unmatched": "Unmatched",
+    "recipes": "Recipes"
   },
   "locations": {
     "none": "Inherit"
@@ -65,7 +66,8 @@
     "newSynonym": "New Synonym ({{language}})",
     "addSynonym": "Add {{language}} Synonym",
     "removeSynonym": "Remove Synonym {{value}}",
-    "none": "No Synonyms yet."
+    "none": "No Synonyms yet.",
+    "namesTitle": "Translations"
   },
   "unmatched": {
     "statusLabel": "Queue",
@@ -113,6 +115,121 @@
       "exists": "The printed text was not added: it is already a Synonym of this Ingredient.",
       "taken": "The printed text was not added: it belongs to another Ingredient.",
       "none": "The printed text was not added: the rows had no printed text."
+    }
+  },
+  "list": {
+    "cuisine": {
+      "title": "Cuisines",
+      "hint": "Recipes can be tagged with one Cuisine.",
+      "new": "New Cuisine",
+      "edit": "Edit Cuisine {{name}}",
+      "name": "Name (English)",
+      "empty": "No Cuisines yet."
+    },
+    "method": {
+      "title": "Methods",
+      "hint": "Recipes can be tagged with one Method, e.g. baking or grilling.",
+      "new": "New Method",
+      "edit": "Edit Method {{name}}",
+      "name": "Name (English)",
+      "empty": "No Methods yet."
+    }
+  },
+  "recipe": {
+    "title": "Recipes",
+    "new": "New Base Recipe",
+    "edit": "Edit Recipe {{title}}",
+    "editHeading": "Recipe: {{title}}",
+    "empty": "No Recipes yet.",
+    "archivedBadge": "Archived",
+    "variantOf": "Variant of {{base}}",
+    "variantsOf": "Variants of {{title}}",
+    "loading": "Loading the Recipe",
+    "save": "Save Recipe",
+    "create": "Create Recipe",
+    "saved": "Recipe saved.",
+    "fields": {
+      "title": "Title (English)",
+      "servings": "Servings",
+      "prepMinutes": "Prep (minutes)",
+      "cookMinutes": "Cook (minutes)",
+      "difficulty": "Difficulty",
+      "difficultyNone": "Not set",
+      "cuisine": "Cuisine",
+      "method": "Method",
+      "none": "None"
+    },
+    "invalid": {
+      "servings": "Servings must be a whole number from 1 to 1000.",
+      "minutes": "Minutes must be a whole number, or blank.",
+      "quantity": "Quantity must be a positive number with at most three decimals, or blank.",
+      "timer": "The timer must be a positive number of minutes, or blank."
+    },
+    "lines": {
+      "title": "Ingredient Lines",
+      "hint": "Leave the quantity blank for a line like \"salt, to taste\".",
+      "empty": "No Ingredient Lines yet.",
+      "add": "Add an Ingredient",
+      "quantity": "Quantity of {{name}}",
+      "unit": "Unit of {{name}}",
+      "optional": "Optional: {{name}}",
+      "note": "Note for {{name}}",
+      "remove": "Remove {{name}}",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "unknown": "Unknown Ingredient"
+    },
+    "steps": {
+      "title": "Steps",
+      "empty": "No Steps yet.",
+      "add": "Add a Step",
+      "text": "Step {{number}}",
+      "timer": "Timer for step {{number}} (minutes)",
+      "moveUp": "Move step {{number}} up",
+      "moveDown": "Move step {{number}} down",
+      "remove": "Remove step {{number}}"
+    },
+    "variant": {
+      "title": "Make a variant",
+      "hint": "Copies the Ingredient Lines, Steps and Step Tips as a draft. After that, the Variant is edited on its own.",
+      "name": "Variant title",
+      "make": "Make a variant",
+      "making": "Making…"
+    },
+    "archive": {
+      "label": "Archive Recipe",
+      "confirm": "Archive this Recipe? It disappears from browsing and from the picker for new Variants. Its Variants keep working.",
+      "note": "This Recipe is archived."
+    },
+    "tips": {
+      "title": "Tips",
+      "hint": "Tips are saved as soon as you change them. To add a Tip to a new Step, save the Recipe first.",
+      "recipeLevel": "Recipe Tips",
+      "forStep": "Tips for step {{number}}",
+      "none": "No Tips yet.",
+      "new": "New Tip",
+      "newForStep": "New Tip for step {{number}}",
+      "add": "Add Tip",
+      "text": "Tip {{position}}",
+      "save": "Save Tip {{position}}",
+      "remove": "Delete Tip {{position}}",
+      "moveUp": "Move Tip {{position}} up",
+      "moveDown": "Move Tip {{position}} down",
+      "inherited": "Tips from the Base Recipe",
+      "inheritedHint": "Untick a Tip to hide it on this Variant.",
+      "show": "Show: {{text}}",
+      "noInherited": "The Base Recipe has no Recipe Tips."
+    },
+    "translations": {
+      "title": "Recipe translations",
+      "hint": "English is the source. A blank field falls back to English. Save the Recipe first so new lines, Steps and Tips appear here.",
+      "title_field": "Title ({{language}})",
+      "step": "Step {{number}} ({{language}})",
+      "line": "Note for {{name}} ({{language}})",
+      "tip": "Tip {{position}} ({{language}})",
+      "source": "English: {{text}}",
+      "save": "Save {{language}} translations",
+      "saved": "{{language}} translations saved."
     }
   }
 }

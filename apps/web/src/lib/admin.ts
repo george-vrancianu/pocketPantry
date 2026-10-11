@@ -9,7 +9,12 @@ import {
 import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
-  'aisle' | 'parent_category' | 'leaf_category' | 'ingredient';
+  | 'aisle'
+  | 'parent_category'
+  | 'leaf_category'
+  | 'ingredient'
+  | 'cuisine'
+  | 'method';
 
 export type AdminTranslation = {
   id: string;
@@ -42,8 +47,14 @@ export type AdminIngredient = Translated & {
   defaultUnit: Unit;
 };
 
+/** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
+export type AdminListEntry = Translated;
+export type ListKind = 'cuisine' | 'method';
+
 export type AdminCatalog = {
   aisles: AdminAisle[];
+  cuisines: AdminListEntry[];
+  methods: AdminListEntry[];
   parentCategories: AdminParentCategory[];
   leafCategories: AdminLeafCategory[];
   ingredients: AdminIngredient[];
@@ -120,6 +131,22 @@ export function useDeleteAisle() {
 export function useReorderAisles() {
   return useAdminWrite((ids: string[]) =>
     apiRequest(`${base}/aisles/order`, { method: 'PUT', body: { ids } }),
+  );
+}
+
+const listPath = (kind: ListKind) =>
+  kind === 'cuisine' ? 'cuisines' : 'methods';
+export function useSaveListEntry(kind: ListKind, id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/${listPath(kind)}${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+export function useDeleteListEntry(kind: ListKind) {
+  return useAdminWrite((id: string) =>
+    apiRequest(`${base}/${listPath(kind)}/${id}`, { method: 'DELETE' }),
   );
 }
 
