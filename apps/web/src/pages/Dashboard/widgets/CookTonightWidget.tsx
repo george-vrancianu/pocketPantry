@@ -136,8 +136,13 @@ function CookCard({ card }: { card: CookTonightCard }) {
       }}
     >
       <Box
-        component="h3"
-        sx={{ m: 0, fontSize: 14, fontWeight: 700, lineHeight: 1.3 }}
+        component="span"
+        sx={{
+          display: 'block',
+          fontSize: 14,
+          fontWeight: 700,
+          lineHeight: 1.3,
+        }}
       >
         {heading}
       </Box>

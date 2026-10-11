@@ -384,9 +384,9 @@ describe('CookTonightWidget', () => {
 
       renderWithProviders(<CookTonightWidget size={size} columns={columns} />);
 
-      expect(await screen.findAllByRole('heading', { level: 3 })).toHaveLength(
-        shown,
-      );
+      expect(
+        await screen.findAllByRole('link', { name: /^Recipe / }),
+      ).toHaveLength(shown);
     },
   );
 
@@ -454,10 +454,11 @@ describe('CookTonightWidget', () => {
       cookTonight([
         card('1', { otherVariantsCount: 1, expiringCount: 1 }),
         card('2', { otherVariantsCount: 3, expiringCount: 3 }),
+        card('3', { otherVariantsCount: 20, expiringCount: 20 }),
       ]),
     );
 
-    renderWithProviders(<CookTonightWidget size="wide" columns={2} />, {
+    renderWithProviders(<CookTonightWidget size="tall" columns={4} />, {
       locale: 'ro',
     });
 
@@ -472,6 +473,12 @@ describe('CookTonightWidget', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(/folosește 3 ingrediente care expiră curând/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/\+20 de alte variante pe care le poți găti/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/folosește 20 de ingrediente care expiră curând/),
     ).toBeInTheDocument();
   });
 

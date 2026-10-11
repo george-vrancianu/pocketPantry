@@ -1,4 +1,4 @@
-/** Every Cook Tonight view and Recipe Pantry match; refetch after anything that changes the Pantry. */
+/** Every Cook Tonight view and Recipe Pantry match ('recipes' must match `recipesQueryKey`, which cannot be imported here without a cycle); refetch after anything that changes the Pantry. */
 export const recipeMatchingQueryKeys = [
   ['recipes', 'cook-tonight'],
   ['recipes', 'pantry-match'],
