@@ -2,6 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Template, TemplateLine } from '../../../lib/shoppingTemplates';
+import { useSuggestions } from '../../../lib/staples';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { ApplyTemplatePicker } from './ApplyTemplatePicker';
 
@@ -43,8 +44,15 @@ const template: Template = {
   ],
 };
 
+/** Keeps a Suggestions query mounted, as the Shopping List does. */
+function SuggestionsProbe() {
+  useSuggestions('en', '2026-10-11');
+  return null;
+}
+
 function stub(onApply: () => Response = () => Response.json({})) {
   const { fetchMock, calls } = stubApi({
+    'GET /api/shopping-list/suggestions': () => Response.json({ staples: [] }),
     'GET /api/shopping-templates/t1': () => Response.json(template),
     'POST /api/shopping-list/items/bulk': onApply,
   });
@@ -107,6 +115,30 @@ describe('ApplyTemplatePicker', () => {
         { name: 'Mystery spice' },
       ],
     });
+  });
+
+  it('refreshes the Suggestions after adding', async () => {
+    const calls = stub();
+    renderWithProviders(
+      <>
+        <SuggestionsProbe />
+        <ApplyTemplatePicker
+          templateId="t1"
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </>,
+    );
+    const suggestionFetches = () =>
+      calls.filter((c) => c.key === 'GET /api/shopping-list/suggestions')
+        .length;
+    await vi.waitFor(() => expect(suggestionFetches()).toBe(1));
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: /^Add \d+ items? to list$/ }),
+    );
+
+    await vi.waitFor(() => expect(suggestionFetches()).toBe(2));
   });
 
   it('disables adding when nothing is ticked', async () => {
