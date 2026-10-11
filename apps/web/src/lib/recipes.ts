@@ -5,13 +5,13 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import type { Difficulty, PairingKind, PairingPrinciple } from './adminRecipes';
 import type { Unit } from './catalog';
 import { useDebounced } from './catalog';
 import { localIso } from './pantry';
 import { suggestionsQueryKey } from './queryKeys';
 import { shoppingListQueryKey, type ShoppingList } from './shopping';
 
-export type RecipeDifficulty = 'easy' | 'medium' | 'hard';
 export type RecipeOwner = 'catalog' | 'family';
 export type NamedRef = { id: string; name: string };
 
@@ -27,7 +27,7 @@ export type RecipeListItem = {
   servings: number;
   prepMinutes: number | null;
   cookMinutes: number | null;
-  difficulty: RecipeDifficulty | null;
+  difficulty: Difficulty | null;
   owner: RecipeOwner;
 };
 
@@ -72,16 +72,6 @@ export type RecipeDiff = {
   swapped: { from: DiffEntry; to: DiffEntry }[];
 };
 
-export type PairingKind = 'food' | 'drink';
-export type PairingPrinciple =
-  | 'acid_cuts_fat'
-  | 'salt_balances_sweet'
-  | 'fat_carries_flavour'
-  | 'contrast_texture'
-  | 'complement_flavour'
-  | 'bitter_balances_rich'
-  | 'cleanses_palate'
-  | 'regional_tradition';
 export type PairingLink =
   | { type: 'ingredient'; id: string; name: string }
   | { type: 'recipe'; id: string; title: string };
@@ -116,7 +106,7 @@ export type RecipeDetail = {
   servings: number;
   prepMinutes: number | null;
   cookMinutes: number | null;
-  difficulty: RecipeDifficulty | null;
+  difficulty: Difficulty | null;
   cuisine: NamedRef | null;
   method: NamedRef | null;
   archived: boolean;

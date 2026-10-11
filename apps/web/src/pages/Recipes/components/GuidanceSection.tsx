@@ -1,11 +1,8 @@
 import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
-import type {
-  DetailEatingMoment,
-  DetailPairing,
-  PairingKind,
-} from '../../../lib/recipes';
+import type { PairingKind } from '../../../lib/adminRecipes';
+import type { DetailEatingMoment, DetailPairing } from '../../../lib/recipes';
 import { Section } from './Section';
 import type { SectionProps } from './sections';
 

@@ -5,6 +5,7 @@ import type {
   PairingPrinciple,
 } from './adminRecipes';
 import { MAX_NUTRITION_NOTE } from './adminRecipes';
+import { newKey } from './recipeDraft';
 
 export type LinkType = 'none' | 'ingredient' | 'recipe';
 
@@ -36,11 +37,8 @@ export type GuidanceDraft = {
   eatingMoments: EatingMomentDraft[];
 };
 
-let nextKey = 1;
 export const MAX_PAIRING_LABEL = 200;
 export const MAX_PAIRING_REASON = 1000;
-
-export const newKey = () => nextKey++;
 
 export function emptyPairing(): PairingDraft {
   return {

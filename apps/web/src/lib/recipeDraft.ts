@@ -43,6 +43,7 @@ export type DraftProblems = {
 };
 
 let nextKey = 1;
+/** A fresh React key for a draft row (shared by every Recipe draft). */
 export const newKey = () => nextKey++;
 
 export const minutesText = (value: number | null) =>
