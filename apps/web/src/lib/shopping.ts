@@ -1,3 +1,4 @@
+import { suggestionsQueryKey } from './queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
@@ -59,7 +60,7 @@ export function useShoppingMutations(locale: string) {
   const onSuccess = (list: ShoppingList) => {
     queryClient.setQueryData(listKey(locale), list);
     // Items on the list are hidden from Suggestions.
-    return queryClient.invalidateQueries({ queryKey: ['suggestions'] });
+    return queryClient.invalidateQueries({ queryKey: suggestionsQueryKey });
   };
 
   const add = useMutation({

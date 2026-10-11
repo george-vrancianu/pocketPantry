@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 
 export type Batch = {
@@ -205,7 +206,8 @@ export function useAddBatch(locale: string) {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
       ]),
   });
 }
@@ -247,7 +249,8 @@ export function useUpdateBatch(locale: string) {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
       ]),
   });
 }
@@ -260,7 +263,8 @@ export function useDeleteBatch() {
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
       ]),
   });
 }

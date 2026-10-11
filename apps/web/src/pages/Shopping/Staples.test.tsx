@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ShoppingList } from '../../lib/shopping';
-import type { Staple, Suggestion } from '../../lib/staples';
+import type { Staple } from '../../lib/staples';
+import type { Suggestion } from '../../lib/suggestions';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { SuggestionsWidget } from '../Dashboard/widgets/SuggestionsWidget';
 import { ShoppingPage } from './ShoppingPage';
@@ -396,7 +397,7 @@ describe('StaplesPage', () => {
 });
 
 describe('SuggestionsWidget', () => {
-  it('shows the count of missing Staples and Used Up Ingredients, and the first few names, and links to Shopping', async () => {
+  it('shows the count of missing Staples, the first few Suggestions of both groups, and links to Shopping', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
@@ -411,9 +412,26 @@ describe('SuggestionsWidget', () => {
 
     const link = await screen.findByRole('link', { name: 'Suggestions' });
     expect(link).toHaveAttribute('href', '/shopping');
-    expect(link).toHaveTextContent('5');
-    expect(link).toHaveTextContent('suggestions');
+    expect(link).toHaveTextContent('4');
+    expect(link).toHaveTextContent('missing staples');
     expect(link).toHaveTextContent('A, B, C…');
+  });
+
+  it('counts only missing Staples, but names Used Up Ingredients too', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [suggestion({ ingredientId: 'A', name: 'A' })],
+          usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: 'Suggestions' });
+    expect(link).toHaveTextContent('1');
+    expect(link).toHaveTextContent('missing staple');
+    expect(link).toHaveTextContent('A, E');
   });
 
   it('says nothing is missing', async () => {

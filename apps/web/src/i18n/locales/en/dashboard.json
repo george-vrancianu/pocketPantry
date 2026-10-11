@@ -38,8 +38,8 @@
     "suggestions": {
       "title": "Suggestions",
       "empty": "Nothing suggested",
-      "count_one": "suggestion",
-      "count_other": "suggestions"
+      "count_one": "missing staple",
+      "count_other": "missing staples"
     },
     "mealPlan": {
       "title": "Meal plan"

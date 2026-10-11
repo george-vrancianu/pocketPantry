@@ -6,7 +6,7 @@ import {
   type NewShoppingItem,
 } from '../../../lib/shopping';
 import { localIso } from '../../../lib/pantry';
-import { useSuggestions } from '../../../lib/staples';
+import { useSuggestions } from '../../../lib/suggestions';
 
 export function useShoppingScreen() {
   const { t, i18n } = useTranslation();

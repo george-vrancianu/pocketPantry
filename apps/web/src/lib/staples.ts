@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-import { SHOPPING_POLL_INTERVAL_MS } from './shopping';
+import { suggestionsQueryKey } from './queryKeys';
 
-type Aisle = { id: string; name: string; sortOrder: number };
+export type Aisle = { id: string; name: string; sortOrder: number };
 
 /** An Ingredient the Family always wants in stock, with an optional preferred amount. */
 export type Staple = {
@@ -15,21 +15,7 @@ export type Staple = {
   aisle: Aisle | null;
 };
 
-/** A missing Staple or a Used Up Ingredient (no quantity), offered at the top of the Shopping List. */
-export type Suggestion = {
-  ingredientId: string;
-  name: string;
-  quantity: number | null;
-  unit: Unit | null;
-  aisle: Aisle | null;
-};
-
-/** One key per group: missing Staples first, then Ingredients recently used up. */
-export type Suggestions = { staples: Suggestion[]; usedUp: Suggestion[] };
-
 export const staplesQueryKey = ['staples'] as const;
-/** Every locale's Suggestions; refetch after anything that changes the Pantry, the list or the Staples. */
-export const suggestionsQueryKey = ['suggestions'] as const;
 
 const query = (locale: string) => `?${new URLSearchParams({ locale })}`;
 
@@ -40,19 +26,6 @@ export function useStaples(locale: string) {
       apiRequest<{ staples: Staple[] }>(`/staples${query(locale)}`).then(
         (body) => body.staples,
       ),
-  });
-}
-
-/** Refreshed on an interval, like the list, so other Members' changes show up. */
-export function useSuggestions(locale: string, today: string) {
-  return useQuery({
-    queryKey: [...suggestionsQueryKey, locale, today],
-    queryFn: () =>
-      apiRequest<Suggestions>(
-        `/shopping-list/suggestions?${new URLSearchParams({ locale, today })}`,
-      ),
-    refetchInterval: SHOPPING_POLL_INTERVAL_MS,
-    refetchOnWindowFocus: 'always',
   });
 }
 
@@ -101,19 +74,3 @@ export function useStapleMutations(locale: string) {
   });
   return { add, update, remove };
 }
-
-/** Dismissing hides the Suggestion for the whole Family until the Ingredient is restocked. */
-export function useDismissSuggestion() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (ingredientId: string) =>
-      apiRequest<void>(`/shopping-list/suggestions/${ingredientId}/dismiss`, {
-        method: 'POST',
-      }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-  });
-}
-
-/** How many Suggestions the Dashboard Widget names. */
-export const WIDGET_SUGGESTION_COUNT = 3;

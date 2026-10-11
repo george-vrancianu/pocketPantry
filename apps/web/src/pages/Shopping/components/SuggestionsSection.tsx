@@ -12,7 +12,10 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../lib/shopping';
-import { useDismissSuggestion, type Suggestion } from '../../../lib/staples';
+import {
+  useDismissSuggestion,
+  type Suggestion,
+} from '../../../lib/suggestions';
 
 export type SuggestionsSectionProps = {
   /** Missing Staples in Aisle order. */

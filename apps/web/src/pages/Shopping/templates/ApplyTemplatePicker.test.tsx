@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Template, TemplateLine } from '../../../lib/shoppingTemplates';
-import { useSuggestions } from '../../../lib/staples';
+import { useSuggestions } from '../../../lib/suggestions';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { ApplyTemplatePicker } from './ApplyTemplatePicker';
 

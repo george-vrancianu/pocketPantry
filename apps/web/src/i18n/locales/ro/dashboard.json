@@ -38,9 +38,9 @@
     "suggestions": {
       "title": "Sugestii",
       "empty": "Nicio sugestie",
-      "count_one": "sugestie",
-      "count_few": "sugestii",
-      "count_other": "de sugestii"
+      "count_one": "produs de bază lipsă",
+      "count_few": "produse de bază lipsă",
+      "count_other": "de produse de bază lipsă"
     },
     "mealPlan": {
       "title": "Plan de mese"

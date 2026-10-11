@@ -1,3 +1,4 @@
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { StorageLocation, Unit } from './catalog';
@@ -60,7 +61,8 @@ export function useFinishShopping() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: ['suggestions'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
       ]),
   });
 }

@@ -4,7 +4,7 @@ import type { Unit } from './catalog';
 import { localIso } from './pantry';
 import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
-import { suggestionsQueryKey } from './staples';
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 
 export type TemplateSummary = { id: string; name: string; lineCount: number };
 
@@ -40,11 +40,12 @@ export function useTemplates() {
 }
 
 export function useTemplate(id: string, locale: string) {
+  const today = localIso(new Date());
   return useQuery({
-    queryKey: [...templatesKey, id, locale],
+    queryKey: [...templateDetailsQueryKey, id, locale, today],
     queryFn: () =>
       apiRequest<Template>(
-        `/shopping-templates/${id}?${new URLSearchParams({ locale, today: localIso(new Date()) })}`,
+        `/shopping-templates/${id}?${new URLSearchParams({ locale, today })}`,
       ),
   });
 }
