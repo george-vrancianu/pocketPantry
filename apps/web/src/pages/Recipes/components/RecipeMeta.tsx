@@ -1,6 +1,7 @@
 import { Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { NamedRef, RecipeDifficulty } from '../../../lib/recipes';
+import type { Difficulty } from '../../../lib/recipeVocabulary';
+import type { NamedRef } from '../../../lib/recipes';
 import { Servings } from './Servings';
 
 type Props = {
@@ -9,7 +10,7 @@ type Props = {
   servings?: number;
   prepMinutes?: number | null;
   cookMinutes?: number | null;
-  difficulty?: RecipeDifficulty | null;
+  difficulty?: Difficulty | null;
 };
 
 /** A dot-separated summary line: Cuisine, Method, Servings, times and difficulty (whichever are known). */

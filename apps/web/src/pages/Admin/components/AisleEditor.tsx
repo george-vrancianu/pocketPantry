@@ -7,7 +7,7 @@ import {
   useSaveAisle,
   type AdminAisle,
 } from '../../../lib/admin';
-import { EditorForm } from './EditorForm';
+import { EditorForm } from '../../../components/EditorForm';
 import { TranslationsEditor } from './TranslationsEditor';
 
 type Props = {

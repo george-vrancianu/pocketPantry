@@ -2,9 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ScanLanguage } from '../i18n/resources';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-
-export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
+import type {
+  Difficulty,
+  PairingKind,
+  PairingPrinciple,
+} from './recipeVocabulary';
 
 export type RecipeLine = {
   id: string;
@@ -20,19 +22,6 @@ export type RecipeStep = {
   timerSeconds: number | null;
 };
 export type RecipeTip = { id: string; stepId: string | null; text: string };
-export const PAIRING_KINDS = ['food', 'drink'] as const;
-export type PairingKind = (typeof PAIRING_KINDS)[number];
-export const PAIRING_PRINCIPLES = [
-  'acid_cuts_fat',
-  'salt_balances_sweet',
-  'fat_carries_flavour',
-  'contrast_texture',
-  'complement_flavour',
-  'bitter_balances_rich',
-  'cleanses_palate',
-  'regional_tradition',
-] as const;
-export type PairingPrinciple = (typeof PAIRING_PRINCIPLES)[number];
 export const MAX_PAIRINGS = 10;
 export const MAX_EATING_MOMENTS = 10;
 export const MAX_NUTRITION_NOTE = 500;

@@ -14,7 +14,7 @@ import {
   useResolveUnmatched,
   type UnmatchedEntry,
 } from '../../../lib/unmatched';
-import { EditorForm } from './EditorForm';
+import { EditorForm } from '../../../components/EditorForm';
 import { IngredientFields } from './IngredientFields';
 
 type Props = {

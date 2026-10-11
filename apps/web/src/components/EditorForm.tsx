@@ -1,8 +1,8 @@
 import { Alert, Button, Stack, Typography } from '@pocket-pantry/ui';
 import { useEffect, useRef, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ConfirmAction } from '../../../components/ConfirmAction';
-import { translateApiError } from '../../../i18n/translateApiError';
+import { ConfirmAction } from './ConfirmAction';
+import { translateApiError } from '../i18n/translateApiError';
 
 type Props = {
   heading: string;
@@ -24,7 +24,7 @@ type Props = {
 };
 
 /**
- * Shared frame of the Admin editors: a heading that takes focus when the
+ * Shared frame of the editors (Admin and Recipes): a heading that takes focus when the
  * editor opens, the error, the fields, and Save / Cancel / two-step Delete.
  */
 export function EditorForm({

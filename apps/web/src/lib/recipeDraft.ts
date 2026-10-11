@@ -1,10 +1,7 @@
-import { localName, type AdminCatalog } from '../../lib/admin';
-import type {
-  AdminRecipe,
-  Difficulty,
-  RecipeDocument,
-} from '../../lib/adminRecipes';
-import type { Unit } from '../../lib/catalog';
+import { localName, type AdminCatalog } from './admin';
+import type { AdminRecipe, RecipeDocument } from './adminRecipes';
+import type { Difficulty } from './recipeVocabulary';
+import type { Unit } from './catalog';
 
 export type LineDraft = {
   /** Stable React key; not sent. */
@@ -47,6 +44,7 @@ export type DraftProblems = {
 };
 
 let nextKey = 1;
+/** A fresh React key for a draft row (shared by every Recipe draft). */
 export const newKey = () => nextKey++;
 
 export const minutesText = (value: number | null) =>

@@ -1,10 +1,7 @@
-import type {
-  EatingMomentPolarity,
-  GuidanceInput,
-  PairingKind,
-  PairingPrinciple,
-} from '../../lib/adminRecipes';
-import { MAX_NUTRITION_NOTE } from '../../lib/adminRecipes';
+import type { EatingMomentPolarity, GuidanceInput } from './adminRecipes';
+import type { PairingKind, PairingPrinciple } from './recipeVocabulary';
+import { MAX_NUTRITION_NOTE } from './adminRecipes';
+import { newKey } from './recipeDraft';
 
 export type LinkType = 'none' | 'ingredient' | 'recipe';
 
@@ -36,11 +33,8 @@ export type GuidanceDraft = {
   eatingMoments: EatingMomentDraft[];
 };
 
-let nextKey = 1;
 export const MAX_PAIRING_LABEL = 200;
 export const MAX_PAIRING_REASON = 1000;
-
-export const newKey = () => nextKey++;
 
 export function emptyPairing(): PairingDraft {
   return {
