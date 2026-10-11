@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { DATABASE } from '../../database/database.constants';
 import type { Database } from '../../database/database.types';
 import {
@@ -11,6 +11,7 @@ import {
 import { unexpiredBatch } from '../../shopping/batch-presence';
 import { SettingsService } from '../../settings/settings.service';
 import { recipeNotFound } from '../recipe-errors';
+import { visibleTo } from '../recipe-view';
 import { isExpiringSoon } from './batch-freshness';
 import {
   indexStock,
@@ -60,12 +61,7 @@ export class PantryMatchingService {
     const recipeRows = await this.database
       .select({ id: recipes.id, servings: recipes.servings })
       .from(recipes)
-      .where(
-        and(
-          inArray(recipes.id, ids),
-          or(isNull(recipes.familyId), eq(recipes.familyId, familyId)),
-        ),
-      );
+      .where(and(inArray(recipes.id, ids), visibleTo(familyId)));
     if (recipeRows.length === 0) return result;
     const visibleIds = recipeRows.map((row) => row.id);
 

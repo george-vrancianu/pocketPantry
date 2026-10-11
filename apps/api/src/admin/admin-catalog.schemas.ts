@@ -33,13 +33,10 @@ export const aisleOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
-/** A Cuisine or Method: just a name; its translations are catalog translations. */
+/** A Cuisine, Method or Eating Moment: just a name; its translations are catalog translations. */
 export const listEntryCreate = z.object({ name: text });
 export const listEntryUpdate = z.object({ name: text });
 
-/** An Eating Moment: a name, its translations are catalog translations. */
-export const eatingMomentCreate = z.object({ name: text });
-export const eatingMomentUpdate = z.object({ name: text });
 /** The full order: every Eating Moment id (archived included) exactly once. */
 export const eatingMomentOrder = z.object({
   ids: z
@@ -132,6 +129,4 @@ export type TranslationCreate = z.infer<typeof translationCreate>;
 export type TranslationUpdate = z.infer<typeof translationUpdate>;
 export type ListEntryCreate = z.infer<typeof listEntryCreate>;
 export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;
-export type EatingMomentCreate = z.infer<typeof eatingMomentCreate>;
-export type EatingMomentUpdate = z.infer<typeof eatingMomentUpdate>;
 export type EatingMomentOrder = z.infer<typeof eatingMomentOrder>;

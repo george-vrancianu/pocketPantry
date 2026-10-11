@@ -26,9 +26,7 @@ import type {
   ListEntryUpdate,
   AisleOrder,
   AisleUpdate,
-  EatingMomentCreate,
   EatingMomentOrder,
-  EatingMomentUpdate,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -277,7 +275,7 @@ export class AdminCatalogService {
   // Eating Moments: an ordered, translated, archivable list like Aisles. Never
   // deleted: Recipes keep their uses, archiving only hides it.
 
-  createEatingMoment(input: EatingMomentCreate) {
+  createEatingMoment(input: ListEntryCreate) {
     return this.write(async (tx) => {
       await lockEatingMomentOrder(tx);
       const [{ last }] = await tx
@@ -298,7 +296,7 @@ export class AdminCatalogService {
     });
   }
 
-  updateEatingMoment(id: string, input: EatingMomentUpdate) {
+  updateEatingMoment(id: string, input: ListEntryUpdate) {
     return this.write(async (tx) => {
       const [row] = await tx
         .update(eatingMoments)

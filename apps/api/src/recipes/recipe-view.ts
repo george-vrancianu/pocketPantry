@@ -26,6 +26,7 @@ import { inOrder } from './recipe-queries';
 import type {
   AdminRecipeDetail,
   RecipeLineView,
+  RecipeOwner,
   RecipeStepView,
   RecipeTipView,
   RecipeTranslationsView,
@@ -215,6 +216,10 @@ export async function loadAdminDetail(
   };
 }
 
+/** Who owns the Recipe: the Catalog or a Family. */
+export const ownerOf = (row: Pick<RecipeRow, 'familyId'>): RecipeOwner =>
+  row.familyId === null ? 'catalog' : 'family';
+
 /** A Recipe the Family may see: a Catalog one or one of its own. */
 export const visibleTo = (familyId: string) =>
   or(isNull(recipes.familyId), eq(recipes.familyId, familyId));
@@ -344,7 +349,7 @@ export async function resolveRecipe(
   return {
     id: row.id,
     parentId: row.parentId,
-    owner: row.familyId === null ? 'catalog' : 'family',
+    owner: ownerOf(row),
     locale,
     title: titleRow[0]?.title ?? row.title,
     servings: row.servings,

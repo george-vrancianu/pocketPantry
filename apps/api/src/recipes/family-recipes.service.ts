@@ -7,12 +7,8 @@ import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
-import { lockFamilies } from '../family/family-locks';
 import {
-  cuisines,
-  family,
   ingredients,
-  methods,
   recipeIngredientLines,
   recipes,
   recipeSteps,
@@ -21,7 +17,12 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
-import { lockRecipe } from './recipe-locks';
+import {
+  assertLiveCatalogBase,
+  recipeColumns,
+  validateRecipeDocument,
+} from './recipe-document-rules';
+import { lockFamilyRecipe, lockFamilyRow } from './recipe-locks';
 import type { GuidanceBody } from './recipe-guidance.schemas';
 import { writeGuidanceChecked } from './recipe-guidance-write';
 import { loadResolvedGuidance } from './recipe-guidance';
@@ -153,7 +154,7 @@ export class FamilyRecipesService {
     document: FamilyRecipeDocument,
     locale: string,
   ): Promise<string> {
-    await this.lockFamily(tx, familyId);
+    await lockFamilyRow(tx, familyId);
     await this.validate(tx, document);
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
@@ -162,13 +163,7 @@ export class FamilyRecipesService {
       id,
       familyId,
       parentId: document.parentId,
-      title: document.title,
-      servings: document.servings,
-      prepMinutes: document.prepMinutes,
-      cookMinutes: document.cookMinutes,
-      difficulty: document.difficulty,
-      cuisineId: document.cuisineId,
-      methodId: document.methodId,
+      ...recipeColumns(document),
     });
     await this.writeLines(tx, id, document, new Map(), locale);
     await this.recipes.writeSteps(tx, id, document, new Set());
@@ -198,8 +193,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      await lockRecipe(tx, id, familyId);
+      await lockFamilyRecipe(tx, id, familyId);
       await this.validate(tx, document);
       const existingLines = await tx
         .select()
@@ -212,13 +206,7 @@ export class FamilyRecipesService {
       await tx
         .update(recipes)
         .set({
-          title: document.title,
-          servings: document.servings,
-          prepMinutes: document.prepMinutes,
-          cookMinutes: document.cookMinutes,
-          difficulty: document.difficulty,
-          cuisineId: document.cuisineId,
-          methodId: document.methodId,
+          ...recipeColumns(document),
         })
         .where(eq(recipes.id, id));
       await this.writeLines(
@@ -246,8 +234,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      await lockRecipe(tx, id, familyId);
+      await lockFamilyRecipe(tx, id, familyId);
       // Archiving twice keeps the first time.
       await tx
         .update(recipes)
@@ -278,8 +265,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      const recipe = await lockRecipe(tx, id, familyId);
+      const recipe = await lockFamilyRecipe(tx, id, familyId);
       await writeGuidanceChecked(tx, recipe, body);
     });
     return this.edit(familyId, id, locale);
@@ -292,7 +278,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.create(id, input, familyId);
+    await this.tips.writeCreate(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -304,7 +290,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.update(id, tipId, input, familyId);
+    await this.tips.writeUpdate(id, tipId, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -320,7 +306,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.reorder(id, input, familyId);
+    await this.tips.writeReorder(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -331,7 +317,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.setHidden(id, input, familyId);
+    await this.tips.writeHidden(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -386,16 +372,6 @@ export class FamilyRecipesService {
     );
   }
 
-  /** Locks the Family row; a Family deleted in the meantime is a 404, not a foreign key error. */
-  private async lockFamily(tx: Tx, familyId: string) {
-    await lockFamilies(tx, [familyId]);
-    const [row] = await tx
-      .select({ id: family.id })
-      .from(family)
-      .where(eq(family.id, familyId));
-    if (!row) throw recipeNotFound();
-  }
-
   private async ingredientNames(
     executor: Executor,
     ids: string[],
@@ -426,33 +402,20 @@ export class FamilyRecipesService {
       .from(recipes)
       .where(eq(recipes.id, parentId))
       .for('share');
-    if (!parent || (parent.familyId !== null && parent.familyId !== familyId)) {
+    if (parent && parent.familyId !== null && parent.familyId !== familyId) {
       throw new ApiException(404, 'recipes.parent_not_found');
     }
-    if (parent.parentId) {
-      throw new ApiException(409, 'recipes.variant_of_variant');
-    }
-    if (parent.familyId !== null) {
-      throw new ApiException(404, 'recipes.parent_not_found');
-    }
-    if (parent.archivedAt) {
-      throw new ApiException(409, 'recipes.parent_archived');
-    }
+    assertLiveCatalogBase(parent);
   }
 
-  private async validate(
+  private validate(
     tx: Tx,
     document: Pick<
       FamilyRecipeDocument,
       'lines' | 'steps' | 'cuisineId' | 'methodId'
     >,
   ) {
-    document.lines.forEach((line, index) => {
-      if ((line.quantity === null) !== (line.unit === null)) {
-        throw new ApiException(400, 'recipes.quantity_unit_mismatch', {
-          line: index,
-        });
-      }
+    return validateRecipeDocument(tx, document, (line, index) => {
       if (line.ingredientId !== null && line.rawName !== null) {
         throw new ApiException(400, 'recipes.line_name_conflict', {
           line: index,
@@ -467,51 +430,6 @@ export class FamilyRecipesService {
         });
       }
     });
-    for (const [kind, items] of [
-      ['line', document.lines],
-      ['step', document.steps],
-    ] as const) {
-      const given = items.flatMap((item) => (item.id ? [item.id] : []));
-      if (new Set(given).size !== given.length) {
-        throw new ApiException(400, 'recipes.duplicate_item', { kind });
-      }
-    }
-    const wanted = [
-      ...new Set(document.lines.flatMap((l) => l.ingredientId ?? [])),
-    ];
-    if (wanted.length > 0) {
-      const found = await tx
-        .select({ id: ingredients.id })
-        .from(ingredients)
-        .where(inArray(ingredients.id, wanted))
-        .orderBy(ingredients.id)
-        .for('key share');
-      if (found.length !== wanted.length) {
-        throw new ApiException(404, 'catalog.not_found', {
-          entity: 'ingredient',
-        });
-      }
-    }
-    if (document.cuisineId) {
-      const [row] = await tx
-        .select({ id: cuisines.id })
-        .from(cuisines)
-        .where(eq(cuisines.id, document.cuisineId))
-        .for('key share');
-      if (!row) {
-        throw new ApiException(404, 'catalog.not_found', { entity: 'cuisine' });
-      }
-    }
-    if (document.methodId) {
-      const [row] = await tx
-        .select({ id: methods.id })
-        .from(methods)
-        .where(eq(methods.id, document.methodId))
-        .for('key share');
-      if (!row) {
-        throw new ApiException(404, 'catalog.not_found', { entity: 'method' });
-      }
-    }
   }
 
   /**
