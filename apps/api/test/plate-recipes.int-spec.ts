@@ -49,7 +49,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
     (
       await member
         .post('/plate-suggestions', { locale: 'en', dishTitle, ingredientIds })
-        .expect(201)
+        .expect(200)
     ).body as Suggestions;
 
   beforeAll(async () => {
@@ -65,7 +65,11 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       '/api/recipes',
     );
     ing = (
-      await database.select({ id: ingredients.id }).from(ingredients).limit(5)
+      await database
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .orderBy(ingredients.id)
+        .limit(5)
     ).map((r) => r.id);
   });
 
@@ -119,6 +123,25 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
         title: `${word} near`,
       });
       expect(suggestions.length).toBeLessThanOrEqual(5);
+    });
+
+    it('shows the locale title and still ranks on the source title', async () => {
+      const word = `Wvk${stamp}`;
+      const base = await catalogBase(`${word} source`, [3]);
+      await admin
+        .put(`/${base.id}/translations/ro`, { title: `Tocana ${stamp}` })
+        .expect(200);
+      const { suggestions } = await member
+        .post('/plate-suggestions', {
+          locale: 'ro',
+          dishTitle: `${word} source`,
+          ingredientIds: [],
+        })
+        .expect(200)
+        .then((r) => r.body as Suggestions);
+      expect(suggestions.find((s) => s.id === base.id)).toMatchObject({
+        title: `Tocana ${stamp}`,
+      });
     });
 
     it('is empty when nothing matches', async () => {
@@ -228,6 +251,14 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       ).toBe('recipes.variant_of_variant');
       await member
         .post('/from-plate', { locale: 'en', title: 'x', lines: [] })
+        .expect(400);
+      await member
+        .post('/from-plate', {
+          locale: 'en',
+          title: 'x',
+          parentId: null,
+          lines: [{ id: crypto.randomUUID(), ...line(0) }],
+        })
         .expect(400);
     });
   });

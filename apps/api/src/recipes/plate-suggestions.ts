@@ -49,6 +49,11 @@ export function rankPlateSuggestions(
       };
     })
     .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.title.localeCompare(b.title) ||
+        a.id.localeCompare(b.id),
+    )
     .slice(0, MAX_PLATE_SUGGESTIONS);
 }

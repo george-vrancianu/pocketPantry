@@ -25,6 +25,7 @@ export class PlateRecipesService {
   ) {}
 
   /** Live Catalog Base Recipes ranked against the dish; a pure ranking over their lines and titles. */
+  // Scanning the whole Catalog is intentional: it is small (tens of Base Recipes), so no index or pre-filter yet.
   async suggest(body: PlateSuggestionsBody): Promise<PlateSuggestion[]> {
     const bases = await this.database
       .select()
@@ -66,7 +67,7 @@ export class PlateRecipesService {
     return rankPlateSuggestions(body, candidates);
   }
 
-  /** One serving (ADR 0007), ingredient lines only; parent rules are the Family editor's. */
+  /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */
   async save(memberId: string, body: FromPlateBody): Promise<FamilyRecipeEdit> {
     return this.family.create(
       memberId,

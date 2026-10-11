@@ -120,7 +120,7 @@ export const fromPlateBody = z
     locale: memberLocale,
     title,
     parentId: id.nullable(),
-    lines: z.array(familyLineInput).max(MAX_LINES),
+    lines: z.array(familyLineInput.omit({ id: true })).max(MAX_LINES),
   })
   .strict();
 

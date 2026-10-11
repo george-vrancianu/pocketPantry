@@ -122,6 +122,7 @@ export class RecipesController {
   }
 
   @Post('plate-suggestions')
+  @HttpCode(200)
   @ApiOperation({
     summary:
       'The Catalog Base Recipes closest to a Plate Scan dish, best first (at most five)',
