@@ -14,7 +14,10 @@ export const friedChicken: BaseRecipeSeed = {
       ingredient: 'chicken-leg-quarters',
       quantity: 1,
       unit: 'kg',
-      note: t('cut into thighs and drumsticks', 'tăiate în pulpe și copănele'),
+      note: t(
+        'cut into thighs and drumsticks',
+        'tăiate în pulpe superioare și copănele',
+      ),
     },
     { ingredient: 'salt', quantity: 8, unit: 'g' },
     { ingredient: 'black-pepper', quantity: 2, unit: 'g' },
@@ -25,11 +28,11 @@ export const friedChicken: BaseRecipeSeed = {
     { ingredient: 'flour', quantity: 150, unit: 'g' },
     {
       ingredient: 'sunflower-oil',
-      quantity: 350,
+      quantity: 700,
       unit: 'ml',
       note: t(
-        'for shallow frying, about 1.5 cm deep',
-        'pentru prăjit în strat subțire, cam 1,5 cm adâncime',
+        'for shallow frying, about 1 cm deep',
+        'pentru prăjit în strat subțire, cam 1 cm adâncime',
       ),
     },
   ],
@@ -61,7 +64,7 @@ export const friedChicken: BaseRecipeSeed = {
       key: 'fry',
       text: t(
         'Lower the pieces in carefully, skin side down, without crowding (fry in two batches if needed). Fry for 10 to 12 minutes until deep golden, turn with tongs and fry another 10 to 12 minutes. Keep the oil between 150 and 170 °C, adjusting the heat as needed.',
-        'Coboară bucățile cu grijă, cu pielea în jos, fără să le înghesui (prăjește în două serii, dacă e nevoie). Prăjește 10-12 minute până se rumenesc intens, întoarce-le cu cleștele și mai prăjește 10-12 minute. Ține uleiul între 150 și 170 °C, reglând focul.',
+        'Pune bucățile cu grijă în ulei, cu pielea în jos, fără să le înghesui (prăjește în două serii, dacă e nevoie). Prăjește 10-12 minute până se rumenesc intens, întoarce-le cu cleștele și mai prăjește 10-12 minute. Ține uleiul între 150 și 170 °C, reglând focul.',
       ),
       timerSeconds: 1320,
     },
@@ -83,19 +86,33 @@ export const friedChicken: BaseRecipeSeed = {
   ],
   tips: [
     t(
-      'Never leave hot oil unattended, and keep a lid nearby to smother a flare-up; never pour water on an oil fire.',
-      'Nu lăsa niciodată uleiul încins nesupravegheat și ține un capac la îndemână ca să înăbuși flăcările; nu turna niciodată apă pe ulei care arde.',
+      'Pat the chicken dry before coating; a wet surface makes the coating slide off and spatter.',
+      'Usucă bine puiul înainte să-l îmbraci; pe carnea udă crusta nu se prinde și uleiul sare.',
     ),
     t(
-      'Hold the oil at about 170 °C: too cool and the coating turns greasy, too hot and it burns before the chicken is cooked through.',
-      'Ține uleiul în jur de 170 °C: prea rece, crusta iese grasă; prea fierbinte, se arde înainte ca puiul să se gătească în interior.',
+      'Check the doneness in the thickest part, away from the bone: it must read at least 74 °C.',
+      'Verifică gătirea în cea mai groasă parte, departe de os: trebuie să arate cel puțin 74 °C.',
     ),
     t(
-      'Let the chicken rest on a rack so steam does not soften the crust underneath.',
-      'Lasă puiul să se odihnească pe grătar, ca aburul să nu înmoaie crusta de dedesubt.',
+      'Rest the chicken on a rack, not on a plate or paper towels, so steam does not soften the crust underneath.',
+      'Lasă puiul să se odihnească pe un grătar, nu pe farfurie sau pe hârtie de bucătărie, ca aburul să nu înmoaie crusta de dedesubt.',
     ),
   ],
   stepTips: [
+    {
+      step: 'heat',
+      text: t(
+        'Never leave hot oil unattended, and keep a lid nearby to smother a flare-up; never pour water on an oil fire.',
+        'Nu lăsa niciodată uleiul încins nesupravegheat și ține un capac la îndemână ca să înăbuși flăcările; nu turna niciodată apă pe ulei care arde.',
+      ),
+    },
+    {
+      step: 'fry',
+      text: t(
+        'Hold the oil at about 170 °C: too cool and the coating turns greasy, too hot and it burns before the chicken is cooked through.',
+        'Ține uleiul în jur de 170 °C: prea rece, crusta iese grasă; prea fierbinte, se arde înainte ca puiul să se gătească în interior.',
+      ),
+    },
     {
       step: 'fry',
       text: t(
@@ -107,7 +124,7 @@ export const friedChicken: BaseRecipeSeed = {
       step: 'check',
       text: t(
         'Thighs and drumsticks stay juicy and taste better a little past 74 °C; 80 °C is fine for dark meat.',
-        'Pulpele și copănelele rămân suculente și au gust mai bun și puțin peste 74 °C; 80 °C e în regulă pentru carnea închisă la culoare.',
+        'Pulpele și copănelele rămân suculente și sunt chiar mai gustoase puțin peste 74 °C; 80 °C e în regulă pentru carnea închisă la culoare.',
       ),
     },
   ],
@@ -121,7 +138,7 @@ export const friedChicken: BaseRecipeSeed = {
       label: t('Creamy coleslaw', 'Salată de varză cu maioneză'),
       reason: t(
         'Cool, crunchy cabbage cuts through the rich crust and refreshes each bite.',
-        'Varza rece și crocantă taie din bogăția crustei și împrospătează fiecare îmbucătură.',
+        'Varza rece și crocantă echilibrează grăsimea crustei și împrospătează fiecare îmbucătură.',
       ),
       principle: 'contrast_texture',
       ingredient: 'cabbage',
@@ -151,7 +168,7 @@ export const friedChicken: BaseRecipeSeed = {
       label: t('Cold lager', 'Bere blondă rece'),
       reason: t(
         'Its bubbles and light bitterness cleanse the palate between fatty bites.',
-        'Bulele și amăreala ușoară curăță gura între îmbucăturile grase.',
+        'Bulele și amăreala ușoară împrospătează gustul între îmbucăturile grase.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'beer',
@@ -161,7 +178,7 @@ export const friedChicken: BaseRecipeSeed = {
       label: t('Iced tea', 'Ceai rece'),
       reason: t(
         'Light, tannic and cold, it resets the palate without adding richness.',
-        'Ușor, tanic și rece, resetează gura fără să adauge bogăție.',
+        'Ușor, tanic și rece, împrospătează gustul fără să încarce masa.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'iced-tea',
@@ -220,7 +237,7 @@ export const friedChicken: BaseRecipeSeed = {
           unit: 'kg',
           note: t(
             'cut into thighs and drumsticks',
-            'tăiate în pulpe și copănele',
+            'tăiate în pulpe superioare și copănele',
           ),
         },
         {
@@ -241,21 +258,21 @@ export const friedChicken: BaseRecipeSeed = {
         { ingredient: 'onion-powder', quantity: 4, unit: 'g' },
         { ingredient: 'flour', quantity: 200, unit: 'g' },
         { ingredient: 'baking-powder', quantity: 3, unit: 'g' },
-        { ingredient: 'sunflower-oil', quantity: 400, unit: 'ml' },
+        { ingredient: 'sunflower-oil', quantity: 750, unit: 'ml' },
       ],
       steps: [
         {
           key: 'soak',
           text: t(
             'Whisk the buttermilk with the hot sauce and 5 g of the salt. Add the chicken, turn to coat, cover and chill for at least 4 hours, ideally overnight.',
-            'Amestecă zara cu sosul picant și 5 g din sare. Adaugă puiul, răstoarnă-l prin amestec, acoperă și pune-l la frigider cel puțin 4 ore, ideal de seara până dimineața.',
+            'Amestecă zara cu sosul picant și 5 g din sare. Adaugă puiul, întoarce-l ca să se acopere bine, acoperă și pune-l la frigider cel puțin 4 ore, ideal de seara până dimineața.',
           ),
         },
         {
           key: 'flour',
           text: t(
             'Mix the flour with the baking powder, the remaining salt, the pepper, paprika, chilli powder, garlic powder and onion powder in a wide bowl. Drizzle 3 tablespoons (45 ml) of the buttermilk marinade into the flour and rub it in with your fingertips to make small shaggy clumps.',
-            'Amestecă făina cu praful de copt, sarea rămasă, piperul, boiaua, ardeiul iute, usturoiul pudră și ceapa pudră într-un castron lat. Stropește cu 45 ml din marinada de zară și frământă cu vârful degetelor până se formează cocoloașe mici, zdrențuite.',
+            'Amestecă făina cu praful de copt, sarea rămasă, piperul, boiaua, ardeiul iute, usturoiul pudră și ceapa pudră într-un castron lat. Stropește cu 45 ml din marinada de zară și freacă cu vârful degetelor până se formează cocoloașe mici, zdrențuite.',
           ),
         },
         {
@@ -308,7 +325,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Coleslaw', 'Salată coleslaw'),
           reason: t(
             'Cool, tangy crunch against the hot spiced crust.',
-            'Crocanta rece și acidulată contrastează cu crusta caldă și condimentată.',
+            'Varza rece, crocantă și acrișoară contrastează cu crusta caldă și condimentată.',
           ),
           principle: 'contrast_texture',
           ingredient: 'cabbage',
@@ -318,7 +335,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Honey drizzle', 'Miere peste pui'),
           reason: t(
             'Sweet honey plays against the salty, peppery crust.',
-            'Mierea dulce se joacă cu crusta sărată și piperată.',
+            'Mierea contrastează plăcut cu crusta sărată și piperată.',
           ),
           principle: 'salt_balances_sweet',
           ingredient: 'honey',
@@ -328,7 +345,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Hot sauce', 'Sos picant'),
           reason: t(
             'Vinegary heat lifts the rich fried coating.',
-            'Iuțeala acră înviorează crusta bogată și prăjită.',
+            'Iuțeala acrișoară înviorează crusta bogată și prăjită.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'hot-sauce',
@@ -359,8 +376,8 @@ export const friedChicken: BaseRecipeSeed = {
           moment: 'hot-day',
           polarity: 'good_for',
           reason: t(
-            'Good picnic food, tasty even served warm or cold.',
-            'Bun pentru picnic, gustos și servit călduț sau rece.',
+            'Good picnic food, tasty even served warm or cold; keep it chilled until serving.',
+            'Bun pentru picnic, gustos și servit călduț sau rece; ține-l la rece până la servire.',
           ),
         },
         {
@@ -450,7 +467,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'fry1',
           text: t(
             'Heat the oil in a deep, heavy pot (no more than half full) to 160 °C. Fry the wings in batches for 8 to 10 minutes until pale gold and cooked through, and lift onto a rack. Rest them for at least 10 minutes.',
-            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 160 °C. Prăjește aripioarele în serii 8-10 minute, până sunt aurii-pale și gătite în interior, și scoate-le pe un grătar. Lasă-le să se odihnească cel puțin 10 minute.',
+            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 160 °C. Prăjește aripioarele în serii 8-10 minute, până se auresc ușor și gătite în interior, și scoate-le pe un grătar. Lasă-le să se odihnească cel puțin 10 minute.',
           ),
           timerSeconds: 540,
         },
@@ -458,7 +475,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'glaze',
           text: t(
             'While they rest, simmer the gochujang, soy sauce, honey, rice vinegar, garlic, ginger and 30 ml of water in a small pan for 2 to 3 minutes until glossy. Keep it warm.',
-            'Cât se odihnesc, fierbe la foc mic gochujang, sosul de soia, mierea, oțetul de orez, usturoiul, ghimbirul și 30 ml de apă într-o cratiță mică 2-3 minute, până devine lucios. Ține-l cald.',
+            'Cât se odihnesc, fierbe la foc mic gochujangul, sosul de soia, mierea, oțetul de orez, usturoiul, ghimbirul și 30 ml de apă într-o cratiță mică 2-3 minute, până devine lucios. Ține-l cald.',
           ),
           timerSeconds: 150,
         },
@@ -466,7 +483,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'fry2',
           text: t(
             'Raise the oil to 180 °C and fry the wings again for 3 to 4 minutes until deep golden and very crisp. Check one wing: at least 74 °C inside.',
-            'Ridică uleiul la 180 °C și prăjește aripioarele încă 3-4 minute, până sunt auriu închis și foarte crocante. Verifică o aripioară: cel puțin 74 °C în interior.',
+            'Încinge uleiul la 180 °C și prăjește aripioarele încă 3-4 minute, până sunt auriu închis și foarte crocante. Verifică o aripioară: cel puțin 74 °C în interior.',
           ),
           timerSeconds: 210,
         },
@@ -495,18 +512,21 @@ export const friedChicken: BaseRecipeSeed = {
       ],
       nutritionNote: t(
         'Wings give protein, and the starch crust is thin and light; but frying twice and the sugary, salty glaze make this rich in oil, sugar and sodium, and the skin carries plenty of saturated fat, so keep portions modest.',
-        'Aripioarele dau proteine, iar crusta de amidon e subțire și ușoară; dar prăjirea dublă și glazura dulce și sărată o fac bogată în ulei, zahăr și sodiu, iar pielea aduce multe grăsimi saturate, deci păstrează porții mici.',
+        'Aripioarele dau proteine, iar crusta de amidon e subțire și ușoară; dar prăjirea dublă și glazura dulce și sărată o fac bogată în ulei, zahăr și sodiu, iar pielea aduce multe grăsimi saturate, așa că mănâncă porții mici.',
       ),
       pairings: [
         {
           kind: 'food',
-          label: t('Pickled radish or cucumber', 'Muraturi dulci-acrișoare'),
+          label: t(
+            'Pickled radish (chicken-mu)',
+            'Ridiche murată dulce-acrișoară (chicken-mu)',
+          ),
           reason: t(
-            'Sharp, crunchy pickles cut the rich, sticky glaze.',
-            'Murăturile ascuțite și crocante taie din glazura bogată și lipicioasă.',
+            'Sharp, crunchy pickled radish cuts the rich, sticky glaze.',
+            'Ridichea murată, ascuțită și crocantă, taie din glazura bogată și lipicioasă.',
           ),
           principle: 'acid_cuts_fat',
-          ingredient: 'pickled-cucumbers',
+          ingredient: 'radish',
         },
         {
           kind: 'food',
@@ -520,13 +540,16 @@ export const friedChicken: BaseRecipeSeed = {
         },
         {
           kind: 'food',
-          label: t('Sesame seeds', 'Semințe de susan'),
+          label: t(
+            'Kimchi-style pickled cabbage',
+            'Varză murată în stil kimchi',
+          ),
           reason: t(
-            'Nutty seeds add crunch and tie in with the Korean flavours.',
-            'Semințele cu gust de nucă adaugă crocanță și se potrivesc cu aromele coreene.',
+            'Tangy, spicy cabbage is the classic Korean companion and cuts the fat.',
+            'Varza acrișoară și picantă e însoțitorul coreean clasic și taie din grăsime.',
           ),
           principle: 'regional_tradition',
-          ingredient: 'sesame-seeds',
+          ingredient: 'cabbage',
         },
         {
           kind: 'drink',
@@ -540,7 +563,7 @@ export const friedChicken: BaseRecipeSeed = {
         },
         {
           kind: 'drink',
-          label: t('Sparkling water', 'Apă minerală'),
+          label: t('Sparkling water', 'Apă minerală carbogazoasă'),
           reason: t(
             'Cold bubbles refresh the palate between sticky bites.',
             'Bulele reci împrospătează gura între îmbucăturile lipicioase.',
@@ -634,15 +657,15 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'fry1',
           text: t(
             'Heat the oil in a deep, heavy pot (no more than half full) to 170 °C. Fry in small batches for 4 to 5 minutes until light golden, and lift onto a rack. Rest for 3 minutes.',
-            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 170 °C. Prăjește în serii mici 4-5 minute, până se auresc ușor, și scoate pe un grătar. Lasă 3 minute.',
+            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 170 °C. Prăjește în serii mici 4-5 minute, până se auresc ușor, și scoate pe un grătar. Lasă-le să se odihnească 3 minute.',
           ),
           timerSeconds: 270,
         },
         {
           key: 'fry2',
           text: t(
-            'Raise the oil to 190 °C and fry the pieces for 1 minute until deep golden and crisp. A piece cut open must read at least 74 °C.',
-            'Ridică uleiul la 190 °C și prăjește bucățile 1 minut, până sunt auriu închis și crocante. Un cub tăiat în două trebuie să aibă cel puțin 74 °C în interior.',
+            'Raise the oil to 190 °C and fry the pieces for 1 minute until deep golden and crisp. Check the largest piece with a probe: at least 74 °C.',
+            'Încinge uleiul la 190 °C și prăjește bucățile 1 minut, până sunt auriu închis și crocante. Verifică cea mai mare bucată cu un termometru cu sondă: cel puțin 74 °C.',
           ),
           timerSeconds: 60,
         },
@@ -679,7 +702,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Lemon wedge', 'Felie de lămâie'),
           reason: t(
             'A squeeze of citrus cuts the oiliness and lifts the ginger.',
-            'Puțin citric taie uleiosul și scoate în evidență ghimbirul.',
+            'Câteva picături de lămâie taie senzația de gras și scot în evidență ghimbirul.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'lemon',
@@ -709,7 +732,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Cold beer', 'Bere rece'),
           reason: t(
             'Crisp lager is the izakaya favourite and cleans the palate.',
-            'Berea blondă, seacă, e preferata din izakaya și curăță gura.',
+            'Berea blondă rece e preferata din izakaya și împrospătează gustul.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'beer',
@@ -722,7 +745,7 @@ export const friedChicken: BaseRecipeSeed = {
             'Ceaiul amărui, ușor, echilibrează bogăția cărnii prăjite.',
           ),
           principle: 'bitter_balances_rich',
-          ingredient: 'tea',
+          ingredient: 'green-tea',
         },
       ],
       eatingMoments: [
@@ -767,7 +790,7 @@ export const friedChicken: BaseRecipeSeed = {
           unit: 'g',
           note: t(
             'cut into 4 cutlets and pounded to 1 cm',
-            'tăiat în 4 felii și bătut până la 1 cm grosime',
+            'tăiat în 4 felii și bătut până la 0,7 cm grosime',
           ),
         },
         { ingredient: 'salt', quantity: 6, unit: 'g' },
@@ -776,7 +799,7 @@ export const friedChicken: BaseRecipeSeed = {
         { ingredient: 'eggs', quantity: 2, unit: 'pcs' },
         { ingredient: 'milk', quantity: 30, unit: 'ml' },
         { ingredient: 'breadcrumbs', quantity: 120, unit: 'g' },
-        { ingredient: 'sunflower-oil', quantity: 250, unit: 'ml' },
+        { ingredient: 'sunflower-oil', quantity: 350, unit: 'ml' },
         { ingredient: 'lemon', quantity: 1, unit: 'pcs' },
         { ingredient: 'parsley', quantity: 10, unit: 'g', optional: true },
       ],
@@ -784,8 +807,8 @@ export const friedChicken: BaseRecipeSeed = {
         {
           key: 'pound',
           text: t(
-            'Slice the breasts through the middle if thick, then pound the cutlets between two sheets of cling film to an even 1 cm. Season both sides with the salt and pepper.',
-            'Taie pieptul în două pe lungime dacă e gros, apoi bate felile între două folii de plastic până la o grosime uniformă de 1 cm. Condimentează pe ambele fețe cu sare și piper.',
+            'Slice the breasts through the middle if thick, then pound the cutlets between two sheets of cling film to an even 0.7 cm. Season both sides with the salt and pepper.',
+            'Taie pieptul în două pe orizontală dacă e gros, apoi bate feliile între două bucăți de folie alimentară până la o grosime uniformă de 1 cm. Condimentează pe ambele fețe cu sare și piper.',
           ),
         },
         {
@@ -798,23 +821,23 @@ export const friedChicken: BaseRecipeSeed = {
         {
           key: 'heat',
           text: t(
-            'Heat the oil in a wide skillet over medium heat to 170 °C. It should be about 1 cm deep.',
-            'Încinge uleiul într-o tigaie lată la foc mediu, la 170 °C. Trebuie să aibă cam 1 cm adâncime.',
+            'Heat the oil in a wide skillet over medium heat to 170 °C. It should be about 0.5 cm deep.',
+            'Încinge uleiul într-o tigaie lată la foc mediu, la 170 °C. Stratul de ulei trebuie să aibă cam 0,5 cm.',
           ),
         },
         {
           key: 'fry',
           text: t(
-            'Fry two cutlets at a time for 3 to 4 minutes per side until golden, shaking the pan gently so the crust puffs. A cutlet must reach at least 74 °C inside.',
-            'Prăjește câte două șnițele deodată 3-4 minute pe fiecare parte, până se rumenesc, mișcând ușor tigaia ca pesmetul să se umfle. Șnițelul trebuie să ajungă la cel puțin 74 °C în interior.',
+            'Fry two cutlets at a time for about 3 minutes per side until golden. A cutlet must reach at least 74 °C inside.',
+            'Prăjește câte două șnițele deodată cam 3 minute pe fiecare parte, până se rumenesc. Șnițelul trebuie să ajungă la cel puțin 74 °C în interior.',
           ),
-          timerSeconds: 420,
+          timerSeconds: 360,
         },
         {
           key: 'serve',
           text: t(
-            'Drain on paper towels for a minute, then serve straight away with lemon wedges and chopped parsley.',
-            'Scurge pe hârtie de bucătărie un minut, apoi servește imediat cu felii de lămâie și pătrunjel tocat.',
+            'Drain briefly on a rack (or a minute on paper towels), then serve straight away with lemon wedges and chopped parsley.',
+            'Scurge-le pe un grătar (sau un minut pe hârtie de bucătărie), apoi servește imediat cu felii de lămâie și pătrunjel tocat.',
           ),
         },
       ],
@@ -873,7 +896,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Draught beer', 'Bere la halbă'),
           reason: t(
             'Cold, light lager cleanses the palate after the crust.',
-            'Berea blondă, rece și ușoară, curăță gura după crustă.',
+            'Berea blondă, rece și ușoară, împrospătează gustul după crustă.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'beer',
@@ -944,7 +967,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'marinate',
           text: t(
             'Whisk the buttermilk with the mustard and half the salt. Add the drumsticks, turn to coat and marinate in the fridge for at least 1 hour.',
-            'Amestecă zara cu muștarul și jumătate din sare. Adaugă copănelele, răstoarnă-le prin amestec și lasă-le la marinat la frigider cel puțin 1 oră.',
+            'Amestecă zara cu muștarul și jumătate din sare. Adaugă copănelele, întoarce-le ca să se acopere bine și lasă-le la marinat la frigider cel puțin 1 oră.',
           ),
           timerSeconds: 3600,
         },
@@ -952,7 +975,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'heat',
           text: t(
             'Heat the oven to 220 °C (200 °C fan) and put a wire rack on a baking tray. Toss the breadcrumbs with the oil, remaining salt, pepper and smoked paprika, and toast them in a dry pan for 3 to 4 minutes until golden.',
-            'Încălzește cuptorul la 220 °C (200 °C cu ventilator) și pune un grătar pe o tavă. Amestecă pesmetul cu uleiul, sarea rămasă, piperul și boiaua afumată și prăjește-l într-o tigaie uscată 3-4 minute, până se rumenește.',
+            'Încălzește cuptorul la 220 °C (200 °C cu ventilator) și pune un grătar pe o tavă. Amestecă pesmetul cu uleiul, sarea rămasă, piperul și boiaua afumată și prăjește-l într-o tigaie, fără ulei în plus 3-4 minute, până se rumenește.',
           ),
           timerSeconds: 210,
         },
@@ -1004,20 +1027,20 @@ export const friedChicken: BaseRecipeSeed = {
           kind: 'food',
           label: t('Green salad', 'Salată verde'),
           reason: t(
-            'Fresh, leafy greens complement the lighter crust.',
-            'Verdeața proaspătă completează crusta mai ușoară.',
+            'Crisp, cool leaves contrast with the hot crust.',
+            'Frunzele reci și crocante contrastează cu crusta fierbinte.',
           ),
           principle: 'contrast_texture',
-          ingredient: 'rocket',
+          ingredient: 'lettuce',
         },
         {
           kind: 'food',
           label: t('Coleslaw', 'Salată coleslaw'),
           reason: t(
             'Cool crunchy cabbage cuts through the savoury crumbs.',
-            'Varza rece și crocantă taie din bogăția pesmetului gustos.',
+            'Varza rece și crocantă echilibrează grăsimea pesmetului gustos.',
           ),
-          principle: 'acid_cuts_fat',
+          principle: 'contrast_texture',
           ingredient: 'cabbage',
         },
         {
@@ -1079,16 +1102,16 @@ export const friedChicken: BaseRecipeSeed = {
       lines: [
         {
           ingredient: 'chicken-drumsticks',
-          quantity: 800,
-          unit: 'g',
+          quantity: 1,
+          unit: 'kg',
         },
-        { ingredient: 'salt', quantity: 6, unit: 'g' },
-        { ingredient: 'black-pepper', quantity: 2, unit: 'g' },
-        { ingredient: 'paprika', quantity: 4, unit: 'g' },
-        { ingredient: 'garlic-powder', quantity: 3, unit: 'g' },
-        { ingredient: 'baking-powder', quantity: 4, unit: 'g' },
-        { ingredient: 'flour', quantity: 60, unit: 'g' },
-        { ingredient: 'sunflower-oil', quantity: 15, unit: 'ml' },
+        { ingredient: 'salt', quantity: 8, unit: 'g' },
+        { ingredient: 'black-pepper', quantity: 2.5, unit: 'g' },
+        { ingredient: 'paprika', quantity: 5, unit: 'g' },
+        { ingredient: 'garlic-powder', quantity: 4, unit: 'g' },
+        { ingredient: 'baking-powder', quantity: 5, unit: 'g' },
+        { ingredient: 'flour', quantity: 75, unit: 'g' },
+        { ingredient: 'sunflower-oil', quantity: 20, unit: 'ml' },
       ],
       steps: [
         {
@@ -1167,7 +1190,7 @@ export const friedChicken: BaseRecipeSeed = {
           kind: 'food',
           label: t('Lemon wedges', 'Felii de lămâie'),
           reason: t(
-            'A squeeze of citrus brightens the smoky, salty crust.',
+            'A squeeze of citrus brightens the spiced, salty crust.',
             'Un strop de citrice înviorează crusta sărată și condimentată.',
           ),
           principle: 'acid_cuts_fat',
@@ -1178,7 +1201,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Iced tea', 'Ceai rece'),
           reason: t(
             'Cold and tannic, it cleanses the palate.',
-            'Rece și tanic, curăță gura.',
+            'Rece și tanic, împrospătează gustul.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'iced-tea',
