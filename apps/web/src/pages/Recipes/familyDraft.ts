@@ -4,7 +4,10 @@ import type {
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
 import {
+  decimal,
+  minutesText,
   newKey,
+  timerText,
   type LineDraft,
   type RecipeDraft,
   type StepDraft,
@@ -17,11 +20,6 @@ export { hasProblems, moved, newKey, problemsOf } from '../Admin/recipeDraft';
  * a Catalog Ingredient; one without is a free-text name kept in `name`.
  */
 export type FamilyDraft = RecipeDraft;
-
-const minutesText = (value: number | null) =>
-  value === null ? '' : String(value);
-const timerText = (seconds: number | null) =>
-  seconds === null ? '' : String(Math.round((seconds / 60) * 100) / 100);
 
 type Source = Pick<
   FamilyRecipeDraft,
@@ -92,8 +90,6 @@ export function draftOfEdit(recipe: FamilyRecipeEdit): FamilyDraft {
     })),
   };
 }
-
-const decimal = (text: string) => Number(text.trim().replace(',', '.'));
 
 /** The document to send; call only when `problemsOf` found nothing. */
 export function documentOf(draft: FamilyDraft): FamilyRecipeDocument {

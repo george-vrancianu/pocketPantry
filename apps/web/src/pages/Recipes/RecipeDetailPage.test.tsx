@@ -286,6 +286,13 @@ describe('RecipeDetailPage', () => {
       ).toBeInTheDocument();
     });
 
+    it('offers no Edit or Delete on an archived own Recipe', async () => {
+      setup(recipe({ id: 'g', owner: 'family', archived: true }));
+      await screen.findByText('This recipe is archived.');
+      expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
+    });
+
     it('hides Make a variant on a Family standalone Recipe', async () => {
       setup(recipe({ id: 'g', owner: 'family' }));
       await screen.findByRole('link', { name: 'Edit' });

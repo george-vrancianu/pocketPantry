@@ -52,17 +52,15 @@
     "delete": "Șterge",
     "deleteConfirm": "Ștergi această rețetă? Dispare pentru toată familia.",
     "newHeading": "Fă o variantă",
-    "editHeading": "Editează {{title}}",
+    "editHeading": "Editează rețeta",
     "create": "Salvează varianta",
     "save": "Salvează rețeta",
-    "loading": "Se încarcă rețeta",
     "title": "Titlu",
     "copyHint": "Aceasta este o copie pe care o poți schimba. Nu se salvează nimic până nu o salvezi.",
     "tipsHint": "Adaugă propriile Sfaturi după ce salvezi varianta.",
     "freeTextLabel": "Sau adaugă un ingredient după nume",
     "freeTextAdd": "Adaugă numele",
     "freeTextNote": "Nu e în Catalog",
-    "cancelled": "Înapoi la rețetă",
     "unavailable": "Această rețetă nu poate fi editată."
   }
 }

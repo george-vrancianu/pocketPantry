@@ -50,17 +50,15 @@
     "delete": "Delete",
     "deleteConfirm": "Delete this recipe? It disappears for your whole family.",
     "newHeading": "Make a variant",
-    "editHeading": "Edit {{title}}",
+    "editHeading": "Edit recipe",
     "create": "Save variant",
     "save": "Save recipe",
-    "loading": "Loading the recipe",
     "title": "Title",
     "copyHint": "This is a copy to change. Nothing is saved until you save it.",
     "tipsHint": "Add your own Tips after saving the variant.",
     "freeTextLabel": "Or add an ingredient by name",
     "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
-    "cancelled": "Back to the recipe",
     "unavailable": "This recipe cannot be edited."
   }
 }

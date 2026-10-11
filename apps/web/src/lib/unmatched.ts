@@ -8,6 +8,7 @@ import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
 import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
+import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
 
@@ -111,6 +112,7 @@ export function useResolveUnmatched() {
           shoppingListQueryKey,
           suggestionsQueryKey,
           templateDetailsQueryKey,
+          recipesQueryKey,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });

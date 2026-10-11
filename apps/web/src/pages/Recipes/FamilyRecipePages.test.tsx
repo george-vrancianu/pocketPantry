@@ -105,6 +105,9 @@ describe('NewVariantPage', () => {
     });
     const title = await screen.findByLabelText(/^Title/);
     expect(title).toHaveValue('Omelette');
+    expect(
+      screen.getByText(/Add your own Tips after saving the variant\./),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Quantity of Egg')).toHaveValue('3');
     expect(screen.getByLabelText('Step 1')).toHaveValue('Whisk the eggs');
     expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
@@ -184,6 +187,34 @@ describe('EditFamilyRecipePage', () => {
       ],
       steps: [{ id: 's1' }],
     });
+  });
+
+  it('says an archived Recipe cannot be edited', async () => {
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () =>
+        Response.json({ ...saved, archived: true }),
+    });
+    expect(
+      await screen.findByText('This recipe cannot be edited.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Title/)).toBeNull();
+  });
+
+  it('sends no unit when a Catalog line has its quantity cleared', async () => {
+    const user = userEvent.setup();
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'PUT /api/recipes/g': () => Response.json(saved),
+    });
+    await user.clear(await screen.findByLabelText('Quantity of Egg'));
+    await user.click(screen.getByRole('button', { name: 'Save recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'PUT /api/recipes/g')?.body,
+      ).toMatchObject({
+        lines: [{ id: 'l1', quantity: null, unit: null }, {}],
+      }),
+    );
   });
 
   it('adds a Tip and hides an inherited one straight away', async () => {

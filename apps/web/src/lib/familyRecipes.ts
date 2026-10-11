@@ -98,12 +98,15 @@ export function useFamilyRecipeEdit(id: string, locale: string) {
       apiRequest<FamilyRecipeEdit>(
         `/recipes/${id}/edit?${localeQuery(locale)}`,
       ),
+    // Unsaved edits live in the form: never refetch under them.
+    refetchOnWindowFocus: false,
   });
 }
 
 /** A write that refreshes every Recipe query (list, detail, edit). */
 function useFamilyWrite<Input, Result>(
   send: (input: Input) => Promise<Result>,
+  { refetchNow = true }: { refetchNow?: boolean } = {},
 ) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -117,7 +120,11 @@ function useFamilyWrite<Input, Result>(
           edit,
         );
       }
-      return queryClient.invalidateQueries({ queryKey: recipesQueryKey });
+      return queryClient.invalidateQueries({
+        queryKey: recipesQueryKey,
+        // Archiving navigates away: mark stale, do not refetch the archived page.
+        ...(refetchNow ? {} : { refetchType: 'none' as const }),
+      });
     },
   });
 }
@@ -144,11 +151,13 @@ export function useUpdateFamilyRecipe(id: string, locale: string) {
 
 /** The UI's Delete: the Recipe is archived, never removed. */
 export function useArchiveFamilyRecipe(id: string, locale: string) {
-  return useFamilyWrite(() =>
-    apiRequest<FamilyRecipeEdit>(
-      `/recipes/${id}/archive?${localeQuery(locale)}`,
-      { method: 'POST' },
-    ),
+  return useFamilyWrite(
+    () =>
+      apiRequest<FamilyRecipeEdit>(
+        `/recipes/${id}/archive?${localeQuery(locale)}`,
+        { method: 'POST' },
+      ),
+    { refetchNow: false },
   );
 }
 

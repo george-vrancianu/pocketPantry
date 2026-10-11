@@ -33,7 +33,7 @@ export function NewVariantPage() {
         {draft.data ? (
           <FamilyRecipeForm
             heading={t('recipes:family.newHeading')}
-            description={t('recipes:family.copyHint')}
+            description={`${t('recipes:family.copyHint')} ${t('recipes:family.tipsHint')}`}
             initial={draftOfVariantDraft(draft.data)}
             saveLabel={t('recipes:family.create')}
             saving={create.isPending}
@@ -70,12 +70,12 @@ export function EditFamilyRecipePage() {
           <Alert>{translateApiError(t, query.error)}</Alert>
         ) : null}
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {recipe ? (
+        {recipe && !recipe.archived ? (
           <>
             <FamilyRecipeForm
-              // A fresh form when the saved Recipe changes under it.
-              key={recipe.steps.map((step) => step.id).join()}
-              heading={t('recipes:family.editHeading', { title: recipe.title })}
+              // Keyed on the Recipe only: Tip writes refresh `recipe` but must not reset unsaved edits.
+              key={recipe.id}
+              heading={t('recipes:family.editHeading')}
               initial={draftOfEdit(recipe)}
               saveLabel={t('recipes:family.save')}
               saving={update.isPending}
@@ -93,7 +93,7 @@ export function EditFamilyRecipePage() {
             <TipsEditor recipe={{ ...recipe, id }} writes={tipWrites} />
           </>
         ) : null}
-        {!recipe && !query.isPending && !query.error ? (
+        {recipe?.archived ? (
           <Typography>{t('recipes:family.unavailable')}</Typography>
         ) : null}
       </Stack>

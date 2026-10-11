@@ -14,13 +14,13 @@ export function RecipeActions({ recipe }: { recipe: RecipeDetail }) {
   const { t, i18n } = useTranslation(['recipes', 'errors']);
   const navigate = useNavigate();
   const archive = useArchiveFamilyRecipe(recipe.id, i18n.language);
-  const own = recipe.owner === 'family';
+  const own = recipe.owner === 'family' && !recipe.archived;
   // A Variant's parent is a Catalog Base Recipe, so a Family standalone Recipe
   // gets none; the Recipe and its base must also be live.
   const canMakeVariant =
     !recipe.archived &&
     !recipe.base?.archived &&
-    !(own && recipe.parentId === null);
+    !(recipe.owner === 'family' && recipe.parentId === null);
 
   const remove = () =>
     archive.mutate(undefined, {
