@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { ingredientUnit } from '../database/schema';
 import { MAX_QUANTITY } from '../common/quantity';
-import { shoppingLocaleQuery } from './shopping.schemas';
 
 export const MAX_TEMPLATES_PER_FAMILY = 50;
 export const MAX_TEMPLATE_LINES = 100;
@@ -44,12 +43,6 @@ export const updateTemplateBody = z
     message: 'Provide name or lines',
   });
 export type UpdateTemplateBody = z.infer<typeof updateTemplateBody>;
-
-/** `today` is the Member's local date (YYYY-MM-DD) the Pantry presence flag counts from; defaults to the server's UTC date. */
-export const templateGetQuery = shoppingLocaleQuery.extend({
-  today: z.iso.date().optional(),
-});
-export type TemplateGetQuery = z.infer<typeof templateGetQuery>;
 
 export const templateIdParam = z.object({ id: z.uuid() });
 

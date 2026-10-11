@@ -17,14 +17,14 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   shoppingLocaleQuery,
+  shoppingLocaleTodayQuery,
   type ShoppingLocaleQuery,
+  type ShoppingLocaleTodayQuery,
 } from './shopping.schemas';
 import {
   createTemplateBody,
   createTemplateFromListBody,
-  templateGetQuery,
   templateIdParam,
-  type TemplateGetQuery,
   updateTemplateBody,
   type CreateTemplateBody,
   type CreateTemplateFromListBody,
@@ -35,7 +35,7 @@ import {
 import { ShoppingTemplatesService } from './shopping-templates.service';
 
 const localeQuery = new ZodValidationPipe(shoppingLocaleQuery);
-const getQuery = new ZodValidationPipe(templateGetQuery);
+const getQuery = new ZodValidationPipe(shoppingLocaleTodayQuery);
 const idParam = new ZodValidationPipe(templateIdParam);
 
 /** Every route works on the signed-in Member's Family Templates. */
@@ -83,7 +83,7 @@ export class ShoppingTemplatesController {
   })
   get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(getQuery) { locale, today }: TemplateGetQuery,
+    @Query(getQuery) { locale, today }: ShoppingLocaleTodayQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<TemplateView> {
     return this.templates.get(member.id, id, locale, today);

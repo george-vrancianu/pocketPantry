@@ -15,8 +15,9 @@ import {
 } from '../database/schema';
 import { USED_UP_WINDOW_MS } from '../pantry/stock-history';
 import { SettingsService } from '../settings/settings.service';
+import { unexpiredBatch, utcToday } from './batch-presence';
 import { byShopOrder, loadIngredientPlacements } from './ingredient-placement';
-import type { SuggestionView, SuggestionsView } from './staples.schemas';
+import type { SuggestionView, SuggestionsView } from './suggestions.schemas';
 
 /**
  * Suggestions are derived on read and never stored. Each group is a key of the
@@ -32,7 +33,7 @@ export class SuggestionsService {
   async list(
     memberId: string,
     locale: CatalogLocale,
-    today: string = new Date().toISOString().slice(0, 10),
+    today: string = utcToday(),
   ): Promise<SuggestionsView> {
     const familyId = await this.settings.familyIdOf(memberId);
     return {
@@ -138,7 +139,7 @@ export class SuggestionsService {
       .where(
         and(
           eq(staples.familyId, familyId),
-          sql`NOT EXISTS (SELECT 1 FROM ${batches} WHERE ${batches.familyId} = ${familyId} AND ${batches.ingredientId} = ${staples.ingredientId} AND (${batches.expiryDate} IS NULL OR ${batches.expiryDate} >= ${today}))`,
+          sql`NOT EXISTS (SELECT 1 FROM ${batches} WHERE ${batches.familyId} = ${familyId} AND ${batches.ingredientId} = ${staples.ingredientId} AND ${unexpiredBatch(today)})`,
           sql`NOT EXISTS (SELECT 1 FROM ${suggestionDismissals} WHERE ${suggestionDismissals.familyId} = ${familyId} AND ${suggestionDismissals.ingredientId} = ${staples.ingredientId})`,
           sql`NOT EXISTS (SELECT 1 FROM ${shoppingItems} INNER JOIN ${shoppingLists} ON ${shoppingLists.id} = ${shoppingItems.listId} WHERE ${shoppingLists.familyId} = ${familyId} AND ${shoppingLists.status} = 'active' AND ${shoppingItems.ingredientId} = ${staples.ingredientId})`,
         ),

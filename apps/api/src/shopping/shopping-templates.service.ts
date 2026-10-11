@@ -1,24 +1,22 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
-import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
-  aisles,
   batches,
   ingredients,
-  leafCategories,
-  parentCategories,
   shoppingItems,
   shoppingLists,
   shoppingTemplateLines,
   shoppingTemplates,
-  user,
 } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
+import { SettingsService } from '../settings/settings.service';
+import { unexpiredBatch, utcToday } from './batch-presence';
+import { loadIngredientPlacements } from './ingredient-placement';
 import {
   MAX_TEMPLATE_LINES,
   MAX_TEMPLATES_PER_FAMILY,
@@ -43,10 +41,13 @@ const tooManyLines = () =>
  */
 @Injectable()
 export class ShoppingTemplatesService {
-  constructor(@Inject(DATABASE) private readonly database: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly settings: SettingsService,
+  ) {}
 
   async list(memberId: string): Promise<{ templates: TemplateSummaryView[] }> {
-    const familyId = await this.familyOf(this.database, memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database
       .select({
         id: shoppingTemplates.id,
@@ -70,7 +71,7 @@ export class ShoppingTemplatesService {
     locale: CatalogLocale,
     today?: string,
   ): Promise<TemplateView> {
-    const familyId = await this.familyOf(this.database, memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     return this.view(this.database, familyId, id, locale, today);
   }
 
@@ -168,7 +169,7 @@ export class ShoppingTemplatesService {
   }
 
   async remove(memberId: string, id: string): Promise<void> {
-    const familyId = await this.familyOf(this.database, memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     const removed = await this.database
       .delete(shoppingTemplates)
       .where(
@@ -181,18 +182,8 @@ export class ShoppingTemplatesService {
     if (removed.length === 0) throw notFound();
   }
 
-  private async familyOf(executor: Executor, memberId: string) {
-    const [member] = await executor
-      .select({ familyId: user.familyId })
-      .from(user)
-      .where(eq(user.id, memberId))
-      .limit(1);
-    if (!member) throw new ApiException(401, 'auth.unauthenticated');
-    return member.familyId;
-  }
-
   private async lockFamily(tx: Tx, memberId: string): Promise<string> {
-    const familyId = await this.familyOf(tx, memberId);
+    const familyId = await this.settings.familyIdOf(memberId);
     await lockFamilies(tx, [familyId]);
     return familyId;
   }
@@ -282,68 +273,46 @@ export class ShoppingTemplatesService {
         id: shoppingTemplateLines.id,
         ingredientId: shoppingTemplateLines.ingredientId,
         typedName: shoppingTemplateLines.name,
-        canonicalName: ingredients.name,
         quantity: shoppingTemplateLines.quantity,
         unit: shoppingTemplateLines.unit,
-        aisleId: aisles.id,
-        aisleName: aisles.name,
-        aisleSortOrder: aisles.sortOrder,
       })
       .from(shoppingTemplateLines)
-      .leftJoin(
-        ingredients,
-        eq(shoppingTemplateLines.ingredientId, ingredients.id),
-      )
-      .leftJoin(
-        leafCategories,
-        eq(ingredients.leafCategoryId, leafCategories.id),
-      )
-      .leftJoin(
-        parentCategories,
-        eq(leafCategories.parentId, parentCategories.id),
-      )
-      .leftJoin(aisles, eq(parentCategories.aisleId, aisles.id))
       .where(eq(shoppingTemplateLines.templateId, id))
       .orderBy(asc(shoppingTemplateLines.position));
 
-    const { pick: display } = await loadDisplayNames(
+    const ingredientIds = rows.flatMap((row) =>
+      row.ingredientId ? [row.ingredientId] : [],
+    );
+    const placements = await loadIngredientPlacements(
       executor,
       locale,
-      rows
-        .flatMap((row) => [row.ingredientId, row.aisleId])
-        .filter((entityId) => entityId !== null),
+      ingredientIds,
     );
     const present = await this.presentIngredients(
       executor,
       familyId,
-      rows.flatMap((row) => (row.ingredientId ? [row.ingredientId] : [])),
+      ingredientIds,
       today,
     );
 
-    const lines: TemplateLineView[] = rows.map((row) => ({
-      id: row.id,
-      ingredientId: row.ingredientId,
-      name:
-        row.ingredientId !== null
-          ? display(
-              'ingredient',
-              row.ingredientId,
-              row.canonicalName ?? row.typedName ?? '',
-            )
-          : (row.typedName ?? ''),
-      quantity: row.quantity === null ? null : Number(row.quantity),
-      unit: row.unit,
-      unmatched: row.ingredientId === null,
-      inPantry: row.ingredientId !== null && present.has(row.ingredientId),
-      aisle:
-        row.aisleId !== null && row.aisleName !== null
-          ? {
-              id: row.aisleId,
-              name: display('aisle', row.aisleId, row.aisleName),
-              sortOrder: row.aisleSortOrder ?? 0,
-            }
-          : null,
-    }));
+    const lines: TemplateLineView[] = rows.map((row) => {
+      const placement = row.ingredientId
+        ? placements.get(row.ingredientId)
+        : undefined;
+      return {
+        id: row.id,
+        ingredientId: row.ingredientId,
+        name:
+          row.ingredientId !== null
+            ? (placement?.name ?? '')
+            : (row.typedName ?? ''),
+        quantity: row.quantity === null ? null : Number(row.quantity),
+        unit: row.unit,
+        unmatched: row.ingredientId === null,
+        inPantry: row.ingredientId !== null && present.has(row.ingredientId),
+        aisle: placement?.aisle ?? null,
+      };
+    });
     return { id: template.id, name: template.name, lines };
   }
 
@@ -355,7 +324,7 @@ export class ShoppingTemplatesService {
     localToday?: string,
   ): Promise<Set<string>> {
     if (ingredientIds.length === 0) return new Set();
-    const today = localToday ?? new Date().toISOString().slice(0, 10);
+    const today = localToday ?? utcToday();
     const rows = await executor
       .selectDistinct({ id: batches.ingredientId })
       .from(batches)
@@ -363,10 +332,7 @@ export class ShoppingTemplatesService {
         and(
           eq(batches.familyId, familyId),
           inArray(batches.ingredientId, ingredientIds),
-          or(
-            isNull(batches.expiryDate),
-            sql`${batches.expiryDate} >= ${today}`,
-          ),
+          unexpiredBatch(today),
         ),
       );
     return new Set(rows.flatMap((row) => (row.id ? [row.id] : [])));

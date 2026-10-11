@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
 import { batches, ingredientStockHistory } from '../database/schema';
-import { clearDismissals } from '../shopping/suggestion-dismissals';
+import { clearDismissals } from './suggestion-dismissals';
 
 /** Deleting a Batch this soon after it was created is a mistaken entry, not a use. */
 export const MISTAKEN_ENTRY_MS = 10 * 60_000;

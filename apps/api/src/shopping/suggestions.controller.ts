@@ -12,12 +12,11 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { ingredientIdParam, type SuggestionsView } from './suggestions.schemas';
 import {
-  ingredientIdParam,
-  suggestionsQuery,
-  type SuggestionsQuery,
-  type SuggestionsView,
-} from './staples.schemas';
+  shoppingLocaleTodayQuery,
+  type ShoppingLocaleTodayQuery,
+} from './shopping.schemas';
 import { SuggestionsService } from './suggestions.service';
 
 /** Suggestions for the Family's Shopping List, derived on every read. */
@@ -34,8 +33,8 @@ export class SuggestionsController {
   })
   list(
     @CurrentUser() member: CurrentUserValue,
-    @Query(new ZodValidationPipe(suggestionsQuery))
-    { locale, today }: SuggestionsQuery,
+    @Query(new ZodValidationPipe(shoppingLocaleTodayQuery))
+    { locale, today }: ShoppingLocaleTodayQuery,
   ): Promise<SuggestionsView> {
     return this.suggestions.list(member.id, locale, today);
   }

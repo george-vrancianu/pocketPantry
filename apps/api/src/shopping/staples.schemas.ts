@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { ingredientUnit } from '../database/schema';
 import { MAX_QUANTITY } from '../common/quantity';
+import type { AisleView } from './ingredient-placement';
 
 export type StapleUnit = (typeof ingredientUnit.enumValues)[number];
 
@@ -36,16 +36,6 @@ export const updateStapleBody = z
 export type UpdateStapleBody = z.infer<typeof updateStapleBody>;
 
 export const stapleIdParam = z.object({ id: z.uuid() });
-export const ingredientIdParam = z.object({ ingredientId: z.uuid() });
-
-export const suggestionsQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-  /** The Member's local date; a Batch is expired before it (default: server UTC date). */
-  today: z.iso.date().optional(),
-});
-export type SuggestionsQuery = z.infer<typeof suggestionsQuery>;
-
-export type AisleView = { id: string; name: string; sortOrder: number };
 
 export type StapleView = {
   id: string;
@@ -54,18 +44,4 @@ export type StapleView = {
   quantity: number | null;
   unit: StapleUnit | null;
   aisle: AisleView | null;
-};
-
-export type SuggestionView = {
-  ingredientId: string;
-  name: string;
-  quantity: number | null;
-  unit: StapleUnit | null;
-  aisle: AisleView | null;
-};
-
-/** One key per group: missing Staples first, then Used Up Ingredients (no quantity). */
-export type SuggestionsView = {
-  staples: SuggestionView[];
-  usedUp: SuggestionView[];
 };

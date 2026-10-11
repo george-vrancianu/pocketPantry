@@ -8,7 +8,8 @@ import {
   leafCategories,
   parentCategories,
 } from '../database/schema';
-import type { AisleView } from './staples.schemas';
+
+export type AisleView = { id: string; name: string; sortOrder: number };
 
 export type IngredientPlacement = {
   name: string;
