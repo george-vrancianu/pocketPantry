@@ -183,7 +183,9 @@ describe('RecipeEditor', () => {
     expect(posts[0].body).toEqual({ text: 'Use stock', stepId: null });
     expect(posts[1].body).toEqual({ text: 'Low heat', stepId: 's2' });
 
-    await user.click(recipeTips.getByRole('button', { name: 'Delete Tip 1' }));
+    await user.click(
+      recipeTips.getByRole('button', { name: 'Delete Tip 1 (Recipe)' }),
+    );
     await vi.waitFor(() =>
       expect(
         calls.some((c) => c.key === 'DELETE /api/admin/recipes/r1/tips/t1'),
@@ -200,7 +202,9 @@ describe('RecipeEditor', () => {
       await screen.findByRole('group', { name: 'Recipe Tips' }),
     );
 
-    await user.click(recipeTips.getByRole('button', { name: 'Move Tip 2 up' }));
+    await user.click(
+      recipeTips.getByRole('button', { name: 'Move Tip 2 up (Recipe)' }),
+    );
 
     await vi.waitFor(() =>
       expect(
@@ -238,6 +242,8 @@ describe('RecipeEditor', () => {
     const danish = within(await screen.findByRole('group', { name: 'Danish' }));
     expect(danish.getByLabelText('Title (Danish)')).toHaveValue('Suppe');
     expect(danish.getByText('English: warm')).toBeInTheDocument();
+    expect(danish.getByLabelText('Tip 1 (Recipe, Danish)')).toBeInTheDocument();
+    expect(danish.getByLabelText('Tip 1 (step 1, Danish)')).toBeInTheDocument();
     await user.clear(danish.getByLabelText('Step 1 (Danish)'));
     await user.type(danish.getByLabelText('Step 2 (Danish)'), 'Simre');
     await user.type(danish.getByLabelText('Note for Milk (Danish)'), 'varm');

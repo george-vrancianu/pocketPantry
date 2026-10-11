@@ -219,4 +219,89 @@ describe('RecipeForm', () => {
       /archived, so it cannot get new Variants/,
     );
   });
+
+  it('shows field errors for out-of-range values, blank title and blank Step', async () => {
+    vi.stubGlobal('fetch', stubApi({}).fetchMock);
+    renderWithProviders(
+      <RecipeForm
+        recipe={saved}
+        catalog={catalog}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+    const save = screen.getByRole('button', { name: 'Save Recipe' });
+
+    await user.clear(screen.getByLabelText(/Title \(English\)/));
+    expect(screen.getByText('Enter a title.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Title \(English\)/), 'Soup');
+
+    await user.clear(screen.getByLabelText('Step 1'));
+    expect(screen.getByText('Enter the Step text.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Step 1'), 'Chop');
+
+    const timer = screen.getByLabelText('Timer for step 1 (minutes)');
+    await user.type(timer, '0.001');
+    expect(save).toBeDisabled();
+    await user.clear(timer);
+    await user.type(timer, '0.0167');
+    expect(save).toBeEnabled();
+    await user.clear(timer);
+
+    await user.type(screen.getByLabelText('Prep (minutes)'), '100001');
+    expect(save).toBeDisabled();
+    await user.clear(screen.getByLabelText('Prep (minutes)'));
+    const quantity = screen.getByLabelText('Quantity of Milk');
+    await user.clear(quantity);
+    await user.type(quantity, '1000001');
+    expect(save).toBeDisabled();
+  });
+
+  it('shows timers in tidy minutes', () => {
+    vi.stubGlobal('fetch', stubApi({}).fetchMock);
+    renderWithProviders(
+      <RecipeForm
+        recipe={{
+          ...saved,
+          steps: [{ id: 's1', text: 'Chop', timerSeconds: 100 }],
+        }}
+        catalog={catalog}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText('Timer for step 1 (minutes)')).toHaveValue(
+      '1.67',
+    );
+  });
+
+  it('warns before removing a saved Step that has Tips', async () => {
+    vi.stubGlobal('fetch', stubApi({}).fetchMock);
+    renderWithProviders(
+      <RecipeForm
+        recipe={{
+          ...saved,
+          tips: [{ id: 't1', stepId: 's1', text: 'Sharp knife' }],
+        }}
+        catalog={catalog}
+        onSaved={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Remove step 2' }));
+    expect(screen.queryByLabelText('Step 2')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Remove step 1' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Removing step 1 deletes its 1 Tip when you save.',
+    );
+    expect(screen.getByLabelText('Step 1')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'Remove step and Tips' }),
+    );
+    expect(screen.queryByLabelText('Step 1')).toBeNull();
+  });
 });

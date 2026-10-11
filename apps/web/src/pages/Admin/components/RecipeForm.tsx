@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
@@ -56,7 +57,17 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
   );
   const [searchKey, setSearchKey] = useState(0);
   const [justSaved, setJustSaved] = useState(false);
+  const [titleTouched, setTitleTouched] = useState(false);
+  /** Steps whose blank text should be flagged: edited or blurred, not just added. */
+  const [touchedSteps, setTouchedSteps] = useState<Set<number>>(new Set());
+  /** A saved Step with Tips waiting for the Admin to confirm its removal. */
+  const [removing, setRemoving] = useState<number | null>(null);
   const problems = problemsOf(draft);
+  const showTitleError = problems.title && (titleTouched || !!recipe);
+  const tipCount = (stepId?: string) =>
+    stepId
+      ? (recipe?.tips.filter((tip) => tip.stepId === stepId).length ?? 0)
+      : 0;
 
   const change = (patch: Partial<RecipeDraft>) => {
     setJustSaved(false);
@@ -109,6 +120,11 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
         label={t('admin:recipe.fields.title')}
         value={draft.title}
         onChange={(event) => change({ title: event.target.value })}
+        onBlur={() => setTitleTouched(true)}
+        error={showTitleError}
+        helperText={
+          showTitleError ? t('admin:recipe.invalid.title') : undefined
+        }
         required
       />
       <Stack direction="row" spacing={1}>
@@ -331,8 +347,22 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
                 <TextField
                   label={t('admin:recipe.steps.text', { number })}
                   value={step.text}
-                  onChange={(event) =>
-                    changeStep(step.key, { text: event.target.value })
+                  onChange={(event) => {
+                    setTouchedSteps((set) => new Set(set).add(step.key));
+                    changeStep(step.key, { text: event.target.value });
+                  }}
+                  onBlur={() =>
+                    setTouchedSteps((set) => new Set(set).add(step.key))
+                  }
+                  error={
+                    problems.steps[step.key] === 'text' &&
+                    touchedSteps.has(step.key)
+                  }
+                  helperText={
+                    problems.steps[step.key] === 'text' &&
+                    touchedSteps.has(step.key)
+                      ? t('admin:recipe.invalid.stepText')
+                      : undefined
                   }
                   multiline
                   minRows={2}
@@ -364,13 +394,47 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
                     change({ steps: moved(draft.steps, index, 1) })
                   }
                   onRemove={() =>
-                    change({
-                      steps: draft.steps.filter(
-                        (item) => item.key !== step.key,
-                      ),
-                    })
+                    tipCount(step.id) > 0
+                      ? setRemoving(step.key)
+                      : change({
+                          steps: draft.steps.filter(
+                            (item) => item.key !== step.key,
+                          ),
+                        })
                   }
                 />
+                {removing === step.key ? (
+                  <Alert severity="warning">
+                    <Stack spacing={1}>
+                      <span>
+                        {t('admin:recipe.steps.tipsWarning', {
+                          number,
+                          count: tipCount(step.id),
+                        })}
+                      </span>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          onClick={() => {
+                            setRemoving(null);
+                            change({
+                              steps: draft.steps.filter(
+                                (item) => item.key !== step.key,
+                              ),
+                            });
+                          }}
+                        >
+                          {t('admin:recipe.steps.removeWithTips')}
+                        </Button>
+                        <Button
+                          variant="text"
+                          onClick={() => setRemoving(null)}
+                        >
+                          {t('admin:recipe.steps.keep')}
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Alert>
+                ) : null}
               </Stack>
             );
           })}

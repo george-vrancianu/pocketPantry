@@ -163,7 +163,9 @@
       "servings": "Servings must be a whole number from 1 to 1000.",
       "minutes": "Minutes must be a whole number, or blank.",
       "quantity": "Quantity must be a positive number with at most three decimals, or blank.",
-      "timer": "The timer must be a positive number of minutes, or blank."
+      "timer": "The timer must be a positive number of minutes, or blank.",
+      "title": "Enter a title.",
+      "stepText": "Enter the Step text."
     },
     "lines": {
       "title": "Ingredient Lines",
@@ -187,7 +189,11 @@
       "timer": "Timer for step {{number}} (minutes)",
       "moveUp": "Move step {{number}} up",
       "moveDown": "Move step {{number}} down",
-      "remove": "Remove step {{number}}"
+      "remove": "Remove step {{number}}",
+      "tipsWarning_one": "Removing step {{number}} deletes its {{count}} Tip when you save.",
+      "tipsWarning_other": "Removing step {{number}} deletes its {{count}} Tips when you save.",
+      "removeWithTips": "Remove step and Tips",
+      "keep": "Keep step"
     },
     "variant": {
       "title": "Make a variant",
@@ -210,15 +216,17 @@
       "new": "New Tip",
       "newForStep": "New Tip for step {{number}}",
       "add": "Add Tip",
-      "text": "Tip {{position}}",
-      "save": "Save Tip {{position}}",
-      "remove": "Delete Tip {{position}}",
-      "moveUp": "Move Tip {{position}} up",
-      "moveDown": "Move Tip {{position}} down",
+      "text": "Tip {{position}} ({{group}})",
+      "save": "Save Tip {{position}} ({{group}})",
+      "remove": "Delete Tip {{position}} ({{group}})",
+      "moveUp": "Move Tip {{position}} up ({{group}})",
+      "moveDown": "Move Tip {{position}} down ({{group}})",
       "inherited": "Tips from the Base Recipe",
       "inheritedHint": "Untick a Tip to hide it on this Variant.",
       "show": "Show: {{text}}",
-      "noInherited": "The Base Recipe has no Recipe Tips."
+      "noInherited": "The Base Recipe has no Recipe Tips.",
+      "groupRecipe": "Recipe",
+      "groupStep": "step {{number}}"
     },
     "translations": {
       "title": "Recipe translations",
@@ -226,7 +234,7 @@
       "title_field": "Title ({{language}})",
       "step": "Step {{number}} ({{language}})",
       "line": "Note for {{name}} ({{language}})",
-      "tip": "Tip {{position}} ({{language}})",
+      "tip": "Tip {{position}} ({{group}}, {{language}})",
       "source": "English: {{text}}",
       "save": "Save {{language}} translations",
       "saved": "{{language}} translations saved."

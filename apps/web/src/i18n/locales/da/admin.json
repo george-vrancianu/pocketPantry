@@ -163,7 +163,9 @@
       "servings": "Portioner skal være et helt tal fra 1 til 1000.",
       "minutes": "Minutter skal være et helt tal eller stå tomme.",
       "quantity": "Mængden skal være et positivt tal med højst tre decimaler, eller tom.",
-      "timer": "Timeren skal være et positivt antal minutter, eller tom."
+      "timer": "Timeren skal være et positivt antal minutter, eller tom.",
+      "title": "Angiv en titel.",
+      "stepText": "Angiv trinnets tekst."
     },
     "lines": {
       "title": "Ingredienslinjer",
@@ -187,7 +189,11 @@
       "timer": "Timer til trin {{number}} (minutter)",
       "moveUp": "Flyt trin {{number}} op",
       "moveDown": "Flyt trin {{number}} ned",
-      "remove": "Fjern trin {{number}}"
+      "remove": "Fjern trin {{number}}",
+      "tipsWarning_one": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tip, når du gemmer.",
+      "tipsWarning_other": "Hvis du fjerner trin {{number}}, slettes dets {{count}} tips, når du gemmer.",
+      "removeWithTips": "Fjern trin og tips",
+      "keep": "Behold trin"
     },
     "variant": {
       "title": "Lav en variant",
@@ -210,15 +216,17 @@
       "new": "Nyt tip",
       "newForStep": "Nyt tip til trin {{number}}",
       "add": "Tilføj tip",
-      "text": "Tip {{position}}",
-      "save": "Gem tip {{position}}",
-      "remove": "Slet tip {{position}}",
-      "moveUp": "Flyt tip {{position}} op",
-      "moveDown": "Flyt tip {{position}} ned",
+      "text": "Tip {{position}} ({{group}})",
+      "save": "Gem tip {{position}} ({{group}})",
+      "remove": "Slet tip {{position}} ({{group}})",
+      "moveUp": "Flyt tip {{position}} op ({{group}})",
+      "moveDown": "Flyt tip {{position}} ned ({{group}})",
       "inherited": "Tips fra grundopskriften",
       "inheritedHint": "Fjern fluebenet ved et tip for at skjule det på denne variant.",
       "show": "Vis: {{text}}",
-      "noInherited": "Grundopskriften har ingen tips på opskriftsniveau."
+      "noInherited": "Grundopskriften har ingen tips på opskriftsniveau.",
+      "groupRecipe": "opskrift",
+      "groupStep": "trin {{number}}"
     },
     "translations": {
       "title": "Oversættelser af opskriften",
@@ -226,7 +234,7 @@
       "title_field": "Titel ({{language}})",
       "step": "Trin {{number}} ({{language}})",
       "line": "Note til {{name}} ({{language}})",
-      "tip": "Tip {{position}} ({{language}})",
+      "tip": "Tip {{position}} ({{group}}, {{language}})",
       "source": "Engelsk: {{text}}",
       "save": "Gem oversættelser på {{language}}",
       "saved": "Oversættelserne på {{language}} er gemt."

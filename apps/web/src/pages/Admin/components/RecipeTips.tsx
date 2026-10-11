@@ -61,8 +61,10 @@ export function RecipeTips({ recipe }: Props) {
     stepId: string | null,
     legend: string,
     newLabel: string,
+    groupName: string,
   ) => ({
     legend,
+    groupName,
     newLabel,
     members: group(stepId),
     busy,
@@ -116,6 +118,7 @@ export function RecipeTips({ recipe }: Props) {
               key={tip.id}
               label={t('admin:recipe.tips.show', { text: tip.text })}
               checked={!tip.hidden}
+              disabled={busy}
               onChange={(event) =>
                 writes.hide.mutate(
                   event.target.checked
@@ -132,6 +135,7 @@ export function RecipeTips({ recipe }: Props) {
           null,
           t('admin:recipe.tips.recipeLevel'),
           t('admin:recipe.tips.new'),
+          t('admin:recipe.tips.groupRecipe'),
         )}
       />
       {recipe.steps.map((step, index) => (
@@ -141,6 +145,7 @@ export function RecipeTips({ recipe }: Props) {
             step.id,
             t('admin:recipe.tips.forStep', { number: index + 1 }),
             t('admin:recipe.tips.newForStep', { number: index + 1 }),
+            t('admin:recipe.tips.groupStep', { number: index + 1 }),
           )}
         />
       ))}
@@ -150,6 +155,8 @@ export function RecipeTips({ recipe }: Props) {
 
 type GroupProps = {
   legend: string;
+  /** Short name of the group, in the accessible names of its Tips. */
+  groupName: string;
   newLabel: string;
   members: RecipeTip[];
   busy: boolean;
@@ -161,6 +168,7 @@ type GroupProps = {
 
 function TipGroup({
   legend,
+  groupName,
   newLabel,
   members,
   busy,
@@ -198,6 +206,7 @@ function TipGroup({
           key={tip.id}
           tip={tip}
           position={index + 1}
+          group={groupName}
           first={index === 0}
           last={index === members.length - 1}
           busy={busy}
@@ -223,6 +232,7 @@ function TipGroup({
 type RowProps = {
   tip: RecipeTip;
   position: number;
+  group: string;
   first: boolean;
   last: boolean;
   busy: boolean;
@@ -234,6 +244,7 @@ type RowProps = {
 function TipRow({
   tip,
   position,
+  group,
   first,
   last,
   busy,
@@ -247,16 +258,16 @@ function TipRow({
   return (
     <Stack spacing={0.5}>
       <TextField
-        label={t('recipe.tips.text', { position })}
+        label={t('recipe.tips.text', { position, group })}
         value={text}
         onChange={(event) => setText(event.target.value)}
         multiline
       />
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <RowControls
-          moveUp={t('recipe.tips.moveUp', { position })}
-          moveDown={t('recipe.tips.moveDown', { position })}
-          remove={t('recipe.tips.remove', { position })}
+          moveUp={t('recipe.tips.moveUp', { position, group })}
+          moveDown={t('recipe.tips.moveDown', { position, group })}
+          remove={t('recipe.tips.remove', { position, group })}
           first={first}
           last={last}
           disabled={busy}
@@ -270,7 +281,7 @@ function TipRow({
             disabled={busy}
             onClick={() => onSave(tip.id, text.trim())}
           >
-            {t('recipe.tips.save', { position })}
+            {t('recipe.tips.save', { position, group })}
           </Button>
         ) : null}
       </Stack>

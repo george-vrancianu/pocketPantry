@@ -157,14 +157,28 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
           saved?.lines[line.id],
         );
       })}
-      {recipe.tips.map((tip, index) =>
-        field(
+      {recipe.tips.map((tip) => {
+        const members = recipe.tips.filter(
+          (other) => other.stepId === tip.stepId,
+        );
+        const stepIndex = recipe.steps.findIndex(
+          (step) => step.id === tip.stepId,
+        );
+        const group =
+          tip.stepId === null
+            ? t('recipe.tips.groupRecipe')
+            : t('recipe.tips.groupStep', { number: stepIndex + 1 });
+        return field(
           `tip:${tip.id}`,
-          t('recipe.translations.tip', { position: index + 1, language }),
+          t('recipe.translations.tip', {
+            position: members.indexOf(tip) + 1,
+            group,
+            language,
+          }),
           tip.text,
           saved?.tips[tip.id],
-        ),
-      )}
+        );
+      })}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button
           variant="secondary"

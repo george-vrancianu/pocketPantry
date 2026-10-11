@@ -165,7 +165,9 @@
       "servings": "Porțiile trebuie să fie un număr întreg de la 1 la 1000.",
       "minutes": "Minutele trebuie să fie un număr întreg sau să rămână goale.",
       "quantity": "Cantitatea trebuie să fie un număr pozitiv cu cel mult trei zecimale, sau goală.",
-      "timer": "Cronometrul trebuie să fie un număr pozitiv de minute, sau gol."
+      "timer": "Cronometrul trebuie să fie un număr pozitiv de minute, sau gol.",
+      "title": "Introdu un titlu.",
+      "stepText": "Introdu textul Pasului."
     },
     "lines": {
       "title": "Linii de ingredient",
@@ -189,7 +191,12 @@
       "timer": "Cronometru pentru pasul {{number}} (minute)",
       "moveUp": "Mută pasul {{number}} mai sus",
       "moveDown": "Mută pasul {{number}} mai jos",
-      "remove": "Elimină pasul {{number}}"
+      "remove": "Elimină pasul {{number}}",
+      "tipsWarning_one": "Eliminarea pasului {{number}} șterge Sfatul lui la salvare.",
+      "tipsWarning_other": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
+      "tipsWarning_few": "Eliminarea pasului {{number}} șterge cele {{count}} Sfaturi ale lui la salvare.",
+      "removeWithTips": "Elimină pasul și Sfaturile",
+      "keep": "Păstrează pasul"
     },
     "variant": {
       "title": "Creează o variantă",
@@ -212,15 +219,17 @@
       "new": "Sfat nou",
       "newForStep": "Sfat nou pentru pasul {{number}}",
       "add": "Adaugă Sfat",
-      "text": "Sfatul {{position}}",
-      "save": "Salvează Sfatul {{position}}",
-      "remove": "Șterge Sfatul {{position}}",
-      "moveUp": "Mută Sfatul {{position}} mai sus",
-      "moveDown": "Mută Sfatul {{position}} mai jos",
+      "text": "Sfatul {{position}} ({{group}})",
+      "save": "Salvează Sfatul {{position}} ({{group}})",
+      "remove": "Șterge Sfatul {{position}} ({{group}})",
+      "moveUp": "Mută Sfatul {{position}} mai sus ({{group}})",
+      "moveDown": "Mută Sfatul {{position}} mai jos ({{group}})",
       "inherited": "Sfaturi din Rețeta de bază",
       "inheritedHint": "Debifează un Sfat ca să-l ascunzi pe această Variantă.",
       "show": "Afișează: {{text}}",
-      "noInherited": "Rețeta de bază nu are Sfaturi la nivel de Rețetă."
+      "noInherited": "Rețeta de bază nu are Sfaturi la nivel de Rețetă.",
+      "groupRecipe": "Rețetă",
+      "groupStep": "pasul {{number}}"
     },
     "translations": {
       "title": "Traducerile Rețetei",
@@ -228,7 +237,7 @@
       "title_field": "Titlu ({{language}})",
       "step": "Pasul {{number}} ({{language}})",
       "line": "Notă pentru {{name}} ({{language}})",
-      "tip": "Sfatul {{position}} ({{language}})",
+      "tip": "Sfatul {{position}} ({{group}}, {{language}})",
       "source": "Engleză: {{text}}",
       "save": "Salvează traducerile în {{language}}",
       "saved": "Traducerile în {{language}} au fost salvate."

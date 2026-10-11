@@ -98,27 +98,37 @@ export function draftOf(
       key: newKey(),
       id: step.id,
       text: step.text,
-      timer: step.timerSeconds === null ? '' : String(step.timerSeconds / 60),
+      timer:
+        step.timerSeconds === null
+          ? ''
+          : String(Math.round((step.timerSeconds / 60) * 100) / 100),
     })),
   };
 }
 
 const decimal = (text: string) => Number(text.trim().replace(',', '.'));
+// Bounds mirror the API's recipe schema (MAX_QUANTITY, minutes, timer seconds).
+const MAX_MINUTES = 100_000;
+const MAX_QUANTITY = 1_000_000;
+const MAX_TIMER_SECONDS = 1_000_000;
 const isMinutes = (text: string) =>
-  text.trim() === '' || /^\d{1,6}$/.test(text.trim());
+  text.trim() === '' ||
+  (/^\d{1,6}$/.test(text.trim()) && Number(text.trim()) <= MAX_MINUTES);
 const isQuantity = (text: string) => {
   if (text.trim() === '') return true;
   const value = decimal(text);
   return (
     Number.isFinite(value) &&
     value >= 0.001 &&
+    value <= MAX_QUANTITY &&
     Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6
   );
 };
 const isTimer = (text: string) => {
   if (text.trim() === '') return true;
   const value = decimal(text);
-  return Number.isFinite(value) && value > 0 && value * 60 <= 1_000_000;
+  const seconds = Math.round(value * 60);
+  return Number.isFinite(value) && seconds >= 1 && seconds <= MAX_TIMER_SECONDS;
 };
 
 export function problemsOf(draft: RecipeDraft): DraftProblems {
