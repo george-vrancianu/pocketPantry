@@ -7,10 +7,8 @@ import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
-import { lockFamilies } from '../family/family-locks';
 import {
   cuisines,
-  family,
   ingredients,
   methods,
   recipeIngredientLines,
@@ -21,7 +19,7 @@ import {
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
-import { lockRecipe } from './recipe-locks';
+import { lockFamilyRecipe, lockFamilyRow } from './recipe-locks';
 import type { GuidanceBody } from './recipe-guidance.schemas';
 import { writeGuidanceChecked } from './recipe-guidance-write';
 import { loadResolvedGuidance } from './recipe-guidance';
@@ -153,7 +151,7 @@ export class FamilyRecipesService {
     document: FamilyRecipeDocument,
     locale: string,
   ): Promise<string> {
-    await this.lockFamily(tx, familyId);
+    await lockFamilyRow(tx, familyId);
     await this.validate(tx, document);
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
@@ -198,8 +196,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      await lockRecipe(tx, id, familyId);
+      await lockFamilyRecipe(tx, id, familyId);
       await this.validate(tx, document);
       const existingLines = await tx
         .select()
@@ -246,8 +243,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      await lockRecipe(tx, id, familyId);
+      await lockFamilyRecipe(tx, id, familyId);
       // Archiving twice keeps the first time.
       await tx
         .update(recipes)
@@ -278,8 +274,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await this.lockFamily(tx, familyId);
-      const recipe = await lockRecipe(tx, id, familyId);
+      const recipe = await lockFamilyRecipe(tx, id, familyId);
       await writeGuidanceChecked(tx, recipe, body);
     });
     return this.edit(familyId, id, locale);
@@ -292,7 +287,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.create(id, input, familyId);
+    await this.tips.writeCreate(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -304,7 +299,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.update(id, tipId, input, familyId);
+    await this.tips.writeUpdate(id, tipId, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -320,7 +315,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.reorder(id, input, familyId);
+    await this.tips.writeReorder(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -331,7 +326,7 @@ export class FamilyRecipesService {
     locale: CatalogLocale,
   ) {
     const familyId = await this.settings.familyIdOf(memberId);
-    await this.tips.setHidden(id, input, familyId);
+    await this.tips.writeHidden(id, input, familyId);
     return this.edit(familyId, id, locale);
   }
 
@@ -384,16 +379,6 @@ export class FamilyRecipesService {
       },
       { isolationLevel: 'repeatable read', accessMode: 'read only' },
     );
-  }
-
-  /** Locks the Family row; a Family deleted in the meantime is a 404, not a foreign key error. */
-  private async lockFamily(tx: Tx, familyId: string) {
-    await lockFamilies(tx, [familyId]);
-    const [row] = await tx
-      .select({ id: family.id })
-      .from(family)
-      .where(eq(family.id, familyId));
-    if (!row) throw recipeNotFound();
   }
 
   private async ingredientNames(

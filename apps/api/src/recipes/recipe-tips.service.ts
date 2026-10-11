@@ -11,7 +11,7 @@ import {
   recipeTips,
 } from '../database/schema';
 import { recipeNotFound } from './recipe-errors';
-import { lockRecipe } from './recipe-locks';
+import { lockFamilyRecipe } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
 import type {
   AdminRecipeDetail,
@@ -37,8 +37,18 @@ export class RecipeTipsService {
     input: TipCreate,
     familyId: string | null = null,
   ): Promise<AdminRecipeDetail> {
+    await this.writeCreate(recipeId, input, familyId);
+    return this.detail(recipeId, familyId);
+  }
+
+  /** `create` without the response, for callers that load their own view. */
+  async writeCreate(
+    recipeId: string,
+    input: TipCreate,
+    familyId: string | null = null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockRecipe(tx, recipeId, familyId);
+      await lockFamilyRecipe(tx, recipeId, familyId);
       await this.assertStepOf(tx, recipeId, input.stepId);
       const [{ last }] = await tx
         .select({ last: max(recipeTips.position) })
@@ -52,7 +62,6 @@ export class RecipeTipsService {
         position: (last ?? -1) + 1,
       });
     });
-    return this.detail(recipeId, familyId);
   }
 
   async update(
@@ -61,8 +70,19 @@ export class RecipeTipsService {
     input: TipUpdate,
     familyId: string | null = null,
   ): Promise<AdminRecipeDetail> {
+    await this.writeUpdate(recipeId, tipId, input, familyId);
+    return this.detail(recipeId, familyId);
+  }
+
+  /** `update` without the response, for callers that load their own view. */
+  async writeUpdate(
+    recipeId: string,
+    tipId: string,
+    input: TipUpdate,
+    familyId: string | null = null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockRecipe(tx, recipeId, familyId);
+      await lockFamilyRecipe(tx, recipeId, familyId);
       const tip = await this.requireTip(tx, recipeId, tipId);
       if (input.stepId !== undefined) {
         await this.assertStepOf(tx, recipeId, input.stepId);
@@ -78,7 +98,6 @@ export class RecipeTipsService {
           .where(eq(recipeHiddenTips.tipId, tip.id));
       }
     });
-    return this.detail(recipeId, familyId);
   }
 
   async delete(
@@ -87,7 +106,7 @@ export class RecipeTipsService {
     familyId: string | null = null,
   ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockRecipe(tx, recipeId, familyId);
+      await lockFamilyRecipe(tx, recipeId, familyId);
       await this.requireTip(tx, recipeId, tipId);
       await tx.delete(recipeTips).where(eq(recipeTips.id, tipId));
     });
@@ -99,8 +118,18 @@ export class RecipeTipsService {
     input: TipOrder,
     familyId: string | null = null,
   ): Promise<AdminRecipeDetail> {
+    await this.writeReorder(recipeId, input, familyId);
+    return this.detail(recipeId, familyId);
+  }
+
+  /** `reorder` without the response, for callers that load their own view. */
+  async writeReorder(
+    recipeId: string,
+    input: TipOrder,
+    familyId: string | null = null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      await lockRecipe(tx, recipeId, familyId);
+      await lockFamilyRecipe(tx, recipeId, familyId);
       const current = await tx
         .select({ id: recipeTips.id })
         .from(recipeTips)
@@ -119,7 +148,6 @@ export class RecipeTipsService {
           .where(eq(recipeTips.id, id));
       }
     });
-    return this.detail(recipeId, familyId);
   }
 
   /**
@@ -132,8 +160,18 @@ export class RecipeTipsService {
     input: HiddenTipsBody,
     familyId: string | null = null,
   ): Promise<AdminRecipeDetail> {
+    await this.writeHidden(recipeId, input, familyId);
+    return this.detail(recipeId, familyId);
+  }
+
+  /** `setHidden` without the response, for callers that load their own view. */
+  async writeHidden(
+    recipeId: string,
+    input: HiddenTipsBody,
+    familyId: string | null = null,
+  ): Promise<void> {
     await this.database.transaction(async (tx) => {
-      const recipe = await lockRecipe(tx, recipeId, familyId);
+      const recipe = await lockFamilyRecipe(tx, recipeId, familyId);
       if (!recipe.parentId)
         throw new ApiException(400, 'recipes.bad_hidden_tip');
       // Serialise with Tip changes on the base (they lock the base row).
@@ -166,7 +204,6 @@ export class RecipeTipsService {
           .values(input.tipIds.map((tipId) => ({ recipeId, tipId })));
       }
     });
-    return this.detail(recipeId, familyId);
   }
 
   private async detail(
