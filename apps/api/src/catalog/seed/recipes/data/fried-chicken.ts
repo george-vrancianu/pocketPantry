@@ -31,8 +31,8 @@ export const friedChicken: BaseRecipeSeed = {
       quantity: 700,
       unit: 'ml',
       note: t(
-        'for shallow frying, about 1 cm deep',
-        'pentru prăjit în strat subțire, cam 1 cm adâncime',
+        'for shallow frying, about 1.5 cm deep',
+        'pentru prăjit în strat subțire, cam 1,5 cm adâncime',
       ),
     },
   ],
@@ -86,12 +86,12 @@ export const friedChicken: BaseRecipeSeed = {
   ],
   tips: [
     t(
-      'Pat the chicken dry before coating; a wet surface makes the coating slide off and spatter.',
-      'Usucă bine puiul înainte să-l îmbraci; pe carnea udă crusta nu se prinde și uleiul sare.',
+      'Do not crowd the pieces, in oil, oven or air fryer alike; crowded chicken steams instead of crisping.',
+      'Nu înghesui bucățile, fie în ulei, la cuptor sau în air fryer; puiul înghesuit se aburește în loc să devină crocant.',
     ),
     t(
-      'Check the doneness in the thickest part, away from the bone: it must read at least 74 °C.',
-      'Verifică gătirea în cea mai groasă parte, departe de os: trebuie să arate cel puțin 74 °C.',
+      'Check the doneness in the thickest part, away from any bone: it must read at least 74 °C.',
+      'Verifică gătirea în cea mai groasă parte, departe de os, dacă are: trebuie să arate cel puțin 74 °C.',
     ),
     t(
       'Rest the chicken on a rack, not on a plate or paper towels, so steam does not soften the crust underneath.',
@@ -467,7 +467,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'fry1',
           text: t(
             'Heat the oil in a deep, heavy pot (no more than half full) to 160 °C. Fry the wings in batches for 8 to 10 minutes until pale gold and cooked through, and lift onto a rack. Rest them for at least 10 minutes.',
-            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 160 °C. Prăjește aripioarele în serii 8-10 minute, până se auresc ușor și gătite în interior, și scoate-le pe un grătar. Lasă-le să se odihnească cel puțin 10 minute.',
+            'Încinge uleiul într-o oală adâncă și grea (cel mult pe jumătate plină) la 160 °C. Prăjește aripioarele în serii 8-10 minute, până se auresc ușor și sunt gătite în interior, și scoate-le pe un grătar. Lasă-le să se odihnească cel puțin 10 minute.',
           ),
           timerSeconds: 540,
         },
@@ -566,7 +566,7 @@ export const friedChicken: BaseRecipeSeed = {
           label: t('Sparkling water', 'Apă minerală carbogazoasă'),
           reason: t(
             'Cold bubbles refresh the palate between sticky bites.',
-            'Bulele reci împrospătează gura între îmbucăturile lipicioase.',
+            'Bulele reci împrospătează gustul între îmbucăturile lipicioase.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-water',
@@ -789,7 +789,7 @@ export const friedChicken: BaseRecipeSeed = {
           quantity: 700,
           unit: 'g',
           note: t(
-            'cut into 4 cutlets and pounded to 1 cm',
+            'cut into 4 cutlets and pounded to 0.7 cm',
             'tăiat în 4 felii și bătut până la 0,7 cm grosime',
           ),
         },
@@ -808,7 +808,7 @@ export const friedChicken: BaseRecipeSeed = {
           key: 'pound',
           text: t(
             'Slice the breasts through the middle if thick, then pound the cutlets between two sheets of cling film to an even 0.7 cm. Season both sides with the salt and pepper.',
-            'Taie pieptul în două pe orizontală dacă e gros, apoi bate feliile între două bucăți de folie alimentară până la o grosime uniformă de 1 cm. Condimentează pe ambele fețe cu sare și piper.',
+            'Taie pieptul în două pe orizontală dacă e gros, apoi bate feliile între două bucăți de folie alimentară până la o grosime uniformă de 0,7 cm. Condimentează pe ambele fețe cu sare și piper.',
           ),
         },
         {
@@ -821,8 +821,8 @@ export const friedChicken: BaseRecipeSeed = {
         {
           key: 'heat',
           text: t(
-            'Heat the oil in a wide skillet over medium heat to 170 °C. It should be about 0.5 cm deep.',
-            'Încinge uleiul într-o tigaie lată la foc mediu, la 170 °C. Stratul de ulei trebuie să aibă cam 0,5 cm.',
+            'Heat the oil in a wide skillet over medium heat to 170 °C. It should be 0.5 to 1 cm deep.',
+            'Încinge uleiul într-o tigaie lată la foc mediu, la 170 °C. Stratul de ulei trebuie să aibă cam 0,5-1 cm.',
           ),
         },
         {
@@ -974,8 +974,8 @@ export const friedChicken: BaseRecipeSeed = {
         {
           key: 'heat',
           text: t(
-            'Heat the oven to 220 °C (200 °C fan) and put a wire rack on a baking tray. Toss the breadcrumbs with the oil, remaining salt, pepper and smoked paprika, and toast them in a dry pan for 3 to 4 minutes until golden.',
-            'Încălzește cuptorul la 220 °C (200 °C cu ventilator) și pune un grătar pe o tavă. Amestecă pesmetul cu uleiul, sarea rămasă, piperul și boiaua afumată și prăjește-l într-o tigaie, fără ulei în plus 3-4 minute, până se rumenește.',
+            'Heat the oven to 220 °C (200 °C fan) and put a wire rack on a baking tray. Toss the breadcrumbs with the oil, remaining salt, pepper and smoked paprika, and toast them in a pan, without extra oil, for 3 to 4 minutes until golden.',
+            'Încălzește cuptorul la 220 °C (200 °C cu ventilator) și pune un grătar pe o tavă. Amestecă pesmetul cu uleiul, sarea rămasă, piperul și boiaua afumată și prăjește-l 3-4 minute într-o tigaie, fără ulei în plus, până se rumenește.',
           ),
           timerSeconds: 210,
         },
