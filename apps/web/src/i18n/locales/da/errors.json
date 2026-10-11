@@ -44,6 +44,11 @@
     "nothing_checked": "Afkryds mindst én vare, før du afslutter.",
     "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden."
   },
+  "shopping_template": {
+    "not_found": "Vi kunne ikke finde den skabelon.",
+    "limit_reached": "En familie kan have op til {{max}} skabeloner. Slet en først.",
+    "too_many_lines": "En skabelon kan have op til {{max}} linjer."
+  },
   "pantry": {
     "location_required": "Vælg, hvor partiet opbevares.",
     "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",

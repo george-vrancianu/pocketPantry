@@ -44,6 +44,11 @@
     "nothing_checked": "Check at least one item before finishing.",
     "quantity_too_large": "That would take the quantity above 1,000,000. Lower the amount."
   },
+  "shopping_template": {
+    "not_found": "We could not find that template.",
+    "limit_reached": "A family can have up to {{max}} templates. Delete one first.",
+    "too_many_lines": "A template can have up to {{max}} lines."
+  },
   "pantry": {
     "location_required": "Choose where this batch is stored.",
     "ingredient_not_found": "We could not find that ingredient.",

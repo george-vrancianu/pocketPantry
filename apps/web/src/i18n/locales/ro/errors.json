@@ -44,6 +44,11 @@
     "nothing_checked": "Bifează cel puțin un produs înainte de a termina.",
     "quantity_too_large": "Cantitatea ar depăși 1.000.000. Scade cantitatea."
   },
+  "shopping_template": {
+    "not_found": "Nu am găsit acel șablon.",
+    "limit_reached": "O familie poate avea cel mult {{max}} de șabloane. Șterge mai întâi unul.",
+    "too_many_lines": "Un șablon poate avea cel mult {{max}} de linii."
+  },
   "pantry": {
     "location_required": "Alege unde este depozitat lotul.",
     "ingredient_not_found": "Nu am găsit ingredientul.",

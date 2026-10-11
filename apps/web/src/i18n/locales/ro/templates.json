@@ -1,0 +1,45 @@
+{
+  "title": "Șabloane de cumpărături",
+  "open": "Șabloane",
+  "save": {
+    "button": "Salvează ca șablon",
+    "name": "Numele șablonului",
+    "submit": "Salvează șablonul",
+    "saving": "Se salvează"
+  },
+  "apply": {
+    "button": "Adaugă dintr-un șablon",
+    "choose": "Alege un șablon",
+    "none": "Încă nu ai șabloane. Salvează lista ca șablon sau creează unul la Șabloane.",
+    "title": "Adaugă din {{name}}",
+    "hint": "Articolele pe care le ai deja în cămară încep nebifate.",
+    "empty": "Acest șablon nu are linii.",
+    "confirm_one": "Adaugă {{count}} articol în listă",
+    "confirm_few": "Adaugă {{count}} articole în listă",
+    "confirm_other": "Adaugă {{count}} de articole în listă",
+    "confirming": "Se adaugă",
+    "inPantry": "În cămară",
+    "unmatched": "Nepotrivit",
+    "unmatchedGroup": "Nu e în catalog",
+    "cancel": "Înapoi"
+  },
+  "list": {
+    "empty": "Încă nu ai șabloane. Creează unul ca să refolosești o listă.",
+    "name": "Numele noului șablon",
+    "create": "Creează șablonul",
+    "lines_one": "{{count}} linie",
+    "lines_few": "{{count}} linii",
+    "lines_other": "{{count}} de linii",
+    "back": "Înapoi la cumpărături"
+  },
+  "editor": {
+    "name": "Nume",
+    "rename": "Redenumește",
+    "remove": "Elimină {{name}}",
+    "delete": "Șterge șablonul",
+    "deleteConfirm": "Ștergi acest șablon pentru toată familia?",
+    "empty": "Încă nu are linii. Adaugă mai jos ce îți trebuie.",
+    "back": "Înapoi la șabloane",
+    "apply": "Adaugă în listă"
+  }
+}
