@@ -425,6 +425,14 @@ export const cannedGoods: SeedSection = {
         undefined,
         ['hrean cu sfecla'],
       ],
+      [
+        'mango-chutney',
+        'Mango chutney',
+        'Chutney de mango',
+        'g',
+        undefined,
+        ['chutney mango', 'sos de mango'],
+      ],
     ]),
   ],
 };
