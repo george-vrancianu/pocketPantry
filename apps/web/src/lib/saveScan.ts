@@ -1,4 +1,8 @@
-import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
+import {
+  recipeMatchingQueryKeys,
+  suggestionsQueryKey,
+  templateDetailsQueryKey,
+} from './queryKeys';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toNewShoppingItem, postShoppingItems } from './plate';
 import { postReceiptConfirm, type TickFailures } from './receiptScan';
@@ -47,6 +51,9 @@ export function useSaveLines(locale: string) {
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
         queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        ...recipeMatchingQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
         queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
       ]),
   });

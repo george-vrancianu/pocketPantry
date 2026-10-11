@@ -5,16 +5,16 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
-import {
-  cuisines,
-  methods,
-  recipes,
-  recipeTranslations,
-} from '../database/schema';
+import { cuisines, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
-import { findVisibleRecipe, resolveRecipe, visibleTo } from './recipe-view';
+import {
+  findVisibleRecipe,
+  recipeTitles,
+  resolveRecipe,
+  visibleTo,
+} from './recipe-view';
 import type {
   BrowseQuery,
   RecipeDetail,
@@ -82,7 +82,7 @@ export class RecipeBrowseService {
         (parents.get(r.parentId) && !parents.get(r.parentId)!.archivedAt),
     );
 
-    const titles = await this.titlesOf(
+    const titles = await recipeTitles(
       this.database,
       [...live, ...parents.values()],
       locale,
@@ -206,7 +206,7 @@ export class RecipeBrowseService {
           isNull(recipes.archivedAt),
         ),
       );
-    const titles = await this.titlesOf(this.database, rows, locale);
+    const titles = await recipeTitles(this.database, rows, locale);
     const ref = await this.namedRefs(
       this.database,
       locale,
@@ -256,29 +256,6 @@ export class RecipeBrowseService {
       .from(recipes)
       .where(and(inArray(recipes.id, ids), visibleTo(familyId)));
     return new Map(rows.map((r) => [r.id, r]));
-  }
-
-  /** Title per Recipe in `locale`; Family Recipes and untranslated ones show the source title. */
-  private async titlesOf(
-    executor: Executor,
-    rows: RecipeRow[],
-    locale: CatalogLocale,
-  ): Promise<Map<string, string>> {
-    const catalogIds = rows.filter((r) => r.familyId === null).map((r) => r.id);
-    const translated =
-      catalogIds.length === 0
-        ? []
-        : await executor
-            .select()
-            .from(recipeTranslations)
-            .where(
-              and(
-                inArray(recipeTranslations.recipeId, catalogIds),
-                eq(recipeTranslations.locale, locale),
-              ),
-            );
-    const byId = new Map(translated.map((t) => [t.recipeId, t.title]));
-    return new Map(rows.map((r) => [r.id, byId.get(r.id) ?? r.title]));
   }
 
   /** Recipes whose title in the locale, or source title, contains the normalised needle. */

@@ -404,3 +404,26 @@ async function loadListName(
     .where(eq(t.id, id));
   return row?.name ?? null;
 }
+
+/** Title per Recipe in `locale`; Family Recipes and untranslated ones show the source title. */
+export async function recipeTitles(
+  executor: Executor,
+  rows: RecipeRow[],
+  locale: CatalogLocale,
+): Promise<Map<string, string>> {
+  const catalogIds = rows.filter((r) => r.familyId === null).map((r) => r.id);
+  const translated =
+    catalogIds.length === 0
+      ? []
+      : await executor
+          .select()
+          .from(recipeTranslations)
+          .where(
+            and(
+              inArray(recipeTranslations.recipeId, catalogIds),
+              eq(recipeTranslations.locale, locale),
+            ),
+          );
+  const byId = new Map(translated.map((t) => [t.recipeId, t.title]));
+  return new Map(rows.map((r) => [r.id, byId.get(r.id) ?? r.title]));
+}

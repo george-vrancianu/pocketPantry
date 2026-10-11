@@ -3,13 +3,14 @@ import { z } from 'zod';
 export const widgetInstance = z.object({
   /** Client-chosen, unique within the layout, so one type can appear twice. */
   id: z.string().trim().min(1).max(64),
-  /** Cook Tonight and Recipe of the Day arrive in wave 2. */
+  /** Recipe of the Day arrives in wave 2. */
   type: z.enum([
     'use-soon',
     'shopping',
     'pantry-stock',
     'quick-scan',
     'suggestions',
+    'cook-tonight',
     'meal-plan',
     'budget',
     'nutrition',
