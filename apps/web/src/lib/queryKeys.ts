@@ -12,3 +12,6 @@ export const templateDetailsQueryKey = [
   'shopping-templates',
   'detail',
 ] as const;
+
+/** Every Recipe's Pantry match; its per-line "on your list" status goes stale when the Shopping List changes ('recipes' must match `recipesQueryKey`). */
+export const pantryMatchesQueryKey = ['recipes', 'pantry-match'] as const;

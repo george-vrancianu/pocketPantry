@@ -13,7 +13,7 @@ import type {
 import type { Unit } from './catalog';
 import { useDebounced } from './catalog';
 import { localIso } from './pantry';
-import { suggestionsQueryKey } from './queryKeys';
+import { pantryMatchesQueryKey, suggestionsQueryKey } from './queryKeys';
 import { shoppingListQueryKey, type ShoppingList } from './shopping';
 
 export type RecipeOwner = 'catalog' | 'family';
@@ -260,7 +260,7 @@ export function useAddMissingToShoppingList(id: string, locale: string) {
       queryClient.setQueryData([...shoppingListQueryKey, locale], list);
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: matchKey(id) }),
+        queryClient.invalidateQueries({ queryKey: pantryMatchesQueryKey }),
       ]);
     },
   });
