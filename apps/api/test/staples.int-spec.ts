@@ -156,12 +156,14 @@ describe('Staples and Suggestions (integration)', () => {
       const duplicate = await addStaple(cookie, { ingredientId: milk }).expect(
         409,
       );
-      expect(duplicate.body).toMatchObject({ code: 'staples.already_exists' });
+      expect(duplicate.body).toMatchObject({
+        code: 'shopping.staple_already_exists',
+      });
       const unknown = await addStaple(cookie, {
         ingredientId: '00000000-0000-4000-8000-000000000000',
       }).expect(404);
       expect(unknown.body).toMatchObject({
-        code: 'staples.ingredient_not_found',
+        code: 'shopping.ingredient_not_found',
       });
       await addStaple(cookie, { ingredientId: parmesan, quantity: 2 }).expect(
         400,
@@ -199,8 +201,8 @@ describe('Staples and Suggestions (integration)', () => {
         ingredientId: all[200].id,
       }).expect(409);
       expect(refused.body).toMatchObject({
-        code: 'staples.limit_reached',
-        params: { limit: 200 },
+        code: 'shopping.staple_limit_reached',
+        params: { max: 200 },
       });
     });
 

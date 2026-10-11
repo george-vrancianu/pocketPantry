@@ -147,7 +147,7 @@ describe('Shopping Templates (integration)', () => {
         .get(`/shopping-templates/${made.id}?locale=en`)
         .expect(404);
       expect(missing.body).toEqual({
-        code: 'shopping_template.not_found',
+        code: 'shopping.template_not_found',
         params: {},
       });
     });
@@ -206,7 +206,7 @@ describe('Shopping Templates (integration)', () => {
         })
         .expect(400);
       expect(over.body).toEqual({
-        code: 'shopping_template.too_many_lines',
+        code: 'shopping.template_too_many_lines',
         params: { max: 100 },
       });
       const overPatch = await as(ana)
@@ -215,7 +215,7 @@ describe('Shopping Templates (integration)', () => {
         })
         .expect(400);
       expect((overPatch.body as Body).code).toBe(
-        'shopping_template.too_many_lines',
+        'shopping.template_too_many_lines',
       );
     });
 
@@ -238,14 +238,14 @@ describe('Shopping Templates (integration)', () => {
         .post('/shopping-templates?locale=en', { name: 'T50' })
         .expect(409);
       expect(over.body).toEqual({
-        code: 'shopping_template.limit_reached',
+        code: 'shopping.template_limit_reached',
         params: { max: 50 },
       });
       const fromList = await as(ana)
         .post('/shopping-templates/from-list?locale=en', { name: 'T50' })
         .expect(409);
       expect((fromList.body as Body).code).toBe(
-        'shopping_template.limit_reached',
+        'shopping.template_limit_reached',
       );
     });
   });
@@ -322,7 +322,7 @@ describe('Shopping Templates (integration)', () => {
         .post('/shopping-templates/from-list?locale=en', { name: 'Too big' })
         .expect(400);
       expect((response.body as Body).code).toBe(
-        'shopping_template.too_many_lines',
+        'shopping.template_too_many_lines',
       );
     });
   });

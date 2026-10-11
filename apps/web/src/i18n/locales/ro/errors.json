@@ -42,12 +42,13 @@
     "ingredient_not_found": "Nu am găsit acel ingredient.",
     "list_changed": "Lista s-a schimbat cât timp ai verificat. Te rugăm să verifici din nou.",
     "nothing_checked": "Bifează cel puțin un produs înainte de a termina.",
-    "quantity_too_large": "Cantitatea ar depăși 1.000.000. Scade cantitatea."
-  },
-  "shopping_template": {
-    "not_found": "Nu am găsit acel șablon.",
-    "limit_reached": "O familie poate avea cel mult {{max}} de șabloane. Șterge mai întâi unul.",
-    "too_many_lines": "Un șablon poate avea cel mult {{max}} de linii."
+    "quantity_too_large": "Cantitatea ar depăși 1.000.000. Scade cantitatea.",
+    "staple_not_found": "Nu am găsit acel produs de bază.",
+    "staple_already_exists": "Acel ingredient este deja un produs de bază.",
+    "staple_limit_reached": "Poți avea cel mult {{max}} de produse de bază. Scoate unul ca să adaugi altul.",
+    "template_not_found": "Nu am găsit acel șablon.",
+    "template_limit_reached": "O familie poate avea cel mult {{max}} de șabloane. Șterge mai întâi unul.",
+    "template_too_many_lines": "Un șablon poate avea cel mult {{max}} de linii."
   },
   "pantry": {
     "location_required": "Alege unde este depozitat lotul.",
@@ -86,14 +87,5 @@
     "name_taken": "Acest nume aparține deja altui Ingredient. Rezolvă-l către acel Ingredient sau redenumește-l mai întâi pe celălalt.",
     "not_found": "Numele nu mai este în coadă. Poate că cineva l-a rezolvat deja.",
     "concurrent_change": "Listele s-au schimbat în timpul rezolvării. Încearcă din nou."
-  },
-  "staples": {
-    "not_found": "Nu am găsit acel produs de bază.",
-    "ingredient_not_found": "Nu am găsit acel ingredient.",
-    "already_exists": "Acel ingredient este deja un produs de bază.",
-    "limit_reached": "Poți avea cel mult {{limit}} de produse de bază. Scoate unul ca să adaugi altul."
-  },
-  "suggestions": {
-    "ingredient_not_found": "Nu am găsit acel ingredient."
   }
 }

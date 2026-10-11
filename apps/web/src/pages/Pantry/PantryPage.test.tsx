@@ -324,7 +324,7 @@ describe('PantryPage', () => {
           'GET /api/staples': () => Response.json({ staples: [] }),
           'POST /api/staples': () =>
             Response.json(
-              { code: 'staples.limit_reached', params: { limit: 200 } },
+              { code: 'shopping.staple_limit_reached', params: { max: 200 } },
               { status: 409 },
             ),
         });

@@ -366,7 +366,7 @@ describe('StaplesPage', () => {
       'GET /api/catalog/search': () => Response.json({ results: [flour] }),
       'POST /api/staples': () =>
         Response.json(
-          { code: 'staples.limit_reached', params: { limit: 200 } },
+          { code: 'shopping.staple_limit_reached', params: { max: 200 } },
           { status: 409 },
         ),
     });

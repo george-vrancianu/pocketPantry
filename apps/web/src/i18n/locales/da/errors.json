@@ -42,12 +42,13 @@
     "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
     "list_changed": "Listen blev ændret, mens du gennemgik den. Gennemgå den igen.",
     "nothing_checked": "Afkryds mindst én vare, før du afslutter.",
-    "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden."
-  },
-  "shopping_template": {
-    "not_found": "Vi kunne ikke finde den skabelon.",
-    "limit_reached": "En familie kan have op til {{max}} skabeloner. Slet en først.",
-    "too_many_lines": "En skabelon kan have op til {{max}} linjer."
+    "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden.",
+    "staple_not_found": "Vi kunne ikke finde den basisvare.",
+    "staple_already_exists": "Den ingrediens er allerede en basisvare.",
+    "staple_limit_reached": "Du kan have op til {{max}} basisvarer. Fjern en for at tilføje en anden.",
+    "template_not_found": "Vi kunne ikke finde den skabelon.",
+    "template_limit_reached": "En familie kan have op til {{max}} skabeloner. Slet en først.",
+    "template_too_many_lines": "En skabelon kan have op til {{max}} linjer."
   },
   "pantry": {
     "location_required": "Vælg, hvor partiet opbevares.",
@@ -86,14 +87,5 @@
     "name_taken": "Det navn tilhører allerede en anden ingrediens. Afklar det som den ingrediens, eller omdøb den anden først.",
     "not_found": "Det navn er ikke længere i køen. Måske har en anden allerede afklaret det.",
     "concurrent_change": "Listerne blev ændret under afklaringen. Prøv igen."
-  },
-  "staples": {
-    "not_found": "Vi kunne ikke finde den basisvare.",
-    "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
-    "already_exists": "Den ingrediens er allerede en basisvare.",
-    "limit_reached": "Du kan have op til {{limit}} basisvarer. Fjern en for at tilføje en anden."
-  },
-  "suggestions": {
-    "ingredient_not_found": "Vi kunne ikke finde den ingrediens."
   }
 }

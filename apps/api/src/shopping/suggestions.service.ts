@@ -54,7 +54,7 @@ export class SuggestionsService {
       .select({ id: ingredients.id })
       .from(ingredients)
       .where(eq(ingredients.id, ingredientId));
-    if (!found) throw new ApiException(404, 'suggestions.ingredient_not_found');
+    if (!found) throw new ApiException(404, 'shopping.ingredient_not_found');
     await this.database.transaction(async (tx) => {
       await tx
         .update(ingredientStockHistory)

@@ -42,12 +42,13 @@
     "ingredient_not_found": "We could not find that ingredient.",
     "list_changed": "The list changed while you were reviewing. Please review again.",
     "nothing_checked": "Check at least one item before finishing.",
-    "quantity_too_large": "That would take the quantity above 1,000,000. Lower the amount."
-  },
-  "shopping_template": {
-    "not_found": "We could not find that template.",
-    "limit_reached": "A family can have up to {{max}} templates. Delete one first.",
-    "too_many_lines": "A template can have up to {{max}} lines."
+    "quantity_too_large": "That would take the quantity above 1,000,000. Lower the amount.",
+    "staple_not_found": "We could not find that staple.",
+    "staple_already_exists": "That ingredient is already a staple.",
+    "staple_limit_reached": "You can have up to {{max}} staples. Remove one to add another.",
+    "template_not_found": "We could not find that template.",
+    "template_limit_reached": "A family can have up to {{max}} templates. Delete one first.",
+    "template_too_many_lines": "A template can have up to {{max}} lines."
   },
   "pantry": {
     "location_required": "Choose where this batch is stored.",
@@ -86,14 +87,5 @@
     "name_taken": "That name already belongs to another Ingredient. Resolve it to that Ingredient, or rename the other one first.",
     "not_found": "That name is no longer in the queue. Someone may have resolved it already.",
     "concurrent_change": "The lists changed while resolving. Please try again."
-  },
-  "staples": {
-    "not_found": "We could not find that staple.",
-    "ingredient_not_found": "We could not find that ingredient.",
-    "already_exists": "That ingredient is already a staple.",
-    "limit_reached": "You can have up to {{limit}} staples. Remove one to add another."
-  },
-  "suggestions": {
-    "ingredient_not_found": "We could not find that ingredient."
   }
 }

@@ -30,9 +30,9 @@ import {
   type UpdateTemplateBody,
 } from './shopping-templates.schemas';
 
-const notFound = () => new ApiException(404, 'shopping_template.not_found');
+const notFound = () => new ApiException(404, 'shopping.template_not_found');
 const tooManyLines = () =>
-  new ApiException(400, 'shopping_template.too_many_lines', {
+  new ApiException(400, 'shopping.template_too_many_lines', {
     max: MAX_TEMPLATE_LINES,
   });
 
@@ -207,7 +207,7 @@ export class ShoppingTemplatesService {
       .from(shoppingTemplates)
       .where(eq(shoppingTemplates.familyId, familyId));
     if (total >= MAX_TEMPLATES_PER_FAMILY) {
-      throw new ApiException(409, 'shopping_template.limit_reached', {
+      throw new ApiException(409, 'shopping.template_limit_reached', {
         max: MAX_TEMPLATES_PER_FAMILY,
       });
     }

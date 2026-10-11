@@ -17,7 +17,7 @@ import {
 
 type StapleRow = typeof staples.$inferSelect;
 
-const stapleNotFound = () => new ApiException(404, 'staples.not_found');
+const stapleNotFound = () => new ApiException(404, 'shopping.staple_not_found');
 
 @Injectable()
 export class StaplesService {
@@ -50,7 +50,7 @@ export class StaplesService {
           .from(ingredients)
           .where(eq(ingredients.id, body.ingredientId));
         if (!found) {
-          throw new ApiException(404, 'staples.ingredient_not_found');
+          throw new ApiException(404, 'shopping.ingredient_not_found');
         }
         // Serialises concurrent adds so the cap cannot be overshot.
         await tx.execute(
@@ -61,8 +61,8 @@ export class StaplesService {
           .from(staples)
           .where(eq(staples.familyId, familyId));
         if (total >= MAX_STAPLES) {
-          throw new ApiException(409, 'staples.limit_reached', {
-            limit: MAX_STAPLES,
+          throw new ApiException(409, 'shopping.staple_limit_reached', {
+            max: MAX_STAPLES,
           });
         }
         const [inserted] = await tx
@@ -78,7 +78,7 @@ export class StaplesService {
       });
     } catch (error) {
       if (hasPgCode(error, '23505')) {
-        throw new ApiException(409, 'staples.already_exists');
+        throw new ApiException(409, 'shopping.staple_already_exists');
       }
       throw error;
     }
