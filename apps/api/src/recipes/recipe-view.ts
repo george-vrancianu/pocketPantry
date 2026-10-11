@@ -62,6 +62,19 @@ export async function findCatalogRecipe(
   return row;
 }
 
+/** The Recipe row when it is owned by `familyId`, else undefined. */
+export async function findFamilyRecipe(
+  executor: Executor,
+  id: string,
+  familyId: string,
+): Promise<RecipeRow | undefined> {
+  const [row] = await executor
+    .select()
+    .from(recipes)
+    .where(and(eq(recipes.id, id), eq(recipes.familyId, familyId)));
+  return row;
+}
+
 async function loadParts(executor: Executor, recipeId: string) {
   const [lines, steps, tips] = await Promise.all([
     executor
@@ -125,12 +138,19 @@ async function loadTranslations(
   return result;
 }
 
-/** The Admin's view of a Catalog Recipe, or null when there is no such Catalog Recipe. */
+/**
+ * The editing view of a Catalog Recipe (`familyId` null) or of one owned by
+ * that Family, or null when there is no such Recipe in that scope.
+ */
 export async function loadAdminDetail(
   executor: Executor,
   id: string,
+  familyId: string | null = null,
 ): Promise<AdminRecipeDetail | null> {
-  const row = await findCatalogRecipe(executor, id);
+  const row =
+    familyId === null
+      ? await findCatalogRecipe(executor, id)
+      : await findFamilyRecipe(executor, id, familyId);
   if (!row) return null;
   const parts = await loadParts(executor, id);
   let parentTips: AdminRecipeDetail['parentTips'] = null;

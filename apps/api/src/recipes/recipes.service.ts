@@ -403,7 +403,8 @@ export class RecipesService {
     }
   }
 
-  private async writeSteps(
+  /** Also used by FamilyRecipesService: Steps are the same for both owners. */
+  async writeSteps(
     tx: Tx,
     recipeId: string,
     document: RecipeDocument,

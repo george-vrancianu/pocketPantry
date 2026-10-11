@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SettingsModule } from '../settings/settings.module';
+import { FamilyRecipesService } from './family-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import { RecipeTipsService } from './recipe-tips.service';
 import { RecipeTranslationsService } from './recipe-translations.service';
@@ -14,7 +15,13 @@ import { RecipesService } from './recipes.service';
     RecipeTipsService,
     RecipeTranslationsService,
     RecipeBrowseService,
+    FamilyRecipesService,
   ],
-  exports: [RecipesService, RecipeTipsService, RecipeTranslationsService],
+  exports: [
+    FamilyRecipesService,
+    RecipesService,
+    RecipeTipsService,
+    RecipeTranslationsService,
+  ],
 })
 export class RecipesModule {}

@@ -1,14 +1,42 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { FamilyRecipesService } from './family-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
+  familyRecipeCreate,
+  familyRecipeUpdate,
+  hiddenTipsBody,
   localeQuery,
   recipeParam,
+  recipeTipParam,
+  tipCreate,
+  tipOrder,
+  tipUpdate,
+  type FamilyRecipeCreate,
+  type FamilyRecipeDraft,
+  type FamilyRecipeEdit,
+  type FamilyRecipeUpdate,
+  type HiddenTipsBody,
+  type TipCreate,
+  type TipOrder,
+  type TipUpdate,
   type BrowseQuery,
   type LocaleQuery,
   type RecipeDetail,
@@ -16,11 +44,18 @@ import {
   type RecipeListItem,
 } from './recipes.schemas';
 
+const Id = () => Param(new ZodValidationPipe(recipeParam));
+const TipParams = () => Param(new ZodValidationPipe(recipeTipParam));
+const Locale = () => Query(new ZodValidationPipe(localeQuery));
+
 @ApiTags('recipes')
 @Controller('recipes')
 @UseGuards(AuthGuard)
 export class RecipesController {
-  constructor(private readonly browse: RecipeBrowseService) {}
+  constructor(
+    private readonly browse: RecipeBrowseService,
+    private readonly family: FamilyRecipesService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -45,6 +80,121 @@ export class RecipesController {
     },
   ): Promise<RecipeFilters> {
     return this.browse.filters(query.locale);
+  }
+
+  @Post()
+  @ApiOperation({
+    summary:
+      "Create one of the Family's own Recipes: a Variant (parentId) or a standalone Base Recipe",
+  })
+  create(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(familyRecipeCreate)) body: FamilyRecipeCreate,
+  ): Promise<FamilyRecipeEdit> {
+    const { locale, ...document } = body;
+    return this.family.create(member.id, document, locale);
+  }
+
+  @Get(':id/variant-draft')
+  @ApiOperation({
+    summary:
+      "An unsaved draft copying a visible Recipe's ingredients and Steps, under its Base Recipe",
+  })
+  variantDraft(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeDraft> {
+    return this.family.variantDraft(member.id, id, locale);
+  }
+
+  @Get(':id/edit')
+  @ApiOperation({ summary: "The editable view of the Family's own Recipe" })
+  edit(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.editFor(member.id, id, locale);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: "Replace the Family's own Recipe document" })
+  update(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(familyRecipeUpdate)) body: FamilyRecipeUpdate,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.update(member.id, id, body);
+  }
+
+  @Post(':id/archive')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "Archive (the UI's Delete) the Family's own Recipe; never removed",
+  })
+  archive(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.archive(member.id, id, locale);
+  }
+
+  @Post(':id/tips')
+  @ApiOperation({ summary: "Add a Tip to the Family's own Recipe or a Step" })
+  createTip(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(tipCreate)) body: TipCreate,
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.createTip(member.id, id, body, locale);
+  }
+
+  @Put(':id/tips/order')
+  @ApiOperation({ summary: 'Set the order of every Tip of the Recipe' })
+  reorderTips(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(tipOrder)) body: TipOrder,
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.reorderTips(member.id, id, body, locale);
+  }
+
+  @Patch(':id/tips/:tipId')
+  @ApiOperation({ summary: 'Edit a Tip of the Family Recipe' })
+  updateTip(
+    @CurrentUser() member: CurrentUserValue,
+    @TipParams() { id, tipId }: { id: string; tipId: string },
+    @Body(new ZodValidationPipe(tipUpdate)) body: TipUpdate,
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.updateTip(member.id, id, tipId, body, locale);
+  }
+
+  @Delete(':id/tips/:tipId')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete a Tip of the Family Recipe' })
+  async deleteTip(
+    @CurrentUser() member: CurrentUserValue,
+    @TipParams() { id, tipId }: { id: string; tipId: string },
+  ): Promise<void> {
+    await this.family.deleteTip(member.id, id, tipId);
+  }
+
+  @Put(':id/hidden-tips')
+  @ApiOperation({
+    summary: "Set which of the base's Recipe-level Tips this Variant hides",
+  })
+  setHiddenTips(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(hiddenTipsBody)) body: HiddenTipsBody,
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.setHiddenTips(member.id, id, body, locale);
   }
 
   @Get(':id')
