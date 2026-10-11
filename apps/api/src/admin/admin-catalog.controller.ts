@@ -19,9 +19,7 @@ import {
   aisleCreate,
   aisleOrder,
   aisleUpdate,
-  eatingMomentCreate,
   eatingMomentOrder,
-  eatingMomentUpdate,
   idParam,
   ingredientCreate,
   ingredientUpdate,
@@ -36,9 +34,7 @@ import {
   type AisleCreate,
   type AisleOrder,
   type AisleUpdate,
-  type EatingMomentCreate,
   type EatingMomentOrder,
-  type EatingMomentUpdate,
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
@@ -152,7 +148,7 @@ export class AdminCatalogController {
     summary: 'Admin only: create an Eating Moment, last in the list',
   })
   createEatingMoment(
-    @Body(new ZodValidationPipe(eatingMomentCreate)) body: EatingMomentCreate,
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
   ) {
     return this.catalog.createEatingMoment(body);
   }
@@ -172,7 +168,7 @@ export class AdminCatalogController {
   @ApiOperation({ summary: 'Admin only: rename an Eating Moment' })
   updateEatingMoment(
     @Id() { id }: IdParam,
-    @Body(new ZodValidationPipe(eatingMomentUpdate)) body: EatingMomentUpdate,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
   ) {
     return this.catalog.updateEatingMoment(id, body);
   }
