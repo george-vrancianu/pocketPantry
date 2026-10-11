@@ -90,7 +90,8 @@
       "plate": "Plate",
       "ingredients": "Ingredients",
       "manual": "Typed",
-      "finish_shopping": "Finish Shopping"
+      "finish_shopping": "Finish Shopping",
+      "recipe": "Recipe"
     },
     "resolve": "Resolve",
     "resolveName": "Resolve {{name}}",

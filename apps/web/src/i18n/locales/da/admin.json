@@ -90,7 +90,8 @@
       "plate": "Tallerken",
       "ingredients": "Ingredienser",
       "manual": "Indtastet",
-      "finish_shopping": "Afslut indkøb"
+      "finish_shopping": "Afslut indkøb",
+      "recipe": "Opskrift"
     },
     "resolve": "Afklar",
     "resolveName": "Afklar {{name}}",
