@@ -168,7 +168,9 @@ export function FamilyRecipeForm({
         steps={draft.steps}
         problems={problems}
         tipCount={(step) =>
-          step.id && stepTipCount ? stepTipCount(step.id) : 0
+          step.id && stepTipCount
+            ? stepTipCount(step.id)
+            : (step.tips?.length ?? 0)
         }
         onChange={(steps) => change({ steps })}
       />

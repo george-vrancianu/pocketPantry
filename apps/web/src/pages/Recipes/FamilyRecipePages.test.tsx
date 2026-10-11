@@ -196,6 +196,12 @@ describe('NewVariantPage', () => {
     await user.click(screen.getByRole('button', { name: 'Move step 2 up' }));
     // The step "Plate" and its Tip are dropped together.
     await user.click(screen.getByRole('button', { name: 'Remove step 3' }));
+    // Its copied Tip is counted in the warning before anything is dropped.
+    expect(
+      screen.getByText('Removing step 3 deletes its 1 Tip when you save.'),
+    ).toBeVisible();
+    expect(screen.getByText('Warm plate')).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /^Remove step and/ }));
     expect(screen.queryByText('Warm plate')).not.toBeInTheDocument();
     expect(screen.queryByText('Do not stir')).toBeInTheDocument();
     // The Member removes one Tip before saving.
