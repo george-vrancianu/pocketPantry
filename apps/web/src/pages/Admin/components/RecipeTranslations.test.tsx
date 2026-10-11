@@ -170,6 +170,11 @@ describe('RecipeTranslations guidance fields', () => {
       'Pâine',
     );
     expect(
+      romanian.getByText(
+        'Pairing 2 needs both a label and a reason (Romanian).',
+      ),
+    ).toBeInTheDocument();
+    expect(
       romanian.getByRole('button', { name: 'Save Romanian translations' }),
     ).toBeDisabled();
   });

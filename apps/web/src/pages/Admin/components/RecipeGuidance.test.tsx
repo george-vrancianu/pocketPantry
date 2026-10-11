@@ -67,8 +67,18 @@ const recipe: AdminRecipe = {
   translations: {},
 };
 
+const milk = {
+  id: 'i-milk',
+  name: 'Milk',
+  defaultUnit: 'ml',
+  leafCategory: { id: 'l1', name: 'Milk' },
+  parentCategory: { id: 'p1', name: 'Dairy', aisle: 'Dairy' },
+  defaults: { expiryDays: 7, location: 'fridge' },
+};
+
 const recipeList = [
   { id: 'r1', title: 'Soup', archived: false },
+  { id: 'r4', title: 'Zucchini bake', archived: false },
   { id: 'r2', title: 'Bread', archived: false },
   { id: 'r3', title: 'Old stew', archived: true },
 ].map((r) => ({
@@ -102,59 +112,69 @@ describe('RecipeGuidance', () => {
     vi.unstubAllGlobals();
   });
 
-  it(
-    'sends Pairings, the Nutrition Note and Eating Moments in one payload',
-    { timeout: 30_000 },
-    async () => {
-      const calls = open();
-      const user = userEvent.setup();
+  it('sends a Pairing with kind, label, reason and Principle', async () => {
+    const calls = open();
+    const user = userEvent.setup();
 
-      await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
-      await user.selectOptions(
-        screen.getByLabelText('Kind of Pairing 1'),
-        'drink',
-      );
-      await user.click(screen.getByLabelText('Label of Pairing 1'));
-      await user.paste('A glass of dry white wine');
-      await user.click(screen.getByLabelText('Reason for Pairing 1'));
-      await user.paste('Its acidity cuts through the butter');
-      await user.selectOptions(
-        screen.getByLabelText('Principle of Pairing 1'),
-        'Acid cuts fat',
-      );
-      await user.click(screen.getByLabelText('Nutrition Note'));
-      await user.paste('Rich in fat; keep portions modest.');
-      await user.selectOptions(
-        screen.getByLabelText('Add an Eating Moment'),
-        'Lunch',
-      );
-      await user.selectOptions(
-        screen.getByLabelText('Good for or Avoid: Lunch'),
-        'avoid',
-      );
-      await user.type(screen.getByLabelText('Reason for Lunch'), 'Heavy');
-      await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Kind of Pairing 1'),
+      'drink',
+    );
+    await user.click(screen.getByLabelText('Label of Pairing 1'));
+    await user.paste('A glass of dry white wine');
+    await user.click(screen.getByLabelText('Reason for Pairing 1'));
+    await user.paste('Its acidity cuts through the butter');
+    await user.selectOptions(
+      screen.getByLabelText('Principle of Pairing 1'),
+      'Acid cuts fat',
+    );
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
 
-      await vi.waitFor(() => expect(saved(calls)).toBeDefined());
-      expect(saved(calls)?.body).toEqual({
-        nutritionNote: 'Rich in fat; keep portions modest.',
-        pairings: [
-          {
-            kind: 'drink',
-            label: 'A glass of dry white wine',
-            reason: 'Its acidity cuts through the butter',
-            principle: 'acid_cuts_fat',
-            linkedIngredientId: null,
-            linkedRecipeId: null,
-          },
-        ],
-        eatingMoments: [
-          { eatingMomentId: 'em3', polarity: 'avoid', reason: 'Heavy' },
-        ],
-      });
-      expect(await screen.findByText('Guidance saved.')).toBeInTheDocument();
-    },
-  );
+    await vi.waitFor(() => expect(saved(calls)).toBeDefined());
+    expect(saved(calls)?.body).toEqual({
+      nutritionNote: null,
+      pairings: [
+        {
+          kind: 'drink',
+          label: 'A glass of dry white wine',
+          reason: 'Its acidity cuts through the butter',
+          principle: 'acid_cuts_fat',
+          linkedIngredientId: null,
+          linkedRecipeId: null,
+        },
+      ],
+      eatingMoments: [],
+    });
+    expect(await screen.findByText('Guidance saved.')).toBeInTheDocument();
+  });
+
+  it('sends the Nutrition Note and Eating Moments', async () => {
+    const calls = open();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByLabelText('Nutrition Note'));
+    await user.paste('Rich in fat; keep portions modest.');
+    await user.selectOptions(
+      screen.getByLabelText('Add an Eating Moment'),
+      'Lunch',
+    );
+    await user.selectOptions(
+      screen.getByLabelText('Good for or Avoid: Lunch'),
+      'avoid',
+    );
+    await user.type(screen.getByLabelText('Reason for Lunch'), 'Heavy');
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+
+    await vi.waitFor(() => expect(saved(calls)).toBeDefined());
+    expect(saved(calls)?.body).toEqual({
+      nutritionNote: 'Rich in fat; keep portions modest.',
+      pairings: [],
+      eatingMoments: [
+        { eatingMomentId: 'em3', polarity: 'avoid', reason: 'Heavy' },
+      ],
+    });
+  });
 
   it('loads saved guidance and keeps Pairing ids so their translations survive', async () => {
     const calls = open({
@@ -202,7 +222,9 @@ describe('RecipeGuidance', () => {
   });
 
   it('links a Pairing to an Ingredient or a Recipe, one at a time', async () => {
-    const calls = open();
+    const calls = open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
     await user.type(screen.getByLabelText('Label of Pairing 1'), 'Milk');
@@ -212,27 +234,84 @@ describe('RecipeGuidance', () => {
       screen.getByLabelText('Link of Pairing 1'),
       'An Ingredient',
     );
-    await user.selectOptions(
-      screen.getByLabelText('Linked Ingredient of Pairing 1'),
-      'Milk',
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'milk',
     );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    expect(screen.getByText('Linked Ingredient: Milk')).toBeInTheDocument();
     await user.selectOptions(
       screen.getByLabelText('Link of Pairing 1'),
       'A Recipe',
     );
-    expect(
-      screen.queryByLabelText('Linked Ingredient of Pairing 1'),
-    ).toBeNull();
+    expect(screen.queryByText(/Linked Ingredient/)).toBeNull();
     await user.selectOptions(
       screen.getByLabelText('Linked Recipe of Pairing 1'),
       'Bread',
     );
     await user.click(screen.getByRole('button', { name: 'Save guidance' }));
-
     await vi.waitFor(() => expect(saved(calls)).toBeDefined());
     expect(saved(calls)?.body).toMatchObject({
       pairings: [{ linkedIngredientId: null, linkedRecipeId: 'r2' }],
     });
+  });
+
+  it('sends an Ingredient link picked by search', async () => {
+    const calls = open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.type(screen.getByLabelText('Label of Pairing 1'), 'Milk');
+    await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Cools');
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'milk',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(screen.getByRole('button', { name: 'Save guidance' }));
+    await vi.waitFor(() => expect(saved(calls)).toBeDefined());
+    expect(saved(calls)?.body).toMatchObject({
+      pairings: [{ linkedIngredientId: 'i-milk', linkedRecipeId: null }],
+    });
+  });
+
+  it('blocks saving a link type with no target', async () => {
+    open();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.type(screen.getByLabelText('Label of Pairing 1'), 'Milk');
+    await user.type(screen.getByLabelText('Reason for Pairing 1'), 'Cools');
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'A Recipe',
+    );
+    expect(
+      screen.getByText(
+        'Choose what Pairing 1 links to, or set its link to No link.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Save guidance' }),
+    ).toBeDisabled();
+  });
+
+  it('limits label and reason length like the API', async () => {
+    open();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    expect(screen.getByLabelText('Label of Pairing 1')).toHaveAttribute(
+      'maxlength',
+      '200',
+    );
+    expect(screen.getByLabelText('Reason for Pairing 1')).toHaveAttribute(
+      'maxlength',
+      '1000',
+    );
   });
 
   it('offers only live Recipes other than this one, and the 8 labelled Principles', async () => {
@@ -250,7 +329,7 @@ describe('RecipeGuidance', () => {
         Array.from(recipes.querySelectorAll('option')).map(
           (o) => o.textContent,
         ),
-      ).toEqual(['Choose…', 'Bread']),
+      ).toEqual(['Choose…', 'Bread', 'Zucchini bake']),
     );
     const principles = screen.getByLabelText('Principle of Pairing 1');
     expect(principles.querySelectorAll('option')).toHaveLength(9);

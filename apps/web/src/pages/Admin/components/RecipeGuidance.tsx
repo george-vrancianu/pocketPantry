@@ -1,6 +1,7 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CatalogSearch } from '../../../components/CatalogSearch';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { localName, type AdminCatalog } from '../../../lib/admin';
 import {
@@ -17,6 +18,8 @@ import {
   type PairingPrinciple,
 } from '../../../lib/adminRecipes';
 import {
+  MAX_PAIRING_LABEL,
+  MAX_PAIRING_REASON,
   emptyPairing,
   guidanceProblems,
   noteLength,
@@ -136,6 +139,13 @@ export function RecipeGuidance({ recipe, catalog }: Props) {
             {t('admin:recipe.guidance.pairings.invalid')}
           </Typography>
         ) : null}
+        {problems.linkPosition !== null ? (
+          <Typography variant="body2" color="error">
+            {t('admin:recipe.guidance.pairings.linkIncomplete', {
+              position: problems.linkPosition,
+            })}
+          </Typography>
+        ) : null}
         {pairingsFull ? (
           <Typography variant="body2" color="text.secondary">
             {t('admin:recipe.guidance.pairings.limit', { max: MAX_PAIRINGS })}
@@ -210,9 +220,7 @@ export function RecipeGuidance({ recipe, catalog }: Props) {
           const moment = catalog.eatingMoments.find(
             (m) => m.id === use.eatingMomentId,
           );
-          const name = moment
-            ? localName(moment, i18n.language)
-            : t('admin:recipe.guidance.eatingMoments.title');
+          const name = moment ? localName(moment, i18n.language) : '';
           return (
             <Stack key={use.eatingMomentId} spacing={0.5}>
               <Typography variant="body2" sx={{ fontWeight: 700 }}>
@@ -326,7 +334,12 @@ export function RecipeGuidance({ recipe, catalog }: Props) {
 
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Button
-          disabled={save.isPending || problems.pairing || problems.note}
+          disabled={
+            save.isPending ||
+            problems.pairing ||
+            problems.note ||
+            problems.linkPosition !== null
+          }
           onClick={() => void submit()}
         >
           {save.isPending
@@ -368,9 +381,15 @@ function PairingRow({
   const recipes = useAdminRecipes();
   const p = { position };
   // The picker hides archived Recipes and this Recipe, except a link already saved.
-  const recipeOptions = (recipes.data ?? []).filter(
-    (r) => r.id !== recipeId && (!r.archived || r.id === pairing.linkTarget),
-  );
+  const recipeOptions = (recipes.data ?? [])
+    .filter(
+      (r) => r.id !== recipeId && (!r.archived || r.id === pairing.linkTarget),
+    )
+    .sort((a, b) => a.title.localeCompare(b.title, i18n.language));
+  const linkedIngredient =
+    pairing.linkType === 'ingredient'
+      ? catalog.ingredients.find((item) => item.id === pairing.linkTarget)
+      : undefined;
   return (
     <Stack
       component="fieldset"
@@ -378,7 +397,7 @@ function PairingRow({
       sx={{ border: 0, p: 0, m: 0, minWidth: 0 }}
     >
       <Typography component="legend" variant="body2" sx={{ fontWeight: 700 }}>
-        {t('admin:recipe.guidance.pairings.title')} {position}
+        {t('admin:recipe.guidance.pairings.heading', p)}
       </Typography>
       <TextField
         select
@@ -401,11 +420,13 @@ function PairingRow({
         label={t('admin:recipe.guidance.pairings.label', p)}
         value={pairing.label}
         onChange={(event) => onChange({ label: event.target.value })}
+        slotProps={{ htmlInput: { maxLength: MAX_PAIRING_LABEL } }}
       />
       <TextField
         label={t('admin:recipe.guidance.pairings.reason', p)}
         value={pairing.reason}
         onChange={(event) => onChange({ reason: event.target.value })}
+        slotProps={{ htmlInput: { maxLength: MAX_PAIRING_REASON } }}
         multiline
       />
       <TextField
@@ -449,20 +470,18 @@ function PairingRow({
         </option>
       </TextField>
       {pairing.linkType === 'ingredient' ? (
-        <TextField
-          select
-          label={t('admin:recipe.guidance.pairings.linkIngredientTarget', p)}
-          value={pairing.linkTarget}
-          onChange={(event) => onChange({ linkTarget: event.target.value })}
-          slotProps={{ select: { native: true } }}
-        >
-          <option value="">{t('admin:recipe.guidance.pairings.choose')}</option>
-          {catalog.ingredients.map((ingredient) => (
-            <option key={ingredient.id} value={ingredient.id}>
-              {localName(ingredient, i18n.language)}
-            </option>
-          ))}
-        </TextField>
+        <Stack spacing={0.5}>
+          {linkedIngredient ? (
+            <Typography variant="body2">
+              {t('admin:recipe.guidance.pairings.linkedIngredient', {
+                name: localName(linkedIngredient, i18n.language),
+              })}
+            </Typography>
+          ) : null}
+          <CatalogSearch
+            onSelect={(ingredient) => onChange({ linkTarget: ingredient.id })}
+          />
+        </Stack>
       ) : null}
       {pairing.linkType === 'recipe' ? (
         <TextField

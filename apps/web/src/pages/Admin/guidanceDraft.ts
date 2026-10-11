@@ -34,6 +34,9 @@ export type GuidanceDraft = {
 };
 
 let nextKey = 1;
+export const MAX_PAIRING_LABEL = 200;
+export const MAX_PAIRING_REASON = 1000;
+
 export const newKey = () => nextKey++;
 
 export function emptyPairing(): PairingDraft {
@@ -73,7 +76,8 @@ export function toGuidanceDraft(recipe: AdminRecipe): GuidanceDraft {
   };
 }
 
-export const noteLength = (note: string) => note.trim().length;
+/** Characters as the API counts them: code points of the trimmed text. */
+export const noteLength = (note: string) => [...note.trim()].length;
 
 export function guidanceProblems(draft: GuidanceDraft) {
   return {
@@ -81,6 +85,13 @@ export function guidanceProblems(draft: GuidanceDraft) {
       (p) => p.label.trim() === '' || p.reason.trim() === '',
     ),
     note: noteLength(draft.nutritionNote) > MAX_NUTRITION_NOTE,
+    /** Position of the first Pairing with a link type but no target, else null. */
+    linkPosition: (() => {
+      const index = draft.pairings.findIndex(
+        (p) => p.linkType !== 'none' && p.linkTarget === '',
+      );
+      return index === -1 ? null : index + 1;
+    })(),
   };
 }
 

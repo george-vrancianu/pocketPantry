@@ -14,8 +14,9 @@ type Props = { recipe: AdminRecipe; catalog: AdminCatalog };
 
 /**
  * Per-locale text of a saved Recipe: title, Steps, Ingredient Line notes and
- * Tips, plus guidance (Pairings, Eating Moment reasons, Nutrition Note). English is the source; a blank field falls back to it. Each locale
- * saves in one request with only what changed (blanking a field deletes it).
+ * Tips, plus guidance (Pairings, Eating Moment reasons, Nutrition Note).
+ * English is the source; a blank field falls back to it. Each locale saves in
+ * one request with only what changed (blanking a field deletes it).
  */
 export function RecipeTranslations({ recipe, catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors']);
@@ -99,8 +100,8 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
   const note = change('nutritionNote', saved?.nutritionNote);
   if (note !== undefined) input.nutritionNote = note;
   const pairings: NonNullable<TranslationsInput['pairings']> = {};
-  let pairingIncomplete = false;
-  for (const pairing of recipe.pairings) {
+  const incompletePairings: number[] = [];
+  for (const [index, pairing] of recipe.pairings.entries()) {
     const savedPairing = saved?.pairings[pairing.id];
     const label = change(`pairing:${pairing.id}:label`, savedPairing?.label);
     const reason = change(`pairing:${pairing.id}:reason`, savedPairing?.reason);
@@ -113,7 +114,7 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
       pairings[pairing.id] = null;
     } else if (nextLabel === null || nextReason === null) {
       // Label and reason are saved together: wait until both are filled.
-      pairingIncomplete = true;
+      incompletePairings.push(index + 1);
     } else {
       pairings[pairing.id] = { label: nextLabel, reason: nextReason };
     }
@@ -130,7 +131,7 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
   }
   if (Object.keys(moments).length > 0) input.eatingMoments = moments;
   const changed =
-    !pairingIncomplete &&
+    incompletePairings.length === 0 &&
     (input.title !== undefined ||
       input.nutritionNote !== undefined ||
       input.pairings !== undefined ||
@@ -216,6 +217,11 @@ function LocaleBlock({ locale, recipe, catalog, saving, onSave }: BlockProps) {
           saved?.tips[tip.id],
         );
       })}
+      {incompletePairings.map((position) => (
+        <Typography key={position} variant="body2" color="error" role="alert">
+          {t('recipe.translations.pairingIncomplete', { position, language })}
+        </Typography>
+      ))}
       {recipe.nutritionNote !== null
         ? field(
             'nutritionNote',

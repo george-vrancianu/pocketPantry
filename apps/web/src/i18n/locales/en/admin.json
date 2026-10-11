@@ -241,7 +241,8 @@
       "pairingLabel": "Pairing {{position}} label ({{language}})",
       "pairingReason": "Pairing {{position}} reason ({{language}})",
       "eatingMomentReason": "Reason for {{name}} ({{language}})",
-      "nutritionNote": "Nutrition Note ({{language}})"
+      "nutritionNote": "Nutrition Note ({{language}})",
+      "pairingIncomplete": "Pairing {{position}} needs both a label and a reason ({{language}})."
     },
     "guidance": {
       "title": "Guidance",
@@ -266,13 +267,15 @@
         "linkNone": "No link",
         "linkIngredient": "An Ingredient",
         "linkRecipe": "A Recipe",
-        "linkIngredientTarget": "Linked Ingredient of Pairing {{position}}",
         "linkRecipeTarget": "Linked Recipe of Pairing {{position}}",
         "choose": "Choose…",
         "moveUp": "Move Pairing {{position}} up",
         "moveDown": "Move Pairing {{position}} down",
         "remove": "Remove Pairing {{position}}",
-        "invalid": "Every Pairing needs a label and a reason."
+        "invalid": "Every Pairing needs a label and a reason.",
+        "heading": "Pairing {{position}}",
+        "linkedIngredient": "Linked Ingredient: {{name}}",
+        "linkIncomplete": "Choose what Pairing {{position}} links to, or set its link to No link."
       },
       "nutrition": {
         "title": "Nutrition Note",

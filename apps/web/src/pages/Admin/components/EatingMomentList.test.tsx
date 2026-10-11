@@ -77,6 +77,14 @@ describe('EatingMomentList', () => {
     ).toHaveAttribute('aria-disabled', 'true');
   });
 
+  it('says so when there are no Eating Moments yet', () => {
+    stub();
+    renderWithProviders(
+      <EatingMomentList moments={[]} onCreate={vi.fn()} onEdit={vi.fn()} />,
+    );
+    expect(screen.getByText('No Eating Moments yet.')).toBeInTheDocument();
+  });
+
   it('opens a moment to edit and offers a new one', async () => {
     stub();
     const onCreate = vi.fn();

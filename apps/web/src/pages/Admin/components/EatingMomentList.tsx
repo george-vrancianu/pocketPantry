@@ -70,6 +70,11 @@ export function EatingMomentList({ moments, onCreate, onEdit }: Props) {
       <div>
         <Button onClick={onCreate}>{t('admin:eatingMoment.new')}</Button>
       </div>
+      {moments.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">
+          {t('admin:eatingMoment.empty')}
+        </Typography>
+      ) : null}
       <Stack
         component="ol"
         aria-labelledby={headingId}
