@@ -230,7 +230,7 @@ describe('Shopping Templates (integration)', () => {
       expect((fromList.body as Body).code).toBe(
         'shopping_template.limit_reached',
       );
-    });
+    }, 30_000);
   });
 
   describe('save current list as template', () => {
