@@ -54,9 +54,13 @@ export const seedId = {
   parent: (slug: string) => stableId(`parent:${slug}`),
   leaf: (slug: string) => stableId(`leaf:${slug}`),
   ingredient: (slug: string) => stableId(`ingredient:${slug}`),
+  recipe: (slug: string) => stableId(`recipe:${slug}`),
+  cuisine: (slug: string) => stableId(`cuisine:${slug}`),
+  method: (slug: string) => stableId(`method:${slug}`),
+  eatingMoment: (slug: string) => stableId(`eating-moment:${slug}`),
 };
 
-function translationRows(
+export function translationRows(
   entityType: EntityType,
   entityId: string,
   names: Record<CatalogLocale, string>,

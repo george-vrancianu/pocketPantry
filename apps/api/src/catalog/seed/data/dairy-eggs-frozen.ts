@@ -660,6 +660,14 @@ export const frozen: SeedSection = {
         undefined,
         ['ardei copti congelati'],
       ],
+      [
+        'edamame',
+        'Edamame',
+        'Edamame',
+        'g',
+        ['soya beans in pods'],
+        ['edamame congelat', 'boabe de soia in teaca'],
+      ],
     ]),
     ...ingredientsOf('frozen-potatoes', [
       [
@@ -849,6 +857,14 @@ export const frozen: SeedSection = {
         'g',
         undefined,
         ['aluat paine congelat', 'covrigei congelati'],
+      ],
+      [
+        'falafel',
+        'Falafel',
+        'Falafel',
+        'g',
+        ['falafel balls'],
+        ['chiftele de naut', 'falafel congelat'],
       ],
     ]),
     ...ingredientsOf('ice-cream', [
