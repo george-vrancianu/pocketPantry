@@ -608,6 +608,14 @@ export const condiments: SeedSection = {
         ['sesame paste'],
         ['pasta de susan', 'pasta susan'],
       ],
+      [
+        'gochujang',
+        'Gochujang',
+        'Gochujang',
+        'g',
+        ['korean chilli paste', 'korean chili paste'],
+        ['pasta coreeana de ardei'],
+      ],
     ]),
     ...ingredientsOf('pasta-sauces-and-pesto', [
       [

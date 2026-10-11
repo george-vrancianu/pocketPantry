@@ -26,6 +26,8 @@ export const SEED_CUISINES: SeedNamed[] = [
   named('greek', 'Greek', 'Grecească', 'Græsk'),
   named('thai', 'Thai', 'Thailandeză', 'Thailandsk'),
   named('british', 'British', 'Britanică', 'Britisk'),
+  named('korean', 'Korean', 'Coreeană', 'Koreansk'),
+  named('japanese', 'Japanese', 'Japoneză', 'Japansk'),
 ];
 
 export const SEED_METHODS: SeedNamed[] = [
@@ -46,6 +48,8 @@ export const SEED_METHODS: SeedNamed[] = [
     'Cremet salat',
   ),
   named('warm-salad', 'Warm salad', 'Salată caldă', 'Varm salat'),
+  named('oven-fried', 'Oven-fried', 'Prăjit la cuptor', 'Ovnstegt'),
+  named('air-fried', 'Air-fried', 'La air fryer', 'Airfryer-stegt'),
 ];
 
 /** In display order. Exactly the list from the ticket. */

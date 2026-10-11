@@ -634,6 +634,7 @@ export const DA_INGREDIENTS: Record<string, string> = {
   'curry-paste': 'Currypasta',
   wasabi: 'Wasabi',
   tahini: 'Tahin',
+  gochujang: 'Gochujang',
   'tomato-pasta-sauce': 'Tomatsauce til pasta',
   'bolognese-sauce': 'Bolognesesauce',
   pesto: 'Pesto på glas',
