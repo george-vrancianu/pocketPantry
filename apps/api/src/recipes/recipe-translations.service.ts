@@ -13,6 +13,7 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
+import { writeGuidanceTranslations } from './recipe-guidance-translations';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import { lockCatalogRecipe } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
@@ -42,6 +43,7 @@ export class RecipeTranslationsService {
       await this.writeSteps(tx, recipeId, locale, body.steps);
       await this.writeLines(tx, recipeId, locale, body.lines);
       await this.writeTips(tx, recipeId, locale, body.tips);
+      await writeGuidanceTranslations(tx, recipeId, locale, body);
     });
     const detail = await loadAdminDetail(this.database, recipeId);
     if (!detail) throw recipeNotFound();

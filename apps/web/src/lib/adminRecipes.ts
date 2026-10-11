@@ -20,11 +20,48 @@ export type RecipeStep = {
   timerSeconds: number | null;
 };
 export type RecipeTip = { id: string; stepId: string | null; text: string };
+export const PAIRING_KINDS = ['food', 'drink'] as const;
+export type PairingKind = (typeof PAIRING_KINDS)[number];
+export const PAIRING_PRINCIPLES = [
+  'acid_cuts_fat',
+  'salt_balances_sweet',
+  'fat_carries_flavour',
+  'contrast_texture',
+  'complement_flavour',
+  'bitter_balances_rich',
+  'cleanses_palate',
+  'regional_tradition',
+] as const;
+export type PairingPrinciple = (typeof PAIRING_PRINCIPLES)[number];
+export const MAX_PAIRINGS = 10;
+export const MAX_EATING_MOMENTS = 10;
+export const MAX_NUTRITION_NOTE = 500;
+
+export type RecipePairing = {
+  id: string;
+  kind: PairingKind;
+  label: string;
+  reason: string;
+  principle: PairingPrinciple | null;
+  linkedIngredientId: string | null;
+  linkedRecipeId: string | null;
+};
+export type EatingMomentPolarity = 'good_for' | 'avoid';
+export type RecipeEatingMoment = {
+  eatingMomentId: string;
+  polarity: EatingMomentPolarity;
+  reason: string | null;
+};
+
 export type RecipeLocaleText = {
   title: string | null;
   steps: Record<string, string>;
   lines: Record<string, string>;
   tips: Record<string, string>;
+  nutritionNote: string | null;
+  pairings: Record<string, { label: string; reason: string }>;
+  /** Reason per Eating Moment id. */
+  eatingMoments: Record<string, string>;
 };
 
 /** The Admin's view of one Catalog Recipe (mirror of the API's `AdminRecipeDetail`). */
@@ -44,6 +81,9 @@ export type AdminRecipe = {
   tips: RecipeTip[];
   /** A Variant's base Recipe-level Tips with whether this Variant hides each. */
   parentTips: (RecipeTip & { hidden: boolean })[] | null;
+  nutritionNote: string | null;
+  pairings: RecipePairing[];
+  eatingMoments: RecipeEatingMoment[];
   translations: Record<string, RecipeLocaleText>;
 };
 
@@ -83,6 +123,28 @@ export type TranslationsInput = {
   steps?: Record<string, string | null>;
   lines?: Record<string, string | null>;
   tips?: Record<string, string | null>;
+  nutritionNote?: string | null;
+  pairings?: Record<string, { label: string; reason: string } | null>;
+  eatingMoments?: Record<string, string | null>;
+};
+
+/** What the guidance endpoint replaces: a Pairing with an `id` keeps its translations. */
+export type GuidanceInput = {
+  nutritionNote: string | null;
+  pairings: Array<{
+    id?: string;
+    kind: PairingKind;
+    label: string;
+    reason: string;
+    principle: PairingPrinciple | null;
+    linkedIngredientId: string | null;
+    linkedRecipeId: string | null;
+  }>;
+  eatingMoments: Array<{
+    eatingMomentId: string;
+    polarity: EatingMomentPolarity;
+    reason: string | null;
+  }>;
 };
 
 export const adminRecipesQueryKey = ['admin-recipes'] as const;
@@ -179,5 +241,14 @@ export function useSetRecipeTranslations(id: string) {
         method: 'PUT',
         body: input,
       }),
+  );
+}
+
+export function useSetGuidance(id: string) {
+  return useRecipeWrite((input: GuidanceInput) =>
+    apiRequest<AdminRecipe>(`/admin/recipes/${id}/guidance`, {
+      method: 'PUT',
+      body: input,
+    }),
   );
 }

@@ -17,6 +17,7 @@ import {
   recipeTips,
 } from '../database/schema';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
+import { copyGuidance } from './recipe-guidance-write';
 import { lockCatalogRecipe } from './recipe-locks';
 import { loadAdminDetail } from './recipe-view';
 import type {
@@ -150,7 +151,8 @@ export class RecipesService {
    * Makes a Variant of a Base Recipe: a full copy (metadata, Ingredient Lines,
    * Steps with new ids, Step Tips re-anchored to the new Steps, and the
    * translations of the copied text) that is an editable draft from then on.
-   * Recipe-level Tips are not copied: the Variant inherits them live.
+   * Guidance (Pairings, Nutrition Note, Eating Moment uses) is copied too, with
+   * its translations. Recipe-level Tips are not copied: the Variant inherits them live.
    */
   async createVariant(
     parentId: string,
@@ -190,6 +192,7 @@ export class RecipesService {
   }
 
   private async copyContent(tx: Tx, fromId: string, toId: string) {
+    await copyGuidance(tx, fromId, toId);
     const lines = await tx
       .select()
       .from(recipeIngredientLines)

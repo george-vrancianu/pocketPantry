@@ -4,6 +4,7 @@ import { FamilyRecipesService } from './family-recipes.service';
 import { ShoppingModule } from '../shopping/shopping.module';
 import { PantryMatchingService } from './matching/pantry-matching.service';
 import { RecipeBrowseService } from './recipe-browse.service';
+import { RecipeGuidanceService } from './recipe-guidance.service';
 import { RecipePantryController } from './recipe-pantry.controller';
 import { RecipePantryService } from './recipe-pantry.service';
 import { RecipeTipsService } from './recipe-tips.service';
@@ -18,6 +19,7 @@ import { RecipesService } from './recipes.service';
     RecipesService,
     RecipeTipsService,
     RecipeTranslationsService,
+    RecipeGuidanceService,
     RecipeBrowseService,
     FamilyRecipesService,
     PantryMatchingService,
@@ -29,6 +31,7 @@ import { RecipesService } from './recipes.service';
     RecipeTipsService,
     RecipeTranslationsService,
     PantryMatchingService,
+    RecipeGuidanceService,
   ],
 })
 export class RecipesModule {}

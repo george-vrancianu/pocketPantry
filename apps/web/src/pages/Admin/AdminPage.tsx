@@ -5,6 +5,8 @@ import { AisleEditor } from './components/AisleEditor';
 import { AisleList } from './components/AisleList';
 import { CategoryEditor } from './components/CategoryEditor';
 import { CategoryTree } from './components/CategoryTree';
+import { EatingMomentEditor } from './components/EatingMomentEditor';
+import { EatingMomentList } from './components/EatingMomentList';
 import { IngredientEditor } from './components/IngredientEditor';
 import { IngredientList } from './components/IngredientList';
 import { ListEntryEditor } from './components/ListEntryEditor';
@@ -45,6 +47,14 @@ export function AdminPage() {
         catalog={catalog}
         onOpen={(id) => screen.edit({ type: 'recipe', id })}
         onClose={screen.close}
+      />
+    );
+  } else if (catalog && editing?.type === 'eatingMoment') {
+    body = (
+      <EatingMomentEditor
+        key={editing.id ?? 'new'}
+        moment={screen.editedEatingMoment}
+        onDone={screen.close}
       />
     );
   } else if (catalog && editing?.type === 'list') {
@@ -111,6 +121,11 @@ export function AdminPage() {
                 screen.edit({ type: 'list', kind: 'method', id: null })
               }
               onEdit={(id) => screen.edit({ type: 'list', kind: 'method', id })}
+            />
+            <EatingMomentList
+              moments={catalog.eatingMoments}
+              onCreate={() => screen.edit({ type: 'eatingMoment', id: null })}
+              onEdit={(id) => screen.edit({ type: 'eatingMoment', id })}
             />
           </Stack>
         ) : screen.tab === 'unmatched' ? (

@@ -16,6 +16,7 @@ export type Editing =
   | { type: 'ingredient'; id: string | null }
   | { type: 'aisle'; id: string | null }
   | { type: 'recipe'; id: string | null }
+  | { type: 'eatingMoment'; id: string | null }
   | { type: 'list'; kind: ListKind; id: string | null }
   | { type: 'category'; kind: CategoryKind; id: string | null };
 
@@ -46,6 +47,10 @@ export function useAdminScreen() {
     editing?.type === 'aisle'
       ? catalog?.aisles.find((item) => item.id === editing.id)
       : undefined;
+  const editedEatingMoment =
+    editing?.type === 'eatingMoment'
+      ? catalog?.eatingMoments.find((item) => item.id === editing.id)
+      : undefined;
   let editedListEntry: AdminListEntry | undefined;
   if (editing?.type === 'list' && catalog) {
     const list =
@@ -75,6 +80,7 @@ export function useAdminScreen() {
     editedAisle,
     editedCategory,
     editedListEntry,
+    editedEatingMoment,
     edit: setEditing,
     close: () => setEditing(null),
   };

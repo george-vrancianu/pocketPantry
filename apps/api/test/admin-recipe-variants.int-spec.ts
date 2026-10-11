@@ -167,6 +167,10 @@ describe('Recipe Variants, Tips and translations (integration)', () => {
         steps: { [variant.steps[0].id]: 'Amesteca' },
         lines: { [variant.lines[0].id]: 'cernuta' },
         tips: { [variant.tips[0].id]: 'Nu amesteca prea mult' },
+        // No guidance to translate on this Recipe.
+        nutritionNote: null,
+        pairings: {},
+        eatingMoments: {},
       });
     });
 

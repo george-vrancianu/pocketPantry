@@ -16,6 +16,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
@@ -139,6 +140,20 @@ export class RecipesController {
     @Locale() { locale }: LocaleQuery,
   ): Promise<FamilyRecipeEdit> {
     return this.family.archive(member.id, id, locale);
+  }
+
+  @Put(':id/guidance')
+  @ApiOperation({
+    summary:
+      "Replace the Family Recipe's guidance (Nutrition Note, Pairings, Eating Moments)",
+  })
+  setGuidance(
+    @CurrentUser() member: CurrentUserValue,
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(guidanceBody)) body: GuidanceBody,
+    @Locale() { locale }: LocaleQuery,
+  ): Promise<FamilyRecipeEdit> {
+    return this.family.setGuidance(member.id, id, body, locale);
   }
 
   @Post(':id/tips')

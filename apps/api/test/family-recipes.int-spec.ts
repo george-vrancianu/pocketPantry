@@ -5,6 +5,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  eatingMoments,
   family,
   ingredients,
   recipeIngredientLines,
@@ -38,6 +39,7 @@ describe('Family Recipes (integration)', () => {
   let adminCookie: string;
   let cookieOf: Record<string, string>;
   let familyA: string;
+  let momentId: string;
   let ing: string[];
   const stamp = Date.now();
   let n = 0;
@@ -120,6 +122,13 @@ describe('Family Recipes (integration)', () => {
       .from(user)
       .where(eq(user.email, emails.a1));
     familyA = row.familyId;
+    momentId = crypto.randomUUID();
+    await database.insert(eatingMoments).values({
+      id: momentId,
+      name: `Moment ${stamp}`,
+      normalizedName: `moment ${stamp}`,
+      sortOrder: 1000,
+    });
     ing = (
       await database.select({ id: ingredients.id }).from(ingredients).limit(5)
     ).map((r) => r.id);
@@ -135,6 +144,7 @@ describe('Family Recipes (integration)', () => {
       await database.delete(recipes).where(eq(recipes.id, row.id));
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
+    await database.delete(eatingMoments).where(eq(eatingMoments.id, momentId));
     await app.close();
   });
 
@@ -677,6 +687,146 @@ describe('Family Recipes (integration)', () => {
       await b
         .post(`/${created.id}/add-missing?locale=en`, { today: '2026-10-12' })
         .expect(404);
+    });
+  });
+
+  describe('guidance', () => {
+    const guidance = (extra: object[] = []) => ({
+      nutritionNote: 'Rich in protein; go easy on salt.',
+      pairings: [
+        {
+          kind: 'drink',
+          label: 'Dry white',
+          reason: 'Acid cuts the fat',
+          principle: 'acid_cuts_fat',
+        },
+        ...extra,
+      ],
+      eatingMoments: [
+        { eatingMomentId: momentId, polarity: 'good_for', reason: 'Brunch' },
+      ],
+    });
+
+    it('writes and reads Family guidance through its own endpoint', async () => {
+      const created = await familyRecipe(a1, null);
+      const view = (
+        await a2
+          .put(`/${created.id}/guidance?locale=en`, guidance())
+          .expect(200)
+      ).body as FamilyRecipeEdit;
+      expect(view).toMatchObject({
+        nutritionNote: 'Rich in protein; go easy on salt.',
+        pairings: [{ label: 'Dry white', kind: 'drink' }],
+        eatingMoments: [{ eatingMomentId: momentId, polarity: 'good_for' }],
+      });
+      const read = (await a1.get(`/${created.id}`).expect(200))
+        .body as RecipeDetail;
+      expect(read.guidance.nutritionNote).toBe(view.nutritionNote);
+      expect(read.guidance.eatingMoments[0]).toMatchObject({
+        reason: 'Brunch',
+      });
+      // A PUT of the document leaves the guidance alone.
+      await a1
+        .put(`/${created.id}`, {
+          title: created.title,
+          servings: 2,
+          locale: 'en',
+          lines: [],
+          steps: [],
+        })
+        .expect(200);
+      expect(
+        (
+          (await a1.get(`/${created.id}/edit`).expect(200))
+            .body as FamilyRecipeEdit
+        ).pairings,
+      ).toHaveLength(1);
+    });
+
+    it("links Catalog Recipes and own Recipes, never another Family's", async () => {
+      const base = await catalogBase();
+      const mine = await familyRecipe(a1, null);
+      const theirs = await familyRecipe(b, null);
+      const target = await familyRecipe(a1, null);
+      const link = (linkedRecipeId: string) =>
+        a1.put(`/${target.id}/guidance`, {
+          nutritionNote: null,
+          eatingMoments: [],
+          pairings: [
+            {
+              kind: 'food',
+              label: 'Side',
+              reason: 'Goes well',
+              linkedRecipeId,
+            },
+          ],
+        });
+      await link(base.id).expect(200);
+      await link(mine.id).expect(200);
+      const refused = await link(theirs.id).expect(409);
+      expect(code(refused)).toBe('recipes.pairing_link_not_allowed');
+    });
+
+    it('copies guidance into the draft and saves it with the Variant', async () => {
+      const base = await catalogBase();
+      await admin
+        .put(`/${base.id}/guidance`, {
+          nutritionNote: 'Base note',
+          pairings: [
+            {
+              kind: 'food',
+              label: 'Salad',
+              reason: 'Fresh',
+              linkedIngredientId: ing[1],
+            },
+          ],
+          eatingMoments: [
+            { eatingMomentId: momentId, polarity: 'avoid', reason: null },
+          ],
+        })
+        .expect(200);
+      const draft = (await a1.get(`/${base.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft.guidance).toEqual({
+        nutritionNote: 'Base note',
+        pairings: [
+          {
+            kind: 'food',
+            label: 'Salad',
+            reason: 'Fresh',
+            principle: null,
+            linkedIngredientId: ing[1],
+            linkedRecipeId: null,
+          },
+        ],
+        eatingMoments: [
+          { eatingMomentId: momentId, polarity: 'avoid', reason: null },
+        ],
+      });
+      const { guidance: draftGuidance, ...rest } = draft;
+      const saved = (
+        await a1
+          .post('', {
+            ...rest,
+            guidance: draftGuidance,
+            locale: 'en',
+            lines: [],
+            steps: [],
+          })
+          .expect(201)
+      ).body as FamilyRecipeEdit;
+      expect(saved.nutritionNote).toBe('Base note');
+      expect(saved.pairings).toHaveLength(1);
+      expect(saved.eatingMoments).toHaveLength(1);
+    });
+
+    it('is invisible to other Families and to the Admin endpoint', async () => {
+      const created = await familyRecipe(a1, null);
+      const body = { nutritionNote: null, pairings: [], eatingMoments: [] };
+      await b.put(`/${created.id}/guidance`, body).expect(404);
+      await admin.put(`/${created.id}/guidance`, body).expect(404);
+      const base = await catalogBase();
+      await a1.put(`/${base.id}/guidance`, body).expect(404);
     });
   });
 

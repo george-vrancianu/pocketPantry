@@ -14,3 +14,12 @@ export async function lockAisleOrder(
     sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-aisle-order', 0))`,
   );
 }
+
+/** The same advisory lock for the set of Eating Moments and their order. */
+export async function lockEatingMomentOrder(
+  executor: Pick<Executor, 'execute'>,
+): Promise<void> {
+  await executor.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-eating-moment-order', 0))`,
+  );
+}

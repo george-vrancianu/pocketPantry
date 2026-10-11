@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  eatingMoments: [],
   parentCategories: [],
   leafCategories: [],
   ingredients: [
@@ -55,12 +56,18 @@ const base: AdminRecipe = {
     { id: 't3', stepId: null, text: 'Freezes well' },
   ],
   parentTips: null,
+  nutritionNote: null,
+  pairings: [],
+  eatingMoments: [],
   translations: {
     da: {
       title: 'Suppe',
       steps: { s1: 'Hak' },
       lines: {},
       tips: {},
+      nutritionNote: null,
+      pairings: {},
+      eatingMoments: {},
     },
   },
 };

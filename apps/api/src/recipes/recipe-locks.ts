@@ -5,7 +5,9 @@ import { recipeNotFound } from './recipe-errors';
 
 /**
  * Locks the Recipe row for the transaction and returns it; 404 when it is not
- * one. `familyId` null means a Catalog Recipe, else a Recipe of that Family:
+ * one (FOR NO KEY UPDATE: exclusive between writers, but it does not conflict
+ * with the KEY SHARE of a Pairing link's foreign-key check, so two Recipes
+ * linking each other cannot deadlock). `familyId` null means a Catalog Recipe, else a Recipe of that Family:
  * the Admin and Member paths never reach each other's Recipes.
  */
 export async function lockRecipe(tx: Tx, id: string, familyId: string | null) {
@@ -20,7 +22,7 @@ export async function lockRecipe(tx: Tx, id: string, familyId: string | null) {
           : eq(recipes.familyId, familyId),
       ),
     )
-    .for('update');
+    .for('no key update');
   if (!row) throw recipeNotFound();
   return row;
 }

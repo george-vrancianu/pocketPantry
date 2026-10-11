@@ -16,6 +16,13 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
+import {
+  emptyGuidanceTranslations,
+  loadAdminGuidance,
+  loadGuidanceTranslations,
+  loadResolvedGuidance,
+} from './recipe-guidance';
+import { inOrder } from './recipe-queries';
 import type {
   AdminRecipeDetail,
   RecipeLineView,
@@ -75,18 +82,6 @@ export async function findFamilyRecipe(
   return row;
 }
 
-/**
- * Awaits lazy query builders one after the other. A transaction has a single
- * connection, which must not run two queries at once.
- */
-export async function inOrder<const T extends readonly unknown[]>(
-  queries: T,
-): Promise<{ -readonly [K in keyof T]: Awaited<T[K]> }> {
-  const results: unknown[] = [];
-  for (const query of queries) results.push(await query);
-  return results as { -readonly [K in keyof T]: Awaited<T[K]> };
-}
-
 async function loadParts(executor: Executor, recipeId: string) {
   const [lines, steps, tips] = await inOrder([
     executor
@@ -142,11 +137,22 @@ async function loadTranslations(
   ]);
   const result: RecipeTranslationsView = {};
   const of = (locale: string) =>
-    (result[locale] ??= { title: null, steps: {}, lines: {}, tips: {} });
+    (result[locale] ??= {
+      title: null,
+      steps: {},
+      lines: {},
+      tips: {},
+      ...emptyGuidanceTranslations(),
+    });
   for (const row of titles) of(row.locale).title = row.title;
   for (const row of stepRows) of(row.locale).steps[row.stepId] = row.text;
   for (const row of lineRows) of(row.locale).lines[row.lineId] = row.note;
   for (const row of tipRows) of(row.locale).tips[row.tipId] = row.text;
+  for (const [locale, guidance] of Object.entries(
+    await loadGuidanceTranslations(executor, recipeId),
+  )) {
+    Object.assign(of(locale), guidance);
+  }
   return result;
 }
 
@@ -201,6 +207,7 @@ export async function loadAdminDetail(
     lines: parts.lines.map(lineView),
     steps: parts.steps.map(stepView),
     tips: parts.tips.map(tipView),
+    ...(await loadAdminGuidance(executor, id, row.nutritionNote)),
     parentTips,
     // Family Recipes are never translated.
     translations:
@@ -383,6 +390,7 @@ export async function resolveRecipe(
         inherited: false,
       })),
     ],
+    guidance: await loadResolvedGuidance(executor, id, locale),
   };
 }
 

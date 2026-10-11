@@ -6,6 +6,7 @@ import type {
   PantryMatch,
   RecipeDetail,
 } from '../../../lib/recipes';
+import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
@@ -202,8 +203,8 @@ function VariantsSection({ recipe }: SectionProps) {
 }
 
 /**
- * The detail page's sections, top to bottom. A new section (guidance: Pairings,
- * When to Eat, Nutrition, #159) is one more entry after Tips.
+ * The detail page's sections, top to bottom. A new section is one more entry,
+ * e.g. guidance (Pairings, When to Eat, Nutrition) sits between Tips and Variants.
  */
 export const DETAIL_SECTIONS: {
   key: string;
@@ -213,5 +214,6 @@ export const DETAIL_SECTIONS: {
   { key: 'ingredients', Component: IngredientsSection },
   { key: 'steps', Component: StepsSection },
   { key: 'tips', Component: TipsSection },
+  { key: 'guidance', Component: GuidanceSection },
   { key: 'variants', Component: VariantsSection },
 ];

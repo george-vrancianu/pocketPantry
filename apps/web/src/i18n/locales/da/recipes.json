@@ -5,6 +5,17 @@
     "medium": "Mellem",
     "hard": "Svær"
   },
+  "principles": {
+    "acid_cuts_fat": "Syre skærer fedt",
+    "salt_balances_sweet": "Salt balancerer sødt",
+    "fat_carries_flavour": "Fedt bærer smag",
+    "contrast_texture": "Kontrast i konsistens",
+    "complement_flavour": "Smage der supplerer hinanden",
+    "bitter_balances_rich": "Bitterhed balancerer det fyldige",
+    "cleanses_palate": "Renser ganen",
+    "regional_tradition": "Regional tradition"
+  },
+  "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",
   "cuisine": "Køkken",
   "method": "Metode",
@@ -25,11 +36,22 @@
   "backToList": "Alle opskrifter",
   "notFound": "Opskriften blev ikke fundet.",
   "sections": {
+    "pairings": "Forslag til servering",
+    "whenToEat": "Hvornår skal det spises",
+    "nutrition": "Ernæring",
     "ingredients": "Ingredienser",
     "steps": "Trin",
     "tips": "Tips",
     "variants": "Varianter",
     "whatsDifferent": "Hvad er anderledes"
+  },
+  "pairingKind": {
+    "food": "Mad",
+    "drink": "Drikke"
+  },
+  "eatingPolarity": {
+    "good_for": "Godt til",
+    "avoid": "Undgå"
   },
   "optional": "valgfri",
   "timer": "Timer {{time}}",

@@ -43,6 +43,7 @@ const detail: RecipeDetail = {
   base: null,
   variants: [],
   diff: null,
+  guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
 };
 
 const line = (over: Partial<PantryLine> & { lineId: string }): PantryLine => ({

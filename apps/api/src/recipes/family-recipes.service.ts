@@ -18,10 +18,14 @@ import {
   recipeSteps,
   unmatchedEntries,
 } from '../database/schema';
+import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import { itemNotFound, recipeNotFound } from './recipe-errors';
 import { lockRecipe } from './recipe-locks';
+import type { GuidanceBody } from './recipe-guidance.schemas';
+import { writeGuidance } from './recipe-guidance-write';
+import { loadResolvedGuidance } from './recipe-guidance';
 import { RecipesService } from './recipes.service';
 import { RecipeTipsService } from './recipe-tips.service';
 import {
@@ -86,6 +90,7 @@ export class FamilyRecipesService {
       throw new ApiException(409, 'recipes.parent_archived');
     }
     const source = await resolveRecipe(this.database, row, locale);
+    const guidance = await loadResolvedGuidance(this.database, row.id, locale);
     return {
       parentId,
       title: source.title,
@@ -108,6 +113,22 @@ export class FamilyRecipesService {
         text: step.text,
         timerSeconds: step.timerSeconds,
       })),
+      guidance: {
+        nutritionNote: guidance.nutritionNote,
+        pairings: guidance.pairings.map((p) => ({
+          kind: p.kind,
+          label: p.label,
+          reason: p.reason,
+          principle: p.principle,
+          linkedIngredientId: p.link?.type === 'ingredient' ? p.link.id : null,
+          linkedRecipeId: p.link?.type === 'recipe' ? p.link.id : null,
+        })),
+        eatingMoments: guidance.eatingMoments.map((m) => ({
+          eatingMomentId: m.eatingMomentId,
+          polarity: m.polarity,
+          reason: m.reason,
+        })),
+      },
     };
   }
 
@@ -152,6 +173,9 @@ export class FamilyRecipesService {
     });
     await this.writeLines(tx, id, document, new Map(), locale);
     await this.recipes.writeSteps(tx, id, document, new Set());
+    if (document.guidance) {
+      await writeGuidance(tx, { id, familyId }, document.guidance);
+    }
     return id;
   }
 
@@ -237,6 +261,38 @@ export class FamilyRecipesService {
           ),
         );
     });
+    return this.edit(familyId, id, locale);
+  }
+
+  /**
+   * Replaces the guidance (Nutrition Note, Pairings, Eating Moments) of a
+   * Family Recipe, as the Admin endpoint does for Catalog Recipes. It is its
+   * own endpoint, not part of `update`. Guidance is never translated. A
+   * Pairing may link Catalog Recipes or the Family's own, never another
+   * Family's.
+   */
+  async setGuidance(
+    memberId: string,
+    id: string,
+    body: GuidanceBody,
+    locale: CatalogLocale,
+  ): Promise<FamilyRecipeEdit> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    try {
+      await this.database.transaction(async (tx) => {
+        await this.lockFamily(tx, familyId);
+        const recipe = await lockRecipe(tx, id, familyId);
+        await writeGuidance(tx, recipe, body);
+      });
+    } catch (error) {
+      if (
+        hasPgCode(error, '23505') &&
+        pgConstraint(error) === 'recipe_eating_moments_recipe_moment_idx'
+      ) {
+        throw new ApiException(400, 'recipes.eating_moment_duplicate');
+      }
+      throw error;
+    }
     return this.edit(familyId, id, locale);
   }
 
