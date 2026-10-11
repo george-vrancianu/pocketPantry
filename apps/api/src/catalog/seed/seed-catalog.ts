@@ -8,7 +8,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
-import { lockAisleOrder } from '../aisle-order-lock';
+import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';

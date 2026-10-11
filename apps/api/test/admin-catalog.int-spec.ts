@@ -3,7 +3,7 @@ import { and, eq, ilike } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import type { Pool } from 'pg';
 import request from 'supertest';
-import { lockAisleOrder } from '../src/catalog/aisle-order-lock';
+import { lockAisleOrder } from '../src/catalog/order-lock';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE, DATABASE_POOL } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';

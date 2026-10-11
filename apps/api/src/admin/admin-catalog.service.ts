@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
-import {
-  lockAisleOrder,
-  lockEatingMomentOrder,
-} from '../catalog/aisle-order-lock';
+import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
