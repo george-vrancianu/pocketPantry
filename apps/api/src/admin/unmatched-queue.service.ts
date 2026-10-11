@@ -10,6 +10,7 @@ import {
 import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
+import { PantryService } from '../pantry/pantry.service';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
@@ -18,6 +19,7 @@ import {
   ingredients,
   shoppingItems,
   shoppingLists,
+  shoppingTemplateLines,
   unmatchedEntries,
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
@@ -55,6 +57,7 @@ export class UnmatchedQueueService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly catalog: AdminCatalogService,
+    private readonly pantry: PantryService,
   ) {}
 
   /**
@@ -252,24 +255,39 @@ export class UnmatchedQueueService {
       itemIds,
       target.id,
     );
-    const relinkedBatches =
+    // Unmatched Template lines carry the same matching key; they have no queue entry of their own.
+    const relinkedTemplateLines = await tx
+      .update(shoppingTemplateLines)
+      .set({ ingredientId: target.id, name: null, normalizedName: null })
+      .where(
+        and(
+          eq(shoppingTemplateLines.normalizedName, key),
+          isNull(shoppingTemplateLines.ingredientId),
+        ),
+      )
+      .returning({ id: shoppingTemplateLines.id });
+    const relinkedBatchRows =
       batchIds.length === 0
-        ? 0
-        : (
-            await tx
-              .update(batches)
-              .set({
-                ingredientId: target.id,
-                // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
-                leafCategoryId: target.leafCategoryId,
-                unmatched: false,
-                rawName: null,
-              })
-              .where(
-                and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
-              )
-              .returning({ id: batches.id })
-          ).length;
+        ? []
+        : await tx
+            .update(batches)
+            .set({
+              ingredientId: target.id,
+              // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
+              leafCategoryId: target.leafCategoryId,
+              unmatched: false,
+              rawName: null,
+            })
+            .where(
+              and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
+            )
+            .returning({ id: batches.id, familyId: batches.familyId });
+    // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
+    for (const familyId of new Set(
+      relinkedBatchRows.map((row) => row.familyId),
+    )) {
+      await this.pantry.relinked(tx, familyId, target.id);
+    }
 
     const synonymAdded = await this.addSynonym(
       tx,
@@ -319,8 +337,9 @@ export class UnmatchedQueueService {
     return {
       ingredientId: target.id,
       locale,
-      relinkedBatches,
+      relinkedBatches: relinkedBatchRows.length,
       relinkedShoppingItems,
+      relinkedTemplateLines: relinkedTemplateLines.length,
       synonymAdded,
       sourceSynonymAdded,
       sourceSynonymSkipped,

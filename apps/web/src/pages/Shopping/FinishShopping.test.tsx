@@ -11,6 +11,7 @@ import { ShoppingPage } from './ShoppingPage';
 
 const item = (id: string, name: string, checked: boolean): ShoppingItem => ({
   id,
+  ingredientId: null,
   name,
   quantity: null,
   unit: null,

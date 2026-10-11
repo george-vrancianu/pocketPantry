@@ -108,6 +108,22 @@ _Avoid_: Recipe tag, origin
 The action that moves checked Shopping Items into the Pantry as Batches with Default Expiry, after a Review, archives the list, and starts a new one that carries over the unchecked items.
 _Avoid_: Move to pantry, checkout, complete
 
+**Staple**:
+An Ingredient the Family always wants in stock, with an optional preferred quantity and unit. A Staple with no unexpired Batch in the Pantry is missing and becomes a Suggestion.
+_Avoid_: Must-have, favourite, essential
+
+**Shopping Template**:
+A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list.
+_Avoid_: Predefined list, saved list, preset
+
+**Used Up**:
+The state of an Ingredient whose last Batch was removed from the Pantry within the past 30 days. A Staple is never Used Up; it is missing instead.
+_Avoid_: Run out, finished, nothing left
+
+**Suggestion**:
+A proposed Shopping Item, from a missing Staple or a Used Up Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing one hides it for the Family until the Ingredient is restocked and runs out again.
+_Avoid_: Alert, notification, recommendation
+
 ### Scanning
 
 **Scan**:

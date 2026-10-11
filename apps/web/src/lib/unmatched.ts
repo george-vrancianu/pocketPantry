@@ -7,6 +7,7 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
 
@@ -45,6 +46,7 @@ export type UnmatchedResolution = {
   locale: Locale;
   relinkedBatches: number;
   relinkedShoppingItems: number;
+  relinkedTemplateLines: number;
   synonymAdded: boolean;
   /** A Synonym of the printed text was added. */
   sourceSynonymAdded: boolean;
@@ -106,6 +108,8 @@ export function useResolveUnmatched() {
           catalogSearchQueryKey,
           ['pantry'],
           shoppingListQueryKey,
+          suggestionsQueryKey,
+          templateDetailsQueryKey,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });

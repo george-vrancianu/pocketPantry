@@ -97,6 +97,7 @@ export type UnmatchedResolution = {
   locale: string;
   relinkedBatches: number;
   relinkedShoppingItems: number;
+  relinkedTemplateLines: number;
   synonymAdded: boolean;
   /** A Synonym of the printed text was added (needs `sourceSynonym` and printed text). */
   sourceSynonymAdded: boolean;

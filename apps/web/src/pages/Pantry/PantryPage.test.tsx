@@ -262,6 +262,102 @@ describe('PantryPage', () => {
       );
     });
 
+    describe('Staple star', () => {
+      const staple = {
+        id: 'staple-1',
+        ingredientId: 'milk-id',
+        name: 'Milk',
+        quantity: null,
+        unit: null,
+        aisle: null,
+      };
+
+      function stubStaples() {
+        const { fetchMock, calls } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({
+              batches: [
+                batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+                batch({
+                  name: 'Zorblax paste',
+                  unmatched: true,
+                  ingredientId: null,
+                  location: 'cupboard',
+                }),
+              ],
+            }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () => Response.json(staple, { status: 201 }),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        return calls;
+      }
+
+      it('toggles a Staple from a matched row and leaves an Unmatched row without a star', async () => {
+        const user = userEvent.setup();
+        const calls = stubStaples();
+        renderWithProviders(<PantryPage />);
+
+        const star = await screen.findByRole('button', {
+          name: 'Make Milk a staple',
+        });
+        await waitFor(() =>
+          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
+        );
+        expect(
+          screen.queryByRole('button', { name: /Zorblax paste a staple/ }),
+        ).not.toBeInTheDocument();
+
+        await user.click(star);
+        await waitFor(() =>
+          expect(
+            calls.find((c) => c.key === 'POST /api/staples')?.body,
+          ).toEqual({ ingredientId: 'milk-id' }),
+        );
+      });
+
+      it('shows a translated error in the page when the Staple limit is reached', async () => {
+        const user = userEvent.setup();
+        const { fetchMock } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({ batches: [batch({ name: 'Milk' })] }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () =>
+            Response.json(
+              { code: 'shopping.staple_limit_reached', params: { max: 200 } },
+              { status: 409 },
+            ),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        renderWithProviders(<PantryPage />);
+
+        const star = await screen.findByRole('button', {
+          name: 'Make Milk a staple',
+        });
+        await waitFor(() =>
+          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
+        );
+        await user.click(star);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          'You can have up to 200 staples',
+        );
+      });
+
+      it('still expands the row', async () => {
+        const user = userEvent.setup();
+        stubStaples();
+        renderWithProviders(<PantryPage />);
+
+        const toggle = await screen.findByRole('button', { name: /^Milk/ });
+        await user.click(toggle);
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          screen.getByRole('list', { name: 'Batches of Milk' }),
+        ).toBeInTheDocument();
+      });
+    });
+
     it('lists totals separately when the units differ', async () => {
       stubManaged([
         batch({ name: 'Flour', ingredientId: 'f', quantity: 500, unit: 'g' }),

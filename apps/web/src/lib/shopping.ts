@@ -1,9 +1,12 @@
+import { suggestionsQueryKey } from './queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
 
 export type ShoppingItem = {
   id: string;
+  /** The Catalog Ingredient; null for an Unmatched item. */
+  ingredientId: string | null;
   name: string;
   quantity: number | null;
   unit: Unit | null;
@@ -54,8 +57,11 @@ export function useShoppingList(locale: string) {
 /** Mutations answer with the whole updated list, which replaces the cached one. */
 export function useShoppingMutations(locale: string) {
   const queryClient = useQueryClient();
-  const onSuccess = (list: ShoppingList) =>
+  const onSuccess = (list: ShoppingList) => {
     queryClient.setQueryData(listKey(locale), list);
+    // Items on the list are hidden from Suggestions.
+    return queryClient.invalidateQueries({ queryKey: suggestionsQueryKey });
+  };
 
   const add = useMutation({
     mutationFn: (item: NewShoppingItem) =>

@@ -42,7 +42,13 @@
     "ingredient_not_found": "Vi kunne ikke finde den ingrediens.",
     "list_changed": "Listen blev ændret, mens du gennemgik den. Gennemgå den igen.",
     "nothing_checked": "Afkryds mindst én vare, før du afslutter.",
-    "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden."
+    "quantity_too_large": "Det ville gøre mængden større end 1.000.000. Sænk mængden.",
+    "staple_not_found": "Vi kunne ikke finde den basisvare.",
+    "staple_already_exists": "Den ingrediens er allerede en basisvare.",
+    "staple_limit_reached": "Du kan have op til {{max}} basisvarer. Fjern en for at tilføje en anden.",
+    "template_not_found": "Vi kunne ikke finde den skabelon.",
+    "template_limit_reached": "En familie kan have op til {{max}} skabeloner. Slet en først.",
+    "template_too_many_lines": "En skabelon kan have op til {{max}} linjer."
   },
   "pantry": {
     "location_required": "Vælg, hvor partiet opbevares.",
@@ -56,7 +62,7 @@
     "not_found": "Det katalogpunkt findes ikke længere.",
     "name_taken": "Det navn er allerede i brug. Navne skal være unikke, uanset store og små bogstaver og accenter.",
     "category_not_empty": "Denne kategori er stadig i brug eller indeholder punkter. Flyt eller slet dem først.",
-    "ingredient_in_use": "Denne ingrediens bruges stadig af partier eller indkøbsvarer og kan derfor ikke slettes.",
+    "ingredient_in_use": "Denne ingrediens bruges stadig i spisekammeret, på indkøbslisten, som basisvare eller i en indkøbsskabelon og kan derfor ikke slettes.",
     "other_leaf_protected": "Kategorien Andet er der, hvor umatchede partier havner, så den kan ikke slettes, flyttes eller fjernes.",
     "other_leaf_name_taken": "En kategori Andet har allerede det genererede navn (\"Andet <name>\"). Omdøb eller fjern den kategori, der er i konflikt, først.",
     "translation_exists": "Dette punkt har allerede et navn på det sprog. Rediger det eksisterende i stedet.",

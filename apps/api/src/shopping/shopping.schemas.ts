@@ -9,6 +9,12 @@ export type ShoppingUnit = (typeof ingredientUnit.enumValues)[number];
 export const shoppingLocaleQuery = catalogSearchQuery.pick({ locale: true });
 export type ShoppingLocaleQuery = z.infer<typeof shoppingLocaleQuery>;
 
+/** `today` is the Member's local date (YYYY-MM-DD) a Batch is expired before; defaults to the server's UTC date. */
+export const shoppingLocaleTodayQuery = shoppingLocaleQuery.extend({
+  today: z.iso.date().optional(),
+});
+export type ShoppingLocaleTodayQuery = z.infer<typeof shoppingLocaleTodayQuery>;
+
 /** Either a Catalog Match (`ingredientId`) or a typed `name` for an Unmatched item. */
 export const addShoppingItemBody = z
   .object({
@@ -39,6 +45,8 @@ export const itemIdParam = z.object({ id: z.uuid() });
 
 export type ShoppingItemView = {
   id: string;
+  /** The Catalog Ingredient, or null for an Unmatched item. */
+  ingredientId: string | null;
   name: string;
   quantity: number | null;
   unit: ShoppingUnit | null;

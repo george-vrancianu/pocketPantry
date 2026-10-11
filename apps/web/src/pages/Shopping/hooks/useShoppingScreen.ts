@@ -5,16 +5,22 @@ import {
   useShoppingMutations,
   type NewShoppingItem,
 } from '../../../lib/shopping';
+import { localIso } from '../../../lib/pantry';
+import { useSuggestions } from '../../../lib/suggestions';
 
 export function useShoppingScreen() {
   const { t, i18n } = useTranslation();
   const list = useShoppingList(i18n.language);
   const { add, setChecked, remove } = useShoppingMutations(i18n.language);
+  // A failed Suggestions request just hides the section; the list still works.
+  const suggestions = useSuggestions(i18n.language, localIso(new Date()));
 
   const error = list.error ?? add.error ?? setChecked.error ?? remove.error;
 
   return {
     list: list.data,
+    staples: suggestions.data?.staples ?? [],
+    usedUp: suggestions.data?.usedUp ?? [],
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,

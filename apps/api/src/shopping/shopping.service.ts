@@ -310,6 +310,7 @@ export class ShoppingService {
     for (const row of rows) {
       const item: ShoppingItemView = {
         id: row.id,
+        ingredientId: row.ingredientId,
         name:
           row.ingredientId !== null
             ? display(

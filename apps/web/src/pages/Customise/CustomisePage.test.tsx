@@ -99,6 +99,7 @@ describe('CustomisePage', () => {
         .map((b) => b.getAttribute('aria-label')),
     ).toEqual([
       'Add Pantry widget',
+      'Add Suggestions widget',
       'Add Meal plan widget',
       'Add Budget widget',
       'Add Nutrition widget',

@@ -1,0 +1,30 @@
+{
+  "title": "Produse de bază",
+  "back": "Înapoi la listă",
+  "hint": "Lucruri pe care vrei să le ai mereu în casă. Când unul nu mai are niciun lot valabil în cămară, îl sugerăm în lista de cumpărături.",
+  "empty": "Încă nu ai produse de bază. Caută mai sus ca să adaugi unul sau atinge steaua de la un produs din cămară sau din listă.",
+  "listLabel": "Produsele tale de bază",
+  "remove": "Scoate {{name}} din produsele de bază",
+  "quantityOf": "Cantitatea obișnuită de {{name}}",
+  "unitOf": "Unitatea pentru {{name}}",
+  "noUnit": "Fără unitate",
+  "unitRequired": "Alege o unitate pentru cantitate.",
+  "save": "Salvează {{name}}",
+  "saveShort": "Salvează",
+  "toggle": {
+    "add": "Fă din {{name}} un produs de bază",
+    "remove": "Scoate {{name}} din produsele de bază"
+  },
+  "suggestions": {
+    "title": "Sugestii",
+    "heading_one": "Sugestii, lipsește {{count}} produs de bază",
+    "heading_few": "Sugestii, lipsesc {{count}} produse de bază",
+    "heading_other": "Sugestii, lipsesc {{count}} de produse de bază",
+    "add": "Adaugă {{name}} în listă",
+    "addShort": "Adaugă",
+    "dismiss": "Ignoră {{name}}",
+    "usedUpHeading_one": "Epuizat recent, {{count}} ingredient",
+    "usedUpHeading_few": "Epuizate recent, {{count}} ingrediente",
+    "usedUpHeading_other": "Epuizate recent, {{count}} de ingrediente"
+  }
+}

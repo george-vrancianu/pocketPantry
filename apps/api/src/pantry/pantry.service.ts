@@ -11,7 +11,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import {
   batches,
   ingredients,
@@ -20,6 +20,7 @@ import {
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
+import { recordRemoved, recordStocked } from './stock-history';
 import type {
   BatchView,
   CreateBatchBody,
@@ -89,7 +90,7 @@ export class PantryService {
       ...this.toRow(familyId, body, targets[index], overrides),
     }));
     const rows = await this.database.transaction(async (tx) => {
-      const inserted = await tx.insert(batches).values(values).returning();
+      const inserted = await this.insertBatches(tx, familyId, values);
       // The ids were generated above, so each entry is built from its own line.
       await recordUnmatched(
         tx,
@@ -189,13 +190,68 @@ export class PantryService {
   /** Another Family's Batch is indistinguishable from a missing one. */
   async remove(memberId: string, batchId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const deleted = await this.database
-      .delete(batches)
-      .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
-      .returning({ id: batches.id });
+    const deleted = await this.database.transaction((tx) =>
+      this.deleteBatches(tx, familyId, [batchId]),
+    );
     if (deleted.length === 0) {
       throw new ApiException(404, 'pantry.batch_not_found');
     }
+  }
+
+  /**
+   * The one way to create Batches, so the stock history stays right (ADR 0005):
+   * every caller (manual add, Scan save, Finish Shopping) goes through it, and a
+   * future flow that adds Batches should too. Runs in the caller's transaction.
+   */
+  async insertBatches(
+    executor: Executor,
+    familyId: string,
+    values: Array<typeof batches.$inferInsert>,
+  ): Promise<BatchRow[]> {
+    // One clock reading for the Batch and its history, so the 10-minute rule
+    // never compares the app clock with the database's.
+    const now = new Date(Date.now());
+    const inserted = await executor
+      .insert(batches)
+      .values(values.map((value) => ({ ...value, createdAt: now })))
+      .returning();
+    await recordStocked(
+      executor,
+      familyId,
+      inserted.map((row) => row.ingredientId),
+      now,
+    );
+    return inserted;
+  }
+
+  /**
+   * The one way to delete Batches of a Family: an Ingredient left with none becomes
+   * Used Up. A future cook-deduction flow must delete through it. Returns the
+   * deleted Batches; ids of another Family are ignored.
+   */
+  async deleteBatches(
+    executor: Executor,
+    familyId: string,
+    batchIds: string[],
+  ): Promise<BatchRow[]> {
+    const deleted = await executor
+      .delete(batches)
+      .where(and(inArray(batches.id, batchIds), eq(batches.familyId, familyId)))
+      .returning();
+    await recordRemoved(executor, familyId, deleted);
+    return deleted;
+  }
+
+  /**
+   * An existing Batch just became a Batch of the Ingredient (an Admin relinking an
+   * Unmatched Batch): same stock history effect as creating one.
+   */
+  async relinked(
+    executor: Executor,
+    familyId: string,
+    ingredientId: string,
+  ): Promise<void> {
+    await recordStocked(executor, familyId, [ingredientId]);
   }
 
   /**

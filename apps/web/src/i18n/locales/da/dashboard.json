@@ -33,6 +33,12 @@
         "ingredients": "Ingredienser"
       }
     },
+    "suggestions": {
+      "title": "Forslag",
+      "empty": "Ingen forslag",
+      "count_one": "manglende basisvare",
+      "count_other": "manglende basisvarer"
+    },
     "mealPlan": {
       "title": "Madplan"
     },

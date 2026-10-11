@@ -337,6 +337,47 @@ export const shoppingItemSourceRecipes = pgTable(
   (table) => [primaryKey({ columns: [table.shoppingItemId, table.recipeId] })],
 );
 
+// Shopping Templates: named, reusable lists a Family applies to its Shopping List.
+// A line has the shape of a Shopping Item: an Ingredient (which it keeps in use) or an
+// Unmatched `name`, with an optional quantity and unit. `position` keeps the saved order.
+export const shoppingTemplates = pgTable(
+  'shopping_templates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    ...timestamps,
+  },
+  (table) => [index('shopping_templates_family_idx').on(table.familyId)],
+);
+
+export const shoppingTemplateLines = pgTable(
+  'shopping_template_lines',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    templateId: uuid('template_id')
+      .notNull()
+      .references(() => shoppingTemplates.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id),
+    name: text('name'),
+    normalizedName: text('normalized_name'),
+    quantity: numeric('quantity', { precision: 12, scale: 3 }),
+    unit: ingredientUnit('unit'),
+    ...timestamps,
+  },
+  (table) => [
+    index('shopping_template_lines_template_idx').on(table.templateId),
+    index('shopping_template_lines_ingredient_idx').on(table.ingredientId),
+    check(
+      'shopping_template_lines_matched_or_named',
+      sql`(${table.ingredientId} IS NOT NULL) <> (${table.name} IS NOT NULL)`,
+    ),
+  ],
+);
+
 // Pantry: one Batch is one purchase of one Ingredient, owned by a Family (not a Member).
 // An Unmatched Batch has no Ingredient: it keeps the typed `rawName` and sits under an
 // "Other" Leaf Category (`leafCategoryId` is always set so Admin curation can find it).
@@ -486,4 +527,73 @@ export const familyExpiryOverrides = pgTable(
       sql`${table.days} BETWEEN 1 AND 3650`,
     ),
   ],
+);
+
+// Quick List: an Ingredient the Family always wants in stock, with an optional preferred
+// quantity and unit. The foreign key has no cascade, so a Staple keeps its Ingredient in use.
+export const staples = pgTable(
+  'staples',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    quantity: numeric('quantity', { precision: 12, scale: 3, mode: 'number' }),
+    unit: ingredientUnit('unit'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('staples_family_ingredient_idx').on(
+      table.familyId,
+      table.ingredientId,
+    ),
+    check(
+      'staples_unit_with_quantity',
+      sql`${table.quantity} IS NULL OR ${table.unit} IS NOT NULL`,
+    ),
+    check(
+      'staples_quantity_positive',
+      sql`${table.quantity} IS NULL OR ${table.quantity} > 0`,
+    ),
+  ],
+);
+
+// A dismissed Suggestion, hidden for the whole Family. Creating any Batch of the
+// Ingredient deletes the row. Not tied to Staples, so Used Up Suggestions can share it.
+export const suggestionDismissals = pgTable(
+  'suggestion_dismissals',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
+);
+
+// One row per Family and Ingredient: when it was last stocked and when its last Batch
+// was removed (null while stocked or after a dismissal). Written only by the Pantry
+// service's Batch create and delete paths. See ADR 0005.
+export const ingredientStockHistory = pgTable(
+  'ingredient_stock_history',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    lastStockedAt: timestamp('last_stocked_at', {
+      withTimezone: true,
+    }).notNull(),
+    usedUpAt: timestamp('used_up_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
 );

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 
 export type Batch = {
@@ -43,7 +44,7 @@ export type ExpiryChip =
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-function localIso(date: Date): string {
+export function localIso(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
@@ -202,7 +203,12 @@ export function useAddBatch(locale: string) {
         method: 'POST',
         body: batch,
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
+      ]),
   });
 }
 
@@ -240,7 +246,12 @@ export function useUpdateBatch(locale: string) {
         `/pantry/batches/${id}?${new URLSearchParams({ locale })}`,
         { method: 'PATCH', body: edit },
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
+      ]),
   });
 }
 
@@ -249,6 +260,11 @@ export function useDeleteBatch() {
   return useMutation({
     mutationFn: (id: string) =>
       apiRequest<void>(`/pantry/batches/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
+      ]),
   });
 }

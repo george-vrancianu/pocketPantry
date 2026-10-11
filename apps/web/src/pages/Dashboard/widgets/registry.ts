@@ -18,6 +18,7 @@ import { PantryStockWidget } from './PantryStockWidget';
 import { QuickScanWidget } from './QuickScanWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import type { WidgetProps } from './types';
+import { SuggestionsWidget } from './SuggestionsWidget';
 import { UseSoonWidget } from './UseSoonWidget';
 
 export type WidgetDefinition = {
@@ -62,6 +63,13 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     icon: ScanIcon,
     sizes: ['wide'],
     defaultSize: 'wide',
+  },
+  suggestions: {
+    component: SuggestionsWidget,
+    nameKey: 'widgets.suggestions.title',
+    icon: ShoppingIcon,
+    sizes: ['small', 'wide'],
+    defaultSize: 'small',
   },
   'meal-plan': {
     component: MealPlanWidget,
