@@ -9,6 +9,10 @@ import {
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import {
+  StapleErrorProvider,
+  useStapleErrors,
+} from '../../components/StapleToggle';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
@@ -18,6 +22,7 @@ import { usePantryScreen } from './hooks/usePantryScreen';
 export function PantryPage() {
   const { t } = useTranslation(['pantry', 'common']);
   const screen = usePantryScreen();
+  const stapleErrors = useStapleErrors();
 
   const focusAdd = () =>
     document
@@ -32,7 +37,7 @@ export function PantryPage() {
   }, [screen.adding, t]);
 
   return (
-    <>
+    <StapleErrorProvider report={stapleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader
         title={t('pantry:title')}
@@ -54,6 +59,7 @@ export function PantryPage() {
       ) : (
         <Stack spacing={1}>
           {screen.error ? <Alert>{screen.error}</Alert> : null}
+          {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
           {screen.error ? (
             <Button onClick={screen.retry}>{t('common:retry')}</Button>
           ) : null}
@@ -87,6 +93,6 @@ export function PantryPage() {
           ))}
         </Stack>
       )}
-    </>
+    </StapleErrorProvider>
   );
 }

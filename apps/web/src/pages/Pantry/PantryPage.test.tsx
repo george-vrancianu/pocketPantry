@@ -316,6 +316,34 @@ describe('PantryPage', () => {
         );
       });
 
+      it('shows a translated error in the page when the Staple limit is reached', async () => {
+        const user = userEvent.setup();
+        const { fetchMock } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({ batches: [batch({ name: 'Milk' })] }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () =>
+            Response.json(
+              { code: 'staples.limit_reached', params: { limit: 200 } },
+              { status: 409 },
+            ),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        renderWithProviders(<PantryPage />);
+
+        const star = await screen.findByRole('button', {
+          name: 'Make Milk a staple',
+        });
+        await waitFor(() =>
+          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
+        );
+        await user.click(star);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          'You can have up to 200 staples',
+        );
+      });
+
       it('still expands the row', async () => {
         const user = userEvent.setup();
         stubStaples();

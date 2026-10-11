@@ -9,6 +9,10 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import {
+  StapleErrorProvider,
+  useStapleErrors,
+} from '../../components/StapleToggle';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddItemForm } from './components/AddItemForm';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
@@ -20,6 +24,7 @@ import { useShoppingScreen } from './hooks/useShoppingScreen';
 export function ShoppingPage() {
   const { t } = useTranslation(['shopping', 'common']);
   const screen = useShoppingScreen();
+  const stapleErrors = useStapleErrors();
   const [reviewing, setReviewing] = useState(false);
 
   if (reviewing) {
@@ -35,7 +40,7 @@ export function ShoppingPage() {
   }
 
   return (
-    <>
+    <StapleErrorProvider report={stapleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
@@ -43,6 +48,7 @@ export function ShoppingPage() {
       />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
+        {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
         {!screen.list && !screen.isLoading ? (
           <Button onClick={screen.retry}>{t('common:retry')}</Button>
@@ -77,6 +83,6 @@ export function ShoppingPage() {
           </>
         ) : null}
       </Stack>
-    </>
+    </StapleErrorProvider>
   );
 }
