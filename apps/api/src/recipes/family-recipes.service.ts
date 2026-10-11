@@ -121,6 +121,7 @@ export class FamilyRecipesService {
         return stepIndex < 0 ? [] : [{ stepIndex, text: tip.text }];
       }),
       guidance: {
+        // Intended: the draft drops Pairing links to archived Recipes (the view hides them), unlike Admin `copyGuidance`.
         nutritionNote: guidance.nutritionNote,
         pairings: guidance.pairings.map((p) => ({
           kind: p.kind,
