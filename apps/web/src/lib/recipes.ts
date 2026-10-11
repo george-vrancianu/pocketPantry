@@ -151,7 +151,11 @@ export const isFiltering = (browse: RecipeBrowse) =>
   browse.methodId !== '';
 
 /** The Recipe list in `locale`; the search is debounced, the shown rows stay while the next load runs. */
-export function useRecipes(browse: RecipeBrowse, locale: string) {
+export function useRecipes(
+  browse: RecipeBrowse,
+  locale: string,
+  { searchOnly = false }: { searchOnly?: boolean } = {},
+) {
   const search = useDebounced(browse.search.trim(), 300);
   const { cuisineId, methodId } = browse;
   return useQuery({
@@ -165,6 +169,8 @@ export function useRecipes(browse: RecipeBrowse, locale: string) {
         `/recipes?${params}`,
       ).then((body) => body.recipes);
     },
+    // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).
+    enabled: !searchOnly || search !== '',
     placeholderData: keepPreviousData,
   });
 }

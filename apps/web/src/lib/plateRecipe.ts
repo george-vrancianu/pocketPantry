@@ -34,7 +34,9 @@ type Line = FamilyRecipeDocument['lines'][number];
 
 /** A reviewed line as a Recipe line: by Ingredient id when Matched, else by name. A blank quantity sends no unit. */
 export function toRecipeLine(line: ReviewLine): Line {
-  const { value } = parseQuantity(line.quantity);
+  // The Review has already refused invalid text; an invalid one never becomes a number here.
+  const parsed = parseQuantity(line.quantity);
+  const value = parsed.valid ? parsed.value : null;
   return {
     ingredientId: line.match?.id ?? null,
     rawName: line.match ? null : line.name.trim(),

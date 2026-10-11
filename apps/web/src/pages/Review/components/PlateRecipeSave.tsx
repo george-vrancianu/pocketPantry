@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -25,6 +25,8 @@ type Props = {
   dishTitle: string;
   /** The Review's current lines, for one serving. */
   lines: ReviewLine[];
+  /** The Review's own line checks: opens and focuses the first invalid line, and says whether there was one. */
+  hasInvalidLine: () => boolean;
   onSaved: (recipeId: string) => void;
 };
 
@@ -57,47 +59,87 @@ function BaseOption({
 }
 
 /** Saves a Plate Scan's dish as a Family Recipe: a Variant of a Catalog Base Recipe, or standalone. */
-export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
+export function PlateRecipeSave({
+  dishTitle,
+  lines,
+  hasInvalidLine,
+  onSaved,
+}: Props) {
   const { t, i18n } = useTranslation('review');
   const groupName = useId();
-  const [open, setOpen] = useState(false);
+  // The Ingredients are read when the panel opens, so editing lines does not reshuffle the suggestions.
+  const [ingredientIds, setIngredientIds] = useState<string[] | null>(null);
+  const open = ingredientIds !== null;
   const [title, setTitle] = useState(dishTitle);
   // Until the Member chooses, the top suggestion (if any) is the base.
   const [chosen, setChosen] = useState<string | null>(null);
   const [another, setAnother] = useState<Base | null>(null);
   const [search, setSearch] = useState('');
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const openerRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+  // Focus follows the panel: its heading when it opens, the opener when it is cancelled.
+  useEffect(() => {
+    if (open) headingRef.current?.focus();
+    else if (wasOpen.current) openerRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
   const save = useSaveFromPlate(i18n.language);
   const suggestions = usePlateSuggestions(
     {
       locale: i18n.language,
       dishTitle,
-      ingredientIds: matchedIngredientIds(lines),
+      ingredientIds: ingredientIds ?? [],
     },
     open,
   );
+  const searching = open && search.trim() !== '';
   const found = useRecipes(
-    { search: open ? search : '', cuisineId: '', methodId: '' },
+    { search: searching ? search : '', cuisineId: '', methodId: '' },
     i18n.language,
+    { searchOnly: true },
   );
 
   const suggested = suggestions.data ?? [];
-  const selected = chosen ?? suggested[0]?.id ?? STANDALONE;
-  const results =
-    search.trim() === ''
-      ? []
-      : (found.data ?? []).filter(
-          (recipe) => recipe.owner === 'catalog' && recipe.parentId === null,
-        );
   const listed = new Set(suggested.map((s) => s.id));
+  const results = !searching
+    ? []
+    : (found.data ?? []).filter(
+        (recipe) =>
+          recipe.owner === 'catalog' &&
+          recipe.parentId === null &&
+          !listed.has(recipe.id),
+      );
+  const extra =
+    another &&
+    !listed.has(another.id) &&
+    !results.some((r) => r.id === another.id)
+      ? another
+      : null;
+  const available = new Set([
+    ...listed,
+    ...results.map((r) => r.id),
+    ...(extra ? [extra.id] : []),
+    STANDALONE,
+  ]);
+  const selected =
+    chosen !== null && available.has(chosen)
+      ? chosen
+      : (suggested[0]?.id ?? STANDALONE);
 
   if (!open)
     return (
-      <Button variant="secondary" onClick={() => setOpen(true)}>
+      <Button
+        ref={openerRef}
+        variant="secondary"
+        onClick={() => setIngredientIds(matchedIngredientIds(lines))}
+      >
         {t('plateRecipe.open')}
       </Button>
     );
 
-  const submit = () =>
+  const submit = () => {
+    if (hasInvalidLine()) return;
     save.mutate(
       {
         title,
@@ -106,8 +148,9 @@ export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
       },
       { onSuccess: (recipe) => onSaved(recipe.id) },
     );
+  };
   const pick = (base: Base) => {
-    if (!listed.has(base.id)) setAnother(base);
+    setAnother(base);
     setChosen(base.id);
   };
 
@@ -120,7 +163,9 @@ export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
       <Typography
         id={`${groupName}-heading`}
         component="h2"
-        sx={{ fontWeight: 700 }}
+        ref={headingRef}
+        tabIndex={-1}
+        sx={{ fontWeight: 700, outline: 'none' }}
       >
         {t('plateRecipe.heading')}
       </Typography>
@@ -130,17 +175,12 @@ export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
         slotProps={{ htmlInput: { maxLength: 200 } }}
         onChange={(event) => setTitle(event.target.value)}
       />
-      <Box
-        component="fieldset"
-        role="group"
-        aria-labelledby={`${groupName}-bases`}
-        sx={{ border: 0, p: 0, m: 0 }}
-      >
-        <Typography id={`${groupName}-bases`} sx={{ fontWeight: 600 }}>
+      <Box component="fieldset" sx={{ border: 0, p: 0, m: 0 }}>
+        <Box component="legend" sx={{ fontWeight: 600, p: 0 }}>
           {t('plateRecipe.base')}
-        </Typography>
+        </Box>
         {suggestions.isPending ? (
-          <Typography color="text.secondary">
+          <Typography role="status" color="text.secondary">
             {t('plateRecipe.loading')}
           </Typography>
         ) : null}
@@ -157,12 +197,12 @@ export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
             onSelect={() => setChosen(suggestion.id)}
           />
         ))}
-        {another && !listed.has(another.id) ? (
+        {extra ? (
           <BaseOption
             name={groupName}
-            checked={selected === another.id}
-            label={another.title}
-            onSelect={() => setChosen(another.id)}
+            checked={selected === extra.id}
+            label={extra.title}
+            onSelect={() => setChosen(extra.id)}
           />
         ) : null}
         {results.map((recipe) => (
@@ -192,7 +232,7 @@ export function PlateRecipeSave({ dishTitle, lines, onSaved }: Props) {
       <Stack direction="row" spacing={1}>
         <Button
           variant="text"
-          onClick={() => setOpen(false)}
+          onClick={() => setIngredientIds(null)}
           disabled={save.isPending}
         >
           {t('plateRecipe.cancel')}

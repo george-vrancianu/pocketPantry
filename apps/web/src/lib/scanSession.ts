@@ -205,6 +205,7 @@ export function sessionReducer(
         status: 'queued',
         dishes: undefined,
         plateToken: undefined,
+        dishTitle: undefined,
       });
     case 'edit':
       return update(state, action.id, { edited: action.lines });

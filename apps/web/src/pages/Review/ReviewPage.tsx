@@ -89,6 +89,7 @@ export function ReviewPage() {
         <PlateRecipeSave
           dishTitle={screen.dishTitle}
           lines={screen.included}
+          hasInvalidLine={screen.hasInvalidLine}
           onSaved={screen.openSavedRecipe}
         />
       ) : null}
