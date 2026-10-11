@@ -16,6 +16,12 @@ import {
   recipeTips,
   recipeTranslations,
 } from '../database/schema';
+import {
+  emptyGuidanceTranslations,
+  loadAdminGuidance,
+  loadGuidanceTranslations,
+  loadResolvedGuidance,
+} from './recipe-guidance';
 import type {
   AdminRecipeDetail,
   RecipeLineView,
@@ -117,11 +123,22 @@ async function loadTranslations(
   ]);
   const result: RecipeTranslationsView = {};
   const of = (locale: string) =>
-    (result[locale] ??= { title: null, steps: {}, lines: {}, tips: {} });
+    (result[locale] ??= {
+      title: null,
+      steps: {},
+      lines: {},
+      tips: {},
+      ...emptyGuidanceTranslations(),
+    });
   for (const row of titles) of(row.locale).title = row.title;
   for (const row of stepRows) of(row.locale).steps[row.stepId] = row.text;
   for (const row of lineRows) of(row.locale).lines[row.lineId] = row.note;
   for (const row of tipRows) of(row.locale).tips[row.tipId] = row.text;
+  for (const [locale, guidance] of Object.entries(
+    await loadGuidanceTranslations(executor, recipeId),
+  )) {
+    Object.assign(of(locale), guidance);
+  }
   return result;
 }
 
@@ -169,6 +186,7 @@ export async function loadAdminDetail(
     lines: parts.lines.map(lineView),
     steps: parts.steps.map(stepView),
     tips: parts.tips.map(tipView),
+    ...(await loadAdminGuidance(executor, id, row.nutritionNote)),
     parentTips,
     translations: await loadTranslations(executor, id, parts),
   };
@@ -349,6 +367,7 @@ export async function resolveRecipe(
         inherited: false,
       })),
     ],
+    guidance: await loadResolvedGuidance(executor, id, locale),
   };
 }
 

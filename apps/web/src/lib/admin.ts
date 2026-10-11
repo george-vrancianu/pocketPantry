@@ -14,7 +14,8 @@ export type EntityType =
   | 'leaf_category'
   | 'ingredient'
   | 'cuisine'
-  | 'method';
+  | 'method'
+  | 'eating_moment';
 
 export type AdminTranslation = {
   id: string;
@@ -53,10 +54,17 @@ export type AdminIngredient = Translated & {
 export type AdminListEntry = Translated;
 export type ListKind = 'cuisine' | 'method';
 
+/** An Eating Moment: an ordered, archivable name list like Aisles. */
+export type AdminEatingMoment = Translated & {
+  sortOrder: number;
+  archived: boolean;
+};
+
 export type AdminCatalog = {
   aisles: AdminAisle[];
   cuisines: AdminListEntry[];
   methods: AdminListEntry[];
+  eatingMoments: AdminEatingMoment[];
   parentCategories: AdminParentCategory[];
   leafCategories: AdminLeafCategory[];
   ingredients: AdminIngredient[];
@@ -150,6 +158,32 @@ export function useSaveListEntry(kind: ListKind, id?: string) {
 export function useDeleteListEntry(kind: ListKind) {
   return useAdminWrite((id: string) =>
     apiRequest(`${base}/${listPath(kind)}/${id}`, { method: 'DELETE' }),
+  );
+}
+
+export function useSaveEatingMoment(id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/eating-moments${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+/** Sets the order: every Eating Moment id once, archived included. */
+export function useReorderEatingMoments() {
+  return useAdminWrite((ids: string[]) =>
+    apiRequest(`${base}/eating-moments/order`, {
+      method: 'PUT',
+      body: { ids },
+    }),
+  );
+}
+export function useArchiveEatingMoment() {
+  return useAdminWrite(({ id, archive }: { id: string; archive: boolean }) =>
+    apiRequest(
+      `${base}/eating-moments/${id}/${archive ? 'archive' : 'unarchive'}`,
+      { method: 'POST' },
+    ),
   );
 }
 

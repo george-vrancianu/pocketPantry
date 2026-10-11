@@ -52,6 +52,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   base: null,
   variants: [],
   diff: null,
+  guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
   ...over,
 });
 
@@ -192,6 +193,26 @@ describe('RecipeDetailPage', () => {
     expect(within(step).getByText('Keep the heat low')).toBeInTheDocument();
     const firstStep = screen.getByText('Whisk the eggs').closest('li')!;
     expect(within(firstStep).queryByText('Keep the heat low')).toBeNull();
+  });
+
+  it('places guidance after Tips and before Variants', async () => {
+    setup(
+      recipe({
+        tips: [{ id: 't1', stepId: null, text: 'Salt', inherited: false }],
+        guidance: {
+          nutritionNote: 'Rich in fat.',
+          pairings: [],
+          eatingMoments: [],
+        },
+      }),
+    );
+    const tips = await screen.findByRole('heading', { name: 'Tips' });
+    const nutrition = screen.getByRole('heading', { name: 'Nutrition' });
+    const variants = screen.getByRole('heading', { name: 'Variants' });
+    const follows = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(tips, nutrition)).toBe(true);
+    expect(follows(nutrition, variants)).toBe(true);
   });
 
   it('omits the Tips section when there are no Recipe-level Tips', async () => {

@@ -5,6 +5,17 @@
     "medium": "Mediu",
     "hard": "Dificil"
   },
+  "principles": {
+    "acid_cuts_fat": "Aciditatea taie grăsimea",
+    "salt_balances_sweet": "Săratul echilibrează dulcele",
+    "fat_carries_flavour": "Grăsimea poartă aroma",
+    "contrast_texture": "Contrast de textură",
+    "complement_flavour": "Arome care se completează",
+    "bitter_balances_rich": "Amarul echilibrează gusturile bogate",
+    "cleanses_palate": "Curăță palatul",
+    "regional_tradition": "Tradiție regională"
+  },
+  "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",
   "cuisine": "Bucătărie",
   "method": "Metodă",
@@ -27,11 +38,22 @@
   "backToList": "Toate rețetele",
   "notFound": "Rețeta nu a fost găsită.",
   "sections": {
+    "pairings": "Asocieri",
+    "whenToEat": "Când să mănânci",
+    "nutrition": "Nutriție",
     "ingredients": "Ingrediente",
     "steps": "Pași",
     "tips": "Sfaturi",
     "variants": "Variante",
     "whatsDifferent": "Ce e diferit"
+  },
+  "pairingKind": {
+    "food": "Mâncare",
+    "drink": "Băutură"
+  },
+  "eatingPolarity": {
+    "good_for": "Potrivit pentru",
+    "avoid": "De evitat"
   },
   "optional": "opțional",
   "timer": "Cronometru {{time}}",

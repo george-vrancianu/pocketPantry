@@ -127,6 +127,13 @@
       "when": 1791750710594,
       "tag": "0017_pantry_basic",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791753449110,
+      "tag": "0018_recipe_guidance",
+      "breakpoints": true
     }
   ]
 }

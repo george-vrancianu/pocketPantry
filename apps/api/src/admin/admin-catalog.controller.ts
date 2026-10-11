@@ -19,6 +19,9 @@ import {
   aisleCreate,
   aisleOrder,
   aisleUpdate,
+  eatingMomentCreate,
+  eatingMomentOrder,
+  eatingMomentUpdate,
   idParam,
   ingredientCreate,
   ingredientUpdate,
@@ -33,6 +36,9 @@ import {
   type AisleCreate,
   type AisleOrder,
   type AisleUpdate,
+  type EatingMomentCreate,
+  type EatingMomentOrder,
+  type EatingMomentUpdate,
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
@@ -139,6 +145,53 @@ export class AdminCatalogController {
   @HttpCode(204)
   async deleteMethod(@Id() { id }: IdParam) {
     await this.catalog.deleteMethod(id);
+  }
+
+  @Post('eating-moments')
+  @ApiOperation({
+    summary: 'Admin only: create an Eating Moment, last in the list',
+  })
+  createEatingMoment(
+    @Body(new ZodValidationPipe(eatingMomentCreate)) body: EatingMomentCreate,
+  ) {
+    return this.catalog.createEatingMoment(body);
+  }
+
+  @Put('eating-moments/order')
+  @ApiOperation({
+    summary:
+      'Admin only: set the order of every Eating Moment (archived included) at once',
+  })
+  reorderEatingMoments(
+    @Body(new ZodValidationPipe(eatingMomentOrder)) body: EatingMomentOrder,
+  ) {
+    return this.catalog.reorderEatingMoments(body);
+  }
+
+  @Patch('eating-moments/:id')
+  @ApiOperation({ summary: 'Admin only: rename an Eating Moment' })
+  updateEatingMoment(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(eatingMomentUpdate)) body: EatingMomentUpdate,
+  ) {
+    return this.catalog.updateEatingMoment(id, body);
+  }
+
+  @Post('eating-moments/:id/archive')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin only: archive an Eating Moment (hidden from the picker and display, kept on Recipes)',
+  })
+  archiveEatingMoment(@Id() { id }: IdParam) {
+    return this.catalog.setEatingMomentArchived(id, true);
+  }
+
+  @Post('eating-moments/:id/unarchive')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin only: bring an Eating Moment back' })
+  unarchiveEatingMoment(@Id() { id }: IdParam) {
+    return this.catalog.setEatingMomentArchived(id, false);
   }
 
   @Post('parent-categories')

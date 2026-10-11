@@ -15,6 +15,11 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AdminRoleGuard } from '../auth/admin-role.guard';
 import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { RecipeGuidanceService } from '../recipes/recipe-guidance.service';
+import {
+  guidanceBody,
+  type GuidanceBody,
+} from '../recipes/recipe-guidance.schemas';
 import { RecipeTipsService } from '../recipes/recipe-tips.service';
 import { RecipeTranslationsService } from '../recipes/recipe-translations.service';
 import { RecipesService } from '../recipes/recipes.service';
@@ -52,6 +57,7 @@ export class AdminRecipesController {
     private readonly recipes: RecipesService,
     private readonly tips: RecipeTipsService,
     private readonly translations: RecipeTranslationsService,
+    private readonly guidance: RecipeGuidanceService,
   ) {}
 
   @Get()
@@ -152,10 +158,22 @@ export class AdminRecipesController {
     return this.tips.setHidden(id, body);
   }
 
+  @Put(':id/guidance')
+  @ApiOperation({
+    summary:
+      'Admin only: replace the Recipe guidance (Nutrition Note, up to 10 Pairings, up to 10 Eating Moment uses); Pairings keep their id when sent back',
+  })
+  setGuidance(
+    @Id() { id }: { id: string },
+    @Body(new ZodValidationPipe(guidanceBody)) body: GuidanceBody,
+  ) {
+    return this.guidance.set(id, body);
+  }
+
   @Put(':id/translations/:locale')
   @ApiOperation({
     summary:
-      "Admin only: set one locale's translations of the title, Steps, line notes and Tips (null deletes)",
+      "Admin only: set one locale's translations of the title, Steps, line notes, Tips, Nutrition Note, Pairings and Eating Moment reasons (null deletes)",
   })
   setTranslations(
     @LocaleParams() { id, locale }: { id: string; locale: string },

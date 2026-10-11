@@ -8,6 +8,15 @@ const catalog = {
   aisles: [],
   cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
   methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  eatingMoments: [
+    {
+      id: 'em1',
+      name: 'Lunch',
+      sortOrder: 1,
+      archived: false,
+      translations: [],
+    },
+  ],
   parentCategories: [],
   leafCategories: [],
   ingredients: [],
@@ -59,6 +68,14 @@ describe('AdminPage Recipes tab', () => {
     );
     expect(
       screen.getByRole('heading', { name: 'Edit Method Baking' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await user.click(
+      screen.getByRole('button', { name: 'Edit Eating Moment Lunch' }),
+    );
+    expect(
+      screen.getByRole('heading', { name: 'Edit Eating Moment Lunch' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 

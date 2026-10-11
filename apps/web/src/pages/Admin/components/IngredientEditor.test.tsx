@@ -9,6 +9,7 @@ const catalog: AdminCatalog = {
   aisles: [{ id: 'a1', name: 'Dairy & eggs', sortOrder: 1, translations: [] }],
   cuisines: [],
   methods: [],
+  eatingMoments: [],
   parentCategories: [
     {
       id: 'p1',
