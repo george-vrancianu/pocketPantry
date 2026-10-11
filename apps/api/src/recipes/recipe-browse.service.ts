@@ -82,7 +82,7 @@ export class RecipeBrowseService {
         (parents.get(r.parentId) && !parents.get(r.parentId)!.archivedAt),
     );
 
-    const titles = await this.titlesOf(
+    const titles = await recipeTitles(
       this.database,
       [...live, ...parents.values()],
       locale,
@@ -206,7 +206,7 @@ export class RecipeBrowseService {
           isNull(recipes.archivedAt),
         ),
       );
-    const titles = await this.titlesOf(this.database, rows, locale);
+    const titles = await recipeTitles(this.database, rows, locale);
     const ref = await this.namedRefs(
       this.database,
       locale,
@@ -256,14 +256,6 @@ export class RecipeBrowseService {
       .from(recipes)
       .where(and(inArray(recipes.id, ids), visibleTo(familyId)));
     return new Map(rows.map((r) => [r.id, r]));
-  }
-
-  private titlesOf(
-    executor: Executor,
-    rows: RecipeRow[],
-    locale: CatalogLocale,
-  ): Promise<Map<string, string>> {
-    return recipeTitles(executor, rows, locale);
   }
 
   /** Recipes whose title in the locale, or source title, contains the normalised needle. */

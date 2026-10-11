@@ -282,7 +282,7 @@ export type RecipeDetail = ResolvedRecipe & {
 export type RecipeFilters = { cuisines: NamedRef[]; methods: NamedRef[] };
 
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
-export const cookTonightQuery = browseQuery.pick({ locale: true }).extend({
+export const cookTonightQuery = localeQuery.extend({
   today: z.iso.date().optional(),
 });
 export type CookTonightQuery = z.infer<typeof cookTonightQuery>;

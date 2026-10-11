@@ -1,14 +1,16 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  catalogTranslations,
   ingredients,
   recipeIngredientLines,
   recipes,
+  recipeTranslations,
   user,
 } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
@@ -109,11 +111,13 @@ describe('Cook Tonight (integration)', () => {
     });
   }
 
-  const cardsOf = async (as: typeof ana, query = `today=${today}`) =>
+  const cardsOf = async (as: typeof ana, locale = 'en') =>
     (
-      (await as.get(`/cook-tonight?locale=en&${query}`).expect(200)).body as {
-        cards: Card[];
-      }
+      (
+        await as
+          .get(`/cook-tonight?locale=${locale}&today=${today}`)
+          .expect(200)
+      ).body as { cards: Card[] }
     ).cards;
   const cardFor = async (baseId: string, as = ana) =>
     (await cardsOf(as)).find((c) => c.base.id === baseId);
@@ -142,6 +146,8 @@ describe('Cook Tonight (integration)', () => {
   });
 
   afterAll(async () => {
+    await database.delete(batches).where(eq(batches.familyId, anaFamily));
+    await database.delete(batches).where(eq(batches.familyId, benFamily));
     // Variants first: they reference their base.
     await database
       .delete(recipes)
@@ -300,6 +306,65 @@ describe('Cook Tonight (integration)', () => {
     const bens = await cardFor(base, ben);
     expect(bens?.recipe.id).toBe(base);
     expect(bens?.otherVariantsCount).toBe(0);
+  });
+
+  it('leaves out a group with no qualifying member', async () => {
+    const base = await makeRecipe(
+      [{ ingredientId: feta, quantity: 100, unit: 'g' }],
+      { archived: true },
+    );
+    await makeRecipe(
+      [
+        { ingredientId: milk, quantity: 200, unit: 'ml' },
+        { ingredientId: carrot, quantity: 1, unit: 'pcs' },
+      ],
+      { parentId: base, title: `Far Variant ${stamp}-e` },
+    );
+    await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+    expect(await cardFor(base)).toBeUndefined();
+  });
+
+  it('breaks a tie by title, whatever the creation order', async () => {
+    const lines = [{ ingredientId: feta, quantity: 100, unit: 'g' as const }];
+    const second = await makeRecipe(lines, { title: `Tonight ${stamp}-tie-b` });
+    const first = await makeRecipe(lines, { title: `Tonight ${stamp}-tie-a` });
+    await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+    const order = (await cardsOf(ana)).map((c) => c.base.id);
+    expect(order.indexOf(first)).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf(first)).toBe(order.indexOf(second) - 1);
+  });
+
+  it('titles the card and names the missing Ingredient in the requested locale', async () => {
+    const base = await makeRecipe([
+      { ingredientId: feta, quantity: 100, unit: 'g' },
+      { ingredientId: milk, quantity: 200, unit: 'ml' },
+    ]);
+    await database
+      .insert(recipeTranslations)
+      .values({ recipeId: base, locale: 'ro', title: `Salata ${stamp}-ro` });
+    const [ro] = await database
+      .select({ value: catalogTranslations.value })
+      .from(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.entityType, 'ingredient'),
+          eq(catalogTranslations.entityId, milk),
+          eq(catalogTranslations.locale, 'ro'),
+          eq(catalogTranslations.kind, 'name'),
+        ),
+      );
+    expect(ro.value).not.toBe('Milk');
+    await stock(anaFamily, feta, { quantity: 500, unit: 'g' });
+
+    const card = (await cardsOf(ana, 'ro')).find((c) => c.base.id === base);
+    expect(card?.base.title).toBe(`Salata ${stamp}-ro`);
+    expect(card?.recipe.title).toBe(`Salata ${stamp}-ro`);
+    expect(card?.missing).toEqual({ ingredientId: milk, name: ro.value });
+    const en = (await cardsOf(ana)).find((c) => c.base.id === base);
+    expect(en?.base.title).toMatch(/^Tonight /);
+    expect(en?.missing?.name).toBe('Milk');
   });
 
   it('rejects a malformed today', async () => {

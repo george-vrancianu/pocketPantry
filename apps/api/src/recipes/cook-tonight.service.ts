@@ -73,37 +73,29 @@ export class CookTonightService {
       [...qualifying, ...baseRows],
       query.locale,
     );
-    const ranked = (members: RecipeRow[]): Candidate[] =>
-      members
-        .map((row) => ({
-          row,
-          title: titles.get(row.id)!,
-          match: matches.get(row.id)!,
-        }))
-        .sort(
-          (a, b) =>
-            compareRecipeMatches(a.match, b.match) ||
-            a.title.localeCompare(b.title, query.locale) ||
-            a.row.id.localeCompare(b.row.id),
-        );
+    // Best first: the Pantry ranking, then title, then id for a stable order.
+    const byRank = (a: Candidate, b: Candidate) =>
+      compareRecipeMatches(a.match, b.match) ||
+      a.title.localeCompare(b.title, query.locale) ||
+      a.row.id.localeCompare(b.row.id);
 
-    const best = [...groups.entries()].flatMap(([baseId, members]) => {
-      const base = baseById.get(baseId);
-      return base ? [{ base, candidates: ranked(members) }] : [];
-    });
-    best.sort(
-      (a, b) =>
-        compareRecipeMatches(a.candidates[0].match, b.candidates[0].match) ||
-        a.candidates[0].title.localeCompare(
-          b.candidates[0].title,
-          query.locale,
-        ) ||
-        a.candidates[0].row.id.localeCompare(b.candidates[0].row.id),
-    );
+    const groupsRanked = [...groups.entries()]
+      .flatMap(([baseId, members]) => {
+        const base = baseById.get(baseId);
+        const candidates = members
+          .map((row) => ({
+            row,
+            title: titles.get(row.id)!,
+            match: matches.get(row.id)!,
+          }))
+          .sort(byRank);
+        return base ? [{ base, candidates }] : [];
+      })
+      .sort((a, b) => byRank(a.candidates[0], b.candidates[0]));
 
-    const names = await this.missingNames(best, query.locale);
+    const names = await this.missingNames(groupsRanked, query.locale);
     return {
-      cards: best.map(({ base, candidates }): CookTonightCard => {
+      cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
         const [top, ...others] = candidates;
         const short = top.match.lines.find(isShortOrMissing);
         return {
@@ -164,4 +156,4 @@ export class CookTonightService {
 
 /** A required line the Pantry cannot cover. */
 const isShortOrMissing = (line: LineMatch): boolean =>
-  !line.optional && !line.pantryBasic && line.status !== 'covered';
+  !line.optional && line.status !== 'covered';
