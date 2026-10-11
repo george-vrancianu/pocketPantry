@@ -111,30 +111,29 @@ export const appetizerPlatter: BaseRecipeSeed = {
     },
     {
       kind: 'food',
-      label: t('Grapes', 'Struguri'),
+      label: t('Fig jam', 'Dulceață de smochine'),
       reason: t(
-        'Sweet, juicy fruit balances the saltiness of cheese and cured meat.',
-        'Fructele dulci și zemoase echilibrează sărătura brânzei și a mezelurilor.',
+        'Sweet jam balances the saltiness of cheese and cured meat.',
+        'Dulceața echilibrează sărătura brânzei și a mezelurilor.',
       ),
       principle: 'salt_balances_sweet',
-      ingredient: 'grapes',
     },
     {
       kind: 'food',
-      label: t('Mustard', 'Muștar'),
+      label: t('Apple slices', 'Felii de măr'),
       reason: t(
-        'A sharp, tangy dab wakes up the richer items on the board.',
-        'O linguriță de muștar picant și acrișor trezește gustul ingredientelor mai grase.',
+        'Crisp, tart apple refreshes the palate and cuts the richness of the cheese.',
+        'Mărul crocant și acrișor împrospătează gustul și taie grăsimea brânzei.',
       ),
-      principle: 'complement_flavour',
-      ingredient: 'mustard',
+      principle: 'acid_cuts_fat',
+      ingredient: 'apple',
     },
     {
       kind: 'drink',
       label: t('Sparkling wine', 'Vin spumant'),
       reason: t(
         'The bubbles and acidity refresh the palate between salty, fatty bites.',
-        'Bulele și aciditatea împrospătează gura între înghițituri sărate și grase.',
+        'Bulele și aciditatea împrospătează gura între îmbucături sărate și grase.',
       ),
       principle: 'cleanses_palate',
       ingredient: 'sparkling-wine',
@@ -156,7 +155,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
       polarity: 'good_for',
       reason: t(
         'Cold, no cooking, and the vegetables keep it light.',
-        'Rece, fără gătit, iar legumele o mențin ușoară.',
+        'Rece, fără gătit, iar legumele îl mențin ușor.',
       ),
     },
     {
@@ -219,7 +218,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           t('thinly sliced', 'tăiat felii subțiri'),
         ),
         line('country-bread', 1, 'pcs', t('sliced', 'tăiată felii')),
-        line('tomato', 200, 'g', t('cut into wedges', 'tăiate felii')),
+        line('tomato', 200, 'g', t('cut into wedges', 'tăiate sferturi')),
         line('radish', 100, 'g'),
         line('pickled-cucumbers', 100, 'g'),
       ],
@@ -227,8 +226,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
         {
           key: 'roast',
           text: t(
-            'Roast the whole aubergines on a gas flame, on a grill or in a 220 °C oven, turning them, for 40 to 45 minutes until the skin is charred and the flesh is completely soft.',
-            'Coace vinetele întregi pe flacără, pe grătar sau în cuptor la 220 °C, întorcându-le, 40-45 de minute, până când coaja e arsă, iar miezul complet moale.',
+            'Roast the whole aubergines for 15 to 20 minutes over a gas flame or on a grill, or for 40 to 45 minutes in a 220 °C oven, turning them, until the skin is charred and the flesh is completely soft.',
+            'Coace vinetele întregi 15-20 de minute pe flacără sau pe grătar, ori 40-45 de minute în cuptor la 220 °C, întorcându-le, până când coaja e arsă, iar miezul complet moale.',
           ),
           timerSeconds: 2520,
         },
@@ -249,8 +248,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
         {
           key: 'arrange',
           text: t(
-            'On a board or large plate, set the salată de vinete and the zacuscă in bowls and arrange the telemea, slănină, sausage, bread, tomatoes, radishes and pickles around them.',
-            'Pe un platou mare, pune salata de vinete și zacusca în boluri și așază în jur telemeaua, slănina, cârnatul, pâinea, roșiile, ridichile și murăturile.',
+            'On a board or large plate, set the salată de vinete and the zacuscă in bowls and arrange the telemea, slănină, winter salami, bread, tomatoes, radishes and pickles around them.',
+            'Pe un platou mare, pune salata de vinete și zacusca în boluri și așază în jur telemeaua, slănina, salamul de iarnă, pâinea, roșiile, ridichile și murăturile.',
           ),
         },
       ],
@@ -270,8 +269,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
         },
       ],
       nutritionNote: t(
-        'Aubergine and vegetable spread bring fibre and few calories, and the bread makes it filling; slănină, sausage and telemea are very salty and rich in saturated fat, and the oil in the salad adds up, so eat them in small slices.',
-        'Vinetele și zacusca aduc fibre și puține calorii, iar pâinea o face sățioasă; slănina, cârnatul și telemeaua sunt foarte sărate și bogate în grăsimi saturate, iar uleiul din salată se adună, așa că mănâncă-le în felii mici.',
+        'Aubergine and vegetable spread bring fibre and few calories, and the bread makes it filling; slănină, winter salami and telemea are very salty and rich in saturated fat, and the oil in the salad adds up, so eat them in small slices.',
+        'Vinetele și zacusca aduc fibre și puține calorii, iar pâinea îl face sățios; slănina, salamul de iarnă și telemeaua sunt foarte sărate și bogate în grăsimi saturate, iar uleiul din salată se adună, așa că mănâncă-le în felii mici.',
       ),
       pairings: [
         {
@@ -279,20 +278,20 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Țuică', 'Țuică'),
           reason: t(
             'The traditional shot with a Romanian spread; its strength cuts the richness of the slănină.',
-            'Paharul tradițional pentru un platou românesc; tăria ei taie bogăția slăninii.',
+            'Paharul nelipsit de lângă un platou românesc; tăria ei taie grăsimea slăninii.',
           ),
           principle: 'regional_tradition',
           ingredient: 'tuica',
         },
         {
           kind: 'food',
-          label: t('Pickled cucumbers', 'Murături'),
+          label: t('Green hot peppers', 'Ardei iute verzi'),
           reason: t(
-            'The brine cuts through the slănină and sausage.',
-            'Zeama murăturilor taie grăsimea slăninii și a cârnatului.',
+            'A crunchy, fiery bite cuts through the slănină and winter salami.',
+            'O mușcătură crocantă și iute taie grăsimea slăninii și a salamului.',
           ),
-          principle: 'acid_cuts_fat',
-          ingredient: 'pickled-cucumbers',
+          principle: 'contrast_texture',
+          ingredient: 'hot-pepper',
         },
         {
           kind: 'food',
@@ -382,6 +381,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
         line('breadsticks', 60, 'g'),
         line('olive-oil', 30, 'ml'),
         line('balsamic-vinegar', 15, 'ml'),
+        line('salt'),
       ],
       steps: [
         {
@@ -418,13 +418,13 @@ export const appetizerPlatter: BaseRecipeSeed = {
           step: 'meats',
           text: t(
             'Separate prosciutto slices gently and fold rather than pile them; thin, airy folds taste silkier.',
-            'Desparte felii de prosciutto cu grijă și împăturește-le, nu le îngrămădi; foile subțiri și aerisite au un gust mai fin.',
+            'Desparte feliile de prosciutto cu grijă și împăturește-le, nu le îngrămădi; foile subțiri și aerisite au un gust mai fin.',
           ),
         },
       ],
       nutritionNote: t(
         'Olive oil, vegetables and tomatoes give a Mediterranean balance and plenty of flavour; prosciutto, salami, parmesan and olives are very salty and the cheeses add saturated fat, so keep the cured items modest and fill up on vegetables.',
-        'Uleiul de măsline, legumele și roșiile dau un echilibru mediteranean și mult gust; prosciutto, salamul, parmezanul și măslinele sunt foarte sărate, iar brânzeturile aduc grăsimi saturate, așa că ține mezelurile la porții moderate și umple-te cu legume.',
+        'Uleiul de măsline, legumele și roșiile dau un echilibru mediteranean și mult gust; prosciutto, salamul, parmezanul și măslinele sunt foarte sărate, iar brânzeturile aduc grăsimi saturate, așa că ține mezelurile la porții moderate și mănâncă mai ales legume.',
       ),
       pairings: [
         {
@@ -558,7 +558,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           step: 'tomato',
           text: t(
             'Assemble the pan con tomate just before serving; the juicy tomato softens the toast within minutes.',
-            'Montează pan con tomate chiar înainte de servire; roșia zemoasă înmoaie pâinea în câteva minute.',
+            'Pregătește pan con tomate chiar înainte de servire; roșia zemoasă înmoaie pâinea în câteva minute.',
           ),
         },
       ],
@@ -578,14 +578,13 @@ export const appetizerPlatter: BaseRecipeSeed = {
           ingredient: 'smoked-paprika',
         },
         {
-          kind: 'food',
-          label: t('Roasted peppers', 'Ardei copți'),
+          kind: 'drink',
+          label: t('Fino sherry', 'Sherry fino'),
           reason: t(
-            'Their sweetness softens the salt of the cured meats.',
-            'Dulceața lor îmblânzește sărătura mezelurilor.',
+            'Bone-dry and nutty, the classic bar partner of olives, almonds and cured ham.',
+            'Foarte sec și cu gust de nucă, partenerul clasic din baruri pentru măsline, migdale și jamón.',
           ),
-          principle: 'salt_balances_sweet',
-          ingredient: 'roasted-peppers',
+          principle: 'regional_tradition',
         },
         {
           kind: 'drink',
@@ -602,7 +601,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Red wine', 'Vin roșu'),
           reason: t(
             'Fruit and gentle tannin stand up to chorizo and manchego.',
-            'Fructul și taninul blând țin piept chorizo și manchego.',
+            'Fructul și taninul blând țin piept chorizoului și brânzei manchego.',
           ),
           principle: 'complement_flavour',
           ingredient: 'red-wine',
@@ -638,7 +637,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           polarity: 'avoid',
           reason: t(
             'Chorizo and nuts are rich and slow to settle.',
-            'Chorizo și nucile sunt bogate și se așază greu.',
+            'Chorizo și migdalele sunt grase și se digeră greu.',
           ),
         },
       ],
@@ -656,12 +655,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
         line('feta', 150, 'g', t('in one slab', 'o bucată întreagă')),
         line('olives', 100, 'g', t('kalamata', 'kalamata')),
         line('dolmades', 150, 'g'),
-        line(
-          'pita',
-          4,
-          'pcs',
-          t('cut into wedges', 'tăiate felii triunghiulare'),
-        ),
+        line('pita', 4, 'pcs', t('cut into wedges', 'tăiate triunghiuri')),
         line('greek-yogurt', 250, 'g'),
         line(
           'cucumber',
@@ -759,10 +753,19 @@ export const appetizerPlatter: BaseRecipeSeed = {
           ),
           reason: t(
             'A light, thirst-quenching drink between salty bites.',
-            'O băutură ușoară, care potolește setea, între înghițituri sărate.',
+            'O băutură ușoară, care potolește setea, între îmbucături sărate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-water',
+        },
+        {
+          kind: 'drink',
+          label: t('Ouzo', 'Ouzo'),
+          reason: t(
+            'Served cold with water, the aniseed spirit is the classic meze companion in Greece.',
+            'Servit rece, cu apă, rachiul de anason este însoțitorul clasic al mezelor în Grecia.',
+          ),
+          principle: 'regional_tradition',
         },
       ],
       eatingMoments: [
@@ -779,7 +782,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           polarity: 'good_for',
           reason: t(
             'Plant-forward and filling without being heavy.',
-            'Bazat pe plante și săturător, fără să fie greu.',
+            'Mai mult vegetal și sățios, fără să fie greu.',
           ),
         },
         {
@@ -826,12 +829,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
             'gata preparat, refrigerat sau congelat',
           ),
         ),
-        line(
-          'pita',
-          4,
-          'pcs',
-          t('cut into wedges', 'tăiate felii triunghiulare'),
-        ),
+        line('pita', 4, 'pcs', t('cut into wedges', 'tăiate triunghiuri')),
         line('cucumber', 1, 'pcs', t('cut into sticks', 'tăiat bastonașe')),
         line('cherry-tomato', 150, 'g'),
         line('parsley', 10, 'g', t('chopped', 'tocat')),
@@ -840,8 +838,8 @@ export const appetizerPlatter: BaseRecipeSeed = {
         {
           key: 'roast',
           text: t(
-            'Prick the aubergines with a fork and roast them whole in a 220 °C oven, or directly over a gas flame, for 40 to 45 minutes, turning once, until the skin is charred and the flesh is collapsing.',
-            'Înțeapă vinetele cu furculița și coace-le întregi în cuptor la 220 °C sau direct pe flacără, 40-45 de minute, întorcându-le o dată, până când coaja e arsă, iar miezul se destramă.',
+            'Prick the aubergines with a fork and roast them whole for 15 to 20 minutes directly over a gas flame, or for 40 to 45 minutes in a 220 °C oven, turning once, until the skin is charred and the flesh is collapsing.',
+            'Înțeapă vinetele cu furculița și coace-le întregi 15-20 de minute direct pe flacără, ori 40-45 de minute în cuptor la 220 °C, întorcându-le o dată, până când coaja e arsă, iar miezul se destramă.',
           ),
           timerSeconds: 2520,
         },
@@ -885,7 +883,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
       ],
       nutritionNote: t(
         'Aubergine, chickpeas and vegetables are rich in fibre and plant protein, and tahini adds minerals and healthy fats; falafel is usually fried and soaks up oil, and tahini and olive oil are calorie-dense, so go easy on the dips.',
-        'Vinetele, năutul și legumele sunt bogate în fibre și proteine vegetale, iar tahini aduce minerale și grăsimi sănătoase; falafelul este de obicei prăjit și absoarbe ulei, iar tahini și uleiul de măsline sunt foarte calorice, așa că moderează cantitatea de dip.',
+        'Vinetele, năutul și legumele sunt bogate în fibre și proteine vegetale, iar tahini aduce minerale și grăsimi sănătoase; falafelul este de obicei prăjit și absoarbe ulei, iar tahini și uleiul de măsline sunt foarte calorice, așa că nu exagera cu pastele tartinabile.',
       ),
       pairings: [
         {
@@ -903,7 +901,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Pickled peppers', 'Ardei murați'),
           reason: t(
             'Their sharpness cuts through the richness of tahini and fried falafel.',
-            'Ascuțimea lor taie bogăția tahinii și a falafelului prăjit.',
+            'Aciditatea lor taie grăsimea tahiniului și a falafelului prăjit.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'pickled-peppers',
@@ -913,27 +911,26 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Fresh mint', 'Mentă proaspătă'),
           reason: t(
             'A cool herb note lifts the earthy chickpeas and aubergine.',
-            'O notă răcoritoare de ierburi ridică gustul pământiu al năutului și al vinetelor.',
+            'O notă răcoritoare de ierburi pune în valoare gustul de pământ al năutului și al vinetelor.',
           ),
           principle: 'complement_flavour',
           ingredient: 'mint',
         },
         {
           kind: 'drink',
-          label: t('Mint tea', 'Ceai de mentă'),
+          label: t('Arak', 'Arak'),
           reason: t(
-            'A hot, fresh tea is the traditional way to end a mezze meal.',
-            'Un ceai cald și proaspăt este felul tradițional de a încheia o masă cu mezze.',
+            'The aniseed spirit is the traditional partner of a Levantine mezze table, served with water and ice.',
+            'Rachiul de anason este însoțitorul tradițional al unei mese levantine cu mezze, servit cu apă și gheață.',
           ),
           principle: 'regional_tradition',
-          ingredient: 'mint-tea',
         },
         {
           kind: 'drink',
           label: t('Ayran', 'Ayran'),
           reason: t(
             'Cold, salty yogurt drink cools the palate between rich bites.',
-            'Băutura rece și sărată din iaurt răcorește gura între înghițituri bogate.',
+            'Băutura rece și sărată din iaurt răcorește gura între îmbucături bogate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'drinking-yogurt',
@@ -945,7 +942,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           polarity: 'good_for',
           reason: t(
             'Plant-based and filling without meat.',
-            'Pe bază de plante și săturător, fără carne.',
+            'Vegetal și sățios, fără carne.',
           ),
         },
         {
@@ -978,7 +975,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
     {
       slug: 'appetizer-platter-french',
       cuisine: 'french',
-      title: t('French apéritif platter', 'Platou franțuzesc pentru apéritif'),
+      title: t('French apéritif platter', 'Platou franțuzesc de aperitiv'),
       servings: 4,
       prepMinutes: 15,
       cookMinutes: 0,
@@ -993,7 +990,12 @@ export const appetizerPlatter: BaseRecipeSeed = {
             'saucisson sec, tăiat felii subțiri',
           ),
         ),
-        line('liver-pate', 100, 'g', t('country-style pâté', 'pateu de țară')),
+        line(
+          'liver-pate',
+          100,
+          'g',
+          t('country-style pâté', 'pateu rustic (pâté de campagne)'),
+        ),
         line('brie', 150, 'g', t('a wedge', 'o felie triunghiulară')),
         line(
           'gruyere',
@@ -1027,7 +1029,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           key: 'radishes',
           text: t(
             'Wash the radishes and set them in a dish beside the soft butter and a little flaky salt, to be dipped and eaten together.',
-            'Spală ridichile și pune-le într-o farfurioară lângă untul moale și puțină sare grunjoasă, ca să fie înmuiate și mâncate împreună.',
+            'Spală ridichile și pune-le într-o farfurioară lângă untul moale și fulgii de sare, ca fiecare să înmoaie ridichea în unt și apoi în sare.',
           ),
         },
         {
@@ -1061,13 +1063,13 @@ export const appetizerPlatter: BaseRecipeSeed = {
       pairings: [
         {
           kind: 'food',
-          label: t('Cornichons', 'Cornichoni'),
+          label: t('Fresh pear', 'Pară proaspătă'),
           reason: t(
-            'Their acidity cuts the richness of pâté and saucisson.',
-            'Aciditatea lor taie bogăția pateului și a saucissonului.',
+            'Juicy, sweet pear sets off the salty brie and gruyère.',
+            'Para zemoasă și dulce pune în valoare brie și gruyère sărate.',
           ),
-          principle: 'acid_cuts_fat',
-          ingredient: 'pickled-cucumbers',
+          principle: 'salt_balances_sweet',
+          ingredient: 'pear',
         },
         {
           kind: 'food',
@@ -1087,7 +1089,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           ),
           reason: t(
             'The classic apéritif: bubbles and acidity clean the palate after rich bites.',
-            'Apéritivul clasic: bulele și aciditatea curăță gura după înghițituri bogate.',
+            'Aperitivul clasic: bulele și aciditatea curăță gustul după îmbucăturile bogate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-wine',
@@ -1109,7 +1111,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           polarity: 'avoid',
           reason: t(
             'Rich pâté and cheese are heavy late at night.',
-            'Pateul și brânza bogate sunt grele seara târziu.',
+            'Pateul gras și brânzeturile sunt grele seara târziu.',
           ),
         },
         {
@@ -1169,14 +1171,14 @@ export const appetizerPlatter: BaseRecipeSeed = {
         line('liver-pate', 100, 'g'),
         line('pickled-cucumbers', 60, 'g', t('sliced', 'feliați')),
         line('dill', 10, 'g', t('sprigs', 'crenguțe')),
-        line('lemon', 1, 'pcs', t('cut into wedges', 'tăiată felii')),
+        line('lemon', 1, 'pcs', t('cut into wedges', 'tăiată sferturi')),
       ],
       steps: [
         {
           key: 'butter',
           text: t(
             'Butter every slice of rye bread right to the edges; the butter keeps the toppings from soaking the bread.',
-            'Unge fiecare felie de pâine neagră cu unt, până la margini; untul împiedică topping-urile să înmoaie pâinea.',
+            'Unge fiecare felie de pâine de secară cu unt, până la margini; untul împiedică ingredientele de deasupra să înmoaie pâinea.',
           ),
         },
         {
@@ -1211,7 +1213,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
       tips: [
         t(
           'Smørrebrød is built to be eaten with knife and fork; keep the toppings in neat, generous layers.',
-          'Smørrebrød se mănâncă cu cuțitul și furculița; așază topping-urile în straturi ordonate și generoase.',
+          'Smørrebrød se mănâncă cu cuțitul și furculița; așază ingredientele de deasupra în straturi ordonate și generoase.',
         ),
       ],
       stepTips: [
@@ -1219,13 +1221,13 @@ export const appetizerPlatter: BaseRecipeSeed = {
           step: 'butter',
           text: t(
             'Use dense, thinly sliced rye; soft white bread collapses under the toppings.',
-            'Folosește pâine neagră densă, tăiată subțire; pâinea albă moale se rupe sub topping-uri.',
+            'Folosește pâine de secară densă, tăiată subțire; pâinea albă moale se rupe sub ingredientele de deasupra.',
           ),
         },
       ],
       nutritionNote: t(
         'Rye bread gives fibre and keeps you full, fish brings protein and omega-3 fats, and eggs and pickles add variety; butter, mayonnaise, pâté and the cured or smoked fish are rich and salty, so watch how thickly you spread.',
-        'Pâinea neagră dă fibre și te menține sătul, peștele aduce proteine și grăsimi omega-3, iar ouăle și murăturile dau varietate; untul, maioneza, pateul și peștele afumat sau marinat sunt bogate și sărate, așa că ai grijă cât de gros întinzi.',
+        'Pâinea de secară dă fibre și te menține sătul, peștele aduce proteine și grăsimi omega-3, iar ouăle și murăturile dau varietate; untul, maioneza, pateul și peștele afumat sau marinat sunt bogate și sărate, așa că ai grijă cât de gros întinzi.',
       ),
       pairings: [
         {
@@ -1233,7 +1235,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Pickled beetroot', 'Sfeclă murată'),
           reason: t(
             'Sweet-sour beetroot cuts the richness of herring and pâté.',
-            'Sfecla dulce-acrișoară taie bogăția heringului și a pateului.',
+            'Sfecla dulce-acrișoară taie grăsimea heringului și a pateului.',
           ),
           principle: 'acid_cuts_fat',
           ingredient: 'canned-beetroot',
@@ -1243,7 +1245,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Fresh dill', 'Mărar proaspăt'),
           reason: t(
             'Its fresh, aniseed note is the signature herb with fish and eggs.',
-            'Nota lui proaspătă, ușor anasonată, este ierburile-semn pentru pește și ouă.',
+            'Nota lui proaspătă, ușor anasonată, îl face nelipsit lângă pește și ouă.',
           ),
           principle: 'regional_tradition',
           ingredient: 'dill',
@@ -1253,7 +1255,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Cold lager', 'Bere blondă rece'),
           reason: t(
             'Crisp, cold beer is the usual partner of smørrebrød and cleans the palate between rich toppings.',
-            'Berea rece și proaspătă însoțește de obicei smørrebrød și curăță gura între topping-uri bogate.',
+            'Berea rece și proaspătă însoțește de obicei smørrebrød și curăță gura între ingredientele bogate de deasupra.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'beer',
@@ -1267,6 +1269,15 @@ export const appetizerPlatter: BaseRecipeSeed = {
           ),
           principle: 'cleanses_palate',
           ingredient: 'sparkling-water',
+        },
+        {
+          kind: 'drink',
+          label: t('Aquavit', 'Akvavit'),
+          reason: t(
+            'A chilled shot of caraway and dill spirit, the traditional match for herring and rye bread.',
+            'Un păhărel rece de băutură cu chimen și mărar, perechea tradițională a heringului și a pâinii de secară.',
+          ),
+          principle: 'regional_tradition',
         },
       ],
       eatingMoments: [
@@ -1355,7 +1366,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           key: 'cucumber',
           text: t(
             'Toss the cucumber with 2 g of the salt and leave it for 10 minutes. Squeeze out the water, then mix with the rice vinegar, sugar and sesame seeds for a quick pickle.',
-            'Amestecă castravetele cu 2 g din sare și lasă-l 10 minute. Stoarce apa, apoi amestecă-l cu oțetul de orez, zahărul și semințele de susan pentru un murat rapid.',
+            'Amestecă castravetele cu 2 g din sare și lasă-l 10 minute. Stoarce apa, apoi amestecă-l cu oțetul de orez, zahărul și semințele de susan ca să obții o murătură rapidă.',
           ),
         },
         {
@@ -1377,7 +1388,7 @@ export const appetizerPlatter: BaseRecipeSeed = {
           key: 'arrange',
           text: t(
             'Arrange the edamame, quick-pickled cucumber, tofu and rice crackers on a tray, with the nori strips for wrapping around the crackers.',
-            'Aranjează edamame, castraveții murați rapid, tofu și biscuiții de orez pe o tavă, cu fâșiile de nori pentru a învălui biscuiții.',
+            'Aranjează edamame, castraveții murați rapid, tofu și biscuiții de orez pe o tavă, cu fâșiile de nori în care să înfășori biscuiții.',
           ),
         },
       ],
@@ -1400,27 +1411,26 @@ export const appetizerPlatter: BaseRecipeSeed = {
           label: t('Wasabi', 'Wasabi'),
           reason: t(
             'A little heat cuts through the soft tofu and keeps the palate lively.',
-            'Puțin iuțeală taie gustul tofu-ului moale și ține gustul viu.',
+            'Puțină iuțeală dă viață tofu-ului moale și înviorează gustul.',
           ),
           principle: 'complement_flavour',
           ingredient: 'wasabi',
         },
         {
           kind: 'food',
-          label: t('Smoked salmon', 'Somon afumat'),
+          label: t('Pickled ginger', 'Ghimbir murat'),
           reason: t(
-            'A silky, savoury bite that sits well beside edamame and rice crackers.',
-            'O îmbucătură fină și sărată, care merge bine lângă edamame și biscuiți de orez.',
+            'Its sweet-sour bite resets the palate between salty snacks.',
+            'Gustul lui dulce-acrișor reîmprospătează gura între gustările sărate.',
           ),
-          principle: 'complement_flavour',
-          ingredient: 'smoked-salmon',
+          principle: 'cleanses_palate',
         },
         {
           kind: 'drink',
           label: t('Green tea', 'Ceai verde'),
           reason: t(
             'Its gentle bitterness refreshes the palate between salty bites.',
-            'Amăreala lui blândă împrospătează gura între înghițituri sărate.',
+            'Amăreala lui blândă împrospătează gura între îmbucături sărate.',
           ),
           principle: 'cleanses_palate',
           ingredient: 'green-tea',
@@ -1434,6 +1444,15 @@ export const appetizerPlatter: BaseRecipeSeed = {
           ),
           principle: 'regional_tradition',
           ingredient: 'beer',
+        },
+        {
+          kind: 'drink',
+          label: t('Sake', 'Sake'),
+          reason: t(
+            'Cold or warm, its gentle sweetness suits tofu, edamame and salty snacks.',
+            'Rece sau caldă, dulceața ei blândă se potrivește cu tofu, edamame și gustări sărate.',
+          ),
+          principle: 'regional_tradition',
         },
       ],
       eatingMoments: [
@@ -1463,10 +1482,10 @@ export const appetizerPlatter: BaseRecipeSeed = {
         },
         {
           moment: 'late-evening',
-          polarity: 'good_for',
+          polarity: 'avoid',
           reason: t(
-            'Light, with little fat, so it will not weigh on you at night.',
-            'Ușor și cu puțină grăsime, deci nu te îngreunează seara.',
+            'Soy sauce and salted crackers are salty and can make you thirsty at night.',
+            'Sosul de soia și biscuiții sărați sunt sărați și pot provoca sete noaptea.',
           ),
         },
       ],
