@@ -69,6 +69,7 @@
     "canonical_name_managed": "Det engelske navn ændres sammen med punktets navn, ikke her.",
     "aisle_in_use": "Overkategorier bruger stadig denne afdeling, så den kan ikke slettes. Flyt dem først til en anden afdeling.",
     "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
+    "eating_moment_order_stale": "Spisetidspunkterne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
     "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter."
   },

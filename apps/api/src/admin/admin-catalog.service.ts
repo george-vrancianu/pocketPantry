@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
-import { lockAisleOrder } from '../catalog/aisle-order-lock';
+import {
+  lockAisleOrder,
+  lockEatingMomentOrder,
+} from '../catalog/aisle-order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -14,6 +17,7 @@ import {
   aisles,
   catalogTranslations,
   cuisines,
+  eatingMoments,
   ingredients,
   leafCategories,
   methods,
@@ -25,6 +29,9 @@ import type {
   ListEntryUpdate,
   AisleOrder,
   AisleUpdate,
+  EatingMomentCreate,
+  EatingMomentOrder,
+  EatingMomentUpdate,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -79,6 +86,7 @@ export class AdminCatalogService {
       translationRows,
       cuisineRows,
       methodRows,
+      eatingMomentRows,
     ] = await Promise.all([
       this.database.select().from(aisles).orderBy(aisles.sortOrder),
       this.database
@@ -96,6 +104,10 @@ export class AdminCatalogService {
       this.database.select().from(catalogTranslations),
       this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
       this.database.select().from(methods).orderBy(methods.normalizedName),
+      this.database
+        .select()
+        .from(eatingMoments)
+        .orderBy(eatingMoments.sortOrder),
     ]);
 
     const byEntity = new Map<string, unknown[]>();
@@ -123,6 +135,13 @@ export class AdminCatalogService {
         id: row.id,
         name: row.name,
         translations: translations('method', row.id),
+      })),
+      eatingMoments: eatingMomentRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sortOrder: row.sortOrder,
+        archived: row.archivedAt !== null,
+        translations: translations('eating_moment', row.id),
       })),
       aisles: aisleRows.map((row) => ({
         id: row.id,
@@ -255,6 +274,79 @@ export class AdminCatalogService {
       },
       new ApiException(409, 'catalog.aisle_in_use'),
     );
+  }
+
+  // Eating Moments: an ordered, translated, archivable list like Aisles. Never
+  // deleted: Recipes keep their uses, archiving only hides it.
+
+  createEatingMoment(input: EatingMomentCreate) {
+    return this.write(async (tx) => {
+      await lockEatingMomentOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(eatingMoments.sortOrder) })
+        .from(eatingMoments);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(eatingMoments)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+          sortOrder: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'eating_moment', id, input.name);
+      return row;
+    });
+  }
+
+  updateEatingMoment(id: string, input: EatingMomentUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(eatingMoments)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(eatingMoments.id, id))
+        .returning();
+      if (!row) throw notFound('eating_moment');
+      await this.renameCanonicalName(tx, 'eating_moment', id, input.name);
+      return row;
+    });
+  }
+
+  /** Rewrites the order to `ids` (1..n); the list must name every Eating Moment once. */
+  reorderEatingMoments({ ids }: EatingMomentOrder) {
+    return this.write(async (tx) => {
+      await lockEatingMomentOrder(tx);
+      const current = await tx
+        .select({ id: eatingMoments.id })
+        .from(eatingMoments);
+      const wanted = new Set(ids);
+      if (
+        current.length !== ids.length ||
+        !current.every((row) => wanted.has(row.id))
+      ) {
+        throw new ApiException(409, 'catalog.eating_moment_order_stale');
+      }
+      for (const [index, id] of ids.entries()) {
+        await tx
+          .update(eatingMoments)
+          .set({ sortOrder: index + 1 })
+          .where(eq(eatingMoments.id, id));
+      }
+      return tx.select().from(eatingMoments).orderBy(eatingMoments.sortOrder);
+    });
+  }
+
+  setEatingMomentArchived(id: string, archived: boolean) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(eatingMoments)
+        .set({ archivedAt: archived ? new Date() : null })
+        .where(eq(eatingMoments.id, id))
+        .returning();
+      if (!row) throw notFound('eating_moment');
+      return row;
+    });
   }
 
   // Cuisines and Methods: Admin-curated Recipe lists, translated like Aisles.
@@ -754,6 +846,7 @@ export class AdminCatalogService {
       ingredient: ingredients,
       cuisine: cuisines,
       method: methods,
+      eating_moment: eatingMoments,
     }[type];
     const [row] = await executor
       .select({ id: table.id })

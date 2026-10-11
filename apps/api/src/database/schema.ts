@@ -158,6 +158,7 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'ingredient',
   'cuisine',
   'method',
+  'eating_moment',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -666,6 +667,8 @@ export const recipes = pgTable(
     cuisineId: uuid('cuisine_id').references(() => cuisines.id),
     methodId: uuid('method_id').references(() => methods.id),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
+    // Recipe guidance: one general-direction note, at most 500 characters (checked in the service).
+    nutritionNote: text('nutrition_note'),
     ...timestamps,
   },
   (table) => [
@@ -827,4 +830,140 @@ export const recipeTipTranslations = pgTable(
     ...timestamps,
   },
   (table) => [primaryKey({ columns: [table.tipId, table.locale] })],
+);
+
+// Recipe guidance (ADR 0008). Pairings and Eating Moment uses are ordered by
+// `position` (array order, no unique index). Source text is English on the row;
+// translations (Catalog Recipes only) live in their own tables and cascade.
+export const pairingKind = pgEnum('pairing_kind', ['food', 'drink']);
+export const pairingPrinciple = pgEnum('pairing_principle', [
+  'acid_cuts_fat',
+  'salt_balances_sweet',
+  'fat_carries_flavour',
+  'contrast_texture',
+  'complement_flavour',
+  'bitter_balances_rich',
+  'cleanses_palate',
+  'regional_tradition',
+]);
+export const eatingMomentPolarity = pgEnum('eating_moment_polarity', [
+  'good_for',
+  'avoid',
+]);
+
+export const recipeNutritionNoteTranslations = pgTable(
+  'recipe_nutrition_note_translations',
+  {
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    nutritionNote: text('nutrition_note').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.recipeId, table.locale] })],
+);
+
+// A Pairing links at most one Catalog Ingredient or one Recipe. A deleted Recipe
+// (never done in practice) just loses the link; an Ingredient in use cannot be deleted.
+export const recipePairings = pgTable(
+  'recipe_pairings',
+  {
+    id: uuid('id').primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull(),
+    kind: pairingKind('kind').notNull(),
+    label: text('label').notNull(),
+    reason: text('reason').notNull(),
+    principle: pairingPrinciple('principle'),
+    linkedIngredientId: uuid('linked_ingredient_id').references(
+      () => ingredients.id,
+    ),
+    linkedRecipeId: uuid('linked_recipe_id').references(() => recipes.id, {
+      onDelete: 'set null',
+    }),
+    ...timestamps,
+  },
+  (table) => [
+    index('recipe_pairings_recipe_idx').on(table.recipeId),
+    index('recipe_pairings_linked_recipe_idx').on(table.linkedRecipeId),
+    index('recipe_pairings_linked_ingredient_idx').on(table.linkedIngredientId),
+    check(
+      'recipe_pairings_one_link',
+      sql`num_nonnulls(${table.linkedIngredientId}, ${table.linkedRecipeId}) <= 1`,
+    ),
+  ],
+);
+
+export const recipePairingTranslations = pgTable(
+  'recipe_pairing_translations',
+  {
+    pairingId: uuid('pairing_id')
+      .notNull()
+      .references(() => recipePairings.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    label: text('label').notNull(),
+    reason: text('reason').notNull(),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.pairingId, table.locale] })],
+);
+
+// An Eating Moment is an Admin-curated, ordered, translated list entry like an
+// Aisle (names in catalog_translations, entity type `eating_moment`). Archived
+// moments are hidden from the picker and from display but stay on Recipes.
+export const eatingMoments = pgTable(
+  'eating_moments',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('eating_moments_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+export const recipeEatingMoments = pgTable(
+  'recipe_eating_moments',
+  {
+    id: uuid('id').primaryKey(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id, { onDelete: 'cascade' }),
+    eatingMomentId: uuid('eating_moment_id')
+      .notNull()
+      .references(() => eatingMoments.id),
+    position: integer('position').notNull(),
+    polarity: eatingMomentPolarity('polarity').notNull(),
+    reason: text('reason'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('recipe_eating_moments_recipe_moment_idx').on(
+      table.recipeId,
+      table.eatingMomentId,
+    ),
+    index('recipe_eating_moments_moment_idx').on(table.eatingMomentId),
+  ],
+);
+
+export const recipeEatingMomentTranslations = pgTable(
+  'recipe_eating_moment_translations',
+  {
+    recipeEatingMomentId: uuid('recipe_eating_moment_id')
+      .notNull()
+      .references(() => recipeEatingMoments.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    reason: text('reason').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.recipeEatingMomentId, table.locale] }),
+  ],
 );

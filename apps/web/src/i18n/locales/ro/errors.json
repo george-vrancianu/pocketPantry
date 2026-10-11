@@ -69,6 +69,7 @@
     "canonical_name_managed": "Numele în engleză se schimbă odată cu numele intrării, nu aici.",
     "aisle_in_use": "Categorii părinte încă folosesc acest Raion, deci nu poate fi șters. Mută-le mai întâi pe alt Raion.",
     "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
+    "eating_moment_order_stale": "Momentele de consum s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
     "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete."
   },
