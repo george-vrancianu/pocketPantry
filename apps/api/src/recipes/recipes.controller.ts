@@ -4,12 +4,16 @@ import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { CookTonightService } from './cook-tonight.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
+  cookTonightQuery,
   localeQuery,
   recipeParam,
   type BrowseQuery,
+  type CookTonightQuery,
+  type CookTonightView,
   type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
@@ -20,7 +24,10 @@ import {
 @Controller('recipes')
 @UseGuards(AuthGuard)
 export class RecipesController {
-  constructor(private readonly browse: RecipeBrowseService) {}
+  constructor(
+    private readonly browse: RecipeBrowseService,
+    private readonly cookTonight: CookTonightService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -45,6 +52,19 @@ export class RecipesController {
     },
   ): Promise<RecipeFilters> {
     return this.browse.filters(query.locale);
+  }
+
+  // Declared before `:id` so it is not read as a Recipe id.
+  @Get('cook-tonight')
+  @ApiOperation({
+    summary:
+      'Recipes the Family Pantry can make, or is one line short of, one card per Base Recipe, best match first',
+  })
+  cookTonightView(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(cookTonightQuery)) query: CookTonightQuery,
+  ): Promise<CookTonightView> {
+    return this.cookTonight.view(member.id, query);
   }
 
   @Get(':id')

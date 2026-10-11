@@ -280,3 +280,32 @@ export type RecipeDetail = ResolvedRecipe & {
 };
 
 export type RecipeFilters = { cuisines: NamedRef[]; methods: NamedRef[] };
+
+/** `today` is the Member's local date; it defaults to the server's UTC date. */
+export const cookTonightQuery = browseQuery.pick({ locale: true }).extend({
+  today: z.iso.date().optional(),
+});
+export type CookTonightQuery = z.infer<typeof cookTonightQuery>;
+
+/** One Base Recipe's card: the best matching Recipe of its group. */
+export type CookTonightCard = {
+  /** The group's Base Recipe (the best match itself on a base or standalone card). */
+  base: { id: string; title: string; archived: boolean };
+  recipe: {
+    id: string;
+    title: string;
+    parentId: string | null;
+    owner: RecipeOwner;
+    servings: number;
+    prepMinutes: number | null;
+    cookMinutes: number | null;
+  };
+  canMake: boolean;
+  /** Set only for a near miss: the one short or missing required line. */
+  missing: { ingredientId: string | null; name: string } | null;
+  expiringCount: number;
+  /** Other Recipes in the group the Family can make; near misses are not counted. */
+  otherVariantsCount: number;
+};
+
+export type CookTonightView = { cards: CookTonightCard[] };
