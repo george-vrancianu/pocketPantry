@@ -994,6 +994,58 @@ describe('Family Recipes (integration)', () => {
     });
   });
 
+  describe('Cook Tonight', () => {
+    it("offers a Family's own Variant and standalone Recipe to that Family only", async () => {
+      const [{ leaf }] = await database
+        .select({ leaf: ingredients.leafCategoryId })
+        .from(ingredients)
+        .where(eq(ingredients.id, ing[0]));
+      const base = await catalogBase({ lines: [line(1)] });
+      const variant = await familyRecipe(a1, base.id, {
+        lines: [{ ingredientId: ing[0] }],
+      });
+      const alone = await familyRecipe(a1, null, {
+        lines: [{ ingredientId: ing[0] }],
+      });
+      const [batch] = await database
+        .insert(batches)
+        .values({
+          familyId: familyA,
+          ingredientId: ing[0],
+          unmatched: false,
+          leafCategoryId: leaf,
+          location: 'fridge',
+        })
+        .returning({ id: batches.id });
+      try {
+        const cards = async (who: typeof a1) =>
+          (
+            (
+              await client(
+                app,
+                who === a1 ? cookieOf.a1 : cookieOf.b,
+                '/api/recipes',
+              )
+                .get('/cook-tonight?today=2026-10-12')
+                .expect(200)
+            ).body as { cards: { recipe: { id: string; owner: string } }[] }
+          ).cards.map((c) => c.recipe);
+        const mine = await cards(a1);
+        expect(mine).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ id: variant.id, owner: 'family' }),
+            expect.objectContaining({ id: alone.id, owner: 'family' }),
+          ]),
+        );
+        const theirs = (await cards(b)).map((r) => r.id);
+        expect(theirs).not.toContain(variant.id);
+        expect(theirs).not.toContain(alone.id);
+      } finally {
+        await database.delete(batches).where(eq(batches.id, batch.id));
+      }
+    });
+  });
+
   describe('Family deletion', () => {
     it('cascades to Recipes, lines, Tips and Unmatched entries', async () => {
       const email = `fam-recipes-c-${stamp}@example.com`;

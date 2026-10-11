@@ -15,6 +15,7 @@ import {
   NutritionWidget,
 } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
+import { CookTonightWidget } from './CookTonightWidget';
 import { QuickScanWidget } from './QuickScanWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import type { WidgetProps } from './types';
@@ -70,6 +71,13 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     icon: ShoppingIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
+  },
+  'cook-tonight': {
+    component: CookTonightWidget,
+    nameKey: 'widgets.cookTonight.title',
+    icon: RecipesIcon,
+    sizes: ['small', 'wide', 'tall'],
+    defaultSize: 'wide',
   },
   'meal-plan': {
     component: MealPlanWidget,

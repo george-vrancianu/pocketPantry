@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { recipeMatchingQueryKeys } from './queryKeys';
 import type { Locale } from '../i18n/resources';
 
 export type ExpiryOverride = {
@@ -54,6 +55,9 @@ function useRefreshAfterFamilyChange() {
       queryClient.invalidateQueries({ queryKey: ['settings', 'family'] }),
       queryClient.invalidateQueries({ queryKey: ['pantry'] }),
       queryClient.invalidateQueries({ queryKey: ['catalog-search'] }),
+      ...recipeMatchingQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
     ]);
 }
 
