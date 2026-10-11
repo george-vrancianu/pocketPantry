@@ -92,6 +92,13 @@
       "when": 1791573670419,
       "tag": "0012_fold_danish_letters",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1791727170223,
+      "tag": "0013_shopping_templates",
+      "breakpoints": true
     }
   ]
 }
