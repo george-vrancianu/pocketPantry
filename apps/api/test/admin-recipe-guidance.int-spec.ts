@@ -10,6 +10,7 @@ import {
   ingredients,
   recipes,
 } from '../src/database/schema';
+import { writeGuidance } from '../src/recipes/recipe-guidance-write';
 import { loadCatalogRecipe } from '../src/recipes/recipe-view';
 import type { AdminRecipeDetail } from '../src/recipes/recipes.schemas';
 import { client, signUp } from './support/admin-session';
@@ -450,9 +451,15 @@ describe('Recipe guidance (integration)', () => {
         .expect(400);
       expect(code(stranger)).toBe('recipes.item_not_found');
       // The `snack` use has no source reason, so there is nothing to translate.
-      await admin
+      const nothing = await admin
         .put(`/${base.id}/translations/ro`, { eatingMoments: { [snack]: 'x' } })
         .expect(400);
+      expect(code(nothing)).toBe('recipes.nothing_to_translate');
+      const bare = await createBase();
+      const noNote = await admin
+        .put(`/${bare.id}/translations/ro`, { nutritionNote: 'x' })
+        .expect(400);
+      expect(code(noNote)).toBe('recipes.nothing_to_translate');
       await admin
         .put(`/${base.id}/translations/ro`, {
           eatingMoments: { [crypto.randomUUID()]: 'x' },
@@ -633,6 +640,52 @@ describe('Recipe guidance (integration)', () => {
         })
         .expect(200);
       expect((await detail(base.id)).nutritionNote).toBe('Changed.');
+    });
+  });
+
+  describe('writeGuidance for the seed', () => {
+    const body = (id: string) => ({
+      nutritionNote: null,
+      pairings: [
+        {
+          id,
+          kind: 'food' as const,
+          label: 'bread',
+          reason: 'soaks up the sauce',
+          principle: null,
+          linkedIngredientId: null,
+          linkedRecipeId: null,
+        },
+      ],
+      eatingMoments: [],
+    });
+    const write = (recipeId: string, id: string, allowNewIds: boolean) =>
+      database.transaction((tx) =>
+        writeGuidance(tx, { id: recipeId, familyId: null }, body(id), {
+          allowNewIds,
+        }),
+      );
+
+    it('inserts a new stable Pairing id only when allowNewIds is set', async () => {
+      const base = await createBase();
+      const stable = crypto.randomUUID();
+      await expect(write(base.id, stable, false)).rejects.toMatchObject({
+        code: 'recipes.item_not_found',
+      });
+      await write(base.id, stable, true);
+      expect((await detail(base.id)).pairings.map((p) => p.id)).toEqual([
+        stable,
+      ]);
+    });
+
+    it('refuses an id that another Recipe already owns', async () => {
+      const owner = await createBase();
+      const other = await createBase();
+      const stable = crypto.randomUUID();
+      await write(owner.id, stable, true);
+      await expect(write(other.id, stable, true)).rejects.toMatchObject({
+        code: 'recipes.item_not_found',
+      });
     });
   });
 

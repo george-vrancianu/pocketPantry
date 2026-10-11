@@ -169,6 +169,7 @@ export class AdminCatalogController {
   }
 
   @Patch('eating-moments/:id')
+  @ApiOperation({ summary: 'Admin only: rename an Eating Moment' })
   updateEatingMoment(
     @Id() { id }: IdParam,
     @Body(new ZodValidationPipe(eatingMomentUpdate)) body: EatingMomentUpdate,

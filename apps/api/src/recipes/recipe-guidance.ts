@@ -4,6 +4,7 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
   eatingMoments,
+  ingredients,
   recipeEatingMomentTranslations,
   recipeEatingMoments,
   recipeNutritionNoteTranslations,
@@ -11,7 +12,6 @@ import {
   recipePairingTranslations,
   recipes,
   recipeTranslations,
-  ingredients,
 } from '../database/schema';
 import type {
   AdminGuidance,

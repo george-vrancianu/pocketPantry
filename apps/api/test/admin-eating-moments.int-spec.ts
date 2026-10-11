@@ -108,14 +108,17 @@ describe('Admin Eating Moments (integration)', () => {
   it('reorders every Eating Moment at once and refuses a stale list', async () => {
     const a = await create(`Alpha ${stamp}`);
     const b = await create(`Beta ${stamp}`);
-    const all = await list();
-    const ids = all.map((m) => m.id);
-    const swapped = ids.map((id) =>
-      id === a.id ? b.id : id === b.id ? a.id : id,
-    );
-    await admin.put('/eating-moments/order', { ids: swapped }).expect(200);
+    // Other workers create Eating Moments too, so a 409 means retry with a fresh list.
+    let swapped: string[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const ids = (await list()).map((m) => m.id);
+      swapped = ids.map((id) => (id === a.id ? b.id : id === b.id ? a.id : id));
+      const res = await admin.put('/eating-moments/order', { ids: swapped });
+      if (res.status === 200) break;
+      expect(res.status).toBe(409);
+    }
     const after = (await list()).map((m) => m.id);
-    expect(after).toEqual(swapped);
+    expect(after.indexOf(b.id)).toBeLessThan(after.indexOf(a.id));
     const stale = await admin
       .put('/eating-moments/order', { ids: swapped.slice(1) })
       .expect(409);

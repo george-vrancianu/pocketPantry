@@ -157,11 +157,16 @@ export async function writeGuidance(
     ).map((r) => r.id),
   );
   const kept = guidance.pairings.flatMap((p) => (p.id ? [p.id] : []));
-  if (
-    !options.allowNewIds &&
-    kept.some((pairingId) => !existingPairings.has(pairingId))
-  ) {
-    throw itemNotFound('pairing');
+  const unknown = kept.filter((pairingId) => !existingPairings.has(pairingId));
+  if (unknown.length > 0) {
+    // With allowNewIds an unknown id is a new stable id, unless another Recipe owns it.
+    const taken = options.allowNewIds
+      ? await tx
+          .select({ id: recipePairings.id })
+          .from(recipePairings)
+          .where(inArray(recipePairings.id, unknown))
+      : [{ id: unknown[0] }];
+    if (taken.length > 0) throw itemNotFound('pairing');
   }
   await tx
     .delete(recipePairings)

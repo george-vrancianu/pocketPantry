@@ -27,11 +27,14 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.pairing_link_not_found` (404): the linked Ingredient or Recipe does not exist.
  * - `recipes.pairing_self_link` (400): a Pairing linking its own Recipe.
  * - `recipes.nutrition_note_too_long` (400, `{ max }`): over 500 characters, source or translation.
+ * - `recipes.nothing_to_translate` (400): a translation of a Nutrition Note or Eating Moment reason the Recipe has no source text for.
  * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient, Cuisine or Method.
  */
 export const recipeNotFound = () => new ApiException(404, 'recipes.not_found');
 
+export const nothingToTranslate = () =>
+  new ApiException(400, 'recipes.nothing_to_translate');
+
 export const itemNotFound = (
-  kind:
-    'line' | 'step' | 'tip' | 'pairing' | 'eating_moment' | 'nutrition_note',
+  kind: 'line' | 'step' | 'tip' | 'pairing' | 'eating_moment',
 ) => new ApiException(400, 'recipes.item_not_found', { kind });

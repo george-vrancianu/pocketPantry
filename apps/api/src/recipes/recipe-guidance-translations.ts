@@ -8,7 +8,7 @@ import {
   recipePairingTranslations,
   recipes,
 } from '../database/schema';
-import { itemNotFound } from './recipe-errors';
+import { itemNotFound, nothingToTranslate } from './recipe-errors';
 import { assertNutritionNoteLength } from './recipe-guidance-write';
 import type { z } from 'zod';
 import type { guidanceTranslationsBody } from './recipe-guidance.schemas';
@@ -62,7 +62,7 @@ async function writeNutritionNote(
     .from(recipes)
     .where(eq(recipes.id, recipeId));
   // Nothing to translate without a source note.
-  if (!recipe?.nutritionNote) throw itemNotFound('nutrition_note');
+  if (!recipe?.nutritionNote) throw nothingToTranslate();
   await tx
     .insert(recipeNutritionNoteTranslations)
     .values({ recipeId, locale, nutritionNote: note })
@@ -159,7 +159,7 @@ async function writeEatingMoments(
         );
     } else {
       // A use without a source reason has nothing to translate.
-      if (use.reason === null) throw itemNotFound('eating_moment');
+      if (use.reason === null) throw nothingToTranslate();
       await tx
         .insert(recipeEatingMomentTranslations)
         .values({ recipeEatingMomentId: use.id, locale, reason })

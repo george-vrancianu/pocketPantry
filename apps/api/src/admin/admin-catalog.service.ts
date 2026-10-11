@@ -616,7 +616,7 @@ export class AdminCatalogService {
 
   deleteIngredient(id: string) {
     // Batches, Shopping Items, Staples, Shopping Template lines and Recipe
-    // Ingredient Lines reference Ingredients with a foreign key, so
+    // Ingredient Lines and Recipe Pairing links reference Ingredients with a foreign key, so
     // the database is the guard: a referenced Ingredient fails the delete
     // atomically (no check-then-delete race) and is mapped to a stable code.
     return this.write(

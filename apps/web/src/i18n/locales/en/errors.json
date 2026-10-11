@@ -62,7 +62,7 @@
     "not_found": "That Catalog entry no longer exists.",
     "name_taken": "That name is already used. Names must be unique, ignoring case and accents.",
     "category_not_empty": "This Category is still in use or contains entries. Move or delete them first.",
-    "ingredient_in_use": "This Ingredient is still used in the Pantry, on the Shopping List, as a Staple, in a Shopping Template or in a Recipe, so it cannot be deleted.",
+    "ingredient_in_use": "This Ingredient is still used in the Pantry, on the Shopping List, as a Staple, in a Shopping Template, in a Recipe or as a Recipe Pairing link, so it cannot be deleted.",
     "other_leaf_protected": "The Other Category is where Unmatched Batches go, so it cannot be deleted, moved, or removed.",
     "other_leaf_name_taken": "An Other Category already has that generated name (\"Other <name>\"). Rename or remove the clashing Category first.",
     "translation_exists": "This entry already has a name in that language. Edit the existing one instead.",
@@ -113,6 +113,7 @@
     "pairing_link_not_allowed": "A Pairing cannot link to that Recipe. Catalog Recipes link only to Catalog content.",
     "pairing_link_not_found": "The Ingredient or Recipe this Pairing links to no longer exists.",
     "pairing_self_link": "A Pairing cannot link to its own Recipe.",
-    "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters."
+    "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
+    "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first."
   }
 }

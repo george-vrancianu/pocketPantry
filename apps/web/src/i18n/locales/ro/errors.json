@@ -62,7 +62,7 @@
     "not_found": "Această intrare din Catalog nu mai există.",
     "name_taken": "Numele este deja folosit. Numele trebuie să fie unice, indiferent de majuscule și diacritice.",
     "category_not_empty": "Această Categorie este încă folosită sau conține intrări. Mută-le sau șterge-le mai întâi.",
-    "ingredient_in_use": "Acest Ingredient este încă folosit în Cămară, în lista de cumpărături, ca Produs de bază, într-un Șablon de cumpărături sau într-o Rețetă, deci nu poate fi șters.",
+    "ingredient_in_use": "Acest Ingredient este încă folosit în Cămară, în lista de cumpărături, ca Produs de bază, într-un Șablon de cumpărături, într-o Rețetă sau ca legătură a unei Asocieri, deci nu poate fi șters.",
     "other_leaf_protected": "Categoria Altele este locul Loturilor nepotrivite, deci nu poate fi ștearsă, mutată sau eliminată.",
     "other_leaf_name_taken": "O categorie Altele are deja acest nume generat („Other <nume>”). Redenumește sau elimină mai întâi categoria în conflict.",
     "translation_exists": "Această intrare are deja un nume în acea limbă. Editează-l pe cel existent.",
@@ -113,6 +113,7 @@
     "pairing_link_not_allowed": "O Asociere nu poate trimite la acea Rețetă. Rețetele din Catalog trimit doar la conținut din Catalog.",
     "pairing_link_not_found": "Ingredientul sau Rețeta la care trimite această Asociere nu mai există.",
     "pairing_self_link": "O Asociere nu poate trimite la propria Rețetă.",
-    "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere."
+    "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere.",
+    "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă."
   }
 }
