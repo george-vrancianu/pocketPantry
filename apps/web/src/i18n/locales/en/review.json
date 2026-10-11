@@ -162,7 +162,7 @@
     "title": "Recipe title",
     "base": "Base Recipe",
     "loading": "Finding Base Recipes…",
-    "suggested": "{{title}} (suggested)",
+    "closest": "{{title}} (closest match)",
     "standalone": "Standalone Recipe (no base)",
     "search": "Find another Base Recipe",
     "cancel": "Cancel",

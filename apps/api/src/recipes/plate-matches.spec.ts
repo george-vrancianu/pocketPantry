@@ -1,4 +1,4 @@
-import { rankPlateSuggestions, type PlateCandidate } from './plate-suggestions';
+import { rankPlateMatches, type PlateCandidate } from './plate-matches';
 
 const candidate = (
   id: string,
@@ -6,9 +6,9 @@ const candidate = (
   ingredientIds: string[],
 ): PlateCandidate => ({ id, titles, ingredientIds });
 
-describe('rankPlateSuggestions', () => {
+describe('rankPlateMatches', () => {
   it('puts a Recipe sharing Ingredients above one sharing none', () => {
-    const ranked = rankPlateSuggestions(
+    const ranked = rankPlateMatches(
       { dishTitle: 'zzz', ingredientIds: ['a', 'b'] },
       [candidate('none', ['Soup'], ['x']), candidate('some', ['Stew'], ['a'])],
     );
@@ -16,7 +16,7 @@ describe('rankPlateSuggestions', () => {
   });
 
   it('scores Ingredient overlap as Jaccard plus half the title Jaccard', () => {
-    const [only] = rankPlateSuggestions(
+    const [only] = rankPlateMatches(
       { dishTitle: 'Pasta carbonara', ingredientIds: ['a', 'b', 'b'] },
       [candidate('r', ['Carbonara'], ['a', 'c'])],
     );
@@ -25,7 +25,7 @@ describe('rankPlateSuggestions', () => {
   });
 
   it('matches titles ignoring case, diacritics and punctuation, on the best title', () => {
-    const [only] = rankPlateSuggestions(
+    const [only] = rankPlateMatches(
       { dishTitle: 'Tocană, de LEGUME!', ingredientIds: [] },
       [candidate('r', ['Something else', 'Tocana de legume'], [])],
     );
@@ -36,10 +36,10 @@ describe('rankPlateSuggestions', () => {
     const many = ['f', 'e', 'd', 'c', 'b', 'a'].map((t) =>
       candidate(`id-${t}`, [`Dish ${t}`], ['a']),
     );
-    const ranked = rankPlateSuggestions(
-      { dishTitle: '', ingredientIds: ['a'] },
-      [...many, candidate('zero', ['Nope'], ['q'])],
-    );
+    const ranked = rankPlateMatches({ dishTitle: '', ingredientIds: ['a'] }, [
+      ...many,
+      candidate('zero', ['Nope'], ['q']),
+    ]);
     expect(ranked.map((r) => r.id)).toEqual([
       'id-a',
       'id-b',
@@ -51,7 +51,7 @@ describe('rankPlateSuggestions', () => {
 
   it('is empty when nothing matches', () => {
     expect(
-      rankPlateSuggestions({ dishTitle: 'x', ingredientIds: [] }, [
+      rankPlateMatches({ dishTitle: 'x', ingredientIds: [] }, [
         candidate('r', ['Y'], ['a']),
       ]),
     ).toEqual([]);

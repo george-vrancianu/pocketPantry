@@ -125,7 +125,7 @@ The state of an Ingredient whose last Batch was removed from the Pantry within t
 _Avoid_: Run out, finished, nothing left
 
 **Suggestion**:
-A proposed Shopping Item, from a missing Staple or a Used Up Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing one hides it for the Family until the Ingredient is restocked and runs out again.
+A proposed Shopping Item, from a missing Staple or a Used Up Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing one hides it for the Family until the Ingredient is restocked and runs out again. Not the closest Base Recipes a Plate Scan offers when saved as a Recipe (plate matches).
 _Avoid_: Alert, notification, recommendation
 
 ### Scanning

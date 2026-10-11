@@ -5,15 +5,15 @@ import type { Database } from '../database/database.types';
 import { recipeIngredientLines, recipes } from '../database/schema';
 import { FamilyRecipesService } from './family-recipes.service';
 import {
-  rankPlateSuggestions,
+  rankPlateMatches,
   type PlateCandidate,
-  type PlateSuggestion,
-} from './plate-suggestions';
+  type PlateMatch,
+} from './plate-matches';
 import { recipeTitles } from './recipe-view';
 import type {
   FamilyRecipeEdit,
   FromPlateBody,
-  PlateSuggestionsBody,
+  PlateMatchesBody,
 } from './recipes.schemas';
 
 /** Saving a Plate Scan dish as a Family Recipe, and finding its closest Catalog base. */
@@ -26,7 +26,7 @@ export class PlateRecipesService {
 
   /** Live Catalog Base Recipes ranked against the dish; a pure ranking over their lines and titles. */
   // Scanning the whole Catalog is intentional: it is small (tens of Base Recipes), so no index or pre-filter yet.
-  async suggest(body: PlateSuggestionsBody): Promise<PlateSuggestion[]> {
+  async closestBases(body: PlateMatchesBody): Promise<PlateMatch[]> {
     const bases = await this.database
       .select()
       .from(recipes)
@@ -64,7 +64,7 @@ export class PlateRecipesService {
       titles: [...new Set([titles.get(r.id)!, r.title])],
       ingredientIds: ingredientsOf.get(r.id) ?? [],
     }));
-    return rankPlateSuggestions(body, candidates);
+    return rankPlateMatches(body, candidates);
   }
 
   /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */
