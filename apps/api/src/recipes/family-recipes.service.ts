@@ -23,7 +23,7 @@ import {
   recipeColumns,
   validateRecipeDocument,
 } from './recipe-document-rules';
-import { lockFamilyRecipe, lockFamilyRow } from './recipe-locks';
+import { lockRecipeForWrite, lockFamilyRow } from './recipe-locks';
 import type { GuidanceBody } from './recipe-guidance.schemas';
 import { writeGuidanceChecked } from './recipe-guidance-write';
 import { loadResolvedGuidance } from './recipe-guidance';
@@ -220,7 +220,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, id, familyId);
+      await lockRecipeForWrite(tx, id, familyId);
       await this.validate(tx, document);
       const existingLines = await tx
         .select()
@@ -232,9 +232,7 @@ export class FamilyRecipesService {
         .where(eq(recipeSteps.recipeId, id));
       await tx
         .update(recipes)
-        .set({
-          ...recipeColumns(document),
-        })
+        .set(recipeColumns(document))
         .where(eq(recipes.id, id));
       await this.writeLines(
         tx,
@@ -261,7 +259,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      await lockFamilyRecipe(tx, id, familyId);
+      await lockRecipeForWrite(tx, id, familyId);
       // Archiving twice keeps the first time.
       await tx
         .update(recipes)
@@ -292,7 +290,7 @@ export class FamilyRecipesService {
   ): Promise<FamilyRecipeEdit> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
-      const recipe = await lockFamilyRecipe(tx, id, familyId);
+      const recipe = await lockRecipeForWrite(tx, id, familyId);
       await writeGuidanceChecked(tx, recipe, body);
     });
     return this.edit(familyId, id, locale);

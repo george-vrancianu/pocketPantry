@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike, inArray } from 'drizzle-orm';
+import pg from 'pg';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -24,6 +25,7 @@ import type {
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
+import { waitForBlockedBackend } from './support/wait-for-blocked-backend';
 
 const code = (res: { body: unknown }) => (res.body as { code: string }).code;
 
@@ -32,6 +34,7 @@ jest.setTimeout(30_000);
 describe('Family Recipes (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
+  let pool: pg.Pool;
   let admin: ReturnType<typeof client>;
   let adminRecipes: ReturnType<typeof client>;
   let a1: ReturnType<typeof client>;
@@ -93,6 +96,7 @@ describe('Family Recipes (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
+    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     const adminEmail = `fam-recipes-admin-${stamp}@example.com`;
     adminCookie = await signUp(app, adminEmail, 'Admin');
     await promoteToAdmin(database, adminEmail);
@@ -146,6 +150,7 @@ describe('Family Recipes (integration)', () => {
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
     await database.delete(eatingMoments).where(ilike(eatingMoments.name, like));
+    await pool.end();
     await app.close();
   });
 
@@ -491,6 +496,37 @@ describe('Family Recipes (integration)', () => {
   });
 
   describe('Tips', () => {
+    it('takes the Family lock before the Recipe lock on a Tip write', async () => {
+      const base = await catalogBase();
+      const fv = await familyRecipe(a1, base.id);
+
+      // Holds the Family row like deleteFamily does.
+      const holder = await pool.connect();
+      let response: Promise<unknown> | undefined;
+      try {
+        await holder.query('BEGIN');
+        const { rows } = await holder.query<{ pid: number }>(
+          'SELECT pg_backend_pid() AS pid',
+        );
+        await holder.query('SELECT id FROM family WHERE id = $1 FOR UPDATE', [
+          familyA,
+        ]);
+        response = a1.post(`/${fv.id}/tips`, { text: 'Locked' }).then((r) => r);
+        await waitForBlockedBackend(pool, rows[0].pid);
+        // Had the Tip write taken the Recipe lock first, deleteFamily's
+        // cascade would now wait on it while the write waits on the Family.
+        const { rows: held } = await holder.query(
+          'SELECT 1 FROM recipes WHERE id = $1 FOR NO KEY UPDATE NOWAIT',
+          [fv.id],
+        );
+        expect(held).toHaveLength(1);
+      } finally {
+        await holder.query('ROLLBACK').catch(() => undefined);
+        holder.release();
+      }
+      expect(((await response) as { status: number }).status).toBe(201);
+    });
+
     it('manages Family Tips and hides inherited base Tips', async () => {
       const base = await catalogBase();
       const baseTip = (

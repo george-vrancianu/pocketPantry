@@ -37,7 +37,7 @@ export const lockCatalogRecipe = (tx: Tx, id: string) =>
  * the Family row first (Family Recipes only), then the Recipe row. A Family
  * deleted in the meantime is a 404, not a foreign key error.
  */
-export async function lockFamilyRecipe(
+export async function lockRecipeForWrite(
   tx: Tx,
   id: string,
   familyId: string | null,

@@ -3,7 +3,7 @@ import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
 import { cuisines, ingredients, methods, recipes } from '../database/schema';
 
-/** The parts of a Recipe document both the Catalog and Family writers check. */
+/** The Ingredient Line fields both the Catalog and Family writers check. */
 interface RecipeLineShape {
   id?: string | undefined;
   ingredientId: string | null;
@@ -11,6 +11,7 @@ interface RecipeLineShape {
   unit: string | null;
 }
 
+/** The parts of a Recipe document both writers check. */
 interface RecipeDocumentShape<L extends RecipeLineShape> {
   lines: L[];
   steps: { id?: string | undefined }[];
@@ -77,6 +78,7 @@ export async function validateRecipeDocument<L extends RecipeLineShape>(
       .from(ingredients)
       .where(inArray(ingredients.id, wanted))
       .orderBy(ingredients.id)
+      // Blocks a concurrent Ingredient delete until we commit.
       .for('key share');
     if (found.length !== wanted.length) {
       throw new ApiException(404, 'catalog.not_found', {
