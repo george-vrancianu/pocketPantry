@@ -20,6 +20,7 @@ const minutes = z.number().int().min(0).max(100_000).nullable();
 
 export const MAX_LINES = 100;
 export const MAX_STEPS = 100;
+export const MAX_TIPS = 200;
 
 /** An Ingredient Line quantity, numeric(10,3): positive, at most 3 decimals. */
 const lineQuantity = z
@@ -98,11 +99,22 @@ export const familyRecipeUpdate = recipeDocument
   .extend({ lines: z.array(familyLineInput).max(MAX_LINES).default([]) })
   .extend({ locale: memberLocale });
 
+/** A step Tip in a create document: it refers to a Step of the document by index. */
+const newStepTip = z
+  .object({ stepIndex: z.number().int().min(0), text: longText })
+  .strict();
+
 /** Creating a Family Recipe: `parentId` makes it a Variant, null/absent a standalone Base Recipe. */
 export const familyRecipeCreate = familyRecipeUpdate.extend({
   parentId: id.nullable().default(null),
   /** Optional: a saved draft brings its guidance along; edits go through the guidance endpoint. */
   guidance: guidanceBody.optional(),
+  /**
+   * Optional step Tips for a new Recipe (a Variant draft brings the source's).
+   * `stepIndex` is the position of a Step in `steps` of this same document;
+   * the array order is the Tip order. Later edits use the Tip endpoints.
+   */
+  tips: z.array(newStepTip).max(MAX_TIPS).optional(),
 });
 
 /** The Plate Scan dish the Review wants the closest Catalog Base Recipe for. */
@@ -387,6 +399,8 @@ export type FamilyRecipeDraft = {
     note: string | null;
   }[];
   steps: { text: string; timerSeconds: number | null }[];
+  /** The source's own step Tips (not inherited ones), in order; `stepIndex` is the index into `steps`. */
+  tips: { stepIndex: number; text: string }[];
   /** The source's guidance in the requested locale, ready to post (no ids). */
   guidance: GuidanceBody;
 };

@@ -185,7 +185,69 @@ describe('Family Recipes (integration)', () => {
       });
       expect(draft.lines[1].ingredientName).toBeTruthy();
       expect(JSON.stringify(draft)).not.toContain(base.steps[0].id);
-      expect(JSON.stringify(draft)).not.toContain('Base tip');
+      expect(draft.tips).toEqual([{ stepIndex: 0, text: 'Base tip' }]);
+    });
+
+    it('carries the source step Tips, anchored to draft steps by index', async () => {
+      const base = await catalogBase({
+        steps: [{ text: 'Mix' }, { text: 'Bake' }],
+      });
+      await admin.post(`/${base.id}/tips`, { text: 'Recipe tip' }).expect(201);
+      for (const [text, step] of [
+        ['Second tip', 1],
+        ['First tip', 0],
+        ['Another on bake', 1],
+      ] as const) {
+        await admin
+          .post(`/${base.id}/tips`, { text, stepId: base.steps[step].id })
+          .expect(201);
+      }
+      const draft = (await a1.get(`/${base.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(draft.tips).toEqual([
+        { stepIndex: 1, text: 'Second tip' },
+        { stepIndex: 0, text: 'First tip' },
+        { stepIndex: 1, text: 'Another on bake' },
+      ]);
+
+      // From a Family Variant: its own step Tips, not the base's.
+      const fv = await familyRecipe(a1, base.id, {
+        steps: [{ text: 'Only' }],
+        tips: [{ stepIndex: 0, text: 'Mine' }],
+      });
+      const fromVariant = (await a1.get(`/${fv.id}/variant-draft`).expect(200))
+        .body as FamilyRecipeDraft;
+      expect(fromVariant.tips).toEqual([{ stepIndex: 0, text: 'Mine' }]);
+    });
+
+    it('creates step Tips re-anchored to the new Steps, in order', async () => {
+      const base = await catalogBase();
+      const created = await familyRecipe(a1, base.id, {
+        steps: [{ text: 'One' }, { text: 'Two' }],
+        tips: [
+          { stepIndex: 1, text: 'On two' },
+          { stepIndex: 0, text: 'On one' },
+        ],
+      });
+      expect(created.tips.map((t) => [t.text, t.stepId])).toEqual([
+        ['On two', created.steps[1].id],
+        ['On one', created.steps[0].id],
+      ]);
+    });
+
+    it('refuses a Tip whose step is not in the document', async () => {
+      const res = await a1.post(
+        '',
+        doc(null, {
+          steps: [{ text: 'One' }],
+          tips: [{ stepIndex: 1, text: 'Nowhere' }],
+        }),
+      );
+      expect(res.status).toBe(400);
+      expect(code(res)).toBe('recipes.bad_step_anchor');
+      await a1
+        .post('', doc(null, { tips: [{ stepIndex: 0, text: '' }] }))
+        .expect(400);
     });
 
     it('from a Variant copies the Variant content but points at its base', async () => {

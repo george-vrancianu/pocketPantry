@@ -12,6 +12,7 @@ import {
   recipeIngredientLines,
   recipes,
   recipeSteps,
+  recipeTips,
   unmatchedEntries,
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
@@ -113,6 +114,12 @@ export class FamilyRecipesService {
         text: step.text,
         timerSeconds: step.timerSeconds,
       })),
+      // Step Tips are never inherited, so the resolved Tips on a step are the
+      // source's own: the same ones `copyContent` copies for the Admin.
+      tips: source.tips.flatMap((tip) => {
+        const stepIndex = source.steps.findIndex((s) => s.id === tip.stepId);
+        return stepIndex < 0 ? [] : [{ stepIndex, text: tip.text }];
+      }),
       guidance: {
         nutritionNote: guidance.nutritionNote,
         pairings: guidance.pairings.map((p) => ({
@@ -156,6 +163,10 @@ export class FamilyRecipesService {
   ): Promise<string> {
     await lockFamilyRow(tx, familyId);
     await this.validate(tx, document);
+    const tips = document.tips ?? [];
+    if (tips.some((tip) => tip.stepIndex >= document.steps.length)) {
+      throw new ApiException(400, 'recipes.bad_step_anchor');
+    }
     if (document.parentId)
       await this.assertParent(tx, familyId, document.parentId);
     const id = randomUUID();
@@ -167,6 +178,22 @@ export class FamilyRecipesService {
     });
     await this.writeLines(tx, id, document, new Map(), locale);
     await this.recipes.writeSteps(tx, id, document, new Set());
+    if (tips.length > 0) {
+      const stepRows = await tx
+        .select({ id: recipeSteps.id, position: recipeSteps.position })
+        .from(recipeSteps)
+        .where(eq(recipeSteps.recipeId, id));
+      const stepIds = new Map(stepRows.map((s) => [s.position, s.id]));
+      await tx.insert(recipeTips).values(
+        tips.map((tip, position) => ({
+          id: randomUUID(),
+          recipeId: id,
+          stepId: stepIds.get(tip.stepIndex) as string,
+          text: tip.text,
+          position,
+        })),
+      );
+    }
     if (document.guidance) {
       await writeGuidanceChecked(tx, { id, familyId }, document.guidance);
     }
