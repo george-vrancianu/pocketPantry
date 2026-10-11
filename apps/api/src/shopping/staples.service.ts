@@ -103,6 +103,8 @@ export class StaplesService {
   async remove(memberId: string, stapleId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
+      // Same lock as a dismiss, so one cannot leave an orphan dismissal behind.
+      await lockFamilies(tx, [familyId]);
       const [removed] = await tx
         .delete(staples)
         .where(and(eq(staples.id, stapleId), eq(staples.familyId, familyId)))

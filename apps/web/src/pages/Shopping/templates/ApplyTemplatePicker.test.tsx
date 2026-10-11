@@ -1,7 +1,8 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Template, TemplateLine } from '../../../lib/shoppingTemplates';
+import { localIso, useDeleteBatch } from '../../../lib/pantry';
 import { useSuggestions } from '../../../lib/suggestions';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { ApplyTemplatePicker } from './ApplyTemplatePicker';
@@ -60,8 +61,53 @@ function stub(onApply: () => Response = () => Response.json({})) {
   return calls;
 }
 
+function DeleteBatchButton() {
+  const remove = useDeleteBatch();
+  return <button onClick={() => remove.mutate('b1')}>Delete batch</button>;
+}
+
 describe('ApplyTemplatePicker', () => {
   afterEach(() => vi.unstubAllGlobals());
+
+  it('refetches the Template, with the local date, when the Pantry changes', async () => {
+    let milkInPantry = false;
+    const { fetchMock, calls } = stubApi({
+      'GET /api/shopping-templates/t1': () =>
+        Response.json({
+          ...template,
+          lines: template.lines.map((l) =>
+            l.id === 'l2' ? { ...l, inPantry: milkInPantry } : l,
+          ),
+        }),
+      'DELETE /api/pantry/batches/b1': () => {
+        milkInPantry = true;
+        return new Response(null, { status: 204 });
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <>
+        <DeleteBatchButton />
+        <ApplyTemplatePicker
+          templateId="t1"
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </>,
+    );
+    await screen.findByRole('checkbox', { name: /Milk/ });
+    const detailCalls = () =>
+      calls.filter((c) => c.key === 'GET /api/shopping-templates/t1');
+    expect(detailCalls()).toHaveLength(1);
+    expect(detailCalls()[0].search).toContain(`today=${localIso(new Date())}`);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete batch' }));
+
+    await waitFor(() => expect(detailCalls()).toHaveLength(2));
+    await waitFor(() =>
+      expect(screen.getByRole('checkbox', { name: /Milk/ })).not.toBeChecked(),
+    );
+  });
 
   it('starts Pantry Ingredients unticked and missing or Unmatched lines ticked, grouped by Aisle', async () => {
     stub();

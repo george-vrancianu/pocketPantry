@@ -14,6 +14,7 @@ import {
   suggestionDismissals,
 } from '../database/schema';
 import { USED_UP_WINDOW_MS } from '../pantry/stock-history';
+import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import { unexpiredBatch, utcToday } from './batch-presence';
 import { byShopOrder, loadIngredientPlacements } from './ingredient-placement';
@@ -57,6 +58,7 @@ export class SuggestionsService {
       .where(eq(ingredients.id, ingredientId));
     if (!found) throw new ApiException(404, 'shopping.ingredient_not_found');
     await this.database.transaction(async (tx) => {
+      await lockFamilies(tx, [familyId]);
       await tx
         .update(ingredientStockHistory)
         .set({ usedUpAt: null, updatedAt: sql`now()` })
