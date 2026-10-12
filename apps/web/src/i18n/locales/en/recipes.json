@@ -104,7 +104,9 @@
     "addMissing": "Add missing to Shopping List",
     "added_one": "Added {{count}} item to your Shopping List",
     "added_other": "Added {{count}} items to your Shopping List",
-    "someOnList": "Some of these are already on your list; adding them again increases the amount."
+    "someOnList": "Some of these are already on your list; adding them again increases the amount.",
+    "toBuy_one": "{{count}} to buy",
+    "toBuy_other": "{{count}} to buy"
   },
   "back": "Back",
   "facts": {
@@ -112,5 +114,10 @@
     "serves": "Serves",
     "level": "Level",
     "style": "Style"
+  },
+  "tabs": {
+    "ingredients": "Ingredients",
+    "steps": "Steps",
+    "about": "About"
   }
 }

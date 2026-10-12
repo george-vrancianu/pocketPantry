@@ -1,4 +1,4 @@
-import { Box, Link, Stack, Typography } from '@pocket-pantry/ui';
+import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -13,7 +13,7 @@ import { RecipeMeta } from './RecipeMeta';
 import { LineStatus, PantrySummary } from './PantryStatus';
 import { Section } from './Section';
 import { ServingsStepper } from './Servings';
-import { StepList } from './StepList';
+import { StepList, TipCallout } from './StepList';
 
 export type SectionProps = {
   recipe: RecipeDetail;
@@ -93,21 +93,11 @@ function TipsSection({ recipe }: SectionProps) {
   if (tips.length === 0) return null;
   return (
     <Section title={t('sections.tips')}>
-      <Stack component="ul" spacing={0.5} sx={{ m: 0, pl: 3 }}>
+      <Stack component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
         {tips.map((tip) => (
-          <Box component="li" key={tip.id}>
-            {tip.text}
-            {tip.inherited ? (
-              <Typography
-                variant="meta"
-                color="text.secondary"
-                component="span"
-              >
-                {' '}
-                ({t('inheritedTip')})
-              </Typography>
-            ) : null}
-          </Box>
+          <li key={tip.id}>
+            <TipCallout tip={tip} />
+          </li>
         ))}
       </Stack>
     </Section>
@@ -122,21 +112,58 @@ function useEntryText() {
   };
 }
 
-function DiffGroup({ label, items }: { label: string; items: ReactNode[] }) {
+const DIFF_KEYS = {
+  added: { key: '+', bg: tokens.color.accentTint, fg: tokens.color.accent },
+  removed: { key: '−', bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
+  swapped: { key: '⇄', bg: tokens.color.soonBg, fg: tokens.color.soonFg },
+};
+
+/** One kind of change: a list named for it, each line led by a coloured key (+, −, ⇄). */
+function DiffGroup({
+  kind,
+  label,
+  items,
+}: {
+  kind: keyof typeof DIFF_KEYS;
+  label: string;
+  items: ReactNode[];
+}) {
   if (items.length === 0) return null;
+  const { key, bg, fg } = DIFF_KEYS[kind];
   return (
-    <div>
-      <Typography variant="meta" color="text.secondary" component="p">
-        {label}
-      </Typography>
-      <Stack component="ul" aria-label={label} sx={{ m: 0, pl: 3 }}>
-        {items.map((item, index) => (
-          <Box component="li" key={index}>
-            {item}
+    <Stack
+      component="ul"
+      aria-label={label}
+      sx={{ listStyle: 'none', m: 0, p: 0 }}
+    >
+      {items.map((item, index) => (
+        <Box
+          component="li"
+          key={index}
+          sx={{ display: 'flex', gap: '8px', alignItems: 'center', py: '6px' }}
+        >
+          <Box
+            component="span"
+            aria-hidden="true"
+            sx={{
+              width: 22,
+              height: 22,
+              flexShrink: 0,
+              borderRadius: '7px',
+              display: 'grid',
+              placeItems: 'center',
+              fontSize: 13,
+              fontWeight: 800,
+              bgcolor: bg,
+              color: fg,
+            }}
+          >
+            {key}
           </Box>
-        ))}
-      </Stack>
-    </div>
+          <span>{item}</span>
+        </Box>
+      ))}
+    </Stack>
   );
 }
 
@@ -156,12 +183,18 @@ function WhatsDifferentSection({ recipe }: SectionProps) {
             {t('diff.none', { base: base?.title ?? '' })}
           </Typography>
         ) : null}
-        <DiffGroup label={t('diff.added')} items={diff.added.map(entryText)} />
         <DiffGroup
+          kind="added"
+          label={t('diff.added')}
+          items={diff.added.map(entryText)}
+        />
+        <DiffGroup
+          kind="removed"
           label={t('diff.removed')}
           items={diff.removed.map(entryText)}
         />
         <DiffGroup
+          kind="swapped"
           label={t('diff.swapped')}
           items={diff.swapped.map((swap) =>
             t('diff.swap', {
@@ -202,18 +235,21 @@ function VariantsSection({ recipe }: SectionProps) {
   );
 }
 
+export type DetailTab = 'ingredients' | 'steps' | 'about';
+
 /**
- * The detail page's sections, top to bottom. A new section is one more entry,
- * e.g. guidance (Pairings, When to Eat, Nutrition) sits between Tips and Variants.
+ * The detail page's sections by tab, top to bottom. A new section is one more entry,
+ * e.g. guidance (Pairings, When to Eat, Nutrition) sits between What's different and Variants.
  */
 export const DETAIL_SECTIONS: {
   key: string;
+  tab: DetailTab;
   Component: (p: SectionProps) => ReactNode;
 }[] = [
-  { key: 'whats-different', Component: WhatsDifferentSection },
-  { key: 'ingredients', Component: IngredientsSection },
-  { key: 'steps', Component: StepsSection },
-  { key: 'tips', Component: TipsSection },
-  { key: 'guidance', Component: GuidanceSection },
-  { key: 'variants', Component: VariantsSection },
+  { key: 'ingredients', tab: 'ingredients', Component: IngredientsSection },
+  { key: 'steps', tab: 'steps', Component: StepsSection },
+  { key: 'tips', tab: 'steps', Component: TipsSection },
+  { key: 'whats-different', tab: 'about', Component: WhatsDifferentSection },
+  { key: 'guidance', tab: 'about', Component: GuidanceSection },
+  { key: 'variants', tab: 'about', Component: VariantsSection },
 ];

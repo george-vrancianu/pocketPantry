@@ -95,10 +95,18 @@ async function openMenu(user: ReturnType<typeof userEvent.setup>) {
   return screen.findByRole('menu');
 }
 
+/** Switches to a tab by clicking it. */
+async function openTab(
+  user: ReturnType<typeof userEvent.setup>,
+  name: 'Ingredients' | 'Steps' | 'About',
+) {
+  await user.click(await screen.findByRole('tab', { name: new RegExp(name) }));
+}
+
 describe('RecipeDetailPage', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows the header, ingredients and steps in the Member locale', async () => {
+  it('shows the header and ingredients in the Member locale', async () => {
     const calls = setup(recipe({}));
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Omelette' }),
@@ -107,7 +115,6 @@ describe('RecipeDetailPage', () => {
     const ingredients = screen.getByRole('list', { name: 'Ingredients' });
     expect(within(ingredients).getByText(/Egg/)).toBeInTheDocument();
     expect(within(ingredients).getByText(/optional/)).toBeInTheDocument();
-    expect(screen.getByText('Whisk the eggs')).toBeInTheDocument();
   });
 
   it('puts the family pill in the H1 of a Family Recipe', async () => {
@@ -211,6 +218,7 @@ describe('RecipeDetailPage', () => {
   });
 
   it("lists a base Recipe's Variants with Cuisine and Method, linking through", async () => {
+    const user = userEvent.setup();
     setup(
       recipe({
         variants: [
@@ -224,6 +232,7 @@ describe('RecipeDetailPage', () => {
         ],
       }),
     );
+    await openTab(user, 'About');
     const section = (
       await screen.findByRole('heading', { name: 'Variants' })
     ).closest('section')!;
@@ -235,6 +244,7 @@ describe('RecipeDetailPage', () => {
   });
 
   it("marks the Family's own Variants under their base", async () => {
+    const user = userEvent.setup();
     setup(
       recipe({
         variants: [
@@ -255,6 +265,7 @@ describe('RecipeDetailPage', () => {
         ],
       }),
     );
+    await openTab(user, 'About');
     const section = (
       await screen.findByRole('heading', { name: 'Variants' })
     ).closest('section')!;
@@ -270,6 +281,7 @@ describe('RecipeDetailPage', () => {
   });
 
   it("shows a Variant's base link and What's different", async () => {
+    const user = userEvent.setup();
     setup(
       recipe({
         id: 'f',
@@ -285,6 +297,7 @@ describe('RecipeDetailPage', () => {
         },
       }),
     );
+    await openTab(user, 'About');
     const back = await screen.findByRole('link', {
       name: /Variant of Omelette/,
     });
@@ -305,7 +318,9 @@ describe('RecipeDetailPage', () => {
   });
 
   it("omits What's different on a base Recipe", async () => {
+    const user = userEvent.setup();
     setup(recipe({}));
+    await openTab(user, 'About');
     await screen.findByRole('heading', { name: 'Omelette' });
     expect(
       screen.queryByRole('heading', { name: "What's different" }),
@@ -313,6 +328,7 @@ describe('RecipeDetailPage', () => {
   });
 
   it('shows own and inherited Tips in the Tips section and step Tips on their step', async () => {
+    const user = userEvent.setup();
     setup(
       recipe({
         tips: [
@@ -332,6 +348,7 @@ describe('RecipeDetailPage', () => {
         ],
       }),
     );
+    await openTab(user, 'Steps');
     const tips = (await screen.findByRole('heading', { name: 'Tips' })).closest(
       'section',
     )!;
@@ -345,10 +362,59 @@ describe('RecipeDetailPage', () => {
     expect(within(firstStep).queryByText('Keep the heat low')).toBeNull();
   });
 
-  it('places guidance after Tips and before Variants', async () => {
+  it("orders the About tab: What's different, Pairings, When to eat, Nutrition, disclaimer", async () => {
+    const user = userEvent.setup();
     setup(
       recipe({
-        tips: [{ id: 't1', stepId: null, text: 'Salt', inherited: false }],
+        parentId: 'o',
+        base: { id: 'o', title: 'Omelette', archived: false },
+        diff: { added: [entry('a1', 'Feta')], removed: [], swapped: [] },
+        guidance: {
+          nutritionNote: 'Rich in fat.',
+          pairings: [
+            {
+              id: 'p1',
+              kind: 'food',
+              label: 'Greens',
+              reason: 'Light',
+              principle: null,
+              link: null,
+            },
+          ],
+          eatingMoments: [
+            {
+              eatingMomentId: 'm1',
+              name: 'Dinner',
+              polarity: 'good_for',
+              reason: null,
+            },
+          ],
+        },
+      }),
+    );
+    await openTab(user, 'About');
+    const panel = await screen.findByRole('tabpanel');
+    const order = [
+      within(panel).getByRole('heading', { name: "What's different" }),
+      within(panel).getByRole('heading', { name: 'Pairings' }),
+      within(panel).getByRole('heading', { name: 'When to eat' }),
+      within(panel).getByRole('heading', { name: 'Nutrition' }),
+      within(panel).getByText(
+        'General guidance, not medical or dietary advice.',
+      ),
+    ];
+    order.slice(1).forEach((node, index) => {
+      expect(
+        order[index]!.compareDocumentPosition(node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
+
+  it('puts Variants last on the About tab of a Base Recipe', async () => {
+    const user = userEvent.setup();
+    setup(
+      recipe({
         guidance: {
           nutritionNote: 'Rich in fat.',
           pairings: [],
@@ -356,17 +422,234 @@ describe('RecipeDetailPage', () => {
         },
       }),
     );
-    const tips = await screen.findByRole('heading', { name: 'Tips' });
-    const nutrition = screen.getByRole('heading', { name: 'Nutrition' });
+    await openTab(user, 'About');
+    const nutrition = await screen.findByRole('heading', { name: 'Nutrition' });
     const variants = screen.getByRole('heading', { name: 'Variants' });
-    const follows = (a: Node, b: Node) =>
-      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(follows(tips, nutrition)).toBe(true);
-    expect(follows(nutrition, variants)).toBe(true);
+    expect(
+      nutrition.compareDocumentPosition(variants) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('omits empty sections from the About tab', async () => {
+    const user = userEvent.setup();
+    setup(
+      recipe({
+        parentId: 'o',
+        base: { id: 'o', title: 'Omelette', archived: false },
+      }),
+    );
+    await openTab(user, 'About');
+    const panel = await screen.findByRole('tabpanel');
+    expect(within(panel).queryByRole('heading')).toBeNull();
+  });
+
+  describe('Tabs', () => {
+    const tab = (name: string) => screen.getByRole('tab', { name });
+
+    it('shows Ingredients, Steps and About, with Ingredients selected and only its panel shown', async () => {
+      setup(recipe({}));
+      await screen.findByRole('tablist');
+      const tabs = within(screen.getByRole('tablist')).getAllByRole('tab');
+      expect(tabs.map((node) => node.textContent)).toEqual([
+        'Ingredients',
+        'Steps',
+        'About',
+      ]);
+      expect(tab('Ingredients')).toHaveAttribute('aria-selected', 'true');
+      expect(tab('Steps')).toHaveAttribute('aria-selected', 'false');
+      const panel = screen.getByRole('tabpanel');
+      expect(tab('Ingredients')).toHaveAttribute(
+        'aria-controls',
+        panel.getAttribute('id'),
+      );
+      expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+      expect(
+        within(panel).getByRole('list', { name: 'Ingredients' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Whisk the eggs')).toBeNull();
+    });
+
+    it('switches panel when a tab is clicked', async () => {
+      const user = userEvent.setup();
+      setup(recipe({}));
+      await openTab(user, 'Steps');
+      expect(tab('Steps')).toHaveAttribute('aria-selected', 'true');
+      expect(tab('Ingredients')).toHaveAttribute('aria-selected', 'false');
+      expect(screen.getByText('Whisk the eggs')).toBeInTheDocument();
+      expect(screen.queryByRole('list', { name: 'Ingredients' })).toBeNull();
+      await openTab(user, 'Ingredients');
+      expect(screen.queryByText('Whisk the eggs')).toBeNull();
+    });
+
+    it('moves focus and selection with the arrow keys, wrapping round', async () => {
+      const user = userEvent.setup();
+      setup(recipe({}));
+      await screen.findByRole('tablist');
+      tab('Ingredients').focus();
+      expect(tab('Ingredients')).toHaveAttribute('tabindex', '0');
+      expect(tab('Steps')).toHaveAttribute('tabindex', '-1');
+      await user.keyboard('{ArrowRight}');
+      expect(tab('Steps')).toHaveFocus();
+      expect(tab('Steps')).toHaveAttribute('aria-selected', 'true');
+      expect(tab('Steps')).toHaveAttribute('tabindex', '0');
+      expect(tab('Ingredients')).toHaveAttribute('tabindex', '-1');
+      await user.keyboard('{ArrowRight}{ArrowRight}');
+      expect(tab('Ingredients')).toHaveFocus();
+      expect(tab('Ingredients')).toHaveAttribute('aria-selected', 'true');
+      await user.keyboard('{ArrowLeft}');
+      expect(tab('About')).toHaveFocus();
+      expect(tab('About')).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('scrolls to the top when switching tabs', async () => {
+      const user = userEvent.setup();
+      const scrollTo = vi.fn();
+      vi.stubGlobal('scrollTo', scrollTo);
+      setup(recipe({}));
+      await screen.findByRole('tablist');
+      expect(scrollTo).not.toHaveBeenCalled();
+      await openTab(user, 'Steps');
+      expect(scrollTo).toHaveBeenCalled();
+    });
+
+    const matchWith = (shortOrMissingCount: number) => ({
+      'GET /api/recipes/o/pantry-match': () =>
+        Response.json({
+          servings: 2,
+          canMake: shortOrMissingCount === 0,
+          shortOrMissingCount,
+          expiringCoveredCount: 0,
+          coverageRatio: 0.5,
+          lines: [],
+        }),
+    });
+
+    it('badges the Ingredients tab with how many lines to buy', async () => {
+      setup(recipe({}), '/recipes/o', matchWith(2));
+      expect(
+        await screen.findByRole('tab', { name: /2 to buy/ }),
+      ).toBeInTheDocument();
+    });
+
+    it('shows no badge on the Ingredients tab when nothing is to buy', async () => {
+      const calls = setup(recipe({}), '/recipes/o', matchWith(0));
+      await vi.waitFor(() =>
+        expect(calls.map((call) => call.key)).toContain(
+          'GET /api/recipes/o/pantry-match',
+        ),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(screen.getByRole('tab', { name: 'Ingredients' })).toBeVisible();
+      expect(screen.queryByText(/to buy/)).toBeNull();
+    });
+  });
+
+  describe('Steps tab', () => {
+    it('numbers the Steps as an ordered list, with the Timer as text, not a button', async () => {
+      const user = userEvent.setup();
+      setup(recipe({}));
+      await openTab(user, 'Steps');
+      const list = screen.getByRole('list', { name: 'Steps' });
+      expect(list.tagName).toBe('OL');
+      expect(
+        within(list)
+          .getAllByRole('listitem')
+          .map((li) => li.textContent),
+      ).toEqual([
+        expect.stringContaining('Whisk the eggs'),
+        expect.stringContaining('Fry gently'),
+      ]);
+      expect(screen.getByText('Timer 1:30')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Timer/ })).toBeNull();
+    });
+
+    it('labels a Step Tip "Tip:" and marks an inherited one as from the Base Recipe', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          tips: [
+            { id: 't1', stepId: 's1', text: 'Use cold eggs', inherited: true },
+            { id: 't2', stepId: 's2', text: 'Low heat', inherited: false },
+          ],
+        }),
+      );
+      await openTab(user, 'Steps');
+      const first = screen.getByText('Whisk the eggs').closest('li')!;
+      expect(first).toHaveTextContent('Tip: Use cold eggs');
+      expect(first).toHaveTextContent('(from the Base Recipe)');
+      const second = screen.getByText('Fry gently').closest('li')!;
+      expect(second).toHaveTextContent('Tip: Low heat');
+      expect(second).not.toHaveTextContent('from the Base Recipe');
+    });
+
+    it('puts the Recipe Tips under a Tips heading below the Steps', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          tips: [{ id: 't1', stepId: null, text: 'Salt', inherited: false }],
+        }),
+      );
+      await openTab(user, 'Steps');
+      const steps = screen.getByRole('list', { name: 'Steps' });
+      const heading = screen.getByRole('heading', { name: 'Tips' });
+      expect(
+        steps.compareDocumentPosition(heading) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
+
+  describe('About tab', () => {
+    it("gives What's different text alternatives for added, removed and swapped entries", async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: false },
+          diff: {
+            added: [entry('a1', 'Feta')],
+            removed: [entry('r1', 'Butter')],
+            swapped: [{ from: entry('w1', 'Chives'), to: entry('w2', 'Dill') }],
+          },
+        }),
+      );
+      await openTab(user, 'About');
+      expect(
+        within(screen.getByRole('list', { name: 'Added' })).getByText(/Feta/),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('list', { name: 'Removed' })).getByText(
+          /Butter/,
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('list', { name: 'Swapped' })).getByText(
+          'Chives to Dill',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('says a Variant has the same ingredients as its base when nothing differs', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          parentId: 'o',
+          base: { id: 'o', title: 'Omelette', archived: false },
+          diff: { added: [], removed: [], swapped: [] },
+        }),
+      );
+      await openTab(user, 'About');
+      expect(
+        await screen.findByText('Same ingredients as Omelette.'),
+      ).toBeInTheDocument();
+    });
   });
 
   it('omits the Tips section when there are no Recipe-level Tips', async () => {
+    const user = userEvent.setup();
     setup(recipe({}));
+    await openTab(user, 'Steps');
     await screen.findByRole('heading', { name: 'Omelette' });
     expect(screen.queryByRole('heading', { name: 'Tips' })).toBeNull();
   });

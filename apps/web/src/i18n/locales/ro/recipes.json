@@ -108,7 +108,10 @@
     "added_one": "{{count}} articol adăugat în lista de cumpărături",
     "added_few": "{{count}} articole adăugate în lista de cumpărături",
     "added_other": "{{count}} de articole adăugate în lista de cumpărături",
-    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește."
+    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește.",
+    "toBuy_one": "{{count}} de cumpărat",
+    "toBuy_few": "{{count}} de cumpărat",
+    "toBuy_other": "{{count}} de cumpărat"
   },
   "back": "Înapoi",
   "facts": {
@@ -116,5 +119,10 @@
     "serves": "Porții",
     "level": "Nivel",
     "style": "Stil"
+  },
+  "tabs": {
+    "ingredients": "Ingrediente",
+    "steps": "Pași",
+    "about": "Despre"
   }
 }

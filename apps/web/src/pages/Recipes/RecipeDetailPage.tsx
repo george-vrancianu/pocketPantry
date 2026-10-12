@@ -1,5 +1,16 @@
-import { Alert, Snackbar, Spinner, Stack } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import {
+  Alert,
+  Box,
+  SegmentedTabs,
+  segmentedTabId,
+  segmentedTabPanelId,
+  Snackbar,
+  Spinner,
+  Stack,
+  tokens,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
@@ -12,7 +23,7 @@ import {
 import { RecipeHero } from './components/RecipeHero';
 import { RecipeHeader } from './components/RecipeHeader';
 import { linesToAdd } from './components/PantryStatus';
-import { DETAIL_SECTIONS } from './components/sections';
+import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
 
 /** One Recipe. Keyed by id so Servings and add results never leak across a Variant <-> base link. */
 export function RecipeDetailPage() {
@@ -36,6 +47,16 @@ function RecipeDetail({ id }: { id: string }) {
     addMissing.mutate(servings, { onSuccess: () => setAdded(count) });
   };
 
+  const tabsId = useId();
+  const [tab, setTab] = useState<DetailTab>('ingredients');
+  const reduceMotion = usePrefersReducedMotion();
+  const openTab = (next: DetailTab) => {
+    if (next === tab) return;
+    setTab(next);
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+  const toBuy = match?.shortOrMissingCount ?? 0;
+
   return (
     <>
       <RecipeHeader recipe={recipe} />
@@ -51,23 +72,63 @@ function RecipeDetail({ id }: { id: string }) {
         {recipe ? (
           <>
             <RecipeHero recipe={recipe} servings={servings} />
-            {DETAIL_SECTIONS.map(({ key, Component }) => (
-              <Component
-                key={key}
-                recipe={recipe}
-                servings={servings}
-                onServingsChange={setPicked}
-                match={match}
-                stale={matchQuery.isPlaceholderData}
-                adding={addMissing.isPending}
-                addError={
-                  addMissing.error
-                    ? translateApiError(t, addMissing.error)
-                    : null
-                }
-                onAddMissing={onAddMissing}
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                py: '8px',
+                bgcolor: tokens.color.bg,
+                // Paints the page background out to the screen edges.
+                boxShadow: `0 0 0 100vmax ${tokens.color.bg}`,
+                clipPath: 'inset(0 -100vmax)',
+              }}
+            >
+              <SegmentedTabs
+                label={t('recipes:title')}
+                id={tabsId}
+                value={tab}
+                onChange={openTab}
+                tabs={[
+                  {
+                    value: 'ingredients',
+                    label: t('recipes:tabs.ingredients'),
+                    badge:
+                      toBuy > 0
+                        ? t('recipes:pantry.toBuy', { count: toBuy })
+                        : undefined,
+                  },
+                  { value: 'steps', label: t('recipes:tabs.steps') },
+                  { value: 'about', label: t('recipes:tabs.about') },
+                ]}
               />
-            ))}
+            </Box>
+            <Stack
+              role="tabpanel"
+              id={segmentedTabPanelId(tabsId, tab)}
+              aria-labelledby={segmentedTabId(tabsId, tab)}
+              spacing={2.5}
+            >
+              {DETAIL_SECTIONS.filter((section) => section.tab === tab).map(
+                ({ key, Component }) => (
+                  <Component
+                    key={key}
+                    recipe={recipe}
+                    servings={servings}
+                    onServingsChange={setPicked}
+                    match={match}
+                    stale={matchQuery.isPlaceholderData}
+                    adding={addMissing.isPending}
+                    addError={
+                      addMissing.error
+                        ? translateApiError(t, addMissing.error)
+                        : null
+                    }
+                    onAddMissing={onAddMissing}
+                  />
+                ),
+              )}
+            </Stack>
           </>
         ) : null}
       </Stack>

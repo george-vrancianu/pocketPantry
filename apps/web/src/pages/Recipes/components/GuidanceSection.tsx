@@ -82,56 +82,49 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
 function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
   const { t } = useTranslation('recipes');
   if (moments.length === 0) return null;
+  // Good-for moments first, then the ones to avoid.
+  const ordered = POLARITIES.flatMap((polarity) =>
+    moments.filter((m) => m.polarity === polarity),
+  );
   return (
     <Section title={t('sections.whenToEat')}>
-      <Stack spacing={1.5}>
-        {POLARITIES.map((polarity) => {
-          const items = moments.filter((m) => m.polarity === polarity);
-          if (items.length === 0) return null;
-          const label = t(`eatingPolarity.${polarity}`);
+      <Stack component="ul" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {ordered.map((moment) => {
+          const avoid = moment.polarity === 'avoid';
           return (
-            <div key={polarity}>
-              <Typography variant="meta" color="text.secondary" component="p">
-                {label}
-              </Typography>
-              <Stack
-                component="ul"
-                aria-label={label}
-                spacing={1}
-                sx={{ listStyle: 'none', m: 0, p: 0 }}
+            <Box
+              component="li"
+              key={moment.eatingMomentId}
+              sx={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  flexShrink: 0,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  px: '10px',
+                  py: '4px',
+                  borderRadius: `${tokens.radius.chip}px`,
+                  bgcolor: avoid ? tokens.color.soonBg : tokens.color.okBg,
+                  color: avoid ? tokens.color.soonFg : tokens.color.okFg,
+                }}
               >
-                {items.map((moment) => (
-                  <Box component="li" key={moment.eatingMomentId}>
-                    <Box
-                      component="span"
-                      sx={{
-                        display: 'inline-block',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        px: '10px',
-                        py: '4px',
-                        borderRadius: `${tokens.radius.chip}px`,
-                        bgcolor:
-                          polarity === 'avoid'
-                            ? tokens.color.soonBg
-                            : tokens.color.okBg,
-                        color:
-                          polarity === 'avoid'
-                            ? tokens.color.soonFg
-                            : tokens.color.okFg,
-                      }}
-                    >
-                      {moment.name}
-                    </Box>
-                    {moment.reason ? (
-                      <Typography color="text.secondary" component="p">
-                        {moment.reason}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                ))}
-              </Stack>
-            </div>
+                {t(`eatingPolarity.${moment.polarity}`)} · {moment.name}
+              </Box>
+              {moment.reason ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 13.5,
+                    lineHeight: 1.4,
+                    color: tokens.color.muted,
+                  }}
+                >
+                  {moment.reason}
+                </Typography>
+              ) : null}
+            </Box>
           );
         })}
       </Stack>

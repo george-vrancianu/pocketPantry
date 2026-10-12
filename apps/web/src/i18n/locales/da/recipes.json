@@ -104,7 +104,9 @@
     "addMissing": "Føj det manglende til indkøbslisten",
     "added_one": "{{count}} vare føjet til indkøbslisten",
     "added_other": "{{count}} varer føjet til indkøbslisten",
-    "someOnList": "Nogle af dem er allerede på din liste; hvis du tilføjer dem igen, øges mængden."
+    "someOnList": "Nogle af dem er allerede på din liste; hvis du tilføjer dem igen, øges mængden.",
+    "toBuy_one": "{{count}} at købe",
+    "toBuy_other": "{{count}} at købe"
   },
   "back": "Tilbage",
   "facts": {
@@ -112,5 +114,10 @@
     "serves": "Antal",
     "level": "Niveau",
     "style": "Stil"
+  },
+  "tabs": {
+    "ingredients": "Ingredienser",
+    "steps": "Trin",
+    "about": "Om"
   }
 }
