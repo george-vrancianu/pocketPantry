@@ -10,6 +10,7 @@ import {
   seedCatalog,
   seedId,
   stableId,
+  translationRows,
 } from '../src/catalog/seed/seed-catalog';
 import { CatalogSearchService } from '../src/catalog/catalog-search.service';
 import { normalizeName } from '../src/catalog/normalize';
@@ -756,23 +757,17 @@ describe('Catalog (integration)', () => {
           SEED_PARENTS.map((p) => seedId.parent(p.slug)),
         ),
       ).toBe(18);
-      // Match on (entity, locale, value) instead of counting: other suites sharing this worker's
-      // database may leave their own Synonyms on seeded Ingredients.
-      const key = (entityId: string, locale: string, value: string) =>
-        `${entityId}|${locale}|${value}`;
-      const seeded = SEED_INGREDIENTS.flatMap((i) =>
-        (['en', 'ro', 'da'] as const).flatMap((locale) =>
-          (i.synonyms?.[locale] ?? []).map((value) =>
-            key(seedId.ingredient(i.slug), locale, value),
-          ),
-        ),
-      );
+      // Compare by id, not by count: other suites sharing this worker's database may leave their
+      // own Synonyms on seeded Ingredients. Seed rows have stable v5 ids, app-created ones are
+      // random v4 ids, so only v5 rows are the seed's and they must match the expected set exactly.
+      const expectedIds = SEED_INGREDIENTS.flatMap((i) =>
+        translationRows('ingredient', seedId.ingredient(i.slug), i, i.synonyms),
+      )
+        .filter((r) => r.kind === 'synonym')
+        .map((r) => r.id)
+        .sort();
       const stored = await database
-        .select({
-          entityId: catalogTranslations.entityId,
-          locale: catalogTranslations.locale,
-          value: catalogTranslations.value,
-        })
+        .select({ id: catalogTranslations.id })
         .from(catalogTranslations)
         .where(
           and(
@@ -784,14 +779,13 @@ describe('Catalog (integration)', () => {
             ),
           ),
         );
-      const storedKeys = stored.map((t) => key(t.entityId, t.locale, t.value));
-      const wanted = new Set(seeded);
-      expect(seeded.length).toBeGreaterThan(0);
-      expect(wanted.size).toBe(seeded.length);
-      // Every seeded Synonym is stored exactly once, and nothing seeded is missing.
-      expect(storedKeys.filter((k) => wanted.has(k)).sort()).toEqual(
-        [...wanted].sort(),
-      );
+      expect(expectedIds.length).toBeGreaterThan(0);
+      expect(
+        stored
+          .map((t) => t.id)
+          .filter((id) => id[14] === '5')
+          .sort(),
+      ).toEqual(expectedIds);
     });
 
     it('leaves a row edited since the last seed run exactly as it was', async () => {

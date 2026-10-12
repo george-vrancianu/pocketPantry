@@ -40,7 +40,7 @@ describe('Used Up Suggestions (integration)', () => {
   });
 
   afterAll(async () => {
-    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient: later specs in this worker count them.
+    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient; remove it so the worker's shared database stays as seeded.
     if (resolvedNames.length > 0) {
       await database
         .delete(catalogTranslations)
