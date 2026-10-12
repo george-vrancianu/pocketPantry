@@ -170,6 +170,41 @@ describe('NewRecipePage', () => {
     const post = calls.find((c) => c.key === 'POST /api/recipes');
     expect(post?.body).toMatchObject({ parentId: null, title: 'Gran stew' });
   });
+
+  it('words the Guidance hint and Tips hint for a Recipe, not a Variant', async () => {
+    setup('/recipes/new', {});
+    await screen.findByLabelText(/^Title/);
+    expect(
+      screen.getByText(/Pairings, a Nutrition Note and Eating Moments\./),
+    ).not.toHaveTextContent(/Variant/);
+    expect(
+      screen.getByText('Add Tips to Steps after saving the Recipe.'),
+    ).toBeInTheDocument();
+  });
+
+  it('blocks saving without a title', async () => {
+    setup('/recipes/new', {});
+    expect(
+      await screen.findByRole('button', { name: 'Save Recipe' }),
+    ).toBeDisabled();
+  });
+
+  it('shows a coded error in the Member locale and stays on the form', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'POST /api/recipes': () =>
+        Response.json(
+          { code: 'recipes.parent_archived', params: {} },
+          { status: 409 },
+        ),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This Base Recipe is archived, so it cannot get new Variants.',
+    );
+    expect(screen.queryByText('Detail of the recipe')).not.toBeInTheDocument();
+  });
 });
 
 describe('NewVariantPage', () => {

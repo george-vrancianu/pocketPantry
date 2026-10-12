@@ -42,7 +42,7 @@ function namedGuidance(
   };
 }
 
-/** "New Recipe": the Family-recipe form, blank; saved as a Base Recipe (no parent). */
+/** "New Recipe": the Family Recipe form, blank; saved as a Base Recipe (no parent). */
 export function NewRecipePage() {
   const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
   const navigate = useNavigate();
@@ -55,6 +55,7 @@ export function NewRecipePage() {
       <Stack spacing={2.5}>
         <FamilyRecipeForm
           heading={t('recipes:family.newRecipeHeading')}
+          description={t('recipes:family.newRecipeHint')}
           initial={emptyDraft()}
           saveLabel={t('recipes:family.save')}
           saving={create.isPending}

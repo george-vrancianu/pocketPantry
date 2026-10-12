@@ -69,6 +69,7 @@
   "family": {
     "newRecipe": "Ny opskrift",
     "newRecipeHeading": "Ny opskrift",
+    "newRecipeHint": "Tilføj tips til trin, når opskriften er gemt.",
     "makeVariant": "Lav en variant",
     "edit": "Rediger",
     "delete": "Slet",
@@ -84,7 +85,7 @@
     "freeTextAdd": "Tilføj navn",
     "freeTextNote": "Ikke i kataloget",
     "unavailable": "Denne opskrift kan ikke redigeres.",
-    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med varianten.",
+    "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med opskriften.",
     "linkedRecipeUnavailable": "En opskrift, du ikke kan se, eller som er arkiveret",
     "saved": "Opskriften er gemt.",
     "viewRecipe": "Se opskriften"
