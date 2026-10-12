@@ -16,7 +16,8 @@ export const pantryMatchQuery = z.object({
 });
 export type PantryMatchQuery = z.infer<typeof pantryMatchQuery>;
 
-export const addMissingQuery = shoppingLocaleQuery;
+/** The locale query of both add-to-list endpoints (bulk and per line). */
+export const addToListQuery = shoppingLocaleQuery;
 
 export const addMissingBody = z.object({
   today: z.iso.date().optional(),
