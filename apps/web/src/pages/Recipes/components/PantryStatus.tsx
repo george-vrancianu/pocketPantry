@@ -2,11 +2,13 @@ import {
   Alert,
   Box,
   Button,
+  CartIcon,
   CheckCircleIcon,
   Stack,
   Typography,
-  visuallyHidden,
   WarningIcon,
+  tokens,
+  visuallyHidden,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
@@ -21,11 +23,34 @@ export function linesToAdd(match: PantryMatch | undefined): PantryLine[] {
   return (match?.lines ?? []).filter(addable);
 }
 
-/** The status after one Ingredient Line: words first, so colour is never the only cue. */
-export function LineStatus({ line }: { line: PantryLine }) {
+const { color } = tokens;
+
+/** The pill's colours: a Pantry Basic first, whatever its status. */
+function pillTone(line: PantryLine) {
+  if (line.pantryBasic) return { bg: color.okBg, fg: color.okFg, ok: true };
+  if (line.status === 'covered')
+    return { bg: color.accentTint, fg: color.accent, ok: true };
+  if (line.status === 'short')
+    return { bg: color.soonBg, fg: color.soonFg, ok: false };
+  return { bg: color.urgentBg, fg: color.urgentFg, ok: false };
+}
+
+/** A line's Pantry status as a pill: icon and words, so colour is never the only cue. */
+export function LineStatusPill({
+  line,
+  iconOnly = false,
+  added = false,
+}: {
+  line: PantryLine;
+  /** The Member added this line to the Shopping List by hand; shows the hint whatever its status. */
+  added?: boolean;
+  /** Collapses to the icon; the words become its accessible name. */
+  iconOnly?: boolean;
+}) {
   const { t, i18n } = useTranslation(['recipes', 'common']);
-  const label =
-    line.status === 'short' && line.shortfall
+  const label = line.pantryBasic
+    ? t('recipes:pantry.basic')
+    : line.status === 'short' && line.shortfall
       ? t('recipes:pantry.short', {
           amount: formatAmount(
             line.shortfall.quantity,
@@ -34,70 +59,118 @@ export function LineStatus({ line }: { line: PantryLine }) {
             t,
           ),
         })
-      : line.pantryBasic
-        ? t('recipes:pantry.basic')
-        : t(`recipes:pantry.${line.status}`);
-  const covered = line.status === 'covered';
+      : t(`recipes:pantry.${line.status}`);
+  const tone = pillTone(line);
+  const onList = (line.onShoppingList && line.status !== 'covered') || added;
+  if (iconOnly) {
+    return (
+      <Box
+        component="span"
+        role="img"
+        aria-label={
+          onList ? `${label}, ${t('recipes:pantry.onListShort')}` : label
+        }
+        sx={{
+          display: 'inline-flex',
+          p: '4px',
+          borderRadius: `${tokens.radius.chip}px`,
+          bgcolor: tone.bg,
+          color: tone.fg,
+        }}
+      >
+        {tone.ok ? (
+          <CheckCircleIcon size={14} aria-hidden />
+        ) : (
+          <WarningIcon size={14} aria-hidden />
+        )}
+      </Box>
+    );
+  }
   return (
-    <Typography
-      variant="meta"
+    <Box
       component="span"
-      color={covered ? 'text.secondary' : 'text.primary'}
-      sx={{ ml: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        px: '9px',
+        py: '4px',
+        borderRadius: `${tokens.radius.chip}px`,
+        bgcolor: tone.bg,
+        color: tone.fg,
+        fontSize: 12,
+        fontWeight: 700,
+        whiteSpace: 'nowrap',
+      }}
     >
-      {covered ? (
+      {tone.ok ? (
         <CheckCircleIcon size={14} aria-hidden />
       ) : (
         <WarningIcon size={14} aria-hidden />
       )}
       <span>{label}</span>
-      {line.onShoppingList && !covered ? (
+      {onList ? (
         <span>
           <span aria-hidden> · </span>
           <Box component="span" sx={visuallyHidden}>
             ,{' '}
           </Box>
-          {t('recipes:pantry.onList')}
+          {t('recipes:pantry.onListShort')}
         </span>
       ) : null}
+    </Box>
+  );
+}
+
+/** "You can make this" or how many lines are left to buy. */
+export function PantryHeading({ match }: { match: PantryMatch | undefined }) {
+  const { t } = useTranslation('recipes');
+  if (!match) return null;
+  return (
+    <Typography variant="sectionLabel" component="p" role="status">
+      {match.canMake
+        ? t('pantry.canMake')
+        : t('pantry.toBuy', { count: match.shortOrMissingCount })}
     </Typography>
   );
 }
 
-type SummaryProps = {
+type AddMissingProps = {
   match: PantryMatch | undefined;
   /** The answer is for another Servings or Recipe; wait for the current one. */
   stale: boolean;
   adding: boolean;
+  /** The missing lines were added at the Servings picked. */
+  added: boolean;
   /** Why the last add failed, shown beside the button. */
   error: string | null;
   onAddMissing: () => void;
 };
 
-/** Can Make (or how many ingredients are missing) and the Add missing button. */
-export function PantrySummary({
+/** The full-width "Add n missing to Shopping List" button, its note and any error. */
+export function AddMissing({
   match,
   stale,
   adding,
+  added,
   error,
   onAddMissing,
-}: SummaryProps) {
+}: AddMissingProps) {
   const { t } = useTranslation('recipes');
-  if (!match) return null;
   const toAdd = linesToAdd(match);
+  if (toAdd.length === 0 && !added) return null;
   return (
-    <Stack spacing={1} sx={{ alignItems: 'flex-start' }}>
-      <Typography role="status" sx={{ fontWeight: 600 }}>
-        {match.canMake
-          ? t('pantry.canMake')
-          : t('pantry.missingCount', { count: match.shortOrMissingCount })}
-      </Typography>
+    <Stack spacing={1}>
       <Button
-        variant="secondary"
-        disabled={adding || stale || toAdd.length === 0}
+        fullWidth
+        startIcon={<CartIcon size={18} />}
+        disabled={adding || stale || added}
         onClick={onAddMissing}
+        sx={{ fontSize: 15, fontWeight: 700 }}
       >
-        {t('pantry.addMissing')}
+        {added
+          ? t('pantry.addedList')
+          : t('pantry.addMissing', { count: toAdd.length })}
       </Button>
       {toAdd.some((line) => line.onShoppingList) ? (
         <Typography variant="meta" color="text.secondary">

@@ -67,7 +67,7 @@ export class FamilyRecipesService {
   /**
    * The unsaved "Make a variant" draft from a Recipe the Family can see. The
    * parent is the source's Catalog base: the source itself, or the base of a
-   * Variant (Catalog or the Family's own). A Family standalone Recipe has no
+   * Variant (Catalog or the Family's own). A Family Base Recipe has no
    * Catalog base, so it is refused (404 `recipes.parent_not_found`); a base
    * that is archived is refused too (409 `recipes.parent_archived`).
    */
@@ -413,7 +413,7 @@ export class FamilyRecipesService {
 
   /**
    * The parent must be a live Catalog Base Recipe: Variants go under Catalog
-   * bases only (a Family standalone Recipe has no Variants). A shared lock
+   * bases only (a Family Base Recipe has no Variants). A shared lock
    * makes an archive of the base wait for us. Existing Variants of an archived
    * base keep working; only new ones are refused.
    */

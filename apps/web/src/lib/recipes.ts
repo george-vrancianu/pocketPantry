@@ -1,4 +1,5 @@
 import {
+  type QueryClient,
   keepPreviousData,
   useMutation,
   useQuery,
@@ -136,6 +137,16 @@ export type RecipeBrowse = {
   methodId: string;
 };
 
+/** Minutes for a Recipe (prep plus cook), or null when it has neither. */
+export function totalMinutes(times: {
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+}): number | null {
+  return times.prepMinutes === null && times.cookMinutes === null
+    ? null
+    : (times.prepMinutes ?? 0) + (times.cookMinutes ?? 0);
+}
+
 export const recipesQueryKey = ['recipes'] as const;
 
 /** Whether a search or a filter is active (the list then includes Variants). */
@@ -244,6 +255,17 @@ export function useRecipePantryMatch(
   });
 }
 
+/** After an add: the answer is the updated Shopping List; Suggestions and the Pantry match are now out of date. */
+function shoppingListUpdated(queryClient: QueryClient, locale: string) {
+  return (list: ShoppingList) => {
+    queryClient.setQueryData([...shoppingListQueryKey, locale], list);
+    return Promise.all([
+      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      queryClient.invalidateQueries({ queryKey: pantryMatchesQueryKey }),
+    ]);
+  };
+}
+
 /** Adds the Recipe's short and missing lines to the Shopping List; the answer is the updated list. */
 export function useAddMissingToShoppingList(id: string, locale: string) {
   const queryClient = useQueryClient();
@@ -256,12 +278,22 @@ export function useAddMissingToShoppingList(id: string, locale: string) {
           body: { today: localIso(new Date()), servings },
         },
       ),
-    onSuccess: (list) => {
-      queryClient.setQueryData([...shoppingListQueryKey, locale], list);
-      return Promise.all([
-        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-        queryClient.invalidateQueries({ queryKey: pantryMatchesQueryKey }),
-      ]);
-    },
+    onSuccess: shoppingListUpdated(queryClient, locale),
+  });
+}
+
+/** Adds one Ingredient Line of the Recipe, at the Servings picked, to the Shopping List. */
+export function useAddLineToShoppingList(id: string, locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ lineId, servings }: { lineId: string; servings: number }) =>
+      apiRequest<ShoppingList>(
+        `/recipes/${id}/add-line?${new URLSearchParams({ locale })}`,
+        {
+          method: 'POST',
+          body: { lineId, servings, today: localIso(new Date()) },
+        },
+      ),
+    onSuccess: shoppingListUpdated(queryClient, locale),
   });
 }

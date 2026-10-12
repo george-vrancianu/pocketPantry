@@ -11,6 +11,10 @@ export { Button, type ButtonProps } from './atoms/Button';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
+export {
+  InputAdornment,
+  type InputAdornmentProps,
+} from './atoms/InputAdornment';
 export { IconButton, type IconButtonProps } from './atoms/IconButton';
 export { Box, Stack, type BoxProps, type StackProps } from './atoms/Layout';
 export { Link, type LinkProps } from './atoms/Link';
@@ -22,6 +26,8 @@ export { Typography, type TypographyProps } from './atoms/Typography';
 export {
   BudgetIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
+  SearchIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
@@ -51,8 +57,25 @@ export {
   CheckCircleIcon,
   DeleteIcon,
   SwapIcon,
+  PeopleIcon,
+  BackIcon,
+  MoreIcon,
+  BranchIcon,
+  CartIcon,
 } from './atoms/icons';
 
+export {
+  ActionMenu,
+  type ActionMenuItem,
+  type ActionMenuProps,
+} from './molecules/ActionMenu';
+export {
+  SegmentedTabs,
+  segmentedTabId,
+  segmentedTabPanelId,
+  type SegmentedTab,
+  type SegmentedTabsProps,
+} from './molecules/SegmentedTabs';
 export {
   ScreenHeader,
   type ScreenHeaderAction,

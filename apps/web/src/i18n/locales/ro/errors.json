@@ -102,6 +102,7 @@
     "duplicate_item": "Aceeași linie, același Pas sau aceeași Asociere apare de două ori. Reîncarcă Rețeta și încearcă din nou.",
     "bad_step_anchor": "Acest Sfat trimite la un Pas care nu aparține acestei Rețete.",
     "bad_hidden_tip": "Doar Sfaturile la nivel de Rețetă ale Rețetei de bază pot fi ascunse, și doar pe o Variantă.",
+    "line_not_found": "Acest ingredient nu mai face parte din Rețetă. Reîncarcă Rețeta și încearcă din nou.",
     "tip_not_found": "Acest Sfat nu mai există.",
     "tip_order_stale": "Sfaturile s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "tips_too_many": "O Rețetă poate avea cel mult {{max}} Sfaturi.",

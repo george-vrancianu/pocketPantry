@@ -16,13 +16,17 @@ export const pantryMatchQuery = z.object({
 });
 export type PantryMatchQuery = z.infer<typeof pantryMatchQuery>;
 
-export const addMissingQuery = shoppingLocaleQuery;
+/** The locale query of both add-to-list endpoints (bulk and per line). */
+export const addToListQuery = shoppingLocaleQuery;
 
 export const addMissingBody = z.object({
   today: z.iso.date().optional(),
   servings: servings.optional(),
 });
 export type AddMissingBody = z.infer<typeof addMissingBody>;
+
+export const addLineBody = addMissingBody.extend({ lineId: z.uuid() });
+export type AddLineBody = z.infer<typeof addLineBody>;
 
 export type PantryLineView = LineMatch & {
   /** An unchecked Shopping Item for the same Ingredient (or Unmatched name) is on the Family's list. It never changes `status`. */

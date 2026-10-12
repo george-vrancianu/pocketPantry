@@ -1,4 +1,10 @@
-import { IconButton, MinusIcon, PlusIcon, Stack } from '@pocket-pantry/ui';
+import {
+  IconButton,
+  MinusIcon,
+  PlusIcon,
+  Stack,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
 /** The most Servings the API will match or add for (keep in step with MAX_MATCH_SERVINGS in apps/api/src/recipes/recipe-pantry.schemas.ts). */
@@ -10,7 +16,7 @@ export function Servings({ servings }: { servings: number }) {
   return <span>{t('servings', { count: servings })}</span>;
 }
 
-/** Servings with a stepper; the Pantry status and quantities follow it. */
+/** Servings with a stepper, as a white pill; the Pantry status and quantities follow it. */
 export function ServingsStepper({
   servings,
   onChange,
@@ -20,23 +26,38 @@ export function ServingsStepper({
 }) {
   const { t } = useTranslation('recipes');
   return (
-    <Stack sx={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+    <Stack
+      sx={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 1,
+        height: 40,
+        px: '3px',
+        bgcolor: tokens.color.surface,
+        border: `1px solid ${tokens.color.line}`,
+        borderRadius: `${tokens.radius.chip}px`,
+        fontSize: 13.5,
+        fontWeight: 700,
+      }}
+    >
       <IconButton
         label={t('fewerServings')}
-        size={40}
+        size={34}
+        tone="plain"
         ariaDisabled={servings <= 1}
         onClick={() => onChange(servings - 1)}
       >
-        <MinusIcon />
+        <MinusIcon size={16} />
       </IconButton>
       <Servings servings={servings} />
       <IconButton
         label={t('moreServings')}
-        size={40}
+        size={34}
+        tone="plain"
         ariaDisabled={servings >= MAX_SERVINGS}
         onClick={() => onChange(servings + 1)}
       >
-        <PlusIcon />
+        <PlusIcon size={16} />
       </IconButton>
     </Stack>
   );

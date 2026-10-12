@@ -1,15 +1,35 @@
-import { Box, Stack } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  Button,
+  CartIcon,
+  tokens,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import type { Unit } from '../../../lib/catalog';
-import type { RecipeDetailLine } from '../../../lib/recipes';
+import type { PantryLine, RecipeDetailLine } from '../../../lib/recipes';
+import { LineStatusPill } from './PantryStatus';
 
 type Props = {
   lines: RecipeDetailLine[];
-  /** A slot after each line, keyed by line id: the per-line Pantry status (#157). */
-  renderLineStatus?: (line: RecipeDetailLine) => ReactNode;
+  /** The Pantry status of each line, by line id; a line without one shows none yet. */
+  pantryByLine: Map<string, PantryLine>;
+  /** The line whose add button is showing, if any. */
+  selectedId: string | null;
+  onSelect: (lineId: string | null) => void;
+  /** The selected line was added to the Shopping List. */
+  addedId: string | null;
+  /** Lines added by hand at the Servings picked; their pill keeps the on-list hint. */
+  handAddedIds: ReadonlySet<string>;
+  /** The line whose last add failed, with the message to show under its button. */
+  errorId: string | null;
+  error: string | null;
+  /** Adding is not possible now (stale match or an add in flight). */
+  addDisabled: boolean;
+  onAddLine: (line: RecipeDetailLine) => void;
   'aria-label': string;
 };
 
@@ -20,37 +40,186 @@ export function lineAmount(
   t: TFunction,
 ): string {
   if (line.quantity === null) return '';
-  return line.unit
+  return line.unit && line.unit !== 'pcs'
     ? formatAmount(line.quantity, line.unit, language, t)
     : new Intl.NumberFormat(language).format(line.quantity);
 }
 
-/** Ingredient Lines in order, with an optional per-line status slot. */
+/** One Ingredient Line: name with its quantity tag, note under it, and the Pantry status on the right. */
+function IngredientRow({
+  line,
+  pantry,
+  selected,
+  added,
+  listed,
+  error,
+  addDisabled,
+  onToggle,
+  onAdd,
+}: {
+  line: RecipeDetailLine;
+  pantry: PantryLine | undefined;
+  selected: boolean;
+  added: boolean;
+  listed: boolean;
+  error: string | null;
+  addDisabled: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
+}) {
+  const { t, i18n } = useTranslation(['recipes', 'common']);
+  const reduceMotion = usePrefersReducedMotion();
+  const amount = lineAmount(line, i18n.language, t);
+  const optionalOrBasic = line.optional || pantry?.pantryBasic === true;
+  const sub = [line.note, line.optional ? t('recipes:optional') : null]
+    .filter(Boolean)
+    .join(', ');
+  return (
+    <Box
+      component="li"
+      sx={{
+        borderTop: `1px solid ${tokens.color.divider}`,
+        '&:first-of-type': { borderTop: 0 },
+        bgcolor: selected ? tokens.color.accentTint : undefined,
+      }}
+    >
+      <Box
+        component="button"
+        type="button"
+        aria-pressed={selected}
+        onClick={onToggle}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          width: '100%',
+          minHeight: 44,
+          px: '16px',
+          py: '10px',
+          border: 0,
+          bgcolor: 'transparent',
+          font: 'inherit',
+          textAlign: 'left',
+          color: 'inherit',
+          cursor: 'pointer',
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box
+            sx={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: optionalOrBasic ? tokens.color.muted : tokens.color.ink,
+            }}
+          >
+            {line.ingredientName}
+            {amount ? (
+              <Box
+                component="span"
+                sx={{
+                  ml: '7px',
+                  px: '7px',
+                  py: '1px',
+                  borderRadius: '6px',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                  bgcolor: optionalOrBasic
+                    ? tokens.color.okBg
+                    : tokens.color.accentTint,
+                  color: optionalOrBasic
+                    ? tokens.color.muted
+                    : tokens.color.accent,
+                }}
+              >
+                {amount}
+              </Box>
+            ) : null}
+          </Box>
+          {sub ? (
+            <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{sub}</Box>
+          ) : null}
+        </Box>
+        {pantry ? (
+          <LineStatusPill line={pantry} iconOnly={selected} added={listed} />
+        ) : null}
+      </Box>
+      {selected ? (
+        <Box
+          sx={{
+            px: '16px',
+            pb: '10px',
+            // Slides in only; leaving is instant. No motion at all under reduce-motion.
+            '@keyframes pp-line-add-in': {
+              from: { opacity: 0, transform: 'translateY(-6px)' },
+              to: { opacity: 1, transform: 'none' },
+            },
+            animation: reduceMotion ? 'none' : 'pp-line-add-in 180ms ease-out',
+          }}
+        >
+          <Button
+            fullWidth
+            startIcon={<CartIcon size={18} />}
+            disabled={added || addDisabled}
+            onClick={onAdd}
+          >
+            {added
+              ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
+              : t('recipes:pantry.addLine', { name: line.ingredientName })}
+          </Button>
+          {error ? (
+            <Box sx={{ mt: '8px' }}>
+              <Alert>{error}</Alert>
+            </Box>
+          ) : null}
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+/** Ingredient Lines in order, as rows of a white card with their Pantry status. */
 export function IngredientList({
   lines,
-  renderLineStatus,
+  pantryByLine,
+  selectedId,
+  onSelect,
+  addedId,
+  handAddedIds,
+  errorId,
+  error,
+  addDisabled,
+  onAddLine,
   'aria-label': label,
 }: Props) {
-  const { t, i18n } = useTranslation(['recipes', 'common']);
   return (
-    <Stack
+    <Box
       component="ul"
       aria-label={label}
-      spacing={0.5}
-      sx={{ listStyle: 'none', m: 0, p: 0 }}
+      sx={{
+        listStyle: 'none',
+        m: 0,
+        p: 0,
+        overflow: 'hidden',
+        bgcolor: tokens.color.surface,
+        border: `1px solid ${tokens.color.line}`,
+        borderRadius: `${tokens.radius.card}px`,
+      }}
     >
-      {lines.map((line) => {
-        const amount = lineAmount(line, i18n.language, t);
-        return (
-          <Box component="li" key={line.id}>
-            {amount ? `${amount} ` : ''}
-            {line.ingredientName}
-            {line.note ? `, ${line.note}` : ''}
-            {line.optional ? ` (${t('recipes:optional')})` : ''}
-            {renderLineStatus?.(line)}
-          </Box>
-        );
-      })}
-    </Stack>
+      {lines.map((line) => (
+        <IngredientRow
+          key={line.id}
+          line={line}
+          pantry={pantryByLine.get(line.id)}
+          selected={selectedId === line.id}
+          added={addedId === line.id}
+          listed={handAddedIds.has(line.id)}
+          error={errorId === line.id ? error : null}
+          addDisabled={addDisabled}
+          onToggle={() => onSelect(selectedId === line.id ? null : line.id)}
+          onAdd={() => onAddLine(line)}
+        />
+      ))}
+    </Box>
   );
 }

@@ -102,6 +102,7 @@
     "duplicate_item": "Den samme linje, det samme trin eller det samme forslag står to gange. Genindlæs opskriften og prøv igen.",
     "bad_step_anchor": "Det tip peger på et trin, der ikke hører til denne opskrift.",
     "bad_hidden_tip": "Kun tip på opskriftsniveau fra grundopskriften kan skjules, og kun på en variant.",
+    "line_not_found": "Den ingrediens er ikke længere en del af opskriften. Genindlæs opskriften og prøv igen.",
     "tip_not_found": "Det tip findes ikke længere.",
     "tip_order_stale": "Tippene blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen og prøv igen.",
     "tips_too_many": "En opskrift kan højst have {{max}} tips.",

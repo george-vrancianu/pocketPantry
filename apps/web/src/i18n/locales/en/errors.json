@@ -102,6 +102,7 @@
     "duplicate_item": "The same line, Step or Pairing appears twice. Reload the Recipe and try again.",
     "bad_step_anchor": "That Tip points at a Step that is not in this Recipe.",
     "bad_hidden_tip": "Only Recipe-level Tips of the Base Recipe can be hidden, and only on a Variant.",
+    "line_not_found": "That ingredient is no longer part of this Recipe. Reload the Recipe and try again.",
     "tip_not_found": "That Tip no longer exists.",
     "tip_order_stale": "The Tips changed while you were reordering. Check the order and try again.",
     "tips_too_many": "A Recipe can have at most {{max}} Tips.",

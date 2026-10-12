@@ -25,6 +25,8 @@ import {
   Apple,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
+  Search,
   Minus,
   GripVertical,
   TriangleAlert,
@@ -32,6 +34,11 @@ import {
   CircleCheck,
   Trash2,
   ArrowLeftRight,
+  Users,
+  ChevronLeft,
+  Ellipsis,
+  GitBranch,
+  ShoppingCart,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -72,3 +79,10 @@ export const AlertIcon = withDefaults(CircleAlert);
 export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
 export const SwapIcon = withDefaults(ArrowLeftRight);
+export const PeopleIcon = withDefaults(Users);
+export const BackIcon = withDefaults(ChevronLeft);
+export const MoreIcon = withDefaults(Ellipsis);
+export const BranchIcon = withDefaults(GitBranch);
+export const CartIcon = withDefaults(ShoppingCart);
+export const ChevronRightIcon = withDefaults(ChevronRight);
+export const SearchIcon = withDefaults(Search);

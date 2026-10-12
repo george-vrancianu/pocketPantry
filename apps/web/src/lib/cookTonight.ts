@@ -34,3 +34,30 @@ export function useCookTonight(locale: string, today: string) {
       ),
   });
 }
+
+/** Cook-tonight cards looked up by Recipe id, for the status pills on the Recipes list. */
+export type CardIndex = {
+  byRecipe: Map<string, CookTonightCard>;
+  byBase: Map<string, CookTonightCard>;
+};
+
+export function indexCards(cards: CookTonightCard[]): CardIndex {
+  return {
+    byRecipe: new Map(cards.map((card) => [card.recipe.id, card])),
+    byBase: new Map(cards.map((card) => [card.base.id, card])),
+  };
+}
+
+/**
+ * The card describing a list row: the Recipe's own card first; only a Base Recipe falls back
+ * to the card of its group, whose best match may be one of its Variants.
+ */
+export function cardFor(
+  index: CardIndex,
+  recipe: { id: string; parentId: string | null },
+): CookTonightCard | undefined {
+  return (
+    index.byRecipe.get(recipe.id) ??
+    (recipe.parentId === null ? index.byBase.get(recipe.id) : undefined)
+  );
+}

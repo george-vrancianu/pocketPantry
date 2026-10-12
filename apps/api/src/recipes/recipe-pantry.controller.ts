@@ -18,10 +18,12 @@ import type {
   ShoppingLocaleQuery,
 } from '../shopping/shopping.schemas';
 import {
+  addLineBody,
   addMissingBody,
-  addMissingQuery,
+  addToListQuery,
   pantryMatchQuery,
   recipeIdParam,
+  type AddLineBody,
   type AddMissingBody,
   type PantryMatchQuery,
   type PantryMatchView,
@@ -59,10 +61,26 @@ export class RecipePantryController {
   addMissing(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
-    @Query(new ZodValidationPipe(addMissingQuery))
+    @Query(new ZodValidationPipe(addToListQuery))
     { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
   ): Promise<ShoppingListView> {
     return this.pantry.addMissing(member.id, id, body, locale);
+  }
+
+  @Post(':id/add-line')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Add one line of the Recipe to the Shopping List (the shortfall if short, else the whole quantity), with the Recipe as Source Recipe; returns the updated list',
+  })
+  addLine(
+    @CurrentUser() member: CurrentUserValue,
+    @IdParam() { id }: { id: string },
+    @Query(new ZodValidationPipe(addToListQuery))
+    { locale }: ShoppingLocaleQuery,
+    @Body(new ZodValidationPipe(addLineBody)) body: AddLineBody,
+  ): Promise<ShoppingListView> {
+    return this.pantry.addLine(member.id, id, body, locale);
   }
 }

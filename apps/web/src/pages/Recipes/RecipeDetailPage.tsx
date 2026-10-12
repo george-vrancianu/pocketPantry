@@ -1,27 +1,31 @@
 import {
   Alert,
-  Link,
+  Box,
+  SegmentedTabs,
+  segmentedTabId,
+  segmentedTabPanelId,
   Snackbar,
   Spinner,
   Stack,
-  Typography,
+  tokens,
+  usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
 import {
+  useAddLineToShoppingList,
   useAddMissingToShoppingList,
   useRecipe,
   useRecipePantryMatch,
 } from '../../lib/recipes';
-import { OwnerBadge } from './components/OwnerBadge';
-import { RecipeActions } from './components/RecipeActions';
-import { RecipeMeta } from './components/RecipeMeta';
+import type { RecipeDetailLine } from '../../lib/recipes';
+import { RecipeHero } from './components/RecipeHero';
+import { RecipeHeader } from './components/RecipeHeader';
 import { linesToAdd } from './components/PantryStatus';
-import { DETAIL_SECTIONS } from './components/sections';
+import { DETAIL_SECTIONS, type DetailTab } from './components/sections';
 
 /** One Recipe. Keyed by id so Servings and add results never leak across a Variant <-> base link. */
 export function RecipeDetailPage() {
@@ -39,15 +43,54 @@ function RecipeDetail({ id }: { id: string }) {
   const matchQuery = useRecipePantryMatch(id, servings, recipe !== undefined);
   const match = matchQuery.data;
   const addMissing = useAddMissingToShoppingList(id, i18n.language);
-  const [added, setAdded] = useState<number | null>(null);
+  const addLine = useAddLineToShoppingList(id, i18n.language);
+  const [toast, setToast] = useState<string | null>(null);
+  // The bulk add was done for the Servings picked; picking others re-opens it.
+  const [addedList, setAddedList] = useState(false);
   const onAddMissing = () => {
     const count = linesToAdd(match).length;
-    addMissing.mutate(servings, { onSuccess: () => setAdded(count) });
+    addMissing.mutate(servings, {
+      onSuccess: () => {
+        setToast(t('recipes:pantry.added', { count }));
+        setAddedList(true);
+      },
+    });
   };
+  // Lines added by hand at the Servings picked; picking others starts over, like the bulk add.
+  const [handAddedLineIds, setHandAddedLineIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
+  const onAddLine = (
+    line: RecipeDetailLine,
+    done: { onAdded: () => void; onFailed: () => void },
+  ) =>
+    addLine.mutate(
+      { lineId: line.id, servings },
+      {
+        onSuccess: () => {
+          setToast(
+            t('recipes:pantry.addedLine', { name: line.ingredientName }),
+          );
+          setHandAddedLineIds((ids) => new Set(ids).add(line.id));
+          done.onAdded();
+        },
+        onError: done.onFailed,
+      },
+    );
+
+  const tabsId = useId();
+  const [tab, setTab] = useState<DetailTab>('ingredients');
+  const reduceMotion = usePrefersReducedMotion();
+  const openTab = (next: DetailTab) => {
+    if (next === tab) return;
+    setTab(next);
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  };
+  const toBuy = match?.shortOrMissingCount ?? 0;
 
   return (
     <>
-      <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
+      <RecipeHeader recipe={recipe} />
       <Stack spacing={2.5}>
         {query.error ? (
           <Alert>
@@ -59,55 +102,86 @@ function RecipeDetail({ id }: { id: string }) {
         {query.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipe ? (
           <>
-            <Stack spacing={0.5}>
-              {recipe.base ? (
-                <Link href={`/recipes/${recipe.base.id}`}>
-                  {t('recipes:variantOf', { base: recipe.base.title })}
-                </Link>
-              ) : null}
-              <OwnerBadge owner={recipe.owner} />
-              <RecipeMeta
-                cuisine={recipe.cuisine}
-                method={recipe.method}
-                prepMinutes={recipe.prepMinutes}
-                cookMinutes={recipe.cookMinutes}
-                difficulty={recipe.difficulty}
+            <RecipeHero recipe={recipe} servings={servings} />
+            <Box
+              sx={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                py: '8px',
+                bgcolor: tokens.color.bg,
+                // Paints the page background out to the screen edges.
+                boxShadow: `0 0 0 100vmax ${tokens.color.bg}`,
+                clipPath: 'inset(0 -100vmax)',
+              }}
+            >
+              <SegmentedTabs
+                label={recipe.title}
+                id={tabsId}
+                value={tab}
+                onChange={openTab}
+                tabs={[
+                  {
+                    value: 'ingredients',
+                    label: t('recipes:tabs.ingredients'),
+                    badge:
+                      toBuy > 0
+                        ? t('recipes:pantry.toBuy', { count: toBuy })
+                        : undefined,
+                  },
+                  { value: 'steps', label: t('recipes:tabs.steps') },
+                  { value: 'about', label: t('recipes:tabs.about') },
+                ]}
               />
-              {recipe.archived ? (
-                <Typography color="text.secondary">
-                  {t('recipes:archived')}
-                </Typography>
-              ) : null}
+            </Box>
+            <Stack
+              role="tabpanel"
+              id={segmentedTabPanelId(tabsId, tab)}
+              aria-labelledby={segmentedTabId(tabsId, tab)}
+              spacing={2.5}
+            >
+              {DETAIL_SECTIONS.filter((section) => section.tab === tab).map(
+                ({ key, Component }) => (
+                  <Component
+                    key={key}
+                    recipe={recipe}
+                    servings={servings}
+                    onServingsChange={(next) => {
+                      setPicked(next);
+                      setAddedList(false);
+                      setHandAddedLineIds(new Set());
+                    }}
+                    match={match}
+                    stale={matchQuery.isPlaceholderData}
+                    adding={addMissing.isPending || addLine.isPending}
+                    added={addedList}
+                    addError={
+                      addMissing.error
+                        ? translateApiError(t, addMissing.error)
+                        : null
+                    }
+                    onAddMissing={onAddMissing}
+                    addLine={{
+                      onAdd: onAddLine,
+                      handAddedIds: handAddedLineIds,
+                      error: addLine.error
+                        ? translateApiError(t, addLine.error)
+                        : null,
+                    }}
+                  />
+                ),
+              )}
             </Stack>
-            <RecipeActions recipe={recipe} />
-            {DETAIL_SECTIONS.map(({ key, Component }) => (
-              <Component
-                key={key}
-                recipe={recipe}
-                servings={servings}
-                onServingsChange={setPicked}
-                match={match}
-                stale={matchQuery.isPlaceholderData}
-                adding={addMissing.isPending}
-                addError={
-                  addMissing.error
-                    ? translateApiError(t, addMissing.error)
-                    : null
-                }
-                onAddMissing={onAddMissing}
-              />
-            ))}
           </>
         ) : null}
-        <Link href="/recipes">{t('recipes:backToList')}</Link>
       </Stack>
       <Snackbar
-        open={added !== null}
-        onClose={() => setAdded(null)}
+        open={toast !== null}
+        onClose={() => setToast(null)}
         bottom="aboveDock"
       >
         <Alert severity="success" role="status">
-          {t('recipes:pantry.added', { count: added ?? 0 })}
+          {toast}
         </Alert>
       </Snackbar>
     </>

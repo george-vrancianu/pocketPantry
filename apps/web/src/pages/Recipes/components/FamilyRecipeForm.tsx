@@ -33,7 +33,7 @@ type Props = {
   error: unknown;
   /** How many own Tips a saved Step carries, for the warning before removing it. */
   stepTipCount?: (stepId: string) => number;
-  /** A Variant draft brings its guidance, edited and saved with the document. */
+  /** The Recipe's guidance (a Variant draft's copy, or a blank one), edited and saved with the document. */
   guidance?: { initial: GuidanceDraft; momentOptions: MomentOption[] };
   onSave: (document: FamilyRecipeDocument, guidance?: GuidanceInput) => void;
   onCancel: () => void;
