@@ -11,6 +11,10 @@ export { Button, type ButtonProps } from './atoms/Button';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
+export {
+  InputAdornment,
+  type InputAdornmentProps,
+} from './atoms/InputAdornment';
 export { IconButton, type IconButtonProps } from './atoms/IconButton';
 export { Box, Stack, type BoxProps, type StackProps } from './atoms/Layout';
 export { Link, type LinkProps } from './atoms/Link';

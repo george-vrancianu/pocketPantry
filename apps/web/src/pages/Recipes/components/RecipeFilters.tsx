@@ -1,6 +1,7 @@
 import {
   Box,
   CloseIcon,
+  InputAdornment,
   SearchIcon,
   TextField,
   tokens,
@@ -47,7 +48,13 @@ export function RecipeFilters({ value, onChange, options }: Props) {
         value={value.search}
         slotProps={{
           htmlInput: { maxLength: 100 },
-          input: { startAdornment: <SearchIcon size={18} /> },
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon size={18} />
+              </InputAdornment>
+            ),
+          },
         }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
         sx={{ bgcolor: tokens.color.surface, borderRadius: '16px' }}
