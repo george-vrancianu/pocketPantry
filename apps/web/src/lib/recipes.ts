@@ -137,6 +137,16 @@ export type RecipeBrowse = {
   methodId: string;
 };
 
+/** Minutes for a Recipe (prep plus cook), or null when it has neither. */
+export function totalMinutes(times: {
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+}): number | null {
+  return times.prepMinutes === null && times.cookMinutes === null
+    ? null
+    : (times.prepMinutes ?? 0) + (times.cookMinutes ?? 0);
+}
+
 export const recipesQueryKey = ['recipes'] as const;
 
 /** Whether a search or a filter is active (the list then includes Variants). */
