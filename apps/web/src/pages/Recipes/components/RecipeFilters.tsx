@@ -1,6 +1,18 @@
-import { Stack, TextField } from '@pocket-pantry/ui';
+import {
+  Box,
+  CloseIcon,
+  SearchIcon,
+  TextField,
+  tokens,
+} from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { RecipeBrowse, RecipeFilterOptions } from '../../../lib/recipes';
+import {
+  isFiltering,
+  type RecipeBrowse,
+  type RecipeFilterOptions,
+} from '../../../lib/recipes';
+import { bleedSx } from './bleed';
 
 type Props = {
   value: RecipeBrowse;
@@ -8,57 +20,120 @@ type Props = {
   options: RecipeFilterOptions | undefined;
 };
 
-/** The search box and the Cuisine and Method pickers above the list. */
+const NONE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
+
+/** The search box and the Cuisine and Method chips, pinned to the top while the list scrolls. */
 export function RecipeFilters({ value, onChange, options }: Props) {
   const { t } = useTranslation('recipes');
+  const cuisines = options?.cuisines ?? [];
+  const methods = options?.methods ?? [];
+  const toggle = (key: 'cuisineId' | 'methodId', id: string) =>
+    onChange({ ...value, [key]: value[key] === id ? '' : id });
   return (
-    <Stack spacing={1.5}>
+    <Box
+      sx={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 2,
+        bgcolor: tokens.color.bg,
+        mx: bleedSx.mx,
+        px: bleedSx.px,
+        py: '8px',
+      }}
+    >
       <TextField
         type="search"
         label={t('search')}
         value={value.search}
-        slotProps={{ htmlInput: { maxLength: 100 } }}
+        slotProps={{
+          htmlInput: { maxLength: 100 },
+          input: { startAdornment: <SearchIcon size={18} /> },
+        }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
+        sx={{ bgcolor: tokens.color.surface, borderRadius: '16px' }}
       />
-      <Picker
-        label={t('cuisine')}
-        any={t('anyCuisine')}
-        value={value.cuisineId}
-        items={options?.cuisines ?? []}
-        onChange={(cuisineId) => onChange({ ...value, cuisineId })}
-      />
-      <Picker
-        label={t('method')}
-        any={t('anyMethod')}
-        value={value.methodId}
-        items={options?.methods ?? []}
-        onChange={(methodId) => onChange({ ...value, methodId })}
-      />
-    </Stack>
+      <Box
+        role="group"
+        aria-label={t('filters')}
+        sx={{
+          ...bleedSx,
+          mt: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          overflowX: 'auto',
+        }}
+      >
+        {isFiltering(value) ? (
+          <Chip onClick={() => onChange(NONE)}>
+            <CloseIcon size={14} />
+            {t('clear')}
+          </Chip>
+        ) : null}
+        {cuisines.map((cuisine) => (
+          <Chip
+            key={cuisine.id}
+            active={value.cuisineId === cuisine.id}
+            onClick={() => toggle('cuisineId', cuisine.id)}
+          >
+            {cuisine.name}
+          </Chip>
+        ))}
+        {cuisines.length > 0 && methods.length > 0 ? (
+          <Box
+            aria-hidden
+            sx={{
+              flexShrink: 0,
+              width: '1px',
+              height: 20,
+              bgcolor: tokens.color.line,
+            }}
+          />
+        ) : null}
+        {methods.map((method) => (
+          <Chip
+            key={method.id}
+            active={value.methodId === method.id}
+            onClick={() => toggle('methodId', method.id)}
+          >
+            {method.name}
+          </Chip>
+        ))}
+      </Box>
+    </Box>
   );
 }
 
-function Picker(props: {
-  label: string;
-  any: string;
-  value: string;
-  items: { id: string; name: string }[];
-  onChange: (id: string) => void;
+function Chip(props: {
+  active?: boolean;
+  onClick: () => void;
+  children: ReactNode;
 }) {
+  const { active } = props;
   return (
-    <TextField
-      select
-      label={props.label}
-      value={props.value}
-      onChange={(event) => props.onChange(event.target.value)}
-      slotProps={{ select: { native: true } }}
+    <Box
+      component="button"
+      type="button"
+      aria-pressed={active}
+      onClick={props.onClick}
+      sx={{
+        flexShrink: 0,
+        height: 32,
+        px: '12px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        borderRadius: `${tokens.radius.chip}px`,
+        border: `1px solid ${active ? tokens.color.ink : tokens.color.line}`,
+        bgcolor: active ? tokens.color.ink : tokens.color.surface,
+        color: active ? '#FFFFFF' : tokens.color.ink,
+        font: 'inherit',
+        fontSize: 12.5,
+        fontWeight: 600,
+        cursor: 'pointer',
+      }}
     >
-      <option value="">{props.any}</option>
-      {props.items.map((item) => (
-        <option key={item.id} value={item.id}>
-          {item.name}
-        </option>
-      ))}
-    </TextField>
+      {props.children}
+    </Box>
   );
 }

@@ -25,6 +25,8 @@ import {
   Apple,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
+  Search,
   Minus,
   GripVertical,
   TriangleAlert,
@@ -82,3 +84,5 @@ export const BackIcon = withDefaults(ChevronLeft);
 export const MoreIcon = withDefaults(Ellipsis);
 export const BranchIcon = withDefaults(GitBranch);
 export const CartIcon = withDefaults(ShoppingCart);
+export const ChevronRightIcon = withDefaults(ChevronRight);
+export const SearchIcon = withDefaults(Search);
