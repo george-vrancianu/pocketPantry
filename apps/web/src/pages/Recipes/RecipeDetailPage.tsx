@@ -47,7 +47,10 @@ function RecipeDetail({ id }: { id: string }) {
 
   return (
     <>
-      <AppScreenHeader title={recipe?.title ?? t('recipes:title')} />
+      <AppScreenHeader
+        title={recipe?.title ?? t('recipes:title')}
+        titleAdornment={recipe ? <OwnerBadge owner={recipe.owner} /> : null}
+      />
       <Stack spacing={2.5}>
         {query.error ? (
           <Alert>
@@ -65,7 +68,6 @@ function RecipeDetail({ id }: { id: string }) {
                   {t('recipes:variantOf', { base: recipe.base.title })}
                 </Link>
               ) : null}
-              <OwnerBadge owner={recipe.owner} />
               <RecipeMeta
                 cuisine={recipe.cuisine}
                 method={recipe.method}

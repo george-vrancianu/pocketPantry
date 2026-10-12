@@ -95,6 +95,18 @@ describe('RecipeDetailPage', () => {
     expect(screen.getByText('Whisk the eggs')).toBeInTheDocument();
   });
 
+  it('puts the family pill in the title of a Family Recipe only', async () => {
+    setup(recipe({ owner: 'family' }));
+    const heading = await screen.findByRole('heading', { name: /Omelette/ });
+    expect(within(heading).getByText("Your family's")).toBeInTheDocument();
+  });
+
+  it('shows no pill in the title of a Catalog Recipe', async () => {
+    setup(recipe({ owner: 'catalog' }));
+    const heading = await screen.findByRole('heading', { name: 'Omelette' });
+    expect(within(heading).queryByText("Your family's")).toBeNull();
+  });
+
   it('notes an archived Recipe', async () => {
     setup(recipe({ archived: true }));
     expect(
@@ -154,6 +166,11 @@ describe('RecipeDetailPage', () => {
       name: "Grandma's omelette",
     });
     expect(own.closest('li')!).toHaveTextContent("Your family's");
+    expect(
+      within(own.closest('li')!)
+        .getByText("Your family's")
+        .closest('[data-owner-pill]'),
+    ).toHaveStyle({ backgroundColor: 'rgb(243, 210, 122)' });
     expect(
       within(
         within(section).getByRole('link', { name: 'Frittata' }).closest('li')!,
