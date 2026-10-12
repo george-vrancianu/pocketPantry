@@ -69,6 +69,8 @@
   "stepTips": "Sfaturi pentru acest pas",
   "tipLabel": "Sfat",
   "family": {
+    "newRecipe": "Rețetă nouă",
+    "newRecipeHeading": "Rețetă nouă",
     "makeVariant": "Fă o variantă",
     "edit": "Editează",
     "delete": "Șterge",

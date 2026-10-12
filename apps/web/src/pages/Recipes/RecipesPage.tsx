@@ -1,4 +1,4 @@
-import { Alert, Spinner, Stack, Typography } from '@pocket-pantry/ui';
+import { Alert, PlusIcon, Spinner, Stack, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -26,7 +26,14 @@ export function RecipesPage() {
 
   return (
     <>
-      <AppScreenHeader title={t('recipes:title')} />
+      <AppScreenHeader
+        title={t('recipes:title')}
+        action={{
+          label: t('recipes:family.newRecipe'),
+          icon: <PlusIcon size={20} />,
+          href: '/recipes/new',
+        }}
+      />
       <Stack spacing={2.5}>
         <RecipeFilters
           value={browse}

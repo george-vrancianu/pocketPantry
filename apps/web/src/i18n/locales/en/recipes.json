@@ -67,6 +67,8 @@
   "stepTips": "Tips for this Step",
   "tipLabel": "Tip",
   "family": {
+    "newRecipe": "New Recipe",
+    "newRecipeHeading": "New Recipe",
     "makeVariant": "Make a Variant",
     "edit": "Edit",
     "delete": "Delete",

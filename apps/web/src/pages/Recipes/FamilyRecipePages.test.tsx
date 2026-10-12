@@ -7,7 +7,11 @@ import type {
   FamilyRecipeEdit,
 } from '../../lib/familyRecipes';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { EditFamilyRecipePage, NewVariantPage } from './FamilyRecipePages';
+import {
+  EditFamilyRecipePage,
+  NewRecipePage,
+  NewVariantPage,
+} from './FamilyRecipePages';
 
 const filters = {
   cuisines: [{ id: 'c-fr', name: 'French' }],
@@ -140,6 +144,7 @@ function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
     <Routes>
+      <Route path="/recipes/new" element={<NewRecipePage />} />
       <Route path="/recipes/:id/variant/new" element={<NewVariantPage />} />
       <Route path="/recipes/:id/edit" element={<EditFamilyRecipePage />} />
       <Route path="/recipes/:id" element={<p>Detail of the recipe</p>} />
@@ -148,6 +153,24 @@ function setup(route: string, routes: Parameters<typeof stubApi>[0]) {
   );
   return calls;
 }
+
+describe('NewRecipePage', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('starts blank and saves a Base Recipe with no parent', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    const title = await screen.findByLabelText(/^Title/);
+    expect(title).toHaveValue('');
+    await user.type(title, 'Gran stew');
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    expect(await screen.findByText('Detail of the recipe')).toBeVisible();
+    const post = calls.find((c) => c.key === 'POST /api/recipes');
+    expect(post?.body).toMatchObject({ parentId: null, title: 'Gran stew' });
+  });
+});
 
 describe('NewVariantPage', () => {
   afterEach(() => vi.unstubAllGlobals());

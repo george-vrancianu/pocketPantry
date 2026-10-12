@@ -67,6 +67,8 @@
   "stepTips": "Tips til dette trin",
   "tipLabel": "Tip",
   "family": {
+    "newRecipe": "Ny opskrift",
+    "newRecipeHeading": "Ny opskrift",
     "makeVariant": "Lav en variant",
     "edit": "Rediger",
     "delete": "Slet",
