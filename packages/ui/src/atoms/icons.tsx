@@ -25,6 +25,8 @@ import {
   Apple,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
+  Search,
   Minus,
   GripVertical,
   TriangleAlert,
@@ -74,3 +76,5 @@ export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
 export const SwapIcon = withDefaults(ArrowLeftRight);
 export const PeopleIcon = withDefaults(Users);
+export const ChevronRightIcon = withDefaults(ChevronRight);
+export const SearchIcon = withDefaults(Search);
