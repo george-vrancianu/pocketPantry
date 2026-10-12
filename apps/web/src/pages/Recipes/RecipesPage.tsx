@@ -1,16 +1,27 @@
-import { Alert, PlusIcon, Spinner, Stack, Typography } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import {
+  Alert,
+  Box,
+  PlusIcon,
+  Spinner,
+  Stack,
+  tokens,
+} from '@pocket-pantry/ui';
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { translateApiError } from '../../i18n/translateApiError';
+import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
+import { localIso } from '../../lib/pantry';
 import {
   isFiltering,
   useRecipeFilters,
   useRecipes,
   type RecipeBrowse,
 } from '../../lib/recipes';
-import { RecipeCard } from './components/RecipeCard';
+import { CanMakeStrip } from './components/CanMakeStrip';
 import { RecipeFilters } from './components/RecipeFilters';
+import { RecipeRow } from './components/RecipeRow';
+import { SectionLabel } from './components/SectionLabel';
 
 /** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
@@ -22,7 +33,13 @@ export function RecipesPage() {
   });
   const recipes = useRecipes(browse, i18n.language);
   const filters = useRecipeFilters(i18n.language);
+  const cookTonight = useCookTonight(i18n.language, localIso(new Date()));
+  const headingId = useId();
   const items = recipes.data ?? [];
+  const filtering = isFiltering(browse);
+  const cards = cookTonight.data?.cards ?? [];
+  const canMakeCards = cards.filter((card) => card.canMake);
+  const index = indexCards(cards);
 
   return (
     <>
@@ -34,7 +51,10 @@ export function RecipesPage() {
           href: '/recipes/new',
         }}
       />
-      <Stack spacing={2.5}>
+      <Stack spacing={1.5}>
+        {!filtering && canMakeCards.length > 0 ? (
+          <CanMakeStrip cards={canMakeCards} />
+        ) : null}
         <RecipeFilters
           value={browse}
           onChange={setBrowse}
@@ -45,19 +65,47 @@ export function RecipesPage() {
         ) : null}
         {recipes.isPending ? <Spinner label={t('common:loading')} /> : null}
         {recipes.data && items.length === 0 ? (
-          <Typography color="text.secondary">
-            {isFiltering(browse) ? t('recipes:noMatches') : t('recipes:empty')}
-          </Typography>
+          <Box sx={{ textAlign: 'center', py: '32px' }}>
+            <Box
+              sx={{
+                fontFamily: tokens.font.display,
+                fontSize: 18,
+                fontWeight: 700,
+              }}
+            >
+              {filtering ? t('recipes:noMatches') : t('recipes:empty')}
+            </Box>
+            <Box sx={{ fontSize: 14, color: tokens.color.muted, mt: '4px' }}>
+              {filtering ? t('recipes:noMatchesHint') : t('recipes:emptyHint')}
+            </Box>
+          </Box>
         ) : null}
-        <Stack
-          component="ul"
-          spacing={1.5}
-          sx={{ listStyle: 'none', m: 0, p: 0 }}
-        >
-          {items.map((recipe) => (
-            <RecipeCard key={recipe.id} recipe={recipe} />
-          ))}
-        </Stack>
+        {items.length > 0 ? (
+          <section>
+            <SectionLabel id={headingId} count={items.length}>
+              {filtering ? t('recipes:matches') : t('recipes:allRecipes')}
+            </SectionLabel>
+            <Box
+              component="ul"
+              aria-labelledby={headingId}
+              sx={{ listStyle: 'none', m: 0, p: 0 }}
+            >
+              {items.map((recipe) => (
+                <RecipeRow
+                  key={recipe.id}
+                  recipe={recipe}
+                  card={cardFor(index, recipe)}
+                  filtering={filtering}
+                />
+              ))}
+            </Box>
+            {!filtering ? (
+              <Box sx={{ fontSize: 13, color: tokens.color.muted, mt: '12px' }}>
+                {t('recipes:variantsHint')}
+              </Box>
+            ) : null}
+          </section>
+        ) : null}
       </Stack>
     </>
   );
