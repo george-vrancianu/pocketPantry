@@ -94,19 +94,19 @@
   "moreServings": "Flere portioner",
   "pantry": {
     "canMake": "Du kan lave den",
-    "missingCount_one": "Mangler {{count}} ingrediens",
-    "missingCount_other": "Mangler {{count}} ingredienser",
     "covered": "I dit spisekammer",
     "short": "Mangler {{amount}}",
     "missing": "Mangler",
     "basic": "Altid på lager",
-    "onList": "På din liste",
-    "addMissing": "Føj det manglende til indkøbslisten",
     "added_one": "{{count}} vare føjet til indkøbslisten",
     "added_other": "{{count}} varer føjet til indkøbslisten",
     "someOnList": "Nogle af dem er allerede på din liste; hvis du tilføjer dem igen, øges mængden.",
     "toBuy_one": "{{count}} at købe",
-    "toBuy_other": "{{count}} at købe"
+    "toBuy_other": "{{count}} at købe",
+    "addMissing_one": "Læg {{count}} manglende på indkøbslisten",
+    "addMissing_other": "Læg {{count}} manglende på indkøbslisten",
+    "addedList": "Lagt på listen",
+    "onListShort": "på listen"
   },
   "back": "Tilbage",
   "facts": {

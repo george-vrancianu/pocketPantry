@@ -10,7 +10,7 @@ import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
-import { LineStatus, PantrySummary } from './PantryStatus';
+import { AddMissing, PantryHeading } from './PantryStatus';
 import { Section } from './Section';
 import { ServingsStepper } from './Servings';
 import { StepList, TipCallout } from './StepList';
@@ -25,6 +25,8 @@ export type SectionProps = {
   /** The match shown is not for the Servings picked yet. */
   stale: boolean;
   adding: boolean;
+  /** The missing lines were added at the Servings picked. */
+  added: boolean;
   addError: string | null;
   onAddMissing: () => void;
 };
@@ -36,6 +38,7 @@ function IngredientsSection({
   match,
   stale,
   adding,
+  added,
   addError,
   onAddMissing,
 }: SectionProps) {
@@ -51,19 +54,25 @@ function IngredientsSection({
   return (
     <Section title={t('sections.ingredients')}>
       <Stack spacing={1.5}>
-        <ServingsStepper servings={servings} onChange={onServingsChange} />
+        <Stack
+          direction="row"
+          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <PantryHeading match={match} />
+          <Box sx={{ ml: 'auto' }}>
+            <ServingsStepper servings={servings} onChange={onServingsChange} />
+          </Box>
+        </Stack>
         <IngredientList
           lines={lines}
           aria-label={t('sections.ingredients')}
-          renderLineStatus={(line) => {
-            const status = byLine.get(line.id);
-            return status ? <LineStatus line={status} /> : null;
-          }}
+          pantryByLine={byLine}
         />
-        <PantrySummary
+        <AddMissing
           match={match}
           stale={stale}
           adding={adding}
+          added={added}
           error={addError}
           onAddMissing={onAddMissing}
         />
@@ -176,7 +185,7 @@ function WhatsDifferentSection({ recipe }: SectionProps) {
   const empty =
     diff.added.length + diff.removed.length + diff.swapped.length === 0;
   return (
-    <Section title={t('sections.whatsDifferent')}>
+    <Section card title={t('sections.whatsDifferent')}>
       <Stack spacing={1}>
         {empty ? (
           <Typography color="text.secondary">

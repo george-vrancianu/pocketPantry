@@ -96,22 +96,22 @@
   "moreServings": "Mai multe porții",
   "pantry": {
     "canMake": "Poți face rețeta",
-    "missingCount_one": "Lipsește {{count}} ingredient",
-    "missingCount_few": "Lipsesc {{count}} ingrediente",
-    "missingCount_other": "Lipsesc {{count}} de ingrediente",
     "covered": "În Cămară",
     "short": "Mai trebuie {{amount}}",
     "missing": "Lipsește",
     "basic": "Nelipsit din Cămară",
-    "onList": "Pe listă",
-    "addMissing": "Adaugă ce lipsește în lista de cumpărături",
     "added_one": "{{count}} articol adăugat în lista de cumpărături",
     "added_few": "{{count}} articole adăugate în lista de cumpărături",
     "added_other": "{{count}} de articole adăugate în lista de cumpărături",
     "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește.",
     "toBuy_one": "{{count}} de cumpărat",
     "toBuy_few": "{{count}} de cumpărat",
-    "toBuy_other": "{{count}} de cumpărat"
+    "toBuy_other": "{{count}} de cumpărat",
+    "addMissing_one": "Adaugă {{count}} ingredient lipsă în lista de cumpărături",
+    "addMissing_few": "Adaugă {{count}} ingrediente lipsă în lista de cumpărături",
+    "addMissing_other": "Adaugă {{count}} de ingrediente lipsă în lista de cumpărături",
+    "addedList": "Adăugat în listă",
+    "onListShort": "pe listă"
   },
   "back": "Înapoi",
   "facts": {

@@ -42,9 +42,16 @@ function RecipeDetail({ id }: { id: string }) {
   const match = matchQuery.data;
   const addMissing = useAddMissingToShoppingList(id, i18n.language);
   const [added, setAdded] = useState<number | null>(null);
+  // The bulk add was done for the Servings picked; picking others re-opens it.
+  const [addedList, setAddedList] = useState(false);
   const onAddMissing = () => {
     const count = linesToAdd(match).length;
-    addMissing.mutate(servings, { onSuccess: () => setAdded(count) });
+    addMissing.mutate(servings, {
+      onSuccess: () => {
+        setAdded(count);
+        setAddedList(true);
+      },
+    });
   };
 
   const tabsId = useId();
@@ -115,10 +122,14 @@ function RecipeDetail({ id }: { id: string }) {
                     key={key}
                     recipe={recipe}
                     servings={servings}
-                    onServingsChange={setPicked}
+                    onServingsChange={(next) => {
+                      setPicked(next);
+                      setAddedList(false);
+                    }}
                     match={match}
                     stale={matchQuery.isPlaceholderData}
                     adding={addMissing.isPending}
+                    added={addedList}
                     addError={
                       addMissing.error
                         ? translateApiError(t, addMissing.error)

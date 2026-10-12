@@ -55,6 +55,7 @@ export {
   BackIcon,
   MoreIcon,
   BranchIcon,
+  CartIcon,
 } from './atoms/icons';
 
 export {

@@ -36,6 +36,7 @@ import {
   ChevronLeft,
   Ellipsis,
   GitBranch,
+  ShoppingCart,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -80,3 +81,4 @@ export const PeopleIcon = withDefaults(Users);
 export const BackIcon = withDefaults(ChevronLeft);
 export const MoreIcon = withDefaults(Ellipsis);
 export const BranchIcon = withDefaults(GitBranch);
+export const CartIcon = withDefaults(ShoppingCart);
