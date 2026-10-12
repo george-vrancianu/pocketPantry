@@ -67,6 +67,9 @@
   "stepTips": "Tips for this Step",
   "tipLabel": "Tip",
   "family": {
+    "newRecipe": "New Recipe",
+    "newRecipeHeading": "New Recipe",
+    "newRecipeHint": "Add Tips to Steps after saving the Recipe.",
     "makeVariant": "Make a Variant",
     "edit": "Edit",
     "delete": "Delete",
@@ -82,7 +85,7 @@
     "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This Recipe cannot be edited.",
-    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Variant.",
+    "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
     "saved": "Recipe saved.",
     "viewRecipe": "View the Recipe"

@@ -44,6 +44,7 @@ function setup(list: (url: URL) => RecipeListItem[]) {
   renderWithProviders(
     <Routes>
       <Route path="/recipes" element={<RecipesPage />} />
+      <Route path="/recipes/new" element={<p>new recipe page</p>} />
       <Route path="/recipes/:id" element={<p>detail page</p>} />
     </Routes>,
     { route: '/recipes' },
@@ -59,6 +60,14 @@ describe('RecipesPage', () => {
     expect(await screen.findByText('Omelette')).toBeInTheDocument();
     expect(screen.getByText('3 Variants')).toBeInTheDocument();
     expect(screen.getByText('1 Variant')).toBeInTheDocument();
+  });
+
+  it('opens the New Recipe page from the header plus', async () => {
+    setup(() => [omelette]);
+    await userEvent.click(
+      await screen.findByRole('link', { name: 'New Recipe' }),
+    );
+    expect(screen.getByText('new recipe page')).toBeInTheDocument();
   });
 
   it('opens a Recipe when tapped', async () => {

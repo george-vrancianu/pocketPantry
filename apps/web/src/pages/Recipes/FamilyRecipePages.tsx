@@ -13,6 +13,7 @@ import {
   type FamilyRecipeDraft,
 } from '../../lib/familyRecipes';
 import { TipsEditor } from '../../components/recipeEditor/RecipeTips';
+import { emptyDraft } from '../../lib/recipeDraft';
 import { toGuidanceDraft, type GuidanceDraft } from '../../lib/guidanceDraft';
 import { useRecipe, type RecipeDetail } from '../../lib/recipes';
 import { FamilyGuidance, useMomentOptions } from './components/FamilyGuidance';
@@ -39,6 +40,45 @@ function namedGuidance(
       return pairing;
     }),
   };
+}
+
+/** "New Recipe": the Family Recipe form, blank; saved as a Base Recipe (no parent). */
+export function NewRecipePage() {
+  const { t, i18n } = useTranslation(['recipes', 'common', 'errors']);
+  const navigate = useNavigate();
+  const create = useCreateFamilyRecipe(i18n.language);
+  const momentOptions = useMomentOptions();
+
+  return (
+    <>
+      <AppScreenHeader title={t('recipes:family.newRecipeHeading')} />
+      <Stack spacing={2.5}>
+        <FamilyRecipeForm
+          heading={t('recipes:family.newRecipeHeading')}
+          description={t('recipes:family.newRecipeHint')}
+          initial={emptyDraft()}
+          saveLabel={t('recipes:family.save')}
+          saving={create.isPending}
+          error={create.error}
+          guidance={{
+            initial: toGuidanceDraft({
+              nutritionNote: null,
+              pairings: [],
+              eatingMoments: [],
+            }),
+            momentOptions,
+          }}
+          onSave={(document, guidance) =>
+            create.mutate(
+              { parentId: null, document: { ...document, guidance } },
+              { onSuccess: (saved) => navigate(`/recipes/${saved.id}`) },
+            )
+          }
+          onCancel={() => navigate('/recipes')}
+        />
+      </Stack>
+    </>
+  );
 }
 
 /** "Make a variant": the editor opens on a copy of the Recipe being viewed. */

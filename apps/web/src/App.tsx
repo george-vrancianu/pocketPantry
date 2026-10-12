@@ -10,6 +10,7 @@ import { FamilyPage } from './pages/Family/FamilyPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
 import {
   EditFamilyRecipePage,
+  NewRecipePage,
   NewVariantPage,
 } from './pages/Recipes/FamilyRecipePages';
 import { RecipeDetailPage } from './pages/Recipes/RecipeDetailPage';
@@ -49,6 +50,7 @@ export function App() {
           <Route path="scan/review" element={<ReviewOverviewPage />} />
           <Route path="scan/review/:scanId" element={<ReviewPage />} />
           <Route path="recipes" element={<RecipesPage />} />
+          <Route path="recipes/new" element={<NewRecipePage />} />
           <Route path="recipes/:id" element={<RecipeDetailPage />} />
           <Route path="recipes/:id/edit" element={<EditFamilyRecipePage />} />
           <Route path="recipes/:id/variant/new" element={<NewVariantPage />} />
