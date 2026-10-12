@@ -25,22 +25,24 @@ export type SectionProps = {
   match: PantryMatch | undefined;
   /** The match shown is not for the Servings picked yet. */
   stale: boolean;
+  /** Any add to the Shopping List is in flight, bulk or per line. */
   adding: boolean;
   /** The missing lines were added at the Servings picked. */
   added: boolean;
   addError: string | null;
   onAddMissing: () => void;
-  /** Adds one line at the Servings picked; `onAdded` or `onFailed` runs with the outcome. */
-  onAddLine: (
-    line: RecipeDetailLine,
-    done: { onAdded: () => void; onFailed: () => void },
-  ) => void;
-  /** Lines added by hand at the Servings picked. */
-  listedIds: ReadonlySet<string>;
-  /** Why the last per-line add failed. */
-  addLineError: string | null;
-  /** A per-line add is in flight. */
-  addingLine: boolean;
+  /** What the per-line add controls need. */
+  addLine: {
+    /** Adds one line at the Servings picked; `onAdded` or `onFailed` runs with the outcome. */
+    onAdd: (
+      line: RecipeDetailLine,
+      done: { onAdded: () => void; onFailed: () => void },
+    ) => void;
+    /** Lines added by hand at the Servings picked. */
+    handAddedIds: ReadonlySet<string>;
+    /** Why the last per-line add failed. */
+    error: string | null;
+  };
 };
 
 function IngredientsSection({
@@ -53,10 +55,7 @@ function IngredientsSection({
   added,
   addError,
   onAddMissing,
-  onAddLine,
-  addingLine,
-  listedIds,
-  addLineError,
+  addLine,
 }: SectionProps) {
   const { t } = useTranslation('recipes');
   // One row at a time; the section unmounts with its tab, so a tab switch clears both.
@@ -95,13 +94,13 @@ function IngredientsSection({
           selectedId={selectedId}
           onSelect={select}
           addedId={addedId}
-          listedIds={listedIds}
+          handAddedIds={addLine.handAddedIds}
           errorId={errorId}
-          error={addLineError}
-          addDisabled={stale || addingLine || adding}
+          error={addLine.error}
+          addDisabled={stale || adding}
           onAddLine={(line) => {
             setErrorId(null);
-            onAddLine(line, {
+            addLine.onAdd(line, {
               onAdded: () => setAddedId(line.id),
               onFailed: () => setErrorId(line.id),
             });
@@ -286,8 +285,7 @@ function VariantsSection({ recipe }: SectionProps) {
 export type DetailTab = 'ingredients' | 'steps' | 'about';
 
 /**
- * The detail page's sections by tab, top to bottom. A new section is one more entry,
- * e.g. guidance (Pairings, When to Eat, Nutrition) sits between What's different and Variants.
+ * The detail page's sections by tab, top to bottom. A new section is one more entry.
  */
 export const DETAIL_SECTIONS: {
   key: string;

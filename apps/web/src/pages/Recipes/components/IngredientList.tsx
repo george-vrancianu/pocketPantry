@@ -23,7 +23,7 @@ type Props = {
   /** The selected line was added to the Shopping List. */
   addedId: string | null;
   /** Lines added by hand at the Servings picked; their pill keeps the on-list hint. */
-  listedIds: ReadonlySet<string>;
+  handAddedIds: ReadonlySet<string>;
   /** The line whose last add failed, with the message to show under its button. */
   errorId: string | null;
   error: string | null;
@@ -70,7 +70,7 @@ function IngredientRow({
   const { t, i18n } = useTranslation(['recipes', 'common']);
   const reduceMotion = usePrefersReducedMotion();
   const amount = lineAmount(line, i18n.language, t);
-  const quiet = line.optional || pantry?.pantryBasic === true;
+  const optionalOrBasic = line.optional || pantry?.pantryBasic === true;
   const sub = [line.note, line.optional ? t('recipes:optional') : null]
     .filter(Boolean)
     .join(', ');
@@ -109,7 +109,7 @@ function IngredientRow({
             sx={{
               fontSize: 15,
               fontWeight: 600,
-              color: quiet ? tokens.color.muted : tokens.color.ink,
+              color: optionalOrBasic ? tokens.color.muted : tokens.color.ink,
             }}
           >
             {line.ingredientName}
@@ -124,8 +124,12 @@ function IngredientRow({
                   fontSize: 12.5,
                   fontWeight: 700,
                   fontVariantNumeric: 'tabular-nums',
-                  bgcolor: quiet ? tokens.color.okBg : tokens.color.accentTint,
-                  color: quiet ? tokens.color.muted : tokens.color.accent,
+                  bgcolor: optionalOrBasic
+                    ? tokens.color.okBg
+                    : tokens.color.accentTint,
+                  color: optionalOrBasic
+                    ? tokens.color.muted
+                    : tokens.color.accent,
                 }}
               >
                 {amount}
@@ -181,7 +185,7 @@ export function IngredientList({
   selectedId,
   onSelect,
   addedId,
-  listedIds,
+  handAddedIds,
   errorId,
   error,
   addDisabled,
@@ -209,7 +213,7 @@ export function IngredientList({
           pantry={pantryByLine.get(line.id)}
           selected={selectedId === line.id}
           added={addedId === line.id}
-          listed={listedIds.has(line.id)}
+          listed={handAddedIds.has(line.id)}
           error={errorId === line.id ? error : null}
           addDisabled={addDisabled}
           onToggle={() => onSelect(selectedId === line.id ? null : line.id)}
