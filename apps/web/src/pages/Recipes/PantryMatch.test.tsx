@@ -558,6 +558,256 @@ describe('Recipe detail Pantry status', () => {
   });
 });
 
+/** Renders the page with an add-line stub; once it was POSTed the match marks the `onList` line as on the list. */
+function setupLine({
+  lines,
+  onList = 'l-egg',
+  pendingServings,
+}: {
+  lines?: PantryLine[];
+  onList?: string;
+  pendingServings?: number;
+} = {}) {
+  let posted = false;
+  const { fetchMock, calls } = stubApi({
+    'GET /api/recipes/r1': () => Response.json(detail),
+    'GET /api/recipes/r1/pantry-match': (url) => {
+      const base = match({
+        servings: Number(url.searchParams.get('servings')),
+        ...(lines ? { lines } : {}),
+      });
+      return Response.json({
+        ...base,
+        lines: base.lines.map((l) =>
+          posted && l.lineId === onList ? { ...l, onShoppingList: true } : l,
+        ),
+      });
+    },
+    'POST /api/recipes/r1/add-line': () => {
+      posted = true;
+      return Response.json({ items: [{ id: 'i1' }] });
+    },
+  });
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+    pendingServings !== undefined &&
+    String(input).includes(`servings=${pendingServings}`)
+      ? gate.then(() => fetchMock(input, init))
+      : fetchMock(input, init),
+  );
+  renderWithProviders(
+    <Routes>
+      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+    </Routes>,
+    { route: '/recipes/r1' },
+  );
+  return { calls, release };
+}
+
+/** The row's toggle: the button carrying aria-pressed (the add button is a different button). */
+const toggle = (name: RegExp) => {
+  const list = screen.getByRole('list', { name: 'Ingredients' });
+  const found = within(list)
+    .getAllByRole('button')
+    .find(
+      (b) => b.hasAttribute('aria-pressed') && name.test(b.textContent ?? ''),
+    );
+  if (!found) throw new Error(`no toggle button for ${name}`);
+  return found;
+};
+
+const addLineCalls = (
+  calls: Array<{ key: string; search: string; body: unknown }>,
+) => calls.filter((c) => c.key === 'POST /api/recipes/r1/add-line');
+
+const addButton = (name: string) =>
+  screen.getByRole('button', { name: `Add ${name} to Shopping List` });
+
+describe('Recipe detail per-line add', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('makes every row a toggle that starts unpressed', async () => {
+    setupLine();
+    await screen.findByText('Short 150 g');
+    for (const name of [/Flour/, /Egg/, /Milk/, /Salt/, /Chives/]) {
+      expect(toggle(name)).toHaveAttribute('aria-pressed', 'false');
+    }
+  });
+
+  it('selects a row on click, one at a time, and deselects on a second click', async () => {
+    setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Flour/));
+    expect(toggle(/Flour/)).toHaveAttribute('aria-pressed', 'true');
+    await user.click(toggle(/Egg/));
+    expect(toggle(/Egg/)).toHaveAttribute('aria-pressed', 'true');
+    expect(toggle(/Flour/)).toHaveAttribute('aria-pressed', 'false');
+    await user.click(toggle(/Egg/));
+    expect(toggle(/Egg/)).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it.each([['{Enter}'], [' ']])(
+    'toggles a row with the key %j',
+    async (key) => {
+      setupLine();
+      const user = userEvent.setup();
+      await screen.findByText('Short 150 g');
+      toggle(/Egg/).focus();
+      await user.keyboard(key);
+      expect(toggle(/Egg/)).toHaveAttribute('aria-pressed', 'true');
+      await user.keyboard(key);
+      expect(toggle(/Egg/)).toHaveAttribute('aria-pressed', 'false');
+    },
+  );
+
+  it('clears the selection when switching tabs and back', async () => {
+    setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    await user.click(screen.getByRole('tab', { name: 'Steps' }));
+    await user.click(screen.getByRole('tab', { name: /^Ingredients/ }));
+    await screen.findByText('Short 150 g');
+    expect(toggle(/Egg/)).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
+    ).toBeNull();
+  });
+
+  it('shows the add button only on the selected row', async () => {
+    setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    expect(
+      screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
+    ).toBeNull();
+    await user.click(toggle(/Egg/));
+    expect(
+      within(row(/Egg/)).getByRole('button', {
+        name: 'Add Egg to Shopping List',
+      }),
+    ).toBeEnabled();
+    await user.click(toggle(/Egg/));
+    expect(
+      screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
+    ).toBeNull();
+  });
+
+  it('collapses the selected row pill to an icon that keeps the status as its name', async () => {
+    setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Flour/));
+    expect(within(row(/Flour/)).queryByText('Short 150 g')).toBeNull();
+    expect(
+      within(row(/Flour/)).getByLabelText('Short 150 g'),
+    ).toBeInTheDocument();
+    // Other rows keep their words.
+    expect(within(row(/Egg/)).getByText('Missing')).toBeInTheDocument();
+    await user.click(toggle(/Flour/));
+    expect(within(row(/Flour/)).getByText('Short 150 g')).toBeInTheDocument();
+  });
+
+  it('adds the line at the current Servings and shows the added state, toast and on-list pill', async () => {
+    const { calls } = setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    const post = await vi.waitFor(() => {
+      const c = addLineCalls(calls)[0];
+      expect(c).toBeDefined();
+      return c!;
+    });
+    expect(post.body).toMatchObject({ lineId: 'l-egg', servings: 2 });
+    expect(post.search).toContain('locale=en');
+    expect(
+      await screen.findByText('Added Egg to your Shopping List'),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Egg added to your Shopping List' }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
+    ).toBeNull();
+    // Deselecting restores the full pill, now with the on-list hint.
+    await user.click(toggle(/Egg/));
+    expect(await within(row(/Egg/)).findByText(/on list/)).toBeVisible();
+    expect(within(row(/Egg/)).getByText('Missing')).toBeInTheDocument();
+  });
+
+  it('sends the Servings picked with the stepper', async () => {
+    const { calls } = setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(screen.getByRole('button', { name: 'More Servings' }));
+    await screen.findByText('3 Servings');
+    await user.click(toggle(/Flour/));
+    await waitFor(() => expect(addButton('Flour')).toBeEnabled());
+    await user.click(addButton('Flour'));
+    const post = await vi.waitFor(() => {
+      const c = addLineCalls(calls)[0];
+      expect(c).toBeDefined();
+      return c!;
+    });
+    expect(post.body).toMatchObject({ lineId: 'l-flour', servings: 3 });
+  });
+
+  it.each([
+    ['a Pantry Basic', /Salt/, 'Salt', 'l-salt'],
+    ['an optional line', /Chives/, 'Chives', 'l-chive'],
+    ['a covered line', /Flour/, 'Flour', 'l-flour'],
+  ])('adds %s without filtering it out', async (_what, re, name, lineId) => {
+    const { calls } = setupLine({
+      lines: [
+        line({ lineId: 'l-flour', quantity: 200, unit: 'g' }),
+        line({ lineId: 'l-salt', pantryBasic: true, quantity: 1, unit: 'g' }),
+        line({ lineId: 'l-chive', status: 'missing', optional: true }),
+        line({ lineId: 'l-egg', status: 'missing', quantity: 2, unit: 'pcs' }),
+      ],
+    });
+    const user = userEvent.setup();
+    await screen.findByText('In your Pantry');
+    await user.click(toggle(re));
+    await user.click(addButton(name));
+    await vi.waitFor(() => expect(addLineCalls(calls)).toHaveLength(1));
+    expect(addLineCalls(calls)[0]!.body).toMatchObject({ lineId });
+  });
+
+  it('refetches the pantry match after the add', async () => {
+    const { calls } = setupLine();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    const matchFetches = () =>
+      calls.filter((c) => c.key === 'GET /api/recipes/r1/pantry-match').length;
+    const before = matchFetches();
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    await vi.waitFor(() => expect(matchFetches()).toBeGreaterThan(before));
+  });
+
+  it('disables the per-line add and Add missing while the match is stale', async () => {
+    const { release } = setupLine({ pendingServings: 3 });
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    const add = addButton('Egg');
+    const bulk = screen.getByRole('button', {
+      name: 'Add 3 missing to Shopping List',
+    });
+    expect(add).toBeEnabled();
+    expect(bulk).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'More Servings' }));
+    expect(add).toBeDisabled();
+    expect(bulk).toBeDisabled();
+    release();
+    await waitFor(() => expect(add).toBeEnabled());
+    expect(bulk).toBeEnabled();
+  });
+});
+
 /** Reads the cached English Shopping List and keeps a Suggestions query mounted. */
 function CacheProbe() {
   const queryClient = useQueryClient();

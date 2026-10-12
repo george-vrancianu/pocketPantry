@@ -121,7 +121,10 @@
     "addMissing_one": "Add {{count}} missing to Shopping List",
     "addMissing_other": "Add {{count}} missing to Shopping List",
     "addedList": "Added to your list",
-    "onListShort": "on list"
+    "onListShort": "on list",
+    "addLine": "Add {{name}} to Shopping List",
+    "lineAdded": "{{name}} added to your Shopping List",
+    "addedLine": "Added {{name}} to your Shopping List"
   },
   "back": "Back",
   "facts": {

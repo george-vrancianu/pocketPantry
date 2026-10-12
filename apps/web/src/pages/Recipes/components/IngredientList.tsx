@@ -1,4 +1,10 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  Button,
+  CartIcon,
+  tokens,
+  usePrefersReducedMotion,
+} from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
@@ -10,6 +16,14 @@ type Props = {
   lines: RecipeDetailLine[];
   /** The Pantry status of each line, by line id; a line without one shows none yet. */
   pantryByLine: Map<string, PantryLine>;
+  /** The line whose add button is showing, if any. */
+  selectedId: string | null;
+  onSelect: (lineId: string | null) => void;
+  /** The selected line was added to the Shopping List. */
+  addedId: string | null;
+  /** Adding is not possible now (stale match or an add in flight). */
+  addDisabled: boolean;
+  onAddLine: (line: RecipeDetailLine) => void;
   'aria-label': string;
 };
 
@@ -29,11 +43,22 @@ export function lineAmount(
 function IngredientRow({
   line,
   pantry,
+  selected,
+  added,
+  addDisabled,
+  onToggle,
+  onAdd,
 }: {
   line: RecipeDetailLine;
   pantry: PantryLine | undefined;
+  selected: boolean;
+  added: boolean;
+  addDisabled: boolean;
+  onToggle: () => void;
+  onAdd: () => void;
 }) {
   const { t, i18n } = useTranslation(['recipes', 'common']);
+  const reduceMotion = usePrefersReducedMotion();
   const amount = lineAmount(line, i18n.language, t);
   const quiet = line.optional || pantry?.pantryBasic === true;
   const sub = [line.note, line.optional ? t('recipes:optional') : null]
@@ -43,49 +68,91 @@ function IngredientRow({
     <Box
       component="li"
       sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        minHeight: 44,
-        px: '16px',
-        py: '10px',
         borderTop: `1px solid ${tokens.color.divider}`,
         '&:first-of-type': { borderTop: 0 },
+        bgcolor: selected ? tokens.color.accentTint : undefined,
       }}
     >
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box
-          sx={{
-            fontSize: 15,
-            fontWeight: 600,
-            color: quiet ? tokens.color.muted : tokens.color.ink,
-          }}
-        >
-          {line.ingredientName}
-          {amount ? (
-            <Box
-              component="span"
-              sx={{
-                ml: '7px',
-                px: '7px',
-                py: '1px',
-                borderRadius: '6px',
-                fontSize: 12.5,
-                fontWeight: 700,
-                fontVariantNumeric: 'tabular-nums',
-                bgcolor: quiet ? tokens.color.okBg : tokens.color.accentTint,
-                color: quiet ? tokens.color.muted : tokens.color.accent,
-              }}
-            >
-              {amount}
-            </Box>
+      <Box
+        component="button"
+        type="button"
+        aria-pressed={selected}
+        onClick={onToggle}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          width: '100%',
+          minHeight: 44,
+          px: '16px',
+          py: '10px',
+          border: 0,
+          bgcolor: 'transparent',
+          font: 'inherit',
+          textAlign: 'left',
+          color: 'inherit',
+          cursor: 'pointer',
+        }}
+      >
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Box
+            sx={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: quiet ? tokens.color.muted : tokens.color.ink,
+            }}
+          >
+            {line.ingredientName}
+            {amount ? (
+              <Box
+                component="span"
+                sx={{
+                  ml: '7px',
+                  px: '7px',
+                  py: '1px',
+                  borderRadius: '6px',
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  fontVariantNumeric: 'tabular-nums',
+                  bgcolor: quiet ? tokens.color.okBg : tokens.color.accentTint,
+                  color: quiet ? tokens.color.muted : tokens.color.accent,
+                }}
+              >
+                {amount}
+              </Box>
+            ) : null}
+          </Box>
+          {sub ? (
+            <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{sub}</Box>
           ) : null}
         </Box>
-        {sub ? (
-          <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{sub}</Box>
-        ) : null}
+        {pantry ? <LineStatusPill line={pantry} iconOnly={selected} /> : null}
       </Box>
-      {pantry ? <LineStatusPill line={pantry} /> : null}
+      {selected ? (
+        <Box
+          sx={{
+            px: '16px',
+            pb: '10px',
+            // Slides in only; leaving is instant. No motion at all under reduce-motion.
+            '@keyframes pp-line-add-in': {
+              from: { opacity: 0, transform: 'translateY(-6px)' },
+              to: { opacity: 1, transform: 'none' },
+            },
+            animation: reduceMotion ? 'none' : 'pp-line-add-in 180ms ease-out',
+          }}
+        >
+          <Button
+            fullWidth
+            startIcon={<CartIcon size={18} />}
+            disabled={added || addDisabled}
+            onClick={onAdd}
+          >
+            {added
+              ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
+              : t('recipes:pantry.addLine', { name: line.ingredientName })}
+          </Button>
+        </Box>
+      ) : null}
     </Box>
   );
 }
@@ -94,6 +161,11 @@ function IngredientRow({
 export function IngredientList({
   lines,
   pantryByLine,
+  selectedId,
+  onSelect,
+  addedId,
+  addDisabled,
+  onAddLine,
   'aria-label': label,
 }: Props) {
   return (
@@ -115,6 +187,11 @@ export function IngredientList({
           key={line.id}
           line={line}
           pantry={pantryByLine.get(line.id)}
+          selected={selectedId === line.id}
+          added={addedId === line.id}
+          addDisabled={addDisabled}
+          onToggle={() => onSelect(selectedId === line.id ? null : line.id)}
+          onAdd={() => onAddLine(line)}
         />
       ))}
     </Box>

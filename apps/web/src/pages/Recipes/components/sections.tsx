@@ -1,10 +1,11 @@
 import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
   DiffEntry,
   PantryMatch,
   RecipeDetail,
+  RecipeDetailLine,
 } from '../../../lib/recipes';
 import { GuidanceSection } from './GuidanceSection';
 import { IngredientList, lineAmount } from './IngredientList';
@@ -29,6 +30,10 @@ export type SectionProps = {
   added: boolean;
   addError: string | null;
   onAddMissing: () => void;
+  /** Adds one line at the Servings picked; `onAdded` runs once it is on the list. */
+  onAddLine: (line: RecipeDetailLine, onAdded: () => void) => void;
+  /** A per-line add is in flight. */
+  addingLine: boolean;
 };
 
 function IngredientsSection({
@@ -41,8 +46,17 @@ function IngredientsSection({
   added,
   addError,
   onAddMissing,
+  onAddLine,
+  addingLine,
 }: SectionProps) {
   const { t } = useTranslation('recipes');
+  // One row at a time; the section unmounts with its tab, so a tab switch clears both.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [addedId, setAddedId] = useState<string | null>(null);
+  const select = (lineId: string | null) => {
+    setSelectedId(lineId);
+    setAddedId(null);
+  };
   const byLine = new Map(match?.lines.map((line) => [line.lineId, line]));
   // The match carries quantities scaled to its Servings; the Recipe's own are for the first load.
   const lines = recipe.lines.map((line) => {
@@ -67,6 +81,11 @@ function IngredientsSection({
           lines={lines}
           aria-label={t('sections.ingredients')}
           pantryByLine={byLine}
+          selectedId={selectedId}
+          onSelect={select}
+          addedId={addedId}
+          addDisabled={stale || addingLine}
+          onAddLine={(line) => onAddLine(line, () => setAddedId(line.id))}
         />
         <AddMissing
           match={match}

@@ -128,7 +128,10 @@
     "addMissing_few": "Adaugă {{count}} ingrediente lipsă în lista de cumpărături",
     "addMissing_other": "Adaugă {{count}} de ingrediente lipsă în lista de cumpărături",
     "addedList": "Adăugat în listă",
-    "onListShort": "pe listă"
+    "onListShort": "pe listă",
+    "addLine": "Adaugă {{name}} în lista de cumpărături",
+    "lineAdded": "{{name}} adăugat în lista de cumpărături",
+    "addedLine": "{{name}} adăugat în lista de cumpărături"
   },
   "back": "Înapoi",
   "facts": {
