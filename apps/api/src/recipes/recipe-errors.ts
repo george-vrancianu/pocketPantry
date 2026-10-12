@@ -20,6 +20,7 @@ import { ApiException } from '../common/api-exception';
  * - `recipes.bad_step_anchor` (400): a Tip's step is not a Step of the same Recipe.
  * - `recipes.bad_hidden_tip` (400): hiding a Tip that is not a Recipe-level Tip of the Variant's base,
  *   or hiding on a Base Recipe.
+ * - `recipes.line_not_found` (404): add-line named a line id that is not on this Recipe.
  * - `recipes.tip_not_found` (404): no such Tip on this Recipe.
  * - `recipes.tips_too_many` (400, `{ max }`): the Recipe already has the most Tips it can hold.
  * - `recipes.tip_order_stale` (409): the Tip order does not name every Tip of the Recipe.
@@ -36,6 +37,9 @@ import { ApiException } from '../common/api-exception';
  * - `catalog.not_found` (404, `{ entity }`): unknown Ingredient, Cuisine or Method.
  */
 export const recipeNotFound = () => new ApiException(404, 'recipes.not_found');
+
+export const recipeLineNotFound = () =>
+  new ApiException(404, 'recipes.line_not_found');
 
 export const nothingToTranslate = () =>
   new ApiException(400, 'recipes.nothing_to_translate');

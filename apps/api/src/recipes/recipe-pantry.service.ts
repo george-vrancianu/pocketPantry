@@ -15,7 +15,10 @@ import {
   type MergeItemInput,
 } from '../shopping/shopping.service';
 import { PantryMatchingService } from './matching/pantry-matching.service';
+import type { LineMatch } from './matching/pantry-match';
+import { recipeLineNotFound } from './recipe-errors';
 import type {
+  AddLineBody,
   AddMissingBody,
   PantryLineView,
   PantryMatchQuery,
@@ -68,17 +71,58 @@ export class RecipePantryService {
     body: AddMissingBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
+    return this.addFromMatch(
+      memberId,
+      recipeId,
+      body,
+      locale,
+      (line) =>
+        !line.optional && !line.pantryBasic && line.status !== 'covered',
+    );
+  }
+
+  /**
+   * Adds one line of the Recipe, at the Servings asked for: a short line's
+   * shortfall, otherwise its whole quantity (none for a quantity-less line).
+   * Unlike add-missing it takes Pantry Basics, optional and covered lines too.
+   */
+  async addLine(
+    memberId: string,
+    recipeId: string,
+    body: AddLineBody,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    return this.addFromMatch(
+      memberId,
+      recipeId,
+      body,
+      locale,
+      (line) => line.lineId === body.lineId,
+      () => recipeLineNotFound(),
+    );
+  }
+
+  /**
+   * Matches the Recipe, turns the chosen lines into Shopping Items and adds
+   * them with the Recipe as Source Recipe. A short line adds the shortfall; any
+   * other line the whole quantity.
+   */
+  private async addFromMatch(
+    memberId: string,
+    recipeId: string,
+    body: AddMissingBody,
+    locale: CatalogLocale,
+    chosen: (line: LineMatch) => boolean,
+    onNoneChosen?: () => Error,
+  ): Promise<ShoppingListView> {
     const familyId = await this.settings.familyIdOf(memberId);
     const match = await this.matching.matchRecipeFor(familyId, recipeId, {
       today: body.today ?? utcToday(),
       servings: body.servings,
     });
-    const items: MergeItemInput[] = [];
-    for (const line of match.lines) {
-      if (line.optional || line.pantryBasic || line.status === 'covered') {
-        continue;
-      }
-      // A short line adds the shortfall; a missing line the whole quantity.
+    const lines = match.lines.filter(chosen);
+    if (lines.length === 0 && onNoneChosen) throw onNoneChosen();
+    const items: MergeItemInput[] = lines.map((line) => {
       const amount =
         line.status === 'short' && line.shortfall
           ? line.shortfall
@@ -88,13 +132,13 @@ export class RecipePantryService {
       if (amount && exceedsMaxQuantity(amount.quantity)) {
         throw new ApiException(400, 'shopping.quantity_too_large');
       }
-      items.push({
+      return {
         ...(line.ingredientId !== null
           ? { ingredientId: line.ingredientId }
           : { name: line.name ?? '', source: 'recipe' as const }),
         ...(amount ?? {}),
-      });
-    }
+      };
+    });
     return this.shopping.addItemsFromRecipe(memberId, recipeId, items, locale);
   }
 

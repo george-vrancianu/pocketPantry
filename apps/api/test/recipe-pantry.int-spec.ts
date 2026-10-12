@@ -9,6 +9,7 @@ import {
   ingredients,
   recipeIngredientLines,
   recipes,
+  shoppingItems,
   shoppingItemSourceRecipes,
   user,
 } from '../src/database/schema';
@@ -177,6 +178,9 @@ describe('Recipe Pantry matching (integration)', () => {
 
   afterAll(async () => {
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
+    await database
+      .delete(shoppingItems)
+      .where(eq(shoppingItems.ingredientId, pantryBasicId));
     await database.delete(ingredients).where(eq(ingredients.id, pantryBasicId));
     await app.close();
   });
@@ -386,41 +390,43 @@ describe('Recipe Pantry matching (integration)', () => {
     });
   });
 
-  describe('POST /api/recipes/:id/add-missing', () => {
-    // Each test gets its own Family, so Batches and the list start empty.
-    async function newMember(label: string) {
-      const email = `pantry-${label}-${stamp}@example.com`;
-      const cookie = await signUp(app, email, label);
-      const [{ familyId }] = await database
-        .select({ familyId: user.familyId })
-        .from(user)
-        .where(eq(user.email, email));
-      const recipesApi = client(app, cookie, '/api/recipes');
-      const list = client(app, cookie, '/api/shopping-list');
-      return {
-        familyId,
-        add: (id: string, body: object = { today }) =>
-          recipesApi.post(`/${id}/add-missing?locale=en`, body),
-        items: async () =>
-          (
-            (await list.get('?locale=en').expect(200)).body as ListView
-          ).groups.flatMap((g) => g.items),
-        check: (id: string) =>
-          list.patch(`/items/${id}`, { checked: true }).expect(200),
-        addItem: (body: object) =>
-          list.post('/items?locale=en', body).expect(200),
-      };
-    }
-    const sourcesOf = async (recipeId: string) =>
-      (
-        await database
-          .select({ itemId: shoppingItemSourceRecipes.shoppingItemId })
-          .from(shoppingItemSourceRecipes)
-          .where(eq(shoppingItemSourceRecipes.recipeId, recipeId))
-      ).map((row) => row.itemId);
-    const summary = (items: ListView['groups'][number]['items']) =>
-      items.map((i) => [i.name, i.quantity, i.unit] as const);
+  // Each test gets its own Family, so Batches and the list start empty.
+  async function newMember(label: string) {
+    const email = `pantry-${label}-${stamp}@example.com`;
+    const cookie = await signUp(app, email, label);
+    const [{ familyId }] = await database
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(eq(user.email, email));
+    const recipesApi = client(app, cookie, '/api/recipes');
+    const list = client(app, cookie, '/api/shopping-list');
+    return {
+      familyId,
+      add: (id: string, body: object = { today }) =>
+        recipesApi.post(`/${id}/add-missing?locale=en`, body),
+      addLine: (id: string, body: object) =>
+        recipesApi.post(`/${id}/add-line?locale=en`, body),
+      items: async () =>
+        (
+          (await list.get('?locale=en').expect(200)).body as ListView
+        ).groups.flatMap((g) => g.items),
+      check: (id: string) =>
+        list.patch(`/items/${id}`, { checked: true }).expect(200),
+      addItem: (body: object) =>
+        list.post('/items?locale=en', body).expect(200),
+    };
+  }
+  const sourcesOf = async (recipeId: string) =>
+    (
+      await database
+        .select({ itemId: shoppingItemSourceRecipes.shoppingItemId })
+        .from(shoppingItemSourceRecipes)
+        .where(eq(shoppingItemSourceRecipes.recipeId, recipeId))
+    ).map((row) => row.itemId);
+  const summary = (items: ListView['groups'][number]['items']) =>
+    items.map((i) => [i.name, i.quantity, i.unit] as const);
 
+  describe('POST /api/recipes/:id/add-missing', () => {
     it('adds the shortfall, the full missing quantity and a quantity-less item, with the Recipe as Source Recipe', async () => {
       const m = await newMember('add');
       const r = await makeRecipe([
@@ -562,6 +568,161 @@ describe('Recipe Pantry matching (integration)', () => {
       const own = await makeRecipe([{ ingredientId: milk }]);
       await m.add(own.id, { today: 'soon' }).expect(400);
       await m.add(own.id, { today, servings: 0 }).expect(400);
+    });
+  });
+
+  describe('POST /api/recipes/:id/add-line', () => {
+    it('adds the shortfall of a short line and the full quantity of a missing and a covered line, returning the Shopping List', async () => {
+      const m = await newMember('line-basic');
+      const r = await makeRecipe([
+        { ingredientId: feta, quantity: 200, unit: 'g' }, // short by 150 g
+        { ingredientId: milk, quantity: 500, unit: 'ml' }, // missing
+        { ingredientId: butter, quantity: 50, unit: 'g' }, // covered
+      ]);
+      await stock(m.familyId, feta, { quantity: 50, unit: 'g' });
+      await stock(m.familyId, butter, { quantity: 1, unit: 'kg' });
+
+      const view = (
+        await m.addLine(r.id, { lineId: r.lineIds[0], today }).expect(200)
+      ).body as ListView;
+      expect(summary(view.groups.flatMap((g) => g.items))).toEqual([
+        ['Feta', 150, 'g'],
+      ]);
+      await m.addLine(r.id, { lineId: r.lineIds[1], today }).expect(200);
+      await m.addLine(r.id, { lineId: r.lineIds[2], today }).expect(200);
+      expect(summary(await m.items()).sort()).toEqual(
+        [
+          ['Feta', 150, 'g'],
+          ['Milk', 500, 'ml'],
+          ['Butter', 50, 'g'],
+        ].sort(),
+      );
+    });
+
+    it('adds a Pantry Basic line, an optional line and a quantity-less line', async () => {
+      const m = await newMember('line-special');
+      const r = await makeRecipe([
+        { ingredientId: pantryBasicId, quantity: 1, unit: 'l' },
+        { ingredientId: carrot, quantity: 2, unit: 'pcs', optional: true },
+        { ingredientId: parmesan },
+      ]);
+      for (const lineId of r.lineIds) {
+        await m.addLine(r.id, { lineId, today }).expect(200);
+      }
+      expect(summary(await m.items()).sort()).toEqual(
+        [
+          [`Pantry Basic ${stamp}`, 1, 'l'],
+          ['Carrot', 2, 'pcs'],
+          ['Parmesan', null, null],
+        ].sort(),
+      );
+    });
+
+    it('scales to the Servings asked for and records the Recipe as Source Recipe', async () => {
+      const m = await newMember('line-scale');
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 250, unit: 'ml' },
+        { ingredientId: butter, quantity: 50, unit: 'g' },
+      ]);
+      await m
+        .addLine(r.id, { lineId: r.lineIds[0], today, servings: 6 })
+        .expect(200);
+      expect(summary(await m.items())).toEqual([['Milk', 750, 'ml']]);
+      const [milkItem] = await m.items();
+      // Only the added line's item has the Recipe as Source Recipe.
+      expect(await sourcesOf(r.id)).toEqual([milkItem.id]);
+    });
+
+    it('adds an Unmatched line of a Family Recipe by name', async () => {
+      const m = await newMember('line-unmatched');
+      const r = await makeRecipe(
+        [{ name: `Zzq Dulse ${stamp}`, quantity: 3, unit: 'g' }],
+        { familyId: m.familyId },
+      );
+      const view = (
+        await m.addLine(r.id, { lineId: r.lineIds[0], today }).expect(200)
+      ).body as ListView;
+      const items = view.groups.flatMap((g) => g.items);
+      expect(items).toHaveLength(1);
+      expect(items[0]).toMatchObject({
+        name: `Zzq Dulse ${stamp}`,
+        quantity: 3,
+        unit: 'g',
+        unmatched: true,
+      });
+      expect(await sourcesOf(r.id)).toEqual([items[0].id]);
+    });
+
+    it('merges into an item with the same unit, keeps another unit apart, and wants a checked item again', async () => {
+      const m = await newMember('line-merge');
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 300, unit: 'ml' },
+        { ingredientId: milk, quantity: 1, unit: 'l' },
+      ]);
+      await m.addItem({ ingredientId: milk, quantity: 200, unit: 'ml' });
+      const [existing] = await m.items();
+      await m.check(existing.id);
+
+      await m.addLine(r.id, { lineId: r.lineIds[0], today }).expect(200);
+      const [merged] = await m.items();
+      expect(merged).toMatchObject({
+        id: existing.id,
+        quantity: 500,
+        checked: false,
+      });
+      expect(await sourcesOf(r.id)).toEqual([existing.id]);
+
+      await m.addLine(r.id, { lineId: r.lineIds[1], today }).expect(200);
+      expect(summary(await m.items()).sort()).toEqual(
+        [
+          ['Milk', 500, 'ml'],
+          ['Milk', 1, 'l'],
+        ].sort(),
+      );
+    });
+
+    it('refuses a total above the quantity cap and changes nothing', async () => {
+      const m = await newMember('line-cap');
+      await m.addItem({ ingredientId: milk, quantity: 999_999, unit: 'ml' });
+      const r = await makeRecipe([
+        { ingredientId: milk, quantity: 5, unit: 'ml' },
+      ]);
+      const res = await m.addLine(r.id, { lineId: r.lineIds[0], today });
+      expect(res.status).toBe(400);
+      expect(code(res)).toBe('shopping.quantity_too_large');
+      expect(summary(await m.items())).toEqual([['Milk', 999_999, 'ml']]);
+      expect(await sourcesOf(r.id)).toEqual([]);
+    });
+
+    it("hides other Families' Recipes, rejects an unknown line and validates the body", async () => {
+      const m = await newMember('line-guard');
+      const theirs = await makeRecipe([{ ingredientId: milk }], {
+        familyId: anaFamily,
+      });
+      const hidden = await m.addLine(theirs.id, {
+        lineId: theirs.lineIds[0],
+        today,
+      });
+      expect(hidden.status).toBe(404);
+      expect(code(hidden)).toBe('recipes.not_found');
+
+      const own = await makeRecipe([{ ingredientId: milk }]);
+      const other = await makeRecipe([{ ingredientId: milk }]);
+      await m.addLine(own.id, { lineId: other.lineIds[0], today }).expect(404);
+      await m
+        .addLine(own.id, { lineId: crypto.randomUUID(), today })
+        .expect(404);
+      expect(await m.items()).toEqual([]);
+
+      const lineId = own.lineIds[0];
+      await m.addLine(own.id, { today }).expect(400);
+      await m.addLine(own.id, { lineId: 42, today }).expect(400);
+      await m.addLine(own.id, { lineId: 'not-a-uuid', today }).expect(400);
+      await m.addLine(own.id, { lineId, today: 'soon' }).expect(400);
+      await m.addLine(own.id, { lineId, today, servings: 0 }).expect(400);
+      await m.addLine(own.id, { lineId, today, servings: 101 }).expect(400);
+      await m.addLine(own.id, { lineId, today, servings: 2.5 }).expect(400);
+      expect(await m.items()).toEqual([]);
     });
   });
 });
