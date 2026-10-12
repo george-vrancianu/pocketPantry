@@ -121,7 +121,10 @@
     "addMissing_one": "Læg {{count}} manglende på indkøbslisten",
     "addMissing_other": "Læg {{count}} manglende på indkøbslisten",
     "addedList": "Lagt på listen",
-    "onListShort": "på listen"
+    "onListShort": "på listen",
+    "addLine": "Læg {{name}} på indkøbslisten",
+    "lineAdded": "{{name}} er lagt på indkøbslisten",
+    "addedLine": "{{name}} lagt på indkøbslisten"
   },
   "back": "Tilbage",
   "facts": {

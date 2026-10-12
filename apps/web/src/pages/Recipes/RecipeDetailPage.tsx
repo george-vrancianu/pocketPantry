@@ -16,10 +16,12 @@ import { useParams } from 'react-router-dom';
 import { translateApiError } from '../../i18n/translateApiError';
 import { ApiError } from '../../lib/api';
 import {
+  useAddLineToShoppingList,
   useAddMissingToShoppingList,
   useRecipe,
   useRecipePantryMatch,
 } from '../../lib/recipes';
+import type { RecipeDetailLine } from '../../lib/recipes';
 import { RecipeHero } from './components/RecipeHero';
 import { RecipeHeader } from './components/RecipeHeader';
 import { linesToAdd } from './components/PantryStatus';
@@ -41,18 +43,38 @@ function RecipeDetail({ id }: { id: string }) {
   const matchQuery = useRecipePantryMatch(id, servings, recipe !== undefined);
   const match = matchQuery.data;
   const addMissing = useAddMissingToShoppingList(id, i18n.language);
-  const [added, setAdded] = useState<number | null>(null);
+  const addLine = useAddLineToShoppingList(id, i18n.language);
+  const [toast, setToast] = useState<string | null>(null);
   // The bulk add was done for the Servings picked; picking others re-opens it.
   const [addedList, setAddedList] = useState(false);
   const onAddMissing = () => {
     const count = linesToAdd(match).length;
     addMissing.mutate(servings, {
       onSuccess: () => {
-        setAdded(count);
+        setToast(t('recipes:pantry.added', { count }));
         setAddedList(true);
       },
     });
   };
+  // Lines added by hand at the Servings picked; picking others starts over, like the bulk add.
+  const [listedIds, setListedIds] = useState<ReadonlySet<string>>(new Set());
+  const onAddLine = (
+    line: RecipeDetailLine,
+    done: { onAdded: () => void; onFailed: () => void },
+  ) =>
+    addLine.mutate(
+      { lineId: line.id, servings },
+      {
+        onSuccess: () => {
+          setToast(
+            t('recipes:pantry.addedLine', { name: line.ingredientName }),
+          );
+          setListedIds((ids) => new Set(ids).add(line.id));
+          done.onAdded();
+        },
+        onError: done.onFailed,
+      },
+    );
 
   const tabsId = useId();
   const [tab, setTab] = useState<DetailTab>('ingredients');
@@ -125,10 +147,11 @@ function RecipeDetail({ id }: { id: string }) {
                     onServingsChange={(next) => {
                       setPicked(next);
                       setAddedList(false);
+                      setListedIds(new Set());
                     }}
                     match={match}
                     stale={matchQuery.isPlaceholderData}
-                    adding={addMissing.isPending}
+                    adding={addMissing.isPending || addLine.isPending}
                     added={addedList}
                     addError={
                       addMissing.error
@@ -136,6 +159,12 @@ function RecipeDetail({ id }: { id: string }) {
                         : null
                     }
                     onAddMissing={onAddMissing}
+                    onAddLine={onAddLine}
+                    addingLine={addLine.isPending || addMissing.isPending}
+                    listedIds={listedIds}
+                    addLineError={
+                      addLine.error ? translateApiError(t, addLine.error) : null
+                    }
                   />
                 ),
               )}
@@ -144,12 +173,12 @@ function RecipeDetail({ id }: { id: string }) {
         ) : null}
       </Stack>
       <Snackbar
-        open={added !== null}
-        onClose={() => setAdded(null)}
+        open={toast !== null}
+        onClose={() => setToast(null)}
         bottom="aboveDock"
       >
         <Alert severity="success" role="status">
-          {t('recipes:pantry.added', { count: added ?? 0 })}
+          {toast}
         </Alert>
       </Snackbar>
     </>

@@ -36,7 +36,17 @@ function pillTone(line: PantryLine) {
 }
 
 /** A line's Pantry status as a pill: icon and words, so colour is never the only cue. */
-export function LineStatusPill({ line }: { line: PantryLine }) {
+export function LineStatusPill({
+  line,
+  iconOnly = false,
+  added = false,
+}: {
+  line: PantryLine;
+  /** The Member added this line to the Shopping List by hand; shows the hint whatever its status. */
+  added?: boolean;
+  /** Collapses to the icon; the words become its accessible name. */
+  iconOnly?: boolean;
+}) {
   const { t, i18n } = useTranslation(['recipes', 'common']);
   const label = line.pantryBasic
     ? t('recipes:pantry.basic')
@@ -51,6 +61,31 @@ export function LineStatusPill({ line }: { line: PantryLine }) {
         })
       : t(`recipes:pantry.${line.status}`);
   const tone = pillTone(line);
+  const onList = (line.onShoppingList && line.status !== 'covered') || added;
+  if (iconOnly) {
+    return (
+      <Box
+        component="span"
+        role="img"
+        aria-label={
+          onList ? `${label}, ${t('recipes:pantry.onListShort')}` : label
+        }
+        sx={{
+          display: 'inline-flex',
+          p: '4px',
+          borderRadius: `${tokens.radius.chip}px`,
+          bgcolor: tone.bg,
+          color: tone.fg,
+        }}
+      >
+        {tone.ok ? (
+          <CheckCircleIcon size={14} aria-hidden />
+        ) : (
+          <WarningIcon size={14} aria-hidden />
+        )}
+      </Box>
+    );
+  }
   return (
     <Box
       component="span"
@@ -74,7 +109,7 @@ export function LineStatusPill({ line }: { line: PantryLine }) {
         <WarningIcon size={14} aria-hidden />
       )}
       <span>{label}</span>
-      {line.onShoppingList && line.status !== 'covered' ? (
+      {onList ? (
         <span>
           <span aria-hidden> · </span>
           <Box component="span" sx={visuallyHidden}>
