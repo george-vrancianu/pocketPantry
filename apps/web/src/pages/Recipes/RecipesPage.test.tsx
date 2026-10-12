@@ -125,4 +125,10 @@ describe('RecipesPage', () => {
     const card = (await screen.findByText('Gran stew')).closest('li')!;
     expect(within(card).getByText("Your family's")).toBeInTheDocument();
   });
+
+  it('shows no badge on a Catalog Recipe', async () => {
+    setup(() => [item({ id: 'c', title: 'Plain stew', owner: 'catalog' })]);
+    const card = (await screen.findByText('Plain stew')).closest('li')!;
+    expect(within(card).queryByText("Your family's")).toBeNull();
+  });
 });

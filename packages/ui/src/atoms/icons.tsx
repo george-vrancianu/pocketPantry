@@ -32,6 +32,7 @@ import {
   CircleCheck,
   Trash2,
   ArrowLeftRight,
+  Users,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -72,3 +73,4 @@ export const AlertIcon = withDefaults(CircleAlert);
 export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
 export const SwapIcon = withDefaults(ArrowLeftRight);
+export const PeopleIcon = withDefaults(Users);

@@ -24,6 +24,8 @@ export type ScreenHeaderProps = {
   action?: ScreenHeaderAction;
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
+  /** Rendered inline after the title text, inside the H1 (e.g. a badge pill). */
+  titleAdornment?: ReactNode;
   /** Makes the title programmatically focusable, so a screen can move focus to it. */
   titleRef?: Ref<HTMLHeadingElement>;
 };
@@ -37,6 +39,7 @@ export function ScreenHeader({
   action,
   trailing,
   titleRef,
+  titleAdornment,
 }: ScreenHeaderProps) {
   return (
     <Box
@@ -61,6 +64,7 @@ export function ScreenHeader({
           sx={{ outline: 'none' }}
         >
           {title}
+          {titleAdornment ? <> {titleAdornment}</> : null}
         </Typography>
         {subtitle ? (
           <Typography

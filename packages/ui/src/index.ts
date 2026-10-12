@@ -51,6 +51,7 @@ export {
   CheckCircleIcon,
   DeleteIcon,
   SwapIcon,
+  PeopleIcon,
 } from './atoms/icons';
 
 export {

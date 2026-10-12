@@ -95,6 +95,18 @@ describe('RecipeDetailPage', () => {
     expect(screen.getByText('Whisk the eggs')).toBeInTheDocument();
   });
 
+  it('puts the family pill in the title of a Family Recipe', async () => {
+    setup(recipe({ owner: 'family' }));
+    const heading = await screen.findByRole('heading', { name: /Omelette/ });
+    expect(within(heading).getByText("Your family's")).toBeInTheDocument();
+  });
+
+  it('shows no pill in the title of a Catalog Recipe', async () => {
+    setup(recipe({ owner: 'catalog' }));
+    const heading = await screen.findByRole('heading', { name: 'Omelette' });
+    expect(within(heading).queryByText("Your family's")).toBeNull();
+  });
+
   it('notes an archived Recipe', async () => {
     setup(recipe({ archived: true }));
     expect(
