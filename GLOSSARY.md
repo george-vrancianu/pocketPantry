@@ -65,7 +65,7 @@ The state of a scanned or typed name that could not be matched to an Ingredient 
 _Avoid_: Unknown, custom, uncategorised
 
 **Pantry Basic**:
-An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List.
+An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List on its own; a Member can still add one by hand.
 _Avoid_: Staple (a Family's always-wanted Ingredient), essential, cupboard item
 
 ### Pantry
@@ -186,6 +186,14 @@ _Avoid_: Category, recipe family, parent recipe
 **Variant**:
 A Recipe that branches from exactly one Base Recipe, such as "Mediterranean omelette" or "Frittata". A Variant never has Variants of its own.
 _Avoid_: Sub-recipe, version, child recipe
+
+**Catalog Recipe**:
+A Recipe curated by Admins and shared by every Family. Members can cook it and make Variants of it, but not change it.
+_Avoid_: Global recipe, built-in recipe
+
+**Family Recipe**:
+A Recipe owned by one Family, which its Members can edit and delete. Either a Base Recipe or a Variant, possibly of a Catalog Recipe.
+_Avoid_: Custom recipe, my recipe, user recipe
 
 **Cuisine**:
 An optional tag for the culinary region a Recipe comes from, such as Mediterranean. At most one per Recipe.
