@@ -24,16 +24,12 @@ export function ConfirmAction({
   variant = 'secondary',
   onConfirm,
 }: Props) {
-  const { t } = useTranslation('common');
   const [asking, setAsking] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
 
   useEffect(() => {
-    if (asking) {
-      confirmRef.current?.focus();
-    } else if (restoreFocus.current) {
+    if (!asking && restoreFocus.current) {
       restoreFocus.current = false;
       triggerRef.current?.focus();
     }
@@ -53,30 +49,18 @@ export function ConfirmAction({
     );
   }
   return (
-    <Stack spacing={1}>
-      <Alert severity="warning">{message}</Alert>
-      <Stack direction="row" spacing={1}>
-        <Button
-          ref={confirmRef}
-          disabled={disabled}
-          onClick={() => {
-            setAsking(false);
-            onConfirm();
-          }}
-        >
-          {t('confirm')}
-        </Button>
-        <Button
-          variant="text"
-          onClick={() => {
-            restoreFocus.current = true;
-            setAsking(false);
-          }}
-        >
-          {t('cancel')}
-        </Button>
-      </Stack>
-    </Stack>
+    <ConfirmPrompt
+      message={message}
+      disabled={disabled}
+      onConfirm={() => {
+        setAsking(false);
+        onConfirm();
+      }}
+      onCancel={() => {
+        restoreFocus.current = true;
+        setAsking(false);
+      }}
+    />
   );
 }
 

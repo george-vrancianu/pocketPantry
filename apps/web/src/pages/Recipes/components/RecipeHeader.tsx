@@ -7,7 +7,7 @@ import {
   PlusIcon,
   Stack,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
@@ -26,8 +26,11 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
   const navigate = useNavigate();
   const archive = useArchiveFamilyRecipe(recipe?.id ?? '', i18n.language);
   const [asking, setAsking] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const back = { label: t('recipes:back'), href: '/recipes' };
-  if (!recipe) return <AppScreenHeader back={back} />;
+  // No Recipe yet (loading, not found): keep a title so the screen has an H1.
+  if (!recipe)
+    return <AppScreenHeader back={back} title={t('recipes:title')} />;
 
   const own = recipe.owner === 'family' && !recipe.archived;
   // A Variant's parent is a Catalog Base Recipe, so a Family standalone Recipe
@@ -59,6 +62,7 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
         trailing={
           own ? (
             <ActionMenu
+              buttonRef={menuButton}
               label={t('recipes:family.moreActions')}
               items={[
                 ...(canMakeVariant
@@ -93,7 +97,10 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
                 setAsking(false);
                 remove();
               }}
-              onCancel={() => setAsking(false)}
+              onCancel={() => {
+                setAsking(false);
+                menuButton.current?.focus();
+              }}
             />
           ) : null}
         </Stack>

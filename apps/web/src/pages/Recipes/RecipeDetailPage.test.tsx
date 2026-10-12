@@ -71,6 +71,7 @@ function setup(
     <Routes>
       <Route path="/recipes" element={<p>All recipes page</p>} />
       <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      <Route path="/recipes/:id/edit" element={<p>Edit page</p>} />
     </Routes>,
     { route },
   );
@@ -169,10 +170,16 @@ describe('RecipeDetailPage', () => {
     it('omits the Time fact when neither prep nor cook time is known', async () => {
       setup(recipe({ prepMinutes: null, cookMinutes: null }));
       await screen.findByRole('heading', { level: 1, name: 'Omelette' });
-      expect(
-        screen.queryByRole('term', { name: 'Time' }),
-      ).not.toBeInTheDocument();
-      expect(fact('Serves')).toBeInTheDocument();
+      const labels = screen.getAllByRole('term').map((n) => n.textContent);
+      expect(labels).not.toContain('Time');
+      expect(labels).toContain('Serves');
+    });
+
+    it('sizes the fact columns to the cells shown, keeping Style the wide one', async () => {
+      setup(recipe({ prepMinutes: null, cookMinutes: null, difficulty: null }));
+      await screen.findByRole('heading', { level: 1, name: 'Omelette' });
+      const grid = fact('Style').parentElement!.parentElement!;
+      expect(grid).toHaveStyle({ gridTemplateColumns: '1fr 1.7fr' });
     });
 
     it('sums prep and cook time when only one is known', async () => {
@@ -528,7 +535,7 @@ describe('RecipeDetailPage', () => {
     it('badges the Ingredients tab with how many lines to buy', async () => {
       setup(recipe({}), '/recipes/o', matchWith(2));
       expect(
-        await screen.findByRole('tab', { name: /2 to buy/ }),
+        await screen.findByRole('tab', { name: 'Ingredients 2 to buy' }),
       ).toBeInTheDocument();
     });
 
@@ -539,7 +546,9 @@ describe('RecipeDetailPage', () => {
           'GET /api/recipes/o/pantry-match',
         ),
       );
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await within(await screen.findByRole('tabpanel')).findByText(
+        'You can make this',
+      );
       expect(screen.getByRole('tab', { name: 'Ingredients' })).toBeVisible();
       expect(screen.queryByText(/to buy/)).toBeNull();
     });
@@ -646,6 +655,21 @@ describe('RecipeDetailPage', () => {
     });
   });
 
+  it('names the tab list after the Recipe, not the list of Recipes', async () => {
+    setup(recipe({}));
+    expect(
+      await screen.findByRole('tablist', { name: 'Omelette' }),
+    ).toBeInTheDocument();
+  });
+
+  it('only points aria-controls at the rendered panel', async () => {
+    setup(recipe({}));
+    const tabs = await screen.findAllByRole('tab');
+    const controls = tabs.map((tab) => tab.getAttribute('aria-controls'));
+    expect(controls.filter(Boolean)).toHaveLength(1);
+    expect(document.getElementById(controls.find(Boolean)!)).not.toBeNull();
+  });
+
   it('omits the Tips section when there are no Recipe-level Tips', async () => {
     const user = userEvent.setup();
     setup(recipe({}));
@@ -729,6 +753,27 @@ describe('RecipeDetailPage', () => {
       expect(
         screen.getByRole('menuitem', { name: 'Edit' }),
       ).toBeInTheDocument();
+    });
+
+    it('navigates in-app from the Edit menu item', async () => {
+      const user = userEvent.setup();
+      setup(recipe({ id: 'g', owner: 'family' }));
+      const menu = await openMenu(user);
+      await user.click(within(menu).getByRole('menuitem', { name: 'Edit' }));
+      expect(await screen.findByText('Edit page')).toBeInTheDocument();
+    });
+
+    it('returns focus to the "More actions" button when Delete is cancelled', async () => {
+      const user = userEvent.setup();
+      setup(recipe({ id: 'g', owner: 'family' }));
+      const menu = await openMenu(user);
+      await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }));
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: 'More actions' }),
+        ).toHaveFocus(),
+      );
     });
 
     it('closes the menu on Escape', async () => {

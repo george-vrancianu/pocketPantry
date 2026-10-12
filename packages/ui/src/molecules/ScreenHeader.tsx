@@ -16,7 +16,7 @@ export type ScreenHeaderAction = {
 export type ScreenHeaderProps = {
   /** Omit to leave the header without a title (the screen then carries its own H1). */
   title?: string;
-  /** A muted line under the title. */
+  /** A muted line under the title. Needs `title`; ignored without it. */
   subtitle?: string;
   /** Accessible name of the Home button. */
   homeLabel: string;
@@ -27,7 +27,7 @@ export type ScreenHeaderProps = {
   trailing?: ReactNode;
   /** Replaces the Home button with a Back link to `href`. */
   back?: { label: string; href: string };
-  /** Makes the title programmatically focusable, so a screen can move focus to it. */
+  /** Makes the title programmatically focusable, so a screen can move focus to it. Needs `title`. */
   titleRef?: Ref<HTMLHeadingElement>;
 };
 

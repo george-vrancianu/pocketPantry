@@ -1,6 +1,6 @@
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type Ref } from 'react';
 import { MoreIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { tokens } from '../theme/tokens';
@@ -20,10 +20,12 @@ export type ActionMenuProps = {
   /** Accessible name of the "…" button. */
   label: string;
   items: ActionMenuItem[];
+  /** Ref to the "…" button, e.g. to return focus to it after an action is cancelled. */
+  buttonRef?: Ref<HTMLButtonElement>;
 };
 
 /** A "…" icon button that opens a dropdown of actions. Escape, outside click and focus are handled by the MUI menu. */
-export function ActionMenu({ label, items }: ActionMenuProps) {
+export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const menuId = useId();
@@ -31,6 +33,7 @@ export function ActionMenu({ label, items }: ActionMenuProps) {
   return (
     <>
       <IconButton
+        ref={buttonRef}
         label={label}
         aria-haspopup="menu"
         aria-expanded={anchor !== null}
@@ -65,7 +68,8 @@ export function ActionMenu({ label, items }: ActionMenuProps) {
           return (
             <MenuItem
               key={item.label}
-              {...(item.href ? { component: 'a', href: item.href } : {})}
+              // `button` + `href` lets ButtonBase use the theme's LinkComponent (the router link).
+              {...(item.href ? { component: 'button', href: item.href } : {})}
               onClick={() => {
                 close();
                 item.onClick?.();

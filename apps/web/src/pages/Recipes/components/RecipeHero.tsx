@@ -6,6 +6,7 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { RecipeDetail } from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
@@ -21,7 +22,7 @@ export function RecipeHero({
   const { t } = useTranslation('recipes');
   const minutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
   const style = [recipe.cuisine?.name, recipe.method?.name].filter(Boolean);
-  const facts: { label: string; value: React.ReactNode; wide?: boolean }[] = [
+  const facts: { label: string; value: ReactNode; wide?: boolean }[] = [
     ...(recipe.prepMinutes === null && recipe.cookMinutes === null
       ? []
       : [
@@ -94,7 +95,9 @@ export function RecipeHero({
         component="dl"
         sx={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr 1.7fr',
+          gridTemplateColumns: facts
+            .map((fact) => (fact.wide ? '1.7fr' : '1fr'))
+            .join(' '),
           gap: '8px',
           m: 0,
         }}

@@ -92,7 +92,7 @@ function RecipeDetail({ id }: { id: string }) {
               }}
             >
               <SegmentedTabs
-                label={t('recipes:title')}
+                label={recipe.title}
                 id={tabsId}
                 value={tab}
                 onChange={openTab}

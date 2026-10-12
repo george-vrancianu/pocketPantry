@@ -63,7 +63,7 @@ const line = (over: Partial<PantryLine> & { lineId: string }): PantryLine => ({
 const match = (over: Partial<PantryMatch> = {}): PantryMatch => ({
   servings: 2,
   canMake: false,
-  shortOrMissingCount: 2,
+  shortOrMissingCount: 3,
   expiringCoveredCount: 0,
   coverageRatio: 0.5,
   lines: [
@@ -156,7 +156,7 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await toBuyHeading('2 to buy');
+    await toBuyHeading('3 to buy');
     expect(
       within(row(/Flour/)).getByText('In your Pantry'),
     ).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('Recipe detail Pantry status', () => {
         lines: [line({ lineId: 'l-flour', quantity: 200, unit: 'g' })],
       }),
     );
-    await toBuyHeading('2 to buy');
+    await toBuyHeading('3 to buy');
     expect(
       within(row(/Flour/)).getByText('In your Pantry'),
     ).toBeInTheDocument();
@@ -210,7 +210,7 @@ describe('Recipe detail Pantry status', () => {
 
   it('heads the Ingredients tab with how many lines to buy', async () => {
     setup();
-    expect(await toBuyHeading('2 to buy')).toBeVisible();
+    expect(await toBuyHeading('3 to buy')).toBeVisible();
     expect(screen.queryByText(/Missing \d+ ingredient/)).toBeNull();
   });
 
@@ -314,7 +314,7 @@ describe('Recipe detail Pantry status', () => {
     finish(Response.json({ items: [] }));
   });
 
-  it('disables the button when nothing would be added', async () => {
+  it('shows no Add missing button when nothing would be added', async () => {
     setup(() =>
       match({
         canMake: true,
@@ -327,10 +327,9 @@ describe('Recipe detail Pantry status', () => {
       }),
     );
     await toBuyHeading('You can make this');
-    const button = screen.queryByRole('button', {
-      name: /^Add \d+ missing to Shopping List$/,
-    });
-    if (button) expect(button).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: /^Add \d+ missing/ }),
+    ).toBeNull();
   });
 
   it('counts only the addable lines in the button', async () => {
@@ -343,7 +342,7 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await toBuyHeading('2 to buy');
+    await toBuyHeading('3 to buy');
     expect(
       screen.getByRole('button', { name: 'Add 1 missing to Shopping List' }),
     ).toBeEnabled();
@@ -401,7 +400,7 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await toBuyHeading('2 to buy');
+    await toBuyHeading('3 to buy');
     expect(
       screen.getByRole('button', { name: 'Add 1 missing to Shopping List' }),
     ).toBeEnabled();
@@ -416,7 +415,7 @@ describe('Recipe detail Pantry status', () => {
     setup(() =>
       match({ lines: [line({ lineId: 'l-egg', status: 'missing' })] }),
     );
-    await toBuyHeading('2 to buy');
+    await toBuyHeading('3 to buy');
     expect(screen.queryByText(/already on your list/)).toBeNull();
   });
 

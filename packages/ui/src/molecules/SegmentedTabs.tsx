@@ -24,7 +24,7 @@ export type SegmentedTabsProps<T extends string> = {
 export const segmentedTabId = (id: string, value: string) =>
   `${id}-tab-${value}`;
 
-/** The id of a tab's panel; the tab points at it with `aria-controls`. */
+/** The id of a tab's panel; the selected tab points at it with `aria-controls` (only that panel is rendered). */
 export const segmentedTabPanelId = (id: string, value: string) =>
   `${id}-panel-${value}`;
 
@@ -82,7 +82,9 @@ export function SegmentedTabs<T extends string>({
             role="tab"
             id={segmentedTabId(id, tab.value)}
             aria-selected={selected}
-            aria-controls={segmentedTabPanelId(id, tab.value)}
+            aria-controls={
+              selected ? segmentedTabPanelId(id, tab.value) : undefined
+            }
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
@@ -103,6 +105,7 @@ export function SegmentedTabs<T extends string>({
             }}
           >
             {tab.label}
+            {tab.badge ? ' ' : null}
             {tab.badge ? (
               <Box
                 component="span"
