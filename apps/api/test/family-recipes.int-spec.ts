@@ -6,6 +6,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  catalogTranslations,
   eatingMoments,
   family,
   ingredients,
@@ -150,6 +151,10 @@ describe('Family Recipes (integration)', () => {
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
     await database.delete(eatingMoments).where(ilike(eatingMoments.name, like));
+    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient: later specs in this worker count them.
+    await database
+      .delete(catalogTranslations)
+      .where(ilike(catalogTranslations.value, like));
     await pool.end();
     await app.close();
   });

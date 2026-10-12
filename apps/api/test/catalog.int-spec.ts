@@ -756,16 +756,23 @@ describe('Catalog (integration)', () => {
           SEED_PARENTS.map((p) => seedId.parent(p.slug)),
         ),
       ).toBe(18);
-      const synonyms = SEED_INGREDIENTS.reduce(
-        (n, i) =>
-          n +
-          (i.synonyms?.en?.length ?? 0) +
-          (i.synonyms?.ro?.length ?? 0) +
-          (i.synonyms?.da?.length ?? 0),
-        0,
+      // Match on (entity, locale, value) instead of counting: other suites sharing this worker's
+      // database may leave their own Synonyms on seeded Ingredients.
+      const key = (entityId: string, locale: string, value: string) =>
+        `${entityId}|${locale}|${value}`;
+      const seeded = SEED_INGREDIENTS.flatMap((i) =>
+        (['en', 'ro', 'da'] as const).flatMap((locale) =>
+          (i.synonyms?.[locale] ?? []).map((value) =>
+            key(seedId.ingredient(i.slug), locale, value),
+          ),
+        ),
       );
-      const [{ stored }] = await database
-        .select({ stored: sql<number>`count(*)::int` })
+      const stored = await database
+        .select({
+          entityId: catalogTranslations.entityId,
+          locale: catalogTranslations.locale,
+          value: catalogTranslations.value,
+        })
         .from(catalogTranslations)
         .where(
           and(
@@ -777,7 +784,14 @@ describe('Catalog (integration)', () => {
             ),
           ),
         );
-      expect(stored).toBe(synonyms);
+      const storedKeys = stored.map((t) => key(t.entityId, t.locale, t.value));
+      const wanted = new Set(seeded);
+      expect(seeded.length).toBeGreaterThan(0);
+      expect(wanted.size).toBe(seeded.length);
+      // Every seeded Synonym is stored exactly once, and nothing seeded is missing.
+      expect(storedKeys.filter((k) => wanted.has(k)).sort()).toEqual(
+        [...wanted].sort(),
+      );
     });
 
     it('leaves a row edited since the last seed run exactly as it was', async () => {
