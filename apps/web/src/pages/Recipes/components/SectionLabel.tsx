@@ -39,7 +39,9 @@ export function SectionLabel({ id, children, count, end }: Props) {
         }}
       >
         <span>{children}</span>
-        {count === undefined ? null : <span>{count}</span>}
+        {count === undefined ? null : (
+          <span style={{ fontWeight: 600, letterSpacing: 0 }}>{count}</span>
+        )}
       </Box>
       {end}
     </Box>

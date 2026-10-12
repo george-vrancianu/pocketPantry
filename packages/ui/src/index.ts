@@ -22,6 +22,8 @@ export { Typography, type TypographyProps } from './atoms/Typography';
 export {
   BudgetIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
+  SearchIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,

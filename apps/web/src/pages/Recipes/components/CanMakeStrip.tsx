@@ -6,7 +6,7 @@ import { totalMinutes, type CookTonightCard } from '../../../lib/cookTonight';
 import { bleedSx } from './bleed';
 import { SectionLabel } from './SectionLabel';
 
-/** "You can make this": a carousel of tiles for the Recipes the Family can make tonight. */
+/** "You can make this": a carousel of tiles for the Recipes the Family Can Make tonight. */
 export function CanMakeStrip({ cards }: { cards: CookTonightCard[] }) {
   const { t } = useTranslation('recipes');
   const labelId = useId();

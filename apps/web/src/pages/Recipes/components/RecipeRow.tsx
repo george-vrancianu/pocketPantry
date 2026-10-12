@@ -1,7 +1,7 @@
 import {
   Box,
   CheckIcon,
-  ChevronDownIcon,
+  ChevronRightIcon,
   IngredientsScanIcon,
   WarningIcon,
   tokens,
@@ -80,7 +80,15 @@ export function RecipeRow({ recipe, card, filtering }: Props) {
           }}
         >
           {minutes === null ? (
-            <Box sx={{ fontSize: 17, fontWeight: 700 }}>—</Box>
+            <Box
+              sx={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: tokens.color.muted,
+              }}
+            >
+              —
+            </Box>
           ) : (
             <>
               <Box
@@ -104,15 +112,8 @@ export function RecipeRow({ recipe, card, filtering }: Props) {
             </>
           )}
         </Box>
-        <Box
-          aria-hidden
-          sx={{
-            display: 'flex',
-            color: tokens.color.muted,
-            transform: 'rotate(-90deg)',
-          }}
-        >
-          <ChevronDownIcon size={16} />
+        <Box aria-hidden sx={{ display: 'flex', color: tokens.color.muted }}>
+          <ChevronRightIcon size={16} />
         </Box>
       </Box>
     </Box>

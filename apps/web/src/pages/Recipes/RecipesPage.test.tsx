@@ -90,13 +90,25 @@ const filters = {
 function setup(
   list: (url: URL) => RecipeListItem[],
   cards: CookTonightCard[] = [],
+  /** Holds every filtered list response until it resolves. */
+  gate?: Promise<void>,
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes': (url) => Response.json({ recipes: list(url) }),
     'GET /api/recipes/filters': () => Response.json(filters),
     'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
   });
-  vi.stubGlobal('fetch', fetchMock);
+  vi.stubGlobal(
+    'fetch',
+    gate
+      ? async (input: RequestInfo | URL, init?: RequestInit) => {
+          const response = await fetchMock(input, init);
+          const url = new URL(String(input), window.location.origin);
+          if (url.pathname === '/api/recipes' && filtered(url)) await gate;
+          return response;
+        }
+      : fetchMock,
+  );
   renderWithProviders(
     <Routes>
       <Route path="/recipes" element={<RecipesPage />} />
@@ -352,6 +364,29 @@ describe('RecipesPage', () => {
         expect(query.get('cuisineId')).toBe('c-gr');
         expect(query.get('methodId')).toBe('m-grill');
       });
+    });
+
+    it('keeps the previous rows on screen while the next search loads', async () => {
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      setup((url) => (filtered(url) ? [frittata] : [omelette]), [], gate);
+      const user = userEvent.setup();
+      await findRow('Omelette');
+
+      await user.click(await chip('Italian'));
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Italian' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        ),
+      );
+      // The filtered response is still held: the old rows stay listed.
+      expect(screen.getByText('Omelette')).toBeInTheDocument();
+      expect(screen.queryByText('Frittata')).not.toBeInTheDocument();
+
+      release();
+      await findRow('Frittata', MATCHES);
+      expect(screen.queryByText('Omelette')).not.toBeInTheDocument();
     });
 
     it('sends the search text after a pause', async () => {

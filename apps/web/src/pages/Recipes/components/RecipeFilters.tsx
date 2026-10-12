@@ -1,4 +1,10 @@
-import { Box, CloseIcon, TextField, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  CloseIcon,
+  SearchIcon,
+  TextField,
+  tokens,
+} from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,6 +25,8 @@ const NONE: RecipeBrowse = { search: '', cuisineId: '', methodId: '' };
 /** The search box and the Cuisine and Method chips, pinned to the top while the list scrolls. */
 export function RecipeFilters({ value, onChange, options }: Props) {
   const { t } = useTranslation('recipes');
+  const cuisines = options?.cuisines ?? [];
+  const methods = options?.methods ?? [];
   const toggle = (key: 'cuisineId' | 'methodId', id: string) =>
     onChange({ ...value, [key]: value[key] === id ? '' : id });
   return (
@@ -37,7 +45,10 @@ export function RecipeFilters({ value, onChange, options }: Props) {
         type="search"
         label={t('search')}
         value={value.search}
-        slotProps={{ htmlInput: { maxLength: 100 } }}
+        slotProps={{
+          htmlInput: { maxLength: 100 },
+          input: { startAdornment: <SearchIcon size={18} /> },
+        }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
         sx={{ bgcolor: tokens.color.surface, borderRadius: '16px' }}
       />
@@ -59,7 +70,7 @@ export function RecipeFilters({ value, onChange, options }: Props) {
             {t('clear')}
           </Chip>
         ) : null}
-        {(options?.cuisines ?? []).map((cuisine) => (
+        {cuisines.map((cuisine) => (
           <Chip
             key={cuisine.id}
             active={value.cuisineId === cuisine.id}
@@ -68,16 +79,18 @@ export function RecipeFilters({ value, onChange, options }: Props) {
             {cuisine.name}
           </Chip>
         ))}
-        <Box
-          aria-hidden
-          sx={{
-            flexShrink: 0,
-            width: '1px',
-            height: 20,
-            bgcolor: tokens.color.line,
-          }}
-        />
-        {(options?.methods ?? []).map((method) => (
+        {cuisines.length > 0 && methods.length > 0 ? (
+          <Box
+            aria-hidden
+            sx={{
+              flexShrink: 0,
+              width: '1px',
+              height: 20,
+              bgcolor: tokens.color.line,
+            }}
+          />
+        ) : null}
+        {methods.map((method) => (
           <Chip
             key={method.id}
             active={value.methodId === method.id}
