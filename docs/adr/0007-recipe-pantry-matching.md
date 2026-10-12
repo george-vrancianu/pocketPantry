@@ -17,6 +17,7 @@ Cook Tonight, the Recipe detail page, and "add missing to Shopping List" all nee
 - **Ranking**: fewest short or missing required lines, then most covered lines that use an Expiring Soon Batch, then coverage ratio. The same order picks the best Recipe in a Base Recipe group.
 - **Cook Tonight** shows Recipes the Family Can Make plus those missing exactly one required line ("Missing: feta").
 - **Add missing** adds the shortfall for a short line when units compare, the full quantity for a missing line, and a quantity-less item for a quantity-less line. Pantry Basics, optional lines, and covered lines are never added. Items carry the Recipe as a Source Recipe and merge by the usual Shopping List rule.
+- **Adding one line by hand** (agreed 2026-10-12) is the Member's explicit choice and works on any line, Pantry Basics, optional and covered lines included. It adds the shortfall for a short line, and otherwise the line's full quantity at the picked Servings (none for a quantity-less line). The "never added" rule above applies to Add missing only.
 
 ## Alternatives rejected
 
