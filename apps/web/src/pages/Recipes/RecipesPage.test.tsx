@@ -575,11 +575,11 @@ describe('RecipesPage', () => {
   });
 
   describe('status pills on rows', () => {
-    it('marks a Recipe that is itself the best match as "Can make"', async () => {
+    it('marks a Recipe that is itself the best match as "Can Make"', async () => {
       setup(() => [omelette, soup], [card()]);
       const row = await findRow('Omelette');
-      expect(within(row).getByText('Can make')).toBeInTheDocument();
-      expect(await findRow('Soup')).not.toHaveTextContent('Can make');
+      expect(within(row).getByText('Can Make')).toBeInTheDocument();
+      expect(await findRow('Soup')).not.toHaveTextContent('Can Make');
     });
 
     it('names the Variant on a Base Recipe row whose best match is that Variant', async () => {
@@ -593,9 +593,9 @@ describe('RecipesPage', () => {
       );
       const row = await findRow('Omelette');
       expect(
-        within(row).getByText('Can make Spicy omelette'),
+        within(row).getByText('Can Make Spicy omelette'),
       ).toBeInTheDocument();
-      expect(within(row).queryByText('Can make')).not.toBeInTheDocument();
+      expect(within(row).queryByText('Can Make')).not.toBeInTheDocument();
     });
 
     it("prefers a Recipe's own card to its base's, and gives no pill to a Variant row without its own card", async () => {
@@ -609,13 +609,13 @@ describe('RecipesPage', () => {
         expect(lastQuery(calls).get('cuisineId')).toBe('c-it'),
       );
       const own = await findRow('Frittata', MATCHES);
-      expect(within(own).getByText('Can make')).toBeInTheDocument();
+      expect(within(own).getByText('Can Make')).toBeInTheDocument();
       expect(await findRow('Gratin', MATCHES)).not.toHaveTextContent(
-        'Can make',
+        'Can Make',
       );
     });
 
-    it('shows "Missing {name}" for a near miss, without a "Can make" pill', async () => {
+    it('shows "Missing {name}" for a near miss, without a "Can Make" pill', async () => {
       setup(
         () => [omelette],
         [
@@ -627,7 +627,7 @@ describe('RecipesPage', () => {
       );
       const row = await findRow('Omelette');
       expect(within(row).getByText('Missing Feta')).toBeInTheDocument();
-      expect(row).not.toHaveTextContent('Can make');
+      expect(row).not.toHaveTextContent('Can Make');
     });
 
     it('shows an "{n} expiring" pill next to the status', async () => {
@@ -645,7 +645,7 @@ describe('RecipesPage', () => {
         ],
       );
       const row = await findRow('Omelette');
-      expect(within(row).getByText('Can make')).toBeInTheDocument();
+      expect(within(row).getByText('Can Make')).toBeInTheDocument();
       expect(within(row).getByText('2 expiring')).toBeInTheDocument();
       const nearRow = await findRow('Soup');
       expect(within(nearRow).getByText('Missing Leek')).toBeInTheDocument();
@@ -656,7 +656,7 @@ describe('RecipesPage', () => {
       setup(() => [omelette, soup], [card()]);
       await findStrip();
       const row = await findRow('Soup');
-      expect(row).not.toHaveTextContent('Can make');
+      expect(row).not.toHaveTextContent('Can Make');
       expect(row).not.toHaveTextContent('Missing');
       expect(row).not.toHaveTextContent('expiring');
     });

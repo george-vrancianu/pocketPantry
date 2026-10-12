@@ -850,7 +850,7 @@ describe('RecipeDetailPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('hides Make a Variant in the menu of a Family standalone Recipe', async () => {
+    it('hides Make a Variant in the menu of a Family Base Recipe', async () => {
       const user = userEvent.setup();
       setup(recipe({ id: 'g', owner: 'family' }));
       const menu = await openMenu(user);

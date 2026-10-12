@@ -33,7 +33,7 @@ export function RecipeHeader({ recipe }: { recipe: RecipeDetail | undefined }) {
     return <AppScreenHeader back={back} title={t('recipes:title')} />;
 
   const own = recipe.owner === 'family' && !recipe.archived;
-  // A Variant's parent is a Catalog Base Recipe, so a Family standalone Recipe
+  // A Variant's parent is a Catalog Base Recipe, so a Family Base Recipe
   // gets none; the Recipe and its base must also be live.
   const canMakeVariant =
     !recipe.archived &&
