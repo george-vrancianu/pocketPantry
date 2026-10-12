@@ -13,35 +13,58 @@ function PairingItem({ pairing }: { pairing: DetailPairing }) {
   const { t } = useTranslation('recipes');
   const { link } = pairing;
   return (
-    <Box component="li">
-      {link?.type === 'recipe' ? (
-        <Link
-          href={`/recipes/${link.id}`}
-          title={link.title}
-          sx={{ fontWeight: 600 }}
-        >
-          {pairing.label}
-        </Link>
-      ) : (
-        <Typography component="span" sx={{ fontWeight: 600 }}>
-          {pairing.label}
-        </Typography>
-      )}
-      {link?.type === 'ingredient' &&
-      !pairing.label.toLowerCase().includes(link.name.toLowerCase()) ? (
-        <Typography variant="meta" color="text.secondary" component="span">
-          {' · '}
-          {link.name}
-        </Typography>
-      ) : null}
+    <Box
+      component="li"
+      sx={{
+        py: '10px',
+        borderTop: `1px solid ${tokens.color.divider}`,
+        '&:first-of-type': { borderTop: 0 },
+      }}
+    >
+      <Box sx={{ fontSize: 15, fontWeight: 700 }}>
+        {link?.type === 'recipe' ? (
+          <Link
+            href={`/recipes/${link.id}`}
+            title={link.title}
+            underline="none"
+            sx={{ color: tokens.color.accent, fontWeight: 700 }}
+          >
+            {pairing.label}
+          </Link>
+        ) : (
+          pairing.label
+        )}
+        {link?.type === 'ingredient' &&
+        !pairing.label.toLowerCase().includes(link.name.toLowerCase()) ? (
+          <Typography variant="meta" color="text.secondary" component="span">
+            {' · '}
+            {link.name}
+          </Typography>
+        ) : null}
+      </Box>
       {pairing.principle ? (
-        <Typography variant="meta" color="text.secondary" component="p">
+        <Box
+          sx={{
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '.03em',
+            textTransform: 'uppercase',
+            color: tokens.color.accent,
+          }}
+        >
           {t(`principles.${pairing.principle}`)}
-        </Typography>
+        </Box>
       ) : null}
-      <Typography color="text.secondary" component="p">
+      <Box
+        sx={{
+          mt: '2px',
+          fontSize: 13.5,
+          lineHeight: 1.4,
+          color: tokens.color.muted,
+        }}
+      >
         {pairing.reason}
-      </Typography>
+      </Box>
     </Box>
   );
 }
@@ -51,30 +74,45 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
   if (pairings.length === 0) return null;
   return (
     <Section title={t('sections.pairings')}>
-      <Stack spacing={1.5}>
-        {KINDS.map((kind) => {
+      <Box
+        sx={{
+          px: '16px',
+          py: '6px',
+          bgcolor: tokens.color.surface,
+          border: `1px solid ${tokens.color.line}`,
+          borderRadius: `${tokens.radius.card}px`,
+        }}
+      >
+        {KINDS.map((kind, index) => {
           const items = pairings.filter((p) => p.kind === kind);
           if (items.length === 0) return null;
           const label = t(`pairingKind.${kind}`);
           return (
             <div key={kind}>
-              <Typography variant="meta" color="text.secondary" component="p">
+              <Typography
+                component="p"
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: tokens.color.muted,
+                  mt: index === 0 ? '8px' : '12px',
+                }}
+              >
                 {label}
               </Typography>
-              <Stack
+              <Box
                 component="ul"
                 aria-label={label}
-                spacing={1}
                 sx={{ listStyle: 'none', m: 0, p: 0 }}
               >
                 {items.map((pairing) => (
                   <PairingItem key={pairing.id} pairing={pairing} />
                 ))}
-              </Stack>
+              </Box>
             </div>
           );
         })}
-      </Stack>
+      </Box>
     </Section>
   );
 }
@@ -82,56 +120,49 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
 function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
   const { t } = useTranslation('recipes');
   if (moments.length === 0) return null;
+  // Good-for moments first, then the ones to avoid.
+  const ordered = POLARITIES.flatMap((polarity) =>
+    moments.filter((m) => m.polarity === polarity),
+  );
   return (
-    <Section title={t('sections.whenToEat')}>
-      <Stack spacing={1.5}>
-        {POLARITIES.map((polarity) => {
-          const items = moments.filter((m) => m.polarity === polarity);
-          if (items.length === 0) return null;
-          const label = t(`eatingPolarity.${polarity}`);
+    <Section card title={t('sections.whenToEat')}>
+      <Stack component="ul" spacing={1} sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {ordered.map((moment) => {
+          const avoid = moment.polarity === 'avoid';
           return (
-            <div key={polarity}>
-              <Typography variant="meta" color="text.secondary" component="p">
-                {label}
-              </Typography>
-              <Stack
-                component="ul"
-                aria-label={label}
-                spacing={1}
-                sx={{ listStyle: 'none', m: 0, p: 0 }}
+            <Box
+              component="li"
+              key={moment.eatingMomentId}
+              sx={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  flexShrink: 0,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  px: '10px',
+                  py: '4px',
+                  borderRadius: `${tokens.radius.chip}px`,
+                  bgcolor: avoid ? tokens.color.soonBg : tokens.color.okBg,
+                  color: avoid ? tokens.color.soonFg : tokens.color.okFg,
+                }}
               >
-                {items.map((moment) => (
-                  <Box component="li" key={moment.eatingMomentId}>
-                    <Box
-                      component="span"
-                      sx={{
-                        display: 'inline-block',
-                        fontSize: 12,
-                        fontWeight: 700,
-                        px: '10px',
-                        py: '4px',
-                        borderRadius: `${tokens.radius.chip}px`,
-                        bgcolor:
-                          polarity === 'avoid'
-                            ? tokens.color.soonBg
-                            : tokens.color.okBg,
-                        color:
-                          polarity === 'avoid'
-                            ? tokens.color.soonFg
-                            : tokens.color.okFg,
-                      }}
-                    >
-                      {moment.name}
-                    </Box>
-                    {moment.reason ? (
-                      <Typography color="text.secondary" component="p">
-                        {moment.reason}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                ))}
-              </Stack>
-            </div>
+                {t(`eatingPolarity.${moment.polarity}`)} · {moment.name}
+              </Box>
+              {moment.reason ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    fontSize: 13.5,
+                    lineHeight: 1.4,
+                    color: tokens.color.muted,
+                  }}
+                >
+                  {moment.reason}
+                </Typography>
+              ) : null}
+            </Box>
           );
         })}
       </Stack>
@@ -154,8 +185,8 @@ export function GuidanceSection({ recipe }: Pick<SectionProps, 'recipe'>) {
       <PairingsSection pairings={pairings} />
       <WhenToEatSection moments={eatingMoments} />
       {nutritionNote ? (
-        <Section title={t('sections.nutrition')}>
-          <Typography>{nutritionNote}</Typography>
+        <Section card title={t('sections.nutrition')}>
+          <Typography sx={{ lineHeight: 1.5 }}>{nutritionNote}</Typography>
         </Section>
       ) : null}
       <Typography variant="meta" color="text.secondary" component="p">

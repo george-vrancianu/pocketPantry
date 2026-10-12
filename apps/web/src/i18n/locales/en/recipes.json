@@ -48,7 +48,6 @@
   "servings_one": "{{count}} Serving",
   "servings_other": "{{count}} Servings",
   "archived": "This Recipe is archived.",
-  "backToList": "All Recipes",
   "notFound": "This Recipe could not be found.",
   "sections": {
     "pairings": "Pairings",
@@ -103,22 +102,37 @@
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
     "saved": "Recipe saved.",
-    "viewRecipe": "View the Recipe"
+    "viewRecipe": "View the Recipe",
+    "moreActions": "More actions"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",
   "pantry": {
     "canMake": "You can make this",
-    "missingCount_one": "Missing {{count}} ingredient",
-    "missingCount_other": "Missing {{count}} ingredients",
     "covered": "In your Pantry",
     "short": "Short {{amount}}",
     "missing": "Missing",
     "basic": "Pantry Basic",
-    "onList": "On your list",
-    "addMissing": "Add missing to Shopping List",
     "added_one": "Added {{count}} item to your Shopping List",
     "added_other": "Added {{count}} items to your Shopping List",
-    "someOnList": "Some of these are already on your list; adding them again increases the amount."
+    "someOnList": "Some of these are already on your list; adding them again increases the amount.",
+    "toBuy_one": "{{count}} to buy",
+    "toBuy_other": "{{count}} to buy",
+    "addMissing_one": "Add {{count}} missing to Shopping List",
+    "addMissing_other": "Add {{count}} missing to Shopping List",
+    "addedList": "Added to your list",
+    "onListShort": "on list"
+  },
+  "back": "Back",
+  "facts": {
+    "time": "Time",
+    "serves": "Serves",
+    "level": "Level",
+    "style": "Style"
+  },
+  "tabs": {
+    "ingredients": "Ingredients",
+    "steps": "Steps",
+    "about": "About"
   }
 }

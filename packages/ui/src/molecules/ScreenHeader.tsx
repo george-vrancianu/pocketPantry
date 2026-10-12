@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import type { MouseEventHandler, ReactNode, Ref } from 'react';
-import { HomeIcon } from '../atoms/icons';
+import { BackIcon, HomeIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { Typography } from '../atoms/Typography';
 import { tokens } from '../theme/tokens';
@@ -14,8 +14,9 @@ export type ScreenHeaderAction = {
 };
 
 export type ScreenHeaderProps = {
-  title: string;
-  /** A muted line under the title. */
+  /** Omit to leave the header without a title (the screen then carries its own H1). */
+  title?: string;
+  /** A muted line under the title. Needs `title`; ignored without it. */
   subtitle?: string;
   /** Accessible name of the Home button. */
   homeLabel: string;
@@ -24,9 +25,9 @@ export type ScreenHeaderProps = {
   action?: ScreenHeaderAction;
   /** Content right-aligned in the header, e.g. counter chips on wide screens. */
   trailing?: ReactNode;
-  /** Rendered inline after the title text, inside the H1 (e.g. a badge pill). */
-  titleAdornment?: ReactNode;
-  /** Makes the title programmatically focusable, so a screen can move focus to it. */
+  /** Replaces the Home button with a Back link to `href`. */
+  back?: { label: string; href: string };
+  /** Makes the title programmatically focusable, so a screen can move focus to it. Needs `title`. */
   titleRef?: Ref<HTMLHeadingElement>;
 };
 
@@ -39,7 +40,7 @@ export function ScreenHeader({
   action,
   trailing,
   titleRef,
-  titleAdornment,
+  back,
 }: ScreenHeaderProps) {
   return (
     <Box
@@ -52,20 +53,27 @@ export function ScreenHeader({
         pb: '14px',
       }}
     >
-      <IconButton label={homeLabel} href={homeHref}>
-        <HomeIcon size={20} />
-      </IconButton>
+      {back ? (
+        <IconButton label={back.label} href={back.href}>
+          <BackIcon size={20} />
+        </IconButton>
+      ) : (
+        <IconButton label={homeLabel} href={homeHref}>
+          <HomeIcon size={20} />
+        </IconButton>
+      )}
       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-        <Typography
-          variant="h2"
-          component="h1"
-          ref={titleRef}
-          tabIndex={titleRef ? -1 : undefined}
-          sx={{ outline: 'none' }}
-        >
-          {title}
-          {titleAdornment ? <> {titleAdornment}</> : null}
-        </Typography>
+        {title ? (
+          <Typography
+            variant="h2"
+            component="h1"
+            ref={titleRef}
+            tabIndex={titleRef ? -1 : undefined}
+            sx={{ outline: 'none' }}
+          >
+            {title}
+          </Typography>
+        ) : null}
         {subtitle ? (
           <Typography
             sx={{ fontSize: 13, color: tokens.color.muted, mt: '2px' }}

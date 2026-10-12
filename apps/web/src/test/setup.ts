@@ -12,3 +12,6 @@ afterEach(() => {
   resetScanSession();
   resetReads();
 });
+
+// jsdom does not implement scrolling; screens that scroll to the top just need it to exist.
+window.scrollTo = () => {};

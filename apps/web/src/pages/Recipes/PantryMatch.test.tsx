@@ -36,7 +36,7 @@ const detail: RecipeDetail = {
     quantity: quantity as number | null,
     unit: unit as 'g' | null,
     optional: optional as boolean,
-    note: null,
+    note: id === 'l-chive' ? 'chopped' : null,
   })),
   steps: [],
   tips: [],
@@ -63,7 +63,7 @@ const line = (over: Partial<PantryLine> & { lineId: string }): PantryLine => ({
 const match = (over: Partial<PantryMatch> = {}): PantryMatch => ({
   servings: 2,
   canMake: false,
-  shortOrMissingCount: 2,
+  shortOrMissingCount: 3,
   expiringCoveredCount: 0,
   coverageRatio: 0.5,
   lines: [
@@ -119,6 +119,10 @@ const row = (name: RegExp) => {
     .find((li) => name.test(li.textContent ?? ''))!;
 };
 
+/** The top-row heading of the Ingredients tab (the tab badge also says "{n} to buy"). */
+const toBuyHeading = async (text: string) =>
+  within(await screen.findByRole('tabpanel')).findByText(text);
+
 describe('Recipe detail Pantry status', () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -133,8 +137,67 @@ describe('Recipe detail Pantry status', () => {
   it('hints that a missing line is on the Shopping List', async () => {
     setup();
     await screen.findByText('Short 150 g');
-    expect(within(row(/Milk/)).getByText('On your list')).toBeInTheDocument();
-    expect(within(row(/Egg/)).queryByText('On your list')).toBeNull();
+    expect(within(row(/Milk/)).getByText(/on list/)).toBeInTheDocument();
+    expect(within(row(/Milk/)).getByText('Missing')).toBeInTheDocument();
+    expect(within(row(/Egg/)).queryByText(/on list/)).toBeNull();
+  });
+
+  it('adds no on-list hint to a covered line that is on the Shopping List', async () => {
+    setup(() =>
+      match({
+        lines: [
+          line({
+            lineId: 'l-flour',
+            quantity: 200,
+            unit: 'g',
+            onShoppingList: true,
+          }),
+          line({ lineId: 'l-egg', status: 'missing' }),
+        ],
+      }),
+    );
+    await toBuyHeading('3 to buy');
+    expect(
+      within(row(/Flour/)).getByText('In your Pantry'),
+    ).toBeInTheDocument();
+    expect(within(row(/Flour/)).queryByText(/on list/)).toBeNull();
+  });
+
+  it('reads a covered Pantry Basic as Pantry Basic, not In your Pantry', async () => {
+    setup();
+    await screen.findByText('Short 150 g');
+    expect(within(row(/Salt/)).getByText('Pantry Basic')).toBeInTheDocument();
+    expect(within(row(/Salt/)).queryByText('In your Pantry')).toBeNull();
+  });
+
+  it('says In your Pantry on a covered line', async () => {
+    setup(() =>
+      match({
+        lines: [line({ lineId: 'l-flour', quantity: 200, unit: 'g' })],
+      }),
+    );
+    await toBuyHeading('3 to buy');
+    expect(
+      within(row(/Flour/)).getByText('In your Pantry'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a quantity tag after the name: unit amounts, a bare number for pieces, none without a quantity', async () => {
+    setup();
+    await screen.findByText('Short 150 g');
+    expect(within(row(/Flour/)).getByText('200 g')).toBeInTheDocument();
+    expect(within(row(/Milk/)).getByText('300 ml')).toBeInTheDocument();
+    expect(within(row(/Egg/)).getByText('2')).toBeInTheDocument();
+    expect(within(row(/Egg/)).queryByText(/pcs/)).toBeNull();
+    expect(row(/Chives/).textContent).not.toMatch(/\d/);
+  });
+
+  it('shows the note and optional under the name', async () => {
+    setup();
+    await screen.findByText('Short 150 g');
+    expect(within(row(/Chives/)).getByText(/chopped/)).toBeInTheDocument();
+    expect(within(row(/Chives/)).getByText(/optional/)).toBeInTheDocument();
+    expect(within(row(/Flour/)).queryByText(/optional/)).toBeNull();
   });
 
   it('marks a Pantry Basic and still shows the status of an optional line', async () => {
@@ -145,14 +208,18 @@ describe('Recipe detail Pantry status', () => {
     expect(within(row(/Chives/)).getByText(/optional/)).toBeInTheDocument();
   });
 
-  it('summarises what is missing, or that the Recipe can be made', async () => {
+  it('heads the Ingredients tab with how many lines to buy', async () => {
     setup();
-    expect(await screen.findByText('Missing 2 ingredients')).toBeVisible();
+    expect(await toBuyHeading('3 to buy')).toBeVisible();
+    expect(screen.queryByText(/Missing \d+ ingredient/)).toBeNull();
   });
 
   it('says so when the Recipe can be made', async () => {
     setup(() => match({ canMake: true, shortOrMissingCount: 0, lines: [] }));
-    expect(await screen.findByText('You can make this')).toBeVisible();
+    expect(await toBuyHeading('You can make this')).toBeVisible();
+    expect(
+      within(screen.getByRole('tabpanel')).queryByText(/to buy/),
+    ).toBeNull();
   });
 
   it('asks for the match at the Servings picked, with the Member date', async () => {
@@ -193,11 +260,13 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await screen.findByText(/200 g Flour/);
+    await vi.waitFor(() =>
+      expect(within(row(/Flour/)).getByText('200 g')).toBeInTheDocument(),
+    );
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'More Servings' }));
-    expect(await screen.findByText(/300 g Flour/)).toBeVisible();
+    expect(await within(row(/Flour/)).findByText('300 g')).toBeVisible();
   });
 
   it('adds the missing lines at the current Servings and confirms', async () => {
@@ -206,7 +275,7 @@ describe('Recipe detail Pantry status', () => {
     await screen.findByText('Short 150 g');
     await user.click(screen.getByRole('button', { name: 'More Servings' }));
     await user.click(
-      screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+      screen.getByRole('button', { name: 'Add 3 missing to Shopping List' }),
     );
     const post = await vi.waitFor(() => {
       const c = calls.find((x) => x.key === 'POST /api/recipes/r1/add-missing');
@@ -238,14 +307,14 @@ describe('Recipe detail Pantry status', () => {
     );
     await screen.findByText('Short 150 g');
     const button = screen.getByRole('button', {
-      name: 'Add missing to Shopping List',
+      name: 'Add 3 missing to Shopping List',
     });
     await userEvent.setup().click(button);
     await waitFor(() => expect(button).toBeDisabled());
     finish(Response.json({ items: [] }));
   });
 
-  it('disables the button when nothing would be added', async () => {
+  it('shows no Add missing button when nothing would be added', async () => {
     setup(() =>
       match({
         canMake: true,
@@ -257,9 +326,69 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await screen.findByText('You can make this');
+    await toBuyHeading('You can make this');
     expect(
-      screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+      screen.queryByRole('button', { name: /^Add \d+ missing/ }),
+    ).toBeNull();
+  });
+
+  it('counts only the addable lines in the button', async () => {
+    setup(() =>
+      match({
+        lines: [
+          line({ lineId: 'l-egg', status: 'missing' }),
+          line({ lineId: 'l-chive', status: 'missing', optional: true }),
+          line({ lineId: 'l-salt', status: 'missing', pantryBasic: true }),
+        ],
+      }),
+    );
+    await toBuyHeading('3 to buy');
+    expect(
+      screen.getByRole('button', { name: 'Add 1 missing to Shopping List' }),
+    ).toBeEnabled();
+  });
+
+  it('disables the button while the match for the picked Servings loads', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/recipes/r1': () => Response.json(detail),
+      'GET /api/recipes/r1/pantry-match': () => Response.json(match()),
+    });
+    let finish: (r: Response) => void = () => {};
+    const pending = new Promise<Response>((resolve) => (finish = resolve));
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes('servings=3') ? pending : fetchMock(input, init),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      </Routes>,
+      { route: '/recipes/r1' },
+    );
+    await screen.findByText('Short 150 g');
+    const button = screen.getByRole('button', {
+      name: 'Add 3 missing to Shopping List',
+    });
+    expect(button).toBeEnabled();
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'More Servings' }));
+    expect(button).toBeDisabled();
+    finish(Response.json(match({ servings: 3 })));
+    await waitFor(() => expect(button).toBeEnabled());
+  });
+
+  it('reads Added to your list and stays disabled after adding', async () => {
+    setup();
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(
+      screen.getByRole('button', { name: 'Add 3 missing to Shopping List' }),
+    );
+    expect(
+      await screen.findByText('Added 3 items to your Shopping List'),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Added to your list' }),
     ).toBeDisabled();
   });
 
@@ -271,9 +400,9 @@ describe('Recipe detail Pantry status', () => {
         ],
       }),
     );
-    await screen.findByText('Missing 2 ingredients');
+    await toBuyHeading('3 to buy');
     expect(
-      screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+      screen.getByRole('button', { name: 'Add 1 missing to Shopping List' }),
     ).toBeEnabled();
     expect(
       screen.getByText(
@@ -286,7 +415,7 @@ describe('Recipe detail Pantry status', () => {
     setup(() =>
       match({ lines: [line({ lineId: 'l-egg', status: 'missing' })] }),
     );
-    await screen.findByText('Missing 2 ingredients');
+    await toBuyHeading('3 to buy');
     expect(screen.queryByText(/already on your list/)).toBeNull();
   });
 
@@ -299,12 +428,12 @@ describe('Recipe detail Pantry status', () => {
     await userEvent
       .setup()
       .click(
-        screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+        screen.getByRole('button', { name: 'Add 3 missing to Shopping List' }),
       );
     const summary = (await screen.findByRole('alert')).parentElement!;
     expect(
       within(summary).getByRole('button', {
-        name: 'Add missing to Shopping List',
+        name: 'Add 3 missing to Shopping List',
       }),
     ).toBeVisible();
   });
@@ -421,7 +550,7 @@ describe('Recipe detail Pantry status', () => {
     await userEvent
       .setup()
       .click(
-        screen.getByRole('button', { name: 'Add missing to Shopping List' }),
+        screen.getByRole('button', { name: 'Add 3 missing to Shopping List' }),
       );
     expect(await screen.findByText('list items: 1')).toBeVisible();
     await vi.waitFor(() => expect(suggestionFetches).toBe(2));

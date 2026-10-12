@@ -156,13 +156,14 @@ describe('GuidanceSection', () => {
         moment({ eatingMomentId: '3', name: 'Lunch', polarity: 'good_for' }),
       ],
     });
-    const good = within(screen.getByRole('list', { name: 'Good for' }));
-    expect(good.getAllByRole('listitem')).toHaveLength(2);
-    expect(good.getByText('Dinner')).toBeInTheDocument();
-    expect(good.getByText('Filling and warm')).toBeInTheDocument();
-    const avoid = within(screen.getByRole('list', { name: 'Avoid' }));
-    expect(avoid.getByText('Before bed')).toBeInTheDocument();
-    expect(avoid.getByText('Heavy to sleep on')).toBeInTheDocument();
+    const chips = screen.getAllByRole('listitem');
+    expect(chips.map((chip) => chip.textContent)).toEqual([
+      expect.stringContaining('Good for · Dinner'),
+      expect.stringContaining('Good for · Lunch'),
+      expect.stringContaining('Avoid · Before bed'),
+    ]);
+    expect(screen.getByText('Filling and warm')).toBeInTheDocument();
+    expect(screen.getByText('Heavy to sleep on')).toBeInTheDocument();
   });
 
   it('shows the Nutrition note, then the disclaimer last', () => {
