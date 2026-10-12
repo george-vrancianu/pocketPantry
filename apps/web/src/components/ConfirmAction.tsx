@@ -79,3 +79,36 @@ export function ConfirmAction({
     </Stack>
   );
 }
+
+/**
+ * The "are you sure" step on its own, for a destructive action started from
+ * elsewhere (e.g. a menu item). Focus moves to Confirm when it appears.
+ */
+export function ConfirmPrompt({
+  message,
+  disabled,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  disabled?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation('common');
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => confirmRef.current?.focus(), []);
+  return (
+    <Stack spacing={1}>
+      <Alert severity="warning">{message}</Alert>
+      <Stack direction="row" spacing={1}>
+        <Button ref={confirmRef} disabled={disabled} onClick={onConfirm}>
+          {t('confirm')}
+        </Button>
+        <Button variant="text" onClick={onCancel}>
+          {t('cancel')}
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}

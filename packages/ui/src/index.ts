@@ -52,8 +52,16 @@ export {
   DeleteIcon,
   SwapIcon,
   PeopleIcon,
+  BackIcon,
+  MoreIcon,
+  BranchIcon,
 } from './atoms/icons';
 
+export {
+  ActionMenu,
+  type ActionMenuItem,
+  type ActionMenuProps,
+} from './molecules/ActionMenu';
 export {
   ScreenHeader,
   type ScreenHeaderAction,

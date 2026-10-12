@@ -33,7 +33,6 @@
   "servings_one": "{{count}} Serving",
   "servings_other": "{{count}} Servings",
   "archived": "This Recipe is archived.",
-  "backToList": "All Recipes",
   "notFound": "This Recipe could not be found.",
   "sections": {
     "pairings": "Pairings",
@@ -88,7 +87,8 @@
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
     "linkedRecipeUnavailable": "A Recipe you cannot see or that is archived",
     "saved": "Recipe saved.",
-    "viewRecipe": "View the Recipe"
+    "viewRecipe": "View the Recipe",
+    "moreActions": "More actions"
   },
   "fewerServings": "Fewer Servings",
   "moreServings": "More Servings",
@@ -105,5 +105,12 @@
     "added_one": "Added {{count}} item to your Shopping List",
     "added_other": "Added {{count}} items to your Shopping List",
     "someOnList": "Some of these are already on your list; adding them again increases the amount."
+  },
+  "back": "Back",
+  "facts": {
+    "time": "Time",
+    "serves": "Serves",
+    "level": "Level",
+    "style": "Style"
   }
 }

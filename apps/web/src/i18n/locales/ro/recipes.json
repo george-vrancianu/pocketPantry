@@ -35,7 +35,6 @@
   "servings_few": "{{count}} porții",
   "servings_other": "{{count}} de porții",
   "archived": "Această rețetă este arhivată.",
-  "backToList": "Toate rețetele",
   "notFound": "Rețeta nu a fost găsită.",
   "sections": {
     "pairings": "Asocieri",
@@ -90,7 +89,8 @@
     "guidanceHint": "Recomandări, o Notă nutrițională și Momente de consum. Se salvează odată cu rețeta.",
     "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
     "saved": "Rețeta a fost salvată.",
-    "viewRecipe": "Vezi rețeta"
+    "viewRecipe": "Vezi rețeta",
+    "moreActions": "Mai multe acțiuni"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",
@@ -109,5 +109,12 @@
     "added_few": "{{count}} articole adăugate în lista de cumpărături",
     "added_other": "{{count}} de articole adăugate în lista de cumpărături",
     "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește."
+  },
+  "back": "Înapoi",
+  "facts": {
+    "time": "Timp",
+    "serves": "Porții",
+    "level": "Nivel",
+    "style": "Stil"
   }
 }

@@ -33,6 +33,9 @@ import {
   Trash2,
   ArrowLeftRight,
   Users,
+  ChevronLeft,
+  Ellipsis,
+  GitBranch,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -74,3 +77,6 @@ export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
 export const SwapIcon = withDefaults(ArrowLeftRight);
 export const PeopleIcon = withDefaults(Users);
+export const BackIcon = withDefaults(ChevronLeft);
+export const MoreIcon = withDefaults(Ellipsis);
+export const BranchIcon = withDefaults(GitBranch);

@@ -33,7 +33,6 @@
   "servings_one": "{{count}} portion",
   "servings_other": "{{count}} portioner",
   "archived": "Denne opskrift er arkiveret.",
-  "backToList": "Alle opskrifter",
   "notFound": "Opskriften blev ikke fundet.",
   "sections": {
     "pairings": "Forslag til servering",
@@ -88,7 +87,8 @@
     "guidanceHint": "Parringer, en Ernæringsnote og Spisetidspunkter. De gemmes sammen med opskriften.",
     "linkedRecipeUnavailable": "En opskrift, du ikke kan se, eller som er arkiveret",
     "saved": "Opskriften er gemt.",
-    "viewRecipe": "Se opskriften"
+    "viewRecipe": "Se opskriften",
+    "moreActions": "Flere handlinger"
   },
   "fewerServings": "Færre portioner",
   "moreServings": "Flere portioner",
@@ -105,5 +105,12 @@
     "added_one": "{{count}} vare føjet til indkøbslisten",
     "added_other": "{{count}} varer føjet til indkøbslisten",
     "someOnList": "Nogle af dem er allerede på din liste; hvis du tilføjer dem igen, øges mængden."
+  },
+  "back": "Tilbage",
+  "facts": {
+    "time": "Tid",
+    "serves": "Antal",
+    "level": "Niveau",
+    "style": "Stil"
   }
 }
