@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -563,10 +564,16 @@ function setupLine({
   lines,
   onList = 'l-egg',
   pendingServings,
+  addLineResponse,
+  extra,
 }: {
   lines?: PantryLine[];
   onList?: string;
   pendingServings?: number;
+  /** Replaces the successful add-line answer. */
+  addLineResponse?: () => Response;
+  /** Rendered beside the page. */
+  extra?: ReactNode;
 } = {}) {
   let posted = false;
   const { fetchMock, calls } = stubApi({
@@ -583,7 +590,10 @@ function setupLine({
         ),
       });
     },
+    'GET /api/shopping-list/suggestions': () =>
+      Response.json({ staples: [], usedUp: [] }),
     'POST /api/recipes/r1/add-line': () => {
+      if (addLineResponse) return addLineResponse();
       posted = true;
       return Response.json({ items: [{ id: 'i1' }] });
     },
@@ -597,9 +607,12 @@ function setupLine({
       : fetchMock(input, init),
   );
   renderWithProviders(
-    <Routes>
-      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-    </Routes>,
+    <>
+      {extra}
+      <Routes>
+        <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      </Routes>
+    </>,
     { route: '/recipes/r1' },
   );
   return { calls, release };
@@ -774,6 +787,81 @@ describe('Recipe detail per-line add', () => {
     await user.click(addButton(name));
     await vi.waitFor(() => expect(addLineCalls(calls)).toHaveLength(1));
     expect(addLineCalls(calls)[0]!.body).toMatchObject({ lineId });
+    // The pill gains the on-list hint even though the line is covered.
+    await user.click(toggle(re));
+    expect(await within(row(re)).findByText(/on list/)).toBeVisible();
+  });
+
+  it('shows the translated error when the add fails, and clears it on another row', async () => {
+    setupLine({
+      addLineResponse: () =>
+        Response.json(
+          { code: 'shopping.quantity_too_large', params: {} },
+          { status: 400 },
+        ),
+    });
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    expect(
+      await within(row(/Egg/)).findByText(/above 1,000,000/),
+    ).toBeVisible();
+    expect(addButton('Egg')).toBeEnabled();
+    await user.click(toggle(/Flour/));
+    expect(screen.queryByText(/above 1,000,000/)).toBeNull();
+  });
+
+  it('shows the Recipe-changed message when the line is gone', async () => {
+    setupLine({
+      addLineResponse: () =>
+        Response.json(
+          { code: 'recipes.line_not_found', params: {} },
+          { status: 404 },
+        ),
+    });
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    expect(
+      await within(row(/Egg/)).findByText(/no longer part of this Recipe/),
+    ).toBeVisible();
+  });
+
+  it('puts the answer in the Shopping List cache and refreshes Suggestions', async () => {
+    const { calls } = setupLine({ extra: <CacheProbe /> });
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    const suggestionFetches = () =>
+      calls.filter((c) => c.key === 'GET /api/shopping-list/suggestions')
+        .length;
+    await vi.waitFor(() => expect(suggestionFetches()).toBe(1));
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    expect(await screen.findByText('list items: 1')).toBeVisible();
+    await vi.waitFor(() => expect(suggestionFetches()).toBe(2));
+  });
+
+  it('disables Add missing while a per-line add is in flight', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    setupLine({ addLineResponse: () => new Response(null, { status: 500 }) });
+    // Hold the POST open by wrapping the stubbed fetch.
+    const inner = globalThis.fetch;
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes('add-line')
+        ? gate.then(() => inner(input, init))
+        : inner(input, init),
+    );
+    const user = userEvent.setup();
+    await screen.findByText('Short 150 g');
+    await user.click(toggle(/Egg/));
+    await user.click(addButton('Egg'));
+    expect(
+      screen.getByRole('button', { name: 'Add 3 missing to Shopping List' }),
+    ).toBeDisabled();
+    release();
   });
 
   it('refetches the pantry match after the add', async () => {

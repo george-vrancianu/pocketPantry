@@ -30,8 +30,15 @@ export type SectionProps = {
   added: boolean;
   addError: string | null;
   onAddMissing: () => void;
-  /** Adds one line at the Servings picked; `onAdded` runs once it is on the list. */
-  onAddLine: (line: RecipeDetailLine, onAdded: () => void) => void;
+  /** Adds one line at the Servings picked; `onAdded` or `onFailed` runs with the outcome. */
+  onAddLine: (
+    line: RecipeDetailLine,
+    done: { onAdded: () => void; onFailed: () => void },
+  ) => void;
+  /** Lines added by hand at the Servings picked. */
+  listedIds: ReadonlySet<string>;
+  /** Why the last per-line add failed. */
+  addLineError: string | null;
   /** A per-line add is in flight. */
   addingLine: boolean;
 };
@@ -48,14 +55,18 @@ function IngredientsSection({
   onAddMissing,
   onAddLine,
   addingLine,
+  listedIds,
+  addLineError,
 }: SectionProps) {
   const { t } = useTranslation('recipes');
   // One row at a time; the section unmounts with its tab, so a tab switch clears both.
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [addedId, setAddedId] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
   const select = (lineId: string | null) => {
     setSelectedId(lineId);
     setAddedId(null);
+    setErrorId(null);
   };
   const byLine = new Map(match?.lines.map((line) => [line.lineId, line]));
   // The match carries quantities scaled to its Servings; the Recipe's own are for the first load.
@@ -84,8 +95,17 @@ function IngredientsSection({
           selectedId={selectedId}
           onSelect={select}
           addedId={addedId}
-          addDisabled={stale || addingLine}
-          onAddLine={(line) => onAddLine(line, () => setAddedId(line.id))}
+          listedIds={listedIds}
+          errorId={errorId}
+          error={addLineError}
+          addDisabled={stale || addingLine || adding}
+          onAddLine={(line) => {
+            setErrorId(null);
+            onAddLine(line, {
+              onAdded: () => setAddedId(line.id),
+              onFailed: () => setErrorId(line.id),
+            });
+          }}
         />
         <AddMissing
           match={match}

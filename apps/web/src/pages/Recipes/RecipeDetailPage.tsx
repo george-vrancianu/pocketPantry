@@ -56,7 +56,12 @@ function RecipeDetail({ id }: { id: string }) {
       },
     });
   };
-  const onAddLine = (line: RecipeDetailLine, onAdded: () => void) =>
+  // Lines added by hand at the Servings picked; picking others starts over, like the bulk add.
+  const [listedIds, setListedIds] = useState<ReadonlySet<string>>(new Set());
+  const onAddLine = (
+    line: RecipeDetailLine,
+    done: { onAdded: () => void; onFailed: () => void },
+  ) =>
     addLine.mutate(
       { lineId: line.id, servings },
       {
@@ -64,8 +69,10 @@ function RecipeDetail({ id }: { id: string }) {
           setToast(
             t('recipes:pantry.addedLine', { name: line.ingredientName }),
           );
-          onAdded();
+          setListedIds((ids) => new Set(ids).add(line.id));
+          done.onAdded();
         },
+        onError: done.onFailed,
       },
     );
 
@@ -140,10 +147,11 @@ function RecipeDetail({ id }: { id: string }) {
                     onServingsChange={(next) => {
                       setPicked(next);
                       setAddedList(false);
+                      setListedIds(new Set());
                     }}
                     match={match}
                     stale={matchQuery.isPlaceholderData}
-                    adding={addMissing.isPending}
+                    adding={addMissing.isPending || addLine.isPending}
                     added={addedList}
                     addError={
                       addMissing.error
@@ -152,7 +160,11 @@ function RecipeDetail({ id }: { id: string }) {
                     }
                     onAddMissing={onAddMissing}
                     onAddLine={onAddLine}
-                    addingLine={addLine.isPending}
+                    addingLine={addLine.isPending || addMissing.isPending}
+                    listedIds={listedIds}
+                    addLineError={
+                      addLine.error ? translateApiError(t, addLine.error) : null
+                    }
                   />
                 ),
               )}

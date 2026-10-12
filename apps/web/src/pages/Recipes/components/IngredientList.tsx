@@ -1,4 +1,5 @@
 import {
+  Alert,
   Box,
   Button,
   CartIcon,
@@ -21,6 +22,11 @@ type Props = {
   onSelect: (lineId: string | null) => void;
   /** The selected line was added to the Shopping List. */
   addedId: string | null;
+  /** Lines added by hand at the Servings picked; their pill keeps the on-list hint. */
+  listedIds: ReadonlySet<string>;
+  /** The line whose last add failed, with the message to show under its button. */
+  errorId: string | null;
+  error: string | null;
   /** Adding is not possible now (stale match or an add in flight). */
   addDisabled: boolean;
   onAddLine: (line: RecipeDetailLine) => void;
@@ -45,6 +51,8 @@ function IngredientRow({
   pantry,
   selected,
   added,
+  listed,
+  error,
   addDisabled,
   onToggle,
   onAdd,
@@ -53,6 +61,8 @@ function IngredientRow({
   pantry: PantryLine | undefined;
   selected: boolean;
   added: boolean;
+  listed: boolean;
+  error: string | null;
   addDisabled: boolean;
   onToggle: () => void;
   onAdd: () => void;
@@ -126,7 +136,9 @@ function IngredientRow({
             <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{sub}</Box>
           ) : null}
         </Box>
-        {pantry ? <LineStatusPill line={pantry} iconOnly={selected} /> : null}
+        {pantry ? (
+          <LineStatusPill line={pantry} iconOnly={selected} added={listed} />
+        ) : null}
       </Box>
       {selected ? (
         <Box
@@ -151,6 +163,11 @@ function IngredientRow({
               ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
               : t('recipes:pantry.addLine', { name: line.ingredientName })}
           </Button>
+          {error ? (
+            <Box sx={{ mt: '8px' }}>
+              <Alert>{error}</Alert>
+            </Box>
+          ) : null}
         </Box>
       ) : null}
     </Box>
@@ -164,6 +181,9 @@ export function IngredientList({
   selectedId,
   onSelect,
   addedId,
+  listedIds,
+  errorId,
+  error,
   addDisabled,
   onAddLine,
   'aria-label': label,
@@ -189,6 +209,8 @@ export function IngredientList({
           pantry={pantryByLine.get(line.id)}
           selected={selectedId === line.id}
           added={addedId === line.id}
+          listed={listedIds.has(line.id)}
+          error={errorId === line.id ? error : null}
           addDisabled={addDisabled}
           onToggle={() => onSelect(selectedId === line.id ? null : line.id)}
           onAdd={() => onAddLine(line)}

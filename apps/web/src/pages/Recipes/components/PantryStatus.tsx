@@ -39,8 +39,11 @@ function pillTone(line: PantryLine) {
 export function LineStatusPill({
   line,
   iconOnly = false,
+  added = false,
 }: {
   line: PantryLine;
+  /** The Member added this line to the Shopping List by hand; shows the hint whatever its status. */
+  added?: boolean;
   /** Collapses to the icon; the words become its accessible name. */
   iconOnly?: boolean;
 }) {
@@ -58,7 +61,7 @@ export function LineStatusPill({
         })
       : t(`recipes:pantry.${line.status}`);
   const tone = pillTone(line);
-  const onList = line.onShoppingList && line.status !== 'covered';
+  const onList = (line.onShoppingList && line.status !== 'covered') || added;
   if (iconOnly) {
     return (
       <Box

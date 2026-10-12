@@ -708,10 +708,18 @@ describe('Recipe Pantry matching (integration)', () => {
 
       const own = await makeRecipe([{ ingredientId: milk }]);
       const other = await makeRecipe([{ ingredientId: milk }]);
-      await m.addLine(own.id, { lineId: other.lineIds[0], today }).expect(404);
-      await m
-        .addLine(own.id, { lineId: crypto.randomUUID(), today })
-        .expect(404);
+      const otherLine = await m.addLine(own.id, {
+        lineId: other.lineIds[0],
+        today,
+      });
+      expect(otherLine.status).toBe(404);
+      expect(code(otherLine)).toBe('recipes.line_not_found');
+      const unknownLine = await m.addLine(own.id, {
+        lineId: crypto.randomUUID(),
+        today,
+      });
+      expect(unknownLine.status).toBe(404);
+      expect(code(unknownLine)).toBe('recipes.line_not_found');
       expect(await m.items()).toEqual([]);
 
       const lineId = own.lineIds[0];
