@@ -57,7 +57,9 @@ function RecipeDetail({ id }: { id: string }) {
     });
   };
   // Lines added by hand at the Servings picked; picking others starts over, like the bulk add.
-  const [listedIds, setListedIds] = useState<ReadonlySet<string>>(new Set());
+  const [handAddedLineIds, setHandAddedLineIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const onAddLine = (
     line: RecipeDetailLine,
     done: { onAdded: () => void; onFailed: () => void },
@@ -69,7 +71,7 @@ function RecipeDetail({ id }: { id: string }) {
           setToast(
             t('recipes:pantry.addedLine', { name: line.ingredientName }),
           );
-          setListedIds((ids) => new Set(ids).add(line.id));
+          setHandAddedLineIds((ids) => new Set(ids).add(line.id));
           done.onAdded();
         },
         onError: done.onFailed,
@@ -147,7 +149,7 @@ function RecipeDetail({ id }: { id: string }) {
                     onServingsChange={(next) => {
                       setPicked(next);
                       setAddedList(false);
-                      setListedIds(new Set());
+                      setHandAddedLineIds(new Set());
                     }}
                     match={match}
                     stale={matchQuery.isPlaceholderData}
@@ -159,12 +161,13 @@ function RecipeDetail({ id }: { id: string }) {
                         : null
                     }
                     onAddMissing={onAddMissing}
-                    onAddLine={onAddLine}
-                    addingLine={addLine.isPending || addMissing.isPending}
-                    listedIds={listedIds}
-                    addLineError={
-                      addLine.error ? translateApiError(t, addLine.error) : null
-                    }
+                    addLine={{
+                      onAdd: onAddLine,
+                      handAddedIds: handAddedLineIds,
+                      error: addLine.error
+                        ? translateApiError(t, addLine.error)
+                        : null,
+                    }}
                   />
                 ),
               )}

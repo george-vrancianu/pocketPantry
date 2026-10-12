@@ -20,7 +20,7 @@ import type {
 import {
   addLineBody,
   addMissingBody,
-  addMissingQuery,
+  addToListQuery,
   pantryMatchQuery,
   recipeIdParam,
   type AddLineBody,
@@ -61,7 +61,7 @@ export class RecipePantryController {
   addMissing(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
-    @Query(new ZodValidationPipe(addMissingQuery))
+    @Query(new ZodValidationPipe(addToListQuery))
     { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
   ): Promise<ShoppingListView> {
@@ -77,7 +77,7 @@ export class RecipePantryController {
   addLine(
     @CurrentUser() member: CurrentUserValue,
     @IdParam() { id }: { id: string },
-    @Query(new ZodValidationPipe(addMissingQuery))
+    @Query(new ZodValidationPipe(addToListQuery))
     { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addLineBody)) body: AddLineBody,
   ): Promise<ShoppingListView> {

@@ -8,10 +8,10 @@ import {
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { RecipeDetail } from '../../../lib/recipes';
+import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
 
-/** The Recipe's eyebrow (Base Recipe link), title with Owner pill, fact cells and archived notice. */
+/** The Recipe's eyebrow (Base Recipe link), title with Family pill, fact cells and archived notice. */
 export function RecipeHero({
   recipe,
   servings,
@@ -20,10 +20,10 @@ export function RecipeHero({
   servings: number;
 }) {
   const { t } = useTranslation('recipes');
-  const minutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
+  const minutes = totalMinutes(recipe);
   const style = [recipe.cuisine?.name, recipe.method?.name].filter(Boolean);
   const facts: { label: string; value: ReactNode; wide?: boolean }[] = [
-    ...(recipe.prepMinutes === null && recipe.cookMinutes === null
+    ...(minutes === null
       ? []
       : [
           {

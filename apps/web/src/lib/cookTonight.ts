@@ -61,13 +61,3 @@ export function cardFor(
     (recipe.parentId === null ? index.byBase.get(recipe.id) : undefined)
   );
 }
-
-/** Minutes for a Recipe (prep plus cook), or null when it has neither. */
-export function totalMinutes(times: {
-  prepMinutes: number | null;
-  cookMinutes: number | null;
-}): number | null {
-  return times.prepMinutes === null && times.cookMinutes === null
-    ? null
-    : (times.prepMinutes ?? 0) + (times.cookMinutes ?? 0);
-}
