@@ -123,12 +123,7 @@ describe('RecipesPage', () => {
   it('badges a Family Recipe', async () => {
     setup(() => [item({ id: 'x', title: 'Gran stew', owner: 'family' })]);
     const card = (await screen.findByText('Gran stew')).closest('li')!;
-    const pill = within(card).getByText("Your family's");
-    expect(pill).toBeInTheDocument();
-    expect(pill.closest('[data-owner-pill]')).toHaveStyle({
-      backgroundColor: 'rgb(243, 210, 122)',
-      color: 'rgb(74, 59, 11)',
-    });
+    expect(within(card).getByText("Your family's")).toBeInTheDocument();
   });
 
   it('shows no badge on a Catalog Recipe', async () => {

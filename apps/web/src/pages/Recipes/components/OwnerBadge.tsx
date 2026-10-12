@@ -9,15 +9,15 @@ export function OwnerBadge({ owner }: { owner: RecipeOwner }) {
   return (
     <Box
       component="span"
-      data-owner-pill=""
       sx={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '4px',
         verticalAlign: 'middle',
+        whiteSpace: 'nowrap',
         px: '8px',
         py: '3px',
-        borderRadius: '999px',
+        borderRadius: `${tokens.radius.chip}px`,
         bgcolor: tokens.color.butter,
         color: tokens.color.butterInk,
         fontSize: 11.5,
