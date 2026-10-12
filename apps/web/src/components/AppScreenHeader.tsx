@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 type Props = Pick<
   ScreenHeaderProps,
-  'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef' | 'titleAdornment'
+  'title' | 'subtitle' | 'action' | 'trailing' | 'titleRef' | 'back'
 >;
 
 export function AppScreenHeader({
@@ -12,7 +12,7 @@ export function AppScreenHeader({
   action,
   trailing,
   titleRef,
-  titleAdornment,
+  back,
 }: Props) {
   const { t } = useTranslation('screenHeader');
   return (
@@ -23,7 +23,7 @@ export function AppScreenHeader({
       action={action}
       trailing={trailing}
       titleRef={titleRef}
-      titleAdornment={titleAdornment}
+      back={back}
     />
   );
 }

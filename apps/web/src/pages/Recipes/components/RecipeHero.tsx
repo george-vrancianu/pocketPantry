@@ -1,0 +1,152 @@
+import {
+  BranchIcon,
+  Box,
+  Link,
+  Stack,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { RecipeDetail } from '../../../lib/recipes';
+import { OwnerBadge } from './OwnerBadge';
+
+/** The Recipe's eyebrow (Base Recipe link), title with Owner pill, fact cells and archived notice. */
+export function RecipeHero({
+  recipe,
+  servings,
+}: {
+  recipe: RecipeDetail;
+  servings: number;
+}) {
+  const { t } = useTranslation('recipes');
+  const minutes = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
+  const style = [recipe.cuisine?.name, recipe.method?.name].filter(Boolean);
+  const facts: { label: string; value: ReactNode; wide?: boolean }[] = [
+    ...(recipe.prepMinutes === null && recipe.cookMinutes === null
+      ? []
+      : [
+          {
+            label: t('facts.time'),
+            value: t('minutes', { count: minutes }),
+          },
+        ]),
+    { label: t('facts.serves'), value: servings },
+    ...(recipe.difficulty
+      ? [
+          {
+            label: t('facts.level'),
+            value: t(`difficulty.${recipe.difficulty}`),
+          },
+        ]
+      : []),
+    ...(style.length > 0
+      ? [
+          {
+            label: t('facts.style'),
+            value: style.map((part, index) => (
+              <span key={index}>
+                {index > 0 ? <br /> : null}
+                {part}
+              </span>
+            )),
+            wide: true,
+          },
+        ]
+      : []),
+  ];
+  return (
+    <Stack spacing={1.5}>
+      <Box>
+        {recipe.base ? (
+          <Link
+            href={`/recipes/${recipe.base.id}`}
+            underline="none"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '.04em',
+              textTransform: 'uppercase',
+              color: tokens.color.accent,
+            }}
+          >
+            <BranchIcon size={14} />
+            {t('variantOf', { base: recipe.base.title })}
+          </Link>
+        ) : null}
+        <Typography
+          variant="h1"
+          sx={{
+            mt: '4px',
+            fontFamily: tokens.font.display,
+            fontSize: 28,
+            fontWeight: 700,
+            letterSpacing: '-.02em',
+            lineHeight: 1.08,
+          }}
+        >
+          {recipe.title} <OwnerBadge owner={recipe.owner} />
+        </Typography>
+      </Box>
+      <Box
+        component="dl"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: facts
+            .map((fact) => (fact.wide ? '1.7fr' : '1fr'))
+            .join(' '),
+          gap: '8px',
+          m: 0,
+        }}
+      >
+        {facts.map(({ label, value, wide }) => (
+          <Box
+            key={label}
+            sx={{
+              bgcolor: tokens.color.surface,
+              border: `1px solid ${tokens.color.line}`,
+              borderRadius: '12px',
+              px: '6px',
+              py: '8px',
+              textAlign: 'center',
+              minWidth: 0,
+            }}
+          >
+            <Box
+              component="dt"
+              sx={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: '.05em',
+                textTransform: 'uppercase',
+                color: tokens.color.muted,
+              }}
+            >
+              {label}
+            </Box>
+            <Box
+              component="dd"
+              sx={{
+                m: 0,
+                mt: '2px',
+                fontFamily: tokens.font.display,
+                fontSize: wide ? 13 : 17,
+                fontWeight: 700,
+                lineHeight: wide ? 1.2 : undefined,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {value}
+            </Box>
+          </Box>
+        ))}
+      </Box>
+      {recipe.archived ? (
+        <Typography color="text.secondary">{t('archived')}</Typography>
+      ) : null}
+    </Stack>
+  );
+}

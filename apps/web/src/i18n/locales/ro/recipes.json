@@ -52,7 +52,6 @@
   "servings_few": "{{count}} porții",
   "servings_other": "{{count}} de porții",
   "archived": "Această rețetă este arhivată.",
-  "backToList": "Toate rețetele",
   "notFound": "Rețeta nu a fost găsită.",
   "sections": {
     "pairings": "Asocieri",
@@ -107,24 +106,40 @@
     "guidanceHint": "Recomandări, o Notă nutrițională și Momente de consum. Se salvează odată cu rețeta.",
     "linkedRecipeUnavailable": "O rețetă pe care nu o vezi sau care e arhivată",
     "saved": "Rețeta a fost salvată.",
-    "viewRecipe": "Vezi rețeta"
+    "viewRecipe": "Vezi rețeta",
+    "moreActions": "Mai multe acțiuni"
   },
   "fewerServings": "Mai puține porții",
   "moreServings": "Mai multe porții",
   "pantry": {
     "canMake": "Poți face rețeta",
-    "missingCount_one": "Lipsește {{count}} ingredient",
-    "missingCount_few": "Lipsesc {{count}} ingrediente",
-    "missingCount_other": "Lipsesc {{count}} de ingrediente",
     "covered": "În Cămară",
     "short": "Mai trebuie {{amount}}",
     "missing": "Lipsește",
     "basic": "Nelipsit din Cămară",
-    "onList": "Pe listă",
-    "addMissing": "Adaugă ce lipsește în lista de cumpărături",
     "added_one": "{{count}} articol adăugat în lista de cumpărături",
     "added_few": "{{count}} articole adăugate în lista de cumpărături",
     "added_other": "{{count}} de articole adăugate în lista de cumpărături",
-    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește."
+    "someOnList": "Unele sunt deja pe listă; dacă le adaugi din nou, cantitatea crește.",
+    "toBuy_one": "{{count}} de cumpărat",
+    "toBuy_few": "{{count}} de cumpărat",
+    "toBuy_other": "{{count}} de cumpărat",
+    "addMissing_one": "Adaugă {{count}} ingredient lipsă în lista de cumpărături",
+    "addMissing_few": "Adaugă {{count}} ingrediente lipsă în lista de cumpărături",
+    "addMissing_other": "Adaugă {{count}} de ingrediente lipsă în lista de cumpărături",
+    "addedList": "Adăugat în listă",
+    "onListShort": "pe listă"
+  },
+  "back": "Înapoi",
+  "facts": {
+    "time": "Timp",
+    "serves": "Porții",
+    "level": "Nivel",
+    "style": "Stil"
+  },
+  "tabs": {
+    "ingredients": "Ingrediente",
+    "steps": "Pași",
+    "about": "Despre"
   }
 }

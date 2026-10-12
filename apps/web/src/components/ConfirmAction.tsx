@@ -24,16 +24,12 @@ export function ConfirmAction({
   variant = 'secondary',
   onConfirm,
 }: Props) {
-  const { t } = useTranslation('common');
   const [asking, setAsking] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
   const restoreFocus = useRef(false);
 
   useEffect(() => {
-    if (asking) {
-      confirmRef.current?.focus();
-    } else if (restoreFocus.current) {
+    if (!asking && restoreFocus.current) {
       restoreFocus.current = false;
       triggerRef.current?.focus();
     }
@@ -53,26 +49,47 @@ export function ConfirmAction({
     );
   }
   return (
+    <ConfirmPrompt
+      message={message}
+      disabled={disabled}
+      onConfirm={() => {
+        setAsking(false);
+        onConfirm();
+      }}
+      onCancel={() => {
+        restoreFocus.current = true;
+        setAsking(false);
+      }}
+    />
+  );
+}
+
+/**
+ * The "are you sure" step on its own, for a destructive action started from
+ * elsewhere (e.g. a menu item). Focus moves to Confirm when it appears.
+ */
+export function ConfirmPrompt({
+  message,
+  disabled,
+  onConfirm,
+  onCancel,
+}: {
+  message: string;
+  disabled?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation('common');
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => confirmRef.current?.focus(), []);
+  return (
     <Stack spacing={1}>
       <Alert severity="warning">{message}</Alert>
       <Stack direction="row" spacing={1}>
-        <Button
-          ref={confirmRef}
-          disabled={disabled}
-          onClick={() => {
-            setAsking(false);
-            onConfirm();
-          }}
-        >
+        <Button ref={confirmRef} disabled={disabled} onClick={onConfirm}>
           {t('confirm')}
         </Button>
-        <Button
-          variant="text"
-          onClick={() => {
-            restoreFocus.current = true;
-            setAsking(false);
-          }}
-        >
+        <Button variant="text" onClick={onCancel}>
           {t('cancel')}
         </Button>
       </Stack>

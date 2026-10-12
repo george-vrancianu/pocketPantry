@@ -22,8 +22,8 @@ export type IconButtonProps = Omit<
     | 'urgent'
     | 'urgentOutline'
     | 'accentOutline';
-  /** Width and height in px: 44 for headers, 40 inside dense form rows. */
-  size?: 40 | 44;
+  /** Width and height in px: 44 for headers, 40 inside dense form rows, 34 inside a pill. */
+  size?: 34 | 40 | 44;
   href?: string;
   /** Looks and announces as disabled (`aria-disabled`) but stays focusable and ignores clicks. */
   ariaDisabled?: boolean;
