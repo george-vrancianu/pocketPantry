@@ -1,5 +1,4 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { scanViaGuide } from '../../test/scan';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,7 +35,6 @@ function renderScan(
 }
 
 const guide = () => screen.getByTestId('scan-guide');
-const hint = () => screen.queryByTestId('scan-hint');
 
 /** All CSS emitted into the document, to check rules jsdom cannot evaluate (media queries). */
 const cssRules = () =>
@@ -147,60 +145,15 @@ describe('Scan guide armed state', () => {
 });
 
 describe('Scan guide hint', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
   afterEach(() => vi.unstubAllGlobals());
 
-  it.each([
-    ['Receipt', 'Lay flat, double-tap to scan'],
-    ['Product', 'Frame the product and its date'],
-    ['Ingredients', 'Lay them out, fit them all in'],
-    ['Plate', 'Fit the whole plate'],
-  ])('shows the %s hint', async (mode, text) => {
-    renderScan();
-    await userEvent.click(screen.getByRole('radio', { name: mode }));
-    expect(hint()).toHaveTextContent(text);
-  });
-
-  it.each([
-    ['Receipt', 'Fit the whole receipt in the frame'],
-    ['Product', 'Point at a barcode or label'],
-    ['Ingredients', 'Spread items out on the counter'],
-    ['Plate', 'Hold steady above your plate'],
-  ])(
-    'no longer shows the old %s hint in the controls area',
-    async (mode, old) => {
+  it.each([['Receipt'], ['Product'], ['Ingredients'], ['Plate']])(
+    'shows no hint under the %s guide (the Info sheet explains the modes)',
+    async (mode) => {
       renderScan();
       await userEvent.click(screen.getByRole('radio', { name: mode }));
-      expect(screen.queryByText(old)).not.toBeInTheDocument();
-      expect(screen.getAllByTestId('scan-hint')).toHaveLength(1);
+      expect(screen.queryByTestId('scan-hint')).not.toBeInTheDocument();
+      expect(screen.queryByText(/double-tap to scan/)).not.toBeInTheDocument();
     },
   );
-
-  it('exposes the guide hint to assistive tech', () => {
-    renderScan();
-    expect(hint()?.closest('[aria-hidden="true"]')).toBeNull();
-  });
-
-  it('sits below the guides, not in the controls area', () => {
-    renderScan();
-    expect(guide()).toContainElement(hint());
-  });
-
-  it('hides after the first Scan, even when it fails, and stays hidden on a mode change', async () => {
-    renderScan('/scan?mode=product', {
-      'POST /api/scan/product': () =>
-        Response.json(
-          { code: 'scan.image_too_large', params: {} },
-          { status: 413 },
-        ),
-    });
-    expect(hint()).toBeInTheDocument();
-    scanViaGuide();
-    await screen.findByTestId('scan-thumbnail');
-    expect(hint()).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: 'Plate' }));
-    expect(hint()).not.toBeInTheDocument();
-  });
 });

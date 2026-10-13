@@ -99,8 +99,6 @@ export function useScanScreen() {
     });
   }, [location, navigate]);
   const fileInput = useRef<HTMLInputElement>(null);
-  /** Whether a Scan was taken yet, failed or not: the guide's hint goes away after the first. */
-  const [scanned, setScanned] = useState(false);
 
   const reading = resizing;
 
@@ -117,7 +115,6 @@ export function useScanScreen() {
       return IMAGE_PREPARATION[mode](source, origin, view);
     },
   ): Promise<boolean> => {
-    setScanned(true);
     setLocalError(null);
     setNotAdded(false);
     setResizing(true);
@@ -179,7 +176,6 @@ export function useScanScreen() {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
     if (picked.length === 0) return;
-    setScanned(true);
     setLocalError(null);
     setNotAdded(false);
     // Take what fits under the Scan Session's cap, counting photos still being resized.
@@ -253,7 +249,6 @@ export function useScanScreen() {
     done: () => navigate('/scan/review'),
     flash,
     reading,
-    scanned,
     modesDisabled: resizing,
     controlsDisabled: reading || capped,
     capped,

@@ -168,13 +168,13 @@ function IngredientRow({
           >
             <IconButton
               tone="accent"
-              size={34}
+              size={40}
               label={
                 added
                   ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
                   : t('recipes:pantry.addLine', { name: line.ingredientName })
               }
-              disabled={added || addDisabled}
+              ariaDisabled={added || addDisabled}
               onClick={onAdd}
             >
               {added ? <CheckIcon size={18} /> : <CartIcon size={18} />}

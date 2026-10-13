@@ -81,7 +81,6 @@ export function ScanPage() {
       />
       <Viewfinder
         mode={screen.mode}
-        hintShown={!screen.scanned}
         disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
@@ -94,11 +93,12 @@ export function ScanPage() {
           top: 0,
           left: 0,
           right: 0,
-          px: 2.5,
+          // Sized so Close, torch, Scan Language, Info, Gallery and Done fit a 360 px phone.
+          px: 2,
           pt: 'calc(22px + env(safe-area-inset-top))',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '6px',
         }}
       >
         <Box
@@ -106,7 +106,7 @@ export function ScanPage() {
           type="button"
           aria-label={t('close')}
           onClick={screen.close}
-          sx={roundButton(44)}
+          sx={roundButton(40)}
         >
           <CloseIcon size={20} />
         </Box>
@@ -118,7 +118,7 @@ export function ScanPage() {
             aria-pressed={screen.flash}
             onClick={() => void screen.toggleFlash()}
             sx={{
-              ...roundButton(44),
+              ...roundButton(40),
               ...(screen.flash && {
                 backgroundColor: tokens.color.camFg,
                 color: tokens.color.ink,
@@ -146,7 +146,7 @@ export function ScanPage() {
           type="button"
           aria-label={t('info.label')}
           onClick={() => setInfoOpen(true)}
-          sx={roundButton(44)}
+          sx={roundButton(40)}
         >
           <InfoIcon size={20} />
         </Box>
@@ -156,7 +156,7 @@ export function ScanPage() {
           aria-label={t('gallery')}
           disabled={screen.controlsDisabled}
           onClick={screen.openGallery}
-          sx={roundButton(44)}
+          sx={roundButton(40)}
         >
           <GalleryIcon size={20} />
         </Box>
@@ -173,10 +173,10 @@ export function ScanPage() {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            height: 44,
-            px: '14px',
-            borderRadius: '22px',
+            gap: '6px',
+            height: 40,
+            px: '12px',
+            borderRadius: '20px',
             border: 0,
             fontSize: 14,
             fontWeight: 800,
@@ -215,7 +215,17 @@ export function ScanPage() {
               {screen.scans.length}
             </Box>
           ) : null}
-          {t('done')}
+          {/* On the narrowest phones the count alone stands for Done; its name still says Done. */}
+          <Box
+            component="span"
+            sx={{
+              '@media (max-width: 389px)': {
+                display: screen.scans.length > 0 ? 'none' : undefined,
+              },
+            }}
+          >
+            {t('done')}
+          </Box>
         </Box>
       </Box>
 

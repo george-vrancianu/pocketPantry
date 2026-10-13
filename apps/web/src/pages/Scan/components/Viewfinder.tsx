@@ -34,8 +34,6 @@ const CORNERS = [
 
 type Props = {
   mode: ScanMode;
-  /** Show the one-line instruction under the guide; it goes away after the first Scan. */
-  hintShown: boolean;
   /** Double-tap (or Enter / Space) on the guide. */
   onScan: () => void;
   disabled: boolean;
@@ -47,13 +45,7 @@ type Props = {
  * The guide brackets that follow the Scan Mode, centred over the full-screen feed. Double-tapping
  * the guide takes the Scan, with a white flash and a pulse.
  */
-export function Viewfinder({
-  mode,
-  hintShown,
-  onScan,
-  disabled,
-  dragEndedAt,
-}: Props) {
+export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
   const { t } = useTranslation('scan');
   const { width, height } = SCAN_GUIDES[mode];
   const [armed, setArmed] = useState(false);
@@ -240,29 +232,6 @@ export function Viewfinder({
             }}
           />
         ))}
-        {hintShown ? (
-          <Box
-            data-testid="scan-hint"
-            sx={{
-              position: 'absolute',
-              left: '50%',
-              top: '100%',
-              mt: '14px',
-              transform: 'translateX(-50%)',
-              whiteSpace: 'nowrap',
-              fontSize: 12.5,
-              fontWeight: 600,
-              color: tokens.color.camDim,
-              backgroundColor: tokens.color.camGlass,
-              backdropFilter: 'blur(10px)',
-              px: '11px',
-              py: '5px',
-              borderRadius: '999px',
-            }}
-          >
-            {t(`guideHint.${mode}`)}
-          </Box>
-        ) : null}
       </Box>
     </Box>
   );

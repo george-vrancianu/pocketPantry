@@ -30,12 +30,6 @@
     "plate": "Farfurie",
     "ingredients": "Ingrediente"
   },
-  "guideHint": {
-    "receipt": "Pune-l pe un plan drept, atinge de două ori pentru a scana",
-    "product": "Încadrează produsul și data",
-    "ingredients": "Așază-le și încadrează-le pe toate",
-    "plate": "Încadrează toată farfuria"
-  },
   "guide": {
     "scan": "Scanează: atinge de două ori sau apasă Enter",
     "receipt": "Ține telefonul la aproximativ 40 cm deasupra bonului, astfel încât marginile lui să atingă ghidajul.",

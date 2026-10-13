@@ -21,7 +21,7 @@ const DEFAULT_LAYOUT: WidgetInstance[] = [
 export class DashboardService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  /** The Member's saved layout, or the default one until they first save. Widgets of a retired type are dropped. */
+  /** The Member's saved layout, or the default one until they first save. Widgets that no longer validate, such as a retired type, are dropped. */
   async get(memberId: string): Promise<DashboardLayoutBody> {
     const [row] = await this.database
       .select({ widgets: dashboardLayouts.widgets })

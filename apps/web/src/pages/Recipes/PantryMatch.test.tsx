@@ -701,7 +701,7 @@ describe('Recipe detail per-line add', () => {
       within(row(/Egg/)).getByRole('button', {
         name: 'Add Egg to Shopping List',
       }),
-    ).toBeEnabled();
+    ).not.toHaveAttribute('aria-disabled');
     await user.click(toggle(/Egg/));
     expect(
       screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
@@ -741,10 +741,14 @@ describe('Recipe detail per-line add', () => {
     ).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Egg added to your Shopping List' }),
-    ).toBeDisabled();
+    ).toHaveAttribute('aria-disabled', 'true');
     expect(
       screen.queryByRole('button', { name: 'Add Egg to Shopping List' }),
     ).toBeNull();
+    // The button stays focusable, so focus is not dropped after the add.
+    expect(
+      screen.getByRole('button', { name: 'Egg added to your Shopping List' }),
+    ).toHaveFocus();
     // Deselecting restores the full pill, now with the on-list hint.
     await user.click(toggle(/Egg/));
     expect(await within(row(/Egg/)).findByText(/on list/)).toBeVisible();
@@ -758,7 +762,9 @@ describe('Recipe detail per-line add', () => {
     await user.click(screen.getByRole('button', { name: 'More Servings' }));
     await screen.findByText('3 Servings');
     await user.click(toggle(/Flour/));
-    await waitFor(() => expect(addButton('Flour')).toBeEnabled());
+    await waitFor(() =>
+      expect(addButton('Flour')).not.toHaveAttribute('aria-disabled'),
+    );
     await user.click(addButton('Flour'));
     const post = await vi.waitFor(() => {
       const c = addLineCalls(calls)[0];
@@ -807,7 +813,7 @@ describe('Recipe detail per-line add', () => {
     expect(
       await within(row(/Egg/)).findByText(/above 1,000,000/),
     ).toBeVisible();
-    expect(addButton('Egg')).toBeEnabled();
+    expect(addButton('Egg')).not.toHaveAttribute('aria-disabled');
     await user.click(toggle(/Flour/));
     expect(screen.queryByText(/above 1,000,000/)).toBeNull();
   });
@@ -885,13 +891,13 @@ describe('Recipe detail per-line add', () => {
     const bulk = screen.getByRole('button', {
       name: 'Add 3 missing to Shopping List',
     });
-    expect(add).toBeEnabled();
+    expect(add).not.toHaveAttribute('aria-disabled');
     expect(bulk).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'More Servings' }));
-    expect(add).toBeDisabled();
+    expect(add).toHaveAttribute('aria-disabled', 'true');
     expect(bulk).toBeDisabled();
     release();
-    await waitFor(() => expect(add).toBeEnabled());
+    await waitFor(() => expect(add).not.toHaveAttribute('aria-disabled'));
     expect(bulk).toBeEnabled();
   });
 });

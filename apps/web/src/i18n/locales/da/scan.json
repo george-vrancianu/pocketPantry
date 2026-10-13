@@ -30,12 +30,6 @@
     "plate": "Tallerken",
     "ingredients": "Ingredienser"
   },
-  "guideHint": {
-    "receipt": "Læg fladt, dobbelttryk for at scanne",
-    "product": "Ramm produktet og dato ind",
-    "ingredients": "Læg dem ud, få dem alle med",
-    "plate": "Få hele tallerkenen med"
-  },
   "guide": {
     "scan": "Scan: dobbelttryk eller tryk Enter",
     "receipt": "Hold telefonen cirka 40 cm over kvitteringen, så kanterne rører hjælpelinjen.",

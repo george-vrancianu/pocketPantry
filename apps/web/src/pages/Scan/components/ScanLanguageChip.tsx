@@ -24,9 +24,9 @@ export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
       onChange={(event) => onChange(event.target.value as ScanLanguage)}
       sx={{
         // As tall as the Info and Done buttons beside it.
-        height: 44,
-        px: '12px',
-        borderRadius: '22px',
+        height: 40,
+        px: '10px',
+        borderRadius: '20px',
         ...glassControl(disabled),
         fontFamily: 'inherit',
         fontSize: 13,
