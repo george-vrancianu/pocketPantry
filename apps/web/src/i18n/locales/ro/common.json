@@ -17,6 +17,10 @@
     "cupboard": "Dulap",
     "spices": "Condimente"
   },
+  "row": {
+    "removed": "Ai scos {{name}}",
+    "undo": "Anulează"
+  },
   "unverified_one": "{{count}} articol încă neverificat",
   "unverified_few": "{{count}} articole încă neverificate",
   "unverified_other": "{{count}} de articole încă neverificate"

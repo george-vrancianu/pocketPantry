@@ -12,7 +12,7 @@ import {
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
-import { Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { ShoppingPage } from './ShoppingPage';
 
 const item = (
@@ -137,27 +137,265 @@ describe('ShoppingPage', () => {
     });
   });
 
-  it('removes an item', async () => {
-    const { calls } = stubShopping({
-      'DELETE /api/shopping-list/items/i1': () =>
-        Response.json(list([{ aisle: dairy, items: [milk] }])),
+  describe('removing an item', () => {
+    const REMOVED_TOMATO = list([{ aisle: dairy, items: [milk] }]);
+    const deleteTomato = {
+      'DELETE /api/shopping-list/items/i1': () => Response.json(REMOVED_TOMATO),
+    };
+    const deletes = (calls: Array<{ key: string }>) =>
+      calls.filter((c) => c.key.startsWith('DELETE')).map((c) => c.key);
+    const remove = (name: string) =>
+      userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
+
+    it('hides the row at once and offers Undo without calling the API', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(<ShoppingPage />);
+      expect(await screen.findByText('1 to buy')).toBeVisible();
+
+      await remove('Tomato');
+
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.getByText('0 to buy')).toBeVisible();
+      expect(await screen.findByText('Removed Tomato')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+      expect(deletes(calls)).toEqual([]);
     });
-    renderWithProviders(<ShoppingPage />);
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Remove Tomato' }),
-    );
+    it('puts the row back on Undo, in its place, with no request', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
 
-    await waitFor(() =>
+      await remove('Tomato');
+      await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
+      expect(screen.getByText('1 to buy')).toBeVisible();
+      const rows = screen.getAllByRole('button', { name: /^(Tomato|Milk)/ });
+      expect(rows.map((r) => r.textContent)).toEqual([
+        expect.stringContaining('Tomato'),
+        expect.stringContaining('Milk'),
+      ]);
+      expect(deletes(calls)).toEqual([]);
+    });
+
+    it('sends the delete when the toast expires after 5 s, not before', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      await act(() => vi.advanceTimersByTimeAsync(4500));
+      expect(deletes(calls)).toEqual([]);
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+    });
+
+    it('sends the first delete at once when a second item is removed, and Undo only restores the second', async () => {
+      const { calls } = stubShopping({
+        ...deleteTomato,
+        'DELETE /api/shopping-list/items/i2': () => Response.json(list([])),
+      });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      await remove('Milk');
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      expect(await screen.findByText('Removed Milk')).toBeVisible();
+      expect(screen.queryByText('Removed Tomato')).toBeNull();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
+
       expect(
-        screen.queryByRole('button', { name: /^Tomato/ }),
-      ).not.toBeInTheDocument(),
-    );
-    expect(calls.map((c) => c.key)).toContain(
-      'DELETE /api/shopping-list/items/i1',
-    );
-    expect(await screen.findByText('Removed Tomato')).toBeVisible();
-    expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+        await screen.findByRole('button', { name: /^Milk/ }),
+      ).toBeVisible();
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']);
+    });
+
+    it('sends the delete when the toast is dismissed with Escape', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      await userEvent.keyboard('{Escape}');
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+    });
+
+    it('ignores Undo clicked while the expired toast fades out', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await screen.findByText('1 to buy');
+
+      await user.click(screen.getByRole('button', { name: 'Remove Tomato' }));
+      const undo = screen.getByRole('button', { name: 'Undo' });
+      await act(() => vi.advanceTimersByTimeAsync(5050));
+      await user.click(undo);
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+    });
+
+    it('takes the Undo toast down when the Member leaves the page', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <ShoppingPage />
+                <Link to="/other">Leave</Link>
+              </>
+            }
+          />
+          <Route path="/other" element={<p>Elsewhere</p>} />
+        </Routes>,
+      );
+      await screen.findByText('1 to buy');
+      await remove('Tomato');
+      expect(screen.getByText('Removed Tomato')).toBeVisible();
+
+      await userEvent.click(screen.getByRole('link', { name: 'Leave' }));
+
+      expect(await screen.findByText('Elsewhere')).toBeVisible();
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      await waitFor(() =>
+        expect(screen.queryByText('Removed Tomato')).toBeNull(),
+      );
+    });
+
+    it('sends the delete when another toast replaces the Undo toast', async () => {
+      const basil = item({
+        id: 'i3',
+        name: 'Basil',
+        ingredientId: 'ing-basil',
+      });
+      const { calls } = stubShopping(
+        {
+          ...deleteTomato,
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () =>
+            Response.json(
+              {
+                id: 's1',
+                ingredientId: 'ing-basil',
+                name: 'Basil',
+                quantity: null,
+                unit: null,
+                aisle: null,
+              },
+              { status: 201 },
+            ),
+        },
+        list([{ aisle: produce, items: [tomato, basil] }]),
+      );
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('2 to buy');
+
+      await remove('Tomato');
+      const star = screen.getByRole('button', { name: 'Make Basil a staple' });
+      await waitFor(() => expect(star).not.toHaveAttribute('aria-disabled'));
+      await userEvent.click(star);
+
+      expect(await screen.findByText('Basil is now a staple')).toBeVisible();
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+    });
+
+    it('sends the delete when the Member leaves the page', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      const { unmount } = renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      unmount();
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+    });
+
+    it('sends the delete on pagehide', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'));
+      });
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+    });
+
+    it('keeps the item hidden when a refetch lands while the delete waits', async () => {
+      const shopping = stubShopping(deleteTomato);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      shopping.setCurrent(
+        list([
+          {
+            aisle: produce,
+            items: [tomato, item({ id: 'i5', name: 'Basil' })],
+          },
+          { aisle: dairy, items: [milk] },
+        ]),
+      );
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      expect(await screen.findByText('Basil')).toBeVisible();
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.getByText('Removed Tomato')).toBeVisible();
+    });
+
+    it('brings the row back with an error toast when the delete fails', async () => {
+      stubShopping({
+        'DELETE /api/shopping-list/items/i1': () =>
+          Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      });
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+
+      expect(
+        await screen.findByRole('button', { name: /^Tomato/ }),
+      ).toBeVisible();
+      expect(screen.getByText('1 to buy')).toBeVisible();
+      expect(screen.queryByText('Removed Tomato')).toBeNull();
+      expect(
+        screen.getByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
+    });
   });
 
   describe('Ingredient Icons', () => {

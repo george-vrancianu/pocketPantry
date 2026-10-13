@@ -100,6 +100,7 @@ export { DockItem, type DockItemProps } from './molecules/DockItem';
 export {
   useToast,
   type ToastApi,
+  type ToastHandle,
   type ToastOptions,
 } from './molecules/ToastProvider';
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
