@@ -244,6 +244,11 @@ export function parseQuantity(text: string): {
   return { value, valid };
 }
 
+/** Parse a typed amount, where a decimal comma ("1,5") counts as a point. */
+export function parseAmountText(text: string) {
+  return parseQuantity(text.replace(',', '.'));
+}
+
 /** The fields to change; anything left out stays as it is. */
 export type BatchEdit = {
   quantity?: number | null;

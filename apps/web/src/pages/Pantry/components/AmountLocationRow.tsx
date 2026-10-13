@@ -1,5 +1,5 @@
 import { Box, Stack, TextField } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useId, useState, type FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountField } from '../../../components/AmountField';
 import {
@@ -36,10 +36,18 @@ export function AmountLocationRow({
 }: Props) {
   const { t } = useTranslation('pantry');
   const id = useId();
+  // Typing "500 kg" passes through invalid text ("500 "), so the error waits until the amount is left or submitted.
+  const [touched, setTouched] = useState(false);
 
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box
+        sx={{ flex: 1, minWidth: 0 }}
+        onBlur={(event: FocusEvent<HTMLElement>) => {
+          if (!event.currentTarget.contains(event.relatedTarget))
+            setTouched(true);
+        }}
+      >
         <AmountField
           name={name}
           quantity={quantity}
@@ -51,26 +59,28 @@ export function AmountLocationRow({
           onUnitChange={(next) => {
             if (next) onUnitChange(next);
           }}
-          error={quantityValid ? null : t('form.quantityInvalid')}
-          onSubmit={onSubmit}
+          error={touched && !quantityValid ? t('common:amount.invalid') : null}
+          onSubmit={() => {
+            setTouched(true);
+            onSubmit();
+          }}
           allowNoUnit={false}
+          label={t('common:amount.placeholder')}
+          height={56}
+          popoverAlign="start"
         />
       </Box>
       <TextField
         id={`${id}-location`}
         select
-        size="small"
         label={t('form.location')}
         value={location}
         onChange={(event) =>
           onLocationChange(event.target.value as StorageLocation)
         }
         slotProps={{ select: { native: true } }}
-        sx={{
-          flex: '0 0 40%',
-          // Match the amount input's 44 px.
-          '& .MuiInputBase-root': { minHeight: 44 },
-        }}
+        // Room for "Congelator" and "Frigider" on a 320 px phone.
+        sx={{ flex: '0 0 40%', minWidth: 136 }}
       >
         {LOCATIONS.map((value) => (
           <option key={value} value={value}>

@@ -51,12 +51,18 @@ export type AmountFieldProps = {
   submit?: { label: string; disabled: boolean };
   /** Offer "no unit" in the chip; off where a quantity always needs a unit (Pantry Batches). */
   allowNoUnit?: boolean;
+  /** A visible label on the border, like the floating labels of the form fields around it. */
+  label?: string;
+  /** Input height in px; 56 matches the outlined form fields around it. */
+  height?: number;
+  /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
+  popoverAlign?: 'start' | 'end';
 };
 
 /**
  * One number input with a unit chip inside it, and an optional submit button beside it.
  * The chip opens a small group of toggle buttons; Escape closes that first. It has no outer
- * padding: the host (the Add sheet's row, the amount sheet) places it.
+ * padding: the host (the Add sheet's row, the amount sheet, the Pantry Batch forms) places it.
  */
 export function AmountField({
   name,
@@ -68,10 +74,14 @@ export function AmountField({
   onSubmit,
   submit,
   allowNoUnit = true,
+  label,
+  height = 44,
+  popoverAlign = 'end',
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const { color } = tokens;
   const errorId = useId();
+  const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
   const [picking, setPicking] = useState(false);
   const unitLabel = unit
@@ -147,7 +157,7 @@ export function AmountField({
             position: 'relative',
             flex: 1,
             minWidth: 0,
-            height: 44,
+            height,
             display: 'flex',
             alignItems: 'center',
             borderRadius: '14px',
@@ -159,8 +169,30 @@ export function AmountField({
             },
           }}
         >
+          {label ? (
+            <Box
+              component="label"
+              htmlFor={inputId}
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 10,
+                transform: 'translateY(-50%)',
+                px: '4px',
+                fontSize: 12,
+                fontWeight: 600,
+                lineHeight: 1,
+                color: color.muted,
+                backgroundColor: color.surface,
+                pointerEvents: 'none',
+              }}
+            >
+              {label}
+            </Box>
+          ) : null}
           <Box
             component="input"
+            id={inputId}
             ref={input}
             type="text"
             inputMode="decimal"
@@ -240,11 +272,12 @@ export function AmountField({
               sx={{
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
-                right: 0,
+                ...(popoverAlign === 'end' ? { right: 0 } : { left: 0 }),
                 zIndex: 1,
                 display: 'flex',
                 flexWrap: 'wrap',
-                justifyContent: 'flex-end',
+                justifyContent:
+                  popoverAlign === 'end' ? 'flex-end' : 'flex-start',
                 // Wrap rather than run off the sheet's left edge on narrow phones.
                 maxWidth: 'min(260px, calc(100vw - 72px))',
                 gap: '2px',

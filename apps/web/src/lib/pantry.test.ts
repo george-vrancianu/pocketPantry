@@ -5,6 +5,7 @@ import {
   countByLocation,
   groupByLocation,
   matchesSearch,
+  parseAmountText,
   parseQuantity,
   rollUp,
   type Batch,
@@ -184,6 +185,18 @@ describe('countByLocation', () => {
         make({ location: 'spices' }),
       ]),
     ).toEqual({ all: 3, fridge: 2, freezer: 0, cupboard: 0, spices: 1 });
+  });
+});
+
+describe('parseAmountText', () => {
+  it('reads a decimal comma as a point', () => {
+    expect(parseAmountText('1,5')).toEqual({ value: 1.5, valid: true });
+  });
+
+  it('keeps the parseQuantity rules', () => {
+    expect(parseAmountText('')).toEqual({ value: null, valid: true });
+    expect(parseAmountText('1,2345').valid).toBe(false);
+    expect(parseAmountText('1e3').valid).toBe(false);
   });
 });
 

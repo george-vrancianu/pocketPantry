@@ -264,11 +264,78 @@ describe('PantryPage', () => {
 
     expect(amount).toHaveValue('1.5');
     await user.click(screen.getByRole('button', { name: 'Unit: kg' }));
-    expect(screen.queryByRole('button', { name: '—' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Units' }))
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['g', 'kg', 'ml', 'L', 'pcs']);
 
     await user.type(amount, '{Enter}');
-    const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
-    expect(post?.body).toMatchObject({ quantity: 1.5, unit: 'kg' });
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 1.5, unit: 'kg' }),
+    );
+  });
+
+  it('takes a decimal comma and keeps a unit typed before the pick', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], [parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '1,5 kg',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 1.5, unit: 'kg' }),
+    );
+  });
+
+  it('sets the unit from the chip', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], [parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '2',
+    );
+    await user.click(screen.getByRole('button', { name: 'Unit: g' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
+        name: 'kg',
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 2, unit: 'kg' }),
+    );
   });
 
   it('explains an invalid quantity and returns focus to Add after Cancel', async () => {
@@ -277,10 +344,20 @@ describe('PantryPage', () => {
     renderWithProviders(<PantryPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-    await user.type(
-      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
-      '1.2345',
-    );
+    const amount = screen.getByRole('textbox', {
+      name: 'Amount, for example 2 or 500 g',
+    });
+    // Half-typed amounts ("500 " on the way to "500 g") are not flagged while typing.
+    await user.type(amount, '500 ');
+    expect(amount).not.toHaveAttribute('aria-invalid');
+    await user.clear(amount);
+    await user.type(amount, '1.2345');
+    expect(amount).not.toHaveAttribute('aria-invalid');
+    // Past the unit chip, out of the amount field.
+    await user.tab();
+    await user.tab();
+    expect(screen.getByLabelText('Location')).toHaveFocus();
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
     expect(
       screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
     ).toBeInTheDocument();
@@ -673,6 +750,32 @@ describe('PantryPage', () => {
           quantity: 500,
           unit: 'ml',
           location: 'freezer',
+        }),
+      );
+    });
+
+    it('saves on Enter in the amount, and Escape closes only the unit popover', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await openEditor(user);
+      const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+
+      await user.click(within(form).getByRole('button', { name: /^Unit: / }));
+      expect(within(form).getByRole('group', { name: 'Units' })).toBeVisible();
+      await user.keyboard('{Escape}');
+      expect(within(form).queryByRole('group', { name: 'Units' })).toBeNull();
+      expect(form).toBeInTheDocument();
+
+      const amount = within(form).getByRole('textbox', {
+        name: /Amount of Milk/,
+      });
+      await user.clear(amount);
+      await user.type(amount, '2{Enter}');
+      await waitFor(() =>
+        expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
+          quantity: 2,
         }),
       );
     });
