@@ -15,12 +15,25 @@ import {
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../../../../lib/catalog';
 
+const TYPED_UNITS: Record<string, Unit> = {
+  g: 'g',
+  kg: 'kg',
+  ml: 'ml',
+  l: 'l',
+  pcs: 'pcs',
+  pc: 'pcs',
+  stk: 'pcs',
+  buc: 'pcs',
+};
+const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
+
 export type AmountFieldProps = {
   /** Name of the Ingredient being added, for the accessible names. */
   name: string;
   quantity: string;
   unit: Unit | '';
-  onQuantityChange: (quantity: string) => void;
+  /** A typed unit ("500 g") arrives with the quantity, as one change. */
+  onQuantityChange: (quantity: string, unit?: Unit) => void;
   onUnitChange: (unit: Unit | '') => void;
   /** Why the quantity is invalid, or null when it is fine. */
   error: string | null;
@@ -52,6 +65,18 @@ export function AmountField({
     ? t(`common:units.${unit}`)
     : t('shopping:amount.noUnit');
 
+  const type = (text: string) => {
+    const typed = TYPED_AMOUNT.exec(text);
+    const typedUnit = typed?.[2] ? TYPED_UNITS[typed[2].toLowerCase()] : null;
+    if (unit === 'pcs' && text === `${quantity}s`) {
+      // "pc" already split off; the "s" of "pcs" completes the same unit.
+      onQuantityChange(quantity);
+    } else if (typed?.[1] && typedUnit) {
+      onQuantityChange(typed[1], typedUnit);
+    } else {
+      onQuantityChange(text);
+    }
+  };
   const choose = (next: Unit | '') => {
     onUnitChange(next);
     setPicking(false);
@@ -101,7 +126,7 @@ export function AmountField({
             placeholder={t('shopping:amount.placeholder')}
             value={quantity}
             onChange={(event: { target: { value: string } }) =>
-              onQuantityChange(event.target.value)
+              type(event.target.value)
             }
             onKeyDown={(event: KeyboardEvent) => {
               if (event.key === 'Enter') {
