@@ -6,7 +6,13 @@ import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
 import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 
-export type TemplateSummary = { id: string; name: string; lineCount: number };
+export type TemplateSummary = {
+  id: string;
+  name: string;
+  lineCount: number;
+  /** The first lines' names (at most 4) in stored order, localised. */
+  previewNames: string[];
+};
 
 export type TemplateLine = {
   id: string;
@@ -29,13 +35,13 @@ export const MAX_TEMPLATE_LINES = 100;
 const templatesKey = ['shopping-templates'] as const;
 const withLocale = (locale: string) => `?${new URLSearchParams({ locale })}`;
 
-export function useTemplates() {
+export function useTemplates(locale: string) {
   return useQuery({
-    queryKey: templatesKey,
+    queryKey: [...templatesKey, 'list', locale],
     queryFn: () =>
-      apiRequest<{ templates: TemplateSummary[] }>('/shopping-templates').then(
-        (body) => body.templates,
-      ),
+      apiRequest<{ templates: TemplateSummary[] }>(
+        `/shopping-templates${withLocale(locale)}`,
+      ).then((body) => body.templates),
   });
 }
 
@@ -48,6 +54,29 @@ export function useTemplate(id: string, locale: string) {
         `/shopping-templates/${id}?${new URLSearchParams({ locale, today })}`,
       ),
   });
+}
+
+export type TemplateLineGroup = {
+  key: string;
+  title: string | null;
+  lines: TemplateLine[];
+};
+
+/** Lines grouped by Aisle in shop order, Unmatched lines last. */
+export function groupByAisle(lines: TemplateLine[]): TemplateLineGroup[] {
+  const groups = new Map<string, TemplateLineGroup & { order: number }>();
+  for (const line of lines) {
+    const key = line.aisle?.id ?? 'unmatched';
+    const group = groups.get(key) ?? {
+      key,
+      title: line.aisle?.name ?? null,
+      order: line.aisle?.sortOrder ?? Number.MAX_SAFE_INTEGER,
+      lines: [],
+    };
+    group.lines.push(line);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.order - b.order);
 }
 
 /** A line as the body of a create or edit: by Ingredient id when matched, else by name. */

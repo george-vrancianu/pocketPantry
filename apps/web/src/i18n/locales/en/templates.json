@@ -5,11 +5,10 @@
     "button": "Save as template",
     "name": "Template name",
     "submit": "Save template",
-    "saving": "Saving"
+    "saving": "Saving",
+    "row": "Save this list as a template"
   },
   "apply": {
-    "button": "Add from template",
-    "choose": "Choose a template",
     "none": "No templates yet. Save your list as one, or create one under Templates.",
     "title": "Add from {{name}}",
     "hint": "Items already in your Pantry start unticked.",
@@ -19,7 +18,12 @@
     "confirming": "Adding",
     "inPantry": "In Pantry",
     "unmatchedGroup": "Not in the catalog",
-    "cancel": "Back"
+    "cancel": "Back",
+    "section": "Add from a template",
+    "allTemplates": "All templates",
+    "onList": "On list",
+    "added_one": "Added {{count}} item from {{name}}",
+    "added_other": "Added {{count}} items from {{name}}"
   },
   "list": {
     "empty": "No templates yet. Create one to reuse a shop.",
@@ -27,7 +31,9 @@
     "create": "Create template",
     "lines_one": "{{count}} line",
     "lines_other": "{{count}} lines",
-    "back": "Back to shopping"
+    "back": "Back to shopping",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items"
   },
   "editor": {
     "name": "Name",
@@ -38,5 +44,6 @@
     "empty": "No lines yet. Add what this template needs below.",
     "back": "Back to templates",
     "apply": "Add to list"
-  }
+  },
+  "manage": "Manage"
 }

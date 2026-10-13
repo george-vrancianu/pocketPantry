@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import { TOAST_ABOVE_SHEET } from './sheetToast';
+import { TemplateChips } from './TemplateChips';
 import {
   useDismissSuggestion,
   type Suggestion,
@@ -30,6 +31,10 @@ export type EmptySearchProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Called with the Ingredient id after a successful add. */
   onAdded: (ingredientId: string) => void;
+  /** Opens a template's apply view. */
+  onOpenTemplate: (id: string) => void;
+  /** Switches to the Templates tab. */
+  onSeeAllTemplates: () => void;
 };
 
 /** What the Ingredients tab shows while the search is empty. */
@@ -37,6 +42,10 @@ export function EmptySearch(props: EmptySearchProps) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
       <SuggestionChips {...props} />
+      <TemplateChips
+        onOpenTemplate={props.onOpenTemplate}
+        onSeeAll={props.onSeeAllTemplates}
+      />
     </Box>
   );
 }

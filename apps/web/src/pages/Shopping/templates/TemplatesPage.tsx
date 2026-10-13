@@ -23,7 +23,7 @@ import {
 export function TemplatesPage() {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const navigate = useNavigate();
-  const templates = useTemplates();
+  const templates = useTemplates(i18n.language);
   const { create } = useTemplateMutations(i18n.language);
   const [name, setName] = useState('');
 

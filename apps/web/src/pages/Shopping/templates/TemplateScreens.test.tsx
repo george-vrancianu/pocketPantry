@@ -24,31 +24,6 @@ const taco: Template = { id: 't1', name: 'Taco night', lines: [milk] };
 describe('Shopping Template screens', () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it('applies a chosen template from the Shopping List', async () => {
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-templates': () =>
-        Response.json({
-          templates: [{ id: 't1', name: 'Taco night', lineCount: 1 }],
-        }),
-      'GET /api/shopping-templates/t1': () => Response.json(taco),
-      'POST /api/shopping-list/items/bulk': () => Response.json({}),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<TemplateActions />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: 'Add from template' }));
-    await user.click(await screen.findByRole('button', { name: 'Taco night' }));
-    await user.click(
-      await screen.findByRole('button', { name: 'Add 1 item to list' }),
-    );
-
-    await screen.findByRole('button', { name: 'Add from template' });
-    expect(
-      calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')?.body,
-    ).toEqual({ items: [{ ingredientId: 'milk-id', quantity: 1, unit: 'l' }] });
-  });
-
   it('saves the current list as a template and opens it', async () => {
     const { fetchMock, calls } = stubApi({
       'POST /api/shopping-templates/from-list': () =>
@@ -83,7 +58,14 @@ describe('Shopping Template screens', () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/shopping-templates': () =>
         Response.json({
-          templates: [{ id: 't1', name: 'Taco night', lineCount: 1 }],
+          templates: [
+            {
+              id: 't1',
+              name: 'Taco night',
+              lineCount: 1,
+              previewNames: ['Milk'],
+            },
+          ],
         }),
       'POST /api/shopping-templates': () =>
         Response.json({ id: 't2', name: 'Weekly', lines: [] }, { status: 201 }),

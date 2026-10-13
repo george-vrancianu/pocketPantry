@@ -63,6 +63,10 @@ export type IngredientsTabProps = {
   usedUp: Suggestion[];
   /** Called after each successful add. */
   onAdded: () => void;
+  /** Opens a template's apply view. */
+  onOpenTemplate: (id: string) => void;
+  /** Switches to the Templates tab. */
+  onSeeAllTemplates: () => void;
 };
 
 /** The Ingredients tab: search the Catalog, open a result, give an amount, add. */
@@ -76,6 +80,8 @@ export function IngredientsTab({
   staples,
   usedUp,
   onAdded,
+  onOpenTemplate,
+  onSeeAllTemplates,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
   const toast = useToast();
@@ -220,6 +226,8 @@ export function IngredientsTab({
           usedUp={usedUp}
           addedIds={state.suggestionsAdded}
           onAdd={onAdd}
+          onOpenTemplate={onOpenTemplate}
+          onSeeAllTemplates={onSeeAllTemplates}
           onAdded={(ingredientId) => {
             onAdded();
             onStateChange((s) => ({

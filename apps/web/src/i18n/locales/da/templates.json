@@ -5,11 +5,10 @@
     "button": "Gem som skabelon",
     "name": "Skabelonens navn",
     "submit": "Gem skabelon",
-    "saving": "Gemmer"
+    "saving": "Gemmer",
+    "row": "Gem denne liste som skabelon"
   },
   "apply": {
-    "button": "Tilføj fra skabelon",
-    "choose": "Vælg en skabelon",
     "none": "Ingen skabeloner endnu. Gem din liste som skabelon, eller opret en under Skabeloner.",
     "title": "Tilføj fra {{name}}",
     "hint": "Varer, du allerede har i spisekammeret, starter uafkrydsede.",
@@ -19,7 +18,12 @@
     "confirming": "Tilføjer",
     "inPantry": "I spisekammeret",
     "unmatchedGroup": "Ikke i kataloget",
-    "cancel": "Tilbage"
+    "cancel": "Tilbage",
+    "section": "Tilføj fra en skabelon",
+    "allTemplates": "Alle skabeloner",
+    "onList": "På listen",
+    "added_one": "Tilføjede {{count}} vare fra {{name}}",
+    "added_other": "Tilføjede {{count}} varer fra {{name}}"
   },
   "list": {
     "empty": "Ingen skabeloner endnu. Opret en for at genbruge en indkøbstur.",
@@ -27,7 +31,9 @@
     "create": "Opret skabelon",
     "lines_one": "{{count}} linje",
     "lines_other": "{{count}} linjer",
-    "back": "Tilbage til indkøb"
+    "back": "Tilbage til indkøb",
+    "items_one": "{{count}} vare",
+    "items_other": "{{count}} varer"
   },
   "editor": {
     "name": "Navn",
@@ -38,5 +44,6 @@
     "empty": "Ingen linjer endnu. Tilføj, hvad skabelonen skal bruge, nedenfor.",
     "back": "Tilbage til skabeloner",
     "apply": "Tilføj til listen"
-  }
+  },
+  "manage": "Administrer"
 }

@@ -89,5 +89,7 @@
     "manage": "Gestionează",
     "dismissed": "Ai ignorat {{name}}",
     "dismiss": "Ignoră {{name}}"
-  }
+  },
+  "templatesFromSearch": "Sau începe de la un șablon",
+  "seeAll": "Vezi tot"
 }

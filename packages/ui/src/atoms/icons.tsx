@@ -26,6 +26,8 @@ import {
   ChevronUp,
   ChevronDown,
   ChevronRight,
+  Bookmark,
+  LayoutTemplate,
   Search,
   Minus,
   GripVertical,
@@ -87,3 +89,5 @@ export const BranchIcon = withDefaults(GitBranch);
 export const CartIcon = withDefaults(ShoppingCart);
 export const ChevronRightIcon = withDefaults(ChevronRight);
 export const SearchIcon = withDefaults(Search);
+export const BookmarkIcon = withDefaults(Bookmark);
+export const TemplateIcon = withDefaults(LayoutTemplate);

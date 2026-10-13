@@ -24,7 +24,12 @@ type Line = {
   aisle: { id: string; name: string; sortOrder: number } | null;
 };
 type Template = { id: string; name: string; lines: Line[] };
-type Summary = { id: string; name: string; lineCount: number };
+type Summary = {
+  id: string;
+  name: string;
+  lineCount: number;
+  previewNames: string[];
+};
 type Body = { code?: string; params?: unknown };
 
 describe('Shopping Templates (integration)', () => {
@@ -127,7 +132,12 @@ describe('Shopping Templates (integration)', () => {
         await as(bob).get('/shopping-templates?locale=en').expect(200)
       ).body as { templates: Summary[] };
       expect(listed.templates).toEqual([
-        { id: made.id, name: 'Weekly basics', lineCount: 2 },
+        {
+          id: made.id,
+          name: 'Weekly basics',
+          lineCount: 2,
+          previewNames: ['Parmesan', `Zzq mystery ${stamp}`],
+        },
       ]);
 
       const edited = (
@@ -186,6 +196,44 @@ describe('Shopping Templates (integration)', () => {
       await as(ana)
         .patch(`/shopping-templates/${made.id}?locale=en`, {})
         .expect(400);
+    });
+  });
+
+  describe('preview names', () => {
+    it('carries at most 4 names, in stored order, localised, Unmatched as typed', async () => {
+      const ana = await signUp();
+      const typed = `Zzq mystery ${stamp}`;
+      await create(ana, 'Long', [
+        { ingredientId: parmesan },
+        { name: typed },
+        { ingredientId: milk },
+        { name: 'Third typed' },
+        { name: 'Fifth typed' },
+      ]);
+      await create(ana, 'Empty');
+
+      const list = async (locale: string) =>
+        (
+          (
+            await as(ana)
+              .get(`/shopping-templates?locale=${locale}`)
+              .expect(200)
+          ).body as { templates: Summary[] }
+        ).templates;
+
+      const en = await list('en');
+      expect(en.map((t) => t.previewNames)).toEqual([
+        ['Parmesan', typed, 'Milk', 'Third typed'],
+        [],
+      ]);
+      expect(en[0].lineCount).toBe(5);
+      const ro = await list('ro');
+      expect(ro[0].previewNames).toEqual([
+        'Parmezan',
+        typed,
+        'Lapte',
+        'Third typed',
+      ]);
     });
   });
 

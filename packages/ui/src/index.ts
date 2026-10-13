@@ -29,6 +29,8 @@ export {
   ChevronDownIcon,
   ChevronRightIcon,
   SearchIcon,
+  BookmarkIcon,
+  TemplateIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
