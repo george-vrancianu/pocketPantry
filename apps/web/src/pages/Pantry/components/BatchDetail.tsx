@@ -6,7 +6,7 @@ import {
   useToast,
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expiryChipFor, type Batch } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
@@ -44,15 +44,8 @@ export function BatchDetail({
   const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
-
-  // "Remove from Pantry" closes the sheet first and asks once it is gone: the sheet hands focus back to the
-  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
+  // "Remove from Pantry" closes the sheet and asks once it has finished closing (focus is back on the row).
+  const removeRequested = useRef(false);
 
   const amount =
     batch.quantity === null || batch.unit === null
@@ -80,6 +73,11 @@ export function BatchDetail({
       <Sheet
         open={editing}
         onClose={() => setEditing(false)}
+        onExited={() => {
+          if (!removeRequested.current) return;
+          removeRequested.current = false;
+          row.current?.askToRemove();
+        }}
         label={t('edit.title', { name: batch.name })}
         header={
           <Typography
@@ -100,8 +98,8 @@ export function BatchDetail({
           }}
           onCancel={() => setEditing(false)}
           onRemove={() => {
+            removeRequested.current = true;
             setEditing(false);
-            setAskAfterClose(true);
           }}
         />
       </Sheet>

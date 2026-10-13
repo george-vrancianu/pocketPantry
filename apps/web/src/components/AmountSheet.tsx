@@ -37,8 +37,8 @@ export type AmountSheetProps = {
   /** Text of the red link under the buttons, e.g. `t('common:edit.removeFromList')`. */
   removeLabel: string;
   /**
-   * The link was pressed. The caller closes the sheet and, once it has closed, calls
-   * `SwipeRowHandle.askToRemove()` (see the effect in ChecklistRow).
+   * The link was pressed. The sheet closes itself (through `onClose`) and calls this once it has
+   * finished closing, so the caller can call `SwipeRowHandle.askToRemove()` with focus back on the row.
    */
   onRemove: () => void;
 };
@@ -60,10 +60,16 @@ export function AmountSheet({
   onRemove,
 }: AmountSheetProps) {
   const { t } = useTranslation('common');
+  const removeRequested = useRef(false);
   return (
     <Sheet
       open={open}
       onClose={onClose}
+      onExited={() => {
+        if (!removeRequested.current) return;
+        removeRequested.current = false;
+        onRemove();
+      }}
       label={t('edit.title', { name })}
       header={
         <Box sx={{ px: 3, pt: 2, pb: 1 }}>
@@ -86,7 +92,10 @@ export function AmountSheet({
         onSave={onSave}
         onCancel={onClose}
         removeLabel={removeLabel}
-        onRemove={onRemove}
+        onRemove={() => {
+          removeRequested.current = true;
+          onClose();
+        }}
       />
     </Sheet>
   );

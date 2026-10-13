@@ -274,15 +274,6 @@ function LineRow({
     };
   }, []);
 
-  // "Remove line" closes the sheet first and asks once it is gone, so that the confirmation's Keep
-  // button is focused after the sheet has handed focus back to the row.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
-
   const meta =
     line.quantity === null
       ? null
@@ -322,10 +313,7 @@ function LineRow({
         }}
         onClose={() => setEditing(false)}
         removeLabel={t('edit.removeLine')}
-        onRemove={() => {
-          setEditing(false);
-          setAskAfterClose(true);
-        }}
+        onRemove={() => row.current?.askToRemove()}
       />
     </>
   );

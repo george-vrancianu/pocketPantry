@@ -11,7 +11,7 @@ import {
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -135,15 +135,6 @@ function StapleRow({
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
 
-  // "Remove Staple" closes the sheet first and asks once it is gone: the sheet hands focus back to the
-  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
-
   return (
     <>
       <SwipeRow
@@ -178,10 +169,7 @@ function StapleRow({
         }}
         onClose={() => setEditing(false)}
         removeLabel={t('common:edit.removeStaple')}
-        onRemove={() => {
-          setEditing(false);
-          setAskAfterClose(true);
-        }}
+        onRemove={() => row.current?.askToRemove()}
       />
     </>
   );

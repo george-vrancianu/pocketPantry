@@ -728,11 +728,24 @@ describe('ShoppingPage', () => {
       await screen.findByText('1 to buy');
 
       const dialog = await openSheet(user);
+      // The app root must not be aria-hidden when Keep takes focus, or a screen reader would not
+      // announce the confirmation: so look at the moment it happens, not afterwards.
+      const hiddenWhenFocused: boolean[] = [];
+      const onFocus = (event: FocusEvent) => {
+        if ((event.target as HTMLElement).textContent === 'Keep') {
+          hiddenWhenFocused.push(
+            document.querySelector('body > [aria-hidden="true"]') !== null,
+          );
+        }
+      };
+      document.addEventListener('focusin', onFocus);
       await user.click(
         within(dialog).getByRole('button', { name: 'Remove from list' }),
       );
 
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      document.removeEventListener('focusin', onFocus);
+      expect(hiddenWhenFocused).toEqual([false]);
       expect(
         await screen.findByRole('group', { name: 'Remove Tomato?' }),
       ).toBeVisible();
