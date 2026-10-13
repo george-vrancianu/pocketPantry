@@ -23,6 +23,7 @@ import {
 } from '../unmatched/unmatched-entries';
 import type {
   AddShoppingItemBody,
+  SetAmountBody,
   ShoppingGroupView,
   ShoppingItemView,
   ShoppingListView,
@@ -229,6 +230,30 @@ export class ShoppingService {
       const updated = await tx
         .update(shoppingItems)
         .set({ checked })
+        .where(
+          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+        )
+        .returning({ id: shoppingItems.id });
+      if (updated.length === 0) throw itemNotFound();
+      return this.view(tx, listId, locale);
+    });
+  }
+
+  /** Replaces the item's quantity and unit (omitted means none); other fields are untouched. */
+  async setAmount(
+    memberId: string,
+    itemId: string,
+    body: SetAmountBody,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView> {
+    return this.database.transaction(async (tx) => {
+      const listId = await this.lockActiveList(tx, memberId);
+      const updated = await tx
+        .update(shoppingItems)
+        .set({
+          quantity: body.quantity === undefined ? null : String(body.quantity),
+          unit: body.unit ?? null,
+        })
         .where(
           and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
         )

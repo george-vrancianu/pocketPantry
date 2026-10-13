@@ -41,6 +41,13 @@ export type AddShoppingItemsBody = z.infer<typeof addShoppingItemsBody>;
 export const setCheckedBody = z.object({ checked: z.boolean() });
 export type SetCheckedBody = z.infer<typeof setCheckedBody>;
 
+/** Replaces a Shopping Item's amount; validation matches adding. Omitted fields are cleared. */
+export const setAmountBody = z.object({
+  quantity: z.number().positive().max(MAX_QUANTITY).optional(),
+  unit: z.enum(ingredientUnit.enumValues).optional(),
+});
+export type SetAmountBody = z.infer<typeof setAmountBody>;
+
 export const itemIdParam = z.object({ id: z.uuid() });
 
 export type ShoppingItemView = {
