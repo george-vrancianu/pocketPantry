@@ -29,7 +29,6 @@ describe('useRowHint', () => {
     expect(localStorage.getItem(KEY)).toBeNull();
     act(() => vi.advanceTimersByTime(1));
     expect(result.current.visible).toBe(true);
-    expect(result.current.visible).toBe(true);
     expect(result.current.peek).toBe(true);
     expect(localStorage.getItem(KEY)).toBe('1');
   });

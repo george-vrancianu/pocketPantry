@@ -28,6 +28,11 @@ export type SheetProps = {
   onClose: () => void;
   /** Called once the open transition has finished, e.g. to focus a field. */
   onEntered?: () => void;
+  /**
+   * Called once the close transition has finished: the dialog is gone, the app is no longer `aria-hidden`
+   * and focus is back on the opener. Use it for anything that needs to focus something after the close.
+   */
+  onExited?: () => void;
   /** Accessible name of the dialog. */
   label: string;
   /** Pinned above the body, e.g. a title row and tabs. */
@@ -54,6 +59,7 @@ export function Sheet({
   open,
   onClose,
   onEntered,
+  onExited,
   label,
   header,
   footer,
@@ -82,7 +88,7 @@ export function Sheet({
       }
       slotProps={{
         backdrop: { sx: { backgroundColor: SCRIM } },
-        transition: { onEntered },
+        transition: { onEntered, onExited },
         paper: {
           ref: setPaper,
           'aria-label': label,

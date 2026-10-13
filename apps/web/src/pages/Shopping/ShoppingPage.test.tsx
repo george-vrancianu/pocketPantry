@@ -126,9 +126,13 @@ describe('ShoppingPage', () => {
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Fruit & veg', 'Dairy & eggs']);
     expect(screen.getByText('250 g')).toBeVisible();
+    // Focusing the row announces the state: it is part of the group's description.
     expect(
-      within(screen.getByRole('group', { name: 'Milk' })).getByText('Ticked'),
-    ).toBeInTheDocument();
+      screen.getByRole('group', { name: 'Milk' }),
+    ).toHaveAccessibleDescription(/Ticked/);
+    expect(
+      screen.getByRole('group', { name: 'Tomato' }),
+    ).not.toHaveAccessibleDescription(/Ticked/);
     expect(
       within(screen.getByRole('group', { name: 'Tomato' })).queryByText(
         'Ticked',
@@ -728,11 +732,24 @@ describe('ShoppingPage', () => {
       await screen.findByText('1 to buy');
 
       const dialog = await openSheet(user);
+      // The app root must not be aria-hidden when Keep takes focus, or a screen reader would not
+      // announce the confirmation: so look at the moment it happens, not afterwards.
+      const hiddenWhenFocused: boolean[] = [];
+      const onFocus = (event: FocusEvent) => {
+        if ((event.target as HTMLElement).textContent === 'Keep') {
+          hiddenWhenFocused.push(
+            document.querySelector('body > [aria-hidden="true"]') !== null,
+          );
+        }
+      };
+      document.addEventListener('focusin', onFocus);
       await user.click(
         within(dialog).getByRole('button', { name: 'Remove from list' }),
       );
 
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      document.removeEventListener('focusin', onFocus);
+      expect(hiddenWhenFocused).toEqual([false]);
       expect(
         await screen.findByRole('group', { name: 'Remove Tomato?' }),
       ).toBeVisible();
@@ -812,7 +829,10 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       await screen.findByText('1 to buy');
 
-      expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
+      // Only the hidden custom action, which is not a tab stop.
+      expect(
+        screen.getByRole('button', { name: 'Remove Tomato' }),
+      ).toHaveAttribute('tabindex', '-1');
       expect(rowOf('Tomato')).toHaveAttribute('tabindex', '0');
     });
 
@@ -981,6 +1001,70 @@ describe('ShoppingPage', () => {
 
       // At once, while the row is still collapsing.
       expect(rowOf('Basil')).toHaveFocus();
+    });
+
+    describe('when the last row of a group goes', () => {
+      const removeByKeyboard = async (name: string) => {
+        act(() => rowOf(name).focus());
+        await userEvent.keyboard('{Delete}');
+        await userEvent.click(confirmRemove());
+      };
+
+      it('focuses the first row of the next group', async () => {
+        stubShopping(
+          {},
+          list([
+            { aisle: produce, items: [tomato] },
+            { aisle: dairy, items: [milk, item({ id: 'i7', name: 'Eggs' })] },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByRole('group', { name: /^Milk/ });
+
+        await removeByKeyboard('Tomato');
+
+        expect(rowOf('Milk')).toHaveFocus();
+      });
+
+      it('focuses the last row of the previous group when it was the last group', async () => {
+        stubShopping(
+          {},
+          list([
+            {
+              aisle: produce,
+              items: [tomato, item({ id: 'i8', name: 'Kale' })],
+            },
+            { aisle: dairy, items: [milk] },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByRole('group', { name: /^Milk/ });
+
+        await removeByKeyboard('Milk');
+
+        expect(rowOf('Kale')).toHaveFocus();
+      });
+
+      it('focuses the empty text when it was the last row of the list', async () => {
+        const shopping = stubShopping(
+          {},
+          list([{ aisle: produce, items: [tomato] }]),
+        );
+        vi.useFakeTimers();
+        renderWithProviders(<ShoppingPage />);
+        await act(() => vi.advanceTimersByTimeAsync(0));
+        void shopping;
+
+        const row = rowOf('Tomato');
+        act(() => row.focus());
+        fireEvent.keyDown(row, { key: 'Delete' });
+        fireEvent.click(confirmRemove());
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+
+        expect(
+          screen.getByText('Your list is empty.').parentElement,
+        ).toHaveFocus();
+      });
     });
 
     it('removes once on a double click of Remove', async () => {

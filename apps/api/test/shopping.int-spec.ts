@@ -335,6 +335,36 @@ describe('Shopping List (integration)', () => {
       expect(items(cleared)[0]).toMatchObject({ quantity: null, unit: null });
     });
 
+    it('does not merge into a sibling, and a later add merges into the oldest duplicate', async () => {
+      const { cookie } = await signUp('AmountDup');
+      const milk = await ingredientId(cookie, 'milk');
+      await add(cookie, { ingredientId: milk, quantity: 1, unit: 'l' });
+      const two = await add(cookie, {
+        ingredientId: milk,
+        quantity: 500,
+        unit: 'ml',
+      });
+      const [litre, millilitres] = items(two);
+
+      // The known exception to the merge rule: two lines now share an Ingredient and a unit.
+      const duplicated = (
+        await call('put', cookie, `/items/${millilitres.id}/amount`)
+          .send({ quantity: 2, unit: 'l' })
+          .expect(200)
+      ).body as List;
+      expect(items(duplicated).map((i) => i.quantity)).toEqual([1, 2]);
+
+      const merged = await add(cookie, {
+        ingredientId: milk,
+        quantity: 5,
+        unit: 'l',
+      });
+      expect(items(merged).map((i) => [i.id, i.quantity])).toEqual([
+        [litre.id, 6],
+        [millilitres.id, 2],
+      ]);
+    });
+
     it('validates like adding', async () => {
       const { cookie } = await signUp('AmountBad');
       const added = await add(cookie, { name: 'Cake' });

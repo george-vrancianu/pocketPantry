@@ -46,6 +46,13 @@ export type SwipeRowLabels = {
   pressed?: string;
   /** The row's description for assistive technology, e.g. "Swipe left to remove, hold to edit". */
   hint?: string;
+  /**
+   * Accessible name of a visually hidden "Edit" button inside the row (e.g. "Edit Tomato"), the screen-reader
+   * custom action for hold. Used only when the row has `onEdit`. The button is not a tab stop.
+   */
+  editAction?: string;
+  /** Accessible name of the hidden "Remove" button (e.g. "Remove Tomato"), which opens the confirmation. */
+  removeAction?: string;
 };
 
 /** What a parent can ask of a row through its `ref`. */
@@ -146,12 +153,35 @@ export function SwipeRow({
       }
       return null;
     };
+    // A list split into groups marks the whole of it `data-row-scope`: when this was the last row of its
+    // group (the group goes with it), the next group's first row takes focus, else the previous group's last.
+    const inScope = () => {
+      const rows = Array.from(
+        item
+          .closest('[data-row-scope]')
+          ?.querySelectorAll<HTMLElement>('li[tabindex]') ?? [],
+      ).filter((row) => row.parentElement !== item.parentElement);
+      const after = rows.find(
+        (row) =>
+          item.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      return after ?? rows[rows.length - 1] ?? null;
+    };
     const target =
       sibling(item.nextElementSibling, 'nextElementSibling') ??
       sibling(item.previousElementSibling, 'previousElementSibling') ??
+      inScope() ??
       item.parentElement;
     if (target && !target.hasAttribute('tabindex')) {
+      // Only to take focus: once it leaves, the container is not a stop of any kind again.
       target.setAttribute('tabindex', '-1');
+      target.addEventListener(
+        'blur',
+        () => target.removeAttribute('tabindex'),
+        {
+          once: true,
+        },
+      );
     }
     target?.focus();
   };
@@ -231,6 +261,7 @@ export function SwipeRow({
 
   const confirming = phase === 'confirming';
   const hintId = useId();
+  const pressedId = useId();
   useEffect(() => {
     if (!confirming) return;
     keepRef.current?.focus();
@@ -255,7 +286,14 @@ export function SwipeRow({
   }, [closer]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
-    if (event.target !== event.currentTarget || !idle) return;
+    if (event.target !== event.currentTarget) return;
+    // Shift+Tab from Keep lands on the row, which is then the place to say no.
+    if (event.key === 'Escape' && confirming) {
+      event.preventDefault();
+      keep();
+      return;
+    }
+    if (!idle) return;
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
       openConfirmation();
@@ -306,7 +344,15 @@ export function SwipeRow({
       ref={itemRef}
       role="group"
       aria-label={name}
-      aria-describedby={labels.hint ? hintId : undefined}
+      aria-disabled={disabled || undefined}
+      aria-describedby={
+        [
+          pressed && labels.pressed ? pressedId : null,
+          labels.hint ? hintId : null,
+        ]
+          .filter(Boolean)
+          .join(' ') || undefined
+      }
       aria-keyshortcuts={onEdit ? 'Enter Delete Backspace' : 'Delete Backspace'}
       tabIndex={0}
       onKeyDown={onKeyDown}
@@ -334,7 +380,7 @@ export function SwipeRow({
       }}
     >
       {pressed && labels.pressed ? (
-        <Box component="span" sx={visuallyHidden}>
+        <Box component="span" id={pressedId} sx={visuallyHidden}>
           {labels.pressed}
         </Box>
       ) : null}
@@ -539,6 +585,22 @@ export function SwipeRow({
                 },
               }}
             />
+          ) : null}
+        </Box>
+      ) : null}
+      {labels.removeAction || (onEdit && labels.editAction) ? (
+        // Screen-reader custom actions: reachable by the virtual cursor and rotor, but not tab stops, so the
+        // row stays one. Kept mounted (inert when busy) so focus can return to them after the sheet closes.
+        <Box component="span" inert={!idle || undefined} sx={visuallyHidden}>
+          {onEdit && labels.editAction ? (
+            <button type="button" tabIndex={-1} onClick={onEdit}>
+              {labels.editAction}
+            </button>
+          ) : null}
+          {labels.removeAction ? (
+            <button type="button" tabIndex={-1} onClick={openConfirmation}>
+              {labels.removeAction}
+            </button>
           ) : null}
         </Box>
       ) : null}

@@ -19,8 +19,12 @@
   },
   "row": {
     "a11yHint": "Swipe left to remove, hold to edit",
+    "actions": {
+      "edit": "Edit {{name}}",
+      "remove": "Remove {{name}}"
+    },
     "context": {
-      "list": "from your list",
+      "shopping": "from your list",
       "pantry": "in your Pantry",
       "template": "from this template",
       "staples": "from your Staples"
@@ -48,6 +52,7 @@
   },
   "edit": {
     "removeFromList": "Remove from list",
+    "removeFromPantry": "Remove from Pantry",
     "removeLine": "Remove line",
     "removeStaple": "Remove Staple",
     "save": "Save",

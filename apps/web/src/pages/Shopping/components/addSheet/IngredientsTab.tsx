@@ -15,6 +15,7 @@ import {
   type CatalogSearchResult,
   type Unit,
 } from '../../../../lib/catalog';
+import { AmountField } from '../../../../components/AmountField';
 import { normalizeName } from '../../../../lib/normalizeName';
 import { parseQuantity } from '../../../../lib/pantry';
 import {
@@ -26,7 +27,6 @@ import {
 } from '../../../../lib/shopping';
 import type { Suggestion } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
-import { AmountField } from '../../../../components/AmountField';
 import { useSheetToast } from './SheetFooter';
 
 import { INNER_RADIUS, LIST_RADIUS, ResultRow } from './ResultRow';

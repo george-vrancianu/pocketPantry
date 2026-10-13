@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-/** The lists whose rows swipe and hold; each shows its first-use hint once. */
-export type RowHintList = 'pantry' | 'shopping' | 'template' | 'staples';
+/** The lists whose rows swipe and hold: each has its own first-use hint and removal context. */
+export type RowList = 'pantry' | 'shopping' | 'template' | 'staples';
 
 /** The hint shows this long after the list has rows to show it on. */
 const SHOW_AFTER_MS = 700;
 /** How long `peek` stays on: longer than the row's own peek, so it plays whenever the row is mounted. */
 const PEEK_WINDOW_MS = 1200;
 
-const keyOf = (list: RowHintList) => `pp.rowHint.${list}`;
+const keyOf = (list: RowList) => `pp.rowHint.${list}`;
 
-function wasShown(list: RowHintList): boolean {
+function wasShown(list: RowList): boolean {
   try {
     return window.localStorage.getItem(keyOf(list)) !== null;
   } catch {
@@ -19,7 +19,7 @@ function wasShown(list: RowHintList): boolean {
   }
 }
 
-function remember(list: RowHintList): void {
+function remember(list: RowList): void {
   try {
     window.localStorage.setItem(keyOf(list), '1');
   } catch {
@@ -44,7 +44,7 @@ export type RowHint = {
  * expanded). 700 ms after that, the pill shows and the first row peeks; a swipe to zone 1 or a completed
  * hold on any row of the list (`onLearned`) fades the pill.
  */
-export function useRowHint(list: RowHintList, active: boolean): RowHint {
+export function useRowHint(list: RowList, active: boolean): RowHint {
   // Read once: a hint shown during this visit keeps its space for the whole visit.
   const [unseen] = useState(() => !wasShown(list));
   const [shown, setShown] = useState(false);

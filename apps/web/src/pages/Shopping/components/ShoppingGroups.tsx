@@ -9,10 +9,11 @@ import {
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../../components/AmountSheet';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
+import { formatRowAmount, type Amount } from '../../../lib/amount';
 import type { RowHint } from '../../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -24,10 +25,7 @@ const CHECKED_TEXT = tokens.color.checkedText;
 export type ShoppingGroupsProps = {
   groups: ShoppingGroup[];
   onToggle: (id: string, checked: boolean) => void;
-  onSetAmount: (
-    id: string,
-    amount: Pick<ShoppingItem, 'quantity' | 'unit'>,
-  ) => Promise<unknown>;
+  onSetAmount: (id: string, amount: Amount) => Promise<unknown>;
   onRemove: (id: string, name: string) => void;
   /** The first-use hint: the first row peeks, and a gesture on any row fades the pill. */
   hint: Pick<RowHint, 'peek' | 'onLearned'>;
@@ -43,7 +41,7 @@ export function ShoppingGroups({
 }: ShoppingGroupsProps) {
   const { t } = useTranslation('shopping');
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} data-row-scope="">
       {groups.map((group, groupIndex) => {
         const title = group.aisle?.name ?? t('unmatchedGroup');
         return (
@@ -128,26 +126,13 @@ function ChecklistRow({
   onSetAmount: ShoppingGroupsProps['onSetAmount'];
   onRemove: ShoppingGroupsProps['onRemove'];
 }) {
-  const { t } = useTranslation('shopping');
+  const { t, i18n } = useTranslation('shopping');
   const toast = useToast();
-  const labels = useSwipeRowLabels(item.name, 'list', { hold: true });
+  const labels = useSwipeRowLabels(item.name, 'shopping', { hold: true });
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
 
-  // "Remove from list" closes the sheet first and asks once it is gone: the sheet hands focus back to the
-  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
-  const quantity =
-    item.quantity === null
-      ? null
-      : item.unit
-        ? `${item.quantity} ${t(`common:units.${item.unit}`)}`
-        : String(item.quantity);
+  const quantity = formatRowAmount(item, i18n.language, t);
 
   return (
     <>
@@ -239,7 +224,7 @@ function ChecklistRow({
       <AmountSheet
         open={editing}
         name={item.name}
-        context={t('common:row.context.list')}
+        context={t('common:row.context.shopping')}
         amount={{ quantity: item.quantity, unit: item.unit }}
         onSave={async (amount) => {
           await onSetAmount(item.id, amount);
@@ -248,10 +233,7 @@ function ChecklistRow({
         }}
         onClose={() => setEditing(false)}
         removeLabel={t('common:edit.removeFromList')}
-        onRemove={() => {
-          setEditing(false);
-          setAskAfterClose(true);
-        }}
+        onRemove={() => row.current?.askToRemove()}
       />
     </>
   );

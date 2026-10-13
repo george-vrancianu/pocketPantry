@@ -22,9 +22,7 @@
   "noDetails": "Ingen mængde angivet",
   "edit": {
     "title": "Rediger partiet {{name}}",
-    "save": "Gem ændringer",
-    "updated": "Opdaterede {{name}}",
-    "remove": "Fjern fra spisekammeret"
+    "save": "Gem ændringer"
   },
   "form": {
     "title": "Tilføj til spisekammeret",

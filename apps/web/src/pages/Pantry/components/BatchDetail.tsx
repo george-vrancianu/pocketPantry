@@ -1,4 +1,5 @@
 import {
+  Box,
   ListRow,
   Sheet,
   SwipeRow,
@@ -6,7 +7,7 @@ import {
   useToast,
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expiryChipFor, type Batch } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
@@ -44,15 +45,8 @@ export function BatchDetail({
   const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
-
-  // "Remove from Pantry" closes the sheet first and asks once it is gone: the sheet hands focus back to the
-  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
+  // "Remove from Pantry" closes the sheet and asks once it has finished closing (focus is back on the row).
+  const removeRequested = useRef(false);
 
   const amount =
     batch.quantity === null || batch.unit === null
@@ -80,28 +74,38 @@ export function BatchDetail({
       <Sheet
         open={editing}
         onClose={() => setEditing(false)}
+        onExited={() => {
+          if (!removeRequested.current) return;
+          removeRequested.current = false;
+          row.current?.askToRemove();
+        }}
         label={t('edit.title', { name: batch.name })}
         header={
-          <Typography
-            component="h2"
-            sx={{ px: 3, pt: 2, pb: 1, fontSize: 20, fontWeight: 700 }}
-          >
-            {batch.name}
-          </Typography>
+          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+            <Typography
+              component="h2"
+              sx={{ fontSize: 20, fontWeight: 700, overflowWrap: 'anywhere' }}
+            >
+              {batch.name}
+            </Typography>
+            <Typography variant="meta" color="text.secondary">
+              {t('common:row.context.pantry')}
+            </Typography>
+          </Box>
         }
       >
         <EditBatchForm
           batch={batch}
           onSaved={(edit) => {
             setEditing(false);
-            toast.show(t('edit.updated', { name: batch.name }));
+            toast.show(t('common:row.updated', { name: batch.name }));
             // A `location` in the edit means the Batch moved out of this row.
             if (edit.location) onLeft();
           }}
           onCancel={() => setEditing(false)}
           onRemove={() => {
+            removeRequested.current = true;
             setEditing(false);
-            setAskAfterClose(true);
           }}
         />
       </Sheet>

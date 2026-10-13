@@ -154,6 +154,8 @@ export class ShoppingService {
             : eq(shoppingItems.unit, unit),
         ),
       )
+      // setAmount can leave two lines with the same identity and unit; the oldest one is the merge target.
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id))
       .limit(1);
 
     if (existing) {
@@ -239,7 +241,13 @@ export class ShoppingService {
     });
   }
 
-  /** Replaces the item's quantity and unit (omitted means none); other fields are untouched. */
+  /**
+   * Replaces the item's quantity and unit (omitted means none); other fields are untouched.
+   *
+   * A line is deliberately not merged into a sibling with the same Ingredient (or Unmatched name) and the
+   * new unit: that is a known exception to the merge rule above, which only applies when adding. Adding
+   * afterwards merges into the oldest of the duplicates.
+   */
   async setAmount(
     memberId: string,
     itemId: string,

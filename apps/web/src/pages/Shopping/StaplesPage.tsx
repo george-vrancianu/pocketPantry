@@ -10,14 +10,13 @@ import {
   useToast,
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { CatalogSearch } from '../../components/CatalogSearch';
 import { translateApiError } from '../../i18n/translateApiError';
-import { formatAmount } from '../../lib/amount';
+import { formatAmount, type Amount } from '../../lib/amount';
 import {
   staplesQueryKey,
   useStapleMutations,
@@ -35,23 +34,24 @@ export function StaplesPage() {
   const staples = useStaples(i18n.language);
   const { add, update, remove } = useStapleMutations(i18n.language);
   const [formKey, setFormKey] = useState(0);
-  const queryClient = useQueryClient();
-  const { mutateAsync: sendDelete } = remove;
-  const removal = useDeferredRemoval(
-    useCallback(
-      async (id: string) => {
-        // A poll already in flight would carry the Staple back in.
-        await queryClient.cancelQueries({ queryKey: staplesQueryKey });
-        return sendDelete(id);
-      },
-      [queryClient, sendDelete],
-    ),
-  );
+  const removal = useDeferredRemoval(staplesQueryKey, remove.mutateAsync);
   // A removed Staple stays out of the list, refetches included, until its delete has settled.
   const visible = useMemo(
     () => staples.data?.filter((staple) => !removal.hiddenIds.has(staple.id)),
     [staples.data, removal.hiddenIds],
   );
+
+  // Removing the last Staple unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLElement>(null);
+  const hadStaples = useRef(false);
+  const stapleCount = visible?.length ?? 0;
+  useEffect(() => {
+    if (stapleCount === 0 && hadStaples.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadStaples.current = stapleCount > 0;
+  }, [stapleCount]);
 
   const hint = useRowHint('staples', (visible?.length ?? 0) > 0);
 
@@ -79,7 +79,14 @@ export function StaplesPage() {
         />
         {staples.isPending ? <Spinner label={t('common:loading')} /> : null}
         {visible?.length === 0 ? (
-          <Typography color="text.secondary">{t('staples:empty')}</Typography>
+          <Typography
+            ref={empty}
+            tabIndex={-1}
+            color="text.secondary"
+            sx={{ outline: 'none' }}
+          >
+            {t('staples:empty')}
+          </Typography>
         ) : null}
         {visible && visible.length > 0 ? (
           <Box
@@ -126,7 +133,7 @@ function StapleRow({
   peek: boolean;
   onLearned: RowHint['onLearned'];
   /** Rejects with the API error, which the amount sheet shows. */
-  onSave: (amount: Pick<Staple, 'quantity' | 'unit'>) => Promise<unknown>;
+  onSave: (amount: Amount) => Promise<unknown>;
   onRemove: () => void;
 }) {
   const { t, i18n } = useTranslation(['staples', 'common']);
@@ -134,15 +141,6 @@ function StapleRow({
   const labels = useSwipeRowLabels(staple.name, 'staples', { hold: true });
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
-
-  // "Remove Staple" closes the sheet first and asks once it is gone: the sheet hands focus back to the
-  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
-  const [askAfterClose, setAskAfterClose] = useState(false);
-  useEffect(() => {
-    if (!askAfterClose || editing) return;
-    setAskAfterClose(false);
-    row.current?.askToRemove();
-  }, [askAfterClose, editing]);
 
   return (
     <>
@@ -178,10 +176,7 @@ function StapleRow({
         }}
         onClose={() => setEditing(false)}
         removeLabel={t('common:edit.removeStaple')}
-        onRemove={() => {
-          setEditing(false);
-          setAskAfterClose(true);
-        }}
+        onRemove={() => row.current?.askToRemove()}
       />
     </>
   );

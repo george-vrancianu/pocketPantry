@@ -1,5 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -24,18 +23,8 @@ export function usePantryScreen() {
   const { t, i18n } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const batches = useBatches(i18n.language, today);
-  const queryClient = useQueryClient();
   const { mutateAsync: sendDelete } = useDeleteBatch();
-  const removal = useDeferredRemoval(
-    useCallback(
-      async (id: string) => {
-        // A refetch already in flight would carry the Batch back in.
-        await queryClient.cancelQueries({ queryKey: ['pantry'] });
-        return sendDelete(id);
-      },
-      [queryClient, sendDelete],
-    ),
-  );
+  const removal = useDeferredRemoval(['pantry'], sendDelete);
   const { hiddenIds } = removal;
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');

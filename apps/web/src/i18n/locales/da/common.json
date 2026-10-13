@@ -19,8 +19,12 @@
   },
   "row": {
     "a11yHint": "Stryg til venstre for at fjerne, hold nede for at redigere",
+    "actions": {
+      "edit": "Rediger {{name}}",
+      "remove": "Fjern {{name}}"
+    },
     "context": {
-      "list": "fra din liste",
+      "shopping": "fra din liste",
       "pantry": "fra dit spisekammer",
       "template": "fra denne skabelon",
       "staples": "fra dine basisvarer"
@@ -30,10 +34,10 @@
     "releaseToDelete": "Slip for at fjerne",
     "remove": "Fjern",
     "removeQuestion": "Fjern {{name}}?",
-    "removed": "Fjernede {{name}}",
+    "removed": "{{name}} fjernet",
     "ticked": "Afkrydset",
     "undo": "Fortryd",
-    "updated": "Opdaterede {{name}}"
+    "updated": "{{name}} opdateret"
   },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",
   "unverified_other": "{{count}} varer er stadig ikke bekræftet",
@@ -48,6 +52,7 @@
   },
   "edit": {
     "removeFromList": "Fjern fra listen",
+    "removeFromPantry": "Fjern fra spisekammeret",
     "removeLine": "Fjern linjen",
     "removeStaple": "Fjern basisvare",
     "save": "Gem",

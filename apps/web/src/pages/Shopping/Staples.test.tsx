@@ -422,7 +422,11 @@ describe('StaplesPage', () => {
     expect(milk).toHaveTextContent('2 L');
     expect(rowOf('Flour')).not.toHaveTextContent(/\d/);
     expect(screen.queryByRole('spinbutton')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Save|Remove/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Save/ })).toBeNull();
+    // The custom actions for screen readers are there, but not tab stops.
+    for (const button of screen.getAllByRole('button', { name: /Remove/ })) {
+      expect(button).toHaveAttribute('tabindex', '-1');
+    }
   });
 
   it('adds a Staple from the Catalog search', async () => {
@@ -637,6 +641,80 @@ describe('StaplesPage', () => {
       expect(deletes(calls)).toEqual(['DELETE /api/staples/s1']);
       expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
       expect(screen.getByText(/No staples yet/)).toBeVisible();
+    });
+  });
+
+  describe('removing a Staple, further cases', () => {
+    const removeMilk = async () => {
+      const row = rowOf('Milk');
+      act(() => row.focus());
+      fireEvent.keyDown(row, { key: 'Delete' });
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+    };
+
+    it('brings the row back with an error toast when the delete fails', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+        'DELETE /api/staples/s1': () =>
+          Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+
+      await removeMilk();
+      expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+      await flush();
+
+      expect(screen.getByRole('group', { name: 'Milk' })).toBeVisible();
+      expect(screen.queryByText('Removed Milk')).toBeNull();
+      expect(
+        screen.getByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
+    });
+
+    it('hands focus to the empty text when the last Staple goes', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+
+      await removeMilk();
+
+      expect(screen.getByText(/No staples yet/)).toHaveFocus();
+    });
+
+    it('opens the sheet when the row is held for 500 ms', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+      const content = rowOf('Milk').querySelector(
+        '[data-swipe-row-content]',
+      ) as HTMLElement;
+
+      fireEvent.pointerDown(content, {
+        pointerId: 1,
+        clientX: 50,
+        clientY: 20,
+      });
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(200));
+
+      expect(screen.getByRole('dialog', { name: 'Edit Milk' })).toBeVisible();
     });
   });
 
