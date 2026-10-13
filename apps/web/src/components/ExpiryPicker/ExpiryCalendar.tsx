@@ -239,6 +239,7 @@ export function ExpiryCalendar({
             transition: 'background-color .1s',
             '&:hover': { backgroundColor: color.chipNeutral },
             ...focusRing,
+            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           },
           '& .day[data-past]': { color: color.muted },
           '& .day[data-band]': {
