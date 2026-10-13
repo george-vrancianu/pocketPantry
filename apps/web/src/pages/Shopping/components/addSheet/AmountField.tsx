@@ -31,6 +31,8 @@ const continuesAlias = (alias: string) =>
   Object.keys(TYPED_UNITS).some(
     (known) => known.startsWith(alias) || `${known}.` === alias,
   );
+// Android IMEs report typing as composition text.
+const TYPED_INPUT_TYPES = new Set(['insertText', 'insertCompositionText']);
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
 
 export type AmountFieldProps = {
@@ -166,8 +168,9 @@ export function AmountField({
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               type(
                 event.target.value,
-                (event.nativeEvent as InputEvent).inputType === 'insertText' &&
-                  event.target.selectionStart === event.target.value.length,
+                TYPED_INPUT_TYPES.has(
+                  (event.nativeEvent as InputEvent).inputType,
+                ) && event.target.selectionStart === event.target.value.length,
               )
             }
             onKeyDown={(event: KeyboardEvent) => {
