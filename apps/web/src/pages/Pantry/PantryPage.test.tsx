@@ -142,15 +142,15 @@ describe('PantryPage', () => {
 
     it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
       stubPantry([
-        batch({ name: 'Kefir', ingredientId: 'kefir-id', aisle: dairy }),
+        batch({ name: 'Zorblax', ingredientId: 'zorblax-id', aisle: dairy }),
       ]);
       renderWithProviders(<PantryPage />);
-      await screen.findByText('Kefir');
-      expect(iconOf('Kefir')).toHaveAttribute(
+      await screen.findByText('Zorblax');
+      expect(iconOf('Zorblax')).toHaveAttribute(
         'data-ingredient-icon',
         'default',
       );
-      expect(iconOf('Kefir')).toHaveAttribute(
+      expect(iconOf('Zorblax')).toHaveAttribute(
         'data-ingredient-tint',
         '#E3ECF3',
       );

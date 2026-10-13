@@ -1,10 +1,6 @@
-import {
-  Box,
-  ChevronRightIcon,
-  IngredientIcon,
-  tokens,
-} from '@pocket-pantry/ui';
+import { Box, ChevronRightIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { IngredientIconSlot } from '../../../../components/IngredientIconSlot';
 import { focusRingStyle } from '../../../../lib/focusRing';
 
 /** Radius of the bordered result list; its rows round their own ends (the list does not clip). */
@@ -97,18 +93,7 @@ export function ResultRow({
         ...(active ? focusRingStyle() : { outline: 'none' }),
       }}
     >
-      <Box
-        aria-hidden
-        sx={{
-          flexShrink: 0,
-          width: 38,
-          height: 38,
-          display: 'grid',
-          placeItems: 'center',
-        }}
-      >
-        <IngredientIcon ingredientId={ingredientId} aisleId={aisleId} />
-      </Box>
+      <IngredientIconSlot ingredientId={ingredientId} aisleId={aisleId} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box
           sx={{

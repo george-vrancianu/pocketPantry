@@ -1,6 +1,7 @@
-import { Box, IngredientIcon, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
 import { expiryChipFor, type RollUp } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
@@ -71,21 +72,10 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
             cursor: 'pointer',
           }}
         >
-          <Box
-            aria-hidden="true"
-            sx={{
-              flexShrink: 0,
-              width: 38,
-              height: 38,
-              display: 'grid',
-              placeItems: 'center',
-            }}
-          >
-            <IngredientIcon
-              ingredientId={rollUp.unmatched ? undefined : rollUp.key}
-              aisleId={rollUp.aisleId ?? undefined}
-            />
-          </Box>
+          <IngredientIconSlot
+            ingredientId={rollUp.ingredientId}
+            aisleId={rollUp.aisleId}
+          />
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography
               component="span"

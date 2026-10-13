@@ -3,17 +3,18 @@ import {
   CheckIcon,
   CloseIcon,
   IconButton,
-  IngredientIcon,
   Stack,
+  tokens,
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
 
 /** Greyed text colour of a checked row, shared by its name and icon. */
-const CHECKED_TEXT = '#66736B';
+const CHECKED_TEXT = tokens.color.checkedText;
 
 export type ShoppingGroupsProps = {
   groups: ShoppingGroup[];
@@ -165,19 +166,11 @@ function ChecklistRow({
         >
           {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
         </Box>
-        <Box
-          aria-hidden="true"
-          sx={{
-            flexShrink: 0,
-            width: 38,
-            height: 38,
-            display: 'grid',
-            placeItems: 'center',
-            color: item.checked ? CHECKED_TEXT : 'text.primary',
-          }}
-        >
-          <IngredientIcon ingredientId={item.ingredientId} aisleId={aisleId} />
-        </Box>
+        <IngredientIconSlot
+          ingredientId={item.ingredientId}
+          aisleId={aisleId}
+          color={item.checked ? CHECKED_TEXT : 'text.primary'}
+        />
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography
             component="span"
