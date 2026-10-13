@@ -49,8 +49,9 @@ export class ShoppingTemplatesController {
   @ApiOperation({ summary: "List the Family's Shopping Templates" })
   list(
     @CurrentUser() member: CurrentUserValue,
+    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
   ): Promise<{ templates: TemplateSummaryView[] }> {
-    return this.templates.list(member.id);
+    return this.templates.list(member.id, locale);
   }
 
   @Post()

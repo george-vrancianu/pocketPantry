@@ -80,5 +80,7 @@
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
     "dismiss": "Dismiss {{name}}"
-  }
+  },
+  "templatesFromSearch": "Or start from a template",
+  "seeAll": "See all"
 }
