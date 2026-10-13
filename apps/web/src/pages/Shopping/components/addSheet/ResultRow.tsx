@@ -1,8 +1,7 @@
 import {
   Box,
   ChevronRightIcon,
-  PlusIcon,
-  aisleTint,
+  IngredientIcon,
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
@@ -15,13 +14,13 @@ export const INNER_RADIUS = LIST_RADIUS - 1;
 
 export type ResultRowProps = {
   id: string;
-  /** Unmatched rows show a plus in their tile instead of a letter. */
-  unmatched?: boolean;
+  /** The matched Ingredient; omitted for an Unmatched row, which shows the neutral Default Icon. */
+  ingredientId?: string;
   name: string;
   /** Part of `name` to highlight, matched case-insensitively (first match). */
   highlight?: string;
   meta: string;
-  /** The result's Aisle, for the tile tint; omitted for an Unmatched row. */
+  /** The result's Aisle, for the icon tint; omitted for an Unmatched row. */
   aisleId?: string;
   /** Shows the "On list" tag. */
   onList?: boolean;
@@ -56,7 +55,7 @@ function Highlighted({ text, match }: { text: string; match?: string }) {
 /** One option of the result listbox. */
 export function ResultRow({
   id,
-  unmatched,
+  ingredientId,
   name,
   highlight,
   meta,
@@ -70,7 +69,6 @@ export function ResultRow({
   last,
 }: ResultRowProps) {
   const { color } = tokens;
-  const tint = aisleId === undefined ? undefined : aisleTint(aisleId);
   const { t } = useTranslation('shopping');
   // The list does not clip (the unit popover must overflow it), so round the ends here.
   // An open row's amount field sits right under it, so it keeps its bottom square.
@@ -107,15 +105,9 @@ export function ResultRow({
           height: 38,
           display: 'grid',
           placeItems: 'center',
-          borderRadius: '12px',
-          backgroundColor: tint?.background ?? color.chipNeutral,
-          color: tint?.text ?? color.muted,
-          fontFamily: 'var(--font-display)',
-          fontSize: 16,
-          fontWeight: 700,
         }}
       >
-        {unmatched ? <PlusIcon size={18} /> : name.charAt(0).toUpperCase()}
+        <IngredientIcon ingredientId={ingredientId} aisleId={aisleId} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box
