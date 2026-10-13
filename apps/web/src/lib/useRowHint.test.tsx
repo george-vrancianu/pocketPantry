@@ -23,13 +23,13 @@ describe('useRowHint', () => {
 
   it('shows the pill and peeks 700 ms after the list has rows, and remembers it', () => {
     const { result } = setup();
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     act(() => vi.advanceTimersByTime(699));
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     expect(localStorage.getItem(KEY)).toBeNull();
     act(() => vi.advanceTimersByTime(1));
-    expect(result.current.showPill).toBe(true);
-    expect(result.current.pillOpen).toBe(true);
+    expect(result.current.visible).toBe(true);
+    expect(result.current.visible).toBe(true);
     expect(result.current.peek).toBe(true);
     expect(localStorage.getItem(KEY)).toBe('1');
   });
@@ -46,17 +46,17 @@ describe('useRowHint', () => {
     act(() => vi.advanceTimersByTime(700));
     act(() => vi.advanceTimersByTime(1200));
     expect(result.current.peek).toBe(false);
-    expect(result.current.showPill).toBe(true);
+    expect(result.current.visible).toBe(true);
   });
 
   it('shows nothing and sets no flag for an empty list, until it has rows', () => {
     const { result, rerender } = setup(false);
     act(() => vi.advanceTimersByTime(5000));
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     expect(localStorage.getItem(KEY)).toBeNull();
     rerender({ on: true });
     act(() => vi.advanceTimersByTime(700));
-    expect(result.current.showPill).toBe(true);
+    expect(result.current.visible).toBe(true);
   });
 
   it('does not set the flag when the list empties before 700 ms', () => {
@@ -64,15 +64,33 @@ describe('useRowHint', () => {
     act(() => vi.advanceTimersByTime(400));
     rerender({ on: false });
     act(() => vi.advanceTimersByTime(5000));
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     expect(localStorage.getItem(KEY)).toBeNull();
+  });
+
+  it('reserves the pill space while the list has rows, before the hint and after it fades', () => {
+    const { result, rerender } = setup(false);
+    expect(result.current.reserve).toBe(false);
+    rerender({ on: true });
+    expect(result.current.reserve).toBe(true);
+    expect(result.current.visible).toBe(false);
+    act(() => vi.advanceTimersByTime(700));
+    act(() => result.current.onLearned());
+    expect(result.current.visible).toBe(false);
+    expect(result.current.reserve).toBe(true);
+  });
+
+  it('reserves nothing once the flag is stored', () => {
+    localStorage.setItem(KEY, '1');
+    const { result } = setup();
+    expect(result.current.reserve).toBe(false);
   });
 
   it('shows nothing once the flag is stored', () => {
     localStorage.setItem(KEY, '1');
     const { result } = setup();
     act(() => vi.advanceTimersByTime(5000));
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     expect(result.current.peek).toBe(false);
   });
 
@@ -80,7 +98,7 @@ describe('useRowHint', () => {
     const { result } = setup();
     act(() => vi.advanceTimersByTime(700));
     act(() => result.current.onLearned());
-    expect(result.current.pillOpen).toBe(false);
+    expect(result.current.visible).toBe(false);
   });
 
   it('a gesture used before the hint shows suppresses it for good', () => {
@@ -88,7 +106,7 @@ describe('useRowHint', () => {
     act(() => vi.advanceTimersByTime(300));
     act(() => result.current.onLearned());
     act(() => vi.advanceTimersByTime(5000));
-    expect(result.current.showPill).toBe(false);
+    expect(result.current.visible).toBe(false);
     expect(localStorage.getItem(KEY)).toBe('1');
   });
 
@@ -101,7 +119,7 @@ describe('useRowHint', () => {
     });
     const { result } = setup();
     act(() => vi.advanceTimersByTime(700));
-    expect(result.current.showPill).toBe(true);
+    expect(result.current.visible).toBe(true);
   });
 
   it('clears its timers on unmount', () => {

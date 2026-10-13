@@ -30,7 +30,7 @@ export type ShoppingGroupsProps = {
   ) => Promise<unknown>;
   onRemove: (id: string, name: string) => void;
   /** The first-use hint: the first row peeks, and a gesture on any row fades the pill. */
-  hint?: Pick<RowHint, 'peek' | 'onLearned'>;
+  hint: Pick<RowHint, 'peek' | 'onLearned'>;
 };
 
 /** The list grouped by Aisle (shop order is the order the API returns). */
@@ -94,8 +94,8 @@ export function ShoppingGroups({
                 <ChecklistRow
                   key={item.id}
                   item={item}
-                  peek={groupIndex === 0 && itemIndex === 0 && !!hint?.peek}
-                  onLearned={hint?.onLearned}
+                  peek={groupIndex === 0 && itemIndex === 0 && hint.peek}
+                  onLearned={hint.onLearned}
                   aisleId={group.aisle?.id}
                   onToggle={onToggle}
                   onSetAmount={onSetAmount}
@@ -121,7 +121,7 @@ function ChecklistRow({
 }: {
   item: ShoppingItem;
   peek: boolean;
-  onLearned?: () => void;
+  onLearned: () => void;
   /** The group's Aisle; absent in the Unmatched group. */
   aisleId?: string;
   onToggle: ShoppingGroupsProps['onToggle'];

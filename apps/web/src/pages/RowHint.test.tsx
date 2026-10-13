@@ -24,6 +24,11 @@ const PILL = 'Swipe left to remove · hold to edit';
 const flag = (list: string) => localStorage.getItem(`pp.rowHint.${list}`);
 const sleep = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
 const peeking = () => document.querySelector('[data-peeking]');
+const pill = () => document.querySelector('[data-row-hint]');
+/** The pill keeps its space while hidden; it is "shown" once exposed to assistive technology. */
+const pillShown = () => pill()?.getAttribute('aria-hidden') === 'false';
+const contentOf = (row: HTMLElement) =>
+  row.querySelector('[data-swipe-row-content]')!;
 
 const dairy = { id: 'a4', name: 'Dairy & eggs', sortOrder: 4 };
 const milkItem = {
@@ -127,6 +132,25 @@ const SETUPS: Setup[] = [
       );
     },
   },
+  {
+    list: 'pantry',
+    render: () => renderWithProviders(<PantryPage />),
+    // Only the Batch rows swipe: expand the roll-up first.
+    firstRow: async () => {
+      await userEvent.click(
+        await screen.findByRole('button', { name: /Milk/ }),
+      );
+      return (await screen.findAllByRole('group', { name: 'Milk' }))[0];
+    },
+    empty: () => {
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/pantry': () => Response.json({ batches: [] }),
+        }).fetchMock,
+      );
+    },
+  },
 ];
 
 function stubPopulated() {
@@ -148,16 +172,28 @@ describe('first-use row hint', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   describe.each(SETUPS)('$list', (setup) => {
+    const swipeToZone1 = (row: HTMLElement) => {
+      const content = contentOf(row);
+      vi.spyOn(content, 'getBoundingClientRect').mockReturnValue({
+        width: 350,
+        left: 0,
+        top: 0,
+      } as DOMRect);
+      const at = (clientX: number) => ({ pointerId: 1, clientX, clientY: 5 });
+      fireEvent.pointerDown(content, at(300));
+      fireEvent.pointerMove(content, at(180));
+      fireEvent.pointerUp(content, at(180));
+    };
+
     it('peeks the first row and shows the pill once, then remembers it', async () => {
       stubPopulated();
       setup.render();
       const row = await setup.firstRow();
-      expect(screen.queryByText(PILL)).toBeNull();
+      expect(pillShown()).toBe(false);
 
-      expect(await screen.findByText(PILL)).toBeVisible();
-      await waitFor(() =>
-        expect(peeking()).toBe(row.querySelector('[data-swipe-row-content]')),
-      );
+      await waitFor(() => expect(pillShown()).toBe(true));
+      expect(screen.getByText(PILL)).toBeVisible();
+      await waitFor(() => expect(peeking()).toBe(contentOf(row)));
       expect(flag(setup.list)).not.toBeNull();
     });
 
@@ -167,7 +203,7 @@ describe('first-use row hint', () => {
       setup.render();
       await setup.firstRow();
       await sleep(900);
-      expect(screen.queryByText(PILL)).toBeNull();
+      expect(pill()).toBeNull();
       expect(peeking()).toBeNull();
     });
 
@@ -176,7 +212,7 @@ describe('first-use row hint', () => {
       setup.render();
       await waitFor(() => expect(screen.queryByRole('group')).toBeNull());
       await sleep(900);
-      expect(screen.queryByText(PILL)).toBeNull();
+      expect(pill()).toBeNull();
       expect(flag(setup.list)).toBeNull();
     });
 
@@ -185,69 +221,64 @@ describe('first-use row hint', () => {
       stubPopulated();
       setup.render();
       await setup.firstRow();
-      expect(await screen.findByText(PILL)).toBeVisible();
+      await waitFor(() => expect(pillShown()).toBe(true));
       await sleep(100);
       expect(peeking()).toBeNull();
     });
 
-    it('fades the pill after a swipe that reaches zone 1', async () => {
+    it('fades the pill after a swipe that reaches zone 1, keeping its space', async () => {
       stubPopulated();
       setup.render();
       const row = await setup.firstRow();
-      await screen.findByText(PILL);
-      const content = row.querySelector('[data-swipe-row-content]')!;
-      vi.spyOn(content, 'getBoundingClientRect').mockReturnValue({
-        width: 350,
-        left: 0,
-        top: 0,
-      } as DOMRect);
-      fireEvent.pointerDown(content, {
-        pointerId: 1,
-        clientX: 300,
-        clientY: 5,
-      });
-      fireEvent.pointerMove(content, {
-        pointerId: 1,
-        clientX: 180,
-        clientY: 5,
-      });
-      fireEvent.pointerUp(content, { pointerId: 1, clientX: 180, clientY: 5 });
-      await waitFor(() => expect(screen.queryByText(PILL)).toBeNull());
+      await waitFor(() => expect(pillShown()).toBe(true));
+      swipeToZone1(row);
+      await waitFor(() => expect(pillShown()).toBe(false));
+      expect(pill()).toBeInTheDocument();
+      expect(screen.getByText(PILL)).not.toBeVisible();
     });
   });
 
-  it('fades the pill after a completed hold', async () => {
+  it.each([
+    ['shopping', SETUPS[0]],
+    ['template', SETUPS[2]],
+    ['staples', SETUPS[1]],
+  ])('fades the pill after a completed hold on %s', async (_list, setup) => {
     stubPopulated();
-    renderWithProviders(<StaplesPage />);
-    const row = await screen.findByRole('group', { name: 'Milk' });
-    await screen.findByText(PILL);
-    const content = row.querySelector('[data-swipe-row-content]')!;
-    fireEvent.pointerDown(content, { pointerId: 1, clientX: 50, clientY: 5 });
+    setup.render();
+    const row = await setup.firstRow();
+    await waitFor(() => expect(pillShown()).toBe(true));
+    fireEvent.pointerDown(contentOf(row), {
+      pointerId: 1,
+      clientX: 50,
+      clientY: 5,
+    });
     await sleep(550);
-    await waitFor(() => expect(screen.queryByText(PILL)).toBeNull());
+    await waitFor(() => expect(pillShown()).toBe(false));
+    expect(pill()).toBeInTheDocument();
   });
 
   describe('Pantry', () => {
-    it('waits for a roll-up to be expanded, then peeks its first Batch', async () => {
+    it('waits for a roll-up to be expanded', async () => {
       stubPopulated();
       renderWithProviders(<PantryPage />);
-      const rollUp = await screen.findByRole('button', { name: /Milk/ });
+      await screen.findByRole('button', { name: /Milk/ });
       await sleep(900);
-      expect(screen.queryByText(PILL)).toBeNull();
+      expect(pill()).toBeNull();
       expect(flag('pantry')).toBeNull();
+    });
 
-      await userEvent.click(rollUp);
-      expect(await screen.findByText(PILL)).toBeVisible();
+    it('peeks only the first Batch of the expanded roll-up', async () => {
+      stubPopulated();
+      renderWithProviders(<PantryPage />);
+      await userEvent.click(
+        await screen.findByRole('button', { name: /Milk/ }),
+      );
       const rows = within(
         screen.getByRole('list', { name: /Batches of Milk/ }),
       ).getAllByRole('group');
       expect(rows).toHaveLength(2);
-      await waitFor(() =>
-        expect(peeking()).toBe(
-          rows[0].querySelector('[data-swipe-row-content]'),
-        ),
-      );
-      expect(flag('pantry')).not.toBeNull();
+      await waitFor(() => expect(peeking()).toBe(contentOf(rows[0])));
+      expect(document.querySelectorAll('[data-peeking]')).toHaveLength(1);
     });
 
     it('shows nothing when the roll-up is collapsed again before the hint', async () => {
@@ -257,7 +288,7 @@ describe('first-use row hint', () => {
       await userEvent.click(rollUp);
       await userEvent.click(rollUp);
       await sleep(900);
-      expect(screen.queryByText(PILL)).toBeNull();
+      expect(pill()).toBeNull();
       expect(flag('pantry')).toBeNull();
     });
   });

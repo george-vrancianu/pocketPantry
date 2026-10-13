@@ -1,29 +1,24 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
 import { RowHintPill } from './RowHintPill';
 
 describe('RowHintPill', () => {
-  afterEach(() => {
-    cleanup();
-    vi.useRealTimers();
-  });
+  afterEach(cleanup);
 
-  it('shows its text, then fades for 250 ms and leaves when closed', () => {
-    vi.useFakeTimers();
-    const view = render(<RowHintPill open>Swipe left</RowHintPill>);
+  const root = () => document.querySelector('[data-row-hint]')!;
+
+  it('is exposed while visible', () => {
+    render(<RowHintPill visible>Swipe left</RowHintPill>);
     expect(screen.getByText('Swipe left')).toBeTruthy();
-    view.rerender(<RowHintPill open={false}>Swipe left</RowHintPill>);
-    act(() => vi.advanceTimersByTime(249));
-    expect(screen.queryByText('Swipe left')).toBeTruthy();
-    act(() => vi.advanceTimersByTime(1));
-    expect(screen.queryByText('Swipe left')).toBeNull();
+    expect(root().getAttribute('aria-hidden')).toBe('false');
   });
 
-  it('clears its timer when it unmounts mid-fade', () => {
-    vi.useFakeTimers();
-    const view = render(<RowHintPill open>Swipe left</RowHintPill>);
-    view.rerender(<RowHintPill open={false}>Swipe left</RowHintPill>);
-    view.unmount();
-    expect(vi.getTimerCount()).toBe(0);
+  it('keeps its place in the page, hidden from assistive technology, when not visible', () => {
+    const view = render(<RowHintPill visible>Swipe left</RowHintPill>);
+    view.rerender(<RowHintPill visible={false}>Swipe left</RowHintPill>);
+    expect(screen.getByText('Swipe left')).toBeTruthy();
+    expect(root().getAttribute('aria-hidden')).toBe('true');
+    expect(getComputedStyle(root()).visibility).toBe('hidden');
+    expect(getComputedStyle(root()).pointerEvents).toBe('none');
   });
 });

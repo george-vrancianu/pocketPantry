@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Box } from '../atoms/Layout';
 import { ArrowLeftIcon } from '../atoms/icons';
@@ -8,37 +7,34 @@ import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 const FADE_MS = 250;
 
 export type RowHintPillProps = {
-  /** Turn off to fade the pill away; it leaves the layout once faded. */
-  open: boolean;
+  /**
+   * Shown or not. The pill always keeps its space, so the page below does not jump when it appears or
+   * fades: hidden, it is invisible, inert and out of the accessibility tree.
+   */
+  visible: boolean;
   /** The hint, e.g. "Swipe left to remove · hold to edit". */
   children: ReactNode;
 };
 
 /**
  * The first-use hint under a list's header (handoff section 7): a small pill telling the Member how the
- * row gestures work. It fades over 250 ms when `open` turns off (instantly under reduce-motion).
+ * row gestures work. It fades over 250 ms (instantly under reduce-motion) and keeps its space.
  */
-export function RowHintPill({ open, children }: RowHintPillProps) {
+export function RowHintPill({ visible, children }: RowHintPillProps) {
   const reduceMotion = usePrefersReducedMotion();
-  const [gone, setGone] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setGone(false);
-      return;
-    }
-    const timer = setTimeout(() => setGone(true), reduceMotion ? 0 : FADE_MS);
-    return () => clearTimeout(timer);
-  }, [open, reduceMotion]);
-  if (gone) return null;
   return (
     <Box
       data-row-hint=""
+      aria-hidden={visible ? 'false' : 'true'}
       sx={{
         display: 'flex',
         justifyContent: 'center',
         my: 1,
-        opacity: open ? 1 : 0,
-        transition: reduceMotion ? 'none' : `opacity ${FADE_MS}ms`,
+        opacity: visible ? 1 : 0,
+        visibility: visible ? 'visible' : 'hidden',
+        transition: reduceMotion
+          ? 'none'
+          : `opacity ${FADE_MS}ms, visibility 0s ${visible ? '0s' : `${FADE_MS}ms`}`,
         pointerEvents: 'none',
       }}
     >

@@ -28,10 +28,10 @@ function remember(list: RowHintList): void {
 }
 
 export type RowHint = {
-  /** Render the pill (and keep it rendered while it fades). */
-  showPill: boolean;
-  /** False once the Member has used a gesture: the pill fades. */
-  pillOpen: boolean;
+  /** Render the pill, invisible, to keep its space: the list has rows and has not shown the hint yet. */
+  reserve: boolean;
+  /** The pill is showing; false again once the Member has used a gesture (it fades, keeping its space). */
+  visible: boolean;
   /** True for a moment when the hint appears: give it to the list's first row as `SwipeRow peek`. */
   peek: boolean;
   /** Give it to every row of the list as `SwipeRow onLearned`. */
@@ -45,6 +45,8 @@ export type RowHint = {
  * hold on any row of the list (`onLearned`) fades the pill.
  */
 export function useRowHint(list: RowHintList, active: boolean): RowHint {
+  // Read once: a hint shown during this visit keeps its space for the whole visit.
+  const [unseen] = useState(() => !wasShown(list));
   const [shown, setShown] = useState(false);
   const [learned, setLearned] = useState(false);
   const [peek, setPeek] = useState(false);
@@ -73,5 +75,10 @@ export function useRowHint(list: RowHintList, active: boolean): RowHint {
     setPeek(false);
   }, [list]);
 
-  return { showPill: shown, pillOpen: !learned, peek, onLearned };
+  return {
+    reserve: unseen && (active || shown),
+    visible: shown && !learned,
+    peek,
+    onLearned,
+  };
 }

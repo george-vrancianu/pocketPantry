@@ -112,7 +112,7 @@ describe('SwipeRow', () => {
         </ul>,
       );
 
-    it('slides out and back over 1.1 s when peek turns on', () => {
+    it('slides out for 550 ms and then back when peek turns on', () => {
       vi.useFakeTimers();
       const view = renderPeek(false);
       expect(peeking()).toBe(false);

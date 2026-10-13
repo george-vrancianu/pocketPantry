@@ -124,6 +124,8 @@ export function SwipeRow({
 
   const idle = phase === 'idle' && !disabled;
   const [peeking, setPeeking] = useState(false);
+  /** The peek's way back takes as long as the way out, instead of the spring. */
+  const [peekBack, setPeekBack] = useState(false);
   const touching = useRef(false);
   const idleRef = useRef(idle);
   idleRef.current = idle;
@@ -195,10 +197,15 @@ export function SwipeRow({
     clearTimeout(peekTimer.current);
     if (!peek || reduceMotion || touching.current || !idleRef.current) {
       setPeeking(false);
+      setPeekBack(false);
       return;
     }
     setPeeking(true);
-    peekTimer.current = setTimeout(() => setPeeking(false), PEEK_OUT_MS);
+    peekTimer.current = setTimeout(() => {
+      setPeeking(false);
+      setPeekBack(true);
+      peekTimer.current = setTimeout(() => setPeekBack(false), PEEK_OUT_MS);
+    }, PEEK_OUT_MS);
     return () => clearTimeout(peekTimer.current);
   }, [peek, reduceMotion]);
 
@@ -274,6 +281,7 @@ export function SwipeRow({
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       touching.current = true;
       setPeeking(false);
+      setPeekBack(false);
       gestures.bind.onPointerDown(event);
     },
     onPointerUp: (event: PointerEvent<HTMLElement>) => {
@@ -368,7 +376,7 @@ export function SwipeRow({
                   ? `transform ${FLY_OFF_MS}ms cubic-bezier(.4,0,.8,.6)`
                   : confirming
                     ? `transform ${SLIDE_MS}ms cubic-bezier(.2,.8,.2,1), opacity 200ms`
-                    : peekOut
+                    : peekOut || (peekBack && x === 0 && !pressing)
                       ? `transform ${PEEK_OUT_MS}ms cubic-bezier(.2,.8,.2,1)`
                       : pressing
                         ? 'transform 250ms ease-out, opacity 200ms'
