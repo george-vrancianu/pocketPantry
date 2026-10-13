@@ -56,6 +56,7 @@
     "description": "Descrierea produsului"
   },
   "expiryPlaceholder": "zz.ll.aaaa",
+  "pickExpiry": "Alege data expirării",
   "error": {
     "name": "Introdu un nume.",
     "expiry": "Introdu o dată reală, în formatul zz.ll.aaaa."

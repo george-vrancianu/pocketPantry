@@ -59,7 +59,7 @@ export const TABLET_COLUMNS: {
   },
   { key: 'qty', width: '120px', wideWidth: '150px', indent: true },
   { key: 'location', width: '104px', wideWidth: '150px', indent: true },
-  { key: 'expiry', width: '112px', wideWidth: '150px', indent: true },
+  { key: 'expiry', width: '144px', wideWidth: '180px', indent: true },
   { key: 'confidence', width: '112px', wideWidth: '120px', indent: false },
   { key: 'actions', width: '144px', wideWidth: '144px', indent: false },
 ];

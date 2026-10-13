@@ -55,6 +55,7 @@
     "description": "Produktbeskrivelse"
   },
   "expiryPlaceholder": "dd.mm.åååå",
+  "pickExpiry": "Vælg udløbsdato",
   "error": {
     "name": "Angiv et navn.",
     "expiry": "Angiv en gyldig dato som dd.mm.åååå."

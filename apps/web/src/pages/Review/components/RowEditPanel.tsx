@@ -5,7 +5,6 @@ import {
   SwapIcon,
   tokens,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import {
@@ -18,7 +17,7 @@ import { Field, controlSx } from './Field';
 import {
   CategorySelect,
   DescriptionInput,
-  ExpiryInput,
+  ExpiryButton,
   LocationSelect,
   NameInput,
   QuantityUnitInput,
@@ -59,12 +58,11 @@ export function RowEditPanel({
   accessibleName,
 }: Props) {
   const { t } = useTranslation(['review', 'pantry', 'common']);
-  // A half-typed date is not an error yet: say so once the Member leaves the field, or a Save is blocked.
-  const [expiryTouched, setExpiryTouched] = useState(false);
   const unmatched = line.match === null;
   const name = displayName(line);
   const invalid = invalidFields(line);
-  const expiryError = invalid.includes('expiry') && (expiryTouched || blocked);
+  // Dates are picked in the sheet here, so an invalid one is left over from typing in the table: say so once a Save is blocked.
+  const expiryError = invalid.includes('expiry') && blocked;
   const matchText = unmatched
     ? `${t('review:match.none')} · ${t('review:match.choose')}`
     : name;
@@ -247,13 +245,13 @@ export function RowEditPanel({
               error={expiryError ? t('review:error.expiry') : undefined}
               errorId={`${id('expiry')}-error`}
             >
-              <ExpiryInput
+              <ExpiryButton
                 line={line}
                 onChange={onChange}
                 id={id('expiry')}
                 error={expiryError}
                 errorId={`${id('expiry')}-error`}
-                onBlur={() => setExpiryTouched(true)}
+                labelId={`${id('expiry')}-label`}
               />
             </Field>
           </>

@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -59,6 +59,8 @@ function renderReview(
       }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
     'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
+    'GET /api/settings/family': () =>
+      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
     ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -269,39 +271,6 @@ describe('ReviewPage', () => {
     expect(screen.getByRole('button', { name: /Excluded · 1/ })).toHaveFocus();
   });
 
-  it('blocks Save on a half-typed date without a blur, focusing it and saying why', async () => {
-    const calls = renderReview([sure()]);
-    await userEvent.click(row('Parmesan'));
-    const expiry = screen.getByLabelText('Expiry date');
-    await userEvent.clear(expiry);
-    await userEvent.type(expiry, '0810');
-    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
-    expect(screen.getByLabelText('Expiry date')).toHaveFocus();
-    expect(
-      screen.getByText('Enter a real date as dd.mm.yyyy.'),
-    ).toBeInTheDocument();
-    expect(calls.map((c) => c.key)).not.toContain(
-      'POST /api/pantry/batches/bulk',
-    );
-  });
-
-  it('shows expiry day-first in full when open, and takes a typed date back as ISO', async () => {
-    const calls = renderReview([sure()]);
-    await userEvent.click(row('Parmesan'));
-    const expiry = screen.getByLabelText('Expiry date');
-    expect(expiry).toHaveValue('24.12.2026');
-    expect(expiry).toHaveAttribute('inputmode', 'numeric');
-    expect(expiry).toHaveAttribute('placeholder', 'dd.mm.yyyy');
-    await userEvent.clear(expiry);
-    await userEvent.type(expiry, '01022027');
-    expect(expiry).toHaveValue('01.02.2027');
-    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
-    await screen.findByText('pantry screen');
-    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
-      ?.body as { batches: object[] };
-    expect(body.batches[0]).toMatchObject({ expiryDate: '2027-02-01' });
-  });
-
   it('saves in the Scan Language of the scan, with the printed text of Unmatched lines only', async () => {
     const calls = renderReview(
       [
@@ -324,44 +293,6 @@ describe('ReviewPage', () => {
     });
     expect(batches[1]).not.toHaveProperty('sourceText');
     expect(batches[2]).not.toHaveProperty('sourceText');
-  });
-
-  it('saves no expiry when the date is cleared', async () => {
-    const calls = renderReview([sure()]);
-    await userEvent.click(row('Parmesan'));
-    await userEvent.clear(screen.getByLabelText('Expiry date'));
-    await userEvent.click(screen.getByRole('button', { name: 'Save 1 item' }));
-    await screen.findByText('pantry screen');
-    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
-      ?.body as { batches: object[] };
-    expect(body.batches[0]).toMatchObject({ expiryDate: null });
-  });
-
-  it('rejects an impossible date inline and focuses it instead of saving', async () => {
-    const calls = renderReview([
-      sure(),
-      sure({ name: 'Milk', match: milk, unit: 'ml' }),
-    ]);
-    await userEvent.click(row('Milk'));
-    const expiry = screen.getByLabelText('Expiry date');
-    await userEvent.clear(expiry);
-    await userEvent.type(expiry, '31022027');
-    expect(
-      screen.queryByText('Enter a real date as dd.mm.yyyy.'),
-    ).not.toBeInTheDocument();
-    await userEvent.tab();
-    expect(
-      screen.getByText('Enter a real date as dd.mm.yyyy.'),
-    ).toBeInTheDocument();
-    await userEvent.click(row('Milk'));
-    expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
-
-    await userEvent.click(screen.getByRole('button', { name: 'Save 2 items' }));
-    expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByLabelText('Expiry date')).toHaveFocus();
-    expect(calls.map((c) => c.key)).not.toContain(
-      'POST /api/pantry/batches/bulk',
-    );
   });
 
   it('focuses the first invalid field in display order when Save is blocked', async () => {
@@ -564,9 +495,13 @@ describe('ReviewPage', () => {
     async (_how, close) => {
       renderReview([sure({ quantity: 2 })]);
       await userEvent.click(row('Parmesan'));
-      const before = ['Unit', 'Location', 'Expiry date'].map(
-        (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
-      );
+      // The phone's expiry cell is a button that shows the date.
+      const values = () => [
+        (screen.getByLabelText('Unit') as HTMLSelectElement).value,
+        (screen.getByLabelText('Location') as HTMLSelectElement).value,
+        screen.getByLabelText(/^Expiry date/).textContent,
+      ];
+      const before = values();
       const opener = screen.getByRole('button', { name: /Parmesan.*Change/ });
       await userEvent.click(opener);
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -578,11 +513,7 @@ describe('ReviewPage', () => {
       expect(
         screen.getByRole('group', { name: 'Parmesan' }),
       ).toBeInTheDocument();
-      expect(
-        ['Unit', 'Location', 'Expiry date'].map(
-          (label) => (screen.getByLabelText(label) as HTMLInputElement).value,
-        ),
-      ).toEqual(before);
+      expect(values()).toEqual(before);
     },
   );
 
@@ -710,6 +641,115 @@ describe('ReviewPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'could not find that ingredient',
     );
+  });
+
+  describe('the expiry cell', () => {
+    // Wednesday 14 October 2026. Only `Date` is faked, so timers and transitions run as usual.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    async function saved(
+      user: ReturnType<typeof userEvent.setup>,
+      calls: ReturnType<typeof renderReview>,
+    ) {
+      await user.click(screen.getByRole('button', { name: 'Save 1 item' }));
+      await screen.findByText('pantry screen');
+      const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
+        ?.body as { batches: object[] };
+      return body.batches[0];
+    }
+
+    async function done(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(
+        within(screen.getByRole('dialog')).getByRole('button', {
+          name: 'Done',
+        }),
+      );
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+    }
+
+    it("shows the date day-first, opens the sheet with the line's context when tapped, and saves the picked day", async () => {
+      const user = userEvent.setup();
+      const calls = renderReview([sure()]);
+      await user.click(row('Parmesan'));
+      const cell = screen.getByRole('button', {
+        name: 'Expiry date 24.12.2026',
+      });
+      expect(cell).toHaveAttribute('aria-haspopup', 'dialog');
+
+      await user.click(cell);
+      const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+      expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Friday, February 5, 2027',
+        }),
+      );
+      await done(user);
+      expect(cell).toHaveFocus();
+      expect(cell).toHaveAccessibleName('Expiry date 05.02.2027');
+      expect(await saved(user, calls)).toMatchObject({
+        expiryDate: '2027-02-05',
+      });
+    });
+
+    it('saves no expiry when No expiry is chosen in the sheet', async () => {
+      const user = userEvent.setup();
+      const calls = renderReview([sure()]);
+      await user.click(row('Parmesan'));
+      await user.click(screen.getByRole('button', { name: /^Expiry date/ }));
+      await user.click(
+        within(
+          await screen.findByRole('dialog', { name: 'Expires' }),
+        ).getByRole('button', { name: 'No expiry' }),
+      );
+      await done(user);
+      expect(
+        screen.getByRole('button', { name: 'Expiry date dd.mm.yyyy' }),
+      ).toBeInTheDocument();
+      expect(await saved(user, calls)).toMatchObject({ expiryDate: null });
+    });
+
+    it('keeps a picked date when the Match changes, instead of the new default', async () => {
+      const user = userEvent.setup();
+      renderReview([
+        line({ expiryDate: null, lowConfidence: true, quantity: 1 }),
+      ]);
+      // No date was read, so the cell holds Parmesan's Default Expiry (60 days).
+      await user.click(
+        screen.getByRole('button', { name: 'Expiry date 13.12.2026' }),
+      );
+      await user.click(
+        within(
+          await screen.findByRole('dialog', { name: 'Expires' }),
+        ).getByRole('button', { name: 'Monday, December 28, 2026' }),
+      );
+      await done(user);
+
+      await user.click(
+        screen.getByRole('button', { name: /Parmesan.*Change/ }),
+      );
+      await user.type(
+        within(
+          screen.getByRole('dialog', { name: 'Change match for Parmesan' }),
+        ).getByRole('combobox', { name: 'Search ingredients' }),
+        'milk',
+      );
+      await user.click(await screen.findByRole('option', { name: /Milk/ }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', { name: 'Expiry date 28.12.2026' }),
+      ).toBeInTheDocument();
+    });
   });
 
   describe('Plate', () => {

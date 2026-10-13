@@ -1,5 +1,6 @@
 import {
   Box,
+  CalendarIcon,
   CheckIcon,
   DeleteIcon,
   IconButton,
@@ -24,6 +25,7 @@ import {
   CategorySelect,
   DescriptionInput,
   ExpiryInput,
+  ExpirySheetFor,
   LocationSelect,
   NameInput,
   QuantityUnitInput,
@@ -104,6 +106,7 @@ export function TabletReviewRow({
 }: Props) {
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
+  const [expirySheetOpen, setExpirySheetOpen] = useState(false);
   // Labels use the position-qualified `accessibleName`; the visible text stays the plain one.
   const name = displayName(line);
   const unmatched = line.match === null;
@@ -343,14 +346,33 @@ export function TabletReviewRow({
               </Box>
             ) : (
               <>
-                <ExpiryInput
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ExpiryInput
+                      line={line}
+                      onChange={onChange}
+                      id={id('expiry')}
+                      error={expiryError}
+                      errorId={`${id('expiry')}-error`}
+                      onBlur={() => setExpiryTouched(true)}
+                      ariaLabel={named(t('review:field.expiry'))}
+                    />
+                  </Box>
+                  <IconButton
+                    label={named(t('review:pickExpiry'))}
+                    tone="plain"
+                    size={34}
+                    aria-haspopup="dialog"
+                    onClick={() => setExpirySheetOpen(true)}
+                  >
+                    <CalendarIcon size={18} />
+                  </IconButton>
+                </Box>
+                <ExpirySheetFor
                   line={line}
                   onChange={onChange}
-                  id={id('expiry')}
-                  error={expiryError}
-                  errorId={`${id('expiry')}-error`}
-                  onBlur={() => setExpiryTouched(true)}
-                  ariaLabel={named(t('review:field.expiry'))}
+                  open={expirySheetOpen}
+                  onClose={() => setExpirySheetOpen(false)}
                 />
                 {expiryError ? (
                   <CellError id={`${id('expiry')}-error`}>

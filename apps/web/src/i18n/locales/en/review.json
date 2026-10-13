@@ -55,6 +55,7 @@
     "description": "Product description"
   },
   "expiryPlaceholder": "dd.mm.yyyy",
+  "pickExpiry": "Pick expiry date",
   "error": {
     "name": "Enter a name.",
     "expiry": "Enter a real date as dd.mm.yyyy."
