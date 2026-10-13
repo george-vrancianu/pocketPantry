@@ -97,6 +97,7 @@ export { Sheet, type SheetProps } from './molecules/Sheet';
 export { ListRow, ListRowItem, type ListRowProps } from './molecules/ListRow';
 export {
   SwipeRow,
+  type SwipeRowHandle,
   type SwipeRowLabels,
   type SwipeRowProps,
 } from './molecules/SwipeRow';
