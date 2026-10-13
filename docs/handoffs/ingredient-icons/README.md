@@ -38,6 +38,6 @@ All 42 catalog ingredients from `docs/shopping/prototype.html`, ids identical to
   ```
 
 ## Follow-ups
-- New catalog items need an icon drawn in the same parts format; until then fall back to the aisle letter tile from the shopping handoff.
+- New catalog items need an icon drawn in the same parts format; until then fall back to the aisle letter tile from the shopping handoff. (Superseded in #213/#215: the Default Icon replaced the letter tile as the fallback.)
 - Bottles/jars (oil, passata, water, honey, sugar, flour) differ mainly by label; revisit if users confuse them.
 - Possible later: replace the letter category tile in search results with these icons.

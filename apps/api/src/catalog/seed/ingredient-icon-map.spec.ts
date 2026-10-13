@@ -28,8 +28,10 @@ describe('Ingredient icon mapping', () => {
     SEED_INGREDIENTS.map((ingredient) => seedId.ingredient(ingredient.slug)),
   );
 
-  it('reads the icon set', () => {
-    expect(iconKeys.size).toBeGreaterThanOrEqual(42);
+  it('reads the icon set and the mapping', () => {
+    expect(iconKeys.size).toBe(42);
+    expect(iconKeys.has('tomato')).toBe(true);
+    expect(Object.keys(mapping).length).toBeGreaterThan(0);
   });
 
   it('only names seeded Ingredients', () => {

@@ -33,6 +33,7 @@ export function aisleTint(aisleId: string): AisleTint {
   return (
     aisleTints[aisleId] ?? {
       light: tokens.color.chipNeutral,
+      // Placeholder until the dark theme is designed; dark values are unused for now.
       dark: tokens.color.chipNeutral,
     }
   );

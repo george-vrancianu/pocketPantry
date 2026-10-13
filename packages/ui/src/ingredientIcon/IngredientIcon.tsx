@@ -27,8 +27,14 @@ export function IngredientIcon({
   aisleId,
   size = 24,
 }: IngredientIconProps) {
-  const mapped = ingredientId ? ICON_KEYS[ingredientId] : undefined;
-  const key = mapped && mapped in INGREDIENT_ICONS ? mapped : DEFAULT_ICON_KEY;
+  const mapped =
+    ingredientId && Object.hasOwn(ICON_KEYS, ingredientId)
+      ? ICON_KEYS[ingredientId]
+      : undefined;
+  const key =
+    mapped && Object.hasOwn(INGREDIENT_ICONS, mapped)
+      ? mapped
+      : DEFAULT_ICON_KEY;
   const tint = aisleId ? aisleTint(aisleId).light : tokens.color.chipNeutral;
   return (
     <svg
