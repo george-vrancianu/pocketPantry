@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ingredientUnit } from '../database/schema';
 import { MAX_QUANTITY } from '../common/quantity';
-import type { AisleView } from './ingredient-placement';
+import type { AisleView } from '../catalog/ingredient-placement';
 
 export type StapleUnit = (typeof ingredientUnit.enumValues)[number];
 

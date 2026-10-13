@@ -5,6 +5,8 @@ import { seedId } from './seed-catalog';
 
 // The mapping and icon set live in packages/ui, which is an ES module package
 // the API can't import (and its tsconfig roots at apps/api), so read them as files.
+// The icon keys are scraped from the source with a regex, so this relies on
+// ingredientIcons.ts keeping its two-space-indented `key: {` entries.
 const ICONS_DIR = join(
   __dirname,
   '../../../../../packages/ui/src/ingredientIcon',

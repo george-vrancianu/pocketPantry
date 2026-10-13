@@ -8,7 +8,10 @@ import { hasPgCode } from '../database/pg-errors';
 import { ingredients, staples, suggestionDismissals } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
-import { byShopOrder, loadIngredientPlacements } from './ingredient-placement';
+import {
+  byShopOrder,
+  loadIngredientPlacements,
+} from '../catalog/ingredient-placement';
 import {
   MAX_STAPLES,
   type AddStapleBody,

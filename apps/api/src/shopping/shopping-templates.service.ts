@@ -16,7 +16,7 @@ import {
 import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import { unexpiredBatch, utcToday } from './batch-presence';
-import { loadIngredientPlacements } from './ingredient-placement';
+import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import {
   MAX_TEMPLATE_LINES,
   MAX_TEMPLATES_PER_FAMILY,

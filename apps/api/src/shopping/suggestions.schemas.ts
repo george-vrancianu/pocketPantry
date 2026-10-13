@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AisleView } from './ingredient-placement';
+import type { AisleView } from '../catalog/ingredient-placement';
 import type { StapleUnit } from './staples.schemas';
 
 export const ingredientIdParam = z.object({ ingredientId: z.uuid() });
