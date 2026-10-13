@@ -382,9 +382,11 @@ describe('Pantry (integration)', () => {
     await add(cookie, { rawName: 'Mystery', location: 'spices' }).expect(201);
 
     const [milk, mystery] = await list(cookie);
-    expect(milk.aisle?.id).toBe(seedId.aisle('dairy-eggs'));
-    expect(milk.aisle?.name).toBe('Dairy & eggs');
-    expect(typeof milk.aisle?.sortOrder).toBe('number');
+    expect(milk.aisle).toEqual({
+      id: seedId.aisle('dairy-eggs'),
+      name: 'Dairy & eggs',
+      sortOrder: expect.any(Number) as number,
+    });
     expect(mystery.aisle).toBeNull();
     expect((await list(cookie, 'ro'))[0].aisle?.name).toBe('Lactate și ouă');
   });

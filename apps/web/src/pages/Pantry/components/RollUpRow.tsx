@@ -72,6 +72,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           }}
         >
           <Box
+            aria-hidden="true"
             sx={{
               flexShrink: 0,
               width: 38,
@@ -134,7 +135,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           component="ul"
           id={panelId}
           aria-label={t('batchesOf', { name: rollUp.name })}
-          sx={{ m: 0, mb: 1, pl: '48px', pr: 0 }}
+          sx={{ m: 0, mb: 1, pl: '50px', pr: 0 }}
         >
           {rollUp.batches.map((batch) => (
             <BatchDetail

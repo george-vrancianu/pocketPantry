@@ -42,7 +42,6 @@ const item = (overrides: Partial<ShoppingItem> & { id: string }) => ({
   unit: null,
   checked: false,
   unmatched: false,
-  aisle: null,
   ...overrides,
 });
 

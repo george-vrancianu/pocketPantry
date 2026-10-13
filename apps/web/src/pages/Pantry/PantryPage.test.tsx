@@ -156,6 +156,26 @@ describe('PantryPage', () => {
       );
     });
 
+    it('tints an Aisle without a tint neutral', async () => {
+      stubPantry([
+        batch({
+          name: 'Parmesan',
+          ingredientId: PARMESAN_SEED_ID,
+          aisle: { id: 'admin-aisle-id', name: 'Custom', sortOrder: 99 },
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('Parmesan');
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
     it('shows an Unmatched Batch the Default Icon with the neutral tint', async () => {
       stubPantry([
         batch({
