@@ -81,12 +81,13 @@ export function AmountField({
   const type = (text: string) => {
     const last = split.current;
     split.current = null;
+    const rest = last ? text.slice(last.quantity.length) : '';
     if (
       last &&
-      text.length > last.quantity.length &&
-      text.startsWith(last.quantity)
+      text.startsWith(last.quantity) &&
+      rest.length === 1 &&
+      !/\d/.test(rest)
     ) {
-      const rest = text.slice(last.quantity.length);
       const alias = last.alias + rest.toLowerCase();
       if (continuesAlias(alias)) {
         split.current = { ...last, alias, original: last.original + rest };
@@ -111,6 +112,7 @@ export function AmountField({
     }
   };
   const choose = (next: Unit | '') => {
+    split.current = null;
     onUnitChange(next);
     setPicking(false);
     input.current?.focus();
