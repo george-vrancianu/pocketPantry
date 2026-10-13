@@ -25,7 +25,9 @@ import {
   type Staple,
 } from '../../lib/staples';
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+import { useRowHint, type RowHint } from '../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../lib/useSwipeRowLabels';
+import { RowHintNote } from '../../components/RowHintNote';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
@@ -51,6 +53,8 @@ export function StaplesPage() {
     [staples.data, removal.hiddenIds],
   );
 
+  const hint = useRowHint('staples', (visible?.length ?? 0) > 0);
+
   // A failed save is shown by the amount sheet and a failed removal by its toast.
   const error = staples.error ?? add.error;
 
@@ -60,6 +64,7 @@ export function StaplesPage() {
         title={t('staples:title')}
         trailing={<Link href="/shopping">{t('staples:back')}</Link>}
       />
+      <RowHintNote hint={hint} />
       <Stack spacing={2}>
         <Typography color="text.secondary">{t('staples:hint')}</Typography>
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
@@ -91,10 +96,12 @@ export function StaplesPage() {
               overflow: 'hidden',
             }}
           >
-            {visible.map((staple) => (
+            {visible.map((staple, index) => (
               <StapleRow
                 key={staple.id}
                 staple={staple}
+                peek={index === 0 && hint.peek}
+                onLearned={hint.onLearned}
                 onSave={(amount) =>
                   update.mutateAsync({ id: staple.id, ...amount })
                 }
@@ -110,10 +117,14 @@ export function StaplesPage() {
 
 function StapleRow({
   staple,
+  peek,
+  onLearned,
   onSave,
   onRemove,
 }: {
   staple: Staple;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
   /** Rejects with the API error, which the amount sheet shows. */
   onSave: (amount: Pick<Staple, 'quantity' | 'unit'>) => Promise<unknown>;
   onRemove: () => void;
@@ -140,6 +151,8 @@ function StapleRow({
         name={staple.name}
         labels={labels}
         disabled={editing}
+        peek={peek}
+        onLearned={onLearned}
         onEdit={() => setEditing(true)}
         onRemove={onRemove}
       >

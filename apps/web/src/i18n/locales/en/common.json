@@ -25,6 +25,7 @@
       "template": "from this template",
       "staples": "from your Staples"
     },
+    "hint": "Swipe left to remove · hold to edit",
     "keep": "Keep",
     "releaseToDelete": "Release to delete",
     "remove": "Remove",

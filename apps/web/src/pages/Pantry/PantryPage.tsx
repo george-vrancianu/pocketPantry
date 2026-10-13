@@ -13,16 +13,19 @@ import {
   StapleErrorProvider,
   useStapleErrors,
 } from '../../components/StapleToggle';
+import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
 import { PantryFilters } from './components/PantryFilters';
+import { usePantryRowHint } from './hooks/usePantryRowHint';
 import { usePantryScreen } from './hooks/usePantryScreen';
 
 export function PantryPage() {
   const { t } = useTranslation(['pantry', 'common']);
   const screen = usePantryScreen();
   const stapleErrors = useStapleErrors();
+  const rowHint = usePantryRowHint();
 
   const focusAdd = () =>
     document
@@ -51,6 +54,7 @@ export function PantryPage() {
               }
         }
       />
+      <RowHintNote hint={rowHint.hint} />
       {screen.adding ? (
         <AddBatchForm
           onSaved={screen.stopAdding}
@@ -92,6 +96,7 @@ export function PantryPage() {
                 screen.removeBatch(batch.id, batch.name)
               }
               onEmptied={focusAdd}
+              rowHint={rowHint}
             />
           ))}
         </Stack>

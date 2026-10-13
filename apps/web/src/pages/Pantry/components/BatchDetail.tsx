@@ -21,13 +21,23 @@ type Props = {
   onRemove: (batch: Batch) => void;
   /** Called once the Batch moved to another Location, so the parent can place focus (this row unmounts). */
   onLeft: () => void;
+  /** The first-use peek, for the first Batch of the first expanded roll-up. */
+  peek: boolean;
+  onLearned: () => void;
 };
 
 /**
  * One Batch inside an expanded roll-up row: its own amount, expiry and Product Description. Swipe left
  * to remove it; hold (or press Enter) to edit it in a sheet, which also offers "Remove from Pantry".
  */
-export function BatchDetail({ batch, today, onRemove, onLeft }: Props) {
+export function BatchDetail({
+  batch,
+  today,
+  onRemove,
+  onLeft,
+  peek,
+  onLearned,
+}: Props) {
   const { t, i18n } = useTranslation('pantry');
   const toast = useToast();
   const labels = useSwipeRowLabels(batch.name, 'pantry', { hold: true });
@@ -57,6 +67,8 @@ export function BatchDetail({ batch, today, onRemove, onLeft }: Props) {
         name={batch.name}
         labels={labels}
         disabled={editing}
+        peek={peek}
+        onLearned={onLearned}
         onEdit={() => setEditing(true)}
         onRemove={() => onRemove(batch)}
       >

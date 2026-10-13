@@ -1,0 +1,264 @@
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Batch } from '../lib/pantry';
+import type { ShoppingList } from '../lib/shopping';
+import type { Staple } from '../lib/staples';
+import type { Template } from '../lib/shoppingTemplates';
+import { renderWithProviders, stubApi } from '../test/render';
+import { stubMotion } from '../test/viewport';
+import { PantryPage } from './Pantry/PantryPage';
+import { ShoppingPage } from './Shopping/ShoppingPage';
+import { StaplesPage } from './Shopping/StaplesPage';
+import { TemplateEditorPage } from './Shopping/templates/TemplateEditorPage';
+
+/** The pill reads the `row.hint` string (en). */
+const PILL = 'Swipe left to remove · hold to edit';
+const flag = (list: string) => localStorage.getItem(`pp.rowHint.${list}`);
+const sleep = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+const peeking = () => document.querySelector('[data-peeking]');
+
+const dairy = { id: 'a4', name: 'Dairy & eggs', sortOrder: 4 };
+const milkItem = {
+  id: 'i1',
+  ingredientId: null,
+  name: 'Milk',
+  quantity: null,
+  unit: null,
+  checked: false,
+  unmatched: false,
+};
+const shoppingList = (empty = false): ShoppingList => ({
+  id: 'l1',
+  groups: empty ? [] : [{ aisle: dairy, items: [milkItem] }],
+  summary: { remaining: empty ? 0 : 1, checked: 0 },
+});
+const staple: Staple = {
+  id: 's1',
+  ingredientId: 'milk-id',
+  name: 'Milk',
+  quantity: 2,
+  unit: 'l',
+  aisle: dairy,
+};
+const line = {
+  id: 'l1',
+  ingredientId: 'milk-id',
+  name: 'Milk',
+  quantity: 1,
+  unit: 'l' as const,
+  unmatched: false,
+  inPantry: false,
+  aisle: dairy,
+};
+const batch = (id: string): Batch => ({
+  id,
+  name: 'Milk',
+  ingredientId: 'milk-id',
+  unmatched: false,
+  aisle: null,
+  quantity: 1,
+  unit: 'l',
+  location: 'fridge',
+  expiryDate: null,
+  productDescription: null,
+  expiringSoon: false,
+  createdAt: '2026-10-01T00:00:00Z',
+});
+
+type Setup = {
+  list: string;
+  render: () => void;
+  firstRow: () => Promise<HTMLElement>;
+  empty: () => void;
+};
+
+const SETUPS: Setup[] = [
+  {
+    list: 'shopping',
+    render: () => renderWithProviders(<ShoppingPage />),
+    firstRow: () => screen.findByRole('group', { name: 'Milk' }),
+    empty: () => {
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/shopping-list': () => Response.json(shoppingList(true)),
+        }).fetchMock,
+      );
+    },
+  },
+  {
+    list: 'staples',
+    render: () => renderWithProviders(<StaplesPage />),
+    firstRow: () => screen.findByRole('group', { name: 'Milk' }),
+    empty: () => {
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/staples': () => Response.json({ staples: [] }),
+        }).fetchMock,
+      );
+    },
+  },
+  {
+    list: 'template',
+    render: () =>
+      renderWithProviders(
+        <Routes>
+          <Route path="/:id" element={<TemplateEditorPage />} />
+        </Routes>,
+        { route: '/t1' },
+      ),
+    firstRow: () => screen.findByRole('group', { name: 'Milk' }),
+    empty: () => {
+      const taco: Template = { id: 't1', name: 'Taco night', lines: [] };
+      vi.stubGlobal(
+        'fetch',
+        stubApi({
+          'GET /api/shopping-templates/t1': () => Response.json(taco),
+        }).fetchMock,
+      );
+    },
+  },
+];
+
+function stubPopulated() {
+  const taco: Template = { id: 't1', name: 'Taco night', lines: [line] };
+  vi.stubGlobal(
+    'fetch',
+    stubApi({
+      'GET /api/shopping-list': () => Response.json(shoppingList()),
+      'GET /api/staples': () => Response.json({ staples: [staple] }),
+      'GET /api/shopping-templates/t1': () => Response.json(taco),
+      'GET /api/pantry': () =>
+        Response.json({ batches: [batch('b1'), batch('b2')] }),
+    }).fetchMock,
+  );
+}
+
+describe('first-use row hint', () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => vi.unstubAllGlobals());
+
+  describe.each(SETUPS)('$list', (setup) => {
+    it('peeks the first row and shows the pill once, then remembers it', async () => {
+      stubPopulated();
+      setup.render();
+      const row = await setup.firstRow();
+      expect(screen.queryByText(PILL)).toBeNull();
+
+      expect(await screen.findByText(PILL)).toBeVisible();
+      await waitFor(() =>
+        expect(peeking()).toBe(row.querySelector('[data-swipe-row-content]')),
+      );
+      expect(flag(setup.list)).not.toBeNull();
+    });
+
+    it('stays quiet once the flag is stored', async () => {
+      localStorage.setItem(`pp.rowHint.${setup.list}`, '1');
+      stubPopulated();
+      setup.render();
+      await setup.firstRow();
+      await sleep(900);
+      expect(screen.queryByText(PILL)).toBeNull();
+      expect(peeking()).toBeNull();
+    });
+
+    it('shows nothing and sets no flag for an empty list', async () => {
+      setup.empty();
+      setup.render();
+      await waitFor(() => expect(screen.queryByRole('group')).toBeNull());
+      await sleep(900);
+      expect(screen.queryByText(PILL)).toBeNull();
+      expect(flag(setup.list)).toBeNull();
+    });
+
+    it('shows the pill but does not peek under reduce-motion', async () => {
+      stubMotion(true);
+      stubPopulated();
+      setup.render();
+      await setup.firstRow();
+      expect(await screen.findByText(PILL)).toBeVisible();
+      await sleep(100);
+      expect(peeking()).toBeNull();
+    });
+
+    it('fades the pill after a swipe that reaches zone 1', async () => {
+      stubPopulated();
+      setup.render();
+      const row = await setup.firstRow();
+      await screen.findByText(PILL);
+      const content = row.querySelector('[data-swipe-row-content]')!;
+      vi.spyOn(content, 'getBoundingClientRect').mockReturnValue({
+        width: 350,
+        left: 0,
+        top: 0,
+      } as DOMRect);
+      fireEvent.pointerDown(content, {
+        pointerId: 1,
+        clientX: 300,
+        clientY: 5,
+      });
+      fireEvent.pointerMove(content, {
+        pointerId: 1,
+        clientX: 180,
+        clientY: 5,
+      });
+      fireEvent.pointerUp(content, { pointerId: 1, clientX: 180, clientY: 5 });
+      await waitFor(() => expect(screen.queryByText(PILL)).toBeNull());
+    });
+  });
+
+  it('fades the pill after a completed hold', async () => {
+    stubPopulated();
+    renderWithProviders(<StaplesPage />);
+    const row = await screen.findByRole('group', { name: 'Milk' });
+    await screen.findByText(PILL);
+    const content = row.querySelector('[data-swipe-row-content]')!;
+    fireEvent.pointerDown(content, { pointerId: 1, clientX: 50, clientY: 5 });
+    await sleep(550);
+    await waitFor(() => expect(screen.queryByText(PILL)).toBeNull());
+  });
+
+  describe('Pantry', () => {
+    it('waits for a roll-up to be expanded, then peeks its first Batch', async () => {
+      stubPopulated();
+      renderWithProviders(<PantryPage />);
+      const rollUp = await screen.findByRole('button', { name: /Milk/ });
+      await sleep(900);
+      expect(screen.queryByText(PILL)).toBeNull();
+      expect(flag('pantry')).toBeNull();
+
+      await userEvent.click(rollUp);
+      expect(await screen.findByText(PILL)).toBeVisible();
+      const rows = within(
+        screen.getByRole('list', { name: /Batches of Milk/ }),
+      ).getAllByRole('group');
+      expect(rows).toHaveLength(2);
+      await waitFor(() =>
+        expect(peeking()).toBe(
+          rows[0].querySelector('[data-swipe-row-content]'),
+        ),
+      );
+      expect(flag('pantry')).not.toBeNull();
+    });
+
+    it('shows nothing when the roll-up is collapsed again before the hint', async () => {
+      stubPopulated();
+      renderWithProviders(<PantryPage />);
+      const rollUp = await screen.findByRole('button', { name: /Milk/ });
+      await userEvent.click(rollUp);
+      await userEvent.click(rollUp);
+      await sleep(900);
+      expect(screen.queryByText(PILL)).toBeNull();
+      expect(flag('pantry')).toBeNull();
+    });
+  });
+});

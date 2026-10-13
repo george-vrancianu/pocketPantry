@@ -25,6 +25,7 @@
       "template": "fra denne skabelon",
       "staples": "fra dine basisvarer"
     },
+    "hint": "Stryg til venstre for at fjerne · hold nede for at redigere",
     "keep": "Behold",
     "releaseToDelete": "Slip for at fjerne",
     "remove": "Fjern",

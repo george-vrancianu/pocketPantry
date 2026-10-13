@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../../components/AmountSheet';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
+import type { RowHint } from '../../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
@@ -28,6 +29,8 @@ export type ShoppingGroupsProps = {
     amount: Pick<ShoppingItem, 'quantity' | 'unit'>,
   ) => Promise<unknown>;
   onRemove: (id: string, name: string) => void;
+  /** The first-use hint: the first row peeks, and a gesture on any row fades the pill. */
+  hint?: Pick<RowHint, 'peek' | 'onLearned'>;
 };
 
 /** The list grouped by Aisle (shop order is the order the API returns). */
@@ -36,11 +39,12 @@ export function ShoppingGroups({
   onToggle,
   onSetAmount,
   onRemove,
+  hint,
 }: ShoppingGroupsProps) {
   const { t } = useTranslation('shopping');
   return (
     <Stack spacing={2}>
-      {groups.map((group) => {
+      {groups.map((group, groupIndex) => {
         const title = group.aisle?.name ?? t('unmatchedGroup');
         return (
           <Box
@@ -86,10 +90,12 @@ export function ShoppingGroups({
                 overflow: 'hidden',
               }}
             >
-              {group.items.map((item) => (
+              {group.items.map((item, itemIndex) => (
                 <ChecklistRow
                   key={item.id}
                   item={item}
+                  peek={groupIndex === 0 && itemIndex === 0 && !!hint?.peek}
+                  onLearned={hint?.onLearned}
                   aisleId={group.aisle?.id}
                   onToggle={onToggle}
                   onSetAmount={onSetAmount}
@@ -106,12 +112,16 @@ export function ShoppingGroups({
 
 function ChecklistRow({
   item,
+  peek,
+  onLearned,
   aisleId,
   onToggle,
   onSetAmount,
   onRemove,
 }: {
   item: ShoppingItem;
+  peek: boolean;
+  onLearned?: () => void;
   /** The group's Aisle; absent in the Unmatched group. */
   aisleId?: string;
   onToggle: ShoppingGroupsProps['onToggle'];
@@ -146,6 +156,8 @@ function ChecklistRow({
         name={item.name}
         labels={labels}
         disabled={editing}
+        peek={peek}
+        onLearned={onLearned}
         pressed={item.checked}
         onEdit={() => setEditing(true)}
         onTap={() => onToggle(item.id, !item.checked)}
