@@ -355,9 +355,15 @@ describe('PantryPage', () => {
       await user.click(screen.getByRole('button', { name: 'Remove' }));
     }
 
-    function stubManaged(initial: Batch[]) {
+    function stubManaged(initial: Batch[], { failDeletes = false } = {}) {
       let batches = initial;
       const remove = (id: string) => () => {
+        if (failDeletes) {
+          return Response.json(
+            { code: 'unknown', params: {} },
+            { status: 500 },
+          );
+        }
         batches = batches.filter((b) => b.id !== id);
         return new Response(null, { status: 204 });
       };
@@ -659,10 +665,10 @@ describe('PantryPage', () => {
     describe('removing a Batch', () => {
       afterEach(() => vi.useRealTimers());
 
-      async function openMilk(batches = stock()) {
+      async function openMilk(batches = stock(), options = {}) {
         vi.useFakeTimers({ shouldAdvanceTime: true });
         const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-        const calls = stubManaged(batches);
+        const calls = stubManaged(batches, options);
         renderWithProviders(<PantryPage />);
         const toggle = await screen.findByRole('button', { name: /^Milk/ });
         await user.click(toggle);
@@ -687,6 +693,21 @@ describe('PantryPage', () => {
           ),
         );
         expect(batchRows()).toHaveLength(1);
+      });
+
+      it('brings the Batch back with an error toast when the delete fails', async () => {
+        const { user, calls } = await openMilk(stock(), { failDeletes: true });
+        await removeBatch(user);
+        await waitFor(() => expect(batchRows()).toHaveLength(1));
+
+        await expireUndo();
+
+        await waitFor(() => expect(batchRows()).toHaveLength(2));
+        expect(deletes(calls)).toHaveLength(1);
+        expect(screen.queryByText('Removed Milk')).toBeNull();
+        expect(
+          screen.getByText('Something went wrong. Please try again.'),
+        ).toBeInTheDocument();
       });
 
       it('brings the Batch back on Undo without any request', async () => {
