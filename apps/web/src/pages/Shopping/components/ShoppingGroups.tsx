@@ -4,6 +4,7 @@ import {
   CloseIcon,
   IconButton,
   ListRow,
+  ListRowItem,
   Stack,
   tokens,
   Typography,
@@ -118,106 +119,106 @@ function ChecklistRow({
         : String(item.quantity);
 
   return (
-    <ListRow
-      done={item.checked}
-      title={item.name}
-      meta={quantity}
-      // The whole row is the toggle, as in the handoff.
-      wrapMain={(main) => (
-        <Box
-          component="button"
-          type="button"
-          aria-pressed={item.checked}
-          onClick={() => onToggle(item.id, !item.checked)}
-          sx={{
-            flexGrow: 1,
-            minWidth: 0,
-            alignSelf: 'stretch',
-            display: 'flex',
-            alignItems: 'center',
-            minHeight: 40,
-            py: 0,
-            pr: 0,
-            pl: 1.25,
-            border: 0,
-            bgcolor: 'transparent',
-            textAlign: 'left',
-            cursor: 'pointer',
-            color: 'text.primary',
-            font: 'inherit',
-          }}
-        >
-          {main}
-        </Box>
-      )}
-      leading={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+    <ListRowItem>
+      <ListRow
+        done={item.checked}
+        title={item.name}
+        meta={quantity}
+        // The whole row is the toggle, as in the handoff.
+        wrapMain={(main) => (
           <Box
-            aria-hidden="true"
+            component="button"
+            type="button"
+            aria-pressed={item.checked}
+            onClick={() => onToggle(item.id, !item.checked)}
             sx={{
-              flexShrink: 0,
-              width: 24,
-              height: 24,
-              boxSizing: 'border-box',
-              borderRadius: '8px',
+              flexGrow: 1,
+              minWidth: 0,
+              alignSelf: 'stretch',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              ...(item.checked
-                ? { bgcolor: 'primary.main', color: '#FFFFFF' }
-                : { border: '2px solid #A7B3AA' }),
+              alignItems: 'stretch',
+              px: 1.25,
+              py: 0,
+              border: 0,
+              bgcolor: 'transparent',
+              textAlign: 'left',
+              cursor: 'pointer',
+              color: 'text.primary',
+              font: 'inherit',
             }}
           >
-            {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+            {main}
           </Box>
-          <IngredientIconSlot
-            ingredientId={item.ingredientId}
-            aisleId={aisleId}
-            color={item.checked ? CHECKED_TEXT : 'text.primary'}
-          />
-        </Box>
-      }
-      tags={
-        item.unmatched ? (
-          <Typography
-            component="span"
-            sx={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: 'primary.main',
-              bgcolor: 'primary.light',
-              px: 1,
-              py: 0.5,
-              borderRadius: 999,
-            }}
-          >
-            {t('item.unmatched')}
-          </Typography>
-        ) : null
-      }
-      trailing={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {item.ingredientId !== null ? (
-            <StapleToggle
+        )}
+        leading={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              aria-hidden="true"
+              sx={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                boxSizing: 'border-box',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...(item.checked
+                  ? { bgcolor: 'primary.main', color: tokens.color.surface }
+                  : { border: `2px solid ${tokens.color.tickBorder}` }),
+              }}
+            >
+              {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+            </Box>
+            <IngredientIconSlot
               ingredientId={item.ingredientId}
-              name={item.name}
-              onToggled={(isStaple) =>
-                toast.show(
-                  t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
-                    name: item.name,
-                  }),
-                )
-              }
+              aisleId={aisleId}
+              color={item.checked ? CHECKED_TEXT : 'text.primary'}
             />
-          ) : null}
-          <IconButton
-            label={t('item.remove', { name: item.name })}
-            onClick={() => onRemove(item.id, item.name)}
-          >
-            <CloseIcon size={18} />
-          </IconButton>
-        </Box>
-      }
-    />
+          </Box>
+        }
+        tags={
+          item.unmatched ? (
+            <Typography
+              component="span"
+              sx={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'primary.main',
+                bgcolor: 'primary.light',
+                px: 1,
+                py: 0.5,
+                borderRadius: 999,
+              }}
+            >
+              {t('item.unmatched')}
+            </Typography>
+          ) : null
+        }
+        trailing={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {item.ingredientId !== null ? (
+              <StapleToggle
+                ingredientId={item.ingredientId}
+                name={item.name}
+                onToggled={(isStaple) =>
+                  toast.show(
+                    t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
+                      name: item.name,
+                    }),
+                  )
+                }
+              />
+            ) : null}
+            <IconButton
+              label={t('item.remove', { name: item.name })}
+              onClick={() => onRemove(item.id, item.name)}
+            >
+              <CloseIcon size={18} />
+            </IconButton>
+          </Box>
+        }
+      />
+    </ListRowItem>
   );
 }

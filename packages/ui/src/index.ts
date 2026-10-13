@@ -94,7 +94,7 @@ export {
   type SegmentedControlProps,
 } from './molecules/SegmentedControl';
 export { Sheet, type SheetProps } from './molecules/Sheet';
-export { ListRow, type ListRowProps } from './molecules/ListRow';
+export { ListRow, ListRowItem, type ListRowProps } from './molecules/ListRow';
 export { DockItem, type DockItemProps } from './molecules/DockItem';
 
 export {

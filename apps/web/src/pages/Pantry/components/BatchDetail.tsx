@@ -6,6 +6,7 @@ import {
   EditIcon,
   IconButton,
   ListRow,
+  ListRowItem,
   Typography,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
@@ -53,7 +54,7 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
 
   if (mode === 'edit') {
     return (
-      <Box component="li" sx={{ listStyle: 'none' }}>
+      <ListRowItem>
         <EditBatchForm
           batch={batch}
           onSaved={(edit) => {
@@ -66,7 +67,7 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
           }}
           onCancel={() => setMode('view')}
         />
-      </Box>
+      </ListRowItem>
     );
   }
 
@@ -77,55 +78,57 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
   const detail = [amount, batch.productDescription].filter(Boolean).join(' · ');
 
   return (
-    <ListRow
-      title={detail || t('noDetails')}
-      tags={chip ? <ExpiryChip chip={chip} /> : null}
-      trailing={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <IconButton
-            ref={editButton}
-            tone="plain"
-            size={40}
-            label={t('edit.action', { name: batch.name })}
-            onClick={() => setMode('edit')}
-          >
-            <EditIcon size={18} />
-          </IconButton>
-          <IconButton
-            ref={deleteButton}
-            tone="plain"
-            size={40}
-            label={t('delete.action', { name: batch.name })}
-            onClick={() => setMode('confirmDelete')}
-          >
-            <DeleteIcon size={18} />
-          </IconButton>
-        </Box>
-      }
-      below={
-        mode === 'confirmDelete' ? (
-          <Box sx={{ mt: 1 }} role="group" aria-label={t('delete.confirm')}>
-            <Typography component="p" sx={{ fontSize: 13, m: 0, mb: 1 }}>
-              {t('delete.confirm')}
-            </Typography>
-            {remove.error ? (
-              <Alert>{translateApiError(t, remove.error)}</Alert>
-            ) : null}
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                ref={confirmButton}
-                disabled={remove.isPending}
-                onClick={confirmDelete}
-              >
-                {t('delete.yes')}
-              </Button>
-              <Button variant="text" onClick={() => setMode('view')}>
-                {t('form.cancel')}
-              </Button>
-            </Box>
+    <ListRowItem>
+      <ListRow
+        title={detail || t('noDetails')}
+        tags={chip ? <ExpiryChip chip={chip} /> : null}
+        trailing={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IconButton
+              ref={editButton}
+              tone="plain"
+              size={40}
+              label={t('edit.action', { name: batch.name })}
+              onClick={() => setMode('edit')}
+            >
+              <EditIcon size={18} />
+            </IconButton>
+            <IconButton
+              ref={deleteButton}
+              tone="plain"
+              size={40}
+              label={t('delete.action', { name: batch.name })}
+              onClick={() => setMode('confirmDelete')}
+            >
+              <DeleteIcon size={18} />
+            </IconButton>
           </Box>
-        ) : null
-      }
-    />
+        }
+        below={
+          mode === 'confirmDelete' ? (
+            <Box sx={{ mt: 1 }} role="group" aria-label={t('delete.confirm')}>
+              <Typography component="p" sx={{ fontSize: 13, m: 0, mb: 1 }}>
+                {t('delete.confirm')}
+              </Typography>
+              {remove.error ? (
+                <Alert>{translateApiError(t, remove.error)}</Alert>
+              ) : null}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  ref={confirmButton}
+                  disabled={remove.isPending}
+                  onClick={confirmDelete}
+                >
+                  {t('delete.yes')}
+                </Button>
+                <Button variant="text" onClick={() => setMode('view')}>
+                  {t('form.cancel')}
+                </Button>
+              </Box>
+            </Box>
+          ) : null
+        }
+      />
+    </ListRowItem>
   );
 }

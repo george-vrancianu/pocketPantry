@@ -6,6 +6,7 @@ import {
   IconButton,
   Link,
   ListRow,
+  ListRowItem,
   Spinner,
   Stack,
   TextField,
@@ -129,27 +130,28 @@ function Editor({
       ) : (
         <Stack component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {lines.map((line) => (
-            <ListRow
-              key={line.id}
-              title={`${line.name}${
-                line.quantity !== null
-                  ? `, ${line.quantity}${line.unit ? ` ${t(`common:units.${line.unit}`)}` : ''}`
-                  : ''
-              }`}
-              trailing={
-                <IconButton
-                  label={t('templates:editor.remove', { name: line.name })}
-                  disabled={update.isPending}
-                  onClick={() =>
-                    void replaceLines(
-                      lines.filter((l) => l.id !== line.id).map(toLineBody),
-                    )
-                  }
-                >
-                  <CloseIcon size={18} />
-                </IconButton>
-              }
-            />
+            <ListRowItem key={line.id}>
+              <ListRow
+                title={`${line.name}${
+                  line.quantity !== null
+                    ? `, ${line.quantity}${line.unit ? ` ${t(`common:units.${line.unit}`)}` : ''}`
+                    : ''
+                }`}
+                trailing={
+                  <IconButton
+                    label={t('templates:editor.remove', { name: line.name })}
+                    disabled={update.isPending}
+                    onClick={() =>
+                      void replaceLines(
+                        lines.filter((l) => l.id !== line.id).map(toLineBody),
+                      )
+                    }
+                  >
+                    <CloseIcon size={18} />
+                  </IconButton>
+                }
+              />
+            </ListRowItem>
           ))}
         </Stack>
       )}

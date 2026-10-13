@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IconButton } from '../atoms/IconButton';
 import { CheckIcon, CloseIcon } from '../atoms/icons';
 import { Box } from '../atoms/Layout';
-import { ListRow } from './ListRow';
+import { tokens } from '../theme/tokens';
+import { ListRow, ListRowItem } from './ListRow';
 
 const meta = {
   title: 'Molecules/ListRow',
@@ -13,7 +14,9 @@ const meta = {
         component="ul"
         sx={{ m: 0, p: 0, maxWidth: 360, bgcolor: 'background.paper' }}
       >
-        <Story />
+        <ListRowItem>
+          <Story />
+        </ListRowItem>
       </Box>
     ),
   ],
@@ -30,7 +33,7 @@ const tick = (
       width: 24,
       height: 24,
       borderRadius: '8px',
-      border: '2px solid #A7B3AA',
+      border: `2px solid ${tokens.color.tickBorder}`,
     }}
   />
 );
@@ -84,7 +87,7 @@ export const CheckedStruckThrough: Story = {
           height: 24,
           borderRadius: '8px',
           bgcolor: 'primary.main',
-          color: '#FFFFFF',
+          color: tokens.color.surface,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -100,9 +103,13 @@ export const CheckedStruckThrough: Story = {
 };
 export const Divided: Story = {
   render: (args) => (
-    <>
-      <ListRow {...args} leading={tick} />
-      <ListRow {...args} title="Eggs" meta="12" />
-    </>
+    <Box component="ul" sx={{ m: 0, p: 0 }}>
+      <ListRowItem>
+        <ListRow {...args} leading={tick} />
+      </ListRowItem>
+      <ListRowItem>
+        <ListRow {...args} title="Eggs" meta="12" />
+      </ListRowItem>
+    </Box>
   ),
 };
