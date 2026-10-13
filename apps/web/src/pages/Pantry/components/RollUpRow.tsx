@@ -62,13 +62,22 @@ export function RollUpRow({ rollUp, today, onRemoveBatch, onRowGone }: Props) {
         '&:first-of-type': { borderTop: 0 },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <Box
+        // Awaiting its delete: nothing to expand, and nothing to focus.
+        inert={rollUp.gone || undefined}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          opacity: rollUp.gone ? 0.5 : 1,
+        }}
+      >
         <Box
           component="button"
           type="button"
           ref={toggle}
           aria-expanded={expanded}
-          aria-controls={expanded ? panelId : undefined}
+          aria-controls={expanded && !rollUp.gone ? panelId : undefined}
           onClick={() => setExpanded((open) => !open)}
           sx={{
             display: 'flex',

@@ -833,14 +833,15 @@ describe('PantryPage', () => {
       afterEach(() => vi.useRealTimers());
 
       async function expanded() {
-        vi.useFakeTimers({ shouldAdvanceTime: true });
-        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        // Real timers to load and expand; then frozen time, so no real time leaks into the hold.
+        const user = userEvent.setup();
         stubManaged(stock());
         renderWithProviders(<PantryPage />);
         await user.click(await screen.findByRole('button', { name: /^Milk/ }));
         const content = batchRows()[0].querySelector(
           '[data-swipe-row-content]',
         ) as HTMLElement;
+        vi.useFakeTimers();
         return { content };
       }
       const press = (content: HTMLElement, x = 50, y = 20) =>
@@ -858,14 +859,15 @@ describe('PantryPage', () => {
         expect(screen.queryByRole('form')).toBeNull();
         await wait(200);
         expect(
-          await screen.findByRole('form', { name: 'Edit Milk batch' }),
+          screen.getByRole('form', { name: 'Edit Milk batch' }),
         ).toBeInTheDocument();
       });
 
       it('does nothing visible for a quick tap', async () => {
         const { content } = await expanded();
         press(content);
-        await wait(300);
+        await wait(60);
+        expect(content.querySelector('[data-hold-circle]')).toBeNull();
         fireEvent.pointerUp(content, {
           pointerId: 1,
           clientX: 50,
@@ -873,7 +875,7 @@ describe('PantryPage', () => {
         });
         await wait(1000);
         expect(screen.queryByRole('form')).toBeNull();
-        expect(content.closest('[data-hold-circle]')).toBeNull();
+        expect(content.querySelector('[data-hold-circle]')).toBeNull();
       });
 
       it('cancels when the finger moves more than 8 pt', async () => {

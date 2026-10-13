@@ -222,10 +222,10 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         x: event.clientX - (rect.left || 0),
         y: event.clientY - (rect.top || 0),
       };
-      pressTimer.current = setTimeout(
-        () => setHold({ pressing: true, armed: false, origin }),
-        PRESS_MS,
-      );
+      pressTimer.current = setTimeout(() => {
+        if (press.current !== current) return;
+        setHold({ pressing: true, armed: false, origin });
+      }, PRESS_MS);
       armTimer.current = setTimeout(() => {
         if (press.current !== current) return;
         current.armed = true;
