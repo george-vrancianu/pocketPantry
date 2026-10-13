@@ -52,6 +52,14 @@
     "done": "Færdig",
     "calendar": "Kalender",
     "within_one": "Inden for {{count}} dag",
-    "within_other": "Inden for {{count}} dage"
+    "within_other": "Inden for {{count}} dage",
+    "quickPicks": "Hurtige valg",
+    "usual": "Plejer",
+    "usualDate": "Plejer · {{date}}",
+    "unitDay": "d",
+    "unitWeek": "uge",
+    "unitMonth": "md",
+    "tile": "{{amount}}, {{date}}",
+    "usualTile": "Plejer, {{amount}}, {{date}}"
   }
 }

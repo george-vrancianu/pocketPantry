@@ -680,6 +680,170 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
+    /** The quick-pick tiles, as "accessible name: pressed". */
+    const quickPicks = (sheet: HTMLElement) =>
+      within(within(sheet).getByRole('group', { name: 'Quick picks' }))
+        .getAllByRole('button')
+        .map(
+          (tile) =>
+            `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
+        );
+
+    it('shows the pre-filled Default Expiry as the Usual quick pick, selected, ahead of 3 d to 1 mo', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+
+      // Parmesan's Default Expiry is 30 days, the same as 1 mo: only Usual lights up.
+      expect(quickPicks(sheet)).toEqual([
+        'Usual, 30 d, Friday, November 13: true',
+        '3 d, Saturday, October 17: false',
+        '5 d, Monday, October 19: false',
+        '1 wk, Wednesday, October 21: false',
+        '2 wk, Wednesday, October 28: false',
+        '1 mo, Friday, November 13: false',
+      ]);
+      const usual = within(sheet).getByRole('button', { name: /^Usual/ });
+      expect(usual).toHaveTextContent('30d');
+      expect(usual).toHaveTextContent('Usual · Nov 13');
+      const week = within(sheet).getByRole('button', { name: /^1 wk/ });
+      expect(week).toHaveTextContent('1wk');
+      expect(week).toHaveTextContent('Oct 21');
+    });
+
+    it('saves today + n for each quick pick (1 mo is 30 days) and scrolls the calendar smoothly to its month', async () => {
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+      const readout = within(sheet).getByRole('status');
+      const shown = () => {
+        const last = scrolling.scrolledTo(calendar);
+        return [last?.child?.querySelector('h3')?.textContent, last?.behavior];
+      };
+
+      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      expect(readout).toHaveTextContent('Sat, Oct 17in 3 days');
+      expect(shown()).toEqual(['October 2026', 'smooth']);
+      await user.click(within(sheet).getByRole('button', { name: /^5 d,/ }));
+      expect(readout).toHaveTextContent('Mon, Oct 19in 5 days');
+      await user.click(within(sheet).getByRole('button', { name: /^1 wk,/ }));
+      expect(readout).toHaveTextContent('Wed, Oct 21in 7 days');
+      await user.click(within(sheet).getByRole('button', { name: /^1 mo,/ }));
+      expect(readout).toHaveTextContent('Fri, Nov 13in 30 days');
+      expect(shown()).toEqual(['November 2026', 'smooth']);
+      await user.click(within(sheet).getByRole('button', { name: /^2 wk,/ }));
+      expect(readout).toHaveTextContent('Wed, Oct 28in 14 days');
+      expect(shown()).toEqual(['October 2026', 'smooth']);
+      expect(
+        within(sheet).getByRole('button', { name: /^2 wk,/ }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(sheet).getByRole('button', { name: /^Usual,/ }),
+      ).toHaveAttribute('aria-pressed', 'false');
+
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect((await save(user, calls)).expiryDate).toBe('2026-10-28');
+    });
+
+    it('leaves every quick pick unselected for a calendar day that matches none', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Thursday, October 22, 2026',
+        }),
+      );
+      expect(quickPicks(sheet).every((tile) => tile.endsWith(': false'))).toBe(
+        true,
+      );
+      // A calendar day 3 days out does light up 3 d.
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Saturday, October 17, 2026',
+        }),
+      );
+      expect(
+        within(sheet).getByRole('button', { name: /^3 d,/ }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('has no Usual tile for an Unmatched name', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const search = screen.getByRole('combobox', {
+        name: 'Search ingredients',
+      });
+      await user.clear(search);
+      await user.type(search, 'Parmigiano');
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Not in the Catalog? Add "Parmigiano" as Unmatched',
+        }),
+      );
+      const sheet = await openSheet(user);
+
+      expect(quickPicks(sheet)).toEqual([
+        '3 d, Saturday, October 17: false',
+        '5 d, Monday, October 19: false',
+        '1 wk, Wednesday, October 21: false',
+        '2 wk, Wednesday, October 28: false',
+        '1 mo, Friday, November 13: false',
+      ]);
+    });
+
+    it('has no Usual tile for an Ingredient without a Default Expiry', async () => {
+      const user = userEvent.setup();
+      stubPantry(
+        [],
+        [
+          {
+            ...parmesan,
+            id: 'salt-id',
+            name: 'Salt',
+            defaults: { expiryDays: null, location: 'spices' },
+          },
+        ],
+      );
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'salt',
+      );
+      await user.click(await screen.findByRole('option', { name: /Salt/ }));
+      const sheet = await openSheet(user);
+
+      expect(
+        within(sheet).queryByRole('button', { name: /^Usual/ }),
+      ).not.toBeInTheDocument();
+      expect(quickPicks(sheet)).toHaveLength(5);
+    });
+
+    it('jumps to the quick pick month instantly under reduced motion', async () => {
+      stubMotion(true);
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+
+      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      const last = scrolling.scrolledTo(calendar);
+      expect(last?.child?.querySelector('h3')).toHaveTextContent(
+        'October 2026',
+      );
+      expect(last?.behavior).toBe('auto');
+    });
+
     it('renders 14 Monday-first months, marks today, and tints today + Stale Threshold as the stale band', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
