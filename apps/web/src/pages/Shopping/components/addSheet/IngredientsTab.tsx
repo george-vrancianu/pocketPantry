@@ -13,6 +13,7 @@ import {
   type CatalogSearchResult,
   type Unit,
 } from '../../../../lib/catalog';
+import { normalizeName } from '../../../../lib/normalizeName';
 import { parseQuantity } from '../../../../lib/pantry';
 import {
   useShoppingList,
@@ -94,7 +95,7 @@ export function IngredientsTab({
       ),
     ];
     if (named.length === 0) return t('search.onListNoUnit');
-    if (named.length < lines.length && lines.some((line) => !line.unit)) {
+    if (lines.some((line) => !line.unit)) {
       return t('search.onListOtherUnits');
     }
     return t('search.onListOtherUnit', {
@@ -133,7 +134,7 @@ export function IngredientsTab({
   const active = activeIndex < rows.length ? activeIndex : -1;
   const optionId = (index: number) => `${listboxId}-option-${index}`;
   const openRow = rows.find((row) => row.key === open?.key);
-  const amount = parseQuantity(open?.quantity ?? '');
+  const amount = parseQuantity((open?.quantity ?? '').replace(',', '.'));
 
   const toggle = (row: Row) => {
     setOpen(
@@ -249,14 +250,12 @@ export function IngredientsTab({
         {rows.map((row, index) => {
           const name = row.kind === 'catalog' ? row.result.name : row.name;
           const isOpen = open?.key === row.key;
-          // Unmatched lines merge on the typed name, ignoring case and spacing.
-          const sameName = (value: string) =>
-            value.trim().replace(/\s+/g, ' ').toLowerCase();
+          // Unmatched lines merge on the normalised typed name, as the server does.
           const onListLines = unchecked.filter((line) =>
             row.kind === 'catalog'
               ? line.ingredientId === row.result.id
               : line.ingredientId === null &&
-                sameName(line.name) === sameName(row.name),
+                normalizeName(line.name) === normalizeName(row.name),
           );
           const hint =
             isOpen && open ? mergeHint(onListLines, open.unit) : null;
@@ -288,8 +287,12 @@ export function IngredientsTab({
                     name={name}
                     quantity={open.quantity}
                     unit={open.unit}
-                    onQuantityChange={(quantity) =>
-                      setOpen({ ...open, quantity })
+                    onQuantityChange={(quantity, unit) =>
+                      setOpen({
+                        ...open,
+                        quantity,
+                        ...(unit !== undefined ? { unit } : {}),
+                      })
                     }
                     onUnitChange={(unit) => setOpen({ ...open, unit })}
                     error={amount.valid ? null : t('finish.quantityInvalid')}
