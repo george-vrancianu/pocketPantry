@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import {
   SHOPPING_POLL_INTERVAL_MS,
+  type ShoppingGroup,
   type ShoppingItem,
   type ShoppingList,
 } from '../../lib/shopping';
@@ -157,6 +158,91 @@ describe('ShoppingPage', () => {
     );
     expect(await screen.findByText('Removed Tomato')).toBeVisible();
     expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+  });
+
+  describe('Ingredient Icons', () => {
+    const DAIRY_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
+    const PARMESAN_ID = '7d85ad5c-dbd3-527e-ad69-23c2eb53ae6e';
+    const dairyAisle = { id: DAIRY_ID, name: 'Dairy & eggs', sortOrder: 4 };
+    const rowIcon = (name: RegExp) =>
+      screen
+        .getByRole('button', { name })
+        .querySelector<SVGElement>('[data-ingredient-icon]');
+    const show = async (
+      items: ShoppingItem[],
+      aisle: ShoppingGroup['aisle'] = dairyAisle,
+    ) => {
+      stubShopping({}, list([{ aisle, items }]));
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByRole('button', { name: /^Item/ });
+    };
+
+    it('shows a mapped Ingredient its icon, tinted by its Aisle', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID, name: 'Item' })]);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+    });
+
+    it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
+      await show([item({ id: 'x', ingredientId: 'not-mapped' })]);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+    });
+
+    it('shows an Unmatched item the Default Icon in the neutral tint', async () => {
+      await show([item({ id: 'x', unmatched: true })], null);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('tints an Aisle without a tint neutral', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID })], {
+        id: 'admin-made-aisle',
+        name: 'Admin aisle',
+        sortOrder: 99,
+      });
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('keeps the icon in a 38px slot', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID })]);
+      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
+        width: '38px',
+        height: '38px',
+      });
+    });
+
+    it('greys the icon when the item is checked', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID, checked: true })]);
+      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
+        color: '#66736B',
+      });
+    });
   });
 
   describe('Staple star toasts', () => {
@@ -367,40 +453,76 @@ describe('ShoppingPage', () => {
     });
 
     const DAIRY_AISLE_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
-    const withAisle = (id: string) =>
+    const icon = (row: HTMLElement) =>
+      row.querySelector<SVGElement>('[data-ingredient-icon]');
+    const withResult = (overrides: Partial<CatalogSearchResult>) =>
       withParmesan({
         'GET /api/catalog/search': () =>
-          Response.json({
-            results: [
-              {
-                ...parmesan,
-                parentCategory: {
-                  ...parmesan.parentCategory,
-                  aisle: { id, name: 'Dairy & eggs' },
-                },
-              },
-            ],
-          }),
+          Response.json({ results: [{ ...parmesan, ...overrides }] }),
       });
+    const PARMESAN_SEED_ID = '7d85ad5c-dbd3-527e-ad69-23c2eb53ae6e';
 
-    it('tints a result tile by its Aisle, and uses the neutral tile for an unknown Aisle', async () => {
-      withAisle(DAIRY_AISLE_ID);
-      const first = renderWithProviders(<ShoppingPage />);
-      const { option } = await findParmesanRow(userEvent.setup());
-      expect(option.firstElementChild).toHaveStyle({
-        backgroundColor: '#E3ECF3',
-        color: '#2F5674',
+    it('shows a mapped Ingredient its icon, tinted by its Aisle', async () => {
+      withResult({
+        id: PARMESAN_SEED_ID,
+        parentCategory: {
+          ...parmesan.parentCategory,
+          aisle: { id: DAIRY_AISLE_ID, name: 'Dairy & eggs' },
+        },
       });
-      first.unmount();
-      vi.unstubAllGlobals();
-
-      withAisle('admin-made-aisle');
       renderWithProviders(<ShoppingPage />);
-      const second = await findParmesanRow(userEvent.setup());
-      expect(second.option.firstElementChild).toHaveStyle({
-        backgroundColor: tokens.color.chipNeutral,
-        color: tokens.color.muted,
+      const { option } = await findParmesanRow(userEvent.setup());
+      expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'parmesan');
+      expect(icon(option)).toHaveAttribute('data-ingredient-tint', '#E3ECF3');
+      expect(icon(option)).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
+      withResult({
+        parentCategory: {
+          ...parmesan.parentCategory,
+          aisle: { id: DAIRY_AISLE_ID, name: 'Dairy & eggs' },
+        },
       });
+      renderWithProviders(<ShoppingPage />);
+      const { option } = await findParmesanRow(userEvent.setup());
+      expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'default');
+      expect(icon(option)).toHaveAttribute('data-ingredient-tint', '#E3ECF3');
+    });
+
+    it('tints an Aisle without a tint neutral', async () => {
+      withResult({
+        id: PARMESAN_SEED_ID,
+        parentCategory: {
+          ...parmesan.parentCategory,
+          aisle: { id: 'admin-made-aisle', name: 'Dairy & eggs' },
+        },
+      });
+      renderWithProviders(<ShoppingPage />);
+      const { option } = await findParmesanRow(userEvent.setup());
+      expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'parmesan');
+      expect(icon(option)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('shows the free-text row the neutral Default Icon', async () => {
+      withParmesan({
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const dialog = await openSheet(user);
+      await user.type(search(dialog), 'Dragon fruit');
+      const row = await within(dialog).findByRole('option', {
+        name: /Add “Dragon fruit”/,
+      });
+      expect(icon(row)).toHaveAttribute('data-ingredient-icon', 'default');
+      expect(icon(row)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
     });
 
     describe('when the Ingredient is already on the list', () => {

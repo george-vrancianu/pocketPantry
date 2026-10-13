@@ -1,7 +1,10 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme } from './theme/theme';
 export { tokens } from './theme/tokens';
-export { aisleTint, aisleTints, type AisleTint } from './theme/aisleTints';
+export {
+  IngredientIcon,
+  type IngredientIconProps,
+} from './ingredientIcon/IngredientIcon';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';

@@ -68,6 +68,14 @@ _Avoid_: Unknown, custom, uncategorised
 An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List on its own; a Member can still add one by hand.
 _Avoid_: Staple (a Family's always-wanted Ingredient), essential, cupboard item
 
+**Ingredient Icon**:
+The picture shown for an Ingredient wherever it appears, coloured by its Aisle. Several Ingredients may share one, and an Ingredient without one shows the Default Icon. Belongs to the Ingredient, never to a Product Description.
+_Avoid_: product icon, category icon, thumbnail
+
+**Default Icon**:
+The generic Ingredient Icon for an Ingredient that has none of its own, and for Unmatched names.
+_Avoid_: placeholder, fallback tile
+
 ### Pantry
 
 **Pantry**:

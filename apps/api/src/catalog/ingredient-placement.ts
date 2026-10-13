@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
-import type { CatalogLocale } from '../catalog/catalog.schemas';
-import { loadDisplayNames } from '../catalog/display-names';
+import type { CatalogLocale } from './catalog.schemas';
+import { loadDisplayNames } from './display-names';
 import type { Executor } from '../database/database.types';
 import {
   aisles,

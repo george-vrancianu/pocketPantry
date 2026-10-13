@@ -17,7 +17,10 @@ import { USED_UP_WINDOW_MS } from '../pantry/stock-history';
 import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import { unexpiredBatch, utcToday } from './batch-presence';
-import { byShopOrder, loadIngredientPlacements } from './ingredient-placement';
+import {
+  byShopOrder,
+  loadIngredientPlacements,
+} from '../catalog/ingredient-placement';
 import type { SuggestionView, SuggestionsView } from './suggestions.schemas';
 
 /**

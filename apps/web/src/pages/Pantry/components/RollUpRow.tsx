@@ -1,6 +1,7 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
 import { expiryChipFor, type RollUp } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
@@ -71,29 +72,10 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
             cursor: 'pointer',
           }}
         >
-          <Box
-            aria-hidden="true"
-            sx={{
-              flexShrink: 0,
-              width: 36,
-              height: 36,
-              borderRadius: '12px',
-              bgcolor: rollUp.unmatched
-                ? tokens.color.soonBg
-                : tokens.color.accentTint,
-              color: rollUp.unmatched
-                ? tokens.color.soonFg
-                : tokens.color.accent,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: tokens.font.display,
-              fontWeight: 700,
-              fontSize: 15,
-            }}
-          >
-            {rollUp.name.charAt(0).toLocaleUpperCase(i18n.language)}
-          </Box>
+          <IngredientIconSlot
+            ingredientId={rollUp.ingredientId}
+            aisleId={rollUp.aisleId}
+          />
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography
               component="span"
@@ -143,7 +125,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           component="ul"
           id={panelId}
           aria-label={t('batchesOf', { name: rollUp.name })}
-          sx={{ m: 0, mb: 1, pl: '48px', pr: 0 }}
+          sx={{ m: 0, mb: 1, pl: '50px', pr: 0 }}
         >
           {rollUp.batches.map((batch) => (
             <BatchDetail

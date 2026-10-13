@@ -7,7 +7,7 @@ import {
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
-import { loadDisplayNames } from '../catalog/display-names';
+import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
@@ -332,33 +332,22 @@ export class PantryService {
   ): Promise<BatchView[]> {
     const threshold = await this.settings.staleThresholdOf(familyId);
     const latestSoon = addDays(today, threshold);
-    const ingredientRows = await this.database
-      .select({ id: ingredients.id, name: ingredients.name })
-      .from(ingredients)
-      .where(
-        inArray(
-          ingredients.id,
-          rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
-        ),
-      );
-    const canonical = new Map(ingredientRows.map((i) => [i.id, i.name]));
-    const names = await loadDisplayNames(
+    const placements = await loadIngredientPlacements(
       this.database,
       locale,
-      ingredientRows.map((i) => i.id),
+      rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
     );
 
     return rows.map((row) => ({
       id: row.id,
       name: row.ingredientId
-        ? names.pick(
-            'ingredient',
-            row.ingredientId,
-            canonical.get(row.ingredientId) ?? row.rawName ?? '',
-          )
+        ? (placements.get(row.ingredientId)?.name ?? row.rawName ?? '')
         : (row.rawName ?? ''),
       ingredientId: row.ingredientId,
       unmatched: row.unmatched,
+      aisle: row.ingredientId
+        ? (placements.get(row.ingredientId)?.aisle ?? null)
+        : null,
       quantity: row.quantity,
       unit: row.unit,
       location: row.location,

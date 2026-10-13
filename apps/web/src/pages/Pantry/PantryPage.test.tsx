@@ -1,3 +1,4 @@
+import { tokens } from '@pocket-pantry/ui';
 import { focusManager } from '@tanstack/react-query';
 import {
   act,
@@ -21,6 +22,7 @@ function batch(overrides: Partial<Batch>): Batch {
     name: 'Milk',
     ingredientId: 'milk-id',
     unmatched: false,
+    aisle: null,
     quantity: null,
     unit: null,
     location: 'fridge',
@@ -96,15 +98,104 @@ describe('PantryPage', () => {
     const fridge = await screen.findByRole('region', { name: 'Fridge · 3' });
     const rows = within(fridge).getAllByRole('listitem');
     expect(rows.map((row) => row.textContent)).toEqual([
-      'Y' + 'Yogurt' + '500 g · Greek, opened' + 'Today',
-      'S' + 'Spinach' + '2 days',
-      expect.stringMatching(/^FFeta/),
+      'Yogurt' + '500 g · Greek, opened' + 'Today',
+      'Spinach' + '2 days',
+      expect.stringMatching(/^Feta/),
     ]);
     expect(within(rows[2]).getByText(/\d{4}$/)).toBeInTheDocument();
 
     const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
     expect(within(cupboard).getByText('Unmatched')).toBeInTheDocument();
     expect(within(cupboard).getByText('Zorblax paste')).toBeInTheDocument();
+  });
+
+  describe('Ingredient Icons', () => {
+    const DAIRY_AISLE_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
+    const dairy = { id: DAIRY_AISLE_ID, name: 'Dairy & eggs', sortOrder: 4 };
+    const PARMESAN_SEED_ID = '7d85ad5c-dbd3-527e-ad69-23c2eb53ae6e';
+    const iconOf = (name: string) =>
+      screen
+        .getByText(name)
+        .closest('li')
+        ?.querySelector<SVGElement>('[data-ingredient-icon]');
+
+    it('shows a mapped Ingredient its icon, tinted by its Aisle', async () => {
+      stubPantry([
+        batch({
+          name: 'Parmesan',
+          ingredientId: PARMESAN_SEED_ID,
+          aisle: dairy,
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('Parmesan');
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+      expect(iconOf('Parmesan')).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
+      stubPantry([
+        batch({ name: 'Zorblax', ingredientId: 'zorblax-id', aisle: dairy }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('Zorblax');
+      expect(iconOf('Zorblax')).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(iconOf('Zorblax')).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+    });
+
+    it('tints an Aisle without a tint neutral', async () => {
+      stubPantry([
+        batch({
+          name: 'Parmesan',
+          ingredientId: PARMESAN_SEED_ID,
+          aisle: { id: 'admin-aisle-id', name: 'Custom', sortOrder: 99 },
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('Parmesan');
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(iconOf('Parmesan')).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('shows an Unmatched Batch the Default Icon with the neutral tint', async () => {
+      stubPantry([
+        batch({
+          name: 'Zorblax paste',
+          ingredientId: null,
+          unmatched: true,
+          aisle: null,
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('Zorblax paste');
+      expect(iconOf('Zorblax paste')).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(iconOf('Zorblax paste')).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
   });
 
   it('shows an empty state with no Batches', async () => {
@@ -261,9 +352,7 @@ describe('PantryPage', () => {
 
       const fridge = await screen.findByRole('region', { name: 'Fridge · 2' });
       const [row] = within(fridge).getAllByRole('listitem');
-      expect(row.textContent).toBe(
-        'M' + 'Milk' + '1.5 L · 2 batches' + '2 days',
-      );
+      expect(row.textContent).toBe('Milk' + '1.5 L · 2 batches' + '2 days');
     });
 
     describe('Staple star', () => {

@@ -329,7 +329,7 @@ export function IngredientsTab({
             <ResultRow
               key={row.key}
               id={optionId(index)}
-              unmatched={row.kind === 'unmatched'}
+              ingredientId={row.kind === 'catalog' ? row.result.id : undefined}
               name={
                 row.kind === 'unmatched'
                   ? t('search.freeText', { name: rowName(row) })

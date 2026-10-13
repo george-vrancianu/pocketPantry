@@ -4,6 +4,7 @@ import {
   FALLBACK_LOCALE,
   SCAN_LANGUAGES,
 } from '../catalog/catalog.schemas';
+import type { AisleView } from '../catalog/ingredient-placement';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
 import { batchQuantity } from '../common/quantity';
@@ -102,6 +103,8 @@ export type BatchView = {
   name: string;
   ingredientId: string | null;
   unmatched: boolean;
+  /** The Ingredient's Aisle, localised; null for an Unmatched Batch. */
+  aisle: AisleView | null;
   quantity: number | null;
   unit: (typeof ingredientUnit.enumValues)[number] | null;
   location: (typeof storageLocation.enumValues)[number];
