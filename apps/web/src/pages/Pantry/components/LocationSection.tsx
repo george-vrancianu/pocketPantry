@@ -2,17 +2,21 @@ import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
-import type { RollUp } from '../../../lib/pantry';
+import type { Batch } from '../../../lib/pantry';
+import type { PantryRowHint } from '../hooks/usePantryRowHint';
+import type { PantryRow } from '../hooks/usePantryScreen';
 import { RollUpRow } from './RollUpRow';
 
 type Props = {
   location: StorageLocation;
   /** Number of Batches (not rows) in this Location. */
   batchCount: number;
-  rows: RollUp[];
+  rows: PantryRow[];
   today: Date;
+  onRemoveBatch: (batch: Batch) => void;
   /** Called when the last row is gone and this section unmounts, so focus can go elsewhere. */
   onEmptied: () => void;
+  rowHint: PantryRowHint;
 };
 
 export function LocationSection({
@@ -20,7 +24,9 @@ export function LocationSection({
   batchCount,
   rows,
   today,
+  onRemoveBatch,
   onEmptied,
+  rowHint,
 }: Props) {
   const { t } = useTranslation('pantry');
   const headingId = useId();
@@ -56,6 +62,8 @@ export function LocationSection({
             key={row.key}
             rollUp={row}
             today={today}
+            onRemoveBatch={onRemoveBatch}
+            rowHint={rowHint}
             onRowGone={() =>
               rows.length > 1 ? heading.current?.focus() : onEmptied()
             }

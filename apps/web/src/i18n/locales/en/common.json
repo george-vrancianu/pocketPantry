@@ -17,6 +17,46 @@
     "cupboard": "Cupboard",
     "spices": "Spices"
   },
+  "row": {
+    "a11yHint": "Swipe left to remove, hold to edit",
+    "actions": {
+      "edit": "Edit {{name}}",
+      "remove": "Remove {{name}}"
+    },
+    "context": {
+      "shopping": "from your list",
+      "pantry": "in your Pantry",
+      "template": "from this template",
+      "staples": "from your Staples"
+    },
+    "hint": "Swipe left to remove · hold to edit",
+    "keep": "Keep",
+    "releaseToDelete": "Release to delete",
+    "remove": "Remove",
+    "removeQuestion": "Remove {{name}}?",
+    "removed": "Removed {{name}}",
+    "ticked": "Ticked",
+    "undo": "Undo",
+    "updated": "Updated {{name}}"
+  },
   "unverified_one": "{{count}} item still unverified",
-  "unverified_other": "{{count}} items still unverified"
+  "unverified_other": "{{count}} items still unverified",
+  "amount": {
+    "placeholder": "Amount",
+    "label": "Amount of {{name}}, for example 2 or 500 g",
+    "unit": "Unit: {{unit}}",
+    "noUnit": "unit",
+    "units": "Units",
+    "invalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals.",
+    "unitRequired": "Choose a unit for the amount."
+  },
+  "edit": {
+    "removeFromList": "Remove from list",
+    "removeFromPantry": "Remove from Pantry",
+    "removeLine": "Remove line",
+    "removeStaple": "Remove Staple",
+    "save": "Save",
+    "saving": "Saving",
+    "title": "Edit {{name}}"
+  }
 }

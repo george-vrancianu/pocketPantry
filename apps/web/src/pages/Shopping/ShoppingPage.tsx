@@ -6,13 +6,15 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   StapleErrorProvider,
   useStapleErrors,
 } from '../../components/StapleToggle';
+import { RowHintNote } from '../../components/RowHintNote';
+import { useRowHint } from '../../lib/useRowHint';
 import { itemCount } from '../../lib/shopping';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
@@ -27,6 +29,21 @@ export function ShoppingPage() {
   const screen = useShoppingScreen();
   const stapleErrors = useStapleErrors();
   const [reviewing, setReviewing] = useState(false);
+  const hint = useRowHint(
+    'shopping',
+    !reviewing && (screen.list?.groups.length ?? 0) > 0,
+  );
+  // Removing the last row unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLDivElement>(null);
+  const hadGroups = useRef(false);
+  const groupCount = screen.list?.groups.length ?? 0;
+  useEffect(() => {
+    if (groupCount === 0 && hadGroups.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadGroups.current = groupCount > 0;
+  }, [groupCount]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
 
@@ -53,6 +70,7 @@ export function ShoppingPage() {
     <StapleErrorProvider report={stapleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader title={t('shopping:title')} />
+      <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
@@ -69,7 +87,11 @@ export function ShoppingPage() {
               onAddItems={() => openSheet({ tab: 'ingredients' })}
             />
             {screen.list.groups.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Box
+                ref={empty}
+                tabIndex={-1}
+                sx={{ textAlign: 'center', py: 3, outline: 'none' }}
+              >
                 <Typography
                   sx={{
                     fontFamily: 'var(--font-display)',
@@ -87,7 +109,9 @@ export function ShoppingPage() {
               <ShoppingGroups
                 groups={screen.list.groups}
                 onToggle={screen.toggle}
+                onSetAmount={screen.setAmount}
                 onRemove={screen.remove}
+                hint={hint}
               />
             )}
             {screen.list.groups.length > 0 ? (

@@ -19,9 +19,7 @@
     "unmatchedHint": "Nu există o potrivire în catalog, deci va fi adăugat ca articol nepotrivit."
   },
   "item": {
-    "remove": "Elimină {{name}}",
     "unmatched": "Nepotrivit",
-    "removed": "Ai scos {{name}}",
     "nowStaple": "{{name}} este acum un produs de bază",
     "removedFromStaples": "{{name}} a fost scos din produsele de bază"
   },
@@ -74,11 +72,6 @@
     "onListNoUnit": "Este deja pe listă fără unitate. Se adaugă o linie separată."
   },
   "amount": {
-    "placeholder": "Cantitate",
-    "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
-    "unit": "Unitate: {{unit}}",
-    "noUnit": "unitate",
-    "units": "Unități",
     "add": "Adaugă {{name}} în listă"
   },
   "suggestions": {

@@ -7,13 +7,25 @@ import {
   matchesSearch,
   rollUp,
   useBatches,
+  useDeleteBatch,
   type PantryFilter,
+  type RollUp,
 } from '../../../lib/pantry';
+import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+
+/**
+ * A roll-up row as shown. `gone`: every Batch of it is pending removal. The row stays (empty, so Undo
+ * brings it back as it was, expanded) until the delete has been sent, and then it collapses away.
+ */
+export type PantryRow = RollUp & { gone: boolean };
 
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
   const today = useMemo(() => new Date(), []);
   const batches = useBatches(i18n.language, today);
+  const { mutateAsync: sendDelete } = useDeleteBatch();
+  const removal = useDeferredRemoval(['pantry'], sendDelete);
+  const { hiddenIds } = removal;
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
@@ -21,6 +33,7 @@ export function usePantryScreen() {
   const all = batches.data ?? [];
   // Chip counts follow the search, so they always say how many Batches the chip would show.
   const searched = all.filter((batch) => matchesSearch(batch, query));
+  const live = (batch: { id: string }) => !hiddenIds.has(batch.id);
   const shown =
     filter === 'all'
       ? searched
@@ -29,10 +42,17 @@ export function usePantryScreen() {
   return {
     sections: groupByLocation(shown).map((group) => ({
       location: group.location,
-      batchCount: group.batches.length,
-      rows: rollUp(group.batches),
+      batchCount: group.batches.filter(live).length,
+      rows: rollUp(group.batches).map((row): PantryRow => {
+        const remaining = row.batches.filter(live);
+        if (remaining.length === row.batches.length) {
+          return { ...row, gone: false };
+        }
+        if (remaining.length === 0) return { ...row, gone: true };
+        return { ...rollUp(remaining)[0], gone: false };
+      }),
     })),
-    counts: countByLocation(searched),
+    counts: countByLocation(searched.filter(live)),
     query,
     setQuery,
     filter,
@@ -45,6 +65,7 @@ export function usePantryScreen() {
     adding,
     startAdding: () => setAdding(true),
     stopAdding: () => setAdding(false),
+    removeBatch: removal.remove,
     retry: () => void batches.refetch(),
   };
 }

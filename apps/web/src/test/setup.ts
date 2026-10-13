@@ -8,6 +8,8 @@ configure({ asyncUtilTimeout: 3000 });
 
 afterEach(() => {
   cleanup();
+  // First-use hints are remembered in storage: start each test unseen.
+  localStorage.clear();
   // The Scan Session is module state: do not carry Scans over to the next test.
   resetScanSession();
   resetReads();

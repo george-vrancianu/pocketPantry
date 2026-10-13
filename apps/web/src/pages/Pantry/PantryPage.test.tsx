@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { defaultExpiryDate, type Batch } from '../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
 import { PantryPage } from './PantryPage';
 
 const inDays = (days: number) => defaultExpiryDate(days, new Date());
@@ -330,9 +331,39 @@ describe('PantryPage', () => {
       }),
     ];
 
-    function stubManaged(initial: Batch[]) {
+    /** The Batch rows of an expanded roll-up, in order. */
+    const batchRows = (name = 'Milk') =>
+      within(
+        screen.getByRole('list', { name: `Batches of ${name}` }),
+      ).getAllByRole('group');
+    /** The keyboard path to the editor sheet: focus the row, press Enter. */
+    async function openEditor(
+      user: ReturnType<typeof userEvent.setup>,
+      row = batchRows()[0],
+    ) {
+      act(() => row.focus());
+      await user.keyboard('{Enter}');
+      return screen.findByRole('form', { name: /^Edit .* batch$/ });
+    }
+    /** The keyboard path to removing: focus the row, Delete, then the Remove button. */
+    async function removeBatch(
+      user: ReturnType<typeof userEvent.setup>,
+      row = batchRows()[0],
+    ) {
+      act(() => row.focus());
+      await user.keyboard('{Delete}');
+      await user.click(screen.getByRole('button', { name: 'Remove' }));
+    }
+
+    function stubManaged(initial: Batch[], { failDeletes = false } = {}) {
       let batches = initial;
       const remove = (id: string) => () => {
+        if (failDeletes) {
+          return Response.json(
+            { code: 'unknown', params: {} },
+            { status: 500 },
+          );
+        }
         batches = batches.filter((b) => b.id !== id);
         return new Response(null, { status: 204 });
       };
@@ -470,29 +501,29 @@ describe('PantryPage', () => {
       ).toBeVisible();
     });
 
-    it('expands a row to each Batch with its own expiry, Edit and Delete', async () => {
+    it('expands a row to each Batch with its own expiry, swipeable and holdable', async () => {
       const user = userEvent.setup();
       stubManaged(stock());
       renderWithProviders(<PantryPage />);
 
       const toggle = await screen.findByRole('button', { name: /^Milk/ });
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      // The roll-up row itself is not a gesture row.
+      expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
       await user.click(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
-      const details = within(
-        screen.getByRole('list', { name: 'Batches of Milk' }),
-      ).getAllByRole('listitem');
-      expect(details.map((d) => d.textContent)).toEqual([
-        '0.5 L · Opened' + '2 days',
-        expect.stringMatching(/^1 L/),
-      ]);
+      const details = batchRows();
+      expect(details[0]).toHaveTextContent(/^0\.5 L · Opened2 days/);
+      expect(details[1]).toHaveTextContent(/^1 L/);
+      expect(batchRows()[0]).toHaveAccessibleDescription(
+        'Swipe left to remove, hold to edit',
+      );
+      // No Edit or Delete icons any more: the hidden custom actions are not tab stops.
       expect(
-        within(details[0]).getByRole('button', { name: 'Edit Milk batch' }),
-      ).toBeInTheDocument();
-      expect(
-        within(details[0]).getByRole('button', { name: 'Delete Milk batch' }),
-      ).toBeInTheDocument();
+        screen.getAllByRole('button', { name: /Edit Milk/ })[0],
+      ).toHaveAttribute('tabindex', '-1');
+      expect(screen.queryByRole('button', { name: /Delete Milk/ })).toBeNull();
 
       await user.click(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -508,10 +539,8 @@ describe('PantryPage', () => {
       await user.click(toggle);
 
       expect(toggle).not.toHaveTextContent(/\d{4}$/);
-      const [detail] = within(
-        screen.getByRole('list', { name: 'Batches of Parmesan' }),
-      ).getAllByRole('listitem');
-      expect(detail).toHaveTextContent(/^Grana Padano 200g.*\d{4}$/);
+      const [detail] = batchRows('Parmesan');
+      expect(detail).toHaveTextContent(/^Grana Padano 200g.*\d{4}/);
     });
 
     it('edits a Batch and sends only that Batch', async () => {
@@ -520,11 +549,7 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
 
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        within(
-          screen.getByRole('list', { name: 'Batches of Milk' }),
-        ).getAllByRole('button', { name: 'Edit Milk batch' })[0],
-      );
+      await openEditor(user);
       const form = screen.getByRole('form', { name: 'Edit Milk batch' });
       expect(within(form).getByLabelText('Quantity')).toHaveValue(0.5);
       expect(within(form).getByLabelText('Product description')).toHaveValue(
@@ -569,9 +594,7 @@ describe('PantryPage', () => {
       vi.stubGlobal('fetch', fetchMock);
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
-      );
+      await openEditor(user);
       const form = screen.getByRole('form', { name: 'Edit Milk batch' });
 
       // Another Member changes the quantity, and the list refetches under the open form.
@@ -602,9 +625,7 @@ describe('PantryPage', () => {
       const calls = stubManaged(stock());
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
-      );
+      await openEditor(user);
       await user.click(screen.getByRole('button', { name: 'Save changes' }));
       await waitFor(() =>
         expect(
@@ -619,9 +640,7 @@ describe('PantryPage', () => {
       stubManaged(stock());
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
-      );
+      await openEditor(user);
       fireEvent.change(screen.getByLabelText('Quantity'), {
         target: { value: '1e3' },
       });
@@ -635,9 +654,7 @@ describe('PantryPage', () => {
       stubManaged(stock());
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0],
-      );
+      await openEditor(user);
       await user.clear(screen.getByLabelText('Quantity'));
       await user.type(screen.getByLabelText('Quantity'), '1.2345');
       expect(
@@ -645,74 +662,103 @@ describe('PantryPage', () => {
       ).toBeDisabled();
     });
 
-    it('deletes a Batch only after confirming', async () => {
-      const user = userEvent.setup();
-      const calls = stubManaged(stock());
-      renderWithProviders(<PantryPage />);
+    describe('removing a Batch', () => {
+      afterEach(() => vi.useRealTimers());
 
-      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      await user.click(
-        screen.getAllByRole('button', { name: 'Delete Milk batch' })[0],
-      );
-      expect(calls.some((c) => c.key.startsWith('DELETE'))).toBe(false);
-      await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
-      await waitFor(() =>
-        expect(calls.map((c) => c.key)).toContain(
-          'DELETE /api/pantry/batches/milk-2',
-        ),
-      );
-    });
-
-    describe('focus', () => {
-      async function openMilk(batches = stock()) {
-        const user = userEvent.setup();
-        stubManaged(batches);
+      async function openMilk(batches = stock(), options = {}) {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        const calls = stubManaged(batches, options);
         renderWithProviders(<PantryPage />);
         const toggle = await screen.findByRole('button', { name: /^Milk/ });
         await user.click(toggle);
-        return { user, toggle };
+        return { user, toggle, calls };
       }
-      const editButton = () =>
-        screen.getAllByRole('button', { name: 'Edit Milk batch' })[0];
-      const deleteButton = () =>
-        screen.getAllByRole('button', { name: 'Delete Milk batch' })[0];
+      const deletes = (calls: { key: string }[]) =>
+        calls.filter((c) => c.key.startsWith('DELETE'));
+      const expireUndo = () => act(() => vi.advanceTimersByTimeAsync(5100));
 
-      it('moves focus into the edit form and back to Edit on Cancel', async () => {
-        const { user } = await openMilk();
-        await user.click(editButton());
-        expect(screen.getByLabelText('Quantity')).toHaveFocus();
-        await user.click(screen.getByRole('button', { name: 'Cancel' }));
-        expect(editButton()).toHaveFocus();
+      it('hides the Batch with Undo and sends the delete only when the Undo expires', async () => {
+        const { user, calls } = await openMilk();
+        await removeBatch(user);
+
+        expect(await screen.findByText('Removed Milk')).toBeInTheDocument();
+        await waitFor(() => expect(batchRows()).toHaveLength(1));
+        expect(deletes(calls)).toHaveLength(0);
+
+        await expireUndo();
+        await waitFor(() =>
+          expect(calls.map((c) => c.key)).toContain(
+            'DELETE /api/pantry/batches/milk-2',
+          ),
+        );
+        expect(batchRows()).toHaveLength(1);
       });
 
-      it('returns focus to Edit after Save', async () => {
-        const { user } = await openMilk();
-        await user.click(editButton());
-        await user.clear(screen.getByLabelText('Quantity'));
-        await user.type(screen.getByLabelText('Quantity'), '2');
-        await user.click(screen.getByRole('button', { name: 'Save changes' }));
-        await waitFor(() => expect(editButton()).toHaveFocus());
-      });
+      it('brings the Batch back with an error toast when the delete fails', async () => {
+        const { user, calls } = await openMilk(stock(), { failDeletes: true });
+        await removeBatch(user);
+        await waitFor(() => expect(batchRows()).toHaveLength(1));
 
-      it('moves focus to the confirm control and back to Delete on Cancel', async () => {
-        const { user } = await openMilk();
-        await user.click(deleteButton());
+        await expireUndo();
+
+        await waitFor(() => expect(batchRows()).toHaveLength(2));
+        expect(deletes(calls)).toHaveLength(1);
+        expect(screen.queryByText('Removed Milk')).toBeNull();
         expect(
-          screen.getByRole('button', { name: 'Yes, delete' }),
-        ).toHaveFocus();
-        await user.click(screen.getByRole('button', { name: 'Cancel' }));
-        expect(deleteButton()).toHaveFocus();
+          screen.getByText('Something went wrong. Please try again.'),
+        ).toBeInTheDocument();
       });
 
-      it('focuses the roll-up toggle after deleting one of several Batches', async () => {
-        const { user, toggle } = await openMilk();
-        await user.click(deleteButton());
-        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
-        await waitFor(() => expect(toggle).toHaveFocus());
+      it('brings the Batch back on Undo without any request', async () => {
+        const { user, calls } = await openMilk();
+        await removeBatch(user);
+        await user.click(await screen.findByRole('button', { name: 'Undo' }));
+
+        expect(batchRows()).toHaveLength(2);
+        await expireUndo();
+        expect(deletes(calls)).toHaveLength(0);
       });
 
-      it('focuses the section heading after deleting the last Batch of a row', async () => {
-        const user = userEvent.setup();
+      it('keeps a roll-up open after its last Batch is removed, and collapses it once the delete is sent', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        const calls = stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        const toggle = await screen.findByRole('button', { name: /^Parmesan/ });
+        await user.click(toggle);
+        await removeBatch(user, batchRows('Parmesan')[0]);
+
+        await screen.findByText('Removed Parmesan');
+        expect(toggle).toBeInTheDocument();
+        expect(toggle).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.queryByRole('group', { name: 'Parmesan' })).toBeNull();
+        expect(deletes(calls)).toHaveLength(0);
+
+        // Undo puts the Batch back inside the same open roll-up.
+        await user.click(screen.getByRole('button', { name: 'Undo' }));
+        expect(batchRows('Parmesan')).toHaveLength(1);
+
+        await removeBatch(user, batchRows('Parmesan')[0]);
+        await expireUndo();
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('button', { name: /^Parmesan/ }),
+          ).toBeNull(),
+        );
+        expect(deletes(calls)).toHaveLength(1);
+      });
+
+      it('moves focus to the next Batch row after removing one of several', async () => {
+        const { user } = await openMilk();
+        await removeBatch(user);
+        await waitFor(() => expect(batchRows()).toHaveLength(1));
+        expect(batchRows()[0]).toHaveFocus();
+      });
+
+      it('focuses the section heading after removing the last Batch of a row', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
         stubManaged([
           ...stock(),
           batch({
@@ -726,10 +772,7 @@ describe('PantryPage', () => {
         await user.click(
           await screen.findByRole('button', { name: /^Parmesan/ }),
         );
-        await user.click(
-          screen.getByRole('button', { name: 'Delete Parmesan batch' }),
-        );
-        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
+        await removeBatch(user, batchRows('Parmesan')[0]);
         await waitFor(() =>
           expect(
             screen.getByRole('heading', { name: 'Freezer · 1' }),
@@ -737,49 +780,154 @@ describe('PantryPage', () => {
         );
       });
 
-      it('focuses the Add button when deleting the last Batch of the last section', async () => {
-        const user = userEvent.setup();
+      it('focuses the Add button after removing the last Batch of the last section', async () => {
+        vi.useFakeTimers({ shouldAdvanceTime: true });
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
         stubManaged([stock()[2]]);
         renderWithProviders(<PantryPage />);
         await user.click(
           await screen.findByRole('button', { name: /^Parmesan/ }),
         );
-        await user.click(
-          screen.getByRole('button', { name: 'Delete Parmesan batch' }),
-        );
-        await user.click(screen.getByRole('button', { name: 'Yes, delete' }));
-        await waitFor(() =>
-          expect(screen.queryByRole('heading', { name: /Freezer/ })).toBeNull(),
-        );
-        expect(screen.getByRole('button', { name: 'Add batch' })).toHaveFocus();
-      });
-
-      it('focuses the Add button when a Batch moves out of its only section', async () => {
-        const user = userEvent.setup();
-        let batches = [stock()[2]];
-        const { fetchMock } = stubApi({
-          'GET /api/pantry': () => Response.json({ batches }),
-          'PATCH /api/pantry/batches/cheese': () => {
-            batches = [{ ...batches[0], location: 'fridge' }];
-            return Response.json(batches[0]);
-          },
-        });
-        vi.stubGlobal('fetch', fetchMock);
-        renderWithProviders(<PantryPage />);
-        await user.click(
-          await screen.findByRole('button', { name: /^Parmesan/ }),
-        );
-        await user.click(
-          screen.getByRole('button', { name: 'Edit Parmesan batch' }),
-        );
-        await user.selectOptions(screen.getByLabelText('Location'), 'fridge');
-        await user.click(screen.getByRole('button', { name: 'Save changes' }));
-        await screen.findByRole('heading', { name: 'Fridge · 1' });
+        await removeBatch(user, batchRows('Parmesan')[0]);
         await waitFor(() =>
           expect(
             screen.getByRole('button', { name: 'Add batch' }),
           ).toHaveFocus(),
         );
+        await expireUndo();
+        await waitFor(() =>
+          expect(screen.queryByRole('heading', { name: /Freezer/ })).toBeNull(),
+        );
+        expect(screen.getByRole('button', { name: 'Add batch' })).toHaveFocus();
+      });
+    });
+
+    describe('the Batch editor sheet', () => {
+      afterEach(() => vi.useRealTimers());
+
+      it('focuses the form, and returns focus to the row on Cancel', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const row = batchRows()[0];
+        await openEditor(user, row);
+        expect(screen.getByLabelText('Quantity')).toHaveFocus();
+        await user.click(screen.getByRole('button', { name: 'Cancel' }));
+        await waitFor(() => expect(row).toHaveFocus());
+      });
+
+      it('says "Updated Milk" after Save and returns focus to the row', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const row = batchRows()[0];
+        await openEditor(user, row);
+        await user.clear(screen.getByLabelText('Quantity'));
+        await user.type(screen.getByLabelText('Quantity'), '2');
+        await user.click(screen.getByRole('button', { name: 'Save changes' }));
+        expect(await screen.findByText('Updated Milk')).toBeInTheDocument();
+        await waitFor(() => expect(row).toHaveFocus());
+      });
+
+      it('"Remove from Pantry" closes the sheet and opens the row\'s confirmation', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        await openEditor(user);
+        await user.click(
+          screen.getByRole('button', { name: 'Remove from Pantry' }),
+        );
+
+        const question = await screen.findByRole('group', {
+          name: 'Remove Milk?',
+        });
+        expect(within(question).getByText('in your Pantry')).toBeVisible();
+        await waitFor(() =>
+          expect(screen.getByRole('button', { name: 'Keep' })).toHaveFocus(),
+        );
+        expect(screen.queryByRole('form')).toBeNull();
+      });
+    });
+
+    describe('hold to edit', () => {
+      afterEach(() => vi.useRealTimers());
+
+      async function expanded() {
+        // Real timers to load and expand; then frozen time, so no real time leaks into the hold.
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const content = batchRows()[0].querySelector(
+          '[data-swipe-row-content]',
+        ) as HTMLElement;
+        vi.useFakeTimers();
+        return { content };
+      }
+      const press = (content: HTMLElement, x = 50, y = 20) =>
+        fireEvent.pointerDown(content, {
+          pointerId: 1,
+          clientX: x,
+          clientY: y,
+        });
+      const wait = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
+
+      it('opens the editor after 500 ms (plus the 160 ms lead-in)', async () => {
+        const { content } = await expanded();
+        press(content);
+        await wait(600);
+        expect(screen.queryByRole('form')).toBeNull();
+        await wait(200);
+        expect(
+          screen.getByRole('form', { name: 'Edit Milk batch' }),
+        ).toBeInTheDocument();
+      });
+
+      it('does nothing visible for a quick tap', async () => {
+        const { content } = await expanded();
+        press(content);
+        await wait(60);
+        expect(content.querySelector('[data-hold-circle]')).toBeNull();
+        fireEvent.pointerUp(content, {
+          pointerId: 1,
+          clientX: 50,
+          clientY: 20,
+        });
+        await wait(1000);
+        expect(screen.queryByRole('form')).toBeNull();
+        expect(content.querySelector('[data-hold-circle]')).toBeNull();
+      });
+
+      it('cancels when the finger moves more than 8 pt', async () => {
+        const { content } = await expanded();
+        press(content);
+        await wait(200);
+        fireEvent.pointerMove(content, {
+          pointerId: 1,
+          clientX: 50,
+          clientY: 31,
+        });
+        await wait(1000);
+        expect(screen.queryByRole('form')).toBeNull();
+      });
+
+      it('only dims the row, with no circle, under reduce-motion', async () => {
+        stubMotion(true);
+        const { content } = await expanded();
+        press(content);
+        await wait(120);
+        expect(content.querySelector('[data-hold-circle]')).toBeNull();
+        expect(content.firstElementChild).toHaveStyle({ opacity: '0.7' });
+      });
+
+      it('shows the hold circle while pressing', async () => {
+        const { content } = await expanded();
+        press(content);
+        await wait(120);
+        expect(content.querySelector('[data-hold-circle]')).not.toBeNull();
       });
     });
 

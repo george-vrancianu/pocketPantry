@@ -47,6 +47,27 @@ export const uncheckedItems = (
     group.items.filter((item) => !item.checked),
   );
 
+/** The list without the items in `ids`: empty groups drop out and the summary follows. */
+export const withoutItems = (
+  list: ShoppingList | undefined,
+  ids: ReadonlySet<string>,
+): ShoppingList | undefined => {
+  if (!list || ids.size === 0) return list;
+  const groups = list.groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !ids.has(item.id)),
+    }))
+    .filter((group) => group.items.length > 0);
+  const items = groups.flatMap((group) => group.items);
+  const checked = items.filter((item) => item.checked).length;
+  return {
+    ...list,
+    groups,
+    summary: { remaining: items.length - checked, checked },
+  };
+};
+
 /**
  * Whether `item` is the thing `target` names: the same Ingredient, or for an
  * Unmatched target the same normalised typed name, as the server merges them.
@@ -108,6 +129,24 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
+  const setAmount = useMutation({
+    mutationFn: ({
+      id,
+      quantity,
+      unit,
+    }: {
+      id: string;
+    } & Pick<ShoppingItem, 'quantity' | 'unit'>) =>
+      apiRequest<ShoppingList>(path(locale, `/items/${id}/amount`), {
+        method: 'PUT',
+        // Left out means none.
+        body: {
+          ...(quantity !== null ? { quantity } : {}),
+          ...(unit !== null ? { unit } : {}),
+        },
+      }),
+    onSuccess,
+  });
   const remove = useMutation({
     mutationFn: (id: string) =>
       apiRequest<ShoppingList>(path(locale, `/items/${id}`), {
@@ -115,5 +154,5 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
-  return { add, setChecked, remove };
+  return { add, setChecked, setAmount, remove };
 }

@@ -1,23 +1,32 @@
 import {
   Alert,
   Box,
-  Button,
-  CloseIcon,
-  IconButton,
   Link,
+  ListRow,
   Spinner,
   Stack,
-  TextField,
+  SwipeRow,
   Typography,
+  useToast,
+  type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { CatalogSearch } from '../../components/CatalogSearch';
 import { translateApiError } from '../../i18n/translateApiError';
-import { UNITS, type Unit } from '../../lib/catalog';
-import { parseQuantity } from '../../lib/pantry';
-import { useStapleMutations, useStaples, type Staple } from '../../lib/staples';
+import { formatAmount, type Amount } from '../../lib/amount';
+import {
+  staplesQueryKey,
+  useStapleMutations,
+  useStaples,
+  type Staple,
+} from '../../lib/staples';
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+import { useRowHint, type RowHint } from '../../lib/useRowHint';
+import { useSwipeRowLabels } from '../../lib/useSwipeRowLabels';
+import { RowHintNote } from '../../components/RowHintNote';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
@@ -25,8 +34,29 @@ export function StaplesPage() {
   const staples = useStaples(i18n.language);
   const { add, update, remove } = useStapleMutations(i18n.language);
   const [formKey, setFormKey] = useState(0);
+  const removal = useDeferredRemoval(staplesQueryKey, remove.mutateAsync);
+  // A removed Staple stays out of the list, refetches included, until its delete has settled.
+  const visible = useMemo(
+    () => staples.data?.filter((staple) => !removal.hiddenIds.has(staple.id)),
+    [staples.data, removal.hiddenIds],
+  );
 
-  const error = staples.error ?? add.error ?? update.error ?? remove.error;
+  // Removing the last Staple unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLElement>(null);
+  const hadStaples = useRef(false);
+  const stapleCount = visible?.length ?? 0;
+  useEffect(() => {
+    if (stapleCount === 0 && hadStaples.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadStaples.current = stapleCount > 0;
+  }, [stapleCount]);
+
+  const hint = useRowHint('staples', (visible?.length ?? 0) > 0);
+
+  // A failed save is shown by the amount sheet and a failed removal by its toast.
+  const error = staples.error ?? add.error;
 
   return (
     <>
@@ -34,6 +64,7 @@ export function StaplesPage() {
         title={t('staples:title')}
         trailing={<Link href="/shopping">{t('staples:back')}</Link>}
       />
+      <RowHintNote hint={hint} />
       <Stack spacing={2}>
         <Typography color="text.secondary">{t('staples:hint')}</Typography>
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
@@ -47,33 +78,41 @@ export function StaplesPage() {
           }
         />
         {staples.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {staples.data?.length === 0 ? (
-          <Typography color="text.secondary">{t('staples:empty')}</Typography>
+        {visible?.length === 0 ? (
+          <Typography
+            ref={empty}
+            tabIndex={-1}
+            color="text.secondary"
+            sx={{ outline: 'none' }}
+          >
+            {t('staples:empty')}
+          </Typography>
         ) : null}
-        {staples.data && staples.data.length > 0 ? (
+        {visible && visible.length > 0 ? (
           <Box
             component="ul"
             aria-label={t('staples:listLabel')}
             sx={{
               listStyle: 'none',
               m: 0,
-              px: 1.5,
-              py: 0,
+              p: 0,
               bgcolor: 'background.paper',
               border: 1,
               borderColor: 'divider',
               borderRadius: '20px',
+              overflow: 'hidden',
             }}
           >
-            {staples.data.map((staple) => (
+            {visible.map((staple, index) => (
               <StapleRow
-                key={`${staple.id}-${staple.quantity}-${staple.unit}`}
+                key={staple.id}
                 staple={staple}
-                saving={update.isPending}
-                onSave={(quantity, unit) =>
-                  update.mutate({ id: staple.id, quantity, unit })
+                peek={index === 0 && hint.peek}
+                onLearned={hint.onLearned}
+                onSave={(amount) =>
+                  update.mutateAsync({ id: staple.id, ...amount })
                 }
-                onRemove={() => remove.mutate(staple.id)}
+                onRemove={() => removal.remove(staple.id, staple.name)}
               />
             ))}
           </Box>
@@ -85,88 +124,60 @@ export function StaplesPage() {
 
 function StapleRow({
   staple,
-  saving,
+  peek,
+  onLearned,
   onSave,
   onRemove,
 }: {
   staple: Staple;
-  saving: boolean;
-  onSave: (quantity: number | null, unit: Unit | null) => void;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
+  /** Rejects with the API error, which the amount sheet shows. */
+  onSave: (amount: Amount) => Promise<unknown>;
   onRemove: () => void;
 }) {
-  const { t } = useTranslation('staples');
-  const [quantity, setQuantity] = useState(
-    staple.quantity === null ? '' : String(staple.quantity),
-  );
-  const [unit, setUnit] = useState<Unit | ''>(staple.unit ?? '');
-  const amount = parseQuantity(quantity);
-  const needsUnit = amount.valid && amount.value !== null && unit === '';
-  const dirty =
-    (amount.valid ? amount.value : undefined) !== staple.quantity ||
-    (unit || null) !== staple.unit;
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!amount.valid || needsUnit) return;
-    onSave(amount.value, unit || null);
-  };
+  const { t, i18n } = useTranslation(['staples', 'common']);
+  const toast = useToast();
+  const labels = useSwipeRowLabels(staple.name, 'staples', { hold: true });
+  const [editing, setEditing] = useState(false);
+  const row = useRef<SwipeRowHandle>(null);
 
   return (
-    <Box
-      component="li"
-      sx={{ py: 1.25, '& + &': { borderTop: 1, borderColor: 'divider' } }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography sx={{ flexGrow: 1, fontSize: 15, fontWeight: 600 }}>
-          {staple.name}
-        </Typography>
-        <IconButton
-          label={t('remove', { name: staple.name })}
-          tone="plain"
-          size={40}
-          onClick={onRemove}
-        >
-          <CloseIcon size={18} />
-        </IconButton>
-      </Box>
-      <Box
-        component="form"
-        onSubmit={submit}
-        noValidate
-        sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
+    <>
+      <SwipeRow
+        ref={row}
+        name={staple.name}
+        labels={labels}
+        disabled={editing}
+        peek={peek}
+        onLearned={onLearned}
+        onEdit={() => setEditing(true)}
+        onRemove={onRemove}
       >
-        <TextField
-          label={t('quantityOf', { name: staple.name })}
-          type="number"
-          value={quantity}
-          onChange={(event) => setQuantity(event.target.value)}
-          error={!amount.valid}
-          slotProps={{ htmlInput: { min: 0, step: 'any' } }}
+        <ListRow
+          title={staple.name}
+          meta={
+            staple.quantity !== null && staple.unit
+              ? formatAmount(staple.quantity, staple.unit, i18n.language, t)
+              : null
+          }
         />
-        <TextField
-          select
-          label={t('unitOf', { name: staple.name })}
-          value={unit}
-          error={needsUnit}
-          helperText={needsUnit ? t('unitRequired') : undefined}
-          onChange={(event) => setUnit(event.target.value as Unit | '')}
-          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
-        >
-          <option value="">{t('noUnit')}</option>
-          {UNITS.map((value) => (
-            <option key={value} value={value}>
-              {t(`common:units.${value}`)}
-            </option>
-          ))}
-        </TextField>
-        <Button
-          type="submit"
-          disabled={!dirty || !amount.valid || needsUnit || saving}
-          aria-label={t('save', { name: staple.name })}
-        >
-          {t('saveShort')}
-        </Button>
-      </Box>
-    </Box>
+      </SwipeRow>
+      <AmountSheet
+        open={editing}
+        name={staple.name}
+        context={t('common:row.context.staples')}
+        amount={{ quantity: staple.quantity, unit: staple.unit }}
+        requireUnit
+        onSave={async (amount) => {
+          await onSave(amount);
+          setEditing(false);
+          toast.show(t('common:row.updated', { name: staple.name }));
+        }}
+        onClose={() => setEditing(false)}
+        removeLabel={t('common:edit.removeStaple')}
+        onRemove={() => row.current?.askToRemove()}
+      />
+    </>
   );
 }

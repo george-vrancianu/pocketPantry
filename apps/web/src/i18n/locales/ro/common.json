@@ -17,7 +17,47 @@
     "cupboard": "Dulap",
     "spices": "Condimente"
   },
+  "row": {
+    "a11yHint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
+    "actions": {
+      "edit": "Editează {{name}}",
+      "remove": "Elimină {{name}}"
+    },
+    "context": {
+      "shopping": "din lista ta",
+      "pantry": "din cămara ta",
+      "template": "din acest șablon",
+      "staples": "din produsele tale de bază"
+    },
+    "hint": "Glisează la stânga pentru a elimina · ține apăsat pentru a edita",
+    "keep": "Păstrează",
+    "releaseToDelete": "Eliberează pentru a elimina",
+    "remove": "Elimină",
+    "removeQuestion": "Elimini {{name}}?",
+    "removed": "Ai eliminat {{name}}",
+    "ticked": "Bifat",
+    "undo": "Anulează",
+    "updated": "Ai actualizat {{name}}"
+  },
   "unverified_one": "{{count}} articol încă neverificat",
   "unverified_few": "{{count}} articole încă neverificate",
-  "unverified_other": "{{count}} de articole încă neverificate"
+  "unverified_other": "{{count}} de articole încă neverificate",
+  "amount": {
+    "placeholder": "Cantitate",
+    "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
+    "unit": "Unitate: {{unit}}",
+    "noUnit": "unitate",
+    "units": "Unități",
+    "invalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale.",
+    "unitRequired": "Alege o unitate pentru cantitate."
+  },
+  "edit": {
+    "removeFromList": "Elimină din listă",
+    "removeFromPantry": "Elimină din cămară",
+    "removeLine": "Elimină linia",
+    "removeStaple": "Elimină produsul de bază",
+    "save": "Salvează",
+    "saving": "Se salvează",
+    "title": "Editează {{name}}"
+  }
 }

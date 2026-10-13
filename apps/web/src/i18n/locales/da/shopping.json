@@ -17,9 +17,7 @@
     "unmatchedHint": "Intet match i kataloget, så den tilføjes som en umatchet vare."
   },
   "item": {
-    "remove": "Fjern {{name}}",
     "unmatched": "Umatchet",
-    "removed": "Fjernede {{name}}",
     "nowStaple": "{{name}} er nu en basisvare",
     "removedFromStaples": "{{name}} fjernet fra basisvarer"
   },
@@ -69,11 +67,6 @@
     "onListNoUnit": "Allerede på din liste uden enhed. Det tilføjer en separat linje."
   },
   "amount": {
-    "placeholder": "Mængde",
-    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
-    "unit": "Enhed: {{unit}}",
-    "noUnit": "enhed",
-    "units": "Enheder",
     "add": "Føj {{name}} til listen"
   },
   "suggestions": {

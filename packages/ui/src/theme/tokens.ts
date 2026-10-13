@@ -11,6 +11,8 @@ export const tokens = {
     chipNeutral: '#E2E8DD',
     /** Greyed text of a checked-off row. */
     checkedText: '#66736B',
+    /** Border of an unchecked tick box. */
+    tickBorder: '#A7B3AA',
     accent: '#2E6A4D',
     accentHover: '#1F4D37',
     accentTint: '#DDEBE2',

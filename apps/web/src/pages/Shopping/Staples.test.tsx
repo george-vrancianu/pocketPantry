@@ -1,4 +1,10 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
@@ -51,6 +57,7 @@ const flour: CatalogSearchResult = {
 };
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -380,7 +387,49 @@ describe('Suggestions in the Add sheet', () => {
 });
 
 describe('StaplesPage', () => {
-  it('adds a Staple from the Catalog search, edits its amount and removes it', async () => {
+  const rowOf = (name: string) => screen.getByRole('group', { name });
+  const deletes = (calls: Array<{ key: string }>) =>
+    calls.filter((c) => c.key.startsWith('DELETE')).map((c) => c.key);
+  const openSheet = async (
+    user: ReturnType<typeof userEvent.setup>,
+    name = 'Milk',
+  ) => {
+    act(() => rowOf(name).focus());
+    await user.keyboard('{Enter}');
+    return screen.findByRole('dialog', { name: `Edit ${name}` });
+  };
+
+  it('shows read-only rows with the preferred amount and no inputs or buttons', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/staples': () =>
+        Response.json({
+          staples: [
+            staple(),
+            staple({
+              id: 's2',
+              ingredientId: 'flour-id',
+              name: 'Flour',
+              quantity: null,
+              unit: null,
+            }),
+          ],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+
+    const milk = await screen.findByRole('group', { name: 'Milk' });
+    expect(milk).toHaveTextContent('2 L');
+    expect(rowOf('Flour')).not.toHaveTextContent(/\d/);
+    expect(screen.queryByRole('spinbutton')).toBeNull();
+    expect(screen.queryByRole('button', { name: /Save/ })).toBeNull();
+    // The custom actions for screen readers are there, but not tab stops.
+    for (const button of screen.getAllByRole('button', { name: /Remove/ })) {
+      expect(button).toHaveAttribute('tabindex', '-1');
+    }
+  });
+
+  it('adds a Staple from the Catalog search', async () => {
     let staples: Staple[] = [staple()];
     const { fetchMock, calls } = stubApi({
       'GET /api/staples': () => Response.json({ staples }),
@@ -399,53 +448,274 @@ describe('StaplesPage', () => {
         ];
         return Response.json(staples[1], { status: 201 });
       },
-      'PATCH /api/staples/s1': () => {
-        staples = [staple({ quantity: 3 }), ...staples.slice(1)];
-        return Response.json(staples[0]);
-      },
-      'DELETE /api/staples/s1': () => {
-        staples = staples.filter((s) => s.id !== 's1');
-        return new Response(null, { status: 204 });
-      },
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<StaplesPage />);
-
-    expect(await screen.findByLabelText('Usual amount of Milk')).toHaveValue(2);
+    await screen.findByRole('group', { name: 'Milk' });
 
     await userEvent.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'flo',
     );
     await userEvent.click(await screen.findByRole('option', { name: /Flour/ }));
-    expect(
-      await screen.findByLabelText('Usual amount of Flour'),
-    ).toBeInTheDocument();
+
+    expect(await screen.findByRole('group', { name: 'Flour' })).toBeVisible();
     expect(calls.find((c) => c.key === 'POST /api/staples')?.body).toEqual({
       ingredientId: 'flour-id',
     });
+  });
 
-    const amount = screen.getByLabelText('Usual amount of Milk');
-    await userEvent.clear(amount);
-    await userEvent.type(amount, '3');
-    await userEvent.click(screen.getByRole('button', { name: 'Save Milk' }));
-    await waitFor(() =>
+  describe('editing the amount', () => {
+    it('opens on Enter, saves the preferred amount and says Updated', async () => {
+      const user = userEvent.setup();
+      let staples = [staple()];
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () => Response.json({ staples }),
+        'PATCH /api/staples/s1': () => {
+          staples = [staple({ quantity: 3 })];
+          return Response.json(staples[0]);
+        },
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const dialog = await openSheet(user);
+      expect(within(dialog).getByText('from your Staples')).toBeVisible();
+      const field = within(dialog).getByLabelText(/^Amount of Milk/);
+      expect(field).toHaveValue('2');
+      await user.clear(field);
+      await user.type(field, '3');
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('Updated Milk')).toBeVisible();
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
       expect(
         calls.find((c) => c.key === 'PATCH /api/staples/s1')?.body,
-      ).toEqual({
-        quantity: 3,
-        unit: 'l',
-      }),
-    );
+      ).toEqual({ quantity: 3, unit: 'l' });
+      await waitFor(() => expect(rowOf('Milk')).toHaveTextContent('3 L'));
+    });
 
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Remove Milk from staples' }),
-    );
-    await waitFor(() =>
+    it('can leave a Staple without a quantity', async () => {
+      const user = userEvent.setup();
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+        'PATCH /api/staples/s1': () =>
+          Response.json(staple({ quantity: null, unit: null })),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const dialog = await openSheet(user);
+      await user.clear(within(dialog).getByLabelText(/^Amount of Milk/));
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      await screen.findByText('Updated Milk');
       expect(
-        screen.queryByLabelText('Usual amount of Milk'),
-      ).not.toBeInTheDocument(),
-    );
+        calls.find((c) => c.key === 'PATCH /api/staples/s1')?.body,
+      ).toEqual({ quantity: null, unit: 'l' });
+    });
+
+    it('asks for a unit when there is a quantity but no unit, and does not save', async () => {
+      const user = userEvent.setup();
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () =>
+          Response.json({
+            staples: [staple({ quantity: null, unit: null })],
+          }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const dialog = await openSheet(user);
+      await user.type(within(dialog).getByLabelText(/^Amount of Milk/), '2');
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      expect(
+        await within(dialog).findByText('Choose a unit for the amount.'),
+      ).toBeVisible();
+      expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
+      expect(screen.getByRole('dialog')).toBeVisible();
+    });
+
+    it('keeps the sheet open and shows the reason when the save fails', async () => {
+      const user = userEvent.setup();
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+        'PATCH /api/staples/s1': () =>
+          Response.json({ code: 'shopping.staple_not_found' }, { status: 404 }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const dialog = await openSheet(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+      expect(await within(dialog).findByRole('alert')).toBeVisible();
+      expect(screen.getByRole('dialog')).toBeVisible();
+    });
+
+    it('opens the inline confirmation on the row from "Remove Staple"', async () => {
+      const user = userEvent.setup();
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const dialog = await openSheet(user);
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Remove Staple' }),
+      );
+
+      expect(
+        await screen.findByRole('group', { name: 'Remove Milk?' }),
+      ).toBeVisible();
+      expect(screen.getByText('from your Staples')).toBeVisible();
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Keep' })).toHaveFocus(),
+      );
+      expect(deletes(calls)).toEqual([]);
+    });
+  });
+
+  describe('removing a Staple', () => {
+    const remove = async (user: ReturnType<typeof userEvent.setup>) => {
+      act(() => rowOf('Milk').focus());
+      await user.keyboard('{Delete}');
+      await user.click(screen.getByRole('button', { name: 'Remove' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull(),
+      );
+    };
+
+    it('hides the row with Undo and sends no request until the Undo expires', async () => {
+      const user = userEvent.setup();
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+        'DELETE /api/staples/s1': () => new Response(null, { status: 204 }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await screen.findByRole('group', { name: 'Milk' });
+
+      await remove(user);
+
+      expect(await screen.findByText('Removed Milk')).toBeVisible();
+      expect(deletes(calls)).toEqual([]);
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+      expect(screen.getByRole('group', { name: 'Milk' })).toBeVisible();
+      expect(deletes(calls)).toEqual([]);
+    });
+
+    it('sends the delete once the Undo expires and the row stays gone', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      let staples = [staple()];
+      const { fetchMock, calls } = stubApi({
+        'GET /api/staples': () => Response.json({ staples }),
+        'DELETE /api/staples/s1': () => {
+          staples = [];
+          return new Response(null, { status: 204 });
+        },
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+      const row = rowOf('Milk');
+      act(() => row.focus());
+      fireEvent.keyDown(row, { key: 'Delete' });
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
+
+      await act(() => vi.advanceTimersByTimeAsync(3500));
+      expect(deletes(calls)).toEqual([]);
+      await act(() => vi.advanceTimersByTimeAsync(1500));
+      await flush();
+
+      expect(deletes(calls)).toEqual(['DELETE /api/staples/s1']);
+      expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
+      expect(screen.getByText(/No staples yet/)).toBeVisible();
+    });
+  });
+
+  describe('removing a Staple, further cases', () => {
+    const removeMilk = async () => {
+      const row = rowOf('Milk');
+      act(() => row.focus());
+      fireEvent.keyDown(row, { key: 'Delete' });
+      fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+    };
+
+    it('brings the row back with an error toast when the delete fails', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+        'DELETE /api/staples/s1': () =>
+          Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+
+      await removeMilk();
+      expect(screen.queryByRole('group', { name: 'Milk' })).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+      await flush();
+
+      expect(screen.getByRole('group', { name: 'Milk' })).toBeVisible();
+      expect(screen.queryByText('Removed Milk')).toBeNull();
+      expect(
+        screen.getByText('Something went wrong. Please try again.'),
+      ).toBeVisible();
+    });
+
+    it('hands focus to the empty text when the last Staple goes', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+
+      await removeMilk();
+
+      expect(screen.getByText(/No staples yet/)).toHaveFocus();
+    });
+
+    it('opens the sheet when the row is held for 500 ms', async () => {
+      vi.useFakeTimers();
+      const flush = () => act(() => vi.advanceTimersByTimeAsync(0));
+      const { fetchMock } = stubApi({
+        'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<StaplesPage />);
+      await flush();
+      const content = rowOf('Milk').querySelector(
+        '[data-swipe-row-content]',
+      ) as HTMLElement;
+
+      fireEvent.pointerDown(content, {
+        pointerId: 1,
+        clientX: 50,
+        clientY: 20,
+      });
+      await act(() => vi.advanceTimersByTimeAsync(600));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(200));
+
+      expect(screen.getByRole('dialog', { name: 'Edit Milk' })).toBeVisible();
+    });
   });
 
   it('shows a translated error when the Staple limit is reached', async () => {

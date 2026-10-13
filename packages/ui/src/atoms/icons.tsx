@@ -35,6 +35,7 @@ import {
   CircleAlert,
   CircleCheck,
   Trash2,
+  ArrowLeft,
   ArrowLeftRight,
   Users,
   ChevronLeft,
@@ -81,6 +82,7 @@ export const AlertIcon = withDefaults(CircleAlert);
 export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
 export const EditIcon = withDefaults(Pencil);
+export const ArrowLeftIcon = withDefaults(ArrowLeft);
 export const SwapIcon = withDefaults(ArrowLeftRight);
 export const PeopleIcon = withDefaults(Users);
 export const BackIcon = withDefaults(ChevronLeft);

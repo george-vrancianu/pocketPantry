@@ -251,6 +251,16 @@ _Avoid_: Macros, nutrition facts, calories
 A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
 _Avoid_: Occasion, meal time, timing
 
+### Lists
+
+**Undo window**:
+The 5 seconds after a Member removes a row from a list ([ADR 0009](docs/adr/0009-row-delete-is-deferred-until-undo-expires.md)), during which Undo puts it back. The delete is only sent when the window ends.
+_Avoid_: Grace period, trash
+
+**Row hint**:
+The one-time pill and peek that teach a list's swipe and hold gestures, shown once per list and remembered on the device. Not a Tip, which is cooking advice on a Recipe.
+_Avoid_: Tutorial, onboarding
+
 ### Dashboard
 
 **Dashboard**:

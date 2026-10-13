@@ -17,6 +17,46 @@
     "cupboard": "Skab",
     "spices": "Krydderier"
   },
+  "row": {
+    "a11yHint": "Stryg til venstre for at fjerne, hold nede for at redigere",
+    "actions": {
+      "edit": "Rediger {{name}}",
+      "remove": "Fjern {{name}}"
+    },
+    "context": {
+      "shopping": "fra din liste",
+      "pantry": "fra dit spisekammer",
+      "template": "fra denne skabelon",
+      "staples": "fra dine basisvarer"
+    },
+    "hint": "Stryg til venstre for at fjerne · hold nede for at redigere",
+    "keep": "Behold",
+    "releaseToDelete": "Slip for at fjerne",
+    "remove": "Fjern",
+    "removeQuestion": "Fjern {{name}}?",
+    "removed": "{{name}} fjernet",
+    "ticked": "Afkrydset",
+    "undo": "Fortryd",
+    "updated": "{{name}} opdateret"
+  },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",
-  "unverified_other": "{{count}} varer er stadig ikke bekræftet"
+  "unverified_other": "{{count}} varer er stadig ikke bekræftet",
+  "amount": {
+    "placeholder": "Mængde",
+    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "unit": "Enhed: {{unit}}",
+    "noUnit": "enhed",
+    "units": "Enheder",
+    "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler.",
+    "unitRequired": "Vælg en enhed til mængden."
+  },
+  "edit": {
+    "removeFromList": "Fjern fra listen",
+    "removeFromPantry": "Fjern fra spisekammeret",
+    "removeLine": "Fjern linjen",
+    "removeStaple": "Fjern basisvare",
+    "save": "Gem",
+    "saving": "Gemmer",
+    "title": "Rediger {{name}}"
+  }
 }
