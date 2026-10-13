@@ -558,6 +558,19 @@ describe('ShoppingPage', () => {
       expect(within(reopened).queryByRole('alert')).toBeNull();
     });
 
+    it('keeps focus on the tablist when arrowing between tabs', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const dialog = await openSheet(user);
+
+      const tab = within(dialog).getByRole('tab', { name: 'Ingredients' });
+      tab.focus();
+      await user.keyboard('{ArrowRight}{ArrowLeft}');
+
+      expect(tab).toHaveFocus();
+    });
+
     it('keeps the query when switching tabs and back', async () => {
       withParmesan();
       renderWithProviders(<ShoppingPage />);

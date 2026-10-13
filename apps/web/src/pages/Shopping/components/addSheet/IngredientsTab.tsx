@@ -1,11 +1,5 @@
 import { Alert, Box, Typography, tokens, useToast } from '@pocket-pantry/ui';
-import {
-  useEffect,
-  useId,
-  useState,
-  type KeyboardEvent,
-  type RefObject,
-} from 'react';
+import { useId, useState, type KeyboardEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCatalogSearch,
@@ -39,8 +33,6 @@ export type IngredientsTabProps = {
   onStateChange: (state: IngredientsState) => void;
   /** The search input, so the sheet can focus it once it has slid in. */
   searchRef: RefObject<HTMLInputElement | null>;
-  /** Focus the search on mount (the sheet is already in view). */
-  focusOnMount: boolean;
   adding: boolean;
   /** Resolves true when added; on false the sheet shows `error`. */
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
@@ -55,7 +47,6 @@ export function IngredientsTab({
   state,
   onStateChange,
   searchRef: searchInput,
-  focusOnMount,
   adding,
   onAdd,
   error,
@@ -68,12 +59,6 @@ export function IngredientsTab({
   const setOpen = (next: OpenRow | null) =>
     onStateChange({ ...state, open: next });
   const [activeIndex, setActiveIndex] = useState(-1);
-
-  useEffect(() => {
-    if (focusOnMount) searchInput.current?.focus();
-    // Only on mount: coming back from another tab.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const search = useCatalogSearch(query, i18n.language);
   const typed = query.trim();

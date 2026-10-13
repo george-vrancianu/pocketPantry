@@ -164,6 +164,10 @@ export function AmountField({
                 right: 0,
                 zIndex: 1,
                 display: 'flex',
+                flexWrap: 'wrap',
+                justifyContent: 'flex-end',
+                // Wrap rather than run off the sheet's left edge on narrow phones.
+                maxWidth: 'min(260px, calc(100vw - 72px))',
                 gap: '2px',
                 p: '5px',
                 borderRadius: '14px',

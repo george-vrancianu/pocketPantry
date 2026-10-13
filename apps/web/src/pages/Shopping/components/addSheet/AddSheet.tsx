@@ -60,8 +60,6 @@ export function AddSheet({
   const [ingredients, setIngredients] =
     useState<IngredientsState>(emptyIngredients);
   const [addedCount, setAddedCount] = useState(0);
-  // True once the slide-in is done, so the search can take focus.
-  const [entered, setEntered] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
@@ -73,7 +71,6 @@ export function AddSheet({
       );
       setIngredients(emptyIngredients);
       setAddedCount(0);
-      setEntered(false);
     }
   }
   const selectTab = (next: SheetTab) => {
@@ -171,7 +168,6 @@ export function AddSheet({
       label={t('sheet.title')}
       header={header}
       onEntered={() => {
-        setEntered(true);
         // Do not steal focus from a field the Member has already reached.
         const focused = document.activeElement;
         if (
@@ -182,7 +178,6 @@ export function AddSheet({
           searchRef.current?.focus();
         }
       }}
-      onExited={() => setEntered(false)}
     >
       <Box
         role="tabpanel"
@@ -195,7 +190,6 @@ export function AddSheet({
             state={ingredients}
             onStateChange={setIngredients}
             searchRef={searchRef}
-            focusOnMount={entered}
             adding={adding}
             onAdd={onAdd}
             error={addError}
