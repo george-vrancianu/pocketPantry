@@ -9,7 +9,6 @@ import {
   NutritionWidget,
 } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
-import { QuickScanWidget } from './QuickScanWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import { CookTonightWidget } from './CookTonightWidget';
 import { UseSoonWidget } from './UseSoonWidget';
@@ -221,24 +220,6 @@ describe('PantryStockWidget', () => {
     expect(
       await screen.findByRole('link', { name: 'Pantry' }),
     ).toHaveTextContent('0');
-  });
-});
-
-describe('QuickScanWidget', () => {
-  it('deep-links each tile to its Scan Mode', () => {
-    renderWithProviders(<QuickScanWidget size="wide" columns={2} />);
-
-    const hrefs = Object.fromEntries(
-      screen
-        .getAllByRole('link')
-        .map((link) => [link.textContent, link.getAttribute('href')]),
-    );
-    expect(hrefs).toEqual({
-      Product: '/scan?mode=product',
-      Receipt: '/scan?mode=receipt',
-      Plate: '/scan?mode=plate',
-      Ingredients: '/scan?mode=ingredients',
-    });
   });
 });
 

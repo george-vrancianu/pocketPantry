@@ -124,10 +124,8 @@ function RecipeDetail({ id }: { id: string }) {
                   {
                     value: 'ingredients',
                     label: t('recipes:tabs.ingredients'),
-                    badge:
-                      toBuy > 0
-                        ? t('recipes:pantry.toBuy', { count: toBuy })
-                        : undefined,
+                    badge: toBuy > 0 ? String(toBuy) : undefined,
+                    badgeLabel: t('recipes:pantry.toBuy', { count: toBuy }),
                   },
                   { value: 'steps', label: t('recipes:tabs.steps') },
                   { value: 'about', label: t('recipes:tabs.about') },

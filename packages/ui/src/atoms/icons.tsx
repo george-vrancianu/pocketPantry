@@ -78,6 +78,7 @@ export const WarningIcon = withDefaults(TriangleAlert);
 export const AlertIcon = withDefaults(CircleAlert);
 export const CheckCircleIcon = withDefaults(CircleCheck);
 export const DeleteIcon = withDefaults(Trash2);
+export const EditIcon = withDefaults(Pencil);
 export const SwapIcon = withDefaults(ArrowLeftRight);
 export const PeopleIcon = withDefaults(Users);
 export const BackIcon = withDefaults(ChevronLeft);

@@ -24,7 +24,7 @@ describe('DashboardPage', () => {
   it("renders the Member's Widgets in layout order and skips unknown types", async () => {
     stub({
       widgets: [
-        { id: 'a', type: 'quick-scan', size: 'wide' },
+        { id: 'a', type: 'meal-plan', size: 'wide' },
         { id: 'b', type: 'from-the-future', size: 'small' },
         { id: 'c', type: 'budget', size: 'small' },
       ],
@@ -34,7 +34,7 @@ describe('DashboardPage', () => {
 
     const regions = await screen.findAllByRole('region');
     expect(regions.map((region) => region.getAttribute('aria-label'))).toEqual([
-      'Quick scan',
+      'Meal plan',
       'Budget',
     ]);
   });

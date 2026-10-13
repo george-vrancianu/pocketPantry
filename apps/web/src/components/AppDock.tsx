@@ -35,7 +35,6 @@ export function AppDock({ activeKey }: Pick<DockState, 'activeKey'>) {
       label: t('scan'),
       href: '/scan',
       icon: <ScanIcon />,
-      emphasis: true,
     },
   ];
   return <Dock label={t('label')} items={items} activeKey={activeKey} />;

@@ -24,15 +24,6 @@
       "itemsInStock_one": "vare på lager",
       "itemsInStock_other": "varer på lager"
     },
-    "quickScan": {
-      "title": "Hurtig scanning",
-      "modes": {
-        "product": "Produkt",
-        "receipt": "Kvittering",
-        "plate": "Tallerken",
-        "ingredients": "Ingredienser"
-      }
-    },
     "suggestions": {
       "title": "Forslag",
       "empty": "Ingen forslag",

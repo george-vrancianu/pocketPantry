@@ -7,7 +7,6 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { findReviewRow } from '../../test/review';
-import { PantryPage } from '../Pantry/PantryPage';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
 import { ScanPage } from './ScanPage';
@@ -99,7 +98,6 @@ describe('ScanPage', () => {
       'Close scanner',
       'Toggle flash',
       'Choose from photos',
-      'Add manually',
     ]) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
@@ -111,24 +109,6 @@ describe('ScanPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Toggle flash' }),
     ).not.toBeInTheDocument();
-  });
-
-  it('opens manual entry on the Pantry from the manual-add button', async () => {
-    const { fetchMock } = stubApi({
-      'GET /api/pantry': () => Response.json({ batches: [] }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(
-      <Routes>
-        <Route path="/scan" element={<ScanPage />} />
-        <Route path="/pantry" element={<PantryPage />} />
-      </Routes>,
-      { route: '/scan?mode=product' },
-    );
-    await userEvent.click(screen.getByRole('button', { name: 'Add manually' }));
-    expect(
-      await screen.findByRole('form', { name: 'Add to Pantry' }),
-    ).toBeInTheDocument();
   });
 
   it('toggles the flash', async () => {

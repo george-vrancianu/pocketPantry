@@ -21,13 +21,11 @@
   "batchesOf": "Partier af {{name}}",
   "noDetails": "Ingen mængde angivet",
   "edit": {
-    "label": "Rediger",
     "action": "Rediger partiet {{name}}",
     "title": "Rediger partiet {{name}}",
     "save": "Gem ændringer"
   },
   "delete": {
-    "label": "Slet",
     "action": "Slet partiet {{name}}",
     "confirm": "Slet dette parti?",
     "yes": "Ja, slet"

@@ -5,7 +5,6 @@ import {
   FlashIcon,
   GalleryIcon,
   InfoIcon,
-  ManualEntryIcon,
   Snackbar,
   Typography,
   visuallyHidden,
@@ -82,7 +81,6 @@ export function ScanPage() {
       />
       <Viewfinder
         mode={screen.mode}
-        hintShown={!screen.scanned}
         disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
@@ -95,11 +93,12 @@ export function ScanPage() {
           top: 0,
           left: 0,
           right: 0,
-          px: 2.5,
+          // Sized so Close, torch, Scan Language, Info, Gallery and Done fit a 360 px phone.
+          px: 2,
           pt: 'calc(22px + env(safe-area-inset-top))',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '6px',
         }}
       >
         <Box
@@ -107,7 +106,7 @@ export function ScanPage() {
           type="button"
           aria-label={t('close')}
           onClick={screen.close}
-          sx={roundButton(44)}
+          sx={roundButton(40)}
         >
           <CloseIcon size={20} />
         </Box>
@@ -119,7 +118,7 @@ export function ScanPage() {
             aria-pressed={screen.flash}
             onClick={() => void screen.toggleFlash()}
             sx={{
-              ...roundButton(44),
+              ...roundButton(40),
               ...(screen.flash && {
                 backgroundColor: tokens.color.camFg,
                 color: tokens.color.ink,
@@ -132,6 +131,8 @@ export function ScanPage() {
         <Typography component="h1" sx={{ ...visuallyHidden, flex: 'none' }}>
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
+        {/* Pushes the Scan Language, Info and Done to the right edge. */}
+        <Box sx={{ flex: 1 }} />
         {screen.scanLanguageShown ? (
           <ScanLanguageChip
             value={screen.scanLanguage}
@@ -145,9 +146,19 @@ export function ScanPage() {
           type="button"
           aria-label={t('info.label')}
           onClick={() => setInfoOpen(true)}
-          sx={roundButton(44)}
+          sx={roundButton(40)}
         >
           <InfoIcon size={20} />
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('gallery')}
+          disabled={screen.controlsDisabled}
+          onClick={screen.openGallery}
+          sx={roundButton(40)}
+        >
+          <GalleryIcon size={20} />
         </Box>
         <Box
           component="button"
@@ -162,10 +173,10 @@ export function ScanPage() {
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            height: 44,
-            px: '14px',
-            borderRadius: '22px',
+            gap: '6px',
+            height: 40,
+            px: '12px',
+            borderRadius: '20px',
             border: 0,
             fontSize: 14,
             fontWeight: 800,
@@ -204,7 +215,17 @@ export function ScanPage() {
               {screen.scans.length}
             </Box>
           ) : null}
-          {t('done')}
+          {/* On the narrowest phones the count alone stands for Done; its name still says Done. */}
+          <Box
+            component="span"
+            sx={{
+              '@media (max-width: 389px)': {
+                display: screen.scans.length > 0 ? 'none' : undefined,
+              },
+            }}
+          >
+            {t('done')}
+          </Box>
         </Box>
       </Box>
 
@@ -220,27 +241,9 @@ export function ScanPage() {
           pb: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
-          <Typography
-            sx={{ mt: '6px', fontSize: 13, color: tokens.color.camDim }}
-          >
-            {t(`detail.${screen.mode}`)}
-          </Typography>
-          {screen.mode === 'receipt' ? (
-            <>
-              <Typography sx={{ mt: '6px', fontSize: 13 }}>
-                {t('guide.receipt')}
-              </Typography>
-              <Typography sx={{ mt: '6px', fontSize: 13 }}>
-                {t('guide.receiptFold')}
-              </Typography>
-            </>
-          ) : null}
-        </Box>
-
         <Box
           role="status"
-          sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
+          sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
           {screen.reading ? t('reading') : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
@@ -263,36 +266,6 @@ export function ScanPage() {
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
         />
-
-        <Box
-          sx={{
-            mt: 3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '44px',
-          }}
-        >
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('gallery')}
-            disabled={screen.controlsDisabled}
-            onClick={screen.openGallery}
-            sx={roundButton(48)}
-          >
-            <GalleryIcon size={22} />
-          </Box>
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('manual')}
-            onClick={screen.addManually}
-            sx={roundButton(48)}
-          >
-            <ManualEntryIcon size={22} />
-          </Box>
-        </Box>
       </Box>
 
       <Snackbar

@@ -23,13 +23,11 @@
   "batchesOf": "Batches of {{name}}",
   "noDetails": "No quantity set",
   "edit": {
-    "label": "Edit",
     "action": "Edit {{name}} batch",
     "title": "Edit {{name}} batch",
     "save": "Save changes"
   },
   "delete": {
-    "label": "Delete",
     "action": "Delete {{name}} batch",
     "confirm": "Delete this batch?",
     "yes": "Yes, delete"

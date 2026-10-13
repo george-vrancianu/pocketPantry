@@ -1,4 +1,13 @@
-import { Alert, Box, Button, Typography, tokens } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  Button,
+  DeleteIcon,
+  EditIcon,
+  IconButton,
+  Typography,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -14,7 +23,7 @@ type Props = {
   onLeft: () => void;
 };
 
-/** One Batch inside an expanded roll-up row: its own amount, expiry and Product Description, with Edit and Delete. */
+/** One Batch inside an expanded roll-up row: its own amount, expiry and Product Description, with Edit and Delete icons. */
 export function BatchDetail({ batch, today, onLeft }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [mode, setMode] = useState<'view' | 'edit' | 'confirmDelete'>('view');
@@ -76,7 +85,7 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
         borderTop: `1px dashed ${tokens.color.divider}`,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <Typography
           component="p"
           sx={{ flexGrow: 1, minWidth: 0, fontSize: 13, m: 0 }}
@@ -84,6 +93,24 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
           {detail || t('noDetails')}
         </Typography>
         {chip ? <ExpiryChip chip={chip} /> : null}
+        <IconButton
+          ref={editButton}
+          tone="plain"
+          size={40}
+          label={t('edit.action', { name: batch.name })}
+          onClick={() => setMode('edit')}
+        >
+          <EditIcon size={18} />
+        </IconButton>
+        <IconButton
+          ref={deleteButton}
+          tone="plain"
+          size={40}
+          label={t('delete.action', { name: batch.name })}
+          onClick={() => setMode('confirmDelete')}
+        >
+          <DeleteIcon size={18} />
+        </IconButton>
       </Box>
       {mode === 'confirmDelete' ? (
         <Box sx={{ mt: 1 }} role="group" aria-label={t('delete.confirm')}>
@@ -106,26 +133,7 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
             </Button>
           </Box>
         </Box>
-      ) : (
-        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <Button
-            ref={editButton}
-            variant="text"
-            aria-label={t('edit.action', { name: batch.name })}
-            onClick={() => setMode('edit')}
-          >
-            {t('edit.label')}
-          </Button>
-          <Button
-            ref={deleteButton}
-            variant="text"
-            aria-label={t('delete.action', { name: batch.name })}
-            onClick={() => setMode('confirmDelete')}
-          >
-            {t('delete.label')}
-          </Button>
-        </Box>
-      )}
+      ) : null}
     </Box>
   );
 }

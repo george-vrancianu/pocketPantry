@@ -14,7 +14,7 @@ type Props = {
   onRowGone: () => void;
 };
 
-/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch. */
+/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple star. */
 export function RollUpRow({ rollUp, today, onRowGone }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [expanded, setExpanded] = useState(false);
@@ -132,9 +132,9 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
               </Typography>
             ) : null}
           </Box>
-          {chip ? <ExpiryChip chip={chip} /> : null}
+          {chip && !expanded ? <ExpiryChip chip={chip} /> : null}
         </Box>
-        {!rollUp.unmatched ? (
+        {expanded && !rollUp.unmatched ? (
           <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
         ) : null}
       </Box>

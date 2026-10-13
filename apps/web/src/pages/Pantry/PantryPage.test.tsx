@@ -298,15 +298,17 @@ describe('PantryPage', () => {
         const calls = stubStaples();
         renderWithProviders(<PantryPage />);
 
-        const star = await screen.findByRole('button', {
-          name: 'Make Milk a staple',
-        });
-        await waitFor(() =>
-          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
+        await user.click(
+          await screen.findByRole('button', { name: /^Zorblax/ }),
         );
         expect(
           screen.queryByRole('button', { name: /Zorblax paste a staple/ }),
         ).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: /^Milk/ }));
+        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
+        await waitFor(() =>
+          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
+        );
 
         await user.click(star);
         await waitFor(() =>
@@ -331,9 +333,8 @@ describe('PantryPage', () => {
         vi.stubGlobal('fetch', fetchMock);
         renderWithProviders(<PantryPage />);
 
-        const star = await screen.findByRole('button', {
-          name: 'Make Milk a staple',
-        });
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
         await waitFor(() =>
           expect(star).not.toHaveAttribute('aria-disabled', 'true'),
         );
@@ -344,17 +345,24 @@ describe('PantryPage', () => {
         );
       });
 
-      it('still expands the row', async () => {
+      it('shows the star only while the row is expanded', async () => {
         const user = userEvent.setup();
         stubStaples();
         renderWithProviders(<PantryPage />);
 
         const toggle = await screen.findByRole('button', { name: /^Milk/ });
+        expect(
+          screen.queryByRole('button', { name: 'Make Milk a staple' }),
+        ).not.toBeInTheDocument();
         await user.click(toggle);
         expect(toggle).toHaveAttribute('aria-expanded', 'true');
         expect(
-          screen.getByRole('list', { name: 'Batches of Milk' }),
+          screen.getByRole('button', { name: 'Make Milk a staple' }),
         ).toBeInTheDocument();
+        await user.click(toggle);
+        expect(
+          screen.queryByRole('button', { name: 'Make Milk a staple' }),
+        ).not.toBeInTheDocument();
       });
     });
 
@@ -383,15 +391,34 @@ describe('PantryPage', () => {
         screen.getByRole('list', { name: 'Batches of Milk' }),
       ).getAllByRole('listitem');
       expect(details.map((d) => d.textContent)).toEqual([
-        '0.5 L · Opened' + '2 days' + 'Edit' + 'Delete',
-        expect.stringMatching(/^1 L.*Edit.*Delete$/),
+        '0.5 L · Opened' + '2 days',
+        expect.stringMatching(/^1 L/),
       ]);
       expect(
         within(details[0]).getByRole('button', { name: 'Edit Milk batch' }),
       ).toBeInTheDocument();
+      expect(
+        within(details[0]).getByRole('button', { name: 'Delete Milk batch' }),
+      ).toBeInTheDocument();
 
       await user.click(toggle);
       expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('moves the expiry from the row onto each Batch while expanded', async () => {
+      const user = userEvent.setup();
+      stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+
+      const toggle = await screen.findByRole('button', { name: /^Parmesan/ });
+      expect(toggle).toHaveTextContent(/\d{4}$/);
+      await user.click(toggle);
+
+      expect(toggle).not.toHaveTextContent(/\d{4}$/);
+      const [detail] = within(
+        screen.getByRole('list', { name: 'Batches of Parmesan' }),
+      ).getAllByRole('listitem');
+      expect(detail).toHaveTextContent(/^Grana Padano 200g.*\d{4}$/);
     });
 
     it('edits a Batch and sends only that Batch', async () => {

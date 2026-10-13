@@ -12,7 +12,6 @@
     "label": "Reading as"
   },
   "gallery": "Choose from photos",
-  "manual": "Add manually",
   "modes": "Scan mode",
   "reading": "Reading your photo",
   "noCamera": "The camera is not available. Choose a photo from your gallery instead.",
@@ -30,12 +29,6 @@
     "receipt": "Receipt",
     "plate": "Plate",
     "ingredients": "Ingredients"
-  },
-  "guideHint": {
-    "receipt": "Lay flat, double-tap to scan",
-    "product": "Frame the product and its date",
-    "ingredients": "Lay them out, fit them all in",
-    "plate": "Fit the whole plate"
   },
   "guide": {
     "scan": "Scan: double-tap or press Enter",

@@ -9,8 +9,6 @@ export type DockEntry = {
   label: string;
   href: string;
   icon: ReactNode;
-  /** Always-filled item (Scan). */
-  emphasis?: boolean;
 };
 
 export type DockProps = {
@@ -53,7 +51,6 @@ export function Dock({ label, items, activeKey }: DockProps) {
           label={item.label}
           href={item.href}
           icon={item.icon}
-          emphasis={item.emphasis}
           active={item.key === activeKey}
         />
       ))}

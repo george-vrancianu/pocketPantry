@@ -12,7 +12,6 @@
     "label": "Læses på"
   },
   "gallery": "Vælg fra fotos",
-  "manual": "Tilføj manuelt",
   "modes": "Scanningstilstand",
   "reading": "Læser dit foto",
   "noCamera": "Kameraet er ikke tilgængeligt. Vælg i stedet et foto fra dit galleri.",
@@ -30,12 +29,6 @@
     "receipt": "Kvittering",
     "plate": "Tallerken",
     "ingredients": "Ingredienser"
-  },
-  "guideHint": {
-    "receipt": "Læg fladt, dobbelttryk for at scanne",
-    "product": "Ramm produktet og dato ind",
-    "ingredients": "Læg dem ud, få dem alle med",
-    "plate": "Få hele tallerkenen med"
   },
   "guide": {
     "scan": "Scan: dobbelttryk eller tryk Enter",

@@ -32,8 +32,8 @@ describe('dashboard layout edits', () => {
 
   it('resizes a Widget only to a size its type supports', () => {
     expect(resizeWidget([b], 'b', 'wide')[0]?.size).toBe('wide');
-    const scan: WidgetInstance = { id: 's', type: 'quick-scan', size: 'wide' };
-    expect(resizeWidget([scan], 's', 'small')).toEqual([scan]);
+    const plan: WidgetInstance = { id: 's', type: 'meal-plan', size: 'wide' };
+    expect(resizeWidget([plan], 's', 'small')).toEqual([plan]);
   });
 
   it('adds a Widget at the end at its default size with a fresh id', () => {

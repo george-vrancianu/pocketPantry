@@ -100,6 +100,18 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
               <Box component="span" sx={{ color: tokens.color.camDim }}>
                 {t(`detail.${mode}`)}
               </Box>
+              {mode === 'receipt'
+                ? (['guide.receipt', 'guide.receiptFold'] as const).map(
+                    (key) => (
+                      <Box
+                        key={key}
+                        sx={{ mt: 0.5, color: tokens.color.camDim }}
+                      >
+                        {t(key)}
+                      </Box>
+                    ),
+                  )
+                : null}
             </Box>
           ))}
         </Box>
