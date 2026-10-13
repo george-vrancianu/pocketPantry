@@ -1,5 +1,12 @@
 import { Alert, Box, Typography, tokens, useToast } from '@pocket-pantry/ui';
-import { useId, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useId,
+  useState,
+  type Dispatch,
+  type KeyboardEvent,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCatalogSearch,
@@ -10,12 +17,10 @@ import { parseQuantity } from '../../../../lib/pantry';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import type { Suggestion } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
+import { TOAST_ABOVE_SHEET } from './sheetToast';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
-
-/** Distance in px that lifts a toast clear of the sheet's bottom edge. */
-const TOAST_ABOVE_SHEET = 92;
 
 /** A result row: a Catalog match, or the typed text as an Unmatched item. */
 type Row =
@@ -41,7 +46,7 @@ export const emptyIngredients: IngredientsState = {
 
 export type IngredientsTabProps = {
   state: IngredientsState;
-  onStateChange: (state: IngredientsState) => void;
+  onStateChange: Dispatch<SetStateAction<IngredientsState>>;
   /** The search input, so the sheet can focus it once it has slid in. */
   searchRef: RefObject<HTMLInputElement | null>;
   adding: boolean;
@@ -72,7 +77,7 @@ export function IngredientsTab({
   const listboxId = useId();
   const { query, open } = state;
   const setOpen = (next: OpenRow | null) =>
-    onStateChange({ ...state, open: next });
+    onStateChange((s) => ({ ...s, open: next }));
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const search = useCatalogSearch(query, i18n.language);
@@ -111,7 +116,7 @@ export function IngredientsTab({
   };
 
   const change = (value: string) => {
-    onStateChange({ ...state, query: value, open: null });
+    onStateChange((s) => ({ ...s, query: value, open: null }));
     setActiveIndex(-1);
   };
 
@@ -144,10 +149,10 @@ export function IngredientsTab({
     if (!added) return;
     toast.show(t('added', { name }), { bottom: TOAST_ABOVE_SHEET });
     onAdded();
-    onStateChange({
+    onStateChange((s) => ({
       ...emptyIngredients,
-      suggestionsAdded: state.suggestionsAdded,
-    });
+      suggestionsAdded: s.suggestionsAdded,
+    }));
     setActiveIndex(-1);
     searchInput.current?.focus();
   };
@@ -184,10 +189,10 @@ export function IngredientsTab({
           onAdd={onAdd}
           onAdded={(ingredientId) => {
             onAdded();
-            onStateChange({
-              ...state,
-              suggestionsAdded: [...state.suggestionsAdded, ingredientId],
-            });
+            onStateChange((s) => ({
+              ...s,
+              suggestionsAdded: [...s.suggestionsAdded, ingredientId],
+            }));
           }}
         />
       )}

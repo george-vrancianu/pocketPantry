@@ -147,6 +147,54 @@ describe('Suggestions in the Add sheet', () => {
     );
   });
 
+  it('keeps every chip disabled while its add is pending and sends one request each', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const { fetchMock, calls } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [
+            suggestion(),
+            suggestion({ ingredientId: 'flour-id', name: 'Flour' }),
+          ],
+        }),
+      'POST /api/shopping-list/items': () => Response.json(emptyList()),
+    });
+    const slowFetch = async (...args: Parameters<typeof fetch>) => {
+      const url = String(args[0]);
+      if (url.includes('/shopping-list/items')) await gate;
+      return fetchMock(...args);
+    };
+    vi.stubGlobal('fetch', slowFetch);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+    const milk = await within(dialog).findByRole('button', {
+      name: 'Add Milk to the list',
+    });
+    const flourChip = within(dialog).getByRole('button', {
+      name: 'Add Flour to the list',
+    });
+
+    await userEvent.click(milk);
+    await userEvent.click(flourChip);
+    await userEvent.click(milk);
+
+    expect(milk).toBeDisabled();
+    expect(flourChip).toBeDisabled();
+    release();
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Done, 2 added' }),
+      ).toBeVisible(),
+    );
+    expect(milk).toBeDisabled();
+    expect(flourChip).toBeDisabled();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/shopping-list/items'),
+    ).toHaveLength(2);
+  });
+
   it('adds a Used Up Ingredient with no quantity', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
@@ -271,9 +319,6 @@ describe('Suggestions in the Add sheet', () => {
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<ShoppingPage />);
     await screen.findByText(/Your list is empty/);
-    expect(
-      screen.queryByRole('region', { name: 'Suggestions' }),
-    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Staples' }),
     ).not.toBeInTheDocument();

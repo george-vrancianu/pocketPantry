@@ -9,16 +9,15 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../../lib/shopping';
+import { TOAST_ABOVE_SHEET } from './sheetToast';
 import {
   useDismissSuggestion,
   type Suggestion,
 } from '../../../../lib/suggestions';
-
-/** Distance in px that lifts a toast clear of the sheet's bottom edge. */
-const TOAST_ABOVE_SHEET = 92;
 
 export type EmptySearchProps = {
   /** Missing Staples in Aisle order. */
@@ -75,7 +74,13 @@ function SuggestionChips({
   const toast = useToast();
   const dismiss = useDismissSuggestion();
 
+  // Chips whose add has not resolved yet, so a double tap sends one request.
+  const [pending, setPending] = useState<string[]>([]);
+
   const add = async (suggestion: Suggestion) => {
+    const id = suggestion.ingredientId;
+    if (pending.includes(id)) return;
+    setPending((ids) => [...ids, id]);
     const added = await onAdd({
       ingredientId: suggestion.ingredientId,
       ...(suggestion.quantity !== null
@@ -83,19 +88,23 @@ function SuggestionChips({
         : {}),
       ...(suggestion.unit ? { unit: suggestion.unit } : {}),
     });
+    setPending((ids) => ids.filter((other) => other !== id));
     if (!added) return;
     toast.show(t('added', { name: suggestion.name }), {
       bottom: TOAST_ABOVE_SHEET,
     });
     onAdded(suggestion.ingredientId);
   };
+  // mutateAsync, not per-call mutate callbacks: those are dropped when a later
+  // dismiss replaces the observer or this component unmounts.
   const remove = (suggestion: Suggestion) =>
-    dismiss.mutate(suggestion.ingredientId, {
-      onSuccess: () =>
+    void dismiss.mutateAsync(suggestion.ingredientId).then(
+      () =>
         toast.show(t('suggestions.dismissed', { name: suggestion.name }), {
           bottom: TOAST_ABOVE_SHEET,
         }),
-    });
+      () => undefined, // dismiss.error shows it
+    );
 
   const group = (label: string, suggestions: Suggestion[], manage?: string) => (
     <Box component="section" aria-label={label}>
@@ -109,6 +118,7 @@ function SuggestionChips({
             key={suggestion.ingredientId}
             suggestion={suggestion}
             added={addedIds.includes(suggestion.ingredientId)}
+            pending={pending.includes(suggestion.ingredientId)}
             onAdd={() => void add(suggestion)}
             onDismiss={() => remove(suggestion)}
           />
@@ -146,6 +156,7 @@ function SuggestionChips({
             ? group(
                 t('suggestions.usedUpLabel', { count: usedUp.length }),
                 usedUp,
+                // With no missing Staples this is the first header, so it carries Manage.
                 staples.length === 0 ? t('suggestions.manage') : undefined,
               )
             : null}
@@ -158,11 +169,13 @@ function SuggestionChips({
 function SuggestionChip({
   suggestion,
   added,
+  pending,
   onAdd,
   onDismiss,
 }: {
   suggestion: Suggestion;
   added: boolean;
+  pending: boolean;
   onAdd: () => void;
   onDismiss: () => void;
 }) {
@@ -204,8 +217,8 @@ function SuggestionChip({
       <Box
         component="button"
         type="button"
-        disabled={added}
-        aria-label={t('suggestions.add', { name: suggestion.name })}
+        disabled={added || pending}
+        aria-label={t('amount.add', { name: suggestion.name })}
         onClick={onAdd}
         sx={{ ...part, gap: 0.75, pl: 1.5, pr: 1.25 }}
       >

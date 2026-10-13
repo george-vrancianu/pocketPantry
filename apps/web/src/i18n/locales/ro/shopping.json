@@ -83,7 +83,6 @@
     "allStocked": "Toate produsele tale de bază sunt în stoc.",
     "manage": "Gestionează",
     "dismissed": "Ai ignorat {{name}}",
-    "add": "Adaugă {{name}} în listă",
     "dismiss": "Ignoră {{name}}"
   }
 }

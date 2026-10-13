@@ -79,7 +79,6 @@
     "allStocked": "All your staples are stocked.",
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
-    "add": "Add {{name}} to the list",
     "dismiss": "Dismiss {{name}}"
   }
 }

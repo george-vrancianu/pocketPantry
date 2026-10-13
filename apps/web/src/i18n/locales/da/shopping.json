@@ -78,7 +78,6 @@
     "allStocked": "Alle dine basisvarer er på lager.",
     "manage": "Administrer",
     "dismissed": "Afviste {{name}}",
-    "add": "Tilføj {{name}} til listen",
     "dismiss": "Afvis {{name}}"
   }
 }
