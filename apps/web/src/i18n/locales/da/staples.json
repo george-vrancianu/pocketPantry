@@ -14,15 +14,5 @@
   "toggle": {
     "add": "Gør {{name}} til en basisvare",
     "remove": "Fjern {{name}} fra basisvarer"
-  },
-  "suggestions": {
-    "title": "Forslag",
-    "heading_one": "Forslag, {{count}} basisvare mangler",
-    "heading_other": "Forslag, {{count}} basisvarer mangler",
-    "add": "Føj {{name}} til listen",
-    "addShort": "Tilføj",
-    "dismiss": "Afvis {{name}}",
-    "usedUpHeading_one": "Brugt op for nylig, {{count}} ingrediens",
-    "usedUpHeading_other": "Brugt op for nylig, {{count}} ingredienser"
   }
 }

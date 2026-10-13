@@ -944,6 +944,9 @@ describe('ShoppingPage', () => {
         expect(
           await within(dialog).findByText('Or start from a template'),
         ).toBeVisible();
+        expect(
+          within(dialog).getByText('All your staples are stocked.'),
+        ).toBeVisible();
 
         await user.click(
           within(dialog).getByRole('button', { name: 'See all' }),

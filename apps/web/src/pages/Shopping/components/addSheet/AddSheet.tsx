@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import { ApplyTemplateView } from './ApplyTemplateView';
 import { TemplatesTab } from './TemplatesTab';
+import type { Suggestion } from '../../../../lib/suggestions';
 import {
   emptyIngredients,
   IngredientsTab,
@@ -36,6 +37,10 @@ export type AddSheetProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
   addError: string | null;
+  /** Missing Staples, suggested while the search is empty. */
+  staples: Suggestion[];
+  /** Ingredients recently used up, suggested while the search is empty. */
+  usedUp: Suggestion[];
 };
 
 /**
@@ -52,6 +57,8 @@ export function AddSheet({
   adding,
   onAdd,
   addError,
+  staples,
+  usedUp,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
   const tabsId = useId();
@@ -205,6 +212,8 @@ export function AddSheet({
             adding={adding}
             onAdd={onAdd}
             error={addError}
+            staples={staples}
+            usedUp={usedUp}
             onAdded={() => setAddedCount((count) => count + 1)}
             onOpenTemplate={openTemplate}
             onSeeAllTemplates={() => selectTab('templates')}
