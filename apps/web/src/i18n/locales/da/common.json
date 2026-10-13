@@ -21,7 +21,8 @@
     "a11yHint": "Stryg til venstre for at fjerne, hold nede for at redigere",
     "context": {
       "list": "fra din liste",
-      "pantry": "fra dit spisekammer"
+      "pantry": "fra dit spisekammer",
+      "template": "fra denne skabelon"
     },
     "keep": "Behold",
     "releaseToDelete": "Slip for at fjerne",
@@ -44,6 +45,7 @@
   },
   "edit": {
     "removeFromList": "Fjern fra listen",
+    "removeLine": "Fjern linjen",
     "save": "Gem",
     "saving": "Gemmer",
     "title": "Rediger {{name}}"

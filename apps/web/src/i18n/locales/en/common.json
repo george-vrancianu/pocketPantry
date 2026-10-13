@@ -21,7 +21,8 @@
     "a11yHint": "Swipe left to remove, hold to edit",
     "context": {
       "list": "from your list",
-      "pantry": "in your Pantry"
+      "pantry": "in your Pantry",
+      "template": "from this template"
     },
     "keep": "Keep",
     "releaseToDelete": "Release to delete",
@@ -44,6 +45,7 @@
   },
   "edit": {
     "removeFromList": "Remove from list",
+    "removeLine": "Remove line",
     "save": "Save",
     "saving": "Saving",
     "title": "Edit {{name}}"

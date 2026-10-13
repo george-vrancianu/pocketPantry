@@ -21,7 +21,8 @@
     "a11yHint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
     "context": {
       "list": "din lista ta",
-      "pantry": "din cămara ta"
+      "pantry": "din cămara ta",
+      "template": "din acest șablon"
     },
     "keep": "Păstrează",
     "releaseToDelete": "Eliberează pentru a elimina",
@@ -45,6 +46,7 @@
   },
   "edit": {
     "removeFromList": "Elimină din listă",
+    "removeLine": "Elimină linia",
     "save": "Salvează",
     "saving": "Se salvează",
     "title": "Editează {{name}}"
