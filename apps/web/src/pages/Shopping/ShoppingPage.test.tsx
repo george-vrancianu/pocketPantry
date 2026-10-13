@@ -656,6 +656,10 @@ describe('ShoppingPage', () => {
       );
 
       expect(await screen.findByText('Added Parmesan')).toBeVisible();
+      // Announced: the toast lives inside the dialog, not behind its aria-hidden.
+      expect(within(dialog).getByRole('alert')).toHaveTextContent(
+        'Added Parmesan',
+      );
       expect(posts(calls)[0]?.body).toEqual({
         ingredientId: 'parmesan-id',
         quantity: 100,
@@ -869,7 +873,7 @@ describe('ShoppingPage', () => {
       ).toBeVisible();
 
       await user.clear(amount);
-      await user.type(amount, '5 kg');
+      await user.type(amount, '2 kg');
       await user.click(amount);
       await user.keyboard('{Control>}a{/Control}');
       await user.paste('25 ml');
@@ -884,6 +888,26 @@ describe('ShoppingPage', () => {
         quantity: 25,
         unit: 'ml',
       });
+    });
+
+    it('treats a select-all paste after a split as a fresh amount', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '2 kg');
+      await user.click(amount);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.paste('2g');
+      expect(amount).toHaveValue('2');
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: g' }),
+      ).toBeVisible();
     });
 
     it('keeps a unit chosen from the chip after a split', async () => {
@@ -1229,6 +1253,45 @@ describe('ShoppingPage', () => {
         ).toBeVisible();
       });
 
+      it('tags an Unmatched line On list when it differs by case and Danish spelling (Rødbeder, ROEDBEDER)', async () => {
+        stubShopping(
+          {
+            'GET /api/shopping-templates': () =>
+              Response.json({ templates: summaries }),
+            'GET /api/shopping-templates/t1': () =>
+              Response.json({
+                id: 't1',
+                name: 'Taco night',
+                lines: [
+                  line('beets', 'Rødbeder', {
+                    ingredientId: null,
+                    unmatched: true,
+                    aisle: null,
+                  }),
+                ],
+              }),
+          },
+          list([
+            {
+              aisle: null,
+              items: [item({ id: 'i9', name: 'ROEDBEDER ', unmatched: true })],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const dialog = await openTemplates(user);
+
+        await user.click(
+          await within(dialog).findByRole('button', { name: /Taco night/ }),
+        );
+
+        const box = await within(dialog).findByRole('checkbox', {
+          name: /Rødbeder/,
+        });
+        await waitFor(() => expect(box).toHaveTextContent('On list'));
+      });
+
       it('starts Pantry lines unticked and tags In Pantry and On list', async () => {
         stubTemplates();
         renderWithProviders(<ShoppingPage />);
@@ -1286,7 +1349,14 @@ describe('ShoppingPage', () => {
         expect(
           await screen.findByText('Added 3 items from Taco night'),
         ).toBeVisible();
+        // A toast raised as the sheet closes lives outside it, so it does not
+        // slide away with the sheet or get announced a second time.
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('Added 3 items from Taco night');
+        expect(dialog).not.toContainElement(alert);
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(screen.getAllByRole('alert')).toHaveLength(1);
+        expect(screen.getByRole('alert')).toBeVisible();
         expect(
           calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')
             ?.body,
@@ -1574,9 +1644,7 @@ describe('ShoppingPage', () => {
           expect(rows.at(-1)).toHaveTextContent('Weekly shop');
           expect(screen.queryByText('Template editor')).toBeNull();
 
-          await user.click(
-            screen.getByRole('button', { name: 'Edit', hidden: true }),
-          );
+          await user.click(screen.getByRole('button', { name: 'Edit' }));
           expect(await screen.findByText('Template editor')).toBeVisible();
         });
 

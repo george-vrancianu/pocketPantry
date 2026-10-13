@@ -6,29 +6,27 @@ export type SheetFooterSlot = {
   /** Where the footer renders, once the sheet has made room for it. */
   host: HTMLElement | null;
   /** Asks the sheet to make room for a footer, or to drop it. */
-  setWanted: (wanted: boolean) => void;
+  setHasFooter: (hasFooter: boolean) => void;
 };
 
 export const SheetFooterContext = createContext<SheetFooterSlot | null>(null);
 
-/**
- * Renders its children in the Add sheet's sticky footer. Pass `wanted` false
- * while the view has nothing to put there (loading, error), so the sheet draws
- * no empty strip.
- */
-export function SheetFooter({
-  wanted = true,
-  children,
-}: {
-  wanted?: boolean;
-  children: ReactNode;
-}) {
+function useSheetFooterSlot(): SheetFooterSlot {
   const slot = useContext(SheetFooterContext);
   if (!slot) throw new Error('SheetFooter must be used inside an AddSheet');
-  const { host, setWanted } = slot;
+  return slot;
+}
+
+/**
+ * Renders its children in the Add sheet's sticky footer. A view that has
+ * nothing to put there (loading, error) simply does not render it, so the
+ * sheet draws no empty strip.
+ */
+export function SheetFooter({ children }: { children: ReactNode }) {
+  const { host, setHasFooter } = useSheetFooterSlot();
   useEffect(() => {
-    setWanted(wanted);
-    return () => setWanted(false);
-  }, [wanted, setWanted]);
-  return wanted && host ? createPortal(children, host) : null;
+    setHasFooter(true);
+    return () => setHasFooter(false);
+  }, [setHasFooter]);
+  return host ? createPortal(children, host) : null;
 }

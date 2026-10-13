@@ -1,7 +1,14 @@
 import MuiDialog from '@mui/material/Dialog';
 import Slide from '@mui/material/Slide';
-import { forwardRef, type ReactElement, type ReactNode, type Ref } from 'react';
+import {
+  forwardRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+} from 'react';
 import { Box } from '../atoms/Layout';
+import { useToastHost } from './ToastProvider';
 import { tokens } from '../theme/tokens';
 import { useBreakpointUp } from '../theme/useBreakpointUp';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
@@ -21,8 +28,6 @@ export type SheetProps = {
   onClose: () => void;
   /** Called once the open transition has finished, e.g. to focus a field. */
   onEntered?: () => void;
-  /** Called once the close transition has finished. */
-  onExited?: () => void;
   /** Accessible name of the dialog. */
   label: string;
   /** Pinned above the body, e.g. a title row and tabs. */
@@ -49,7 +54,6 @@ export function Sheet({
   open,
   onClose,
   onEntered,
-  onExited,
   label,
   header,
   footer,
@@ -58,6 +62,11 @@ export function Sheet({
   const centred = useBreakpointUp('md');
   const reduceMotion = usePrefersReducedMotion();
   const { color } = tokens;
+  // Toasts show inside the open sheet, where they can be heard and reached.
+  const [paper, setPaper] = useState<HTMLElement | null>(null);
+  // Only while open: a toast raised as the sheet closes must not sit in the
+  // paper that is sliding away.
+  useToastHost(open ? paper : null);
   return (
     <MuiDialog
       open={open}
@@ -73,8 +82,9 @@ export function Sheet({
       }
       slotProps={{
         backdrop: { sx: { backgroundColor: SCRIM } },
-        transition: { onEntered, onExited },
+        transition: { onEntered },
         paper: {
+          ref: setPaper,
           'aria-label': label,
           sx: {
             display: 'flex',

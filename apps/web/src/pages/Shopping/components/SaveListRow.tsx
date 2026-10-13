@@ -1,6 +1,6 @@
 import { BookmarkIcon, Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { focusRing } from './focusRing';
+import { focusRing } from '../../../lib/focusRing';
 
 export type SaveListRowProps = {
   /** Items on the Shopping List. */

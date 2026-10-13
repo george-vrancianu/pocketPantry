@@ -13,9 +13,10 @@ import {
   type CatalogSearchResult,
   type Unit,
 } from '../../../../lib/catalog';
-import { normalizeName } from '../../../../lib/normalizeName';
 import { parseQuantity } from '../../../../lib/pantry';
 import {
+  isOnList,
+  uncheckedItems,
   useShoppingList,
   type NewShoppingItem,
   type ShoppingItem,
@@ -117,9 +118,7 @@ export function IngredientsTab({
   const search = useCatalogSearch(query, i18n.language);
   // The loaded list (shared with the screen behind), for the "On list" hints.
   const list = useShoppingList(i18n.language);
-  const unchecked = (list.data?.groups ?? []).flatMap((group) =>
-    group.items.filter((line) => !line.checked),
-  );
+  const unchecked = uncheckedItems(list.data);
   const typed = query.trim();
   // The debounce lags a cleared field, so go by what is typed now.
   const results = typed && search.active ? (search.data ?? []) : [];
@@ -260,10 +259,12 @@ export function IngredientsTab({
           const isOpen = open?.key === row.key;
           // Unmatched lines merge on the normalised typed name, as the server does.
           const onListLines = unchecked.filter((line) =>
-            row.kind === 'catalog'
-              ? line.ingredientId === row.result.id
-              : line.ingredientId === null &&
-                normalizeName(line.name) === normalizeName(row.name),
+            isOnList(
+              line,
+              row.kind === 'catalog'
+                ? { ingredientId: row.result.id, name: row.result.name }
+                : { ingredientId: null, name: row.name },
+            ),
           );
           const hint =
             isOpen && open ? mergeHint(onListLines, open.unit) : null;

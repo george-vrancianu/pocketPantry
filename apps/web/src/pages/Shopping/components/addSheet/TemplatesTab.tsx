@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../focusRing';
+import { focusRing } from '../../../../lib/focusRing';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */

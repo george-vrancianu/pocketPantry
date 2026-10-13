@@ -1,7 +1,7 @@
 import { Box, TemplateIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../focusRing';
+import { focusRing } from '../../../../lib/focusRing';
 
 export type TemplateChipsProps = {
   /** Opens a template's apply view. */
