@@ -251,6 +251,83 @@ describe('Shopping Template screens', () => {
     expect(patches(calls)).toHaveLength(1);
   });
 
+  it('takes the Undo toast down when the editor is left, so it cannot overwrite newer lines', async () => {
+    const { calls } = statefulTemplate([milk, eggs]);
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByRole('group', { name: 'Eggs' });
+
+    await removeLine(user, 'Eggs');
+    expect(await screen.findByText('Removed Eggs')).toBeVisible();
+    await user.click(
+      screen.getAllByRole('button', { name: 'Add to list' }).at(-1)!,
+    );
+    await user.click(await screen.findByRole('button', { name: 'Back' }));
+
+    await screen.findByRole('group', { name: 'Milk' });
+    await waitFor(() => expect(screen.queryByText('Removed Eggs')).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+    expect(patches(calls)).toHaveLength(1);
+  });
+
+  it('lets a save in flight land before Undo puts the line back on top of it', async () => {
+    const { fetchMock, calls } = statefulTemplate([milk, eggs, bread]);
+    let release: () => void = () => undefined;
+    let gate: Promise<void> | null = null;
+    vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
+      if (args[1]?.method === 'PATCH' && gate) await gate;
+      return fetchMock(...args);
+    });
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByRole('group', { name: 'Eggs' });
+    await removeLine(user, 'Eggs');
+    await screen.findByText('Removed Eggs');
+
+    // A newer edit is on its way when Undo is pressed.
+    gate = new Promise<void>((resolve) => (release = resolve));
+    act(() => screen.getByRole('group', { name: 'Milk' }).focus());
+    await user.keyboard('{Enter}');
+    const dialog = await screen.findByRole('dialog', { name: 'Edit Milk' });
+    const field = within(dialog).getByLabelText(/^Amount of Milk/);
+    await user.clear(field);
+    await user.type(field, '2');
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(patches(calls)).toHaveLength(1);
+
+    gate = null;
+    release();
+    await waitFor(() => expect(patches(calls)).toHaveLength(3));
+    expect(patches(calls)[1]).toEqual({
+      lines: [
+        { ingredientId: 'milk-id', quantity: 2, unit: 'l' },
+        { ingredientId: 'bread-id' },
+      ],
+    });
+    expect(patches(calls)[2]).toEqual({
+      lines: [
+        { ingredientId: 'milk-id', quantity: 2, unit: 'l' },
+        { ingredientId: 'eggs-id', quantity: 6 },
+        { ingredientId: 'bread-id' },
+      ],
+    });
+  });
+
+  it('moves focus to the empty text when the last line is removed', async () => {
+    statefulTemplate([milk]);
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByRole('group', { name: 'Milk' });
+
+    await removeLine(user, 'Milk');
+
+    await waitFor(() =>
+      expect(screen.getByText(/no lines yet/i)).toHaveFocus(),
+    );
+  });
+
   describe('editing the amount', () => {
     const openSheet = async (
       user: ReturnType<typeof userEvent.setup>,

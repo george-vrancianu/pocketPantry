@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
   useToast,
+  type ToastHandle,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -113,39 +114,53 @@ function Editor({
   // Removing a Template Line saves at once, without it (ADR 0009: the exception, because a line is only
   // a name, an amount and a unit). Undo saves the lines again with it back at its old position.
   const toast = useToast();
-  const undone = useRef(false);
+  // The toast outlives this page, but Undo builds on this instance's refs: take it down when we go.
+  const undoToast = useRef<ToastHandle | null>(null);
+  useEffect(() => () => undoToast.current?.close(), []);
   const removeLine = async (line: TemplateLine) => {
     const index = lines.findIndex((l) => l.id === line.id);
     await save(lines.filter((l) => l.id !== line.id).map(toLineBody));
-    undone.current = false;
-    toast.show(t('common:row.removed', { name: line.name }), {
-      duration: UNDO_WINDOW_MS,
-      action: {
-        label: t('common:row.undo'),
-        onClick: () => {
-          if (undone.current) return;
-          undone.current = true;
-          void restore(line, index);
+    undoToast.current = toast.show(
+      t('common:row.removed', { name: line.name }),
+      {
+        duration: UNDO_WINDOW_MS,
+        action: {
+          label: t('common:row.undo'),
+          onClick: () => {
+            void restore(line, index);
+          },
         },
       },
-    });
+    );
   };
   const restore = async (line: TemplateLine, index: number) => {
     // Let a save that is still in flight land first, then put the line back on top of it.
     await saving.current;
     const next = latest.current.map(toLineBody);
     next.splice(Math.min(index, next.length), 0, toLineBody(line));
-    try {
-      await save(next);
-    } catch (error) {
-      toast.show(translateApiError(t, error));
-    }
+    // A failure shows in the page's alert.
+    await save(next).catch(() => undefined);
   };
 
+  // The sheet shows a failed save itself, so the page's alert does not repeat it.
   const setAmount = (line: TemplateLine, amount: Amount) =>
     save(
       lines.map((l) => toLineBody(l.id === line.id ? { ...l, ...amount } : l)),
-    );
+    ).catch((failure: unknown) => {
+      update.reset();
+      throw failure;
+    });
+
+  // Removing the last line unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLElement>(null);
+  const hadLines = useRef(lines.length > 0);
+  useEffect(() => {
+    if (lines.length === 0 && hadLines.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadLines.current = lines.length > 0;
+  }, [lines.length]);
 
   const add = (item: NewShoppingItem) =>
     save([...lines.map(toLineBody), item]).then(
@@ -169,7 +184,9 @@ function Editor({
           <Button
             type="submit"
             variant="secondary"
-            disabled={!name.trim() || name.trim() === template.name}
+            disabled={
+              update.isPending || !name.trim() || name.trim() === template.name
+            }
             sx={{ minHeight: 56 }}
           >
             {t('templates:editor.rename')}
@@ -178,7 +195,12 @@ function Editor({
       </Box>
 
       {lines.length === 0 ? (
-        <Typography color="text.secondary">
+        <Typography
+          ref={empty}
+          tabIndex={-1}
+          color="text.secondary"
+          sx={{ outline: 'none' }}
+        >
           {t('templates:editor.empty')}
         </Typography>
       ) : (
