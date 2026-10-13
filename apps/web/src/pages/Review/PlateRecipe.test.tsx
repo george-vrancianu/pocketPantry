@@ -14,7 +14,11 @@ const rice: CatalogSearchResult = {
   name: 'Rice',
   defaultUnit: 'g',
   leafCategory: { id: 'grain', name: 'Grains' },
-  parentCategory: { id: 'dry', name: 'Dry goods', aisle: 'Dry goods' },
+  parentCategory: {
+    id: 'dry',
+    name: 'Dry goods',
+    aisle: { id: 'aisle', name: 'Dry goods' },
+  },
   defaults: { expiryDays: 300, location: 'cupboard' },
 };
 

@@ -38,7 +38,11 @@ const milk = {
   name: 'Milk',
   defaultUnit: 'ml',
   leafCategory: { id: 'l1', name: 'Milk' },
-  parentCategory: { id: 'p1', name: 'Dairy', aisle: 'Dairy' },
+  parentCategory: {
+    id: 'p1',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy' },
+  },
   defaults: { expiryDays: 7, location: 'fridge' },
 };
 
