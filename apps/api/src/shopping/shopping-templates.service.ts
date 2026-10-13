@@ -108,8 +108,8 @@ export class ShoppingTemplatesService {
     for (const line of lines) {
       const name =
         (line.ingredientId && placements.get(line.ingredientId)?.name) ||
-        line.name ||
-        '';
+        line.name;
+      if (!name) continue;
       previews.set(line.templateId, [
         ...(previews.get(line.templateId) ?? []),
         name,

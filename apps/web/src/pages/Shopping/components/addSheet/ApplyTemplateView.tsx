@@ -11,10 +11,11 @@ import {
   useToast,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { useShoppingList } from '../../../../lib/shopping';
+import { focusRing } from '../focusRing';
+import { SheetFooter } from './SheetFooter';
 import {
   groupByAisle,
   useApplyTemplate,
@@ -28,8 +29,6 @@ export type ApplyTemplateViewProps = {
   onBack: () => void;
   /** Closes the sheet after the lines are added. */
   onApplied: () => void;
-  /** Where the sticky footer renders, once the sheet has made room for it. */
-  footerHost: HTMLElement | null;
 };
 
 const normalise = (name: string) => name.trim().toLowerCase();
@@ -42,7 +41,6 @@ export function ApplyTemplateView({
   templateId,
   onBack,
   onApplied,
-  footerHost,
 }: ApplyTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const toast = useToast();
@@ -71,6 +69,7 @@ export function ApplyTemplateView({
         fontSize: 14,
         fontWeight: 700,
         cursor: 'pointer',
+        ...focusRing(),
       }}
     >
       <BackIcon size={16} aria-hidden />
@@ -213,6 +212,7 @@ export function ApplyTemplateView({
                     gap: 1.5,
                     cursor: 'pointer',
                     '& + &': { borderTop: `1px solid ${color.divider}` },
+                    ...focusRing(),
                   }}
                 >
                   <Box
@@ -269,7 +269,7 @@ export function ApplyTemplateView({
           </Box>
         </Box>
       ))}
-      {footerHost ? createPortal(footer, footerHost) : null}
+      <SheetFooter>{footer}</SheetFooter>
     </Box>
   );
 }

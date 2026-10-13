@@ -1,12 +1,20 @@
 {
   "title": "Shopping templates",
-  "open": "Templates",
   "save": {
-    "button": "Save as template",
     "name": "Template name",
     "submit": "Save template",
     "saving": "Saving",
-    "row": "Save this list as a template"
+    "row": "Save this list as a template",
+    "back": "Templates",
+    "placeholder": "e.g. Weekly shop",
+    "saved": "Saved “{{name}}”",
+    "edit": "Edit",
+    "preview_one": "Saves {{count}} item, ticked ones too",
+    "preview_other": "Saves all {{count}} items, ticked ones too",
+    "rowHint_one": "Reuse this {{count}} item next time",
+    "rowHint_other": "Reuse these {{count}} items next time",
+    "rowMeta_one": "{{count}} item, quantities included",
+    "rowMeta_other": "{{count}} items, quantities included"
   },
   "apply": {
     "none": "No templates yet. Save your list as one, or create one under Templates.",

@@ -14,11 +14,11 @@ import {
   useStapleErrors,
 } from '../../components/StapleToggle';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { AddSheet } from './components/addSheet/AddSheet';
+import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
+import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
-import { TemplateActions } from './templates/TemplateActions';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
@@ -27,6 +27,7 @@ export function ShoppingPage() {
   const stapleErrors = useStapleErrors();
   const [reviewing, setReviewing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
 
   if (reviewing) {
     return (
@@ -59,10 +60,10 @@ export function ShoppingPage() {
               onFinish={() => setReviewing(true)}
               onAddItems={() => {
                 screen.resetAddError();
+                setSheetView({ tab: 'ingredients' });
                 setSheetOpen(true);
               }}
             />
-            <TemplateActions />
             {screen.list.groups.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 3 }}>
                 <Typography
@@ -85,11 +86,23 @@ export function ShoppingPage() {
                 onRemove={screen.remove}
               />
             )}
+            {screen.list.groups.length > 0 ? (
+              <SaveListRow
+                count={
+                  screen.list.summary.remaining + screen.list.summary.checked
+                }
+                onClick={() => {
+                  setSheetView({ tab: 'templates', view: 'save' });
+                  setSheetOpen(true);
+                }}
+              />
+            ) : null}
           </>
         ) : null}
       </Stack>
       <AddSheet
         open={sheetOpen}
+        initialView={sheetView}
         onClose={() => setSheetOpen(false)}
         adding={screen.adding}
         onAdd={screen.add}
