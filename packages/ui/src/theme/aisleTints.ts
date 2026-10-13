@@ -1,7 +1,7 @@
 import { tokens } from './tokens';
 
 /** An Aisle's tint for Ingredient Icons, per theme. Dark is stored but unused until a dark theme exists. */
-export type AisleTint = { light: string; dark: string };
+type AisleTint = { light: string; dark: string };
 
 const produce = { light: '#DDEBE2', dark: '#24392E' };
 const bakery = { light: '#F6EBC8', dark: '#3B3320' };
@@ -16,7 +16,7 @@ const drinks = { light: '#EFE6F1', dark: '#362A3A' };
  * (`seedId.aisle(slug)` in apps/api/src/catalog/seed/seed-catalog.ts); Aisles
  * have no slug column, so the slug is noted beside each.
  */
-export const aisleTints: Readonly<Record<string, AisleTint>> = {
+const aisleTints: Readonly<Record<string, AisleTint>> = {
   '1dff107d-5280-500f-807e-d694a53e24d9': produce, // fruit-veg
   '28ebc9e6-2bd5-5698-ba01-8a4a0b232e36': bakery, // bakery
   '5275409d-8e0e-584a-8b21-94dfdcf2edb0': meat, // meat-fish
@@ -28,10 +28,10 @@ export const aisleTints: Readonly<Record<string, AisleTint>> = {
   '233a1edd-a872-5885-bbf3-d77182e67050': drinks, // snacks-drinks
 };
 
-/** The tint for an Aisle; "Other" and any Admin-created Aisle get the neutral chip. */
-export function aisleTint(aisleId: string): AisleTint {
+/** The tint for an Aisle; no Aisle, "Other" and any Admin-created Aisle get the neutral chip. */
+export function aisleTint(aisleId?: string | null): AisleTint {
   return (
-    aisleTints[aisleId] ?? {
+    (aisleId ? aisleTints[aisleId] : undefined) ?? {
       light: tokens.color.chipNeutral,
       // Placeholder until the dark theme is designed; dark values are unused for now.
       dark: tokens.color.chipNeutral,

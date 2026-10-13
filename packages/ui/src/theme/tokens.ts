@@ -9,6 +9,8 @@ export const tokens = {
     divider: '#EEF1EA',
     subtle: '#F7F9F5',
     chipNeutral: '#E2E8DD',
+    /** Greyed text of a checked-off row. */
+    checkedText: '#66736B',
     accent: '#2E6A4D',
     accentHover: '#1F4D37',
     accentTint: '#DDEBE2',

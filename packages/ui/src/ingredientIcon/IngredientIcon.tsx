@@ -1,5 +1,4 @@
 import { aisleTint } from '../theme/aisleTints';
-import { tokens } from '../theme/tokens';
 import ingredientIconMap from './ingredientIconMap.json';
 import { DEFAULT_ICON_KEY, INGREDIENT_ICONS } from './ingredientIcons';
 
@@ -35,7 +34,7 @@ export function IngredientIcon({
     mapped && Object.hasOwn(INGREDIENT_ICONS, mapped)
       ? mapped
       : DEFAULT_ICON_KEY;
-  const tint = aisleId ? aisleTint(aisleId).light : tokens.color.chipNeutral;
+  const tint = aisleTint(aisleId).light;
   return (
     <svg
       aria-hidden
