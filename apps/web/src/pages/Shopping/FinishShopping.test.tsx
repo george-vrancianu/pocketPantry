@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   FinishProposal,
   FinishProposalLine,
@@ -67,6 +67,8 @@ function stubFinish(routes: Record<string, () => Response> = {}) {
   const { fetchMock, calls } = stubApi({
     'GET /api/shopping-list': () => Response.json(list),
     'GET /api/shopping-list/finish': () => Response.json(proposal),
+    'GET /api/settings/family': () =>
+      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
     ...routes,
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -113,7 +115,9 @@ describe('Finish Shopping review', () => {
     expect(parmesan.getByLabelText('Quantity')).toHaveValue(200);
     expect(parmesan.getByLabelText('Unit')).toHaveValue('g');
     expect(parmesan.getByLabelText('Location')).toHaveValue('fridge');
-    expect(parmesan.getByLabelText('Expiry date')).toHaveValue('2026-11-01');
+    expect(
+      parmesan.getByRole('button', { name: /^Expires, Sunday, November 1\b/ }),
+    ).toHaveAttribute('aria-haspopup', 'dialog');
     const unmatched = within(
       within(review).getByRole('region', { name: 'Dragon fruit' }),
     );
@@ -136,7 +140,13 @@ describe('Finish Shopping review', () => {
     await user.selectOptions(parmesan.getByLabelText('Location'), 'freezer');
     await user.clear(parmesan.getByLabelText('Quantity'));
     await user.type(parmesan.getByLabelText('Quantity'), '150');
-    await user.clear(parmesan.getByLabelText('Expiry date'));
+    await user.click(parmesan.getByRole('button', { name: /^Expires,/ }));
+    const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+    await user.click(within(sheet).getByRole('button', { name: 'No expiry' }));
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     await user.click(review.getByRole('button', { name: 'Drop Milk' }));
     await user.click(
       review.getByRole('button', { name: 'Add 2 items to Pantry' }),
@@ -295,5 +305,141 @@ describe('Finish Shopping review', () => {
     expect(
       review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     ).toBeDisabled();
+  });
+});
+
+describe('the expiry picker in the Finish Shopping Review', () => {
+  // Wednesday 14 October 2026, mid-afternoon: Parmesan's pre-filled 1 November is 18 days away. Only `Date` is faked.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** Open the expiry sheet of one Review line. */
+  async function openSheet(
+    user: ReturnType<typeof userEvent.setup>,
+    name: string,
+  ) {
+    const section = await screen.findByRole('region', { name });
+    await user.click(
+      within(section).getByRole('button', { name: /^Expires,/ }),
+    );
+    return screen.findByRole('dialog', { name: 'Expires' });
+  }
+
+  async function closeSheet(
+    user: ReturnType<typeof userEvent.setup>,
+    sheet: HTMLElement,
+  ) {
+    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  /** The quick-pick tiles, as "accessible name: pressed". */
+  const quickPicks = (sheet: HTMLElement) =>
+    within(within(sheet).getByRole('group', { name: 'Quick picks' }))
+      .getAllByRole('button')
+      .map(
+        (tile) =>
+          `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
+      );
+
+  it("shows a line's pre-filled date as the Usual quick pick, selected", async () => {
+    stubFinish();
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    await openReview();
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Expires, Sunday, November 1, in 18 days',
+      }),
+    ).toBeInTheDocument();
+    const sheet = await openSheet(user, 'Parmesan');
+    expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
+    expect(quickPicks(sheet)).toEqual([
+      'Usual, 18 d, Sunday, November 1: true',
+      '3 d, Saturday, October 17: false',
+      '5 d, Monday, October 19: false',
+      '1 wk, Wednesday, October 21: false',
+      '2 wk, Wednesday, October 28: false',
+      '1 mo, Friday, November 13: false',
+    ]);
+  });
+
+  it('offers no Usual for a line without a pre-filled date, or for an Unmatched line', async () => {
+    stubFinish({
+      'GET /api/shopping-list/finish': () =>
+        Response.json({
+          ...proposal,
+          lines: proposal.lines.map((l) =>
+            l.unmatched ? { ...l, expiryDate: '2026-10-20' } : l,
+          ),
+        }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    await openReview();
+
+    let sheet = await openSheet(user, 'Milk');
+    expect(quickPicks(sheet).some((tile) => tile.startsWith('Usual'))).toBe(
+      false,
+    );
+    expect(quickPicks(sheet)).toHaveLength(5);
+    await closeSheet(user, sheet);
+
+    sheet = await openSheet(user, 'Dragon fruit');
+    expect(quickPicks(sheet).some((tile) => tile.startsWith('Usual'))).toBe(
+      false,
+    );
+    expect(quickPicks(sheet)).toHaveLength(5);
+  });
+
+  it("sends each line's chosen date, changing only the line that was picked", async () => {
+    const calls = stubFinish({
+      'POST /api/shopping-list/finish': () =>
+        Response.json({ listId: 'l2', batchCount: 3 }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    await openReview();
+
+    let sheet = await openSheet(user, 'Milk');
+    await user.click(within(sheet).getByRole('button', { name: /^1 wk/ }));
+    await closeSheet(user, sheet);
+    sheet = await openSheet(user, 'Dragon fruit');
+    await user.click(
+      within(sheet).getByRole('button', { name: 'Thursday, December 3, 2026' }),
+    );
+    await closeSheet(user, sheet);
+    expect(
+      within(screen.getByRole('region', { name: 'Milk' })).getByRole('button', {
+        name: 'Expires, Wednesday, October 21, in 7 days',
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Add 3 items to Pantry' }),
+    );
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/shopping-list/finish'),
+      ).toBeDefined(),
+    );
+    const body = calls.find((c) => c.key === 'POST /api/shopping-list/finish')
+      ?.body as { lines: { itemId: string; expiryDate: string | null }[] };
+    expect(
+      body.lines.map(({ itemId, expiryDate }) => ({ itemId, expiryDate })),
+    ).toEqual([
+      { itemId: 'i1', expiryDate: '2026-11-01' },
+      { itemId: 'i2', expiryDate: '2026-10-21' },
+      { itemId: 'i3', expiryDate: '2026-12-03' },
+    ]);
   });
 });

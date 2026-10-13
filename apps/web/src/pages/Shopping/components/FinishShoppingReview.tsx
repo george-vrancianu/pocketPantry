@@ -7,6 +7,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
 
@@ -14,7 +15,7 @@ type Props = { onDone: () => void; onCancel: () => void };
 
 /** Review screen: the proposed Batches for every checked item, editable, before anything is saved. */
 export function FinishShoppingReview({ onDone, onCancel }: Props) {
-  const { t } = useTranslation(['shopping', 'pantry', 'common']);
+  const { t, i18n } = useTranslation(['shopping', 'pantry', 'common']);
   const review = useFinishReview({ onDone });
 
   return (
@@ -38,7 +39,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
         <Typography>{t('shopping:finish.empty')}</Typography>
       ) : null}
 
-      {review.lines.map(({ line, edit, dropped, quantityValid }) => (
+      {review.lines.map(({ line, edit, dropped, quantityValid, usualDays }) => (
         <Stack
           key={line.itemId}
           component="section"
@@ -131,14 +132,23 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
                   </option>
                 ))}
               </TextField>
-              <TextField
-                type="date"
-                label={t('pantry:form.expiry')}
+              <ExpiryField
+                label={t('pantry:picker.label')}
                 value={edit.expiryDate}
-                onChange={(event) =>
-                  review.edit(line.itemId, { expiryDate: event.target.value })
+                onChange={(expiryDate) =>
+                  review.edit(line.itemId, { expiryDate })
                 }
-                slotProps={{ inputLabel: { shrink: true } }}
+                usualDays={usualDays}
+                context={expiryContext(
+                  {
+                    name: line.name,
+                    quantity: edit.quantity,
+                    unit: edit.unit,
+                    location: edit.location,
+                  },
+                  i18n.language,
+                  t,
+                )}
               />
             </>
           )}
