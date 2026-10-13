@@ -1,12 +1,20 @@
 {
   "title": "Indkøbsskabeloner",
-  "open": "Skabeloner",
   "save": {
-    "button": "Gem som skabelon",
     "name": "Skabelonens navn",
     "submit": "Gem skabelon",
     "saving": "Gemmer",
-    "row": "Gem denne liste som skabelon"
+    "row": "Gem denne liste som skabelon",
+    "back": "Skabeloner",
+    "placeholder": "fx Ugens indkøb",
+    "saved": "Gemte “{{name}}”",
+    "edit": "Redigér",
+    "preview_one": "Gemmer {{count}} vare, også de afkrydsede",
+    "preview_other": "Gemmer alle {{count}} varer, også de afkrydsede",
+    "rowHint_one": "Genbrug denne {{count}} vare næste gang",
+    "rowHint_other": "Genbrug disse {{count}} varer næste gang",
+    "rowMeta_one": "{{count}} vare, mængder med",
+    "rowMeta_other": "{{count}} varer, mængder med"
   },
   "apply": {
     "none": "Ingen skabeloner endnu. Gem din liste som skabelon, eller opret en under Skabeloner.",

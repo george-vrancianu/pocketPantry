@@ -1,6 +1,7 @@
 import { Box, TemplateIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
+import { focusRing } from './focusRing';
 
 export type TemplateChipsProps = {
   /** Opens a template's apply view. */
@@ -55,6 +56,7 @@ export function TemplateChips({
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
+            ...focusRing,
           }}
         >
           {t('shopping:seeAll')}
@@ -81,6 +83,7 @@ export function TemplateChips({
               fontSize: 14,
               fontWeight: 600,
               cursor: 'pointer',
+              ...focusRing,
             }}
           >
             <Box aria-hidden sx={{ display: 'flex', color: color.butterInk }}>

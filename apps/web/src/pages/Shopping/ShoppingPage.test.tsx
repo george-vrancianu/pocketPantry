@@ -10,6 +10,7 @@ import {
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
+import { Route, Routes } from 'react-router-dom';
 import { ShoppingPage } from './ShoppingPage';
 
 const item = (
@@ -1125,7 +1126,7 @@ describe('ShoppingPage', () => {
         ).toHaveAttribute('aria-selected', 'true');
       });
 
-      it('switches to the Templates tab with See all, and hides the chips without templates', async () => {
+      it('switches to the Templates tab with See all', async () => {
         stubTemplates();
         renderWithProviders(<ShoppingPage />);
         const user = userEvent.setup();
@@ -1144,6 +1145,215 @@ describe('ShoppingPage', () => {
         expect(
           within(dialog).getByRole('heading', { name: 'Add from a template' }),
         ).toBeVisible();
+      });
+
+      describe('Save as template', () => {
+        const withEditor = (
+          <Routes>
+            <Route path="/" element={<ShoppingPage />} />
+            <Route
+              path="/shopping/templates/:id"
+              element={<h1>Template editor</h1>}
+            />
+          </Routes>
+        );
+        const openSave = async (user = userEvent.setup()) => {
+          const dialog = await openTemplates(user);
+          await user.click(
+            within(dialog).getByRole('button', {
+              name: /Save this list as a template/,
+            }),
+          );
+          return dialog;
+        };
+
+        it('shows the save row with the item count, and hides it on an empty list', async () => {
+          stubTemplates();
+          renderWithProviders(<ShoppingPage />);
+          const dialog = await openTemplates();
+          expect(
+            await within(dialog).findByRole('button', {
+              name: /Save this list as a template.*3 items, quantities included/,
+            }),
+          ).toBeVisible();
+        });
+
+        it('hides both save rows on an empty list', async () => {
+          stubShopping(
+            {
+              'GET /api/shopping-templates': () =>
+                Response.json({ templates: [] }),
+            },
+            list([]),
+          );
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          const dialog = await openSheet(user);
+          await user.click(
+            within(dialog).getByRole('tab', { name: 'Templates' }),
+          );
+          await within(dialog).findByText(/No templates yet/);
+          expect(
+            screen.queryByRole('button', {
+              name: /Save this list as a template/,
+            }),
+          ).toBeNull();
+        });
+
+        it('opens the sheet on the save view from the row under the list', async () => {
+          stubTemplates();
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+
+          await user.click(
+            await screen.findByRole('button', {
+              name: /Save this list as a template.*Reuse these 3 items next time/,
+            }),
+          );
+
+          const dialog = await screen.findByRole('dialog', {
+            name: 'Add to list',
+          });
+          expect(
+            within(dialog).getByRole('textbox', { name: 'Template name' }),
+          ).toHaveAttribute('placeholder', 'e.g. Weekly shop');
+        });
+
+        it('previews every item with its amount and focuses the name', async () => {
+          stubTemplates();
+          renderWithProviders(<ShoppingPage />);
+          const dialog = await openSave();
+
+          const name = within(dialog).getByRole('textbox', {
+            name: 'Template name',
+          });
+          await vi.waitFor(() => expect(name).toHaveFocus());
+          expect(name).toHaveAttribute('maxlength', '100');
+          expect(
+            within(dialog).getByText('Saves all 3 items, ticked ones too'),
+          ).toBeVisible();
+          expect(
+            within(dialog).getByText('Tomato (250 g), Milk, Saffron', {
+              exact: false,
+            }),
+          ).toBeVisible();
+          expect(
+            within(dialog).getByRole('button', { name: 'Save template' }),
+          ).toBeDisabled();
+          await userEvent.click(
+            within(dialog).getByRole('button', { name: /Templates/ }),
+          );
+          expect(
+            await within(dialog).findByRole('heading', {
+              name: 'Add from a template',
+            }),
+          ).toBeVisible();
+        });
+
+        it('saves under the name, stays in the sheet and offers Edit without navigating', async () => {
+          let saved = false;
+          const created = { id: 't3', name: 'Weekly shop', lines: [] };
+          const { calls } = stubTemplates({
+            'POST /api/shopping-templates/from-list': () => {
+              saved = true;
+              return Response.json(created, { status: 201 });
+            },
+            'GET /api/shopping-templates': () =>
+              Response.json({
+                templates: saved
+                  ? [
+                      ...summaries,
+                      {
+                        id: 't3',
+                        name: 'Weekly shop',
+                        lineCount: 3,
+                        previewNames: ['Tomato'],
+                      },
+                    ]
+                  : summaries,
+              }),
+          });
+          renderWithProviders(withEditor);
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
+
+          await user.type(
+            within(dialog).getByRole('textbox', { name: 'Template name' }),
+            'Weekly shop{Enter}',
+          );
+
+          expect(await screen.findByText('Saved “Weekly shop”')).toBeVisible();
+          expect(
+            calls.find(
+              (c) => c.key === 'POST /api/shopping-templates/from-list',
+            )?.body,
+          ).toEqual({ name: 'Weekly shop' });
+          expect(
+            await within(dialog).findByRole('button', { name: /Weekly shop/ }),
+          ).toBeVisible();
+          expect(screen.queryByText('Template editor')).toBeNull();
+
+          await user.click(
+            screen.getByRole('button', { name: 'Edit', hidden: true }),
+          );
+          expect(await screen.findByText('Template editor')).toBeVisible();
+        });
+
+        it('keeps the name and shows the API error', async () => {
+          stubTemplates({
+            'POST /api/shopping-templates/from-list': () =>
+              Response.json(
+                {
+                  code: 'shopping.template_too_many_lines',
+                  params: { max: 100 },
+                },
+                { status: 400 },
+              ),
+          });
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
+          const name = within(dialog).getByRole('textbox', {
+            name: 'Template name',
+          });
+
+          await user.type(name, 'Big shop');
+          await user.click(
+            within(dialog).getByRole('button', { name: 'Save template' }),
+          );
+
+          expect(await within(dialog).findByRole('alert')).toBeVisible();
+          expect(name).toHaveValue('Big shop');
+        });
+
+        it('disables Save and says why at the template limit', async () => {
+          stubTemplates({
+            'GET /api/shopping-templates': () =>
+              Response.json({
+                templates: Array.from({ length: 50 }, (_, i) => ({
+                  id: `m${i}`,
+                  name: `Template ${i}`,
+                  lineCount: 0,
+                  previewNames: [],
+                })),
+              }),
+          });
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
+
+          await user.type(
+            within(dialog).getByRole('textbox', { name: 'Template name' }),
+            'One more',
+          );
+
+          expect(
+            await within(dialog).findByText(/up to 50 templates/),
+          ).toBeVisible();
+          expect(
+            within(dialog).getByRole('button', { name: 'Save template' }),
+          ).toBeDisabled();
+        });
       });
 
       it('shows no template section in the empty search without templates', async () => {

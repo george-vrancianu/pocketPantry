@@ -10,11 +10,12 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { useShoppingList } from '../../../../lib/shopping';
+import { focusRing } from './focusRing';
 import {
   groupByAisle,
   useApplyTemplate,
@@ -30,6 +31,8 @@ export type ApplyTemplateViewProps = {
   onApplied: () => void;
   /** Where the sticky footer renders, once the sheet has made room for it. */
   footerHost: HTMLElement | null;
+  /** Tells the sheet whether this view has a footer to make room for. */
+  onFooterWanted: (wanted: boolean) => void;
 };
 
 const normalise = (name: string) => name.trim().toLowerCase();
@@ -43,6 +46,7 @@ export function ApplyTemplateView({
   onBack,
   onApplied,
   footerHost,
+  onFooterWanted,
 }: ApplyTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const toast = useToast();
@@ -52,6 +56,11 @@ export function ApplyTemplateView({
   // Only the lines the Member has flipped; every other line keeps its default.
   const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
   const { color } = tokens;
+  const loaded = Boolean(template.data);
+  useEffect(() => {
+    onFooterWanted(loaded);
+    return () => onFooterWanted(false);
+  }, [loaded, onFooterWanted]);
 
   const back = (
     <Box
@@ -71,6 +80,7 @@ export function ApplyTemplateView({
         fontSize: 14,
         fontWeight: 700,
         cursor: 'pointer',
+        ...focusRing,
       }}
     >
       <BackIcon size={16} aria-hidden />
@@ -213,6 +223,7 @@ export function ApplyTemplateView({
                     gap: 1.5,
                     cursor: 'pointer',
                     '& + &': { borderTop: `1px solid ${color.divider}` },
+                    ...focusRing,
                   }}
                 >
                   <Box

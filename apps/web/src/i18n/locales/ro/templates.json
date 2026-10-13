@@ -1,12 +1,23 @@
 {
   "title": "Șabloane de cumpărături",
-  "open": "Șabloane",
   "save": {
-    "button": "Salvează ca șablon",
     "name": "Numele șablonului",
     "submit": "Salvează șablonul",
     "saving": "Se salvează",
-    "row": "Salvează această listă ca șablon"
+    "row": "Salvează această listă ca șablon",
+    "back": "Șabloane",
+    "placeholder": "ex. Cumpărăturile săptămânii",
+    "saved": "Am salvat „{{name}}”",
+    "edit": "Editează",
+    "preview_one": "Salvează {{count}} articol, inclusiv cele bifate",
+    "preview_few": "Salvează toate cele {{count}} articole, inclusiv cele bifate",
+    "preview_other": "Salvează toate cele {{count}} de articole, inclusiv cele bifate",
+    "rowHint_one": "Refolosește acest articol data viitoare",
+    "rowHint_few": "Refolosește aceste {{count}} articole data viitoare",
+    "rowHint_other": "Refolosește aceste {{count}} de articole data viitoare",
+    "rowMeta_one": "{{count}} articol, cu cantități",
+    "rowMeta_few": "{{count}} articole, cu cantități",
+    "rowMeta_other": "{{count}} de articole, cu cantități"
   },
   "apply": {
     "none": "Încă nu ai șabloane. Salvează lista ca șablon sau creează unul la Șabloane.",

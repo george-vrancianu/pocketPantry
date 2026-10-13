@@ -7,10 +7,11 @@ import {
   segmentedTabPanelId,
   tokens,
 } from '@pocket-pantry/ui';
-import { useId, useRef, useState } from 'react';
+import { useCallback, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import { ApplyTemplateView } from './ApplyTemplateView';
+import { SaveTemplateView } from './SaveTemplateView';
 import { TemplatesTab } from './TemplatesTab';
 import type { Suggestion } from '../../../../lib/suggestions';
 import {
@@ -64,6 +65,12 @@ export function AddSheet({
   const tabsId = useId();
   const [tab, setTab] = useState<SheetTab>(initialView.tab);
   const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
+  // Whether the current view has a footer; none while it loads or fails.
+  const [footerWanted, setFooterWanted] = useState(false);
+  const wantFooter = useCallback(
+    (wanted: boolean) => setFooterWanted(wanted),
+    [],
+  );
   const [templatesView, setTemplatesView] = useState<TemplatesView>(
     initialView.tab === 'templates' ? initialView.view : 'list',
   );
@@ -182,7 +189,7 @@ export function AddSheet({
       label={t('sheet.title')}
       header={header}
       footer={
-        tab === 'templates' && typeof templatesView === 'object' ? (
+        tab === 'templates' && templatesView !== 'list' && footerWanted ? (
           <Box ref={setFooterHost} />
         ) : undefined
       }
@@ -224,9 +231,19 @@ export function AddSheet({
             onBack={() => setTemplatesView('list')}
             onApplied={onClose}
             footerHost={footerHost}
+            onFooterWanted={wantFooter}
+          />
+        ) : templatesView === 'save' ? (
+          <SaveTemplateView
+            onBack={() => setTemplatesView('list')}
+            footerHost={footerHost}
+            onFooterWanted={wantFooter}
           />
         ) : (
-          <TemplatesTab onOpenTemplate={openTemplate} />
+          <TemplatesTab
+            onOpenTemplate={openTemplate}
+            onSave={() => setTemplatesView('save')}
+          />
         )}
       </Box>
     </Sheet>

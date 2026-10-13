@@ -4,7 +4,6 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Template } from '../../../lib/shoppingTemplates';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import { TemplateActions } from './TemplateActions';
 import { TemplateEditorPage } from './TemplateEditorPage';
 import { TemplatesPage } from './TemplatesPage';
 
@@ -23,36 +22,6 @@ const taco: Template = { id: 't1', name: 'Taco night', lines: [milk] };
 
 describe('Shopping Template screens', () => {
   afterEach(() => vi.unstubAllGlobals());
-
-  it('saves the current list as a template and opens it', async () => {
-    const { fetchMock, calls } = stubApi({
-      'POST /api/shopping-templates/from-list': () =>
-        Response.json(taco, { status: 201 }),
-      'GET /api/shopping-templates': () => Response.json({ templates: [] }),
-      'GET /api/shopping-templates/t1': () => Response.json(taco),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(
-      <Routes>
-        <Route path="/" element={<TemplateActions />} />
-        <Route
-          path="/shopping/templates/:id"
-          element={<TemplateEditorPage />}
-        />
-      </Routes>,
-    );
-    const user = userEvent.setup();
-
-    await user.click(screen.getByRole('button', { name: 'Save as template' }));
-    await user.type(screen.getByLabelText('Template name'), 'Taco night');
-    await user.click(screen.getByRole('button', { name: 'Save template' }));
-
-    expect(await screen.findByLabelText('Name')).toHaveValue('Taco night');
-    expect(
-      calls.find((c) => c.key === 'POST /api/shopping-templates/from-list')
-        ?.body,
-    ).toEqual({ name: 'Taco night' });
-  });
 
   it('lists templates and creates a new one', async () => {
     const { fetchMock, calls } = stubApi({
