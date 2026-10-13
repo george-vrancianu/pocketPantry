@@ -126,10 +126,10 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           id={panelId}
           aria-label={t('batchesOf', { name: rollUp.name })}
           sx={{
-            m: 0,
+            mt: 0,
             mb: 1,
-            pl: '50px',
-            pr: 0,
+            ml: '50px',
+            p: 0,
             borderTop: `1px solid ${tokens.color.divider}`,
           }}
         >

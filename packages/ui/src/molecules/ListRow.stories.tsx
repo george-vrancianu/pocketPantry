@@ -9,14 +9,19 @@ const meta = {
   title: 'Molecules/ListRow',
   component: ListRow,
   decorators: [
-    (Story) => (
+    (Story, { name }) => (
       <Box
         component="ul"
         sx={{ m: 0, p: 0, maxWidth: 360, bgcolor: 'background.paper' }}
       >
-        <ListRowItem>
+        {/* Divided renders its own items. */}
+        {name === 'Divided' ? (
           <Story />
-        </ListRowItem>
+        ) : (
+          <ListRowItem>
+            <Story />
+          </ListRowItem>
+        )}
       </Box>
     ),
   ],
@@ -103,13 +108,13 @@ export const CheckedStruckThrough: Story = {
 };
 export const Divided: Story = {
   render: (args) => (
-    <Box component="ul" sx={{ m: 0, p: 0 }}>
+    <>
       <ListRowItem>
         <ListRow {...args} leading={tick} />
       </ListRowItem>
       <ListRowItem>
         <ListRow {...args} title="Eggs" meta="12" />
       </ListRowItem>
-    </Box>
+    </>
   ),
 };
