@@ -17,7 +17,11 @@ const line = (
     name,
     defaultUnit: 'pcs',
     leafCategory: { id: 'l', name: 'Leaf' },
-    parentCategory: { id: 'p', name: 'Parent', aisle: 'Aisle' },
+    parentCategory: {
+      id: 'p',
+      name: 'Parent',
+      aisle: { id: 'aisle', name: 'Aisle' },
+    },
     defaults: { expiryDays: 7, location: 'fridge' },
   },
   lowConfidence: false,

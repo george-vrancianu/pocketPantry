@@ -1,5 +1,12 @@
-import { Box, ChevronRightIcon, PlusIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  ChevronRightIcon,
+  PlusIcon,
+  aisleTint,
+  tokens,
+} from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type ResultRowProps = {
   id: string;
@@ -9,6 +16,10 @@ export type ResultRowProps = {
   /** Part of `name` to highlight, matched case-insensitively (first match). */
   highlight?: string;
   meta: string;
+  /** The result's Aisle, for the tile tint; omitted for a free-text row. */
+  aisleId?: string;
+  /** Shows the "On list" tag. */
+  onList?: boolean;
   open: boolean;
   /** Keyboard-highlighted in the listbox. */
   active: boolean;
@@ -41,12 +52,16 @@ export function ResultRow({
   name,
   highlight,
   meta,
+  aisleId,
+  onList,
   open,
   active,
   onToggle,
   children,
 }: ResultRowProps) {
   const { color } = tokens;
+  const tint = aisleId === undefined ? undefined : aisleTint(aisleId);
+  const { t } = useTranslation('shopping');
   return (
     <Box
       role="presentation"
@@ -88,8 +103,8 @@ export function ResultRow({
             display: 'grid',
             placeItems: 'center',
             borderRadius: '12px',
-            backgroundColor: color.chipNeutral,
-            color: color.muted,
+            backgroundColor: tint?.background ?? color.chipNeutral,
+            color: tint?.text ?? color.muted,
             fontFamily: 'var(--font-display)',
             fontSize: 16,
             fontWeight: 700,
@@ -105,6 +120,23 @@ export function ResultRow({
             {meta}
           </Box>
         </Box>
+        {onList ? (
+          <Box
+            component="span"
+            sx={{
+              flexShrink: 0,
+              px: '9px',
+              py: '3px',
+              borderRadius: 999,
+              backgroundColor: color.accentTint,
+              color: color.accent,
+              fontSize: 11,
+              fontWeight: 700,
+            }}
+          >
+            {t('search.onList')}
+          </Box>
+        ) : null}
         <Box
           aria-hidden
           sx={{

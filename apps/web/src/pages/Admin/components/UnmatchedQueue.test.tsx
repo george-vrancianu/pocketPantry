@@ -94,7 +94,11 @@ function stub(routes: Parameters<typeof stubApi>[0] = {}) {
             name: 'Parmesan',
             defaultUnit: 'g',
             leafCategory: { id: 'l1', name: 'Hard cheese' },
-            parentCategory: { id: 'p1', name: 'Dairy', aisle: 'Dairy' },
+            parentCategory: {
+              id: 'p1',
+              name: 'Dairy',
+              aisle: { id: 'aisle', name: 'Dairy' },
+            },
             defaults: { expiryDays: null, location: null },
           },
         ],
