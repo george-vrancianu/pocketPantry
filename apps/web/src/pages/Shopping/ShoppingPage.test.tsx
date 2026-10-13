@@ -159,6 +159,67 @@ describe('ShoppingPage', () => {
     expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
   });
 
+  describe('Ingredient Icons', () => {
+    const DAIRY_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
+    const PARMESAN_ID = '7d85ad5c-dbd3-527e-ad69-23c2eb53ae6e';
+    const dairyAisle = { id: DAIRY_ID, name: 'Dairy & eggs', sortOrder: 4 };
+    const rowIcon = (name: RegExp) =>
+      screen
+        .getByRole('button', { name })
+        .querySelector<SVGElement>('[data-ingredient-icon]');
+    const show = async (
+      items: ShoppingItem[],
+      aisle = dairyAisle as typeof produce | null,
+    ) => {
+      stubShopping({}, list([{ aisle, items }]));
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByRole('button', { name: /^Item/ });
+    };
+
+    it('shows a mapped Ingredient its icon, tinted by its Aisle', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID, name: 'Item' })]);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+    });
+
+    it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
+      await show([item({ id: 'x', ingredientId: 'not-mapped' })]);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        '#E3ECF3',
+      );
+    });
+
+    it('shows an Unmatched item the Default Icon in the neutral tint', async () => {
+      await show([item({ id: 'x', unmatched: true })], null);
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'default',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('keeps the icon in a 38px slot and greys it when the item is checked', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID, checked: true })]);
+      const slot = rowIcon(/^Item/)?.parentElement;
+      expect(slot).toHaveStyle({ width: '38px', height: '38px' });
+      expect(slot).toHaveStyle({ color: '#66736B' });
+    });
+  });
+
   describe('Staple star toasts', () => {
     const tomatoItem = item({
       id: 'i1',

@@ -3,6 +3,7 @@ import {
   CheckIcon,
   CloseIcon,
   IconButton,
+  IngredientIcon,
   Stack,
   Typography,
   useToast,
@@ -77,6 +78,7 @@ export function ShoppingGroups({
                 <ChecklistRow
                   key={item.id}
                   item={item}
+                  aisleId={group.aisle?.id}
                   onToggle={onToggle}
                   onRemove={onRemove}
                 />
@@ -91,10 +93,13 @@ export function ShoppingGroups({
 
 function ChecklistRow({
   item,
+  aisleId,
   onToggle,
   onRemove,
 }: {
   item: ShoppingItem;
+  /** The group's Aisle; absent for Unmatched items. */
+  aisleId?: string;
   onToggle: ShoppingGroupsProps['onToggle'];
   onRemove: ShoppingGroupsProps['onRemove'];
 }) {
@@ -156,6 +161,18 @@ function ChecklistRow({
           }}
         >
           {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+        </Box>
+        <Box
+          sx={{
+            flexShrink: 0,
+            width: 38,
+            height: 38,
+            display: 'grid',
+            placeItems: 'center',
+            color: item.checked ? '#66736B' : 'text.primary',
+          }}
+        >
+          <IngredientIcon ingredientId={item.ingredientId} aisleId={aisleId} />
         </Box>
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <Typography
