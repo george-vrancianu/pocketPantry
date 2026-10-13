@@ -41,6 +41,11 @@ export type SheetProps = {
   footer?: ReactNode;
   /** Scrolls when it does not fit. */
   children: ReactNode;
+  /**
+   * `tall` (default) fills 90 dvh on a phone; `content` is as tall as its
+   * content, up to the same 90 dvh, for short sheets such as a single field.
+   */
+  size?: 'tall' | 'content';
 };
 
 const SlideUp = forwardRef(function SlideUp(
@@ -51,7 +56,7 @@ const SlideUp = forwardRef(function SlideUp(
 });
 
 /**
- * A modal sheet: a bottom sheet (90 dvh, handle, slides up) below `md`, a
+ * A modal sheet: a bottom sheet (90 dvh or content-sized, handle, slides up) below `md`, a
  * centred dialog (`sm` wide, 80 vh) from `md` up. Built on the MUI dialog, so
  * focus is trapped while open and returns to the opener on close.
  */
@@ -64,6 +69,7 @@ export function Sheet({
   header,
   footer,
   children,
+  size = 'tall',
 }: SheetProps) {
   const centred = useBreakpointUp('md');
   const reduceMotion = usePrefersReducedMotion();
@@ -103,7 +109,7 @@ export function Sheet({
               : {
                   m: 0,
                   width: '100%',
-                  height: '90dvh',
+                  height: size === 'tall' ? '90dvh' : 'auto',
                   maxHeight: '90dvh',
                   borderRadius: `${RADIUS}px ${RADIUS}px 0 0`,
                 }),

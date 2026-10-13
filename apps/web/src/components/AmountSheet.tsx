@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import type { Unit } from '../lib/catalog';
@@ -71,6 +71,7 @@ export function AmountSheet({
         onRemove();
       }}
       label={t('edit.title', { name })}
+      size="content"
       header={
         <Box sx={{ px: 3, pt: 2, pb: 1 }}>
           <Typography
@@ -126,11 +127,6 @@ function AmountForm({
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const sending = useRef(false);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    formRef.current?.querySelector<HTMLElement>('input')?.focus();
-  }, []);
 
   const parsed = parseQuantity(quantity.replace(',', '.'));
 
@@ -161,7 +157,6 @@ function AmountForm({
   return (
     <Stack
       component="form"
-      ref={formRef}
       spacing={2}
       onSubmit={submit}
       aria-label={t('edit.title', { name })}
