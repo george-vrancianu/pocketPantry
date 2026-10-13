@@ -26,8 +26,9 @@ import {
 } from '../../../../lib/shopping';
 import type { Suggestion } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
+import { AmountField } from '../../../../components/AmountField';
 import { useSheetToast } from './SheetFooter';
-import { AmountField } from './AmountField';
+
 import { INNER_RADIUS, LIST_RADIUS, ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
 
@@ -371,26 +372,31 @@ export function IngredientsTab({
                   : 0,
             }}
           >
-            <AmountField
-              name={rowName(openRow)}
-              quantity={open.quantity}
-              unit={open.unit}
-              onQuantityChange={(quantity, unit) =>
-                setOpen({
-                  ...open,
-                  quantity,
-                  ...(unit !== undefined ? { unit } : {}),
-                })
-              }
-              onUnitChange={(unit) => setOpen({ ...open, unit })}
-              error={
-                open.attempted && !amount.valid
-                  ? t('finish.quantityInvalid')
-                  : null
-              }
-              disabled={adding}
-              onSubmit={() => void submit()}
-            />
+            <Box sx={{ p: '0 14px 12px 64px' }}>
+              <AmountField
+                name={rowName(openRow)}
+                quantity={open.quantity}
+                unit={open.unit}
+                onQuantityChange={(quantity, unit) =>
+                  setOpen({
+                    ...open,
+                    quantity,
+                    ...(unit !== undefined ? { unit } : {}),
+                  })
+                }
+                onUnitChange={(unit) => setOpen({ ...open, unit })}
+                error={
+                  open.attempted && !amount.valid
+                    ? t('finish.quantityInvalid')
+                    : null
+                }
+                onSubmit={() => void submit()}
+                submit={{
+                  label: t('amount.add', { name: rowName(openRow) }),
+                  disabled: adding,
+                }}
+              />
+            </Box>
             {hint ? (
               <Typography
                 sx={{

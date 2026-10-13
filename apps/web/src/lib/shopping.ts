@@ -129,6 +129,24 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
+  const setAmount = useMutation({
+    mutationFn: ({
+      id,
+      quantity,
+      unit,
+    }: {
+      id: string;
+    } & Pick<ShoppingItem, 'quantity' | 'unit'>) =>
+      apiRequest<ShoppingList>(path(locale, `/items/${id}/amount`), {
+        method: 'PUT',
+        // Left out means none.
+        body: {
+          ...(quantity !== null ? { quantity } : {}),
+          ...(unit !== null ? { unit } : {}),
+        },
+      }),
+    onSuccess,
+  });
   const remove = useMutation({
     mutationFn: (id: string) =>
       apiRequest<ShoppingList>(path(locale, `/items/${id}`), {
@@ -136,5 +154,5 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
-  return { add, setChecked, remove };
+  return { add, setChecked, setAmount, remove };
 }

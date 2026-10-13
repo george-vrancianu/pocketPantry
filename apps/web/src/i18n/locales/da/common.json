@@ -29,8 +29,23 @@
     "removeQuestion": "Fjern {{name}}?",
     "removed": "Fjernede {{name}}",
     "ticked": "Afkrydset",
-    "undo": "Fortryd"
+    "undo": "Fortryd",
+    "updated": "Opdaterede {{name}}"
   },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",
-  "unverified_other": "{{count}} varer er stadig ikke bekræftet"
+  "unverified_other": "{{count}} varer er stadig ikke bekræftet",
+  "amount": {
+    "placeholder": "Mængde",
+    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "unit": "Enhed: {{unit}}",
+    "noUnit": "enhed",
+    "units": "Enheder",
+    "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler."
+  },
+  "edit": {
+    "removeFromList": "Fjern fra listen",
+    "save": "Gem",
+    "saving": "Gemmer",
+    "title": "Rediger {{name}}"
+  }
 }

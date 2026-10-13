@@ -60,7 +60,7 @@ describe('Shopping List (integration)', () => {
   }
 
   const call = (
-    method: 'get' | 'post' | 'patch' | 'delete',
+    method: 'get' | 'post' | 'put' | 'patch' | 'delete',
     cookie: string,
     path: string,
   ) =>
@@ -301,6 +301,78 @@ describe('Shopping List (integration)', () => {
     const removed = (await call('delete', cookie, `/items/${id}`).expect(200))
       .body as List;
     expect(items(removed).map((i) => i.name)).toEqual(['Cake']);
+  });
+
+  describe('setting an amount', () => {
+    it('replaces the quantity and unit, checked state untouched', async () => {
+      const { cookie } = await signUp('Amount');
+      const added = await add(cookie, {
+        ingredientId: await ingredientId(cookie, 'milk'),
+        quantity: 1,
+        unit: 'l',
+      });
+      const id = items(added)[0].id;
+      await call('patch', cookie, `/items/${id}`)
+        .send({ checked: true })
+        .expect(200);
+
+      const updated = (
+        await call('put', cookie, `/items/${id}/amount`)
+          .send({ quantity: 500, unit: 'ml' })
+          .expect(200)
+      ).body as List;
+      expect(items(updated)[0]).toMatchObject({
+        id,
+        quantity: 500,
+        unit: 'ml',
+        checked: true,
+      });
+      expect(updated.summary).toEqual({ remaining: 0, checked: 1 });
+
+      const cleared = (
+        await call('put', cookie, `/items/${id}/amount`).send({}).expect(200)
+      ).body as List;
+      expect(items(cleared)[0]).toMatchObject({ quantity: null, unit: null });
+    });
+
+    it('validates like adding', async () => {
+      const { cookie } = await signUp('AmountBad');
+      const added = await add(cookie, { name: 'Cake' });
+      const id = items(added)[0].id;
+      const put = (body: object) =>
+        call('put', cookie, `/items/${id}/amount`).send(body);
+      await put({ quantity: 0 }).expect(400);
+      await put({ quantity: -1 }).expect(400);
+      await put({ quantity: 1_000_001 }).expect(400);
+      await put({ quantity: '2' }).expect(400);
+      await put({ quantity: 1, unit: 'cups' }).expect(400);
+      await call('put', cookie, '/items/not-a-uuid/amount')
+        .send({ quantity: 1 })
+        .expect(400);
+    });
+
+    it('answers 404 for an unknown id and for another Family’s item', async () => {
+      const owner = await signUp('AmountOwner');
+      const stranger = await signUp('AmountStranger');
+      const added = await add(owner.cookie, { name: 'Cake' });
+      const id = items(added)[0].id;
+      await call('put', stranger.cookie, `/items/${id}/amount`)
+        .send({ quantity: 2 })
+        .expect(404);
+      await call(
+        'put',
+        owner.cookie,
+        '/items/00000000-0000-4000-8000-00000000dead/amount',
+      )
+        .send({ quantity: 2 })
+        .expect(404);
+      expect(items(await getList(owner.cookie))[0].quantity).toBeNull();
+      await request(app.getHttpServer())
+        .put(`/api/shopping-list/items/${id}/amount`)
+        .set('origin', TEST_ORIGIN)
+        .send({ quantity: 2 })
+        .expect(401);
+    });
   });
 
   describe('Family scoping', () => {

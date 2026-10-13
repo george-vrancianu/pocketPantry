@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -19,10 +20,12 @@ import {
   addShoppingItemBody,
   addShoppingItemsBody,
   itemIdParam,
+  setAmountBody,
   setCheckedBody,
   shoppingLocaleQuery,
   type AddShoppingItemBody,
   type AddShoppingItemsBody,
+  type SetAmountBody,
   type SetCheckedBody,
   type ShoppingListView,
   type ShoppingLocaleQuery,
@@ -88,6 +91,17 @@ export class ShoppingController {
     @Body(new ZodValidationPipe(setCheckedBody)) body: SetCheckedBody,
   ): Promise<ShoppingListView> {
     return this.shopping.setChecked(member.id, id, body.checked, locale);
+  }
+
+  @Put('items/:id/amount')
+  @ApiOperation({ summary: "Set a Shopping Item's quantity and unit" })
+  setAmount(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(localeQuery) { locale }: ShoppingLocaleQuery,
+    @Param(idParam) { id }: { id: string },
+    @Body(new ZodValidationPipe(setAmountBody)) body: SetAmountBody,
+  ): Promise<ShoppingListView> {
+    return this.shopping.setAmount(member.id, id, body, locale);
   }
 
   @Delete('items/:id')

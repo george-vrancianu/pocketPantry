@@ -18,6 +18,9 @@ export const HOLD_MS = 500;
 /** The editor opens this long after the row arms. */
 export const HOLD_OPEN_MS = 160;
 
+/** A press that starts on one of these is the control's, not a hold; a drag from it still swipes. */
+const INTERACTIVE = 'button, a, input, select, textarea, [role="button"]';
+
 const HAPTIC_REVEAL = 10;
 const HAPTIC_ARMED = 18;
 const HAPTIC_DELETE_LINE = [14, 40, 22];
@@ -218,6 +221,8 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       };
       press.current = current;
       if (!o.onHold) return;
+      const target = event.target as Element | null;
+      if (target?.closest?.(INTERACTIVE)) return;
       const origin = {
         x: event.clientX - (rect.left || 0),
         y: event.clientY - (rect.top || 0),

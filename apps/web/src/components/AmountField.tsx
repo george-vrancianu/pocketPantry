@@ -14,7 +14,7 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UNITS, type Unit } from '../../../../lib/catalog';
+import { UNITS, type Unit } from '../lib/catalog';
 
 const TYPED_UNITS: Record<string, Unit> = {
   g: 'g',
@@ -36,7 +36,7 @@ const TYPED_INPUT_TYPES = new Set(['insertText', 'insertCompositionText']);
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
 
 export type AmountFieldProps = {
-  /** Name of the Ingredient being added, for the accessible names. */
+  /** Name of the item whose amount this is, for the accessible names. */
   name: string;
   quantity: string;
   unit: Unit | '';
@@ -45,14 +45,16 @@ export type AmountFieldProps = {
   onUnitChange: (unit: Unit | '') => void;
   /** Why the quantity is invalid, or null when it is fine. */
   error: string | null;
-  disabled: boolean;
-  /** The Add button and Enter in the input. */
+  /** Enter in the input. */
   onSubmit: () => void;
+  /** A round button beside the input (the Add sheet's "+"); leave out when a footer saves. */
+  submit?: { label: string; disabled: boolean };
 };
 
 /**
- * One number input with a unit chip inside it, and the Add button beside it.
- * The chip opens a small group of toggle buttons; Escape closes that first.
+ * One number input with a unit chip inside it, and an optional submit button beside it.
+ * The chip opens a small group of toggle buttons; Escape closes that first. It has no outer
+ * padding: the host (the Add sheet's row, the amount sheet) places it.
  */
 export function AmountField({
   name,
@@ -61,17 +63,17 @@ export function AmountField({
   onQuantityChange,
   onUnitChange,
   error,
-  disabled,
   onSubmit,
+  submit,
 }: AmountFieldProps) {
-  const { t } = useTranslation(['shopping', 'common']);
+  const { t } = useTranslation('common');
   const { color } = tokens;
   const errorId = useId();
   const input = useRef<HTMLInputElement>(null);
   const [picking, setPicking] = useState(false);
   const unitLabel = unit
     ? t(`common:units.${unit}`)
-    : t('shopping:amount.noUnit');
+    : t('common:amount.noUnit');
 
   // What the last keystroke split off, so the next one can continue the unit
   // ("pc" then "s") or undo the split ("g" then "r" of "gram").
@@ -135,7 +137,7 @@ export function AmountField({
   };
 
   return (
-    <Box sx={{ p: '0 14px 12px 64px' }} onKeyDown={keyDown} onBlur={blur}>
+    <Box onKeyDown={keyDown} onBlur={blur}>
       <Box sx={{ display: 'flex', gap: 1 }}>
         <Box
           sx={{
@@ -160,10 +162,10 @@ export function AmountField({
             type="text"
             inputMode="decimal"
             autoComplete="off"
-            aria-label={t('shopping:amount.label', { name })}
+            aria-label={t('common:amount.label', { name })}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            placeholder={t('shopping:amount.placeholder')}
+            placeholder={t('common:amount.placeholder')}
             value={quantity}
             onChange={(event: ChangeEvent<HTMLInputElement>) =>
               type(
@@ -197,7 +199,7 @@ export function AmountField({
           <Box
             component="button"
             type="button"
-            aria-label={t('shopping:amount.unit', { unit: unitLabel })}
+            aria-label={t('common:amount.unit', { unit: unitLabel })}
             aria-expanded={picking}
             onClick={() => setPicking((value) => !value)}
             sx={{
@@ -223,7 +225,7 @@ export function AmountField({
           {picking ? (
             <Box
               role="group"
-              aria-label={t('shopping:amount.units')}
+              aria-label={t('common:amount.units')}
               // Keep focus where it is so a tap does not blur the popover shut.
               onMouseDown={(event: { preventDefault: () => void }) =>
                 event.preventDefault()
@@ -276,28 +278,30 @@ export function AmountField({
             </Box>
           ) : null}
         </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('shopping:amount.add', { name })}
-          disabled={disabled}
-          onClick={onSubmit}
-          sx={{
-            flexShrink: 0,
-            width: 44,
-            height: 44,
-            display: 'grid',
-            placeItems: 'center',
-            border: 0,
-            borderRadius: '14px',
-            cursor: 'pointer',
-            backgroundColor: color.accent,
-            color: '#FFFFFF',
-            '&:disabled': { opacity: 0.5, cursor: 'default' },
-          }}
-        >
-          <PlusIcon size={20} />
-        </Box>
+        {submit ? (
+          <Box
+            component="button"
+            type="button"
+            aria-label={submit.label}
+            disabled={submit.disabled}
+            onClick={onSubmit}
+            sx={{
+              flexShrink: 0,
+              width: 44,
+              height: 44,
+              display: 'grid',
+              placeItems: 'center',
+              border: 0,
+              borderRadius: '14px',
+              cursor: 'pointer',
+              backgroundColor: color.accent,
+              color: '#FFFFFF',
+              '&:disabled': { opacity: 0.5, cursor: 'default' },
+            }}
+          >
+            <PlusIcon size={20} />
+          </Box>
+        ) : null}
       </Box>
       {error ? (
         <Typography

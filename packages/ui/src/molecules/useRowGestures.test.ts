@@ -10,7 +10,7 @@ import {
 
 const WIDTH = 350; // the 390 pt reference; delete line 350 * 2/3 * 0.985 = 229.8
 
-function pointer(x: number, y = 0, id = 1) {
+function pointer(x: number, y = 0, id = 1, interactive = false) {
   const target = {
     setPointerCapture: vi.fn(),
     releasePointerCapture: vi.fn(),
@@ -23,6 +23,7 @@ function pointer(x: number, y = 0, id = 1) {
     button: 0,
     isPrimary: true,
     currentTarget: target,
+    target: { closest: () => (interactive ? {} : null) },
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
   } as unknown as PointerEvent<HTMLElement> & {
@@ -281,6 +282,22 @@ describe('hold to edit', () => {
     advance(1000);
     expect(view.result.current.armed).toBe(false);
     expect(onHold).not.toHaveBeenCalled();
+  });
+
+  it('does not hold when the press starts on a button inside the row, but still swipes from it', () => {
+    const { view, bind, advance, onHold, onAsk } = holdSetup();
+    act(() => bind().onPointerDown(pointer(300, 0, 1, true)));
+    advance(1000);
+    expect(view.result.current.pressing).toBe(false);
+    expect(view.result.current.armed).toBe(false);
+    expect(onHold).not.toHaveBeenCalled();
+    act(() => bind().onPointerUp(pointer(300, 0, 1, true)));
+
+    act(() => bind().onPointerDown(pointer(300, 0, 1, true)));
+    act(() => bind().onPointerMove(pointer(300 - 100, 0, 1, true)));
+    expect(view.result.current.dragging).toBe(true);
+    act(() => bind().onPointerUp(pointer(300 - 100)));
+    expect(onAsk).toHaveBeenCalledTimes(1);
   });
 
   it('keeps holding through a wobble of 8 pt or less', () => {

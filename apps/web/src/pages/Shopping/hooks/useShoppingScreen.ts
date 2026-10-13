@@ -8,6 +8,7 @@ import {
   useShoppingMutations,
   withoutItems,
   type NewShoppingItem,
+  type ShoppingItem,
 } from '../../../lib/shopping';
 import { localIso } from '../../../lib/pantry';
 import { useSuggestions } from '../../../lib/suggestions';
@@ -16,7 +17,9 @@ import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
 export function useShoppingScreen() {
   const { t, i18n } = useTranslation();
   const list = useShoppingList(i18n.language);
-  const { add, setChecked, remove } = useShoppingMutations(i18n.language);
+  const { add, setChecked, setAmount, remove } = useShoppingMutations(
+    i18n.language,
+  );
   const queryClient = useQueryClient();
   const { mutateAsync: sendDelete } = remove;
   const removal = useDeferredRemoval(
@@ -58,6 +61,9 @@ export function useShoppingScreen() {
       ),
     toggle: (id: string, checked: boolean) =>
       setChecked.mutate({ id, checked }),
+    /** Rejects with the API error, which the amount sheet shows. */
+    setAmount: (id: string, amount: Pick<ShoppingItem, 'quantity' | 'unit'>) =>
+      setAmount.mutateAsync({ id, ...amount }),
     remove: removal.remove,
     retry: () => void list.refetch(),
   };

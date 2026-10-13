@@ -68,11 +68,6 @@
     "onListNoUnit": "Already on your list with no unit. This adds a separate line."
   },
   "amount": {
-    "placeholder": "Amount",
-    "label": "Amount of {{name}}, for example 2 or 500 g",
-    "unit": "Unit: {{unit}}",
-    "noUnit": "unit",
-    "units": "Units",
     "add": "Add {{name}} to the list"
   },
   "suggestions": {
