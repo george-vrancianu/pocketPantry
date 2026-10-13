@@ -41,5 +41,35 @@
     "reload": "Genindlæs",
     "cancel": "Tilbage til listen"
   },
-  "staples": "Basisvarer"
+  "staples": "Basisvarer",
+  "addItems": "Tilføj varer",
+  "added": "Tilføjede {{name}}",
+  "sheet": {
+    "title": "Føj til listen",
+    "done": "Færdig",
+    "doneCount_one": "Færdig, {{count}} tilføjet",
+    "doneCount_other": "Færdig, {{count}} tilføjet",
+    "tabsLabel": "Føj til listen",
+    "tabs": {
+      "ingredients": "Ingredienser",
+      "templates": "Skabeloner"
+    }
+  },
+  "search": {
+    "placeholder": "Søg efter ingredienser",
+    "clear": "Ryd søgning",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} match",
+    "noMatch": "Intet match i kataloget",
+    "freeText": "Tilføj “{{name}}”",
+    "freeTextHint": "Ikke i kataloget, tilføjes som fri tekst"
+  },
+  "amount": {
+    "placeholder": "Mængde",
+    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "unit": "Enhed: {{unit}}",
+    "noUnit": "enhed",
+    "units": "Enheder",
+    "add": "Føj {{name}} til listen"
+  }
 }

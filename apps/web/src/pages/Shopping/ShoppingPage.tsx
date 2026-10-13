@@ -15,7 +15,7 @@ import {
   useStapleErrors,
 } from '../../components/StapleToggle';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { AddItemForm } from './components/AddItemForm';
+import { AddSheet } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SuggestionsSection } from './components/SuggestionsSection';
@@ -28,6 +28,7 @@ export function ShoppingPage() {
   const screen = useShoppingScreen();
   const stapleErrors = useStapleErrors();
   const [reviewing, setReviewing] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   if (reviewing) {
     return (
@@ -61,13 +62,13 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
+              onAddItems={() => setSheetOpen(true)}
             />
             <SuggestionsSection
               staples={screen.staples}
               usedUp={screen.usedUp}
               onAdd={screen.add}
             />
-            <AddItemForm adding={screen.adding} onAdd={screen.add} />
             <TemplateActions />
             {screen.list.groups.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -94,6 +95,13 @@ export function ShoppingPage() {
           </>
         ) : null}
       </Stack>
+      <AddSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        adding={screen.adding}
+        onAdd={screen.add}
+        addError={screen.addError}
+      />
     </StapleErrorProvider>
   );
 }

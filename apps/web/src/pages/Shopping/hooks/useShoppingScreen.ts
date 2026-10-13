@@ -17,7 +17,8 @@ export function useShoppingScreen() {
   // A failed Suggestions request just hides the section; the list still works.
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
 
-  const error = list.error ?? add.error ?? setChecked.error ?? remove.error;
+  // A failed add is shown by the Add sheet, next to what was typed.
+  const error = list.error ?? setChecked.error ?? remove.error;
 
   return {
     list: list.data,
@@ -26,7 +27,8 @@ export function useShoppingScreen() {
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,
-    /** Resolves true when added; the error itself is shown by the page. */
+    addError: add.error ? translateApiError(t, add.error) : null,
+    /** Resolves true when added; on false, `addError` says why. */
     add: (item: NewShoppingItem) =>
       add.mutateAsync(item).then(
         () => true,

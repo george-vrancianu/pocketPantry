@@ -2,6 +2,8 @@ import {
   Box,
   Button,
   PantryIcon,
+  PlusIcon,
+  tokens,
   ProgressBar,
   Typography,
 } from '@pocket-pantry/ui';
@@ -12,6 +14,8 @@ export type SummaryCardProps = {
   checked: number;
   /** Opens the Finish Shopping Review. */
   onFinish: () => void;
+  /** Opens the Add sheet. */
+  onAddItems: () => void;
 };
 
 /** Items left to buy, how far the basket is, and Finish Shopping. */
@@ -19,6 +23,7 @@ export function SummaryCard({
   remaining,
   checked,
   onFinish,
+  onAddItems,
 }: SummaryCardProps) {
   const { t } = useTranslation('shopping');
   const total = remaining + checked;
@@ -32,22 +37,54 @@ export function SummaryCard({
         borderRadius: '20px',
       }}
     >
-      <Typography
+      <Box
         sx={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 24,
-          fontWeight: 700,
-          fontVariantNumeric: 'tabular-nums',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 1.5,
         }}
       >
-        {t('summary.toBuy', { count: remaining })}
-      </Typography>
-      <Typography
-        sx={{ fontSize: 13, fontWeight: 500, mb: '9px' }}
-        color="text.secondary"
-      >
-        {t('summary.inBasket', { checked, total })}
-      </Typography>
+        <Box>
+          <Typography
+            sx={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 24,
+              fontWeight: 700,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {t('summary.toBuy', { count: remaining })}
+          </Typography>
+          <Typography
+            sx={{ fontSize: 13, fontWeight: 500, mb: '9px' }}
+            color="text.secondary"
+          >
+            {t('summary.inBasket', { checked, total })}
+          </Typography>
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('addItems')}
+          onClick={onAddItems}
+          sx={{
+            flexShrink: 0,
+            width: 52,
+            height: 52,
+            display: 'grid',
+            placeItems: 'center',
+            border: 0,
+            borderRadius: '18px',
+            cursor: 'pointer',
+            color: '#FFFFFF',
+            backgroundColor: tokens.color.accent,
+            '&:hover': { backgroundColor: tokens.color.accentHover },
+          }}
+        >
+          <PlusIcon size={26} />
+        </Box>
+      </Box>
       <ProgressBar
         label={t('summary.progress')}
         value={checked}
