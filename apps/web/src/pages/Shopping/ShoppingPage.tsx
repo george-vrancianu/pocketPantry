@@ -1,5 +1,6 @@
 import {
   Alert,
+  Box,
   Button,
   Link,
   Spinner,
@@ -59,6 +60,7 @@ export function ShoppingPage() {
             <SummaryCard
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
+              onFinish={() => setReviewing(true)}
             />
             <SuggestionsSection
               staples={screen.staples}
@@ -68,9 +70,20 @@ export function ShoppingPage() {
             <AddItemForm adding={screen.adding} onAdd={screen.add} />
             <TemplateActions />
             {screen.list.groups.length === 0 ? (
-              <Typography color="text.secondary">
-                {t('shopping:empty')}
-              </Typography>
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 18,
+                    fontWeight: 700,
+                  }}
+                >
+                  {t('shopping:empty.title')}
+                </Typography>
+                <Typography variant="meta" color="text.secondary">
+                  {t('shopping:empty.hint')}
+                </Typography>
+              </Box>
             ) : (
               <ShoppingGroups
                 groups={screen.list.groups}
@@ -78,11 +91,6 @@ export function ShoppingPage() {
                 onRemove={screen.remove}
               />
             )}
-            {screen.list.summary.checked > 0 ? (
-              <Button onClick={() => setReviewing(true)}>
-                {t('shopping:finish.button')}
-              </Button>
-            ) : null}
           </>
         ) : null}
       </Stack>

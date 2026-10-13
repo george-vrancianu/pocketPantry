@@ -3,7 +3,11 @@
   "summary": {
     "toBuy": "{{count}} at købe",
     "inBasket": "{{checked}} af {{total}} i din kurv",
-    "progress": "Fremdrift i kurven"
+    "progress": "Fremdrift i kurven",
+    "tickedOff_one": "{{count}} afkrydset",
+    "tickedOff_other": "{{count}} afkrydset",
+    "moveToPantry_one": "Flyt {{count}} til spisekammeret",
+    "moveToPantry_other": "Flyt {{count}} til spisekammeret"
   },
   "add": {
     "quantity": "Mængde",
@@ -17,9 +21,11 @@
     "unmatched": "Umatchet"
   },
   "unmatchedGroup": "Ikke i kataloget",
-  "empty": "Din liste er tom. Tilføj det, du har brug for, ovenfor.",
+  "empty": {
+    "title": "Din liste er tom.",
+    "hint": "Tilføj det, du mangler, eller start fra en skabelon."
+  },
   "finish": {
-    "button": "Afslut indkøb",
     "reviewTitle": "Føj til dit spisekammer",
     "reviewHint": "Tjek, hvad du har købt. Ret mængde, placering eller udløbsdato, eller fjern en vare.",
     "drop": "Fravælg {{name}}",
