@@ -8,7 +8,7 @@ import type {
 } from '../../../lib/catalog';
 import {
   defaultExpiryDate,
-  parseQuantity,
+  parseAmountText,
   useAddBatch,
 } from '../../../lib/pantry';
 
@@ -34,7 +34,8 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setIngredient(result);
     setUnmatchedName(null);
     setTyped(result.name);
-    setUnit(result.defaultUnit);
+    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
+    if (quantity.trim() === '') setUnit(result.defaultUnit);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
     setExpiryDate(defaultExpiryDate(result.defaults.expiryDays, new Date()));
   };
@@ -52,7 +53,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   };
 
   const { value: quantityValue, valid: quantityValid } =
-    parseQuantity(quantity);
+    parseAmountText(quantity);
   const canSave =
     (ingredient !== null || Boolean(unmatchedName)) &&
     quantityValid &&

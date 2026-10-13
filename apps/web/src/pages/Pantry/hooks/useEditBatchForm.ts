@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { Unit } from '../../../lib/catalog';
 import {
-  parseQuantity,
+  parseAmountText,
   useUpdateBatch,
   type Batch,
   type BatchEdit,
@@ -41,7 +41,7 @@ export function useEditBatchForm(
     batch.productDescription ?? '',
   );
 
-  const parsed = parseQuantity(quantity);
+  const parsed = parseAmountText(quantity);
   const canSave = parsed.valid && !update.isPending;
 
   const submit = (event: FormEvent) => {
