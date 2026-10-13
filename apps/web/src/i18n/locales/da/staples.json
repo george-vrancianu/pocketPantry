@@ -4,13 +4,6 @@
   "hint": "Ting, du altid vil have på lager. Når en ikke har nogen frisk vare i spisekammeret, foreslås den på din indkøbsliste.",
   "empty": "Ingen basisvarer endnu. Søg ovenfor for at tilføje en, eller tryk på stjernen ved en vare i spisekammeret eller på listen.",
   "listLabel": "Dine basisvarer",
-  "remove": "Fjern {{name}} fra basisvarer",
-  "quantityOf": "Sædvanlig mængde af {{name}}",
-  "unitOf": "Enhed for {{name}}",
-  "noUnit": "Ingen enhed",
-  "unitRequired": "Vælg en enhed til mængden.",
-  "save": "Gem {{name}}",
-  "saveShort": "Gem",
   "toggle": {
     "add": "Gør {{name}} til en basisvare",
     "remove": "Fjern {{name}} fra basisvarer"

@@ -22,7 +22,8 @@
     "context": {
       "list": "from your list",
       "pantry": "in your Pantry",
-      "template": "from this template"
+      "template": "from this template",
+      "staples": "from your Staples"
     },
     "keep": "Keep",
     "releaseToDelete": "Release to delete",
@@ -41,11 +42,13 @@
     "unit": "Unit: {{unit}}",
     "noUnit": "unit",
     "units": "Units",
-    "invalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals."
+    "invalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals.",
+    "unitRequired": "Choose a unit for the amount."
   },
   "edit": {
     "removeFromList": "Remove from list",
     "removeLine": "Remove line",
+    "removeStaple": "Remove Staple",
     "save": "Save",
     "saving": "Saving",
     "title": "Edit {{name}}"
