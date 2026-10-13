@@ -53,6 +53,14 @@
     "done": "Done",
     "calendar": "Calendar",
     "within_one": "Within {{count}} day",
-    "within_other": "Within {{count}} days"
+    "within_other": "Within {{count}} days",
+    "quickPicks": "Quick picks",
+    "usual": "Usual",
+    "usualDate": "Usual · {{date}}",
+    "unitDay": "d",
+    "unitWeek": "wk",
+    "unitMonth": "mo",
+    "tile": "{{amount}}, {{date}}",
+    "usualTile": "Usual, {{amount}}, {{date}}"
   }
 }

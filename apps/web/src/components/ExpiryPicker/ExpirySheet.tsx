@@ -13,6 +13,7 @@ import { expiryTagFor, fullDate, relativeDay } from '../../lib/pantry';
 import { useStaleThresholdDays } from '../../lib/settings';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpiryCalendar, type ExpiryCalendarHandle } from './ExpiryCalendar';
+import { QuickPicks } from './QuickPicks';
 
 export type ExpirySheetProps = {
   open: boolean;
@@ -42,6 +43,7 @@ export function ExpirySheet({
   onExited,
   value,
   onChange,
+  usualDays,
   context,
   title,
 }: ExpirySheetProps) {
@@ -82,7 +84,7 @@ export function ExpirySheet({
         </Stack>
       }
     >
-      <SheetBody value={value} onChange={onChange} />
+      <SheetBody value={value} onChange={onChange} usualDays={usualDays} />
     </Sheet>
   );
 }
@@ -91,13 +93,23 @@ export function ExpirySheet({
 function SheetBody({
   value,
   onChange,
-}: Pick<ExpirySheetProps, 'value' | 'onChange'>) {
+  usualDays,
+}: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays'>) {
   const { i18n } = useTranslation();
   const staleThresholdDays = useStaleThresholdDays(i18n.language);
   const calendar = useRef<ExpiryCalendarHandle>(null);
   const today = new Date();
   return (
     <Box sx={{ px: 3, pt: 0.5, pb: 2 }}>
+      <QuickPicks
+        value={value}
+        usualDays={usualDays}
+        today={today}
+        onPick={(iso) => {
+          onChange(iso);
+          calendar.current?.scrollToMonth(iso, true);
+        }}
+      />
       <ExpiryCalendar
         ref={calendar}
         value={value}
