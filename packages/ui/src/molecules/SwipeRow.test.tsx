@@ -6,7 +6,7 @@ import {
   screen,
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createRef } from 'react';
+import { StrictMode, createRef } from 'react';
 import { SwipeRow, type SwipeRowHandle } from './SwipeRow';
 
 const labels = {
@@ -92,6 +92,155 @@ describe('SwipeRow', () => {
     expect(onEdit).not.toHaveBeenCalled();
     await act(() => vi.advanceTimersByTimeAsync(1));
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+
+  describe('peek', () => {
+    const content = () => document.querySelector('[data-swipe-row-content]')!;
+    const peeking = () => content().hasAttribute('data-peeking');
+    const renderPeek = (peek: boolean, extra = {}) =>
+      render(
+        <ul>
+          <SwipeRow
+            name="Tomato"
+            labels={labels}
+            onRemove={vi.fn()}
+            peek={peek}
+            {...extra}
+          >
+            <span>Tomato</span>
+          </SwipeRow>
+        </ul>,
+      );
+
+    it('slides out and back over 1.1 s when peek turns on', () => {
+      vi.useFakeTimers();
+      const view = renderPeek(false);
+      expect(peeking()).toBe(false);
+      view.rerender(
+        <ul>
+          <SwipeRow name="Tomato" labels={labels} onRemove={vi.fn()} peek>
+            <span>Tomato</span>
+          </SwipeRow>
+        </ul>,
+      );
+      expect(peeking()).toBe(true);
+      act(() => vi.advanceTimersByTime(549));
+      expect(peeking()).toBe(true);
+      act(() => vi.advanceTimersByTime(1));
+      expect(peeking()).toBe(false);
+    });
+
+    it('peeks once when mounted with peek on, even under StrictMode', () => {
+      vi.useFakeTimers();
+      render(
+        <StrictMode>
+          <ul>
+            <SwipeRow name="Tomato" labels={labels} onRemove={vi.fn()} peek>
+              <span>Tomato</span>
+            </SwipeRow>
+          </ul>
+        </StrictMode>,
+      );
+      expect(peeking()).toBe(true);
+      act(() => vi.advanceTimersByTime(550));
+      expect(peeking()).toBe(false);
+      act(() => vi.advanceTimersByTime(5000));
+      expect(peeking()).toBe(false);
+    });
+
+    it('stops at once when a pointer goes down on the row', () => {
+      vi.useFakeTimers();
+      renderPeek(true);
+      expect(peeking()).toBe(true);
+      fireEvent.pointerDown(content(), {
+        pointerId: 1,
+        clientX: 50,
+        clientY: 20,
+      });
+      expect(peeking()).toBe(false);
+    });
+
+    it('leaves a confirming row alone', () => {
+      vi.useFakeTimers();
+      const ref = createRef<SwipeRowHandle>();
+      renderPeek(false, { ref });
+      act(() => ref.current?.askToRemove());
+      expect(screen.getByRole('button', { name: 'Keep' })).toBeTruthy();
+      cleanup();
+      const again = createRef<SwipeRowHandle>();
+      const view = renderPeek(false, { ref: again });
+      act(() => again.current?.askToRemove());
+      view.rerender(
+        <ul>
+          <SwipeRow
+            ref={again}
+            name="Tomato"
+            labels={labels}
+            onRemove={vi.fn()}
+            peek
+          >
+            <span>Tomato</span>
+          </SwipeRow>
+        </ul>,
+      );
+      expect(peeking()).toBe(false);
+      expect(screen.getByRole('button', { name: 'Keep' })).toBeTruthy();
+    });
+
+    it('does not peek under reduce-motion', () => {
+      vi.useFakeTimers();
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('reduce'),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+      }));
+      try {
+        renderPeek(true);
+        expect(peeking()).toBe(false);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
+    it('does not set state after it unmounts mid-peek', () => {
+      vi.useFakeTimers();
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const view = renderPeek(true);
+      view.unmount();
+      act(() => vi.advanceTimersByTime(2000));
+      expect(error).not.toHaveBeenCalled();
+      error.mockRestore();
+    });
+  });
+
+  it('reports a gesture the Member used through onLearned', () => {
+    const onLearned = vi.fn();
+    render(
+      <ul>
+        <SwipeRow
+          name="Milk"
+          labels={labels}
+          onRemove={vi.fn()}
+          onEdit={vi.fn()}
+          onLearned={onLearned}
+        >
+          <span>Milk</span>
+        </SwipeRow>
+      </ul>,
+    );
+    const el = document.querySelector('[data-swipe-row-content]')!;
+    vi.spyOn(el, 'getBoundingClientRect').mockReturnValue({
+      width: 350,
+      left: 0,
+      top: 0,
+    } as DOMRect);
+    fireEvent.pointerDown(el, { pointerId: 1, clientX: 300, clientY: 20 });
+    fireEvent.pointerMove(el, { pointerId: 1, clientX: 180, clientY: 20 });
+    fireEvent.pointerUp(el, { pointerId: 1, clientX: 180, clientY: 20 });
+    expect(onLearned).toHaveBeenCalledOnce();
   });
 
   it('describes the row and opens its confirmation through the ref', () => {

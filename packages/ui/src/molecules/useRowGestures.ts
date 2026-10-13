@@ -39,6 +39,8 @@ export type RowGestureOptions = {
    * has no hold: `pressing` and `armed` stay false.
    */
   onHold?: () => void;
+  /** A swipe was released in zone 1 or 2, or a hold armed: the Member has used a gesture. */
+  onLearned?: () => void;
   /** Ignore pointers, e.g. while the row is confirming or leaving. */
   disabled?: boolean;
   /** Width of the trash tab, the zone 1 distance. */
@@ -235,6 +237,7 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         if (press.current !== current) return;
         current.armed = true;
         vibrate(HAPTIC_ARMED);
+        latest.current.options.onLearned?.();
         setHold({ pressing: true, armed: true, origin });
         clearTimeout(openTimer.current);
         openTimer.current = setTimeout(() => {
@@ -287,6 +290,7 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       if (!current.dragging) return;
       swallowNextClick();
       const { options: o } = latest.current;
+      if (current.zone > 0) o.onLearned?.();
       try {
         event.currentTarget.releasePointerCapture?.(event.pointerId);
       } catch {

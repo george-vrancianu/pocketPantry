@@ -65,6 +65,7 @@ export {
   EditIcon,
   SwapIcon,
   PeopleIcon,
+  ArrowLeftIcon,
   BackIcon,
   MoreIcon,
   BranchIcon,
@@ -95,6 +96,7 @@ export {
 } from './molecules/SegmentedControl';
 export { Sheet, type SheetProps } from './molecules/Sheet';
 export { ListRow, ListRowItem, type ListRowProps } from './molecules/ListRow';
+export { RowHintPill, type RowHintPillProps } from './molecules/RowHintPill';
 export {
   SwipeRow,
   type SwipeRowHandle,
