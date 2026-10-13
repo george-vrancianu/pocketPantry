@@ -6,6 +6,7 @@ import {
   defaultExpiryDate,
   fromIso,
   fullDate,
+  type IsoDate,
 } from '../../lib/pantry';
 import { focusRing } from './focusRing';
 
@@ -26,8 +27,7 @@ const QUICK: QuickPick[] = [
 export type QuickPicksProps = {
   /** The tiles' group, so the sheet can focus a tile when it opens. */
   ref?: Ref<HTMLDivElement>;
-  /** `YYYY-MM-DD`, or null. */
-  value: string | null;
+  value: IsoDate | null;
   /** The Default Expiry in days; null hides the Usual tile. */
   usualDays: number | null;
   today: Date;

@@ -9,8 +9,12 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
-import { expiryTagFor, fullDate, relativeDay } from '../../lib/pantry';
-import { useStaleThresholdDays } from '../../lib/settings';
+import {
+  dateAndRelativeDay,
+  useExpiryTags,
+  type ExpiryTag as Tag,
+  type IsoDate,
+} from '../../lib/pantry';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpiryCalendar, type ExpiryCalendarHandle } from './ExpiryCalendar';
 import { QuickPicks } from './QuickPicks';
@@ -21,10 +25,10 @@ export type ExpirySheetProps = {
   onClose: () => void;
   /** After the close transition, with focus back on the opener. */
   onExited?: () => void;
-  /** `YYYY-MM-DD`, or null for no expiry. */
-  value: string | null;
+  /** Null for no expiry. */
+  value: IsoDate | null;
   /** Called on every tap. */
-  onChange: (value: string | null) => void;
+  onChange: (value: IsoDate | null) => void;
   /** The Default Expiry in days, for the "Usual" quick pick; null when there is none. */
   usualDays: number | null;
   /** The line under the title, e.g. "Greek yogurt · 500 g · Fridge". */
@@ -47,8 +51,10 @@ export function ExpirySheet({
   context,
   title,
 }: ExpirySheetProps) {
-  const { t } = useTranslation('pantry');
+  const { t, i18n } = useTranslation('pantry');
   const quickPicks = useRef<HTMLDivElement>(null);
+  const today = new Date();
+  const { staleThresholdDays, tagFor } = useExpiryTags(today);
   return (
     <Sheet
       open={open}
@@ -72,7 +78,14 @@ export function ExpirySheet({
           <Typography variant="meta" color="text.secondary" sx={{ mt: '3px' }}>
             {context}
           </Typography>
-          <Readout value={value} />
+          <Readout
+            text={
+              value === null
+                ? null
+                : dateAndRelativeDay(value, today, i18n.language)
+            }
+            tag={tagFor(value)}
+          />
         </Box>
       }
       footer={
@@ -98,6 +111,8 @@ export function ExpirySheet({
         value={value}
         onChange={onChange}
         usualDays={usualDays}
+        today={today}
+        staleThresholdDays={staleThresholdDays}
       />
     </Sheet>
   );
@@ -109,13 +124,14 @@ function SheetBody({
   value,
   onChange,
   usualDays,
+  today,
+  staleThresholdDays,
 }: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays'> & {
   quickPicks: Ref<HTMLDivElement>;
+  today: Date;
+  staleThresholdDays: number;
 }) {
-  const { i18n } = useTranslation();
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
   const calendar = useRef<ExpiryCalendarHandle>(null);
-  const today = new Date();
   return (
     <Box sx={{ px: 3, pt: 0.5, pb: 2 }}>
       <QuickPicks
@@ -140,10 +156,15 @@ function SheetBody({
 }
 
 /** The chosen date, how far away it is and the tag it will get; "No expiry date" when empty. */
-function Readout({ value }: { value: string | null }) {
-  const { t, i18n } = useTranslation('pantry');
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
-  const today = new Date();
+function Readout({
+  text,
+  tag,
+}: {
+  /** The chosen date and how far away it is; null for no expiry. */
+  text: { date: string; relative: string } | null;
+  tag: Tag;
+}) {
+  const { t } = useTranslation('pantry');
   return (
     <Box
       role="status"
@@ -157,7 +178,7 @@ function Readout({ value }: { value: string | null }) {
         px: '2px',
       }}
     >
-      {value === null ? (
+      {text === null ? (
         <Box
           component="span"
           sx={{ fontSize: 14, fontWeight: 500, color: tokens.color.muted }}
@@ -173,7 +194,7 @@ function Readout({ value }: { value: string | null }) {
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {fullDate(value, today, i18n.language)}
+          {text.date}
           <Box
             component="small"
             sx={{
@@ -183,11 +204,11 @@ function Readout({ value }: { value: string | null }) {
               color: tokens.color.muted,
             }}
           >
-            {relativeDay(value, today, i18n.language)}
+            {text.relative}
           </Box>
         </Box>
       )}
-      <ExpiryTag tag={expiryTagFor(value, today, staleThresholdDays)} />
+      <ExpiryTag tag={tag} />
     </Box>
   );
 }

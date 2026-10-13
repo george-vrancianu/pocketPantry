@@ -10,6 +10,7 @@ import {
   defaultExpiryDate,
   parseAmountText,
   useAddBatch,
+  type IsoDate,
 } from '../../../lib/pantry';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
@@ -23,7 +24,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     null,
   );
   const [typed, setTyped] = useState('');
-  const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
+  const [unmatchedName, setUnmatchedName] = useState<IsoDate | null>(null);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<Unit>('g');
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);

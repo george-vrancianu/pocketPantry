@@ -4,8 +4,7 @@ import { Link } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { soonestExpiring } from '../../../lib/dashboard';
 import { ExpiryTag } from '../../../components/ExpiryTag';
-import { expiryTagFor, useBatches } from '../../../lib/pantry';
-import { useStaleThresholdDays } from '../../../lib/settings';
+import { useBatches, useExpiryTags } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
@@ -15,7 +14,7 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
   const today = new Date();
   const batches = useBatches(i18n.language);
   const soonest = soonestExpiring(batches.data ?? []);
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  const { tagFor } = useExpiryTags(today);
 
   return (
     <WidgetCard
@@ -84,13 +83,7 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
                 >
                   {batch.name}
                 </Box>
-                <ExpiryTag
-                  tag={expiryTagFor(
-                    batch.expiryDate,
-                    today,
-                    staleThresholdDays,
-                  )}
-                />
+                <ExpiryTag tag={tagFor(batch.expiryDate)} />
               </Box>
             );
           })}

@@ -10,8 +10,7 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../../../components/ExpiryTag';
-import { expiryTagFor, fullDate, type Batch } from '../../../lib/pantry';
-import { useStaleThresholdDays } from '../../../lib/settings';
+import { fullDate, useExpiryTags, type Batch } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { EditBatchForm } from './EditBatchForm';
@@ -43,8 +42,7 @@ export function BatchDetail({
   const { t, i18n } = useTranslation('pantry');
   const toast = useToast();
   const labels = useSwipeRowLabels(batch.name, 'pantry', { hold: true });
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
-  const tag = expiryTagFor(batch.expiryDate, today, staleThresholdDays);
+  const tag = useExpiryTags(today).tagFor(batch.expiryDate);
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
   // "Remove from Pantry" closes the sheet and asks once it has finished closing (focus is back on the row).

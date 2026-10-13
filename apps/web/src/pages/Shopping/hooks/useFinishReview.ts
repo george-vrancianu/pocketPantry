@@ -9,15 +9,15 @@ import {
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
-import { daysUntil } from '../../../lib/pantry';
+import { daysUntil, type IsoDate } from '../../../lib/pantry';
 import { shoppingListQueryKey } from '../../../lib/shopping';
 
 export type ReviewEdit = {
   quantity: string;
   unit: Unit;
   location: StorageLocation;
-  /** `YYYY-MM-DD`, or null for no expiry. */
-  expiryDate: string | null;
+  /** Null for no expiry. */
+  expiryDate: IsoDate | null;
 };
 
 const FALLBACK_UNIT: Unit = 'pcs';

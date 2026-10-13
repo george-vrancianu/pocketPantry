@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
 import { ExpiryTag } from '../../../components/ExpiryTag';
-import { expiryTagFor, type Batch } from '../../../lib/pantry';
-import { useStaleThresholdDays } from '../../../lib/settings';
+import { useExpiryTags, type Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
@@ -32,12 +31,10 @@ export function RollUpRow({
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
   const toggle = useRef<HTMLButtonElement>(null);
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  const { tagFor } = useExpiryTags(today);
   // A row without an expiry shows no tag; only Batch detail says "No expiry".
   const tag =
-    rollUp.soonestExpiry === null
-      ? null
-      : expiryTagFor(rollUp.soonestExpiry, today, staleThresholdDays);
+    rollUp.soonestExpiry === null ? null : tagFor(rollUp.soonestExpiry);
 
   // Tell the first-use hint when this roll-up is showing Batch rows to swipe.
   const showingBatches = expanded && !rollUp.gone;

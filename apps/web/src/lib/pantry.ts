@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
 import {
   recipeMatchingQueryKeys,
@@ -7,6 +8,10 @@ import {
 } from './queryKeys';
 import type { Aisle } from './staples';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
+import { useStaleThresholdDays } from './settings';
+
+/** A calendar date as `YYYY-MM-DD`. */
+export type IsoDate = string;
 
 export type Batch = {
   id: string;
@@ -19,8 +24,7 @@ export type Batch = {
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;
-  /** `YYYY-MM-DD`, or null. */
-  expiryDate: string | null;
+  expiryDate: IsoDate | null;
   productDescription: string | null;
   createdAt: string;
 };
@@ -85,6 +89,22 @@ export function expiryTagFor(
   return { tone: 'ok', kind: 'days', days };
 }
 
+/**
+ * The Family's Stale Threshold, and the tag an expiry date gets on `today` with it. Changing the threshold
+ * re-colours every tag on the next render.
+ */
+export function useExpiryTags(today: Date): {
+  staleThresholdDays: number;
+  tagFor: (expiryDate: IsoDate | null) => ExpiryTag;
+} {
+  const { i18n } = useTranslation();
+  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  return {
+    staleThresholdDays,
+    tagFor: (expiryDate) => expiryTagFor(expiryDate, today, staleThresholdDays),
+  };
+}
+
 /** A `YYYY-MM-DD` calendar date as local midnight, for formatting. */
 export function fromIso(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
@@ -120,6 +140,19 @@ export function relativeDay(
     daysUntil(expiryDate, today),
     'day',
   );
+}
+
+/** An expiry date and how far away it is, e.g. `{ date: 'Sat, Oct 11', relative: 'in 10 days' }`. */
+export function dateAndRelativeDay(
+  expiryDate: IsoDate,
+  today: Date,
+  locale: string,
+  width: 'short' | 'long' = 'short',
+): { date: string; relative: string } {
+  return {
+    date: fullDate(expiryDate, today, locale, width),
+    relative: relativeDay(expiryDate, today, locale),
+  };
 }
 
 /** The pre-filled expiry (a `YYYY-MM-DD` string, or empty) for a Catalog default in days. */

@@ -10,7 +10,7 @@ import {
   type Ref,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { daysUntil, fromIso, localIso } from '../../lib/pantry';
+import { daysUntil, fromIso, localIso, type IsoDate } from '../../lib/pantry';
 import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
 import { focusRing } from './focusRing';
 
@@ -24,8 +24,7 @@ export type ExpiryCalendarHandle = {
 
 export type ExpiryCalendarProps = {
   ref?: Ref<ExpiryCalendarHandle>;
-  /** `YYYY-MM-DD`, or null. */
-  value: string | null;
+  value: IsoDate | null;
   /** A day was tapped. */
   onChange: (iso: string) => void;
   today: Date;

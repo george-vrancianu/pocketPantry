@@ -7,8 +7,11 @@ import {
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { expiryTagFor, fullDate, relativeDay } from '../../lib/pantry';
-import { useStaleThresholdDays } from '../../lib/settings';
+import {
+  dateAndRelativeDay,
+  useExpiryTags,
+  type IsoDate,
+} from '../../lib/pantry';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpirySheet } from './ExpirySheet';
 
@@ -17,10 +20,10 @@ export type ExpiryFieldProps = {
   id?: string;
   /** The label above the row, which also starts its accessible name, e.g. "Expires". */
   label: string;
-  /** `YYYY-MM-DD`, or null for no expiry. */
-  value: string | null;
+  /** Null for no expiry. */
+  value: IsoDate | null;
   /** Called on every tap in the sheet, so closing it never throws a change away. */
-  onChange: (value: string | null) => void;
+  onChange: (value: IsoDate | null) => void;
   /** The Default Expiry in days, for the "Usual" quick pick; null when there is none (or for an Unmatched name). */
   usualDays: number | null;
   /** The sheet's context line, e.g. "Greek yogurt · 500 g · Fridge". */
@@ -44,17 +47,18 @@ export function ExpiryField({
   const rowId = id ?? fallbackId;
   const [open, setOpen] = useState(false);
   const row = useRef<HTMLButtonElement>(null);
-  const staleThresholdDays = useStaleThresholdDays(i18n.language);
   const today = new Date();
+  const { tagFor } = useExpiryTags(today);
   const { color } = tokens;
+  const shown =
+    value === null ? null : dateAndRelativeDay(value, today, i18n.language);
 
   const name =
     value === null
       ? t('picker.summaryNone', { label })
       : t('picker.summary', {
           label,
-          date: fullDate(value, today, i18n.language, 'long'),
-          relative: relativeDay(value, today, i18n.language),
+          ...dateAndRelativeDay(value, today, i18n.language, 'long'),
         });
 
   return (
@@ -132,19 +136,13 @@ export function ExpiryField({
               textOverflow: 'ellipsis',
             }}
           >
-            {value === null
-              ? t('picker.none')
-              : fullDate(value, today, i18n.language)}
+            {shown === null ? t('picker.none') : shown.date}
           </Box>
           <Box component="span" sx={{ fontSize: 12.5, color: color.muted }}>
-            {value === null
-              ? t('picker.tapToSet')
-              : relativeDay(value, today, i18n.language)}
+            {shown === null ? t('picker.tapToSet') : shown.relative}
           </Box>
         </Box>
-        {value === null ? null : (
-          <ExpiryTag tag={expiryTagFor(value, today, staleThresholdDays)} />
-        )}
+        {value === null ? null : <ExpiryTag tag={tagFor(value)} />}
         <ChevronRightIcon
           size={18}
           color={color.muted}
