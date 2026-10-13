@@ -1439,7 +1439,7 @@ describe('ShoppingPage', () => {
           return dialog;
         };
 
-        it('shows the save row with the item count, and hides it on an empty list', async () => {
+        it('shows the save row with the item count', async () => {
           stubTemplates();
           renderWithProviders(<ShoppingPage />);
           const dialog = await openTemplates();
@@ -1460,13 +1460,20 @@ describe('ShoppingPage', () => {
           );
           renderWithProviders(<ShoppingPage />);
           const user = userEvent.setup();
+          expect(await screen.findByText('0 to buy')).toBeVisible();
+          expect(
+            screen.queryByRole('button', {
+              name: /Save this list as a template/,
+            }),
+          ).toBeNull();
+
           const dialog = await openSheet(user);
           await user.click(
             within(dialog).getByRole('tab', { name: 'Templates' }),
           );
           await within(dialog).findByText(/No templates yet/);
           expect(
-            screen.queryByRole('button', {
+            within(dialog).queryByRole('button', {
               name: /Save this list as a template/,
             }),
           ).toBeNull();
@@ -1494,7 +1501,8 @@ describe('ShoppingPage', () => {
         it('previews every item with its amount and focuses the name', async () => {
           stubTemplates();
           renderWithProviders(<ShoppingPage />);
-          const dialog = await openSave();
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
 
           const name = within(dialog).getByRole('textbox', {
             name: 'Template name',
@@ -1512,7 +1520,7 @@ describe('ShoppingPage', () => {
           expect(
             within(dialog).getByRole('button', { name: 'Save template' }),
           ).toBeDisabled();
-          await userEvent.click(
+          await user.click(
             within(dialog).getByRole('button', { name: /Templates/ }),
           );
           expect(
@@ -1560,9 +1568,10 @@ describe('ShoppingPage', () => {
               (c) => c.key === 'POST /api/shopping-templates/from-list',
             )?.body,
           ).toEqual({ name: 'Weekly shop' });
-          expect(
-            await within(dialog).findByRole('button', { name: /Weekly shop/ }),
-          ).toBeVisible();
+          const rows = await within(dialog).findAllByRole('button', {
+            name: /items? ·|0 items/,
+          });
+          expect(rows.at(-1)).toHaveTextContent('Weekly shop');
           expect(screen.queryByText('Template editor')).toBeNull();
 
           await user.click(

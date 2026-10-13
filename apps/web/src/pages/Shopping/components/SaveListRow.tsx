@@ -1,5 +1,6 @@
 import { BookmarkIcon, Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { focusRing } from './focusRing';
 
 export type SaveListRowProps = {
   /** Items on the Shopping List. */
@@ -29,10 +30,7 @@ export function SaveListRow({ count, onClick }: SaveListRowProps) {
         font: 'inherit',
         textAlign: 'left',
         cursor: 'pointer',
-        '&:focus-visible': {
-          outline: `3px solid ${color.accent}`,
-          outlineOffset: 2,
-        },
+        ...focusRing(2),
       }}
     >
       <Box

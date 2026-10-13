@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from './focusRing';
+import { focusRing } from '../focusRing';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */
@@ -52,7 +52,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
             font: 'inherit',
             textAlign: 'left',
             cursor: 'pointer',
-            ...focusRing,
+            ...focusRing(),
           }}
         >
           <Tile icon={<BookmarkIcon size={20} />} accent />
@@ -125,7 +125,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
                   font: 'inherit',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  ...focusRing,
+                  ...focusRing(),
                 }}
               >
                 <Tile icon={<TemplateIcon size={20} />} />

@@ -7,10 +7,11 @@ import {
   segmentedTabPanelId,
   tokens,
 } from '@pocket-pantry/ui';
-import { useCallback, useId, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import { ApplyTemplateView } from './ApplyTemplateView';
+import { SheetFooterContext } from './SheetFooter';
 import { SaveTemplateView } from './SaveTemplateView';
 import { TemplatesTab } from './TemplatesTab';
 import type { Suggestion } from '../../../../lib/suggestions';
@@ -67,9 +68,9 @@ export function AddSheet({
   const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
   // Whether the current view has a footer; none while it loads or fails.
   const [footerWanted, setFooterWanted] = useState(false);
-  const wantFooter = useCallback(
-    (wanted: boolean) => setFooterWanted(wanted),
-    [],
+  const footerSlot = useMemo(
+    () => ({ host: footerHost, setWanted: setFooterWanted }),
+    [footerHost],
   );
   const [templatesView, setTemplatesView] = useState<TemplatesView>(
     initialView.tab === 'templates' ? initialView.view : 'list',
@@ -183,69 +184,65 @@ export function AddSheet({
   );
 
   return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      label={t('sheet.title')}
-      header={header}
-      footer={
-        tab === 'templates' && templatesView !== 'list' && footerWanted ? (
-          <Box ref={setFooterHost} />
-        ) : undefined
-      }
-      onEntered={() => {
-        // Do not steal focus from a field the Member has already reached.
-        const focused = document.activeElement;
-        if (
-          !focused ||
-          focused === document.body ||
-          focused.getAttribute('role') === 'dialog'
-        ) {
-          searchRef.current?.focus();
+    <SheetFooterContext.Provider value={footerSlot}>
+      <Sheet
+        open={open}
+        onClose={onClose}
+        label={t('sheet.title')}
+        header={header}
+        footer={
+          tab === 'templates' && templatesView !== 'list' && footerWanted ? (
+            <Box ref={setFooterHost} />
+          ) : undefined
         }
-      }}
-    >
-      <Box
-        role="tabpanel"
-        id={segmentedTabPanelId(tabsId, tab)}
-        aria-labelledby={segmentedTabId(tabsId, tab)}
-        sx={{ p: '4px 20px 24px' }}
+        onEntered={() => {
+          // Do not steal focus from a field the Member has already reached.
+          const focused = document.activeElement;
+          if (
+            !focused ||
+            focused === document.body ||
+            focused.getAttribute('role') === 'dialog'
+          ) {
+            searchRef.current?.focus();
+          }
+        }}
       >
-        {tab === 'ingredients' ? (
-          <IngredientsTab
-            state={ingredients}
-            onStateChange={setIngredients}
-            searchRef={searchRef}
-            adding={adding}
-            onAdd={onAdd}
-            error={addError}
-            staples={staples}
-            usedUp={usedUp}
-            onAdded={() => setAddedCount((count) => count + 1)}
-            onOpenTemplate={openTemplate}
-            onSeeAllTemplates={() => selectTab('templates')}
-          />
-        ) : typeof templatesView === 'object' ? (
-          <ApplyTemplateView
-            templateId={templatesView.apply}
-            onBack={() => setTemplatesView('list')}
-            onApplied={onClose}
-            footerHost={footerHost}
-            onFooterWanted={wantFooter}
-          />
-        ) : templatesView === 'save' ? (
-          <SaveTemplateView
-            onBack={() => setTemplatesView('list')}
-            footerHost={footerHost}
-            onFooterWanted={wantFooter}
-          />
-        ) : (
-          <TemplatesTab
-            onOpenTemplate={openTemplate}
-            onSave={() => setTemplatesView('save')}
-          />
-        )}
-      </Box>
-    </Sheet>
+        <Box
+          role="tabpanel"
+          id={segmentedTabPanelId(tabsId, tab)}
+          aria-labelledby={segmentedTabId(tabsId, tab)}
+          sx={{ p: '4px 20px 24px' }}
+        >
+          {tab === 'ingredients' ? (
+            <IngredientsTab
+              state={ingredients}
+              onStateChange={setIngredients}
+              searchRef={searchRef}
+              adding={adding}
+              onAdd={onAdd}
+              error={addError}
+              staples={staples}
+              usedUp={usedUp}
+              onAdded={() => setAddedCount((count) => count + 1)}
+              onOpenTemplate={openTemplate}
+              onSeeAllTemplates={() => selectTab('templates')}
+            />
+          ) : typeof templatesView === 'object' ? (
+            <ApplyTemplateView
+              templateId={templatesView.apply}
+              onBack={() => setTemplatesView('list')}
+              onApplied={onClose}
+            />
+          ) : templatesView === 'save' ? (
+            <SaveTemplateView onBack={() => setTemplatesView('list')} />
+          ) : (
+            <TemplatesTab
+              onOpenTemplate={openTemplate}
+              onSave={() => setTemplatesView('save')}
+            />
+          )}
+        </Box>
+      </Sheet>
+    </SheetFooterContext.Provider>
   );
 }

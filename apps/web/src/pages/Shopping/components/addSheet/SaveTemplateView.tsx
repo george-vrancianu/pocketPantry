@@ -9,8 +9,7 @@ import {
   tokens,
   useToast,
 } from '@pocket-pantry/ui';
-import { useEffect, useState, type FormEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../../../i18n/translateApiError';
@@ -20,27 +19,20 @@ import {
   useTemplateMutations,
   useTemplates,
 } from '../../../../lib/shoppingTemplates';
-import { focusRing } from './focusRing';
+import { focusRing } from '../focusRing';
+import { SheetFooter } from './SheetFooter';
 import { TOAST_ABOVE_SHEET } from './sheetToast';
 
 export type SaveTemplateViewProps = {
   /** Back to the list of templates; also where a successful save returns. */
   onBack: () => void;
-  /** Where the sticky footer renders, once the sheet has made room for it. */
-  footerHost: HTMLElement | null;
-  /** Tells the sheet whether this view has a footer to make room for. */
-  onFooterWanted: (wanted: boolean) => void;
 };
 
 /**
  * The Templates tab's save view: names the Shopping List and saves every item
- * on it, ticked ones too, as a Shopping Template.
+ * on it, checked ones too, as a Shopping Template.
  */
-export function SaveTemplateView({
-  onBack,
-  footerHost,
-  onFooterWanted,
-}: SaveTemplateViewProps) {
+export function SaveTemplateView({ onBack }: SaveTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common', 'errors']);
   const toast = useToast();
   const navigate = useNavigate();
@@ -50,17 +42,13 @@ export function SaveTemplateView({
   const [name, setName] = useState('');
   const { color } = tokens;
 
-  useEffect(() => {
-    onFooterWanted(true);
-    return () => onFooterWanted(false);
-  }, [onFooterWanted]);
-
   const items: ShoppingItem[] = (shoppingList.data?.groups ?? []).flatMap(
     (group) => group.items,
   );
   const atLimit = (templates.data?.length ?? 0) >= MAX_TEMPLATES;
   const trimmed = name.trim();
-  const canSave = trimmed !== '' && !createFromList.isPending && !atLimit;
+  const canSave =
+    trimmed !== '' && items.length > 0 && !createFromList.isPending && !atLimit;
 
   const amountOf = (item: ShoppingItem) =>
     item.quantity === null
@@ -132,7 +120,7 @@ export function SaveTemplateView({
           fontSize: 14,
           fontWeight: 700,
           cursor: 'pointer',
-          ...focusRing,
+          ...focusRing(),
         }}
       >
         <BackIcon size={16} aria-hidden />
@@ -170,7 +158,7 @@ export function SaveTemplateView({
           {preview}
         </Box>
       </Box>
-      {footerHost ? createPortal(footer, footerHost) : null}
+      <SheetFooter>{footer}</SheetFooter>
     </Box>
   );
 }
