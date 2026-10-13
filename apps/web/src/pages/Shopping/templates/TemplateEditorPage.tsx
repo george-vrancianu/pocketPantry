@@ -21,6 +21,8 @@ import { ConfirmAction } from '../../../components/ConfirmAction';
 import { AmountSheet, type Amount } from '../../../components/AmountSheet';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
+import { RowHintNote } from '../../../components/RowHintNote';
+import { useRowHint, type RowHint } from '../../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import type { NewShoppingItem } from '../../../lib/shopping';
 import {
@@ -85,6 +87,7 @@ function Editor({
   const [name, setName] = useState(template.name);
 
   const lines = template.lines;
+  const hint = useRowHint('template', lines.length > 0);
   const full = lines.length >= MAX_TEMPLATE_LINES;
 
   const rename = (event: FormEvent) => {
@@ -172,6 +175,7 @@ function Editor({
 
   return (
     <Stack spacing={2.5}>
+      <RowHintNote hint={hint} />
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       <Box component="form" onSubmit={rename} noValidate>
         <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
@@ -205,10 +209,12 @@ function Editor({
         </Typography>
       ) : (
         <Stack component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
-          {lines.map((line) => (
+          {lines.map((line, index) => (
             <LineRow
               key={line.id}
               line={line}
+              peek={index === 0 && hint.peek}
+              onLearned={hint.onLearned}
               busy={update.isPending}
               onRemove={removeLine}
               onSetAmount={setAmount}
@@ -239,11 +245,15 @@ function Editor({
 
 function LineRow({
   line,
+  peek,
+  onLearned,
   busy,
   onRemove,
   onSetAmount,
 }: {
   line: TemplateLine;
+  peek: boolean;
+  onLearned: RowHint['onLearned'];
   /** A Template save is in flight: rows ignore gestures and keys until it lands. */
   busy: boolean;
   onRemove: (line: TemplateLine) => Promise<unknown>;
@@ -288,6 +298,8 @@ function LineRow({
         name={line.name}
         labels={labels}
         disabled={editing || busy}
+        peek={peek}
+        onLearned={onLearned}
         onEdit={() => setEditing(true)}
         onRemove={() => {
           // The page shows the failure; the row only has to be usable again.

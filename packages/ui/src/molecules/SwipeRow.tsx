@@ -1,5 +1,11 @@
 import { useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
-import type { KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';
+import type {
+  KeyboardEvent,
+  MouseEvent,
+  PointerEvent,
+  ReactNode,
+  Ref,
+} from 'react';
 import { Box } from '../atoms/Layout';
 import { DeleteIcon } from '../atoms/icons';
 import { tokens } from '../theme/tokens';
@@ -19,6 +25,10 @@ const CONFIRM_MS = 6000;
 const FLY_OFF_MS = 200;
 const COLLAPSE_MS = 240;
 const SLIDE_MS = 260;
+/** The first-use peek (handoff section 7): out 40 pt over 550 ms, then back. */
+const PEEK_PT = 40;
+const PEEK_OUT_MS = 550;
+const PEEK_BAND = 0.6;
 const HAPTIC_COLLAPSE = 8;
 const HAPTIC_REMOVE = 10;
 const INTERACTIVE = 'button, a, input, select, textarea, [role="button"]';
@@ -57,6 +67,13 @@ export type SwipeRowProps = {
   onTap?: () => void;
   /** Marks a row that toggles as on: announced through `labels.pressed` (aria-pressed is not valid on a group). */
   pressed?: boolean;
+  /**
+   * Turn on to play the first-use peek: the row slides 40 pt left and back to show the swipe. Skipped
+   * under reduce-motion, while the row is busy (confirming, pressed, dragging) and if a pointer lands on it.
+   */
+  peek?: boolean;
+  /** The Member swiped to zone 1 or beyond, or completed a hold on this row. */
+  onLearned?: () => void;
   /** Ignore gestures and keys, e.g. while a save is in flight. */
   disabled?: boolean;
   /** The row's content, in practice a `ListRow`. */
@@ -84,6 +101,8 @@ export function SwipeRow({
   onEdit,
   onTap,
   pressed,
+  peek = false,
+  onLearned,
   disabled = false,
   children,
 }: SwipeRowProps) {
@@ -104,6 +123,15 @@ export function SwipeRow({
   const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
   const idle = phase === 'idle' && !disabled;
+  const [peeking, setPeeking] = useState(false);
+  /** The peek's way back takes as long as the way out, instead of the spring. */
+  const [peekBack, setPeekBack] = useState(false);
+  const touching = useRef(false);
+  const idleRef = useRef(idle);
+  idleRef.current = idle;
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   /** Focus would fall to <body> when the row goes: hand it to the next row, else the previous, else the list. */
   const moveFocusAway = () => {
@@ -160,7 +188,26 @@ export function SwipeRow({
     // A swipe past the delete line flies the row off and calls `onRemove`. If the parent then keeps the
     // row (it does not remove it), the row stays flown off and inert: the parent owns what removing means.
     onDelete: () => startRemoval(true),
+    onLearned,
   });
+
+  // The first-use peek. It never touches the phase, so a confirming row is left as it is, and a pointer
+  // that lands during it (see `bind` below) ends it so the real gesture starts from rest.
+  useEffect(() => {
+    clearTimeout(peekTimer.current);
+    if (!peek || reduceMotion || touching.current || !idleRef.current) {
+      setPeeking(false);
+      setPeekBack(false);
+      return;
+    }
+    setPeeking(true);
+    peekTimer.current = setTimeout(() => {
+      setPeeking(false);
+      setPeekBack(true);
+      peekTimer.current = setTimeout(() => setPeekBack(false), PEEK_OUT_MS);
+    }, PEEK_OUT_MS);
+    return () => clearTimeout(peekTimer.current);
+  }, [peek, reduceMotion]);
 
   function openConfirmation() {
     if (closeOpenConfirmation && closeOpenConfirmation !== closer) {
@@ -229,9 +276,27 @@ export function SwipeRow({
   };
 
   const { x, zone, dragging, pressing, armed, origin } = gestures;
+  const bind = {
+    ...gestures.bind,
+    onPointerDown: (event: PointerEvent<HTMLElement>) => {
+      touching.current = true;
+      setPeeking(false);
+      setPeekBack(false);
+      gestures.bind.onPointerDown(event);
+    },
+    onPointerUp: (event: PointerEvent<HTMLElement>) => {
+      touching.current = false;
+      gestures.bind.onPointerUp(event);
+    },
+    onPointerCancel: (event: PointerEvent<HTMLElement>) => {
+      touching.current = false;
+      gestures.bind.onPointerCancel(event);
+    },
+  };
+  const peekOut = peeking && idle && !dragging && !pressing && x === 0;
   const flying = phase === 'removing' && flew;
   const solid = zone === 2 || flying;
-  const progress = Math.min(1, -x / REVEAL_PT);
+  const progress = peekOut ? PEEK_BAND : Math.min(1, -x / REVEAL_PT);
   const slide = reduceMotion ? 'none' : undefined;
   const motion = (value: string) => slide ?? value;
 
@@ -279,13 +344,14 @@ export function SwipeRow({
           position: 'absolute',
           inset: 0,
           bgcolor: solid ? tokens.color.urgentFg : tokens.color.urgentBg,
-          opacity: solid ? 1 : x < 0 ? 0.35 + 0.65 * progress : 0,
+          opacity: solid ? 1 : x < 0 || peekOut ? 0.35 + 0.65 * progress : 0,
           transition: motion('background-color 180ms, opacity 120ms'),
         }}
       />
       <Box
-        {...gestures.bind}
+        {...bind}
         data-swipe-row-content=""
+        data-peeking={peekOut ? '' : undefined}
         onClick={onContentClick}
         inert={confirming || undefined}
         sx={{
@@ -299,7 +365,9 @@ export function SwipeRow({
             ? `translateX(calc(-100% - ${REVEAL_PT}px))`
             : confirming
               ? 'translateX(-30%)'
-              : `translateX(${x}px)${pressing && !armed && !reduceMotion ? ' scale(.99)' : ''}`,
+              : peekOut
+                ? `translateX(-${PEEK_PT}px)`
+                : `translateX(${x}px)${pressing && !armed && !reduceMotion ? ' scale(.99)' : ''}`,
           opacity: confirming ? 0 : 1,
           transition: dragging
             ? 'none'
@@ -308,11 +376,13 @@ export function SwipeRow({
                   ? `transform ${FLY_OFF_MS}ms cubic-bezier(.4,0,.8,.6)`
                   : confirming
                     ? `transform ${SLIDE_MS}ms cubic-bezier(.2,.8,.2,1), opacity 200ms`
-                    : pressing
-                      ? 'transform 250ms ease-out, opacity 200ms'
-                      : armed
-                        ? 'transform 400ms ease-out, opacity 200ms'
-                        : 'transform 300ms cubic-bezier(.25,1.35,.45,1), opacity 200ms',
+                    : peekOut || (peekBack && x === 0 && !pressing)
+                      ? `transform ${PEEK_OUT_MS}ms cubic-bezier(.2,.8,.2,1)`
+                      : pressing
+                        ? 'transform 250ms ease-out, opacity 200ms'
+                        : armed
+                          ? 'transform 400ms ease-out, opacity 200ms'
+                          : 'transform 300ms cubic-bezier(.25,1.35,.45,1), opacity 200ms',
               ),
           // Flying off leaves the band solid, so the content itself stays opaque.
           ...(flying ? { bgcolor: tokens.color.surface } : {}),

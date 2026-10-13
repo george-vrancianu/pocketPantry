@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
 import { expiryChipFor, type Batch } from '../../../lib/pantry';
+import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { BatchDetail } from './BatchDetail';
@@ -15,10 +16,17 @@ type Props = {
   onRemoveBatch: (batch: Batch) => void;
   /** Called when removing or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
+  rowHint: PantryRowHint;
 };
 
 /** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple star. */
-export function RollUpRow({ rollUp, today, onRemoveBatch, onRowGone }: Props) {
+export function RollUpRow({
+  rollUp,
+  today,
+  onRemoveBatch,
+  onRowGone,
+  rowHint,
+}: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
@@ -28,6 +36,14 @@ export function RollUpRow({ rollUp, today, onRemoveBatch, onRowGone }: Props) {
     today,
     rollUp.batches[0].expiringSoon,
   );
+
+  // Tell the first-use hint when this roll-up is showing Batch rows to swipe.
+  const showingBatches = expanded && !rollUp.gone;
+  const { setOpen } = rowHint;
+  useEffect(() => {
+    setOpen(panelId, showingBatches);
+    return () => setOpen(panelId, false);
+  }, [panelId, showingBatches, setOpen]);
 
   // The last Batch was removed: if focus was on its row it is on the list or <body> now, so place it.
   const item = useRef<HTMLLIElement>(null);
@@ -157,10 +173,14 @@ export function RollUpRow({ rollUp, today, onRemoveBatch, onRowGone }: Props) {
             borderTop: `1px solid ${tokens.color.divider}`,
           }}
         >
-          {rollUp.batches.map((batch) => (
+          {rollUp.batches.map((batch, index) => (
             <BatchDetail
               key={batch.id}
               batch={batch}
+              peek={
+                index === 0 && rowHint.leader === panelId && rowHint.hint.peek
+              }
+              onLearned={rowHint.hint.onLearned}
               today={today}
               onRemove={onRemoveBatch}
               onLeft={() =>

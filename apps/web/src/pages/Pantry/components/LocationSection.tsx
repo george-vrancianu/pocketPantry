@@ -3,6 +3,7 @@ import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
 import type { Batch } from '../../../lib/pantry';
+import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { RollUpRow } from './RollUpRow';
 
@@ -15,6 +16,7 @@ type Props = {
   onRemoveBatch: (batch: Batch) => void;
   /** Called when the last row is gone and this section unmounts, so focus can go elsewhere. */
   onEmptied: () => void;
+  rowHint: PantryRowHint;
 };
 
 export function LocationSection({
@@ -24,6 +26,7 @@ export function LocationSection({
   today,
   onRemoveBatch,
   onEmptied,
+  rowHint,
 }: Props) {
   const { t } = useTranslation('pantry');
   const headingId = useId();
@@ -60,6 +63,7 @@ export function LocationSection({
             rollUp={row}
             today={today}
             onRemoveBatch={onRemoveBatch}
+            rowHint={rowHint}
             onRowGone={() =>
               rows.length > 1 ? heading.current?.focus() : onEmptied()
             }

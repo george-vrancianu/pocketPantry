@@ -25,6 +25,7 @@
       "template": "din acest șablon",
       "staples": "din produsele tale de bază"
     },
+    "hint": "Glisează la stânga pentru a elimina · ține apăsat pentru a edita",
     "keep": "Păstrează",
     "releaseToDelete": "Eliberează pentru a elimina",
     "remove": "Elimină",

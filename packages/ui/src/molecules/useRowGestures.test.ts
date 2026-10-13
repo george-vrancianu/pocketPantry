@@ -381,3 +381,34 @@ describe('hold to edit', () => {
     expect(onHold).not.toHaveBeenCalled();
   });
 });
+
+describe('onLearned', () => {
+  it('fires when a swipe is released in zone 1 or 2, not in zone 0', () => {
+    const onLearned = vi.fn();
+    const { drag, release } = setup({ onLearned });
+    drag(-60);
+    release(-60);
+    expect(onLearned).not.toHaveBeenCalled();
+    drag(-120);
+    release(-120);
+    expect(onLearned).toHaveBeenCalledTimes(1);
+    drag(-260);
+    release(-260);
+    expect(onLearned).toHaveBeenCalledTimes(2);
+  });
+
+  it('fires when a hold arms, and not when it is cancelled first', () => {
+    vi.useFakeTimers();
+    const onLearned = vi.fn();
+    const rig = setup({ onLearned, onHold: vi.fn() });
+    act(() => rig.bind().onPointerDown(pointer(100, 20)));
+    act(() => vi.advanceTimersByTime(499));
+    expect(onLearned).not.toHaveBeenCalled();
+    act(() => rig.bind().onPointerUp(pointer(100, 20)));
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onLearned).not.toHaveBeenCalled();
+    act(() => rig.bind().onPointerDown(pointer(100, 20)));
+    act(() => vi.advanceTimersByTime(500));
+    expect(onLearned).toHaveBeenCalledTimes(1);
+  });
+});
