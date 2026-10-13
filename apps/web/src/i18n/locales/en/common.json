@@ -32,5 +32,12 @@
     "undo": "Undo"
   },
   "unverified_one": "{{count}} item still unverified",
-  "unverified_other": "{{count}} items still unverified"
+  "unverified_other": "{{count}} items still unverified",
+  "amount": {
+    "placeholder": "Amount",
+    "label": "Amount of {{name}}, for example 2 or 500 g",
+    "unit": "Unit: {{unit}}",
+    "noUnit": "unit",
+    "units": "Units"
+  }
 }

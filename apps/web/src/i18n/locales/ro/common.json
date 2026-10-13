@@ -33,5 +33,12 @@
   },
   "unverified_one": "{{count}} articol încă neverificat",
   "unverified_few": "{{count}} articole încă neverificate",
-  "unverified_other": "{{count}} de articole încă neverificate"
+  "unverified_other": "{{count}} de articole încă neverificate",
+  "amount": {
+    "placeholder": "Cantitate",
+    "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
+    "unit": "Unitate: {{unit}}",
+    "noUnit": "unitate",
+    "units": "Unități"
+  }
 }

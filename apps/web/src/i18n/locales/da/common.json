@@ -32,5 +32,12 @@
     "undo": "Fortryd"
   },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",
-  "unverified_other": "{{count}} varer er stadig ikke bekræftet"
+  "unverified_other": "{{count}} varer er stadig ikke bekræftet",
+  "amount": {
+    "placeholder": "Mængde",
+    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "unit": "Enhed: {{unit}}",
+    "noUnit": "enhed",
+    "units": "Enheder"
+  }
 }

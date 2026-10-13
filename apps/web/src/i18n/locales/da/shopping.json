@@ -67,11 +67,6 @@
     "onListNoUnit": "Allerede på din liste uden enhed. Det tilføjer en separat linje."
   },
   "amount": {
-    "placeholder": "Mængde",
-    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
-    "unit": "Enhed: {{unit}}",
-    "noUnit": "enhed",
-    "units": "Enheder",
     "add": "Føj {{name}} til listen"
   },
   "suggestions": {
