@@ -264,7 +264,7 @@ export function SwipeRow({
   const pressedId = useId();
   useEffect(() => {
     if (!confirming) return;
-    keepRef.current?.focus();
+    keepRef.current?.focus({ preventScroll: true });
     const timer = setTimeout(() => {
       if (closeOpenConfirmation === closer) closeOpenConfirmation = null;
       setPhase('idle');
@@ -358,7 +358,9 @@ export function SwipeRow({
       onKeyDown={onKeyDown}
       sx={{
         ...listRowItemSx,
-        overflow: 'hidden',
+        // Clip, not hidden: a hidden row is still a scroll container, and focusing Keep while the confirmation
+        // slides in from the right would scroll the row sideways and leave the confirmation off to the left.
+        overflow: 'clip',
         userSelect: 'none',
         WebkitTouchCallout: 'none',
         touchAction: 'pan-y',
