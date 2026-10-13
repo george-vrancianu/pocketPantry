@@ -1918,6 +1918,62 @@ describe('PantryPage', () => {
         expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
       });
 
+      it('opens on the month of a Batch that expired 3 months ago, and lets that date be re-selected', async () => {
+        const scrolling = trackScrolling();
+        const user = userEvent.setup();
+        const calls = stubManaged(
+          stock().map((b) =>
+            b.id === 'milk-2' ? { ...b, expiryDate: '2026-07-14' } : b,
+          ),
+        );
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        // The expired Batch sorts first.
+        await openEditor(user, batchRows()[0]);
+        const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+        await user.click(
+          within(form).getByRole('button', {
+            name: /^Expires, Tuesday, July 14,/,
+          }),
+        );
+        const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+        const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+
+        const headings = within(calendar)
+          .getAllByRole('heading')
+          .map((heading) => heading.textContent);
+        expect(headings[0]).toBe('July 2026');
+        expect(
+          scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
+        ).toHaveTextContent('July 2026');
+        const day = within(calendar).getByRole('button', {
+          name: 'Tuesday, July 14, 2026',
+        });
+        expect(day).toHaveAttribute('aria-pressed', 'true');
+
+        await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+        expect(day).toHaveAttribute('aria-pressed', 'false');
+        await user.click(day);
+        expect(day).toHaveAttribute('aria-pressed', 'true');
+        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('dialog', { name: 'Expires' }),
+          ).not.toBeInTheDocument(),
+        );
+
+        // Back on the date the Batch already had: nothing to send.
+        await user.click(
+          within(form).getByRole('button', { name: 'Save changes' }),
+        );
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('form', { name: 'Edit Milk batch' }),
+          ).not.toBeInTheDocument(),
+        );
+        expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
+      });
+
       it('saves a day tapped on the calendar', async () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);

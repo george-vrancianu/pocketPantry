@@ -1,4 +1,4 @@
-import { localIso } from '../../lib/pantry';
+import { fromIso, localIso } from '../../lib/pantry';
 
 export type CalendarMonth = {
   /** `YYYY-MM`. */
@@ -28,22 +28,26 @@ function weeksOf(year: number, monthIndex: number): (string | null)[][] {
 
 /**
  * The calendar's months: one month before `today` through twelve after, extended to the value's month when the
- * value is later.
+ * value is earlier or later.
  */
 export function calendarMonths(
   today: Date,
   value: string | null,
 ): CalendarMonth[] {
+  const oneBefore = new Date(today.getFullYear(), today.getMonth() - 1, 1);
   const twelveAhead = monthKey(
     localIso(new Date(today.getFullYear(), today.getMonth() + 12, 1)),
   );
+  const valueMonth = value === null ? null : monthKey(value);
+  const start =
+    valueMonth !== null && valueMonth < monthKey(localIso(oneBefore))
+      ? fromIso(`${valueMonth}-01`)
+      : oneBefore;
   const last =
-    value !== null && monthKey(value) > twelveAhead
-      ? monthKey(value)
-      : twelveAhead;
+    valueMonth !== null && valueMonth > twelveAhead ? valueMonth : twelveAhead;
   const months: CalendarMonth[] = [];
-  for (let offset = -1; ; offset += 1) {
-    const first = new Date(today.getFullYear(), today.getMonth() + offset, 1);
+  for (let offset = 0; ; offset += 1) {
+    const first = new Date(start.getFullYear(), start.getMonth() + offset, 1);
     const key = monthKey(localIso(first));
     if (key > last) return months;
     months.push({
