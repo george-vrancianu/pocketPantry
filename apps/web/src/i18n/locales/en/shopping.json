@@ -42,7 +42,6 @@
     "reload": "Reload",
     "cancel": "Back to list"
   },
-  "staples": "Staples",
   "addItems": "Add items",
   "added": "Added {{name}}",
   "sheet": {
@@ -67,6 +66,7 @@
     "onList": "On list",
     "onListHint": "Already on your list. Adding again increases the amount.",
     "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",
+    "onListOtherUnits": "Already on your list in other units. This adds a separate line.",
     "onListNoUnit": "Already on your list with no unit. This adds a separate line."
   },
   "amount": {
@@ -76,5 +76,14 @@
     "noUnit": "unit",
     "units": "Units",
     "add": "Add {{name}} to the list"
+  },
+  "suggestions": {
+    "missingLabel": "Missing staples · {{count}}",
+    "usedUpLabel": "Recently used up · {{count}}",
+    "stapleLabel": "Staples",
+    "allStocked": "All your staples are stocked.",
+    "manage": "Manage",
+    "dismissed": "Dismissed {{name}}",
+    "dismiss": "Dismiss {{name}}"
   }
 }

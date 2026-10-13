@@ -14,16 +14,5 @@
   "toggle": {
     "add": "Make {{name}} a staple",
     "remove": "Remove {{name}} from staples"
-  },
-  "suggestions": {
-    "title": "Suggestions",
-    "heading_one": "Suggested, {{count}} staple missing",
-    "heading_few": "Suggested, {{count}} staples missing",
-    "heading_other": "Suggested, {{count}} staples missing",
-    "add": "Add {{name}} to the list",
-    "addShort": "Add",
-    "dismiss": "Dismiss {{name}}",
-    "usedUpHeading_one": "Recently used up, {{count}} ingredient",
-    "usedUpHeading_other": "Recently used up, {{count}} ingredients"
   }
 }

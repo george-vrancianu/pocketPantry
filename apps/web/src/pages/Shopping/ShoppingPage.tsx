@@ -2,7 +2,6 @@ import {
   Alert,
   Box,
   Button,
-  Link,
   Spinner,
   Stack,
   Typography,
@@ -18,7 +17,6 @@ import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddSheet } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
-import { SuggestionsSection } from './components/SuggestionsSection';
 import { SummaryCard } from './components/SummaryCard';
 import { TemplateActions } from './templates/TemplateActions';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
@@ -45,10 +43,7 @@ export function ShoppingPage() {
   return (
     <StapleErrorProvider report={stapleErrors.report}>
       <UnverifiedToast />
-      <AppScreenHeader
-        title={t('shopping:title')}
-        trailing={<Link href="/shopping/staples">{t('shopping:staples')}</Link>}
-      />
+      <AppScreenHeader title={t('shopping:title')} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
@@ -66,11 +61,6 @@ export function ShoppingPage() {
                 screen.resetAddError();
                 setSheetOpen(true);
               }}
-            />
-            <SuggestionsSection
-              staples={screen.staples}
-              usedUp={screen.usedUp}
-              onAdd={screen.add}
             />
             <TemplateActions />
             {screen.list.groups.length === 0 ? (
@@ -104,6 +94,8 @@ export function ShoppingPage() {
         adding={screen.adding}
         onAdd={screen.add}
         addError={screen.addError}
+        staples={screen.staples}
+        usedUp={screen.usedUp}
       />
     </StapleErrorProvider>
   );

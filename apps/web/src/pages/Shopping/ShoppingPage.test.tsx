@@ -1,3 +1,4 @@
+import { tokens } from '@pocket-pantry/ui';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -266,7 +267,7 @@ describe('ShoppingPage', () => {
 
   describe('Add sheet', () => {
     const openSheet = async (user = userEvent.setup()) => {
-      await screen.findByText('1 to buy');
+      await screen.findByText(/^\d+ to buy$/);
       await user.click(screen.getByRole('button', { name: 'Add items' }));
       return screen.findByRole('dialog', { name: 'Add to list' });
     };
@@ -393,8 +394,8 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       const second = await findParmesanRow(userEvent.setup());
       expect(second.option.firstElementChild).toHaveStyle({
-        backgroundColor: '#E2E8DD',
-        color: '#55635A',
+        backgroundColor: tokens.color.chipNeutral,
+        color: tokens.color.muted,
       });
     });
 
@@ -431,6 +432,145 @@ describe('ShoppingPage', () => {
         expect(within(option).queryByText('On list')).toBeNull();
         await user.click(option);
         expect(amountHint(dialog)).toBeNull();
+      });
+
+      it('names the other units, or says "other units" when one line has none', async () => {
+        const lines = (...units: ShoppingItem['unit'][]) =>
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: dairy,
+              items: units.map((unit, i) =>
+                item({
+                  id: `p${i}`,
+                  ingredientId: 'parmesan-id',
+                  name: 'Parmesan',
+                  quantity: 1,
+                  unit,
+                }),
+              ),
+            },
+          ]);
+        withParmesan({}, lines('kg', 'pcs'));
+        const view = renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        let found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list in kg and pcs. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        view.unmount();
+        vi.unstubAllGlobals();
+
+        withParmesan({}, lines('kg', null));
+        const mixed = renderWithProviders(<ShoppingPage />);
+        found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list in other units. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        mixed.unmount();
+        vi.unstubAllGlobals();
+
+        withParmesan({}, lines(null));
+        renderWithProviders(<ShoppingPage />);
+        found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list with no unit. This adds a separate line.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('ends the Romanian hint without a double period after an abbreviated unit', async () => {
+        withParmesan(
+          {},
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: dairy,
+              items: [
+                item({
+                  id: 'p1',
+                  ingredientId: 'parmesan-id',
+                  name: 'Parmesan',
+                  quantity: 1,
+                  unit: 'pcs',
+                }),
+              ],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />, { locale: 'ro' });
+        const user = userEvent.setup();
+        await screen.findByText('1 de cumpărat');
+        await user.click(
+          screen.getByRole('button', { name: 'Adaugă produse' }),
+        );
+        const dialog = await screen.findByRole('dialog', {
+          name: 'Adaugă în listă',
+        });
+        await user.type(
+          within(dialog).getByRole('combobox', { name: 'Caută ingrediente' }),
+          'parm',
+        );
+        await user.click(
+          await within(dialog).findByRole('option', { name: /Parmesan/ }),
+        );
+        expect(
+          within(dialog).getByText(
+            'Este deja pe listă în buc.; se adaugă o linie separată.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('tags a typed name that matches an unchecked Unmatched line', async () => {
+        withParmesan(
+          {},
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: null,
+              items: [
+                item({
+                  id: 'u1',
+                  name: 'dragon  Fruit',
+                  quantity: 2,
+                  unit: 'pcs',
+                  unmatched: true,
+                }),
+              ],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const dialog = await openSheet(user);
+        await user.type(search(dialog), ' Dragon fruit ');
+        const row = await within(dialog).findByRole('option', {
+          name: /Add “Dragon fruit”/,
+        });
+        expect(within(row).getByText('On list')).toBeVisible();
+        await user.click(row);
+        expect(
+          within(dialog).getByText(
+            'Already on your list in pcs. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: unit' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'pcs' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
       });
 
       it('tags it and explains the merge, following the unit', async () => {

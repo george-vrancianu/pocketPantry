@@ -1,5 +1,12 @@
 import { Alert, Box, Typography, tokens, useToast } from '@pocket-pantry/ui';
-import { useId, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useId,
+  useState,
+  type Dispatch,
+  type KeyboardEvent,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCatalogSearch,
@@ -12,12 +19,12 @@ import {
   type NewShoppingItem,
   type ShoppingItem,
 } from '../../../../lib/shopping';
+import type { Suggestion } from '../../../../lib/suggestions';
+import { EmptySearch } from './EmptySearch';
+import { TOAST_ABOVE_SHEET } from './sheetToast';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
-
-/** Distance in px that lifts a toast clear of the sheet's bottom edge. */
-const TOAST_ABOVE_SHEET = 92;
 
 /** A result row: a Catalog match, or the typed text as an Unmatched item. */
 type Row =
@@ -28,13 +35,22 @@ type Row =
 export type OpenRow = { key: string; quantity: string; unit: Unit | '' };
 
 /** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
-export type IngredientsState = { query: string; open: OpenRow | null };
+export type IngredientsState = {
+  query: string;
+  open: OpenRow | null;
+  /** Ingredient ids added from a Suggestion chip, until the Suggestions drop them. */
+  suggestionsAdded: string[];
+};
 
-export const emptyIngredients: IngredientsState = { query: '', open: null };
+export const emptyIngredients: IngredientsState = {
+  query: '',
+  open: null,
+  suggestionsAdded: [],
+};
 
 export type IngredientsTabProps = {
   state: IngredientsState;
-  onStateChange: (state: IngredientsState) => void;
+  onStateChange: Dispatch<SetStateAction<IngredientsState>>;
   /** The search input, so the sheet can focus it once it has slid in. */
   searchRef: RefObject<HTMLInputElement | null>;
   adding: boolean;
@@ -42,6 +58,8 @@ export type IngredientsTabProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, shown above the search. */
   error: string | null;
+  staples: Suggestion[];
+  usedUp: Suggestion[];
   /** Called after each successful add. */
   onAdded: () => void;
 };
@@ -54,27 +72,39 @@ export function IngredientsTab({
   adding,
   onAdd,
   error,
+  staples,
+  usedUp,
   onAdded,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
   const toast = useToast();
   const listboxId = useId();
   const { query, open } = state;
-  const unitName = (unit: Unit | null) =>
-    unit ? t(`common:units.${unit}`) : null;
-  // What adding will do, following the server: it merges only on the same Ingredient and unit.
+  // What adding will do, following the server: it merges only on the same Ingredient (or typed name) and unit.
   const mergeHint = (lines: ShoppingItem[], unit: Unit | '') => {
     if (lines.length === 0) return null;
     if (lines.some((line) => (line.unit ?? '') === unit)) {
       return t('search.onListHint');
     }
-    const units = [...new Set(lines.map((line) => unitName(line.unit)))];
-    return units.every((name) => name)
-      ? t('search.onListOtherUnit', { unit: units.join(', ') })
-      : t('search.onListNoUnit');
+    const named = [
+      ...new Set(
+        lines.flatMap((line) =>
+          line.unit ? [t(`common:units.${line.unit}`)] : [],
+        ),
+      ),
+    ];
+    if (named.length === 0) return t('search.onListNoUnit');
+    if (named.length < lines.length && lines.some((line) => !line.unit)) {
+      return t('search.onListOtherUnits');
+    }
+    return t('search.onListOtherUnit', {
+      unit: new Intl.ListFormat(i18n.language, { type: 'conjunction' }).format(
+        named,
+      ),
+    });
   };
   const setOpen = (next: OpenRow | null) =>
-    onStateChange({ ...state, open: next });
+    onStateChange((s) => ({ ...s, open: next }));
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const search = useCatalogSearch(query, i18n.language);
@@ -118,7 +148,7 @@ export function IngredientsTab({
   };
 
   const change = (value: string) => {
-    onStateChange({ query: value, open: null });
+    onStateChange((s) => ({ ...s, query: value, open: null }));
     setActiveIndex(-1);
   };
 
@@ -151,7 +181,10 @@ export function IngredientsTab({
     if (!added) return;
     toast.show(t('added', { name }), { bottom: TOAST_ABOVE_SHEET });
     onAdded();
-    onStateChange(emptyIngredients);
+    onStateChange((s) => ({
+      ...emptyIngredients,
+      suggestionsAdded: s.suggestionsAdded,
+    }));
     setActiveIndex(-1);
     searchInput.current?.focus();
   };
@@ -180,6 +213,21 @@ export function IngredientsTab({
         expanded={rows.length > 0}
         activeOptionId={active >= 0 ? optionId(active) : undefined}
       />
+      {typed ? null : (
+        <EmptySearch
+          staples={staples}
+          usedUp={usedUp}
+          addedIds={state.suggestionsAdded}
+          onAdd={onAdd}
+          onAdded={(ingredientId) => {
+            onAdded();
+            onStateChange((s) => ({
+              ...s,
+              suggestionsAdded: [...s.suggestionsAdded, ingredientId],
+            }));
+          }}
+        />
+      )}
       <Typography
         role="status"
         variant="sectionLabel"
@@ -201,11 +249,17 @@ export function IngredientsTab({
         {rows.map((row, index) => {
           const name = row.kind === 'catalog' ? row.result.name : row.name;
           const isOpen = open?.key === row.key;
-          const onListLines =
+          // Unmatched lines merge on the typed name, ignoring case and spacing.
+          const sameName = (value: string) =>
+            value.trim().replace(/\s+/g, ' ').toLowerCase();
+          const onListLines = unchecked.filter((line) =>
             row.kind === 'catalog'
-              ? unchecked.filter((line) => line.ingredientId === row.result.id)
-              : [];
-          const hint = open ? mergeHint(onListLines, open.unit) : null;
+              ? line.ingredientId === row.result.id
+              : line.ingredientId === null &&
+                sameName(line.name) === sameName(row.name),
+          );
+          const hint =
+            isOpen && open ? mergeHint(onListLines, open.unit) : null;
           return (
             <ResultRow
               key={row.key}
