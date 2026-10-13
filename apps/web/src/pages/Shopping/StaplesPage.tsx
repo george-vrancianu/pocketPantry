@@ -5,6 +5,7 @@ import {
   CloseIcon,
   IconButton,
   Link,
+  ListRow,
   Spinner,
   Stack,
   TextField,
@@ -112,14 +113,9 @@ function StapleRow({
   };
 
   return (
-    <Box
-      component="li"
-      sx={{ py: 1.25, '& + &': { borderTop: 1, borderColor: 'divider' } }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-        <Typography sx={{ flexGrow: 1, fontSize: 15, fontWeight: 600 }}>
-          {staple.name}
-        </Typography>
+    <ListRow
+      title={staple.name}
+      trailing={
         <IconButton
           label={t('remove', { name: staple.name })}
           tone="plain"
@@ -128,45 +124,50 @@ function StapleRow({
         >
           <CloseIcon size={18} />
         </IconButton>
-      </Box>
-      <Box
-        component="form"
-        onSubmit={submit}
-        noValidate
-        sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}
-      >
-        <TextField
-          label={t('quantityOf', { name: staple.name })}
-          type="number"
-          value={quantity}
-          onChange={(event) => setQuantity(event.target.value)}
-          error={!amount.valid}
-          slotProps={{ htmlInput: { min: 0, step: 'any' } }}
-        />
-        <TextField
-          select
-          label={t('unitOf', { name: staple.name })}
-          value={unit}
-          error={needsUnit}
-          helperText={needsUnit ? t('unitRequired') : undefined}
-          onChange={(event) => setUnit(event.target.value as Unit | '')}
-          slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
+      }
+      below={
+        <Box
+          component="form"
+          onSubmit={submit}
+          noValidate
+          sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}
         >
-          <option value="">{t('noUnit')}</option>
-          {UNITS.map((value) => (
-            <option key={value} value={value}>
-              {t(`common:units.${value}`)}
-            </option>
-          ))}
-        </TextField>
-        <Button
-          type="submit"
-          disabled={!dirty || !amount.valid || needsUnit || saving}
-          aria-label={t('save', { name: staple.name })}
-        >
-          {t('saveShort')}
-        </Button>
-      </Box>
-    </Box>
+          <TextField
+            label={t('quantityOf', { name: staple.name })}
+            type="number"
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+            error={!amount.valid}
+            slotProps={{ htmlInput: { min: 0, step: 'any' } }}
+          />
+          <TextField
+            select
+            label={t('unitOf', { name: staple.name })}
+            value={unit}
+            error={needsUnit}
+            helperText={needsUnit ? t('unitRequired') : undefined}
+            onChange={(event) => setUnit(event.target.value as Unit | '')}
+            slotProps={{
+              select: { native: true },
+              inputLabel: { shrink: true },
+            }}
+          >
+            <option value="">{t('noUnit')}</option>
+            {UNITS.map((value) => (
+              <option key={value} value={value}>
+                {t(`common:units.${value}`)}
+              </option>
+            ))}
+          </TextField>
+          <Button
+            type="submit"
+            disabled={!dirty || !amount.valid || needsUnit || saving}
+            aria-label={t('save', { name: staple.name })}
+          >
+            {t('saveShort')}
+          </Button>
+        </Box>
+      }
+    />
   );
 }

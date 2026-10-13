@@ -5,6 +5,7 @@ import {
   CloseIcon,
   IconButton,
   Link,
+  ListRow,
   Spinner,
   Stack,
   TextField,
@@ -128,30 +129,27 @@ function Editor({
       ) : (
         <Stack component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {lines.map((line) => (
-            <Stack
-              component="li"
+            <ListRow
               key={line.id}
-              direction="row"
-              sx={{ alignItems: 'center', justifyContent: 'space-between' }}
-            >
-              <Typography>
-                {line.name}
-                {line.quantity !== null
+              title={`${line.name}${
+                line.quantity !== null
                   ? `, ${line.quantity}${line.unit ? ` ${t(`common:units.${line.unit}`)}` : ''}`
-                  : ''}
-              </Typography>
-              <IconButton
-                label={t('templates:editor.remove', { name: line.name })}
-                disabled={update.isPending}
-                onClick={() =>
-                  void replaceLines(
-                    lines.filter((l) => l.id !== line.id).map(toLineBody),
-                  )
-                }
-              >
-                <CloseIcon size={18} />
-              </IconButton>
-            </Stack>
+                  : ''
+              }`}
+              trailing={
+                <IconButton
+                  label={t('templates:editor.remove', { name: line.name })}
+                  disabled={update.isPending}
+                  onClick={() =>
+                    void replaceLines(
+                      lines.filter((l) => l.id !== line.id).map(toLineBody),
+                    )
+                  }
+                >
+                  <CloseIcon size={18} />
+                </IconButton>
+              }
+            />
           ))}
         </Stack>
       )}
