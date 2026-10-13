@@ -2,6 +2,7 @@ import { pantryMatchesQueryKey, suggestionsQueryKey } from './queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
+import { normalizeName } from './normalizeName';
 
 export type ShoppingItem = {
   id: string;
@@ -33,6 +34,31 @@ export type NewShoppingItem = {
   quantity?: number;
   unit?: Unit;
 };
+
+/** How many items are on the list, ticked ones included. */
+export const itemCount = (summary: ShoppingList['summary']): number =>
+  summary.remaining + summary.checked;
+
+/** The items still to buy: every group's unchecked items, flattened. */
+export const uncheckedItems = (
+  list: ShoppingList | undefined,
+): ShoppingItem[] =>
+  (list?.groups ?? []).flatMap((group) =>
+    group.items.filter((item) => !item.checked),
+  );
+
+/**
+ * Whether `item` is the thing `target` names: the same Ingredient, or for an
+ * Unmatched target the same normalised typed name, as the server merges them.
+ */
+export const isOnList = (
+  item: ShoppingItem,
+  target: { ingredientId: string | null; name: string },
+): boolean =>
+  target.ingredientId
+    ? item.ingredientId === target.ingredientId
+    : item.ingredientId === null &&
+      normalizeName(item.name) === normalizeName(target.name);
 
 /** How often the list refetches, so other Members' changes show up without a reload. */
 export const SHOPPING_POLL_INTERVAL_MS = 10_000;

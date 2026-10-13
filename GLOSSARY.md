@@ -109,8 +109,8 @@ A Recipe whose missing ingredients added a Shopping Item. Always a specific Base
 _Avoid_: Recipe tag, origin
 
 **Finish Shopping**:
-The action that moves checked Shopping Items into the Pantry as Batches with Default Expiry, after a Review, archives the list, and starts a new one that carries over the unchecked items.
-_Avoid_: Move to pantry, checkout, complete
+The action that moves checked Shopping Items into the Pantry as Batches with Default Expiry, after a Review, archives the list, and starts a new one that carries over the unchecked items. The button that starts it may read "Move N to Pantry"; the action is still Finish Shopping.
+_Avoid_: Move to pantry (as a name for the action), checkout, complete
 
 **Staple**:
 An Ingredient the Family always wants in stock, with an optional preferred quantity and unit. A Staple with no unexpired Batch in the Pantry is missing and becomes a Suggestion.

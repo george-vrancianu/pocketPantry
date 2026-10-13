@@ -3,7 +3,11 @@
   "summary": {
     "toBuy": "{{count}} at købe",
     "inBasket": "{{checked}} af {{total}} i din kurv",
-    "progress": "Fremdrift i kurven"
+    "progress": "Fremdrift i kurven",
+    "tickedOff_one": "{{count}} afkrydset",
+    "tickedOff_other": "{{count}} afkrydset",
+    "moveToPantry_one": "Flyt {{count}} til spisekammeret",
+    "moveToPantry_other": "Flyt {{count}} til spisekammeret"
   },
   "add": {
     "quantity": "Mængde",
@@ -14,12 +18,17 @@
   },
   "item": {
     "remove": "Fjern {{name}}",
-    "unmatched": "Umatchet"
+    "unmatched": "Umatchet",
+    "removed": "Fjernede {{name}}",
+    "nowStaple": "{{name}} er nu en basisvare",
+    "removedFromStaples": "{{name}} fjernet fra basisvarer"
   },
   "unmatchedGroup": "Ikke i kataloget",
-  "empty": "Din liste er tom. Tilføj det, du har brug for, ovenfor.",
+  "empty": {
+    "title": "Din liste er tom.",
+    "hint": "Tilføj det, du mangler, eller start fra en skabelon."
+  },
   "finish": {
-    "button": "Afslut indkøb",
     "reviewTitle": "Føj til dit spisekammer",
     "reviewHint": "Tjek, hvad du har købt. Ret mængde, placering eller udløbsdato, eller fjern en vare.",
     "drop": "Fravælg {{name}}",
@@ -32,5 +41,50 @@
     "reload": "Genindlæs",
     "cancel": "Tilbage til listen"
   },
-  "staples": "Basisvarer"
+  "addItems": "Tilføj varer",
+  "added": "Tilføjede {{name}}",
+  "sheet": {
+    "title": "Føj til listen",
+    "done": "Færdig",
+    "doneCount_one": "Færdig, {{count}} tilføjet",
+    "doneCount_other": "Færdig, {{count}} tilføjet",
+    "tabsLabel": "Føj til listen",
+    "tabs": {
+      "ingredients": "Ingredienser",
+      "templates": "Skabeloner"
+    }
+  },
+  "search": {
+    "placeholder": "Søg efter ingredienser",
+    "clear": "Ryd søgning",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} match",
+    "noMatch": "Intet match i kataloget",
+    "freeText": "Tilføj “{{name}}”",
+    "freeTextHint": "Ikke i kataloget, tilføjes som fri tekst",
+    "onList": "På listen",
+    "onListHint": "Allerede på din liste. Hvis du tilføjer igen, øges mængden.",
+    "onListOtherUnit": "Allerede på din liste i {{unit}}; det tilføjer en separat linje.",
+    "onListOtherUnits": "Allerede på din liste i andre enheder; det tilføjer en separat linje.",
+    "onListNoUnit": "Allerede på din liste uden enhed. Det tilføjer en separat linje."
+  },
+  "amount": {
+    "placeholder": "Mængde",
+    "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "unit": "Enhed: {{unit}}",
+    "noUnit": "enhed",
+    "units": "Enheder",
+    "add": "Føj {{name}} til listen"
+  },
+  "suggestions": {
+    "missingLabel": "Manglende basisvarer · {{count}}",
+    "usedUpLabel": "Brugt op for nylig · {{count}}",
+    "stapleLabel": "Basisvarer",
+    "allStocked": "Alle dine basisvarer er på lager.",
+    "manage": "Administrer",
+    "dismissed": "Afviste {{name}}",
+    "dismiss": "Afvis {{name}}"
+  },
+  "templatesFromSearch": "Eller start fra en skabelon",
+  "seeAll": "Se alle"
 }

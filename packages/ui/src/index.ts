@@ -1,6 +1,7 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme } from './theme/theme';
 export { tokens } from './theme/tokens';
+export { aisleTint, aisleTints, type AisleTint } from './theme/aisleTints';
 export { useBreakpointUp } from './theme/useBreakpointUp';
 export { usePrefersReducedMotion } from './theme/usePrefersReducedMotion';
 export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
@@ -28,6 +29,8 @@ export {
   ChevronDownIcon,
   ChevronRightIcon,
   SearchIcon,
+  BookmarkIcon,
+  TemplateIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
@@ -87,8 +90,14 @@ export {
   type SegmentedControlOption,
   type SegmentedControlProps,
 } from './molecules/SegmentedControl';
+export { Sheet, type SheetProps } from './molecules/Sheet';
 export { DockItem, type DockItemProps } from './molecules/DockItem';
 
+export {
+  useToast,
+  type ToastApi,
+  type ToastOptions,
+} from './molecules/ToastProvider';
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
 
 export { CenteredLayout } from './templates/CenteredLayout';

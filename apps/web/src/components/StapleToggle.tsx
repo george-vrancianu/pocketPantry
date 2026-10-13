@@ -32,10 +32,12 @@ type Props = {
   ingredientId: string;
   /** The Ingredient's display name, for the button's accessible name. */
   name: string;
+  /** Called after the change is saved, with whether the Ingredient is now a Staple. */
+  onToggled?: (isStaple: boolean) => void;
 };
 
 /** A ★ that marks an Ingredient as a Staple, or unmarks it. Unmatched names have no toggle. */
-export function StapleToggle({ ingredientId, name }: Props) {
+export function StapleToggle({ ingredientId, name, onToggled }: Props) {
   const { t, i18n } = useTranslation('staples');
   const staples = useStaples(i18n.language);
   const { add, remove } = useStapleMutations(i18n.language);
@@ -52,7 +54,10 @@ export function StapleToggle({ ingredientId, name }: Props) {
       ariaDisabled={busy || staples.data === undefined}
       onClick={() => {
         const options = {
-          onSuccess: () => report(null),
+          onSuccess: () => {
+            report(null);
+            onToggled?.(!staple);
+          },
           onError: (error: unknown) => report(translateApiError(t, error)),
         };
         if (staple) remove.mutate(staple.id, options);

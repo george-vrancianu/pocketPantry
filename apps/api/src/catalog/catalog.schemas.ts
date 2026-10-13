@@ -33,7 +33,11 @@ export type CatalogSearchResult = {
   name: string;
   defaultUnit: (typeof ingredientUnit.enumValues)[number];
   leafCategory: { id: string; name: string };
-  parentCategory: { id: string; name: string; aisle: string };
+  parentCategory: {
+    id: string;
+    name: string;
+    aisle: { id: string; name: string };
+  };
   /** Default Expiry (days) and Location, resolved Leaf then Parent. */
   defaults: ResolvedCatalogDefaults;
 };

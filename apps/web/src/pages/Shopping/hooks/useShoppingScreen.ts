@@ -1,3 +1,4 @@
+import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -10,12 +11,14 @@ import { useSuggestions } from '../../../lib/suggestions';
 
 export function useShoppingScreen() {
   const { t, i18n } = useTranslation();
+  const toast = useToast();
   const list = useShoppingList(i18n.language);
   const { add, setChecked, remove } = useShoppingMutations(i18n.language);
   // A failed Suggestions request just hides the section; the list still works.
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
 
-  const error = list.error ?? add.error ?? setChecked.error ?? remove.error;
+  // A failed add is shown by the Add sheet, next to what was typed.
+  const error = list.error ?? setChecked.error ?? remove.error;
 
   return {
     list: list.data,
@@ -24,7 +27,10 @@ export function useShoppingScreen() {
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,
-    /** Resolves true when added; the error itself is shown by the page. */
+    addError: add.error ? translateApiError(t, add.error) : null,
+    /** Forget a failed add, e.g. when the sheet opens. */
+    resetAddError: () => add.reset(),
+    /** Resolves true when added; on false, `addError` says why. */
     add: (item: NewShoppingItem) =>
       add.mutateAsync(item).then(
         () => true,
@@ -32,7 +38,10 @@ export function useShoppingScreen() {
       ),
     toggle: (id: string, checked: boolean) =>
       setChecked.mutate({ id, checked }),
-    remove: (id: string) => remove.mutate(id),
+    remove: (id: string, name: string) =>
+      remove.mutate(id, {
+        onSuccess: () => toast.show(t('shopping:item.removed', { name })),
+      }),
     retry: () => void list.refetch(),
   };
 }

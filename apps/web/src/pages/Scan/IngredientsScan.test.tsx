@@ -30,7 +30,11 @@ const catalogItem = (id: string, name: string): CatalogSearchResult => ({
   name,
   defaultUnit: 'pcs',
   leafCategory: { id: `${id}-leaf`, name },
-  parentCategory: { id: 'produce', name: 'Produce', aisle: 'Produce' },
+  parentCategory: {
+    id: 'produce',
+    name: 'Produce',
+    aisle: { id: 'aisle', name: 'Produce' },
+  },
   defaults: { expiryDays: 7, location: 'fridge' },
 });
 

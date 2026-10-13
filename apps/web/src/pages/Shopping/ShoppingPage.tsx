@@ -1,7 +1,7 @@
 import {
   Alert,
+  Box,
   Button,
-  Link,
   Spinner,
   Stack,
   Typography,
@@ -13,13 +13,13 @@ import {
   StapleErrorProvider,
   useStapleErrors,
 } from '../../components/StapleToggle';
+import { itemCount } from '../../lib/shopping';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { AddItemForm } from './components/AddItemForm';
+import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
-import { SuggestionsSection } from './components/SuggestionsSection';
+import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
-import { TemplateActions } from './templates/TemplateActions';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
@@ -27,6 +27,15 @@ export function ShoppingPage() {
   const screen = useShoppingScreen();
   const stapleErrors = useStapleErrors();
   const [reviewing, setReviewing] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
+
+  // Every way in starts clean, with no error left from an earlier opening.
+  const openSheet = (view: SheetView) => {
+    screen.resetAddError();
+    setSheetView(view);
+    setSheetOpen(true);
+  };
 
   if (reviewing) {
     return (
@@ -43,10 +52,7 @@ export function ShoppingPage() {
   return (
     <StapleErrorProvider report={stapleErrors.report}>
       <UnverifiedToast />
-      <AppScreenHeader
-        title={t('shopping:title')}
-        trailing={<Link href="/shopping/staples">{t('shopping:staples')}</Link>}
-      />
+      <AppScreenHeader title={t('shopping:title')} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
         {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
@@ -59,18 +65,24 @@ export function ShoppingPage() {
             <SummaryCard
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
+              onFinish={() => setReviewing(true)}
+              onAddItems={() => openSheet({ tab: 'ingredients' })}
             />
-            <SuggestionsSection
-              staples={screen.staples}
-              usedUp={screen.usedUp}
-              onAdd={screen.add}
-            />
-            <AddItemForm adding={screen.adding} onAdd={screen.add} />
-            <TemplateActions />
             {screen.list.groups.length === 0 ? (
-              <Typography color="text.secondary">
-                {t('shopping:empty')}
-              </Typography>
+              <Box sx={{ textAlign: 'center', py: 3 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 18,
+                    fontWeight: 700,
+                  }}
+                >
+                  {t('shopping:empty.title')}
+                </Typography>
+                <Typography variant="meta" color="text.secondary">
+                  {t('shopping:empty.hint')}
+                </Typography>
+              </Box>
             ) : (
               <ShoppingGroups
                 groups={screen.list.groups}
@@ -78,14 +90,25 @@ export function ShoppingPage() {
                 onRemove={screen.remove}
               />
             )}
-            {screen.list.summary.checked > 0 ? (
-              <Button onClick={() => setReviewing(true)}>
-                {t('shopping:finish.button')}
-              </Button>
+            {screen.list.groups.length > 0 ? (
+              <SaveListRow
+                count={itemCount(screen.list.summary)}
+                onClick={() => openSheet({ tab: 'templates', view: 'save' })}
+              />
             ) : null}
           </>
         ) : null}
       </Stack>
+      <AddSheet
+        open={sheetOpen}
+        initialView={sheetView}
+        onClose={() => setSheetOpen(false)}
+        adding={screen.adding}
+        onAdd={screen.add}
+        addError={screen.addError}
+        staples={screen.staples}
+        usedUp={screen.usedUp}
+      />
     </StapleErrorProvider>
   );
 }

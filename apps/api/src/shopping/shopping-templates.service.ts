@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
@@ -28,6 +28,8 @@ import {
   type UpdateTemplateBody,
 } from './shopping-templates.schemas';
 
+const PREVIEW_NAMES = 4;
+
 const notFound = () => new ApiException(404, 'shopping.template_not_found');
 const tooManyLines = () =>
   new ApiException(400, 'shopping.template_too_many_lines', {
@@ -46,7 +48,10 @@ export class ShoppingTemplatesService {
     private readonly settings: SettingsService,
   ) {}
 
-  async list(memberId: string): Promise<{ templates: TemplateSummaryView[] }> {
+  async list(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<{ templates: TemplateSummaryView[] }> {
     const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database
       .select({
@@ -62,7 +67,55 @@ export class ShoppingTemplatesService {
       .where(eq(shoppingTemplates.familyId, familyId))
       .groupBy(shoppingTemplates.id)
       .orderBy(asc(shoppingTemplates.createdAt), asc(shoppingTemplates.id));
-    return { templates: rows };
+    const previews = await this.previewLines(
+      rows.map((row) => row.id),
+      locale,
+    );
+    return {
+      templates: rows.map((row) => ({
+        ...row,
+        previewNames: previews.get(row.id) ?? [],
+      })),
+    };
+  }
+
+  /** The first lines' names per Template, in stored order, localised. */
+  private async previewLines(
+    templateIds: string[],
+    locale: CatalogLocale,
+  ): Promise<Map<string, string[]>> {
+    if (templateIds.length === 0) return new Map();
+    const lines = await this.database
+      .select({
+        templateId: shoppingTemplateLines.templateId,
+        ingredientId: shoppingTemplateLines.ingredientId,
+        name: shoppingTemplateLines.name,
+      })
+      .from(shoppingTemplateLines)
+      .where(
+        and(
+          inArray(shoppingTemplateLines.templateId, templateIds),
+          lt(shoppingTemplateLines.position, PREVIEW_NAMES),
+        ),
+      )
+      .orderBy(asc(shoppingTemplateLines.position));
+    const placements = await loadIngredientPlacements(
+      this.database,
+      locale,
+      lines.flatMap((line) => (line.ingredientId ? [line.ingredientId] : [])),
+    );
+    const previews = new Map<string, string[]>();
+    for (const line of lines) {
+      const name =
+        (line.ingredientId && placements.get(line.ingredientId)?.name) ||
+        line.name;
+      if (!name) continue;
+      previews.set(line.templateId, [
+        ...(previews.get(line.templateId) ?? []),
+        name,
+      ]);
+    }
+    return previews;
   }
 
   async get(

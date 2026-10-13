@@ -29,7 +29,11 @@ type SearchResult = {
   name: string;
   defaultUnit: string;
   leafCategory: { id: string; name: string };
-  parentCategory: { id: string; name: string; aisle: string };
+  parentCategory: {
+    id: string;
+    name: string;
+    aisle: { id: string; name: string };
+  };
 };
 
 describe('Catalog (integration)', () => {
@@ -163,7 +167,7 @@ describe('Catalog (integration)', () => {
       expect(parmesan.name).toBe('Parmezan');
       expect(parmesan.leafCategory.name).toBe('Brânzeturi tari');
       expect(parmesan.parentCategory.name).toBe('Lactate');
-      expect(parmesan.parentCategory.aisle).toBe('Lactate și ouă');
+      expect(parmesan.parentCategory.aisle.name).toBe('Lactate și ouă');
     });
 
     it('returns Danish display names for locale=da, and finds them by their Danish name', async () => {
@@ -171,7 +175,7 @@ describe('Catalog (integration)', () => {
       expect(parmesan.name).toBe('Parmesan');
       expect(parmesan.leafCategory.name).toBe('Hård ost');
       expect(parmesan.parentCategory.name).toBe('Mejeri');
-      expect(parmesan.parentCategory.aisle).toBe('Mejeri og æg');
+      expect(parmesan.parentCategory.aisle.name).toBe('Mejeri og æg');
       const [milk] = await search('mælk', 'da');
       expect(milk).toMatchObject({
         id: seedId.ingredient('milk'),
@@ -200,11 +204,15 @@ describe('Catalog (integration)', () => {
 
     it('localises the Aisle name, with English fallback', async () => {
       const [ro] = await search('parsley', 'ro');
-      expect(ro.parentCategory.aisle).toBe('Legume și fructe');
+      expect(ro.parentCategory.aisle.name).toBe('Legume și fructe');
       const [en] = await search('parsley', 'en');
-      expect(en.parentCategory.aisle).toBe('Fruit & veg');
+      expect(en.parentCategory.aisle).toEqual({
+        id: seedId.aisle('fruit-veg'),
+        name: 'Fruit & veg',
+      });
+      expect(ro.parentCategory.aisle.id).toBe(seedId.aisle('fruit-veg'));
       // Herbs and Produce share one Aisle.
-      expect((await search('tomato', 'en'))[0].parentCategory.aisle).toBe(
+      expect((await search('tomato', 'en'))[0].parentCategory.aisle).toEqual(
         en.parentCategory.aisle,
       );
     });
@@ -215,7 +223,10 @@ describe('Catalog (integration)', () => {
         name: 'Parmesan',
         defaultUnit: 'g',
         leafCategory: { name: 'Hard cheese' },
-        parentCategory: { name: 'Dairy', aisle: 'Dairy & eggs' },
+        parentCategory: {
+          name: 'Dairy',
+          aisle: { id: seedId.aisle('dairy-eggs'), name: 'Dairy & eggs' },
+        },
       });
     });
 

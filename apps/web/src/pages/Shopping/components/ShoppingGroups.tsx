@@ -5,6 +5,7 @@ import {
   IconButton,
   Stack,
   Typography,
+  useToast,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -13,7 +14,7 @@ import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
 export type ShoppingGroupsProps = {
   groups: ShoppingGroup[];
   onToggle: (id: string, checked: boolean) => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string, name: string) => void;
 };
 
 /** The list grouped by Aisle (shop order is the order the API returns). */
@@ -33,14 +34,31 @@ export function ShoppingGroups({
             key={group.aisle?.id ?? 'unmatched'}
             aria-label={title}
           >
-            <Typography
-              component="h2"
-              variant="sectionLabel"
-              color="text.secondary"
-              sx={{ mx: 0.5, mb: 1 }}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                mx: 0.5,
+                mb: 1,
+              }}
             >
-              {title}
-            </Typography>
+              <Typography
+                component="h2"
+                variant="sectionLabel"
+                color="text.secondary"
+              >
+                {title}
+              </Typography>
+              <Typography
+                component="span"
+                variant="sectionLabel"
+                color="text.secondary"
+                sx={{ fontVariantNumeric: 'tabular-nums' }}
+              >
+                {group.items.length}
+              </Typography>
+            </Box>
             <Box
               component="ul"
               sx={{
@@ -81,6 +99,7 @@ function ChecklistRow({
   onRemove: ShoppingGroupsProps['onRemove'];
 }) {
   const { t } = useTranslation('shopping');
+  const toast = useToast();
   const quantity =
     item.quantity === null
       ? null
@@ -182,11 +201,21 @@ function ChecklistRow({
         ) : null}
       </Box>
       {item.ingredientId !== null ? (
-        <StapleToggle ingredientId={item.ingredientId} name={item.name} />
+        <StapleToggle
+          ingredientId={item.ingredientId}
+          name={item.name}
+          onToggled={(isStaple) =>
+            toast.show(
+              t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
+                name: item.name,
+              }),
+            )
+          }
+        />
       ) : null}
       <IconButton
         label={t('item.remove', { name: item.name })}
-        onClick={() => onRemove(item.id)}
+        onClick={() => onRemove(item.id, item.name)}
       >
         <CloseIcon size={18} />
       </IconButton>

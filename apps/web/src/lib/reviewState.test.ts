@@ -18,7 +18,11 @@ const butter: CatalogSearchResult = {
   name: 'Butter',
   defaultUnit: 'g',
   leafCategory: { id: 'butter', name: 'Butter' },
-  parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy' },
+  parentCategory: {
+    id: 'dairy',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy' },
+  },
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 const milk: CatalogSearchResult = {

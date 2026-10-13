@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   useApplyTemplate,
+  groupByAisle,
   useTemplate,
   type TemplateLine,
 } from '../../../lib/shoppingTemplates';
@@ -21,25 +22,6 @@ type Props = {
   onDone: () => void;
   onCancel: () => void;
 };
-
-type Group = { key: string; title: string | null; lines: TemplateLine[] };
-
-/** Lines grouped by Aisle in shop order, Unmatched lines last. */
-function groupByAisle(lines: TemplateLine[]): Group[] {
-  const groups = new Map<string, Group & { order: number }>();
-  for (const line of lines) {
-    const key = line.aisle?.id ?? 'unmatched';
-    const group = groups.get(key) ?? {
-      key,
-      title: line.aisle?.name ?? null,
-      order: line.aisle?.sortOrder ?? Number.MAX_SAFE_INTEGER,
-      lines: [],
-    };
-    group.lines.push(line);
-    groups.set(key, group);
-  }
-  return [...groups.values()].sort((a, b) => a.order - b.order);
-}
 
 /**
  * The apply picker. Ingredients already in the Pantry start unticked; Unmatched

@@ -3,7 +3,11 @@
   "summary": {
     "toBuy": "{{count}} to buy",
     "inBasket": "{{checked}} of {{total}} in your basket",
-    "progress": "Basket progress"
+    "progress": "Basket progress",
+    "tickedOff_one": "{{count}} ticked off",
+    "tickedOff_other": "{{count}} ticked off",
+    "moveToPantry_one": "Move {{count}} to Pantry",
+    "moveToPantry_other": "Move {{count}} to Pantry"
   },
   "add": {
     "quantity": "Quantity",
@@ -14,12 +18,17 @@
   },
   "item": {
     "remove": "Remove {{name}}",
-    "unmatched": "Unmatched"
+    "unmatched": "Unmatched",
+    "removed": "Removed {{name}}",
+    "nowStaple": "{{name}} is now a staple",
+    "removedFromStaples": "{{name}} removed from staples"
   },
   "unmatchedGroup": "Not in the catalog",
-  "empty": "Your list is empty. Add what you need above.",
+  "empty": {
+    "title": "Your list is empty.",
+    "hint": "Add what you need, or start from a template."
+  },
   "finish": {
-    "button": "Finish shopping",
     "reviewTitle": "Add to your Pantry",
     "reviewHint": "Check what you bought. Adjust the amount, location or expiry, or drop an item.",
     "drop": "Drop {{name}}",
@@ -33,5 +42,50 @@
     "reload": "Reload",
     "cancel": "Back to list"
   },
-  "staples": "Staples"
+  "addItems": "Add items",
+  "added": "Added {{name}}",
+  "sheet": {
+    "title": "Add to list",
+    "done": "Done",
+    "doneCount_one": "Done, {{count}} added",
+    "doneCount_other": "Done, {{count}} added",
+    "tabsLabel": "Add to list",
+    "tabs": {
+      "ingredients": "Ingredients",
+      "templates": "Templates"
+    }
+  },
+  "search": {
+    "placeholder": "Search ingredients",
+    "clear": "Clear search",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "noMatch": "No catalog match",
+    "freeText": "Add “{{name}}”",
+    "freeTextHint": "Not in the catalog, added as free text",
+    "onList": "On list",
+    "onListHint": "Already on your list. Adding again increases the amount.",
+    "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",
+    "onListOtherUnits": "Already on your list in other units. This adds a separate line.",
+    "onListNoUnit": "Already on your list with no unit. This adds a separate line."
+  },
+  "amount": {
+    "placeholder": "Amount",
+    "label": "Amount of {{name}}, for example 2 or 500 g",
+    "unit": "Unit: {{unit}}",
+    "noUnit": "unit",
+    "units": "Units",
+    "add": "Add {{name}} to the list"
+  },
+  "suggestions": {
+    "missingLabel": "Missing staples · {{count}}",
+    "usedUpLabel": "Recently used up · {{count}}",
+    "stapleLabel": "Staples",
+    "allStocked": "All your staples are stocked.",
+    "manage": "Manage",
+    "dismissed": "Dismissed {{name}}",
+    "dismiss": "Dismiss {{name}}"
+  },
+  "templatesFromSearch": "Or start from a template",
+  "seeAll": "See all"
 }

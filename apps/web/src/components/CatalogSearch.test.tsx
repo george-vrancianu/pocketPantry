@@ -16,7 +16,7 @@ const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
   parentCategory: {
     id: 'dairy',
     name: locale === 'ro' ? 'Lactate' : 'Dairy',
-    aisle: 'Dairy & eggs',
+    aisle: { id: 'aisle', name: 'Dairy & eggs' },
   },
   defaults: { expiryDays: 30, location: 'fridge' },
 });
@@ -26,7 +26,11 @@ const cheddar: CatalogSearchResult = {
   name: 'Cheddar',
   defaultUnit: 'g',
   leafCategory: { id: 'hard-cheese', name: 'Hard cheese' },
-  parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy & eggs' },
+  parentCategory: {
+    id: 'dairy',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy & eggs' },
+  },
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 

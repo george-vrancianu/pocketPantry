@@ -37,7 +37,11 @@ const parmesan: CatalogSearchResult = {
   name: 'Parmesan',
   defaultUnit: 'g',
   leafCategory: { id: 'hard-cheese', name: 'Hard cheese' },
-  parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy & eggs' },
+  parentCategory: {
+    id: 'dairy',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy & eggs' },
+  },
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 

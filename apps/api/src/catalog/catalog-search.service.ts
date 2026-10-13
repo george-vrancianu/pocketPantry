@@ -205,7 +205,10 @@ export class CatalogSearchService {
           parentCategory: {
             id: row.parentId,
             name: display('parent_category', row.parentId, row.parentName),
-            aisle: display('aisle', row.aisleId, row.aisleName),
+            aisle: {
+              id: row.aisleId,
+              name: display('aisle', row.aisleId, row.aisleName),
+            },
           },
           defaults: {
             ...resolveCatalogDefaults(
