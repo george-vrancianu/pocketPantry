@@ -36,7 +36,7 @@ const TYPED_INPUT_TYPES = new Set(['insertText', 'insertCompositionText']);
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
 
 export type AmountFieldProps = {
-  /** Name of the item whose amount this is, for the accessible names. */
+  /** Name of the item whose amount this is, for the accessible names; empty before a pick. */
   name: string;
   quantity: string;
   unit: Unit | '';
@@ -49,6 +49,8 @@ export type AmountFieldProps = {
   onSubmit: () => void;
   /** A round button beside the input (the Add sheet's "+"); leave out when a footer saves. */
   submit?: { label: string; disabled: boolean };
+  /** Offer "no unit" in the chip; off where a quantity always needs a unit (Pantry Batches). */
+  allowNoUnit?: boolean;
 };
 
 /**
@@ -65,6 +67,7 @@ export function AmountField({
   error,
   onSubmit,
   submit,
+  allowNoUnit = true,
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const { color } = tokens;
@@ -162,7 +165,11 @@ export function AmountField({
             type="text"
             inputMode="decimal"
             autoComplete="off"
-            aria-label={t('common:amount.label', { name })}
+            aria-label={
+              name
+                ? t('common:amount.label', { name })
+                : t('common:amount.labelNoName')
+            }
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
             placeholder={t('common:amount.placeholder')}
@@ -248,33 +255,37 @@ export function AmountField({
                 boxShadow: 'var(--shadow-dock)',
               }}
             >
-              {(['', ...UNITS] as const).map((option) => {
-                const selected = option === unit;
-                return (
-                  <Box
-                    key={option || 'none'}
-                    component="button"
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => choose(option)}
-                    sx={{
-                      height: 34,
-                      minWidth: 40,
-                      px: 1,
-                      border: 0,
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      font: 'inherit',
-                      fontSize: 13.5,
-                      fontWeight: 700,
-                      backgroundColor: selected ? color.accent : 'transparent',
-                      color: selected ? '#FFFFFF' : color.ink,
-                    }}
-                  >
-                    {option ? t(`common:units.${option}`) : '—'}
-                  </Box>
-                );
-              })}
+              {(allowNoUnit ? (['', ...UNITS] as const) : UNITS).map(
+                (option) => {
+                  const selected = option === unit;
+                  return (
+                    <Box
+                      key={option || 'none'}
+                      component="button"
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => choose(option)}
+                      sx={{
+                        height: 34,
+                        minWidth: 40,
+                        px: 1,
+                        border: 0,
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        font: 'inherit',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        backgroundColor: selected
+                          ? color.accent
+                          : 'transparent',
+                        color: selected ? '#FFFFFF' : color.ink,
+                      }}
+                    >
+                      {option ? t(`common:units.${option}`) : '—'}
+                    </Box>
+                  );
+                },
+              )}
             </Box>
           ) : null}
         </Box>

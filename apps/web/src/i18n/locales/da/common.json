@@ -44,6 +44,7 @@
   "amount": {
     "placeholder": "Mængde",
     "label": "Mængde af {{name}}, for eksempel 2 eller 500 g",
+    "labelNoName": "Mængde, for eksempel 2 eller 500 g",
     "unit": "Enhed: {{unit}}",
     "noUnit": "enhed",
     "units": "Enheder",

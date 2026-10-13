@@ -2,9 +2,9 @@ import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoveLink } from '../../../components/RemoveLink';
-import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import type { Batch, BatchEdit } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
+import { AmountLocationRow } from './AmountLocationRow';
 
 type Props = {
   batch: Batch;
@@ -32,54 +32,17 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
       aria-label={t('edit.title', { name: batch.name })}
       sx={{ px: 3, pt: 1, pb: 3 }}
     >
-      <Stack direction="row" spacing={1}>
-        <TextField
-          id={`${id}-quantity`}
-          label={t('form.quantity')}
-          type="number"
-          value={form.quantity}
-          error={!form.quantityValid}
-          helperText={
-            form.quantityValid ? undefined : t('form.quantityInvalid')
-          }
-          onChange={(event) => form.setQuantity(event.target.value)}
-          slotProps={{
-            htmlInput: { min: 0, step: 'any', inputMode: 'decimal' },
-          }}
-        />
-        <TextField
-          id={`${id}-unit`}
-          select
-          label={t('form.unit')}
-          value={form.unit}
-          onChange={(event) =>
-            form.setUnit(event.target.value as typeof form.unit)
-          }
-          slotProps={{ select: { native: true } }}
-        >
-          {UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {t(`common:units.${unit}`)}
-            </option>
-          ))}
-        </TextField>
-      </Stack>
-      <TextField
-        id={`${id}-location`}
-        select
-        label={t('form.location')}
-        value={form.location}
-        onChange={(event) =>
-          form.setLocation(event.target.value as typeof form.location)
-        }
-        slotProps={{ select: { native: true } }}
-      >
-        {LOCATIONS.map((location) => (
-          <option key={location} value={location}>
-            {t(`common:locations.${location}`)}
-          </option>
-        ))}
-      </TextField>
+      <AmountLocationRow
+        name={batch.name}
+        quantity={form.quantity}
+        unit={form.unit}
+        location={form.location}
+        quantityValid={form.quantityValid}
+        onQuantityChange={form.setQuantity}
+        onUnitChange={form.setUnit}
+        onLocationChange={form.setLocation}
+        onSubmit={() => formRef.current?.requestSubmit()}
+      />
       <TextField
         id={`${id}-expiry`}
         type="date"

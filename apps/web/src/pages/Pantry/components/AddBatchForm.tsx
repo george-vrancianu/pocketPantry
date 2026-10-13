@@ -1,9 +1,9 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
-import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useAddBatchForm } from '../hooks/useAddBatchForm';
+import { AmountLocationRow } from './AmountLocationRow';
 
 type Props = { onSaved: () => void; onCancel: () => void };
 
@@ -11,10 +11,12 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
   const { t } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved });
   const id = useId();
+  const formRef = useRef<HTMLFormElement>(null);
 
   return (
     <Stack
       component="form"
+      ref={formRef}
       spacing={2}
       onSubmit={form.submit}
       aria-label={t('form.title')}
@@ -45,55 +47,17 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         </Typography>
       ) : null}
 
-      <Stack direction="row" spacing={1}>
-        <TextField
-          id={`${id}-quantity`}
-          label={t('form.quantity')}
-          type="number"
-          value={form.quantity}
-          error={!form.quantityValid}
-          helperText={
-            form.quantityValid ? undefined : t('form.quantityInvalid')
-          }
-          onChange={(event) => form.setQuantity(event.target.value)}
-          slotProps={{
-            htmlInput: { min: 0, step: 'any', inputMode: 'decimal' },
-          }}
-        />
-        <TextField
-          id={`${id}-unit`}
-          select
-          label={t('form.unit')}
-          value={form.unit}
-          onChange={(event) =>
-            form.setUnit(event.target.value as typeof form.unit)
-          }
-          slotProps={{ select: { native: true } }}
-        >
-          {UNITS.map((unit) => (
-            <option key={unit} value={unit}>
-              {t(`common:units.${unit}`)}
-            </option>
-          ))}
-        </TextField>
-      </Stack>
-
-      <TextField
-        id={`${id}-location`}
-        select
-        label={t('form.location')}
-        value={form.location}
-        onChange={(event) =>
-          form.setLocation(event.target.value as typeof form.location)
-        }
-        slotProps={{ select: { native: true } }}
-      >
-        {LOCATIONS.map((location) => (
-          <option key={location} value={location}>
-            {t(`common:locations.${location}`)}
-          </option>
-        ))}
-      </TextField>
+      <AmountLocationRow
+        name={form.ingredient?.name ?? form.unmatchedName ?? ''}
+        quantity={form.quantity}
+        unit={form.unit}
+        location={form.location}
+        quantityValid={form.quantityValid}
+        onQuantityChange={form.setQuantity}
+        onUnitChange={form.setUnit}
+        onLocationChange={form.setLocation}
+        onSubmit={() => formRef.current?.requestSubmit()}
+      />
 
       <TextField
         id={`${id}-expiry`}
