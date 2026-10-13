@@ -67,9 +67,9 @@ export function AddSheet({
   const [tab, setTab] = useState<SheetTab>(initialView.tab);
   const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
   // Whether the current view has a footer; none while it loads or fails.
-  const [footerWanted, setFooterWanted] = useState(false);
+  const [hasFooter, setHasFooter] = useState(false);
   const footerSlot = useMemo(
-    () => ({ host: footerHost, setWanted: setFooterWanted }),
+    () => ({ host: footerHost, setHasFooter }),
     [footerHost],
   );
   const [templatesView, setTemplatesView] = useState<TemplatesView>(
@@ -191,7 +191,7 @@ export function AddSheet({
         label={t('sheet.title')}
         header={header}
         footer={
-          tab === 'templates' && templatesView !== 'list' && footerWanted ? (
+          tab === 'templates' && templatesView !== 'list' && hasFooter ? (
             <Box ref={setFooterHost} />
           ) : undefined
         }
