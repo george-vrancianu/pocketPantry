@@ -1,5 +1,6 @@
 import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
 import { useMemo, type ElementType, type ReactNode } from 'react';
+import { ToastProvider } from '../molecules/ToastProvider';
 import { createPocketPantryTheme } from './theme';
 import { tokens, tokensAsCssVariables } from './tokens';
 
@@ -34,7 +35,7 @@ export function PocketPantryUiProvider({ children, linkComponent }: Props) {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <GlobalStyles styles={globalStyles} />
-      {children}
+      <ToastProvider>{children}</ToastProvider>
     </ThemeProvider>
   );
 }

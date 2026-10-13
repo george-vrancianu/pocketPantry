@@ -18,7 +18,10 @@
   },
   "item": {
     "remove": "Fjern {{name}}",
-    "unmatched": "Umatchet"
+    "unmatched": "Umatchet",
+    "removed": "Fjernede {{name}}",
+    "nowStaple": "{{name}} er nu en basisvare",
+    "removedFromStaples": "{{name}} fjernet fra basisvarer"
   },
   "unmatchedGroup": "Ikke i kataloget",
   "empty": {
