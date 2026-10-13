@@ -7,14 +7,15 @@ import {
   fromIso,
   fullDate,
 } from '../../lib/pantry';
+import { focusRing } from './focusRing';
 
 const { color } = tokens;
 
-type Unit = 'unitDay' | 'unitWeek' | 'unitMonth';
-type Pick = { days: number; amount: number; unit: Unit; usual?: true };
+type PickUnit = 'unitDay' | 'unitWeek' | 'unitMonth';
+type QuickPick = { days: number; amount: number; unit: PickUnit; usual?: true };
 
 /** 3 d, 5 d, 1 wk, 2 wk, 1 mo. A month is always 30 days. */
-const QUICK: Pick[] = [
+const QUICK: QuickPick[] = [
   { days: 3, amount: 3, unit: 'unitDay' },
   { days: 5, amount: 5, unit: 'unitDay' },
   { days: 7, amount: 1, unit: 'unitWeek' },
@@ -48,7 +49,7 @@ export function QuickPicks({
 }: QuickPicksProps) {
   const { t, i18n } = useTranslation('pantry');
   const days = value === null ? null : daysUntil(value, today);
-  const picks: Pick[] =
+  const picks: QuickPick[] =
     usualDays === null
       ? QUICK
       : [
@@ -92,10 +93,7 @@ export function QuickPicks({
           transition:
             'background-color .12s, border-color .12s, transform .08s',
           '&:active': { transform: 'scale(.97)' },
-          '&:focus-visible': {
-            outline: `2px solid ${color.accent}`,
-            outlineOffset: 1,
-          },
+          ...focusRing,
           '@media (prefers-reduced-motion: reduce)': {
             transition: 'none',
             '&:active': { transform: 'none' },

@@ -12,11 +12,15 @@ export type CalendarMonth = {
 /** `YYYY-MM` of a `YYYY-MM-DD` date. */
 export const monthKey = (iso: string) => iso.slice(0, 7);
 
+/** How many days a month has; `monthIndex` is 0-based. */
+export const daysInMonth = (year: number, monthIndex: number) =>
+  new Date(year, monthIndex + 1, 0).getDate();
+
 function weeksOf(year: number, monthIndex: number): (string | null)[][] {
   const first = new Date(year, monthIndex, 1);
   // Weeks start on Monday in every locale.
   const lead = (first.getDay() + 6) % 7;
-  const length = new Date(year, monthIndex + 1, 0).getDate();
+  const length = daysInMonth(year, monthIndex);
   const cells: (string | null)[] = Array.from({ length: lead }, () => null);
   for (let day = 1; day <= length; day += 1)
     cells.push(localIso(new Date(year, monthIndex, day)));

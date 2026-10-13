@@ -11,7 +11,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { daysUntil, fromIso, localIso } from '../../lib/pantry';
-import { calendarMonths, monthKey } from './calendarMonths';
+import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
+import { focusRing } from './focusRing';
 
 export type ExpiryCalendarHandle = {
   /**
@@ -28,7 +29,7 @@ export type ExpiryCalendarProps = {
   /** A day was tapped. */
   onChange: (iso: string) => void;
   today: Date;
-  /** Days from today through today + this are the stale band. */
+  /** Days from today through today + this are the Expiring Soon band. */
   staleThresholdDays: number;
 };
 
@@ -57,15 +58,12 @@ function keyTarget(iso: string, key: string): string | null {
   }
   const months = key === 'PageDown' ? 1 : key === 'PageUp' ? -1 : 0;
   if (months === 0) return null;
-  const length = new Date(
-    day.getFullYear(),
-    day.getMonth() + months + 1,
-    0,
-  ).getDate();
+  const target = new Date(day.getFullYear(), day.getMonth() + months, 1);
+  const length = daysInMonth(target.getFullYear(), target.getMonth());
   return localIso(
     new Date(
-      day.getFullYear(),
-      day.getMonth() + months,
+      target.getFullYear(),
+      target.getMonth(),
       Math.min(day.getDate(), length),
     ),
   );
@@ -79,8 +77,8 @@ const SELECTED_SHADOW = '0 4px 12px rgba(46,106,77,.28)';
 
 /**
  * The calendar card of the expiry sheet: weekday initials (Monday first), a vertically scrolling list of whole
- * months with sticky names, and a legend for the stale band. It opens on the value's month (today's when empty)
- * and keeps its place when a day is tapped.
+ * months with sticky names, and a legend for the Expiring Soon band. It opens on the value's month (today's when
+ * empty) and keeps its place when a day is tapped.
  */
 export function ExpiryCalendar({
   ref,
@@ -240,10 +238,7 @@ export function ExpiryCalendar({
             cursor: 'pointer',
             transition: 'background-color .1s',
             '&:hover': { backgroundColor: color.chipNeutral },
-            '&:focus-visible': {
-              outline: `2px solid ${color.accent}`,
-              outlineOffset: 1,
-            },
+            ...focusRing,
           },
           '& .day[data-past]': { color: color.muted },
           '& .day[data-band]': {
@@ -374,10 +369,7 @@ export function ExpiryCalendar({
             fontWeight: 700,
             color: color.accent,
             cursor: 'pointer',
-            '&:focus-visible': {
-              outline: `2px solid ${color.accent}`,
-              outlineOffset: 1,
-            },
+            ...focusRing,
           }}
         >
           {t('picker.today')}

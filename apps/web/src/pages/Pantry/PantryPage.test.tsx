@@ -848,7 +848,7 @@ describe('PantryPage', () => {
       expect(last?.behavior).toBe('auto');
     });
 
-    it('renders 14 Monday-first months, marks today, and tints today + Stale Threshold as the stale band', async () => {
+    it('renders 14 Monday-first months, marks today, and tints today + Stale Threshold as the Expiring Soon band', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
       const sheet = await openSheet(user);
