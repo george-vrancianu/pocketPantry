@@ -35,7 +35,6 @@
     "save": "Add to Pantry",
     "saving": "Saving",
     "location": "Location",
-    "expiry": "Expiry date",
     "description": "Product description",
     "descriptionPlaceholder": "e.g. Grana Padano 200g",
     "useUnmatched": "Not in the Catalog? Add \"{{name}}\" as Unmatched",

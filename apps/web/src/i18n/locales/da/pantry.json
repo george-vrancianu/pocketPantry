@@ -34,7 +34,6 @@
     "save": "Tilføj til spisekammeret",
     "saving": "Gemmer",
     "location": "Placering",
-    "expiry": "Udløbsdato",
     "description": "Produktbeskrivelse",
     "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
     "useUnmatched": "Ikke i kataloget? Tilføj \"{{name}}\" som umatchet",
