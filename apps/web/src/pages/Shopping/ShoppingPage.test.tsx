@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import {
   SHOPPING_POLL_INTERVAL_MS,
+  type ShoppingGroup,
   type ShoppingItem,
   type ShoppingList,
 } from '../../lib/shopping';
@@ -169,7 +170,7 @@ describe('ShoppingPage', () => {
         .querySelector<SVGElement>('[data-ingredient-icon]');
     const show = async (
       items: ShoppingItem[],
-      aisle = dairyAisle as typeof produce | null,
+      aisle: ShoppingGroup['aisle'] = dairyAisle,
     ) => {
       stubShopping({}, list([{ aisle, items }]));
       renderWithProviders(<ShoppingPage />);
@@ -212,11 +213,35 @@ describe('ShoppingPage', () => {
       );
     });
 
-    it('keeps the icon in a 38px slot and greys it when the item is checked', async () => {
+    it('tints an Aisle without a tint neutral', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID })], {
+        id: 'admin-made-aisle',
+        name: 'Admin aisle',
+        sortOrder: 99,
+      });
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-icon',
+        'parmesan',
+      );
+      expect(rowIcon(/^Item/)).toHaveAttribute(
+        'data-ingredient-tint',
+        tokens.color.chipNeutral,
+      );
+    });
+
+    it('keeps the icon in a 38px slot', async () => {
+      await show([item({ id: 'x', ingredientId: PARMESAN_ID })]);
+      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
+        width: '38px',
+        height: '38px',
+      });
+    });
+
+    it('greys the icon when the item is checked', async () => {
       await show([item({ id: 'x', ingredientId: PARMESAN_ID, checked: true })]);
-      const slot = rowIcon(/^Item/)?.parentElement;
-      expect(slot).toHaveStyle({ width: '38px', height: '38px' });
-      expect(slot).toHaveStyle({ color: '#66736B' });
+      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
+        color: '#66736B',
+      });
     });
   });
 
