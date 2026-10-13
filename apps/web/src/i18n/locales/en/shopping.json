@@ -19,7 +19,6 @@
   "item": {
     "remove": "Remove {{name}}",
     "unmatched": "Unmatched",
-    "removed": "Removed {{name}}",
     "nowStaple": "{{name}} is now a staple",
     "removedFromStaples": "{{name}} removed from staples"
   },

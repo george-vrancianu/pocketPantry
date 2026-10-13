@@ -17,6 +17,10 @@
     "cupboard": "Skab",
     "spices": "Krydderier"
   },
+  "row": {
+    "removed": "Fjernede {{name}}",
+    "undo": "Fortryd"
+  },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",
   "unverified_other": "{{count}} varer er stadig ikke bekræftet"
 }

@@ -17,6 +17,10 @@
     "cupboard": "Cupboard",
     "spices": "Spices"
   },
+  "row": {
+    "removed": "Removed {{name}}",
+    "undo": "Undo"
+  },
   "unverified_one": "{{count}} item still unverified",
   "unverified_other": "{{count}} items still unverified"
 }

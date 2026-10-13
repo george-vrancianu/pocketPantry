@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,7 +16,7 @@ import { aboveDock, DOCK_HEIGHT } from '../theme/dock';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 
-/** How long a toast stays, ms. */
+/** How long a toast stays unless it says otherwise, ms. */
 const TOAST_DURATION_MS = 2600;
 
 export type ToastOptions = {
@@ -23,6 +24,14 @@ export type ToastOptions = {
   action?: { label: string; onClick: () => void };
   /** Distance from the bottom in px, to sit above e.g. a sheet's footer. Defaults to just above the Dock. */
   bottom?: number;
+  /** How long the toast stays, in ms. Defaults to 2600. */
+  duration?: number;
+  /**
+   * Something is waiting on this toast. Called once when the toast ends for
+   * any reason (timeout, dismissed, replaced by another toast, or the provider
+   * unmounting), except when the action was used.
+   */
+  onClose?: () => void;
 };
 
 export type ToastApi = {
@@ -62,11 +71,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     return () => setHost((prev) => (prev === element ? null : prev));
   }, []);
   const reduceMotion = usePrefersReducedMotion();
-
-  const show = useCallback((message: string, options: ToastOptions = {}) => {
-    setCurrent((prev) => ({ ...options, message, id: (prev?.id ?? 0) + 1 }));
-    setOpen(true);
+  // The showing toast's `onClose`, until it has been called or its action used.
+  const pendingClose = useRef<(() => void) | undefined>(undefined);
+  const settle = useCallback(() => {
+    const close = pendingClose.current;
+    pendingClose.current = undefined;
+    close?.();
   }, []);
+  useEffect(() => settle, [settle]);
+
+  const show = useCallback(
+    (message: string, options: ToastOptions = {}) => {
+      settle();
+      pendingClose.current = options.onClose;
+      setCurrent((prev) => ({ ...options, message, id: (prev?.id ?? 0) + 1 }));
+      setOpen(true);
+    },
+    [settle],
+  );
   const api = useMemo<ToastApi>(() => ({ show }), [show]);
 
   return (
@@ -80,9 +102,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             // A new key remounts, so the old toast is replaced rather than animated out.
             key={current.id}
             open={open}
-            autoHideDuration={TOAST_DURATION_MS}
+            autoHideDuration={current.duration ?? TOAST_DURATION_MS}
             onClose={(_event, reason) => {
-              if (reason !== 'clickaway') setOpen(false);
+              if (reason === 'clickaway') return;
+              setOpen(false);
+              settle();
             }}
             anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             transitionDuration={reduceMotion ? 0 : undefined}
@@ -107,6 +131,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 current.action ? (
                   <MuiButton
                     onClick={() => {
+                      pendingClose.current = undefined;
                       current.action?.onClick();
                       setOpen(false);
                     }}

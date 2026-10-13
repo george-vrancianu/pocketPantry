@@ -19,7 +19,6 @@
   "item": {
     "remove": "Fjern {{name}}",
     "unmatched": "Umatchet",
-    "removed": "Fjernede {{name}}",
     "nowStaple": "{{name}} er nu en basisvare",
     "removedFromStaples": "{{name}} fjernet fra basisvarer"
   },

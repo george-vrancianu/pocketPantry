@@ -21,7 +21,6 @@
   "item": {
     "remove": "Elimină {{name}}",
     "unmatched": "Nepotrivit",
-    "removed": "Ai scos {{name}}",
     "nowStaple": "{{name}} este acum un produs de bază",
     "removedFromStaples": "{{name}} a fost scos din produsele de bază"
   },
