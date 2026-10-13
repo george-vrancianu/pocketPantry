@@ -9,12 +9,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
+import { aboveDock, DOCK_HEIGHT } from '../theme/dock';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 
 /** How long a toast stays, ms. */
-export const TOAST_DURATION_MS = 2600;
+const TOAST_DURATION_MS = 2600;
 
 export type ToastOptions = {
   /** One optional action; clicking it runs `onClick` and dismisses the toast. */
@@ -31,10 +31,6 @@ export type ToastApi = {
 type Current = ToastOptions & { id: number; message: string };
 
 const ToastContext = createContext<ToastApi | null>(null);
-
-const GAP = 8;
-const aboveDock = (height: number) =>
-  `calc(${DOCK_BOTTOM + height + GAP}px + env(safe-area-inset-bottom, 0px))`;
 
 /** Mount once, near the root. Read it with `useToast()`. */
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -63,13 +59,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
           transitionDuration={reduceMotion ? 0 : undefined}
           sx={{
+            // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
             bottom:
               current.bottom !== undefined
                 ? current.bottom
                 : {
                     xs: aboveDock(DOCK_HEIGHT.xs),
+                    sm: aboveDock(DOCK_HEIGHT.xs),
                     md: aboveDock(DOCK_HEIGHT.md),
                   },
+            // 20 px side insets on phones (handoff section 7).
+            left: { xs: 20 },
+            right: { xs: 20 },
           }}
         >
           <MuiSnackbarContent
