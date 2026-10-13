@@ -11,7 +11,7 @@ import {
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
@@ -53,6 +53,18 @@ export function StaplesPage() {
     [staples.data, removal.hiddenIds],
   );
 
+  // Removing the last Staple unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLElement>(null);
+  const hadStaples = useRef(false);
+  const stapleCount = visible?.length ?? 0;
+  useEffect(() => {
+    if (stapleCount === 0 && hadStaples.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadStaples.current = stapleCount > 0;
+  }, [stapleCount]);
+
   const hint = useRowHint('staples', (visible?.length ?? 0) > 0);
 
   // A failed save is shown by the amount sheet and a failed removal by its toast.
@@ -79,7 +91,14 @@ export function StaplesPage() {
         />
         {staples.isPending ? <Spinner label={t('common:loading')} /> : null}
         {visible?.length === 0 ? (
-          <Typography color="text.secondary">{t('staples:empty')}</Typography>
+          <Typography
+            ref={empty}
+            tabIndex={-1}
+            color="text.secondary"
+            sx={{ outline: 'none' }}
+          >
+            {t('staples:empty')}
+          </Typography>
         ) : null}
         {visible && visible.length > 0 ? (
           <Box

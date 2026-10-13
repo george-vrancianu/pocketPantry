@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
@@ -33,6 +33,17 @@ export function ShoppingPage() {
     'shopping',
     !reviewing && (screen.list?.groups.length ?? 0) > 0,
   );
+  // Removing the last row unmounts the list that held focus: hand it to the empty text.
+  const empty = useRef<HTMLDivElement>(null);
+  const hadGroups = useRef(false);
+  const groupCount = screen.list?.groups.length ?? 0;
+  useEffect(() => {
+    if (groupCount === 0 && hadGroups.current) {
+      const active = document.activeElement;
+      if (!active || active === document.body) empty.current?.focus();
+    }
+    hadGroups.current = groupCount > 0;
+  }, [groupCount]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
 
@@ -76,7 +87,11 @@ export function ShoppingPage() {
               onAddItems={() => openSheet({ tab: 'ingredients' })}
             />
             {screen.list.groups.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 3 }}>
+              <Box
+                ref={empty}
+                tabIndex={-1}
+                sx={{ textAlign: 'center', py: 3, outline: 'none' }}
+              >
                 <Typography
                   sx={{
                     fontFamily: 'var(--font-display)',

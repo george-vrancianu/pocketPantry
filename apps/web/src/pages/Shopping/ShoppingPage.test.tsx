@@ -996,6 +996,70 @@ describe('ShoppingPage', () => {
       expect(rowOf('Basil')).toHaveFocus();
     });
 
+    describe('when the last row of a group goes', () => {
+      const removeByKeyboard = async (name: string) => {
+        act(() => rowOf(name).focus());
+        await userEvent.keyboard('{Delete}');
+        await userEvent.click(confirmRemove());
+      };
+
+      it('focuses the first row of the next group', async () => {
+        stubShopping(
+          {},
+          list([
+            { aisle: produce, items: [tomato] },
+            { aisle: dairy, items: [milk, item({ id: 'i7', name: 'Eggs' })] },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByRole('group', { name: /^Milk/ });
+
+        await removeByKeyboard('Tomato');
+
+        expect(rowOf('Milk')).toHaveFocus();
+      });
+
+      it('focuses the last row of the previous group when it was the last group', async () => {
+        stubShopping(
+          {},
+          list([
+            {
+              aisle: produce,
+              items: [tomato, item({ id: 'i8', name: 'Kale' })],
+            },
+            { aisle: dairy, items: [milk] },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByRole('group', { name: /^Milk/ });
+
+        await removeByKeyboard('Milk');
+
+        expect(rowOf('Kale')).toHaveFocus();
+      });
+
+      it('focuses the empty text when it was the last row of the list', async () => {
+        const shopping = stubShopping(
+          {},
+          list([{ aisle: produce, items: [tomato] }]),
+        );
+        vi.useFakeTimers();
+        renderWithProviders(<ShoppingPage />);
+        await act(() => vi.advanceTimersByTimeAsync(0));
+        void shopping;
+
+        const row = rowOf('Tomato');
+        act(() => row.focus());
+        fireEvent.keyDown(row, { key: 'Delete' });
+        fireEvent.click(confirmRemove());
+        await act(() => vi.advanceTimersByTimeAsync(1000));
+
+        expect(
+          screen.getByText('Your list is empty.').parentElement,
+        ).toHaveFocus();
+      });
+    });
+
     it('removes once on a double click of Remove', async () => {
       const { calls } = stubShopping({
         'DELETE /api/shopping-list/items/i1': () =>

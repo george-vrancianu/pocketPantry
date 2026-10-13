@@ -43,7 +43,7 @@ export function ShoppingGroups({
 }: ShoppingGroupsProps) {
   const { t } = useTranslation('shopping');
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2} data-row-scope="">
       {groups.map((group, groupIndex) => {
         const title = group.aisle?.name ?? t('unmatchedGroup');
         return (

@@ -146,9 +146,24 @@ export function SwipeRow({
       }
       return null;
     };
+    // A list split into groups marks the whole of it `data-row-scope`: when this was the last row of its
+    // group (the group goes with it), the next group's first row takes focus, else the previous group's last.
+    const inScope = () => {
+      const rows = Array.from(
+        item
+          .closest('[data-row-scope]')
+          ?.querySelectorAll<HTMLElement>('li[tabindex]') ?? [],
+      ).filter((row) => row.parentElement !== item.parentElement);
+      const after = rows.find(
+        (row) =>
+          item.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      return after ?? rows[rows.length - 1] ?? null;
+    };
     const target =
       sibling(item.nextElementSibling, 'nextElementSibling') ??
       sibling(item.previousElementSibling, 'previousElementSibling') ??
+      inScope() ??
       item.parentElement;
     if (target && !target.hasAttribute('tabindex')) {
       target.setAttribute('tabindex', '-1');
