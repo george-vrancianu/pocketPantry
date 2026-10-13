@@ -1,11 +1,15 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import pg from 'pg';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { batches, ingredients } from '../src/database/schema';
+import {
+  batches,
+  catalogTranslations,
+  ingredients,
+} from '../src/database/schema';
 import { PantryService } from '../src/pantry/pantry.service';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
@@ -27,6 +31,7 @@ describe('Used Up Suggestions (integration)', () => {
   let database: Database;
   let pool: pg.Pool;
   let counter = 0;
+  const resolvedNames: string[] = [];
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -35,6 +40,12 @@ describe('Used Up Suggestions (integration)', () => {
   });
 
   afterAll(async () => {
+    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient; remove it so the worker's shared database stays as seeded.
+    if (resolvedNames.length > 0) {
+      await database
+        .delete(catalogTranslations)
+        .where(inArray(catalogTranslations.value, resolvedNames));
+    }
     await pool.end();
     await app.close();
   });
@@ -279,6 +290,7 @@ describe('Used Up Suggestions (integration)', () => {
     await promoteToAdmin(database, adminEmail);
     const cookie = await signUp();
     const raw = `Zzq sheep milk ${Date.now()}`;
+    resolvedNames.push(raw);
     const saved = (
       await api('post', cookie, '/pantry/batches/bulk?locale=en')
         .send({

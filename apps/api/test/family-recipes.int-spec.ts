@@ -1,11 +1,12 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike, inArray } from 'drizzle-orm';
+import { and, eq, ilike, inArray } from 'drizzle-orm';
 import pg from 'pg';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  catalogTranslations,
   eatingMoments,
   family,
   ingredients,
@@ -150,6 +151,15 @@ describe('Family Recipes (integration)', () => {
     }
     await database.delete(recipes).where(ilike(recipes.title, like));
     await database.delete(eatingMoments).where(ilike(eatingMoments.name, like));
+    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient; remove it so the worker's shared database stays as seeded.
+    await database
+      .delete(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.kind, 'synonym'),
+          ilike(catalogTranslations.value, like),
+        ),
+      );
     await pool.end();
     await app.close();
   });

@@ -10,6 +10,7 @@ import {
   seedCatalog,
   seedId,
   stableId,
+  translationRows,
 } from '../src/catalog/seed/seed-catalog';
 import { CatalogSearchService } from '../src/catalog/catalog-search.service';
 import { normalizeName } from '../src/catalog/normalize';
@@ -767,16 +768,17 @@ describe('Catalog (integration)', () => {
           SEED_PARENTS.map((p) => seedId.parent(p.slug)),
         ),
       ).toBe(18);
-      const synonyms = SEED_INGREDIENTS.reduce(
-        (n, i) =>
-          n +
-          (i.synonyms?.en?.length ?? 0) +
-          (i.synonyms?.ro?.length ?? 0) +
-          (i.synonyms?.da?.length ?? 0),
-        0,
-      );
-      const [{ stored }] = await database
-        .select({ stored: sql<number>`count(*)::int` })
+      // Compare by id, not by count: other suites sharing this worker's database may leave their
+      // own Synonyms on seeded Ingredients. Seed rows have stable v5 ids, app-created ones are
+      // random v4 ids, so only v5 rows are the seed's and they must match the expected set exactly.
+      const expectedIds = SEED_INGREDIENTS.flatMap((i) =>
+        translationRows('ingredient', seedId.ingredient(i.slug), i, i.synonyms),
+      )
+        .filter((r) => r.kind === 'synonym')
+        .map((r) => r.id)
+        .sort();
+      const stored = await database
+        .select({ id: catalogTranslations.id })
         .from(catalogTranslations)
         .where(
           and(
@@ -788,7 +790,13 @@ describe('Catalog (integration)', () => {
             ),
           ),
         );
-      expect(stored).toBe(synonyms);
+      expect(expectedIds.length).toBeGreaterThan(0);
+      expect(
+        stored
+          .map((t) => t.id)
+          .filter((id) => id[14] === '5')
+          .sort(),
+      ).toEqual(expectedIds);
     });
 
     it('leaves a row edited since the last seed run exactly as it was', async () => {
