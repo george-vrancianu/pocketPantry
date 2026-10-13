@@ -75,7 +75,7 @@ function stubFinish(routes: Record<string, () => Response> = {}) {
 
 async function openReview() {
   await userEvent.click(
-    await screen.findByRole('button', { name: 'Finish shopping' }),
+    await screen.findByRole('button', { name: 'Move 3 to Pantry' }),
   );
   return screen.findByRole('region', { name: 'Add to your Pantry' });
 }
@@ -96,8 +96,9 @@ describe('Finish Shopping review', () => {
 
     await screen.findByText('1 to buy');
     expect(
-      screen.queryByRole('button', { name: 'Finish shopping' }),
+      screen.queryByRole('button', { name: /to Pantry/ }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/ticked off/)).not.toBeInTheDocument();
   });
 
   it('pre-fills a Batch per checked item with Location and expiry', async () => {
