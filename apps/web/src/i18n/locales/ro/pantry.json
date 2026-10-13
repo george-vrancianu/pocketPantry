@@ -22,14 +22,10 @@
   "batchesOf": "Loturi de {{name}}",
   "noDetails": "Fără cantitate",
   "edit": {
-    "action": "Editează lotul de {{name}}",
     "title": "Editează lotul de {{name}}",
-    "save": "Salvează modificările"
-  },
-  "delete": {
-    "action": "Șterge lotul de {{name}}",
-    "confirm": "Ștergi acest lot?",
-    "yes": "Da, șterge"
+    "save": "Salvează modificările",
+    "updated": "Ai actualizat {{name}}",
+    "remove": "Elimină din cămară"
   },
   "unmatched": "Nepotrivit",
   "form": {

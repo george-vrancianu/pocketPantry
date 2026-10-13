@@ -1,75 +1,48 @@
 import {
-  Alert,
-  Box,
-  Button,
-  DeleteIcon,
-  EditIcon,
-  IconButton,
   ListRow,
-  ListRowItem,
+  Sheet,
+  SwipeRow,
   Typography,
+  useToast,
+  type SwipeRowHandle,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
-import { expiryChipFor, useDeleteBatch, type Batch } from '../../../lib/pantry';
+import { expiryChipFor, type Batch } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
+import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { EditBatchForm } from './EditBatchForm';
 import { ExpiryChip } from './ExpiryChip';
 
 type Props = {
   batch: Batch;
   today: Date;
-  /** Called once the Batch is deleted or moved to another Location, so the parent can place focus (this row unmounts). */
+  /** Swiped or confirmed away: the page hides the Batch and deletes it when its Undo ends. */
+  onRemove: (batch: Batch) => void;
+  /** Called once the Batch moved to another Location, so the parent can place focus (this row unmounts). */
   onLeft: () => void;
 };
 
-/** One Batch inside an expanded roll-up row: its own amount, expiry and Product Description, with Edit and Delete icons. */
-export function BatchDetail({ batch, today, onLeft }: Props) {
+/**
+ * One Batch inside an expanded roll-up row: its own amount, expiry and Product Description. Swipe left
+ * to remove it; hold (or press Enter) to edit it in a sheet, which also offers "Remove from Pantry".
+ */
+export function BatchDetail({ batch, today, onRemove, onLeft }: Props) {
   const { t, i18n } = useTranslation('pantry');
-  const [mode, setMode] = useState<'view' | 'edit' | 'confirmDelete'>('view');
-  const remove = useDeleteBatch();
+  const toast = useToast();
+  const labels = useSwipeRowLabels(batch.name, 'pantry', { hold: true });
   const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
+  const [editing, setEditing] = useState(false);
+  const row = useRef<SwipeRowHandle>(null);
 
-  // Focus follows the mode: into the form or confirmation, back to the opening button on leaving it.
-  const editButton = useRef<HTMLButtonElement>(null);
-  const deleteButton = useRef<HTMLButtonElement>(null);
-  const confirmButton = useRef<HTMLButtonElement>(null);
-  const previous = useRef(mode);
-  const moved = useRef(false);
+  // "Remove from Pantry" closes the sheet first and asks once it is gone: the sheet hands focus back to the
+  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
+  const [askAfterClose, setAskAfterClose] = useState(false);
   useEffect(() => {
-    const from = previous.current;
-    previous.current = mode;
-    const wasMove = moved.current;
-    moved.current = false;
-    if (mode === 'confirmDelete') confirmButton.current?.focus();
-    else if (mode === 'view' && from === 'edit' && !wasMove)
-      editButton.current?.focus();
-    else if (mode === 'view' && from === 'confirmDelete')
-      deleteButton.current?.focus();
-  }, [mode]);
-
-  const confirmDelete = () =>
-    remove.mutateAsync(batch.id).then(onLeft, () => undefined);
-
-  if (mode === 'edit') {
-    return (
-      <ListRowItem>
-        <EditBatchForm
-          batch={batch}
-          onSaved={(edit) => {
-            setMode('view');
-            // A `location` in the edit means the Batch moved out of this row.
-            if (edit.location) {
-              moved.current = true;
-              onLeft();
-            }
-          }}
-          onCancel={() => setMode('view')}
-        />
-      </ListRowItem>
-    );
-  }
+    if (!askAfterClose || editing) return;
+    setAskAfterClose(false);
+    row.current?.askToRemove();
+  }, [askAfterClose, editing]);
 
   const amount =
     batch.quantity === null || batch.unit === null
@@ -78,57 +51,48 @@ export function BatchDetail({ batch, today, onLeft }: Props) {
   const detail = [amount, batch.productDescription].filter(Boolean).join(' · ');
 
   return (
-    <ListRowItem>
-      <ListRow
-        title={detail || t('noDetails')}
-        tags={chip ? <ExpiryChip chip={chip} /> : null}
-        trailing={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <IconButton
-              ref={editButton}
-              tone="plain"
-              size={40}
-              label={t('edit.action', { name: batch.name })}
-              onClick={() => setMode('edit')}
-            >
-              <EditIcon size={18} />
-            </IconButton>
-            <IconButton
-              ref={deleteButton}
-              tone="plain"
-              size={40}
-              label={t('delete.action', { name: batch.name })}
-              onClick={() => setMode('confirmDelete')}
-            >
-              <DeleteIcon size={18} />
-            </IconButton>
-          </Box>
+    <>
+      <SwipeRow
+        ref={row}
+        name={batch.name}
+        labels={labels}
+        disabled={editing}
+        onEdit={() => setEditing(true)}
+        onRemove={() => onRemove(batch)}
+      >
+        <ListRow
+          title={detail || t('noDetails')}
+          tags={chip ? <ExpiryChip chip={chip} /> : null}
+        />
+      </SwipeRow>
+      <Sheet
+        open={editing}
+        onClose={() => setEditing(false)}
+        label={t('edit.title', { name: batch.name })}
+        header={
+          <Typography
+            component="h2"
+            sx={{ px: 3, pt: 2, pb: 1, fontSize: 20, fontWeight: 700 }}
+          >
+            {batch.name}
+          </Typography>
         }
-        below={
-          mode === 'confirmDelete' ? (
-            <Box sx={{ mt: 1 }} role="group" aria-label={t('delete.confirm')}>
-              <Typography component="p" sx={{ fontSize: 13, m: 0, mb: 1 }}>
-                {t('delete.confirm')}
-              </Typography>
-              {remove.error ? (
-                <Alert>{translateApiError(t, remove.error)}</Alert>
-              ) : null}
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  ref={confirmButton}
-                  disabled={remove.isPending}
-                  onClick={confirmDelete}
-                >
-                  {t('delete.yes')}
-                </Button>
-                <Button variant="text" onClick={() => setMode('view')}>
-                  {t('form.cancel')}
-                </Button>
-              </Box>
-            </Box>
-          ) : null
-        }
-      />
-    </ListRowItem>
+      >
+        <EditBatchForm
+          batch={batch}
+          onSaved={(edit) => {
+            setEditing(false);
+            toast.show(t('edit.updated', { name: batch.name }));
+            // A `location` in the edit means the Batch moved out of this row.
+            if (edit.location) onLeft();
+          }}
+          onCancel={() => setEditing(false)}
+          onRemove={() => {
+            setEditing(false);
+            setAskAfterClose(true);
+          }}
+        />
+      </Sheet>
+    </>
   );
 }

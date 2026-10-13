@@ -19,8 +19,10 @@
   },
   "row": {
     "context": {
-      "list": "din lista ta"
+      "list": "din lista ta",
+      "pantry": "din cămara ta"
     },
+    "hint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
     "keep": "Păstrează",
     "releaseToDelete": "Eliberează pentru a elimina",
     "remove": "Elimină",

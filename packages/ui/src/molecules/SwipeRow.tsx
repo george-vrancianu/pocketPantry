@@ -268,11 +268,6 @@ export function SwipeRow({
           : {}),
       }}
     >
-      {labels.hint ? (
-        <Box component="span" id={hintId} sx={visuallyHidden}>
-          {labels.hint}
-        </Box>
-      ) : null}
       {pressed && labels.pressed ? (
         <Box component="span" sx={visuallyHidden}>
           {labels.pressed}
@@ -475,6 +470,11 @@ export function SwipeRow({
               }}
             />
           ) : null}
+        </Box>
+      ) : null}
+      {labels.hint ? (
+        <Box component="span" id={hintId} hidden>
+          {labels.hint}
         </Box>
       ) : null}
     </Box>

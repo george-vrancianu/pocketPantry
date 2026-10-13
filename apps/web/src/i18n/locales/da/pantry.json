@@ -21,14 +21,10 @@
   "batchesOf": "Partier af {{name}}",
   "noDetails": "Ingen mængde angivet",
   "edit": {
-    "action": "Rediger partiet {{name}}",
     "title": "Rediger partiet {{name}}",
-    "save": "Gem ændringer"
-  },
-  "delete": {
-    "action": "Slet partiet {{name}}",
-    "confirm": "Slet dette parti?",
-    "yes": "Ja, slet"
+    "save": "Gem ændringer",
+    "updated": "Opdaterede {{name}}",
+    "remove": "Fjern fra spisekammeret"
   },
   "form": {
     "title": "Tilføj til spisekammeret",

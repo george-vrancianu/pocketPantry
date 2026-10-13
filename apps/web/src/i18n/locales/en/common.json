@@ -19,8 +19,10 @@
   },
   "row": {
     "context": {
-      "list": "from your list"
+      "list": "from your list",
+      "pantry": "in your Pantry"
     },
+    "hint": "Swipe left to remove, hold to edit",
     "keep": "Keep",
     "releaseToDelete": "Release to delete",
     "remove": "Remove",

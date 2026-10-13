@@ -23,14 +23,10 @@
   "batchesOf": "Batches of {{name}}",
   "noDetails": "No quantity set",
   "edit": {
-    "action": "Edit {{name}} batch",
     "title": "Edit {{name}} batch",
-    "save": "Save changes"
-  },
-  "delete": {
-    "action": "Delete {{name}} batch",
-    "confirm": "Delete this batch?",
-    "yes": "Yes, delete"
+    "save": "Save changes",
+    "updated": "Updated {{name}}",
+    "remove": "Remove from Pantry"
   },
   "form": {
     "title": "Add to Pantry",
