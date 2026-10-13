@@ -12,7 +12,7 @@ const LAYOUT = {
   widgets: [
     { id: 'a', type: 'use-soon', size: 'wide' },
     { id: 'b', type: 'shopping', size: 'small' },
-    { id: 'c', type: 'quick-scan', size: 'wide' },
+    { id: 'c', type: 'meal-plan', size: 'wide' },
   ],
 };
 
@@ -91,7 +91,7 @@ describe('CustomisePage', () => {
   it('lists the Widgets on the dashboard and offers only the missing types', async () => {
     setup();
 
-    expect(await names()).toEqual(['Use soon', 'Shopping', 'Quick scan']);
+    expect(await names()).toEqual(['Use soon', 'Shopping', 'Meal plan']);
     const gallery = screen.getByRole('region', { name: 'Add widgets' });
     expect(
       within(gallery)
@@ -101,7 +101,6 @@ describe('CustomisePage', () => {
       'Add Pantry widget',
       'Add Suggestions widget',
       'Add Cook tonight widget',
-      'Add Meal plan widget',
       'Add Budget widget',
       'Add Nutrition widget',
     ]);
@@ -115,15 +114,13 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Move Use soon down' }),
     );
 
-    expect(await names()).toEqual(['Shopping', 'Use soon', 'Quick scan']);
+    expect(await names()).toEqual(['Shopping', 'Use soon', 'Meal plan']);
     expect(puts().at(-1)).toEqual({
       widgets: [LAYOUT.widgets[1], LAYOUT.widgets[0], LAYOUT.widgets[2]],
     });
 
-    await user.click(
-      screen.getByRole('button', { name: 'Move Quick scan up' }),
-    );
-    expect(await names()).toEqual(['Shopping', 'Quick scan', 'Use soon']);
+    await user.click(screen.getByRole('button', { name: 'Move Meal plan up' }));
+    expect(await names()).toEqual(['Shopping', 'Meal plan', 'Use soon']);
     expect(puts().at(-1)).toEqual({
       widgets: [LAYOUT.widgets[1], LAYOUT.widgets[2], LAYOUT.widgets[0]],
     });
@@ -163,7 +160,7 @@ describe('CustomisePage', () => {
     setup();
     await rows();
 
-    const toggle = screen.getByRole('button', { name: /Size of Quick scan/ });
+    const toggle = screen.getByRole('button', { name: /Size of Meal plan/ });
     expect(toggle).toHaveAttribute('aria-disabled', 'true');
     toggle.focus();
     expect(toggle).toHaveFocus();
@@ -241,7 +238,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Remove Shopping widget' }),
     );
 
-    expect(await names()).toEqual(['Use soon', 'Quick scan']);
+    expect(await names()).toEqual(['Use soon', 'Meal plan']);
     expect(puts().at(-1)).toEqual({
       widgets: [LAYOUT.widgets[0], LAYOUT.widgets[2]],
     });
@@ -249,7 +246,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Add Shopping widget' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Reorder Quick scan' }),
+      screen.getByRole('button', { name: 'Reorder Meal plan' }),
     ).toHaveFocus();
   });
 
@@ -262,7 +259,7 @@ describe('CustomisePage', () => {
     expect(await names()).toEqual([
       'Use soon',
       'Shopping',
-      'Quick scan',
+      'Meal plan',
       'Budget',
     ]);
     const saved = puts().at(-1) as { widgets: Array<Record<string, string>> };
@@ -288,7 +285,7 @@ describe('CustomisePage', () => {
     );
 
     expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(await names()).toEqual(['Use soon', 'Shopping', 'Quick scan']);
+    expect(await names()).toEqual(['Use soon', 'Shopping', 'Meal plan']);
   });
 
   it('serialises quick edits: one PUT at a time and the last edit wins', async () => {
@@ -300,7 +297,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Remove Shopping widget' }),
     );
     await user.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
 
     await vi.waitFor(() => expect(api.puts).toHaveLength(1));
@@ -323,7 +320,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Remove Shopping widget' }),
     );
     await user.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
     await vi.waitFor(() => expect(api.puts).toHaveLength(1));
     api.puts[0]!.respond(500);
@@ -350,7 +347,7 @@ describe('CustomisePage', () => {
 
     await vi.waitFor(() => expect(api.gets()).toBe(2));
     expect(api.order).toEqual(['GET', 'PUT', 'GET']);
-    expect(await names()).toEqual(['Use soon', 'Shopping', 'Quick scan']);
+    expect(await names()).toEqual(['Use soon', 'Shopping', 'Meal plan']);
   });
 
   it('cancels an in-flight refetch when the Member edits again, so stale data cannot overwrite the edit', async () => {
@@ -366,7 +363,7 @@ describe('CustomisePage', () => {
     await vi.waitFor(() => expect(api.gets()).toBe(2));
 
     await user.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
     api.releaseRefetch();
     await vi.waitFor(() => expect(api.puts).toHaveLength(2));
@@ -388,7 +385,7 @@ describe('CustomisePage', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
     await vi.waitFor(() => expect(api.puts).toHaveLength(2));
     api.puts[1]!.respond(200);
@@ -407,7 +404,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Remove Shopping widget' }),
     );
     await user.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
     await vi.waitFor(() => expect(api.puts).toHaveLength(1));
     api.puts[0]!.respond(500);
@@ -426,7 +423,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Remove Shopping widget' }),
     );
     fireEvent.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
 
     await vi.waitFor(async () => expect(await names()).toEqual(['Use soon']));
@@ -441,7 +438,7 @@ describe('CustomisePage', () => {
     setup();
     await rows();
 
-    for (const name of ['Use soon', 'Shopping', 'Quick scan']) {
+    for (const name of ['Use soon', 'Shopping', 'Meal plan']) {
       fireEvent.click(
         screen.getByRole('button', { name: `Remove ${name} widget` }),
       );
@@ -459,7 +456,7 @@ describe('CustomisePage', () => {
     await rows();
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Remove Quick scan widget' }),
+      screen.getByRole('button', { name: 'Remove Meal plan widget' }),
     );
     fireEvent.click(screen.getByRole('button', { name: 'Move Use soon down' }));
 
@@ -481,7 +478,7 @@ describe('CustomisePage', () => {
       screen.getByRole('button', { name: 'Move Use soon down' }),
     );
 
-    expect(await names()).toEqual(['Shopping', 'Use soon', 'Quick scan']);
+    expect(await names()).toEqual(['Shopping', 'Use soon', 'Meal plan']);
     await vi.waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Reorder Use soon' }),

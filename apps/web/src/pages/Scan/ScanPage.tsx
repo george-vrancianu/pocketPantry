@@ -5,7 +5,6 @@ import {
   FlashIcon,
   GalleryIcon,
   InfoIcon,
-  ManualEntryIcon,
   Snackbar,
   Typography,
   visuallyHidden,
@@ -132,6 +131,8 @@ export function ScanPage() {
         <Typography component="h1" sx={{ ...visuallyHidden, flex: 'none' }}>
           {t('title', { mode: modeLabel.toLocaleLowerCase() })}
         </Typography>
+        {/* Pushes the Scan Language, Info and Done to the right edge. */}
+        <Box sx={{ flex: 1 }} />
         {screen.scanLanguageShown ? (
           <ScanLanguageChip
             value={screen.scanLanguage}
@@ -148,6 +149,16 @@ export function ScanPage() {
           sx={roundButton(44)}
         >
           <InfoIcon size={20} />
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('gallery')}
+          disabled={screen.controlsDisabled}
+          onClick={screen.openGallery}
+          sx={roundButton(44)}
+        >
+          <GalleryIcon size={20} />
         </Box>
         <Box
           component="button"
@@ -220,27 +231,9 @@ export function ScanPage() {
           pb: 'calc(16px + env(safe-area-inset-bottom))',
         }}
       >
-        <Box sx={{ mt: '24px', textAlign: 'center', minHeight: 72 }}>
-          <Typography
-            sx={{ mt: '6px', fontSize: 13, color: tokens.color.camDim }}
-          >
-            {t(`detail.${screen.mode}`)}
-          </Typography>
-          {screen.mode === 'receipt' ? (
-            <>
-              <Typography sx={{ mt: '6px', fontSize: 13 }}>
-                {t('guide.receipt')}
-              </Typography>
-              <Typography sx={{ mt: '6px', fontSize: 13 }}>
-                {t('guide.receiptFold')}
-              </Typography>
-            </>
-          ) : null}
-        </Box>
-
         <Box
           role="status"
-          sx={{ minHeight: 24, textAlign: 'center', fontSize: 13 }}
+          sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
           {screen.reading ? t('reading') : null}
           {screen.camera.status === 'unavailable' ? t('noCamera') : null}
@@ -263,36 +256,6 @@ export function ScanPage() {
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
         />
-
-        <Box
-          sx={{
-            mt: 3,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '44px',
-          }}
-        >
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('gallery')}
-            disabled={screen.controlsDisabled}
-            onClick={screen.openGallery}
-            sx={roundButton(48)}
-          >
-            <GalleryIcon size={22} />
-          </Box>
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('manual')}
-            onClick={screen.addManually}
-            sx={roundButton(48)}
-          >
-            <ManualEntryIcon size={22} />
-          </Box>
-        </Box>
       </Box>
 
       <Snackbar

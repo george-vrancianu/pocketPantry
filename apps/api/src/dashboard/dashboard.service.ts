@@ -3,28 +3,37 @@ import { eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { dashboardLayouts } from '../database/schema';
-import type { DashboardLayoutBody, WidgetInstance } from './dashboard.schemas';
+import {
+  widgetInstance,
+  type DashboardLayoutBody,
+  type WidgetInstance,
+} from './dashboard.schemas';
 
-/** The handoff's Main mockup: Use Soon, Shopping, Pantry Stock, Quick Scan. */
+/** The handoff's Main mockup, less Quick Scan (the Dock already opens Scan): Use Soon, Shopping, Pantry Stock. */
 /** Fixed ids keep the default layout identical across fetches until the Member first saves. */
 const DEFAULT_LAYOUT: WidgetInstance[] = [
   { id: 'default-use-soon', type: 'use-soon', size: 'wide' },
   { id: 'default-shopping', type: 'shopping', size: 'small' },
   { id: 'default-pantry-stock', type: 'pantry-stock', size: 'small' },
-  { id: 'default-quick-scan', type: 'quick-scan', size: 'wide' },
 ];
 
 @Injectable()
 export class DashboardService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
-  /** The Member's saved layout, or the default one until they first save. */
+  /** The Member's saved layout, or the default one until they first save. Widgets of a retired type are dropped. */
   async get(memberId: string): Promise<DashboardLayoutBody> {
     const [row] = await this.database
       .select({ widgets: dashboardLayouts.widgets })
       .from(dashboardLayouts)
       .where(eq(dashboardLayouts.userId, memberId));
-    if (row) return { widgets: row.widgets as WidgetInstance[] };
+    if (row)
+      return {
+        widgets: (row.widgets as unknown[]).filter(
+          (widget): widget is WidgetInstance =>
+            widgetInstance.safeParse(widget).success,
+        ),
+      };
     return { widgets: DEFAULT_LAYOUT };
   }
 

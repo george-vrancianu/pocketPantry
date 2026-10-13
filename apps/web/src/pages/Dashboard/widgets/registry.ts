@@ -4,7 +4,6 @@ import {
   NutritionIcon,
   PantryIcon,
   RecipesIcon,
-  ScanIcon,
   ShoppingIcon,
 } from '@pocket-pantry/ui';
 import type { ComponentType } from 'react';
@@ -16,7 +15,6 @@ import {
 } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
 import { CookTonightWidget } from './CookTonightWidget';
-import { QuickScanWidget } from './QuickScanWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import type { WidgetProps } from './types';
 import { SuggestionsWidget } from './SuggestionsWidget';
@@ -57,13 +55,6 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
     icon: PantryIcon,
     sizes: ['small', 'wide'],
     defaultSize: 'small',
-  },
-  'quick-scan': {
-    component: QuickScanWidget,
-    nameKey: 'widgets.quickScan.title',
-    icon: ScanIcon,
-    sizes: ['wide'],
-    defaultSize: 'wide',
   },
   suggestions: {
     component: SuggestionsWidget,

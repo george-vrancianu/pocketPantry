@@ -51,7 +51,8 @@ export function RecipesPage() {
           href: '/recipes/new',
         }}
       />
-      <Stack spacing={1.5}>
+      {/* Flex gap leaves the children's margins alone, so the filters can bleed to the screen edges. */}
+      <Stack spacing={1.5} useFlexGap>
         {!filtering && canMakeCards.length > 0 ? (
           <CanMakeStrip cards={canMakeCards} />
         ) : null}

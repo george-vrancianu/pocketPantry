@@ -26,15 +26,6 @@
       "itemsInStock_few": "produse în stoc",
       "itemsInStock_other": "de produse în stoc"
     },
-    "quickScan": {
-      "title": "Scanare rapidă",
-      "modes": {
-        "product": "Produs",
-        "receipt": "Bon",
-        "plate": "Farfurie",
-        "ingredients": "Ingrediente"
-      }
-    },
     "suggestions": {
       "title": "Sugestii",
       "empty": "Nicio sugestie",

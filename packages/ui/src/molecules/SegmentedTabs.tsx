@@ -2,12 +2,15 @@ import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import { useRef, type KeyboardEvent } from 'react';
 import { tokens } from '../theme/tokens';
+import { visuallyHidden } from '../theme/visuallyHidden';
 
 export type SegmentedTab<T extends string> = {
   value: T;
   label: string;
-  /** A small urgent badge inside the tab, e.g. "2 to buy". */
+  /** A small urgent badge inside the tab, e.g. "2". */
   badge?: string;
+  /** What screen readers hear in place of the badge, e.g. "2 to buy". */
+  badgeLabel?: string;
 };
 
 export type SegmentedTabsProps<T extends string> = {
@@ -109,6 +112,7 @@ export function SegmentedTabs<T extends string>({
             {tab.badge ? (
               <Box
                 component="span"
+                aria-hidden={tab.badgeLabel ? true : undefined}
                 sx={{
                   fontSize: 11,
                   fontWeight: 700,
@@ -120,6 +124,11 @@ export function SegmentedTabs<T extends string>({
                 }}
               >
                 {tab.badge}
+              </Box>
+            ) : null}
+            {tab.badge && tab.badgeLabel ? (
+              <Box component="span" sx={visuallyHidden}>
+                {tab.badgeLabel}
               </Box>
             ) : null}
           </ButtonBase>

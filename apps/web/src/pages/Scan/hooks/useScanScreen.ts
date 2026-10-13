@@ -289,9 +289,5 @@ export function useScanScreen() {
       if (location.key === 'default') navigate('/');
       else navigate(-1);
     },
-    // Handoff section 7: the Pantry's add form is the manual entry.
-    addManually: () => {
-      navigate('/pantry?add=1');
-    },
   };
 }

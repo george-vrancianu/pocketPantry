@@ -8,25 +8,15 @@ export type DockItemProps = {
   href: string;
   icon: ReactNode;
   active?: boolean;
-  /** Always-filled item (Scan). */
-  emphasis?: boolean;
 };
 
-export function DockItem({
-  label,
-  href,
-  icon,
-  active = false,
-  emphasis = false,
-}: DockItemProps) {
+export function DockItem({ label, href, icon, active = false }: DockItemProps) {
   const { color } = tokens;
-  const pill = emphasis
-    ? { backgroundColor: color.accent, color: '#FFFFFF' }
-    : active
-      ? { backgroundColor: color.accentTint, color: color.accent }
-      : {};
+  const pill = active
+    ? { backgroundColor: color.accentTint, color: color.accent }
+    : {};
 
-  const labelColor = emphasis ? color.ink : active ? color.accent : color.muted;
+  const labelColor = active ? color.accent : color.muted;
 
   return (
     <ButtonBase
@@ -38,7 +28,7 @@ export function DockItem({
         borderRadius: '18px',
         color: labelColor,
         fontSize: 11,
-        fontWeight: emphasis || active ? 700 : 600,
+        fontWeight: active ? 700 : 600,
         fontFamily: tokens.font.body,
       }}
     >

@@ -7,7 +7,6 @@ export type WidgetType =
   | 'use-soon'
   | 'shopping'
   | 'pantry-stock'
-  | 'quick-scan'
   | 'suggestions'
   | 'cook-tonight'
   | 'meal-plan'

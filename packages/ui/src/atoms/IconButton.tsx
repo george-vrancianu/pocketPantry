@@ -92,6 +92,8 @@ export function IconButton({
         flexShrink: 0,
         ...toneStyles,
         ...(ariaDisabled ? { opacity: 0.35, cursor: 'default' } : {}),
+        // Keep the tone when natively disabled too, rather than MUI's grey icon.
+        '&.Mui-disabled': { color: toneStyles.color, opacity: 0.35 },
         '&:focus-visible': {
           outline: `3px solid ${color.accent}`,
           outlineOffset: 2,

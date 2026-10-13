@@ -37,5 +37,9 @@ describe('InfoSheet mode list', () => {
       'Adds every item from your shop in one go.',
     );
     expect(items[3]).toHaveTextContent('Lists its ingredients');
+    // Receipt also carries the framing and folding tips.
+    expect(items[0]).toHaveTextContent(/40 cm above the receipt/);
+    expect(items[0]).toHaveTextContent(/fold where the guide ends/);
+    expect(items[1]).not.toHaveTextContent(/40 cm/);
   });
 });

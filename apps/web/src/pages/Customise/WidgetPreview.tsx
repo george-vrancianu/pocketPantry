@@ -3,7 +3,6 @@ import {
   ClockIcon,
   PantryIcon,
   RecipesIcon,
-  ScanIcon,
   ShoppingIcon,
   tokens,
 } from '@pocket-pantry/ui';
@@ -34,7 +33,6 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
   'use-soon': centred(<ClockIcon size={30} />),
   shopping: centred(<ShoppingIcon size={30} />),
   'pantry-stock': centred(<PantryIcon size={30} />),
-  'quick-scan': centred(<ScanIcon size={30} />),
   suggestions: centred(<ShoppingIcon size={30} />),
   'cook-tonight': centred(<RecipesIcon size={30} />),
   'meal-plan': (

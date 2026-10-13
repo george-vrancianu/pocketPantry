@@ -1,8 +1,9 @@
 import {
   Alert,
   Box,
-  Button,
   CartIcon,
+  CheckIcon,
+  IconButton,
   tokens,
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
@@ -45,7 +46,7 @@ export function lineAmount(
     : new Intl.NumberFormat(language).format(line.quantity);
 }
 
-/** One Ingredient Line: name with its quantity tag, note under it, and the Pantry status on the right. */
+/** One Ingredient Line: name with its quantity tag, note under it, and the Pantry status on the right; selected, a cart button beside it. */
 function IngredientRow({
   line,
   pantry,
@@ -83,95 +84,107 @@ function IngredientRow({
         bgcolor: selected ? tokens.color.accentTint : undefined,
       }}
     >
-      <Box
-        component="button"
-        type="button"
-        aria-pressed={selected}
-        onClick={onToggle}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          width: '100%',
-          minHeight: 44,
-          px: '16px',
-          py: '10px',
-          border: 0,
-          bgcolor: 'transparent',
-          font: 'inherit',
-          textAlign: 'left',
-          color: 'inherit',
-          cursor: 'pointer',
-        }}
-      >
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box
-            sx={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: optionalOrBasic ? tokens.color.muted : tokens.color.ink,
-            }}
-          >
-            {line.ingredientName}
-            {amount ? (
-              <Box
-                component="span"
-                sx={{
-                  ml: '7px',
-                  px: '7px',
-                  py: '1px',
-                  borderRadius: '6px',
-                  fontSize: 12.5,
-                  fontWeight: 700,
-                  fontVariantNumeric: 'tabular-nums',
-                  bgcolor: optionalOrBasic
-                    ? tokens.color.okBg
-                    : tokens.color.accentTint,
-                  color: optionalOrBasic
-                    ? tokens.color.muted
-                    : tokens.color.accent,
-                }}
-              >
-                {amount}
+      {/* The add button cannot sit inside the toggle, so the two are siblings on one line. */}
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box
+          component="button"
+          type="button"
+          aria-pressed={selected}
+          onClick={onToggle}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flex: 1,
+            minWidth: 0,
+            minHeight: 44,
+            pl: '16px',
+            pr: selected ? '8px' : '16px',
+            py: '10px',
+            border: 0,
+            bgcolor: 'transparent',
+            font: 'inherit',
+            textAlign: 'left',
+            color: 'inherit',
+            cursor: 'pointer',
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Box
+              sx={{
+                fontSize: 15,
+                fontWeight: 600,
+                color: optionalOrBasic ? tokens.color.muted : tokens.color.ink,
+              }}
+            >
+              {line.ingredientName}
+              {amount ? (
+                <Box
+                  component="span"
+                  sx={{
+                    ml: '7px',
+                    px: '7px',
+                    py: '1px',
+                    borderRadius: '6px',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
+                    bgcolor: optionalOrBasic
+                      ? tokens.color.okBg
+                      : tokens.color.accentTint,
+                    color: optionalOrBasic
+                      ? tokens.color.muted
+                      : tokens.color.accent,
+                  }}
+                >
+                  {amount}
+                </Box>
+              ) : null}
+            </Box>
+            {sub ? (
+              <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>
+                {sub}
               </Box>
             ) : null}
           </Box>
-          {sub ? (
-            <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>{sub}</Box>
+          {pantry ? (
+            <LineStatusPill line={pantry} iconOnly={selected} added={listed} />
           ) : null}
         </Box>
-        {pantry ? (
-          <LineStatusPill line={pantry} iconOnly={selected} added={listed} />
+        {selected ? (
+          <Box
+            sx={{
+              display: 'flex',
+              pr: '12px',
+              // Fades in only; leaving is instant. No motion at all under reduce-motion.
+              '@keyframes pp-line-add-in': {
+                from: { opacity: 0, transform: 'scale(0.8)' },
+                to: { opacity: 1, transform: 'none' },
+              },
+              animation: reduceMotion
+                ? 'none'
+                : 'pp-line-add-in 180ms ease-out',
+            }}
+          >
+            <IconButton
+              tone="accent"
+              size={34}
+              label={
+                added
+                  ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
+                  : t('recipes:pantry.addLine', { name: line.ingredientName })
+              }
+              disabled={added || addDisabled}
+              onClick={onAdd}
+            >
+              {added ? <CheckIcon size={18} /> : <CartIcon size={18} />}
+            </IconButton>
+          </Box>
         ) : null}
       </Box>
-      {selected ? (
-        <Box
-          sx={{
-            px: '16px',
-            pb: '10px',
-            // Slides in only; leaving is instant. No motion at all under reduce-motion.
-            '@keyframes pp-line-add-in': {
-              from: { opacity: 0, transform: 'translateY(-6px)' },
-              to: { opacity: 1, transform: 'none' },
-            },
-            animation: reduceMotion ? 'none' : 'pp-line-add-in 180ms ease-out',
-          }}
-        >
-          <Button
-            fullWidth
-            startIcon={<CartIcon size={18} />}
-            disabled={added || addDisabled}
-            onClick={onAdd}
-          >
-            {added
-              ? t('recipes:pantry.lineAdded', { name: line.ingredientName })
-              : t('recipes:pantry.addLine', { name: line.ingredientName })}
-          </Button>
-          {error ? (
-            <Box sx={{ mt: '8px' }}>
-              <Alert>{error}</Alert>
-            </Box>
-          ) : null}
+      {selected && error ? (
+        <Box sx={{ px: '16px', pb: '10px' }}>
+          <Alert>{error}</Alert>
         </Box>
       ) : null}
     </Box>

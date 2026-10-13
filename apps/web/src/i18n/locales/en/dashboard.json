@@ -26,15 +26,6 @@
       "itemsInStock_few": "items in stock",
       "itemsInStock_other": "items in stock"
     },
-    "quickScan": {
-      "title": "Quick scan",
-      "modes": {
-        "product": "Product",
-        "receipt": "Receipt",
-        "plate": "Plate",
-        "ingredients": "Ingredients"
-      }
-    },
     "suggestions": {
       "title": "Suggestions",
       "empty": "Nothing suggested",

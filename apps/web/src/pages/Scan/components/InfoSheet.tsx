@@ -99,6 +99,9 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
               <strong>{t(`mode.${mode}`)}</strong>{' '}
               <Box component="span" sx={{ color: tokens.color.camDim }}>
                 {t(`detail.${mode}`)}
+                {mode === 'receipt'
+                  ? ` ${t('guide.receipt')} ${t('guide.receiptFold')}`
+                  : null}
               </Box>
             </Box>
           ))}

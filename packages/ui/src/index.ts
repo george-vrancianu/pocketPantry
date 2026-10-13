@@ -56,6 +56,7 @@ export {
   AlertIcon,
   CheckCircleIcon,
   DeleteIcon,
+  EditIcon,
   SwapIcon,
   PeopleIcon,
   BackIcon,

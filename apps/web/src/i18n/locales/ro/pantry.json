@@ -22,13 +22,11 @@
   "batchesOf": "Loturi de {{name}}",
   "noDetails": "Fără cantitate",
   "edit": {
-    "label": "Editează",
     "action": "Editează lotul de {{name}}",
     "title": "Editează lotul de {{name}}",
     "save": "Salvează modificările"
   },
   "delete": {
-    "label": "Șterge",
     "action": "Șterge lotul de {{name}}",
     "confirm": "Ștergi acest lot?",
     "yes": "Da, șterge"

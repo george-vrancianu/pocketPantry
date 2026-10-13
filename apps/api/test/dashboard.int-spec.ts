@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { user } from '../src/database/schema';
+import { dashboardLayouts, user } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Widget = { id: string; type: string; size: string };
@@ -66,7 +66,6 @@ describe('Dashboard layout (integration)', () => {
       { type: 'use-soon', size: 'wide' },
       { type: 'shopping', size: 'small' },
       { type: 'pantry-stock', size: 'small' },
-      { type: 'quick-scan', size: 'wide' },
     ]);
     expect(new Set(widgets.map((w) => w.id)).size).toBe(widgets.length);
   });
@@ -116,7 +115,24 @@ describe('Dashboard layout (integration)', () => {
 
     const body = (await call('get', other.cookie).expect(200)).body as unknown;
 
-    expect((body as { widgets: Widget[] }).widgets).toHaveLength(4);
+    expect((body as { widgets: Widget[] }).widgets).toHaveLength(3);
+  });
+
+  it('drops the retired Quick Scan Widget from a saved layout', async () => {
+    const { cookie, userId } = await signUp('Eva');
+    await database.insert(dashboardLayouts).values({
+      userId,
+      widgets: [
+        { id: 'a', type: 'quick-scan', size: 'wide' },
+        { id: 'b', type: 'budget', size: 'small' },
+      ],
+    });
+
+    const body = (await call('get', cookie).expect(200)).body as unknown;
+
+    expect(body).toEqual({
+      widgets: [{ id: 'b', type: 'budget', size: 'small' }],
+    });
   });
 
   it.each([
