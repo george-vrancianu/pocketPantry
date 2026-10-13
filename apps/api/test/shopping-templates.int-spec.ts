@@ -1,11 +1,12 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { and, eq, ilike } from 'drizzle-orm';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
   batches,
+  catalogTranslations,
   ingredients,
   shoppingTemplates,
   user,
@@ -47,6 +48,15 @@ describe('Shopping Templates (integration)', () => {
   });
 
   afterAll(async () => {
+    // Resolving an Unmatched name adds a Synonym to a seeded Ingredient; remove it so the worker's shared database stays as seeded.
+    await database
+      .delete(catalogTranslations)
+      .where(
+        and(
+          eq(catalogTranslations.kind, 'synonym'),
+          ilike(catalogTranslations.value, `%${stamp}%`),
+        ),
+      );
     await app.close();
   });
 
