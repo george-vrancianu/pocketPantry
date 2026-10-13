@@ -873,7 +873,7 @@ describe('ShoppingPage', () => {
       ).toBeVisible();
 
       await user.clear(amount);
-      await user.type(amount, '5 kg');
+      await user.type(amount, '2 kg');
       await user.click(amount);
       await user.keyboard('{Control>}a{/Control}');
       await user.paste('25 ml');
@@ -888,6 +888,26 @@ describe('ShoppingPage', () => {
         quantity: 25,
         unit: 'ml',
       });
+    });
+
+    it('treats a select-all paste after a split as a fresh amount', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '2 kg');
+      await user.click(amount);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.paste('2g');
+      expect(amount).toHaveValue('2');
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: g' }),
+      ).toBeVisible();
     });
 
     it('keeps a unit chosen from the chip after a split', async () => {

@@ -9,6 +9,7 @@ import {
   useId,
   useRef,
   useState,
+  type ChangeEvent,
   type FocusEvent,
   type KeyboardEvent,
 } from 'react';
@@ -78,8 +79,10 @@ export function AmountField({
     alias: string;
     previousUnit: Unit | '';
   } | null>(null);
-  const type = (text: string) => {
-    const last = split.current;
+  const type = (text: string, typedAtEnd: boolean) => {
+    // Only a character typed at the end continues or undoes a split; a paste
+    // or an edit mid-text is a fresh amount.
+    const last = typedAtEnd ? split.current : null;
     split.current = null;
     const rest = last ? text.slice(last.quantity.length) : '';
     if (
@@ -160,8 +163,12 @@ export function AmountField({
             aria-describedby={error ? errorId : undefined}
             placeholder={t('shopping:amount.placeholder')}
             value={quantity}
-            onChange={(event: { target: { value: string } }) =>
-              type(event.target.value)
+            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+              type(
+                event.target.value,
+                (event.nativeEvent as InputEvent).inputType === 'insertText' &&
+                  event.target.selectionStart === event.target.value.length,
+              )
             }
             onKeyDown={(event: KeyboardEvent) => {
               if (event.key === 'Enter') {
