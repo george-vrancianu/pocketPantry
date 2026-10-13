@@ -1,17 +1,18 @@
 import { tokens } from './tokens';
 
-export type AisleTint = { background: string; text: string };
+/** An Aisle's tint for Ingredient Icons, per theme. Dark is stored but unused until a dark theme exists. */
+export type AisleTint = { light: string; dark: string };
 
-const produce = { background: '#DDEBE2', text: '#2E6A4D' };
-const bakery = { background: '#F6EBC8', text: '#6E5200' };
-const dairy = { background: '#E3ECF3', text: '#2F5674' };
-const meat = { background: '#FBE6DA', text: '#B54A17' };
-const frozen = { background: '#E6E9F4', text: '#3E4C7A' };
-const pantry = { background: '#E2E8DD', text: '#3C4A41' };
-const drinks = { background: '#EFE6F1', text: '#6A3F72' };
+const produce = { light: '#DDEBE2', dark: '#24392E' };
+const bakery = { light: '#F6EBC8', dark: '#3B3320' };
+const dairy = { light: '#E3ECF3', dark: '#243440' };
+const meat = { light: '#FBE6DA', dark: '#42291E' };
+const frozen = { light: '#E6E9F4', dark: '#272C3F' };
+const pantry = { light: '#E2E8DD', dark: '#2B332C' };
+const drinks = { light: '#EFE6F1', dark: '#362A3A' };
 
 /**
- * Tile colours by Aisle id. The ids are the seeded Aisles' stable ids
+ * Icon tints by Aisle id. The ids are the seeded Aisles' stable ids
  * (`seedId.aisle(slug)` in apps/api/src/catalog/seed/seed-catalog.ts); Aisles
  * have no slug column, so the slug is noted beside each.
  */
@@ -31,8 +32,8 @@ export const aisleTints: Readonly<Record<string, AisleTint>> = {
 export function aisleTint(aisleId: string): AisleTint {
   return (
     aisleTints[aisleId] ?? {
-      background: tokens.color.chipNeutral,
-      text: tokens.color.muted,
+      light: tokens.color.chipNeutral,
+      dark: tokens.color.chipNeutral,
     }
   );
 }
