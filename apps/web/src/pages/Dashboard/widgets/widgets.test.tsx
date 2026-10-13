@@ -24,6 +24,7 @@ const batch = (overrides: Partial<Batch> & { id: string }): Batch => ({
   name: 'Item',
   ingredientId: 'ing',
   unmatched: false,
+  aisle: null,
   quantity: null,
   unit: null,
   location: 'fridge',
@@ -41,6 +42,7 @@ const item = (overrides: Partial<ShoppingItem> & { id: string }) => ({
   unit: null,
   checked: false,
   unmatched: false,
+  aisle: null,
   ...overrides,
 });
 

@@ -1,4 +1,4 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, IngredientIcon, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -72,27 +72,18 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           }}
         >
           <Box
-            aria-hidden="true"
             sx={{
               flexShrink: 0,
-              width: 36,
-              height: 36,
-              borderRadius: '12px',
-              bgcolor: rollUp.unmatched
-                ? tokens.color.soonBg
-                : tokens.color.accentTint,
-              color: rollUp.unmatched
-                ? tokens.color.soonFg
-                : tokens.color.accent,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: tokens.font.display,
-              fontWeight: 700,
-              fontSize: 15,
+              width: 38,
+              height: 38,
+              display: 'grid',
+              placeItems: 'center',
             }}
           >
-            {rollUp.name.charAt(0).toLocaleUpperCase(i18n.language)}
+            <IngredientIcon
+              ingredientId={rollUp.unmatched ? undefined : rollUp.key}
+              aisleId={rollUp.aisleId ?? undefined}
+            />
           </Box>
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
             <Typography

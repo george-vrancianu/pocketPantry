@@ -13,6 +13,8 @@ export type Batch = {
   name: string;
   ingredientId: string | null;
   unmatched: boolean;
+  /** The Ingredient's Aisle; null for an Unmatched Batch. */
+  aisle: { id: string; name: string; sortOrder: number } | null;
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;
@@ -140,6 +142,8 @@ export type RollUp = {
   key: string;
   name: string;
   unmatched: boolean;
+  /** The Ingredient's Aisle id, for the icon tint; null for Unmatched Batches. */
+  aisleId: string | null;
   /** Soonest expiry first, Batches without one last. */
   batches: Batch[];
   /** One total per unit: units that disagree are listed separately, never converted. */
@@ -177,6 +181,7 @@ export function rollUp(batches: Batch[]): RollUp[] {
         key,
         name: sorted[0].name,
         unmatched: sorted[0].unmatched,
+        aisleId: sorted[0].aisle?.id ?? null,
         batches: sorted,
         totals: UNITS.filter((unit) => sums.has(unit)).map((unit) => ({
           unit,
