@@ -10,14 +10,16 @@ import {
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
+import { ApplyTemplateView } from './ApplyTemplateView';
+import { TemplatesTab } from './TemplatesTab';
 import {
   emptyIngredients,
   IngredientsTab,
   type IngredientsState,
 } from './IngredientsTab';
 
-/** The Templates tab's sub-views; later tickets fill them in. */
-export type TemplatesView = 'list' | 'save';
+/** The Templates tab's sub-views: the list, the save view, or applying one template. */
+export type TemplatesView = 'list' | 'save' | { apply: string };
 
 /** Where the sheet opens. */
 export type SheetView =
@@ -54,6 +56,7 @@ export function AddSheet({
   const { t } = useTranslation('shopping');
   const tabsId = useId();
   const [tab, setTab] = useState<SheetTab>(initialView.tab);
+  const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
   const [templatesView, setTemplatesView] = useState<TemplatesView>(
     initialView.tab === 'templates' ? initialView.view : 'list',
   );
@@ -77,6 +80,10 @@ export function AddSheet({
     // Changing tabs returns Templates to its list view.
     if (next !== tab) setTemplatesView('list');
     setTab(next);
+  };
+  const openTemplate = (templateId: string) => {
+    setTab('templates');
+    setTemplatesView({ apply: templateId });
   };
   const { color } = tokens;
 
@@ -167,6 +174,11 @@ export function AddSheet({
       onClose={onClose}
       label={t('sheet.title')}
       header={header}
+      footer={
+        tab === 'templates' && typeof templatesView === 'object' ? (
+          <Box ref={setFooterHost} />
+        ) : undefined
+      }
       onEntered={() => {
         // Do not steal focus from a field the Member has already reached.
         const focused = document.activeElement;
@@ -194,16 +206,20 @@ export function AddSheet({
             onAdd={onAdd}
             error={addError}
             onAdded={() => setAddedCount((count) => count + 1)}
+            onOpenTemplate={openTemplate}
+            onSeeAllTemplates={() => selectTab('templates')}
+          />
+        ) : typeof templatesView === 'object' ? (
+          <ApplyTemplateView
+            templateId={templatesView.apply}
+            onBack={() => setTemplatesView('list')}
+            onApplied={onClose}
+            footerHost={footerHost}
           />
         ) : (
-          <TemplatesPlaceholder view={templatesView} />
+          <TemplatesTab onOpenTemplate={openTemplate} />
         )}
       </Box>
     </Sheet>
   );
-}
-
-/** Stands in for the Templates tab until it is built. */
-function TemplatesPlaceholder({ view }: { view: TemplatesView }) {
-  return <Box data-view={view} />;
 }

@@ -11,6 +11,7 @@ import type { NewShoppingItem } from '../../../../lib/shopping';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
+import { TemplateChips } from './TemplateChips';
 
 /** Distance in px that lifts a toast clear of the sheet's bottom edge. */
 const TOAST_ABOVE_SHEET = 92;
@@ -40,6 +41,10 @@ export type IngredientsTabProps = {
   error: string | null;
   /** Called after each successful add. */
   onAdded: () => void;
+  /** Opens a template's apply view. */
+  onOpenTemplate: (id: string) => void;
+  /** Switches to the Templates tab. */
+  onSeeAllTemplates: () => void;
 };
 
 /** The Ingredients tab: search the Catalog, open a result, give an amount, add. */
@@ -51,6 +56,8 @@ export function IngredientsTab({
   onAdd,
   error,
   onAdded,
+  onOpenTemplate,
+  onSeeAllTemplates,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
   const toast = useToast();
@@ -213,6 +220,12 @@ export function IngredientsTab({
           );
         })}
       </Box>
+      {typed ? null : (
+        <TemplateChips
+          onOpenTemplate={onOpenTemplate}
+          onSeeAll={onSeeAllTemplates}
+        />
+      )}
     </Box>
   );
 }

@@ -72,5 +72,7 @@
     "noUnit": "unit",
     "units": "Units",
     "add": "Add {{name}} to the list"
-  }
+  },
+  "templatesFromSearch": "Or start from a template",
+  "seeAll": "See all"
 }

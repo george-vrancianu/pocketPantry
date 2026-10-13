@@ -71,5 +71,7 @@
     "noUnit": "enhed",
     "units": "Enheder",
     "add": "Føj {{name}} til listen"
-  }
+  },
+  "templatesFromSearch": "Eller start fra en skabelon",
+  "seeAll": "Se alle"
 }

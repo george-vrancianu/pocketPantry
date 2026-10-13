@@ -76,5 +76,7 @@
     "noUnit": "unitate",
     "units": "Unități",
     "add": "Adaugă {{name}} în listă"
-  }
+  },
+  "templatesFromSearch": "Sau începe de la un șablon",
+  "seeAll": "Vezi tot"
 }
