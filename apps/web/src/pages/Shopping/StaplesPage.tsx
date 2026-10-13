@@ -1,25 +1,31 @@
 import {
   Alert,
   Box,
-  Button,
-  CloseIcon,
-  IconButton,
   Link,
   ListRow,
-  ListRowItem,
   Spinner,
   Stack,
-  TextField,
+  SwipeRow,
   Typography,
+  useToast,
+  type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { CatalogSearch } from '../../components/CatalogSearch';
 import { translateApiError } from '../../i18n/translateApiError';
-import { UNITS, type Unit } from '../../lib/catalog';
-import { parseQuantity } from '../../lib/pantry';
-import { useStapleMutations, useStaples, type Staple } from '../../lib/staples';
+import { formatAmount } from '../../lib/amount';
+import {
+  staplesQueryKey,
+  useStapleMutations,
+  useStaples,
+  type Staple,
+} from '../../lib/staples';
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
+import { useSwipeRowLabels } from '../../lib/useSwipeRowLabels';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
@@ -27,8 +33,26 @@ export function StaplesPage() {
   const staples = useStaples(i18n.language);
   const { add, update, remove } = useStapleMutations(i18n.language);
   const [formKey, setFormKey] = useState(0);
+  const queryClient = useQueryClient();
+  const { mutateAsync: sendDelete } = remove;
+  const removal = useDeferredRemoval(
+    useCallback(
+      async (id: string) => {
+        // A poll already in flight would carry the Staple back in.
+        await queryClient.cancelQueries({ queryKey: staplesQueryKey });
+        return sendDelete(id);
+      },
+      [queryClient, sendDelete],
+    ),
+  );
+  // A removed Staple stays out of the list, refetches included, until its delete has settled.
+  const visible = useMemo(
+    () => staples.data?.filter((staple) => !removal.hiddenIds.has(staple.id)),
+    [staples.data, removal.hiddenIds],
+  );
 
-  const error = staples.error ?? add.error ?? update.error ?? remove.error;
+  // A failed save is shown by the amount sheet and a failed removal by its toast.
+  const error = staples.error ?? add.error;
 
   return (
     <>
@@ -49,33 +73,32 @@ export function StaplesPage() {
           }
         />
         {staples.isPending ? <Spinner label={t('common:loading')} /> : null}
-        {staples.data?.length === 0 ? (
+        {visible?.length === 0 ? (
           <Typography color="text.secondary">{t('staples:empty')}</Typography>
         ) : null}
-        {staples.data && staples.data.length > 0 ? (
+        {visible && visible.length > 0 ? (
           <Box
             component="ul"
             aria-label={t('staples:listLabel')}
             sx={{
               listStyle: 'none',
               m: 0,
-              px: 1.5,
-              py: 0,
+              p: 0,
               bgcolor: 'background.paper',
               border: 1,
               borderColor: 'divider',
               borderRadius: '20px',
+              overflow: 'hidden',
             }}
           >
-            {staples.data.map((staple) => (
+            {visible.map((staple) => (
               <StapleRow
-                key={`${staple.id}-${staple.quantity}-${staple.unit}`}
+                key={staple.id}
                 staple={staple}
-                saving={update.isPending}
-                onSave={(quantity, unit) =>
-                  update.mutate({ id: staple.id, quantity, unit })
+                onSave={(amount) =>
+                  update.mutateAsync({ id: staple.id, ...amount })
                 }
-                onRemove={() => remove.mutate(staple.id)}
+                onRemove={() => removal.remove(staple.id, staple.name)}
               />
             ))}
           </Box>
@@ -87,90 +110,66 @@ export function StaplesPage() {
 
 function StapleRow({
   staple,
-  saving,
   onSave,
   onRemove,
 }: {
   staple: Staple;
-  saving: boolean;
-  onSave: (quantity: number | null, unit: Unit | null) => void;
+  /** Rejects with the API error, which the amount sheet shows. */
+  onSave: (amount: Pick<Staple, 'quantity' | 'unit'>) => Promise<unknown>;
   onRemove: () => void;
 }) {
-  const { t } = useTranslation('staples');
-  const [quantity, setQuantity] = useState(
-    staple.quantity === null ? '' : String(staple.quantity),
-  );
-  const [unit, setUnit] = useState<Unit | ''>(staple.unit ?? '');
-  const amount = parseQuantity(quantity);
-  const needsUnit = amount.valid && amount.value !== null && unit === '';
-  const dirty =
-    (amount.valid ? amount.value : undefined) !== staple.quantity ||
-    (unit || null) !== staple.unit;
+  const { t, i18n } = useTranslation(['staples', 'common']);
+  const toast = useToast();
+  const labels = useSwipeRowLabels(staple.name, 'staples', { hold: true });
+  const [editing, setEditing] = useState(false);
+  const row = useRef<SwipeRowHandle>(null);
 
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!amount.valid || needsUnit) return;
-    onSave(amount.value, unit || null);
-  };
+  // "Remove Staple" closes the sheet first and asks once it is gone: the sheet hands focus back to the
+  // row as it closes, and the confirmation's Keep button must be focused after that, not before.
+  const [askAfterClose, setAskAfterClose] = useState(false);
+  useEffect(() => {
+    if (!askAfterClose || editing) return;
+    setAskAfterClose(false);
+    row.current?.askToRemove();
+  }, [askAfterClose, editing]);
 
   return (
-    <ListRowItem>
-      <ListRow
-        title={staple.name}
-        trailing={
-          <IconButton
-            label={t('remove', { name: staple.name })}
-            tone="plain"
-            size={40}
-            onClick={onRemove}
-          >
-            <CloseIcon size={18} />
-          </IconButton>
-        }
-        below={
-          <Box
-            component="form"
-            onSubmit={submit}
-            noValidate
-            sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', mt: 1 }}
-          >
-            <TextField
-              label={t('quantityOf', { name: staple.name })}
-              type="number"
-              value={quantity}
-              onChange={(event) => setQuantity(event.target.value)}
-              error={!amount.valid}
-              slotProps={{ htmlInput: { min: 0, step: 'any' } }}
-            />
-            <TextField
-              select
-              label={t('unitOf', { name: staple.name })}
-              value={unit}
-              error={needsUnit}
-              helperText={needsUnit ? t('unitRequired') : undefined}
-              onChange={(event) => setUnit(event.target.value as Unit | '')}
-              slotProps={{
-                select: { native: true },
-                inputLabel: { shrink: true },
-              }}
-            >
-              <option value="">{t('noUnit')}</option>
-              {UNITS.map((value) => (
-                <option key={value} value={value}>
-                  {t(`common:units.${value}`)}
-                </option>
-              ))}
-            </TextField>
-            <Button
-              type="submit"
-              disabled={!dirty || !amount.valid || needsUnit || saving}
-              aria-label={t('save', { name: staple.name })}
-            >
-              {t('saveShort')}
-            </Button>
-          </Box>
-        }
+    <>
+      <SwipeRow
+        ref={row}
+        name={staple.name}
+        labels={labels}
+        disabled={editing}
+        onEdit={() => setEditing(true)}
+        onRemove={onRemove}
+      >
+        <ListRow
+          title={staple.name}
+          meta={
+            staple.quantity !== null && staple.unit
+              ? formatAmount(staple.quantity, staple.unit, i18n.language, t)
+              : null
+          }
+        />
+      </SwipeRow>
+      <AmountSheet
+        open={editing}
+        name={staple.name}
+        context={t('common:row.context.staples')}
+        amount={{ quantity: staple.quantity, unit: staple.unit }}
+        requireUnit
+        onSave={async (amount) => {
+          await onSave(amount);
+          setEditing(false);
+          toast.show(t('common:row.updated', { name: staple.name }));
+        }}
+        onClose={() => setEditing(false)}
+        removeLabel={t('common:edit.removeStaple')}
+        onRemove={() => {
+          setEditing(false);
+          setAskAfterClose(true);
+        }}
       />
-    </ListRowItem>
+    </>
   );
 }

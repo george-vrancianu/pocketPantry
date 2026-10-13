@@ -2,7 +2,7 @@ import type { SwipeRowLabels } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
 /** What the removal confirmation says it removes the item from; the keys are `common:row.context.*`. */
-export type RowContext = 'list' | 'pantry';
+export type RowContext = 'list' | 'pantry' | 'staples';
 
 /**
  * The strings a `SwipeRow` shows, for the item called `name`. A row you can also hold to edit

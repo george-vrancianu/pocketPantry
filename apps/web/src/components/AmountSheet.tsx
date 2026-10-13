@@ -30,6 +30,8 @@ export type AmountSheetProps = {
    * reject, ideally with an `ApiError`, to keep the sheet open with the reason shown.
    */
   onSave: (amount: Amount) => Promise<unknown>;
+  /** A quantity needs a unit (Staples); no quantity at all is still fine. Shows `amount.unitRequired`. */
+  requireUnit?: boolean;
   /** Cancel, Escape and the scrim. */
   onClose: () => void;
   /** Text of the red link under the buttons, e.g. `t('common:edit.removeFromList')`. */
@@ -51,6 +53,7 @@ export function AmountSheet({
   name,
   context,
   amount,
+  requireUnit = false,
   onSave,
   onClose,
   removeLabel,
@@ -79,6 +82,7 @@ export function AmountSheet({
       <AmountForm
         name={name}
         amount={amount}
+        requireUnit={requireUnit}
         onSave={onSave}
         onCancel={onClose}
         removeLabel={removeLabel}
@@ -92,11 +96,15 @@ export function AmountSheet({
 function AmountForm({
   name,
   amount,
+  requireUnit,
   onSave,
   onCancel,
   removeLabel,
   onRemove,
-}: Pick<AmountSheetProps, 'name' | 'amount' | 'onSave' | 'removeLabel'> & {
+}: Pick<
+  AmountSheetProps,
+  'name' | 'amount' | 'onSave' | 'removeLabel' | 'requireUnit'
+> & {
   onCancel: () => void;
   onRemove: () => void;
 }) {
@@ -117,12 +125,15 @@ function AmountForm({
 
   const parsed = parseQuantity(quantity.replace(',', '.'));
 
+  const needsUnit =
+    requireUnit && parsed.valid && parsed.value !== null && unit === '';
+
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     // Enter and the button can both fire; one save at a time.
     if (sending.current) return;
     setAttempted(true);
-    if (!parsed.valid) return;
+    if (!parsed.valid || needsUnit) return;
     sending.current = true;
     setSaving(true);
     setFailure(null);
@@ -156,7 +167,13 @@ function AmountForm({
           if (typedUnit !== undefined) setUnit(typedUnit);
         }}
         onUnitChange={setUnit}
-        error={attempted && !parsed.valid ? t('amount.invalid') : null}
+        error={
+          attempted && !parsed.valid
+            ? t('amount.invalid')
+            : attempted && needsUnit
+              ? t('amount.unitRequired')
+              : null
+        }
         onSubmit={submit}
       />
       {failure ? <Alert>{failure}</Alert> : null}

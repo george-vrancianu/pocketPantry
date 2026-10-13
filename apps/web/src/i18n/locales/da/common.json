@@ -21,7 +21,8 @@
     "a11yHint": "Stryg til venstre for at fjerne, hold nede for at redigere",
     "context": {
       "list": "fra din liste",
-      "pantry": "fra dit spisekammer"
+      "pantry": "fra dit spisekammer",
+      "staples": "fra dine basisvarer"
     },
     "keep": "Behold",
     "releaseToDelete": "Slip for at fjerne",
@@ -40,10 +41,12 @@
     "unit": "Enhed: {{unit}}",
     "noUnit": "enhed",
     "units": "Enheder",
-    "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler."
+    "invalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler.",
+    "unitRequired": "Vælg en enhed til mængden."
   },
   "edit": {
     "removeFromList": "Fjern fra listen",
+    "removeStaple": "Fjern basisvare",
     "save": "Gem",
     "saving": "Gemmer",
     "title": "Rediger {{name}}"

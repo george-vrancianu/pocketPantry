@@ -21,7 +21,8 @@
     "a11yHint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
     "context": {
       "list": "din lista ta",
-      "pantry": "din cămara ta"
+      "pantry": "din cămara ta",
+      "staples": "din produsele tale de bază"
     },
     "keep": "Păstrează",
     "releaseToDelete": "Eliberează pentru a elimina",
@@ -41,10 +42,12 @@
     "unit": "Unitate: {{unit}}",
     "noUnit": "unitate",
     "units": "Unități",
-    "invalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale."
+    "invalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale.",
+    "unitRequired": "Alege o unitate pentru cantitate."
   },
   "edit": {
     "removeFromList": "Elimină din listă",
+    "removeStaple": "Elimină produsul de bază",
     "save": "Salvează",
     "saving": "Se salvează",
     "title": "Editează {{name}}"
