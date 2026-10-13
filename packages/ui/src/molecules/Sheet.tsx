@@ -19,6 +19,10 @@ export type SheetProps = {
    * itself (say, a popover) calls `event.stopPropagation()` on that keydown.
    */
   onClose: () => void;
+  /** Called once the open transition has finished, e.g. to focus a field. */
+  onEntered?: () => void;
+  /** Called once the close transition has finished. */
+  onExited?: () => void;
   /** Accessible name of the dialog. */
   label: string;
   /** Pinned above the body, e.g. a title row and tabs. */
@@ -44,6 +48,8 @@ const SlideUp = forwardRef(function SlideUp(
 export function Sheet({
   open,
   onClose,
+  onEntered,
+  onExited,
   label,
   header,
   footer,
@@ -67,6 +73,7 @@ export function Sheet({
       }
       slotProps={{
         backdrop: { sx: { backgroundColor: SCRIM } },
+        transition: { onEntered, onExited },
         paper: {
           'aria-label': label,
           sx: {

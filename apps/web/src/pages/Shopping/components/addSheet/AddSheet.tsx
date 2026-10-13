@@ -7,15 +7,28 @@ import {
   segmentedTabPanelId,
   tokens,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
-import { IngredientsTab } from './IngredientsTab';
+import {
+  emptyIngredients,
+  IngredientsTab,
+  type IngredientsState,
+} from './IngredientsTab';
 
-type SheetTab = 'ingredients' | 'templates';
+/** The Templates tab's sub-views; later tickets fill them in. */
+export type TemplatesView = 'list' | 'save';
+
+/** Where the sheet opens. */
+export type SheetView =
+  { tab: 'ingredients' } | { tab: 'templates'; view: TemplatesView };
+
+type SheetTab = SheetView['tab'];
 
 export type AddSheetProps = {
   open: boolean;
+  /** The view each opening starts on; Ingredients by default. */
+  initialView?: SheetView;
   onClose: () => void;
   adding: boolean;
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
@@ -25,11 +38,14 @@ export type AddSheetProps = {
 
 /**
  * The Add sheet: a header with Done, the Ingredients and Templates tabs, and
- * the selected tab's panel. What belongs to one opening (tab, adds so far)
- * resets whenever it opens; the lists polled behind it never reset it.
+ * the selected tab's panel. It owns everything that belongs to one opening
+ * (tab, Templates sub-view, query, open row, typed amount and unit, adds so
+ * far) so it survives switching tabs. All of it resets whenever the sheet
+ * opens; the lists polled behind it never reset it.
  */
 export function AddSheet({
   open,
+  initialView = { tab: 'ingredients' },
   onClose,
   adding,
   onAdd,
@@ -37,16 +53,34 @@ export function AddSheet({
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
   const tabsId = useId();
-  const [tab, setTab] = useState<SheetTab>('ingredients');
+  const [tab, setTab] = useState<SheetTab>(initialView.tab);
+  const [templatesView, setTemplatesView] = useState<TemplatesView>(
+    initialView.tab === 'templates' ? initialView.view : 'list',
+  );
+  const [ingredients, setIngredients] =
+    useState<IngredientsState>(emptyIngredients);
   const [addedCount, setAddedCount] = useState(0);
+  // True once the slide-in is done, so the search can take focus.
+  const [entered, setEntered] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setTab('ingredients');
+      setTab(initialView.tab);
+      setTemplatesView(
+        initialView.tab === 'templates' ? initialView.view : 'list',
+      );
+      setIngredients(emptyIngredients);
       setAddedCount(0);
+      setEntered(false);
     }
   }
+  const selectTab = (next: SheetTab) => {
+    // Changing tabs returns Templates to its list view.
+    if (next !== tab) setTemplatesView('list');
+    setTab(next);
+  };
   const { color } = tokens;
 
   const header = (
@@ -125,7 +159,7 @@ export function AddSheet({
           { value: 'templates', label: t('sheet.tabs.templates') },
         ]}
         value={tab}
-        onChange={setTab}
+        onChange={selectTab}
       />
     </Box>
   );
@@ -136,6 +170,19 @@ export function AddSheet({
       onClose={onClose}
       label={t('sheet.title')}
       header={header}
+      onEntered={() => {
+        setEntered(true);
+        // Do not steal focus from a field the Member has already reached.
+        const focused = document.activeElement;
+        if (
+          !focused ||
+          focused === document.body ||
+          focused.getAttribute('role') === 'dialog'
+        ) {
+          searchRef.current?.focus();
+        }
+      }}
+      onExited={() => setEntered(false)}
     >
       <Box
         role="tabpanel"
@@ -145,13 +192,24 @@ export function AddSheet({
       >
         {tab === 'ingredients' ? (
           <IngredientsTab
+            state={ingredients}
+            onStateChange={setIngredients}
+            searchRef={searchRef}
+            focusOnMount={entered}
             adding={adding}
             onAdd={onAdd}
             error={addError}
             onAdded={() => setAddedCount((count) => count + 1)}
           />
-        ) : null}
+        ) : (
+          <TemplatesPlaceholder view={templatesView} />
+        )}
       </Box>
     </Sheet>
   );
+}
+
+/** Stands in for the Templates tab until it is built. */
+function TemplatesPlaceholder({ view }: { view: TemplatesView }) {
+  return <Box data-view={view} />;
 }

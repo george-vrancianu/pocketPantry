@@ -79,10 +79,11 @@ export function SummaryCard({
             cursor: 'pointer',
             color: '#FFFFFF',
             backgroundColor: tokens.color.accent,
+            boxShadow: '0 6px 14px rgba(46,106,77,.28)',
             '&:hover': { backgroundColor: tokens.color.accentHover },
           }}
         >
-          <PlusIcon size={26} />
+          <PlusIcon size={24} />
         </Box>
       </Box>
       <ProgressBar

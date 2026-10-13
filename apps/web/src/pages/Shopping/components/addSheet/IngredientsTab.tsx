@@ -1,5 +1,11 @@
 import { Alert, Box, Typography, tokens, useToast } from '@pocket-pantry/ui';
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   useCatalogSearch,
@@ -21,9 +27,20 @@ type Row =
   | { key: 'free-text'; kind: 'free'; name: string };
 
 /** The row being filled in; only one is open at a time. */
-type OpenRow = { key: string; quantity: string; unit: Unit | '' };
+export type OpenRow = { key: string; quantity: string; unit: Unit | '' };
+
+/** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
+export type IngredientsState = { query: string; open: OpenRow | null };
+
+export const emptyIngredients: IngredientsState = { query: '', open: null };
 
 export type IngredientsTabProps = {
+  state: IngredientsState;
+  onStateChange: (state: IngredientsState) => void;
+  /** The search input, so the sheet can focus it once it has slid in. */
+  searchRef: RefObject<HTMLInputElement | null>;
+  /** Focus the search on mount (the sheet is already in view). */
+  focusOnMount: boolean;
   adding: boolean;
   /** Resolves true when added; on false the sheet shows `error`. */
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
@@ -35,6 +52,10 @@ export type IngredientsTabProps = {
 
 /** The Ingredients tab: search the Catalog, open a result, give an amount, add. */
 export function IngredientsTab({
+  state,
+  onStateChange,
+  searchRef: searchInput,
+  focusOnMount,
   adding,
   onAdd,
   error,
@@ -43,10 +64,16 @@ export function IngredientsTab({
   const { t, i18n } = useTranslation('shopping');
   const toast = useToast();
   const listboxId = useId();
-  const searchInput = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState<OpenRow | null>(null);
+  const { query, open } = state;
+  const setOpen = (next: OpenRow | null) =>
+    onStateChange({ ...state, open: next });
   const [activeIndex, setActiveIndex] = useState(-1);
+
+  useEffect(() => {
+    if (focusOnMount) searchInput.current?.focus();
+    // Only on mount: coming back from another tab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const search = useCatalogSearch(query, i18n.language);
   const typed = query.trim();
@@ -59,11 +86,14 @@ export function IngredientsTab({
   }));
   if (
     typed &&
+    !search.isSearching &&
     !results.some((result) => result.name.toLowerCase() === typed.toLowerCase())
   ) {
     rows.push({ key: 'free-text', kind: 'free', name: typed });
   }
 
+  // Rows come and go as results load; never point at one that is gone.
+  const active = activeIndex < rows.length ? activeIndex : -1;
   const optionId = (index: number) => `${listboxId}-option-${index}`;
   const openRow = rows.find((row) => row.key === open?.key);
   const amount = parseQuantity(open?.quantity ?? '');
@@ -81,21 +111,20 @@ export function IngredientsTab({
   };
 
   const change = (value: string) => {
-    setQuery(value);
-    setOpen(null);
+    onStateChange({ query: value, open: null });
     setActiveIndex(-1);
   };
 
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === 'ArrowDown' && rows.length > 0) {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % rows.length);
+      setActiveIndex((active + 1) % rows.length);
     } else if (event.key === 'ArrowUp' && rows.length > 0) {
       event.preventDefault();
-      setActiveIndex((index) => (index <= 0 ? rows.length - 1 : index - 1));
+      setActiveIndex(active <= 0 ? rows.length - 1 : active - 1);
     } else if (event.key === 'Enter' && rows.length > 0) {
       event.preventDefault();
-      const row = rows[Math.max(activeIndex, 0)];
+      const row = rows[Math.max(active, 0)];
       if (row) toggle(row);
     }
   };
@@ -115,8 +144,7 @@ export function IngredientsTab({
     if (!added) return;
     toast.show(t('added', { name }), { bottom: TOAST_ABOVE_SHEET });
     onAdded();
-    setQuery('');
-    setOpen(null);
+    onStateChange(emptyIngredients);
     setActiveIndex(-1);
     searchInput.current?.focus();
   };
@@ -143,7 +171,7 @@ export function IngredientsTab({
         inputRef={searchInput}
         listboxId={listboxId}
         expanded={rows.length > 0}
-        activeOptionId={activeIndex >= 0 ? optionId(activeIndex) : undefined}
+        activeOptionId={active >= 0 ? optionId(active) : undefined}
       />
       <Typography
         role="status"
@@ -158,7 +186,6 @@ export function IngredientsTab({
         aria-label={t('search.placeholder')}
         hidden={rows.length === 0}
         sx={{
-          overflow: 'hidden',
           borderRadius: '20px',
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
@@ -180,7 +207,7 @@ export function IngredientsTab({
                   : t('search.freeTextHint')
               }
               open={isOpen}
-              active={index === activeIndex}
+              active={index === active}
               onToggle={() => toggle(row)}
             >
               {isOpen && open ? (

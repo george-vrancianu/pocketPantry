@@ -279,9 +279,11 @@ describe('ShoppingPage', () => {
       expect(
         within(dialog).getByRole('tab', { name: 'Templates' }),
       ).toHaveAttribute('aria-selected', 'false');
-      expect(
-        within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-      ).toHaveFocus();
+      await waitFor(() =>
+        expect(
+          within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+        ).toHaveFocus(),
+      );
     });
 
     it('closes with Done, Escape and a scrim tap, returning focus to Add items', async () => {
@@ -533,6 +535,43 @@ describe('ShoppingPage', () => {
       expect(screen.queryByText('Added Parmesan')).toBeNull();
     });
 
+    it('shows no stale add error when the sheet is reopened', async () => {
+      withParmesan({
+        'POST /api/shopping-list/items': () =>
+          Response.json({ code: 'boom', params: {} }, { status: 500 }),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+      await user.click(option);
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      expect(await within(dialog).findByRole('alert')).toBeVisible();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      const reopened = await openSheet(user);
+
+      expect(within(reopened).queryByRole('alert')).toBeNull();
+    });
+
+    it('keeps the query when switching tabs and back', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog } = await findParmesanRow(user);
+
+      await user.click(within(dialog).getByRole('tab', { name: 'Templates' }));
+      await user.click(
+        within(dialog).getByRole('tab', { name: 'Ingredients' }),
+      );
+
+      expect(search(dialog)).toHaveValue('parm');
+    });
+
     it('closes the unit popover on Escape before the sheet', async () => {
       withParmesan();
       renderWithProviders(<ShoppingPage />);
@@ -544,6 +583,9 @@ describe('ShoppingPage', () => {
       await user.keyboard('{Escape}');
 
       expect(within(dialog).queryByRole('button', { name: 'kg' })).toBeNull();
+      expect(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+      ).toHaveFocus();
       expect(screen.getByRole('dialog')).toBeVisible();
       await user.keyboard('{Escape}');
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
@@ -586,7 +628,7 @@ describe('ShoppingPage', () => {
       const dialog = await openSheet();
 
       expect(dialog).toBeVisible();
-      expect(search(dialog)).toHaveFocus();
+      await waitFor(() => expect(search(dialog)).toHaveFocus());
     });
 
     it('opens under reduced motion', async () => {

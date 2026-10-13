@@ -62,7 +62,10 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              onAddItems={() => setSheetOpen(true)}
+              onAddItems={() => {
+                screen.resetAddError();
+                setSheetOpen(true);
+              }}
             />
             <SuggestionsSection
               staples={screen.staples}

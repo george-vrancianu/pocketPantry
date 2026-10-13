@@ -53,6 +53,10 @@ export function ResultRow({
       sx={{
         backgroundColor: open ? color.subtle : 'transparent',
         '& + &': { borderTop: `1px solid ${color.divider}` },
+        // The list does not clip (the unit popover must overflow it), so round the ends here.
+        '&:first-of-type': { borderRadius: '19px 19px 0 0' },
+        '&:last-of-type': { borderRadius: '0 0 19px 19px' },
+        '&:first-of-type:last-of-type': { borderRadius: '19px' },
       }}
     >
       <Box

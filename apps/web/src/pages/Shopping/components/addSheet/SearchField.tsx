@@ -62,7 +62,6 @@ export function SearchField({
       <Box
         component="input"
         ref={inputRef}
-        autoFocus
         role="combobox"
         aria-label={t('search.placeholder')}
         aria-autocomplete="list"

@@ -28,6 +28,8 @@ export function useShoppingScreen() {
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,
     addError: add.error ? translateApiError(t, add.error) : null,
+    /** Forget a failed add, e.g. when the sheet opens. */
+    resetAddError: () => add.reset(),
     /** Resolves true when added; on false, `addError` says why. */
     add: (item: NewShoppingItem) =>
       add.mutateAsync(item).then(
