@@ -62,7 +62,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             // MUI's own sm+ `bottom: 24` would win above sm, so set every breakpoint.
             bottom:
               current.bottom !== undefined
-                ? current.bottom
+                ? { xs: current.bottom, sm: current.bottom }
                 : {
                     xs: aboveDock(DOCK_HEIGHT.xs),
                     sm: aboveDock(DOCK_HEIGHT.xs),
