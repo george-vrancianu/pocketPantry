@@ -13,7 +13,7 @@ import type { WidgetProps } from './types';
 export function UseSoonWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = new Date();
-  const batches = useBatches(i18n.language, today);
+  const batches = useBatches(i18n.language);
   const soonest = soonestExpiring(batches.data ?? []);
   const staleThresholdDays = useStaleThresholdDays(i18n.language);
 

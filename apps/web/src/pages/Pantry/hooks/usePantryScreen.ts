@@ -22,7 +22,7 @@ export type PantryRow = RollUp & { gone: boolean };
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
   const today = useMemo(() => new Date(), []);
-  const batches = useBatches(i18n.language, today);
+  const batches = useBatches(i18n.language);
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);
   const { hiddenIds } = removal;

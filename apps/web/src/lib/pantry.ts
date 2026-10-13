@@ -203,13 +203,12 @@ export function rollUp(batches: Batch[]): RollUp[] {
     .sort((a, b) => byExpiry(a.batches[0], b.batches[0]));
 }
 
-export function useBatches(locale: string, today: Date) {
-  const localToday = localIso(today);
+export function useBatches(locale: string) {
   return useQuery({
-    queryKey: ['pantry', locale, localToday],
+    queryKey: ['pantry', locale],
     queryFn: () =>
       apiRequest<{ batches: Batch[] }>(
-        `/pantry?${new URLSearchParams({ locale, today: localToday })}`,
+        `/pantry?${new URLSearchParams({ locale })}`,
       ).then((body) => body.batches),
   });
 }

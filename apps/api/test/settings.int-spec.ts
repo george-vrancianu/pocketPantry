@@ -345,73 +345,39 @@ describe('Settings (integration)', () => {
     });
   });
 
-  describe('Stale Threshold and Expiring Soon', () => {
-    it('changes which Batches are Expiring Soon with no state stored on the Batch', async () => {
+  describe('Stale Threshold and the Pantry', () => {
+    it('leaves the Pantry response unchanged when the Stale Threshold changes', async () => {
       const { cookie } = await signUp();
-      const add = (expiryDate: string) =>
+      const add = (expiryDate: string | null) =>
         request(app.getHttpServer())
           .post('/api/pantry/batches')
           .set('origin', TEST_ORIGIN)
           .set('cookie', cookie)
           .send({ ingredientId: seedId.ingredient('milk'), expiryDate })
           .expect(201);
-      const today = '2031-06-10';
-      await add('2031-06-09'); // yesterday: expired
-      await add('2031-06-12'); // in 2 days
-      await add('2031-06-15'); // in 5 days
-      await add('2031-06-30'); // in 20 days
-
-      const expiringSoon = async () =>
+      await add('2031-06-09');
+      await add('2031-06-12');
+      await add(null);
+      const pantry = async () =>
         (
           (
             await request(app.getHttpServer())
               .get('/api/pantry')
-              .query({ today })
               .set('origin', TEST_ORIGIN)
               .set('cookie', cookie)
               .expect(200)
-          ).body as { batches: (Batch & { expiringSoon: boolean })[] }
-        ).batches
-          .filter((b) => b.expiringSoon)
-          .map((b) => b.expiryDate);
+          ).body as { batches: Record<string, unknown>[] }
+        ).batches;
 
-      // Default threshold is 3 days.
-      expect(await expiringSoon()).toEqual(['2031-06-09', '2031-06-12']);
+      // The client colours expiry tags by the threshold; no Batch carries an Expiring Soon flag.
+      const before = await pantry();
+      expect(before).toHaveLength(3);
+      for (const batch of before)
+        expect(batch).not.toHaveProperty('expiringSoon');
       await call(cookie, 'patch', '/family')
-        .send({ staleThresholdDays: 5 })
+        .send({ staleThresholdDays: 7 })
         .expect(200);
-      expect(await expiringSoon()).toEqual([
-        '2031-06-09',
-        '2031-06-12',
-        '2031-06-15',
-      ]);
-      await call(cookie, 'patch', '/family')
-        .send({ staleThresholdDays: 1 })
-        .expect(200);
-      expect(await expiringSoon()).toEqual(['2031-06-09']);
-    });
-
-    it('never counts a Batch without an expiry as Expiring Soon', async () => {
-      const { cookie } = await signUp();
-      await request(app.getHttpServer())
-        .post('/api/pantry/batches')
-        .set('origin', TEST_ORIGIN)
-        .set('cookie', cookie)
-        .send({
-          ingredientId: seedId.ingredient('milk'),
-          expiryDate: null,
-        })
-        .expect(201);
-      const batches = (
-        (
-          await request(app.getHttpServer())
-            .get('/api/pantry')
-            .set('origin', TEST_ORIGIN)
-            .set('cookie', cookie)
-            .expect(200)
-        ).body as { batches: { expiringSoon: boolean }[] }
-      ).batches;
-      expect(batches.map((b) => b.expiringSoon)).toEqual([false]);
+      expect(await pantry()).toEqual(before);
     });
   });
 
