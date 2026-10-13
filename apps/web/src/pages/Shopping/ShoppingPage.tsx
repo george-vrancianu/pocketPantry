@@ -71,7 +71,13 @@ export function ShoppingPage() {
             <TemplateActions />
             {screen.list.groups.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 3 }}>
-                <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
+                <Typography
+                  sx={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 18,
+                    fontWeight: 700,
+                  }}
+                >
                   {t('shopping:empty.title')}
                 </Typography>
                 <Typography variant="meta" color="text.secondary">

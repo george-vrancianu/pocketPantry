@@ -3,7 +3,6 @@ import {
   Button,
   PantryIcon,
   ProgressBar,
-  tokens,
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +25,7 @@ export function SummaryCard({
   return (
     <Box
       sx={{
-        p: '16px',
+        p: '14px 14px 14px 16px',
         bgcolor: 'background.paper',
         border: 1,
         borderColor: 'divider',
@@ -44,7 +43,7 @@ export function SummaryCard({
         {t('summary.toBuy', { count: remaining })}
       </Typography>
       <Typography
-        sx={{ fontSize: 13, fontWeight: 500, mb: 1.25 }}
+        sx={{ fontSize: 13, fontWeight: 500, mb: '9px' }}
         color="text.secondary"
       >
         {t('summary.inBasket', { checked, total })}
@@ -68,17 +67,19 @@ export function SummaryCard({
             gap: 1.5,
           }}
         >
-          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+          <Typography variant="meta" color="text.secondary">
             {t('summary.tickedOff', { count: checked })}
           </Typography>
           <Button
+            variant="secondary"
             onClick={onFinish}
-            startIcon={<PantryIcon size={18} />}
+            startIcon={<PantryIcon size={16} />}
             sx={{
-              bgcolor: tokens.color.ink,
-              color: '#FFFFFF',
+              minHeight: 36,
               borderRadius: 999,
-              '&:hover': { bgcolor: tokens.color.ink },
+              px: 1.75,
+              fontSize: 13.5,
+              fontWeight: 700,
             }}
           >
             {t('summary.moveToPantry', { count: checked })}

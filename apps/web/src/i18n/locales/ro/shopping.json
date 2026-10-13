@@ -4,9 +4,9 @@
     "toBuy": "{{count}} de cumpărat",
     "inBasket": "{{checked}} din {{total}} în coș",
     "progress": "Progresul coșului",
-    "tickedOff_one": "{{count}} bifat",
-    "tickedOff_few": "{{count}} bifate",
-    "tickedOff_other": "{{count}} de bifate",
+    "tickedOff_one": "{{count}} produs bifat",
+    "tickedOff_few": "{{count}} produse bifate",
+    "tickedOff_other": "{{count}} de produse bifate",
     "moveToPantry_one": "Mută {{count}} în cămară",
     "moveToPantry_few": "Mută {{count}} în cămară",
     "moveToPantry_other": "Mută {{count}} în cămară"

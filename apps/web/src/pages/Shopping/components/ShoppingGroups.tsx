@@ -51,7 +51,7 @@ export function ShoppingGroups({
               </Typography>
               <Typography
                 component="span"
-                variant="meta"
+                variant="sectionLabel"
                 color="text.secondary"
                 sx={{ fontVariantNumeric: 'tabular-nums' }}
               >

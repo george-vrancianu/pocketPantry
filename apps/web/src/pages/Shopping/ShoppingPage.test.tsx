@@ -172,7 +172,10 @@ describe('ShoppingPage', () => {
       screen.queryByRole('button', { name: 'Finish shopping' }),
     ).not.toBeInTheDocument();
     const produceSection = screen.getByRole('region', { name: 'Fruit & veg' });
-    expect(within(produceSection).getByText('1')).toBeVisible();
+    const heading = within(produceSection).getByRole('heading', {
+      name: 'Fruit & veg',
+    });
+    expect(heading.parentElement).toHaveTextContent('Fruit & veg1');
   });
 
   it('adds a Catalog Match with quantity and unit', async () => {
