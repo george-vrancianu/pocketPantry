@@ -14,7 +14,10 @@
   },
   "item": {
     "remove": "Remove {{name}}",
-    "unmatched": "Unmatched"
+    "unmatched": "Unmatched",
+    "removed": "Removed {{name}}",
+    "nowStaple": "{{name}} is now a staple",
+    "removedFromStaples": "{{name}} removed from staples"
   },
   "unmatchedGroup": "Not in the catalog",
   "empty": "Your list is empty. Add what you need above.",

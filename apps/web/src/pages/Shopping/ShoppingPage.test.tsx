@@ -147,6 +147,87 @@ describe('ShoppingPage', () => {
     expect(calls.map((c) => c.key)).toContain(
       'DELETE /api/shopping-list/items/i1',
     );
+    expect(await screen.findByText('Removed Tomato')).toBeVisible();
+    expect(screen.queryByRole('button', { name: /undo/i })).toBeNull();
+  });
+
+  describe('Staple star toasts', () => {
+    const tomatoItem = item({
+      id: 'i1',
+      ingredientId: 'ing-tomato',
+      name: 'Tomato',
+    });
+    const withIngredient = list([{ aisle: produce, items: [tomatoItem] }]);
+    const stapleRow = {
+      id: 's1',
+      ingredientId: 'ing-tomato',
+      name: 'Tomato',
+      quantity: null,
+      unit: null,
+      aisle: null,
+    };
+
+    it('says the item is now a staple when starred', async () => {
+      stubShopping(
+        {
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () => Response.json(stapleRow, { status: 201 }),
+        },
+        withIngredient,
+      );
+      renderWithProviders(<ShoppingPage />);
+
+      const star = await screen.findByRole('button', {
+        name: 'Make Tomato a staple',
+      });
+      await waitFor(() => expect(star).not.toHaveAttribute('aria-disabled'));
+      await userEvent.click(star);
+
+      expect(await screen.findByText('Tomato is now a staple')).toBeVisible();
+    });
+
+    it('says the item was removed from staples when unstarred', async () => {
+      stubShopping(
+        {
+          'GET /api/staples': () => Response.json({ staples: [stapleRow] }),
+          'DELETE /api/staples/s1': () => new Response(null, { status: 204 }),
+        },
+        withIngredient,
+      );
+      renderWithProviders(<ShoppingPage />);
+
+      const star = await screen.findByRole('button', {
+        name: 'Remove Tomato from staples',
+      });
+      await waitFor(() => expect(star).not.toHaveAttribute('aria-disabled'));
+      await userEvent.click(star);
+
+      expect(
+        await screen.findByText('Tomato removed from staples'),
+      ).toBeVisible();
+    });
+  });
+
+  it('replaces the showing toast instead of queueing', async () => {
+    stubShopping({
+      'DELETE /api/shopping-list/items/i1': () =>
+        Response.json(list([{ aisle: dairy, items: [milk] }])),
+      'DELETE /api/shopping-list/items/i2': () => Response.json(list([])),
+    });
+    renderWithProviders(<ShoppingPage />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remove Tomato' }),
+    );
+    expect(await screen.findByText('Removed Tomato')).toBeVisible();
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Remove Milk' }),
+    );
+
+    expect(await screen.findByText('Removed Milk')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.queryByText('Removed Tomato')).not.toBeInTheDocument(),
+    );
   });
 
   it('shows an empty state', async () => {

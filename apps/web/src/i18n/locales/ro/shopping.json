@@ -14,7 +14,10 @@
   },
   "item": {
     "remove": "Elimină {{name}}",
-    "unmatched": "Nepotrivit"
+    "unmatched": "Nepotrivit",
+    "removed": "Ai scos {{name}}",
+    "nowStaple": "{{name}} este acum un produs de bază",
+    "removedFromStaples": "{{name}} a fost scos din produsele de bază"
   },
   "unmatchedGroup": "În afara catalogului",
   "empty": "Lista ta este goală. Adaugă mai sus ce ai nevoie.",

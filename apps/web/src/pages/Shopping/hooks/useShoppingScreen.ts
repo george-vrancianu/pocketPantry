@@ -1,3 +1,4 @@
+import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -10,6 +11,7 @@ import { useSuggestions } from '../../../lib/suggestions';
 
 export function useShoppingScreen() {
   const { t, i18n } = useTranslation();
+  const toast = useToast();
   const list = useShoppingList(i18n.language);
   const { add, setChecked, remove } = useShoppingMutations(i18n.language);
   // A failed Suggestions request just hides the section; the list still works.
@@ -32,7 +34,10 @@ export function useShoppingScreen() {
       ),
     toggle: (id: string, checked: boolean) =>
       setChecked.mutate({ id, checked }),
-    remove: (id: string) => remove.mutate(id),
+    remove: (id: string, name: string) =>
+      remove.mutate(id, {
+        onSuccess: () => toast.show(t('shopping:item.removed', { name })),
+      }),
     retry: () => void list.refetch(),
   };
 }
