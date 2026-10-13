@@ -88,6 +88,9 @@ export function PantryPage() {
               batchCount={section.batchCount}
               rows={section.rows}
               today={screen.today}
+              onRemoveBatch={(batch) =>
+                screen.removeBatch(batch.id, batch.name)
+              }
               onEmptied={focusAdd}
             />
           ))}

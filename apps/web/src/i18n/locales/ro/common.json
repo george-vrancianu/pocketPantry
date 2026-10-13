@@ -18,8 +18,10 @@
     "spices": "Condimente"
   },
   "row": {
+    "a11yHint": "Glisează la stânga pentru a elimina, ține apăsat pentru a edita",
     "context": {
-      "list": "din lista ta"
+      "list": "din lista ta",
+      "pantry": "din cămara ta"
     },
     "keep": "Păstrează",
     "releaseToDelete": "Eliberează pentru a elimina",

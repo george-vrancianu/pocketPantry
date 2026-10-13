@@ -223,3 +223,144 @@ describe('useRowGestures', () => {
     expect(vibrate).toHaveBeenLastCalledWith([10, 30, 30]);
   });
 });
+
+describe('hold to edit', () => {
+  function holdSetup(options: Partial<RowGestureOptions> = {}) {
+    vi.useFakeTimers();
+    const onHold = vi.fn();
+    const rig = setup({ onHold, ...options });
+    const press = () => act(() => rig.bind().onPointerDown(pointer(100, 20)));
+    const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+    return { ...rig, onHold, press, advance };
+  }
+
+  it('starts pressing after 90 ms, not before', () => {
+    const { view, press, advance } = holdSetup();
+    press();
+    advance(89);
+    expect(view.result.current.pressing).toBe(false);
+    advance(1);
+    expect(view.result.current.pressing).toBe(true);
+    expect(view.result.current.armed).toBe(false);
+  });
+
+  it('arms at 500 ms with a haptic and opens the editor 160 ms later, once', () => {
+    const vibrate = vi.fn();
+    Object.defineProperty(navigator, 'vibrate', {
+      value: vibrate,
+      configurable: true,
+    });
+    const { view, press, advance, onHold } = holdSetup();
+    press();
+    advance(499);
+    expect(view.result.current.armed).toBe(false);
+    advance(1);
+    expect(view.result.current.armed).toBe(true);
+    expect(vibrate).toHaveBeenLastCalledWith(18);
+    advance(159);
+    expect(onHold).not.toHaveBeenCalled();
+    advance(1);
+    expect(onHold).toHaveBeenCalledTimes(1);
+    advance(2000);
+    expect(onHold).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports where the press began, relative to the row', () => {
+    const { view, press, advance } = holdSetup();
+    press();
+    advance(90);
+    expect(view.result.current.origin).toEqual({ x: 100, y: 20 });
+  });
+
+  it('cancels when the finger moves more than 8 pt', () => {
+    const { view, bind, press, advance, onHold } = holdSetup();
+    press();
+    advance(100);
+    act(() => bind().onPointerMove(pointer(100, 20 + 9)));
+    expect(view.result.current.pressing).toBe(false);
+    advance(1000);
+    expect(view.result.current.armed).toBe(false);
+    expect(onHold).not.toHaveBeenCalled();
+  });
+
+  it('keeps holding through a wobble of 8 pt or less', () => {
+    const { bind, press, advance, onHold } = holdSetup();
+    press();
+    act(() => bind().onPointerMove(pointer(100 + 5, 20 + 5)));
+    advance(700);
+    expect(onHold).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels when the pointer lifts early, and a quick tap still clicks', () => {
+    const { view, bind, press, advance, onHold } = holdSetup();
+    press();
+    advance(300);
+    act(() => bind().onPointerUp(pointer(100, 20)));
+    expect(view.result.current.pressing).toBe(false);
+    advance(1000);
+    expect(onHold).not.toHaveBeenCalled();
+    const click = pointer(100);
+    bind().onClickCapture(click);
+    expect(click.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it('cancels when the page scrolls (pointer cancel)', () => {
+    const { view, bind, press, advance, onHold } = holdSetup();
+    press();
+    advance(200);
+    act(() => bind().onPointerCancel(pointer(100, 20)));
+    expect(view.result.current.pressing).toBe(false);
+    advance(1000);
+    expect(onHold).not.toHaveBeenCalled();
+  });
+
+  it('does not count the pointer-up that ends a hold as a tap', () => {
+    const { bind, press, advance } = holdSetup();
+    press();
+    advance(500);
+    act(() => bind().onPointerUp(pointer(100, 20)));
+    const click = pointer(100);
+    bind().onClickCapture(click);
+    expect(click.stopPropagation).toHaveBeenCalled();
+  });
+
+  it('still opens the editor if the finger lifts during the 160 ms after arming', () => {
+    const { bind, press, advance, onHold } = holdSetup();
+    press();
+    advance(500);
+    act(() => bind().onPointerUp(pointer(100, 20)));
+    advance(160);
+    expect(onHold).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not hold while swiping', () => {
+    const { view, bind, press, advance, onHold } = holdSetup();
+    press();
+    act(() => bind().onPointerMove(pointer(100 - 30, 20)));
+    advance(1000);
+    expect(view.result.current.pressing).toBe(false);
+    expect(onHold).not.toHaveBeenCalled();
+  });
+
+  it('does nothing without onHold or while disabled', () => {
+    vi.useFakeTimers();
+    const none = setup();
+    act(() => none.bind().onPointerDown(pointer(100, 20)));
+    act(() => vi.advanceTimersByTime(1000));
+    expect(none.view.result.current.pressing).toBe(false);
+    const { view, press, advance, onHold } = holdSetup({ disabled: true });
+    press();
+    advance(1000);
+    expect(view.result.current.pressing).toBe(false);
+    expect(onHold).not.toHaveBeenCalled();
+  });
+
+  it('clears its timers on unmount', () => {
+    const { view, press, advance, onHold } = holdSetup();
+    press();
+    advance(400);
+    view.unmount();
+    advance(2000);
+    expect(onHold).not.toHaveBeenCalled();
+  });
+});

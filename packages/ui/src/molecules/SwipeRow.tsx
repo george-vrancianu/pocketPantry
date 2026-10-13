@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useImperativeHandle, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode, Ref } from 'react';
 import { Box } from '../atoms/Layout';
 import { DeleteIcon } from '../atoms/icons';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 import { listRowItemSx } from './ListRow';
-import { REVEAL_PT, useRowGestures, vibrate } from './useRowGestures';
+import {
+  HOLD_MS,
+  PRESS_MS,
+  REVEAL_PT,
+  useRowGestures,
+  vibrate,
+} from './useRowGestures';
 import { visuallyHidden } from '../theme/visuallyHidden';
 
 /** The confirmation counts down this long, then the row returns to idle. */
@@ -28,6 +34,14 @@ export type SwipeRowLabels = {
   releaseToDelete: string;
   /** Read out on a `pressed` row, e.g. "Ticked". */
   pressed?: string;
+  /** The row's description for assistive technology, e.g. "Swipe left to remove, hold to edit". */
+  hint?: string;
+};
+
+/** What a parent can ask of a row through its `ref`. */
+export type SwipeRowHandle = {
+  /** Open the inline "Remove {name}?" confirmation, as the swipe or Delete key does. */
+  askToRemove: () => void;
 };
 
 export type SwipeRowProps = {
@@ -36,8 +50,9 @@ export type SwipeRowProps = {
   labels: SwipeRowLabels;
   /** Called after the row has collapsed; the list decides what removing means. */
   onRemove: () => void;
-  /** Enter on the focused row. */
+  /** Enter on the focused row, and holding the row for 500 ms. */
   onEdit?: () => void;
+  ref?: Ref<SwipeRowHandle>;
   /** A tap on the row (not on a button inside it), and Space on the focused row. */
   onTap?: () => void;
   /** Marks a row that toggles as on: announced through `labels.pressed` (aria-pressed is not valid on a group). */
@@ -64,6 +79,7 @@ const dimOf = (zone: number) => (zone === 2 ? 0.45 : zone === 1 ? 0.7 : 1);
 export function SwipeRow({
   name,
   labels,
+  ref,
   onRemove,
   onEdit,
   onTap,
@@ -140,6 +156,7 @@ export function SwipeRow({
   const gestures = useRowGestures({
     disabled: !idle,
     onAsk: () => openConfirmation(),
+    onHold: onEdit,
     // A swipe past the delete line flies the row off and calls `onRemove`. If the parent then keeps the
     // row (it does not remove it), the row stays flown off and inert: the parent owns what removing means.
     onDelete: () => startRemoval(true),
@@ -159,7 +176,14 @@ export function SwipeRow({
     itemRef.current?.focus();
   };
 
+  useImperativeHandle(ref, () => ({
+    askToRemove: () => {
+      if (idle) openConfirmation();
+    },
+  }));
+
   const confirming = phase === 'confirming';
+  const hintId = useId();
   useEffect(() => {
     if (!confirming) return;
     keepRef.current?.focus();
@@ -204,7 +228,7 @@ export function SwipeRow({
     onTap();
   };
 
-  const { x, zone, dragging } = gestures;
+  const { x, zone, dragging, pressing, armed, origin } = gestures;
   const flying = phase === 'removing' && flew;
   const solid = zone === 2 || flying;
   const progress = Math.min(1, -x / REVEAL_PT);
@@ -217,7 +241,8 @@ export function SwipeRow({
       ref={itemRef}
       role="group"
       aria-label={name}
-      aria-keyshortcuts="Delete Backspace"
+      aria-describedby={labels.hint ? hintId : undefined}
+      aria-keyshortcuts={onEdit ? 'Enter Delete Backspace' : 'Delete Backspace'}
       tabIndex={0}
       onKeyDown={onKeyDown}
       sx={{
@@ -274,7 +299,7 @@ export function SwipeRow({
             ? `translateX(calc(-100% - ${REVEAL_PT}px))`
             : confirming
               ? 'translateX(-30%)'
-              : `translateX(${x}px)`,
+              : `translateX(${x}px)${pressing && !armed && !reduceMotion ? ' scale(.99)' : ''}`,
           opacity: confirming ? 0 : 1,
           transition: dragging
             ? 'none'
@@ -283,15 +308,23 @@ export function SwipeRow({
                   ? `transform ${FLY_OFF_MS}ms cubic-bezier(.4,0,.8,.6)`
                   : confirming
                     ? `transform ${SLIDE_MS}ms cubic-bezier(.2,.8,.2,1), opacity 200ms`
-                    : 'transform 300ms cubic-bezier(.25,1.35,.45,1), opacity 200ms',
+                    : pressing
+                      ? 'transform 250ms ease-out, opacity 200ms'
+                      : armed
+                        ? 'transform 400ms ease-out, opacity 200ms'
+                        : 'transform 300ms cubic-bezier(.25,1.35,.45,1), opacity 200ms',
               ),
           // Flying off leaves the band solid, so the content itself stays opaque.
           ...(flying ? { bgcolor: tokens.color.surface } : {}),
         }}
       >
+        {pressing && origin && !reduceMotion ? (
+          <HoldCircle origin={origin} armed={armed} />
+        ) : null}
         <Box
           sx={{
-            opacity: dimOf(zone),
+            position: 'relative',
+            opacity: pressing && reduceMotion ? 0.7 : dimOf(zone),
             transition: motion('opacity 150ms'),
           }}
         >
@@ -438,6 +471,95 @@ export function SwipeRow({
             />
           ) : null}
         </Box>
+      ) : null}
+      {labels.hint ? (
+        <Box component="span" id={hintId} hidden>
+          {labels.hint}
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+const HOLD_CIRCLE_PT = 48;
+
+/**
+ * The hold circle (handoff section 5): grows from the touch point over the rest of the hold, under the
+ * content, clipped by the row. It breathes once while it grows, one ring drifts out with it, and a last
+ * ring leaves when the row arms. It mounts 90 ms into the hold, so its animation is shorter by that much.
+ */
+function HoldCircle({
+  origin,
+  armed,
+}: {
+  origin: { x: number; y: number };
+  armed: boolean;
+}) {
+  const growMs = HOLD_MS - PRESS_MS;
+  const centre = {
+    position: 'absolute',
+    left: origin.x - HOLD_CIRCLE_PT / 2,
+    top: origin.y - HOLD_CIRCLE_PT / 2,
+    width: HOLD_CIRCLE_PT,
+    height: HOLD_CIRCLE_PT,
+    borderRadius: '50%',
+    pointerEvents: 'none',
+  } as const;
+  const halo = `color-mix(in srgb, ${tokens.color.accent} 22%, transparent)`;
+  return (
+    <Box aria-hidden="true" data-hold-circle="">
+      <Box
+        sx={{
+          ...centre,
+          bgcolor: tokens.color.accentTint,
+          opacity: 0.55,
+          transform: 'scale(20)',
+          animation: armed
+            ? 'pp-hold-fade 450ms 100ms ease-out forwards'
+            : `pp-hold-grow ${growMs}ms cubic-bezier(.3,.05,.3,1) forwards, pp-hold-breathe ${growMs}ms ease-in-out`,
+          '@keyframes pp-hold-grow': {
+            from: { transform: 'scale(0)' },
+            to: { transform: 'scale(20)' },
+          },
+          '@keyframes pp-hold-breathe': {
+            '0%': { boxShadow: '0 0 0 0 transparent' },
+            '50%': { boxShadow: `0 0 18px 6px ${halo}` },
+            '100%': { boxShadow: '0 0 0 0 transparent' },
+          },
+          '@keyframes pp-hold-fade': {
+            from: { opacity: 0.55 },
+            to: { opacity: 0 },
+          },
+        }}
+      />
+      <Box
+        sx={{
+          ...centre,
+          border: `1.5px solid ${tokens.color.accent}`,
+          boxSizing: 'border-box',
+          opacity: 0,
+          animation: `pp-hold-ring ${growMs}ms linear`,
+          '@keyframes pp-hold-ring': {
+            '0%': { opacity: 0, transform: 'scale(.9)' },
+            '25%': { opacity: 0.35 },
+            '100%': { opacity: 0, transform: 'scale(2.6)' },
+          },
+        }}
+      />
+      {armed ? (
+        <Box
+          sx={{
+            ...centre,
+            border: `1.5px solid ${tokens.color.accent}`,
+            boxSizing: 'border-box',
+            opacity: 0,
+            animation: 'pp-hold-armed-ring 500ms ease-out',
+            '@keyframes pp-hold-armed-ring': {
+              from: { opacity: 0.4, transform: 'scale(1.2)' },
+              to: { opacity: 0, transform: 'scale(4)' },
+            },
+          }}
+        />
       ) : null}
     </Box>
   );

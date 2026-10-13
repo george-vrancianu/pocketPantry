@@ -23,8 +23,15 @@ const NAMES = [
   'A very long ingredient name '.repeat(3),
 ];
 
-function List({ withTap }: { withTap?: boolean }) {
+function List({
+  withTap,
+  withHold,
+}: {
+  withTap?: boolean;
+  withHold?: boolean;
+}) {
   const [names, setNames] = useState(NAMES);
+  const [edited, setEdited] = useState<string | null>(null);
   const [ticked, setTicked] = useState<string[]>([]);
   return (
     <Box
@@ -42,7 +49,11 @@ function List({ withTap }: { withTap?: boolean }) {
         <SwipeRow
           key={name}
           name={name}
-          labels={labelsFor(name)}
+          labels={{
+            ...labelsFor(name),
+            hint: withHold ? 'Swipe left to remove, hold to edit' : undefined,
+          }}
+          onEdit={withHold ? () => setEdited(name) : undefined}
           pressed={withTap ? ticked.includes(name) : undefined}
           onTap={
             withTap
@@ -61,6 +72,7 @@ function List({ withTap }: { withTap?: boolean }) {
           <ListRow title={name} meta="2 pcs" done={ticked.includes(name)} />
         </SwipeRow>
       ))}
+      {edited ? <li aria-live="polite">Editing {edited}</li> : null}
     </Box>
   );
 }
@@ -70,3 +82,6 @@ export const Default: StoryObj = { render: () => <List /> };
 
 /** Tapping (or Space) ticks the row. */
 export const Tappable: StoryObj = { render: () => <List withTap /> };
+
+/** Press and hold for half a second: the circle grows from the touch point, then the row opens its editor (here, a line under the list). Enter does the same. */
+export const Holdable: StoryObj = { render: () => <List withHold /> };

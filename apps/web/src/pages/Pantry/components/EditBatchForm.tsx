@@ -1,4 +1,11 @@
-import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Box,
+  Button,
+  Stack,
+  TextField,
+  tokens,
+} from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCATIONS, UNITS } from '../../../lib/catalog';
@@ -9,9 +16,11 @@ type Props = {
   batch: Batch;
   onSaved: (edit: BatchEdit) => void;
   onCancel: () => void;
+  /** The "Remove from Pantry" link under the buttons. */
+  onRemove: () => void;
 };
 
-export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
+export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
   const { t } = useTranslation('pantry');
   const form = useEditBatchForm(batch, { onSaved });
   const id = useId();
@@ -27,7 +36,7 @@ export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
       spacing={2}
       onSubmit={form.submit}
       aria-label={t('edit.title', { name: batch.name })}
-      sx={{ py: 1 }}
+      sx={{ px: 3, pt: 1, pb: 3 }}
     >
       <Stack direction="row" spacing={1}>
         <TextField
@@ -102,6 +111,25 @@ export function EditBatchForm({ batch, onSaved, onCancel }: Props) {
           {t('form.cancel')}
         </Button>
       </Stack>
+      <Box
+        component="button"
+        type="button"
+        onClick={onRemove}
+        sx={{
+          alignSelf: 'flex-start',
+          minHeight: 40,
+          p: 0,
+          border: 0,
+          bgcolor: 'transparent',
+          font: 'inherit',
+          fontSize: 14,
+          fontWeight: 700,
+          color: tokens.color.urgentFg,
+          cursor: 'pointer',
+        }}
+      >
+        {t('edit.remove')}
+      </Box>
     </Stack>
   );
 }

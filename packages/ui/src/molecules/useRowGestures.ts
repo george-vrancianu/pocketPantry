@@ -12,7 +12,14 @@ const PAST_LINE_RUBBER_BAND = 0.4;
 /** How long after a drag the click that follows it is still swallowed. */
 const CLICK_GUARD_MS = 350;
 
+/** Hold to edit (handoff section 5): pressing shows after 90 ms so a tap never flashes; armed at 500 ms. */
+export const PRESS_MS = 90;
+export const HOLD_MS = 500;
+/** The editor opens this long after the row arms. */
+export const HOLD_OPEN_MS = 160;
+
 const HAPTIC_REVEAL = 10;
+const HAPTIC_ARMED = 18;
 const HAPTIC_DELETE_LINE = [14, 40, 22];
 const HAPTIC_FLY_OFF = [10, 30, 30];
 
@@ -24,6 +31,11 @@ export type RowGestureOptions = {
   onAsk: () => void;
   /** Release in zone 2: the row flies off and is removed. */
   onDelete: () => void;
+  /**
+   * A press held still for 500 ms arms the row, and this is called 160 ms later. Without it the row
+   * has no hold: `pressing` and `armed` stay false.
+   */
+  onHold?: () => void;
   /** Ignore pointers, e.g. while the row is confirming or leaving. */
   disabled?: boolean;
   /** Width of the trash tab, the zone 1 distance. */
@@ -88,6 +100,7 @@ type Press = {
   dragging: boolean;
   zone: SwipeZone;
   dx: number;
+  armed: boolean;
 };
 
 export type RowGestureBind = {
@@ -106,6 +119,12 @@ export type RowGestures = {
   x: number;
   zone: SwipeZone;
   dragging: boolean;
+  /** The press has been still for 90 ms: show the hold circle (or dim the row under reduce-motion). */
+  pressing: boolean;
+  /** The hold completed; the editor opens shortly. */
+  armed: boolean;
+  /** Where the press began, in pt from the row's top-left: the hold circle grows from here. */
+  origin: { x: number; y: number } | null;
 };
 
 /**
@@ -127,18 +146,48 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
     zone: 0 as SwipeZone,
     dragging: false,
   });
+  const [hold, setHold] = useState({
+    pressing: false,
+    armed: false,
+    origin: null as { x: number; y: number } | null,
+  });
   const press = useRef<Press | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const armTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const swallowClick = useRef(false);
   const guardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
 
-  useEffect(() => () => clearTimeout(guardTimer.current), []);
+  useEffect(
+    () => () => {
+      clearTimeout(guardTimer.current);
+      clearTimeout(pressTimer.current);
+      clearTimeout(armTimer.current);
+      clearTimeout(openTimer.current);
+    },
+    [],
+  );
+
+  /** Stop a hold that has not armed yet; an armed one still opens its editor. */
+  const cancelHold = useCallback(() => {
+    clearTimeout(pressTimer.current);
+    clearTimeout(armTimer.current);
+    setHold((h) =>
+      h.pressing || h.armed ? { ...h, pressing: false, armed: false } : h,
+    );
+  }, []);
 
   const rest = useCallback(() => {
     press.current = null;
+    cancelHold();
     setView({ x: 0, zone: 0, dragging: false });
-  }, []);
+  }, [cancelHold]);
 
   const swallowNextClick = () => {
     swallowClick.current = true;
@@ -154,15 +203,40 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       if (o.disabled) return;
       if (event.pointerType === 'mouse' && event.button !== 0) return;
       swallowClick.current = false;
-      press.current = {
+      clearTimeout(pressTimer.current);
+      clearTimeout(armTimer.current);
+      const rect = event.currentTarget.getBoundingClientRect();
+      const current: Press = {
         id: event.pointerId,
         x: event.clientX,
         y: event.clientY,
-        width: event.currentTarget.getBoundingClientRect().width,
+        width: rect.width,
         dragging: false,
         zone: 0,
         dx: 0,
+        armed: false,
       };
+      press.current = current;
+      if (!o.onHold) return;
+      const origin = {
+        x: event.clientX - (rect.left || 0),
+        y: event.clientY - (rect.top || 0),
+      };
+      pressTimer.current = setTimeout(() => {
+        if (press.current !== current) return;
+        setHold({ pressing: true, armed: false, origin });
+      }, PRESS_MS);
+      armTimer.current = setTimeout(() => {
+        if (press.current !== current) return;
+        current.armed = true;
+        vibrate(HAPTIC_ARMED);
+        setHold({ pressing: true, armed: true, origin });
+        clearTimeout(openTimer.current);
+        openTimer.current = setTimeout(() => {
+          const { options: latestOptions } = latest.current;
+          if (!latestOptions.disabled) latestOptions.onHold?.();
+        }, HOLD_OPEN_MS);
+      }, HOLD_MS);
     },
     onPointerMove: (event) => {
       const current = press.current;
@@ -170,6 +244,9 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       const dx = event.clientX - current.x;
       const dy = event.clientY - current.y;
       const { tuning: t } = latest.current;
+      // An armed row is committed to editing: no swipe from here.
+      if (current.armed) return;
+      if (Math.hypot(dx, dy) > t.moveTolerance) cancelHold();
       if (!current.dragging) {
         if (Math.abs(dy) > t.moveTolerance && Math.abs(dy) >= Math.abs(dx)) {
           // Vertical: the scroll view's.
@@ -199,6 +276,9 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       const current = press.current;
       if (!current || event.pointerId !== current.id) return;
       press.current = null;
+      cancelHold();
+      // The pointer-up that ends a hold is not a tap.
+      if (current.armed) swallowNextClick();
       if (!current.dragging) return;
       swallowNextClick();
       const { options: o } = latest.current;
@@ -231,5 +311,5 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
     onContextMenu: (event) => event.preventDefault(),
   };
 
-  return { bind, ...view };
+  return { bind, ...view, ...hold };
 }

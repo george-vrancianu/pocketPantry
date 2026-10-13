@@ -1,22 +1,24 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
-import { expiryChipFor, type RollUp } from '../../../lib/pantry';
+import { expiryChipFor, type Batch } from '../../../lib/pantry';
+import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { BatchDetail } from './BatchDetail';
 import { ExpiryChip } from './ExpiryChip';
 
 type Props = {
-  rollUp: RollUp;
+  rollUp: PantryRow;
   today: Date;
-  /** Called when deleting or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
+  onRemoveBatch: (batch: Batch) => void;
+  /** Called when removing or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
 };
 
 /** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple star. */
-export function RollUpRow({ rollUp, today, onRowGone }: Props) {
+export function RollUpRow({ rollUp, today, onRemoveBatch, onRowGone }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const [expanded, setExpanded] = useState(false);
   const panelId = useId();
@@ -26,6 +28,17 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
     today,
     rollUp.batches[0].expiringSoon,
   );
+
+  // The last Batch was removed: if focus was on its row it is on the list or <body> now, so place it.
+  const item = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (!rollUp.gone) return;
+    const active = document.activeElement;
+    if (active === document.body || item.current?.contains(active)) {
+      onRowGone();
+    }
+    // Only when the row becomes gone, not on every render while it is.
+  }, [rollUp.gone]);
 
   const detail = [
     rollUp.totals
@@ -43,18 +56,28 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
   return (
     <Box
       component="li"
+      ref={item}
       sx={{
         borderTop: `1px solid ${tokens.color.divider}`,
         '&:first-of-type': { borderTop: 0 },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <Box
+        // Awaiting its delete: nothing to expand, and nothing to focus.
+        inert={rollUp.gone || undefined}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          opacity: rollUp.gone ? 0.5 : 1,
+        }}
+      >
         <Box
           component="button"
           type="button"
           ref={toggle}
           aria-expanded={expanded}
-          aria-controls={expanded ? panelId : undefined}
+          aria-controls={expanded && !rollUp.gone ? panelId : undefined}
           onClick={() => setExpanded((open) => !open)}
           sx={{
             display: 'flex',
@@ -120,7 +143,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
         ) : null}
       </Box>
-      {expanded ? (
+      {expanded && !rollUp.gone ? (
         <Box
           component="ul"
           id={panelId}
@@ -128,7 +151,8 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
           sx={{
             mt: 0,
             mb: 1,
-            ml: '50px',
+            // The rows pad themselves (12 pt), so their content lines up 50 pt in.
+            ml: '38px',
             p: 0,
             borderTop: `1px solid ${tokens.color.divider}`,
           }}
@@ -138,6 +162,7 @@ export function RollUpRow({ rollUp, today, onRowGone }: Props) {
               key={batch.id}
               batch={batch}
               today={today}
+              onRemove={onRemoveBatch}
               onLeft={() =>
                 rollUp.batches.length > 1
                   ? toggle.current?.focus()
