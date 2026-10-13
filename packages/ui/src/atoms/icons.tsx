@@ -42,6 +42,7 @@ import {
   Ellipsis,
   GitBranch,
   ShoppingCart,
+  createLucideIcon,
 } from 'lucide-react';
 
 /** Handoff section 5: 24 px line icons at 1.8 stroke. */
@@ -93,3 +94,10 @@ export const ChevronRightIcon = withDefaults(ChevronRight);
 export const SearchIcon = withDefaults(Search);
 export const BookmarkIcon = withDefaults(Bookmark);
 export const TemplateIcon = withDefaults(LayoutTemplate);
+
+/** The expiry handoff's calendar: an 18 x 16 rounded rect at y 5, a line at y 10, two ticks at x 8 and 16. */
+const Calendar = createLucideIcon('pp-calendar', [
+  ['rect', { x: '3', y: '5', width: '18', height: '16', rx: '3', key: 'body' }],
+  ['path', { d: 'M3 10h18M8 3v4M16 3v4', key: 'lines' }],
+]);
+export const CalendarIcon = withDefaults(Calendar);
