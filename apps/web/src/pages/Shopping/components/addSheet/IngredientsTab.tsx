@@ -1,4 +1,4 @@
-import { Alert, Box, Typography, tokens, useToast } from '@pocket-pantry/ui';
+import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
 import {
   useId,
   useState,
@@ -13,6 +13,7 @@ import {
   type CatalogSearchResult,
   type Unit,
 } from '../../../../lib/catalog';
+import { normalizeName } from '../../../../lib/normalizeName';
 import { parseQuantity } from '../../../../lib/pantry';
 import {
   isOnList,
@@ -23,7 +24,7 @@ import {
 } from '../../../../lib/shopping';
 import type { Suggestion } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
-import { TOAST_ABOVE_SHEET } from './sheetToast';
+import { useSheetToast } from './SheetFooter';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
@@ -31,10 +32,16 @@ import { SearchField } from './SearchField';
 /** A result row: a Catalog match, or the typed text as an Unmatched item. */
 type Row =
   | { key: string; kind: 'catalog'; result: CatalogSearchResult }
-  | { key: 'free-text'; kind: 'free'; name: string };
+  | { key: 'free-text'; kind: 'unmatched'; name: string };
 
 /** The row being filled in; only one is open at a time. */
-export type OpenRow = { key: string; quantity: string; unit: Unit | '' };
+export type OpenRow = {
+  key: string;
+  quantity: string;
+  unit: Unit | '';
+  /** An add was tried, so an invalid amount now shows its error. */
+  attempted?: boolean;
+};
 
 /** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
 export type IngredientsState = {
@@ -74,7 +81,7 @@ export type IngredientsTabProps = {
 export function IngredientsTab({
   state,
   onStateChange,
-  searchRef: searchInput,
+  searchRef,
   adding,
   onAdd,
   error,
@@ -85,7 +92,7 @@ export function IngredientsTab({
   onSeeAllTemplates,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
-  const toast = useToast();
+  const toast = useSheetToast();
   const listboxId = useId();
   const { query, open } = state;
   // What adding will do, following the server: it merges only on the same Ingredient (or typed name) and unit.
@@ -130,15 +137,32 @@ export function IngredientsTab({
   if (
     typed &&
     !search.isSearching &&
-    !results.some((result) => result.name.toLowerCase() === typed.toLowerCase())
+    !results.some(
+      (result) => normalizeName(result.name) === normalizeName(typed),
+    )
   ) {
-    rows.push({ key: 'free-text', kind: 'free', name: typed });
+    rows.push({ key: 'free-text', kind: 'unmatched', name: typed });
   }
 
   // Rows come and go as results load; never point at one that is gone.
   const active = activeIndex < rows.length ? activeIndex : -1;
   const optionId = (index: number) => `${listboxId}-option-${index}`;
-  const openRow = rows.find((row) => row.key === open?.key);
+  const openIndex = rows.findIndex((row) => row.key === open?.key);
+  const openRow = rows[openIndex];
+  const rowName = (row: Row) =>
+    row.kind === 'catalog' ? row.result.name : row.name;
+  // Unmatched lines merge on the normalised typed name, as the server does.
+  const onListLinesOf = (row: Row) =>
+    unchecked.filter((line) =>
+      isOnList(
+        line,
+        row.kind === 'catalog'
+          ? { ingredientId: row.result.id, name: row.result.name }
+          : { ingredientId: null, name: row.name },
+      ),
+    );
+  const hint =
+    open && openRow ? mergeHint(onListLinesOf(openRow), open.unit) : null;
   const amount = parseQuantity((open?.quantity ?? '').replace(',', '.'));
 
   const toggle = (row: Row) => {
@@ -173,9 +197,12 @@ export function IngredientsTab({
   };
 
   const submit = async () => {
-    if (!open || !openRow || !amount.valid) return;
-    const name =
-      openRow.kind === 'catalog' ? openRow.result.name : openRow.name;
+    if (!open || !openRow) return;
+    if (!amount.valid) {
+      setOpen({ ...open, attempted: true });
+      return;
+    }
+    const name = rowName(openRow);
     const added = await onAdd({
       ...(openRow.kind === 'catalog'
         ? { ingredientId: openRow.result.id }
@@ -185,14 +212,14 @@ export function IngredientsTab({
     });
     // On failure everything typed stays, and the sheet shows the error.
     if (!added) return;
-    toast.show(t('added', { name }), { bottom: TOAST_ABOVE_SHEET });
+    toast.show(t('added', { name }));
     onAdded();
     onStateChange((s) => ({
       ...emptyIngredients,
       suggestionsAdded: s.suggestionsAdded,
     }));
     setActiveIndex(-1);
-    searchInput.current?.focus();
+    searchRef.current?.focus();
   };
 
   let status = '';
@@ -211,10 +238,10 @@ export function IngredientsTab({
         onChange={change}
         onClear={() => {
           change('');
-          searchInput.current?.focus();
+          searchRef.current?.focus();
         }}
         onKeyDown={keyDown}
-        inputRef={searchInput}
+        inputRef={searchRef}
         listboxId={listboxId}
         expanded={rows.length > 0}
         activeOptionId={active >= 0 ? optionId(active) : undefined}
@@ -244,36 +271,33 @@ export function IngredientsTab({
         {status}
       </Typography>
       <Box
-        role="listbox"
-        id={listboxId}
-        aria-label={t('search.placeholder')}
         hidden={rows.length === 0}
         sx={{
+          display: rows.length === 0 ? 'none' : 'flex',
+          flexDirection: 'column',
           borderRadius: '20px',
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
         }}
       >
-        {rows.map((row, index) => {
-          const name = row.kind === 'catalog' ? row.result.name : row.name;
-          const isOpen = open?.key === row.key;
-          // Unmatched lines merge on the normalised typed name, as the server does.
-          const onListLines = unchecked.filter((line) =>
-            isOnList(
-              line,
-              row.kind === 'catalog'
-                ? { ingredientId: row.result.id, name: row.result.name }
-                : { ingredientId: null, name: row.name },
-            ),
-          );
-          const hint =
-            isOpen && open ? mergeHint(onListLines, open.unit) : null;
-          return (
+        {/* Only options in the listbox. It adds no box of its own, so the rows
+            and the open row's amount field (a sibling, below) interleave by `order`. */}
+        <Box
+          role="listbox"
+          id={listboxId}
+          aria-label={t('search.placeholder')}
+          sx={{ display: 'contents' }}
+        >
+          {rows.map((row, index) => (
             <ResultRow
               key={row.key}
               id={optionId(index)}
-              free={row.kind === 'free'}
-              name={row.kind === 'free' ? t('search.freeText', { name }) : name}
+              free={row.kind === 'unmatched'}
+              name={
+                row.kind === 'unmatched'
+                  ? t('search.freeText', { name: rowName(row) })
+                  : rowName(row)
+              }
               highlight={row.kind === 'catalog' ? typed : undefined}
               meta={
                 row.kind === 'catalog'
@@ -285,45 +309,57 @@ export function IngredientsTab({
                   ? row.result.parentCategory.aisle.id
                   : undefined
               }
-              onList={onListLines.length > 0}
-              open={isOpen}
+              onList={onListLinesOf(row).length > 0}
+              open={open?.key === row.key}
               active={index === active}
               onToggle={() => toggle(row)}
-            >
-              {isOpen && open ? (
-                <>
-                  <AmountField
-                    name={name}
-                    quantity={open.quantity}
-                    unit={open.unit}
-                    onQuantityChange={(quantity, unit) =>
-                      setOpen({
-                        ...open,
-                        quantity,
-                        ...(unit !== undefined ? { unit } : {}),
-                      })
-                    }
-                    onUnitChange={(unit) => setOpen({ ...open, unit })}
-                    error={amount.valid ? null : t('finish.quantityInvalid')}
-                    disabled={adding}
-                    onSubmit={() => void submit()}
-                  />
-                  {hint ? (
-                    <Typography
-                      sx={{
-                        p: '0 14px 12px 64px',
-                        fontSize: 12.5,
-                        color: tokens.color.muted,
-                      }}
-                    >
-                      {hint}
-                    </Typography>
-                  ) : null}
-                </>
-              ) : null}
-            </ResultRow>
-          );
-        })}
+              order={2 * index}
+              first={index === 0}
+              last={index === rows.length - 1}
+            />
+          ))}
+        </Box>
+        {open && openRow ? (
+          <Box
+            sx={{
+              order: 2 * openIndex + 1,
+              backgroundColor: tokens.color.subtle,
+              borderRadius: openIndex === rows.length - 1 ? '0 0 19px 19px' : 0,
+            }}
+          >
+            <AmountField
+              name={rowName(openRow)}
+              quantity={open.quantity}
+              unit={open.unit}
+              onQuantityChange={(quantity, unit) =>
+                setOpen({
+                  ...open,
+                  quantity,
+                  ...(unit !== undefined ? { unit } : {}),
+                })
+              }
+              onUnitChange={(unit) => setOpen({ ...open, unit })}
+              error={
+                open.attempted && !amount.valid
+                  ? t('finish.quantityInvalid')
+                  : null
+              }
+              disabled={adding}
+              onSubmit={() => void submit()}
+            />
+            {hint ? (
+              <Typography
+                sx={{
+                  p: '0 14px 12px 64px',
+                  fontSize: 12.5,
+                  color: tokens.color.muted,
+                }}
+              >
+                {hint}
+              </Typography>
+            ) : null}
+          </Box>
+        ) : null}
       </Box>
     </Box>
   );

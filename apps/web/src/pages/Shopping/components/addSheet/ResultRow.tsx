@@ -5,7 +5,6 @@ import {
   aisleTint,
   tokens,
 } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { focusRingStyle } from '../../../../lib/focusRing';
 
@@ -25,8 +24,11 @@ export type ResultRowProps = {
   /** Keyboard-highlighted in the listbox. */
   active: boolean;
   onToggle: () => void;
-  /** The amount field, shown under the row while it is open. */
-  children?: ReactNode;
+  /** Where the row sits in the visual list (see IngredientsTab). */
+  order: number;
+  /** First and last row of the list, for the rounded ends. */
+  first: boolean;
+  last: boolean;
 };
 
 function Highlighted({ text, match }: { text: string; match?: string }) {
@@ -46,7 +48,7 @@ function Highlighted({ text, match }: { text: string; match?: string }) {
   );
 }
 
-/** One option of the result listbox, with its open amount field under it. */
+/** One option of the result listbox. */
 export function ResultRow({
   id,
   free,
@@ -58,99 +60,103 @@ export function ResultRow({
   open,
   active,
   onToggle,
-  children,
+  order,
+  first,
+  last,
 }: ResultRowProps) {
   const { color } = tokens;
   const tint = aisleId === undefined ? undefined : aisleTint(aisleId);
   const { t } = useTranslation('shopping');
+  // The list does not clip (the unit popover must overflow it), so round the ends here.
+  // An open row's amount field sits right under it, so it keeps its bottom square.
+  const radius = (end: boolean) => (end ? '19px' : 0);
   return (
     <Box
-      role="presentation"
+      id={id}
+      role="option"
+      aria-selected={open}
+      // Keep focus in the search input so the tap still lands.
+      onMouseDown={(event: { preventDefault: () => void }) =>
+        event.preventDefault()
+      }
+      onClick={onToggle}
       sx={{
+        order,
+        minHeight: 58,
+        p: '10px 14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1.5,
+        cursor: 'pointer',
         backgroundColor: open ? color.subtle : 'transparent',
-        '& + &': { borderTop: `1px solid ${color.divider}` },
-        // The list does not clip (the unit popover must overflow it), so round the ends here.
-        '&:first-of-type': { borderRadius: '19px 19px 0 0' },
-        '&:last-of-type': { borderRadius: '0 0 19px 19px' },
-        '&:first-of-type:last-of-type': { borderRadius: '19px' },
+        borderTop: first ? 0 : `1px solid ${color.divider}`,
+        borderRadius: `${radius(first)} ${radius(first)} ${radius(last && !open)} ${radius(last && !open)}`,
+        ...(active ? focusRingStyle() : { outline: 'none' }),
       }}
     >
       <Box
-        id={id}
-        role="option"
-        aria-selected={open}
-        // Keep focus in the search input so the tap still lands.
-        onMouseDown={(event: { preventDefault: () => void }) =>
-          event.preventDefault()
-        }
-        onClick={onToggle}
+        aria-hidden
         sx={{
-          minHeight: 58,
-          p: '10px 14px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          cursor: 'pointer',
-          ...(active ? focusRingStyle() : { outline: 'none' }),
+          flexShrink: 0,
+          width: 38,
+          height: 38,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '12px',
+          backgroundColor: tint?.background ?? color.chipNeutral,
+          color: tint?.text ?? color.muted,
+          fontFamily: 'var(--font-display)',
+          fontSize: 16,
+          fontWeight: 700,
         }}
       >
+        {free ? <PlusIcon size={18} /> : name.charAt(0).toUpperCase()}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box
-          aria-hidden
+          sx={{
+            fontSize: 15,
+            fontWeight: 600,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <Highlighted text={name} match={highlight} />
+        </Box>
+        <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
+          {meta}
+        </Box>
+      </Box>
+      {onList ? (
+        <Box
+          component="span"
           sx={{
             flexShrink: 0,
-            width: 38,
-            height: 38,
-            display: 'grid',
-            placeItems: 'center',
-            borderRadius: '12px',
-            backgroundColor: tint?.background ?? color.chipNeutral,
-            color: tint?.text ?? color.muted,
-            fontFamily: 'var(--font-display)',
-            fontSize: 16,
+            px: '9px',
+            py: '3px',
+            borderRadius: 999,
+            backgroundColor: color.accentTint,
+            color: color.accent,
+            fontSize: 11,
             fontWeight: 700,
           }}
         >
-          {free ? <PlusIcon size={18} /> : name.charAt(0).toUpperCase()}
+          {t('search.onList')}
         </Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Box sx={{ fontSize: 15, fontWeight: 600, overflowWrap: 'anywhere' }}>
-            <Highlighted text={name} match={highlight} />
-          </Box>
-          <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
-            {meta}
-          </Box>
-        </Box>
-        {onList ? (
-          <Box
-            component="span"
-            sx={{
-              flexShrink: 0,
-              px: '9px',
-              py: '3px',
-              borderRadius: 999,
-              backgroundColor: color.accentTint,
-              color: color.accent,
-              fontSize: 11,
-              fontWeight: 700,
-            }}
-          >
-            {t('search.onList')}
-          </Box>
-        ) : null}
-        <Box
-          aria-hidden
-          sx={{
-            display: 'flex',
-            color: color.muted,
-            transform: open ? 'rotate(90deg)' : 'none',
-            transition: 'transform 150ms',
-            '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-          }}
-        >
-          <ChevronRightIcon size={18} />
-        </Box>
+      ) : null}
+      <Box
+        aria-hidden
+        sx={{
+          display: 'flex',
+          color: color.muted,
+          transform: open ? 'rotate(90deg)' : 'none',
+          transition: 'transform 150ms',
+          '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+        }}
+      >
+        <ChevronRightIcon size={18} />
       </Box>
-      {open ? children : null}
     </Box>
   );
 }

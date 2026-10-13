@@ -1,13 +1,11 @@
 import {
   Alert,
-  BackIcon,
   BookmarkIcon,
   Box,
   Button,
   TextField,
   Typography,
   tokens,
-  useToast,
 } from '@pocket-pantry/ui';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,9 +17,8 @@ import {
   useTemplateMutations,
   useTemplates,
 } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../../../../lib/focusRing';
-import { SheetFooter } from './SheetFooter';
-import { TOAST_ABOVE_SHEET } from './sheetToast';
+import { BackButton } from './BackButton';
+import { SheetFooter, TOAST_ABOVE_SHEET, useSheetToast } from './SheetFooter';
 
 export type SaveTemplateViewProps = {
   /** Back to the list of templates; also where a successful save returns. */
@@ -34,7 +31,7 @@ export type SaveTemplateViewProps = {
  */
 export function SaveTemplateView({ onBack }: SaveTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common', 'errors']);
-  const toast = useToast();
+  const toast = useSheetToast();
   const navigate = useNavigate();
   const shoppingList = useShoppingList(i18n.language);
   const templates = useTemplates(i18n.language);
@@ -103,29 +100,7 @@ export function SaveTemplateView({ onBack }: SaveTemplateViewProps) {
       noValidate
       sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
     >
-      <Box
-        component="button"
-        type="button"
-        onClick={onBack}
-        sx={{
-          mr: 'auto',
-          p: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          border: 0,
-          background: 'none',
-          color: color.accent,
-          font: 'inherit',
-          fontSize: 14,
-          fontWeight: 700,
-          cursor: 'pointer',
-          ...focusRing(),
-        }}
-      >
-        <BackIcon size={16} aria-hidden />
-        {t('templates:save.back')}
-      </Box>
+      <BackButton label={t('templates:save.back')} onClick={onBack} />
       {createFromList.error ? (
         <Alert>{translateApiError(t, createFromList.error)}</Alert>
       ) : null}

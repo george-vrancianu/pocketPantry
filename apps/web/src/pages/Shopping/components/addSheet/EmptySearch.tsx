@@ -7,13 +7,12 @@ import {
   PlusIcon,
   Typography,
   tokens,
-  useToast,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../../lib/shopping';
-import { TOAST_ABOVE_SHEET } from './sheetToast';
+import { useSheetToast } from './SheetFooter';
 import { TemplateChips } from './TemplateChips';
 import {
   useDismissSuggestion,
@@ -80,7 +79,7 @@ function SuggestionChips({
   onAdded,
 }: EmptySearchProps) {
   const { t } = useTranslation('shopping');
-  const toast = useToast();
+  const toast = useSheetToast();
   const dismiss = useDismissSuggestion();
 
   // Chips whose add has not resolved yet, so a double tap sends one request.
@@ -99,19 +98,14 @@ function SuggestionChips({
     });
     setPending((ids) => ids.filter((other) => other !== id));
     if (!added) return;
-    toast.show(t('added', { name: suggestion.name }), {
-      bottom: TOAST_ABOVE_SHEET,
-    });
+    toast.show(t('added', { name: suggestion.name }));
     onAdded(suggestion.ingredientId);
   };
   // mutateAsync, not per-call mutate callbacks: those are dropped when a later
   // dismiss replaces the observer or this component unmounts.
   const remove = (suggestion: Suggestion) =>
     void dismiss.mutateAsync(suggestion.ingredientId).then(
-      () =>
-        toast.show(t('suggestions.dismissed', { name: suggestion.name }), {
-          bottom: TOAST_ABOVE_SHEET,
-        }),
+      () => toast.show(t('suggestions.dismissed', { name: suggestion.name })),
       () => undefined, // dismiss.error shows it
     );
 

@@ -35,6 +35,10 @@ export type NewShoppingItem = {
   unit?: Unit;
 };
 
+/** How many items are on the list, ticked ones included. */
+export const itemCount = (summary: ShoppingList['summary']): number =>
+  summary.remaining + summary.checked;
+
 /** The items still to buy: every group's unchecked items, flattened. */
 export const uncheckedItems = (
   list: ShoppingList | undefined,

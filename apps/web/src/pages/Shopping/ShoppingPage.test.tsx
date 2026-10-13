@@ -790,6 +790,47 @@ describe('ShoppingPage', () => {
       expect(amount).toBeVisible();
     });
 
+    it('shows the amount error only after an add attempt, and clears it once valid', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '-2');
+      expect(amount).toBeValid();
+      expect(within(dialog).queryByText(/0.001 to 1,000,000/)).toBeNull();
+
+      await user.keyboard('{Enter}');
+      expect(amount).toBeInvalid();
+
+      await user.clear(amount);
+      await user.type(amount, '2');
+      expect(amount).toBeValid();
+      await user.type(amount, 'x');
+      expect(amount).toBeInvalid();
+    });
+
+    it('keeps only options in the listbox, with the amount controls beside it', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      const listbox = within(dialog).getByRole('listbox');
+      expect(listbox).not.toContainElement(amount);
+      expect(within(listbox).queryByRole('textbox')).toBeNull();
+      expect(within(listbox).queryByRole('button')).toBeNull();
+      expect(within(listbox).getAllByRole('option').length).toBeGreaterThan(0);
+    });
+
     it.each([
       ['500 g', '500', 500, 'g', 'g'],
       ['1,5 kg', '1,5', 1.5, 'kg', 'kg'],
@@ -1042,6 +1083,37 @@ describe('ShoppingPage', () => {
       await user.click(within(dialog).getByRole('button', { name: 'Done' }));
       await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
       const reopened = await openSheet(user);
+
+      expect(within(reopened).queryByRole('alert')).toBeNull();
+    });
+
+    it('shows no stale add error when reopened from the save row', async () => {
+      withParmesan({
+        'POST /api/shopping-list/items': () =>
+          Response.json({ code: 'boom', params: {} }, { status: 500 }),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+      await user.click(option);
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      expect(await within(dialog).findByRole('alert')).toBeVisible();
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+      await user.click(
+        screen.getByRole('button', { name: /Save this list as a template/ }),
+      );
+      const reopened = await screen.findByRole('dialog', {
+        name: 'Add to list',
+      });
+      await user.click(
+        within(reopened).getByRole('tab', { name: 'Ingredients' }),
+      );
 
       expect(within(reopened).queryByRole('alert')).toBeNull();
     });

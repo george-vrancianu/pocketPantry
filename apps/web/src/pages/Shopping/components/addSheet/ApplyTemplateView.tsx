@@ -1,6 +1,5 @@
 import {
   Alert,
-  BackIcon,
   Box,
   Button,
   CheckIcon,
@@ -18,6 +17,7 @@ import {
   uncheckedItems,
   useShoppingList,
 } from '../../../../lib/shopping';
+import { BackButton } from './BackButton';
 import { focusRing } from '../../../../lib/focusRing';
 import { SheetFooter } from './SheetFooter';
 import {
@@ -54,29 +54,11 @@ export function ApplyTemplateView({
   const { color } = tokens;
 
   const back = (
-    <Box
-      component="button"
-      type="button"
+    <BackButton
+      label={t('templates:apply.allTemplates')}
       onClick={onBack}
-      sx={{
-        mb: 1.5,
-        p: 0,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 0.5,
-        border: 0,
-        background: 'none',
-        color: color.accent,
-        font: 'inherit',
-        fontSize: 14,
-        fontWeight: 700,
-        cursor: 'pointer',
-        ...focusRing(),
-      }}
-    >
-      <BackIcon size={16} aria-hidden />
-      {t('templates:apply.allTemplates')}
-    </Box>
+      mb={1.5}
+    />
   );
 
   if (template.isPending) return <Spinner label={t('common:loading')} />;

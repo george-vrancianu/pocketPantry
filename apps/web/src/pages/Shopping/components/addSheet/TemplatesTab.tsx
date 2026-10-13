@@ -11,7 +11,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
-import { useShoppingList } from '../../../../lib/shopping';
+import { itemCount, useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
 import { focusRing } from '../../../../lib/focusRing';
 
@@ -27,14 +27,12 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const templates = useTemplates(i18n.language);
   const shoppingList = useShoppingList(i18n.language);
-  const itemCount = shoppingList.data
-    ? shoppingList.data.summary.remaining + shoppingList.data.summary.checked
-    : 0;
+  const count = shoppingList.data ? itemCount(shoppingList.data.summary) : 0;
   const { color } = tokens;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
-      {itemCount > 0 ? (
+      {count > 0 ? (
         <Box
           component="button"
           type="button"
@@ -61,7 +59,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
               {t('templates:save.row')}
             </Box>
             <Box sx={{ fontSize: 12.5, color: color.muted }}>
-              {t('templates:save.rowMeta', { count: itemCount })}
+              {t('templates:save.rowMeta', { count })}
             </Box>
           </Box>
           <Box aria-hidden sx={{ display: 'flex', color: color.muted }}>
@@ -130,7 +128,15 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
               >
                 <Tile icon={<TemplateIcon size={20} />} />
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Box sx={{ fontSize: 15, fontWeight: 600 }}>
+                  <Box
+                    sx={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {template.name}
                   </Box>
                   <Box

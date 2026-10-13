@@ -13,6 +13,7 @@ import {
   StapleErrorProvider,
   useStapleErrors,
 } from '../../components/StapleToggle';
+import { itemCount } from '../../lib/shopping';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
@@ -28,6 +29,13 @@ export function ShoppingPage() {
   const [reviewing, setReviewing] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
+
+  // Every way in starts clean, with no error left from an earlier opening.
+  const openSheet = (view: SheetView) => {
+    screen.resetAddError();
+    setSheetView(view);
+    setSheetOpen(true);
+  };
 
   if (reviewing) {
     return (
@@ -58,11 +66,7 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              onAddItems={() => {
-                screen.resetAddError();
-                setSheetView({ tab: 'ingredients' });
-                setSheetOpen(true);
-              }}
+              onAddItems={() => openSheet({ tab: 'ingredients' })}
             />
             {screen.list.groups.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -88,13 +92,8 @@ export function ShoppingPage() {
             )}
             {screen.list.groups.length > 0 ? (
               <SaveListRow
-                count={
-                  screen.list.summary.remaining + screen.list.summary.checked
-                }
-                onClick={() => {
-                  setSheetView({ tab: 'templates', view: 'save' });
-                  setSheetOpen(true);
-                }}
+                count={itemCount(screen.list.summary)}
+                onClick={() => openSheet({ tab: 'templates', view: 'save' })}
               />
             ) : null}
           </>

@@ -45,7 +45,7 @@ export function SummaryCard({
           gap: 1.5,
         }}
       >
-        <Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             sx={{
               fontFamily: 'var(--font-display)',
@@ -62,6 +62,12 @@ export function SummaryCard({
           >
             {t('summary.inBasket', { checked, total })}
           </Typography>
+          <ProgressBar
+            label={t('summary.progress')}
+            value={checked}
+            max={total}
+            size="large"
+          />
         </Box>
         <Box
           component="button"
@@ -86,12 +92,6 @@ export function SummaryCard({
           <PlusIcon size={24} />
         </Box>
       </Box>
-      <ProgressBar
-        label={t('summary.progress')}
-        value={checked}
-        max={total}
-        size="large"
-      />
       {checked > 0 ? (
         <Box
           sx={{
