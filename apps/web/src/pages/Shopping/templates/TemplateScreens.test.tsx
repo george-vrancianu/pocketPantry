@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -173,6 +179,59 @@ describe('Shopping Template screens', () => {
     );
     expect(names).toEqual(['Milk', 'Eggs', 'Bread']);
     expect(patches(calls)).toHaveLength(2);
+  });
+
+  it('does not bring a removed line back when a second one is swiped during its fly-off', async () => {
+    const { calls, fetchMock } = statefulTemplate([milk, eggs, bread]);
+    // A slow save: the second row's removal finishes while the first one is still in flight.
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+      init?.method === 'PATCH'
+        ? new Promise((resolve) =>
+            setTimeout(() => resolve(fetchMock(input, init)), 700),
+          )
+        : fetchMock(input, init),
+    );
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByRole('group', { name: 'Eggs' });
+    const removeIn = async (name: string) => {
+      const row = screen.getByRole('group', { name });
+      act(() => row.focus());
+      await user.keyboard('{Delete}');
+      await user.click(within(row).getByRole('button', { name: 'Remove' }));
+    };
+
+    // Both before the first row has collapsed and saved.
+    await removeIn('Eggs');
+    await removeIn('Bread');
+
+    await waitFor(() => expect(patches(calls)).toHaveLength(2));
+    expect(patches(calls)[1]).toEqual({
+      lines: [{ ingredientId: 'milk-id', quantity: 1, unit: 'l' }],
+    });
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('group').map((g) => g.getAttribute('aria-label')),
+      ).toEqual(['Milk']),
+    );
+  });
+
+  it('opens the sheet when a line is held for 500 ms', async () => {
+    statefulTemplate([milk]);
+    renderEditor();
+    await screen.findByRole('group', { name: 'Milk' });
+    const content = screen
+      .getByRole('group', { name: 'Milk' })
+      .querySelector('[data-swipe-row-content]') as HTMLElement;
+    vi.useFakeTimers();
+
+    fireEvent.pointerDown(content, { pointerId: 1, clientX: 50, clientY: 20 });
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await act(() => vi.advanceTimersByTimeAsync(200));
+
+    expect(screen.getByRole('dialog', { name: 'Edit Milk' })).toBeVisible();
+    vi.useRealTimers();
   });
 
   it('makes the row usable again when the removal fails to save', async () => {

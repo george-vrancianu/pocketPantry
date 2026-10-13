@@ -102,13 +102,20 @@ function Editor({
   // what the page rendered when the toast appeared.
   const latest = useRef(lines);
   latest.current = lines;
+  // Saves run one at a time, each building its lines from the newest we know of once the one before it
+  // has landed: a second swipe during the first row's fly-off must not bring the first line back.
   const saving = useRef<Promise<unknown>>(Promise.resolve());
-  const save = (next: NewShoppingItem[]) => {
-    const request = update.mutateAsync({ id: template.id, lines: next });
+  const save = (build: (current: TemplateLine[]) => NewShoppingItem[]) => {
+    const request = saving.current.then(() =>
+      update
+        .mutateAsync({ id: template.id, lines: build(latest.current) })
+        .then((saved) => {
+          latest.current = saved.lines;
+          return saved;
+        }),
+    );
     saving.current = request.then(
-      (saved) => {
-        latest.current = saved.lines;
-      },
+      () => undefined,
       () => undefined,
     );
     return request;
@@ -121,8 +128,12 @@ function Editor({
   const undoToast = useRef<ToastHandle | null>(null);
   useEffect(() => () => undoToast.current?.close(), []);
   const removeLine = async (line: TemplateLine) => {
-    const index = lines.findIndex((l) => l.id === line.id);
-    await save(lines.filter((l) => l.id !== line.id).map(toLineBody));
+    let index = 0;
+    await save((current) => {
+      const at = indexOfLine(current, line);
+      index = Math.max(0, at);
+      return current.filter((_, i) => i !== at).map(toLineBody);
+    });
     undoToast.current = toast.show(
       t('common:row.removed', { name: line.name }),
       {
@@ -137,18 +148,21 @@ function Editor({
     );
   };
   const restore = async (line: TemplateLine, index: number) => {
-    // Let a save that is still in flight land first, then put the line back on top of it.
-    await saving.current;
-    const next = latest.current.map(toLineBody);
-    next.splice(Math.min(index, next.length), 0, toLineBody(line));
+    // Queued behind any save still in flight, so the line goes back on top of it.
     // A failure shows in the page's alert.
-    await save(next).catch(() => undefined);
+    await save((current) => {
+      const next = current.map(toLineBody);
+      next.splice(Math.min(index, next.length), 0, toLineBody(line));
+      return next;
+    }).catch(() => undefined);
   };
 
   // The sheet shows a failed save itself, so the page's alert does not repeat it.
   const setAmount = (line: TemplateLine, amount: Amount) =>
-    save(
-      lines.map((l) => toLineBody(l.id === line.id ? { ...l, ...amount } : l)),
+    save((current) =>
+      current.map((l, i) =>
+        toLineBody(i === indexOfLine(current, line) ? { ...l, ...amount } : l),
+      ),
     ).catch((failure: unknown) => {
       update.reset();
       throw failure;
@@ -166,7 +180,7 @@ function Editor({
   }, [lines.length]);
 
   const add = (item: NewShoppingItem) =>
-    save([...lines.map(toLineBody), item]).then(
+    save((current) => [...current.map(toLineBody), item]).then(
       () => true,
       () => false,
     );
@@ -240,6 +254,18 @@ function Editor({
       />
       <Link href="/shopping/templates">{t('templates:editor.back')}</Link>
     </Stack>
+  );
+}
+
+/**
+ * Every save gives the lines new ids, so a row asked about before the save in front of it landed is found
+ * again by its Ingredient (or its name, for a line with none) when its id is gone. -1 if it is gone.
+ */
+function indexOfLine(lines: TemplateLine[], line: TemplateLine) {
+  const byId = lines.findIndex((l) => l.id === line.id);
+  if (byId >= 0) return byId;
+  return lines.findIndex(
+    (l) => l.ingredientId === line.ingredientId && l.name === line.name,
   );
 }
 
