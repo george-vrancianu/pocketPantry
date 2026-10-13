@@ -101,7 +101,7 @@ export function IngredientsTab({
   const active = activeIndex < rows.length ? activeIndex : -1;
   const optionId = (index: number) => `${listboxId}-option-${index}`;
   const openRow = rows.find((row) => row.key === open?.key);
-  const amount = parseQuantity(open?.quantity ?? '');
+  const amount = parseQuantity((open?.quantity ?? '').replace(',', '.'));
 
   const toggle = (row: Row) => {
     setOpen(
@@ -238,8 +238,12 @@ export function IngredientsTab({
                   name={name}
                   quantity={open.quantity}
                   unit={open.unit}
-                  onQuantityChange={(quantity) =>
-                    setOpen({ ...open, quantity })
+                  onQuantityChange={(quantity, unit) =>
+                    setOpen({
+                      ...open,
+                      quantity,
+                      ...(unit !== undefined ? { unit } : {}),
+                    })
                   }
                   onUnitChange={(unit) => setOpen({ ...open, unit })}
                   error={amount.valid ? null : t('finish.quantityInvalid')}

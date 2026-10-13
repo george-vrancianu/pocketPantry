@@ -511,6 +511,195 @@ describe('ShoppingPage', () => {
       expect(amount).toBeVisible();
     });
 
+    it.each([
+      ['500 g', '500', 500, 'g', 'g'],
+      ['1,5 kg', '1,5', 1.5, 'kg', 'kg'],
+      ['2 pcs', '2', 2, 'pcs', 'pcs'],
+      ['3 stk', '3', 3, 'pcs', 'pcs'],
+      ['3 stk.', '3', 3, 'pcs', 'pcs'],
+      ['2 PCS', '2', 2, 'pcs', 'pcs'],
+      ['4 buc', '4', 4, 'pcs', 'pcs'],
+      ['2 pc', '2', 2, 'pcs', 'pcs'],
+      ['1 L', '1', 1, 'l', 'L'],
+      ['250ml', '250', 250, 'ml', 'ml'],
+    ])(
+      'splits typed "%s" into the amount and the unit chip',
+      async (typed, shown, quantity, unit, label) => {
+        const { calls } = withParmesan();
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        const amount = within(dialog).getByRole('textbox', {
+          name: /Amount of Parmesan/,
+        });
+        await user.type(amount, typed);
+        expect(amount).toHaveValue(shown);
+        expect(
+          within(dialog).getByRole('button', { name: `Unit: ${label}` }),
+        ).toBeVisible();
+        await user.keyboard('{Enter}');
+
+        await waitFor(() => expect(posts(calls)).toHaveLength(1));
+        expect(posts(calls)[0]?.body).toEqual({
+          ingredientId: 'parmesan-id',
+          quantity,
+          unit,
+        });
+      },
+    );
+
+    it.each([
+      ['500 gram', '500 gram'],
+      ['1 liter', '1 liter'],
+      ['4 bucăți', '4 bucăți'],
+    ])(
+      'keeps "%s" as typed, invalid, with the chip unchanged',
+      async (typed, shown) => {
+        const { calls } = withParmesan();
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        const amount = within(dialog).getByRole('textbox', {
+          name: /Amount of Parmesan/,
+        });
+        await user.type(amount, `${typed}{Enter}`);
+
+        expect(amount).toHaveValue(shown);
+        expect(amount).toBeInvalid();
+        expect(
+          within(dialog).getByRole('button', { name: 'Unit: g' }),
+        ).toBeVisible();
+        expect(posts(calls)).toHaveLength(0);
+      },
+    );
+
+    it('keeps typing digits after a split, and splits a pasted amount cleanly', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '50 g0');
+      expect(amount).toHaveValue('500');
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: g' }),
+      ).toBeVisible();
+
+      await user.clear(amount);
+      await user.type(amount, '5 kg');
+      await user.click(amount);
+      await user.keyboard('{Control>}a{/Control}');
+      await user.paste('25 ml');
+      expect(amount).toHaveValue('25');
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: ml' }),
+      ).toBeVisible();
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 25,
+        unit: 'ml',
+      });
+    });
+
+    it('keeps a unit chosen from the chip after a split', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '2 pc');
+      await user.click(
+        within(dialog).getByRole('button', { name: 'Unit: pcs' }),
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+      await user.type(amount, 'x');
+      await user.clear(amount);
+      await user.type(amount, '3{Enter}');
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 3,
+        unit: 'kg',
+      });
+    });
+
+    it('lets a typed unit override a chosen chip', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
+      await user.click(within(dialog).getByRole('button', { name: 'ml' }));
+      await user.type(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+        '2 kg{Enter}',
+      );
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 2,
+        unit: 'kg',
+      });
+    });
+
+    it('accepts a plain comma decimal as the quantity', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      await user.type(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+        '1,5{Enter}',
+      );
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 1.5,
+        unit: 'g',
+      });
+    });
+
+    it('leaves input that is not a number and a unit as it is, and still validates it', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '5 xyz{Enter}');
+
+      expect(amount).toHaveValue('5 xyz');
+      expect(amount).toBeInvalid();
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: g' }),
+      ).toBeVisible();
+      expect(posts(calls)).toHaveLength(0);
+    });
+
     it('shows an Alert and keeps everything typed when adding fails', async () => {
       withParmesan({
         'POST /api/shopping-list/items': () =>
