@@ -5,7 +5,7 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expiryTagFor, fullDate, relativeDay } from '../../lib/pantry';
 import { useStaleThresholdDays } from '../../lib/settings';
@@ -43,6 +43,7 @@ export function ExpiryField({
   const fallbackId = useId();
   const rowId = id ?? fallbackId;
   const [open, setOpen] = useState(false);
+  const row = useRef<HTMLButtonElement>(null);
   const staleThresholdDays = useStaleThresholdDays(i18n.language);
   const today = new Date();
   const { color } = tokens;
@@ -68,6 +69,7 @@ export function ExpiryField({
         {label}
       </Typography>
       <Box
+        ref={row}
         component="button"
         type="button"
         id={rowId}
@@ -152,6 +154,8 @@ export function ExpiryField({
       <ExpirySheet
         open={open}
         onClose={() => setOpen(false)}
+        // MUI restores focus to the opener, but a tap doesn't always focus it (Safari), so focus it here.
+        onExited={() => row.current?.focus()}
         value={value}
         onChange={onChange}
         usualDays={usualDays}

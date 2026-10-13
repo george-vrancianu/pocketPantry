@@ -7,7 +7,7 @@ import {
   Typography,
   tokens,
 } from '@pocket-pantry/ui';
-import { useRef } from 'react';
+import { useRef, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { expiryTagFor, fullDate, relativeDay } from '../../lib/pantry';
 import { useStaleThresholdDays } from '../../lib/settings';
@@ -48,10 +48,19 @@ export function ExpirySheet({
   title,
 }: ExpirySheetProps) {
   const { t } = useTranslation('pantry');
+  const quickPicks = useRef<HTMLDivElement>(null);
   return (
     <Sheet
       open={open}
       onClose={onClose}
+      onEntered={() => {
+        // The selected quick pick, or the first. A button, so a phone keyboard stays down.
+        const tiles = quickPicks.current;
+        (
+          tiles?.querySelector<HTMLElement>('.tile[aria-pressed="true"]') ??
+          tiles?.querySelector<HTMLElement>('.tile')
+        )?.focus();
+      }}
       onExited={onExited}
       label={title}
       size="content"
@@ -84,17 +93,25 @@ export function ExpirySheet({
         </Stack>
       }
     >
-      <SheetBody value={value} onChange={onChange} usualDays={usualDays} />
+      <SheetBody
+        quickPicks={quickPicks}
+        value={value}
+        onChange={onChange}
+        usualDays={usualDays}
+      />
     </Sheet>
   );
 }
 
 /** Mounted with the open sheet, so the calendar opens on the value's month every time. */
 function SheetBody({
+  quickPicks,
   value,
   onChange,
   usualDays,
-}: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays'>) {
+}: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays'> & {
+  quickPicks: Ref<HTMLDivElement>;
+}) {
   const { i18n } = useTranslation();
   const staleThresholdDays = useStaleThresholdDays(i18n.language);
   const calendar = useRef<ExpiryCalendarHandle>(null);
@@ -102,6 +119,7 @@ function SheetBody({
   return (
     <Box sx={{ px: 3, pt: 0.5, pb: 2 }}>
       <QuickPicks
+        ref={quickPicks}
         value={value}
         usualDays={usualDays}
         today={today}

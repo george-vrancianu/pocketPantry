@@ -52,6 +52,7 @@
     "clear": "No expiry",
     "done": "Done",
     "calendar": "Calendar",
+    "today": "Today",
     "within_one": "Within {{count}} day",
     "within_other": "Within {{count}} days",
     "quickPicks": "Quick picks",
