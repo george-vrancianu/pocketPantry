@@ -19,7 +19,7 @@ import {
   useTemplateMutations,
   useTemplates,
 } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../focusRing';
+import { focusRing } from '../../../../lib/focusRing';
 import { SheetFooter } from './SheetFooter';
 import { TOAST_ABOVE_SHEET } from './sheetToast';
 

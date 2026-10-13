@@ -7,6 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { focusRingStyle } from '../../../../lib/focusRing';
 
 export type ResultRowProps = {
   id: string;
@@ -90,8 +91,7 @@ export function ResultRow({
           alignItems: 'center',
           gap: 1.5,
           cursor: 'pointer',
-          outline: active ? `2px solid ${color.accent}` : 'none',
-          outlineOffset: -2,
+          ...(active ? focusRingStyle() : { outline: 'none' }),
         }}
       >
         <Box

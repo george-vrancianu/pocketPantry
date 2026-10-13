@@ -18,7 +18,7 @@ import {
   uncheckedItems,
   useShoppingList,
 } from '../../../../lib/shopping';
-import { focusRing } from '../focusRing';
+import { focusRing } from '../../../../lib/focusRing';
 import { SheetFooter } from './SheetFooter';
 import {
   groupByAisle,

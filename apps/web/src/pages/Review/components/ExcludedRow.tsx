@@ -1,8 +1,9 @@
+import { focusRing } from '../../../lib/focusRing';
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { displayName, type ReviewLine } from '../../../lib/review';
-import { EXCLUDED_TOGGLE_ID, focusRing } from './layout';
+import { EXCLUDED_TOGGLE_ID } from './layout';
 
 type Props = {
   lines: ReviewLine[];
@@ -45,7 +46,7 @@ export function ExcludedRow({ lines, onRestore }: Props) {
           fontFamily: 'inherit',
           textAlign: 'left',
           cursor: 'pointer',
-          ...focusRing,
+          ...focusRing(),
         }}
       >
         <Box>
@@ -111,7 +112,7 @@ export function ExcludedRow({ lines, onRestore }: Props) {
                       fontSize: 13,
                       fontWeight: 700,
                       cursor: 'pointer',
-                      ...focusRing,
+                      ...focusRing(),
                     }}
                   >
                     {t('excluded.restore')}

@@ -1,4 +1,5 @@
 import { tokens } from '@pocket-pantry/ui';
+import { focusRing } from '../../../lib/focusRing';
 import type { RowStatus } from '../../../lib/review';
 
 /**
@@ -105,15 +106,5 @@ export const linkButtonSx = {
   fontSize: 13,
   fontWeight: 700,
   cursor: 'pointer',
-  '&:focus-visible': {
-    outline: `3px solid ${tokens.color.accent}`,
-    outlineOffset: -3,
-  },
+  ...focusRing(),
 } as const;
-
-export const focusRing = {
-  '&:focus-visible': {
-    outline: `3px solid ${tokens.color.accent}`,
-    outlineOffset: -3,
-  },
-};
