@@ -138,6 +138,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Note: a change of `host` remounts the toast, replaying it and announcing it again. */
 function ToastPortal({
   host,
   children,

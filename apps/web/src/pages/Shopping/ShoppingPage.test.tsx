@@ -1349,7 +1349,14 @@ describe('ShoppingPage', () => {
         expect(
           await screen.findByText('Added 3 items from Taco night'),
         ).toBeVisible();
+        // A toast raised as the sheet closes lives outside it, so it does not
+        // slide away with the sheet or get announced a second time.
+        const alert = await screen.findByRole('alert');
+        expect(alert).toHaveTextContent('Added 3 items from Taco night');
+        expect(dialog).not.toContainElement(alert);
         await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+        expect(screen.getAllByRole('alert')).toHaveLength(1);
+        expect(screen.getByRole('alert')).toBeVisible();
         expect(
           calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')
             ?.body,

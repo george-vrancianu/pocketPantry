@@ -64,7 +64,9 @@ export function Sheet({
   const { color } = tokens;
   // Toasts show inside the open sheet, where they can be heard and reached.
   const [paper, setPaper] = useState<HTMLElement | null>(null);
-  useToastHost(paper);
+  // Only while open: a toast raised as the sheet closes must not sit in the
+  // paper that is sliding away.
+  useToastHost(open ? paper : null);
   return (
     <MuiDialog
       open={open}
