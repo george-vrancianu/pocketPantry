@@ -19,6 +19,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AppScreenHeader } from '../../../components/AppScreenHeader';
 import { ConfirmAction } from '../../../components/ConfirmAction';
 import { AmountSheet, type Amount } from '../../../components/AmountSheet';
+import { formatRowAmount } from '../../../lib/amount';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 import { RowHintNote } from '../../../components/RowHintNote';
@@ -285,7 +286,7 @@ function LineRow({
   onRemove: (line: TemplateLine) => Promise<unknown>;
   onSetAmount: (line: TemplateLine, amount: Amount) => Promise<unknown>;
 }) {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
   const toast = useToast();
   const labels = useSwipeRowLabels(line.name, 'template', { hold: true });
   const [editing, setEditing] = useState(false);
@@ -300,12 +301,7 @@ function LineRow({
     };
   }, []);
 
-  const meta =
-    line.quantity === null
-      ? null
-      : line.unit
-        ? `${line.quantity} ${t(`units.${line.unit}`)}`
-        : String(line.quantity);
+  const meta = formatRowAmount(line, i18n.language, t);
 
   return (
     <>

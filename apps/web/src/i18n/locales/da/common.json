@@ -24,7 +24,7 @@
       "remove": "Fjern {{name}}"
     },
     "context": {
-      "list": "fra din liste",
+      "shopping": "fra din liste",
       "pantry": "fra dit spisekammer",
       "template": "fra denne skabelon",
       "staples": "fra dine basisvarer"

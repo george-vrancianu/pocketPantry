@@ -10,14 +10,13 @@ import {
   useToast,
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { CatalogSearch } from '../../components/CatalogSearch';
 import { translateApiError } from '../../i18n/translateApiError';
-import { formatAmount } from '../../lib/amount';
+import { formatAmount, type Amount } from '../../lib/amount';
 import {
   staplesQueryKey,
   useStapleMutations,
@@ -35,18 +34,7 @@ export function StaplesPage() {
   const staples = useStaples(i18n.language);
   const { add, update, remove } = useStapleMutations(i18n.language);
   const [formKey, setFormKey] = useState(0);
-  const queryClient = useQueryClient();
-  const { mutateAsync: sendDelete } = remove;
-  const removal = useDeferredRemoval(
-    useCallback(
-      async (id: string) => {
-        // A poll already in flight would carry the Staple back in.
-        await queryClient.cancelQueries({ queryKey: staplesQueryKey });
-        return sendDelete(id);
-      },
-      [queryClient, sendDelete],
-    ),
-  );
+  const removal = useDeferredRemoval(staplesQueryKey, remove.mutateAsync);
   // A removed Staple stays out of the list, refetches included, until its delete has settled.
   const visible = useMemo(
     () => staples.data?.filter((staple) => !removal.hiddenIds.has(staple.id)),
@@ -145,7 +133,7 @@ function StapleRow({
   peek: boolean;
   onLearned: RowHint['onLearned'];
   /** Rejects with the API error, which the amount sheet shows. */
-  onSave: (amount: Pick<Staple, 'quantity' | 'unit'>) => Promise<unknown>;
+  onSave: (amount: Amount) => Promise<unknown>;
   onRemove: () => void;
 }) {
   const { t, i18n } = useTranslation(['staples', 'common']);

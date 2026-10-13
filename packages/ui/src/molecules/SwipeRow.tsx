@@ -173,7 +173,15 @@ export function SwipeRow({
       inScope() ??
       item.parentElement;
     if (target && !target.hasAttribute('tabindex')) {
+      // Only to take focus: once it leaves, the container is not a stop of any kind again.
       target.setAttribute('tabindex', '-1');
+      target.addEventListener(
+        'blur',
+        () => target.removeAttribute('tabindex'),
+        {
+          once: true,
+        },
+      );
     }
     target?.focus();
   };

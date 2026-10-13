@@ -24,7 +24,7 @@
       "remove": "Remove {{name}}"
     },
     "context": {
-      "list": "from your list",
+      "shopping": "from your list",
       "pantry": "in your Pantry",
       "template": "from this template",
       "staples": "from your Staples"

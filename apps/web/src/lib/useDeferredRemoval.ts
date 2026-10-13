@@ -1,4 +1,5 @@
 import { useToast, type ToastHandle } from '@pocket-pantry/ui';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
@@ -21,17 +22,30 @@ export const UNDO_WINDOW_MS = 5000;
  * response in the cache with `setQueryData` in the mutation's `onSuccess`, or
  * return the `invalidateQueries` promise), otherwise the row flashes back.
  * Pass `mutateAsync`, not `mutate`: per-call callbacks are dropped when a
- * newer `mutate` runs. Cancel in-flight refetches of the list inside `send`
- * so a poll cannot resurrect the row.
+ * newer `mutate` runs. The hook cancels in-flight refetches of `queryKey`
+ * (the list's query key) before it calls `mutateAsync`, so a poll cannot
+ * resurrect the row.
  *
  * The error toast replaces a newer Undo toast and so sends that delete early;
  * that is intended (ADR 0009: a new toast sends any pending delete).
  */
 export function useDeferredRemoval<Id extends string | number>(
-  send: (id: Id) => Promise<unknown>,
+  queryKey: QueryKey,
+  mutateAsync: (id: Id) => Promise<unknown>,
 ) {
   const { t } = useTranslation('common');
   const toast = useToast();
+  const queryClient = useQueryClient();
+  // Held by key value, so a new array each render does not change `send`.
+  const keyRef = useRef(queryKey);
+  keyRef.current = queryKey;
+  const send = useCallback(
+    async (id: Id) => {
+      await queryClient.cancelQueries({ queryKey: keyRef.current });
+      return mutateAsync(id);
+    },
+    [queryClient, mutateAsync],
+  );
   const [hiddenIds, setHiddenIds] = useState<ReadonlySet<Id>>(new Set());
   // The one removal still waiting on its Undo, and its toast.
   const waiting = useRef<{ id: Id; toast: ToastHandle } | null>(null);

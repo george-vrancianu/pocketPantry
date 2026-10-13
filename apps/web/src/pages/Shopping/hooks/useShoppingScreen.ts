@@ -1,5 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
@@ -8,8 +7,8 @@ import {
   useShoppingMutations,
   withoutItems,
   type NewShoppingItem,
-  type ShoppingItem,
 } from '../../../lib/shopping';
+import type { Amount } from '../../../lib/amount';
 import { localIso } from '../../../lib/pantry';
 import { useSuggestions } from '../../../lib/suggestions';
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
@@ -20,18 +19,7 @@ export function useShoppingScreen() {
   const { add, setChecked, setAmount, remove } = useShoppingMutations(
     i18n.language,
   );
-  const queryClient = useQueryClient();
-  const { mutateAsync: sendDelete } = remove;
-  const removal = useDeferredRemoval(
-    useCallback(
-      async (id: string) => {
-        // A poll already in flight would carry the item back in.
-        await queryClient.cancelQueries({ queryKey: shoppingListQueryKey });
-        return sendDelete(id);
-      },
-      [queryClient, sendDelete],
-    ),
-  );
+  const removal = useDeferredRemoval(shoppingListQueryKey, remove.mutateAsync);
   // A removed item stays out of the list, refetches included, until its delete has settled.
   const visible = useMemo(
     () => withoutItems(list.data, removal.hiddenIds),
@@ -62,7 +50,7 @@ export function useShoppingScreen() {
     toggle: (id: string, checked: boolean) =>
       setChecked.mutate({ id, checked }),
     /** Rejects with the API error, which the amount sheet shows. */
-    setAmount: (id: string, amount: Pick<ShoppingItem, 'quantity' | 'unit'>) =>
+    setAmount: (id: string, amount: Amount) =>
       setAmount.mutateAsync({ id, ...amount }),
     remove: removal.remove,
     retry: () => void list.refetch(),

@@ -10,12 +10,12 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import type { Unit } from '../lib/catalog';
+import type { Amount } from '../lib/amount';
 import { parseQuantity } from '../lib/pantry';
 import { AmountField } from './AmountField';
 import { RemoveLink } from './RemoveLink';
 
-/** The amount a row holds: both fields can be empty ("some"). */
-export type Amount = { quantity: number | null; unit: Unit | null };
+export type { Amount };
 
 export type AmountSheetProps = {
   open: boolean;

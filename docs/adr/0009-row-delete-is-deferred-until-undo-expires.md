@@ -1,6 +1,6 @@
 # Row delete is deferred until its Undo expires
 
-Row gestures (swipe left to remove, `docs/handoffs/row-gestures-handoff.zip`) put an Undo on every removal from a list. `docs/handoffs/shopping/shopping-handoff.md:30` had ruled out Undo on Shopping Items because deleting and re-adding loses the Source Recipes, and deleting a Batch is a hard delete ([ADR 0005](0005-used-up-from-stock-history.md)), so re-adding one would make a new Batch and could set Used Up by mistake. We keep the Undo and make it lossless by not sending the delete until the Undo is gone.
+Row gestures (swipe left to remove, `docs/handoffs/row-gestures/handoff.md`) put an Undo on every removal from a list. `docs/handoffs/shopping/shopping-handoff.md:30` had ruled out Undo on Shopping Items because deleting and re-adding loses the Source Recipes, and deleting a Batch is a hard delete ([ADR 0005](0005-used-up-from-stock-history.md)), so re-adding one would make a new Batch and could set Used Up by mistake. We keep the Undo and make it lossless by not sending the delete until the Undo is gone.
 
 ## Decision
 

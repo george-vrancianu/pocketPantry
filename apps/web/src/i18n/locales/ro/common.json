@@ -24,7 +24,7 @@
       "remove": "Elimină {{name}}"
     },
     "context": {
-      "list": "din lista ta",
+      "shopping": "din lista ta",
       "pantry": "din cămara ta",
       "template": "din acest șablon",
       "staples": "din produsele tale de bază"
