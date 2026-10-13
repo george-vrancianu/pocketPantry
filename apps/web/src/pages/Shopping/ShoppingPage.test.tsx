@@ -1,3 +1,4 @@
+import { tokens } from '@pocket-pantry/ui';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -55,7 +56,11 @@ const parmesan: CatalogSearchResult = {
   name: 'Parmesan',
   defaultUnit: 'g',
   leafCategory: { id: 'hc', name: 'Hard cheese' },
-  parentCategory: { id: 'd', name: 'Dairy', aisle: 'Dairy & eggs' },
+  parentCategory: {
+    id: 'd',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy & eggs' },
+  },
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 
@@ -263,6 +268,7 @@ describe('ShoppingPage', () => {
 
   describe('Add sheet', () => {
     const openSheet = async (user = userEvent.setup()) => {
+      await screen.findByText(/^\d+ to buy$/);
       await user.click(
         await screen.findByRole('button', { name: 'Add items' }),
       );
@@ -357,6 +363,272 @@ describe('ShoppingPage', () => {
       );
       expect(option).toHaveTextContent('Hard cheese · Dairy & eggs');
       expect(search(dialog)).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    const DAIRY_AISLE_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
+    const withAisle = (id: string) =>
+      withParmesan({
+        'GET /api/catalog/search': () =>
+          Response.json({
+            results: [
+              {
+                ...parmesan,
+                parentCategory: {
+                  ...parmesan.parentCategory,
+                  aisle: { id, name: 'Dairy & eggs' },
+                },
+              },
+            ],
+          }),
+      });
+
+    it('tints a result tile by its Aisle, and uses the neutral tile for an unknown Aisle', async () => {
+      withAisle(DAIRY_AISLE_ID);
+      const first = renderWithProviders(<ShoppingPage />);
+      const { option } = await findParmesanRow(userEvent.setup());
+      expect(option.firstElementChild).toHaveStyle({
+        backgroundColor: '#E3ECF3',
+        color: '#2F5674',
+      });
+      first.unmount();
+      vi.unstubAllGlobals();
+
+      withAisle('admin-made-aisle');
+      renderWithProviders(<ShoppingPage />);
+      const second = await findParmesanRow(userEvent.setup());
+      expect(second.option.firstElementChild).toHaveStyle({
+        backgroundColor: tokens.color.chipNeutral,
+        color: tokens.color.muted,
+      });
+    });
+
+    describe('when the Ingredient is already on the list', () => {
+      const onList = (overrides: Partial<ShoppingItem>) =>
+        list([
+          {
+            aisle: produce,
+            items: [{ ...tomato, checked: !overrides.checked }],
+          },
+          {
+            aisle: dairy,
+            items: [
+              item({
+                id: 'p1',
+                ingredientId: 'parmesan-id',
+                name: 'Parmesan',
+                quantity: 100,
+                unit: 'g',
+                ...overrides,
+              }),
+            ],
+          },
+        ]);
+      const amountHint = (dialog: HTMLElement) =>
+        within(dialog).queryByText(/Already on your list/);
+
+      it('shows no tag or hint when it is not on the list or only checked', async () => {
+        withParmesan({}, onList({ checked: true }));
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        expect(within(option).queryByText('On list')).toBeNull();
+        await user.click(option);
+        expect(amountHint(dialog)).toBeNull();
+      });
+
+      it('switches to the separate-line hint when a typed unit changes the unit', async () => {
+        withParmesan({}, onList({}));
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+        await user.click(option);
+
+        await user.type(
+          within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+          '200 kg',
+        );
+        expect(
+          within(dialog).getByText(
+            'Already on your list in g. This adds a separate line.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('names the other units, or says "other units" when one line has none', async () => {
+        const lines = (...units: ShoppingItem['unit'][]) =>
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: dairy,
+              items: units.map((unit, i) =>
+                item({
+                  id: `p${i}`,
+                  ingredientId: 'parmesan-id',
+                  name: 'Parmesan',
+                  quantity: 1,
+                  unit,
+                }),
+              ),
+            },
+          ]);
+        withParmesan({}, lines('kg', 'pcs'));
+        const view = renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        let found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list in kg and pcs. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        view.unmount();
+        vi.unstubAllGlobals();
+
+        withParmesan({}, lines('kg', null));
+        const mixed = renderWithProviders(<ShoppingPage />);
+        found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list in other units. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        mixed.unmount();
+        vi.unstubAllGlobals();
+
+        withParmesan({}, lines(null));
+        renderWithProviders(<ShoppingPage />);
+        found = await findParmesanRow(user);
+        await user.click(found.option);
+        expect(
+          within(found.dialog).getByText(
+            'Already on your list with no unit. This adds a separate line.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('ends the Romanian hint without a double period after an abbreviated unit', async () => {
+        withParmesan(
+          {},
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: dairy,
+              items: [
+                item({
+                  id: 'p1',
+                  ingredientId: 'parmesan-id',
+                  name: 'Parmesan',
+                  quantity: 1,
+                  unit: 'pcs',
+                }),
+              ],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />, { locale: 'ro' });
+        const user = userEvent.setup();
+        await screen.findByText('1 de cumpărat');
+        await user.click(
+          screen.getByRole('button', { name: 'Adaugă produse' }),
+        );
+        const dialog = await screen.findByRole('dialog', {
+          name: 'Adaugă în listă',
+        });
+        await user.type(
+          within(dialog).getByRole('combobox', { name: 'Caută ingrediente' }),
+          'parm',
+        );
+        await user.click(
+          await within(dialog).findByRole('option', { name: /Parmesan/ }),
+        );
+        expect(
+          within(dialog).getByText(
+            'Este deja pe listă în buc.; se adaugă o linie separată.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('tags a typed name that matches an unchecked Unmatched line', async () => {
+        withParmesan(
+          {},
+          list([
+            { aisle: produce, items: [{ ...tomato, checked: true }] },
+            {
+              aisle: null,
+              items: [
+                item({
+                  id: 'u1',
+                  name: 'dragon  Fruit',
+                  quantity: 2,
+                  unit: 'pcs',
+                  unmatched: true,
+                }),
+              ],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const dialog = await openSheet(user);
+        await user.type(search(dialog), ' Dragon fruit ');
+        const row = await within(dialog).findByRole('option', {
+          name: /Add “Dragon fruit”/,
+        });
+        expect(within(row).getByText('On list')).toBeVisible();
+        await user.click(row);
+        expect(
+          within(dialog).getByText(
+            'Already on your list in pcs. This adds a separate line.',
+          ),
+        ).toBeVisible();
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: unit' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'pcs' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
+      });
+
+      it('tags it and explains the merge, following the unit', async () => {
+        withParmesan({}, onList({}));
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        expect(within(option).getByText('On list')).toBeVisible();
+        expect(amountHint(dialog)).toBeNull();
+        await user.click(option);
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
+
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: g' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list in g. This adds a separate line.',
+          ),
+        ).toBeVisible();
+
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: kg' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'g' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
+      });
     });
 
     it('adds a Catalog Match with amount and unit, then resets the search', async () => {

@@ -66,7 +66,12 @@
     "matches_other": "{{count}} de potriviri",
     "noMatch": "Nicio potrivire în catalog",
     "freeText": "Adaugă „{{name}}”",
-    "freeTextHint": "Nu e în catalog, se adaugă ca text liber"
+    "freeTextHint": "Nu e în catalog, se adaugă ca text liber",
+    "onList": "Pe listă",
+    "onListHint": "Este deja pe listă. Dacă o adaugi din nou, cantitatea crește.",
+    "onListOtherUnit": "Este deja pe listă în {{unit}}; se adaugă o linie separată.",
+    "onListOtherUnits": "Este deja pe listă în alte unități; se adaugă o linie separată.",
+    "onListNoUnit": "Este deja pe listă fără unitate. Se adaugă o linie separată."
   },
   "amount": {
     "placeholder": "Cantitate",

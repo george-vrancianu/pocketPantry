@@ -34,7 +34,11 @@ const milk: CatalogSearchResult = {
   name: 'Milk',
   defaultUnit: 'ml',
   leafCategory: { id: 'milk', name: 'Milk' },
-  parentCategory: { id: 'dairy', name: 'Dairy', aisle: 'Dairy' },
+  parentCategory: {
+    id: 'dairy',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy' },
+  },
   defaults: { expiryDays: 7, location: 'fridge' },
 };
 

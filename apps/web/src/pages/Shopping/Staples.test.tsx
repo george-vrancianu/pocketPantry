@@ -42,7 +42,11 @@ const flour: CatalogSearchResult = {
   name: 'Flour',
   defaultUnit: 'g',
   leafCategory: { id: 'f', name: 'Flour' },
-  parentCategory: { id: 'b', name: 'Baking', aisle: 'Baking' },
+  parentCategory: {
+    id: 'b',
+    name: 'Baking',
+    aisle: { id: 'aisle', name: 'Baking' },
+  },
   defaults: { expiryDays: 365, location: 'cupboard' },
 };
 

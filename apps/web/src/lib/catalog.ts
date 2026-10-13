@@ -13,7 +13,11 @@ export type CatalogSearchResult = {
   name: string;
   defaultUnit: Unit;
   leafCategory: { id: string; name: string };
-  parentCategory: { id: string; name: string; aisle: string };
+  parentCategory: {
+    id: string;
+    name: string;
+    aisle: { id: string; name: string };
+  };
 };
 
 export function useDebounced<T>(value: T, delayMs: number): T {

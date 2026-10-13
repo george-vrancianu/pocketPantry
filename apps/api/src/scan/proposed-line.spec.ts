@@ -7,7 +7,7 @@ const match: CatalogSearchResult = {
   name: 'Parmesan',
   defaultUnit: 'g',
   leafCategory: { id: 'l', name: 'Hard cheese' },
-  parentCategory: { id: 'p', name: 'Dairy', aisle: 'Dairy' },
+  parentCategory: { id: 'p', name: 'Dairy', aisle: { id: 'a', name: 'Dairy' } },
   defaults: { expiryDays: 60, location: 'fridge' },
 };
 
