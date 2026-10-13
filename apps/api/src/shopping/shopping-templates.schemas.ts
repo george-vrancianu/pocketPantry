@@ -50,6 +50,8 @@ export type TemplateSummaryView = {
   id: string;
   name: string;
   lineCount: number;
+  /** The first lines' names (at most 4) in stored order, localised. */
+  previewNames: string[];
 };
 
 export type TemplateLineView = {
