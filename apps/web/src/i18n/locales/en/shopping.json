@@ -42,5 +42,35 @@
     "reload": "Reload",
     "cancel": "Back to list"
   },
-  "staples": "Staples"
+  "staples": "Staples",
+  "addItems": "Add items",
+  "added": "Added {{name}}",
+  "sheet": {
+    "title": "Add to list",
+    "done": "Done",
+    "doneCount_one": "Done, {{count}} added",
+    "doneCount_other": "Done, {{count}} added",
+    "tabsLabel": "Add to list",
+    "tabs": {
+      "ingredients": "Ingredients",
+      "templates": "Templates"
+    }
+  },
+  "search": {
+    "placeholder": "Search ingredients",
+    "clear": "Clear search",
+    "matches_one": "{{count}} match",
+    "matches_other": "{{count}} matches",
+    "noMatch": "No catalog match",
+    "freeText": "Add “{{name}}”",
+    "freeTextHint": "Not in the catalog, added as free text"
+  },
+  "amount": {
+    "placeholder": "Amount",
+    "label": "Amount of {{name}}, for example 2 or 500 g",
+    "unit": "Unit: {{unit}}",
+    "noUnit": "unit",
+    "units": "Units",
+    "add": "Add {{name}} to the list"
+  }
 }

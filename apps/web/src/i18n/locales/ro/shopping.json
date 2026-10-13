@@ -44,5 +44,37 @@
     "reload": "Reîncarcă",
     "cancel": "Înapoi la listă"
   },
-  "staples": "Produse de bază"
+  "staples": "Produse de bază",
+  "addItems": "Adaugă produse",
+  "added": "Ai adăugat {{name}}",
+  "sheet": {
+    "title": "Adaugă în listă",
+    "done": "Gata",
+    "doneCount_one": "Gata, {{count}} adăugat",
+    "doneCount_few": "Gata, {{count}} adăugate",
+    "doneCount_other": "Gata, {{count}} adăugate",
+    "tabsLabel": "Adaugă în listă",
+    "tabs": {
+      "ingredients": "Ingrediente",
+      "templates": "Șabloane"
+    }
+  },
+  "search": {
+    "placeholder": "Caută ingrediente",
+    "clear": "Șterge căutarea",
+    "matches_one": "{{count}} potrivire",
+    "matches_few": "{{count}} potriviri",
+    "matches_other": "{{count}} de potriviri",
+    "noMatch": "Nicio potrivire în catalog",
+    "freeText": "Adaugă „{{name}}”",
+    "freeTextHint": "Nu e în catalog, se adaugă ca text liber"
+  },
+  "amount": {
+    "placeholder": "Cantitate",
+    "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
+    "unit": "Unitate: {{unit}}",
+    "noUnit": "unitate",
+    "units": "Unități",
+    "add": "Adaugă {{name}} în listă"
+  }
 }

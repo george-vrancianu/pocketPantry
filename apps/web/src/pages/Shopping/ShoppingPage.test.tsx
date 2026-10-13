@@ -8,6 +8,7 @@ import {
   type ShoppingList,
 } from '../../lib/shopping';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubMotion, stubViewport } from '../../test/viewport';
 import { ShoppingPage } from './ShoppingPage';
 
 const item = (
@@ -259,132 +260,397 @@ describe('ShoppingPage', () => {
     expect(heading.parentElement).toHaveTextContent('Fruit & veg1');
   });
 
-  it('adds a Catalog Match with quantity and unit', async () => {
-    const { calls } = stubShopping({
-      'POST /api/shopping-list/items': () =>
-        Response.json(
-          list([
-            ...base.groups,
-            {
-              aisle: dairy,
-              items: [
-                item({ id: 'i3', name: 'Parmesan', quantity: 100, unit: 'g' }),
-              ],
-            },
-          ]),
-        ),
-    });
-    renderWithProviders(<ShoppingPage />);
-    const user = userEvent.setup();
+  describe('Add sheet', () => {
+    const openSheet = async (user = userEvent.setup()) => {
+      await screen.findByText('1 to buy');
+      await user.click(screen.getByRole('button', { name: 'Add items' }));
+      return screen.findByRole('dialog', { name: 'Add to list' });
+    };
 
-    await screen.findByText('1 to buy');
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'parm',
-    );
-    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
-    // The unit defaults to the Ingredient's own.
-    expect(screen.getByLabelText('Unit')).toHaveValue('g');
-    await user.type(screen.getByLabelText('Quantity'), '100');
-    await user.click(screen.getByRole('button', { name: 'Add to list' }));
+    it('opens on the Ingredients tab with focus in the search field', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
 
-    expect(await screen.findByText('100 g')).toBeVisible();
-    expect(
-      calls.find((c) => c.key.startsWith('POST /api/shopping-list'))?.body,
-    ).toEqual({
-      ingredientId: 'parmesan-id',
-      quantity: 100,
-      unit: 'g',
-    });
-    // The form is cleared for the next item.
-    expect(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-    ).toHaveValue('');
-  });
+      const dialog = await openSheet();
 
-  it('rejects a zero or negative quantity instead of dropping it', async () => {
-    const { calls } = stubShopping();
-    renderWithProviders(<ShoppingPage />);
-    const user = userEvent.setup();
-
-    await screen.findByText('1 to buy');
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'parm',
-    );
-    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
-    for (const bad of ['0', '-2']) {
-      await user.clear(screen.getByLabelText('Quantity'));
-      await user.type(screen.getByLabelText('Quantity'), bad);
       expect(
-        screen.getByRole('button', { name: 'Add to list' }),
-      ).toBeDisabled();
-      expect(screen.getByLabelText('Quantity')).toHaveAccessibleDescription(
-        /0.001 to 1,000,000/,
+        within(dialog).getByRole('tab', { name: 'Ingredients' }),
+      ).toHaveAttribute('aria-selected', 'true');
+      expect(
+        within(dialog).getByRole('tab', { name: 'Templates' }),
+      ).toHaveAttribute('aria-selected', 'false');
+      await waitFor(() =>
+        expect(
+          within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+        ).toHaveFocus(),
       );
-    }
-    expect(calls.some((c) => c.key.startsWith('POST'))).toBe(false);
-  });
-
-  it('adds a name with no Catalog match as an Unmatched item, flagged visibly', async () => {
-    stubShopping({
-      'GET /api/catalog/search': () => Response.json({ results: [] }),
-      'POST /api/shopping-list/items': () =>
-        Response.json(
-          list([
-            ...base.groups,
-            {
-              aisle: null,
-              items: [
-                item({ id: 'i9', name: 'Dragon fruit', unmatched: true }),
-              ],
-            },
-          ]),
-        ),
     });
-    renderWithProviders(<ShoppingPage />);
-    const user = userEvent.setup();
 
-    await screen.findByText('1 to buy');
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'dragon fruit',
-    );
-    expect(
-      await screen.findByText(/will be added as an unmatched item/),
-    ).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Add to list' }));
+    it('closes with Done, Escape and a scrim tap, returning focus to Add items', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const opener = () => screen.getByRole('button', { name: 'Add items' });
 
-    const row = (
-      await screen.findByRole('button', { name: /^Dragon fruit/ })
-    ).closest('li');
-    expect(row).not.toBeNull();
-    expect(within(row as HTMLElement).getByText('Unmatched')).toBeVisible();
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Not in the catalog' }),
-    ).toBeVisible();
-  });
+      let dialog = await openSheet(user);
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(opener()).toHaveFocus();
 
-  it('sends the typed name when no Catalog Match was picked', async () => {
-    const { calls } = stubShopping({
-      'GET /api/catalog/search': () => Response.json({ results: [] }),
-      'POST /api/shopping-list/items': () => Response.json(base),
+      await openSheet(user);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(opener()).toHaveFocus();
+
+      dialog = await openSheet(user);
+      const scrim = document.querySelector('.MuiBackdrop-root');
+      await user.click(scrim as HTMLElement);
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(opener()).toHaveFocus();
     });
-    renderWithProviders(<ShoppingPage />);
-    const user = userEvent.setup();
 
-    await screen.findByText('1 to buy');
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'Dragon fruit',
-    );
-    await user.click(screen.getByRole('button', { name: 'Add to list' }));
+    const withParmesan = (
+      routes: Record<string, () => Response> = {},
+      initial: ShoppingList = base,
+    ) => {
+      const added = list([
+        ...base.groups,
+        {
+          aisle: dairy,
+          items: [
+            item({ id: 'i3', name: 'Parmesan', quantity: 100, unit: 'g' }),
+          ],
+        },
+      ]);
+      return stubShopping(
+        {
+          'POST /api/shopping-list/items': () => Response.json(added),
+          ...routes,
+        },
+        initial,
+      );
+    };
+    const search = (dialog: HTMLElement) =>
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' });
+    const findParmesanRow = async (
+      user: ReturnType<typeof userEvent.setup>,
+    ) => {
+      const dialog = await openSheet(user);
+      await user.type(search(dialog), 'parm');
+      const option = await within(dialog).findByRole('option', {
+        name: /Parmesan/,
+      });
+      return { dialog, option };
+    };
+    const posts = (calls: { key: string; body: unknown }[]) =>
+      calls.filter((c) => c.key === 'POST /api/shopping-list/items');
 
-    await waitFor(() =>
-      expect(calls.find((c) => c.key.startsWith('POST'))?.body).toEqual({
-        name: 'Dragon fruit',
-      }),
-    );
+    it('announces the matches and shows the name, leaf and aisle of each', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const { dialog, option } = await findParmesanRow(userEvent.setup());
+
+      await waitFor(() =>
+        expect(within(dialog).getByRole('status')).toHaveTextContent('1 match'),
+      );
+      expect(option).toHaveTextContent('Hard cheese · Dairy & eggs');
+      expect(search(dialog)).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('adds a Catalog Match with amount and unit, then resets the search', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      // The unit defaults to the Ingredient's own.
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: g' }),
+      ).toBeVisible();
+      await user.type(
+        within(dialog).getByRole('textbox', {
+          name: 'Amount of Parmesan, for example 2 or 500 g',
+        }),
+        '100',
+      );
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+
+      expect(await screen.findByText('Added Parmesan')).toBeVisible();
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 100,
+        unit: 'g',
+      });
+      expect(
+        within(dialog).getByRole('button', { name: 'Done, 1 added' }),
+      ).toBeVisible();
+      expect(search(dialog)).toHaveValue('');
+      expect(search(dialog)).toHaveFocus();
+      expect(within(dialog).queryByRole('option')).toBeNull();
+      expect(await screen.findByText('100 g')).toBeVisible();
+    });
+
+    it('changes the unit from the chip popover and returns focus to the amount', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '2');
+      await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
+      expect(within(dialog).getByRole('button', { name: 'g' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+
+      expect(amount).toHaveFocus();
+      expect(within(dialog).queryByRole('button', { name: 'kg' })).toBeNull();
+      await user.keyboard('{Enter}');
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 2,
+        unit: 'kg',
+      });
+    });
+
+    it('opens the first result on Enter, and toggles rows by tapping', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(search(dialog));
+      await user.keyboard('{Enter}');
+      expect(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+      ).toBeVisible();
+
+      await user.click(option);
+      expect(
+        within(dialog).queryByRole('textbox', { name: /Amount of/ }),
+      ).toBeNull();
+    });
+
+    it('adds the free-text row as an Unmatched item', async () => {
+      const { calls } = stubShopping({
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+        'POST /api/shopping-list/items': () => Response.json(base),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const dialog = await openSheet(user);
+
+      await user.type(search(dialog), 'Dragon fruit');
+      const row = await within(dialog).findByRole('option', {
+        name: /Add “Dragon fruit”/,
+      });
+      expect(row).toHaveTextContent('Not in the catalog, added as free text');
+      expect(await within(dialog).findByText('No catalog match')).toBeVisible();
+      await user.click(row);
+      expect(
+        within(dialog).getByRole('button', { name: 'Unit: unit' }),
+      ).toBeVisible();
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Dragon fruit to the list',
+        }),
+      );
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({ name: 'Dragon fruit' });
+    });
+
+    it('hides the free-text row when a result has exactly the typed name', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const dialog = await openSheet(user);
+
+      await user.type(search(dialog), 'parmesan');
+      await within(dialog).findByRole('option', { name: /Parmesan/ });
+      expect(
+        within(dialog).queryByRole('option', { name: /Add “/ }),
+      ).toBeNull();
+    });
+
+    it('keeps the row open and marks an invalid amount without adding', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      for (const bad of ['0', '-2']) {
+        await user.clear(amount);
+        await user.type(amount, bad);
+        await user.keyboard('{Enter}');
+        expect(amount).toBeInvalid();
+        expect(amount).toHaveAccessibleDescription(/0.001 to 1,000,000/);
+      }
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      expect(posts(calls)).toHaveLength(0);
+      expect(amount).toBeVisible();
+    });
+
+    it('shows an Alert and keeps everything typed when adding fails', async () => {
+      withParmesan({
+        'POST /api/shopping-list/items': () =>
+          Response.json({ code: 'boom', params: {} }, { status: 500 }),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '100{Enter}');
+
+      expect(await within(dialog).findByRole('alert')).toBeVisible();
+      expect(amount).toHaveValue('100');
+      expect(search(dialog)).toHaveValue('parm');
+      expect(
+        within(dialog).getByRole('button', { name: 'Done' }),
+      ).toBeVisible();
+      expect(screen.queryByText('Added Parmesan')).toBeNull();
+    });
+
+    it('shows no stale add error when the sheet is reopened', async () => {
+      withParmesan({
+        'POST /api/shopping-list/items': () =>
+          Response.json({ code: 'boom', params: {} }, { status: 500 }),
+      });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+      await user.click(option);
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      expect(await within(dialog).findByRole('alert')).toBeVisible();
+
+      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      const reopened = await openSheet(user);
+
+      expect(within(reopened).queryByRole('alert')).toBeNull();
+    });
+
+    it('keeps focus on the tablist when arrowing between tabs', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const dialog = await openSheet(user);
+
+      const tab = within(dialog).getByRole('tab', { name: 'Ingredients' });
+      tab.focus();
+      await user.keyboard('{ArrowRight}{ArrowLeft}');
+
+      expect(tab).toHaveFocus();
+    });
+
+    it('keeps the query when switching tabs and back', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog } = await findParmesanRow(user);
+
+      await user.click(within(dialog).getByRole('tab', { name: 'Templates' }));
+      await user.click(
+        within(dialog).getByRole('tab', { name: 'Ingredients' }),
+      );
+
+      expect(search(dialog)).toHaveValue('parm');
+    });
+
+    it('closes the unit popover on Escape before the sheet', async () => {
+      withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
+      await user.keyboard('{Escape}');
+
+      expect(within(dialog).queryByRole('button', { name: 'kg' })).toBeNull();
+      expect(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+      ).toHaveFocus();
+      expect(screen.getByRole('dialog')).toBeVisible();
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('keeps the query, open row and amount through a background poll', async () => {
+      const shopping = withParmesan();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const { dialog, option } = await findParmesanRow(user);
+      await user.click(option);
+      const amount = within(dialog).getByRole('textbox', {
+        name: /Amount of Parmesan/,
+      });
+      await user.type(amount, '7');
+
+      shopping.setCurrent(
+        list([
+          {
+            aisle: produce,
+            items: [tomato, item({ id: 'i5', name: 'Basil' })],
+          },
+        ]),
+      );
+      await act(() =>
+        vi.advanceTimersByTimeAsync(SHOPPING_POLL_INTERVAL_MS + 100),
+      );
+
+      expect(await screen.findByText('Basil')).toBeInTheDocument();
+      expect(search(dialog)).toHaveValue('parm');
+      expect(amount).toHaveValue('7');
+    });
+
+    it('is a centred dialog from md up', async () => {
+      stubViewport(1024);
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+
+      const dialog = await openSheet();
+
+      expect(dialog).toBeVisible();
+      await waitFor(() => expect(search(dialog)).toHaveFocus());
+    });
+
+    it('opens under reduced motion', async () => {
+      stubMotion(true);
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+
+      expect(await openSheet()).toBeVisible();
+    });
   });
 
   it('refreshes on an interval and on window focus so other Members changes appear', async () => {
