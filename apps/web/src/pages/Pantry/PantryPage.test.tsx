@@ -1017,6 +1017,7 @@ describe('PantryPage', () => {
       };
       const { fetchMock, calls } = stubApi({
         'GET /api/pantry': () => Response.json({ batches }),
+        'GET /api/settings/family': familySettings(3),
         'PATCH /api/pantry/batches/milk-2': () => Response.json(batches[1]),
         'DELETE /api/pantry/batches/milk-2': remove('milk-2'),
         'DELETE /api/pantry/batches/cheese': remove('cheese'),
@@ -1217,7 +1218,17 @@ describe('PantryPage', () => {
         within(form).getByLabelText('Location'),
         'freezer',
       );
-      await user.clear(within(form).getByLabelText('Expiry date'));
+      await user.click(within(form).getByRole('button', { name: /^Expires,/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+      await user.click(
+        within(sheet).getByRole('button', { name: 'No expiry' }),
+      );
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
+      );
       await user.click(
         within(form).getByRole('button', { name: 'Save changes' }),
       );
@@ -1507,6 +1518,113 @@ describe('PantryPage', () => {
           expect(screen.queryByRole('heading', { name: /Freezer/ })).toBeNull(),
         );
         expect(screen.getByRole('button', { name: 'Add batch' })).toHaveFocus();
+      });
+    });
+
+    describe('the expiry picker in Edit batch', () => {
+      // Wednesday 14 October 2026, mid-afternoon. Only `Date` is faked, so timers and transitions run as usual.
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+      });
+      afterEach(() => vi.useRealTimers());
+
+      /** Open the editor of the opened Milk (0.5 L, Fridge, expiring in 2 days) and its expiry sheet. */
+      async function openExpirySheet(user: ReturnType<typeof userEvent.setup>) {
+        const calls = stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        await openEditor(user);
+        const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+        await user.click(
+          within(form).getByRole('button', {
+            name: 'Expires, Friday, October 16, in 2 days',
+          }),
+        );
+        const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+        return { calls, form, sheet };
+      }
+
+      async function saveEdit(
+        user: ReturnType<typeof userEvent.setup>,
+        form: HTMLElement,
+        calls: ReturnType<typeof stubManaged>,
+      ) {
+        await user.click(
+          within(form).getByRole('button', { name: 'Save changes' }),
+        );
+        await waitFor(() =>
+          expect(
+            calls.find((c) => c.key === 'PATCH /api/pantry/batches/milk-2'),
+          ).toBeDefined(),
+        );
+        return calls.find((c) => c.key === 'PATCH /api/pantry/batches/milk-2')
+          ?.body;
+      }
+
+      it("shows the Batch's context and the five fixed quick picks, with no Usual tile", async () => {
+        const user = userEvent.setup();
+        const { sheet } = await openExpirySheet(user);
+
+        expect(sheet).toHaveTextContent('Milk · 0.5 L · Fridge');
+        expect(within(sheet).getByRole('status')).toHaveTextContent(
+          'Fri, Oct 16in 2 days2 d left',
+        );
+        expect(
+          within(within(sheet).getByRole('group', { name: 'Quick picks' }))
+            .getAllByRole('button')
+            .map((tile) => tile.getAttribute('aria-label')),
+        ).toEqual([
+          '3 d, Saturday, October 17',
+          '5 d, Monday, October 19',
+          '1 wk, Wednesday, October 21',
+          '2 wk, Wednesday, October 28',
+          '1 mo, Friday, November 13',
+        ]);
+      });
+
+      it('saves a quick pick as today + n, and Escape closes only the expiry sheet', async () => {
+        const user = userEvent.setup();
+        const { calls, form, sheet } = await openExpirySheet(user);
+
+        await user.click(within(sheet).getByRole('button', { name: /^1 wk/ }));
+        await user.keyboard('{Escape}');
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('dialog', { name: 'Expires' }),
+          ).not.toBeInTheDocument(),
+        );
+        expect(form).toBeInTheDocument();
+        expect(
+          within(form).getByRole('button', {
+            name: 'Expires, Wednesday, October 21, in 7 days',
+          }),
+        ).toBeInTheDocument();
+
+        expect(await saveEdit(user, form, calls)).toEqual({
+          expiryDate: '2026-10-21',
+        });
+      });
+
+      it('saves a day tapped on the calendar', async () => {
+        const user = userEvent.setup();
+        const { calls, form, sheet } = await openExpirySheet(user);
+
+        await user.click(
+          within(sheet).getByRole('button', {
+            name: 'Thursday, December 3, 2026',
+          }),
+        );
+        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await waitFor(() =>
+          expect(
+            screen.queryByRole('dialog', { name: 'Expires' }),
+          ).not.toBeInTheDocument(),
+        );
+
+        expect(await saveEdit(user, form, calls)).toEqual({
+          expiryDate: '2026-12-03',
+        });
       });
     });
 
