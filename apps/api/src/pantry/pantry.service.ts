@@ -14,6 +14,7 @@ import { addDays } from '../common/dates';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import {
+  aisles,
   batches,
   ingredients,
   leafCategories,
@@ -333,8 +334,23 @@ export class PantryService {
     const threshold = await this.settings.staleThresholdOf(familyId);
     const latestSoon = addDays(today, threshold);
     const ingredientRows = await this.database
-      .select({ id: ingredients.id, name: ingredients.name })
+      .select({
+        id: ingredients.id,
+        name: ingredients.name,
+        aisleId: aisles.id,
+        aisleName: aisles.name,
+        aisleSortOrder: aisles.sortOrder,
+      })
       .from(ingredients)
+      .leftJoin(
+        leafCategories,
+        eq(ingredients.leafCategoryId, leafCategories.id),
+      )
+      .leftJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .leftJoin(aisles, eq(parentCategories.aisleId, aisles.id))
       .where(
         inArray(
           ingredients.id,
@@ -342,10 +358,21 @@ export class PantryService {
         ),
       );
     const canonical = new Map(ingredientRows.map((i) => [i.id, i.name]));
-    const names = await loadDisplayNames(
-      this.database,
-      locale,
-      ingredientRows.map((i) => i.id),
+    const names = await loadDisplayNames(this.database, locale, [
+      ...ingredientRows.map((i) => i.id),
+      ...ingredientRows.flatMap((i) => (i.aisleId ? [i.aisleId] : [])),
+    ]);
+    const aisleOf = new Map(
+      ingredientRows.map((i) => [
+        i.id,
+        i.aisleId === null || i.aisleName === null
+          ? null
+          : {
+              id: i.aisleId,
+              name: names.pick('aisle', i.aisleId, i.aisleName),
+              sortOrder: i.aisleSortOrder ?? 0,
+            },
+      ]),
     );
 
     return rows.map((row) => ({
@@ -359,6 +386,7 @@ export class PantryService {
         : (row.rawName ?? ''),
       ingredientId: row.ingredientId,
       unmatched: row.unmatched,
+      aisle: row.ingredientId ? (aisleOf.get(row.ingredientId) ?? null) : null,
       quantity: row.quantity,
       unit: row.unit,
       location: row.location,

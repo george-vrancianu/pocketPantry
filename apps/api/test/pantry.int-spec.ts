@@ -27,6 +27,7 @@ type Batch = {
   expiryDate: string | null;
   productDescription: string | null;
   expiringSoon?: boolean;
+  aisle: { id: string; name: string; sortOrder: number } | null;
 };
 
 const inDays = (days: number) =>
@@ -370,6 +371,24 @@ describe('Pantry (integration)', () => {
       'Lapte',
       'Mystery',
     ]);
+  });
+
+  it("carries the Ingredient's Aisle on a matched Batch and null on an Unmatched one, localised", async () => {
+    const { cookie } = await signUp();
+    await add(cookie, {
+      ingredientId: seedId.ingredient('milk'),
+      expiryDate: '2031-05-01',
+    }).expect(201);
+    await add(cookie, { rawName: 'Mystery', location: 'spices' }).expect(201);
+
+    const [milk, mystery] = await list(cookie);
+    expect(milk.aisle).toEqual({
+      id: seedId.aisle('dairy-eggs'),
+      name: 'Dairy & eggs',
+      sortOrder: expect.any(Number),
+    });
+    expect(mystery.aisle).toBeNull();
+    expect((await list(cookie, 'ro'))[0].aisle?.name).toBe('Lactate și ouă');
   });
 
   it('scopes the Pantry to the Family: members of one Family share it, other Families do not see it', async () => {

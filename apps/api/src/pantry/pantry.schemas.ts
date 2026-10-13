@@ -102,6 +102,8 @@ export type BatchView = {
   name: string;
   ingredientId: string | null;
   unmatched: boolean;
+  /** The Ingredient's Aisle, localised; null for an Unmatched Batch. */
+  aisle: { id: string; name: string; sortOrder: number } | null;
   quantity: number | null;
   unit: (typeof ingredientUnit.enumValues)[number] | null;
   location: (typeof storageLocation.enumValues)[number];
