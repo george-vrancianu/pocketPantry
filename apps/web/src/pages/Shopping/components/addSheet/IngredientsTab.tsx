@@ -169,7 +169,8 @@ export function IngredientsTab({
     );
   const panelShown = Boolean(open && openRow);
   // The panel overlays the list (so the listbox stays a real box of options only)
-  // and the open option makes room for it; follow both as they resize.
+  // and the open option makes room for it; follow both as they resize, and the
+  // list itself, since a row above the option resizing moves it.
   useLayoutEffect(() => {
     const list = listRef.current;
     const panelEl = panelRef.current;
@@ -193,6 +194,7 @@ export function IngredientsTab({
     const observer = new ResizeObserver(measure);
     observer.observe(panelEl);
     observer.observe(option);
+    observer.observe(list);
     return () => observer.disconnect();
   }, [openIndex, rows.length, panelShown]);
   const hint =
