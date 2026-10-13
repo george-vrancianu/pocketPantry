@@ -7,6 +7,7 @@ import {
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
+import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
@@ -18,7 +19,6 @@ import {
   leafCategories,
   parentCategories,
 } from '../database/schema';
-import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import { recordRemoved, recordStocked } from './stock-history';
