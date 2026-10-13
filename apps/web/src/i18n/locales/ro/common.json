@@ -18,6 +18,13 @@
     "spices": "Condimente"
   },
   "row": {
+    "context": {
+      "list": "din lista ta"
+    },
+    "keep": "Păstrează",
+    "releaseToDelete": "Eliberează pentru a elimina",
+    "remove": "Elimină",
+    "removeQuestion": "Elimini {{name}}?",
     "removed": "Ai scos {{name}}",
     "undo": "Anulează"
   },

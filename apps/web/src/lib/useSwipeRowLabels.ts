@@ -1,0 +1,20 @@
+import type { SwipeRowLabels } from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
+
+/** What the removal confirmation says it removes the item from; the keys are `common:row.context.*`. */
+export type RowContext = 'list';
+
+/** The strings a `SwipeRow` shows, for the item called `name`. */
+export function useSwipeRowLabels(
+  name: string,
+  context: RowContext,
+): SwipeRowLabels {
+  const { t } = useTranslation('common');
+  return {
+    question: t('row.removeQuestion', { name }),
+    context: t(`row.context.${context}`),
+    keep: t('row.keep'),
+    remove: t('row.remove'),
+    releaseToDelete: t('row.releaseToDelete'),
+  };
+}

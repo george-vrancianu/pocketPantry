@@ -1,17 +1,16 @@
 import {
   Box,
   CheckIcon,
-  CloseIcon,
-  IconButton,
   ListRow,
-  ListRowItem,
   Stack,
+  SwipeRow,
   tokens,
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
+import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
 
@@ -72,7 +71,6 @@ export function ShoppingGroups({
                 listStyle: 'none',
                 m: 0,
                 py: 0,
-                px: 0.75,
                 bgcolor: 'background.paper',
                 border: 1,
                 borderColor: 'divider',
@@ -111,6 +109,7 @@ function ChecklistRow({
 }) {
   const { t } = useTranslation('shopping');
   const toast = useToast();
+  const labels = useSwipeRowLabels(item.name, 'list');
   const quantity =
     item.quantity === null
       ? null
@@ -119,106 +118,87 @@ function ChecklistRow({
         : String(item.quantity);
 
   return (
-    <ListRowItem>
-      <ListRow
-        done={item.checked}
-        title={item.name}
-        meta={quantity}
-        // The whole row is the toggle, as in the handoff.
-        wrapMain={(main) => (
-          <Box
-            component="button"
-            type="button"
-            aria-pressed={item.checked}
-            onClick={() => onToggle(item.id, !item.checked)}
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              alignSelf: 'stretch',
-              display: 'flex',
-              alignItems: 'stretch',
-              px: 1.25,
-              py: 0,
-              border: 0,
-              bgcolor: 'transparent',
-              textAlign: 'left',
-              cursor: 'pointer',
-              color: 'text.primary',
-              font: 'inherit',
-            }}
-          >
-            {main}
-          </Box>
-        )}
-        leading={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box
-              aria-hidden="true"
-              sx={{
-                flexShrink: 0,
-                width: 24,
-                height: 24,
-                boxSizing: 'border-box',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                ...(item.checked
-                  ? { bgcolor: 'primary.main', color: tokens.color.surface }
-                  : { border: `2px solid ${tokens.color.tickBorder}` }),
-              }}
-            >
-              {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
-            </Box>
-            <IngredientIconSlot
-              ingredientId={item.ingredientId}
-              aisleId={aisleId}
-              color={item.checked ? CHECKED_TEXT : 'text.primary'}
-            />
-          </Box>
-        }
-        tags={
-          item.unmatched ? (
-            <Typography
-              component="span"
-              sx={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: 'primary.main',
-                bgcolor: 'primary.light',
-                px: 1,
-                py: 0.5,
-                borderRadius: 999,
-              }}
-            >
-              {t('item.unmatched')}
-            </Typography>
-          ) : null
-        }
-        trailing={
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {item.ingredientId !== null ? (
-              <StapleToggle
+    <SwipeRow
+      name={item.name}
+      labels={labels}
+      pressed={item.checked}
+      onTap={() => onToggle(item.id, !item.checked)}
+      onRemove={() => onRemove(item.id, item.name)}
+    >
+      <Box sx={{ pl: 2, pr: 0.75 }}>
+        <ListRow
+          done={item.checked}
+          title={item.name}
+          meta={quantity}
+          leading={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box
+                aria-hidden="true"
+                sx={{
+                  flexShrink: 0,
+                  width: 24,
+                  height: 24,
+                  boxSizing: 'border-box',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  ...(item.checked
+                    ? { bgcolor: 'primary.main', color: tokens.color.surface }
+                    : { border: `2px solid ${tokens.color.tickBorder}` }),
+                }}
+              >
+                {item.checked ? (
+                  <CheckIcon size={16} strokeWidth={2.6} />
+                ) : null}
+              </Box>
+              <IngredientIconSlot
                 ingredientId={item.ingredientId}
-                name={item.name}
-                onToggled={(isStaple) =>
-                  toast.show(
-                    t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
-                      name: item.name,
-                    }),
-                  )
-                }
+                aisleId={aisleId}
+                color={item.checked ? CHECKED_TEXT : 'text.primary'}
               />
-            ) : null}
-            <IconButton
-              label={t('item.remove', { name: item.name })}
-              onClick={() => onRemove(item.id, item.name)}
-            >
-              <CloseIcon size={18} />
-            </IconButton>
-          </Box>
-        }
-      />
-    </ListRowItem>
+            </Box>
+          }
+          tags={
+            item.unmatched ? (
+              <Typography
+                component="span"
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: 'primary.main',
+                  bgcolor: 'primary.light',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 999,
+                }}
+              >
+                {t('item.unmatched')}
+              </Typography>
+            ) : null
+          }
+          trailing={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {item.ingredientId !== null ? (
+                <StapleToggle
+                  ingredientId={item.ingredientId}
+                  name={item.name}
+                  onToggled={(isStaple) =>
+                    toast.show(
+                      t(
+                        isStaple ? 'item.nowStaple' : 'item.removedFromStaples',
+                        {
+                          name: item.name,
+                        },
+                      ),
+                    )
+                  }
+                />
+              ) : null}
+            </Box>
+          }
+        />
+      </Box>
+    </SwipeRow>
   );
 }

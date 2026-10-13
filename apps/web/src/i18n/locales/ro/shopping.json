@@ -19,7 +19,6 @@
     "unmatchedHint": "Nu există o potrivire în catalog, deci va fi adăugat ca articol nepotrivit."
   },
   "item": {
-    "remove": "Elimină {{name}}",
     "unmatched": "Nepotrivit",
     "nowStaple": "{{name}} este acum un produs de bază",
     "removedFromStaples": "{{name}} a fost scos din produsele de bază"

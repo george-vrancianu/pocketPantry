@@ -36,26 +36,4 @@ describe('ListRow', () => {
     );
     expect(screen.getByRole('listitem')).toHaveTextContent('Milk');
   });
-
-  it('lets the caller wrap the main area in a button spanning the row height', () => {
-    renderWithProviders(
-      <ul>
-        <ListRowItem>
-          <ListRow
-            title="Milk"
-            meta="2 l"
-            wrapMain={(main) => <button type="button">{main}</button>}
-            trailing={<span>end</span>}
-          />
-        </ListRowItem>
-      </ul>,
-    );
-    const button = screen.getByRole('button');
-    expect(button).toHaveTextContent('Milk');
-    expect(button).toHaveTextContent('2 l');
-    expect(button).not.toHaveTextContent('end');
-    const line = button.parentElement as HTMLElement;
-    expect(getComputedStyle(line).alignItems).toBe('stretch');
-    expect(getComputedStyle(line).minHeight).toBe('56px');
-  });
 });
