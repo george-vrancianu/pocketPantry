@@ -201,7 +201,11 @@ export function IngredientsTab({
                   quantity={open.quantity}
                   unit={open.unit}
                   onQuantityChange={(quantity, unit) =>
-                    setOpen({ ...open, quantity, ...(unit ? { unit } : {}) })
+                    setOpen({
+                      ...open,
+                      quantity,
+                      ...(unit !== undefined ? { unit } : {}),
+                    })
                   }
                   onUnitChange={(unit) => setOpen({ ...open, unit })}
                   error={amount.valid ? null : t('finish.quantityInvalid')}

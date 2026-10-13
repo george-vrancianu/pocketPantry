@@ -516,7 +516,8 @@ describe('ShoppingPage', () => {
       ['1,5 kg', '1,5', 1.5, 'kg', 'kg'],
       ['2 pcs', '2', 2, 'pcs', 'pcs'],
       ['3 stk', '3', 3, 'pcs', 'pcs'],
-      ['3 stk.', '3.', 3, 'pcs', 'pcs'],
+      ['3 stk.', '3', 3, 'pcs', 'pcs'],
+      ['2 PCS', '2', 2, 'pcs', 'pcs'],
       ['4 buc', '4', 4, 'pcs', 'pcs'],
       ['2 pc', '2', 2, 'pcs', 'pcs'],
       ['1 L', '1', 1, 'l', 'L'],
@@ -548,6 +549,55 @@ describe('ShoppingPage', () => {
         });
       },
     );
+
+    it.each([
+      ['500 gram', '500 gram'],
+      ['1 liter', '1 liter'],
+      ['4 bucăți', '4 bucăți'],
+    ])(
+      'keeps "%s" as typed, invalid, with the chip unchanged',
+      async (typed, shown) => {
+        const { calls } = withParmesan();
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        const amount = within(dialog).getByRole('textbox', {
+          name: /Amount of Parmesan/,
+        });
+        await user.type(amount, `${typed}{Enter}`);
+
+        expect(amount).toHaveValue(shown);
+        expect(amount).toBeInvalid();
+        expect(
+          within(dialog).getByRole('button', { name: 'Unit: g' }),
+        ).toBeVisible();
+        expect(posts(calls)).toHaveLength(0);
+      },
+    );
+
+    it('lets a typed unit override a chosen chip', async () => {
+      const { calls } = withParmesan();
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup();
+      const { dialog, option } = await findParmesanRow(user);
+
+      await user.click(option);
+      await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
+      await user.click(within(dialog).getByRole('button', { name: 'ml' }));
+      await user.type(
+        within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
+        '2 kg{Enter}',
+      );
+
+      await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      expect(posts(calls)[0]?.body).toEqual({
+        ingredientId: 'parmesan-id',
+        quantity: 2,
+        unit: 'kg',
+      });
+    });
 
     it('accepts a plain comma decimal as the quantity', async () => {
       const { calls } = withParmesan();

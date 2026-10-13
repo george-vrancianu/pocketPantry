@@ -25,6 +25,11 @@ const TYPED_UNITS: Record<string, Unit> = {
   stk: 'pcs',
   buc: 'pcs',
 };
+/** Whether `alias` is still on its way to a unit the pattern takes. */
+const continuesAlias = (alias: string) =>
+  Object.keys(TYPED_UNITS).some(
+    (known) => known.startsWith(alias) || `${known}.` === alias,
+  );
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
 
 export type AmountFieldProps = {
@@ -33,7 +38,7 @@ export type AmountFieldProps = {
   quantity: string;
   unit: Unit | '';
   /** A typed unit ("500 g") arrives with the quantity, as one change. */
-  onQuantityChange: (quantity: string, unit?: Unit) => void;
+  onQuantityChange: (quantity: string, unit?: Unit | '') => void;
   onUnitChange: (unit: Unit | '') => void;
   /** Why the quantity is invalid, or null when it is fine. */
   error: string | null;
@@ -65,13 +70,41 @@ export function AmountField({
     ? t(`common:units.${unit}`)
     : t('shopping:amount.noUnit');
 
+  // What the last keystroke split off, so the next one can continue the unit
+  // ("pc" then "s") or undo the split ("g" then "r" of "gram").
+  const split = useRef<{
+    quantity: string;
+    original: string;
+    alias: string;
+    previousUnit: Unit | '';
+  } | null>(null);
   const type = (text: string) => {
+    const last = split.current;
+    split.current = null;
+    if (
+      last &&
+      text.length > last.quantity.length &&
+      text.startsWith(last.quantity)
+    ) {
+      const rest = text.slice(last.quantity.length);
+      const alias = last.alias + rest.toLowerCase();
+      if (continuesAlias(alias)) {
+        split.current = { ...last, alias, original: last.original + rest };
+        onQuantityChange(last.quantity);
+      } else {
+        onQuantityChange(last.original + rest, last.previousUnit);
+      }
+      return;
+    }
     const typed = TYPED_AMOUNT.exec(text);
     const typedUnit = typed?.[2] ? TYPED_UNITS[typed[2].toLowerCase()] : null;
-    if (unit === 'pcs' && text === `${quantity}s`) {
-      // "pc" already split off; the "s" of "pcs" completes the same unit.
-      onQuantityChange(quantity);
-    } else if (typed?.[1] && typedUnit) {
+    if (typed?.[1] && typed[2] && typedUnit) {
+      split.current = {
+        quantity: typed[1],
+        original: text,
+        alias: typed[2].toLowerCase(),
+        previousUnit: unit,
+      };
       onQuantityChange(typed[1], typedUnit);
     } else {
       onQuantityChange(text);
