@@ -3,6 +3,7 @@ import {
   CheckIcon,
   CloseIcon,
   IconButton,
+  ListRow,
   Stack,
   tokens,
   Typography,
@@ -117,90 +118,70 @@ function ChecklistRow({
         : String(item.quantity);
 
   return (
-    <Box
-      component="li"
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-        '& + &': { borderTop: 1, borderColor: 'divider' },
-      }}
-    >
-      {/* The whole row is the toggle, as in the handoff. */}
-      <Box
-        component="button"
-        type="button"
-        aria-pressed={item.checked}
-        onClick={() => onToggle(item.id, !item.checked)}
-        sx={{
-          flexGrow: 1,
-          minWidth: 0,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1.5,
-          minHeight: 50,
-          px: 1.25,
-          border: 0,
-          bgcolor: 'transparent',
-          textAlign: 'left',
-          cursor: 'pointer',
-          color: 'text.primary',
-          font: 'inherit',
-        }}
-      >
+    <ListRow
+      done={item.checked}
+      title={item.name}
+      meta={quantity}
+      // The whole row is the toggle, as in the handoff.
+      wrapMain={(main) => (
         <Box
-          aria-hidden="true"
+          component="button"
+          type="button"
+          aria-pressed={item.checked}
+          onClick={() => onToggle(item.id, !item.checked)}
           sx={{
-            flexShrink: 0,
-            width: 24,
-            height: 24,
-            boxSizing: 'border-box',
-            borderRadius: '8px',
+            flexGrow: 1,
+            minWidth: 0,
+            alignSelf: 'stretch',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            ...(item.checked
-              ? { bgcolor: 'primary.main', color: '#FFFFFF' }
-              : { border: '2px solid #A7B3AA' }),
+            minHeight: 40,
+            py: 0,
+            pr: 0,
+            pl: 1.25,
+            border: 0,
+            bgcolor: 'transparent',
+            textAlign: 'left',
+            cursor: 'pointer',
+            color: 'text.primary',
+            font: 'inherit',
           }}
         >
-          {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+          {main}
         </Box>
-        <IngredientIconSlot
-          ingredientId={item.ingredientId}
-          aisleId={aisleId}
-          color={item.checked ? CHECKED_TEXT : 'text.primary'}
-        />
-        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-          <Typography
-            component="span"
-            sx={{
-              display: 'block',
-              fontSize: 15,
-              fontWeight: item.checked ? 500 : 600,
-              ...(item.checked
-                ? { textDecoration: 'line-through', color: CHECKED_TEXT }
-                : {}),
-            }}
-          >
-            {item.name}
-          </Typography>
-          {quantity ? (
-            <Typography
-              component="span"
-              variant="meta"
-              color="text.secondary"
-              sx={{ display: 'block' }}
-            >
-              {quantity}
-            </Typography>
-          ) : null}
-        </Box>
-        {item.unmatched ? (
-          <Typography
-            component="span"
+      )}
+      leading={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
+            aria-hidden="true"
             sx={{
               flexShrink: 0,
+              width: 24,
+              height: 24,
+              boxSizing: 'border-box',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...(item.checked
+                ? { bgcolor: 'primary.main', color: '#FFFFFF' }
+                : { border: '2px solid #A7B3AA' }),
+            }}
+          >
+            {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+          </Box>
+          <IngredientIconSlot
+            ingredientId={item.ingredientId}
+            aisleId={aisleId}
+            color={item.checked ? CHECKED_TEXT : 'text.primary'}
+          />
+        </Box>
+      }
+      tags={
+        item.unmatched ? (
+          <Typography
+            component="span"
+            sx={{
               fontSize: 11,
               fontWeight: 700,
               color: 'primary.main',
@@ -212,27 +193,31 @@ function ChecklistRow({
           >
             {t('item.unmatched')}
           </Typography>
-        ) : null}
-      </Box>
-      {item.ingredientId !== null ? (
-        <StapleToggle
-          ingredientId={item.ingredientId}
-          name={item.name}
-          onToggled={(isStaple) =>
-            toast.show(
-              t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
-                name: item.name,
-              }),
-            )
-          }
-        />
-      ) : null}
-      <IconButton
-        label={t('item.remove', { name: item.name })}
-        onClick={() => onRemove(item.id, item.name)}
-      >
-        <CloseIcon size={18} />
-      </IconButton>
-    </Box>
+        ) : null
+      }
+      trailing={
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {item.ingredientId !== null ? (
+            <StapleToggle
+              ingredientId={item.ingredientId}
+              name={item.name}
+              onToggled={(isStaple) =>
+                toast.show(
+                  t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
+                    name: item.name,
+                  }),
+                )
+              }
+            />
+          ) : null}
+          <IconButton
+            label={t('item.remove', { name: item.name })}
+            onClick={() => onRemove(item.id, item.name)}
+          >
+            <CloseIcon size={18} />
+          </IconButton>
+        </Box>
+      }
+    />
   );
 }
