@@ -29,7 +29,6 @@ function batch(overrides: Partial<Batch>): Batch {
     location: 'fridge',
     expiryDate: null,
     productDescription: null,
-    expiringSoon: false,
     createdAt: '2026-10-01T00:00:00Z',
     ...overrides,
   };
@@ -48,9 +47,14 @@ const parmesan: CatalogSearchResult = {
   defaults: { expiryDays: 30, location: 'fridge' },
 };
 
+/** The Family Settings response, with the Stale Threshold the tags are coloured by. */
+const familySettings = (staleThresholdDays: number) => () =>
+  Response.json({ staleThresholdDays, expiryOverrides: [] });
+
 function stubPantry(batches: Batch[], search: CatalogSearchResult[] = []) {
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () => Response.json({ batches }),
+    'GET /api/settings/family': familySettings(3),
     'GET /api/catalog/search': () => Response.json({ results: search }),
     'POST /api/pantry/batches': () => Response.json(batch({})),
   });
@@ -63,7 +67,7 @@ describe('PantryPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('groups Batches by Location in the order given, with name, amount, description and ExpiryChip', async () => {
+  it('groups Batches by Location in the order given, with name, amount, description and ExpiryTag', async () => {
     stubPantry([
       batch({
         name: 'Yogurt',
@@ -79,13 +83,6 @@ describe('PantryPage', () => {
         ingredientId: 'spinach-id',
         location: 'fridge',
         expiryDate: inDays(2),
-        expiringSoon: true,
-      }),
-      batch({
-        name: 'Feta',
-        ingredientId: 'feta-id',
-        location: 'fridge',
-        expiryDate: inDays(9),
       }),
       batch({
         name: 'Zorblax paste',
@@ -96,18 +93,123 @@ describe('PantryPage', () => {
     ]);
     renderWithProviders(<PantryPage />);
 
-    const fridge = await screen.findByRole('region', { name: 'Fridge · 3' });
+    const fridge = await screen.findByRole('region', { name: 'Fridge · 2' });
     const rows = within(fridge).getAllByRole('listitem');
     expect(rows.map((row) => row.textContent)).toEqual([
       'Yogurt' + '500 g · Greek, opened' + 'Today',
-      'Spinach' + '2 days',
-      expect.stringMatching(/^Feta/),
+      'Spinach' + '2 d left',
     ]);
-    expect(within(rows[2]).getByText(/\d{4}$/)).toBeInTheDocument();
 
     const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
     expect(within(cupboard).getByText('Unmatched')).toBeInTheDocument();
     expect(within(cupboard).getByText('Zorblax paste')).toBeInTheDocument();
+  });
+
+  describe('expiry tags', () => {
+    const ladder = () => [
+      batch({ name: 'Bread', ingredientId: 'bread', expiryDate: inDays(-2) }),
+      batch({ name: 'Yogurt', ingredientId: 'yogurt', expiryDate: inDays(0) }),
+      batch({
+        name: 'Spinach',
+        ingredientId: 'spinach',
+        expiryDate: inDays(1),
+      }),
+      batch({ name: 'Feta', ingredientId: 'feta', expiryDate: inDays(3) }),
+      batch({ name: 'Ham', ingredientId: 'ham', expiryDate: inDays(4) }),
+      batch({ name: 'Butter', ingredientId: 'butter', expiryDate: inDays(9) }),
+      batch({ name: 'Mustard', ingredientId: 'mustard', expiryDate: null }),
+    ];
+    const rowTexts = () =>
+      within(screen.getByRole('region', { name: /^Fridge/ }))
+        .getAllByRole('listitem')
+        .map((row) => row.textContent);
+
+    it('counts the days left on each roll-up row, by the Stale Threshold, with nothing for no expiry', async () => {
+      stubPantry(ladder());
+      renderWithProviders(<PantryPage />);
+
+      await screen.findByRole('region', { name: 'Fridge · 7' });
+      await waitFor(() =>
+        expect(rowTexts()).toEqual([
+          'Bread' + 'Expired',
+          'Yogurt' + 'Today',
+          'Spinach' + 'Tomorrow',
+          'Feta' + '3 d left',
+          'Ham' + '4 d',
+          'Butter' + '9 d',
+          'Mustard',
+        ]),
+      );
+      // The Expired tag leads with an alert icon.
+      expect(screen.getByText('Expired').querySelector('svg')).not.toBeNull();
+    });
+
+    it('re-colours the tags when the Stale Threshold changes, with no other change', async () => {
+      let threshold = 3;
+      const { fetchMock } = stubApi({
+        'GET /api/pantry': () => Response.json({ batches: ladder() }),
+        'GET /api/settings/family': () => familySettings(threshold)(),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      renderWithProviders(<PantryPage />);
+      await screen.findByText('4 d');
+
+      threshold = 1;
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+      await waitFor(() =>
+        expect(rowTexts()).toEqual([
+          'Bread' + 'Expired',
+          'Yogurt' + 'Today',
+          'Spinach' + 'Tomorrow',
+          'Feta' + '3 d',
+          'Ham' + '4 d',
+          'Butter' + '9 d',
+          'Mustard',
+        ]),
+      );
+
+      threshold = 7;
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+      await waitFor(() =>
+        expect(rowTexts()).toEqual([
+          'Bread' + 'Expired',
+          'Yogurt' + 'Today',
+          'Spinach' + 'Tomorrow',
+          'Feta' + '3 d left',
+          'Ham' + '4 d left',
+          'Butter' + '9 d',
+          'Mustard',
+        ]),
+      );
+    });
+
+    it('shows the full date and tag in Batch detail, with the year only when it is not this year', async () => {
+      const user = userEvent.setup();
+      stubPantry([
+        batch({ id: 'a', quantity: 1, unit: 'l', expiryDate: inDays(0) }),
+        batch({ id: 'b', quantity: 2, unit: 'l', expiryDate: '2031-06-09' }),
+        batch({ id: 'c', quantity: 3, unit: 'l', expiryDate: null }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+
+      const [todays, later, undated] = within(
+        screen.getByRole('list', { name: 'Batches of Milk' }),
+      ).getAllByRole('group');
+      const thisYear = String(new Date().getFullYear());
+      expect(todays).toHaveTextContent(
+        /^1 L[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}Today/,
+      );
+      expect(todays).not.toHaveTextContent(thisYear);
+      expect(later).toHaveTextContent(/^2 LMon, Jun 9, 2031\d+ d(?! left)/);
+      expect(undated).toHaveTextContent(/^3 LNo expiry/);
+    });
   });
 
   describe('Ingredient Icons', () => {
@@ -313,7 +415,6 @@ describe('PantryPage', () => {
         unit: 'l',
         productDescription: 'Opened',
         expiryDate: inDays(2),
-        expiringSoon: true,
       }),
       batch({
         id: 'cheese',
@@ -383,7 +484,7 @@ describe('PantryPage', () => {
 
       const fridge = await screen.findByRole('region', { name: 'Fridge · 2' });
       const [row] = within(fridge).getAllByRole('listitem');
-      expect(row.textContent).toBe('Milk' + '1.5 L · 2 batches' + '2 days');
+      expect(row.textContent).toBe('Milk' + '1.5 L · 2 batches' + '2 d left');
     });
 
     describe('Staple star', () => {
@@ -514,8 +615,8 @@ describe('PantryPage', () => {
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
       const details = batchRows();
-      expect(details[0]).toHaveTextContent(/^0\.5 L · Opened2 days/);
-      expect(details[1]).toHaveTextContent(/^1 L/);
+      expect(details[0]).toHaveTextContent(/^0\.5 L · Opened.*2 d left/);
+      expect(details[1]).toHaveTextContent(/^1 L.*5 d/);
       expect(batchRows()[0]).toHaveAccessibleDescription(
         'Swipe left to remove, hold to edit',
       );
@@ -535,12 +636,12 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
 
       const toggle = await screen.findByRole('button', { name: /^Parmesan/ });
-      expect(toggle).toHaveTextContent(/\d{4}$/);
+      expect(toggle).toHaveTextContent(/40 d$/);
       await user.click(toggle);
 
-      expect(toggle).not.toHaveTextContent(/\d{4}$/);
+      expect(toggle).not.toHaveTextContent(/40 d$/);
       const [detail] = batchRows('Parmesan');
-      expect(detail).toHaveTextContent(/^Grana Padano 200g.*\d{4}/);
+      expect(detail).toHaveTextContent(/^Grana Padano 200g.*40 d/);
     });
 
     it('edits a Batch and sends only that Batch', async () => {

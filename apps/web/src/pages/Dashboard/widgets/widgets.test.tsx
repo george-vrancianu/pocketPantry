@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
@@ -30,7 +30,6 @@ const batch = (overrides: Partial<Batch> & { id: string }): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
-  expiringSoon: false,
   createdAt: '2026-01-01T00:00:00Z',
   ...overrides,
 });
@@ -62,31 +61,18 @@ function stub(routes: Record<string, () => Response>) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('UseSoonWidget', () => {
-  it('lists the three soonest-expiring Batches with ExpiryChips, soonest first', async () => {
+  it('lists the three soonest-expiring Batches with their ExpiryTags, Expired ones first', async () => {
     stub({
+      'GET /api/settings/family': () =>
+        Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
       'GET /api/pantry': () =>
         Response.json({
           batches: [
             batch({ id: '1', name: 'Feta', expiryDate: isoIn(6) }),
-            batch({
-              id: '2',
-              name: 'Yogurt',
-              expiryDate: isoIn(0),
-              expiringSoon: true,
-            }),
+            batch({ id: '2', name: 'Yogurt', expiryDate: isoIn(0) }),
             batch({ id: '3', name: 'Orzo' }),
-            batch({
-              id: '4',
-              name: 'Spinach',
-              expiryDate: isoIn(1),
-              expiringSoon: true,
-            }),
-            batch({
-              id: '5',
-              name: 'Chicken',
-              expiryDate: isoIn(2),
-              expiringSoon: true,
-            }),
+            batch({ id: '4', name: 'Spinach', expiryDate: isoIn(1) }),
+            batch({ id: '5', name: 'Bread', expiryDate: isoIn(-4) }),
           ],
         }),
     });
@@ -96,13 +82,39 @@ describe('UseSoonWidget', () => {
     const region = await screen.findByRole('region', { name: 'Use soon' });
     const rows = await within(region).findAllByRole('listitem');
     expect(rows.map((row) => row.textContent)).toEqual([
+      'BreadExpired',
       'YogurtToday',
-      'Spinach1 day',
-      'Chicken2 days',
+      'SpinachTomorrow',
     ]);
     expect(
       within(region).getByRole('link', { name: 'See all' }),
     ).toHaveAttribute('href', '/pantry');
+  });
+
+  it('counts days left within the Stale Threshold and plain days after it', async () => {
+    stub({
+      'GET /api/settings/family': () =>
+        Response.json({ staleThresholdDays: 7, expiryOverrides: [] }),
+      'GET /api/pantry': () =>
+        Response.json({
+          batches: [
+            batch({ id: '1', name: 'Feta', expiryDate: isoIn(5) }),
+            batch({ id: '2', name: 'Ham', expiryDate: isoIn(7) }),
+            batch({ id: '3', name: 'Butter', expiryDate: isoIn(12) }),
+          ],
+        }),
+    });
+
+    renderWithProviders(<UseSoonWidget size="wide" columns={2} />);
+
+    const region = await screen.findByRole('region', { name: 'Use soon' });
+    await waitFor(() =>
+      expect(
+        within(region)
+          .getAllByRole('listitem')
+          .map((row) => row.textContent),
+      ).toEqual(['Feta5 d left', 'Ham7 d left', 'Butter12 d']),
+    );
   });
 
   it('says so when no Batch has an expiry date', async () => {

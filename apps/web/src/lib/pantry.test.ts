@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   defaultExpiryDate,
-  expiryChipFor,
+  expiryTagFor,
   countByLocation,
   groupByLocation,
   matchesSearch,
@@ -12,41 +12,78 @@ import {
 
 const today = new Date(2026, 9, 1, 15, 30); // 1 Oct 2026, local
 
-describe('expiryChipFor', () => {
-  it('is urgent for today and for already-expired Batches', () => {
-    expect(expiryChipFor('2026-10-01', today, true)).toEqual({
-      tone: 'urgent',
-      kind: 'today',
+describe('expiryTagFor', () => {
+  // `today` is 1 Oct 2026, so 2026-10-0N is N - 1 days away.
+  it('has a dashed "No expiry" tag without an expiry date', () => {
+    expect(expiryTagFor(null, today, 3)).toEqual({
+      tone: 'none',
+      kind: 'none',
     });
-    expect(expiryChipFor('2026-09-28', today, true)).toEqual({
+  });
+
+  it('is urgent for Expired Batches and for those expiring today', () => {
+    expect(expiryTagFor('2026-09-28', today, 3)).toEqual({
       tone: 'urgent',
       kind: 'expired',
     });
+    expect(expiryTagFor('2026-09-30', today, 1)).toEqual({
+      tone: 'urgent',
+      kind: 'expired',
+    });
+    expect(expiryTagFor('2026-10-01', today, 7)).toEqual({
+      tone: 'urgent',
+      kind: 'today',
+    });
   });
 
-  it('is soon for Expiring Soon Batches (within the Stale Threshold)', () => {
-    expect(expiryChipFor('2026-10-02', today, true)).toEqual({
-      tone: 'soon',
+  it('is soon for tomorrow, even with a Stale Threshold of 1', () => {
+    for (const threshold of [1, 3, 7]) {
+      expect(expiryTagFor('2026-10-02', today, threshold)).toEqual({
+        tone: 'soon',
+        kind: 'tomorrow',
+      });
+    }
+  });
+
+  it('counts days left up to the Stale Threshold, then plain days after it', () => {
+    expect(expiryTagFor('2026-10-03', today, 1)).toEqual({
+      tone: 'ok',
       kind: 'days',
-      days: 1,
+      days: 2,
     });
-    expect(expiryChipFor('2026-10-04', today, true)).toEqual({
+    expect(expiryTagFor('2026-10-03', today, 3)).toEqual({
       tone: 'soon',
-      kind: 'days',
+      kind: 'daysLeft',
+      days: 2,
+    });
+    expect(expiryTagFor('2026-10-04', today, 3)).toEqual({
+      tone: 'soon',
+      kind: 'daysLeft',
       days: 3,
     });
-  });
-
-  it('is ok when not Expiring Soon, showing the date', () => {
-    expect(expiryChipFor('2026-10-05', today, false)).toEqual({
+    expect(expiryTagFor('2026-10-05', today, 3)).toEqual({
       tone: 'ok',
-      kind: 'date',
-      expiryDate: '2026-10-05',
+      kind: 'days',
+      days: 4,
+    });
+    expect(expiryTagFor('2026-10-08', today, 7)).toEqual({
+      tone: 'soon',
+      kind: 'daysLeft',
+      days: 7,
+    });
+    expect(expiryTagFor('2026-10-09', today, 7)).toEqual({
+      tone: 'ok',
+      kind: 'days',
+      days: 8,
     });
   });
 
-  it('has no chip without an expiry date', () => {
-    expect(expiryChipFor(null, today, false)).toBeNull();
+  it('always counts in days, however far away', () => {
+    expect(expiryTagFor('2027-10-01', today, 3)).toEqual({
+      tone: 'ok',
+      kind: 'days',
+      days: 365,
+    });
   });
 });
 
@@ -73,7 +110,6 @@ describe('groupByLocation', () => {
     location,
     expiryDate: null,
     productDescription: null,
-    expiringSoon: false,
     createdAt: '2026-10-01T00:00:00Z',
   });
 
@@ -103,7 +139,6 @@ const make = (overrides: Partial<Batch>): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
-  expiringSoon: false,
   createdAt: '2026-10-01T00:00:00Z',
   ...overrides,
 });

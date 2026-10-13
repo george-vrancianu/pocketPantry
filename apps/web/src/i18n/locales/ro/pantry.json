@@ -5,9 +5,14 @@
   "expiry": {
     "today": "Astăzi",
     "expired": "Expirat",
-    "days_one": "{{count}} zi",
-    "days_few": "{{count}} zile",
-    "days_other": "{{count}} de zile"
+    "tomorrow": "Mâine",
+    "daysLeft_one": "încă {{count}} d",
+    "daysLeft_few": "încă {{count}} d",
+    "daysLeft_other": "încă {{count}} d",
+    "days_one": "{{count}} d",
+    "days_few": "{{count}} d",
+    "days_other": "{{count}} d",
+    "none": "Fără expirare"
   },
   "all": "Toate",
   "filters": "Filtrează după locație",

@@ -5,8 +5,12 @@
   "expiry": {
     "today": "I dag",
     "expired": "Udløbet",
-    "days_one": "{{count}} dag",
-    "days_other": "{{count}} dage"
+    "tomorrow": "I morgen",
+    "daysLeft_one": "{{count}} d tilbage",
+    "daysLeft_other": "{{count}} d tilbage",
+    "days_one": "{{count}} d",
+    "days_other": "{{count}} d",
+    "none": "Ingen udløbsdato"
   },
   "unmatched": "Umatchet",
   "all": "Alle",

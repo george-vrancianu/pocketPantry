@@ -74,7 +74,6 @@ const batch = (id: string): Batch => ({
   location: 'fridge',
   expiryDate: null,
   productDescription: null,
-  expiringSoon: false,
   createdAt: '2026-10-01T00:00:00Z',
 });
 

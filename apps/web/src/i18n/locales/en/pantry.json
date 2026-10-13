@@ -5,9 +5,12 @@
   "expiry": {
     "today": "Today",
     "expired": "Expired",
-    "days_one": "{{count}} day",
-    "days_few": "{{count}} days",
-    "days_other": "{{count}} days"
+    "tomorrow": "Tomorrow",
+    "daysLeft_one": "{{count}} d left",
+    "daysLeft_other": "{{count}} d left",
+    "days_one": "{{count}} d",
+    "days_other": "{{count}} d",
+    "none": "No expiry"
   },
   "unmatched": "Unmatched",
   "all": "All",

@@ -3,17 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { soonestExpiring } from '../../../lib/dashboard';
-import { expiryChipFor, useBatches } from '../../../lib/pantry';
-import { ExpiryChip } from '../../Pantry/components/ExpiryChip';
+import { ExpiryTag } from '../../../components/ExpiryTag';
+import { expiryTagFor, useBatches } from '../../../lib/pantry';
+import { useStaleThresholdDays } from '../../../lib/settings';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-/** The three soonest-expiring Batches with their ExpiryChips. */
+/** The three soonest-expiring Batches (Expired ones first) with their ExpiryTags. */
 export function UseSoonWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const today = new Date();
   const batches = useBatches(i18n.language, today);
   const soonest = soonestExpiring(batches.data ?? []);
+  const staleThresholdDays = useStaleThresholdDays(i18n.language);
 
   return (
     <WidgetCard
@@ -55,11 +57,6 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
       ) : (
         <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
           {soonest.map((batch) => {
-            const chip = expiryChipFor(
-              batch.expiryDate,
-              today,
-              batch.expiringSoon,
-            );
             return (
               <Box
                 component="li"
@@ -87,7 +84,13 @@ export function UseSoonWidget({ size, columns }: WidgetProps) {
                 >
                   {batch.name}
                 </Box>
-                {chip ? <ExpiryChip chip={chip} /> : null}
+                <ExpiryTag
+                  tag={expiryTagFor(
+                    batch.expiryDate,
+                    today,
+                    staleThresholdDays,
+                  )}
+                />
               </Box>
             );
           })}

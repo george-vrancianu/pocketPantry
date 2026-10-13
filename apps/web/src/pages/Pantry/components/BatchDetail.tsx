@@ -9,11 +9,23 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { expiryChipFor, type Batch } from '../../../lib/pantry';
+import { ExpiryTag } from '../../../components/ExpiryTag';
+import { expiryTagFor, type Batch } from '../../../lib/pantry';
+import { useStaleThresholdDays } from '../../../lib/settings';
 import { formatAmount } from '../../../lib/amount';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { EditBatchForm } from './EditBatchForm';
-import { ExpiryChip } from './ExpiryChip';
+
+/** "Sat, Oct 11" in the UI locale, with the year only when it is not this year. */
+function fullDate(expiryDate: string, today: Date, locale: string): string {
+  const date = new Date(`${expiryDate}T00:00:00`);
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+  }).format(date);
+}
 
 type Props = {
   batch: Batch;
@@ -28,7 +40,7 @@ type Props = {
 };
 
 /**
- * One Batch inside an expanded roll-up row: its own amount, expiry and Product Description. Swipe left
+ * One Batch inside an expanded roll-up row: its own amount, Product Description, full expiry date and tag. Swipe left
  * to remove it; hold (or press Enter) to edit it in a sheet, which also offers "Remove from Pantry".
  */
 export function BatchDetail({
@@ -42,7 +54,8 @@ export function BatchDetail({
   const { t, i18n } = useTranslation('pantry');
   const toast = useToast();
   const labels = useSwipeRowLabels(batch.name, 'pantry', { hold: true });
-  const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
+  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  const tag = expiryTagFor(batch.expiryDate, today, staleThresholdDays);
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
   // "Remove from Pantry" closes the sheet and asks once it has finished closing (focus is back on the row).
@@ -53,6 +66,10 @@ export function BatchDetail({
       ? null
       : formatAmount(batch.quantity, batch.unit, i18n.language, t);
   const detail = [amount, batch.productDescription].filter(Boolean).join(' · ');
+  const expires =
+    batch.expiryDate === null
+      ? null
+      : fullDate(batch.expiryDate, today, i18n.language);
 
   return (
     <>
@@ -68,7 +85,8 @@ export function BatchDetail({
       >
         <ListRow
           title={detail || t('noDetails')}
-          tags={chip ? <ExpiryChip chip={chip} /> : null}
+          meta={expires}
+          tags={<ExpiryTag tag={tag} />}
         />
       </SwipeRow>
       <Sheet

@@ -36,6 +36,17 @@ export function useFamilySettings(locale: string) {
   });
 }
 
+/** The API's default Stale Threshold, used for expiry tags until Family Settings have loaded (or if they fail). */
+const DEFAULT_STALE_THRESHOLD_DAYS = 3;
+
+/** The Family's Stale Threshold, which colours every expiry tag. Changing it re-colours them on the next render. */
+export function useStaleThresholdDays(locale: string): number {
+  return (
+    useFamilySettings(locale).data?.staleThresholdDays ??
+    DEFAULT_STALE_THRESHOLD_DAYS
+  );
+}
+
 export function useCategoryOptions(locale: string) {
   return useQuery({
     queryKey: ['settings', 'categories', locale],
@@ -47,7 +58,7 @@ export function useCategoryOptions(locale: string) {
   });
 }
 
-/** Anything derived from Family Settings (Pantry chips, form pre-fill) must refetch after a change. */
+/** Anything derived from Family Settings (expiry tags, form pre-fill) must refetch after a change. */
 function useRefreshAfterFamilyChange() {
   const queryClient = useQueryClient();
   return () =>

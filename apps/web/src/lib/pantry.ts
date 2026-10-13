@@ -22,8 +22,6 @@ export type Batch = {
   /** `YYYY-MM-DD`, or null. */
   expiryDate: string | null;
   productDescription: string | null;
-  /** Within the Family's Stale Threshold; derived by the API, never stored on the Batch. */
-  expiringSoon: boolean;
   createdAt: string;
 };
 
@@ -44,10 +42,13 @@ export type NewBatch = {
   productDescription?: string | null;
 };
 
-export type ExpiryChip =
-  | { tone: 'urgent'; kind: 'today' | 'expired' }
-  | { tone: 'soon'; kind: 'days'; days: number }
-  | { tone: 'ok'; kind: 'date'; expiryDate: string };
+/** The days-left tag of an expiry date; `none` (no date) is shown only where its absence is worth saying. */
+export type ExpiryTag =
+  | { tone: 'none'; kind: 'none' }
+  | { tone: 'urgent'; kind: 'expired' | 'today' }
+  | { tone: 'soon'; kind: 'tomorrow' }
+  | { tone: 'soon'; kind: 'daysLeft'; days: number }
+  | { tone: 'ok'; kind: 'days'; days: number };
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -65,18 +66,23 @@ export function daysUntil(expiryDate: string, today: Date): number {
   return dayNumber(expiryDate) - dayNumber(localIso(today));
 }
 
-/** `expiringSoon` comes from the API, which applies the Family's Stale Threshold. */
-export function expiryChipFor(
+/**
+ * The tag for an expiry date on the device's local `today`. Expiring Soon (at most the Family's Stale
+ * Threshold days away) is amber, and so is tomorrow at any threshold; it always counts in days.
+ */
+export function expiryTagFor(
   expiryDate: string | null,
   today: Date,
-  expiringSoon: boolean,
-): ExpiryChip | null {
-  if (!expiryDate) return null;
+  staleThresholdDays: number,
+): ExpiryTag {
+  if (expiryDate === null) return { tone: 'none', kind: 'none' };
   const days = daysUntil(expiryDate, today);
   if (days < 0) return { tone: 'urgent', kind: 'expired' };
   if (days === 0) return { tone: 'urgent', kind: 'today' };
-  if (expiringSoon) return { tone: 'soon', kind: 'days', days };
-  return { tone: 'ok', kind: 'date', expiryDate };
+  if (days === 1) return { tone: 'soon', kind: 'tomorrow' };
+  if (days <= staleThresholdDays)
+    return { tone: 'soon', kind: 'daysLeft', days };
+  return { tone: 'ok', kind: 'days', days };
 }
 
 /** The pre-filled expiry (a `YYYY-MM-DD` string, or empty) for a Catalog default in days. */
