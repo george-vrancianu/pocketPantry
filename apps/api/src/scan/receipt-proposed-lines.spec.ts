@@ -7,7 +7,11 @@ const milk: CatalogSearchResult = {
   name: 'Lapte',
   defaultUnit: 'l',
   leafCategory: { id: 'l', name: 'Lapte' },
-  parentCategory: { id: 'p', name: 'Lactate', aisle: 'Lactate' },
+  parentCategory: {
+    id: 'p',
+    name: 'Lactate',
+    aisle: { id: 'a', name: 'Lactate' },
+  },
   defaults: { expiryDays: 7, location: 'fridge' },
 };
 
