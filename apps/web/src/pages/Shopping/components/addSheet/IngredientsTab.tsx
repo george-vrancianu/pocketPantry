@@ -17,7 +17,7 @@ import {
 } from '../../../../lib/catalog';
 import { AmountField } from '../../../../components/AmountField';
 import { normalizeName } from '../../../../lib/normalizeName';
-import { parseQuantity } from '../../../../lib/pantry';
+import { parseAmountText } from '../../../../lib/pantry';
 import {
   isOnList,
   uncheckedItems,
@@ -200,7 +200,7 @@ export function IngredientsTab({
   }, [openIndex, rows.length, panelShown]);
   const hint =
     open && openRow ? mergeHint(onListLinesOf(openRow), open.unit) : null;
-  const amount = parseQuantity((open?.quantity ?? '').replace(',', '.'));
+  const amount = parseAmountText(open?.quantity ?? '');
 
   const toggle = (row: Row) => {
     setOpen(

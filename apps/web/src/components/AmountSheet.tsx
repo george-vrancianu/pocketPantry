@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import type { Unit } from '../lib/catalog';
 import type { Amount } from '../lib/amount';
-import { parseQuantity } from '../lib/pantry';
+import { parseAmountText } from '../lib/pantry';
 import { AmountField } from './AmountField';
 import { RemoveLink } from './RemoveLink';
 
@@ -128,7 +128,7 @@ function AmountForm({
   const [failure, setFailure] = useState<string | null>(null);
   const sending = useRef(false);
 
-  const parsed = parseQuantity(quantity.replace(',', '.'));
+  const parsed = parseAmountText(quantity);
 
   const needsUnit =
     requireUnit && parsed.valid && parsed.value !== null && unit === '';
