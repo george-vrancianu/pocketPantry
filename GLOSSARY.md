@@ -120,6 +120,10 @@ _Avoid_: Must-have, favourite, essential
 A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list.
 _Avoid_: Predefined list, saved list, preset
 
+**Template Line**:
+One Ingredient or Unmatched name in a Shopping Template, with an optional quantity and unit. Applying the Shopping Template turns each Template Line into a Shopping Item.
+_Avoid_: Template item, entry
+
 **Used Up**:
 The state of an Ingredient whose last Batch was removed from the Pantry within the past 30 days. A Staple is never Used Up; it is missing instead.
 _Avoid_: Run out, finished, nothing left
