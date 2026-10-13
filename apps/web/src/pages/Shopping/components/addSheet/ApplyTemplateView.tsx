@@ -13,7 +13,11 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
-import { useShoppingList } from '../../../../lib/shopping';
+import {
+  isOnList,
+  uncheckedItems,
+  useShoppingList,
+} from '../../../../lib/shopping';
 import { focusRing } from '../focusRing';
 import { SheetFooter } from './SheetFooter';
 import {
@@ -30,8 +34,6 @@ export type ApplyTemplateViewProps = {
   /** Closes the sheet after the lines are added. */
   onApplied: () => void;
 };
-
-const normalise = (name: string) => name.trim().toLowerCase();
 
 /**
  * The Templates tab's apply view. Ingredients in the Pantry start unticked, all
@@ -92,20 +94,10 @@ export function ApplyTemplateView({
     !line.inPantry !== flipped.has(line.id);
   const ticked = lines.filter(isTicked);
 
-  // Unchecked items already on the list, by Ingredient and by Unmatched name.
-  const unchecked = (shoppingList.data?.groups ?? [])
-    .flatMap((group) => group.items)
-    .filter((item) => !item.checked);
-  const onListIds = new Set(unchecked.map((item) => item.ingredientId));
-  const onListNames = new Set(
-    unchecked
-      .filter((item) => !item.ingredientId)
-      .map((item) => normalise(item.name)),
-  );
-  const isOnList = (line: TemplateLine) =>
-    line.ingredientId
-      ? onListIds.has(line.ingredientId)
-      : onListNames.has(normalise(line.name));
+  // Unchecked items already on the list.
+  const unchecked = uncheckedItems(shoppingList.data);
+  const lineOnList = (line: TemplateLine) =>
+    unchecked.some((item) => isOnList(item, line));
 
   const toggle = (id: string) =>
     setFlipped((current) => {
@@ -186,7 +178,7 @@ export function ApplyTemplateView({
             {group.lines.map((line) => {
               const tag = line.inPantry
                 ? { text: t('templates:apply.inPantry'), ...okTag }
-                : isOnList(line)
+                : lineOnList(line)
                   ? { text: t('templates:apply.onList'), ...soonTag }
                   : null;
               const amount = amountOf(line);

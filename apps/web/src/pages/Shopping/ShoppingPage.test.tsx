@@ -1253,6 +1253,45 @@ describe('ShoppingPage', () => {
         ).toBeVisible();
       });
 
+      it('tags an Unmatched line On list when it differs by case and Danish spelling (Rødbeder, ROEDBEDER)', async () => {
+        stubShopping(
+          {
+            'GET /api/shopping-templates': () =>
+              Response.json({ templates: summaries }),
+            'GET /api/shopping-templates/t1': () =>
+              Response.json({
+                id: 't1',
+                name: 'Taco night',
+                lines: [
+                  line('beets', 'Rødbeder', {
+                    ingredientId: null,
+                    unmatched: true,
+                    aisle: null,
+                  }),
+                ],
+              }),
+          },
+          list([
+            {
+              aisle: null,
+              items: [item({ id: 'i9', name: 'ROEDBEDER ', unmatched: true })],
+            },
+          ]),
+        );
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const dialog = await openTemplates(user);
+
+        await user.click(
+          await within(dialog).findByRole('button', { name: /Taco night/ }),
+        );
+
+        const box = await within(dialog).findByRole('checkbox', {
+          name: /Rødbeder/,
+        });
+        await waitFor(() => expect(box).toHaveTextContent('On list'));
+      });
+
       it('starts Pantry lines unticked and tags In Pantry and On list', async () => {
         stubTemplates();
         renderWithProviders(<ShoppingPage />);
