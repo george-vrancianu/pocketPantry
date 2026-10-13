@@ -12,7 +12,7 @@ import {
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
-import { Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router-dom';
 import { ShoppingPage } from './ShoppingPage';
 
 const item = (
@@ -219,6 +219,68 @@ describe('ShoppingPage', () => {
       ).toBeVisible();
       expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
       expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']);
+    });
+
+    it('sends the delete when the toast is dismissed with Escape', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await remove('Tomato');
+      await userEvent.keyboard('{Escape}');
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+    });
+
+    it('ignores Undo clicked while the expired toast fades out', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await screen.findByText('1 to buy');
+
+      await user.click(screen.getByRole('button', { name: 'Remove Tomato' }));
+      const undo = screen.getByRole('button', { name: 'Undo' });
+      await act(() => vi.advanceTimersByTimeAsync(5050));
+      await user.click(undo);
+
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+    });
+
+    it('takes the Undo toast down when the Member leaves the page', async () => {
+      const { calls } = stubShopping(deleteTomato);
+      renderWithProviders(
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <ShoppingPage />
+                <Link to="/other">Leave</Link>
+              </>
+            }
+          />
+          <Route path="/other" element={<p>Elsewhere</p>} />
+        </Routes>,
+      );
+      await screen.findByText('1 to buy');
+      await remove('Tomato');
+      expect(screen.getByText('Removed Tomato')).toBeVisible();
+
+      await userEvent.click(screen.getByRole('link', { name: 'Leave' }));
+
+      expect(await screen.findByText('Elsewhere')).toBeVisible();
+      await waitFor(() =>
+        expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
+      );
+      await waitFor(() =>
+        expect(screen.queryByText('Removed Tomato')).toBeNull(),
+      );
     });
 
     it('sends the delete when another toast replaces the Undo toast', async () => {

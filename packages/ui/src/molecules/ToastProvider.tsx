@@ -34,9 +34,15 @@ export type ToastOptions = {
   onClose?: () => void;
 };
 
+export type ToastHandle = { close: () => void };
+
 export type ToastApi = {
-  /** Show a toast. It replaces the one showing; there is no queue. */
-  show: (message: string, options?: ToastOptions) => void;
+  /**
+   * Show a toast. It replaces the one showing; there is no queue. The handle
+   * closes this toast early (running its `onClose`); it does nothing once
+   * another toast has replaced it.
+   */
+  show: (message: string, options?: ToastOptions) => ToastHandle;
 };
 
 type Current = ToastOptions & { id: number; message: string };
@@ -80,12 +86,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => settle, [settle]);
 
+  const lastId = useRef(0);
   const show = useCallback(
-    (message: string, options: ToastOptions = {}) => {
+    (message: string, options: ToastOptions = {}): ToastHandle => {
       settle();
       pendingClose.current = options.onClose;
-      setCurrent((prev) => ({ ...options, message, id: (prev?.id ?? 0) + 1 }));
+      const id = ++lastId.current;
+      setCurrent({ ...options, message, id });
       setOpen(true);
+      return {
+        close: () => {
+          if (lastId.current !== id) return;
+          setOpen(false);
+          settle();
+        },
+      };
     },
     [settle],
   );
@@ -131,6 +146,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 current.action ? (
                   <MuiButton
                     onClick={() => {
+                      // The toast may still be fading out after it closed.
+                      if (!open) return;
                       pendingClose.current = undefined;
                       current.action?.onClick();
                       setOpen(false);
