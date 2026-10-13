@@ -3,7 +3,13 @@
   "summary": {
     "toBuy": "{{count}} de cumpărat",
     "inBasket": "{{checked}} din {{total}} în coș",
-    "progress": "Progresul coșului"
+    "progress": "Progresul coșului",
+    "tickedOff_one": "{{count}} bifat",
+    "tickedOff_few": "{{count}} bifate",
+    "tickedOff_other": "{{count}} de bifate",
+    "moveToPantry_one": "Mută {{count}} în cămară",
+    "moveToPantry_few": "Mută {{count}} în cămară",
+    "moveToPantry_other": "Mută {{count}} în cămară"
   },
   "add": {
     "quantity": "Cantitate",
@@ -17,9 +23,11 @@
     "unmatched": "Nepotrivit"
   },
   "unmatchedGroup": "În afara catalogului",
-  "empty": "Lista ta este goală. Adaugă mai sus ce ai nevoie.",
+  "empty": {
+    "title": "Lista ta este goală.",
+    "hint": "Adaugă ce ai nevoie sau pornește de la un șablon."
+  },
   "finish": {
-    "button": "Termină cumpărăturile",
     "reviewTitle": "Adaugă în cămară",
     "reviewHint": "Verifică ce ai cumpărat. Ajustează cantitatea, locația sau data de expirare sau renunță la un produs.",
     "drop": "Renunță la {{name}}",

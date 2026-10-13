@@ -153,8 +153,26 @@ describe('ShoppingPage', () => {
     stubShopping({}, list([]));
     renderWithProviders(<ShoppingPage />);
 
-    expect(await screen.findByText(/Your list is empty/)).toBeVisible();
+    expect(await screen.findByText('Your list is empty.')).toBeVisible();
+    expect(
+      screen.getByText('Add what you need, or start from a template.'),
+    ).toBeVisible();
     expect(screen.getByText('0 to buy')).toBeVisible();
+  });
+
+  it('shows the Finish row and item counts per Aisle', async () => {
+    stubShopping();
+    renderWithProviders(<ShoppingPage />);
+
+    expect(await screen.findByText('1 ticked off')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Move 1 to Pantry' }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Finish shopping' }),
+    ).not.toBeInTheDocument();
+    const produceSection = screen.getByRole('region', { name: 'Fruit & veg' });
+    expect(within(produceSection).getByText('1')).toBeVisible();
   });
 
   it('adds a Catalog Match with quantity and unit', async () => {

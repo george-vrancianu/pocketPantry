@@ -1,29 +1,90 @@
-import { Box, ProgressBar, Typography } from '@pocket-pantry/ui';
+import {
+  Box,
+  Button,
+  PantryIcon,
+  ProgressBar,
+  tokens,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
-export type SummaryCardProps = { remaining: number; checked: number };
+export type SummaryCardProps = {
+  remaining: number;
+  checked: number;
+  /** Opens the Finish Shopping Review. */
+  onFinish: () => void;
+};
 
-/** Items left to buy and how far the basket is, as in the handoff. */
-export function SummaryCard({ remaining, checked }: SummaryCardProps) {
+/** Items left to buy, how far the basket is, and Finish Shopping. */
+export function SummaryCard({
+  remaining,
+  checked,
+  onFinish,
+}: SummaryCardProps) {
   const { t } = useTranslation('shopping');
   const total = remaining + checked;
   return (
     <Box
       sx={{
-        p: '14px 16px',
+        p: '16px',
         bgcolor: 'background.paper',
         border: 1,
         borderColor: 'divider',
         borderRadius: '20px',
       }}
     >
-      <Typography sx={{ fontSize: 15, fontWeight: 700 }}>
+      <Typography
+        sx={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 24,
+          fontWeight: 700,
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
         {t('summary.toBuy', { count: remaining })}
       </Typography>
-      <Typography variant="meta" color="text.secondary" sx={{ mb: 1 }}>
+      <Typography
+        sx={{ fontSize: 13, fontWeight: 500, mb: 1.25 }}
+        color="text.secondary"
+      >
         {t('summary.inBasket', { checked, total })}
       </Typography>
-      <ProgressBar label={t('summary.progress')} value={checked} max={total} />
+      <ProgressBar
+        label={t('summary.progress')}
+        value={checked}
+        max={total}
+        size="large"
+      />
+      {checked > 0 ? (
+        <Box
+          sx={{
+            mt: 1.75,
+            pt: 1.5,
+            borderTop: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+          }}
+        >
+          <Typography sx={{ fontSize: 13, fontWeight: 600 }}>
+            {t('summary.tickedOff', { count: checked })}
+          </Typography>
+          <Button
+            onClick={onFinish}
+            startIcon={<PantryIcon size={18} />}
+            sx={{
+              bgcolor: tokens.color.ink,
+              color: '#FFFFFF',
+              borderRadius: 999,
+              '&:hover': { bgcolor: tokens.color.ink },
+            }}
+          >
+            {t('summary.moveToPantry', { count: checked })}
+          </Button>
+        </Box>
+      ) : null}
     </Box>
   );
 }
