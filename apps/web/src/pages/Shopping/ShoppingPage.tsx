@@ -87,6 +87,7 @@ export function ShoppingPage() {
               <ShoppingGroups
                 groups={screen.list.groups}
                 onToggle={screen.toggle}
+                onSetAmount={screen.setAmount}
                 onRemove={screen.remove}
               />
             )}
