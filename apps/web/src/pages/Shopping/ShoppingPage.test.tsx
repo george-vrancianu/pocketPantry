@@ -1,7 +1,13 @@
 import { tokens } from '@pocket-pantry/ui';
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import {
   SHOPPING_POLL_INTERVAL_MS,
@@ -35,6 +41,22 @@ function list(groups: ShoppingList['groups']): ShoppingList {
     groups,
     summary: { remaining: all.length - checked, checked },
   };
+}
+
+/** Removes a row the way a keyboard user does: Delete opens the confirmation, then Remove. */
+async function removeRow(
+  name: string,
+  user: {
+    keyboard: (keys: string) => Promise<unknown>;
+    click: (element: Element) => Promise<unknown>;
+  } = userEvent,
+) {
+  const row = await screen.findByRole('group', { name });
+  act(() => row.focus());
+  await user.keyboard('{Delete}');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
+  // The row collapses before it is handed to the list.
+  await waitFor(() => expect(screen.queryByRole('group', { name })).toBeNull());
 }
 
 const produce = { id: 'a1', name: 'Fruit & veg', sortOrder: 1 };
@@ -104,14 +126,14 @@ describe('ShoppingPage', () => {
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Fruit & veg', 'Dairy & eggs']);
     expect(screen.getByText('250 g')).toBeVisible();
-    expect(screen.getByRole('button', { name: /^Milk/ })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByRole('button', { name: /^Tomato/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(
+      within(screen.getByRole('group', { name: 'Milk' })).getByText('Ticked'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Tomato' })).queryByText(
+        'Ticked',
+      ),
+    ).toBeNull();
   });
 
   it('checks and unchecks an item through the API', async () => {
@@ -127,9 +149,7 @@ describe('ShoppingPage', () => {
     });
     renderWithProviders(<ShoppingPage />);
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: /^Tomato/ }),
-    );
+    await userEvent.click(await screen.findByText('Tomato'));
 
     expect(await screen.findByText('0 to buy')).toBeVisible();
     expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
@@ -144,8 +164,7 @@ describe('ShoppingPage', () => {
     };
     const deletes = (calls: Array<{ key: string }>) =>
       calls.filter((c) => c.key.startsWith('DELETE')).map((c) => c.key);
-    const remove = (name: string) =>
-      userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
+    const remove = removeRow;
 
     it('hides the row at once and offers Undo without calling the API', async () => {
       const { calls } = stubShopping(deleteTomato);
@@ -154,7 +173,7 @@ describe('ShoppingPage', () => {
 
       await remove('Tomato');
 
-      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: /^Tomato/ })).toBeNull();
       expect(screen.getByText('0 to buy')).toBeVisible();
       expect(await screen.findByText('Removed Tomato')).toBeVisible();
       expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
@@ -170,7 +189,7 @@ describe('ShoppingPage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
 
       expect(screen.getByText('1 to buy')).toBeVisible();
-      const rows = screen.getAllByRole('button', { name: /^(Tomato|Milk)/ });
+      const rows = screen.getAllByRole('group', { name: /^(Tomato|Milk)/ });
       expect(rows.map((r) => r.textContent)).toEqual([
         expect.stringContaining('Tomato'),
         expect.stringContaining('Milk'),
@@ -192,7 +211,7 @@ describe('ShoppingPage', () => {
       await waitFor(() =>
         expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
       );
-      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: /^Tomato/ })).toBeNull();
     });
 
     it('sends the first delete at once when a second item is removed, and Undo only restores the second', async () => {
@@ -214,10 +233,8 @@ describe('ShoppingPage', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Undo' }));
 
-      expect(
-        await screen.findByRole('button', { name: /^Milk/ }),
-      ).toBeVisible();
-      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(await screen.findByRole('group', { name: /^Milk/ })).toBeVisible();
+      expect(screen.queryByRole('group', { name: /^Tomato/ })).toBeNull();
       expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']);
     });
 
@@ -241,7 +258,7 @@ describe('ShoppingPage', () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       await screen.findByText('1 to buy');
 
-      await user.click(screen.getByRole('button', { name: 'Remove Tomato' }));
+      await removeRow('Tomato', user);
       const undo = screen.getByRole('button', { name: 'Undo' });
       await act(() => vi.advanceTimersByTimeAsync(5050));
       await user.click(undo);
@@ -249,7 +266,7 @@ describe('ShoppingPage', () => {
       await waitFor(() =>
         expect(deletes(calls)).toEqual(['DELETE /api/shopping-list/items/i1']),
       );
-      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: /^Tomato/ })).toBeNull();
     });
 
     it('takes the Undo toast down when the Member leaves the page', async () => {
@@ -371,7 +388,7 @@ describe('ShoppingPage', () => {
       });
 
       expect(await screen.findByText('Basil')).toBeVisible();
-      expect(screen.queryByRole('button', { name: /^Tomato/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: /^Tomato/ })).toBeNull();
       expect(screen.getByText('Removed Tomato')).toBeVisible();
     });
 
@@ -388,7 +405,7 @@ describe('ShoppingPage', () => {
       await act(() => vi.advanceTimersByTimeAsync(5500));
 
       expect(
-        await screen.findByRole('button', { name: /^Tomato/ }),
+        await screen.findByRole('group', { name: /^Tomato/ }),
       ).toBeVisible();
       expect(screen.getByText('1 to buy')).toBeVisible();
       expect(screen.queryByText('Removed Tomato')).toBeNull();
@@ -404,7 +421,7 @@ describe('ShoppingPage', () => {
     const dairyAisle = { id: DAIRY_ID, name: 'Dairy & eggs', sortOrder: 4 };
     const rowIcon = (name: RegExp) =>
       screen
-        .getByRole('button', { name })
+        .getByRole('group', { name })
         .querySelector<SVGElement>('[data-ingredient-icon]');
     const show = async (
       items: ShoppingItem[],
@@ -412,7 +429,7 @@ describe('ShoppingPage', () => {
     ) => {
       stubShopping({}, list([{ aisle, items }]));
       renderWithProviders(<ShoppingPage />);
-      await screen.findByRole('button', { name: /^Item/ });
+      await screen.findByRole('group', { name: /^Item/ });
     };
 
     it('shows a mapped Ingredient its icon, tinted by its Aisle', async () => {
@@ -540,6 +557,319 @@ describe('ShoppingPage', () => {
     });
   });
 
+  describe('swiping a row', () => {
+    const rowOf = (name: string) => screen.getByRole('group', { name });
+    const openConfirmation = async (name: string) => {
+      act(() => rowOf(name).focus());
+      await userEvent.keyboard('{Delete}');
+    };
+    const keep = () => screen.getByRole('button', { name: 'Keep' });
+    const confirmRemove = () => screen.getByRole('button', { name: 'Remove' });
+
+    it('has no remove button on the rows', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
+      expect(rowOf('Tomato')).toHaveAttribute('tabindex', '0');
+    });
+
+    it('ticks on a tap on the row and on Space, and leaves the star to its own tap', async () => {
+      const checkedTomato = { ...tomato, checked: true };
+      const { calls } = stubShopping(
+        {
+          'PATCH /api/shopping-list/items/i1': () =>
+            Response.json(
+              list([
+                { aisle: produce, items: [checkedTomato] },
+                { aisle: dairy, items: [milk] },
+              ]),
+            ),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'POST /api/staples': () =>
+            Response.json({
+              id: 's1',
+              ingredientId: 'ing-tomato',
+              name: 'Tomato',
+              quantity: null,
+              unit: null,
+            }),
+        },
+        list([
+          {
+            aisle: produce,
+            items: [{ ...tomato, ingredientId: 'ing-tomato' }],
+          },
+        ]),
+      );
+      renderWithProviders(<ShoppingPage />);
+      const star = await screen.findByRole('button', {
+        name: 'Make Tomato a staple',
+      });
+      await waitFor(() => expect(star).not.toHaveAttribute('aria-disabled'));
+
+      await userEvent.click(star);
+      expect(await screen.findByText('Tomato is now a staple')).toBeVisible();
+      expect(calls.filter((c) => c.key.startsWith('PATCH'))).toEqual([]);
+
+      act(() => rowOf('Tomato').focus());
+      await userEvent.keyboard(' ');
+      await waitFor(() =>
+        expect(calls.filter((c) => c.key.startsWith('PATCH'))).toHaveLength(1),
+      );
+    });
+
+    it('opens the confirmation with Delete, focusing Keep', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await openConfirmation('Tomato');
+
+      expect(screen.getByText('Remove Tomato?')).toBeVisible();
+      expect(screen.getByText('from your list')).toBeVisible();
+      expect(keep()).toHaveFocus();
+      await userEvent.tab();
+      expect(confirmRemove()).toHaveFocus();
+      await userEvent.tab({ shift: true });
+      expect(keep()).toHaveFocus();
+    });
+
+    it('opens the confirmation with Backspace too', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      act(() => rowOf('Tomato').focus());
+      await userEvent.keyboard('{Backspace}');
+
+      expect(keep()).toHaveFocus();
+    });
+
+    it('returns to idle on Keep, with the row focused and nothing removed', async () => {
+      const { calls } = stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      await userEvent.click(keep());
+
+      expect(screen.queryByRole('button', { name: 'Keep' })).toBeNull();
+      expect(rowOf('Tomato')).toHaveFocus();
+      expect(calls.filter((c) => c.key.startsWith('DELETE'))).toEqual([]);
+    });
+
+    it('returns to idle on Escape, without dismissing anything else', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      await userEvent.keyboard('{Escape}');
+
+      expect(screen.queryByRole('button', { name: 'Keep' })).toBeNull();
+      expect(rowOf('Tomato')).toHaveFocus();
+    });
+
+    it('returns to idle when the 6 s countdown ends', async () => {
+      stubShopping();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+      expect(keep()).toBeVisible();
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+
+      expect(screen.queryByRole('button', { name: 'Keep' })).toBeNull();
+    });
+
+    it('confirms one row at a time', async () => {
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+
+      await openConfirmation('Tomato');
+      await openConfirmation('Milk');
+
+      expect(screen.getAllByRole('button', { name: 'Keep' })).toHaveLength(1);
+      expect(screen.getByText('Remove Milk?')).toBeVisible();
+    });
+
+    it('keeps a confirming row through a refetch', async () => {
+      const shopping = stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      shopping.setCurrent(
+        list([
+          {
+            aisle: produce,
+            items: [tomato, item({ id: 'i5', name: 'Basil' })],
+          },
+          { aisle: dairy, items: [milk] },
+        ]),
+      );
+      act(() => {
+        window.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      expect(await screen.findByText('Basil')).toBeVisible();
+      expect(screen.getByText('Remove Tomato?')).toBeVisible();
+    });
+
+    it('moves focus to the next row when a row is removed from the keyboard', async () => {
+      stubShopping(
+        {},
+        list([
+          {
+            aisle: produce,
+            items: [tomato, item({ id: 'i9', name: 'Basil' })],
+          },
+        ]),
+      );
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('2 to buy');
+
+      act(() => rowOf('Tomato').focus());
+      await userEvent.keyboard('{Delete}');
+      await userEvent.click(confirmRemove());
+
+      // At once, while the row is still collapsing.
+      expect(rowOf('Basil')).toHaveFocus();
+    });
+
+    it('removes once on a double click of Remove', async () => {
+      const { calls } = stubShopping({
+        'DELETE /api/shopping-list/items/i1': () =>
+          Response.json(list([{ aisle: dairy, items: [milk] }])),
+      });
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      const remove = confirmRemove();
+      fireEvent.click(remove);
+      fireEvent.click(remove);
+      await act(() => vi.advanceTimersByTimeAsync(300));
+
+      expect(screen.getAllByText('Removed Tomato')).toHaveLength(1);
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+      await waitFor(() =>
+        expect(calls.filter((c) => c.key.startsWith('DELETE'))).toHaveLength(1),
+      );
+    });
+
+    it('does not remove a row that leaves the page mid-collapse', async () => {
+      stubShopping();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const view = renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      fireEvent.click(confirmRemove());
+      view.unmount();
+      await vi.advanceTimersByTimeAsync(500);
+
+      expect(screen.queryByText('Removed Tomato')).toBeNull();
+    });
+
+    describe('with the pointer', () => {
+      const swipe = (name: string, dx: number) => {
+        const content = within(rowOf(name))
+          .getByText(name)
+          .closest<HTMLElement>('[data-swipe-row-content]') as HTMLElement;
+        fireEvent.pointerDown(content, {
+          pointerId: 1,
+          clientX: 300,
+          clientY: 10,
+        });
+        fireEvent.pointerMove(content, {
+          pointerId: 1,
+          clientX: 300 + dx,
+          clientY: 10,
+        });
+        fireEvent.pointerUp(content, {
+          pointerId: 1,
+          clientX: 300 + dx,
+          clientY: 10,
+        });
+      };
+
+      beforeEach(() => {
+        // jsdom has no layout: give rows the 350 pt reference width.
+        vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+          width: 350,
+        } as DOMRect);
+      });
+      afterEach(() => {
+        vi.restoreAllMocks();
+      });
+
+      it('springs back after a short swipe, without ticking', async () => {
+        const { calls } = stubShopping();
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByText('1 to buy');
+
+        swipe('Tomato', -50);
+
+        expect(screen.queryByRole('button', { name: 'Keep' })).toBeNull();
+        expect(calls.filter((c) => c.key.startsWith('PATCH'))).toEqual([]);
+      });
+
+      it('asks for confirmation after a medium swipe', async () => {
+        stubShopping();
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByText('1 to buy');
+
+        swipe('Tomato', -120);
+
+        expect(keep()).toHaveFocus();
+        expect(screen.getByText('Remove Tomato?')).toBeVisible();
+      });
+
+      it('removes the row and offers Undo after a long swipe', async () => {
+        stubShopping();
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByText('1 to buy');
+
+        swipe('Tomato', -260);
+
+        expect(await screen.findByText('Removed Tomato')).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Undo' })).toBeVisible();
+        expect(screen.queryByRole('group', { name: 'Tomato' })).toBeNull();
+      });
+
+      it('removes at once, with no animation, when the Member prefers reduced motion', async () => {
+        stubMotion(true);
+        stubShopping();
+        renderWithProviders(<ShoppingPage />);
+        await screen.findByText('1 to buy');
+
+        swipe('Tomato', -260);
+
+        expect(screen.getByText('Removed Tomato')).toBeVisible();
+        expect(screen.queryByRole('group', { name: 'Tomato' })).toBeNull();
+      });
+    });
+
+    it('removes at once from the confirmation when the Member prefers reduced motion', async () => {
+      stubMotion(true);
+      stubShopping();
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      await userEvent.click(confirmRemove());
+
+      expect(screen.getByText('Removed Tomato')).toBeVisible();
+    });
+  });
+
   it('replaces the showing toast instead of queueing', async () => {
     stubShopping({
       'DELETE /api/shopping-list/items/i1': () =>
@@ -548,13 +878,9 @@ describe('ShoppingPage', () => {
     });
     renderWithProviders(<ShoppingPage />);
 
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Remove Tomato' }),
-    );
+    await removeRow('Tomato');
     expect(await screen.findByText('Removed Tomato')).toBeVisible();
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Remove Milk' }),
-    );
+    await removeRow('Milk');
 
     expect(await screen.findByText('Removed Milk')).toBeVisible();
     await waitFor(() =>

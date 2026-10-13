@@ -95,6 +95,17 @@ export {
 } from './molecules/SegmentedControl';
 export { Sheet, type SheetProps } from './molecules/Sheet';
 export { ListRow, ListRowItem, type ListRowProps } from './molecules/ListRow';
+export {
+  SwipeRow,
+  type SwipeRowLabels,
+  type SwipeRowProps,
+} from './molecules/SwipeRow';
+export {
+  useRowGestures,
+  type RowGestureOptions,
+  type RowGestures,
+  type SwipeZone,
+} from './molecules/useRowGestures';
 export { DockItem, type DockItemProps } from './molecules/DockItem';
 
 export {

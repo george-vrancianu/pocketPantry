@@ -18,16 +18,11 @@ export type ListRowProps = {
   below?: ReactNode;
   /** Strikes the title through and greys it, as on a checked-off row. */
   done?: boolean;
-  /**
-   * Wraps the leading/text/tags area, which spans the full row height, e.g. in a button that makes it clickable.
-   * To be removed in #222, when SwipeRow takes over taps.
-   */
-  wrapMain?: (main: ReactNode) => ReactNode;
 };
 
 /**
  * The content of a list row: leading, title, meta, tags and trailing slots, min height 56, 8 vertical padding.
- * Layout only, with no list semantics: render it inside a `ListRowItem` (or the `SwipeRow` that owns the `<li>`).
+ * Layout only, with no list semantics: render it inside a `ListRowItem` (or a `SwipeRow`, which owns the `<li>`).
  */
 export function ListRow({
   leading,
@@ -37,7 +32,6 @@ export function ListRow({
   trailing,
   below,
   done = false,
-  wrapMain,
 }: ListRowProps) {
   const main = (
     <Box
@@ -89,7 +83,7 @@ export function ListRow({
   return (
     <Box sx={{ minHeight: 56, boxSizing: 'border-box' }}>
       <Box sx={{ display: 'flex', alignItems: 'stretch', minHeight: 56 }}>
-        {wrapMain ? wrapMain(main) : main}
+        {main}
         {trailing ? (
           <Box
             sx={{
@@ -108,17 +102,17 @@ export function ListRow({
   );
 }
 
-/** The `<li>` that holds a `ListRow` in a `<ul>`: no bullet, a 1 px divider between rows. */
+/** Style of the `<li>` that holds a `ListRow`: no bullet, a 1 px divider between rows. */
+export const listRowItemSx = {
+  listStyle: 'none',
+  position: 'relative',
+  '& + &': { borderTop: `1px solid ${tokens.color.divider}` },
+} as const;
+
+/** The `<li>` that holds a `ListRow` in a `<ul>`. */
 export function ListRowItem({ children }: { children: ReactNode }) {
   return (
-    <Box
-      component="li"
-      sx={{
-        listStyle: 'none',
-        position: 'relative',
-        '& + &': { borderTop: `1px solid ${tokens.color.divider}` },
-      }}
-    >
+    <Box component="li" sx={listRowItemSx}>
       {children}
     </Box>
   );

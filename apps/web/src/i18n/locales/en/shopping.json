@@ -17,7 +17,6 @@
     "unmatchedHint": "No catalog match, so this will be added as an unmatched item."
   },
   "item": {
-    "remove": "Remove {{name}}",
     "unmatched": "Unmatched",
     "nowStaple": "{{name}} is now a staple",
     "removedFromStaples": "{{name}} removed from staples"

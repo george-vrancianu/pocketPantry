@@ -18,7 +18,15 @@
     "spices": "Krydderier"
   },
   "row": {
+    "context": {
+      "list": "fra din liste"
+    },
+    "keep": "Behold",
+    "releaseToDelete": "Slip for at fjerne",
+    "remove": "Fjern",
+    "removeQuestion": "Fjern {{name}}?",
     "removed": "Fjernede {{name}}",
+    "ticked": "Afkrydset",
     "undo": "Fortryd"
   },
   "unverified_one": "{{count}} vare er stadig ikke bekræftet",

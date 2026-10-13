@@ -18,7 +18,15 @@
     "spices": "Condimente"
   },
   "row": {
+    "context": {
+      "list": "din lista ta"
+    },
+    "keep": "Păstrează",
+    "releaseToDelete": "Eliberează pentru a elimina",
+    "remove": "Elimină",
+    "removeQuestion": "Elimini {{name}}?",
     "removed": "Ai scos {{name}}",
+    "ticked": "Bifat",
     "undo": "Anulează"
   },
   "unverified_one": "{{count}} articol încă neverificat",

@@ -17,7 +17,6 @@
     "unmatchedHint": "Intet match i kataloget, så den tilføjes som en umatchet vare."
   },
   "item": {
-    "remove": "Fjern {{name}}",
     "unmatched": "Umatchet",
     "nowStaple": "{{name}} er nu en basisvare",
     "removedFromStaples": "{{name}} fjernet fra basisvarer"

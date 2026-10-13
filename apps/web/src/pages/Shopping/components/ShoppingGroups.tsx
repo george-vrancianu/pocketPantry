@@ -1,17 +1,16 @@
 import {
   Box,
   CheckIcon,
-  CloseIcon,
-  IconButton,
   ListRow,
-  ListRowItem,
   Stack,
+  SwipeRow,
   tokens,
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
+import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
 
@@ -71,8 +70,7 @@ export function ShoppingGroups({
               sx={{
                 listStyle: 'none',
                 m: 0,
-                py: 0,
-                px: 0.75,
+                p: 0,
                 bgcolor: 'background.paper',
                 border: 1,
                 borderColor: 'divider',
@@ -111,6 +109,7 @@ function ChecklistRow({
 }) {
   const { t } = useTranslation('shopping');
   const toast = useToast();
+  const labels = useSwipeRowLabels(item.name, 'list');
   const quantity =
     item.quantity === null
       ? null
@@ -119,37 +118,17 @@ function ChecklistRow({
         : String(item.quantity);
 
   return (
-    <ListRowItem>
+    <SwipeRow
+      name={item.name}
+      labels={labels}
+      pressed={item.checked}
+      onTap={() => onToggle(item.id, !item.checked)}
+      onRemove={() => onRemove(item.id, item.name)}
+    >
       <ListRow
         done={item.checked}
         title={item.name}
         meta={quantity}
-        // The whole row is the toggle, as in the handoff.
-        wrapMain={(main) => (
-          <Box
-            component="button"
-            type="button"
-            aria-pressed={item.checked}
-            onClick={() => onToggle(item.id, !item.checked)}
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              alignSelf: 'stretch',
-              display: 'flex',
-              alignItems: 'stretch',
-              px: 1.25,
-              py: 0,
-              border: 0,
-              bgcolor: 'transparent',
-              textAlign: 'left',
-              cursor: 'pointer',
-              color: 'text.primary',
-              font: 'inherit',
-            }}
-          >
-            {main}
-          </Box>
-        )}
         leading={
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box
@@ -210,15 +189,9 @@ function ChecklistRow({
                 }
               />
             ) : null}
-            <IconButton
-              label={t('item.remove', { name: item.name })}
-              onClick={() => onRemove(item.id, item.name)}
-            >
-              <CloseIcon size={18} />
-            </IconButton>
           </Box>
         }
       />
-    </ListRowItem>
+    </SwipeRow>
   );
 }
