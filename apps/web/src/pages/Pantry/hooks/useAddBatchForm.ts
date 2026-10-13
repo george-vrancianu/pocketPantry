@@ -27,7 +27,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<Unit>('g');
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
-  const [expiryDate, setExpiryDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState<string | null>(null);
   const [description, setDescription] = useState('');
 
   const selectIngredient = (result: CatalogSearchResult) => {
@@ -37,7 +37,8 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
     if (quantity.trim() === '') setUnit(result.defaultUnit);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
-    setExpiryDate(defaultExpiryDate(result.defaults.expiryDays, new Date()));
+    const days = result.defaults.expiryDays;
+    setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
 
   const changeQuery = (query: string) => {
@@ -49,7 +50,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const markTypedAsUnmatched = () => {
     setUnmatchedName(typed.trim());
     setIngredient(null);
-    setExpiryDate('');
+    setExpiryDate(null);
   };
 
   const { value: quantityValue, valid: quantityValid } =
@@ -70,7 +71,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
         quantity: quantityValue,
         unit: quantityValue === null ? null : unit,
         location,
-        expiryDate: expiryDate === '' ? null : expiryDate,
+        expiryDate,
         productDescription: description.trim() || null,
       },
       { onSuccess: onSaved },
@@ -85,6 +86,8 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     unit,
     location,
     expiryDate,
+    /** The Default Expiry in days for the "Usual" quick pick: only for a chosen Ingredient that has one. */
+    usualDays: ingredient?.defaults.expiryDays ?? null,
     description,
     canSave,
     quantityValid,

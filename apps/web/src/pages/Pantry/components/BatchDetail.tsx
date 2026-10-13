@@ -10,22 +10,11 @@ import {
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpiryTag } from '../../../components/ExpiryTag';
-import { expiryTagFor, type Batch } from '../../../lib/pantry';
+import { expiryTagFor, fullDate, type Batch } from '../../../lib/pantry';
 import { useStaleThresholdDays } from '../../../lib/settings';
 import { formatAmount } from '../../../lib/amount';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { EditBatchForm } from './EditBatchForm';
-
-/** "Sat, Oct 11" in the UI locale, with the year only when it is not this year. */
-function fullDate(expiryDate: string, today: Date, locale: string): string {
-  const date = new Date(`${expiryDate}T00:00:00`);
-  return new Intl.DateTimeFormat(locale, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
-  }).format(date);
-}
 
 type Props = {
   batch: Batch;

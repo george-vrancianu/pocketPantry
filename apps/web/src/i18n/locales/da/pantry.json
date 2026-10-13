@@ -41,5 +41,17 @@
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
     "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
     "pickIngredient": "Vælg en ingrediens blandt søgeresultaterne, eller tilføj dit eget navn som umatchet."
+  },
+  "picker": {
+    "label": "Udløber",
+    "none": "Ingen udløbsdato",
+    "tapToSet": "Tryk for at vælge en",
+    "summary": "{{label}}, {{date}}, {{relative}}",
+    "summaryNone": "{{label}}, ingen udløbsdato",
+    "clear": "Ingen udløb",
+    "done": "Færdig",
+    "calendar": "Kalender",
+    "within_one": "Inden for {{count}} dag",
+    "within_other": "Inden for {{count}} dage"
   }
 }

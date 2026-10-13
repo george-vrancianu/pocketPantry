@@ -85,6 +85,43 @@ export function expiryTagFor(
   return { tone: 'ok', kind: 'days', days };
 }
 
+/** A `YYYY-MM-DD` calendar date as local midnight, for formatting. */
+export function fromIso(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/**
+ * "Sat, Oct 11" in the UI locale, with the year only when it is not this year. `long` spells the weekday and
+ * month out ("Saturday, October 11"), for accessible names.
+ */
+export function fullDate(
+  expiryDate: string,
+  today: Date,
+  locale: string,
+  width: 'short' | 'long' = 'short',
+): string {
+  const date = fromIso(expiryDate);
+  return new Intl.DateTimeFormat(locale, {
+    weekday: width,
+    day: 'numeric',
+    month: width,
+    year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+  }).format(date);
+}
+
+/** "in 10 days", "tomorrow", "today", "yesterday", "3 days ago" in the UI locale. */
+export function relativeDay(
+  expiryDate: string,
+  today: Date,
+  locale: string,
+): string {
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+    daysUntil(expiryDate, today),
+    'day',
+  );
+}
+
 /** The pre-filled expiry (a `YYYY-MM-DD` string, or empty) for a Catalog default in days. */
 export function defaultExpiryDate(days: number | null, today: Date): string {
   if (days === null) return '';

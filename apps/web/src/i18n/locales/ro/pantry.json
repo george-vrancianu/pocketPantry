@@ -44,5 +44,18 @@
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "pickIngredient": "Alege un ingredient din rezultatele căutării sau adaugă propriul nume ca Nepotrivit."
+  },
+  "picker": {
+    "label": "Expiră",
+    "none": "Fără dată de expirare",
+    "tapToSet": "Atinge pentru a seta una",
+    "summary": "{{label}}, {{date}}, {{relative}}",
+    "summaryNone": "{{label}}, fără dată de expirare",
+    "clear": "Fără expirare",
+    "done": "Gata",
+    "calendar": "Calendar",
+    "within_one": "În {{count}} zi",
+    "within_few": "În {{count}} zile",
+    "within_other": "În {{count}} de zile"
   }
 }

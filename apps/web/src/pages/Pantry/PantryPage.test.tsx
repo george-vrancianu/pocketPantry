@@ -8,10 +8,11 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { defaultExpiryDate, type Batch } from '../../lib/pantry';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { trackScrolling } from '../../test/scroll';
 import { stubMotion } from '../../test/viewport';
 import { PantryPage } from './PantryPage';
 
@@ -307,7 +308,7 @@ describe('PantryPage', () => {
     expect(await screen.findByText(/Your Pantry is empty/)).toBeInTheDocument();
   });
 
-  it('adds a Batch from the Catalog with pre-filled Location and expiry that can be overridden', async () => {
+  it('adds a Batch from the Catalog with pre-filled Location and expiry', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);
     renderWithProviders(<PantryPage />);
@@ -320,12 +321,12 @@ describe('PantryPage', () => {
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
 
     expect(screen.getByLabelText('Location')).toHaveValue('fridge');
-    expect(screen.getByLabelText('Expiry date')).toHaveValue(inDays(30));
+    expect(
+      screen.getByRole('button', { name: /^Expires, .*, in 30 days$/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
-    await user.clear(screen.getByLabelText('Expiry date'));
-    await user.type(screen.getByLabelText('Expiry date'), '2030-01-31');
     await user.type(
       screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
       '200',
@@ -342,7 +343,7 @@ describe('PantryPage', () => {
       quantity: 200,
       unit: 'g',
       location: 'freezer',
-      expiryDate: '2030-01-31',
+      expiryDate: inDays(30),
       productDescription: 'Grana Padano 200g',
     });
     // Back on the list after saving, with focus on the Add button.
@@ -503,6 +504,282 @@ describe('PantryPage', () => {
       unit: null,
     });
     expect(post?.body).not.toHaveProperty('ingredientId');
+  });
+
+  describe('the expiry picker in Add batch', () => {
+    // Wednesday 14 October 2026, mid-afternoon. Only `Date` is faked, so timers and transitions run as usual.
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /** Open Add batch and pick Parmesan (Default Expiry 30 days, Fridge). */
+    async function addParmesan(user: ReturnType<typeof userEvent.setup>) {
+      const calls = stubPantry([], [parmesan]);
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+      return calls;
+    }
+
+    async function save(
+      user: ReturnType<typeof userEvent.setup>,
+      calls: ReturnType<typeof stubPantry>,
+    ) {
+      await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+      await waitFor(() =>
+        expect(
+          calls.find((call) => call.key === 'POST /api/pantry/batches'),
+        ).toBeDefined(),
+      );
+      return calls.find((call) => call.key === 'POST /api/pantry/batches')
+        ?.body as { expiryDate: string | null };
+    }
+
+    it('shows the Default Expiry as an Expires summary row that opens a dialog', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+
+      const row = screen.getByRole('button', {
+        name: 'Expires, Friday, November 13, in 30 days',
+      });
+      expect(row).toHaveAttribute('aria-haspopup', 'dialog');
+      expect(row).toHaveTextContent('Fri, Nov 13');
+      expect(row).toHaveTextContent('in 30 days');
+      expect(row).toHaveTextContent('30 d');
+    });
+
+    it("opens a sheet titled with the form's context, and a tapped day is saved as that ISO date", async () => {
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      await user.type(
+        screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+        '200',
+      );
+
+      await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+      expect(
+        within(sheet).getByRole('heading', { name: 'Expires' }),
+      ).toBeInTheDocument();
+      expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Fri, Nov 13in 30 days30 d',
+      );
+
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Friday, November 20, 2026',
+        }),
+      );
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Fri, Nov 20in 37 days37 d',
+      );
+      expect(
+        within(sheet).getByRole('button', {
+          name: 'Friday, November 20, 2026',
+        }),
+      ).toHaveAttribute('aria-pressed', 'true');
+
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', {
+          name: 'Expires, Friday, November 20, in 37 days',
+        }),
+      ).toBeInTheDocument();
+
+      expect((await save(user, calls)).expiryDate).toBe('2026-11-20');
+    });
+
+    it('clears the pre-filled expiry when the name is marked Unmatched', async () => {
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      const search = screen.getByRole('combobox', {
+        name: 'Search ingredients',
+      });
+      await user.clear(search);
+      await user.type(search, 'Parmigiano');
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Not in the Catalog? Add "Parmigiano" as Unmatched',
+        }),
+      );
+
+      expect(
+        screen.getByRole('button', { name: 'Expires, No expiry date' }),
+      ).toBeInTheDocument();
+      expect((await save(user, calls)).expiryDate).toBeNull();
+    });
+
+    async function openSheet(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+      return screen.findByRole('dialog', { name: 'Expires' });
+    }
+
+    it('lets a past day be picked, and the readout tag follows expiryTagFor', async () => {
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      const sheet = await openSheet(user);
+      const readout = within(sheet).getByRole('status');
+      const pick = (name: string) =>
+        user.click(within(sheet).getByRole('button', { name }));
+
+      // Stale Threshold 3: Today, Tomorrow, "N d left" up to 3, then "N d".
+      await pick('Wednesday, October 14, 2026');
+      expect(readout).toHaveTextContent('Wed, Oct 14todayToday');
+      await pick('Thursday, October 15, 2026');
+      expect(readout).toHaveTextContent('Thu, Oct 15tomorrowTomorrow');
+      await pick('Saturday, October 17, 2026');
+      expect(readout).toHaveTextContent('Sat, Oct 17in 3 days3 d left');
+      await pick('Sunday, October 18, 2026');
+      expect(readout).toHaveTextContent('Sun, Oct 18in 4 days4 d');
+      await pick('Thursday, September 24, 2026');
+      expect(readout).toHaveTextContent('Thu, Sep 2420 days agoExpired');
+
+      await user.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect((await save(user, calls)).expiryDate).toBe('2026-09-24');
+    });
+
+    it('"No expiry" saves null, and the scrim keeps the choice', async () => {
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      const sheet = await openSheet(user);
+      const noExpiry = within(sheet).getByRole('button', { name: 'No expiry' });
+      expect(noExpiry).toHaveAttribute('aria-pressed', 'false');
+
+      await user.click(noExpiry);
+      expect(noExpiry).toHaveAttribute('aria-pressed', 'true');
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'No expiry dateNo expiry',
+      );
+
+      await user.click(document.querySelector('.MuiBackdrop-root') as Element);
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      const row = screen.getByRole('button', {
+        name: 'Expires, No expiry date',
+      });
+      expect(row).toHaveTextContent('No expiry date');
+      expect(row).toHaveTextContent('Tap to set one');
+      expect((await save(user, calls)).expiryDate).toBeNull();
+    });
+
+    it('renders 14 Monday-first months, marks today, and tints today + Stale Threshold as the stale band', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+
+      expect(
+        within(calendar)
+          .getAllByRole('heading')
+          .map((heading) => heading.textContent),
+      ).toEqual([
+        'September 2026',
+        'October 2026',
+        'November 2026',
+        'December 2026',
+        'January 2027',
+        'February 2027',
+        'March 2027',
+        'April 2027',
+        'May 2027',
+        'June 2027',
+        'July 2027',
+        'August 2027',
+        'September 2027',
+        'October 2027',
+      ]);
+
+      // 1 October 2026 is a Thursday: three blank cells, then the 1st.
+      const october = within(calendar).getByRole('grid', {
+        name: 'October 2026',
+      });
+      const [firstWeek] = within(october).getAllByRole('row');
+      expect(
+        within(firstWeek)
+          .getAllByRole('gridcell')
+          .map((cell) => cell.textContent),
+      ).toEqual(['', '', '', '1', '2', '3', '4']);
+      expect(
+        within(firstWeek).getByRole('button', { name: /^Thursday/ }),
+      ).toHaveTextContent('1');
+
+      expect(
+        within(calendar).getByRole('button', { current: 'date' }),
+      ).toHaveAccessibleName('Wednesday, October 14, 2026');
+
+      // Stale Threshold 3: today through 17 October, four days.
+      const band = within(calendar)
+        .getAllByRole('button')
+        .filter((day) => day.hasAttribute('aria-describedby'));
+      expect(band.map((day) => day.textContent)).toEqual([
+        '14',
+        '15',
+        '16',
+        '17',
+      ]);
+      for (const day of band)
+        expect(day).toHaveAccessibleDescription('Within 3 days');
+    });
+
+    it("opens straight on the value's month (today's when empty) and stays put when a day is tapped", async () => {
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const monthShown = (sheet: HTMLElement) => {
+        const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+        const shown = scrolling.scrolledTo(calendar);
+        return [
+          shown?.child?.querySelector('h3')?.textContent,
+          shown?.behavior,
+          scrolling.scrollsOf(calendar).length,
+        ];
+      };
+
+      let sheet = await openSheet(user);
+      expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
+
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Wednesday, December 2, 2026',
+        }),
+      );
+      expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
+
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      sheet = await openSheet(user);
+      expect(monthShown(sheet)).toEqual(['December 2026', 'auto', 1]);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'No expiry' }),
+      );
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      sheet = await openSheet(user);
+      expect(monthShown(sheet)).toEqual(['October 2026', 'auto', 1]);
+    });
   });
 
   describe('managing the Pantry', () => {
