@@ -89,6 +89,13 @@ export {
 } from './molecules/SegmentedControl';
 export { DockItem, type DockItemProps } from './molecules/DockItem';
 
+export {
+  ToastProvider,
+  useToast,
+  TOAST_DURATION_MS,
+  type ToastApi,
+  type ToastOptions,
+} from './molecules/ToastProvider';
 export { Dock, type DockEntry, type DockProps } from './organisms/Dock';
 
 export { CenteredLayout } from './templates/CenteredLayout';
