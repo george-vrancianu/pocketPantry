@@ -8,6 +8,8 @@ import {
 } from '../../../../lib/catalog';
 import { parseQuantity } from '../../../../lib/pantry';
 import type { NewShoppingItem } from '../../../../lib/shopping';
+import type { Suggestion } from '../../../../lib/suggestions';
+import { EmptySearch } from './EmptySearch';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
@@ -24,9 +26,18 @@ type Row =
 export type OpenRow = { key: string; quantity: string; unit: Unit | '' };
 
 /** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
-export type IngredientsState = { query: string; open: OpenRow | null };
+export type IngredientsState = {
+  query: string;
+  open: OpenRow | null;
+  /** Ingredient ids added from a Suggestion chip, until the Suggestions drop them. */
+  suggestionsAdded: string[];
+};
 
-export const emptyIngredients: IngredientsState = { query: '', open: null };
+export const emptyIngredients: IngredientsState = {
+  query: '',
+  open: null,
+  suggestionsAdded: [],
+};
 
 export type IngredientsTabProps = {
   state: IngredientsState;
@@ -38,6 +49,8 @@ export type IngredientsTabProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, shown above the search. */
   error: string | null;
+  staples: Suggestion[];
+  usedUp: Suggestion[];
   /** Called after each successful add. */
   onAdded: () => void;
 };
@@ -50,6 +63,8 @@ export function IngredientsTab({
   adding,
   onAdd,
   error,
+  staples,
+  usedUp,
   onAdded,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
@@ -96,7 +111,7 @@ export function IngredientsTab({
   };
 
   const change = (value: string) => {
-    onStateChange({ query: value, open: null });
+    onStateChange({ ...state, query: value, open: null });
     setActiveIndex(-1);
   };
 
@@ -129,7 +144,10 @@ export function IngredientsTab({
     if (!added) return;
     toast.show(t('added', { name }), { bottom: TOAST_ABOVE_SHEET });
     onAdded();
-    onStateChange(emptyIngredients);
+    onStateChange({
+      ...emptyIngredients,
+      suggestionsAdded: state.suggestionsAdded,
+    });
     setActiveIndex(-1);
     searchInput.current?.focus();
   };
@@ -158,6 +176,21 @@ export function IngredientsTab({
         expanded={rows.length > 0}
         activeOptionId={active >= 0 ? optionId(active) : undefined}
       />
+      {typed ? null : (
+        <EmptySearch
+          staples={staples}
+          usedUp={usedUp}
+          addedIds={state.suggestionsAdded}
+          onAdd={onAdd}
+          onAdded={(ingredientId) => {
+            onAdded();
+            onStateChange({
+              ...state,
+              suggestionsAdded: [...state.suggestionsAdded, ingredientId],
+            });
+          }}
+        />
+      )}
       <Typography
         role="status"
         variant="sectionLabel"

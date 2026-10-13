@@ -42,7 +42,6 @@
     "reload": "Reload",
     "cancel": "Back to list"
   },
-  "staples": "Staples",
   "addItems": "Add items",
   "added": "Added {{name}}",
   "sheet": {
@@ -72,5 +71,15 @@
     "noUnit": "unit",
     "units": "Units",
     "add": "Add {{name}} to the list"
+  },
+  "suggestions": {
+    "missingLabel": "Missing staples · {{count}}",
+    "usedUpLabel": "Recently used up · {{count}}",
+    "stapleLabel": "Staples",
+    "allStocked": "All your staples are stocked.",
+    "manage": "Manage",
+    "dismissed": "Dismissed {{name}}",
+    "add": "Add {{name}} to the list",
+    "dismiss": "Dismiss {{name}}"
   }
 }
