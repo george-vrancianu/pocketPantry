@@ -26,6 +26,7 @@
     "remove": "Remove",
     "removeQuestion": "Remove {{name}}?",
     "removed": "Removed {{name}}",
+    "ticked": "Ticked",
     "undo": "Undo"
   },
   "unverified_one": "{{count}} item still unverified",

@@ -5,13 +5,16 @@ import { DeleteIcon } from '../atoms/icons';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 import { listRowItemSx } from './ListRow';
-import { REVEAL_PT, useRowGestures } from './useRowGestures';
+import { REVEAL_PT, useRowGestures, vibrate } from './useRowGestures';
+import { visuallyHidden } from '../theme/visuallyHidden';
 
 /** The confirmation counts down this long, then the row returns to idle. */
 const CONFIRM_MS = 6000;
 const FLY_OFF_MS = 200;
 const COLLAPSE_MS = 240;
 const SLIDE_MS = 260;
+const HAPTIC_COLLAPSE = 8;
+const HAPTIC_REMOVE = 10;
 const INTERACTIVE = 'button, a, input, select, textarea, [role="button"]';
 
 export type SwipeRowLabels = {
@@ -23,6 +26,8 @@ export type SwipeRowLabels = {
   remove: string;
   /** Shown on the band once the swipe passes the delete line. */
   releaseToDelete: string;
+  /** Read out on a `pressed` row, e.g. "Ticked". */
+  pressed?: string;
 };
 
 export type SwipeRowProps = {
@@ -35,7 +40,7 @@ export type SwipeRowProps = {
   onEdit?: () => void;
   /** A tap on the row (not on a button inside it), and Space on the focused row. */
   onTap?: () => void;
-  /** Sets `aria-pressed` on the row, for a row that toggles. */
+  /** Marks a row that toggles as on: announced through `labels.pressed` (aria-pressed is not valid on a group). */
   pressed?: boolean;
   /** Ignore gestures and keys, e.g. while a save is in flight. */
   disabled?: boolean;
@@ -79,29 +84,65 @@ export function SwipeRow({
   ).current;
   const onRemoveRef = useRef(onRemove);
   onRemoveRef.current = onRemove;
+  const removing = useRef(false);
+  const timers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
 
   const idle = phase === 'idle' && !disabled;
 
+  /** Focus would fall to <body> when the row goes: hand it to the next row, else the previous, else the list. */
+  const moveFocusAway = () => {
+    const item = itemRef.current;
+    if (!item?.contains(document.activeElement)) return;
+    const sibling = (
+      from: Element | null,
+      step: 'nextElementSibling' | 'previousElementSibling',
+    ) => {
+      for (let el = from; el; el = el[step]) {
+        if (el instanceof HTMLElement && el.matches('[tabindex]')) return el;
+      }
+      return null;
+    };
+    const target =
+      sibling(item.nextElementSibling, 'nextElementSibling') ??
+      sibling(item.previousElementSibling, 'previousElementSibling') ??
+      item.parentElement;
+    if (target && !target.hasAttribute('tabindex')) {
+      target.setAttribute('tabindex', '-1');
+    }
+    target?.focus();
+  };
+
   const startRemoval = (fromSwipe: boolean) => {
+    if (removing.current) return;
+    removing.current = true;
     if (closeOpenConfirmation === closer) closeOpenConfirmation = null;
     setPhase('removing');
     setFlew(fromSwipe);
-    if (reduceMotion) {
+    const finish = () => {
+      moveFocusAway();
       onRemoveRef.current();
+    };
+    if (reduceMotion) {
+      finish();
       return;
     }
+    const later = (fn: () => void, ms: number) =>
+      timers.current.push(setTimeout(fn, ms));
     const collapse = () => {
+      vibrate(HAPTIC_COLLAPSE);
       setHeight(itemRef.current?.offsetHeight ?? 0);
       setCollapsing(true);
-      setTimeout(() => onRemoveRef.current(), COLLAPSE_MS);
+      later(finish, COLLAPSE_MS);
     };
-    if (fromSwipe) setTimeout(collapse, FLY_OFF_MS);
+    if (fromSwipe) later(collapse, FLY_OFF_MS);
     else collapse();
   };
 
   const gestures = useRowGestures({
     disabled: !idle,
     onAsk: () => openConfirmation(),
+    // A swipe past the delete line flies the row off and calls `onRemove`. If the parent then keeps the
+    // row (it does not remove it), the row stays flown off and inert: the parent owns what removing means.
     onDelete: () => startRemoval(true),
   });
 
@@ -132,13 +173,16 @@ export function SwipeRow({
     return () => clearTimeout(timer);
   }, [confirming, closer]);
 
-  // A row that leaves while confirming frees the slot.
-  useEffect(
-    () => () => {
+  // A row that leaves frees the slot, and does not call `onRemove` after it is gone.
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      for (const timer of pending) clearTimeout(timer);
+      pending.length = 0;
+      removing.current = false;
       if (closeOpenConfirmation === closer) closeOpenConfirmation = null;
-    },
-    [closer],
-  );
+    };
+  }, [closer]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLLIElement>) => {
     if (event.target !== event.currentTarget || !idle) return;
@@ -174,7 +218,6 @@ export function SwipeRow({
       ref={itemRef}
       role="group"
       aria-label={name}
-      aria-pressed={pressed}
       aria-keyshortcuts="Delete Backspace"
       tabIndex={0}
       onKeyDown={onKeyDown}
@@ -201,6 +244,11 @@ export function SwipeRow({
           : {}),
       }}
     >
+      {pressed && labels.pressed ? (
+        <Box component="span" sx={visuallyHidden}>
+          {labels.pressed}
+        </Box>
+      ) : null}
       <Box
         aria-hidden="true"
         sx={{
@@ -213,10 +261,14 @@ export function SwipeRow({
       />
       <Box
         {...gestures.bind}
+        data-swipe-row-content=""
         onClick={onContentClick}
         inert={confirming || undefined}
         sx={{
           position: 'relative',
+          // The row's inline padding; lists put nothing around the content.
+          pl: '12px',
+          pr: '10px',
           bgcolor: tokens.color.surface,
           cursor: onTap ? 'pointer' : undefined,
           transform: flying
@@ -295,6 +347,7 @@ export function SwipeRow({
         <Box
           role="group"
           aria-label={labels.question}
+          inert={phase === 'removing' || undefined}
           onKeyDown={(event: KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             event.stopPropagation();
@@ -308,7 +361,10 @@ export function SwipeRow({
             gap: '10px',
             p: '8px 10px 8px 14px',
             bgcolor: tokens.color.urgentBg,
-            animation: `pp-row-confirm-in ${SLIDE_MS}ms cubic-bezier(.2,.8,.2,1)`,
+            pointerEvents: phase === 'removing' ? 'none' : undefined,
+            animation: reduceMotion
+              ? 'none'
+              : `pp-row-confirm-in ${SLIDE_MS}ms cubic-bezier(.2,.8,.2,1)`,
             '@keyframes pp-row-confirm-in': {
               from: { transform: 'translateX(100%)' },
               to: { transform: 'translateX(0)' },
@@ -351,7 +407,13 @@ export function SwipeRow({
           <ConfirmButton ref={keepRef} onClick={keep}>
             {labels.keep}
           </ConfirmButton>
-          <ConfirmButton danger onClick={() => startRemoval(false)}>
+          <ConfirmButton
+            danger
+            onClick={() => {
+              vibrate(HAPTIC_REMOVE);
+              startRemoval(false);
+            }}
+          >
             {labels.remove}
           </ConfirmButton>
           {phase === 'confirming' ? (
@@ -366,7 +428,9 @@ export function SwipeRow({
                 bgcolor: tokens.color.urgentFg,
                 opacity: 0.55,
                 transformOrigin: 'left',
-                animation: `pp-row-countdown ${CONFIRM_MS}ms linear forwards`,
+                animation: reduceMotion
+                  ? 'none'
+                  : `pp-row-countdown ${CONFIRM_MS}ms linear forwards`,
                 '@keyframes pp-row-countdown': {
                   from: { transform: 'scaleX(1)' },
                   to: { transform: 'scaleX(0)' },

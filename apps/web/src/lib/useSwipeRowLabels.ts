@@ -16,5 +16,6 @@ export function useSwipeRowLabels(
     keep: t('row.keep'),
     remove: t('row.remove'),
     releaseToDelete: t('row.releaseToDelete'),
+    pressed: t('row.ticked'),
   };
 }

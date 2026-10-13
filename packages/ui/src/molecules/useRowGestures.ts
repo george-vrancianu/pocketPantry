@@ -71,7 +71,8 @@ export function swipeZone(
   return drag >= reveal ? 1 : 0;
 }
 
-function vibrate(pattern: number | number[]) {
+/** Buzz where the browser can; a nicety, never an error. */
+export function vibrate(pattern: number | number[]) {
   try {
     navigator.vibrate?.(pattern);
   } catch {

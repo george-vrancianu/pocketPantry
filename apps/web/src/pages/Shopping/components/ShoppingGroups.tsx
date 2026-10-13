@@ -70,7 +70,7 @@ export function ShoppingGroups({
               sx={{
                 listStyle: 'none',
                 m: 0,
-                py: 0,
+                p: 0,
                 bgcolor: 'background.paper',
                 border: 1,
                 borderColor: 'divider',
@@ -125,80 +125,73 @@ function ChecklistRow({
       onTap={() => onToggle(item.id, !item.checked)}
       onRemove={() => onRemove(item.id, item.name)}
     >
-      <Box sx={{ pl: 2, pr: 0.75 }}>
-        <ListRow
-          done={item.checked}
-          title={item.name}
-          meta={quantity}
-          leading={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Box
-                aria-hidden="true"
-                sx={{
-                  flexShrink: 0,
-                  width: 24,
-                  height: 24,
-                  boxSizing: 'border-box',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  ...(item.checked
-                    ? { bgcolor: 'primary.main', color: tokens.color.surface }
-                    : { border: `2px solid ${tokens.color.tickBorder}` }),
-                }}
-              >
-                {item.checked ? (
-                  <CheckIcon size={16} strokeWidth={2.6} />
-                ) : null}
-              </Box>
-              <IngredientIconSlot
+      <ListRow
+        done={item.checked}
+        title={item.name}
+        meta={quantity}
+        leading={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              aria-hidden="true"
+              sx={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                boxSizing: 'border-box',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...(item.checked
+                  ? { bgcolor: 'primary.main', color: tokens.color.surface }
+                  : { border: `2px solid ${tokens.color.tickBorder}` }),
+              }}
+            >
+              {item.checked ? <CheckIcon size={16} strokeWidth={2.6} /> : null}
+            </Box>
+            <IngredientIconSlot
+              ingredientId={item.ingredientId}
+              aisleId={aisleId}
+              color={item.checked ? CHECKED_TEXT : 'text.primary'}
+            />
+          </Box>
+        }
+        tags={
+          item.unmatched ? (
+            <Typography
+              component="span"
+              sx={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: 'primary.main',
+                bgcolor: 'primary.light',
+                px: 1,
+                py: 0.5,
+                borderRadius: 999,
+              }}
+            >
+              {t('item.unmatched')}
+            </Typography>
+          ) : null
+        }
+        trailing={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {item.ingredientId !== null ? (
+              <StapleToggle
                 ingredientId={item.ingredientId}
-                aisleId={aisleId}
-                color={item.checked ? CHECKED_TEXT : 'text.primary'}
+                name={item.name}
+                onToggled={(isStaple) =>
+                  toast.show(
+                    t(isStaple ? 'item.nowStaple' : 'item.removedFromStaples', {
+                      name: item.name,
+                    }),
+                  )
+                }
               />
-            </Box>
-          }
-          tags={
-            item.unmatched ? (
-              <Typography
-                component="span"
-                sx={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: 'primary.main',
-                  bgcolor: 'primary.light',
-                  px: 1,
-                  py: 0.5,
-                  borderRadius: 999,
-                }}
-              >
-                {t('item.unmatched')}
-              </Typography>
-            ) : null
-          }
-          trailing={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {item.ingredientId !== null ? (
-                <StapleToggle
-                  ingredientId={item.ingredientId}
-                  name={item.name}
-                  onToggled={(isStaple) =>
-                    toast.show(
-                      t(
-                        isStaple ? 'item.nowStaple' : 'item.removedFromStaples',
-                        {
-                          name: item.name,
-                        },
-                      ),
-                    )
-                  }
-                />
-              ) : null}
-            </Box>
-          }
-        />
-      </Box>
+            ) : null}
+          </Box>
+        }
+      />
     </SwipeRow>
   );
 }

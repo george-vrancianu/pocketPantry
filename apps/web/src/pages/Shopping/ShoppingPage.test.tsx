@@ -126,14 +126,14 @@ describe('ShoppingPage', () => {
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Fruit & veg', 'Dairy & eggs']);
     expect(screen.getByText('250 g')).toBeVisible();
-    expect(screen.getByRole('group', { name: /^Milk/ })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByRole('group', { name: /^Tomato/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(
+      within(screen.getByRole('group', { name: 'Milk' })).getByText('Ticked'),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Tomato' })).queryByText(
+        'Ticked',
+      ),
+    ).toBeNull();
   });
 
   it('checks and unchecks an item through the API', async () => {
@@ -721,10 +721,65 @@ describe('ShoppingPage', () => {
       expect(screen.getByText('Remove Tomato?')).toBeVisible();
     });
 
+    it('moves focus to the next row when a row is removed from the keyboard', async () => {
+      stubShopping(
+        {},
+        list([
+          {
+            aisle: produce,
+            items: [tomato, item({ id: 'i9', name: 'Basil' })],
+          },
+        ]),
+      );
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('2 to buy');
+
+      await removeRow('Tomato');
+
+      expect(rowOf('Basil')).toHaveFocus();
+    });
+
+    it('removes once on a double click of Remove', async () => {
+      const { calls } = stubShopping({
+        'DELETE /api/shopping-list/items/i1': () =>
+          Response.json(list([{ aisle: dairy, items: [milk] }])),
+      });
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      const remove = confirmRemove();
+      fireEvent.click(remove);
+      fireEvent.click(remove);
+      await act(() => vi.advanceTimersByTimeAsync(300));
+
+      expect(screen.getAllByText('Removed Tomato')).toHaveLength(1);
+      await act(() => vi.advanceTimersByTimeAsync(5500));
+      await waitFor(() =>
+        expect(calls.filter((c) => c.key.startsWith('DELETE'))).toHaveLength(1),
+      );
+    });
+
+    it('does not remove a row that leaves the page mid-collapse', async () => {
+      stubShopping();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const view = renderWithProviders(<ShoppingPage />);
+      await screen.findByText('1 to buy');
+      await openConfirmation('Tomato');
+
+      fireEvent.click(confirmRemove());
+      view.unmount();
+      await vi.advanceTimersByTimeAsync(500);
+
+      expect(screen.queryByText('Removed Tomato')).toBeNull();
+    });
+
     describe('with the pointer', () => {
       const swipe = (name: string, dx: number) => {
-        const content = screen.getByText(name).closest('li')?.firstElementChild
-          ?.nextElementSibling as HTMLElement;
+        const content = within(rowOf(name))
+          .getByText(name)
+          .closest<HTMLElement>('[data-swipe-row-content]') as HTMLElement;
         fireEvent.pointerDown(content, {
           pointerId: 1,
           clientX: 300,
