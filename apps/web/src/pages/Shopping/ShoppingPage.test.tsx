@@ -806,10 +806,12 @@ describe('ShoppingPage', () => {
 
       await user.keyboard('{Enter}');
       expect(amount).toBeInvalid();
+      expect(within(dialog).getByText(/0.001 to 1,000,000/)).toBeVisible();
 
       await user.clear(amount);
       await user.type(amount, '2');
       expect(amount).toBeValid();
+      expect(within(dialog).queryByText(/0.001 to 1,000,000/)).toBeNull();
       await user.type(amount, 'x');
       expect(amount).toBeInvalid();
     });

@@ -8,15 +8,20 @@ import {
 import { useTranslation } from 'react-i18next';
 import { focusRingStyle } from '../../../../lib/focusRing';
 
+/** Radius of the bordered result list; its rows round their own ends (the list does not clip). */
+export const LIST_RADIUS = 20;
+/** The same corner just inside the list's 1px border. */
+export const INNER_RADIUS = LIST_RADIUS - 1;
+
 export type ResultRowProps = {
   id: string;
-  /** Free-text rows show a plus in their tile instead of a letter. */
-  free?: boolean;
+  /** Unmatched rows show a plus in their tile instead of a letter. */
+  unmatched?: boolean;
   name: string;
   /** Part of `name` to highlight, matched case-insensitively (first match). */
   highlight?: string;
   meta: string;
-  /** The result's Aisle, for the tile tint; omitted for a free-text row. */
+  /** The result's Aisle, for the tile tint; omitted for an Unmatched row. */
   aisleId?: string;
   /** Shows the "On list" tag. */
   onList?: boolean;
@@ -24,8 +29,8 @@ export type ResultRowProps = {
   /** Keyboard-highlighted in the listbox. */
   active: boolean;
   onToggle: () => void;
-  /** Where the row sits in the visual list (see IngredientsTab). */
-  order: number;
+  /** Room left under the row for the amount panel, which sits over it (see IngredientsTab). */
+  spaceBelow?: number;
   /** First and last row of the list, for the rounded ends. */
   first: boolean;
   last: boolean;
@@ -51,7 +56,7 @@ function Highlighted({ text, match }: { text: string; match?: string }) {
 /** One option of the result listbox. */
 export function ResultRow({
   id,
-  free,
+  unmatched,
   name,
   highlight,
   meta,
@@ -60,7 +65,7 @@ export function ResultRow({
   open,
   active,
   onToggle,
-  order,
+  spaceBelow = 0,
   first,
   last,
 }: ResultRowProps) {
@@ -69,7 +74,7 @@ export function ResultRow({
   const { t } = useTranslation('shopping');
   // The list does not clip (the unit popover must overflow it), so round the ends here.
   // An open row's amount field sits right under it, so it keeps its bottom square.
-  const radius = (end: boolean) => (end ? '19px' : 0);
+  const radius = (end: boolean) => (end ? `${INNER_RADIUS}px` : 0);
   return (
     <Box
       id={id}
@@ -81,7 +86,7 @@ export function ResultRow({
       }
       onClick={onToggle}
       sx={{
-        order,
+        marginBottom: spaceBelow,
         minHeight: 58,
         p: '10px 14px',
         display: 'flex',
@@ -110,7 +115,7 @@ export function ResultRow({
           fontWeight: 700,
         }}
       >
-        {free ? <PlusIcon size={18} /> : name.charAt(0).toUpperCase()}
+        {unmatched ? <PlusIcon size={18} /> : name.charAt(0).toUpperCase()}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box

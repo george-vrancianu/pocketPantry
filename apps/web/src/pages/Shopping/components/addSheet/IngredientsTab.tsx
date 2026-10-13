@@ -1,6 +1,8 @@
 import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
 import {
   useId,
+  useLayoutEffect,
+  useRef,
   useState,
   type Dispatch,
   type KeyboardEvent,
@@ -26,7 +28,7 @@ import type { Suggestion } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 import { AmountField } from './AmountField';
-import { ResultRow } from './ResultRow';
+import { INNER_RADIUS, LIST_RADIUS, ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
 
 /** A result row: a Catalog match, or the typed text as an Unmatched item. */
@@ -121,6 +123,10 @@ export function IngredientsTab({
   const setOpen = (next: OpenRow | null) =>
     onStateChange((s) => ({ ...s, open: next }));
   const [activeIndex, setActiveIndex] = useState(-1);
+  const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Where the amount panel sits: the open option's bottom edge, and its height.
+  const [panel, setPanel] = useState({ top: 0, height: 0 });
 
   const search = useCatalogSearch(query, i18n.language);
   // The loaded list (shared with the screen behind), for the "On list" hints.
@@ -161,6 +167,34 @@ export function IngredientsTab({
           : { ingredientId: null, name: row.name },
       ),
     );
+  const panelShown = Boolean(open && openRow);
+  // The panel overlays the list (so the listbox stays a real box of options only)
+  // and the open option makes room for it; follow both as they resize.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const panelEl = panelRef.current;
+    const option = openIndex >= 0 ? list?.children[openIndex] : undefined;
+    if (!list || !panelEl || !(option instanceof HTMLElement)) {
+      setPanel((prev) => (prev.height === 0 ? prev : { top: 0, height: 0 }));
+      return;
+    }
+    const measure = () => {
+      const next = {
+        top: option.offsetTop + option.offsetHeight,
+        height: panelEl.offsetHeight,
+      };
+      setPanel((prev) =>
+        prev.top === next.top && prev.height === next.height ? prev : next,
+      );
+    };
+    measure();
+    // jsdom has no ResizeObserver; the measurement above is then all we get.
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(panelEl);
+    observer.observe(option);
+    return () => observer.disconnect();
+  }, [openIndex, rows.length, panelShown]);
   const hint =
     open && openRow ? mergeHint(onListLinesOf(openRow), open.unit) : null;
   const amount = parseQuantity((open?.quantity ?? '').replace(',', '.'));
@@ -273,26 +307,27 @@ export function IngredientsTab({
       <Box
         hidden={rows.length === 0}
         sx={{
-          display: rows.length === 0 ? 'none' : 'flex',
-          flexDirection: 'column',
-          borderRadius: '20px',
+          position: 'relative',
+          display: rows.length === 0 ? 'none' : 'block',
+          borderRadius: `${LIST_RADIUS}px`,
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
         }}
       >
-        {/* Only options in the listbox. It adds no box of its own, so the rows
-            and the open row's amount field (a sibling, below) interleave by `order`. */}
+        {/* Only options in the listbox. The open row's amount panel is a sibling
+            laid over the space the open option leaves under itself. */}
         <Box
+          ref={listRef}
           role="listbox"
           id={listboxId}
           aria-label={t('search.placeholder')}
-          sx={{ display: 'contents' }}
+          sx={{ display: 'flex', flexDirection: 'column' }}
         >
           {rows.map((row, index) => (
             <ResultRow
               key={row.key}
               id={optionId(index)}
-              free={row.kind === 'unmatched'}
+              unmatched={row.kind === 'unmatched'}
               name={
                 row.kind === 'unmatched'
                   ? t('search.freeText', { name: rowName(row) })
@@ -313,7 +348,7 @@ export function IngredientsTab({
               open={open?.key === row.key}
               active={index === active}
               onToggle={() => toggle(row)}
-              order={2 * index}
+              spaceBelow={index === openIndex ? panel.height : 0}
               first={index === 0}
               last={index === rows.length - 1}
             />
@@ -321,10 +356,17 @@ export function IngredientsTab({
         </Box>
         {open && openRow ? (
           <Box
+            ref={panelRef}
             sx={{
-              order: 2 * openIndex + 1,
+              position: 'absolute',
+              top: panel.top,
+              left: 0,
+              right: 0,
               backgroundColor: tokens.color.subtle,
-              borderRadius: openIndex === rows.length - 1 ? '0 0 19px 19px' : 0,
+              borderRadius:
+                openIndex === rows.length - 1
+                  ? `0 0 ${INNER_RADIUS}px ${INNER_RADIUS}px`
+                  : 0,
             }}
           >
             <AmountField
