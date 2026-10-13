@@ -734,8 +734,11 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       await screen.findByText('2 to buy');
 
-      await removeRow('Tomato');
+      act(() => rowOf('Tomato').focus());
+      await userEvent.keyboard('{Delete}');
+      await userEvent.click(confirmRemove());
 
+      // At once, while the row is still collapsing.
       expect(rowOf('Basil')).toHaveFocus();
     });
 

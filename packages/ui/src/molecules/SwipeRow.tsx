@@ -115,13 +115,12 @@ export function SwipeRow({
   const startRemoval = (fromSwipe: boolean) => {
     if (removing.current) return;
     removing.current = true;
+    // Before the confirmation goes inert, which would blur the focused Remove button.
+    moveFocusAway();
     if (closeOpenConfirmation === closer) closeOpenConfirmation = null;
     setPhase('removing');
     setFlew(fromSwipe);
-    const finish = () => {
-      moveFocusAway();
-      onRemoveRef.current();
-    };
+    const finish = () => onRemoveRef.current();
     if (reduceMotion) {
       finish();
       return;
