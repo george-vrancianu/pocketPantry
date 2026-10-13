@@ -5,7 +5,6 @@ import {
   Sheet,
   Stack,
   Typography,
-  tokens,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +12,7 @@ import { translateApiError } from '../i18n/translateApiError';
 import type { Unit } from '../lib/catalog';
 import { parseQuantity } from '../lib/pantry';
 import { AmountField } from './AmountField';
+import { RemoveLink } from './RemoveLink';
 
 /** The amount a row holds: both fields can be empty ("some"). */
 export type Amount = { quantity: number | null; unit: Unit | null };
@@ -194,25 +194,7 @@ function AmountForm({
           {t('cancel')}
         </Button>
       </Stack>
-      <Box
-        component="button"
-        type="button"
-        onClick={onRemove}
-        sx={{
-          alignSelf: 'flex-start',
-          minHeight: 40,
-          p: 0,
-          border: 0,
-          bgcolor: 'transparent',
-          font: 'inherit',
-          fontSize: 14,
-          fontWeight: 700,
-          color: tokens.color.urgentFg,
-          cursor: 'pointer',
-        }}
-      >
-        {removeLabel}
-      </Box>
+      <RemoveLink onClick={onRemove}>{removeLabel}</RemoveLink>
     </Stack>
   );
 }

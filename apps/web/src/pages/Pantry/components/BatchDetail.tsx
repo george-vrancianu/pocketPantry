@@ -1,4 +1,5 @@
 import {
+  Box,
   ListRow,
   Sheet,
   SwipeRow,
@@ -80,19 +81,24 @@ export function BatchDetail({
         }}
         label={t('edit.title', { name: batch.name })}
         header={
-          <Typography
-            component="h2"
-            sx={{ px: 3, pt: 2, pb: 1, fontSize: 20, fontWeight: 700 }}
-          >
-            {batch.name}
-          </Typography>
+          <Box sx={{ px: 3, pt: 2, pb: 1 }}>
+            <Typography
+              component="h2"
+              sx={{ fontSize: 20, fontWeight: 700, overflowWrap: 'anywhere' }}
+            >
+              {batch.name}
+            </Typography>
+            <Typography variant="meta" color="text.secondary">
+              {t('common:row.context.pantry')}
+            </Typography>
+          </Box>
         }
       >
         <EditBatchForm
           batch={batch}
           onSaved={(edit) => {
             setEditing(false);
-            toast.show(t('edit.updated', { name: batch.name }));
+            toast.show(t('common:row.updated', { name: batch.name }));
             // A `location` in the edit means the Batch moved out of this row.
             if (edit.location) onLeft();
           }}

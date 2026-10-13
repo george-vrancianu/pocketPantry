@@ -23,9 +23,7 @@
   "noDetails": "Fără cantitate",
   "edit": {
     "title": "Editează lotul de {{name}}",
-    "save": "Salvează modificările",
-    "updated": "Ai actualizat {{name}}",
-    "remove": "Elimină din cămară"
+    "save": "Salvează modificările"
   },
   "unmatched": "Nepotrivit",
   "form": {

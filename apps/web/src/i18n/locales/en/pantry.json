@@ -24,9 +24,7 @@
   "noDetails": "No quantity set",
   "edit": {
     "title": "Edit {{name}} batch",
-    "save": "Save changes",
-    "updated": "Updated {{name}}",
-    "remove": "Remove from Pantry"
+    "save": "Save changes"
   },
   "form": {
     "title": "Add to Pantry",

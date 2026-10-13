@@ -1,13 +1,7 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Stack,
-  TextField,
-  tokens,
-} from '@pocket-pantry/ui';
+import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { RemoveLink } from '../../../components/RemoveLink';
 import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import type { Batch, BatchEdit } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
@@ -111,25 +105,9 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
           {t('form.cancel')}
         </Button>
       </Stack>
-      <Box
-        component="button"
-        type="button"
-        onClick={onRemove}
-        sx={{
-          alignSelf: 'flex-start',
-          minHeight: 40,
-          p: 0,
-          border: 0,
-          bgcolor: 'transparent',
-          font: 'inherit',
-          fontSize: 14,
-          fontWeight: 700,
-          color: tokens.color.urgentFg,
-          cursor: 'pointer',
-        }}
-      >
-        {t('edit.remove')}
-      </Box>
+      <RemoveLink onClick={onRemove}>
+        {t('common:edit.removeFromPantry')}
+      </RemoveLink>
     </Stack>
   );
 }
