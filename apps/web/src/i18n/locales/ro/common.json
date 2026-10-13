@@ -45,6 +45,7 @@
   "amount": {
     "placeholder": "Cantitate",
     "label": "Cantitatea de {{name}}, de exemplu 2 sau 500 g",
+    "labelNoName": "Cantitate, de exemplu 2 sau 500 g",
     "unit": "Unitate: {{unit}}",
     "noUnit": "unitate",
     "units": "Unități",

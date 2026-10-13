@@ -36,7 +36,7 @@ const TYPED_INPUT_TYPES = new Set(['insertText', 'insertCompositionText']);
 const TYPED_AMOUNT = /^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l|pcs|pc|stk|buc)\.?$/i;
 
 export type AmountFieldProps = {
-  /** Name of the item whose amount this is, for the accessible names. */
+  /** Name of the item whose amount this is, for the accessible names; empty before a pick. */
   name: string;
   quantity: string;
   unit: Unit | '';
@@ -49,12 +49,20 @@ export type AmountFieldProps = {
   onSubmit: () => void;
   /** A round button beside the input (the Add sheet's "+"); leave out when a footer saves. */
   submit?: { label: string; disabled: boolean };
+  /** Offer "no unit" in the chip; off where a quantity always needs a unit (Pantry Batches). */
+  allowNoUnit?: boolean;
+  /** A visible label on the border, like the floating labels of the form fields around it. */
+  label?: string;
+  /** Input height in px; 56 matches the outlined form fields around it. */
+  height?: number;
+  /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
+  popoverAlign?: 'start' | 'end';
 };
 
 /**
  * One number input with a unit chip inside it, and an optional submit button beside it.
  * The chip opens a small group of toggle buttons; Escape closes that first. It has no outer
- * padding: the host (the Add sheet's row, the amount sheet) places it.
+ * padding: the host (the Add sheet's row, the amount sheet, the Pantry Batch forms) places it.
  */
 export function AmountField({
   name,
@@ -65,10 +73,15 @@ export function AmountField({
   error,
   onSubmit,
   submit,
+  allowNoUnit = true,
+  label,
+  height = 44,
+  popoverAlign = 'end',
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const { color } = tokens;
   const errorId = useId();
+  const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
   const [picking, setPicking] = useState(false);
   const unitLabel = unit
@@ -144,7 +157,7 @@ export function AmountField({
             position: 'relative',
             flex: 1,
             minWidth: 0,
-            height: 44,
+            height,
             display: 'flex',
             alignItems: 'center',
             borderRadius: '14px',
@@ -156,13 +169,39 @@ export function AmountField({
             },
           }}
         >
+          {label ? (
+            <Box
+              component="label"
+              htmlFor={inputId}
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 10,
+                transform: 'translateY(-50%)',
+                px: '4px',
+                fontSize: 12,
+                fontWeight: 600,
+                lineHeight: 1,
+                color: color.muted,
+                backgroundColor: color.surface,
+                pointerEvents: 'none',
+              }}
+            >
+              {label}
+            </Box>
+          ) : null}
           <Box
             component="input"
+            id={inputId}
             ref={input}
             type="text"
             inputMode="decimal"
             autoComplete="off"
-            aria-label={t('common:amount.label', { name })}
+            aria-label={
+              name
+                ? t('common:amount.label', { name })
+                : t('common:amount.labelNoName')
+            }
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
             placeholder={t('common:amount.placeholder')}
@@ -233,11 +272,12 @@ export function AmountField({
               sx={{
                 position: 'absolute',
                 top: 'calc(100% + 6px)',
-                right: 0,
+                ...(popoverAlign === 'end' ? { right: 0 } : { left: 0 }),
                 zIndex: 1,
                 display: 'flex',
                 flexWrap: 'wrap',
-                justifyContent: 'flex-end',
+                justifyContent:
+                  popoverAlign === 'end' ? 'flex-end' : 'flex-start',
                 // Wrap rather than run off the sheet's left edge on narrow phones.
                 maxWidth: 'min(260px, calc(100vw - 72px))',
                 gap: '2px',
@@ -248,33 +288,37 @@ export function AmountField({
                 boxShadow: 'var(--shadow-dock)',
               }}
             >
-              {(['', ...UNITS] as const).map((option) => {
-                const selected = option === unit;
-                return (
-                  <Box
-                    key={option || 'none'}
-                    component="button"
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={() => choose(option)}
-                    sx={{
-                      height: 34,
-                      minWidth: 40,
-                      px: 1,
-                      border: 0,
-                      borderRadius: '10px',
-                      cursor: 'pointer',
-                      font: 'inherit',
-                      fontSize: 13.5,
-                      fontWeight: 700,
-                      backgroundColor: selected ? color.accent : 'transparent',
-                      color: selected ? '#FFFFFF' : color.ink,
-                    }}
-                  >
-                    {option ? t(`common:units.${option}`) : '—'}
-                  </Box>
-                );
-              })}
+              {(allowNoUnit ? (['', ...UNITS] as const) : UNITS).map(
+                (option) => {
+                  const selected = option === unit;
+                  return (
+                    <Box
+                      key={option || 'none'}
+                      component="button"
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => choose(option)}
+                      sx={{
+                        height: 34,
+                        minWidth: 40,
+                        px: 1,
+                        border: 0,
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        font: 'inherit',
+                        fontSize: 13.5,
+                        fontWeight: 700,
+                        backgroundColor: selected
+                          ? color.accent
+                          : 'transparent',
+                        color: selected ? '#FFFFFF' : color.ink,
+                      }}
+                    >
+                      {option ? t(`common:units.${option}`) : '—'}
+                    </Box>
+                  );
+                },
+              )}
             </Box>
           ) : null}
         </Box>

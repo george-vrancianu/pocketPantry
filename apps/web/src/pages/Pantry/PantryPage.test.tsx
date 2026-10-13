@@ -321,12 +321,15 @@ describe('PantryPage', () => {
 
     expect(screen.getByLabelText('Location')).toHaveValue('fridge');
     expect(screen.getByLabelText('Expiry date')).toHaveValue(inDays(30));
-    expect(screen.getByLabelText('Unit')).toHaveValue('g');
+    expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
     await user.clear(screen.getByLabelText('Expiry date'));
     await user.type(screen.getByLabelText('Expiry date'), '2030-01-31');
-    await user.type(screen.getByLabelText('Quantity'), '200');
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '200',
+    );
     await user.type(
       screen.getByLabelText('Product description'),
       'Grana Padano 200g',
@@ -347,13 +350,116 @@ describe('PantryPage', () => {
     expect(addButton).toHaveFocus();
   });
 
+  it('takes a typed unit with the amount and offers no "no unit" option', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], [parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    const amount = screen.getByRole('textbox', { name: /Amount of Parmesan/ });
+    await user.type(amount, '1.5 kg');
+
+    expect(amount).toHaveValue('1.5');
+    await user.click(screen.getByRole('button', { name: 'Unit: kg' }));
+    expect(
+      within(screen.getByRole('group', { name: 'Units' }))
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['g', 'kg', 'ml', 'L', 'pcs']);
+
+    await user.type(amount, '{Enter}');
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 1.5, unit: 'kg' }),
+    );
+  });
+
+  it('takes a decimal comma and keeps a unit typed before the pick', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], [parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '1,5 kg',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 1.5, unit: 'kg' }),
+    );
+  });
+
+  it('sets the unit from the chip', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], [parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '2',
+    );
+    await user.click(screen.getByRole('button', { name: 'Unit: g' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
+        name: 'kg',
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 2, unit: 'kg' }),
+    );
+  });
+
   it('explains an invalid quantity and returns focus to Add after Cancel', async () => {
     const user = userEvent.setup();
     stubPantry([], []);
     renderWithProviders(<PantryPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-    await user.type(screen.getByLabelText('Quantity'), '1.2345');
+    const amount = screen.getByRole('textbox', {
+      name: 'Amount, for example 2 or 500 g',
+    });
+    // Half-typed amounts ("500 " on the way to "500 g") are not flagged while typing.
+    await user.type(amount, '500 ');
+    expect(amount).not.toHaveAttribute('aria-invalid');
+    await user.clear(amount);
+    await user.type(amount, '1.2345');
+    expect(amount).not.toHaveAttribute('aria-invalid');
+    // Past the unit chip, out of the amount field.
+    await user.tab();
+    await user.tab();
+    expect(screen.getByLabelText('Location')).toHaveFocus();
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
     expect(
       screen.getByText(/from 0.001 to 1,000,000, with up to 3 decimals/),
     ).toBeInTheDocument();
@@ -652,13 +758,20 @@ describe('PantryPage', () => {
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
       const form = screen.getByRole('form', { name: 'Edit Milk batch' });
-      expect(within(form).getByLabelText('Quantity')).toHaveValue(0.5);
+      expect(
+        within(form).getByRole('textbox', { name: /Amount of Milk/ }),
+      ).toHaveValue('0.5');
       expect(within(form).getByLabelText('Product description')).toHaveValue(
         'Opened',
       );
 
-      await user.clear(within(form).getByLabelText('Quantity'));
-      await user.type(within(form).getByLabelText('Quantity'), '0.25');
+      await user.clear(
+        within(form).getByRole('textbox', { name: /Amount of Milk/ }),
+      );
+      await user.type(
+        within(form).getByRole('textbox', { name: /Amount of Milk/ }),
+        '0.25',
+      );
       await user.selectOptions(
         within(form).getByLabelText('Location'),
         'freezer',
@@ -721,6 +834,53 @@ describe('PantryPage', () => {
       expect(patch?.body).toEqual({ productDescription: 'Opened jar' });
     });
 
+    it('edits the amount and unit in one input, next to the Location', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await openEditor(user);
+      const amount = screen.getByRole('textbox', { name: /Amount of Milk/ });
+      await user.clear(amount);
+      await user.type(amount, '500 ml');
+      await user.selectOptions(screen.getByLabelText('Location'), 'freezer');
+      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+
+      await waitFor(() =>
+        expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
+          quantity: 500,
+          unit: 'ml',
+          location: 'freezer',
+        }),
+      );
+    });
+
+    it('saves on Enter in the amount, and Escape closes only the unit popover', async () => {
+      const user = userEvent.setup();
+      const calls = stubManaged(stock());
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      await openEditor(user);
+      const form = screen.getByRole('form', { name: 'Edit Milk batch' });
+
+      await user.click(within(form).getByRole('button', { name: /^Unit: / }));
+      expect(within(form).getByRole('group', { name: 'Units' })).toBeVisible();
+      await user.keyboard('{Escape}');
+      expect(within(form).queryByRole('group', { name: 'Units' })).toBeNull();
+      expect(form).toBeInTheDocument();
+
+      const amount = within(form).getByRole('textbox', {
+        name: /Amount of Milk/,
+      });
+      await user.clear(amount);
+      await user.type(amount, '2{Enter}');
+      await waitFor(() =>
+        expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
+          quantity: 2,
+        }),
+      );
+    });
+
     it('sends no request when nothing changed', async () => {
       const user = userEvent.setup();
       const calls = stubManaged(stock());
@@ -742,9 +902,12 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
-      fireEvent.change(screen.getByLabelText('Quantity'), {
-        target: { value: '1e3' },
-      });
+      fireEvent.change(
+        screen.getByRole('textbox', { name: /Amount of Milk/ }),
+        {
+          target: { value: '1e3' },
+        },
+      );
       expect(
         screen.getByRole('button', { name: 'Save changes' }),
       ).toBeDisabled();
@@ -756,8 +919,11 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
       await openEditor(user);
-      await user.clear(screen.getByLabelText('Quantity'));
-      await user.type(screen.getByLabelText('Quantity'), '1.2345');
+      await user.clear(screen.getByRole('textbox', { name: /Amount of Milk/ }));
+      await user.type(
+        screen.getByRole('textbox', { name: /Amount of Milk/ }),
+        '1.2345',
+      );
       expect(
         screen.getByRole('button', { name: 'Save changes' }),
       ).toBeDisabled();
@@ -913,7 +1079,9 @@ describe('PantryPage', () => {
         await user.click(await screen.findByRole('button', { name: /^Milk/ }));
         const row = batchRows()[0];
         await openEditor(user, row);
-        expect(screen.getByLabelText('Quantity')).toHaveFocus();
+        expect(
+          screen.getByRole('textbox', { name: /Amount of Milk/ }),
+        ).toHaveFocus();
         await user.click(screen.getByRole('button', { name: 'Cancel' }));
         await waitFor(() => expect(row).toHaveFocus());
       });
@@ -925,8 +1093,13 @@ describe('PantryPage', () => {
         await user.click(await screen.findByRole('button', { name: /^Milk/ }));
         const row = batchRows()[0];
         await openEditor(user, row);
-        await user.clear(screen.getByLabelText('Quantity'));
-        await user.type(screen.getByLabelText('Quantity'), '2');
+        await user.clear(
+          screen.getByRole('textbox', { name: /Amount of Milk/ }),
+        );
+        await user.type(
+          screen.getByRole('textbox', { name: /Amount of Milk/ }),
+          '2',
+        );
         await user.click(screen.getByRole('button', { name: 'Save changes' }));
         expect(await screen.findByText('Updated Milk')).toBeInTheDocument();
         await waitFor(() => expect(row).toHaveFocus());
