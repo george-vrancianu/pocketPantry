@@ -44,7 +44,6 @@
     "reload": "Reîncarcă",
     "cancel": "Înapoi la listă"
   },
-  "staples": "Produse de bază",
   "addItems": "Adaugă produse",
   "added": "Ai adăugat {{name}}",
   "sheet": {
@@ -76,5 +75,14 @@
     "noUnit": "unitate",
     "units": "Unități",
     "add": "Adaugă {{name}} în listă"
+  },
+  "suggestions": {
+    "missingLabel": "Produse de bază lipsă · {{count}}",
+    "usedUpLabel": "Epuizate recent · {{count}}",
+    "stapleLabel": "Produse de bază",
+    "allStocked": "Toate produsele tale de bază sunt în stoc.",
+    "manage": "Gestionează",
+    "dismissed": "Ai ignorat {{name}}",
+    "dismiss": "Ignoră {{name}}"
   }
 }
