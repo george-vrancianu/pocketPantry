@@ -656,6 +656,10 @@ describe('ShoppingPage', () => {
       );
 
       expect(await screen.findByText('Added Parmesan')).toBeVisible();
+      // Announced: the toast lives inside the dialog, not behind its aria-hidden.
+      expect(within(dialog).getByRole('alert')).toHaveTextContent(
+        'Added Parmesan',
+      );
       expect(posts(calls)[0]?.body).toEqual({
         ingredientId: 'parmesan-id',
         quantity: 100,
@@ -1574,9 +1578,7 @@ describe('ShoppingPage', () => {
           expect(rows.at(-1)).toHaveTextContent('Weekly shop');
           expect(screen.queryByText('Template editor')).toBeNull();
 
-          await user.click(
-            screen.getByRole('button', { name: 'Edit', hidden: true }),
-          );
+          await user.click(screen.getByRole('button', { name: 'Edit' }));
           expect(await screen.findByText('Template editor')).toBeVisible();
         });
 
