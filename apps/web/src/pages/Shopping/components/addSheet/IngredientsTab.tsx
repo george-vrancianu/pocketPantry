@@ -7,7 +7,11 @@ import {
   type Unit,
 } from '../../../../lib/catalog';
 import { parseQuantity } from '../../../../lib/pantry';
-import type { NewShoppingItem } from '../../../../lib/shopping';
+import {
+  useShoppingList,
+  type NewShoppingItem,
+  type ShoppingItem,
+} from '../../../../lib/shopping';
 import { AmountField } from './AmountField';
 import { ResultRow } from './ResultRow';
 import { SearchField } from './SearchField';
@@ -56,11 +60,29 @@ export function IngredientsTab({
   const toast = useToast();
   const listboxId = useId();
   const { query, open } = state;
+  const unitName = (unit: Unit | null) =>
+    unit ? t(`common:units.${unit}`) : null;
+  // What adding will do, following the server: it merges only on the same Ingredient and unit.
+  const mergeHint = (lines: ShoppingItem[], unit: Unit | '') => {
+    if (lines.length === 0) return null;
+    if (lines.some((line) => (line.unit ?? '') === unit)) {
+      return t('search.onListHint');
+    }
+    const units = [...new Set(lines.map((line) => unitName(line.unit)))];
+    return units.every((name) => name)
+      ? t('search.onListOtherUnit', { unit: units.join(', ') })
+      : t('search.onListNoUnit');
+  };
   const setOpen = (next: OpenRow | null) =>
     onStateChange({ ...state, open: next });
   const [activeIndex, setActiveIndex] = useState(-1);
 
   const search = useCatalogSearch(query, i18n.language);
+  // The loaded list (shared with the screen behind), for the "On list" hints.
+  const list = useShoppingList(i18n.language);
+  const unchecked = (list.data?.groups ?? []).flatMap((group) =>
+    group.items.filter((line) => !line.checked),
+  );
   const typed = query.trim();
   // The debounce lags a cleared field, so go by what is typed now.
   const results = typed && search.active ? (search.data ?? []) : [];
@@ -179,6 +201,11 @@ export function IngredientsTab({
         {rows.map((row, index) => {
           const name = row.kind === 'catalog' ? row.result.name : row.name;
           const isOpen = open?.key === row.key;
+          const onListLines =
+            row.kind === 'catalog'
+              ? unchecked.filter((line) => line.ingredientId === row.result.id)
+              : [];
+          const hint = open ? mergeHint(onListLines, open.unit) : null;
           return (
             <ResultRow
               key={row.key}
@@ -188,26 +215,45 @@ export function IngredientsTab({
               highlight={row.kind === 'catalog' ? typed : undefined}
               meta={
                 row.kind === 'catalog'
-                  ? `${row.result.leafCategory.name} · ${row.result.parentCategory.aisle}`
+                  ? `${row.result.leafCategory.name} · ${row.result.parentCategory.aisle.name}`
                   : t('search.freeTextHint')
               }
+              aisleId={
+                row.kind === 'catalog'
+                  ? row.result.parentCategory.aisle.id
+                  : undefined
+              }
+              onList={onListLines.length > 0}
               open={isOpen}
               active={index === active}
               onToggle={() => toggle(row)}
             >
               {isOpen && open ? (
-                <AmountField
-                  name={name}
-                  quantity={open.quantity}
-                  unit={open.unit}
-                  onQuantityChange={(quantity) =>
-                    setOpen({ ...open, quantity })
-                  }
-                  onUnitChange={(unit) => setOpen({ ...open, unit })}
-                  error={amount.valid ? null : t('finish.quantityInvalid')}
-                  disabled={adding}
-                  onSubmit={() => void submit()}
-                />
+                <>
+                  <AmountField
+                    name={name}
+                    quantity={open.quantity}
+                    unit={open.unit}
+                    onQuantityChange={(quantity) =>
+                      setOpen({ ...open, quantity })
+                    }
+                    onUnitChange={(unit) => setOpen({ ...open, unit })}
+                    error={amount.valid ? null : t('finish.quantityInvalid')}
+                    disabled={adding}
+                    onSubmit={() => void submit()}
+                  />
+                  {hint ? (
+                    <Typography
+                      sx={{
+                        p: '0 14px 12px 64px',
+                        fontSize: 12.5,
+                        color: tokens.color.muted,
+                      }}
+                    >
+                      {hint}
+                    </Typography>
+                  ) : null}
+                </>
               ) : null}
             </ResultRow>
           );

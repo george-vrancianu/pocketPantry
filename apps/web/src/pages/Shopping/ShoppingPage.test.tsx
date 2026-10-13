@@ -361,6 +361,115 @@ describe('ShoppingPage', () => {
       expect(search(dialog)).toHaveAttribute('aria-expanded', 'true');
     });
 
+    const DAIRY_AISLE_ID = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
+    const withAisle = (id: string) =>
+      withParmesan({
+        'GET /api/catalog/search': () =>
+          Response.json({
+            results: [
+              {
+                ...parmesan,
+                parentCategory: {
+                  ...parmesan.parentCategory,
+                  aisle: { id, name: 'Dairy & eggs' },
+                },
+              },
+            ],
+          }),
+      });
+
+    it('tints a result tile by its Aisle, and uses the neutral tile for an unknown Aisle', async () => {
+      withAisle(DAIRY_AISLE_ID);
+      const first = renderWithProviders(<ShoppingPage />);
+      const { option } = await findParmesanRow(userEvent.setup());
+      expect(option.firstElementChild).toHaveStyle({
+        backgroundColor: '#E3ECF3',
+        color: '#2F5674',
+      });
+      first.unmount();
+      vi.unstubAllGlobals();
+
+      withAisle('admin-made-aisle');
+      renderWithProviders(<ShoppingPage />);
+      const second = await findParmesanRow(userEvent.setup());
+      expect(second.option.firstElementChild).toHaveStyle({
+        backgroundColor: '#E2E8DD',
+        color: '#55635A',
+      });
+    });
+
+    describe('when the Ingredient is already on the list', () => {
+      const onList = (overrides: Partial<ShoppingItem>) =>
+        list([
+          {
+            aisle: produce,
+            items: [{ ...tomato, checked: !overrides.checked }],
+          },
+          {
+            aisle: dairy,
+            items: [
+              item({
+                id: 'p1',
+                ingredientId: 'parmesan-id',
+                name: 'Parmesan',
+                quantity: 100,
+                unit: 'g',
+                ...overrides,
+              }),
+            ],
+          },
+        ]);
+      const amountHint = (dialog: HTMLElement) =>
+        within(dialog).queryByText(/Already on your list/);
+
+      it('shows no tag or hint when it is not on the list or only checked', async () => {
+        withParmesan({}, onList({ checked: true }));
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        expect(within(option).queryByText('On list')).toBeNull();
+        await user.click(option);
+        expect(amountHint(dialog)).toBeNull();
+      });
+
+      it('tags it and explains the merge, following the unit', async () => {
+        withParmesan({}, onList({}));
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        expect(within(option).getByText('On list')).toBeVisible();
+        expect(amountHint(dialog)).toBeNull();
+        await user.click(option);
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
+
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: g' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list in g. This adds a separate line.',
+          ),
+        ).toBeVisible();
+
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: kg' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'g' }));
+        expect(
+          within(dialog).getByText(
+            'Already on your list. Adding again increases the amount.',
+          ),
+        ).toBeVisible();
+      });
+    });
+
     it('adds a Catalog Match with amount and unit, then resets the search', async () => {
       const { calls } = withParmesan();
       renderWithProviders(<ShoppingPage />);
