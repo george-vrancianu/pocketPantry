@@ -1,4 +1,5 @@
 import { Box, tokens } from '@pocket-pantry/ui';
+import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   daysUntil,
@@ -22,6 +23,8 @@ const QUICK: Pick[] = [
 ];
 
 export type QuickPicksProps = {
+  /** The tiles' group, so the sheet can focus a tile when it opens. */
+  ref?: Ref<HTMLDivElement>;
   /** `YYYY-MM-DD`, or null. */
   value: string | null;
   /** The Default Expiry in days; null hides the Usual tile. */
@@ -37,6 +40,7 @@ export type QuickPicksProps = {
  * count, only Usual is pressed.
  */
 export function QuickPicks({
+  ref,
   value,
   usualDays,
   today,
@@ -63,6 +67,7 @@ export function QuickPicks({
 
   return (
     <Box
+      ref={ref}
       role="group"
       aria-label={t('picker.quickPicks')}
       sx={{

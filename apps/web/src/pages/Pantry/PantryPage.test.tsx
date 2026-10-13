@@ -623,6 +623,10 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
+    /** The sheet focuses a tile once its open transition ends, which can take a while on a busy machine. */
+    const focusLandsOn = (element: () => HTMLElement) =>
+      waitFor(() => expect(element()).toHaveFocus(), { timeout: 5000 });
+
     async function openSheet(user: ReturnType<typeof userEvent.setup>) {
       await user.click(screen.getByRole('button', { name: /^Expires,/ }));
       return screen.findByRole('dialog', { name: 'Expires' });
@@ -943,6 +947,255 @@ describe('PantryPage', () => {
       );
       sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['October 2026', 'auto', 1]);
+    });
+
+    it('brings this month back into view from "Today", smoothly unless motion is reduced', async () => {
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+      const shown = () => {
+        const last = scrolling.scrolledTo(calendar);
+        return [last?.child?.querySelector('h3')?.textContent, last?.behavior];
+      };
+      // The sheet opens on November, the month of Parmesan's Default Expiry.
+      expect(shown()).toEqual(['November 2026', 'auto']);
+
+      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      expect(shown()).toEqual(['October 2026', 'smooth']);
+      // Today only scrolls; the value is unchanged.
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Fri, Nov 13in 30 days',
+      );
+    });
+
+    it('extends the calendar to a value 18 months out, opens on its month, and lets it be re-selected', async () => {
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      // A tin keeps for 548 days, so the pre-filled expiry is 14 April 2028.
+      const calls = stubPantry(
+        [],
+        [
+          {
+            ...parmesan,
+            id: 'tomatoes-id',
+            name: 'Chopped tomatoes',
+            defaults: { expiryDays: 548, location: 'cupboard' },
+          },
+        ],
+      );
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'tomat',
+      );
+      await user.click(
+        await screen.findByRole('option', { name: /Chopped tomatoes/ }),
+      );
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+      const headings = within(calendar)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent);
+
+      expect(headings).toHaveLength(20);
+      expect(headings[0]).toBe('September 2026');
+      expect(headings.at(-1)).toBe('April 2028');
+      expect(
+        scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
+      ).toHaveTextContent('April 2028');
+      const day = within(calendar).getByRole('button', {
+        name: 'Friday, April 14, 2028',
+      });
+      expect(day).toHaveAttribute('aria-pressed', 'true');
+
+      // Move away with a quick pick, then pick the far day again.
+      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      expect(day).toHaveAttribute('aria-pressed', 'false');
+      await user.click(day);
+      expect(day).toHaveAttribute('aria-pressed', 'true');
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Fri, Apr 14, 2028',
+      );
+
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect((await save(user, calls)).expiryDate).toBe('2028-04-14');
+    });
+
+    it('focuses the selected quick pick on open (the first when none is selected) and returns focus to the summary row on close', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+
+      let sheet = await openSheet(user);
+      await focusLandsOn(() =>
+        within(sheet).getByRole('button', { name: /^Usual,/ }),
+      );
+      await user.click(within(sheet).getByRole('button', { name: /^2 wk,/ }));
+      await user.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', { name: /^Expires, Wednesday, October 28/ }),
+      ).toHaveFocus();
+
+      sheet = await openSheet(user);
+      await focusLandsOn(() =>
+        within(sheet).getByRole('button', { name: /^2 wk,/ }),
+      );
+      // A day that matches no quick pick: focus goes to the first tile next time.
+      await user.click(
+        within(sheet).getByRole('button', {
+          name: 'Thursday, October 22, 2026',
+        }),
+      );
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole('button', { name: /^Expires,/ })).toHaveFocus();
+
+      sheet = await openSheet(user);
+      await focusLandsOn(() =>
+        within(sheet).getByRole('button', { name: /^Usual,/ }),
+      );
+    });
+
+    it('returns focus to the summary row when the sheet was opened without focusing it', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const row = screen.getByRole('button', { name: /^Expires,/ });
+      // A touch tap on some browsers (Safari) doesn't focus the button it opens from.
+      fireEvent.click(row);
+      const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(row).toHaveFocus();
+    });
+
+    it('moves between days with the arrow keys within a month, and by a month with Page Up/Down', async () => {
+      const user = userEvent.setup();
+      const calls = await addParmesan(user);
+      const sheet = await openSheet(user);
+      const focused = () => document.activeElement?.getAttribute('aria-label');
+
+      // The calendar is one Tab stop, on the selected day.
+      await focusLandsOn(() =>
+        within(sheet).getByRole('button', { name: /^Usual,/ }),
+      );
+      act(() =>
+        within(sheet)
+          .getByRole('button', { name: /^1 mo,/ })
+          .focus(),
+      );
+      await user.tab();
+      expect(focused()).toBe('Friday, November 13, 2026');
+      await user.tab();
+      expect(
+        within(sheet).getByRole('button', { name: 'Today' }),
+      ).toHaveFocus();
+      await user.tab({ shift: true });
+      expect(focused()).toBe('Friday, November 13, 2026');
+
+      await user.keyboard('{ArrowRight}');
+      expect(focused()).toBe('Saturday, November 14, 2026');
+      await user.keyboard('{ArrowDown}');
+      expect(focused()).toBe('Saturday, November 21, 2026');
+      await user.keyboard('{ArrowLeft}');
+      expect(focused()).toBe('Friday, November 20, 2026');
+      await user.keyboard('{ArrowUp}');
+      expect(focused()).toBe('Friday, November 13, 2026');
+      await user.keyboard('{PageDown}');
+      expect(focused()).toBe('Sunday, December 13, 2026');
+      await user.keyboard('{PageUp}{PageUp}');
+      expect(focused()).toBe('Tuesday, October 13, 2026');
+
+      // Arrows stay within the month.
+      await user.keyboard('{ArrowUp}{ArrowUp}');
+      expect(focused()).toBe('Tuesday, October 6, 2026');
+      await user.keyboard('{ArrowLeft>6/}');
+      expect(focused()).toBe('Thursday, October 1, 2026');
+      // Page Down lands on the same day, or the month's last day when it is shorter.
+      await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}');
+      expect(focused()).toBe('Thursday, October 29, 2026');
+      await user.keyboard('{ArrowRight}{ArrowRight}{ArrowDown}');
+      expect(focused()).toBe('Saturday, October 31, 2026');
+      await user.keyboard('{PageDown}');
+      expect(focused()).toBe('Monday, November 30, 2026');
+
+      // Focus alone doesn't pick; Enter does.
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Fri, Nov 13',
+      );
+      await user.keyboard('{Enter}');
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Mon, Nov 30',
+      );
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect((await save(user, calls)).expiryDate).toBe('2026-11-30');
+    });
+
+    it('labels each day with its full date in the UI locale, and reports only the selected day as pressed', async () => {
+      const user = userEvent.setup();
+      stubPantry([], [parmesan]);
+      const { i18n } = renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+
+      const pressed = within(calendar)
+        .getAllByRole('button')
+        .filter((day) => day.getAttribute('aria-pressed') === 'true');
+      expect(pressed.map((day) => day.getAttribute('aria-label'))).toEqual([
+        'Friday, November 13, 2026',
+      ]);
+
+      await act(() => i18n.changeLanguage('ro'));
+      expect(
+        within(calendar).getByRole('button', {
+          name: 'vineri, 13 noiembrie 2026',
+        }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(calendar).getByRole('button', {
+          name: 'sâmbătă, 14 noiembrie 2026',
+        }),
+      ).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('jumps back to this month from "Today" under reduced motion', async () => {
+      stubMotion(true);
+      const scrolling = trackScrolling();
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+
+      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      const last = scrolling.scrolledTo(calendar);
+      expect(last?.child?.querySelector('h3')).toHaveTextContent(
+        'October 2026',
+      );
+      expect(last?.behavior).toBe('auto');
     });
   });
 

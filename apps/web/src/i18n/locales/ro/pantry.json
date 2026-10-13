@@ -53,6 +53,7 @@
     "clear": "Fără expirare",
     "done": "Gata",
     "calendar": "Calendar",
+    "today": "Astăzi",
     "within_one": "În {{count}} zi",
     "within_few": "În {{count}} zile",
     "within_other": "În {{count}} de zile",

@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type KeyboardEvent,
   type Ref,
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,45 @@ export type ExpiryCalendarProps = {
   /** Days from today through today + this are the stale band. */
   staleThresholdDays: number;
 };
+
+/** Days an arrow key moves by. */
+const ARROW_STEP: Record<string, number> = {
+  ArrowLeft: -1,
+  ArrowRight: 1,
+  ArrowUp: -7,
+  ArrowDown: 7,
+};
+
+/**
+ * The day a key moves focus to from `iso`, or null when it doesn't move: arrows stay within the month, and
+ * Page Up/Down keep the day of the month, falling back to the last day of a shorter month.
+ */
+function keyTarget(iso: string, key: string): string | null {
+  const day = fromIso(iso);
+  const step = ARROW_STEP[key];
+  if (step !== undefined) {
+    const next = new Date(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate() + step,
+    );
+    return next.getMonth() === day.getMonth() ? localIso(next) : null;
+  }
+  const months = key === 'PageDown' ? 1 : key === 'PageUp' ? -1 : 0;
+  if (months === 0) return null;
+  const length = new Date(
+    day.getFullYear(),
+    day.getMonth() + months + 1,
+    0,
+  ).getDate();
+  return localIso(
+    new Date(
+      day.getFullYear(),
+      day.getMonth() + months,
+      Math.min(day.getDate(), length),
+    ),
+  );
+}
 
 /** A Monday, for the weekday initials. */
 const MONDAY = new Date(2024, 0, 1);
@@ -77,6 +117,28 @@ export function ExpiryCalendar({
   );
 
   useImperativeHandle(ref, () => ({ scrollToMonth }), [scrollToMonth]);
+
+  // The calendar is a single Tab stop: the selected day when it is shown, otherwise today.
+  const shown = (iso: string | null) =>
+    iso !== null && months.some((month) => month.key === monthKey(iso));
+  const tabStop = shown(value) ? value : localIso(today);
+
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const from = (event.target as HTMLElement).closest<HTMLElement>('.day')
+      ?.dataset.iso;
+    if (!from) return;
+    const to = keyTarget(from, event.key);
+    if (to === null) {
+      // Page Up/Down would otherwise scroll the list away from the focused day.
+      if (event.key === 'PageUp' || event.key === 'PageDown')
+        event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    scroller.current
+      ?.querySelector<HTMLElement>(`.day[data-iso="${to}"]`)
+      ?.focus();
+  };
 
   // Opens straight on the value's month; after that only an explicit request scrolls.
   useLayoutEffect(() => {
@@ -148,6 +210,7 @@ export function ExpiryCalendar({
         ref={scroller}
         role="group"
         aria-label={t('picker.calendar')}
+        onKeyDown={onKeyDown}
         sx={{
           position: 'relative',
           height: 264,
@@ -245,6 +308,8 @@ export function ExpiryCalendar({
                           <button
                             type="button"
                             className="day"
+                            data-iso={iso}
+                            tabIndex={iso === tabStop ? 0 : -1}
                             aria-label={dayName.format(fromIso(iso))}
                             aria-pressed={iso === value}
                             aria-current={days === 0 ? 'date' : undefined}
@@ -294,6 +359,28 @@ export function ExpiryCalendar({
           <span id={legendId}>
             {t('picker.within', { count: staleThresholdDays })}
           </span>
+        </Box>
+        <Box
+          component="button"
+          type="button"
+          onClick={() => scrollToMonth(localIso(today), true)}
+          sx={{
+            p: '4px 2px',
+            border: 0,
+            borderRadius: '6px',
+            backgroundColor: 'transparent',
+            font: 'inherit',
+            fontSize: 13,
+            fontWeight: 700,
+            color: color.accent,
+            cursor: 'pointer',
+            '&:focus-visible': {
+              outline: `2px solid ${color.accent}`,
+              outlineOffset: 1,
+            },
+          }}
+        >
+          {t('picker.today')}
         </Box>
       </Box>
     </Box>
