@@ -267,4 +267,111 @@ describe('SwipeRow', () => {
       screen.getByRole('button', { name: 'Keep' }),
     );
   });
+
+  it('describes a pressed row as ticked, ahead of the hint', () => {
+    render(
+      <ul>
+        <SwipeRow
+          name="Milk"
+          labels={{ ...labels, pressed: 'Ticked', hint: 'Swipe to remove' }}
+          pressed
+          onRemove={vi.fn()}
+        >
+          <span>Milk</span>
+        </SwipeRow>
+      </ul>,
+    );
+    const described = (
+      screen
+        .getByRole('group', { name: 'Milk' })
+        .getAttribute('aria-describedby') ?? ''
+    )
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent);
+    expect(described).toEqual(['Ticked', 'Swipe to remove']);
+  });
+
+  describe('custom actions', () => {
+    const actions = {
+      ...labels,
+      editAction: 'Edit Milk',
+      removeAction: 'Remove Milk',
+    };
+
+    it('offers Edit and Remove as buttons that are not tab stops', () => {
+      const onEdit = vi.fn();
+      render(
+        <ul>
+          <SwipeRow
+            name="Milk"
+            labels={actions}
+            onEdit={onEdit}
+            onRemove={vi.fn()}
+          >
+            <span>Milk</span>
+          </SwipeRow>
+        </ul>,
+      );
+      const edit = screen.getByRole('button', { name: 'Edit Milk' });
+      const remove = screen.getByRole('button', { name: 'Remove Milk' });
+      expect(edit.getAttribute('tabindex')).toBe('-1');
+      expect(remove.getAttribute('tabindex')).toBe('-1');
+
+      fireEvent.click(edit);
+      expect(onEdit).toHaveBeenCalledOnce();
+      fireEvent.click(remove);
+      expect(
+        screen.getByRole('group', { name: 'Remove Tomato?' }),
+      ).not.toBeNull();
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Keep' }),
+      );
+    });
+
+    it('has no Edit without onEdit', () => {
+      render(
+        <ul>
+          <SwipeRow name="Milk" labels={actions} onRemove={vi.fn()}>
+            <span>Milk</span>
+          </SwipeRow>
+        </ul>,
+      );
+      expect(screen.queryByRole('button', { name: 'Edit Milk' })).toBeNull();
+      expect(
+        screen.getByRole('button', { name: 'Remove Milk' }),
+      ).not.toBeNull();
+    });
+  });
+
+  it('marks a disabled row aria-disabled', () => {
+    render(
+      <ul>
+        <SwipeRow name="Milk" labels={labels} onRemove={vi.fn()} disabled>
+          <span>Milk</span>
+        </SwipeRow>
+      </ul>,
+    );
+    expect(
+      screen.getByRole('group', { name: 'Milk' }).getAttribute('aria-disabled'),
+    ).toBe('true');
+  });
+
+  it('keeps the row on Escape while confirming, even when the row itself has focus', () => {
+    render(
+      <ul>
+        <SwipeRow name="Milk" labels={labels} onRemove={vi.fn()}>
+          <span>Milk</span>
+        </SwipeRow>
+      </ul>,
+    );
+    const row = screen.getByRole('group', { name: 'Milk' });
+    fireEvent.keyDown(row, { key: 'Delete' });
+    expect(screen.getByRole('button', { name: 'Keep' })).not.toBeNull();
+
+    act(() => row.focus());
+    fireEvent.keyDown(row, { key: 'Escape' });
+
+    expect(screen.queryByRole('button', { name: 'Keep' })).toBeNull();
+    expect(document.activeElement).toBe(row);
+  });
 });

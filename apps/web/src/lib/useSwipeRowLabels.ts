@@ -22,5 +22,7 @@ export function useSwipeRowLabels(
     releaseToDelete: t('row.releaseToDelete'),
     pressed: t('row.ticked'),
     hint: hold ? t('row.a11yHint') : undefined,
+    editAction: hold ? t('row.actions.edit', { name }) : undefined,
+    removeAction: t('row.actions.remove', { name }),
   };
 }

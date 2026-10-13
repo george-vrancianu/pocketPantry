@@ -126,9 +126,13 @@ describe('ShoppingPage', () => {
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Fruit & veg', 'Dairy & eggs']);
     expect(screen.getByText('250 g')).toBeVisible();
+    // Focusing the row announces the state: it is part of the group's description.
     expect(
-      within(screen.getByRole('group', { name: 'Milk' })).getByText('Ticked'),
-    ).toBeInTheDocument();
+      screen.getByRole('group', { name: 'Milk' }),
+    ).toHaveAccessibleDescription(/Ticked/);
+    expect(
+      screen.getByRole('group', { name: 'Tomato' }),
+    ).not.toHaveAccessibleDescription(/Ticked/);
     expect(
       within(screen.getByRole('group', { name: 'Tomato' })).queryByText(
         'Ticked',
@@ -825,7 +829,10 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       await screen.findByText('1 to buy');
 
-      expect(screen.queryByRole('button', { name: /^Remove/ })).toBeNull();
+      // Only the hidden custom action, which is not a tab stop.
+      expect(
+        screen.getByRole('button', { name: 'Remove Tomato' }),
+      ).toHaveAttribute('tabindex', '-1');
       expect(rowOf('Tomato')).toHaveAttribute('tabindex', '0');
     });
 

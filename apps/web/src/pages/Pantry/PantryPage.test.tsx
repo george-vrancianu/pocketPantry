@@ -513,8 +513,10 @@ describe('PantryPage', () => {
       expect(batchRows()[0]).toHaveAccessibleDescription(
         'Swipe left to remove, hold to edit',
       );
-      // No Edit or Delete icons any more.
-      expect(screen.queryByRole('button', { name: /Edit Milk/ })).toBeNull();
+      // No Edit or Delete icons any more: the hidden custom actions are not tab stops.
+      expect(
+        screen.getAllByRole('button', { name: /Edit Milk/ })[0],
+      ).toHaveAttribute('tabindex', '-1');
       expect(screen.queryByRole('button', { name: /Delete Milk/ })).toBeNull();
 
       await user.click(toggle);

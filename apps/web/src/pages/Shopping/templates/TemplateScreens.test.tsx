@@ -200,7 +200,11 @@ describe('Shopping Template screens', () => {
     renderEditor();
 
     await screen.findByRole('group', { name: 'Milk' });
-    expect(screen.queryByRole('button', { name: 'Remove Milk' })).toBeNull();
+    // Only the hidden custom action for screen readers, which is not a tab stop.
+    expect(screen.getByRole('button', { name: 'Remove Milk' })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
   });
 
   it('renames', async () => {

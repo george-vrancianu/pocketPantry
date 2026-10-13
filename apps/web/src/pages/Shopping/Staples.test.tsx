@@ -422,7 +422,11 @@ describe('StaplesPage', () => {
     expect(milk).toHaveTextContent('2 L');
     expect(rowOf('Flour')).not.toHaveTextContent(/\d/);
     expect(screen.queryByRole('spinbutton')).toBeNull();
-    expect(screen.queryByRole('button', { name: /Save|Remove/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Save/ })).toBeNull();
+    // The custom actions for screen readers are there, but not tab stops.
+    for (const button of screen.getAllByRole('button', { name: /Remove/ })) {
+      expect(button).toHaveAttribute('tabindex', '-1');
+    }
   });
 
   it('adds a Staple from the Catalog search', async () => {
