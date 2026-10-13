@@ -46,7 +46,6 @@
   "editor": {
     "name": "Name",
     "rename": "Rename",
-    "remove": "Remove {{name}}",
     "delete": "Delete template",
     "deleteConfirm": "Delete this template for your whole family?",
     "empty": "No lines yet. Add what this template needs below.",

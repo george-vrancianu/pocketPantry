@@ -53,7 +53,6 @@
   "editor": {
     "name": "Nume",
     "rename": "Redenumește",
-    "remove": "Elimină {{name}}",
     "delete": "Șterge șablonul",
     "deleteConfirm": "Ștergi acest șablon pentru toată familia?",
     "empty": "Încă nu are linii. Adaugă mai jos ce îți trebuie.",

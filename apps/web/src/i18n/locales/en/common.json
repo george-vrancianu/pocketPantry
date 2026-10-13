@@ -22,6 +22,7 @@
     "context": {
       "list": "from your list",
       "pantry": "in your Pantry",
+      "template": "from this template",
       "staples": "from your Staples"
     },
     "keep": "Keep",
@@ -46,6 +47,7 @@
   },
   "edit": {
     "removeFromList": "Remove from list",
+    "removeLine": "Remove line",
     "removeStaple": "Remove Staple",
     "save": "Save",
     "saving": "Saving",

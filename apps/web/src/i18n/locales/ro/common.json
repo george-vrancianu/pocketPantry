@@ -22,6 +22,7 @@
     "context": {
       "list": "din lista ta",
       "pantry": "din cămara ta",
+      "template": "din acest șablon",
       "staples": "din produsele tale de bază"
     },
     "keep": "Păstrează",
@@ -47,6 +48,7 @@
   },
   "edit": {
     "removeFromList": "Elimină din listă",
+    "removeLine": "Elimină linia",
     "removeStaple": "Elimină produsul de bază",
     "save": "Salvează",
     "saving": "Se salvează",
