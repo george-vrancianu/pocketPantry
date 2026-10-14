@@ -39,7 +39,7 @@ export function lookupCategory(
         name: parent.name,
         parentName: parent.name,
         wholeParent: true,
-        catalogDays: parent.catalogDays ?? null,
+        catalogDays: parent.catalogDays,
       };
     }
     const leaf = parent.leaves.find((candidate) => candidate.id === id);
@@ -49,7 +49,7 @@ export function lookupCategory(
         name: leaf.name,
         parentName: parent.name,
         wholeParent: false,
-        catalogDays: leaf.catalogDays ?? null,
+        catalogDays: leaf.catalogDays,
       };
     }
   }
@@ -98,7 +98,7 @@ export function groupCategories(
         parentName: parent.name,
         wholeParent: true,
         override: overrides[parent.id] ?? null,
-        catalogDays: parent.catalogDays ?? null,
+        catalogDays: parent.catalogDays,
       });
     }
     for (const leaf of parent.leaves) {
@@ -109,7 +109,7 @@ export function groupCategories(
         parentName: parent.name,
         wholeParent: false,
         override: overrides[leaf.id] ?? null,
-        catalogDays: leaf.catalogDays ?? null,
+        catalogDays: leaf.catalogDays,
       });
     }
     if (rows.length > 0) groups.push({ parent, rows });

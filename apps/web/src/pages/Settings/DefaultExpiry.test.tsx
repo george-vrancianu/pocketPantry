@@ -7,12 +7,14 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { CategoryOptions } from '../../lib/settings';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { SettingsPage } from './SettingsPage';
 
 type Override = { categoryId: string; name: string; days: number };
 
-const categories = {
+/** As `GET /api/settings/categories` answers: every category carries `catalogDays`. */
+const categories: CategoryOptions = {
   parents: [
     {
       id: 'p-dairy',
@@ -26,7 +28,8 @@ const categories = {
     {
       id: 'p-produce',
       name: 'Produce',
-      leaves: [{ id: 'l-leafy', name: 'Leafy greens' }],
+      catalogDays: null,
+      leaves: [{ id: 'l-leafy', name: 'Leafy greens', catalogDays: null }],
     },
   ],
 };

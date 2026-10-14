@@ -15,12 +15,13 @@ const options: CategoryOptions = {
       catalogDays: 7,
       leaves: [
         { id: 'l-milk', name: 'Milk', catalogDays: 5 },
-        { id: 'l-cheese', name: 'Hard cheese' },
+        { id: 'l-cheese', name: 'Hard cheese', catalogDays: null },
       ],
     },
     {
       id: 'p-produce',
       name: 'Produce',
+      catalogDays: null,
       leaves: [{ id: 'l-leafy', name: 'Leafy greens', catalogDays: null }],
     },
   ],

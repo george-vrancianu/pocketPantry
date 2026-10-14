@@ -45,12 +45,15 @@ export type FamilySettingsView = {
   expiryOverrides: ExpiryOverrideView[];
 };
 
+/** `catalogDays`: the Catalog's Default Expiry in days, before any Family override. */
+export type CategoryOptionView = {
+  id: string;
+  name: string;
+  catalogDays: number | null;
+};
+
 export type CategoryOptionsView = {
-  parents: {
-    id: string;
-    name: string;
-    leaves: { id: string; name: string }[];
-  }[];
+  parents: (CategoryOptionView & { leaves: CategoryOptionView[] })[];
 };
 
 export type PreferencesView = {
