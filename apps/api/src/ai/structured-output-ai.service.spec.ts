@@ -2,8 +2,9 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import type { AppConfig } from '../config/env';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
+import { type AppConfig, validateEnv } from '../config/env';
 import { StructuredOutputAiService } from './structured-output-ai.service';
 
 describe('StructuredOutputAiService', () => {
@@ -391,6 +392,88 @@ describe('StructuredOutputAiService', () => {
       expect(body.reasoning_effort).toBe('low');
       expect(body).not.toHaveProperty('temperature');
     });
+  });
+
+  // Through the real ConfigModule, as a deployer's environment reaches the service.
+  describe('requests from the deployed environment', () => {
+    const saved = { ...process.env };
+    afterEach(() => {
+      process.env = { ...saved };
+    });
+
+    const bodyFor = async (env: Record<string, string>) => {
+      process.env = {
+        ...saved,
+        DATABASE_URL: 'postgresql://x',
+        CLIENT_ORIGIN: 'http://localhost:5173',
+        BETTER_AUTH_URL: 'http://localhost:3000',
+        BETTER_AUTH_SECRET: 'x'.repeat(32),
+        AI_API_KEY: 'k',
+        ...env,
+      };
+      for (const key of [
+        'AI_PROVIDER',
+        'AI_VISION_MODEL',
+        'AI_REASONING_EFFORT',
+      ]) {
+        if (!(key in env)) delete process.env[key];
+      }
+      const moduleRef = await Test.createTestingModule({
+        imports: [
+          ConfigModule.forRoot({ ignoreEnvFile: true, validate: validateEnv }),
+        ],
+        providers: [StructuredOutputAiService],
+      }).compile();
+      jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            status: 'completed',
+            output: [
+              {
+                type: 'message',
+                content: [{ type: 'output_text', text: '{}' }],
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+      await moduleRef.get(StructuredOutputAiService).generate({
+        prompt: 'p',
+        schemaName: 's',
+        schema: {},
+        maxOutputTokens: 400,
+      });
+      return JSON.parse(
+        (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      ) as Record<string, unknown>;
+    };
+
+    it('runs on gpt-6-luna at effort none when nothing is set', async () => {
+      const body = await bodyFor({});
+      expect(body.model).toBe('gpt-6-luna');
+      expect(body.reasoning).toEqual({ effort: 'none' });
+      expect(body.temperature).toBe(0);
+      expect(body.max_output_tokens).toBe(400);
+    });
+
+    it.each([
+      ['left out', {}],
+      ['empty', { AI_REASONING_EFFORT: '' }],
+    ])(
+      'goes back to the gpt-4o-mini request with the effort %s',
+      async (_, effort) => {
+        const body = await bodyFor({
+          AI_VISION_MODEL: 'gpt-4o-mini-2024-07-18',
+          ...effort,
+        });
+        expect(body.model).toBe('gpt-4o-mini-2024-07-18');
+        expect(body).not.toHaveProperty('reasoning');
+        expect(body.temperature).toBe(0);
+        expect(body.max_output_tokens).toBe(400);
+      },
+    );
   });
 
   describe('failures carry stable API codes', () => {

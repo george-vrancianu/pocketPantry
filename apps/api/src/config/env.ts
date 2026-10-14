@@ -12,6 +12,11 @@ export const REASONING_EFFORTS = [
 ] as const;
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
+/** Scan model when AI_VISION_MODEL is unset, run at DEFAULT_REASONING_EFFORT. */
+export const DEFAULT_VISION_MODEL = 'gpt-6-luna';
+/** Keeps temperature 0 on gpt-6-luna, and spends no reasoning tokens. */
+const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none';
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -24,8 +29,11 @@ const envSchema = z.object({
   AI_PROVIDER: z.enum(['openai', 'openai-compatible']).default('openai'),
   AI_API_KEY: z.string().min(1).optional(),
   AI_BASE_URL: z.url().optional(),
-  AI_VISION_MODEL: z.string().min(1).default('gpt-4o-mini-2024-07-18'),
-  /** Reasoning effort for a reasoning model such as gpt-6-luna. Unset: none is sent (gpt-4o-mini). */
+  AI_VISION_MODEL: z.string().min(1).default(DEFAULT_VISION_MODEL),
+  /**
+   * Reasoning effort for a reasoning model such as gpt-6-luna. Unset: `none` with the
+   * default model, otherwise no effort is sent (gpt-4o-mini, openai-compatible vendors).
+   */
   AI_REASONING_EFFORT: z.enum(REASONING_EFFORTS).optional(),
   /** Scan Cap: Scans per Member per UTC day. 0 disables the cap (unlimited). */
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
@@ -70,6 +78,13 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
   }
   return {
     ...rest,
+    // The default effort belongs to the default model: a deployer who picks a model
+    // (gpt-4o-mini, a vendor's model) gets no effort unless they set one.
+    AI_REASONING_EFFORT:
+      rest.AI_REASONING_EFFORT ??
+      (present.AI_VISION_MODEL === undefined
+        ? DEFAULT_REASONING_EFFORT
+        : undefined),
     // Only an explicit NODE_ENV=development counts, never the default for a missing one.
     SCAN_DEBUG_DIR:
       present.NODE_ENV === 'development' ? rest.SCAN_DEBUG_DIR : undefined,

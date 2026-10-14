@@ -250,7 +250,10 @@ export class StructuredOutputAiService {
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
     const model = this.config.get('AI_VISION_MODEL', { infer: true });
     const configuredBaseUrl = this.config.get('AI_BASE_URL', { infer: true });
-    const effort = this.config.get('AI_REASONING_EFFORT', { infer: true });
+    // `|| undefined`: with no validated effort, ConfigService falls back to process.env,
+    // where `AI_REASONING_EFFORT=` is ''. That means no effort, as validateEnv reads it.
+    const effort =
+      this.config.get('AI_REASONING_EFFORT', { infer: true }) || undefined;
     trace.provider = provider;
     trace.model = model;
 

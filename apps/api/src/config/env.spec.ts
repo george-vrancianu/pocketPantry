@@ -75,18 +75,56 @@ describe('SCAN_DEBUG_DIR', () => {
   });
 });
 
-describe('AI_REASONING_EFFORT', () => {
-  it('is unset by default, and `KEY=` keeps it unset', () => {
-    expect(validateEnv({ ...base }).AI_REASONING_EFFORT).toBeUndefined();
-    expect(
-      validateEnv({ ...base, AI_REASONING_EFFORT: '' }).AI_REASONING_EFFORT,
-    ).toBeUndefined();
+describe('Scan model defaults', () => {
+  it('runs a fresh deploy on gpt-6-luna at effort none', () => {
+    const env = validateEnv({ ...base });
+    expect(env.AI_VISION_MODEL).toBe('gpt-6-luna');
+    expect(env.AI_REASONING_EFFORT).toBe('none');
   });
 
-  it('accepts a known effort and rejects anything else', () => {
+  it('treats `KEY=` as unset, so an empty model and effort still give the defaults', () => {
+    const env = validateEnv({
+      ...base,
+      AI_VISION_MODEL: '',
+      AI_REASONING_EFFORT: '',
+    });
+    expect(env.AI_VISION_MODEL).toBe('gpt-6-luna');
+    expect(env.AI_REASONING_EFFORT).toBe('none');
+  });
+
+  it('sends no effort when the model is set and the effort is not (back to gpt-4o-mini)', () => {
+    for (const AI_REASONING_EFFORT of [undefined, '']) {
+      const env = validateEnv({
+        ...base,
+        AI_VISION_MODEL: 'gpt-4o-mini-2024-07-18',
+        AI_REASONING_EFFORT,
+      });
+      expect(env.AI_VISION_MODEL).toBe('gpt-4o-mini-2024-07-18');
+      expect(env.AI_REASONING_EFFORT).toBeUndefined();
+    }
+  });
+
+  it('leaves an openai-compatible vendor model without an effort', () => {
+    const env = validateEnv({
+      ...base,
+      AI_PROVIDER: 'openai-compatible',
+      AI_BASE_URL: 'https://vendor.example/v1',
+      AI_VISION_MODEL: 'vendor-vision-model',
+    });
+    expect(env.AI_REASONING_EFFORT).toBeUndefined();
+  });
+
+  it('keeps an effort set alongside a model', () => {
     expect(
-      validateEnv({ ...base, AI_REASONING_EFFORT: 'low' }).AI_REASONING_EFFORT,
+      validateEnv({
+        ...base,
+        AI_VISION_MODEL: 'gpt-6-luna',
+        AI_REASONING_EFFORT: 'low',
+      }).AI_REASONING_EFFORT,
     ).toBe('low');
+  });
+
+  it('rejects an unknown effort', () => {
     expect(() =>
       validateEnv({ ...base, AI_REASONING_EFFORT: 'turbo' }),
     ).toThrow(/AI_REASONING_EFFORT/);

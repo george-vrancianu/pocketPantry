@@ -66,7 +66,9 @@ never reach a client.
 - `src/database`: Drizzle schema, module, pool. Migrations are in `drizzle/`.
   Change the schema, then `npm run db:generate -w @pocket-pantry/api`.
 - `src/ai`: structured-output AI service (`AI_PROVIDER`, `AI_API_KEY`,
-  `AI_VISION_MODEL`, `AI_BASE_URL`).
+  `AI_VISION_MODEL`, `AI_REASONING_EFFORT`, `AI_BASE_URL`). Unset, the model is
+  `gpt-6-luna` at effort `none`; a model set without an effort sends no effort
+  (see "Choose the Scan model" in the root README).
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
   schemas. Only `POST /api/scan/product` is exposed so far. The Scan Cap is
   `SCAN_DAILY_CAP` Scans per Member per UTC day (default 30; `0` disables the
