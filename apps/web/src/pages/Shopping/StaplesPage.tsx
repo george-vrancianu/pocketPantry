@@ -72,7 +72,7 @@ export function StaplesPage() {
           key={formKey}
           onSelect={(ingredient) =>
             add.mutate(
-              { ingredientId: ingredient.id },
+              { ingredientId: ingredient.id, name: ingredient.name },
               { onSettled: () => setFormKey((key) => key + 1) },
             )
           }
