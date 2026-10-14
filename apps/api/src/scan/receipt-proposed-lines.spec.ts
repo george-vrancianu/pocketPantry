@@ -6,6 +6,7 @@ const milk: CatalogSearchResult = {
   id: 'milk-id',
   name: 'Lapte',
   defaultUnit: 'l',
+  amountScale: 'medium',
   leafCategory: { id: 'l', name: 'Lapte' },
   parentCategory: {
     id: 'p',
