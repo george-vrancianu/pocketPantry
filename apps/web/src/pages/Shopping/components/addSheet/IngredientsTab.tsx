@@ -72,6 +72,7 @@ export type IngredientsTabProps = {
   error: string | null;
   staples: Suggestion[];
   usedUp: Suggestion[];
+  runningLow: Suggestion[];
   /** Called after each successful add. */
   onAdded: () => void;
   /** Opens a template's apply view. */
@@ -90,6 +91,7 @@ export function IngredientsTab({
   error,
   staples,
   usedUp,
+  runningLow,
   onAdded,
   onOpenTemplate,
   onSeeAllTemplates,
@@ -287,6 +289,7 @@ export function IngredientsTab({
         <EmptySearch
           staples={staples}
           usedUp={usedUp}
+          runningLow={runningLow}
           addedIds={state.suggestionsAdded}
           onAdd={onAdd}
           onOpenTemplate={onOpenTemplate}

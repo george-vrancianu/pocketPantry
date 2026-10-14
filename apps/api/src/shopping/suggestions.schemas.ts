@@ -12,8 +12,9 @@ export type SuggestionView = {
   aisle: AisleView | null;
 };
 
-/** One key per group: missing Staples first, then Used Up Ingredients (no quantity). */
+/** One key per group: missing Staples first, then Used Up, then Running low (no quantity). */
 export type SuggestionsView = {
   staples: SuggestionView[];
   usedUp: SuggestionView[];
+  runningLow: SuggestionView[];
 };
