@@ -43,6 +43,8 @@ export type AddSheetProps = {
   staples: Suggestion[];
   /** Ingredients recently used up, suggested while the search is empty. */
   usedUp: Suggestion[];
+  /** Ingredients flagged running low, suggested while the search is empty. */
+  runningLow: Suggestion[];
 };
 
 /**
@@ -61,6 +63,7 @@ export function AddSheet({
   addError,
   staples,
   usedUp,
+  runningLow,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
   const tabsId = useId();
@@ -223,6 +226,7 @@ export function AddSheet({
               error={addError}
               staples={staples}
               usedUp={usedUp}
+              runningLow={runningLow}
               onAdded={() => setAddedCount((count) => count + 1)}
               onOpenTemplate={openTemplate}
               onSeeAllTemplates={() => selectTab('templates')}

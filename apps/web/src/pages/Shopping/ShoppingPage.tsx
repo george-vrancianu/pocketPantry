@@ -134,6 +134,7 @@ export function ShoppingPage() {
         addError={screen.addError}
         staples={screen.staples}
         usedUp={screen.usedUp}
+        runningLow={screen.runningLow}
       />
     </RowToggleErrorProvider>
   );

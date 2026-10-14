@@ -105,6 +105,96 @@ describe('Running low flag (integration)', () => {
     await setRunningLow(cookie, 'not-a-uuid').expect(400);
   });
 
+  describe('Running low suggestions', () => {
+    const suggestions = async (cookie: string) =>
+      (
+        await api('get', cookie, '/shopping-list/suggestions?locale=en').expect(
+          200,
+        )
+      ).body as {
+        staples: Array<{ ingredientId: string }>;
+        usedUp: Array<{ ingredientId: string }>;
+        runningLow: Array<{
+          ingredientId: string;
+          name: string;
+          quantity: number | null;
+          unit: string | null;
+        }>;
+      };
+    const addToList = async (cookie: string, ingredientId: string) =>
+      (
+        await api('post', cookie, '/shopping-list/items?locale=en')
+          .send({ ingredientId })
+          .expect(200)
+      ).body as { groups: Array<{ items: Array<{ id: string }> }> };
+
+    it('suggests a flagged Ingredient that has a Batch, by name', async () => {
+      const { cookie } = await signUp();
+      await addBatch(cookie, milk);
+      await setRunningLow(cookie, milk).expect(204);
+
+      const found = await suggestions(cookie);
+
+      expect(found.runningLow).toEqual([
+        expect.objectContaining({
+          ingredientId: milk,
+          name: 'Milk',
+          quantity: null,
+          unit: null,
+        }),
+      ]);
+      expect(found.staples).toEqual([]);
+      expect(found.usedUp).toEqual([]);
+    });
+
+    it('does not suggest a flagged Ingredient with no Batch', async () => {
+      const { cookie } = await signUp();
+      await setRunningLow(cookie, milk).expect(204);
+      expect((await suggestions(cookie)).runningLow).toEqual([]);
+    });
+
+    it('hides a flagged Ingredient while it is on the active list, and brings it back once removed', async () => {
+      const { cookie } = await signUp();
+      await addBatch(cookie, milk);
+      await setRunningLow(cookie, milk).expect(204);
+
+      const list = await addToList(cookie, milk);
+      expect((await suggestions(cookie)).runningLow).toEqual([]);
+
+      await api(
+        'delete',
+        cookie,
+        `/shopping-list/items/${list.groups[0].items[0].id}?locale=en`,
+      ).expect(200);
+      expect(
+        (await suggestions(cookie)).runningLow.map((s) => s.ingredientId),
+      ).toEqual([milk]);
+    });
+
+    it('drops the Ingredient once its flag is turned off', async () => {
+      const { cookie } = await signUp();
+      await addBatch(cookie, milk);
+      await setRunningLow(cookie, milk).expect(204);
+      expect((await suggestions(cookie)).runningLow).toHaveLength(1);
+
+      await clearRunningLow(cookie, milk).expect(204);
+      expect((await suggestions(cookie)).runningLow).toEqual([]);
+    });
+
+    it("keeps one Family's flag out of another's Running low group", async () => {
+      const a = await signUp('Family A');
+      const b = await signUp('Family B');
+      await addBatch(a.cookie, parmesan);
+      await addBatch(b.cookie, parmesan);
+      await setRunningLow(a.cookie, parmesan).expect(204);
+
+      expect(
+        (await suggestions(a.cookie)).runningLow.map((s) => s.ingredientId),
+      ).toEqual([parmesan]);
+      expect((await suggestions(b.cookie)).runningLow).toEqual([]);
+    });
+  });
+
   it("keeps one Family's flag out of another's, for the same Ingredient", async () => {
     const a = await signUp('Family A');
     const b = await signUp('Family B');

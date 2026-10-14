@@ -35,6 +35,7 @@ export function useShoppingScreen() {
     list: visible,
     staples: suggestions.data?.staples ?? [],
     usedUp: suggestions.data?.usedUp ?? [],
+    runningLow: suggestions.data?.runningLow ?? [],
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,
