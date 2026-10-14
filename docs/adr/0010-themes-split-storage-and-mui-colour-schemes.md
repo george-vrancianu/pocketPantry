@@ -4,7 +4,7 @@ The "Themes & icons" handoff (`docs/handoffs/themes/handoff.md` §2) stores the 
 
 ## Decision
 
-- **Theme** is a Member Preference, stored on the Member next to the locale. The server is the source of truth. A `null` value means the Member never chose, so the default applies. Changes are optimistic: the Theme applies and is cached at once, then saved.
+- **Theme** is a Member Preference, stored on the Member next to the locale. The server is the source of truth. A `null` value means the Member never chose, so the default applies. Changes are optimistic: the Theme applies and is cached at once, then saved. Until that save succeeds the device records the Theme as unsynced (`pp.appearance.unsynced`, a key of its own so MUI's adapter layout stays untouched); while it is set the device's Theme wins over the server's and is re-sent when preferences load or the device comes back online. Saves go one at a time, latest choice last.
 - **Match system** is per device, not a Member Preference. The device keeps both values under the single `localStorage` key `pp.appearance` (`{ theme, matchSystem }`), so it can apply a Theme before the Member Preferences load and on unauthenticated screens.
 - The three Themes are MUI colour schemes named `warm`, `minimal` and `dark`, built from the handoff's flat theme record with CSS variables. The scheme is chosen by `data-theme="<id>"` on the root, and any subtree can be forced into another scheme with the same attribute.
 - Colour tokens live in each scheme's palette (MUI's standard keys where one matches, custom keys under `palette.pp` otherwise). Non-colour tokens (radii, border widths, shadows, fonts) are `--pp-*` variables written per scheme selector, because MUI doesn't vary them per scheme.
