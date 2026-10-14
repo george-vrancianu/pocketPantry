@@ -4,7 +4,7 @@ import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { paintedColour } from './test/colour';
 import { renderWithProviders } from './test/render';
-import { stubMatchMedia } from './test/viewport';
+import { stubMatchMedia, stubSystemScheme } from './test/viewport';
 
 const BG = { warm: '#F3EDE1', minimal: '#FAFAF8', dark: '#0F1512' };
 
@@ -30,10 +30,41 @@ afterEach(() => {
 });
 
 describe('Themes', () => {
-  it('renders in Warm editorial with no stored preference', () => {
+  it('follows the system on a new device: Warm editorial in light mode', () => {
+    stubSystemScheme(false);
     renderWithProviders(<p>Pantry</p>);
     expect(rootTheme()).toBe('warm');
     expect(themeColor()).toBe(BG.warm);
+  });
+
+  it('follows the system on a new device: Dark-first in dark mode', () => {
+    stubSystemScheme(true);
+    renderWithProviders(<p>Pantry</p>);
+    expect(rootTheme()).toBe('dark');
+    expect(themeColor()).toBe(BG.dark);
+  });
+
+  it('switches with the system scheme while the app is open, with Match system on', () => {
+    const system = stubSystemScheme(false);
+    store({ theme: 'minimal', matchSystem: true });
+    renderWithProviders(<p>Pantry</p>);
+    expect(rootTheme()).toBe('minimal');
+
+    act(() => system.setDark(true));
+    expect(rootTheme()).toBe('dark');
+    expect(themeColor()).toBe(BG.dark);
+
+    act(() => system.setDark(false));
+    expect(rootTheme()).toBe('minimal');
+    expect(themeColor()).toBe(BG.minimal);
+  });
+
+  it('ignores the system scheme with Match system off', () => {
+    const system = stubSystemScheme(false);
+    store({ theme: 'minimal', matchSystem: false });
+    renderWithProviders(<p>Pantry</p>);
+    act(() => system.setDark(true));
+    expect(rootTheme()).toBe('minimal');
   });
 
   it.each(['warm', 'minimal', 'dark'] as const)(

@@ -17,3 +17,18 @@ afterEach(() => {
 
 // jsdom does not implement scrolling; screens that scroll to the top just need it to exist.
 window.scrollTo = () => {};
+
+// jsdom has no matchMedia, which every browser has: without one MUI cannot
+// resolve Match system. Default to a light system where every query is false;
+// tests stub their own through `test/viewport.ts`.
+window.matchMedia = (query: string) =>
+  ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    dispatchEvent: () => false,
+  }) as MediaQueryList;
