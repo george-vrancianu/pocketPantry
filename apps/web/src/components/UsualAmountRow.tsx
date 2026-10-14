@@ -13,6 +13,7 @@ import { fitChips } from '../lib/fitChips';
 import { focusRing } from '../lib/focusRing';
 import {
   parseQuantity,
+  usualAmountsAscending,
   usualAmountsInPriority,
   type AmountScale,
 } from '../lib/usualAmounts';
@@ -97,9 +98,9 @@ export function UsualAmountRow({
     new Intl.NumberFormat(i18n.language).format(value);
   const unitLabel = unit ? t(`units.${unit}`) : '';
   // Chips read smallest to largest, whichever ones are kept.
-  const order = values
-    .map((_, index) => index)
-    .sort((a, b) => values[a] - values[b]);
+  const order = unit
+    ? usualAmountsAscending(unit, scale).map((value) => values.indexOf(value))
+    : [];
 
   const moveFocus = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
@@ -130,7 +131,7 @@ export function UsualAmountRow({
       <Box
         ref={group}
         role="group"
-        aria-label={t('amount.presets', { name })}
+        aria-label={t('amount.usualAmounts', { name })}
         hidden={!visible}
         onKeyDown={moveFocus}
         sx={{

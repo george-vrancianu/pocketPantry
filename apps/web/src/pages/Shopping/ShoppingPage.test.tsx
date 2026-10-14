@@ -1716,6 +1716,34 @@ describe('ShoppingPage', () => {
           ),
         ).toEqual(['0.5 kg', '1 kg', '2 kg', '5 kg']);
       });
+
+      it('converts the typed number when the unit changes, so 1500 g becomes 1.5 kg', async () => {
+        withParmesan();
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        await user.type(
+          within(dialog).getByRole('textbox', {
+            name: 'Amount of Parmesan, for example 2 or 500 g',
+          }),
+          '1500 g',
+        );
+        await user.click(
+          within(dialog).getByRole('button', { name: 'Unit: g' }),
+        );
+        await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+
+        expect(
+          within(dialog).getByRole('textbox', {
+            name: 'Amount of Parmesan, for example 2 or 500 g',
+          }),
+        ).toHaveValue('1.5');
+        expect(
+          within(dialog).getByRole('button', { name: 'Unit: kg' }),
+        ).toBeVisible();
+      });
     });
 
     it('adds a Catalog Match with amount and unit, then resets the search', async () => {
@@ -1783,9 +1811,10 @@ describe('ShoppingPage', () => {
       await user.keyboard('{Enter}');
 
       await waitFor(() => expect(posts(calls)).toHaveLength(1));
+      // The unit change converts the typed 2 g to 0.002 kg, so the amount stays the same.
       expect(posts(calls)[0]?.body).toEqual({
         ingredientId: 'parmesan-id',
-        quantity: 2,
+        quantity: 0.002,
         unit: 'kg',
       });
     });

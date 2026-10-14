@@ -139,6 +139,38 @@ describe('AmountField usual amount chips', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('takes the chips hidden for lack of width out of the accessibility tree', () => {
+    renderWithProviders(<Harness unit="g" start="250" />);
+
+    // 200 g is in the scale but does not fit the 300 pt row: it is in the DOM, not announced.
+    expect(within(usualGroup()).getByLabelText('200 g')).not.toBeVisible();
+    expect(
+      within(usualGroup()).queryByRole('button', { name: '200 g' }),
+    ).not.toBeInTheDocument();
+    expect(chipNames()).toEqual(['100 g', '250 g', '500 g', '1,000 g']);
+  });
+
+  it('removes the chip transitions when the Member prefers reduced motion', () => {
+    renderWithProviders(<Harness unit="g" start="250" />);
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent ?? '')
+      .join('\n');
+    const classes = Array.from(chip('250 g').classList);
+
+    expect(
+      classes.some((c) =>
+        new RegExp(`\\.${c}\\{[^}]*transition:background-color`).test(css),
+      ),
+    ).toBe(true);
+    expect(
+      classes.some((c) =>
+        new RegExp(
+          `@media \\(prefers-reduced-motion: reduce\\)\\{\\.${c}\\{[^}]*transition:none`,
+        ).test(css),
+      ),
+    ).toBe(true);
+  });
+
   it('converts the number when the unit changes between g and kg', async () => {
     const onQuantity = vi.fn();
     const onUnit = vi.fn();
@@ -179,6 +211,26 @@ describe('AmountField usual amount chips', () => {
     expect(onQuantity).toHaveBeenLastCalledWith('260', undefined);
     await user.keyboard('{Shift>}{ArrowDown}{/Shift}');
     expect(onQuantity).toHaveBeenLastCalledWith('210', undefined);
+  });
+
+  it('ignores the arrow keys when the field has no Amount Scale', async () => {
+    const onQuantityChange = vi.fn();
+    renderWithProviders(
+      <AmountField
+        name="Paprika"
+        quantity="250"
+        unit="g"
+        onQuantityChange={onQuantityChange}
+        onUnitChange={() => {}}
+        error={null}
+        onSubmit={() => {}}
+      />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('textbox'));
+    await user.keyboard('{ArrowUp}{Shift>}{ArrowDown}{/Shift}');
+    expect(onQuantityChange).not.toHaveBeenCalled();
   });
 
   it('keeps a zero amount at zero when stepping down', async () => {

@@ -261,7 +261,8 @@ export function AmountField({
               if (event.key === 'Enter') {
                 event.preventDefault();
                 onSubmit();
-              } else {
+              } else if (amountScale) {
+                // Only fields with Usual Amount chips step; the others keep the arrow keys.
                 step(event);
               }
             }}
