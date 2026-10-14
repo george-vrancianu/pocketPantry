@@ -3109,10 +3109,10 @@ describe('PantryPage: Add to your catalog (#270)', () => {
     renderWithProviders(<PantryPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
-    await user.type(
+    await user.click(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'kombucha',
     );
+    await user.paste('kombucha');
 
     const options = await screen.findAllByRole('option');
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);

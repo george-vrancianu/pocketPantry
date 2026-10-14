@@ -527,10 +527,10 @@ describe('RecipeGuidance: no Add to your catalog (#270)', () => {
       'An Ingredient',
     );
 
-    await user.type(
+    await user.click(
       screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
-      'kombucha',
     );
+    await user.paste('kombucha');
 
     expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
     expect(

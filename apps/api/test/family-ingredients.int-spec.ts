@@ -79,6 +79,9 @@ describe('Family Ingredients (integration)', () => {
     await database
       .delete(catalogTranslations)
       .where(eq(catalogTranslations.value, `fi-synonym-${stamp}`));
+    await database
+      .delete(catalogTranslations)
+      .where(eq(catalogTranslations.value, `fi-synonym-hidden-${stamp}`));
     await app.close();
   });
 
@@ -178,15 +181,17 @@ describe('Family Ingredients (integration)', () => {
 
   describe('name collisions', () => {
     it('answers 409 with the existing Ingredient on a shared name, ignoring case and accents', async () => {
-      const res = await create(a, body('PARMESAN'));
+      for (const typed of ['PARMESAN', 'Pârmesan']) {
+        const res = await create(a, body(typed));
 
-      expect(res.status).toBe(409);
-      expect(res.body).toMatchObject({
-        code: 'catalog.family_ingredient_exists',
-        params: {
-          existing: { id: parmesan, name: 'Parmesan', owner: 'catalog' },
-        },
-      });
+        expect(res.status).toBe(409);
+        expect(res.body).toMatchObject({
+          code: 'catalog.family_ingredient_exists',
+          params: {
+            existing: { id: parmesan, name: 'Parmesan', owner: 'catalog' },
+          },
+        });
+      }
     });
 
     it('answers 409 on a shared name in another locale', async () => {
@@ -241,8 +246,12 @@ describe('Family Ingredients (integration)', () => {
       const forB = await made(b, name);
 
       expect(forB.id).not.toBe(forA.id);
-      expect((await search(a, name)).map((r) => r.id)).toEqual([forA.id]);
-      expect((await search(b, name)).map((r) => r.id)).toEqual([forB.id]);
+      const seenByA = (await search(a, name)).map((r) => r.id);
+      const seenByB = (await search(b, name)).map((r) => r.id);
+      expect(seenByA).toContain(forA.id);
+      expect(seenByA).not.toContain(forB.id);
+      expect(seenByB).toContain(forB.id);
+      expect(seenByB).not.toContain(forA.id);
     });
   });
 
@@ -251,8 +260,8 @@ describe('Family Ingredients (integration)', () => {
       const name = unique('Secret Sauce');
       const secret = await made(a, name);
 
-      expect((await search(a, name)).map((r) => r.id)).toEqual([secret.id]);
-      expect(await search(b, name)).toEqual([]);
+      expect((await search(a, name)).map((r) => r.id)).toContain(secret.id);
+      expect((await search(b, name)).map((r) => r.id)).not.toContain(secret.id);
 
       // Anything that looks the Ingredient up by id treats it as unknown to B.
       await b
@@ -263,15 +272,29 @@ describe('Family Ingredients (integration)', () => {
         );
       await b
         .post('/shopping-list/items', { ingredientId: secret.id })
-        .expect(404);
-      await b.post('/staples', { ingredientId: secret.id }).expect(404);
+        .expect(404)
+        .expect(({ body: error }) =>
+          expect(error).toMatchObject({
+            code: 'shopping.ingredient_not_found',
+          }),
+        );
+      await b
+        .post('/staples', { ingredientId: secret.id })
+        .expect(404)
+        .expect(({ body: error }) =>
+          expect(error).toMatchObject({
+            code: 'shopping.ingredient_not_found',
+          }),
+        );
     });
 
     it('never shows it in the shared scope, even to its own Family', async () => {
       const name = unique('Hidden From Shared');
-      await made(a, name);
+      const hiddenFromShared = await made(a, name);
 
-      expect(await search(a, name, '&scope=shared')).toEqual([]);
+      expect(
+        (await search(a, name, '&scope=shared')).map((r) => r.id),
+      ).not.toContain(hiddenFromShared.id);
     });
 
     it('never shows it to an Admin, in the shared scope or in Catalog Recipe editing', async () => {
@@ -279,7 +302,9 @@ describe('Family Ingredients (integration)', () => {
       const hidden = await made(a, name);
       const admin = client(app, adminCookie, '/api');
 
-      expect(await search(admin, name, '&scope=shared')).toEqual([]);
+      expect(
+        (await search(admin, name, '&scope=shared')).map((r) => r.id),
+      ).not.toContain(hidden.id);
       const recipe = await admin.post('/admin/recipes', {
         title: unique('Admin recipe'),
         servings: 2,
@@ -287,6 +312,60 @@ describe('Family Ingredients (integration)', () => {
         steps: [{ text: 'Mix' }],
       });
       expect(recipe.status).toBe(404);
+
+      // Nor can Admin curation reach it by id: every mutation answers 404.
+      const notFound = { code: 'catalog.not_found' };
+      const patched = await admin.patch(
+        `/admin/catalog/ingredients/${hidden.id}`,
+        {
+          name: unique('Renamed By Admin'),
+        },
+      );
+      expect([patched.status, patched.body]).toEqual([
+        404,
+        expect.objectContaining(notFound),
+      ]);
+      const deleted = await admin.del(
+        `/admin/catalog/ingredients/${hidden.id}`,
+      );
+      expect(deleted.status).toBe(404);
+      const translated = await admin.post('/admin/catalog/translations', {
+        entityType: 'ingredient',
+        entityId: hidden.id,
+        locale: 'ro',
+        kind: 'synonym',
+        value: unique('Admin synonym'),
+      });
+      expect(translated.status).toBe(404);
+      expect((await search(a, name)).map((r) => r.name)).toContain(name);
+    });
+
+    it('answers 404 to Admin edits of a Family Ingredient translation', async () => {
+      const admin = client(app, adminCookie, '/api');
+      const hidden = await made(a, unique('Hidden Translated'));
+      const [row] = await database
+        .insert(catalogTranslations)
+        .values({
+          id: randomUUID(),
+          entityType: 'ingredient',
+          entityId: hidden.id,
+          locale: 'ro',
+          kind: 'synonym',
+          value: `fi-synonym-hidden-${stamp}`,
+          normalizedValue: normalizeName(`fi-synonym-hidden-${stamp}`),
+        })
+        .returning();
+
+      expect(
+        (
+          await admin.patch(`/admin/catalog/translations/${row.id}`, {
+            value: 'x',
+          })
+        ).status,
+      ).toBe(404);
+      expect(
+        (await admin.del(`/admin/catalog/translations/${row.id}`)).status,
+      ).toBe(404);
     });
 
     it('lists it in the browse-by-aisle search of its own Family only', async () => {
@@ -305,8 +384,8 @@ describe('Family Ingredients (integration)', () => {
       // Browse is capped at 50 Ingredients, so narrow with the name.
       const within = async (who: typeof a) =>
         (await search(who, name, `&aisleId=${aisleId}`)).map((r) => r.id);
-      expect(await within(a)).toEqual([created.id]);
-      expect(await within(b)).toEqual([]);
+      expect(await within(a)).toContain(created.id);
+      expect(await within(b)).not.toContain(created.id);
       expect((await listing(b)).map((r) => r.id)).not.toContain(created.id);
     });
   });

@@ -616,6 +616,8 @@ export class AdminCatalogService {
 
   updateIngredient(id: string, input: IngredientUpdate) {
     return this.write(async (tx) => {
+      // 404 for a Family Ingredient: the Admin scope never sees them (ADR 0011).
+      await this.requireRow(tx, 'ingredient', id);
       if (input.leafCategoryId) {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
       }
@@ -860,6 +862,10 @@ export class AdminCatalogService {
       .from(translations)
       .where(eq(translations.id, id));
     if (!row) throw notFound('translation');
+    // Translations of a Family Ingredient are outside the Admin scope too.
+    if (row.entityType === 'ingredient') {
+      await this.requireRow(executor, 'ingredient', row.entityId);
+    }
     return row;
   }
 

@@ -758,10 +758,10 @@ describe('Add to your catalog (#270)', () => {
     renderWithProviders(<StaplesPage />);
     await screen.findByRole('group', { name: 'Milk' });
 
-    await userEvent.type(
+    await userEvent.click(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'kombucha',
     );
+    await userEvent.paste('kombucha');
 
     const options = await screen.findAllByRole('option');
     expect(options).toHaveLength(1);
@@ -786,10 +786,10 @@ describe('Add to your catalog (#270)', () => {
     );
     const dialog = await screen.findByRole('dialog');
 
-    await userEvent.type(
+    await userEvent.click(
       within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-      'kombucha',
     );
+    await userEvent.paste('kombucha');
 
     const options = await within(dialog).findAllByRole('option');
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);

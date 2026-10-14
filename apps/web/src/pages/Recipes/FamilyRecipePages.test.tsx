@@ -771,10 +771,10 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
     });
     await screen.findByLabelText(/^Title/);
 
-    await user.type(
+    await user.click(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'kombucha',
     );
+    await user.paste('kombucha');
 
     // Only the search listbox's options: the form's native selects have options too.
     const options = within(await screen.findByRole('listbox')).getAllByRole(
@@ -795,12 +795,12 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
       'ingredient',
     );
 
-    await user.type(
+    await user.click(
       await screen.findByRole('combobox', {
         name: 'Linked Ingredient of Pairing 1',
       }),
-      'kombucha',
     );
+    await user.paste('kombucha');
 
     const options = within(await screen.findByRole('listbox')).getAllByRole(
       'option',

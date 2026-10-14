@@ -47,7 +47,6 @@
     "placeholder": "Search categories, e.g. spices",
     "typeToSearch": "type to search categories",
     "noMatch": "No category matches. Try the aisle name.",
-    "loading": "Searching categories",
     "change": "Change category",
     "pickOne": "pick one",
     "unit": "Unit",

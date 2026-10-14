@@ -269,8 +269,9 @@ export function CatalogSearch({
       event.preventDefault();
       pick(active);
     } else if (event.key === 'Enter' && expanded && !search.isSearching) {
-      // No row is active: pick the first option (the first result, or "Use as
-      // typed" when it is the only one), once the results for what is typed have arrived.
+      // No row is active: pick the first option (the first result; with no
+      // match, "Use as typed" or "Add to your catalog"), once the results for
+      // what is typed have arrived.
       event.preventDefault();
       pick(0);
     } else if (
