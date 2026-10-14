@@ -1836,7 +1836,9 @@ describe('PantryPage', () => {
         };
 
         /** The Pantry follows the saves, as the API does; Catalog search finds Milk. */
-        function stubAdding() {
+        function stubAdding({
+          searchGate,
+        }: { searchGate?: Promise<void> } = {}) {
           let batches = [
             batch({ id: 'milk-1', name: 'Milk', quantity: 1, unit: 'l' }),
             batch({
@@ -1851,8 +1853,10 @@ describe('PantryPage', () => {
             'GET /api/pantry': () => Response.json({ batches, runningLow: [] }),
             'GET /api/staples': () => Response.json({ staples: [] }),
             'GET /api/settings/family': familySettings(3),
-            'GET /api/catalog/search': () =>
-              Response.json({ results: [parmesan, milk] }),
+            'GET /api/catalog/search': async () => {
+              await searchGate;
+              return Response.json({ results: [parmesan, milk] });
+            },
             'POST /api/pantry/batches': () => {
               const saved = batch({
                 id: 'milk-new',
@@ -1942,6 +1946,56 @@ describe('PantryPage', () => {
           // Back on the Pantry with Milk still open, now with the new Batch.
           await waitFor(() => expect(batchRows()).toHaveLength(2));
           expect(batchRows()[1]).toHaveTextContent(/Fresh/);
+        });
+
+        it("keeps a Location and expiry the Member set before the Ingredient's Catalog defaults arrive", async () => {
+          const user = userEvent.setup();
+          const { gate, release } = gated();
+          const calls = stubAdding({ searchGate: gate });
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          await user.click(addButton('Milk'));
+          // The search for Milk's defaults is still out: the Member picks the freezer and a 3-day expiry.
+          await user.selectOptions(
+            screen.getByLabelText('Location'),
+            'freezer',
+          );
+          await user.click(screen.getByRole('button', { name: /^Expires,/ }));
+          const sheet = await screen.findByRole('dialog', { name: 'Expires' });
+          await user.click(quickPick(sheet, /^3 days,/));
+          await user.click(sheetButton(sheet, 'Done'));
+          await waitFor(() =>
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+          );
+          await act(async () => release());
+          // Milk's defaults have landed: it shows as the picked token.
+          await screen.findByRole('combobox', {
+            name: 'Ingredient: Milk. Press Backspace to change',
+          });
+          expect(screen.getByLabelText('Location')).toHaveValue('freezer');
+
+          await user.type(
+            screen.getByRole('textbox', { name: /Amount of Milk/ }),
+            '2',
+          );
+          await user.click(
+            screen.getByRole('button', { name: 'Add to Pantry' }),
+          );
+
+          await waitFor(() =>
+            expect(
+              calls.find((call) => call.key === 'POST /api/pantry/batches')
+                ?.body,
+            ).toEqual({
+              ingredientId: 'milk-id',
+              quantity: 2,
+              unit: 'l',
+              location: 'freezer',
+              expiryDate: inDays(3),
+              productDescription: null,
+            }),
+          );
         });
 
         it("opens Add batch with an Unmatched Ingredient's name filled in, to save another Unmatched Batch", async () => {

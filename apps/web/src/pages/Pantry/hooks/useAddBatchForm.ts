@@ -88,9 +88,18 @@ export function useAddBatchForm({
   const startingDefaults = startingLookup.data?.find(
     (result) => result.id === startingIngredient?.id,
   );
+  // The fields stay editable while the lookup is out: what the Member sets in that time is kept.
+  // The lookup can also miss (the name search may not return the id): the save still sends the
+  // starting `ingredientId`, and Location and expiry stay on their fallbacks.
+  const [touched, setTouched] = useState({ location: false, expiry: false });
   useEffect(() => {
-    if (startingDefaults && ingredient === startingIngredient)
-      selectIngredient(startingDefaults);
+    if (!startingDefaults || ingredient !== startingIngredient) return;
+    setIngredient(startingDefaults);
+    if (!touched.location)
+      setLocation(startingDefaults.defaults.location ?? FALLBACK_LOCATION);
+    const days = startingDefaults.defaults.expiryDays;
+    if (!touched.expiry)
+      setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
     // Once, when the lookup lands; not again after the Member has picked or typed something else.
   }, [startingDefaults]);
 
@@ -160,8 +169,14 @@ export function useAddBatchForm({
     chooseTypedName,
     setQuantity,
     setUnit: setChosenUnit,
-    setLocation,
-    setExpiryDate,
+    setLocation: (value: StorageLocation) => {
+      setTouched((was) => ({ ...was, location: true }));
+      setLocation(value);
+    },
+    setExpiryDate: (value: IsoDate | null) => {
+      setTouched((was) => ({ ...was, expiry: true }));
+      setExpiryDate(value);
+    },
     setDescription,
     submit,
   };
