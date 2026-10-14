@@ -42,12 +42,18 @@ export type DefaultExpirySheetProps = {
   open: boolean;
   start: SheetStart;
   options: CategoryOptions | undefined;
+  /** The categories query is still loading. */
+  optionsPending: boolean;
+  /** Why the categories failed to load, if they did. */
+  optionsError: unknown;
   /** The Family's visible overrides (not ones pending an Undo). */
   overrides: ExpiryOverride[];
   onClose: () => void;
   onExited: () => void;
   /** "Use Catalog default": the section removes the override with Undo. */
   onUseCatalog: (category: CategoryRef) => void;
+  /** Runs just before Save sends: drops a removal of this category still waiting on its Undo. */
+  onBeforeSave: (categoryId: string) => void;
 };
 
 type View =
@@ -62,10 +68,13 @@ export function DefaultExpirySheet({
   open,
   start,
   options,
+  optionsPending,
+  optionsError,
   overrides,
   onClose,
   onExited,
   onUseCatalog,
+  onBeforeSave,
 }: DefaultExpirySheetProps) {
   const { t } = useTranslation('settings');
   const toast = useToast();
@@ -108,6 +117,7 @@ export function DefaultExpirySheet({
 
   const save = () => {
     if (!category) return;
+    onBeforeSave(category.id);
     setOverride.mutateAsync({ categoryId: category.id, days }).then(
       () => {
         toast.show(
@@ -206,6 +216,8 @@ export function DefaultExpirySheet({
           onQuery={setQuery}
           searchRef={searchRef}
           options={options}
+          optionsPending={optionsPending}
+          optionsError={optionsError}
           overrides={overrides}
           onChoose={chooseCategory}
         />
@@ -311,6 +323,8 @@ function PickList({
   onQuery,
   searchRef,
   options,
+  optionsPending,
+  optionsError,
   overrides,
   onChoose,
 }: {
@@ -318,6 +332,8 @@ function PickList({
   onQuery: (value: string) => void;
   searchRef: Ref<HTMLInputElement>;
   options: CategoryOptions | undefined;
+  optionsPending: boolean;
+  optionsError: unknown;
   overrides: ExpiryOverride[];
   onChoose: (id: string) => void;
 }) {
@@ -340,7 +356,15 @@ function PickList({
           },
         }}
       />
-      {groups.length === 0 ? (
+      {optionsPending ? (
+        <Typography role="status" color="text.secondary">
+          {t('defaultExpiry.loadingCategories')}
+        </Typography>
+      ) : null}
+      {optionsError ? (
+        <Alert>{translateApiError(t, optionsError)}</Alert>
+      ) : null}
+      {options && query.trim() !== '' && groups.length === 0 ? (
         <Typography color="text.secondary">
           {t('defaultExpiry.noMatch', { query })}
         </Typography>

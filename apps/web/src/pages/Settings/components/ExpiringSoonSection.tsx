@@ -60,11 +60,13 @@ export function ExpiringSoonSection() {
 
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const unsent = useRef<number | null>(null);
-  const saving = useRef(false);
+  // Saves can overlap: count those in flight, and number them so only the latest may revert.
+  const inFlight = useRef(0);
+  const latestSave = useRef(0);
 
   // A new saved value (ours, once it lands, or another device's) replaces the draft, unless a change is still pending.
   useEffect(() => {
-    if (!saving.current && unsent.current === null) setDraft(null);
+    if (inFlight.current === 0 && unsent.current === null) setDraft(null);
   }, [saved]);
 
   const flush = () => {
@@ -73,16 +75,21 @@ export function ExpiringSoonSection() {
     const next = unsent.current;
     if (next === null) return;
     unsent.current = null;
-    saving.current = true;
+    inFlight.current += 1;
+    const saveNumber = ++latestSave.current;
     save.mutateAsync(next).then(
       () => {
-        saving.current = false;
+        inFlight.current -= 1;
         toast.show(t('expiringSoon.saved'));
       },
       (error: unknown) => {
-        saving.current = false;
-        // Revert, unless the Member has tapped again since.
-        if (unsent.current === null && timer.current === undefined)
+        inFlight.current -= 1;
+        // Revert, unless a newer save has been sent or the Member has tapped again since.
+        if (
+          saveNumber === latestSave.current &&
+          unsent.current === null &&
+          timer.current === undefined
+        )
           setDraft(null);
         toast.show(translateApiError(t, error));
       },
@@ -113,7 +120,7 @@ export function ExpiringSoonSection() {
   const canPlus = value !== undefined && value < MAX_DAYS;
 
   return (
-    <Stack component="section" spacing={1}>
+    <Stack component="section" spacing={1} aria-labelledby={headingId}>
       <SectionHeading id={headingId} title={t('expiringSoon.title')} />
       <Card>
         <Stack spacing={2}>

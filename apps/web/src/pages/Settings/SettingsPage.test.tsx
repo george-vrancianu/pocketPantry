@@ -257,9 +257,11 @@ describe('SettingsPage', () => {
     );
     expect(screen.getByText('Sign out of this phone?')).toBeInTheDocument();
     expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByText('Sign out of this phone?')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Sign out' })).toHaveFocus();
     expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
   });
 

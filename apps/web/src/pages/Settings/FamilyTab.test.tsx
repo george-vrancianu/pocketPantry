@@ -28,24 +28,29 @@ type StubOptions = {
   family?: Family;
   threshold?: number;
   saveStatus?: number;
+  /** Answers each PATCH in turn, replacing `saveStatus`. */
+  patch?: () => Promise<Response>;
 };
 
 function stubFamilyTab({
   family: current = family(),
   threshold = 7,
   saveStatus = 200,
+  patch,
 }: StubOptions = {}) {
   const { fetchMock, calls } = stubApi({
     'GET /api/family': () => Response.json(current),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: threshold, expiryOverrides: [] }),
     'PATCH /api/settings/family': () =>
-      saveStatus === 200
-        ? Response.json({})
-        : Response.json(
-            { code: 'internal_server_error', params: {} },
-            { status: saveStatus },
-          ),
+      patch
+        ? patch()
+        : saveStatus === 200
+          ? Response.json({})
+          : Response.json(
+              { code: 'internal_server_error', params: {} },
+              { status: saveStatus },
+            ),
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
@@ -100,7 +105,9 @@ describe('FamilyTab', () => {
       stubFamilyTab();
       renderWithProviders(<FamilyTab />);
 
-      expect(await screen.findByText('Your family')).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Your family' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(/You are the Owner/)).toBeInTheDocument();
       expect(screen.getByText(/2 members/)).toBeInTheDocument();
     });
@@ -237,7 +244,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 1 });
       renderWithProviders(<FamilyTab />);
 
-      const value = await screen.findByLabelText('Expiring soon');
+      const value = await screen.findByRole('group', { name: 'Expiring soon' });
       expect(within(value).getByText('1')).toBeInTheDocument();
       expect(within(value).getByText('day')).toBeInTheDocument();
       expect(
@@ -252,7 +259,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 30 });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       expect(
         screen.getByRole('button', { name: 'One day more' }),
       ).toBeDisabled();
@@ -265,7 +272,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 45 });
       renderWithProviders(<FamilyTab />);
 
-      const value = await screen.findByLabelText('Expiring soon');
+      const value = await screen.findByRole('group', { name: 'Expiring soon' });
       expect(within(value).getByText('45')).toBeInTheDocument();
       expect(within(value).getByText('days')).toBeInTheDocument();
       expect(
@@ -294,12 +301,14 @@ describe('FamilyTab', () => {
       });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       const plus = screen.getByRole('button', { name: 'One day more' });
       await user.click(plus);
       await user.click(plus);
       await user.click(plus);
-      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('10');
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('10');
       expect(patches(calls)).toHaveLength(0);
 
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
@@ -316,7 +325,7 @@ describe('FamilyTab', () => {
       });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       await user.click(screen.getByRole('button', { name: 'One day more' }));
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
         timeout: 2000,
@@ -326,7 +335,48 @@ describe('FamilyTab', () => {
           'Something went wrong on our side. Please try again.',
         ),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('7');
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('7');
+    });
+
+    it('keeps the newer value when an older save fails while the newer one is in flight', async () => {
+      const answers: Array<(response: Response) => void> = [];
+      const calls = stubFamilyTab({
+        threshold: 7,
+        patch: () => new Promise((resolve) => answers.push(resolve)),
+      });
+      const user = userEvent.setup({
+        advanceTimers: (ms) => vi.advanceTimersByTime(ms),
+      });
+      renderWithProviders(<FamilyTab />);
+
+      await screen.findByRole('group', { name: 'Expiring soon' });
+      const plus = screen.getByRole('button', { name: 'One day more' });
+      await user.click(plus);
+      await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
+        timeout: 2000,
+      });
+      await user.click(plus);
+      await vi.waitFor(() => expect(patches(calls)).toHaveLength(2), {
+        timeout: 2000,
+      });
+      expect(patches(calls)[1].body).toEqual({ staleThresholdDays: 9 });
+
+      answers[0](
+        Response.json(
+          { code: 'internal_server_error', params: {} },
+          { status: 500 },
+        ),
+      );
+      expect(
+        await screen.findByText(
+          'Something went wrong on our side. Please try again.',
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('9');
     });
 
     it('sends a pending change when the tab is left before the 600 ms pass', async () => {
@@ -336,7 +386,7 @@ describe('FamilyTab', () => {
       });
       const { unmount } = renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       await user.click(screen.getByRole('button', { name: 'One day more' }));
       unmount();
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1));

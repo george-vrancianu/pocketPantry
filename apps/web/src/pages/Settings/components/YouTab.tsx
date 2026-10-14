@@ -12,7 +12,7 @@ import {
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
@@ -40,6 +40,19 @@ export function YouTab() {
   const navigate = useNavigate();
   const id = useId();
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  // Focus follows the inline confirm: to Cancel when it opens, back to "Sign out" when cancelled.
+  const cancelButton = useRef<HTMLButtonElement>(null);
+  const signOutButton = useRef<HTMLButtonElement>(null);
+  const confirmToggled = useRef(false);
+  useEffect(() => {
+    if (!confirmToggled.current) return;
+    if (confirmingSignOut) cancelButton.current?.focus();
+    else signOutButton.current?.focus();
+  }, [confirmingSignOut]);
+  const toggleConfirm = (open: boolean) => {
+    confirmToggled.current = true;
+    setConfirmingSignOut(open);
+  };
   const isAdmin = session.data?.user.role === 'admin';
   const unmatched = useLoadedUnmatchedCount(isAdmin);
 
@@ -171,9 +184,10 @@ export function YouTab() {
             <Typography variant="body2">{t('signOutConfirm')}</Typography>
             <Stack direction="row" spacing={0.5}>
               <Button
+                ref={cancelButton}
                 variant="ghost"
                 size="sm"
-                onClick={() => setConfirmingSignOut(false)}
+                onClick={() => toggleConfirm(false)}
               >
                 {t('cancel')}
               </Button>
@@ -193,10 +207,11 @@ export function YouTab() {
           </Box>
         ) : (
           <Button
+            ref={signOutButton}
             variant="secondary"
             fullWidth
             startIcon={<LogoutIcon size={18} />}
-            onClick={() => setConfirmingSignOut(true)}
+            onClick={() => toggleConfirm(true)}
           >
             {t('signOut')}
           </Button>

@@ -47,12 +47,14 @@ function stubFamily(
   options: {
     put?: () => Response;
     del?: () => Response;
+    categories?: () => Response | Promise<Response>;
   } = {},
 ) {
   let current = overrides;
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () => Response.json(family(current)),
-    'GET /api/settings/categories': () => Response.json(categories),
+    'GET /api/settings/categories': () =>
+      options.categories?.() ?? Response.json(categories),
     'GET /api/settings/preferences': () =>
       Response.json({ locale: null, theme: null }),
     'GET /api/auth/get-session': () => Response.json(null),
@@ -61,6 +63,13 @@ function stubFamily(
     'DELETE /api/settings/family/expiry-overrides/l-milk': () => {
       current = current.filter((o) => o.categoryId !== 'l-milk');
       return options.del?.() ?? new Response(null, { status: 204 });
+    },
+    'PUT /api/settings/family/expiry-overrides/l-cheese': () => {
+      current = [
+        ...current,
+        { categoryId: 'l-cheese', name: 'Hard cheese', days: 30 },
+      ];
+      return new Response(null, { status: 204 });
     },
     'DELETE /api/settings/family/expiry-overrides/p-produce': () => {
       current = current.filter((o) => o.categoryId !== 'p-produce');
@@ -233,6 +242,43 @@ describe('Default expiry', () => {
       ).toBeVisible();
     });
 
+    it('says the categories are loading while they load, not that none match', async () => {
+      const user = userEvent.setup();
+      stubFamily([], { categories: () => new Promise<Response>(() => {}) });
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Loading categories',
+      );
+      expect(within(sheet).queryByText(/No category matches/)).toBeNull();
+    });
+
+    it('shows the error when the categories fail to load', async () => {
+      const user = userEvent.setup();
+      stubFamily([], {
+        categories: () =>
+          Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      });
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+
+      expect(await within(sheet).findByRole('alert')).toHaveTextContent(
+        'Something went wrong. Please try again.',
+      );
+      expect(within(sheet).queryByText(/No category matches/)).toBeNull();
+    });
+
     it('shows the override as "Set" beside a category, else the Catalog default', async () => {
       const user = userEvent.setup();
       stubFamily([MILK]);
@@ -371,6 +417,66 @@ describe('Default expiry', () => {
       ]);
     });
 
+    it('creates a new override from "Set a category" and lists it', async () => {
+      const user = userEvent.setup();
+      const { calls } = stubFamily([MILK]);
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const picker = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+      await user.click(
+        within(picker).getByRole('button', { name: /Hard cheese/ }),
+      );
+      const sheet = await screen.findByRole('dialog', { name: 'Hard cheese' });
+      await user.click(within(sheet).getByRole('button', { name: '1 month' }));
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('Hard cheese: 30 days')).toBeVisible();
+      expect(calls.filter((call) => call.key.startsWith('PUT'))).toEqual([
+        expect.objectContaining({
+          key: 'PUT /api/settings/family/expiry-overrides/l-cheese',
+          body: { days: 30 },
+        }),
+      ]);
+      const row = await waitFor(() => rowOf('Hard cheese'));
+      expect(within(row).getByText('Dairy · Catalog 60 d')).toBeVisible();
+      expect(within(row).getByText('30')).toBeVisible();
+    });
+
+    it('saving a category whose removal is still waiting on Undo drops that removal and sends only the PUT', async () => {
+      const user = userEvent.setup();
+      const { calls } = stubFamily([MILK]);
+      renderFamily();
+      await rowOfAsync('Milk');
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Use the Catalog default for Milk',
+        }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Set a category' }));
+      const picker = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+      await user.click(within(picker).getByRole('button', { name: /Milk/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Milk' });
+      await user.click(within(sheet).getByRole('button', { name: '2 weeks' }));
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('Milk: 14 days')).toBeVisible();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: 'Milk' })).toBeNull(),
+      );
+      expect(screen.queryByText('Milk uses the Catalog default')).toBeNull();
+      expect(writes(calls)).toEqual([
+        'PUT /api/settings/family/expiry-overrides/l-milk',
+      ]);
+      expect(rowOf('Milk')).toBeVisible();
+    });
+
     it('a save error keeps the sheet open with the error above the footer', async () => {
       const user = userEvent.setup();
       stubFamily([MILK], {
@@ -449,6 +555,22 @@ describe('Default expiry', () => {
       renderFamily();
       const row = await rowOfAsync('Milk');
       await user.click(row);
+      const sheet = await screen.findByRole('dialog', { name: 'Milk' });
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => expect(sheet).not.toBeInTheDocument());
+      await waitFor(() => expect(rowOf('Milk')).toHaveFocus());
+    });
+
+    it('returns focus to the row even when clicking it did not focus it (as in Safari)', async () => {
+      const user = userEvent.setup();
+      stubFamily([MILK]);
+      renderFamily();
+      const row = await rowOfAsync('Milk');
+      // fireEvent clicks without moving focus, as Safari does for buttons.
+      fireEvent.click(row);
+      expect(row).not.toHaveFocus();
       const sheet = await screen.findByRole('dialog', { name: 'Milk' });
 
       await user.keyboard('{Escape}');

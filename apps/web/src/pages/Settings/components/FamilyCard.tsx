@@ -180,7 +180,7 @@ export function FamilyCard() {
           <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="body1"
-              component="h3"
+              component="h2"
               sx={{ fontWeight: 700, fontSize: 21 }}
             >
               {t('familyCard.title')}
