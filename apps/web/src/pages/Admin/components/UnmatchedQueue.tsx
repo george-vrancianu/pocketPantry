@@ -227,7 +227,7 @@ function QueueRow({
           {t('unmatched.resolve')}
         </Button>
         <Button
-          variant="text"
+          variant="ghost"
           disabled={busy}
           aria-label={t(
             dismissed ? 'unmatched.restoreName' : 'unmatched.dismissName',

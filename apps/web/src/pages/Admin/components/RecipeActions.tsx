@@ -69,7 +69,7 @@ export function RecipeActions({ recipe, onOpen }: Props) {
         <Alert severity="info">{t('admin:recipe.archive.note')}</Alert>
       ) : (
         <ConfirmAction
-          variant="text"
+          variant="ghost"
           label={t('admin:recipe.archive.label')}
           message={t('admin:recipe.archive.confirm')}
           disabled={archive.isPending}

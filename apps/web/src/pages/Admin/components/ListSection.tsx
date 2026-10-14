@@ -45,7 +45,7 @@ export function ListSection({ kind, entries, onCreate, onEdit }: Props) {
             return (
               <li key={entry.id}>
                 <Button
-                  variant="text"
+                  variant="ghost"
                   aria-label={t(`list.${kind}.edit`, { name })}
                   onClick={() => onEdit(entry.id)}
                 >

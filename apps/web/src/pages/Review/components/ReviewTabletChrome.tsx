@@ -75,7 +75,7 @@ export function ReviewTabletFooter({
       </Box>
       <Box sx={{ display: 'flex', gap: '10px' }}>
         <Button
-          variant="text"
+          variant="ghost"
           onClick={onDiscard}
           sx={{
             bgcolor: tokens.color.surface,

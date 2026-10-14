@@ -33,7 +33,7 @@ export function CategoryTree({ catalog, onCreate, onEdit }: Props) {
         return (
           <Stack key={parent.id} component="section" spacing={0.5}>
             <Button
-              variant="text"
+              variant="ghost"
               aria-label={t('category.editParent', { name: parentName })}
               onClick={() => onEdit('parent', parent.id)}
             >
@@ -48,7 +48,7 @@ export function CategoryTree({ catalog, onCreate, onEdit }: Props) {
                 return (
                   <li key={leaf.id}>
                     <Button
-                      variant="text"
+                      variant="ghost"
                       aria-label={t('category.editLeaf', { name: leafName })}
                       onClick={() => onEdit('leaf', leaf.id)}
                     >

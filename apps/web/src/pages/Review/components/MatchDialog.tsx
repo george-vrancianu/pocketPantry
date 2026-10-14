@@ -24,7 +24,7 @@ export function MatchDialog({ open, name, onSelect, onClose }: Props) {
       onClose={onClose}
       title={t('review:match.dialogTitle', { name })}
       actions={
-        <Button variant="text" onClick={onClose}>
+        <Button variant="ghost" onClick={onClose}>
           {t('common:cancel')}
         </Button>
       }

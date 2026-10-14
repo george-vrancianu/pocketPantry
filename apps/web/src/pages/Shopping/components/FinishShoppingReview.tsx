@@ -31,7 +31,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
       </Typography>
       {review.error ? <Alert>{review.error}</Alert> : null}
       {review.stale ? (
-        <Button type="button" variant="text" onClick={review.reload}>
+        <Button type="button" variant="ghost" onClick={review.reload}>
           {t('shopping:finish.reload')}
         </Button>
       ) : null}
@@ -63,7 +63,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
               {line.unmatched ? ` (${t('shopping:item.unmatched')})` : ''}
             </Typography>
             <Button
-              variant="text"
+              variant="ghost"
               type="button"
               aria-pressed={dropped}
               onClick={() => review.toggleDrop(line.itemId)}
@@ -168,7 +168,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
               : t('shopping:finish.confirm', { count: review.keptCount })}
           </Button>
         )}
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('shopping:finish.cancel')}
         </Button>
       </Stack>

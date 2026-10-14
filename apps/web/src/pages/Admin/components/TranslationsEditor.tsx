@@ -170,7 +170,7 @@ function LocaleBlock({
                   {item.value}
                 </Typography>
                 <Button
-                  variant="text"
+                  variant="ghost"
                   aria-label={t('translations.removeSynonym', {
                     value: item.value,
                   })}

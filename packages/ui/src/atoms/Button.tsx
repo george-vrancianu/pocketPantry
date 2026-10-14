@@ -19,9 +19,9 @@ export type ButtonProps = Omit<ButtonBaseProps, 'color'> & {
   /**
    * Handoff section 4. `primary` is the Theme primary (ink-black in Minimal
    * crisp), `secondary` a bordered surface, `tonal` the accent tint, `ghost`
-   * accent text, `danger` the urgent pair. `text` is the old name of `ghost`.
+   * accent text, `danger` the urgent pair.
    */
-  variant?: ButtonVariant | 'text';
+  variant?: ButtonVariant;
   /** `sm` is 36 high for tight rows. */
   size?: 'md' | 'sm';
   /** `pill` is fully round, e.g. Done or Move N to Pantry. */
@@ -112,7 +112,7 @@ export function Button({
                 ? nestedRadius(radius.control, 2)
                 : radius.control,
         },
-        variantSx(variant === 'text' ? 'ghost' : variant),
+        variantSx(variant),
         press,
         focusRing,
         ...(Array.isArray(sx) ? sx : [sx]),

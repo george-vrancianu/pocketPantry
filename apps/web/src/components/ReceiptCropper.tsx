@@ -149,21 +149,21 @@ export function ReceiptCropper({
         }}
       >
         <Button
-          variant="text"
+          variant="ghost"
           sx={{ color: tokens.color.ink }}
           onClick={() => onCancel()}
         >
           {t('crop.cancel')}
         </Button>
         <Button
-          variant="text"
+          variant="ghost"
           sx={{ color: tokens.color.ink }}
           onClick={() => setQuarterTurns((turns) => (turns + 3) % 4)}
         >
           {t('crop.rotateLeft')}
         </Button>
         <Button
-          variant="text"
+          variant="ghost"
           sx={{ color: tokens.color.ink }}
           onClick={() => setQuarterTurns((turns) => (turns + 1) % 4)}
         >
