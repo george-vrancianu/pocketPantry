@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { StorageLocation } from '../../../lib/catalog';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -69,27 +69,39 @@ export function usePantryScreen() {
       ? searched
       : searched.filter((batch) => batch.location === filter);
 
+  const sections = groupByLocation(shown).map((group) => ({
+    location: group.location,
+    batchCount: group.batches.filter(live).length,
+    rows: rollUp(group.batches).map((row): PantryRow => {
+      const remaining = row.batches.filter(live);
+      const gone = remaining.length === 0;
+      const current =
+        remaining.length === row.batches.length || gone
+          ? row
+          : rollUp(remaining)[0];
+      const key = openIngredientKey(group.location, current.key);
+      return {
+        ...current,
+        gone,
+        runningLow: flagged.has(current.key),
+        openKey: key,
+        open: key === openKey,
+      };
+    }),
+  }));
+
+  // The open key goes with its row: once no row shown has it (filtered, searched or deleted away),
+  // nothing is open, so the card does not come back open unprompted when the row returns.
+  const openRowShown = sections.some((section) =>
+    section.rows.some((row) => row.open),
+  );
+  const loaded = batches.data !== undefined;
+  useEffect(() => {
+    if (loaded && !openRowShown) setOpenKey(null);
+  }, [loaded, openRowShown]);
+
   return {
-    sections: groupByLocation(shown).map((group) => ({
-      location: group.location,
-      batchCount: group.batches.filter(live).length,
-      rows: rollUp(group.batches).map((row): PantryRow => {
-        const remaining = row.batches.filter(live);
-        const gone = remaining.length === 0;
-        const current =
-          remaining.length === row.batches.length || gone
-            ? row
-            : rollUp(remaining)[0];
-        const key = openIngredientKey(group.location, current.key);
-        return {
-          ...current,
-          gone,
-          runningLow: flagged.has(current.key),
-          openKey: key,
-          open: key === openKey,
-        };
-      }),
-    })),
+    sections,
     counts: countByLocation(searched.filter(live)),
     query,
     setQuery,

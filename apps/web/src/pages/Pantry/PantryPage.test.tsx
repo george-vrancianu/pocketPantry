@@ -2517,6 +2517,23 @@ describe('PantryPage', () => {
         expect(screen.queryByRole('group', { name: /batch/ })).toBeNull();
       });
 
+      it('closes the open Ingredient once its row is filtered away, so it does not come back open', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+
+        await user.click(row('Milk'));
+        // Milk is in the Fridge: the Freezer chip hides it.
+        await user.click(screen.getByRole('button', { name: /^Freezer/ }));
+        expect(
+          screen.queryByRole('button', { name: /^Milk/ }),
+        ).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: /^All/ }));
+
+        expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
+      });
+
       it('opens only the tapped Location when the Ingredient is in two', async () => {
         const user = userEvent.setup();
         stubManaged([

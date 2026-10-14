@@ -52,7 +52,7 @@
   },
   "a11y": {
     "markLow": "Marchează ca fiind pe sfârșite",
-    "clearLow": "Nu mai e pe sfârșite",
+    "clearLow": "Șterge marcajul „pe sfârșite”",
     "lowKey": "Apasă L: {{action}}.",
     "stapleKey": "Apasă S: {{action}}.",
     "makeStaple": "Fă-l produs de bază",

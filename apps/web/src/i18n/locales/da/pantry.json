@@ -33,7 +33,7 @@
     "label_one": "{{name}}, {{count}} parti",
     "label_other": "{{name}}, {{count}} partier",
     "runningLow": "Ved at løbe tør",
-    "notLow": "Ikke tør",
+    "notLow": "Har nok",
     "staple": "Basisvare",
     "makeStaple": "Gør til basisvare",
     "addBatch": "Tilføj et parti af {{name}}"

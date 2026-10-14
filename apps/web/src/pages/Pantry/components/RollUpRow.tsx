@@ -94,6 +94,7 @@ export function RollUpRow({
   );
   useEffect(() => () => clearTimeout(flipTimer.current), []);
   const onSwipeToggle = () => {
+    // Intended: a second swipe within FLAG_FLIP_MS restarts the wait, so two quick swipes flip once.
     clearTimeout(flipTimer.current);
     flipTimer.current = setTimeout(() => latestFlip.current(), FLAG_FLIP_MS);
   };
