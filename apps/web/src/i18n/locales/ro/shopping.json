@@ -83,5 +83,8 @@
     "goneLabelStaple": "{{name}}, produs de bază lipsă"
   },
   "templatesFromSearch": "Sau începe de la un șablon",
-  "seeAll": "Vezi tot"
+  "seeAll": "Vezi tot",
+  "import": {
+    "inTrolley": "În coș"
+  }
 }

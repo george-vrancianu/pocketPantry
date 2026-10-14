@@ -134,6 +134,48 @@ describe('ApplyTemplatePicker', () => {
     ).toBeEnabled();
   });
 
+  it('tags a line matching a checked Shopping Item "In trolley" and starts it unticked', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-templates/t1': () => Response.json(template),
+      'GET /api/shopping-list': () =>
+        Response.json({
+          id: 'list1',
+          groups: [
+            {
+              aisle: dairy,
+              items: [
+                {
+                  id: 'i1',
+                  ingredientId: 'l2-ing',
+                  name: 'Milk',
+                  quantity: 1,
+                  unit: 'l',
+                  checked: true,
+                  unmatched: false,
+                },
+              ],
+            },
+          ],
+          summary: { remaining: 0, checked: 1 },
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <ApplyTemplatePicker
+        templateId="t1"
+        onDone={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const milk = await screen.findByRole('checkbox', { name: /Milk/ });
+    await waitFor(() => expect(milk).not.toBeChecked());
+    expect(milk).toHaveAccessibleDescription('In trolley');
+    expect(
+      screen.getByRole('checkbox', { name: /Mystery spice/ }),
+    ).toBeChecked();
+  });
+
   it('adds only the ticked lines through the bulk endpoint, then finishes', async () => {
     const calls = stub();
     const onDone = vi.fn();

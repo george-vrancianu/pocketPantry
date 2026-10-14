@@ -139,8 +139,7 @@ export function useTemplateMutations(locale: string) {
 export function useApplyTemplate(locale: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (lines: TemplateLine[]) =>
-      postShoppingItems(locale, lines.map(toLineBody)),
+    mutationFn: (body: NewShoppingItem[]) => postShoppingItems(locale, body),
     // Suggestions hide while the Ingredient is on the list.
     onSuccess: () =>
       Promise.all([

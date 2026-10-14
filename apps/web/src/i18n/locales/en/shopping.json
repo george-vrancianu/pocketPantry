@@ -80,5 +80,8 @@
     "goneLabelStaple": "{{name}}, missing staple"
   },
   "templatesFromSearch": "Or start from a template",
-  "seeAll": "See all"
+  "seeAll": "See all",
+  "import": {
+    "inTrolley": "In trolley"
+  }
 }
