@@ -63,12 +63,20 @@
     "add": "Føj {{name}} til listen"
   },
   "suggestions": {
-    "runningLowLabel": "Løber tør · {{count}}",
+    "runningLowLabel": "Løber tør",
     "runningLowWhy": "løber tør",
     "runningLowTile": "{{name}}, løber tør",
     "manage": "Administrer",
     "dismissed": "Afviste {{name}}",
-    "dismiss": "Afvis {{name}}"
+    "dismiss": "Afvis {{name}}",
+    "gone": "Væk fra dit spisekammer",
+    "goneNone": "Intet er løbet tør eller udløbet. Fedt.",
+    "usedUpWhen": "brugt op · {{when}}",
+    "expiredWhen": "udløbet · {{when}}",
+    "stapleWhy": "basisvare",
+    "goneLabelUsedUp": "{{name}}, brugt op {{when}}",
+    "goneLabelExpired": "{{name}}, udløbet {{when}}",
+    "goneLabelStaple": "{{name}}, manglende basisvare"
   },
   "templatesFromSearch": "Eller start fra en skabelon",
   "seeAll": "Se alle"

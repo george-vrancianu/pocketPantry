@@ -49,6 +49,9 @@ export function useCatalogParents(locale: string, enabled = true) {
   });
 }
 
+/** Which Catalog a search reads: `shared` is the shared Catalog only (Admin); `family` adds the Family's own. */
+export type CatalogScopeName = 'family' | 'shared';
+
 export type CatalogAisle = {
   id: string;
   name: string;
@@ -58,7 +61,7 @@ export type CatalogAisle = {
 /** The Aisles in shop order with their Parent Categories, for Browse by aisle. */
 export function useCatalogAisles(
   locale: string,
-  scope: 'family' | 'shared' = 'family',
+  scope: CatalogScopeName = 'family',
   enabled = true,
 ) {
   return useQuery({
@@ -90,7 +93,7 @@ const aisleOfKey = (key: readonly unknown[]) =>
 export function useCatalogSearch(
   query: string,
   locale: string,
-  scope: 'family' | 'shared' = 'family',
+  scope: CatalogScopeName = 'family',
   within: SearchWithin | null = null,
 ) {
   const debounced = useDebounced(query.trim(), 150);

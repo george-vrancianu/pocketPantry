@@ -57,7 +57,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setUnmatchedName(null);
   };
 
-  const useTypedName = (name: string) => {
+  const chooseTypedName = (name: string) => {
     setUnmatchedName(name);
     clearIngredient();
     setExpiryDate(null);
@@ -104,7 +104,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     error: addBatch.error ? translateApiError(t, addBatch.error) : null,
     selectIngredient,
     changeQuery,
-    useTypedName,
+    chooseTypedName,
     setQuantity,
     setUnit: setChosenUnit,
     setLocation,

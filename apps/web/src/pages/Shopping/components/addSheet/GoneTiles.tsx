@@ -11,7 +11,7 @@ import { translateApiError } from '../../../../i18n/translateApiError';
 import {
   goneInOrder,
   useDismissSuggestion,
-  type GoneReason,
+  type GoneEntry,
   type Suggestion,
   type Suggestions,
 } from '../../../../lib/suggestions';
@@ -26,51 +26,46 @@ export type GoneTilesProps = {
 /** "Gone from your Pantry": expired, then Used Up, then missing Staples, as tiles saying why and when. */
 export function GoneTiles({ suggestions, onPick }: GoneTilesProps) {
   const search = useEmptyStateSearch();
-  const { t } = useTranslation('catalog');
-  const { t: tShopping } = useTranslation('shopping');
+  const { t } = useTranslation('shopping');
   const toast = useSheetToast();
   const dismiss = useDismissSuggestion();
   const ago = useShortAgo();
   const all = goneInOrder(suggestions);
   const entries = all.slice(0, MAX_TILES);
+  if (!search) return null;
 
   const dismissTile = (suggestion: Suggestion) => {
     void dismiss.mutateAsync(suggestion.ingredientId).then(
-      () =>
-        toast.show(
-          tShopping('suggestions.dismissed', { name: suggestion.name }),
-        ),
-      (error: unknown) => toast.show(translateApiError(tShopping, error)),
+      () => toast.show(t('suggestions.dismissed', { name: suggestion.name })),
+      (error: unknown) => toast.show(translateApiError(t, error)),
     );
   };
 
-  const tile = ({
-    suggestion,
-    reason,
-  }: {
-    suggestion: Suggestion;
-    reason: GoneReason;
-  }) => {
+  const tile = ({ suggestion, reason }: GoneEntry) => {
     const { name, since } = suggestion;
     const age = since === null ? '' : ago(since);
     const { color } = tokens;
     const why = {
       expired: {
         glyph: '◷',
-        text: t('search.expiredWhen', { when: age }),
+        text: t('suggestions.expiredWhen', { when: age }),
         color: color.urgentFg,
       },
       usedUp: {
         glyph: '→',
-        text: t('search.usedUpWhen', { when: age }),
+        text: t('suggestions.usedUpWhen', { when: age }),
         color: color.muted,
       },
-      staple: { glyph: '★', text: t('search.staple'), color: color.soonIcon },
+      staple: {
+        glyph: '★',
+        text: t('suggestions.stapleWhy'),
+        color: color.soonIcon,
+      },
     }[reason];
     const label = {
-      expired: t('search.goneLabelExpired', { name, when: age }),
-      usedUp: t('search.goneLabelUsedUp', { name, when: age }),
-      staple: t('search.goneLabelStaple', { name }),
+      expired: t('suggestions.goneLabelExpired', { name, when: age }),
+      usedUp: t('suggestions.goneLabelUsedUp', { name, when: age }),
+      staple: t('suggestions.goneLabelStaple', { name }),
     }[reason];
     return (
       <IngredientTile
@@ -82,13 +77,13 @@ export function GoneTiles({ suggestions, onPick }: GoneTilesProps) {
         label={label}
         onSelect={() => {
           onPick?.(suggestion);
-          search?.select(suggestion.ingredient);
+          search.select(suggestion.ingredient);
         }}
         action={
           <Box
             component="button"
             type="button"
-            aria-label={tShopping('suggestions.dismiss', { name })}
+            aria-label={t('suggestions.dismiss', { name })}
             onClick={() => dismissTile(suggestion)}
             sx={{
               width: 24,
@@ -116,12 +111,12 @@ export function GoneTiles({ suggestions, onPick }: GoneTilesProps) {
   };
   return (
     <TileSection
-      heading={t('search.gone')}
+      heading={t('suggestions.gone')}
       count={all.length > 0 ? all.length : undefined}
-      none={t('search.goneNone')}
+      none={t('suggestions.goneNone')}
       action={
         <Link href="/shopping/staples" sx={{ fontSize: 13, fontWeight: 700 }}>
-          {tShopping('suggestions.manage')}
+          {t('suggestions.manage')}
         </Link>
       }
     >

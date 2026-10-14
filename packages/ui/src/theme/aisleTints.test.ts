@@ -32,6 +32,16 @@ describe('Aisle tints', () => {
     }
   });
 
+  it('gives Warm its own handoff backgrounds, readable at 4.5:1', () => {
+    expect(AISLE_TINTS.warm.produce.bg).toBe('#DFE7CF');
+    expect(AISLE_TINTS.warm.bakery.bg).toBe('#F3E4BF');
+    expect(AISLE_TINTS.warm).not.toEqual(AISLE_TINTS.minimal);
+    for (const name of AISLE_TINT_NAMES) {
+      const { bg, fg } = AISLE_TINTS.warm[name];
+      expect(contrast(bg, fg), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
   it('keeps the groups apart in Dark-first: no two share a tint', () => {
     const backgrounds = AISLE_TINT_NAMES.map((n) => AISLE_TINTS.dark[n].bg);
     expect(new Set(backgrounds).size).toBe(AISLE_TINT_NAMES.length);

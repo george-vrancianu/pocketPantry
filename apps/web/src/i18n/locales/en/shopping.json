@@ -64,12 +64,20 @@
     "add": "Add {{name}} to the list"
   },
   "suggestions": {
-    "runningLowLabel": "Running low · {{count}}",
+    "runningLowLabel": "Running low",
     "runningLowWhy": "running low",
     "runningLowTile": "{{name}}, running low",
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
-    "dismiss": "Dismiss {{name}}"
+    "dismiss": "Dismiss {{name}}",
+    "gone": "Gone from your Pantry",
+    "goneNone": "Nothing has run out or expired. Nice.",
+    "usedUpWhen": "used up · {{when}}",
+    "expiredWhen": "expired · {{when}}",
+    "stapleWhy": "staple",
+    "goneLabelUsedUp": "{{name}}, used up {{when}}",
+    "goneLabelExpired": "{{name}}, expired {{when}}",
+    "goneLabelStaple": "{{name}}, missing staple"
   },
   "templatesFromSearch": "Or start from a template",
   "seeAll": "See all"

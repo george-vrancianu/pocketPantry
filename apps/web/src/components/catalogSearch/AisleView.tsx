@@ -102,7 +102,7 @@ export function AisleViewHeader({
                   borderRadius: radius.chip,
                   border: `1px solid ${on ? color.accent : color.line}`,
                   backgroundColor: on ? color.accentTint : color.surface,
-                  color: on ? color.accentHover : color.ink,
+                  color: on ? color.accentOnTint : color.ink,
                   font: 'inherit',
                   fontSize: 13,
                   fontWeight: 600,

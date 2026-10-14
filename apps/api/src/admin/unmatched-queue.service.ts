@@ -42,7 +42,7 @@ type EntryRow = typeof unmatchedEntries.$inferSelect;
 const MAX_REFERENCES = 20;
 const MAX_LOCK_ATTEMPTS = 5;
 
-// The Unmatched queue is Admin curation: it reads shared Catalog rows only (ADR 0010).
+// The Unmatched queue is Admin curation: it reads shared Catalog rows only (the Family Ingredients ADR, #270).
 const adminScope = catalogScope(SHARED_ONLY);
 
 const notInQueue = () => new ApiException(404, 'unmatched.not_found');

@@ -223,10 +223,11 @@ export class CatalogSearchService {
     const unique = [...idsByKey.values()].flatMap((ids) =>
       ids.length === 1 ? ids : [],
     );
-    const found = new Map(
-      (
-        await this.findByIds(scope, [...new Set(unique)], locale, overrides)
-      ).map((match) => [match.id, match]),
+    const found = await this.mapByIds(
+      scope,
+      [...new Set(unique)],
+      locale,
+      overrides,
     );
     const result = new Map<string, CatalogSearchResult>();
     for (const [name, key] of keyOf) {
@@ -257,6 +258,17 @@ export class CatalogSearchService {
         name: pick('parent_category', row.id, row.name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, locale));
+  }
+
+  /** `findByIds` keyed by Ingredient id, for callers that join the results to their own rows. */
+  async mapByIds(
+    scope: CatalogScope,
+    ids: string[],
+    locale: CatalogLocale,
+    overrides: readonly ExpiryOverride[] = [],
+  ): Promise<Map<string, CatalogSearchResult>> {
+    const found = await this.findByIds(scope, ids, locale, overrides);
+    return new Map(found.map((result) => [result.id, result]));
   }
 
   /** Ingredients by id, in the order given, shaped like a search result. Unknown ids are skipped. */

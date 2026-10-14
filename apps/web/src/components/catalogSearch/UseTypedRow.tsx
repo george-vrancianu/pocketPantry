@@ -1,5 +1,6 @@
 import { Box, PlusIcon, tokens, radius, nestedRadius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { OptionRow } from './OptionRow';
 import { RowTag } from './RowTag';
 
 export type UseTypedRowProps = {
@@ -26,42 +27,12 @@ export function UseTypedRow({
   const { color } = tokens;
   const { t } = useTranslation('catalog');
   return (
-    <Box
-      component="li"
+    <OptionRow
       id={id}
-      role="option"
-      aria-selected={active}
-      // Keep focus in the input so the tap still lands.
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onSelect}
-      sx={{
-        position: 'relative',
-        minHeight: 58,
-        p: '9px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        cursor: 'pointer',
-        backgroundColor: active ? color.subtle : 'transparent',
-        // A dashed top rule sets it apart from the results above.
-        borderTop: first ? 0 : `1px dashed ${color.tickBorder}`,
-        '&:hover': { backgroundColor: color.subtle },
-        ...(active
-          ? {
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 10,
-                bottom: 10,
-                width: 3,
-                borderRadius: radius.pill,
-                backgroundColor: color.accent,
-              },
-            }
-          : {}),
-        outline: 'none',
-      }}
+      active={active}
+      first={first}
+      rule="dashed"
+      onSelect={onSelect}
     >
       <Box
         aria-hidden="true"
@@ -87,6 +58,6 @@ export function UseTypedRow({
         </Box>
       </Box>
       {tag ? <RowTag>{tag}</RowTag> : null}
-    </Box>
+    </OptionRow>
   );
 }

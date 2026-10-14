@@ -26,6 +26,7 @@ import {
   type LinkType,
   type PairingDraft,
 } from '../../lib/guidanceDraft';
+import type { CatalogScopeName } from '../../lib/catalog';
 import { moved } from '../../lib/recipeDraft';
 import { RowControls } from '../RowControls';
 
@@ -53,7 +54,7 @@ type FieldsProps = {
   /** Name of a linked Ingredient the Pairing already carries, when known. */
   ingredientName?: (id: string) => string | undefined;
   /** Which Catalog the Ingredient link searches: `shared` for Catalog Recipes (Admin). */
-  ingredientScope?: 'family' | 'shared';
+  ingredientScope?: CatalogScopeName;
 };
 
 /**
@@ -340,7 +341,7 @@ type RowProps = {
   last: boolean;
   RecipePicker: RecipePickerComponent;
   ingredientName?: (id: string) => string | undefined;
-  ingredientScope?: 'family' | 'shared';
+  ingredientScope?: CatalogScopeName;
   onChange: (patch: Partial<PairingDraft>) => void;
   onMove: (offset: -1 | 1) => void;
   onRemove: () => void;

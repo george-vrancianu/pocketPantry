@@ -11,7 +11,7 @@ export const SHARED_ONLY = Symbol('catalog.shared-only');
 export type CatalogReader = string | typeof SHARED_ONLY;
 
 /**
- * The only way to read Ingredients and Catalog translations (ADR 0010).
+ * The only way to read Ingredients and Catalog translations (the Family Ingredients ADR, #270).
  * Each method returns a subquery with the table's columns, to use wherever the
  * table would be: `.from(scope.ingredients(db))`, a join, or a raw-SQL source.
  * Callers never filter by owner themselves, so forgetting the scope is the one

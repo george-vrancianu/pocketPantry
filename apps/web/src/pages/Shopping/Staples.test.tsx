@@ -153,7 +153,7 @@ describe('Suggestions in the Add sheet', () => {
     const dialog = await openSheet();
 
     const section = await within(dialog).findByRole('region', {
-      name: 'Running low · 1',
+      name: 'Running low',
     });
     const gone = within(dialog).getByRole('region', {
       name: 'Gone from your Pantry',
@@ -641,7 +641,7 @@ describe('StaplesPage', () => {
 });
 
 describe('SuggestionsWidget', () => {
-  it('shows the count of missing Staples, the first few Suggestions of both groups, and links to Shopping', async () => {
+  it('counts everything gone from the Pantry, names the first few, and links to Shopping', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
@@ -657,12 +657,12 @@ describe('SuggestionsWidget', () => {
 
     const link = await screen.findByRole('link', { name: 'Suggestions' });
     expect(link).toHaveAttribute('href', '/shopping');
-    expect(link).toHaveTextContent('4');
-    expect(link).toHaveTextContent('missing staples');
+    expect(link).toHaveTextContent('5');
+    expect(link).toHaveTextContent('gone from your Pantry');
     expect(link).toHaveTextContent('E, A, B…');
   });
 
-  it('counts only missing Staples, but names Used Up Ingredients too', async () => {
+  it('counts the Staples and the Used Up Ingredients it names', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
@@ -675,8 +675,8 @@ describe('SuggestionsWidget', () => {
     renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
 
     const link = await screen.findByRole('link', { name: 'Suggestions' });
-    expect(link).toHaveTextContent('1');
-    expect(link).toHaveTextContent('missing staple');
+    expect(link).toHaveTextContent('2');
+    expect(link).toHaveTextContent('gone from your Pantry');
     expect(link).toHaveTextContent('E, A');
   });
 

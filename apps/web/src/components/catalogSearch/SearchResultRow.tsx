@@ -2,7 +2,8 @@ import { Box, tokens, radius } from '@pocket-pantry/ui';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { RowTag } from './RowTag';
-import { Highlighted, matchRange } from './matchRange';
+import { OptionRow } from './OptionRow';
+import { Highlighted } from './matchRange';
 
 export type SearchResultRowProps = {
   id: string;
@@ -39,51 +40,16 @@ export function SearchResultRow({
 }: SearchResultRowProps) {
   const { color } = tokens;
   const meta = resultMeta(result);
-  // The meta carries the highlight only when the name does not.
-  const metaQuery = matchRange(result.name, query) ? '' : query;
   return (
-    <Box
-      component="li"
+    <OptionRow
       id={id}
-      role="option"
-      aria-selected={active}
-      aria-label={[result.name, meta, showUnit ? result.defaultUnit : null, tag]
+      active={active}
+      first={first}
+      dimmed={dimmed}
+      label={[result.name, meta, showUnit ? result.defaultUnit : null, tag]
         .filter(Boolean)
         .join(', ')}
-      data-dimmed={dimmed ? 'true' : undefined}
-      // Keep focus in the input so the tap still lands.
-      onMouseDown={(event) => event.preventDefault()}
-      onClick={onSelect}
-      sx={{
-        position: 'relative',
-        minHeight: 58,
-        p: '9px 14px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1.5,
-        cursor: 'pointer',
-        backgroundColor: active ? color.subtle : 'transparent',
-        borderTop: first ? 0 : `1px solid ${color.divider}`,
-        opacity: dimmed ? 0.72 : 1,
-        transition: 'opacity 200ms',
-        '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-        '&:hover': { backgroundColor: color.subtle },
-        ...(active
-          ? {
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                left: 0,
-                top: 10,
-                bottom: 10,
-                width: 3,
-                borderRadius: radius.pill,
-                backgroundColor: color.accent,
-              },
-            }
-          : {}),
-        outline: 'none',
-      }}
+      onSelect={onSelect}
     >
       <IngredientIconSlot
         ingredientId={result.id}
@@ -102,8 +68,7 @@ export function SearchResultRow({
           <Highlighted text={result.name} query={query} />
         </Box>
         <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
-          <Highlighted text={result.leafCategory.name} query={metaQuery} />
-          {` · ${result.parentCategory.aisle.name}`}
+          {meta}
         </Box>
       </Box>
       {tag ? <RowTag>{tag}</RowTag> : null}
@@ -143,6 +108,6 @@ export function SearchResultRow({
           </Box>
         )
       ) : null}
-    </Box>
+    </OptionRow>
   );
 }

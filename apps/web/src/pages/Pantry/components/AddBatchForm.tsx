@@ -30,7 +30,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         selected={form.ingredient}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
-        onUseTyped={form.useTypedName}
+        onUseTyped={form.chooseTypedName}
         emptyState={
           <>
             <RecentlyStocked />

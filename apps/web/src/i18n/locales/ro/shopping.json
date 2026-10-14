@@ -67,12 +67,20 @@
     "add": "Adaugă {{name}} în listă"
   },
   "suggestions": {
-    "runningLowLabel": "Pe cale să se termine · {{count}}",
+    "runningLowLabel": "Pe cale să se termine",
     "runningLowWhy": "pe cale să se termine",
     "runningLowTile": "{{name}}, pe cale să se termine",
     "manage": "Gestionează",
     "dismissed": "Ai ignorat {{name}}",
-    "dismiss": "Ignoră {{name}}"
+    "dismiss": "Ignoră {{name}}",
+    "gone": "Dispărute din cămară",
+    "goneNone": "Nimic nu s-a terminat sau expirat. Bravo.",
+    "usedUpWhen": "epuizat · {{when}}",
+    "expiredWhen": "expirat · {{when}}",
+    "stapleWhy": "produs de bază",
+    "goneLabelUsedUp": "{{name}}, epuizat {{when}}",
+    "goneLabelExpired": "{{name}}, expirat {{when}}",
+    "goneLabelStaple": "{{name}}, produs de bază lipsă"
   },
   "templatesFromSearch": "Sau începe de la un șablon",
   "seeAll": "Vezi tot"

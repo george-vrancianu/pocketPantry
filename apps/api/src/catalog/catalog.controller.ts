@@ -5,7 +5,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
-import { catalogScope, SHARED_ONLY } from './catalog-scope';
+import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
@@ -58,9 +58,7 @@ export class CatalogController {
   ): Promise<{ aisles: CatalogAisle[] }> {
     return {
       aisles: await this.searchService.listAisles(
-        query.scope === 'shared'
-          ? catalogScope(SHARED_ONLY)
-          : await this.settings.catalogScopeForMember(member.id),
+        await this.scopeFor(query, member.id),
         query.locale,
       ),
     };
@@ -78,9 +76,7 @@ export class CatalogController {
   ): Promise<{ results: CatalogSearchResult[] }> {
     return {
       results: await this.searchService.search(
-        query.scope === 'shared'
-          ? catalogScope(SHARED_ONLY)
-          : await this.settings.catalogScopeForMember(member.id),
+        await this.scopeFor(query, member.id),
         query.q,
         query.locale,
         query.limit,
@@ -91,5 +87,15 @@ export class CatalogController {
         },
       ),
     };
+  }
+
+  /** The Catalog scope a request asks for: shared rows only, or the Member's Family. */
+  private async scopeFor(
+    query: { scope: 'family' | 'shared' },
+    memberId: string,
+  ): Promise<CatalogScope> {
+    return query.scope === 'shared'
+      ? catalogScope(SHARED_ONLY)
+      : this.settings.catalogScopeForMember(memberId);
   }
 }

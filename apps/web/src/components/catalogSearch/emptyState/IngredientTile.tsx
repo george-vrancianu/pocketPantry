@@ -18,7 +18,6 @@ export type IngredientTileProps = {
   why: TileWhy;
   /** Accessible name; spells the why line out. */
   label: string;
-  disabled?: boolean;
   /** A secondary control (e.g. dismiss) at the tile's right edge, outside the select button. */
   action?: ReactNode;
   onSelect: () => void;
@@ -31,7 +30,6 @@ export function IngredientTile({
   name,
   why,
   label,
-  disabled = false,
   action,
   onSelect,
 }: IngredientTileProps) {
@@ -41,7 +39,6 @@ export function IngredientTile({
       component="button"
       type="button"
       aria-label={label}
-      disabled={disabled}
       onClick={onSelect}
       sx={{
         display: 'flex',
@@ -56,9 +53,8 @@ export function IngredientTile({
         backgroundColor: color.surface,
         border: `1px solid ${color.line}`,
         borderRadius: radius.chip,
-        cursor: disabled ? 'default' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
-        '&:hover:not(:disabled)': { backgroundColor: color.subtle },
+        cursor: 'pointer',
+        '&:hover': { backgroundColor: color.subtle },
         ...focusRing,
       }}
     >

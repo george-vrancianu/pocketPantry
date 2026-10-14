@@ -40,15 +40,11 @@ export class RecentlyStockedService {
       .orderBy(desc(history.lastStockedAt), history.ingredientId)
       .limit(limit);
     const overrides = await this.settings.expiryOverridesOf(familyId);
-    const found = new Map(
-      (
-        await this.search.findByIds(
-          scope,
-          rows.map((row) => row.ingredientId),
-          locale,
-          overrides,
-        )
-      ).map((result) => [result.id, result]),
+    const found = await this.search.mapByIds(
+      scope,
+      rows.map((row) => row.ingredientId),
+      locale,
+      overrides,
     );
     return rows.flatMap((row) => {
       const result = found.get(row.ingredientId);

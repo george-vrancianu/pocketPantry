@@ -15,6 +15,9 @@ export const FALLBACK_LOCALE: CatalogLocale = 'en';
 export const SCAN_LANGUAGES = ['en', 'ro', 'da'] as const;
 export type ScanLanguage = (typeof SCAN_LANGUAGES)[number];
 
+/** 'shared' reads the shared Catalog only: Admin curation and Catalog Recipe editing. */
+export const catalogScopeParam = z.enum(['family', 'shared']).default('family');
+
 export const catalogSearchQuery = z.object({
   q: z.string().max(100),
   // Browse by aisle: an empty `q` lists the Aisle's Ingredients A to Z (limit 50); with `q` it filters within.
@@ -22,8 +25,7 @@ export const catalogSearchQuery = z.object({
   parentCategoryId: z.uuid().optional(),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
-  // 'shared' searches the shared Catalog only: Admin curation and Catalog Recipe editing.
-  scope: z.enum(['family', 'shared']).default('family'),
+  scope: catalogScopeParam,
 });
 export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 
@@ -36,7 +38,7 @@ export type CatalogParent = { id: string; name: string };
 
 export const catalogAislesQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
-  scope: z.enum(['family', 'shared']).default('family'),
+  scope: catalogScopeParam,
 });
 export type CatalogAislesQuery = z.infer<typeof catalogAislesQuery>;
 

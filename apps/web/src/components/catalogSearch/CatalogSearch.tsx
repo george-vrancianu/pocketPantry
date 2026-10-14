@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import {
   useCatalogSearch,
   type CatalogAisle,
+  type CatalogScopeName,
   type CatalogSearchResult,
 } from '../../lib/catalog';
 import { normalizeName } from '../../lib/normalizeName';
@@ -56,7 +57,7 @@ export type CatalogSearchProps = {
   /** When given, the no-match state ends with a "Use “…” as typed" option. */
   onUseTyped?: (name: string) => void;
   /** `shared` searches the shared Catalog only (Admin); default `family`. */
-  scope?: 'family' | 'shared';
+  scope?: CatalogScopeName;
   /**
    * A short pill for a row (for example "On list"), or null for none. Called
    * for each result (with its id) and for the Use as typed row (id null).
@@ -194,7 +195,7 @@ export function CatalogSearch({
     onSelect(ingredient);
   };
 
-  const useTyped = () => {
+  const pickTyped = () => {
     setOpen(false);
     setActiveIndex(-1);
     onUseTyped?.(typed);
@@ -203,7 +204,7 @@ export function CatalogSearch({
   /** Picks option `index`: a result, or the "Use as typed" option after them. */
   const pick = (index: number) => {
     if (index < results.length) select(results[index]);
-    else useTyped();
+    else pickTyped();
   };
 
   const keyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -239,14 +240,9 @@ export function CatalogSearch({
     } else if (event.key === 'Enter' && expanded && active >= 0) {
       event.preventDefault();
       pick(active);
-    } else if (
-      event.key === 'Enter' &&
-      useTypedOffered &&
-      !search.isSearching &&
-      results.length === 0
-    ) {
-      // The only option left is "Use as typed" (a result needs an arrow first),
-      // once the results for what is typed have arrived.
+    } else if (event.key === 'Enter' && expanded && !search.isSearching) {
+      // No row is active: pick the first option (the first result, or "Use as
+      // typed" when it is the only one), once the results for what is typed have arrived.
       event.preventDefault();
       pick(0);
     } else if (
@@ -399,7 +395,7 @@ export function CatalogSearch({
               active={results.length === active}
               first={results.length === 0}
               tag={rowTag?.({ ingredientId: null, name: typed })}
-              onSelect={useTyped}
+              onSelect={pickTyped}
             />
           ) : null}
         </Box>

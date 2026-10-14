@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt, isNotNull, sql } from 'drizzle-orm';
-import { catalogScope } from '../catalog/catalog-scope';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
@@ -46,24 +46,29 @@ export class SuggestionsService {
     today: string = utcToday(),
   ): Promise<SuggestionsView> {
     const familyId = await this.settings.familyIdOf(memberId);
+    const scope = catalogScope(familyId);
+    const staples = await this.missingStaples(scope, familyId, locale, today);
+    const expired = await this.expired(scope, familyId, locale, today);
+    // An Ingredient shows once: a Staple or an expired one is not also Running low.
+    const shown = new Set(
+      [...staples, ...expired].map((entry) => entry.ingredientId),
+    );
     const groups = {
-      staples: await this.missingStaples(familyId, locale, today),
-      usedUp: await this.usedUp(familyId, locale),
-      runningLow: await this.runningLowGroup(familyId, locale),
-      expired: await this.expired(familyId, locale, today),
+      staples,
+      usedUp: await this.usedUp(scope, familyId, locale),
+      runningLow: (await this.runningLowGroup(scope, familyId, locale)).filter(
+        (entry) => !shown.has(entry.ingredientId),
+      ),
+      expired,
     };
     const ids = Object.values(groups).flatMap((group) =>
       group.map((entry) => entry.ingredientId),
     );
-    const found = new Map(
-      (
-        await this.search.findByIds(
-          catalogScope(familyId),
-          [...new Set(ids)],
-          locale,
-          await this.settings.expiryOverridesOf(familyId),
-        )
-      ).map((result) => [result.id, result]),
+    const found = await this.search.mapByIds(
+      scope,
+      [...new Set(ids)],
+      locale,
+      await this.settings.expiryOverridesOf(familyId),
     );
     // An Ingredient the Family can no longer see in the Catalog has no result to select, so it is left out.
     const withResult = (group: Suggestion[]): SuggestionView[] =>
@@ -130,6 +135,7 @@ export class SuggestionsService {
    * since. Hidden while a Staple (it is missing instead) or on the active list.
    */
   private async usedUp(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
   ): Promise<Suggestion[]> {
@@ -151,7 +157,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
-      catalogScope(familyId),
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -192,6 +198,7 @@ export class SuggestionsService {
    * active list; a new Batch ends the dismissal.
    */
   private async expired(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
     today: string,
@@ -219,7 +226,7 @@ export class SuggestionsService {
     );
     const placements = await loadIngredientPlacements(
       this.database,
-      catalogScope(familyId),
+      scope,
       locale,
       ids,
     );
@@ -244,6 +251,7 @@ export class SuggestionsService {
    * the flag off is the only dismissal.
    */
   private async runningLowGroup(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
   ): Promise<Suggestion[]> {
@@ -259,7 +267,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
-      catalogScope(familyId),
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -280,6 +288,7 @@ export class SuggestionsService {
    * quantity is ignored). Hidden while dismissed or on the active list, checked or not.
    */
   private async missingStaples(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
     today: string,
@@ -301,7 +310,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
-      catalogScope(familyId),
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );

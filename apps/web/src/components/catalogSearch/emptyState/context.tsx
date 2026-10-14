@@ -1,5 +1,9 @@
 import { createContext, useContext } from 'react';
-import type { CatalogAisle, CatalogSearchResult } from '../../../lib/catalog';
+import type {
+  CatalogAisle,
+  CatalogScopeName,
+  CatalogSearchResult,
+} from '../../../lib/catalog';
 
 /**
  * What the enclosing CatalogSearch offers an empty-state block, so the block
@@ -11,7 +15,7 @@ export type EmptyStateSearch = {
   /** Picks an Ingredient through the search: the token, the field text and `onSelect`, like a typed pick. */
   select: (ingredient: CatalogSearchResult) => void;
   /** The search's scope, so a block lists the same Catalog the search reads. */
-  scope: 'family' | 'shared';
+  scope: CatalogScopeName;
   /** Opens the aisle view in the search's own list; the search owns the view from there. */
   openAisle: (aisle: CatalogAisle) => void;
 };

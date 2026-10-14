@@ -41,7 +41,7 @@ export type AddSheetProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
   addError: string | null;
-  /** What is gone from the Pantry, shown as tiles while the search is empty. */
+  /** What is gone from the Pantry, and what is running low, shown as tiles while the search is empty. */
   suggestions: Suggestions;
 };
 

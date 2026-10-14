@@ -181,17 +181,14 @@ describe('CatalogSearch', () => {
       expect(within(option).getByText('Mælk').tagName).toBe('MARK');
     });
 
-    it('underlines the match in the meta when only the category matches', async () => {
+    it('does not highlight the category, even when only it matches', async () => {
       stubSearch(() => [cheddar]);
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
 
       await userEvent.setup().type(screen.getByRole('combobox'), 'hard');
 
       const option = await screen.findByRole('option', { name: /Cheddar/ });
-      const marks = option.querySelectorAll('mark');
-      expect(marks).toHaveLength(1);
-      expect(marks[0]).toHaveTextContent('Hard');
-      expect(within(option).getByText('Cheddar').closest('mark')).toBeNull();
+      expect(option.querySelector('mark')).toBeNull();
     });
 
     it('shows the default unit as a chip and names the row "{name}, {meta}, {unit}"', async () => {
@@ -603,6 +600,22 @@ describe('CatalogSearch', () => {
       expect(last).toHaveAttribute('aria-selected', 'true');
       await user.keyboard('{Home}');
       expect(first).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('picks the first result with Enter when no row is active', async () => {
+      stubSearch((locale) => [parmesan(locale), cheddar]);
+      const onSelect = vi.fn();
+      renderWithProviders(<CatalogSearch onSelect={onSelect} />);
+      const user = userEvent.setup();
+      await user.type(screen.getByRole('combobox'), 'che');
+      await screen.findAllByRole('option');
+      await vi.waitFor(() =>
+        expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument(),
+      );
+
+      await user.keyboard('{Enter}');
+
+      expect(onSelect).toHaveBeenCalledWith(parmesan('en'));
     });
 
     it('picks the active row with Enter', async () => {
@@ -1085,7 +1098,7 @@ describe('CatalogSearch host extension points (#266)', () => {
       expect(onUseTyped).toHaveBeenCalledWith('zzz');
     });
 
-    it('is not picked by Enter while other options are showing and none is active', async () => {
+    it('is not picked by Enter while results are showing: the first result is', async () => {
       const search = stubControlled();
       const onUseTyped = vi.fn();
       const onSelect = vi.fn();
@@ -1100,7 +1113,7 @@ describe('CatalogSearch host extension points (#266)', () => {
       await user.keyboard('{Enter}');
 
       expect(onUseTyped).not.toHaveBeenCalled();
-      expect(onSelect).not.toHaveBeenCalled();
+      expect(onSelect).toHaveBeenCalledWith(cheddar);
     });
 
     it('can be reached with the arrow keys and picked with Enter', async () => {

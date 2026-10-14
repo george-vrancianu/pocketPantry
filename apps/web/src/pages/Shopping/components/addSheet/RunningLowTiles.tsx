@@ -13,10 +13,11 @@ import type { Suggestion } from '../../../../lib/suggestions';
 export function RunningLowTiles({ runningLow }: { runningLow: Suggestion[] }) {
   const search = useEmptyStateSearch();
   const { t } = useTranslation('shopping');
-  if (runningLow.length === 0) return null;
+  if (!search || runningLow.length === 0) return null;
   return (
     <TileSection
-      heading={t('suggestions.runningLowLabel', { count: runningLow.length })}
+      heading={t('suggestions.runningLowLabel')}
+      count={runningLow.length}
     >
       {runningLow.map(({ ingredientId, aisle, name, ingredient }) => (
         <IngredientTile
@@ -30,7 +31,7 @@ export function RunningLowTiles({ runningLow }: { runningLow: Suggestion[] }) {
             color: tokens.color.soonIcon,
           }}
           label={t('suggestions.runningLowTile', { name })}
-          onSelect={() => search?.select(ingredient)}
+          onSelect={() => search.select(ingredient)}
         />
       ))}
     </TileSection>

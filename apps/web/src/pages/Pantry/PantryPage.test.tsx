@@ -3062,4 +3062,36 @@ describe('PantryPage Browse by aisle', () => {
       expect(params.get('scope')).not.toBe('shared');
     });
   });
+
+  it('puts Recently stocked above Browse by aisle', async () => {
+    const user = userEvent.setup();
+    const { fetchMock } = stubApi({
+      'GET /api/pantry': () => Response.json({ batches: [] }),
+      'GET /api/pantry/recently-stocked': () =>
+        Response.json({
+          ingredients: [
+            {
+              ...parmesan,
+              lastStockedAt: new Date().toISOString(),
+              inPantry: true,
+            },
+          ],
+        }),
+      'GET /api/settings/family': familySettings(3),
+      'GET /api/catalog/aisles': () => Response.json(browseAisles),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    const recent = await screen.findByRole('region', {
+      name: 'Recently stocked',
+    });
+    const browse = await screen.findByText('Browse by aisle');
+
+    expect(
+      recent.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

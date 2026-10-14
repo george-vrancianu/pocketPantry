@@ -114,6 +114,7 @@ describe('Running low flag (integration)', () => {
       ).body as {
         staples: Array<{ ingredientId: string }>;
         usedUp: Array<{ ingredientId: string }>;
+        expired: Array<{ ingredientId: string }>;
         runningLow: Array<{
           ingredientId: string;
           name: string;
@@ -169,6 +170,47 @@ describe('Running low flag (integration)', () => {
       expect(
         (await suggestions(cookie)).runningLow.map((s) => s.ingredientId),
       ).toEqual([milk]);
+    });
+
+    it('shows a flagged Ingredient whose Batches all expired once, as expired', async () => {
+      const { cookie } = await signUp();
+      await api('post', cookie, '/pantry/batches?locale=en')
+        .send({
+          ingredientId: milk,
+          quantity: 1,
+          unit: 'pcs',
+          location: 'fridge',
+          expiryDate: '2020-01-01',
+        })
+        .expect(201);
+      await setRunningLow(cookie, milk).expect(204);
+
+      const found = await suggestions(cookie);
+
+      expect(found.expired.map((s) => s.ingredientId)).toEqual([milk]);
+      expect(found.runningLow).toEqual([]);
+    });
+
+    it('shows a flagged, missing Staple once, as a Staple', async () => {
+      const { cookie } = await signUp();
+      await api('post', cookie, '/pantry/batches?locale=en')
+        .send({
+          ingredientId: milk,
+          quantity: 1,
+          unit: 'pcs',
+          location: 'fridge',
+          expiryDate: '2020-01-01',
+        })
+        .expect(201);
+      await api('post', cookie, '/staples?locale=en')
+        .send({ ingredientId: milk })
+        .expect(201);
+      await setRunningLow(cookie, milk).expect(204);
+
+      const found = await suggestions(cookie);
+
+      expect(found.staples.map((s) => s.ingredientId)).toEqual([milk]);
+      expect(found.runningLow).toEqual([]);
     });
 
     it('drops the Ingredient once its flag is turned off', async () => {

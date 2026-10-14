@@ -62,7 +62,7 @@ const otherLeafNameTaken = () =>
 type ListType = 'cuisine' | 'method';
 const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
 
-// Admin curation reads shared Catalog rows only (ADR 0010).
+// Admin curation reads shared Catalog rows only (the Family Ingredients ADR, #270).
 const adminScope = catalogScope(SHARED_ONLY);
 
 const notFound = (entity: EntityType | 'translation') =>
