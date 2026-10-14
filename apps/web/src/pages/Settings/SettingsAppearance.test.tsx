@@ -149,9 +149,10 @@ describe('Settings Appearance', () => {
       'aria-checked',
       'true',
     );
-    expect(
-      tiles.getByRole('radio', { name: 'Dark-first' }),
-    ).toHaveAccessibleDescription('Used in dark mode');
+    const dark = tiles.getByRole('radio', { name: 'Dark-first' });
+    expect(dark).toHaveAccessibleDescription('Used in dark mode');
+    // The tile itself carries the note (spec #243: the Dark-first tile reads it).
+    expect(dark).toContainElement(screen.getByText('Used in dark mode'));
   });
 
   it('keeps Match system on the device: toggling it saves nothing on the Member', async () => {
