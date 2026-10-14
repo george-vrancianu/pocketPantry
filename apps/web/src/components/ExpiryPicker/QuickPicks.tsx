@@ -32,7 +32,7 @@ export type QuickPicksProps = {
   usualDays: number | null;
   today: Date;
   /** A tile was tapped, with the date it lands on. */
-  onPick: (iso: string) => void;
+  onPick: (iso: IsoDate) => void;
 };
 
 /**

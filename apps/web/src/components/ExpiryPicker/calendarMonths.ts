@@ -6,22 +6,22 @@ export type CalendarMonth = {
   /** The 1st of the month, local midnight, for formatting its name. */
   first: Date;
   /** Monday-first weeks of `YYYY-MM-DD` days; `null` pads the first and last week. */
-  weeks: (string | null)[][];
+  weeks: (IsoDate | null)[][];
 };
 
 /** `YYYY-MM` of a `YYYY-MM-DD` date. */
-export const monthKey = (iso: string) => iso.slice(0, 7);
+export const monthKey = (iso: IsoDate) => iso.slice(0, 7);
 
 /** How many days a month has; `monthIndex` is 0-based. */
 export const daysInMonth = (year: number, monthIndex: number) =>
   localDate(year, monthIndex + 1, 0).getDate();
 
-function weeksOf(year: number, monthIndex: number): (string | null)[][] {
+function weeksOf(year: number, monthIndex: number): (IsoDate | null)[][] {
   const first = localDate(year, monthIndex, 1);
   // Weeks start on Monday in every locale.
   const lead = (first.getDay() + 6) % 7;
   const length = daysInMonth(year, monthIndex);
-  const cells: (string | null)[] = Array.from({ length: lead }, () => null);
+  const cells: (IsoDate | null)[] = Array.from({ length: lead }, () => null);
   for (let day = 1; day <= length; day += 1)
     cells.push(localIso(localDate(year, monthIndex, day)));
   while (cells.length % 7 !== 0) cells.push(null);

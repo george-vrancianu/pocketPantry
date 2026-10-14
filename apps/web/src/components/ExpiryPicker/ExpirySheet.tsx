@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import {
   dateAndRelativeDay,
   useExpiryTags,
-  type ExpiryTag as Tag,
+  type ExpiryTagState,
   type IsoDate,
 } from '../../lib/pantry';
 import { useToday } from '../../lib/useToday';
@@ -164,7 +164,7 @@ function Readout({
 }: {
   /** The chosen date and how far away it is; null for no expiry. */
   text: { date: string; relative: string } | null;
-  tag: Tag;
+  tag: ExpiryTagState;
 }) {
   const { t } = useTranslation('pantry');
   return (

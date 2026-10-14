@@ -42,12 +42,12 @@ export type NewBatch = {
   unit?: Unit | null;
   location: StorageLocation;
   /** `null` means no expiry. */
-  expiryDate: string | null;
+  expiryDate: IsoDate | null;
   productDescription?: string | null;
 };
 
 /** The days-left tag of an expiry date; `none` (no date) is shown only where its absence is worth saying. */
-export type ExpiryTag =
+export type ExpiryTagState =
   | { tone: 'none'; kind: 'none' }
   | { tone: 'urgent'; kind: 'expired' | 'today' }
   | { tone: 'soon'; kind: 'tomorrow' }
@@ -60,14 +60,19 @@ export function localIso(date: Date): string {
   return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function dayNumber(iso: string): number {
+function dayNumber(iso: IsoDate): number {
   const [y, m, d] = iso.split('-').map(Number);
   return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
 /** Whole calendar days from `today` to the expiry date (negative once expired). */
-export function daysUntil(expiryDate: string, today: Date): number {
+export function daysUntil(expiryDate: IsoDate, today: Date): number {
   return dayNumber(expiryDate) - dayNumber(localIso(today));
+}
+
+/** Expiring Soon: from today through the Stale Threshold, in days. */
+export function isExpiringSoon(days: number, staleThresholdDays: number) {
+  return days >= 0 && days <= staleThresholdDays;
 }
 
 /**
@@ -75,16 +80,16 @@ export function daysUntil(expiryDate: string, today: Date): number {
  * Threshold days away) is amber, and so is tomorrow at any threshold; it always counts in days.
  */
 export function expiryTagFor(
-  expiryDate: string | null,
+  expiryDate: IsoDate | null,
   today: Date,
   staleThresholdDays: number,
-): ExpiryTag {
+): ExpiryTagState {
   if (expiryDate === null) return { tone: 'none', kind: 'none' };
   const days = daysUntil(expiryDate, today);
   if (days < 0) return { tone: 'urgent', kind: 'expired' };
   if (days === 0) return { tone: 'urgent', kind: 'today' };
   if (days === 1) return { tone: 'soon', kind: 'tomorrow' };
-  if (days <= staleThresholdDays)
+  if (isExpiringSoon(days, staleThresholdDays))
     return { tone: 'soon', kind: 'daysLeft', days };
   return { tone: 'ok', kind: 'days', days };
 }
@@ -95,7 +100,7 @@ export function expiryTagFor(
  */
 export function useExpiryTags(today: Date): {
   staleThresholdDays: number;
-  tagFor: (expiryDate: IsoDate | null) => ExpiryTag;
+  tagFor: (expiryDate: IsoDate | null) => ExpiryTagState;
 } {
   const { i18n } = useTranslation();
   const staleThresholdDays = useStaleThresholdDays(i18n.language);
@@ -106,7 +111,7 @@ export function useExpiryTags(today: Date): {
 }
 
 /** A `YYYY-MM-DD` calendar date as local midnight, for formatting. */
-export function fromIso(iso: string): Date {
+export function fromIso(iso: IsoDate): Date {
   const [y, m, d] = iso.split('-').map(Number);
   return localDate(y, m - 1, d);
 }
@@ -123,7 +128,7 @@ export function localDate(year: number, monthIndex: number, day: number): Date {
  * month out ("Saturday, October 11"), for accessible names.
  */
 export function fullDate(
-  expiryDate: string,
+  expiryDate: IsoDate,
   today: Date,
   locale: string,
   width: 'short' | 'long' = 'short',
@@ -139,7 +144,7 @@ export function fullDate(
 
 /** "in 10 days", "tomorrow", "today", "yesterday", "3 days ago" in the UI locale. */
 export function relativeDay(
-  expiryDate: string,
+  expiryDate: IsoDate,
   today: Date,
   locale: string,
 ): string {

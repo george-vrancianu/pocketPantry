@@ -25,7 +25,7 @@ import {
   CategorySelect,
   DescriptionInput,
   ExpiryInput,
-  ExpirySheetFor,
+  ReviewLineExpirySheet,
   LocationSelect,
   NameInput,
   QuantityUnitInput,
@@ -370,7 +370,7 @@ export function TabletReviewRow({
                     <CalendarIcon size={18} />
                   </IconButton>
                 </Box>
-                <ExpirySheetFor
+                <ReviewLineExpirySheet
                   line={line}
                   onChange={onChange}
                   open={expirySheetOpen}

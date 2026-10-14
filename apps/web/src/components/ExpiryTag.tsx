@@ -1,6 +1,6 @@
 import { AlertIcon, Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { ExpiryTag as ExpiryTagValue } from '../lib/pantry';
+import type { ExpiryTagState } from '../lib/pantry';
 
 const TONES = {
   urgent: { bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
@@ -9,7 +9,7 @@ const TONES = {
 } as const;
 
 type Props = {
-  tag: ExpiryTagValue;
+  tag: ExpiryTagState;
   /** Hide the tag from assistive tech, where the text beside it already says the same. */
   decorative?: boolean;
 };

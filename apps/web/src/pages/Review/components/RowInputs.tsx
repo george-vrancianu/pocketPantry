@@ -258,7 +258,7 @@ export function ExpiryButton({
         </Box>
         <CalendarIcon size={18} color={tokens.color.muted} />
       </Box>
-      <ExpirySheetFor
+      <ReviewLineExpirySheet
         line={line}
         onChange={onChange}
         open={open}
@@ -274,7 +274,7 @@ export function ExpiryButton({
  * The expiry picker's sheet for one line. A date (or No expiry) picked in it is written to the line as an explicit
  * expiry, the same as a typed one. Usual is the Match's Default Expiry; there is none for an Unmatched line.
  */
-export function ExpirySheetFor({
+export function ReviewLineExpirySheet({
   line,
   onChange,
   open,

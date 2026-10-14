@@ -4,6 +4,7 @@ import {
   expiryTagFor,
   countByLocation,
   groupByLocation,
+  isExpiringSoon,
   matchesSearch,
   parseAmountText,
   parseQuantity,
@@ -12,6 +13,15 @@ import {
 } from './pantry';
 
 const today = new Date(2026, 9, 1, 15, 30); // 1 Oct 2026, local
+
+describe('isExpiringSoon', () => {
+  it('is true from today through the Stale Threshold, and not before or after', () => {
+    expect(isExpiringSoon(-1, 3)).toBe(false);
+    expect(isExpiringSoon(0, 3)).toBe(true);
+    expect(isExpiringSoon(3, 3)).toBe(true);
+    expect(isExpiringSoon(4, 3)).toBe(false);
+  });
+});
 
 describe('expiryTagFor', () => {
   // `today` is 1 Oct 2026, so 2026-10-0N is N - 1 days away.

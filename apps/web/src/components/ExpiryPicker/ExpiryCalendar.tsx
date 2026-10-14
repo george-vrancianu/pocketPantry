@@ -15,6 +15,7 @@ import {
   daysUntil,
   defaultExpiryDate,
   fromIso,
+  isExpiringSoon,
   localDate,
   localIso,
   type IsoDate,
@@ -27,14 +28,14 @@ export type ExpiryCalendarHandle = {
    * Scroll the list so the month of `iso` is at the top: smoothly when `smooth` (and motion is allowed),
    * instantly otherwise. For quick picks and the Today link.
    */
-  scrollToMonth: (iso: string, smooth: boolean) => void;
+  scrollToMonth: (iso: IsoDate, smooth: boolean) => void;
 };
 
 export type ExpiryCalendarProps = {
   ref?: Ref<ExpiryCalendarHandle>;
   value: IsoDate | null;
   /** A day was tapped. */
-  onChange: (iso: string) => void;
+  onChange: (iso: IsoDate) => void;
   today: Date;
   /** The Default Expiry in days, so the Usual date is always in the range; null when there is none. */
   usualDays: number | null;
@@ -55,7 +56,7 @@ const ARROW_STEP: Record<string, number> = {
  * go to the Monday/Sunday of the week (cut at the month's edge), and Page Up/Down keep the day of the month,
  * falling back to the last day of a shorter month.
  */
-function keyTarget(iso: string, key: string): string | null {
+function keyTarget(iso: IsoDate, key: string): IsoDate | null {
   const day = fromIso(iso);
   const step = ARROW_STEP[key];
   if (step !== undefined) {
@@ -121,7 +122,7 @@ export function ExpiryCalendar({
   );
 
   const scrollToMonth = useCallback(
-    (iso: string, smooth: boolean) => {
+    (iso: IsoDate, smooth: boolean) => {
       const list = scroller.current;
       const month = list?.querySelector<HTMLElement>(
         `[data-month="${monthKey(iso)}"]`,
@@ -141,7 +142,7 @@ export function ExpiryCalendar({
   useImperativeHandle(ref, () => ({ scrollToMonth }), [scrollToMonth]);
 
   // The calendar is a single Tab stop: the selected day when it is shown, otherwise today (until a day is focused).
-  const shown = (iso: string | null) =>
+  const shown = (iso: IsoDate | null) =>
     iso !== null && months.some((month) => month.key === monthKey(iso));
   const initialStop = shown(value) ? value : localIso(today);
   // Roving tabindex: the Tab stop follows the focused day, so Shift+Tab back lands where the arrows left off.
@@ -328,7 +329,7 @@ export function ExpiryCalendar({
                       if (iso === null)
                         return <span key={column} role="gridcell" />;
                       const days = daysUntil(iso, today);
-                      const inBand = days >= 0 && days <= staleThresholdDays;
+                      const inBand = isExpiringSoon(days, staleThresholdDays);
                       return (
                         <Box key={iso} role="gridcell" sx={{ display: 'grid' }}>
                           <button

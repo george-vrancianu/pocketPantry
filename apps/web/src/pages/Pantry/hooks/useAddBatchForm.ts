@@ -24,11 +24,11 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     null,
   );
   const [typed, setTyped] = useState('');
-  const [unmatchedName, setUnmatchedName] = useState<IsoDate | null>(null);
+  const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<Unit>('g');
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
-  const [expiryDate, setExpiryDate] = useState<string | null>(null);
+  const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
 
   const selectIngredient = (result: CatalogSearchResult) => {
