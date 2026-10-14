@@ -1,12 +1,17 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { inArray, like } from 'drizzle-orm';
+import { eq, inArray, like } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
 import { normalizeName } from '../src/catalog/normalize';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { catalogTranslations, scanUsage, user } from '../src/database/schema';
+import {
+  catalogTranslations,
+  ingredients,
+  scanUsage,
+  user,
+} from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -74,9 +79,10 @@ describe('Family Ingredients in Scans (integration)', () => {
     return (res.body as { id: string }).id;
   };
 
-  const sharedSynonym = (value: string) =>
-    database.insert(catalogTranslations).values({
-      id: randomUUID(),
+  const sharedSynonym = async (value: string) => {
+    const id = randomUUID();
+    await database.insert(catalogTranslations).values({
+      id,
       entityType: 'ingredient',
       entityId: seedId.ingredient('parmesan'),
       locale: 'en',
@@ -84,6 +90,8 @@ describe('Family Ingredients in Scans (integration)', () => {
       value,
       normalizedValue: normalizeName(value),
     });
+    return id;
+  };
 
   const productJson = (name: string): Json => ({
     productName: name,
@@ -128,13 +136,38 @@ describe('Family Ingredients in Scans (integration)', () => {
   it('prefers the Family Ingredient over a shared Synonym with the same name', async () => {
     const name = unique('Fis Clash');
     const id = await addFamilyIngredient(a, name);
-    await sharedSynonym(name);
+    const synonymId = await sharedSynonym(name);
+    try {
+      expect(await scanProduct(a, name)).toMatchObject({ id });
+      // Another Family still sees the shared Synonym alone.
+      expect(await scanProduct(b, name)).toMatchObject({
+        id: seedId.ingredient('parmesan'),
+      });
+    } finally {
+      await database
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.id, synonymId));
+    }
+  });
 
-    expect(await scanProduct(a, name)).toMatchObject({ id });
-    // Another Family still sees the shared Synonym alone.
-    expect(await scanProduct(b, name)).toMatchObject({
-      id: seedId.ingredient('parmesan'),
+  it('prefers the Family Ingredient over a shared Ingredient added later with the same name', async () => {
+    const name = unique('Fis Shared Name');
+    const id = await addFamilyIngredient(a, name);
+    const sharedId = randomUUID();
+    await database.insert(ingredients).values({
+      id: sharedId,
+      leafCategoryId: seedId.leaf('hard-cheese'),
+      name,
+      normalizedName: normalizeName(name),
+      defaultUnit: 'g',
+      amountScale: 'medium',
     });
+    try {
+      expect(await scanProduct(a, name)).toMatchObject({ id });
+      expect(await scanProduct(b, name)).toMatchObject({ id: sharedId });
+    } finally {
+      await database.delete(ingredients).where(eq(ingredients.id, sharedId));
+    }
   });
 
   it("does not match another Family's Ingredient", async () => {

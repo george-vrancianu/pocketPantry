@@ -224,7 +224,7 @@ export class CatalogSearchService {
         FROM ${ingredients}
         UNION ALL
         SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
-          ${SHARED_TIER}
+          ${SHARED_TIER}::int
         FROM ${catalogTranslations}
         WHERE ${catalogTranslations.entityType} = 'ingredient'
       ) c

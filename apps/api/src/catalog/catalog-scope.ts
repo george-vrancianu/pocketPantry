@@ -38,7 +38,7 @@ export const SHARED_TIER = 1;
 export function ingredientTier(
   scoped: ReturnType<CatalogScope['ingredients']>,
 ) {
-  return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER} ELSE ${FAMILY_TIER} END`;
+  return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER}::int ELSE ${FAMILY_TIER}::int END`;
 }
 
 function scopedIngredients(executor: Executor, reader: CatalogReader) {
