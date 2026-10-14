@@ -3,7 +3,8 @@
  * (docs/handoffs/themes/themes.ts) so future handoffs can be diffed against it.
  * Every Theme defines the same keys. This flat record is the single source of
  * truth: the MUI colour schemes, the `--pp-*` variables and the pre-paint
- * script are all built from it.
+ * script are all built from it. One deliberate difference: `ThemeMeta` has no
+ * `fonts.google` query, because the fonts are self-hosted (fonts.css).
  */
 
 export const THEME_IDS = ['warm', 'minimal', 'dark'] as const;
@@ -67,7 +68,6 @@ export interface ThemeMeta {
   id: ThemeId;
   name: string;
   scheme: 'light' | 'dark';
-  fonts: { google: string };
 }
 
 export const THEMES: Record<ThemeId, ThemeTokens> = {
@@ -239,27 +239,15 @@ export const THEME_META: Record<ThemeId, ThemeMeta> = {
     id: 'warm',
     name: 'Warm editorial',
     scheme: 'light',
-    fonts: {
-      google:
-        'family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700',
-    },
   },
   minimal: {
     id: 'minimal',
     name: 'Minimal crisp',
     scheme: 'light',
-    fonts: {
-      google:
-        'family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700',
-    },
   },
   dark: {
     id: 'dark',
     name: 'Dark-first',
     scheme: 'dark',
-    fonts: {
-      google:
-        'family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700',
-    },
   },
 };
