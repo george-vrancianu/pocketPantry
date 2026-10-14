@@ -1,4 +1,4 @@
-import { ChevronDownIcon, IconButton } from '@pocket-pantry/ui';
+import { IconButton, RunningLowIcon } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
 import { useRunningLow, useSetRunningLow } from '../lib/pantry';
@@ -8,7 +8,7 @@ type Props = {
   ingredientId: string;
 };
 
-/** A downward toggle that flags an Ingredient as running low for the Family, or clears the flag. Its state is the Pantry's cache, so every row of the Ingredient agrees. */
+/** A low-battery toggle, in the `neutral` chip fill when off and the `soon` pair when on, that flags an Ingredient as running low for the Family, or clears the flag. Its state is the Pantry's cache, so every row of the Ingredient agrees. */
 export function RunningLowToggle({ ingredientId }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const runningLow = useRunningLow(i18n.language);
@@ -20,7 +20,7 @@ export function RunningLowToggle({ ingredientId }: Props) {
     <IconButton
       label={t('runningLow.toggle')}
       aria-pressed={on}
-      tone="plain"
+      tone={on ? 'soon' : 'neutral'}
       size={40}
       ariaDisabled={save.isPending || runningLow.data === undefined}
       onClick={() =>
@@ -33,7 +33,7 @@ export function RunningLowToggle({ ingredientId }: Props) {
         )
       }
     >
-      <ChevronDownIcon size={20} />
+      <RunningLowIcon size={20} />
     </IconButton>
   );
 }
