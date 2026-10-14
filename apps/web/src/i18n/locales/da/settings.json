@@ -82,7 +82,7 @@
     "catalogDefault_one": "Catalog-standard: {{count}} dag",
     "catalogDefault_other": "Catalog-standard: {{count}} dage",
     "catalogSays": "Catalog siger {{days}}",
-    "wholeAisle": "alle kategorier uden egen",
+    "wholeParent": "alle kategorier uden egen",
     "allHint": "Alle {{parent}}-kategorier uden egen",
     "unit": "d",
     "useCatalog": "Brug Catalog-standarden for {{name}}",

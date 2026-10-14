@@ -82,7 +82,7 @@
     "catalogDefault_one": "Catalog default {{count}} day",
     "catalogDefault_other": "Catalog default {{count}} days",
     "catalogSays": "Catalog says {{days}}",
-    "wholeAisle": "every category without its own",
+    "wholeParent": "every category without its own",
     "allHint": "Every {{parent}} category without its own",
     "unit": "d",
     "useCatalog": "Use the Catalog default for {{name}}",

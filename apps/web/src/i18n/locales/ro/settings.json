@@ -83,7 +83,7 @@
     "catalogDefault_few": "Valoare implicită din Catalog: {{count}} zile",
     "catalogDefault_other": "Valoare implicită din Catalog: {{count}} de zile",
     "catalogSays": "Catalogul spune {{days}}",
-    "wholeAisle": "fiecare categorie fără valoare proprie",
+    "wholeParent": "fiecare categorie fără valoare proprie",
     "allHint": "Fiecare categorie {{parent}} fără valoare proprie",
     "unit": "z",
     "useCatalog": "Folosește valoarea din Catalog pentru {{name}}",

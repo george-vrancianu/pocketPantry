@@ -92,7 +92,7 @@ export function DefaultExpirySection() {
             );
             const subline = category
               ? category.wholeParent
-                ? [category.parentName, t('defaultExpiry.wholeAisle')]
+                ? [category.parentName, t('defaultExpiry.wholeParent')]
                 : [
                     category.parentName,
                     category.catalogDays !== null
