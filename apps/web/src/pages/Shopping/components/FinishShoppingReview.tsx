@@ -5,12 +5,12 @@ import {
   Stack,
   TextField,
   Typography,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
-import { radius } from '../../../lib/themeVars';
 
 type Props = { onDone: () => void; onCancel: () => void };
 

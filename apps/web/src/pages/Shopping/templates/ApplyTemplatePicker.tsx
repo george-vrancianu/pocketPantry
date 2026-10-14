@@ -6,6 +6,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  radius,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +17,6 @@ import {
   useTemplate,
   type TemplateLine,
 } from '../../../lib/shoppingTemplates';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   templateId: string;

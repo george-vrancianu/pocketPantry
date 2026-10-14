@@ -9,13 +9,13 @@ import {
   Typography,
   tokens,
   Card,
+  radius,
+  insetFocusRing,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { itemCount, useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../../../../lib/focusRing';
-import { radius } from '../../../../lib/themeVars';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */
@@ -52,7 +52,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
             font: 'inherit',
             textAlign: 'left',
             cursor: 'pointer',
-            ...focusRing(),
+            ...insetFocusRing,
           }}
         >
           <Tile icon={<BookmarkIcon size={20} />} accent />
@@ -119,7 +119,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
                   font: 'inherit',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  ...focusRing(),
+                  ...insetFocusRing,
                 }}
               >
                 <Tile icon={<TemplateIcon size={20} />} />

@@ -9,6 +9,7 @@ import {
   Typography,
   visuallyHidden,
   tokens,
+  radius,
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -24,7 +25,6 @@ import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
-import { radius } from '../../lib/themeVars';
 
 const roundButton = (size: number) => ({
   display: 'flex',

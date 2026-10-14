@@ -1,5 +1,11 @@
-import { focusRing } from '../../../lib/focusRing';
-import { Box, Collapse, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import {
+  Box,
+  Collapse,
+  tokens,
+  visuallyHidden,
+  radius,
+  insetFocusRing,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import type { ScanMode } from '../../../lib/scan';
@@ -13,7 +19,6 @@ import { SourceText } from './SourceText';
 import { RowEditPanel } from './RowEditPanel';
 import { StatusIcon } from './StatusIcon';
 import { ROW_TINT, panelId, rowGridSx, rowId, titleId } from './layout';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   line: ReviewLine;
@@ -96,7 +101,7 @@ export function ReviewRow({
           fontFamily: 'inherit',
           textAlign: 'left',
           cursor: 'pointer',
-          ...focusRing(),
+          ...insetFocusRing,
         }}
       >
         <Box

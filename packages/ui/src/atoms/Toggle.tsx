@@ -1,5 +1,6 @@
 import ButtonBase, { type ButtonBaseProps } from '@mui/material/ButtonBase';
 import { focusRing } from '../theme/focusRing';
+import { themePalette } from '../theme/themeVars';
 
 export type ToggleProps = Omit<
   ButtonBaseProps,
@@ -25,8 +26,8 @@ export function Toggle({ checked, onChange, sx, ...props }: ToggleProps) {
           height: 28,
           borderRadius: '999px',
           backgroundColor: checked
-            ? (theme.vars ?? theme).palette.pp.accent
-            : (theme.vars ?? theme).palette.pp.box,
+            ? themePalette(theme).pp.accent
+            : themePalette(theme).pp.box,
           transition: 'background-color 150ms',
           '&::after': {
             content: '""',
@@ -36,8 +37,8 @@ export function Toggle({ checked, onChange, sx, ...props }: ToggleProps) {
             width: 22,
             height: 22,
             borderRadius: '50%',
-            backgroundColor: (theme.vars ?? theme).palette.common.white,
-            boxShadow: `0 1px 2px color-mix(in srgb, ${(theme.vars ?? theme).palette.common.black} 25%, transparent)`,
+            backgroundColor: themePalette(theme).common.white,
+            boxShadow: `0 1px 2px color-mix(in srgb, ${themePalette(theme).common.black} 25%, transparent)`,
             transform: checked ? 'translateX(18px)' : 'none',
             transition: 'transform 150ms',
           },

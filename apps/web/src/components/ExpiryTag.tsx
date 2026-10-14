@@ -1,7 +1,12 @@
-import { AlertIcon, Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import {
+  AlertIcon,
+  Box,
+  tokens,
+  visuallyHidden,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { ExpiryTagState } from '../lib/pantry';
-import { radius } from '../lib/themeVars';
 
 const TONES = {
   urgent: { bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },

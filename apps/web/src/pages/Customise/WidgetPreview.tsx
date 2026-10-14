@@ -5,10 +5,11 @@ import {
   RecipesIcon,
   ShoppingIcon,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import type { WidgetType } from '../../lib/dashboard';
-import { nestedRadius, radius } from '../../lib/themeVars';
 
 const bar = (width: string, color: string) => (
   <Box

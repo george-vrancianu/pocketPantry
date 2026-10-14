@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { DockItem } from '../molecules/DockItem';
 import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
+import { border, radius, shadow } from '../theme/themeVars';
 
 export type DockEntry = {
   key: string;
@@ -45,11 +46,11 @@ export function Dock({ label, items, activeKey }: DockProps) {
         bgcolor: 'pp.dockBg',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderWidth: 'var(--pp-bw)',
+        borderWidth: border.width,
         borderStyle: 'solid',
         borderColor: 'pp.line',
-        borderRadius: 'var(--pp-r-dock)',
-        boxShadow: 'var(--pp-shadow-float)',
+        borderRadius: radius.dock,
+        boxShadow: shadow.float,
       }}
     >
       {items.map((item) => (

@@ -31,6 +31,8 @@ import {
   tokens,
   usePrefersReducedMotion,
   visuallyHidden,
+  border,
+  radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +60,6 @@ import {
 } from '../../lib/layoutColumns';
 import { WIDGET_REGISTRY } from '../Dashboard/widgets/registry';
 import { WidgetPreview } from './WidgetPreview';
-import { border, radius } from '../../lib/themeVars';
 
 const FOCUS_RING = {
   '&:focus-visible': {

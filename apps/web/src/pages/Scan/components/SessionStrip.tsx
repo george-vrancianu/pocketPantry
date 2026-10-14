@@ -1,4 +1,4 @@
-import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
+import { Box, CheckIcon, tokens, radius } from '@pocket-pantry/ui';
 import { shade, translucent } from './glass';
 import { useTranslation } from 'react-i18next';
 import {
@@ -7,7 +7,6 @@ import {
   type SessionScan,
 } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
-import { radius } from '../../../lib/themeVars';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 

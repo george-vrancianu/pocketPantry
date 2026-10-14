@@ -4,6 +4,11 @@ import {
   PlusIcon,
   Typography,
   tokens,
+  border,
+  color,
+  nestedRadius,
+  radius,
+  shadow,
 } from '@pocket-pantry/ui';
 import {
   useId,
@@ -15,7 +20,6 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../lib/catalog';
-import { border, colour, nestedRadius, radius, shadow } from '../lib/themeVars';
 
 const TYPED_UNITS: Record<string, Unit> = {
   g: 'g',
@@ -80,7 +84,6 @@ export function AmountField({
   popoverAlign = 'end',
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
-  const { color } = tokens;
   const errorId = useId();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -162,11 +165,11 @@ export function AmountField({
             display: 'flex',
             alignItems: 'center',
             borderRadius: radius.control,
-            border: `${border.field} solid ${error ? color.urgentFg : color.line}`,
-            backgroundColor: colour.fieldBg,
+            border: `${border.field} solid ${error ? tokens.color.urgentFg : tokens.color.line}`,
+            backgroundColor: color.fieldBg,
             '&:focus-within': {
-              borderColor: error ? color.urgentFg : color.accent,
-              boxShadow: `0 0 0 3px ${color.accentTint}`,
+              borderColor: error ? tokens.color.urgentFg : tokens.color.accent,
+              boxShadow: `0 0 0 3px ${tokens.color.accentTint}`,
             },
           }}
         >
@@ -183,8 +186,8 @@ export function AmountField({
                 fontSize: 12,
                 fontWeight: 600,
                 lineHeight: 1,
-                color: color.muted,
-                backgroundColor: colour.fieldBg,
+                color: tokens.color.muted,
+                backgroundColor: color.fieldBg,
                 pointerEvents: 'none',
               }}
             >
@@ -233,7 +236,7 @@ export function AmountField({
               fontSize: 16,
               fontWeight: 600,
               fontVariantNumeric: 'tabular-nums',
-              color: color.ink,
+              color: tokens.color.ink,
             }}
           />
           <Box
@@ -252,8 +255,8 @@ export function AmountField({
               border: 0,
               borderRadius: nestedRadius(radius.control, 5),
               cursor: 'pointer',
-              backgroundColor: color.chipNeutral,
-              color: color.ink,
+              backgroundColor: tokens.color.chipNeutral,
+              color: tokens.color.ink,
               font: 'inherit',
               fontSize: 13.5,
               fontWeight: 700,
@@ -284,8 +287,8 @@ export function AmountField({
                 gap: '2px',
                 p: '5px',
                 borderRadius: radius.control,
-                border: `${border.width} solid ${color.line}`,
-                backgroundColor: color.surface,
+                border: `${border.width} solid ${tokens.color.line}`,
+                backgroundColor: tokens.color.surface,
                 boxShadow: shadow.float,
               }}
             >
@@ -310,9 +313,9 @@ export function AmountField({
                         fontSize: 13.5,
                         fontWeight: 700,
                         backgroundColor: selected
-                          ? color.accent
+                          ? tokens.color.accent
                           : 'transparent',
-                        color: selected ? colour.accentInk : color.ink,
+                        color: selected ? color.accentInk : tokens.color.ink,
                       }}
                     >
                       {option ? t(`common:units.${option}`) : '—'}
@@ -339,8 +342,8 @@ export function AmountField({
               border: 0,
               borderRadius: radius.control,
               cursor: 'pointer',
-              backgroundColor: color.accent,
-              color: colour.accentInk,
+              backgroundColor: tokens.color.accent,
+              color: color.accentInk,
               '&:disabled': { opacity: 0.5, cursor: 'default' },
             }}
           >
@@ -352,7 +355,7 @@ export function AmountField({
         <Typography
           id={errorId}
           variant="meta"
-          sx={{ display: 'block', mt: 0.75, color: color.urgentFg }}
+          sx={{ display: 'block', mt: 0.75, color: tokens.color.urgentFg }}
         >
           {error}
         </Typography>

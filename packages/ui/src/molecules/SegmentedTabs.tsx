@@ -3,6 +3,7 @@ import ButtonBase from '@mui/material/ButtonBase';
 import { useRef, type KeyboardEvent } from 'react';
 import { tokens } from '../theme/tokens';
 import { visuallyHidden } from '../theme/visuallyHidden';
+import { bodyFont, nestedRadius, radius, shadow } from '../theme/themeVars';
 
 export type SegmentedTab<T extends string> = {
   value: T;
@@ -70,7 +71,7 @@ export function SegmentedTabs<T extends string>({
         gap: '4px',
         p: '4px',
         backgroundColor: color.chipNeutral,
-        borderRadius: 'var(--pp-r-ctl)',
+        borderRadius: radius.control,
       }}
     >
       {tabs.map((tab, index) => {
@@ -94,14 +95,14 @@ export function SegmentedTabs<T extends string>({
             sx={{
               height: 40,
               gap: '6px',
-              borderRadius: 'calc(var(--pp-r-ctl) - 4px)',
+              borderRadius: nestedRadius(radius.control, 4),
               fontSize: 14,
               fontWeight: selected ? 700 : 600,
-              fontFamily: tokens.font.body,
+              fontFamily: bodyFont,
               // Selected like the SegmentedControl: `seg-on` / `seg-on-ink`.
               backgroundColor: selected ? 'pp.segOn' : 'transparent',
               color: selected ? 'pp.segOnInk' : color.muted,
-              boxShadow: selected ? 'var(--pp-shadow-seg)' : 'none',
+              boxShadow: selected ? shadow.segment : 'none',
               '&:focus-visible': {
                 outline: `3px solid ${color.accent}`,
                 outlineOffset: 2,

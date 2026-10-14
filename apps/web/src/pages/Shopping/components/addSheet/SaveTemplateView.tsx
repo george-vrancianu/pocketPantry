@@ -6,6 +6,7 @@ import {
   TextField,
   Typography,
   tokens,
+  radius,
 } from '@pocket-pantry/ui';
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +20,6 @@ import {
 } from '../../../../lib/shoppingTemplates';
 import { BackButton } from './BackButton';
 import { SheetFooter, TOAST_ABOVE_SHEET, useSheetToast } from './SheetFooter';
-import { radius } from '../../../../lib/themeVars';
 
 export type SaveTemplateViewProps = {
   /** Back to the list of templates; also where a successful save returns. */

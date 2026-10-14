@@ -1,8 +1,13 @@
-import { Box, ChevronRightIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  ChevronRightIcon,
+  tokens,
+  nestedRadius,
+  radius,
+  insetFocusRingStyle,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../../components/IngredientIconSlot';
-import { focusRingStyle } from '../../../../lib/focusRing';
-import { nestedRadius, radius } from '../../../../lib/themeVars';
 
 /** Radius of the bordered result list; its rows round their own ends (the list does not clip). */
 export const LIST_RADIUS = radius.card;
@@ -95,7 +100,7 @@ export function ResultRow({
         backgroundColor: open ? color.subtle : 'transparent',
         borderTop: first ? 0 : `1px solid ${color.divider}`,
         borderRadius: ends(first, last && !open),
-        ...(active ? focusRingStyle() : { outline: 'none' }),
+        ...(active ? insetFocusRingStyle : { outline: 'none' }),
       }}
     >
       <IngredientIconSlot ingredientId={ingredientId} aisleId={aisleId} />

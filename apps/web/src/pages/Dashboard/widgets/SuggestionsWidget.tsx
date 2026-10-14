@@ -1,4 +1,4 @@
-import { Box, ShoppingIcon, tokens } from '@pocket-pantry/ui';
+import { Box, ShoppingIcon, tokens, displayType } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { localIso } from '../../../lib/pantry';
@@ -8,7 +8,6 @@ import {
 } from '../../../lib/suggestions';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
-import { displayType } from '../../../lib/themeVars';
 
 /** How many Staples are missing, and the first few Suggestions by name; the card opens the Shopping List. */
 export function SuggestionsWidget({ size, columns }: WidgetProps) {

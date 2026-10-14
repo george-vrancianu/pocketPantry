@@ -5,6 +5,9 @@ import {
   SearchIcon,
   TextField,
   tokens,
+  border,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +17,6 @@ import {
   type RecipeFilterOptions,
 } from '../../../lib/recipes';
 import { bleedSx } from './bleed';
-import { border, colour, radius } from '../../../lib/themeVars';
 
 type Props = {
   value: RecipeBrowse;
@@ -58,7 +60,7 @@ export function RecipeFilters({ value, onChange, options }: Props) {
           },
         }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
-        sx={{ bgcolor: colour.fieldBg, borderRadius: radius.control }}
+        sx={{ bgcolor: color.fieldBg, borderRadius: radius.control }}
       />
       <Box
         role="group"
@@ -134,7 +136,7 @@ function Chip(props: {
         borderRadius: radius.chip,
         border: `${border.width} solid ${active ? tokens.color.accentTint : tokens.color.line}`,
         bgcolor: active ? tokens.color.accentTint : tokens.color.surface,
-        color: active ? colour.accentOnTint : tokens.color.ink,
+        color: active ? color.accentOnTint : tokens.color.ink,
         font: 'inherit',
         fontSize: 12.5,
         fontWeight: 600,

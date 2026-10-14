@@ -1,9 +1,8 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES } from '../../../lib/scan';
 import { glassFocusRing, shade, translucent } from './glass';
-import { radius } from '../../../lib/themeVars';
 
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';

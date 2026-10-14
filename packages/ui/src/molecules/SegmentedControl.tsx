@@ -1,6 +1,13 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
 import { focusRing } from '../theme/focusRing';
+import {
+  bodyFont,
+  nestedRadius,
+  radius,
+  shadow,
+  themePalette,
+} from '../theme/themeVars';
 
 export type SegmentedControlOption<T extends string> = {
   value: T;
@@ -30,8 +37,8 @@ export function SegmentedControl<T extends string>({
         display: 'inline-flex',
         gap: '4px',
         p: '4px',
-        backgroundColor: (theme.vars ?? theme).palette.pp.chip,
-        borderRadius: 'var(--pp-r-ctl)',
+        backgroundColor: themePalette(theme).pp.chip,
+        borderRadius: radius.control,
       })}
     >
       {options.map((option) => {
@@ -43,18 +50,18 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(option.value)}
             sx={[
               (theme) => {
-                const p = (theme.vars ?? theme).palette;
+                const p = themePalette(theme);
                 return {
                   minHeight: 36,
                   minWidth: 56,
                   px: '16px',
-                  borderRadius: 'calc(var(--pp-r-ctl) - 4px)',
+                  borderRadius: nestedRadius(radius.control, 4),
                   fontSize: 14,
                   fontWeight: selected ? 700 : 600,
-                  fontFamily: 'var(--pp-body)',
+                  fontFamily: bodyFont,
                   backgroundColor: selected ? p.pp.segOn : 'transparent',
                   color: selected ? p.pp.segOnInk : p.text.secondary,
-                  boxShadow: selected ? 'var(--pp-shadow-seg)' : 'none',
+                  boxShadow: selected ? shadow.segment : 'none',
                 };
               },
               focusRing,

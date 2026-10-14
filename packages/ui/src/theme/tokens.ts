@@ -1,5 +1,4 @@
-/** A Theme colour from the active MUI colour scheme, e.g. `palette('pp-accent')`. */
-const palette = (path: string) => `var(--mui-palette-${path})`;
+import { palette } from './themeVars';
 
 /** A mix of two Theme colours, for legacy shades the Themes don't define. */
 const mix = (a: string, percent: number, b: string) =>
@@ -16,12 +15,13 @@ const soonBg = palette('warning-light');
 const soonFg = palette('warning-main');
 
 /**
- * Legacy design tokens from pocket-pantry-handoff/HANDOFF.md section 4, kept
- * in their old shape so every importer follows the active Theme unchanged.
- * Colours are references to the Theme's variables (docs/handoffs/themes);
- * legacy keys with no Theme token are mapped to the nearest one or mixed from
- * two. Prefer `theme.vars.palette` in new code; this module goes once the
- * sweep has moved everything over.
+ * The legacy colour tokens from pocket-pantry-handoff/HANDOFF.md section 4,
+ * kept in their old shape as a shim so existing importers follow the active
+ * Theme unchanged. Each is a reference to a Theme variable
+ * (docs/handoffs/themes); legacy keys with no Theme token are mapped to the
+ * nearest one or mixed from two. New code doesn't import this: it reads
+ * colours through MUI (`theme.vars.palette`, sx paths like `'pp.accent'`) or
+ * `color` / `palette()`, and other tokens through the themeVars helpers.
  */
 export const tokens = {
   color: {
@@ -41,7 +41,6 @@ export const tokens = {
     accentHover: mix(accent, 82, ink),
     accentTint: palette('pp-accentTint'),
     accentMid: mix(accent, 55, surface),
-    accentSoftOnDark: palette('pp-accentOnTint'),
     butter: palette('secondary-main'),
     butterInk: palette('secondary-contrastText'),
     urgentBg,
@@ -57,39 +56,4 @@ export const tokens = {
     okBg: palette('success-light'),
     okFg: palette('success-main'),
   },
-  font: {
-    display: 'var(--pp-display)',
-    body: 'var(--pp-body)',
-  },
-  radius: {
-    dock: 26,
-    widget: 22,
-    card: 20,
-    input: 16,
-    field: 12,
-    table: 24,
-    counter: 18,
-    chip: 999,
-  },
-  shadow: {
-    dock: 'var(--pp-shadow-float)',
-  },
 } as const;
-
-const kebab = (name: string) =>
-  name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-
-/** The legacy tokens as `:root` CSS variables (`--accent-hover`, `--r-dock`, ...). */
-export function tokensAsCssVariables(): Record<string, string> {
-  const vars: Record<string, string> = {};
-  for (const [name, value] of Object.entries(tokens.color)) {
-    vars[`--${kebab(name)}`] = value;
-  }
-  vars['--font-display'] = tokens.font.display;
-  vars['--font-body'] = tokens.font.body;
-  for (const [name, value] of Object.entries(tokens.radius)) {
-    vars[`--r-${name}`] = `${value}px`;
-  }
-  vars['--shadow-dock'] = tokens.shadow.dock;
-  return vars;
-}

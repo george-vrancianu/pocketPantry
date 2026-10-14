@@ -1,4 +1,4 @@
-import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Alert, Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -9,7 +9,6 @@ import {
   dispatchScanSession,
   type SessionScan,
 } from '../../../lib/scanSession';
-import { radius } from '../../../lib/themeVars';
 
 const buttonSx = {
   display: 'flex',

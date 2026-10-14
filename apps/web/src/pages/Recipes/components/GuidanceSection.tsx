@@ -1,11 +1,18 @@
-import { Box, Link, Stack, Typography, tokens, Card } from '@pocket-pantry/ui';
+import {
+  Box,
+  Link,
+  Stack,
+  Typography,
+  tokens,
+  Card,
+  radius,
+} from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PairingKind } from '../../../lib/recipeVocabulary';
 import type { DetailEatingMoment, DetailPairing } from '../../../lib/recipes';
 import { Section } from './Section';
 import type { SectionProps } from './sections';
-import { radius } from '../../../lib/themeVars';
 
 const KINDS: PairingKind[] = ['food', 'drink'];
 const POLARITIES: DetailEatingMoment['polarity'][] = ['good_for', 'avoid'];

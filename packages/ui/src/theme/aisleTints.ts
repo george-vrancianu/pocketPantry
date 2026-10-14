@@ -1,4 +1,5 @@
 import type { ThemeId } from './themes';
+import { palette } from './themeVars';
 
 /** An Aisle tint: a background and the text that sits on it. */
 export type AisleTint = { bg: string; fg: string };
@@ -16,8 +17,11 @@ export const AISLE_TINT_NAMES = [
 /** A tinted Aisle group; `neutral` is any Aisle without one. */
 export type AisleTintName = (typeof AISLE_TINT_NAMES)[number] | 'neutral';
 
+/** An Aisle tint with its own colour pair in each Theme. */
+type TintedAisleName = Exclude<AisleTintName, 'neutral'>;
+
 /** The shopping handoff's pairs (docs/handoffs/shopping, section 4), kept in both light Themes. */
-const light: Record<Exclude<AisleTintName, 'neutral'>, AisleTint> = {
+const light: Record<TintedAisleName, AisleTint> = {
   produce: { bg: '#DDEBE2', fg: '#2E6A4D' },
   bakery: { bg: '#F6EBC8', fg: '#6E5200' },
   dairy: { bg: '#E3ECF3', fg: '#2F5674' },
@@ -32,7 +36,7 @@ const light: Record<Exclude<AisleTintName, 'neutral'>, AisleTint> = {
  * at 85 % lightness (themes handoff section 6.3). By eye, Bakery and Meat
  * lost some saturation so they don't glow on the moss background.
  */
-const dark: Record<Exclude<AisleTintName, 'neutral'>, AisleTint> = {
+const dark: Record<TintedAisleName, AisleTint> = {
   produce: { bg: '#26402F', fg: '#CAE8D9' },
   bakery: { bg: '#4C3F1A', fg: '#FFECB3' },
   dairy: { bg: '#1F3647', fg: '#C9DBE9' },
@@ -44,7 +48,7 @@ const dark: Record<Exclude<AisleTintName, 'neutral'>, AisleTint> = {
 
 /** Aisle tints keyed by Theme, next to the Theme tokens. */
 export const AISLE_TINTS: Readonly<
-  Record<ThemeId, Record<Exclude<AisleTintName, 'neutral'>, AisleTint>>
+  Record<ThemeId, Record<TintedAisleName, AisleTint>>
 > = { warm: light, minimal: light, dark };
 
 /**
@@ -86,8 +90,8 @@ export function aisleTint(
   if (name === 'neutral') {
     return {
       name,
-      bg: 'var(--mui-palette-pp-chip)',
-      fg: 'var(--mui-palette-text-secondary)',
+      bg: palette('pp-chip'),
+      fg: palette('text-secondary'),
     };
   }
   return {

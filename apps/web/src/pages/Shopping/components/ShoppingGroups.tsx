@@ -9,6 +9,8 @@ import {
   Typography,
   useToast,
   Card,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +21,6 @@ import type { RowHint } from '../../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
-import { colour, radius } from '../../../lib/themeVars';
 
 /** Greyed text colour of a checked row, shared by its name and icon. */
 const CHECKED_TEXT = tokens.color.checkedText;
@@ -160,7 +161,7 @@ function ChecklistRow({
                   alignItems: 'center',
                   justifyContent: 'center',
                   ...(item.checked
-                    ? { bgcolor: tokens.color.accent, color: colour.accentInk }
+                    ? { bgcolor: tokens.color.accent, color: color.accentInk }
                     : { border: `2px solid ${tokens.color.tickBorder}` }),
                 }}
               >
@@ -182,7 +183,7 @@ function ChecklistRow({
                 sx={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: colour.accentOnTint,
+                  color: color.accentOnTint,
                   bgcolor: tokens.color.accentTint,
                   px: 1,
                   py: 0.5,

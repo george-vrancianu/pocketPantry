@@ -7,6 +7,9 @@ import {
   Toggle,
   Typography,
   type ThemeId,
+  nestedRadius,
+  radius,
+  focusRing,
 } from '@pocket-pantry/ui';
 import { useId, useRef, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +18,6 @@ import {
   useAppearance,
   useChooseTheme,
 } from '../../../lib/appearance';
-import { focusRing } from '../../../lib/focusRing';
-import { nestedRadius, radius } from '../../../lib/themeVars';
 
 const NEXT_KEYS = ['ArrowRight', 'ArrowDown'];
 const PREVIOUS_KEYS = ['ArrowLeft', 'ArrowUp'];
@@ -104,7 +105,7 @@ export function AppearanceCard() {
                     font: 'inherit',
                     textAlign: 'left',
                     cursor: 'pointer',
-                    ...focusRing(2),
+                    ...focusRing,
                   }}
                 >
                   <ThemePreview theme={theme} />

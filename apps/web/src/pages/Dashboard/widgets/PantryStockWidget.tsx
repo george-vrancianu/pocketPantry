@@ -1,10 +1,15 @@
-import { Box, PantryIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  PantryIcon,
+  tokens,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { groupByLocation, useBatches } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
-import { displayType, radius } from '../../../lib/themeVars';
 
 const LOCATION_COLORS = {
   fridge: tokens.color.accent,

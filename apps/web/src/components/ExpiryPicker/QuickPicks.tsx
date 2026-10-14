@@ -1,4 +1,11 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  tokens,
+  bodyFont,
+  displayType,
+  radius,
+  focusRing,
+} from '@pocket-pantry/ui';
 import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,8 +15,6 @@ import {
   fullDate,
   type IsoDate,
 } from '../../lib/pantry';
-import { focusRing } from './focusRing';
-import { displayType, radius } from '../../lib/themeVars';
 
 const { color } = tokens;
 
@@ -156,7 +161,7 @@ export function QuickPicks({
                 component="small"
                 sx={{
                   ml: '2px',
-                  fontFamily: tokens.font.body,
+                  fontFamily: bodyFont,
                   fontSize: 12,
                   fontWeight: 600,
                   ...muted,

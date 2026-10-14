@@ -1,7 +1,6 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RowStatus } from '../../../lib/review';
-import { radius } from '../../../lib/themeVars';
 
 const TONE: Record<RowStatus, { bgcolor: string; color: string }> = {
   low: { bgcolor: tokens.color.urgentBg, color: tokens.color.urgentFg },

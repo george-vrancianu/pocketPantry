@@ -2,6 +2,22 @@ export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme, themeSelector } from './theme/theme';
 export { tokens } from './theme/tokens';
 export {
+  bodyFont,
+  border,
+  color,
+  displayType,
+  nestedRadius,
+  palette,
+  radius,
+  shadow,
+} from './theme/themeVars';
+export {
+  focusRing,
+  focusRingStyle,
+  insetFocusRing,
+  insetFocusRingStyle,
+} from './theme/focusRing';
+export {
   THEME_IDS,
   THEME_META,
   THEMES,

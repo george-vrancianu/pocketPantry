@@ -7,6 +7,7 @@ import { ProgressBar } from './ProgressBar';
 import { Tag } from './Tag';
 import { Sheet } from '../molecules/Sheet';
 import { useToast } from '../molecules/ToastProvider';
+import { nestedRadius, palette, radius } from '../theme/themeVars';
 
 const meta: Meta<typeof Card> = {
   title: 'Atoms/Card and surfaces',
@@ -50,9 +51,8 @@ function Cards() {
         <Box
           sx={{
             height: 96,
-            borderRadius: 'calc(var(--pp-r-card) - 6px)',
-            backgroundImage:
-              'linear-gradient(135deg, var(--mui-palette-pp-accentTint), var(--mui-palette-secondary-main))',
+            borderRadius: nestedRadius(radius.card, 6),
+            backgroundImage: `linear-gradient(135deg, ${palette('pp-accentTint')}, ${palette('secondary-main')})`,
           }}
         />
         <Box sx={{ px: '6px', display: 'grid', gap: 1 }}>

@@ -1,4 +1,4 @@
-import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import { Box, tokens, visuallyHidden, radius } from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
@@ -13,7 +13,6 @@ import type { ScanMode } from '../../../lib/scan';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
 import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   state: ReviewState;

@@ -1,11 +1,10 @@
-import { Box, ShoppingIcon, tokens } from '@pocket-pantry/ui';
+import { Box, ShoppingIcon, tokens, displayType } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { firstUncheckedNames } from '../../../lib/dashboard';
 import { useShoppingList } from '../../../lib/shopping';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
-import { displayType } from '../../../lib/themeVars';
 
 /** Unchecked Shopping Items on the butter card: the count and the first few names. */
 export function ShoppingWidget({ size, columns }: WidgetProps) {

@@ -7,9 +7,12 @@ import {
   ProgressBar,
   Typography,
   Card,
+  color,
+  displayType,
+  radius,
+  shadow,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { colour, displayType, radius, shadow } from '../../../lib/themeVars';
 
 export type SummaryCardProps = {
   remaining: number;
@@ -76,7 +79,7 @@ export function SummaryCard({
             border: 0,
             borderRadius: radius.fab,
             cursor: 'pointer',
-            color: colour.accentInk,
+            color: color.accentInk,
             backgroundColor: tokens.color.accent,
             boxShadow: shadow.button,
             '&:hover': { backgroundColor: tokens.color.accentHover },

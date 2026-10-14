@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import {
@@ -13,7 +13,6 @@ import { ExcludedRow } from './ExcludedRow';
 import { ReviewGroup } from './ReviewGroup';
 import { ReviewRow } from './ReviewRow';
 import { rowGridSx } from './layout';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   state: ReviewState;

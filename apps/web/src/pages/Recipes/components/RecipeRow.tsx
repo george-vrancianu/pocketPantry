@@ -5,6 +5,8 @@ import {
   IngredientsScanIcon,
   WarningIcon,
   tokens,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +14,6 @@ import { Link } from 'react-router-dom';
 import type { CookTonightCard } from '../../../lib/cookTonight';
 import { totalMinutes, type RecipeListItem } from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
-import { displayType, radius } from '../../../lib/themeVars';
 
 type Props = {
   recipe: RecipeListItem;

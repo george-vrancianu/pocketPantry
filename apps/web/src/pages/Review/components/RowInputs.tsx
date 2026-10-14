@@ -1,4 +1,4 @@
-import { Box, CalendarIcon, tokens } from '@pocket-pantry/ui';
+import { Box, CalendarIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpirySheet, expiryContext } from '../../../components/ExpiryPicker';
@@ -11,7 +11,6 @@ import {
 } from '../../../lib/dateFormat';
 import { displayName, type ReviewLine } from '../../../lib/review';
 import { controlSx } from './Field';
-import { radius } from '../../../lib/themeVars';
 
 /**
  * The inputs of a Review line, shared by the phone edit panel and the tablet
