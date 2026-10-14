@@ -168,6 +168,8 @@ export function CatalogSearch({
   };
 
   const clear = () => {
+    setAisle(null);
+    setParentCategoryId(null);
     setQuery('');
     setOpen(true);
     setActiveIndex(-1);
@@ -254,17 +256,22 @@ export function CatalogSearch({
       event.preventDefault();
       setOpen(false);
       setActiveIndex(-1);
+    } else if (event.key === 'Escape' && !open && aisle) {
+      // A second Escape drops the aisle the first one hid, so it can't come back unseen.
+      event.preventDefault();
+      setAisle(null);
+      setParentCategoryId(null);
     }
   };
 
   let status = '';
-  if (showPanel && typed && search.active) {
+  if (showPanel && querying && search.active) {
     if (failed) status = t('search.failed');
     else if (firstLoad || (results.length === 0 && search.isSearching)) {
       status = t('search.searching');
     } else if (results.length === 0) status = t('search.noResults');
     else status = t('search.resultCount', { count: results.length });
-  } else if (showPanel && typed) {
+  } else if (showPanel && querying) {
     // Typing ahead of the debounce.
     status = t('search.searching');
   }
@@ -290,6 +297,7 @@ export function CatalogSearch({
         activeOptionId={expanded && active >= 0 ? optionId(active) : undefined}
         selected={selected}
         onClear={clear}
+        canClear={aisle !== null}
         refetching={refetching}
         reducedMotion={reducedMotion}
       />
@@ -310,6 +318,8 @@ export function CatalogSearch({
                 setAisle(opened);
                 setParentCategoryId(null);
                 setActiveIndex(-1);
+                // The chip that opened it is gone; keep keyboard focus in the field.
+                inputRef.current?.focus();
               },
             }}
           >
@@ -331,7 +341,11 @@ export function CatalogSearch({
           <AisleViewHeader
             aisle={aisle}
             parentCategoryId={parentCategoryId}
-            onParentCategory={setParentCategoryId}
+            onParentCategory={(id) => {
+              setParentCategoryId(id);
+              setActiveIndex(-1);
+            }}
+            failed={failed}
             query={search.query}
             count={
               search.data && !search.isSearching && !failed

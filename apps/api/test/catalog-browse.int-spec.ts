@@ -210,9 +210,10 @@ describe('Catalog browse by aisle (integration)', () => {
       const shared = await search({ q: '', aisleId: DAIRY, scope: 'shared' });
       expect(shared.length).toBeGreaterThan(0);
       expect(shared).toEqual(family);
-      expect(
-        (await get('/catalog/aisles', { scope: 'shared' }).expect(200)).body,
-      ).toHaveProperty('aisles');
+      const sharedAisles = (
+        await get('/catalog/aisles', { scope: 'shared' }).expect(200)
+      ).body as { aisles: AisleListing[] };
+      expect(sharedAisles.aisles).toEqual(await aisleList());
     });
 
     it('rejects an aisleId that is not a UUID', async () => {

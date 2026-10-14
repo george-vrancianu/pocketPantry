@@ -56,9 +56,11 @@ export type CatalogAisle = {
 export function useCatalogAisles(
   locale: string,
   scope: 'family' | 'shared' = 'family',
+  enabled = true,
 ) {
   return useQuery({
     queryKey: ['catalog-aisles', locale, scope],
+    enabled,
     queryFn: () => {
       const params = new URLSearchParams({ locale });
       if (scope === 'shared') params.set('scope', 'shared');
@@ -72,6 +74,10 @@ export function useCatalogAisles(
 
 /** Restricts a search to an Aisle, and within it to one Parent Category. */
 export type SearchWithin = { aisleId: string; parentCategoryId: string | null };
+
+/** The Aisle a search key was made for ('' for none): the key ends with `{ aisleId, parentCategoryId }`. */
+const aisleOfKey = (key: readonly unknown[]) =>
+  (key.at(-1) as { aisleId: string }).aisleId;
 
 /**
  * Catalog search, with names in `locale`. Idle for a blank query unless
@@ -93,8 +99,7 @@ export function useCatalogSearch(
       locale,
       scope,
       debounced,
-      aisleId,
-      parentCategoryId,
+      { aisleId, parentCategoryId },
     ],
     queryFn: () => {
       const params = new URLSearchParams({ q: debounced, locale });
@@ -109,7 +114,9 @@ export function useCatalogSearch(
     // Keep the shown options (and their nodes) while the next query loads, so
     // a click mid-refresh still lands. Not across Aisles: those show skeletons.
     placeholderData: (previous, previousQuery) =>
-      previousQuery?.queryKey[4] === aisleId ? previous : undefined,
+      previousQuery && aisleOfKey(previousQuery.queryKey) === aisleId
+        ? previous
+        : undefined,
     staleTime: 60_000,
   });
   return {

@@ -502,5 +502,10 @@ describe('RecipeGuidance Browse by aisle', () => {
       expect(params.get('aisleId')).toBe('a1');
       expect(params.get('scope')).toBe('shared');
     });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
   });
 });

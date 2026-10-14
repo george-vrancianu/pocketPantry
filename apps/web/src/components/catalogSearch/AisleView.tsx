@@ -14,6 +14,8 @@ export type AisleViewHeaderProps = {
   /** The row count once the rows for `query` have loaded, else null (still loading). */
   count: number | null;
   onLeave: () => void;
+  /** The search failed: the error row says so, so the status line stays quiet. */
+  failed?: boolean;
 };
 
 /** The head of the aisle view: swatch, name, status line, Leave ×, and Parent Category chips when there are several. */
@@ -24,10 +26,11 @@ export function AisleViewHeader({
   query,
   count,
   onLeave,
+  failed = false,
 }: AisleViewHeaderProps) {
   const { color } = tokens;
   const { t } = useTranslation('catalog');
-  let status = t('search.aisleLoading');
+  let status = failed ? '' : t('search.aisleLoading');
   if (count !== null) {
     status = query
       ? t('search.aisleMatching', { query })

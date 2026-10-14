@@ -317,3 +317,96 @@ describe('Browse by aisle', () => {
     expect(catalog.last().searchParams.get('aisleId')).toBe(DAIRY_AISLE);
   });
 });
+
+describe('Browse by aisle: keyboard, announcements and leaving (#267 review r1)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('keeps focus in the field when a chip is opened from the keyboard, so the arrows reach the rows', async () => {
+    const catalog = stubCatalog();
+    renderWithProviders(<Host />);
+    const user = userEvent.setup();
+
+    (await screen.findByRole('button', { name: 'Dairy & eggs' })).focus();
+    await user.keyboard('{Enter}');
+    await catalog.respond(`|${DAIRY_AISLE}|`, [butter, eggs, milk]);
+    await screen.findAllByRole('option');
+
+    expect(screen.getByRole('combobox')).toHaveFocus();
+    await user.keyboard('{ArrowDown}');
+    const [first] = screen.getAllByRole('option');
+    expect(first).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('announces the aisle search while loading and the count once loaded, with no text typed', async () => {
+    const catalog = stubCatalog();
+    renderWithProviders(<Host />);
+    const user = userEvent.setup();
+
+    await openDairy(user);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Searching'),
+    );
+    await catalog.respond(`|${DAIRY_AISLE}|`, [butter, eggs, milk]);
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('3 results'),
+    );
+  });
+
+  it('closes the list on Escape and drops the aisle on a second Escape', async () => {
+    const catalog = stubCatalog();
+    renderWithProviders(<Host />);
+    const user = userEvent.setup();
+
+    await openDairy(user);
+    await catalog.respond(`|${DAIRY_AISLE}|`, [butter]);
+    await screen.findAllByRole('option');
+    await user.keyboard('{Escape}');
+    expect(
+      screen.queryByRole('button', { name: 'Leave Dairy & eggs' }),
+    ).toBeNull();
+    await user.keyboard('{Escape}');
+
+    // Focus leaves and returns: the empty state is back, not the old aisle.
+    await user.tab();
+    await user.tab({ shift: true });
+    expect(screen.getByRole('combobox')).toHaveFocus();
+    expect(await screen.findByRole('button', { name: 'Bakery' })).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Leave Dairy & eggs' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('leaves the aisle when the field’s clear × is pressed', async () => {
+    const catalog = stubCatalog();
+    renderWithProviders(<Host />);
+    const user = userEvent.setup();
+
+    await openDairy(user);
+    await catalog.respond(`|${DAIRY_AISLE}|`, [butter]);
+    await screen.findAllByRole('option');
+    await user.click(screen.getByRole('button', { name: 'Clear search' }));
+
+    expect(await screen.findByRole('button', { name: 'Bakery' })).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: 'Leave Dairy & eggs' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('does not claim to be loading after the aisle search failed', async () => {
+    vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
+      const url = new URL(String(input), window.location.origin);
+      return Promise.resolve(
+        url.pathname === '/api/catalog/aisles'
+          ? Response.json({ aisles })
+          : new Response('{}', { status: 500 }),
+      );
+    });
+    renderWithProviders(<Host />);
+    const user = userEvent.setup();
+
+    await openDairy(user);
+
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(screen.queryByText('loading…')).not.toBeInTheDocument();
+  });
+});

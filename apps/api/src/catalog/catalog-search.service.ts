@@ -44,7 +44,13 @@ export class CatalogSearchService {
     const key = normalizeName(query);
     if (!key) {
       return within.aisleId
-        ? this.listAisle(scope, within, locale, overrides)
+        ? this.listAisle(
+            scope,
+            within.aisleId,
+            within.parentCategoryId,
+            locale,
+            overrides,
+          )
         : [];
     }
     const ingredients = scope.ingredients(this.database);
@@ -97,7 +103,8 @@ export class CatalogSearchService {
   /** An Aisle's Ingredients (optionally one Parent Category's) by name in `locale`, A to Z, up to the listing limit. */
   private async listAisle(
     scope: CatalogScope,
-    within: SearchWithin,
+    aisleId: string,
+    parentCategoryId: string | undefined,
     locale: CatalogLocale,
     overrides: readonly ExpiryOverride[],
   ): Promise<CatalogSearchResult[]> {
@@ -115,9 +122,9 @@ export class CatalogSearchService {
       )
       .where(
         and(
-          eq(parentCategories.aisleId, within.aisleId as string),
-          within.parentCategoryId
-            ? eq(parentCategories.id, within.parentCategoryId)
+          eq(parentCategories.aisleId, aisleId),
+          parentCategoryId
+            ? eq(parentCategories.id, parentCategoryId)
             : undefined,
         ),
       );
@@ -128,7 +135,10 @@ export class CatalogSearchService {
       overrides,
     );
     return found
-      .sort((a, b) => a.name.localeCompare(b.name, locale))
+      .sort(
+        (a, b) =>
+          a.name.localeCompare(b.name, locale) || a.id.localeCompare(b.id),
+      )
       .slice(0, AISLE_LISTING_LIMIT);
   }
 

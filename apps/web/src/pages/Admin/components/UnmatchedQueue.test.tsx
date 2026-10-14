@@ -639,7 +639,7 @@ describe('UnmatchedQueue Browse by aisle', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows Browse by aisle in the resolver search', async () => {
-    stub({
+    const calls = stub({
       'GET /api/admin/unmatched': () =>
         Response.json({ entries: [printedEntry], nextCursor: null }),
       'GET /api/catalog/aisles': () =>
@@ -658,5 +658,19 @@ describe('UnmatchedQueue Browse by aisle', () => {
     );
 
     expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('a1');
+      expect(params.get('scope')).toBe('shared');
+    });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
   });
 });

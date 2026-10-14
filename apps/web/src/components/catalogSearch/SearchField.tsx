@@ -29,6 +29,8 @@ export type SearchFieldProps = {
   selected: CatalogSearchResult | null;
   /** Clears the text (and the selection); wired to × and to the token. */
   onClear: () => void;
+  /** Show the clear × even with no text (an Aisle is open). */
+  canClear?: boolean;
   /** Rows are showing while newer results load: the spinner takes the right slot. */
   refetching: boolean;
   reducedMotion: boolean;
@@ -51,6 +53,7 @@ export function SearchField({
   activeOptionId,
   selected,
   onClear,
+  canClear = false,
   refetching,
   reducedMotion,
 }: SearchFieldProps) {
@@ -80,7 +83,7 @@ export function SearchField({
             }),
       }}
     />
-  ) : value ? (
+  ) : value || canClear ? (
     <IconButton
       label={t('search.clear')}
       tone="plain"
