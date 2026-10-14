@@ -80,6 +80,14 @@ describe('Catalog browse by aisle (integration)', () => {
     return SEED_INGREDIENTS.filter((i) => leaves.has(i.leaf)).length;
   };
 
+  // Other suites share this DB and add rows under seeded Aisles, so assertions
+  // about "the Aisle's contents" only consider seeded Parent Categories.
+  const SEEDED_PARENT_IDS = new Set(
+    SEED_PARENTS.map((p) => seedId.parent(p.slug)),
+  );
+  const seededParentsOf = (aisle?: AisleListing) =>
+    (aisle?.parentCategories ?? []).filter((p) => SEEDED_PARENT_IDS.has(p.id));
+
   describe('GET /catalog/aisles', () => {
     it('lists the Aisles in shop order, each with its Parent Categories', async () => {
       const aisles = await aisleList();
@@ -87,27 +95,31 @@ describe('Catalog browse by aisle (integration)', () => {
       const expected = [...SEED_AISLES].sort(
         (a, b) => a.sortOrder - b.sortOrder,
       );
-      expect(aisles.map((a) => a.id)).toEqual(
-        expected.map((a) => seedId.aisle(a.slug)),
-      );
+      const seededIds = expected.map((a) => seedId.aisle(a.slug));
+      // Other suites sharing this DB may add Aisles; compare only the seeded ones.
+      expect(
+        aisles.map((a) => a.id).filter((id) => seededIds.includes(id)),
+      ).toEqual(seededIds);
       const dairy = aisles.find((a) => a.id === DAIRY);
       expect(dairy?.name).toBe('Dairy & eggs');
-      expect(dairy?.parentCategories).toEqual(
+      const seededParents = seededParentsOf(dairy);
+      expect(seededParents).toEqual(
         expect.arrayContaining([
           { id: seedId.parent('dairy'), name: 'Dairy' },
           { id: seedId.parent('eggs'), name: 'Eggs' },
         ]),
       );
-      expect(dairy?.parentCategories).toHaveLength(2);
+      expect(seededParents).toHaveLength(2);
     });
 
     it('names Aisles and Parent Categories in the requested locale', async () => {
       const dairy = (await aisleList('ro')).find((a) => a.id === DAIRY);
       expect(dairy?.name).toBe('Lactate și ouă');
-      expect(dairy?.parentCategories.map((p) => p.name).sort()).toEqual([
-        'Lactate',
-        'Ouă',
-      ]);
+      expect(
+        seededParentsOf(dairy)
+          .map((p) => p.name)
+          .sort(),
+      ).toEqual(['Lactate', 'Ouă']);
     });
 
     it('requires authentication', async () => {
@@ -122,8 +134,14 @@ describe('Catalog browse by aisle (integration)', () => {
     it('returns the Aisle’s Ingredients A to Z by localised name for an empty q', async () => {
       const results = await search({ q: '', aisleId: DAIRY, limit: '50' });
 
+      const seededIds = new Set(
+        SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
+      );
       expect(results.length).toBeGreaterThan(5);
-      expect(results.length).toBe(Math.min(50, seededCount('dairy-eggs')));
+      expect(results.length).toBeLessThanOrEqual(50);
+      expect(results.filter((r) => seededIds.has(r.id)).length).toBeGreaterThan(
+        5,
+      );
       for (const r of results) {
         expect(r.parentCategory.aisle.id).toBe(DAIRY);
       }
@@ -209,11 +227,25 @@ describe('Catalog browse by aisle (integration)', () => {
       const family = await search({ q: '', aisleId: DAIRY });
       const shared = await search({ q: '', aisleId: DAIRY, scope: 'shared' });
       expect(shared.length).toBeGreaterThan(0);
-      expect(shared).toEqual(family);
+      const seededIds = new Set(
+        SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
+      );
+      const seededOnly = (rs: Result[]) =>
+        rs.filter((r) => seededIds.has(r.id)).map((r) => r.id);
+      expect(seededOnly(shared)).toEqual(seededOnly(family));
       const sharedAisles = (
         await get('/catalog/aisles', { scope: 'shared' }).expect(200)
       ).body as { aisles: AisleListing[] };
-      expect(sharedAisles.aisles).toEqual(await aisleList());
+      const seededAisleIds = new Set(
+        SEED_AISLES.map((a) => seedId.aisle(a.slug)),
+      );
+      const seededAisles = (as: AisleListing[]) =>
+        as
+          .filter((a) => seededAisleIds.has(a.id))
+          .map((a) => ({ ...a, parentCategories: seededParentsOf(a) }));
+      expect(seededAisles(sharedAisles.aisles)).toEqual(
+        seededAisles(await aisleList()),
+      );
     });
 
     it('rejects an aisleId that is not a UUID', async () => {
