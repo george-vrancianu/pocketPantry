@@ -37,7 +37,7 @@ const tick = (
     sx={{
       width: 24,
       height: 24,
-      borderRadius: '8px',
+      borderRadius: 'var(--pp-r-box)',
       border: `2px solid ${tokens.color.tickBorder}`,
     }}
   />
@@ -90,7 +90,7 @@ export const CheckedStruckThrough: Story = {
         sx={{
           width: 24,
           height: 24,
-          borderRadius: '8px',
+          borderRadius: 'var(--pp-r-box)',
           bgcolor: 'primary.main',
           color: tokens.color.surface,
           display: 'flex',

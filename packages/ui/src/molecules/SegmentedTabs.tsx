@@ -70,7 +70,7 @@ export function SegmentedTabs<T extends string>({
         gap: '4px',
         p: '4px',
         backgroundColor: color.chipNeutral,
-        borderRadius: '16px',
+        borderRadius: 'var(--pp-r-ctl)',
       }}
     >
       {tabs.map((tab, index) => {
@@ -94,13 +94,14 @@ export function SegmentedTabs<T extends string>({
             sx={{
               height: 40,
               gap: '6px',
-              borderRadius: '12px',
+              borderRadius: 'calc(var(--pp-r-ctl) - 4px)',
               fontSize: 14,
               fontWeight: selected ? 700 : 600,
               fontFamily: tokens.font.body,
-              backgroundColor: selected ? color.surface : 'transparent',
-              color: selected ? color.ink : color.muted,
-              boxShadow: selected ? '0 1px 2px rgba(23,35,28,.08)' : 'none',
+              // Selected like the SegmentedControl: `seg-on` / `seg-on-ink`.
+              backgroundColor: selected ? 'pp.segOn' : 'transparent',
+              color: selected ? 'pp.segOnInk' : color.muted,
+              boxShadow: selected ? 'var(--pp-shadow-seg)' : 'none',
               '&:focus-visible': {
                 outline: `3px solid ${color.accent}`,
                 outlineOffset: 2,
@@ -118,7 +119,7 @@ export function SegmentedTabs<T extends string>({
                   fontWeight: 700,
                   px: '6px',
                   py: '2px',
-                  borderRadius: `${tokens.radius.chip}px`,
+                  borderRadius: '999px',
                   backgroundColor: color.urgentBg,
                   color: color.urgentFg,
                 }}

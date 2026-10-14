@@ -3,6 +3,7 @@ import {
   createColorScheme,
   createTheme,
   type PaletteOptions,
+  type Theme,
 } from '@mui/material/styles';
 import type { CSSProperties, ElementType } from 'react';
 import {
@@ -153,6 +154,16 @@ export function ppCssVariables(): Record<string, Record<string, string>> {
   return styles;
 }
 
+/** An Alert's background and text: the Theme's ok, soon or urgent pair. */
+function statusPair(theme: Theme, key: 'success' | 'warning' | 'error') {
+  const { light, main } = (theme.vars ?? theme).palette[key];
+  return {
+    backgroundColor: light,
+    color: main,
+    '& .MuiAlert-icon': { color: main },
+  };
+}
+
 /** Display type follows the Theme's display face, weight and tracking. */
 const display = {
   fontFamily: 'var(--pp-display)',
@@ -199,10 +210,12 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       stat: { ...display, fontSize: 40, lineHeight: 1 },
       meta: { fontSize: 13, fontWeight: 500, lineHeight: 1.4 },
       caption: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
+      // Themes handoff section 4: 12/700 caps, .07 em, `muted`.
       sectionLabel: {
+        color: 'var(--mui-palette-text-secondary)',
         fontSize: 12,
         fontWeight: 700,
-        letterSpacing: '0.06em',
+        letterSpacing: '0.07em',
         textTransform: 'uppercase',
         lineHeight: 1.4,
       },
@@ -262,9 +275,32 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       MuiInputLabel: {
         styleOverrides: { root: { fontWeight: 600 } },
       },
+      // Status pairs straight from the Theme, rather than MUI's mixes of `main`.
       MuiAlert: {
         styleOverrides: {
-          root: { borderRadius: radius.input, fontWeight: 500 },
+          root: ({ theme }) => {
+            const { pp } = (theme.vars ?? theme).palette;
+            return {
+              borderRadius: 'var(--pp-r-ctl)',
+              fontWeight: 500,
+              variants: [
+                ...(['success', 'warning', 'error'] as const).map(
+                  (severity) => ({
+                    props: { variant: 'standard', severity },
+                    style: statusPair(theme, severity),
+                  }),
+                ),
+                {
+                  props: { variant: 'standard', severity: 'info' },
+                  style: {
+                    backgroundColor: pp.accentTint,
+                    color: pp.accentOnTint,
+                    '& .MuiAlert-icon': { color: pp.accentOnTint },
+                  },
+                },
+              ],
+            };
+          },
         },
       },
     },

@@ -1,3 +1,4 @@
+import Box from '@mui/material/Box';
 import MuiSnackbar from '@mui/material/Snackbar';
 import type { ReactNode } from 'react';
 import { aboveDock, DOCK_HEIGHT } from '../theme/dock';
@@ -34,7 +35,15 @@ export function Snackbar({ open, onClose, bottom, children }: SnackbarProps) {
             : undefined
       }
     >
-      <div>{children}</div>
+      {/* Floats like a toast: the Theme's float shadow on the control radius. */}
+      <Box
+        sx={{
+          borderRadius: 'var(--pp-r-ctl)',
+          boxShadow: 'var(--pp-shadow-float)',
+        }}
+      >
+        {children}
+      </Box>
     </MuiSnackbar>
   );
 }

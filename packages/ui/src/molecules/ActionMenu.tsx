@@ -55,9 +55,9 @@ export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
             sx: {
               minWidth: 190,
               mt: '6px',
-              borderRadius: '16px',
+              borderRadius: 'var(--pp-r-card)',
               border: `1px solid ${tokens.color.line}`,
-              boxShadow: tokens.shadow.dock,
+              boxShadow: 'var(--pp-shadow-float)',
             },
           },
           list: { sx: { p: '6px' } },
@@ -78,7 +78,8 @@ export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
                 gap: '10px',
                 height: 44,
                 px: '12px',
-                borderRadius: '10px',
+                // Concentric with the menu, 6 px inside its edge.
+                borderRadius: 'calc(var(--pp-r-card) - 6px)',
                 fontSize: 15,
                 fontWeight: 600,
                 color: urgent ? tokens.color.urgentFg : tokens.color.ink,

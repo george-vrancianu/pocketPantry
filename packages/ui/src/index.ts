@@ -36,6 +36,8 @@ export {
   type ButtonProps,
   type ButtonVariant,
 } from './atoms/Button';
+export { Card, type CardProps } from './atoms/Card';
+export { Chip, type ChipProps } from './atoms/Chip';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
@@ -50,6 +52,7 @@ export { Link, type LinkProps } from './atoms/Link';
 export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
 export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
+export { Tag, type TagProps, type TagTone } from './atoms/Tag';
 export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
