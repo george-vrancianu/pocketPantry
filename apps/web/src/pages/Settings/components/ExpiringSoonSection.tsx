@@ -120,7 +120,7 @@ export function ExpiringSoonSection() {
   const canPlus = value !== undefined && value < MAX_DAYS;
 
   return (
-    <Stack component="section" spacing={1}>
+    <Stack component="section" spacing={1} aria-labelledby={headingId}>
       <SectionHeading id={headingId} title={t('expiringSoon.title')} />
       <Card>
         <Stack spacing={2}>

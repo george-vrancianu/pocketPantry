@@ -244,7 +244,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 1 });
       renderWithProviders(<FamilyTab />);
 
-      const value = await screen.findByLabelText('Expiring soon');
+      const value = await screen.findByRole('group', { name: 'Expiring soon' });
       expect(within(value).getByText('1')).toBeInTheDocument();
       expect(within(value).getByText('day')).toBeInTheDocument();
       expect(
@@ -259,7 +259,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 30 });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       expect(
         screen.getByRole('button', { name: 'One day more' }),
       ).toBeDisabled();
@@ -272,7 +272,7 @@ describe('FamilyTab', () => {
       stubFamilyTab({ threshold: 45 });
       renderWithProviders(<FamilyTab />);
 
-      const value = await screen.findByLabelText('Expiring soon');
+      const value = await screen.findByRole('group', { name: 'Expiring soon' });
       expect(within(value).getByText('45')).toBeInTheDocument();
       expect(within(value).getByText('days')).toBeInTheDocument();
       expect(
@@ -301,12 +301,14 @@ describe('FamilyTab', () => {
       });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       const plus = screen.getByRole('button', { name: 'One day more' });
       await user.click(plus);
       await user.click(plus);
       await user.click(plus);
-      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('10');
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('10');
       expect(patches(calls)).toHaveLength(0);
 
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
@@ -323,7 +325,7 @@ describe('FamilyTab', () => {
       });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       await user.click(screen.getByRole('button', { name: 'One day more' }));
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
         timeout: 2000,
@@ -333,7 +335,9 @@ describe('FamilyTab', () => {
           'Something went wrong on our side. Please try again.',
         ),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('7');
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('7');
     });
 
     it('keeps the newer value when an older save fails while the newer one is in flight', async () => {
@@ -347,7 +351,7 @@ describe('FamilyTab', () => {
       });
       renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       const plus = screen.getByRole('button', { name: 'One day more' });
       await user.click(plus);
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
@@ -370,7 +374,9 @@ describe('FamilyTab', () => {
           'Something went wrong on our side. Please try again.',
         ),
       ).toBeInTheDocument();
-      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('9');
+      expect(
+        screen.getByRole('group', { name: 'Expiring soon' }),
+      ).toHaveTextContent('9');
     });
 
     it('sends a pending change when the tab is left before the 600 ms pass', async () => {
@@ -380,7 +386,7 @@ describe('FamilyTab', () => {
       });
       const { unmount } = renderWithProviders(<FamilyTab />);
 
-      await screen.findByLabelText('Expiring soon');
+      await screen.findByRole('group', { name: 'Expiring soon' });
       await user.click(screen.getByRole('button', { name: 'One day more' }));
       unmount();
       await vi.waitFor(() => expect(patches(calls)).toHaveLength(1));
