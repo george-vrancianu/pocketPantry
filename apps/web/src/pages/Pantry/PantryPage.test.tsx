@@ -337,8 +337,19 @@ describe('PantryPage', () => {
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'parm',
     );
-    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    const option = await screen.findByRole('option', { name: /Parmesan/ });
+    // The Pantry search keeps the unit chip.
+    expect(option).toHaveAccessibleName(
+      'Parmesan, Hard cheese · Dairy & eggs, g',
+    );
+    await user.click(option);
 
+    // The pick shows as the selected token.
+    expect(
+      screen.getByRole('combobox', {
+        name: 'Ingredient: Parmesan. Press Backspace to change',
+      }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText('Location')).toHaveValue('fridge');
     expect(
       screen.getByRole('button', { name: /^Expires, .*, in 30 days$/ }),

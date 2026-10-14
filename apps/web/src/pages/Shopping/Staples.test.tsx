@@ -457,7 +457,10 @@ describe('StaplesPage', () => {
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'flo',
     );
-    await userEvent.click(await screen.findByRole('option', { name: /Flour/ }));
+    const option = await screen.findByRole('option', { name: /Flour/ });
+    // The Staples search has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Flour, Flour · Baking');
+    await userEvent.click(option);
 
     expect(await screen.findByRole('group', { name: 'Flour' })).toBeVisible();
     expect(calls.find((c) => c.key === 'POST /api/staples')?.body).toEqual({

@@ -12,6 +12,10 @@ export type CatalogSearchProps = {
   label?: string;
   /** Id of an element that describes the input. */
   describedBy?: string;
+  /** Show the default unit as a chip on each row (default true). */
+  showUnit?: boolean;
+  /** The picked ingredient, shown as a token; host-controlled so it can clear it. */
+  selected?: CatalogSearchResult | null;
 };
 
 /**

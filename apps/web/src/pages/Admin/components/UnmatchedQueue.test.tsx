@@ -79,7 +79,10 @@ async function pickParmesan(user: ReturnType<typeof userEvent.setup>) {
     screen.getByRole('combobox', { name: 'Search ingredients' }),
     'parm',
   );
-  await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+  const option = await screen.findByRole('option', { name: /Parmesan/ });
+  // The resolver has no use for a unit chip.
+  expect(option).toHaveAccessibleName('Parmesan, Hard cheese · Dairy');
+  await user.click(option);
 }
 
 function stub(routes: Parameters<typeof stubApi>[0] = {}) {

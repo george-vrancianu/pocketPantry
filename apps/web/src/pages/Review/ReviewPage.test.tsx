@@ -350,7 +350,10 @@ describe('ReviewPage', () => {
     });
     expect(search).toHaveFocus();
     await userEvent.type(search, 'milk');
-    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    const option = await screen.findByRole('option', { name: /Milk/ });
+    // The match dialog has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Milk, Hard cheese · Dairy');
+    await userEvent.click(option);
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
