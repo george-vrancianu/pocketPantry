@@ -1,9 +1,11 @@
 import { Stack, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { ExpiringSoonSection } from './ExpiringSoonSection';
+import { FamilyCard } from './FamilyCard';
 
 /**
- * The Family tab. Shared Family settings: the Family card, Expiring soon and
- * Default expiry are added here by the Settings follow-up tickets, below the intro.
+ * The Family tab. Shared Family settings: the Family card and Expiring soon are here, and Default expiry
+ * is added below them by its own ticket.
  */
 export function FamilyTab() {
   const { t } = useTranslation('settings');
@@ -12,6 +14,8 @@ export function FamilyTab() {
       <Typography variant="meta" color="text.secondary">
         {t('familyIntro')}
       </Typography>
+      <FamilyCard />
+      <ExpiringSoonSection />
     </Stack>
   );
 }
