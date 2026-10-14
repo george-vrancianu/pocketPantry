@@ -16,7 +16,7 @@ import { ApplyTemplateView } from './ApplyTemplateView';
 import { SheetFooterContext } from './SheetFooter';
 import { SaveTemplateView } from './SaveTemplateView';
 import { TemplatesTab } from './TemplatesTab';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestions } from '../../../../lib/suggestions';
 import {
   emptyIngredients,
   IngredientsTab,
@@ -41,18 +41,14 @@ export type AddSheetProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
   addError: string | null;
-  /** Missing Staples, suggested while the search is empty. */
-  staples: Suggestion[];
-  /** Ingredients recently used up, suggested while the search is empty. */
-  usedUp: Suggestion[];
-  /** Ingredients flagged running low, suggested while the search is empty. */
-  runningLow: Suggestion[];
+  /** What is gone from the Pantry, and what is running low, shown as tiles while the search is empty. */
+  suggestions: Suggestions;
 };
 
 /**
  * The Add sheet: a header with Done, the Ingredients and Templates tabs, and
  * the selected tab's panel. It owns everything that belongs to one opening
- * (tab, Templates sub-view, query, open row, typed amount and unit, adds so
+ * (tab, Templates sub-view, query, pick, typed amount and unit, adds so
  * far) so it survives switching tabs. All of it resets whenever the sheet
  * opens; the lists polled behind it never reset it.
  */
@@ -63,9 +59,7 @@ export function AddSheet({
   adding,
   onAdd,
   addError,
-  staples,
-  usedUp,
-  runningLow,
+  suggestions,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
   const tabsId = useId();
@@ -224,9 +218,7 @@ export function AddSheet({
               adding={adding}
               onAdd={onAdd}
               error={addError}
-              staples={staples}
-              usedUp={usedUp}
-              runningLow={runningLow}
+              suggestions={suggestions}
               onAdded={() => setAddedCount((count) => count + 1)}
               onOpenTemplate={openTemplate}
               onSeeAllTemplates={() => selectTab('templates')}

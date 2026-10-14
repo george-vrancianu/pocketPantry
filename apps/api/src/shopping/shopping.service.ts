@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { normalizeName } from '../catalog/normalize';
@@ -9,7 +10,6 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
   aisles,
-  ingredients,
   leafCategories,
   parentCategories,
   shoppingItems,
@@ -59,8 +59,8 @@ export class ShoppingService {
     memberId: string,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    const listId = await this.activeListId(this.database, memberId);
-    return this.view(this.database, listId, locale);
+    const { listId, scope } = await this.activeList(this.database, memberId);
+    return this.view(this.database, listId, scope, locale);
   }
 
   async addItem(
@@ -79,9 +79,10 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
-      const listId = await this.lockActiveList(tx, memberId);
-      for (const body of bodies) await this.mergeItem(tx, listId, body, locale);
-      return this.view(tx, listId, locale);
+      const { listId, scope } = await this.lockActiveList(tx, memberId);
+      for (const body of bodies)
+        await this.mergeItem(tx, listId, scope, body, locale);
+      return this.view(tx, listId, scope, locale);
     });
   }
 
@@ -97,15 +98,15 @@ export class ShoppingService {
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
-      const listId = await this.lockActiveList(tx, memberId);
+      const { listId, scope } = await this.lockActiveList(tx, memberId);
       for (const body of bodies) {
-        const itemId = await this.mergeItem(tx, listId, body, locale);
+        const itemId = await this.mergeItem(tx, listId, scope, body, locale);
         await tx
           .insert(shoppingItemSourceRecipes)
           .values({ shoppingItemId: itemId, recipeId })
           .onConflictDoNothing();
       }
-      return this.view(tx, listId, locale);
+      return this.view(tx, listId, scope, locale);
     });
   }
 
@@ -113,6 +114,7 @@ export class ShoppingService {
   private async mergeItem(
     tx: Tx,
     listId: string,
+    scope: CatalogScope,
     body: MergeItemInput,
     locale: CatalogLocale,
   ): Promise<string> {
@@ -122,6 +124,7 @@ export class ShoppingService {
     let insertValues:
       { ingredientId: string } | { name: string; normalizedName: string };
     if (body.ingredientId !== undefined) {
+      const ingredients = scope.ingredients(tx);
       const [found] = await tx
         .select({ id: ingredients.id })
         .from(ingredients)
@@ -206,7 +209,7 @@ export class ShoppingService {
     ingredientIds: string[],
   ): Promise<string[]> {
     if (ingredientIds.length === 0) return [];
-    const listId = await this.activeListId(this.database, memberId);
+    const { listId } = await this.activeList(this.database, memberId);
     const rows = await this.database
       .select({ id: shoppingItems.id })
       .from(shoppingItems)
@@ -228,7 +231,7 @@ export class ShoppingService {
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
-      const listId = await this.lockActiveList(tx, memberId);
+      const { listId, scope } = await this.lockActiveList(tx, memberId);
       const updated = await tx
         .update(shoppingItems)
         .set({ checked })
@@ -237,7 +240,7 @@ export class ShoppingService {
         )
         .returning({ id: shoppingItems.id });
       if (updated.length === 0) throw itemNotFound();
-      return this.view(tx, listId, locale);
+      return this.view(tx, listId, scope, locale);
     });
   }
 
@@ -255,7 +258,7 @@ export class ShoppingService {
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
-      const listId = await this.lockActiveList(tx, memberId);
+      const { listId, scope } = await this.lockActiveList(tx, memberId);
       const updated = await tx
         .update(shoppingItems)
         .set({
@@ -267,7 +270,7 @@ export class ShoppingService {
         )
         .returning({ id: shoppingItems.id });
       if (updated.length === 0) throw itemNotFound();
-      return this.view(tx, listId, locale);
+      return this.view(tx, listId, scope, locale);
     });
   }
 
@@ -277,7 +280,7 @@ export class ShoppingService {
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
-      const listId = await this.lockActiveList(tx, memberId);
+      const { listId, scope } = await this.lockActiveList(tx, memberId);
       const removed = await tx
         .delete(shoppingItems)
         .where(
@@ -285,7 +288,7 @@ export class ShoppingService {
         )
         .returning({ id: shoppingItems.id });
       if (removed.length === 0) throw itemNotFound();
-      return this.view(tx, listId, locale);
+      return this.view(tx, listId, scope, locale);
     });
   }
 
@@ -295,22 +298,25 @@ export class ShoppingService {
    * wait, Postgres rechecks the predicate and the archived row drops out (no
    * row); a fresh statement then sees the new active list.
    */
-  private async lockActiveList(tx: Tx, memberId: string): Promise<string> {
+  private async lockActiveList(
+    tx: Tx,
+    memberId: string,
+  ): Promise<{ listId: string; scope: CatalogScope }> {
     for (let attempt = 0; attempt < 2; attempt++) {
-      const listId = await this.activeListId(tx, memberId);
+      const { listId, scope } = await this.activeList(tx, memberId);
       const locked = await tx.execute<{ id: string }>(
         sql`SELECT ${shoppingLists.id} AS id FROM ${shoppingLists} WHERE ${shoppingLists.id} = ${listId} AND ${shoppingLists.status} = 'active' FOR UPDATE`,
       );
-      if (locked.rows.length > 0) return listId;
+      if (locked.rows.length > 0) return { listId, scope };
     }
     throw new ApiException(409, 'shopping.list_changed');
   }
 
   /** The Family's active list, created on first use. */
-  private async activeListId(
+  private async activeList(
     executor: Executor,
     memberId: string,
-  ): Promise<string> {
+  ): Promise<{ listId: string; scope: CatalogScope }> {
     const [member] = await executor
       .select({ familyId: user.familyId })
       .from(user)
@@ -331,14 +337,16 @@ export class ShoppingService {
           eq(shoppingLists.status, 'active'),
         ),
       );
-    return list.id;
+    return { listId: list.id, scope: catalogScope(member.familyId) };
   }
 
   private async view(
     executor: Executor,
     listId: string,
+    scope: CatalogScope,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
+    const ingredients = scope.ingredients(executor);
     const rows = await executor
       .select({
         id: shoppingItems.id,
@@ -368,6 +376,7 @@ export class ShoppingService {
 
     const { pick: display } = await loadDisplayNames(
       executor,
+      scope,
       locale,
       rows
         .flatMap((row) => [row.ingredientId, row.aisleId])

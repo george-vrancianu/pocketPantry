@@ -1,11 +1,11 @@
 import { eq, inArray } from 'drizzle-orm';
+import type { CatalogScope } from './catalog-scope';
 import type { CatalogLocale } from './catalog.schemas';
 import { readAmountScale, type AmountScale } from './amount-scale';
 import { loadDisplayNames } from './display-names';
 import type { Executor } from '../database/database.types';
 import {
   aisles,
-  ingredients,
   ingredientUnit,
   leafCategories,
   parentCategories,
@@ -24,10 +24,12 @@ export type IngredientPlacement = {
 /** Localised name and Aisle of each Ingredient, for lists shown in shop order. */
 export async function loadIngredientPlacements(
   executor: Executor,
+  scope: CatalogScope,
   locale: CatalogLocale,
   ingredientIds: string[],
 ): Promise<Map<string, IngredientPlacement>> {
   if (ingredientIds.length === 0) return new Map();
+  const ingredients = scope.ingredients(executor);
   const rows = await executor
     .select({
       id: ingredients.id,
@@ -49,7 +51,7 @@ export async function loadIngredientPlacements(
     )
     .innerJoin(aisles, eq(parentCategories.aisleId, aisles.id))
     .where(inArray(ingredients.id, ingredientIds));
-  const { pick } = await loadDisplayNames(executor, locale, [
+  const { pick } = await loadDisplayNames(executor, scope, locale, [
     ...rows.flatMap((row) => [row.id, row.aisleId]),
   ]);
   return new Map(

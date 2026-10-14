@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -8,7 +9,6 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
-  ingredients,
   recipeIngredientLines,
   recipes,
   recipeSteps,
@@ -90,8 +90,18 @@ export class FamilyRecipesService {
     if (base?.archivedAt) {
       throw new ApiException(409, 'recipes.parent_archived');
     }
-    const source = await resolveRecipe(this.database, row, locale);
-    const guidance = await loadResolvedGuidance(this.database, row.id, locale);
+    const source = await resolveRecipe(
+      this.database,
+      catalogScope(familyId),
+      row,
+      locale,
+    );
+    const guidance = await loadResolvedGuidance(
+      this.database,
+      catalogScope(familyId),
+      row.id,
+      locale,
+    );
     return {
       parentId,
       title: source.title,
@@ -163,7 +173,7 @@ export class FamilyRecipesService {
     locale: string,
   ): Promise<string> {
     await lockFamilyRow(tx, familyId);
-    await this.validate(tx, document);
+    await this.validate(tx, familyId, document);
     const tips = document.tips ?? [];
     if (tips.some((tip) => tip.stepIndex >= document.steps.length)) {
       throw new ApiException(400, 'recipes.bad_step_anchor');
@@ -217,7 +227,7 @@ export class FamilyRecipesService {
     const familyId = await this.settings.familyIdOf(memberId);
     await this.database.transaction(async (tx) => {
       await lockRecipeForWrite(tx, id, familyId);
-      await this.validate(tx, document);
+      await this.validate(tx, familyId, document);
       const existingLines = await tx
         .select()
         .from(recipeIngredientLines)
@@ -354,7 +364,12 @@ export class FamilyRecipesService {
         if (!detail) throw recipeNotFound();
         const { translations, ...rest } = detail;
         void translations; // Family Recipes are never translated
-        const resolved = await loadResolvedGuidance(tx, id, locale);
+        const resolved = await loadResolvedGuidance(
+          tx,
+          catalogScope(familyId),
+          id,
+          locale,
+        );
         const links = new Map(resolved.pairings.map((p) => [p.id, p.link]));
         const rows = await tx
           .select()
@@ -362,6 +377,7 @@ export class FamilyRecipesService {
           .where(eq(recipeIngredientLines.recipeId, id));
         const names = await this.ingredientNames(
           tx,
+          familyId,
           rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
           locale,
         );
@@ -395,16 +411,19 @@ export class FamilyRecipesService {
 
   private async ingredientNames(
     executor: Executor,
+    familyId: string,
     ids: string[],
     locale: CatalogLocale,
   ) {
     const result = new Map<string, string>();
     if (ids.length === 0) return result;
+    const scope = catalogScope(familyId);
+    const ingredients = scope.ingredients(executor);
     const canonical = await executor
       .select({ id: ingredients.id, name: ingredients.name })
       .from(ingredients)
       .where(inArray(ingredients.id, ids));
-    const display = await loadDisplayNames(executor, locale, ids);
+    const display = await loadDisplayNames(executor, scope, locale, ids);
     for (const row of canonical) {
       result.set(row.id, display.pick('ingredient', row.id, row.name));
     }
@@ -431,26 +450,32 @@ export class FamilyRecipesService {
 
   private validate(
     tx: Tx,
+    familyId: string,
     document: Pick<
       FamilyRecipeDocument,
       'lines' | 'steps' | 'cuisineId' | 'methodId'
     >,
   ) {
-    return validateRecipeDocument(tx, document, (line, index) => {
-      if (line.ingredientId !== null && line.rawName !== null) {
-        throw new ApiException(400, 'recipes.line_name_conflict', {
-          line: index,
-        });
-      }
-      if (
-        line.ingredientId === null &&
-        (line.rawName === null || normalizeName(line.rawName) === '')
-      ) {
-        throw new ApiException(400, 'recipes.ingredient_required', {
-          line: index,
-        });
-      }
-    });
+    return validateRecipeDocument(
+      tx,
+      catalogScope(familyId),
+      document,
+      (line, index) => {
+        if (line.ingredientId !== null && line.rawName !== null) {
+          throw new ApiException(400, 'recipes.line_name_conflict', {
+            line: index,
+          });
+        }
+        if (
+          line.ingredientId === null &&
+          (line.rawName === null || normalizeName(line.rawName) === '')
+        ) {
+          throw new ApiException(400, 'recipes.ingredient_required', {
+            line: index,
+          });
+        }
+      },
+    );
   }
 
   /**

@@ -29,8 +29,8 @@
     "suggestions": {
       "title": "Suggestions",
       "empty": "Nothing suggested",
-      "count_one": "missing staple",
-      "count_other": "missing staples"
+      "count_one": "gone from your Pantry",
+      "count_other": "gone from your Pantry"
     },
     "cookTonight": {
       "title": "Cook tonight",

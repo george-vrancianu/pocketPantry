@@ -54,13 +54,6 @@
     }
   },
   "search": {
-    "placeholder": "Search ingredients",
-    "clear": "Clear search",
-    "matches_one": "{{count}} match",
-    "matches_other": "{{count}} matches",
-    "noMatch": "No catalog match",
-    "freeText": "Add “{{name}}”",
-    "freeTextHint": "Not in the catalog, added as free text",
     "onList": "On list",
     "onListHint": "Already on your list. Adding again increases the amount.",
     "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",
@@ -71,14 +64,20 @@
     "add": "Add {{name}} to the list"
   },
   "suggestions": {
-    "missingLabel": "Missing staples · {{count}}",
-    "usedUpLabel": "Recently used up · {{count}}",
-    "runningLowLabel": "Running low · {{count}}",
-    "stapleLabel": "Staples",
-    "allStocked": "All your staples are stocked.",
+    "runningLowLabel": "Running low",
+    "runningLowWhy": "running low",
+    "runningLowTile": "{{name}}, running low",
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
-    "dismiss": "Dismiss {{name}}"
+    "dismiss": "Dismiss {{name}}",
+    "gone": "Gone from your Pantry",
+    "goneNone": "Nothing has run out or expired. Nice.",
+    "usedUpWhen": "used up · {{when}}",
+    "expiredWhen": "expired · {{when}}",
+    "stapleWhy": "staple",
+    "goneLabelUsedUp": "{{name}}, used up {{when}}",
+    "goneLabelExpired": "{{name}}, expired {{when}}",
+    "goneLabelStaple": "{{name}}, missing staple"
   },
   "templatesFromSearch": "Or start from a template",
   "seeAll": "See all"

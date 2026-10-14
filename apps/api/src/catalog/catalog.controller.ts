@@ -5,9 +5,13 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
+import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
 import {
+  catalogAislesQuery,
   catalogParentsQuery,
+  type CatalogAisle,
+  type CatalogAislesQuery,
   catalogSearchQuery,
   type CatalogParent,
   type CatalogParentsQuery,
@@ -30,10 +34,34 @@ export class CatalogController {
       'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
   })
   async parents(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(catalogParentsQuery))
     query: CatalogParentsQuery,
   ): Promise<{ parents: CatalogParent[] }> {
-    return { parents: await this.searchService.listParents(query.locale) };
+    return {
+      parents: await this.searchService.listParents(
+        await this.settings.catalogScopeForMember(member.id),
+        query.locale,
+      ),
+    };
+  }
+
+  @Get('aisles')
+  @ApiOperation({
+    summary:
+      'List Aisles in shop order, each with its Parent Categories, for Browse by aisle',
+  })
+  async aisles(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(catalogAislesQuery))
+    query: CatalogAislesQuery,
+  ): Promise<{ aisles: CatalogAisle[] }> {
+    return {
+      aisles: await this.searchService.listAisles(
+        await this.scopeFor(query, member.id),
+        query.locale,
+      ),
+    };
   }
 
   @Get('search')
@@ -48,11 +76,26 @@ export class CatalogController {
   ): Promise<{ results: CatalogSearchResult[] }> {
     return {
       results: await this.searchService.search(
+        await this.scopeFor(query, member.id),
         query.q,
         query.locale,
         query.limit,
         await this.settings.expiryOverridesForMember(member.id),
+        {
+          aisleId: query.aisleId,
+          parentCategoryId: query.parentCategoryId,
+        },
       ),
     };
+  }
+
+  /** The Catalog scope a request asks for: shared rows only, or the Member's Family. */
+  private async scopeFor(
+    query: { scope: 'family' | 'shared' },
+    memberId: string,
+  ): Promise<CatalogScope> {
+    return query.scope === 'shared'
+      ? catalogScope(SHARED_ONLY)
+      : this.settings.catalogScopeForMember(memberId);
   }
 }

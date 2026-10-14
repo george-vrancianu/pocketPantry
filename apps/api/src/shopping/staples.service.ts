@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
-import { ingredients, staples, suggestionDismissals } from '../database/schema';
+import { staples, suggestionDismissals } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { SettingsService } from '../settings/settings.service';
 import {
@@ -37,7 +38,7 @@ export class StaplesService {
       .select()
       .from(staples)
       .where(eq(staples.familyId, familyId));
-    return this.toViews(rows, locale);
+    return this.toViews(familyId, rows, locale);
   }
 
   async add(
@@ -49,6 +50,7 @@ export class StaplesService {
     let row: StapleRow;
     try {
       row = await this.database.transaction(async (tx) => {
+        const ingredients = catalogScope(familyId).ingredients(tx);
         const [found] = await tx
           .select({ id: ingredients.id })
           .from(ingredients)
@@ -84,7 +86,7 @@ export class StaplesService {
       }
       throw error;
     }
-    return (await this.toViews([row], locale))[0];
+    return (await this.toViews(familyId, [row], locale))[0];
   }
 
   async update(
@@ -100,7 +102,7 @@ export class StaplesService {
       .where(and(eq(staples.id, stapleId), eq(staples.familyId, familyId)))
       .returning();
     if (!row) throw stapleNotFound();
-    return (await this.toViews([row], locale))[0];
+    return (await this.toViews(familyId, [row], locale))[0];
   }
 
   async remove(memberId: string, stapleId: string): Promise<void> {
@@ -126,11 +128,13 @@ export class StaplesService {
   }
 
   private async toViews(
+    familyId: string,
     rows: StapleRow[],
     locale: CatalogLocale,
   ): Promise<StapleView[]> {
     const placements = await loadIngredientPlacements(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.map((row) => row.ingredientId),
     );

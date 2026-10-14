@@ -57,14 +57,6 @@
     }
   },
   "search": {
-    "placeholder": "Caută ingrediente",
-    "clear": "Șterge căutarea",
-    "matches_one": "{{count}} potrivire",
-    "matches_few": "{{count}} potriviri",
-    "matches_other": "{{count}} de potriviri",
-    "noMatch": "Nicio potrivire în catalog",
-    "freeText": "Adaugă „{{name}}”",
-    "freeTextHint": "Nu e în catalog, se adaugă ca text liber",
     "onList": "Pe listă",
     "onListHint": "Este deja pe listă. Dacă o adaugi din nou, cantitatea crește.",
     "onListOtherUnit": "Este deja pe listă în {{unit}}; se adaugă o linie separată.",
@@ -75,14 +67,20 @@
     "add": "Adaugă {{name}} în listă"
   },
   "suggestions": {
-    "missingLabel": "Produse de bază lipsă · {{count}}",
-    "usedUpLabel": "Epuizate recent · {{count}}",
-    "runningLowLabel": "Pe cale să se termine · {{count}}",
-    "stapleLabel": "Produse de bază",
-    "allStocked": "Toate produsele tale de bază sunt în stoc.",
+    "runningLowLabel": "Pe cale să se termine",
+    "runningLowWhy": "pe cale să se termine",
+    "runningLowTile": "{{name}}, pe cale să se termine",
     "manage": "Gestionează",
     "dismissed": "Ai ignorat {{name}}",
-    "dismiss": "Ignoră {{name}}"
+    "dismiss": "Ignoră {{name}}",
+    "gone": "Dispărute din cămară",
+    "goneNone": "Nimic nu s-a terminat sau expirat. Bravo.",
+    "usedUpWhen": "epuizat · {{when}}",
+    "expiredWhen": "expirat · {{when}}",
+    "stapleWhy": "produs de bază",
+    "goneLabelUsedUp": "{{name}}, epuizat {{when}}",
+    "goneLabelExpired": "{{name}}, expirat {{when}}",
+    "goneLabelStaple": "{{name}}, produs de bază lipsă"
   },
   "templatesFromSearch": "Sau începe de la un șablon",
   "seeAll": "Vezi tot"
