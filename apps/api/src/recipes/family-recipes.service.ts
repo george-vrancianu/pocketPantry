@@ -1,7 +1,7 @@
-import { catalogScope } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';

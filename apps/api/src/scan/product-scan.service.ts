@@ -1,5 +1,5 @@
-import type { CatalogReader } from '../catalog/catalog-scope';
 import { Injectable } from '@nestjs/common';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';

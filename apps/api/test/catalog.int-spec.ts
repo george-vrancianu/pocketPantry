@@ -1,7 +1,7 @@
-import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
+import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import {
   SEED_INGREDIENTS,
   SEED_LEAVES,

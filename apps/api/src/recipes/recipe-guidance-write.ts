@@ -1,6 +1,6 @@
-import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, notInArray } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
 import { hasPgCode, pgConstraint } from '../database/pg-errors';

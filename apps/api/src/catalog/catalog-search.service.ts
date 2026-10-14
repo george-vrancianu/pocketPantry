@@ -3,12 +3,12 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
+import type { CatalogScope } from './catalog-scope';
 import {
   type CatalogLocale,
   type CatalogParent,
   type CatalogSearchResult,
 } from './catalog.schemas';
-import type { CatalogScope } from './catalog-scope';
 import { loadDisplayNames } from './display-names';
 import {
   resolveCatalogDefaults,

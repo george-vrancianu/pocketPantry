@@ -1,6 +1,6 @@
-import { catalogScope } from '../../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray } from 'drizzle-orm';
+import { catalogScope } from '../../catalog/catalog-scope';
 import { DATABASE } from '../../database/database.constants';
 import type { Database } from '../../database/database.types';
 import { batches, recipeIngredientLines, recipes } from '../../database/schema';

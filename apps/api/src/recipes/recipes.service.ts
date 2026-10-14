@@ -1,7 +1,7 @@
-import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';

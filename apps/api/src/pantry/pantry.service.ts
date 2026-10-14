@@ -1,4 +1,3 @@
-import { catalogScope } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
@@ -7,6 +6,7 @@ import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
+import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import { seedId } from '../catalog/seed/seed-catalog';

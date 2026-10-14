@@ -1,5 +1,3 @@
-import type { ingredients as ingredientsTable } from '../database/schema';
-import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -7,9 +5,11 @@ import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   FALLBACK_LOCALE,
   type CatalogLocale,
+  type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -45,7 +45,7 @@ type CheckedRow = {
   quantity: string | null;
   unit: (typeof shoppingItems.$inferSelect)['unit'];
   canonicalName: string | null;
-  defaultUnit: (typeof ingredientsTable.$inferSelect)['defaultUnit'] | null;
+  defaultUnit: CatalogSearchResult['defaultUnit'] | null;
   leaf: typeof leafCategories.$inferSelect | null;
   parent: typeof parentCategories.$inferSelect | null;
 };

@@ -1,8 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
 import { catalogEntityType } from '../database/schema';
-import { type CatalogLocale, FALLBACK_LOCALE } from './catalog.schemas';
 import type { CatalogScope } from './catalog-scope';
+import { type CatalogLocale, FALLBACK_LOCALE } from './catalog.schemas';
 
 export type EntityType = (typeof catalogEntityType.enumValues)[number];
 

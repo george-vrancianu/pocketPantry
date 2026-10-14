@@ -1,7 +1,7 @@
-import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import {
   ConcurrentMove,
@@ -41,6 +41,9 @@ type EntryRow = typeof unmatchedEntries.$inferSelect;
 const MAX_REFERENCES = 20;
 const MAX_LOCK_ATTEMPTS = 5;
 
+// The Unmatched queue is Admin curation: it reads shared Catalog rows only (ADR 0010).
+const adminScope = catalogScope(SHARED_ONLY);
+
 const notInQueue = () => new ApiException(404, 'unmatched.not_found');
 
 /**
@@ -56,9 +59,6 @@ const notInQueue = () => new ApiException(404, 'unmatched.not_found');
  * Family lock first, so they cannot invert with this order. Resolve takes every
  * name lock it needs up front, sorted.
  */
-// The Unmatched queue is Admin curation: it reads shared Catalog rows only (ADR 0010).
-const adminScope = catalogScope(SHARED_ONLY);
-
 @Injectable()
 export class UnmatchedQueueService {
   constructor(

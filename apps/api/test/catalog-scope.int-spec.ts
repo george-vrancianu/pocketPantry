@@ -1,52 +1,51 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { count, eq } from 'drizzle-orm';
-import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
-import { DATABASE } from '../src/database/database.constants';
-import type { Database } from '../src/database/database.types';
-import { catalogTranslations, ingredients } from '../src/database/schema';
-import { createTestApp } from './support/create-test-app';
+import request from 'supertest';
+import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 describe('Catalog scope (integration)', () => {
   let app: NestFastifyApplication;
-  let database: Database;
+  let cookie: string;
 
   beforeAll(async () => {
     app = await createTestApp();
-    database = app.get<Database>(DATABASE);
+    const signUp = await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .set('origin', TEST_ORIGIN)
+      .send({
+        name: 'Scope Member',
+        email: `catalog-scope-${Date.now()}@example.com`,
+        password: 'correct-horse-staple',
+      })
+      .expect(200);
+    cookie = [signUp.headers['set-cookie'] ?? []]
+      .flat()
+      .map((value) => value.split(';')[0])
+      .join('; ');
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('shows a Family the shared Ingredients and translations', async () => {
-    const [{ total }] = await database
-      .select({ total: count() })
-      .from(ingredients);
-    const scope = catalogScope('some-family-id');
-    const ingredientRows = scope.ingredients(database);
-    const [seen] = await database
-      .select({ total: count() })
-      .from(ingredientRows);
-    expect(total).toBeGreaterThan(0);
-    expect(seen.total).toBe(total);
+  const search = (query: Record<string, string>) =>
+    request(app.getHttpServer())
+      .get('/api/catalog/search')
+      .query({ q: 'milk', ...query })
+      .set('origin', TEST_ORIGIN)
+      .set('cookie', cookie);
 
-    const [{ translations }] = await database
-      .select({ translations: count() })
-      .from(catalogTranslations);
-    const translationRows = scope.translations(database);
-    const [seenTranslations] = await database
-      .select({ total: count() })
-      .from(translationRows);
-    expect(seenTranslations.total).toBe(translations);
+  it('searches the Family scope by default and the shared scope on request', async () => {
+    const family = (await search({}).expect(200)).body as {
+      results: unknown[];
+    };
+    const shared = (await search({ scope: 'shared' }).expect(200)).body as {
+      results: unknown[];
+    };
+    expect(family.results.length).toBeGreaterThan(0);
+    expect(shared.results).toEqual(family.results);
   });
 
-  it('shows the shared-only scope the shared Ingredients', async () => {
-    const scoped = catalogScope(SHARED_ONLY).ingredients(database);
-    const rows = await database
-      .select({ id: scoped.id })
-      .from(scoped)
-      .where(eq(scoped.name, 'Milk'));
-    expect(rows).toHaveLength(1);
+  it('rejects an unknown scope', async () => {
+    await search({ scope: 'everyone' }).expect(400);
   });
 });

@@ -1,5 +1,5 @@
-import type { CatalogReader } from '../catalog/catalog-scope';
 import { Injectable, Logger } from '@nestjs/common';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { z } from 'zod';
 import {

@@ -1,7 +1,7 @@
-import type { CatalogReader } from '../catalog/catalog-scope';
 import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';

@@ -1,11 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { ExpiryOverride } from '../catalog/catalog-defaults';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   CATALOG_LOCALES,
   type CatalogLocale,
 } from '../catalog/catalog.schemas';
-import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';

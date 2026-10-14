@@ -1,6 +1,6 @@
-import { catalogScope } from '../catalog/catalog-scope';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';

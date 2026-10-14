@@ -5,6 +5,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
+import { catalogScope, SHARED_ONLY } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogParentsQuery,
@@ -54,7 +55,9 @@ export class CatalogController {
   ): Promise<{ results: CatalogSearchResult[] }> {
     return {
       results: await this.searchService.search(
-        await this.settings.catalogScopeForMember(member.id),
+        query.scope === 'shared'
+          ? catalogScope(SHARED_ONLY)
+          : await this.settings.catalogScopeForMember(member.id),
         query.q,
         query.locale,
         query.limit,

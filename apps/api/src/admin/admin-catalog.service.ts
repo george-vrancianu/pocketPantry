@@ -1,7 +1,7 @@
-import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -58,6 +58,9 @@ const otherLeafNameTaken = () =>
 type ListType = 'cuisine' | 'method';
 const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
 
+// Admin curation reads shared Catalog rows only (ADR 0010).
+const adminScope = catalogScope(SHARED_ONLY);
+
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
 
@@ -69,18 +72,12 @@ const notFound = (entity: EntityType | 'translation') =>
  * - deleting an entity deletes every translation and Synonym of it, in the
  *   same transaction, so no orphans remain.
  */
-// Admin curation reads shared Catalog rows only (ADR 0010).
-const adminScope = catalogScope(SHARED_ONLY);
-const sharedIngredients = (executor: Executor) =>
-  adminScope.ingredients(executor);
-const sharedTranslations = (executor: Executor) =>
-  adminScope.translations(executor);
-
 @Injectable()
 export class AdminCatalogService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   async overview() {
+    const sharedIngredients = adminScope.ingredients(this.database);
     const [
       aisleRows,
       parentRows,
@@ -102,9 +99,9 @@ export class AdminCatalogService {
         .orderBy(leafCategories.normalizedName),
       this.database
         .select()
-        .from(sharedIngredients(this.database))
-        .orderBy(sharedIngredients(this.database).normalizedName),
-      this.database.select().from(sharedTranslations(this.database)),
+        .from(sharedIngredients)
+        .orderBy(sharedIngredients.normalizedName),
+      this.database.select().from(adminScope.translations(this.database)),
       this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
       this.database.select().from(methods).orderBy(methods.normalizedName),
       this.database
@@ -564,7 +561,8 @@ export class AdminCatalogService {
           .where(eq(leafCategories.id, id));
         if (!leaf) throw notFound('leaf_category');
         if (leaf.isOther) throw otherLeafProtected();
-        const shared = sharedIngredients(tx);
+        // Counts shared Ingredients only: #270/#275 must also count Family Ingredients in this Leaf.
+        const shared = adminScope.ingredients(tx);
         const [{ children }] = await tx
           .select({ children: count() })
           .from(shared)
@@ -647,7 +645,7 @@ export class AdminCatalogService {
           await this.claimName(tx, input.value, input.entityId);
         }
         if (input.kind === 'name') {
-          const translations = sharedTranslations(tx);
+          const translations = adminScope.translations(tx);
           const [existing] = await tx
             .select({ id: translations.id })
             .from(translations)
@@ -727,8 +725,8 @@ export class AdminCatalogService {
     key: string,
     ingredientId?: string,
   ): Promise<boolean> {
-    const shared = sharedIngredients(tx);
-    const translations = sharedTranslations(tx);
+    const shared = adminScope.ingredients(tx);
+    const translations = adminScope.translations(tx);
     const owners = await tx
       .select({ id: shared.id })
       .from(shared)
@@ -834,7 +832,7 @@ export class AdminCatalogService {
   }
 
   private async requireTranslation(executor: Executor, id: string) {
-    const translations = sharedTranslations(executor);
+    const translations = adminScope.translations(executor);
     const [row] = await executor
       .select()
       .from(translations)
@@ -852,7 +850,7 @@ export class AdminCatalogService {
       aisle: aisles,
       parent_category: parentCategories,
       leaf_category: leafCategories,
-      ingredient: sharedIngredients(executor),
+      ingredient: adminScope.ingredients(executor),
       cuisine: cuisines,
       method: methods,
       eating_moment: eatingMoments,

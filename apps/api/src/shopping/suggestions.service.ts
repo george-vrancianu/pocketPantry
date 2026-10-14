@@ -1,6 +1,6 @@
-import { catalogScope } from '../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt, sql } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';

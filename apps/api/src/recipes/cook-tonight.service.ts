@@ -1,6 +1,6 @@
-import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, inArray, isNull } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';

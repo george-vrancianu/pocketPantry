@@ -1,5 +1,5 @@
-import type { CatalogScope } from '../catalog/catalog-scope';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';

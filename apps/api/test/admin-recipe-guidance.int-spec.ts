@@ -1,7 +1,7 @@
-import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
