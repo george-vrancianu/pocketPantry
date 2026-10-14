@@ -48,7 +48,9 @@
     "clearLow": "Nu mai e pe sfârșite",
     "lowKey": "Apasă L: {{action}}"
   },
-  "noDetails": "Fără cantitate",
+  "batch": {
+    "noDate": "fără dată"
+  },
   "edit": {
     "title": "Editează lotul de {{name}}",
     "save": "Salvează modificările"

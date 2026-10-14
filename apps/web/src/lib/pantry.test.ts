@@ -170,6 +170,24 @@ describe('rollUp', () => {
     ]);
   });
 
+  it('orders Batches with the same expiry, or none, by when they were added', () => {
+    const [row] = rollUp([
+      make({ id: 'c', expiryDate: null, createdAt: '2026-10-03T00:00:00Z' }),
+      make({
+        id: 'b',
+        expiryDate: '2026-10-09',
+        createdAt: '2026-10-02T00:00:00Z',
+      }),
+      make({ id: 'a', expiryDate: null, createdAt: '2026-10-01T00:00:00Z' }),
+      make({
+        id: 'd',
+        expiryDate: '2026-10-09',
+        createdAt: '2026-10-01T00:00:00Z',
+      }),
+    ]);
+    expect(row.batches.map((b) => b.id)).toEqual(['d', 'b', 'a', 'c']);
+  });
+
   it('lists totals separately when the units differ', () => {
     const [row] = rollUp([
       make({ quantity: 500, unit: 'g' }),

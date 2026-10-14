@@ -47,7 +47,9 @@
     "clearLow": "Fjern ved at løbe tør",
     "lowKey": "Tryk L: {{action}}"
   },
-  "noDetails": "Ingen mængde angivet",
+  "batch": {
+    "noDate": "ingen dato"
+  },
   "edit": {
     "title": "Rediger partiet {{name}}",
     "save": "Gem ændringer"

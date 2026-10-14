@@ -48,7 +48,9 @@
     "clearLow": "Clear running low",
     "lowKey": "Press L: {{action}}"
   },
-  "noDetails": "No quantity set",
+  "batch": {
+    "noDate": "no date"
+  },
   "edit": {
     "title": "Edit {{name}} batch",
     "save": "Save changes"

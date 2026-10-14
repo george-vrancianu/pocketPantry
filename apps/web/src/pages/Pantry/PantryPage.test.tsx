@@ -213,9 +213,9 @@ describe('PantryPage', () => {
       const [todays, later, undated] = within(
         screen.getByRole('group', { name: 'Milk, 3 batches' }),
       ).getAllByRole('group');
-      expect(todays).toHaveTextContent(/^1 LWed, Oct 14Today/);
-      expect(later).toHaveTextContent(/^2 LMon, Jun 9, 2031\d+ d(?! left)/);
-      expect(undated).toHaveTextContent(/^3 LNo expiry/);
+      expect(todays).toHaveTextContent(/^11 L · Wed, Oct 14Today/);
+      expect(later).toHaveTextContent(/^22 L · Mon, Jun 9, 2031\d+ d(?! left)/);
+      expect(undated).toHaveTextContent(/^33 L · no dateNo expiry/);
     });
 
     it('moves its tags on to the new day when the page is shown again after midnight', async () => {
@@ -1739,14 +1739,14 @@ describe('PantryPage', () => {
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
 
       const details = batchRows();
-      expect(details[0]).toHaveTextContent(/^0\.5 L · Opened.*2 d left/);
-      expect(details[1]).toHaveTextContent(/^1 L.*5 d/);
+      expect(details[0]).toHaveTextContent(/^10\.5 L · .+Opened2 d left/);
+      expect(details[1]).toHaveTextContent(/^21 L · .+5 d/);
       expect(batchRows()[0]).toHaveAccessibleDescription(
         'Swipe left to remove, hold to edit',
       );
       // No Edit or Delete icons any more: the hidden custom actions are not tab stops.
       expect(
-        screen.getAllByRole('button', { name: /Edit Milk/ })[0],
+        screen.getAllByRole('button', { name: /^Edit .*Milk/ })[0],
       ).toHaveAttribute('tabindex', '-1');
       expect(screen.queryByRole('button', { name: /Delete Milk/ })).toBeNull();
 
@@ -1765,7 +1765,7 @@ describe('PantryPage', () => {
 
       expect(toggle).not.toHaveTextContent(/40 d40 days$/);
       const [detail] = batchRows('Parmesan');
-      expect(detail).toHaveTextContent(/^Grana Padano 200g.*40 d/);
+      expect(detail).toHaveTextContent(/^1.+Grana Padano 200g40 d/);
     });
 
     describe('opening an Ingredient', () => {
@@ -1917,6 +1917,205 @@ describe('PantryPage', () => {
         await user.keyboard('{Escape}');
 
         expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
+      });
+    });
+
+    describe('the lifted Ingredient card', () => {
+      const fridgeOfFour = () =>
+        ['Butter', 'Eggs', 'Milk', 'Yogurt'].map((name, index) =>
+          batch({
+            id: name,
+            name,
+            ingredientId: `${name}-id`,
+            expiryDate: inDays(index + 1),
+          }),
+        );
+      const blocks = () =>
+        within(screen.getByRole('region', { name: /^Fridge/ })).getAllByRole(
+          'listitem',
+        );
+      const card = 'var(--pp-r-card)';
+      const corners = (block: HTMLElement) => {
+        const style = getComputedStyle(block);
+        return [
+          style.borderTopLeftRadius,
+          style.borderTopRightRadius,
+          style.borderBottomRightRadius,
+          style.borderBottomLeftRadius,
+        ].map((value) => (value === card ? 'r' : '0'));
+      };
+
+      it('stacks the Location as blocks with the outer corners rounded', async () => {
+        stubManaged(fridgeOfFour());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+
+        expect(blocks().map(corners)).toEqual([
+          ['r', 'r', '0', '0'],
+          ['0', '0', '0', '0'],
+          ['0', '0', '0', '0'],
+          ['0', '0', 'r', 'r'],
+        ]);
+      });
+
+      it('lifts the open Ingredient, and its neighbours round the corners next to it', async () => {
+        const user = userEvent.setup();
+        stubManaged(fridgeOfFour());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Eggs/ }));
+
+        expect(blocks().map(corners)).toEqual([
+          ['r', 'r', 'r', 'r'],
+          ['r', 'r', 'r', 'r'],
+          ['r', 'r', '0', '0'],
+          ['0', '0', 'r', 'r'],
+        ]);
+        expect(blocks()[1]).toHaveStyle({
+          marginTop: '10px',
+          marginBottom: '10px',
+          marginLeft: '-6px',
+          marginRight: '-6px',
+        });
+        expect(blocks()[0]).toHaveStyle({ marginTop: '0px' });
+      });
+
+      it('rounds all four corners of an open first or last block', async () => {
+        const user = userEvent.setup();
+        stubManaged(fridgeOfFour());
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Butter/ }),
+        );
+        expect(blocks().map(corners)).toEqual([
+          ['r', 'r', 'r', 'r'],
+          ['r', 'r', '0', '0'],
+          ['0', '0', '0', '0'],
+          ['0', '0', 'r', 'r'],
+        ]);
+
+        await user.click(screen.getByRole('button', { name: /^Yogurt/ }));
+        expect(blocks().map(corners)).toEqual([
+          ['r', 'r', '0', '0'],
+          ['0', '0', '0', '0'],
+          ['0', '0', 'r', 'r'],
+          ['r', 'r', 'r', 'r'],
+        ]);
+      });
+
+      it('numbers the Batch rows, with the amount and date, the Product Description and the tag', async () => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+        const user = userEvent.setup();
+        stubManaged([
+          batch({
+            id: 'later',
+            name: 'Greek yogurt',
+            quantity: 500,
+            unit: 'g',
+            expiryDate: '2026-10-17',
+            productDescription: 'Fage 5%',
+          }),
+          batch({
+            id: 'undated',
+            name: 'Greek yogurt',
+            quantity: 150,
+            unit: 'g',
+            expiryDate: null,
+          }),
+          batch({
+            id: 'soon',
+            name: 'Greek yogurt',
+            quantity: 1,
+            unit: 'kg',
+            expiryDate: '2026-10-15',
+          }),
+        ]);
+        renderWithProviders(<PantryPage />);
+        await user.click(
+          await screen.findByRole('button', { name: /^Greek yogurt/ }),
+        );
+
+        const rows = batchRows('Greek yogurt');
+        expect(rows.map((row) => row.textContent)).toEqual([
+          expect.stringMatching(/^11 kg · Thu, Oct 15Tomorrow/),
+          expect.stringMatching(/^2500 g · Sat, Oct 17Fage 5%3 d/),
+          expect.stringMatching(/^3150 g · no dateNo expiry/),
+        ]);
+        // The number is only a visual index.
+        expect(within(rows[0]).getByText('1')).toHaveAttribute(
+          'aria-hidden',
+          'true',
+        );
+      });
+
+      it('hides the soonest-expiry tag in the open header', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        const toggle = await screen.findByRole('button', { name: /^Milk/ });
+        expect(toggle).toHaveTextContent('2 d left');
+        await user.click(toggle);
+        expect(toggle).not.toHaveTextContent('2 d left');
+      });
+
+      it('names the Batch in its removal confirmation', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+
+        act(() => batchRows()[0].focus());
+        await user.keyboard('{Delete}');
+        expect(
+          screen.getByRole('group', { name: 'Remove 0.5 L Milk?' }),
+        ).toBeVisible();
+      });
+
+      describe('scrolling the opened card above the Dock', () => {
+        afterEach(() => vi.restoreAllMocks());
+
+        async function openWithBottomAt(bottom: number) {
+          vi.useFakeTimers({ shouldAdvanceTime: true });
+          const user = userEvent.setup({
+            advanceTimers: vi.advanceTimersByTime,
+          });
+          const scrollBy = vi.fn();
+          vi.stubGlobal('scrollBy', scrollBy);
+          vi.stubGlobal('innerHeight', 800);
+          vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+            bottom,
+          } as DOMRect);
+          stubManaged(stock());
+          renderWithProviders(<PantryPage />);
+          await user.click(
+            await screen.findByRole('button', { name: /^Milk/ }),
+          );
+          return scrollBy;
+        }
+
+        it('scrolls the card clear of the Dock once it has lifted', async () => {
+          const scrollBy = await openWithBottomAt(760);
+          expect(scrollBy).not.toHaveBeenCalled();
+          await act(() => vi.advanceTimersByTimeAsync(300));
+          // 800 tall, the Dock and its gap take the bottom 100, and 14 more to breathe.
+          expect(scrollBy).toHaveBeenCalledWith({
+            top: 74,
+            behavior: 'smooth',
+          });
+        });
+
+        it('jumps instead under reduce-motion', async () => {
+          stubMotion(true);
+          const scrollBy = await openWithBottomAt(760);
+          await act(() => vi.advanceTimersByTimeAsync(300));
+          expect(scrollBy).toHaveBeenCalledWith({ top: 74, behavior: 'auto' });
+        });
+
+        it('leaves the page alone when the card is clear of the Dock', async () => {
+          const scrollBy = await openWithBottomAt(600);
+          await act(() => vi.advanceTimersByTimeAsync(300));
+          expect(scrollBy).not.toHaveBeenCalled();
+        });
       });
     });
 
@@ -2506,7 +2705,7 @@ describe('PantryPage', () => {
         );
 
         const question = await screen.findByRole('group', {
-          name: 'Remove Milk?',
+          name: 'Remove 0.5 L Milk?',
         });
         expect(within(question).getByText('in your Pantry')).toBeVisible();
         await waitFor(() =>

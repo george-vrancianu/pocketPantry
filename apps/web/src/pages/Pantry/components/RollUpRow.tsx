@@ -6,7 +6,14 @@ import {
   tokens,
   radius,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ComponentProps,
+  type KeyboardEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -17,8 +24,10 @@ import { useExpiryTags, type Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
+import { useLiftIntoView } from '../hooks/useLiftIntoView';
 import { BatchDetail } from './BatchDetail';
 import { useRunningLowToggle } from '../hooks/useRunningLowToggle';
+import { LIFT_EASING, LIFT_MS } from './liftedBlock';
 
 /** The row springs back before the flag flips (Pantry batches handoff, section 6). */
 const FLAG_FLIP_MS = 220;
@@ -55,6 +64,8 @@ type Props = {
   /** Called when removing or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
   rowHint: PantryRowHint;
+  /** The row's block in its Location card. */
+  sx?: ComponentProps<typeof Box>['sx'];
 };
 
 /** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple star. */
@@ -65,6 +76,7 @@ export function RollUpRow({
   onRemoveBatch,
   onRowGone,
   rowHint,
+  sx,
 }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const expanded = rollUp.open;
@@ -115,6 +127,7 @@ export function RollUpRow({
 
   // The last Batch was removed: if focus was on its row it is on the list or <body> now, so place it.
   const item = useRef<HTMLLIElement>(null);
+  useLiftIntoView(item, expanded && !rollUp.gone);
   useEffect(() => {
     if (!rollUp.gone) return;
     const active = document.activeElement;
@@ -147,14 +160,7 @@ export function RollUpRow({
     .join(' · ');
 
   return (
-    <Box
-      component="li"
-      ref={item}
-      sx={{
-        borderTop: `1px solid ${tokens.color.divider}`,
-        '&:first-of-type': { borderTop: 0 },
-      }}
-    >
+    <Box component="li" ref={item} sx={sx}>
       <SwipeToggle
         label={t(rollUp.runningLow ? 'group.notLow' : 'group.runningLow')}
         onToggle={onSwipeToggle}
@@ -167,6 +173,7 @@ export function RollUpRow({
             display: 'flex',
             alignItems: 'center',
             gap: '4px',
+            px: '12px',
             opacity: rollUp.gone ? 0.5 : 1,
           }}
         >
@@ -192,7 +199,7 @@ export function RollUpRow({
               gap: '12px',
               flexGrow: 1,
               minWidth: 0,
-              minHeight: 60,
+              minHeight: expanded ? 64 : 60,
               p: 0,
               border: 0,
               bgcolor: 'transparent',
@@ -214,7 +221,11 @@ export function RollUpRow({
             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
               <Typography
                 component="span"
-                sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}
+                sx={{
+                  display: 'block',
+                  fontSize: 15,
+                  fontWeight: expanded ? 700 : 600,
+                }}
               >
                 {rollUp.name}
                 {rollUp.unmatched ? (
@@ -262,9 +273,13 @@ export function RollUpRow({
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                color: tokens.color.muted,
+                bgcolor: expanded ? tokens.color.accentTint : 'transparent',
+                color: expanded
+                  ? tokens.color.accentOnTint
+                  : tokens.color.muted,
                 transform: expanded ? 'rotate(180deg)' : 'none',
-                transition: 'transform 260ms cubic-bezier(.2,.8,.2,1)',
+                transition:
+                  'transform 260ms cubic-bezier(.2,.8,.2,1), background-color 200ms, color 200ms',
                 '@media (prefers-reduced-motion: reduce)': {
                   transition: 'none',
                 },
@@ -287,15 +302,27 @@ export function RollUpRow({
           role="group"
           aria-label={`${rollUp.name}, ${t('group.batches', { count: rollUp.batches.length })}`}
           onKeyDown={closeFromInside}
+          sx={{
+            // The body grows open with the lift.
+            display: 'grid',
+            gridTemplateRows: '1fr',
+            animation: `pp-lift-body ${LIFT_MS}ms ${LIFT_EASING}`,
+            '@keyframes pp-lift-body': {
+              from: { gridTemplateRows: '0fr' },
+              to: { gridTemplateRows: '1fr' },
+            },
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          }}
         >
           <Box
             component="ul"
             sx={{
-              mt: 0,
-              mb: 1,
-              // The rows pad themselves (12 pt), so their content lines up 50 pt in.
-              ml: '38px',
+              m: 0,
               p: 0,
+              pb: '4px',
+              minHeight: 0,
+              overflow: 'hidden',
+              listStyle: 'none',
               borderTop: `1px solid ${tokens.color.divider}`,
             }}
           >
@@ -303,6 +330,7 @@ export function RollUpRow({
               <BatchDetail
                 key={batch.id}
                 batch={batch}
+                index={index}
                 peek={
                   index === 0 && rowHint.leader === panelId && rowHint.hint.peek
                 }
