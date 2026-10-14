@@ -29,10 +29,17 @@ export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
 export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
-export { Button, type ButtonProps } from './atoms/Button';
+export {
+  AddButton,
+  Button,
+  type AddButtonProps,
+  type ButtonProps,
+  type ButtonVariant,
+} from './atoms/Button';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
+export { FieldUnit, type FieldUnitProps } from './atoms/FieldUnit';
 export {
   InputAdornment,
   type InputAdornmentProps,
@@ -44,6 +51,7 @@ export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
 export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
 export { TextField, type TextFieldProps } from './atoms/TextField';
+export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
   BudgetIcon,
