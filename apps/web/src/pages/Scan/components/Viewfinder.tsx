@@ -1,4 +1,5 @@
 import { Box, tokens } from '@pocket-pantry/ui';
+import { shade } from './glass';
 import {
   useEffect,
   useRef,
@@ -130,6 +131,8 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
     event.preventDefault();
     scan();
   };
+  const bracketColour =
+    armed && !flash ? tokens.color.accent : tokens.color.ink;
   return (
     <Box sx={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
       {flash ? (
@@ -139,7 +142,7 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
           sx={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tokens.color.ink,
             opacity: 0,
             animation: 'pp-scan-flash 280ms ease-out',
             '@keyframes pp-scan-flash': {
@@ -177,7 +180,7 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
           transition: `width 400ms cubic-bezier(.2,.8,.2,1), height 400ms cubic-bezier(.2,.8,.2,1)`,
           ...noMotion,
           '&:focus-visible': {
-            outline: `2px solid ${tokens.color.camAccent}`,
+            outline: `2px solid ${tokens.color.accent}`,
             outlineOffset: 8,
           },
           ...(pulse && {
@@ -198,7 +201,7 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
             sx={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: '#FFFFFF',
+              backgroundColor: tokens.color.ink,
               opacity: 0,
               animation: `pp-scan-fill ${FLASH_MS}ms ease-out`,
               '@keyframes pp-scan-fill': {
@@ -224,9 +227,9 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
               [`border${v}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${h}`]: `${flash ? 6 : 3.5}px solid`,
               [`border${v}${h}Radius`]: '10px',
-              borderColor:
-                armed && !flash ? tokens.color.camAccent : tokens.color.camFg,
-              filter: 'drop-shadow(0 1px 4px rgba(0,0,0,.5))',
+              [`border${v}Color`]: bracketColour,
+              [`border${h}Color`]: bracketColour,
+              filter: `drop-shadow(0 1px 4px ${shade(50)})`,
               transition: 'border-color 200ms',
               ...noMotion,
             }}
