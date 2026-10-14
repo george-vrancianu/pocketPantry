@@ -3,14 +3,19 @@ import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { useAddBatchForm } from '../hooks/useAddBatchForm';
+import { useAddBatchForm, type AddBatchStart } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
 
-type Props = { onSaved: () => void; onCancel: () => void };
+type Props = {
+  onSaved: () => void;
+  onCancel: () => void;
+  /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
+  start?: AddBatchStart;
+};
 
-export function AddBatchForm({ onSaved, onCancel }: Props) {
+export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const { t, i18n } = useTranslation('pantry');
-  const form = useAddBatchForm({ onSaved });
+  const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -24,6 +29,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
     >
       <CatalogSearch
         autoFocus
+        initialQuery={form.typed}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
       />

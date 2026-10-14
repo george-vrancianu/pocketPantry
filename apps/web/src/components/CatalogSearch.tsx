@@ -12,6 +12,8 @@ export type CatalogSearchProps = {
   label?: string;
   /** Id of an element that describes the input. */
   describedBy?: string;
+  /** Text the input starts with (an Ingredient already picked, or a name already typed); read once. */
+  initialQuery?: string;
 };
 
 /**
@@ -24,6 +26,7 @@ export function CatalogSearch({
   onQueryChange,
   label,
   describedBy,
+  initialQuery = '',
 }: CatalogSearchProps) {
   const { t, i18n } = useTranslation('catalog');
   const id = useId();
@@ -31,7 +34,7 @@ export function CatalogSearch({
   const listId = `${id}-list`;
   const optionId = (index: number) => `${id}-option-${index}`;
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const search = useCatalogSearch(query, i18n.language);

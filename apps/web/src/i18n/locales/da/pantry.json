@@ -35,7 +35,8 @@
     "runningLow": "Ved at løbe tør",
     "notLow": "Ikke tør",
     "staple": "Basisvare",
-    "makeStaple": "Gør til basisvare"
+    "makeStaple": "Gør til basisvare",
+    "addBatch": "Tilføj et parti af {{name}}"
   },
   "toast": {
     "low": {

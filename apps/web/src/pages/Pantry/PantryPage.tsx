@@ -33,12 +33,20 @@ export function PantryPage() {
       .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
       ?.focus();
 
-  // The header's Add button is replaced while the form is open: put focus back on it afterwards.
-  const wasAdding = useRef(false);
+  // The form replaces the list and the header's Add button while open: afterwards put focus back on
+  // the Ingredient row whose Add batch button opened it, or else on the header's Add button.
+  const wasAdding = useRef<{ from?: string } | null>(null);
   useEffect(() => {
-    if (wasAdding.current && !screen.adding) focusAdd();
-    wasAdding.current = screen.adding;
-  }, [screen.adding, t]);
+    const was = wasAdding.current;
+    if (was && !screen.adding) {
+      const row = [
+        ...document.querySelectorAll<HTMLElement>('[data-open-key]'),
+      ].find((element) => element.dataset.openKey === was.from);
+      if (row) row.focus();
+      else focusAdd();
+    }
+    wasAdding.current = screen.adding ? { from: screen.addingFrom } : null;
+  }, [screen.adding, screen.addingFrom, t]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
@@ -58,6 +66,7 @@ export function PantryPage() {
       <RowHintNote hint={rowHint.hint} />
       {screen.adding ? (
         <AddBatchForm
+          start={screen.addStart}
           onSaved={screen.stopAdding}
           onCancel={screen.stopAdding}
         />
@@ -99,6 +108,7 @@ export function PantryPage() {
               onRemoveBatch={(batch) =>
                 screen.removeBatch(batch.id, batch.name)
               }
+              onAddBatch={screen.startAddingTo}
               onEmptied={focusAdd}
               rowHint={rowHint}
             />
