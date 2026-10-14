@@ -46,19 +46,15 @@ const warm: Record<TintedAisleName, AisleTint> = {
   drinks: { bg: '#ECE1E7', fg: '#6A3F72' },
 };
 
-/**
- * Dark-first: the light pair's hues with the background at 20 % and the text
- * at 85 % lightness (themes handoff section 6.3). By eye, Bakery and Meat
- * lost some saturation so they don't glow on the moss background.
- */
+/** Dark-first: the shopping handoff's dark pairs (docs/handoffs/shopping-import, section 7). */
 const dark: Record<TintedAisleName, AisleTint> = {
-  produce: { bg: '#26402F', fg: '#CAE8D9' },
-  bakery: { bg: '#4C3F1A', fg: '#FFECB3' },
-  dairy: { bg: '#1F3647', fg: '#C9DBE9' },
-  meat: { bg: '#4F2A17', fg: '#F6CEBB' },
-  frozen: { bg: '#1F2847', fg: '#CCD2E5' },
-  pantry: { bg: '#323D29', fg: '#D5DDD8' },
-  drinks: { bg: '#3C2541', fg: '#E0CEE4' },
+  produce: { bg: '#1F3A2A', fg: '#9FE0B4' },
+  bakery: { bg: '#3A3118', fg: '#F2CF72' },
+  dairy: { bg: '#1D2C38', fg: '#9CC3E3' },
+  meat: { bg: '#3F241B', fg: '#FFA27E' },
+  pantry: { bg: '#26312A', fg: '#B9C7BC' },
+  frozen: { bg: '#232842', fg: '#AEB9EA' },
+  drinks: { bg: '#33243A', fg: '#D7B3DF' },
 };
 
 /** Aisle tints keyed by Theme, next to the Theme tokens. */
