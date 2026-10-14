@@ -206,6 +206,46 @@ describe('StructuredOutputAiService', () => {
       });
     });
 
+    it('logs reasoning tokens from the Responses API', async () => {
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      respond(
+        responses({
+          input_tokens: 33,
+          output_tokens: 312,
+          output_tokens_details: { reasoning_tokens: 300 },
+        }),
+      );
+      await serviceFor('openai').generate(request);
+      expect(log).toHaveBeenCalledWith({
+        message: 'AI token usage',
+        requestId: 'req-1',
+        schemaName: 'receipt',
+        inputTokens: 33,
+        outputTokens: 312,
+        reasoningTokens: 300,
+      });
+    });
+
+    it('logs reasoning tokens from Chat Completions', async () => {
+      const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      respond(
+        chat({
+          prompt_tokens: 37,
+          completion_tokens: 11,
+          completion_tokens_details: { reasoning_tokens: 0 },
+        }),
+      );
+      await serviceFor('openai-compatible').generate(request);
+      expect(log).toHaveBeenCalledWith({
+        message: 'AI token usage',
+        requestId: 'req-1',
+        schemaName: 'receipt',
+        inputTokens: 37,
+        outputTokens: 11,
+        reasoningTokens: 0,
+      });
+    });
+
     it('never logs prompt or image content', async () => {
       const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
       respond(chat({ prompt_tokens: 5, completion_tokens: 2 }));
@@ -213,6 +253,105 @@ describe('StructuredOutputAiService', () => {
       const logged = JSON.stringify(log.mock.calls);
       expect(logged).not.toContain('secret receipt text');
       expect(logged).not.toContain('SECRETIMAGE');
+    });
+  });
+
+  describe('reasoning effort', () => {
+    const serviceFor = (provider: string, effort?: string) =>
+      new StructuredOutputAiService({
+        get: (key: string) =>
+          (
+            ({
+              AI_PROVIDER: provider,
+              AI_API_KEY: 'k',
+              AI_BASE_URL: 'https://vendor.example/v1',
+              AI_VISION_MODEL: 'some-model',
+              AI_REASONING_EFFORT: effort,
+            }) as Record<string, string | undefined>
+          )[key],
+      } as unknown as ConfigService<AppConfig, true>);
+    const request = {
+      prompt: 'p',
+      schemaName: 's',
+      schema: {},
+      maxOutputTokens: 400,
+    };
+    const sentBody = async (provider: string, effort?: string) => {
+      jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify(
+            provider === 'openai'
+              ? {
+                  status: 'completed',
+                  output: [
+                    {
+                      type: 'message',
+                      content: [{ type: 'output_text', text: '{}' }],
+                    },
+                  ],
+                }
+              : { choices: [{ message: { content: '{}' } }] },
+          ),
+          { status: 200 },
+        ),
+      );
+      await serviceFor(provider, effort).generate(request);
+      return JSON.parse(
+        (fetchMock.mock.calls[0][1] as RequestInit).body as string,
+      ) as Record<string, unknown>;
+    };
+
+    it('leaves Responses requests as they were when no effort is configured', async () => {
+      const body = await sentBody('openai');
+      expect(body.temperature).toBe(0);
+      expect(body.max_output_tokens).toBe(400);
+      expect(body).not.toHaveProperty('reasoning');
+    });
+
+    it('leaves Chat Completions requests as they were when no effort is configured', async () => {
+      const body = await sentBody('openai-compatible');
+      expect(body.temperature).toBe(0);
+      expect(body.max_tokens).toBe(400);
+      expect(body).not.toHaveProperty('reasoning_effort');
+      expect(body).not.toHaveProperty('max_completion_tokens');
+    });
+
+    it('sends effort none on the Responses API and keeps temperature 0', async () => {
+      const body = await sentBody('openai', 'none');
+      expect(body.reasoning).toEqual({ effort: 'none' });
+      expect(body.temperature).toBe(0);
+      expect(body.max_output_tokens).toBe(400);
+    });
+
+    it('leaves temperature out above effort none, where the API rejects it', async () => {
+      const body = await sentBody('openai', 'low');
+      expect(body.reasoning).toEqual({ effort: 'low' });
+      expect(body).not.toHaveProperty('temperature');
+    });
+
+    it('adds room for reasoning tokens to the output budget', async () => {
+      // A gpt-6-luna Product Scan at effort low used 202 reasoning tokens of 297 output.
+      expect((await sentBody('openai', 'low')).max_output_tokens).toBe(2400);
+      jest.restoreAllMocks();
+      expect(
+        (await sentBody('openai-compatible', 'medium')).max_completion_tokens,
+      ).toBe(8400);
+    });
+
+    it('sends effort none on Chat Completions with temperature 0 and max_completion_tokens', async () => {
+      const body = await sentBody('openai-compatible', 'none');
+      expect(body.reasoning_effort).toBe('none');
+      expect(body.temperature).toBe(0);
+      // Reasoning models reject `max_tokens` on Chat Completions.
+      expect(body.max_completion_tokens).toBe(400);
+      expect(body).not.toHaveProperty('max_tokens');
+    });
+
+    it('leaves temperature out of Chat Completions above effort none', async () => {
+      const body = await sentBody('openai-compatible', 'low');
+      expect(body.reasoning_effort).toBe('low');
+      expect(body).not.toHaveProperty('temperature');
     });
   });
 
@@ -262,6 +401,25 @@ describe('StructuredOutputAiService', () => {
       });
       respond({ status: 'incomplete', output: [] });
       await expect(serviceWith('k').generate(request)).rejects.toMatchObject({
+        code: 'scan.provider_incomplete',
+      });
+    });
+
+    it('maps a Chat Completions answer cut off by the token limit to incomplete', async () => {
+      const service = new StructuredOutputAiService({
+        get: (key: string) =>
+          ({
+            AI_PROVIDER: 'openai-compatible',
+            AI_API_KEY: 'k',
+            AI_BASE_URL: 'https://vendor.example/v1',
+          })[key],
+      } as unknown as ConfigService<AppConfig, true>);
+      respond({
+        choices: [
+          { finish_reason: 'length', message: { content: '{"items":[{"na' } },
+        ],
+      });
+      await expect(service.generate(request)).rejects.toMatchObject({
         code: 'scan.provider_incomplete',
       });
     });

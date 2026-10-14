@@ -74,3 +74,21 @@ describe('SCAN_DEBUG_DIR', () => {
     ).toThrow(/SCAN_DEBUG_DIR must not be set in production/);
   });
 });
+
+describe('AI_REASONING_EFFORT', () => {
+  it('is unset by default, and `KEY=` keeps it unset', () => {
+    expect(validateEnv({ ...base }).AI_REASONING_EFFORT).toBeUndefined();
+    expect(
+      validateEnv({ ...base, AI_REASONING_EFFORT: '' }).AI_REASONING_EFFORT,
+    ).toBeUndefined();
+  });
+
+  it('accepts a known effort and rejects anything else', () => {
+    expect(
+      validateEnv({ ...base, AI_REASONING_EFFORT: 'low' }).AI_REASONING_EFFORT,
+    ).toBe('low');
+    expect(() =>
+      validateEnv({ ...base, AI_REASONING_EFFORT: 'turbo' }),
+    ).toThrow(/AI_REASONING_EFFORT/);
+  });
+});
