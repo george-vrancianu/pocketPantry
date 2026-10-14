@@ -240,6 +240,22 @@ describe('Family Ingredients (integration)', () => {
       });
     });
 
+    it('answers one 201 and one 409 when two members create the same name at once', async () => {
+      const name = unique('Race Clash');
+
+      const [first, second] = await Promise.all([
+        create(a, body(name)),
+        create(a2, body(name)),
+      ]);
+
+      const responses = [first, second].sort((x, y) => x.status - y.status);
+      expect(responses.map((r) => r.status)).toEqual([201, 409]);
+      expect(responses[1].body).toMatchObject({
+        code: 'catalog.family_ingredient_exists',
+        params: { existing: { id: (responses[0].body as Result).id } },
+      });
+    });
+
     it('lets two Families each own the same name', async () => {
       const name = unique('Kombucha Twin');
       const forA = await made(a, name);

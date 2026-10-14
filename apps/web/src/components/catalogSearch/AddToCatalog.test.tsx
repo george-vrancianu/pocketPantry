@@ -260,6 +260,23 @@ describe('Add to your catalog', () => {
       expect(new URLSearchParams(request?.search).get('locale')).toBe('en');
     });
 
+    it("shows each category's Default Expiry as a chip", async () => {
+      const { user, dialog } = await open();
+      const other = await within(dialog).findByRole('option', {
+        name: /Other/,
+      });
+      expect(other).toHaveTextContent('No expiry');
+      await user.click(
+        within(dialog).getByRole('combobox', { name: 'Category' }),
+      );
+      await user.paste('spice');
+      const spices = await within(dialog).findByRole('option', {
+        name: /Ground spices/,
+      });
+      expect(spices).toHaveTextContent('730 d');
+      expect(dialog).not.toHaveTextContent(/shelf life/i);
+    });
+
     it('disables Add & pick with "pick one" until a category is chosen', async () => {
       const { user, dialog } = await open();
       const add = within(dialog).getByRole('button', { name: /^Add & pick/ });

@@ -2,6 +2,7 @@ import {
   Box,
   Button,
   CloseIcon,
+  PlusIcon,
   IconButton,
   TextField,
   tokens,
@@ -231,6 +232,24 @@ export function AddToCatalogForm({
                     {categoryMeta(row)}
                   </Box>
                 </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    flexShrink: 0,
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    color: color.muted,
+                    backgroundColor: color.chipNeutral,
+                    borderRadius: radius.chip,
+                    p: '5px 8px',
+                  }}
+                >
+                  {row.defaults.expiryDays === null
+                    ? t('catalogAdd.noExpiry')
+                    : t('catalogAdd.expiryDays', {
+                        count: row.defaults.expiryDays,
+                      })}
+                </Box>
               </Box>
             ))}
           </Box>
@@ -279,6 +298,7 @@ export function AddToCatalogForm({
             onClick={submit}
             disabled={!category || trimmed === '' || create.isPending}
           >
+            <PlusIcon size={16} />
             {t('catalogAdd.add')}
             {category ? null : (
               <Box
