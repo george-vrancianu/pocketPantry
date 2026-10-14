@@ -8,7 +8,7 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LOCALES, type Locale } from '../../../i18n/resources';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import type { AdminCatalog, IngredientInput } from '../../../lib/admin';
 import {
   useResolveUnmatched,

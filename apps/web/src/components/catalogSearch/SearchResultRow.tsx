@@ -1,6 +1,5 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { focusRingStyle } from '../../lib/focusRing';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { Highlighted, matchRange } from './matchRange';
 
@@ -79,9 +78,7 @@ export function SearchResultRow({
               },
             }
           : {}),
-        // The active row is shown by its bar; the ring is for real focus only.
         outline: 'none',
-        ...(active ? { '&:focus-visible': focusRingStyle() } : {}),
       }}
     >
       <IngredientIconSlot
@@ -101,7 +98,8 @@ export function SearchResultRow({
           <Highlighted text={result.name} query={query} />
         </Box>
         <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
-          <Highlighted text={meta} query={metaQuery} />
+          <Highlighted text={result.leafCategory.name} query={metaQuery} />
+          {` · ${result.parentCategory.aisle.name}`}
         </Box>
       </Box>
       {showUnit ? (

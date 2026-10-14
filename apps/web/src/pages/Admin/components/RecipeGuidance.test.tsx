@@ -243,7 +243,10 @@ describe('RecipeGuidance', () => {
       screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
       'milk',
     );
-    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    const option = await screen.findByRole('option', { name: /Milk/ });
+    // The link target has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Milk, Milk · Dairy');
+    await user.click(option);
     expect(screen.getByText('Linked Ingredient: Milk')).toBeInTheDocument();
     expect(
       screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),

@@ -2,9 +2,9 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CatalogSearchResult } from '../lib/catalog';
-import { renderWithProviders } from '../test/render';
-import { stubMotion } from '../test/viewport';
+import type { CatalogSearchResult } from '../../lib/catalog';
+import { renderWithProviders } from '../../test/render';
+import { stubMotion } from '../../test/viewport';
 import { CatalogSearch, type CatalogSearchProps } from './CatalogSearch';
 
 /** The seeded Dairy & eggs Aisle, so the icon tint is a real one. */
@@ -168,6 +168,16 @@ describe('CatalogSearch', () => {
       expect(cream.querySelector('mark')).toBeNull();
     });
 
+    it('highlights Danish letters as the search folds them (maelk finds Mælk)', async () => {
+      stubSearch(() => [{ ...cheddar, id: 'maelk', name: 'Mælk' }]);
+      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+
+      await userEvent.setup().type(screen.getByRole('combobox'), 'maelk');
+
+      const option = await screen.findByRole('option', { name: /Mælk/ });
+      expect(within(option).getByText('Mælk').tagName).toBe('MARK');
+    });
+
     it('underlines the match in the meta when only the category matches', async () => {
       stubSearch(() => [cheddar]);
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
@@ -253,7 +263,7 @@ describe('CatalogSearch', () => {
       stubPending();
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
 
-      await userEvent.setup().type(screen.getByRole('combobox'), 'parm');
+      await typeQuery(userEvent.setup(), 'parm');
 
       expect(await screen.findAllByTestId('search-skeleton')).toHaveLength(4);
       expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument();
@@ -264,7 +274,7 @@ describe('CatalogSearch', () => {
       stubPending();
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
 
-      await userEvent.setup().type(screen.getByRole('combobox'), 'parm');
+      await typeQuery(userEvent.setup(), 'parm');
 
       for (const row of await screen.findAllByTestId('search-skeleton')) {
         expect(row.closest('[aria-hidden="true"]')).not.toBeNull();
@@ -275,9 +285,9 @@ describe('CatalogSearch', () => {
       const search = stubControlled();
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
 
-      await userEvent.setup().type(screen.getByRole('combobox'), 'parm');
+      await typeQuery(userEvent.setup(), 'parm');
       await screen.findAllByTestId('search-skeleton');
-      search.respond('parm', [parmesan('en')]);
+      await search.respond('parm', [parmesan('en')]);
 
       expect(
         await screen.findByRole('option', { name: /Parmesan/ }),
@@ -290,9 +300,9 @@ describe('CatalogSearch', () => {
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
       const user = userEvent.setup();
 
-      await user.type(screen.getByRole('combobox'), 'che');
+      await typeQuery(user, 'che');
       await screen.findAllByTestId('search-skeleton');
-      search.respond('che', [parmesan('en'), cheddar]);
+      await search.respond('che', [parmesan('en'), cheddar]);
       await screen.findAllByRole('option');
 
       await user.keyboard('e');
@@ -306,7 +316,7 @@ describe('CatalogSearch', () => {
       expect(active).not.toHaveAttribute('data-dimmed');
       expect(other).toHaveAttribute('data-dimmed', 'true');
 
-      search.respond('chee', [cheddar]);
+      await search.respond('chee', [cheddar]);
       await vi.waitFor(() =>
         expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument(),
       );
@@ -318,11 +328,11 @@ describe('CatalogSearch', () => {
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
       const user = userEvent.setup();
 
-      await user.type(screen.getByRole('combobox'), 'che');
+      await typeQuery(user, 'che');
       for (const row of await screen.findAllByTestId('search-skeleton')) {
         expect(row).toHaveAttribute('data-shimmer', 'on');
       }
-      search.respond('che', [cheddar]);
+      await search.respond('che', [cheddar]);
       await screen.findByRole('option');
       await user.keyboard('e');
       await vi.waitFor(() => expect(search.asked('chee')).toBe(true));
@@ -339,11 +349,11 @@ describe('CatalogSearch', () => {
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
       const user = userEvent.setup();
 
-      await user.type(screen.getByRole('combobox'), 'che');
+      await typeQuery(user, 'che');
       for (const row of await screen.findAllByTestId('search-skeleton')) {
         expect(row).toHaveAttribute('data-shimmer', 'off');
       }
-      search.respond('che', [parmesan('en'), cheddar]);
+      await search.respond('che', [parmesan('en'), cheddar]);
       await screen.findAllByRole('option');
       await user.keyboard('e');
       await vi.waitFor(() => expect(search.asked('chee')).toBe(true));
@@ -444,7 +454,23 @@ describe('CatalogSearch', () => {
       expect(onSelect).not.toHaveBeenCalled();
     });
 
-    it('goes away when a later query has rows', async () => {
+    it('stays, with the field spinner, while the next query loads', async () => {
+      const search = stubControlled();
+      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await search.respond('zzz', []);
+      await screen.findByText('No match for “zzz”');
+      await user.keyboard('z');
+      await vi.waitFor(() => expect(search.asked('zzzz')).toBe(true));
+
+      expect(screen.getByText(/No match for/)).toBeVisible();
+      expect(screen.getByTestId('search-spinner')).toBeVisible();
+      await search.respond('zzzz', []);
+    });
+
+    it('goes away when the field is cleared', async () => {
       stubSearch(() => []);
       renderWithProviders(<CatalogSearch onSelect={() => {}} />);
       const user = userEvent.setup();
@@ -501,6 +527,22 @@ describe('CatalogSearch', () => {
       await user.type(screen.getByRole('combobox'), 'parm');
       const retry = await screen.findByRole('button', { name: 'Retry' });
       await user.click(retry);
+
+      expect(screen.getByRole('combobox')).toHaveFocus();
+    });
+
+    it('keeps focus in the input when Retry is pressed from the keyboard', async () => {
+      stubFailing();
+      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      const user = userEvent.setup();
+
+      await user.type(screen.getByRole('combobox'), 'parm');
+      await screen.findByRole('alert');
+      // Past the clear × to Retry.
+      await user.tab();
+      await user.tab();
+      expect(screen.getByRole('button', { name: 'Retry' })).toHaveFocus();
+      await user.keyboard('{Enter}');
 
       expect(screen.getByRole('combobox')).toHaveFocus();
     });
@@ -630,6 +672,22 @@ describe('CatalogSearch', () => {
       expect(
         screen.queryByRole('button', { name: 'Change ingredient' }),
       ).not.toBeInTheDocument();
+    });
+
+    it('replaces the token when a character is typed over it', async () => {
+      stubSearch((locale) => [parmesan(locale)]);
+      const onQueryChange = vi.fn();
+      renderWithProviders(<ControlledHost onQueryChange={onQueryChange} />);
+      const user = userEvent.setup();
+      await user.type(screen.getByRole('combobox'), 'parm');
+      await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+
+      await user.keyboard('m');
+
+      expect(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+      ).toHaveValue('m');
+      expect(onQueryChange).toHaveBeenLastCalledWith('m');
     });
 
     it('clears on Delete', async () => {
@@ -773,6 +831,12 @@ function stubFlaky() {
   return state;
 }
 
+/** Enters a query in one input event, so only one debounced request goes out whatever the machine's speed. */
+async function typeQuery(user: ReturnType<typeof userEvent.setup>, q: string) {
+  await user.click(screen.getByRole('combobox'));
+  await user.paste(q);
+}
+
 /** Each query stays pending until the test answers it with `respond`. */
 function stubControlled() {
   const pending = new Map<string, (results: CatalogSearchResult[]) => void>();
@@ -788,7 +852,10 @@ function stubControlled() {
   });
   return {
     asked: (q: string) => asked.has(q),
-    respond: (q: string, results: CatalogSearchResult[]) =>
-      pending.get(q)?.(results),
+    /** Waits until `q` has been requested, so an answer is never lost. */
+    respond: async (q: string, results: CatalogSearchResult[]) => {
+      await vi.waitFor(() => expect(pending.has(q)).toBe(true));
+      pending.get(q)?.(results);
+    },
   };
 }

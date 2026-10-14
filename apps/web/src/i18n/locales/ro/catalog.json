@@ -15,7 +15,6 @@
     "retry": "Reîncearcă",
     "clear": "Șterge căutarea",
     "change": "Schimbă ingredientul",
-    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba",
-    "enterHint": "Enter"
+    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba"
   }
 }

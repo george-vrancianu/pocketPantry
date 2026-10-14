@@ -192,7 +192,7 @@ export const FILTERS: PantryFilter[] = ['all', ...LOCATIONS];
  * letters fold as the API's matching key does (æ→ae, ø→oe, å→aa), so "maelk"
  * finds "Mælk".
  */
-function fold(text: string): string {
+export function fold(text: string): string {
   return text
     .normalize('NFD')
     .toLocaleLowerCase()

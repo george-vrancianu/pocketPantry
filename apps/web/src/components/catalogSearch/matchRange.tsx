@@ -1,8 +1,5 @@
 import { Box, tokens } from '@pocket-pantry/ui';
-
-/** Lower-case and drop accents, so "creme" finds "Crème". */
-const fold = (text: string) =>
-  text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+import { fold } from '../../lib/pantry';
 
 /** Where the first case- and accent-insensitive match of `query` sits in `text`, as [start, end) of `text`. */
 export function matchRange(

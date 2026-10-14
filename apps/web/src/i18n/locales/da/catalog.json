@@ -14,7 +14,6 @@
     "retry": "Prøv igen",
     "clear": "Ryd søgning",
     "change": "Skift ingrediens",
-    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte",
-    "enterHint": "Enter"
+    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte"
   }
 }
