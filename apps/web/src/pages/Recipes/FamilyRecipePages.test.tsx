@@ -171,6 +171,62 @@ describe('NewRecipePage', () => {
     expect(post?.body).toMatchObject({ parentId: null, title: 'Gran stew' });
   });
 
+  it('adds an ingredient line by Use as typed, saved by its name with no Ingredient', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Dragon fruit',
+    );
+    const useTyped = await screen.findByRole('option', {
+      name: /Use “Dragon fruit” as typed/,
+    });
+    expect(useTyped).toHaveTextContent(
+      'Not in the catalog · saved as an unmatched item',
+    );
+    await user.click(useTyped);
+
+    expect(
+      await screen.findByLabelText('Quantity of Dragon fruit'),
+    ).toBeVisible();
+    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
+    // The search is ready for the next ingredient.
+    expect(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    ).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        lines: [{ ingredientId: null, rawName: 'Dragon fruit' }],
+      }),
+    );
+  });
+
+  it("offers Use as typed in a new Recipe's search, still on the Family scope", async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.type(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+    await screen.findByRole('option', { name: /as typed/ });
+
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
+  });
+
   it('words the Guidance hint and Tips hint for a Recipe, not a Variant', async () => {
     setup('/recipes/new', {});
     await screen.findByLabelText(/^Title/);
@@ -588,6 +644,32 @@ describe('EditFamilyRecipePage', () => {
         ],
       }),
     );
+  });
+
+  it('links a Pairing to an Ingredient with a search that has no Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+    await user.type(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
   });
 
   it('adds a Tip and hides an inherited one straight away', async () => {

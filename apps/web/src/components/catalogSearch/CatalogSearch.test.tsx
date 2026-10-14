@@ -775,6 +775,277 @@ describe('CatalogSearch', () => {
   });
 });
 
+describe('CatalogSearch host extension points (#266)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  describe('emptyState', () => {
+    it('shows when the field is focused and empty, and not before', async () => {
+      stubControlled();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={() => {}}
+          emptyState={<p>Gone from your Pantry</p>}
+        />,
+      );
+      expect(screen.queryByText('Gone from your Pantry')).toBeNull();
+
+      await userEvent.setup().click(screen.getByRole('combobox'));
+
+      expect(await screen.findByText('Gone from your Pantry')).toBeVisible();
+    });
+
+    it('goes away once something is typed, and returns when the field is cleared', async () => {
+      const search = stubControlled();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={() => {}}
+          emptyState={<p>Gone from your Pantry</p>}
+        />,
+      );
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('combobox'));
+      await screen.findByText('Gone from your Pantry');
+
+      await typeQuery(user, 'che');
+      expect(screen.queryByText('Gone from your Pantry')).toBeNull();
+      await search.respond('che', [cheddar]);
+
+      await user.clear(screen.getByRole('combobox'));
+      expect(await screen.findByText('Gone from your Pantry')).toBeVisible();
+    });
+
+    it('lets a button inside it be clicked, though that takes focus off the field', async () => {
+      stubControlled();
+      const onTile = vi.fn();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={() => {}}
+          emptyState={
+            <button type="button" onClick={onTile}>
+              Milk tile
+            </button>
+          }
+        />,
+      );
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('combobox'));
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Milk tile' }),
+      );
+
+      expect(onTile).toHaveBeenCalledTimes(1);
+    });
+
+    it('is not rendered when the host passes none', async () => {
+      stubControlled();
+      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      await userEvent.setup().click(screen.getByRole('combobox'));
+      expect(screen.queryByRole('button')).toBeNull();
+    });
+  });
+
+  describe('onUseTyped', () => {
+    const useTyped = (q: string) =>
+      screen.findByRole('option', { name: new RegExp(`Use “${q}” as typed`) });
+
+    it('ends the no-match state with a Use as typed option and its hint', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await search.respond('zzz', []);
+
+      expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+      const option = await useTyped('zzz');
+      expect(option).toHaveTextContent(
+        'Not in the catalog · saved as an unmatched item',
+      );
+      await user.click(option);
+      expect(onUseTyped).toHaveBeenCalledTimes(1);
+      expect(onUseTyped).toHaveBeenCalledWith('zzz');
+    });
+
+    it('passes the trimmed name', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, '  Dragon fruit ');
+      await search.respond('Dragon fruit', []);
+      await user.click(await useTyped('Dragon fruit'));
+
+      expect(onUseTyped).toHaveBeenCalledWith('Dragon fruit');
+    });
+
+    it('is listed after the results when none has exactly the typed name', async () => {
+      const search = stubControlled();
+      const onSelect = vi.fn();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={onSelect} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+      await useTyped('che');
+
+      const options = screen.getAllByRole('option');
+      expect(options).toHaveLength(2);
+      expect(options[0]).toHaveTextContent('Cheddar');
+      expect(options[1]).toHaveTextContent('Use “che” as typed');
+      await user.click(options[1]);
+      expect(onUseTyped).toHaveBeenCalledWith('che');
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it('is hidden when a result has the typed name, ignoring case, accents and spacing', async () => {
+      const search = stubControlled();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={() => {}} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, ' PARMESAN ');
+      await search.respond('PARMESAN', [parmesan('en'), cheddar]);
+      await screen.findByRole('option', { name: /Parmesan/ });
+
+      expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+      expect(screen.getAllByRole('option')).toHaveLength(2);
+    });
+
+    it('is not offered while the first results are still loading', async () => {
+      stubPending();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={() => {}} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await screen.findAllByTestId('search-skeleton');
+
+      expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    });
+
+    it('is picked by Enter when it is the only option', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await search.respond('zzz', []);
+      await useTyped('zzz');
+      await user.keyboard('{Enter}');
+
+      expect(onUseTyped).toHaveBeenCalledTimes(1);
+      expect(onUseTyped).toHaveBeenCalledWith('zzz');
+    });
+
+    it('is not picked by Enter while other options are showing and none is active', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      const onSelect = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={onSelect} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+      await useTyped('che');
+      await user.keyboard('{Enter}');
+
+      expect(onUseTyped).not.toHaveBeenCalled();
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it('can be reached with the arrow keys and picked with Enter', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+      const option = await useTyped('che');
+      await user.keyboard('{ArrowDown}{ArrowDown}');
+      expect(
+        screen.getByRole('combobox').getAttribute('aria-activedescendant'),
+      ).toBe(option.id);
+      await user.keyboard('{Enter}');
+
+      expect(onUseTyped).toHaveBeenCalledWith('che');
+    });
+
+    it('is absent without the prop: only the no-match hint shows', async () => {
+      const search = stubControlled();
+      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await search.respond('zzz', []);
+
+      expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+      expect(
+        screen.getByText('Check the spelling or try a shorter word.'),
+      ).toBeVisible();
+      expect(screen.queryByRole('option')).toBeNull();
+      expect(screen.queryByText(/as typed/)).toBeNull();
+    });
+  });
+
+  describe('scope', () => {
+    it('sends scope=shared to the search when the host asks for the shared Catalog', async () => {
+      const search = stubControlled();
+      renderWithProviders(<CatalogSearch onSelect={() => {}} scope="shared" />);
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+
+      expect(search.requests.length).toBeGreaterThan(0);
+      for (const url of search.requests) {
+        expect(url.pathname).toBe('/api/catalog/search');
+        expect(url.searchParams.get('scope')).toBe('shared');
+      }
+    });
+
+    it.each([['family' as const], [undefined]])(
+      'does not ask for the shared scope with scope=%s',
+      async (scope) => {
+        const search = stubControlled();
+        renderWithProviders(
+          <CatalogSearch onSelect={() => {}} scope={scope} />,
+        );
+        const user = userEvent.setup();
+
+        await typeQuery(user, 'che');
+        await search.respond('che', [cheddar]);
+
+        expect(search.requests.length).toBeGreaterThan(0);
+        for (const url of search.requests) {
+          expect(url.searchParams.get('scope')).not.toBe('shared');
+        }
+      },
+    );
+  });
+});
+
 /** A host that owns `selected`: set on a pick, cleared when the search reports an empty query. */
 function ControlledHost({
   onSelect,
@@ -841,16 +1112,18 @@ async function typeQuery(user: ReturnType<typeof userEvent.setup>, q: string) {
 function stubControlled() {
   const pending = new Map<string, (results: CatalogSearchResult[]) => void>();
   const asked = new Set<string>();
+  const requests: URL[] = [];
   vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
-    const q = new URL(String(input), window.location.origin).searchParams.get(
-      'q',
-    ) as string;
+    const url = new URL(String(input), window.location.origin);
+    requests.push(url);
+    const q = url.searchParams.get('q') as string;
     asked.add(q);
     return new Promise<Response>((resolve) => {
       pending.set(q, (results) => resolve(Response.json({ results })));
     });
   });
   return {
+    requests,
     asked: (q: string) => asked.has(q),
     /** Waits until `q` has been requested, so an answer is never lost. */
     respond: async (q: string, results: CatalogSearchResult[]) => {

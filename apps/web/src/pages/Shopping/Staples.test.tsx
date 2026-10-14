@@ -302,6 +302,51 @@ describe('Suggestions in the Add sheet', () => {
     );
   });
 
+  it('shows the Suggestion and Template chips together while the search is empty, and both go once the Member types', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [suggestion()], usedUp: [] }),
+      'GET /api/shopping-templates': () =>
+        Response.json({
+          templates: [
+            {
+              id: 't1',
+              name: 'Taco night',
+              lineCount: 2,
+              previewNames: ['Milk', 'Tomato'],
+            },
+          ],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+
+    expect(
+      await within(dialog).findByRole('button', {
+        name: 'Add Milk to the list',
+      }),
+    ).toBeVisible();
+    expect(
+      await within(dialog).findByRole('button', { name: /Taco night/ }),
+    ).toBeVisible();
+    expect(within(dialog).getByText('Or start from a template')).toBeVisible();
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'flo',
+    );
+    await within(dialog).findByRole('option', { name: /Flour/ });
+    expect(
+      within(dialog).queryByRole('button', { name: 'Add Milk to the list' }),
+    ).toBeNull();
+    expect(
+      within(dialog).queryByRole('button', { name: /Taco night/ }),
+    ).toBeNull();
+  });
+
   it('says all Staples are stocked when there are no Suggestions', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
@@ -466,6 +511,29 @@ describe('StaplesPage', () => {
     expect(calls.find((c) => c.key === 'POST /api/staples')?.body).toEqual({
       ingredientId: 'flour-id',
     });
+  });
+
+  it('offers no Use as typed on the Staples page: a Staple must be an Ingredient', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+    await screen.findByRole('group', { name: 'Milk' });
+
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
   });
 
   describe('editing the amount', () => {

@@ -188,6 +188,28 @@ describe('UnmatchedQueue', () => {
     ).toEqual({ normalizedName: 'branza ciudata' });
   });
 
+  it('searches the shared Catalog only in the resolver, with no Use as typed', async () => {
+    const calls = stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'par',
+    );
+    await screen.findByRole('option', { name: /Parmesan/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+
   it('resolves to an existing Ingredient chosen from search, in the entry locale', async () => {
     const calls = stub({
       'POST /api/admin/unmatched/resolve': () =>

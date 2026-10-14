@@ -10,6 +10,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCatalogSearch, type CatalogSearchResult } from '../../lib/catalog';
@@ -37,6 +38,12 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
+  /** Host blocks shown while the field is focused and empty. */
+  emptyState?: ReactNode;
+  /** When given, the no-match state ends with a "Use “…” as typed" option. */
+  onUseTyped?: (name: string) => void;
+  /** `shared` searches the shared Catalog only (Admin); default `family`. */
+  scope?: 'family' | 'shared';
 };
 
 /**

@@ -411,21 +411,21 @@ describe('PantryPage', () => {
     );
   });
 
-  it('takes a decimal comma and keeps a unit typed before the pick', async () => {
+  it('takes a decimal comma and a typed unit once the Ingredient is picked', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);
     renderWithProviders(<PantryPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
     await user.type(
-      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
-      '1,5 kg',
-    );
-    await user.type(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'parm',
     );
     await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '1,5 kg',
+    );
 
     expect(
       screen.getByRole('button', { name: 'Unit: kg' }),
@@ -473,12 +473,17 @@ describe('PantryPage', () => {
 
   it('explains an invalid quantity and returns focus to Add after Cancel', async () => {
     const user = userEvent.setup();
-    stubPantry([], []);
+    stubPantry([], [parmesan]);
     renderWithProviders(<PantryPage />);
 
     await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
     const amount = screen.getByRole('textbox', {
-      name: 'Amount, for example 2 or 500 g',
+      name: /Amount of Parmesan/,
     });
     // Half-typed amounts ("500 " on the way to "500 g") are not flagged while typing.
     await user.type(amount, '500 ');
@@ -501,7 +506,7 @@ describe('PantryPage', () => {
     ).toHaveFocus();
   });
 
-  it('saves a typed name with no Catalog match as an Unmatched Batch', async () => {
+  it('saves a typed name with no Catalog match as an Unmatched Batch via Use as typed', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], []);
     renderWithProviders(<PantryPage />);
@@ -515,25 +520,131 @@ describe('PantryPage', () => {
       screen.getByRole('button', { name: 'Add to Pantry' }),
     ).toBeDisabled();
 
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Not in the Catalog? Add "Zorblax paste" as Unmatched',
-      }),
+    const useTyped = await screen.findByRole('option', {
+      name: /Use “Zorblax paste” as typed/,
+    });
+    expect(useTyped).toHaveTextContent(
+      'Not in the catalog · saved as an unmatched item',
     );
+    await user.click(useTyped);
     expect(
       screen.getByText(/saved as Unmatched and flagged/),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
 
     const post = calls.find((call) => call.key === 'POST /api/pantry/batches');
-    expect(post?.body).toMatchObject({
+    expect(post?.body).toEqual({
       rawName: 'Zorblax paste',
       location: 'cupboard',
       expiryDate: null,
       quantity: null,
       unit: null,
+      productDescription: null,
     });
     expect(post?.body).not.toHaveProperty('ingredientId');
+  });
+
+  it('saves Use as typed from the keyboard when it is the only option', async () => {
+    const user = userEvent.setup();
+    const calls = stubPantry([], []);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Zorblax paste',
+    );
+    await screen.findByRole('option', { name: /Use “Zorblax paste” as typed/ });
+    await user.keyboard('{Enter}');
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+
+    expect(
+      calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+    ).toMatchObject({ rawName: 'Zorblax paste' });
+  });
+
+  describe('the Add batch form without the old Unmatched controls', () => {
+    it('has no separate use-as-typed button and no "pick an ingredient" line', async () => {
+      const user = userEvent.setup();
+      stubPantry([], []);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      expect(screen.queryByText(/Pick an ingredient/i)).toBeNull();
+
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'Zorblax paste',
+      );
+      await screen.findByRole('option', {
+        name: /Use “Zorblax paste” as typed/,
+      });
+      expect(
+        screen.queryByRole('button', {
+          name: /Add "Zorblax paste" as Unmatched/,
+        }),
+      ).toBeNull();
+      expect(screen.queryByText(/Pick an ingredient/i)).toBeNull();
+    });
+
+    it('shows the fields only once something is picked or typed', async () => {
+      const user = userEvent.setup();
+      stubPantry([], [parmesan]);
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      const fieldsShown = () => ({
+        amount: screen.queryByRole('textbox', { name: /^Amount/ }),
+        location: screen.queryByLabelText('Location'),
+        expires: screen.queryByRole('button', { name: /^Expires,/ }),
+        description: screen.queryByLabelText('Product description'),
+      });
+
+      expect(fieldsShown()).toEqual({
+        amount: null,
+        location: null,
+        expires: null,
+        description: null,
+      });
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
+
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+      expect(fieldsShown().amount).toBeVisible();
+      expect(fieldsShown().location).toBeVisible();
+      expect(fieldsShown().expires).toBeVisible();
+      expect(fieldsShown().description).toBeVisible();
+    });
+
+    it('shows the fields after Use as typed', async () => {
+      const user = userEvent.setup();
+      stubPantry([], []);
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'Zorblax paste',
+      );
+      await user.click(
+        await screen.findByRole('option', {
+          name: /Use “Zorblax paste” as typed/,
+        }),
+      );
+
+      expect(
+        screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
+      ).toBeVisible();
+      expect(screen.getByLabelText('Location')).toBeVisible();
+      expect(screen.getByLabelText('Product description')).toBeVisible();
+    });
   });
 
   describe('the expiry picker in Add batch', () => {
@@ -642,8 +753,8 @@ describe('PantryPage', () => {
       await user.clear(search);
       await user.type(search, 'Parmigiano');
       await user.click(
-        screen.getByRole('button', {
-          name: 'Not in the Catalog? Add "Parmigiano" as Unmatched',
+        await screen.findByRole('option', {
+          name: /Use “Parmigiano” as typed/,
         }),
       );
 
@@ -821,8 +932,8 @@ describe('PantryPage', () => {
       await user.clear(search);
       await user.type(search, 'Parmigiano');
       await user.click(
-        screen.getByRole('button', {
-          name: 'Not in the Catalog? Add "Parmigiano" as Unmatched',
+        await screen.findByRole('option', {
+          name: /Use “Parmigiano” as typed/,
         }),
       );
       const sheet = await openSheet(user);

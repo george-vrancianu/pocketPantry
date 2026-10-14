@@ -267,6 +267,30 @@ describe('RecipeGuidance', () => {
     });
   });
 
+  it('searches the shared Catalog only for an Ingredient link, with no Use as typed', async () => {
+    const calls = open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+      'mi',
+    );
+    await screen.findByRole('option', { name: /Milk/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+
   it('sends an Ingredient link picked by search', async () => {
     const calls = open(recipe, {
       'GET /api/catalog/search': () => Response.json({ results: [milk] }),

@@ -487,6 +487,28 @@ describe('ReviewPage', () => {
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
 
+  it('offers no Use as typed in the match dialog, only the no-match hint', async () => {
+    const calls = renderReview(
+      [line({ match: null, name: 'Mystery jar', quantity: 1 })],
+      { 'GET /api/catalog/search': () => Response.json({ results: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
+  });
+
   it.each([
     [
       'Cancel',
