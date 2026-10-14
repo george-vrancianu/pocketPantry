@@ -418,9 +418,8 @@ describe('onLearned', () => {
 describe('toggle mode', () => {
   function toggleSetup(options: { disabled?: boolean } = {}) {
     const onToggle = vi.fn();
-    const onLearned = vi.fn();
     const view = renderHook(() =>
-      useRowGestures({ mode: 'toggle', onToggle, onLearned, ...options }),
+      useRowGestures({ mode: 'toggle', onToggle, ...options }),
     );
     const bind = () => view.result.current.bind;
     const drag = (dx: number, dy = 0) => {
@@ -429,7 +428,7 @@ describe('toggle mode', () => {
     };
     const release = (dx: number) =>
       act(() => bind().onPointerUp(pointer(300 + dx)));
-    return { view, bind, drag, release, onToggle, onLearned };
+    return { view, bind, drag, release, onToggle };
   }
 
   describe('maths', () => {
@@ -471,12 +470,11 @@ describe('toggle mode', () => {
   });
 
   it('toggles on a release inside the zone, and springs back', () => {
-    const { view, drag, release, onToggle, onLearned } = toggleSetup();
+    const { view, drag, release, onToggle } = toggleSetup();
     drag(-92);
     expect(view.result.current.zone).toBe(1);
     release(-92);
     expect(onToggle).toHaveBeenCalledOnce();
-    expect(onLearned).toHaveBeenCalledOnce();
     expect(view.result.current).toMatchObject({
       x: 0,
       zone: 0,

@@ -1440,8 +1440,9 @@ describe('PantryPage', () => {
         return { gate, release };
       }
 
+      /** The chip is named by its label: "Make Staple", or "Staple" while pressed. */
       const stapleChip = () =>
-        screen.queryByRole('button', { name: 'Make Staple' });
+        screen.queryByRole('button', { name: /^(Make )?Staple$/ });
       const lowChip = () =>
         screen.queryByRole('button', { name: 'Running low' });
       /** The Running low marker on the Ingredient row itself. */
@@ -1701,16 +1702,22 @@ describe('PantryPage', () => {
           await openMilk(user);
 
           const chip = stapleChip()!;
+          expect(chip).toHaveAccessibleName('Make Staple');
           await user.click(chip);
-          // Held at the server: the chip already shows the new state.
+          // Held at the server: the chip already shows the new state, and its name follows the label.
           expect(chip).toHaveAttribute('aria-pressed', 'true');
           expect(chip).toHaveTextContent(/^Staple$/);
+          expect(chip).toHaveAccessibleName('Staple');
+          // The toast waits for the server, so a refusal never leaves it saying otherwise.
+          expect(
+            screen.queryByText('Milk is a Staple'),
+          ).not.toBeInTheDocument();
+
+          release();
           expect(await screen.findByText('Milk is a Staple')).toBeVisible();
           expect(
             screen.queryByRole('button', { name: 'Undo' }),
           ).not.toBeInTheDocument();
-
-          release();
           await waitFor(() =>
             expect(
               calls.find((c) => c.key === 'POST /api/staples')?.body,
@@ -1775,6 +1782,9 @@ describe('PantryPage', () => {
             'You can have up to 200 staples',
           );
           expect(chip).toHaveAttribute('aria-pressed', 'false');
+          expect(
+            screen.queryByText('Milk is a Staple'),
+          ).not.toBeInTheDocument();
         });
       });
 

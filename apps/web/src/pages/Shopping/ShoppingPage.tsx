@@ -13,7 +13,7 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   RowToggleErrorProvider,
   useRowToggleErrors,
-} from '../../components/StapleToggle';
+} from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { useRowHint } from '../../lib/useRowHint';
 import { itemCount } from '../../lib/shopping';

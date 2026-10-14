@@ -30,8 +30,8 @@
   "batchCount_one": "{{count}} parti",
   "batchCount_other": "{{count}} partier",
   "group": {
-    "batches_one": "{{count}} parti",
-    "batches_other": "{{count}} partier",
+    "label_one": "{{name}}, {{count}} parti",
+    "label_other": "{{name}}, {{count}} partier",
     "runningLow": "Ved at løbe tør",
     "notLow": "Ikke tør",
     "staple": "Basisvare",
@@ -51,7 +51,8 @@
   "a11y": {
     "markLow": "Markér som ved at løbe tør",
     "clearLow": "Fjern ved at løbe tør",
-    "lowKey": "Tryk L: {{action}}",
+    "lowKey": "Tryk L: {{action}}.",
+    "stapleKey": "Tryk S: {{action}}.",
     "makeStaple": "Gør til basisvare",
     "removeStaple": "Fjern som basisvare"
   },

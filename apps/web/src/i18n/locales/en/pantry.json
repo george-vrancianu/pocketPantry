@@ -31,8 +31,8 @@
   "batchCount_few": "{{count}} batches",
   "batchCount_other": "{{count}} batches",
   "group": {
-    "batches_one": "{{count}} batch",
-    "batches_other": "{{count}} batches",
+    "label_one": "{{name}}, {{count}} batch",
+    "label_other": "{{name}}, {{count}} batches",
     "runningLow": "Running low",
     "notLow": "Not low",
     "staple": "Staple",
@@ -52,7 +52,8 @@
   "a11y": {
     "markLow": "Mark running low",
     "clearLow": "Clear running low",
-    "lowKey": "Press L: {{action}}",
+    "lowKey": "Press L: {{action}}.",
+    "stapleKey": "Press S: {{action}}.",
     "makeStaple": "Make Staple",
     "removeStaple": "Remove Staple"
   },

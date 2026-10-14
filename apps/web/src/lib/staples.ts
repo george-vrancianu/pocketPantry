@@ -54,7 +54,7 @@ export function useStapleMutations(locale: string) {
       queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
     ]);
 
-  const edit = (change: (staples: Staple[]) => Staple[]) => {
+  const patchCachedStaples = (change: (staples: Staple[]) => Staple[]) => {
     const current = queryClient.getQueryData<Staple[]>(key);
     if (current) queryClient.setQueryData<Staple[]>(key, change(current));
   };
@@ -67,7 +67,7 @@ export function useStapleMutations(locale: string) {
       }),
     onMutate: async ({ ingredientId, name, quantity, unit }) => {
       await queryClient.cancelQueries({ queryKey: staplesQueryKey });
-      edit((staples) =>
+      patchCachedStaples((staples) =>
         staples.some((s) => s.ingredientId === ingredientId)
           ? staples
           : [
@@ -85,7 +85,7 @@ export function useStapleMutations(locale: string) {
     },
     // Only this add's placeholder goes: changes made meanwhile stay.
     onError: (_error, { ingredientId }) =>
-      edit((staples) =>
+      patchCachedStaples((staples) =>
         staples.filter((s) => s.id !== placeholderId(ingredientId)),
       ),
     onSettled: refresh,
@@ -113,13 +113,13 @@ export function useStapleMutations(locale: string) {
       await queryClient.cancelQueries({ queryKey: staplesQueryKey });
       const staples = queryClient.getQueryData<Staple[]>(key) ?? [];
       const index = staples.findIndex((s) => s.id === id);
-      edit((current) => current.filter((s) => s.id !== id));
+      patchCachedStaples((current) => current.filter((s) => s.id !== id));
       return index === -1 ? undefined : { staple: staples[index], index };
     },
     // Put it back where it was, unless it is back already.
     onError: (_error, _id, removed) => {
       if (!removed) return;
-      edit((staples) =>
+      patchCachedStaples((staples) =>
         staples.some((s) => s.id === removed.staple.id)
           ? staples
           : [

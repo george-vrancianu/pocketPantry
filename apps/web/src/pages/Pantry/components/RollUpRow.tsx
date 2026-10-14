@@ -3,6 +3,7 @@ import {
   ChevronDownIcon,
   SwipeToggle,
   Typography,
+  insetFocusRing,
   tokens,
   radius,
 } from '@pocket-pantry/ui';
@@ -26,33 +27,13 @@ import { useLiftIntoView } from '../hooks/useLiftIntoView';
 import { BatchDetail } from './BatchDetail';
 import { IngredientActions } from './IngredientActions';
 import { useRunningLowToggle } from '../hooks/useRunningLowToggle';
+import { usePantryStaple } from '../hooks/usePantryStaple';
+import { keyframesSx } from '../../../lib/keyframesSx';
+import { rowKeyHintIds } from './RowKeyHints';
 import { LIFT_EASING, LIFT_MS } from './liftedBlock';
 
 /** The row springs back before the flag flips (Pantry batches handoff, section 6). */
 const FLAG_FLIP_MS = 220;
-
-const LOW_KEY_HINT_IDS = {
-  mark: 'pantry-low-key-mark',
-  clear: 'pantry-low-key-clear',
-};
-
-/**
- * The closed rows' description, "Press L: Mark running low" (or Clear). Rendered once by the page, so
- * each row points at it rather than carrying its own copy.
- */
-export function RunningLowKeyHints() {
-  const { t } = useTranslation('pantry');
-  return (
-    <>
-      <span id={LOW_KEY_HINT_IDS.mark} hidden>
-        {t('a11y.lowKey', { action: t('a11y.markLow') })}
-      </span>
-      <span id={LOW_KEY_HINT_IDS.clear} hidden>
-        {t('a11y.lowKey', { action: t('a11y.clearLow') })}
-      </span>
-    </>
-  );
-}
 
 type Props = {
   rollUp: PantryRow;
@@ -89,17 +70,20 @@ export function RollUpRow({
   const tag =
     rollUp.soonestExpiry === null ? null : tagFor(rollUp.soonestExpiry);
 
-  // Swipe (or L) on a closed, matched row toggles Running low. Open rows leave the swipe to their Batches.
+  // Swipe (or L) on a closed, matched row toggles Running low, and S toggles Staple. Open rows leave
+  // the swipe to their Batches and these to the action row's chips.
   const lowToggle = useRunningLowToggle();
-  const canToggleLow = !expanded && !rollUp.unmatched && !rollUp.gone;
+  const staple = usePantryStaple(rollUp.key, rollUp.name);
+  const rowActions = !expanded && !rollUp.unmatched && !rollUp.gone;
   const [popChip, setPopChip] = useState(false);
-  // The swipe and L offer Undo; the open card's chip does not.
-  const flipLow = ({ undo = true }: { undo?: boolean } = {}) => {
+  // From the closed row (swipe or L) the toast offers Undo and the row's chip pops in; the open
+  // card's chip does neither.
+  const flipLow = ({ fromRow = true }: { fromRow?: boolean } = {}) => {
     const on = !rollUp.runningLow;
-    setPopChip(on);
+    setPopChip(on && fromRow);
     lowToggle.toggle(
       { ingredientId: rollUp.key, name: rollUp.name, on },
-      { undo },
+      { undo: fromRow },
     );
   };
   // The timer reads the row as it is when it fires, not as it was at the release.
@@ -114,10 +98,12 @@ export function RollUpRow({
     flipTimer.current = setTimeout(() => latestFlip.current(), FLAG_FLIP_MS);
   };
   const onRowKeyDown = (event: KeyboardEvent) => {
-    if (!canToggleLow || event.key.toLowerCase() !== 'l') return;
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!rowActions || event.altKey || event.ctrlKey || event.metaKey) return;
+    const key = event.key.toLowerCase();
+    if (key === 'l') flipLow();
+    else if (key === 's') staple.toggle();
+    else return;
     event.preventDefault();
-    flipLow();
   };
 
   // Tell the first-use hint when this roll-up is showing Batch rows to swipe.
@@ -167,7 +153,7 @@ export function RollUpRow({
       <SwipeToggle
         label={t(rollUp.runningLow ? 'group.notLow' : 'group.runningLow')}
         onToggle={onSwipeToggle}
-        disabled={!canToggleLow}
+        disabled={!rowActions}
       >
         <Box
           // Awaiting its delete: nothing to expand, and nothing to focus.
@@ -189,13 +175,14 @@ export function RollUpRow({
             aria-expanded={expanded}
             aria-controls={expanded && !rollUp.gone ? panelId : undefined}
             aria-describedby={
-              canToggleLow
-                ? rollUp.runningLow
-                  ? LOW_KEY_HINT_IDS.clear
-                  : LOW_KEY_HINT_IDS.mark
+              rowActions
+                ? rowKeyHintIds({
+                    runningLow: rollUp.runningLow,
+                    isStaple: staple.isStaple,
+                  })
                 : undefined
             }
-            aria-keyshortcuts={canToggleLow ? 'L' : undefined}
+            aria-keyshortcuts={rowActions ? 'L S' : undefined}
             onClick={onToggle}
             onKeyDown={onRowKeyDown}
             sx={{
@@ -213,10 +200,7 @@ export function RollUpRow({
               textAlign: 'left',
               cursor: 'pointer',
               // Inset: the swipe wrapper clips anything outside the row.
-              '&:focus-visible': {
-                outline: `2px solid ${tokens.color.accent}`,
-                outlineOffset: -2,
-              },
+              ...insetFocusRing,
             }}
           >
             <IngredientIconSlot
@@ -299,18 +283,19 @@ export function RollUpRow({
         <Box
           id={panelId}
           role="group"
-          aria-label={`${rollUp.name}, ${t('group.batches', { count: rollUp.batches.length })}`}
+          aria-label={t('group.label', {
+            name: rollUp.name,
+            count: rollUp.batches.length,
+          })}
           onKeyDown={closeFromInside}
           sx={{
             // The body grows open with the lift.
             display: 'grid',
             gridTemplateRows: '1fr',
-            animation: `pp-lift-body ${LIFT_MS}ms ${LIFT_EASING}`,
-            '@keyframes pp-lift-body': {
+            ...keyframesSx('pp-lift-body', `${LIFT_MS}ms ${LIFT_EASING}`, {
               from: { gridTemplateRows: '0fr' },
               to: { gridTemplateRows: '1fr' },
-            },
-            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+            }),
           }}
         >
           {/* The one grid track: the Batches, then the action row at the bottom of the card. */}
@@ -347,11 +332,11 @@ export function RollUpRow({
               ))}
             </Box>
             <IngredientActions
-              ingredientId={rollUp.key}
               name={rollUp.name}
               unmatched={rollUp.unmatched}
+              staple={staple}
               runningLow={rollUp.runningLow}
-              onToggleLow={() => flipLow({ undo: false })}
+              onToggleLow={() => flipLow({ fromRow: false })}
               onAddBatch={onAddBatch}
             />
           </Box>

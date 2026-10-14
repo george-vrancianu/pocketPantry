@@ -12,12 +12,12 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   RowToggleErrorProvider,
   useRowToggleErrors,
-} from '../../components/StapleToggle';
+} from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
-import { RunningLowKeyHints } from './components/RollUpRow';
+import { RowKeyHints } from './components/RowKeyHints';
 import { PantryFilters } from './components/PantryFilters';
 import { usePantryRowHint } from './hooks/usePantryRowHint';
 import { usePantryScreen } from './hooks/usePantryScreen';
@@ -37,11 +37,11 @@ export function PantryPage() {
   // the Ingredient row whose Add batch button opened it, or else on the header's Add button.
   const wasAdding = useRef<{ from?: string } | null>(null);
   useEffect(() => {
-    const was = wasAdding.current;
-    if (was && !screen.adding) {
+    const closedAdding = wasAdding.current;
+    if (closedAdding && !screen.adding) {
       const row = [
         ...document.querySelectorAll<HTMLElement>('[data-open-key]'),
-      ].find((element) => element.dataset.openKey === was.from);
+      ].find((element) => element.dataset.openKey === closedAdding.from);
       if (row) row.focus();
       else focusAdd();
     }
@@ -115,7 +115,7 @@ export function PantryPage() {
           ))}
         </Stack>
       )}
-      <RunningLowKeyHints />
+      <RowKeyHints />
     </RowToggleErrorProvider>
   );
 }
