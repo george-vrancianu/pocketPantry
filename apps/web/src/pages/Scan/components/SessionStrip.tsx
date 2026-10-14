@@ -7,6 +7,7 @@ import {
   type SessionScan,
 } from '../../../lib/scanSession';
 import { MODE_ICONS } from './ModeDial';
+import { radius } from '../../../lib/themeVars';
 
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 
@@ -75,7 +76,7 @@ export function SessionStrip({
               flex: 'none',
               width: 46,
               height: 60,
-              borderRadius: '11px',
+              borderRadius: radius.control,
               overflow: 'hidden',
               border: `1.5px solid ${failed ? tokens.color.soonFg : translucent(tokens.color.ink, 35)}`,
               backgroundColor: translucent(tokens.color.surface, 82),

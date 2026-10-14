@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Locale, ScanLanguage } from '../../../i18n/resources';
 import { glassControl, glassFocusRing } from './glass';
 import { scanLanguageOptions } from '../../../lib/scanLanguage';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   value: ScanLanguage;
@@ -26,7 +27,7 @@ export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
         // As tall as the Info and Done buttons beside it.
         height: 40,
         px: '10px',
-        borderRadius: '20px',
+        borderRadius: radius.pill,
         ...glassControl(disabled),
         fontFamily: 'inherit',
         fontSize: 13,

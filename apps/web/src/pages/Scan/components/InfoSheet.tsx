@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES } from '../../../lib/scan';
 import { glassFocusRing, shade, translucent } from './glass';
+import { radius } from '../../../lib/themeVars';
 
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -63,7 +64,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
           p: 3,
           pt: 1.5,
           pb: 'calc(24px + env(safe-area-inset-bottom))',
-          borderRadius: '28px 28px 0 0',
+          borderRadius: `${radius.card} ${radius.card} 0 0`,
           backgroundColor: translucent(tokens.color.surface, 82),
           backdropFilter: 'blur(14px)',
           color: tokens.color.ink,
@@ -76,7 +77,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             height: 4,
             mx: 'auto',
             mb: 2,
-            borderRadius: 2,
+            borderRadius: radius.pill,
             backgroundColor: tokens.color.muted,
           }}
         />
@@ -124,7 +125,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             height: 44,
             width: '100%',
             border: 0,
-            borderRadius: '22px',
+            borderRadius: radius.pill,
             fontFamily: 'inherit',
             fontSize: 15,
             fontWeight: 700,

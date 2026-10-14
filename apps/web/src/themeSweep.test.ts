@@ -2,16 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * Guards the token sweep (#249): screens follow the Theme only if they read
- * its variables, so the app's source (outside the always-dark Scan screen,
- * swept separately) carries no fixed colours, radii or old font names.
+ * its variables, so the app's source (including the always-dark Scan screen,
+ * which reads the Dark-first Theme's variables) carries no fixed colours,
+ * radii or old font names.
  */
 const sources = import.meta.glob<string>(
-  [
-    './**/*.{ts,tsx}',
-    '!./**/*.test.{ts,tsx}',
-    '!./test/**',
-    '!./pages/Scan/**',
-  ],
+  ['./**/*.{ts,tsx}', '!./**/*.test.{ts,tsx}', '!./test/**'],
   { query: '?raw', import: 'default', eager: true },
 );
 
@@ -66,7 +62,7 @@ describe('Theme token sweep', () => {
     expect(Object.keys(sources).length).toBeGreaterThan(50);
   });
 
-  it('leaves no hard-coded colours, radii or old font names outside Scan', () => {
+  it('leaves no hard-coded colours, radii or old font names', () => {
     expect(offences()).toEqual([]);
   });
 });
