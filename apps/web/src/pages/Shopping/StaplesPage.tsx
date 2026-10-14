@@ -70,6 +70,7 @@ export function StaplesPage() {
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
         <CatalogSearch
           key={formKey}
+          showUnit={false}
           onSelect={(ingredient) =>
             add.mutate(
               { ingredientId: ingredient.id },

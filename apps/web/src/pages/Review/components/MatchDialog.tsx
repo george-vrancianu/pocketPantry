@@ -29,7 +29,7 @@ export function MatchDialog({ open, name, onSelect, onClose }: Props) {
         </Button>
       }
     >
-      <CatalogSearch autoFocus onSelect={onSelect} />
+      <CatalogSearch autoFocus showUnit={false} onSelect={onSelect} />
     </Dialog>
   );
 }

@@ -637,7 +637,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       const calls = await addParmesan(user);
       const search = screen.getByRole('combobox', {
-        name: 'Search ingredients',
+        name: 'Ingredient: Parmesan. Press Backspace to change',
       });
       await user.clear(search);
       await user.type(search, 'Parmigiano');
@@ -816,7 +816,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       await addParmesan(user);
       const search = screen.getByRole('combobox', {
-        name: 'Search ingredients',
+        name: 'Ingredient: Parmesan. Press Backspace to change',
       });
       await user.clear(search);
       await user.type(search, 'Parmigiano');

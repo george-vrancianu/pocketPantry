@@ -24,6 +24,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
     >
       <CatalogSearch
         autoFocus
+        selected={form.ingredient}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
       />

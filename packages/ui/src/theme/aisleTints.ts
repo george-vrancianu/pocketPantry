@@ -1,15 +1,15 @@
 import { tokens } from './tokens';
 
-/** An Aisle's tint for Ingredient Icons, per theme. Dark is stored but unused until a dark theme exists. */
-type AisleTint = { light: string; dark: string };
+/** An Aisle's tint for Ingredient Icons, per theme (`light` is the minimal theme). Dark is stored but unused until a dark theme exists. */
+type AisleTint = { light: string; dark: string; warm: string };
 
-const produce = { light: '#DDEBE2', dark: '#24392E' };
-const bakery = { light: '#F6EBC8', dark: '#3B3320' };
-const dairy = { light: '#E3ECF3', dark: '#243440' };
-const meat = { light: '#FBE6DA', dark: '#42291E' };
-const frozen = { light: '#E6E9F4', dark: '#272C3F' };
-const pantry = { light: '#E2E8DD', dark: '#2B332C' };
-const drinks = { light: '#EFE6F1', dark: '#362A3A' };
+const produce = { light: '#DDEBE2', dark: '#24392E', warm: '#DFE7CF' };
+const bakery = { light: '#F6EBC8', dark: '#3B3320', warm: '#F3E4BF' };
+const dairy = { light: '#E3ECF3', dark: '#243440', warm: '#E4E9EA' };
+const meat = { light: '#FBE6DA', dark: '#42291E', warm: '#F5DCCB' };
+const frozen = { light: '#E6E9F4', dark: '#272C3F', warm: '#E3E5EE' };
+const pantry = { light: '#E2E8DD', dark: '#2B332C', warm: '#E8E3D1' };
+const drinks = { light: '#EFE6F1', dark: '#362A3A', warm: '#ECE1E7' };
 
 /**
  * Icon tints by Aisle id. The ids are the seeded Aisles' stable ids
@@ -35,6 +35,7 @@ export function aisleTint(aisleId?: string | null): AisleTint {
       light: tokens.color.chipNeutral,
       // Placeholder until the dark theme is designed; dark values are unused for now.
       dark: tokens.color.chipNeutral,
+      warm: tokens.color.chipNeutral,
     }
   );
 }

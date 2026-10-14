@@ -129,6 +129,7 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
       {mode === 'existing' ? (
         <Stack spacing={1}>
           <CatalogSearch
+            showUnit={false}
             onSelect={(ingredient) =>
               setPicked({ id: ingredient.id, name: ingredient.name })
             }

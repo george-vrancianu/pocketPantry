@@ -448,6 +448,7 @@ function PairingRow({
             </Typography>
           ) : null}
           <CatalogSearch
+            showUnit={false}
             label={t('admin:recipe.guidance.pairings.linkIngredientTarget', p)}
             describedBy={linkedName ? linkedId : undefined}
             onSelect={(ingredient) =>
