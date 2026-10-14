@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
+/** Structured-output schema name of an Ingredients Scan request. */
+export const INGREDIENTS_SCAN_SCHEMA_NAME = 'grocery_ingredients_photo_scan';
+
 export const ingredientsScanSchema = z.object({
   ingredientsImage: imageDataUrlSchema,
 });

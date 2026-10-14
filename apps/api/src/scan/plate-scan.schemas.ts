@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { imageDataUrlSchema } from './product-scan.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 
+/** Structured-output schema names of a Plate Scan's two requests: dish guesses, then one dish's Ingredients. */
+export const PLATE_DISHES_SCHEMA_NAME = 'plate_recipe_suggestions';
+export const PLATE_INGREDIENTS_SCHEMA_NAME = 'selected_recipe_ingredients';
+
 /** Plate Scan step one: the photo of the dish. */
 export const plateScanSchema = z.object({ plateImage: imageDataUrlSchema });
 export type PlateScanInput = z.infer<typeof plateScanSchema>;

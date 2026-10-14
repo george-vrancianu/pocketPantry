@@ -2,6 +2,9 @@ import { z } from 'zod';
 import { MAX_QUANTITY } from '../common/quantity';
 import { imageDataUrlSchema } from './product-scan.schemas';
 
+/** Structured-output schema name of a Receipt Scan request. */
+export const RECEIPT_SCAN_SCHEMA_NAME = 'grocery_receipt_scan';
+
 export const receiptScanSchema = z.object({
   receiptImage: imageDataUrlSchema,
 });

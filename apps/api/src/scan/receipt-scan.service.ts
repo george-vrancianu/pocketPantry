@@ -13,6 +13,7 @@ import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
   receiptScanModelJsonSchema,
   receiptScanModelResultSchema,
+  RECEIPT_SCAN_SCHEMA_NAME,
   ReceiptScanOutputError,
   type ReceiptScanInput,
   type ReceiptScanResult,
@@ -63,7 +64,7 @@ export class ReceiptScanService {
           `Application catalog: ${catalogPrompt}`,
         ].join(' '),
         images: [input.receiptImage],
-        schemaName: 'grocery_receipt_scan',
+        schemaName: RECEIPT_SCAN_SCHEMA_NAME,
         schema: receiptScanModelJsonSchema,
         maxOutputTokens: 16_000,
       });

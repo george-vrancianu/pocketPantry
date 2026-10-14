@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Structured-output schema name of a Product Scan request. */
+export const PRODUCT_SCAN_SCHEMA_NAME = 'grocery_product_scan';
+
 export const imageDataUrlSchema = z
   .string()
   .max(7_000_000, 'Image is too large')
