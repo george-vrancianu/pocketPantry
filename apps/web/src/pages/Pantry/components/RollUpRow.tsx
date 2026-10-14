@@ -180,7 +180,7 @@ export function RollUpRow({
             // The rows pad themselves (12 pt): the elbow's stem sits under the roll-up's icon and the text lines up 50 pt in.
             ml: '2px',
             p: 0,
-            // A divider in its own line box (rows' opaque fills would cover an overlay), from the text column 38 pt in.
+            // A divider in its own block (rows' opaque fills would cover an overlay), starting 38 pt in, past the elbows.
             '&::before': {
               content: '""',
               display: 'block',
