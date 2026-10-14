@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { user } from '../src/database/schema';
+import { leafCategories, user } from '../src/database/schema';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Batch = { id: string; name: string; expiryDate: string | null };
@@ -211,6 +212,33 @@ describe('Settings (integration)', () => {
       expect(dairy?.leaves.map((l) => l.id)).toContain(
         seedId.leaf('hard-cheese'),
       );
+    });
+    it("sends each Category's Catalog Default Expiry, a Leaf without its own falling back to its Parent's", async () => {
+      const { cookie } = await signUp();
+      const bare = randomUUID();
+      await database.insert(leafCategories).values({
+        id: bare,
+        parentId: seedId.parent('dairy'),
+        name: 'Settings test bare leaf',
+        normalizedName: `settings test bare leaf ${bare}`,
+        defaultExpiryDays: null,
+      });
+      const body = (
+        await call(cookie, 'get', '/categories?locale=en').expect(200)
+      ).body as {
+        parents: {
+          id: string;
+          catalogDays: number | null;
+          leaves: { id: string; catalogDays: number | null }[];
+        }[];
+      };
+      const dairy = body.parents.find((p) => p.id === seedId.parent('dairy'));
+      // Catalog: Dairy lasts 10 days, hard cheese 60.
+      expect(dairy?.catalogDays).toBe(10);
+      const leafDays = (id: string) =>
+        dairy?.leaves.find((l) => l.id === id)?.catalogDays;
+      expect(leafDays(seedId.leaf('hard-cheese'))).toBe(60);
+      expect(leafDays(bare)).toBe(10);
     });
   });
 
