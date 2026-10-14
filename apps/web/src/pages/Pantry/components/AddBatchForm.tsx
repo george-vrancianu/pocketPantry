@@ -3,6 +3,7 @@ import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
+import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { useAddBatchForm } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
@@ -25,12 +26,17 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
       aria-label={t('form.title')}
     >
       <CatalogSearch
-        emptyState={<BrowseByAisle />}
         autoFocus
         selected={form.ingredient}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
         onUseTyped={form.useTypedName}
+        emptyState={
+          <>
+            <RecentlyStocked />
+            <BrowseByAisle />
+          </>
+        }
       />
 
       {form.unmatchedName ? (

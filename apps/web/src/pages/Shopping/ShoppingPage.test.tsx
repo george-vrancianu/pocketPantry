@@ -1251,6 +1251,25 @@ describe('ShoppingPage', () => {
       return screen.findByRole('dialog', { name: 'Add to list' });
     };
 
+    it('does not offer Recently stocked: that is the Pantry search only', async () => {
+      const { calls } = stubShopping();
+      renderWithProviders(<ShoppingPage />);
+
+      const dialog = await openSheet();
+      await waitFor(() =>
+        expect(
+          within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+        ).toHaveFocus(),
+      );
+
+      expect(
+        screen.queryByRole('region', { name: 'Recently stocked' }),
+      ).not.toBeInTheDocument();
+      expect(
+        calls.some((call) => call.key === 'GET /api/pantry/recently-stocked'),
+      ).toBe(false);
+    });
+
     it('opens on the Ingredients tab with focus in the search field', async () => {
       stubShopping();
       renderWithProviders(<ShoppingPage />);

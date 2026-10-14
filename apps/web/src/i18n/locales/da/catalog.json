@@ -23,6 +23,17 @@
     "aisleLoading": "henter…",
     "aisleMatching": "der matcher “{{query}}”",
     "leaveAisle": "Forlad {{aisle}}",
-    "noMatchAisleHint": "Prøv en anden afdeling, eller fjern afdelingen."
+    "noMatchAisleHint": "Prøv en anden afdeling, eller fjern afdelingen.",
+    "recentlyStocked": "Senest tilføjet",
+    "stockedInPantry": "i spisekammeret · tilføjet {{when}}",
+    "stockedGone": "tilføjet {{when}}",
+    "stockedInPantryLabel": "{{name}}, i spisekammeret, tilføjet {{when}}",
+    "stockedGoneLabel": "{{name}}, tilføjet {{when}}",
+    "when": {
+      "today": "i dag",
+      "days": "{{count}} d siden",
+      "weeks": "{{count}} u siden",
+      "months": "{{count}} md siden"
+    }
   }
 }

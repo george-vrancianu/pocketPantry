@@ -21,7 +21,7 @@ import {
 } from '../../lib/catalog';
 import { normalizeName } from '../../lib/normalizeName';
 import { AisleViewHeader } from './AisleView';
-import { CatalogSearchBrowseContext } from './browse';
+import { CatalogSearchEmptyStateContext } from './emptyState/context';
 import { ErrorRow } from './ErrorRow';
 import { NoMatchRow } from './NoMatchRow';
 import { SearchField } from './SearchField';
@@ -47,7 +47,10 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
-  /** Host blocks shown while the field is focused and empty. */
+  /**
+   * Host blocks shown while the field is focused and empty. Blocks reach the
+   * search through `useEmptyStateSearch` (pick, open an Aisle), not props.
+   */
   emptyState?: ReactNode;
   /** When given, the no-match state ends with a "Use “…” as typed" option. */
   onUseTyped?: (name: string) => void;
@@ -294,10 +297,14 @@ export function CatalogSearch({
         {status}
       </Box>
       {emptyShown ? (
-        // Taps inside land without the field losing focus.
-        <Box onMouseDown={(event) => event.preventDefault()} sx={{ mt: 2 }}>
-          <CatalogSearchBrowseContext.Provider
+        // Taps inside land without the field losing focus. A block that renders nothing leaves no gap.
+        <Box
+          onMouseDown={(event) => event.preventDefault()}
+          sx={{ mt: 2, '&:empty': { display: 'none' } }}
+        >
+          <CatalogSearchEmptyStateContext.Provider
             value={{
+              select,
               scope,
               openAisle: (opened) => {
                 setAisle(opened);
@@ -307,7 +314,7 @@ export function CatalogSearch({
             }}
           >
             {emptyState}
-          </CatalogSearchBrowseContext.Provider>
+          </CatalogSearchEmptyStateContext.Provider>
         </Box>
       ) : null}
       <Box

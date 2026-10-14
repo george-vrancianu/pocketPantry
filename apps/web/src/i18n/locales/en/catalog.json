@@ -23,6 +23,17 @@
     "aisleLoading": "loading…",
     "aisleMatching": "matching “{{query}}”",
     "leaveAisle": "Leave {{aisle}}",
-    "noMatchAisleHint": "Try another aisle or clear the aisle."
+    "noMatchAisleHint": "Try another aisle or clear the aisle.",
+    "recentlyStocked": "Recently stocked",
+    "stockedInPantry": "in pantry · added {{when}}",
+    "stockedGone": "added {{when}}",
+    "stockedInPantryLabel": "{{name}}, in pantry, added {{when}}",
+    "stockedGoneLabel": "{{name}}, added {{when}}",
+    "when": {
+      "today": "today",
+      "days": "{{count}}d ago",
+      "weeks": "{{count}}w ago",
+      "months": "{{count}}mo ago"
+    }
   }
 }

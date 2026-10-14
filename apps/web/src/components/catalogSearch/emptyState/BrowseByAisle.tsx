@@ -3,18 +3,18 @@ import { useTranslation } from 'react-i18next';
 import { useCatalogAisles } from '../../../lib/catalog';
 import { focusRing } from '../../../lib/focusRing';
 import { AisleSwatch } from '../AisleSwatch';
-import { useCatalogSearchBrowse } from '../browse';
+import { useEmptyStateSearch } from './context';
 
 /**
  * "Browse by aisle": one chip per Aisle. Tapping one opens that Aisle's
  * Ingredients in the enclosing CatalogSearch's list. Takes no props: it reads
- * the search through `useCatalogSearchBrowse`, and renders nothing outside one
+ * the search through `useEmptyStateSearch`, and renders nothing outside one
  * or until the Aisles have loaded.
  */
 export function BrowseByAisle() {
   const { color } = tokens;
   const { t, i18n } = useTranslation('catalog');
-  const browse = useCatalogSearchBrowse();
+  const browse = useEmptyStateSearch();
   const aisles = useCatalogAisles(i18n.language, browse?.scope);
   if (!browse || !aisles.data || aisles.data.length === 0) return null;
   return (
