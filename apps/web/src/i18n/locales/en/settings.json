@@ -73,5 +73,52 @@
   "unmatched_one": "{{count}} unmatched name waiting",
   "unmatched_other": "{{count}} unmatched names waiting",
   "signOutConfirm": "Sign out of this phone?",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "defaultExpiry": {
+    "title": "Default expiry",
+    "hint": "Pre-fills the date when anyone in the family adds a batch. Categories you leave out use the Catalog default.",
+    "list": "Default expiry",
+    "catalog": "Catalog {{days}} d",
+    "catalogDefault_one": "Catalog default {{count}} day",
+    "catalogDefault_other": "Catalog default {{count}} days",
+    "catalogSays": "Catalog says {{days}}",
+    "wholeAisle": "every category without its own",
+    "allHint": "Every {{parent}} category without its own",
+    "unit": "d",
+    "useCatalog": "Use the Catalog default for {{name}}",
+    "removed": "{{name}} uses the Catalog default",
+    "empty": "Catalog defaults are used for every category. Add one to set your own.",
+    "add": "Set a category",
+    "pickTitle": "Pick a category",
+    "pickHint": "Its expiry pre-fills new batches",
+    "search": "Search categories",
+    "all": "All {{parent}}",
+    "noMatch": "No category matches “{{query}}”.",
+    "set": "Set · {{days}} d",
+    "back": "Back",
+    "close": "Close",
+    "quickPicks": "Quick picks",
+    "quick": {
+      "3": "3 days",
+      "5": "5 days",
+      "7": "1 week",
+      "14": "2 weeks",
+      "30": "1 month"
+    },
+    "quickShort": {
+      "3": "3 d",
+      "5": "5 d",
+      "7": "1 wk",
+      "14": "2 wk",
+      "30": "1 mo"
+    },
+    "fewer": "One day fewer",
+    "more": "One day more",
+    "value_one": "{{count}} day",
+    "value_other": "{{count}} days",
+    "useCatalogButton": "Use Catalog default",
+    "save": "Save",
+    "savedToast_one": "{{name}}: {{count}} day",
+    "savedToast_other": "{{name}}: {{count}} days"
+  }
 }

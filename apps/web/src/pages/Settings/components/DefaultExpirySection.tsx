@@ -1,0 +1,218 @@
+import {
+  Alert,
+  Box,
+  Button,
+  CloseIcon,
+  IconButton,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
+import { useId, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { translateApiError } from '../../../i18n/translateApiError';
+import {
+  useCategoryOptions,
+  useFamilySettings,
+  useRemoveExpiryOverride,
+} from '../../../lib/settings';
+import { lookupCategory, type CategoryRef } from '../defaultExpiry';
+import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+import { DefaultExpirySheet, type SheetStart } from './DefaultExpirySheet';
+
+type SheetState = { open: boolean; start: SheetStart; session: number };
+
+/**
+ * Family Default expiry: one row per override, removed with Undo (ADR 0009), and a sheet to set or
+ * change one. Every Member can edit it.
+ */
+export function DefaultExpirySection() {
+  const { t, i18n } = useTranslation('settings');
+  const id = useId();
+  const settings = useFamilySettings(i18n.language);
+  const categories = useCategoryOptions(i18n.language);
+  const removeOverride = useRemoveExpiryOverride();
+  const removal = useDeferredRemoval(
+    ['settings', 'family'],
+    removeOverride.mutateAsync,
+  );
+
+  // A removed override stays out of the list, refetches included, until its delete has settled.
+  const overrides = (settings.data?.expiryOverrides ?? []).filter(
+    (override) => !removal.hiddenIds.has(override.categoryId),
+  );
+
+  const [sheet, setSheet] = useState<SheetState>({
+    open: false,
+    start: { kind: 'pick' },
+    session: 0,
+  });
+  // Where focus goes back to when the sheet closes; the add button if the opener has gone.
+  const opener = useRef<HTMLElement | null>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+
+  const openSheet = (start: SheetStart) => {
+    opener.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setSheet((prev) => ({ open: true, start, session: prev.session + 1 }));
+  };
+  const closeSheet = () => setSheet((prev) => ({ ...prev, open: false }));
+  const focusOpener = () => {
+    if (opener.current?.isConnected) opener.current.focus();
+    else addButton.current?.focus();
+  };
+
+  const useCatalog = (category: CategoryRef) => {
+    removal.remove(
+      category.id,
+      category.name,
+      t('defaultExpiry.removed', { name: category.name }),
+    );
+  };
+
+  const error = settings.error ? translateApiError(t, settings.error) : null;
+  const headingId = `${id}-heading`;
+
+  return (
+    <Stack component="section" spacing={2} aria-labelledby={headingId}>
+      <Typography
+        id={headingId}
+        variant="sectionLabel"
+        component="h2"
+        color="text.secondary"
+      >
+        {t('defaultExpiry.title')}
+      </Typography>
+      <Typography variant="meta" color="text.secondary">
+        {t('defaultExpiry.hint')}
+      </Typography>
+      {error ? <Alert>{error}</Alert> : null}
+      {overrides.length > 0 ? (
+        <Stack
+          component="ul"
+          aria-labelledby={headingId}
+          sx={{ listStyle: 'none', p: 0, m: 0 }}
+        >
+          {overrides.map((override) => {
+            const category = lookupCategory(
+              categories.data,
+              override.categoryId,
+            );
+            const subline = category
+              ? category.wholeParent
+                ? [category.parentName, t('defaultExpiry.wholeAisle')]
+                : [
+                    category.parentName,
+                    category.catalogDays !== null
+                      ? t('defaultExpiry.catalog', {
+                          days: category.catalogDays,
+                        })
+                      : null,
+                  ]
+              : [];
+            return (
+              <Stack
+                component="li"
+                key={override.categoryId}
+                direction="row"
+                sx={{
+                  alignItems: 'center',
+                  minHeight: 52,
+                  borderTop: 1,
+                  borderColor: 'divider',
+                }}
+              >
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={(event) => {
+                    opener.current = event.currentTarget;
+                    openSheet({
+                      kind: 'edit',
+                      categoryId: override.categoryId,
+                    });
+                  }}
+                  sx={{
+                    display: 'flex',
+                    flex: 1,
+                    minWidth: 0,
+                    alignItems: 'center',
+                    gap: 1,
+                    py: 1,
+                    border: 0,
+                    background: 'none',
+                    color: 'inherit',
+                    font: 'inherit',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                      {override.name}
+                    </Typography>
+                    {subline.length > 0 ? (
+                      <Typography variant="meta" color="text.secondary">
+                        {subline.filter(Boolean).join(' · ')}
+                      </Typography>
+                    ) : null}
+                  </Box>
+                  <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                    <span>{override.days}</span>{' '}
+                    <Typography
+                      component="span"
+                      variant="meta"
+                      color="text.secondary"
+                    >
+                      {t('defaultExpiry.unit')}
+                    </Typography>
+                  </Typography>
+                </Box>
+                <IconButton
+                  label={t('defaultExpiry.useCatalog', {
+                    name: override.name,
+                  })}
+                  size={40}
+                  onClick={() =>
+                    removal.remove(
+                      override.categoryId,
+                      override.name,
+                      t('defaultExpiry.removed', { name: override.name }),
+                    )
+                  }
+                >
+                  <CloseIcon size={18} />
+                </IconButton>
+              </Stack>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Typography color="text.secondary">
+          {t('defaultExpiry.empty')}
+        </Typography>
+      )}
+      <Button
+        ref={addButton}
+        variant="secondary"
+        onClick={(event) => {
+          opener.current = event.currentTarget;
+          openSheet({ kind: 'pick' });
+        }}
+      >
+        {t('defaultExpiry.add')}
+      </Button>
+      <DefaultExpirySheet
+        key={sheet.session}
+        open={sheet.open}
+        start={sheet.start}
+        options={categories.data}
+        overrides={overrides}
+        onClose={closeSheet}
+        onExited={focusOpener}
+        onUseCatalog={useCatalog}
+      />
+    </Stack>
+  );
+}

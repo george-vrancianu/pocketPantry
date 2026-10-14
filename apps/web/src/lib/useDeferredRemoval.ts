@@ -91,10 +91,11 @@ export function useDeferredRemoval<Id extends string | number>(
     };
   }, []);
 
-  const remove = (id: Id, name: string) => {
+  /** `message` replaces the default "Removed {name}" toast text, already translated. */
+  const remove = (id: Id, name: string, message?: string) => {
     setHiddenIds((prev) => new Set(prev).add(id));
     // Showing a toast sends the previous removal; this one takes its place.
-    const handle = toast.show(t('row.removed', { name }), {
+    const handle = toast.show(message ?? t('row.removed', { name }), {
       duration: UNDO_WINDOW_MS,
       action: {
         label: t('row.undo'),
