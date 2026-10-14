@@ -64,10 +64,17 @@ describe('the pre-paint script', () => {
     expect(result).toEqual({ theme: 'dark', themeColors: [DARK_BG, DARK_BG] });
   });
 
-  it('falls back to Warm editorial with no stored preference', () => {
-    expect(runPrePaint({ systemDark: true })).toEqual({
+  it('follows the system with no stored preference: Warm editorial in light mode', () => {
+    expect(runPrePaint({})).toEqual({
       theme: 'warm',
       themeColors: [WARM_BG, WARM_BG],
+    });
+  });
+
+  it('follows the system with no stored preference: Dark-first in dark mode', () => {
+    expect(runPrePaint({ systemDark: true })).toEqual({
+      theme: 'dark',
+      themeColors: [DARK_BG, DARK_BG],
     });
   });
 

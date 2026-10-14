@@ -7,12 +7,12 @@ export type Appearance = { theme: ThemeId; matchSystem: boolean };
 export const APPEARANCE_STORAGE_KEY = 'pp.appearance';
 
 /**
- * Used when nothing valid is stored. Pinned to Warm editorial with Match system
- * off until the Settings Appearance section can change it (#252).
+ * Used when nothing valid is stored, for new installs and upgrades alike:
+ * follow the system, with Warm editorial as the light Theme.
  */
 export const DEFAULT_APPEARANCE: Appearance = {
   theme: 'warm',
-  matchSystem: false,
+  matchSystem: true,
 };
 
 export const SYSTEM_DARK_QUERY = '(prefers-color-scheme: dark)';
