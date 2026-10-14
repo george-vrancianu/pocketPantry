@@ -66,15 +66,6 @@
   "amount": {
     "add": "Adaugă {{name}} în listă"
   },
-  "suggestions": {
-    "missingLabel": "Produse de bază lipsă · {{count}}",
-    "usedUpLabel": "Epuizate recent · {{count}}",
-    "stapleLabel": "Produse de bază",
-    "allStocked": "Toate produsele tale de bază sunt în stoc.",
-    "manage": "Gestionează",
-    "dismissed": "Ai ignorat {{name}}",
-    "dismiss": "Ignoră {{name}}"
-  },
   "templatesFromSearch": "Sau începe de la un șablon",
   "seeAll": "Vezi tot"
 }

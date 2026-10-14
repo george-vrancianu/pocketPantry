@@ -17,6 +17,17 @@
     "retry": "Reîncearcă",
     "clear": "Șterge căutarea",
     "change": "Schimbă ingredientul",
-    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba"
+    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba",
+    "gone": "Dispărute din cămară",
+    "goneNone": "Nimic nu s-a terminat sau expirat. Bravo.",
+    "usedUpWhen": "epuizat · {{when}}",
+    "expiredWhen": "expirat · {{when}}",
+    "staple": "produs de bază",
+    "goneLabelUsedUp": "{{name}}, epuizat {{when}}",
+    "goneLabelExpired": "{{name}}, expirat {{when}}",
+    "goneLabelStaple": "{{name}}, produs de bază lipsă",
+    "today": "astăzi",
+    "daysAgo": "acum {{count}} z",
+    "pickFailed": "Nu am putut alege {{name}}. Încearcă să îl cauți."
   }
 }

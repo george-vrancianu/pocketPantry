@@ -3,7 +3,11 @@ import { type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../../components/catalogSearch/CatalogSearch';
 import { AmountField } from '../../../../components/AmountField';
-import type { CatalogSearchResult, Unit } from '../../../../lib/catalog';
+import {
+  useFindCatalogResult,
+  type CatalogSearchResult,
+  type Unit,
+} from '../../../../lib/catalog';
 import { parseAmountText } from '../../../../lib/pantry';
 import {
   isOnList,
@@ -12,7 +16,7 @@ import {
   type NewShoppingItem,
   type ShoppingItem,
 } from '../../../../lib/shopping';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestion, Suggestions } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 
@@ -35,8 +39,6 @@ export type IngredientsState = {
   /** The text in the search field. */
   query: string;
   open: OpenPick | null;
-  /** Ingredient ids added from a Suggestion chip, until the Suggestions drop them. */
-  suggestionsAdded: string[];
   /** Bumped after an add to give the search a fresh, focused field. */
   searchKey: number;
 };
@@ -44,7 +46,6 @@ export type IngredientsState = {
 export const emptyIngredients: IngredientsState = {
   query: '',
   open: null,
-  suggestionsAdded: [],
   searchKey: 0,
 };
 
@@ -58,8 +59,7 @@ export type IngredientsTabProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, shown above the search. */
   error: string | null;
-  staples: Suggestion[];
-  usedUp: Suggestion[];
+  suggestions: Suggestions;
   /** Called after each successful add. */
   onAdded: () => void;
   /** Opens a template's apply view. */
@@ -76,8 +76,7 @@ export function IngredientsTab({
   adding,
   onAdd,
   error,
-  staples,
-  usedUp,
+  suggestions,
   onAdded,
   onOpenTemplate,
   onSeeAllTemplates,
@@ -145,6 +144,17 @@ export function IngredientsTab({
       },
     }));
 
+  // A Gone tile knows the Ingredient, not its search result: find it through the search, then pick it as a typed pick would.
+  const findResult = useFindCatalogResult(i18n.language);
+  const pickGone = async (suggestion: Suggestion) => {
+    const result = await findResult({
+      id: suggestion.ingredientId,
+      name: suggestion.name,
+    }).catch(() => null);
+    if (result) choose({ kind: 'catalog', result }, result.name);
+    else toast.show(t('catalog:search.pickFailed', { name: suggestion.name }));
+  };
+
   const submit = async () => {
     if (!open || !pick) return;
     if (!amount.valid) {
@@ -164,7 +174,6 @@ export function IngredientsTab({
     onAdded();
     onStateChange((s) => ({
       ...emptyIngredients,
-      suggestionsAdded: s.suggestionsAdded,
       searchKey: s.searchKey + 1,
     }));
   };
@@ -193,19 +202,10 @@ export function IngredientsTab({
         }
         emptyState={
           <EmptySearch
-            staples={staples}
-            usedUp={usedUp}
-            addedIds={state.suggestionsAdded}
-            onAdd={onAdd}
+            suggestions={suggestions}
+            onPickGone={(suggestion) => void pickGone(suggestion)}
             onOpenTemplate={onOpenTemplate}
             onSeeAllTemplates={onSeeAllTemplates}
-            onAdded={(ingredientId) => {
-              onAdded();
-              onStateChange((s) => ({
-                ...s,
-                suggestionsAdded: [...s.suggestionsAdded, ingredientId],
-              }));
-            }}
           />
         }
       />

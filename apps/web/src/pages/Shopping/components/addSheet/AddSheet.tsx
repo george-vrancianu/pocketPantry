@@ -14,7 +14,7 @@ import { ApplyTemplateView } from './ApplyTemplateView';
 import { SheetFooterContext } from './SheetFooter';
 import { SaveTemplateView } from './SaveTemplateView';
 import { TemplatesTab } from './TemplatesTab';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestions } from '../../../../lib/suggestions';
 import {
   emptyIngredients,
   IngredientsTab,
@@ -39,10 +39,8 @@ export type AddSheetProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
   addError: string | null;
-  /** Missing Staples, suggested while the search is empty. */
-  staples: Suggestion[];
-  /** Ingredients recently used up, suggested while the search is empty. */
-  usedUp: Suggestion[];
+  /** What is gone from the Pantry, shown as tiles while the search is empty. */
+  suggestions: Suggestions;
 };
 
 /**
@@ -59,8 +57,7 @@ export function AddSheet({
   adding,
   onAdd,
   addError,
-  staples,
-  usedUp,
+  suggestions,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
   const tabsId = useId();
@@ -221,8 +218,7 @@ export function AddSheet({
               adding={adding}
               onAdd={onAdd}
               error={addError}
-              staples={staples}
-              usedUp={usedUp}
+              suggestions={suggestions}
               onAdded={() => setAddedCount((count) => count + 1)}
               onOpenTemplate={openTemplate}
               onSeeAllTemplates={() => selectTab('templates')}

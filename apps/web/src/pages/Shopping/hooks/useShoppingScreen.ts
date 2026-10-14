@@ -10,7 +10,7 @@ import {
 } from '../../../lib/shopping';
 import type { Amount } from '../../../lib/amount';
 import { localIso } from '../../../lib/pantry';
-import { useSuggestions } from '../../../lib/suggestions';
+import { noSuggestions, useSuggestions } from '../../../lib/suggestions';
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
 
 export function useShoppingScreen() {
@@ -33,8 +33,7 @@ export function useShoppingScreen() {
 
   return {
     list: visible,
-    staples: suggestions.data?.staples ?? [],
-    usedUp: suggestions.data?.usedUp ?? [],
+    suggestions: suggestions.data ?? noSuggestions,
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,

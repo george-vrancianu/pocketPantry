@@ -16,6 +16,17 @@
     "retry": "Retry",
     "clear": "Clear search",
     "change": "Change ingredient",
-    "selectedLabel": "Ingredient: {{name}}. Press Backspace to change"
+    "selectedLabel": "Ingredient: {{name}}. Press Backspace to change",
+    "gone": "Gone from your Pantry",
+    "goneNone": "Nothing has run out or expired. Nice.",
+    "usedUpWhen": "used up · {{when}}",
+    "expiredWhen": "expired · {{when}}",
+    "staple": "staple",
+    "goneLabelUsedUp": "{{name}}, used up {{when}}",
+    "goneLabelExpired": "{{name}}, expired {{when}}",
+    "goneLabelStaple": "{{name}}, missing staple",
+    "today": "today",
+    "daysAgo": "{{count}}d ago",
+    "pickFailed": "Couldn’t pick {{name}}. Try searching for it."
   }
 }

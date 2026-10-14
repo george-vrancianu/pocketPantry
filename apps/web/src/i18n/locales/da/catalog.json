@@ -16,6 +16,17 @@
     "retry": "Prøv igen",
     "clear": "Ryd søgning",
     "change": "Skift ingrediens",
-    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte"
+    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte",
+    "gone": "Væk fra dit spisekammer",
+    "goneNone": "Intet er løbet tør eller udløbet. Fedt.",
+    "usedUpWhen": "brugt op · {{when}}",
+    "expiredWhen": "udløbet · {{when}}",
+    "staple": "basisvare",
+    "goneLabelUsedUp": "{{name}}, brugt op {{when}}",
+    "goneLabelExpired": "{{name}}, udløbet {{when}}",
+    "goneLabelStaple": "{{name}}, manglende basisvare",
+    "today": "i dag",
+    "daysAgo": "for {{count}} d siden",
+    "pickFailed": "Kunne ikke vælge {{name}}. Prøv at søge efter den."
   }
 }

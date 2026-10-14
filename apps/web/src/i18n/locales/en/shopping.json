@@ -63,15 +63,6 @@
   "amount": {
     "add": "Add {{name}} to the list"
   },
-  "suggestions": {
-    "missingLabel": "Missing staples · {{count}}",
-    "usedUpLabel": "Recently used up · {{count}}",
-    "stapleLabel": "Staples",
-    "allStocked": "All your staples are stocked.",
-    "manage": "Manage",
-    "dismissed": "Dismissed {{name}}",
-    "dismiss": "Dismiss {{name}}"
-  },
   "templatesFromSearch": "Or start from a template",
   "seeAll": "See all"
 }

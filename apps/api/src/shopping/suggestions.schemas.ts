@@ -10,10 +10,16 @@ export type SuggestionView = {
   quantity: number | null;
   unit: StapleUnit | null;
   aisle: AisleView | null;
+  /**
+   * Since when it is gone: the Used Up timestamp (ISO), the latest expiry date
+   * (YYYY-MM-DD) of an expired Ingredient, or null for a missing Staple.
+   */
+  since: string | null;
 };
 
-/** One key per group: missing Staples first, then Used Up Ingredients (no quantity). */
+/** One key per group: missing Staples, Used Up Ingredients and expired Ingredients (the last two carry no quantity). */
 export type SuggestionsView = {
   staples: SuggestionView[];
   usedUp: SuggestionView[];
+  expired: SuggestionView[];
 };

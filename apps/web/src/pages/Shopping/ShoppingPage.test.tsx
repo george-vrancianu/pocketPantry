@@ -2619,7 +2619,7 @@ describe('ShoppingPage', () => {
           await within(dialog).findByText('Or start from a template'),
         ).toBeVisible();
         expect(
-          within(dialog).getByText('All your staples are stocked.'),
+          within(dialog).getByText('Nothing has run out or expired. Nice.'),
         ).toBeVisible();
 
         await user.click(

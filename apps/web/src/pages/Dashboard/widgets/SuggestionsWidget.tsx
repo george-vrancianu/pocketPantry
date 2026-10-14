@@ -14,7 +14,11 @@ export function SuggestionsWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
   const staples = suggestions.data?.staples ?? [];
-  const all = [...staples, ...(suggestions.data?.usedUp ?? [])];
+  const all = [
+    ...staples,
+    ...(suggestions.data?.usedUp ?? []),
+    ...(suggestions.data?.expired ?? []),
+  ];
   const names = all.slice(0, WIDGET_SUGGESTION_COUNT).map((s) => s.name);
 
   return (

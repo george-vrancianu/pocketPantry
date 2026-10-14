@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, sql } from 'drizzle-orm';
 import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import {
   batches,
   ingredientStockHistory,
@@ -43,6 +43,7 @@ export class SuggestionsService {
     return {
       staples: await this.missingStaples(familyId, locale, today),
       usedUp: await this.usedUp(familyId, locale),
+      expired: await this.expired(familyId, locale, today),
     };
   }
 
@@ -81,7 +82,9 @@ export class SuggestionsService {
             eq(staples.ingredientId, ingredientId),
           ),
         );
-      if (!staple) return;
+      if (!staple && !(await this.hasBatches(tx, familyId, ingredientId))) {
+        return;
+      }
       await tx
         .insert(suggestionDismissals)
         .values({ familyId, ingredientId })
@@ -99,7 +102,10 @@ export class SuggestionsService {
   ): Promise<SuggestionView[]> {
     const since = new Date(Date.now() - USED_UP_WINDOW_MS);
     const rows = await this.database
-      .select({ ingredientId: ingredientStockHistory.ingredientId })
+      .select({
+        ingredientId: ingredientStockHistory.ingredientId,
+        usedUpAt: ingredientStockHistory.usedUpAt,
+      })
       .from(ingredientStockHistory)
       .where(
         and(
@@ -123,6 +129,78 @@ export class SuggestionsService {
         quantity: null,
         unit: null,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: row.usedUpAt?.toISOString() ?? null,
+      }))
+      .sort(byShopOrder);
+  }
+
+  private async hasBatches(
+    executor: Executor,
+    familyId: string,
+    ingredientId: string,
+  ): Promise<boolean> {
+    const [batch] = await executor
+      .select({ id: batches.id })
+      .from(batches)
+      .where(
+        and(
+          eq(batches.familyId, familyId),
+          eq(batches.ingredientId, ingredientId),
+        ),
+      )
+      .limit(1);
+    return Boolean(batch);
+  }
+
+  /**
+   * Expired: at least one Batch and every one expired before `today` (an Expiring
+   * Soon Batch, or one with no expiry date, still counts as present). A Staple is
+   * missing instead, so it is left out here. Hidden while dismissed or on the
+   * active list; a new Batch ends the dismissal.
+   */
+  private async expired(
+    familyId: string,
+    locale: CatalogLocale,
+    today: string,
+  ): Promise<SuggestionView[]> {
+    const rows = await this.database
+      .select({
+        ingredientId: batches.ingredientId,
+        latestExpiry: sql<string>`max(${batches.expiryDate})::text`,
+      })
+      .from(batches)
+      .where(
+        and(eq(batches.familyId, familyId), isNotNull(batches.ingredientId)),
+      )
+      .groupBy(batches.ingredientId)
+      .having(
+        and(
+          sql`bool_and(${batches.expiryDate} IS NOT NULL AND ${batches.expiryDate} < ${today})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${staples} WHERE ${staples.familyId} = ${familyId} AND ${staples.ingredientId} = ${batches.ingredientId})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${suggestionDismissals} WHERE ${suggestionDismissals.familyId} = ${familyId} AND ${suggestionDismissals.ingredientId} = ${batches.ingredientId})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${shoppingItems} INNER JOIN ${shoppingLists} ON ${shoppingLists.id} = ${shoppingItems.listId} WHERE ${shoppingLists.familyId} = ${familyId} AND ${shoppingLists.status} = 'active' AND ${shoppingItems.ingredientId} = ${batches.ingredientId})`,
+        ),
+      );
+    const ids = rows.flatMap((row) =>
+      row.ingredientId ? [row.ingredientId] : [],
+    );
+    const placements = await loadIngredientPlacements(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      ids,
+    );
+    return rows
+      .flatMap((row) =>
+        row.ingredientId ? [{ ...row, ingredientId: row.ingredientId }] : [],
+      )
+      .map((row) => ({
+        ingredientId: row.ingredientId,
+        name: placements.get(row.ingredientId)?.name ?? '',
+        quantity: null,
+        unit: null,
+        aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: row.latestExpiry,
       }))
       .sort(byShopOrder);
   }
@@ -164,6 +242,7 @@ export class SuggestionsService {
         quantity: row.quantity,
         unit: row.unit,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: null,
       }))
       .sort(byShopOrder);
   }
