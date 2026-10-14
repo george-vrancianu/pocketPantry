@@ -48,6 +48,8 @@ export type DefaultExpirySheetProps = {
   onExited: () => void;
   /** "Use Catalog default": the section removes the override with Undo. */
   onUseCatalog: (category: CategoryRef) => void;
+  /** Runs just before Save sends: drops a removal of this category still waiting on its Undo. */
+  onBeforeSave: (categoryId: string) => void;
 };
 
 type View =
@@ -66,6 +68,7 @@ export function DefaultExpirySheet({
   onClose,
   onExited,
   onUseCatalog,
+  onBeforeSave,
 }: DefaultExpirySheetProps) {
   const { t } = useTranslation('settings');
   const toast = useToast();
@@ -108,6 +111,7 @@ export function DefaultExpirySheet({
 
   const save = () => {
     if (!category) return;
+    onBeforeSave(category.id);
     setOverride.mutateAsync({ categoryId: category.id, days }).then(
       () => {
         toast.show(

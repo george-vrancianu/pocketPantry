@@ -371,6 +371,37 @@ describe('Default expiry', () => {
       ]);
     });
 
+    it('saving a category whose removal is still waiting on Undo drops that removal and sends only the PUT', async () => {
+      const user = userEvent.setup();
+      const { calls } = stubFamily([MILK]);
+      renderFamily();
+      await rowOfAsync('Milk');
+
+      await user.click(
+        screen.getByRole('button', {
+          name: 'Use the Catalog default for Milk',
+        }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Set a category' }));
+      const picker = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+      await user.click(within(picker).getByRole('button', { name: /Milk/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Milk' });
+      await user.click(within(sheet).getByRole('button', { name: '2 weeks' }));
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('Milk: 14 days')).toBeVisible();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: 'Milk' })).toBeNull(),
+      );
+      expect(screen.queryByText('Milk uses the Catalog default')).toBeNull();
+      expect(writes(calls)).toEqual([
+        'PUT /api/settings/family/expiry-overrides/l-milk',
+      ]);
+      expect(rowOf('Milk')).toBeVisible();
+    });
+
     it('a save error keeps the sheet open with the error above the footer', async () => {
       const user = userEvent.setup();
       stubFamily([MILK], {

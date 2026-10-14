@@ -202,6 +202,7 @@ export function DefaultExpirySection() {
         onClose={closeSheet}
         onExited={focusOpener}
         onUseCatalog={revertToCatalog}
+        onBeforeSave={removal.discard}
       />
     </Stack>
   );

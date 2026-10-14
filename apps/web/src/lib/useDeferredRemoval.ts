@@ -26,6 +26,9 @@ export const UNDO_WINDOW_MS = 5000;
  * (the list's query key) before it calls `mutateAsync`, so a poll cannot
  * resurrect the row.
  *
+ * `discard` drops a waiting removal without sending it, for when the record is
+ * written again before its Undo window ends.
+ *
  * The error toast replaces a newer Undo toast and so sends that delete early;
  * that is intended (ADR 0009: a new toast sends any pending delete).
  */
@@ -111,5 +114,17 @@ export function useDeferredRemoval<Id extends string | number>(
     waiting.current = { id, toast: handle };
   };
 
-  return { hiddenIds, remove };
+  /**
+   * Drop the removal of `id` still waiting on its Undo, without sending it: its toast closes and
+   * the record shows again. Call it before writing the record back, so the delete cannot follow.
+   */
+  const discard = (id: Id) => {
+    const pending = waiting.current;
+    if (pending?.id !== id) return;
+    waiting.current = null;
+    unhide(id);
+    pending.toast.close();
+  };
+
+  return { hiddenIds, remove, discard };
 }
