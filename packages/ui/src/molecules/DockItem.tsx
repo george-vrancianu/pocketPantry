@@ -1,6 +1,7 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
+import { focusRing } from '../theme/focusRing';
 import { bodyFont, nestedRadius, radius } from '../theme/themeVars';
 
 export type DockItemProps = {
@@ -20,16 +21,19 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
     <ButtonBase
       href={href}
       aria-current={active ? 'page' : undefined}
-      sx={{
-        flexDirection: 'column',
-        gap: '3px',
-        // Concentric with the dock, 8 px inside its edge.
-        borderRadius: nestedRadius(radius.dock, 8),
-        color: colour,
-        fontSize: 11,
-        fontWeight: active ? 700 : 600,
-        fontFamily: bodyFont,
-      }}
+      sx={[
+        {
+          flexDirection: 'column',
+          gap: '3px',
+          // Concentric with the dock, 8 px inside its edge.
+          borderRadius: nestedRadius(radius.dock, 8),
+          color: colour,
+          fontSize: 11,
+          fontWeight: active ? 700 : 600,
+          fontFamily: bodyFont,
+        },
+        focusRing,
+      ]}
     >
       <Box
         sx={{

@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import { useRef, type KeyboardEvent } from 'react';
+import { focusRing } from '../theme/focusRing';
 import { tokens } from '../theme/tokens';
 import { visuallyHidden } from '../theme/visuallyHidden';
 import { bodyFont, nestedRadius, radius, shadow } from '../theme/themeVars';
@@ -92,22 +93,21 @@ export function SegmentedTabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            sx={{
-              height: 40,
-              gap: '6px',
-              borderRadius: nestedRadius(radius.control, 4),
-              fontSize: 14,
-              fontWeight: selected ? 700 : 600,
-              fontFamily: bodyFont,
-              // Selected like the SegmentedControl: `seg-on` / `seg-on-ink`.
-              backgroundColor: selected ? 'pp.segOn' : 'transparent',
-              color: selected ? 'pp.segOnInk' : color.muted,
-              boxShadow: selected ? shadow.segment : 'none',
-              '&:focus-visible': {
-                outline: `3px solid ${color.accent}`,
-                outlineOffset: 2,
+            sx={[
+              {
+                height: 40,
+                gap: '6px',
+                borderRadius: nestedRadius(radius.control, 4),
+                fontSize: 14,
+                fontWeight: selected ? 700 : 600,
+                fontFamily: bodyFont,
+                // Selected like the SegmentedControl: `seg-on` / `seg-on-ink`.
+                backgroundColor: selected ? 'pp.segOn' : 'transparent',
+                color: selected ? 'pp.segOnInk' : color.muted,
+                boxShadow: selected ? shadow.segment : 'none',
               },
-            }}
+              focusRing,
+            ]}
           >
             {tab.label}
             {tab.badge ? ' ' : null}
