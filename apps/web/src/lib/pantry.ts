@@ -345,7 +345,12 @@ export function useSetRunningLow(locale: string) {
         queryClient.setQueryData(pantryQueryKey(locale), context.previous);
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        // The Running low group of the shopping suggestions is built from the flags.
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      ]),
   });
 }
 

@@ -1696,6 +1696,12 @@ describe('PantryPage', () => {
             await screen.findByRole('button', { name: /^Milk/ }),
           );
           expect(chip()).toBeVisible();
+          // The expiry shows per Batch in the expanded panel, so the chip stays on the header.
+          expect(
+            within(
+              screen.getByRole('list', { name: 'Batches of Milk' }),
+            ).getByText('2 days left'),
+          ).toBeVisible();
           expect(
             screen.getByRole('button', { name: 'Mark running low' }),
           ).toHaveAttribute('aria-pressed', 'true');
