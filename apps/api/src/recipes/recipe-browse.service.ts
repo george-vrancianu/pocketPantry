@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -88,6 +89,7 @@ export class RecipeBrowseService {
     const counts = await this.variantCounts(familyId, baseIds);
     const ref = await this.namedRefs(
       this.database,
+      catalogScope(familyId),
       locale,
       matching.flatMap((r) => [r.cuisineId, r.methodId]),
     );
@@ -124,7 +126,12 @@ export class RecipeBrowseService {
     const familyId = await this.settings.familyIdOf(memberId);
     const row = await findVisibleRecipe(this.database, id, familyId);
     if (!row) throw recipeNotFound();
-    const resolved = await resolveRecipe(this.database, row, locale);
+    const resolved = await resolveRecipe(
+      this.database,
+      catalogScope(familyId),
+      row,
+      locale,
+    );
 
     let base: RecipeDetail['base'] = null;
     let diff: RecipeDetail['diff'] = null;
@@ -137,6 +144,7 @@ export class RecipeBrowseService {
       if (baseRow) {
         const baseResolved = await resolveRecipe(
           this.database,
+          catalogScope(familyId),
           baseRow,
           locale,
         );
@@ -160,7 +168,11 @@ export class RecipeBrowseService {
   }
 
   /** Cuisines and Methods for the filter pickers, named in `locale`, sorted by name. */
-  async filters(locale: CatalogLocale): Promise<RecipeFilters> {
+  async filters(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeFilters> {
+    const scope = await this.settings.catalogScopeForMember(memberId);
     const [cuisineRows, methodRows, momentRows] = await Promise.all([
       this.database.select().from(cuisines),
       this.database.select().from(methods),
@@ -170,7 +182,7 @@ export class RecipeBrowseService {
         .where(isNull(eatingMoments.archivedAt))
         .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id)),
     ]);
-    const names = await loadDisplayNames(this.database, locale, [
+    const names = await loadDisplayNames(this.database, scope, locale, [
       ...cuisineRows.map((r) => r.id),
       ...methodRows.map((r) => r.id),
       ...momentRows.map((r) => r.id),
@@ -213,6 +225,7 @@ export class RecipeBrowseService {
     const titles = await recipeTitles(this.database, rows, locale);
     const ref = await this.namedRefs(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.flatMap((r) => [r.cuisineId, r.methodId]),
     );
@@ -277,6 +290,7 @@ export class RecipeBrowseService {
 
   private async namedRefs(
     executor: Executor,
+    scope: CatalogScope,
     locale: CatalogLocale,
     ids: (string | null)[],
   ) {
@@ -288,7 +302,7 @@ export class RecipeBrowseService {
       wanted.length === 0
         ? []
         : executor.select().from(methods).where(inArray(methods.id, wanted)),
-      loadDisplayNames(executor, locale, wanted),
+      loadDisplayNames(executor, scope, locale, wanted),
     ]);
     const cuisineName = new Map(cuisineRows.map((r) => [r.id, r.name]));
     const methodName = new Map(methodRows.map((r) => [r.id, r.name]));

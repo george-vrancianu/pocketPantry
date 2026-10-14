@@ -87,12 +87,13 @@ export class RecipesController {
     summary: 'Cuisines and Methods for the filter pickers, named in the locale',
   })
   filters(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(localeQuery))
     query: {
       locale: BrowseQuery['locale'];
     },
   ): Promise<RecipeFilters> {
-    return this.browse.filters(query.locale);
+    return this.browse.filters(member.id, query.locale);
   }
 
   // Declared before `:id` so it is not read as a Recipe id.

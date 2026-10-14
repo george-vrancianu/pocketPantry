@@ -18,6 +18,8 @@ export const catalogSearchQuery = z.object({
   q: z.string().max(100),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  // 'shared' searches the shared Catalog only: Admin curation and Catalog Recipe editing.
+  scope: z.enum(['family', 'shared']).default('family'),
 });
 export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 

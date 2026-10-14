@@ -1,10 +1,14 @@
 import { and, asc, eq, inArray, isNull, or } from 'drizzle-orm';
+import {
+  catalogScope,
+  type CatalogScope,
+  SHARED_ONLY,
+} from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
   cuisines,
-  ingredients,
   methods,
   recipeHiddenTips,
   recipeIngredientLines,
@@ -250,7 +254,9 @@ export async function loadCatalogRecipe(
   locale: CatalogLocale,
 ): Promise<ResolvedRecipe | null> {
   const row = await findCatalogRecipe(executor, id);
-  return row ? resolveRecipe(executor, row, locale) : null;
+  return row
+    ? resolveRecipe(executor, catalogScope(SHARED_ONLY), row, locale)
+    : null;
 }
 
 /**
@@ -260,10 +266,12 @@ export async function loadCatalogRecipe(
  */
 export async function resolveRecipe(
   executor: Executor,
+  scope: CatalogScope,
   row: RecipeRow,
   locale: CatalogLocale,
 ): Promise<ResolvedRecipe> {
   const id = row.id;
+  const ingredients = scope.ingredients(executor);
   const translated = row.familyId === null;
   const parts = await loadParts(executor, id);
   const lineIds = translated ? parts.lines.map((l) => l.id) : [];
@@ -320,7 +328,7 @@ export async function resolveRecipe(
               eq(recipeTipTranslations.locale, locale),
             ),
           ),
-    loadDisplayNames(executor, locale, [
+    loadDisplayNames(executor, scope, locale, [
       ...parts.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
       ...(row.cuisineId ? [row.cuisineId] : []),
       ...(row.methodId ? [row.methodId] : []),
@@ -395,7 +403,7 @@ export async function resolveRecipe(
         inherited: false,
       })),
     ],
-    guidance: await loadResolvedGuidance(executor, id, locale),
+    guidance: await loadResolvedGuidance(executor, scope, id, locale),
   };
 }
 
