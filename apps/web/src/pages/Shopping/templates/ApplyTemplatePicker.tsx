@@ -10,12 +10,9 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useShoppingList } from '../../../lib/shopping';
-import {
-  bulkBody,
-  lineTag,
-  useSingleTemplateSelection,
-} from '../../../lib/templateSelection';
+import { useShoppingList, type ShoppingList } from '../../../lib/shopping';
+import { bulkBody, lineTag, lineTagKey } from '../../../lib/templateSelection';
+import { useSingleTemplateSelection } from '../../../lib/useSingleTemplateSelection';
 import {
   useApplyTemplate,
   groupByAisle,
@@ -37,8 +34,11 @@ type Props = {
 export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const template = useTemplate(templateId, i18n.language);
+  const shoppingList = useShoppingList(i18n.language);
 
-  if (template.isPending) return <Spinner label={t('common:loading')} />;
+  // Defaults depend on the trolley, so wait for the list (an error falls back to none).
+  if (template.isPending || shoppingList.isPending)
+    return <Spinner label={t('common:loading')} />;
   if (template.error || !template.data) {
     return (
       <Stack spacing={2}>
@@ -51,35 +51,37 @@ export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
   }
 
   return (
-    <Picker template={template.data} onDone={onDone} onCancel={onCancel} />
+    <Picker
+      template={template.data}
+      list={shoppingList.data}
+      onDone={onDone}
+      onCancel={onCancel}
+    />
   );
 }
 
 function Picker({
   template,
+  list,
   onDone,
   onCancel,
-}: Omit<Props, 'templateId'> & { template: Template }) {
+}: Omit<Props, 'templateId'> & {
+  template: Template;
+  list: ShoppingList | undefined;
+}) {
   const { t, i18n } = useTranslation(['templates', 'common', 'shopping']);
-  const shoppingList = useShoppingList(i18n.language);
   const apply = useApplyTemplate(i18n.language);
   const { name, lines } = template;
   const { selection, isTicked, ticked, toggle } = useSingleTemplateSelection(
     template,
-    shoppingList.data,
+    list,
   );
 
   const submit = () =>
     apply.mutate(bulkBody(selection, [template]), { onSuccess: onDone });
 
   const tagText = (tag: ReturnType<typeof lineTag>) =>
-    tag === 'inPantry'
-      ? t('templates:apply.inPantry')
-      : tag === 'inTrolley'
-        ? t('shopping:import.inTrolley')
-        : tag === 'onList'
-          ? t('templates:apply.onList')
-          : undefined;
+    tag ? t(lineTagKey[tag]) : undefined;
 
   const quantityOf = (line: TemplateLine) =>
     line.quantity === null
@@ -129,7 +131,7 @@ function Picker({
                 label={`${line.name}${quantityOf(line)}`}
                 checked={isTicked(line)}
                 onChange={() => toggle(line)}
-                helperText={tagText(lineTag(line, shoppingList.data))}
+                helperText={tagText(lineTag(line, list))}
               />
             ))}
           </Stack>

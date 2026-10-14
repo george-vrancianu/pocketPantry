@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { normalizeName } from './normalizeName';
 import {
   isOnList,
@@ -25,6 +24,13 @@ export const emptySelection: Selection = new Map();
 
 /** Why a line is worth a second look, in priority order. */
 export type LineTag = 'inPantry' | 'inTrolley' | 'onList';
+
+/** i18n key of each tag's text. */
+export const lineTagKey: Record<LineTag, string> = {
+  inPantry: 'templates:apply.inPantry',
+  inTrolley: 'shopping:import.inTrolley',
+  onList: 'templates:apply.onList',
+};
 
 export type TemplateState = 'excluded' | 'all' | 'mixed';
 
@@ -57,7 +63,11 @@ const defaultTicked = (line: TemplateLine, list: ShoppingList | undefined) => {
   return tag !== 'inPantry' && tag !== 'inTrolley';
 };
 
-/** Includes the Template with its default selection. */
+/**
+ * Includes the Template with its default selection. When every line defaults to
+ * unticked (or there are no lines) the Template is still included, with an empty
+ * set: state 'mixed', "0 of n selected", contributing nothing to the counts.
+ */
 export function includeTemplate(
   selection: Selection,
   template: Template,
@@ -171,7 +181,11 @@ export type SelectionSummary = {
   items: number;
   /** Ticked lines folded into another by the same identity (any unit). */
   repeats: number;
-  /** More than MAX_APPLY_ITEMS after combining same identity and unit. */
+  /**
+   * More than MAX_APPLY_ITEMS ticked lines. The spec words this "after combining
+   * same identity and unit", but the lines are sent as they are and the server
+   * caps the raw array, so combining first would let through requests it rejects.
+   */
   overCap: boolean;
 };
 
@@ -181,39 +195,12 @@ export function summarize(
 ): SelectionSummary {
   const lines = tickedLines(selection, templates);
   const identities = new Set(lines.map(identityOf));
-  const combined = new Set(
-    lines.map((l) => `${identityOf(l)}|${l.unit ?? ''}`),
-  );
   return {
     templates: templates.filter((template) =>
       template.lines.some((l) => isLineTicked(selection, template.id, l.id)),
     ),
     items: identities.size,
     repeats: lines.length - identities.size,
-    overCap: combined.size > MAX_APPLY_ITEMS,
-  };
-}
-
-/**
- * The selection of a single Template (the editor's Apply picker, the Add
- * sheet's apply view). Starts as the default selection of the Template and
- * the current list; once the Member taps a line it is theirs, so a list
- * refetch no longer moves their ticks. They may untick every line.
- */
-export function useSingleTemplateSelection(
-  template: Template,
-  list: ShoppingList | undefined,
-) {
-  const [touched, setTouched] = useState<Selection | null>(null);
-  const selection = touched ?? includeTemplate(emptySelection, template, list);
-  return {
-    selection,
-    isTicked: (line: TemplateLine) =>
-      isLineTicked(selection, template.id, line.id),
-    ticked: tickedLines(selection, [template]),
-    toggle: (line: TemplateLine) =>
-      setTouched(
-        toggleLine(selection, template, line, list, { keepWhenEmpty: true }),
-      ),
+    overCap: lines.length > MAX_APPLY_ITEMS,
   };
 }

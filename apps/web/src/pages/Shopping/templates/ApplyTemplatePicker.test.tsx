@@ -153,6 +153,15 @@ describe('ApplyTemplatePicker', () => {
                   checked: true,
                   unmatched: false,
                 },
+                {
+                  id: 'i2',
+                  ingredientId: null,
+                  name: 'mystery  spice',
+                  quantity: null,
+                  unit: null,
+                  checked: false,
+                  unmatched: true,
+                },
               ],
             },
           ],
@@ -169,11 +178,11 @@ describe('ApplyTemplatePicker', () => {
     );
 
     const milk = await screen.findByRole('checkbox', { name: /Milk/ });
-    await waitFor(() => expect(milk).not.toBeChecked());
+    expect(milk).not.toBeChecked();
     expect(milk).toHaveAccessibleDescription('In trolley');
-    expect(
-      screen.getByRole('checkbox', { name: /Mystery spice/ }),
-    ).toBeChecked();
+    const spice = screen.getByRole('checkbox', { name: /Mystery spice/ });
+    expect(spice).toBeChecked();
+    expect(spice).toHaveAccessibleDescription('On list');
   });
 
   it('adds only the ticked lines through the bulk endpoint, then finishes', async () => {

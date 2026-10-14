@@ -15,12 +15,13 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
-import { useShoppingList } from '../../../../lib/shopping';
+import { useShoppingList, type ShoppingList } from '../../../../lib/shopping';
 import {
   bulkBody,
   lineTag,
-  useSingleTemplateSelection,
+  lineTagKey,
 } from '../../../../lib/templateSelection';
+import { useSingleTemplateSelection } from '../../../../lib/useSingleTemplateSelection';
 import { BackButton } from './BackButton';
 import { SheetFooter } from './SheetFooter';
 import {
@@ -50,6 +51,7 @@ export function ApplyTemplateView({
 }: ApplyTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const template = useTemplate(templateId, i18n.language);
+  const shoppingList = useShoppingList(i18n.language);
 
   const back = (
     <BackButton
@@ -59,7 +61,9 @@ export function ApplyTemplateView({
     />
   );
 
-  if (template.isPending) return <Spinner label={t('common:loading')} />;
+  // Defaults depend on the trolley, so wait for the list (an error falls back to none).
+  if (template.isPending || shoppingList.isPending)
+    return <Spinner label={t('common:loading')} />;
   if (template.error || !template.data) {
     return (
       <Box>
@@ -69,26 +73,34 @@ export function ApplyTemplateView({
     );
   }
 
-  return <Loaded template={template.data} back={back} onApplied={onApplied} />;
+  return (
+    <Loaded
+      template={template.data}
+      list={shoppingList.data}
+      back={back}
+      onApplied={onApplied}
+    />
+  );
 }
 
 function Loaded({
   template,
+  list,
   back,
   onApplied,
 }: {
   template: Template;
+  list: ShoppingList | undefined;
   back: React.ReactNode;
   onApplied: () => void;
 }) {
   const { t, i18n } = useTranslation(['templates', 'common', 'shopping']);
   const toast = useToast();
-  const shoppingList = useShoppingList(i18n.language);
   const apply = useApplyTemplate(i18n.language);
   const { name, lines } = template;
   const { selection, isTicked, ticked, toggle } = useSingleTemplateSelection(
     template,
-    shoppingList.data,
+    list,
   );
 
   const submit = () =>
@@ -160,15 +172,13 @@ function Loaded({
             }}
           >
             {group.lines.map((line) => {
-              const lineTagKind = lineTag(line, shoppingList.data);
-              const tag =
-                lineTagKind === 'inPantry'
-                  ? { text: t('templates:apply.inPantry'), ...okTag }
-                  : lineTagKind === 'inTrolley'
-                    ? { text: t('shopping:import.inTrolley'), ...okTag }
-                    : lineTagKind === 'onList'
-                      ? { text: t('templates:apply.onList'), ...soonTag }
-                      : null;
+              const tagKind = lineTag(line, list);
+              const tag = tagKind
+                ? {
+                    text: t(lineTagKey[tagKind]),
+                    ...(tagKind === 'onList' ? soonTag : okTag),
+                  }
+                : null;
               const amount = amountOf(line);
               const on = isTicked(line);
               return (
