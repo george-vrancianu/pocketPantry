@@ -1,3 +1,4 @@
+import { outlinedInputClasses } from '@mui/material/OutlinedInput';
 import {
   createColorScheme,
   createTheme,
@@ -68,7 +69,7 @@ declare module '@mui/material/Typography' {
   }
 }
 
-const { color, radius } = tokens;
+const { radius } = tokens;
 
 /** One Theme's palette: the matching handoff tokens in MUI's standard keys, the rest under `pp`. */
 function schemePalette(id: ThemeId): PaletteOptions {
@@ -228,15 +229,32 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
           },
         },
       },
+      // Handoff section 4 Field: `field-bg`, `bw-field` `line` border, radius
+      // `r-ctl`; focus is an `accent` border with a 3 px `accent-tint` ring.
       MuiOutlinedInput: {
         styleOverrides: {
-          root: {
-            borderRadius: radius.input,
-            backgroundColor: color.surface,
-            minHeight: 48,
-            fontWeight: 500,
+          root: ({ theme }) => {
+            const { pp } = (theme.vars ?? theme).palette;
+            return {
+              borderRadius: 'var(--pp-r-ctl)',
+              backgroundColor: pp.fieldBg,
+              minHeight: 50,
+              fontWeight: 500,
+              [`&:hover:not(.Mui-focused, .Mui-error) .${outlinedInputClasses.notchedOutline}`]:
+                { borderColor: pp.lineStrong },
+              '&.Mui-focused': {
+                boxShadow: `0 0 0 3px ${pp.accentTint}`,
+                [`& .${outlinedInputClasses.notchedOutline}`]: {
+                  borderColor: pp.accent,
+                  borderWidth: 'var(--pp-bw-field)',
+                },
+              },
+            };
           },
-          notchedOutline: { borderColor: color.line },
+          notchedOutline: ({ theme }) => ({
+            borderColor: (theme.vars ?? theme).palette.pp.line,
+            borderWidth: 'var(--pp-bw-field)',
+          }),
         },
       },
       MuiInputLabel: {

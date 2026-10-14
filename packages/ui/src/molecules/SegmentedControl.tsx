@@ -1,6 +1,6 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
-import { tokens } from '../theme/tokens';
+import { focusRing } from '../theme/focusRing';
 
 export type SegmentedControlOption<T extends string> = {
   value: T;
@@ -22,19 +22,17 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
 }: SegmentedControlProps<T>) {
-  const { color } = tokens;
   return (
     <Box
       role="group"
       aria-label={label}
-      sx={{
+      sx={(theme) => ({
         display: 'inline-flex',
         gap: '4px',
         p: '4px',
-        backgroundColor: color.surface,
-        border: `1px solid ${color.line}`,
-        borderRadius: `${tokens.radius.chip}px`,
-      }}
+        backgroundColor: (theme.vars ?? theme).palette.pp.chip,
+        borderRadius: 'var(--pp-r-ctl)',
+      })}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -43,17 +41,24 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             aria-pressed={selected}
             onClick={() => onChange(option.value)}
-            sx={{
-              minHeight: 40,
-              minWidth: 56,
-              px: '16px',
-              borderRadius: `${tokens.radius.chip}px`,
-              fontSize: 14,
-              fontWeight: 700,
-              fontFamily: tokens.font.body,
-              backgroundColor: selected ? color.ink : 'transparent',
-              color: selected ? '#FFFFFF' : color.muted,
-            }}
+            sx={[
+              (theme) => {
+                const p = (theme.vars ?? theme).palette;
+                return {
+                  minHeight: 36,
+                  minWidth: 56,
+                  px: '16px',
+                  borderRadius: 'calc(var(--pp-r-ctl) - 4px)',
+                  fontSize: 14,
+                  fontWeight: selected ? 700 : 600,
+                  fontFamily: 'var(--pp-body)',
+                  backgroundColor: selected ? p.pp.segOn : 'transparent',
+                  color: selected ? p.pp.segOnInk : p.text.secondary,
+                  boxShadow: selected ? 'var(--pp-shadow-seg)' : 'none',
+                };
+              },
+              focusRing,
+            ]}
           >
             {option.label}
           </ButtonBase>
