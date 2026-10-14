@@ -6,7 +6,16 @@ import { normalizeName } from '../src/catalog/normalize';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { catalogTranslations } from '../src/database/schema';
+import {
+  batches,
+  catalogTranslations,
+  ingredientStockHistory,
+  recipeIngredientLines,
+  shoppingItems,
+  shoppingTemplateLines,
+  unmatchedEntries,
+  user,
+} from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -577,6 +586,233 @@ describe('Family Ingredients (integration)', () => {
 
     it('rejects an unknown locale', async () => {
       await a.get('/catalog/categories?q=x&locale=xx').expect(400);
+    });
+  });
+
+  describe("relinking the Family's Unmatched items", () => {
+    type Pantry = {
+      batches: Array<{
+        id: string;
+        name: string;
+        ingredientId: string | null;
+        unmatched: boolean;
+      }>;
+    };
+
+    async function familyIdOf(email: string) {
+      const [row] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      return row.familyId;
+    }
+
+    /** One Unmatched item of every kind, typed as `raw`, in `who`'s Family. */
+    async function unmatchedEverywhere(who: typeof a, raw: string) {
+      await who
+        .post('/pantry/batches/bulk?locale=en', {
+          batches: [
+            { rawName: raw, quantity: 1, unit: 'pcs', location: 'fridge' },
+          ],
+        })
+        .expect(201);
+      await who
+        .post('/shopping-list/items?locale=en', { name: raw })
+        .expect(200);
+      await who
+        .post('/shopping-templates', {
+          name: unique('Template'),
+          lines: [{ name: raw }],
+        })
+        .expect(201);
+      await who
+        .post('/recipes', {
+          title: unique('Recipe'),
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ rawName: raw }],
+          steps: [{ text: 'Stir' }],
+        })
+        .expect(201);
+    }
+
+    const key = (raw: string) => normalizeName(raw);
+    const entriesFor = (raw: string) =>
+      database
+        .select()
+        .from(unmatchedEntries)
+        .where(eq(unmatchedEntries.normalizedName, key(raw)));
+    const batchesNamed = (raw: string) =>
+      database.select().from(batches).where(eq(batches.rawName, raw));
+    const unmatchedLines = (raw: string) =>
+      database
+        .select()
+        .from(shoppingTemplateLines)
+        .where(eq(shoppingTemplateLines.normalizedName, key(raw)));
+    const unmatchedRecipeLines = (raw: string) =>
+      database
+        .select()
+        .from(recipeIngredientLines)
+        .where(eq(recipeIngredientLines.normalizedName, key(raw)));
+    const unmatchedItems = (raw: string) =>
+      database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.normalizedName, key(raw)));
+
+    it("relinks every kind of the Family's Unmatched item to the new Ingredient", async () => {
+      const raw = unique('Kombucha');
+      await unmatchedEverywhere(a, raw);
+      const [batch] = await batchesNamed(raw);
+      const [item] = await unmatchedItems(raw);
+      expect(batch.leafCategoryId).toBe(OTHER);
+
+      const created = await made(a, raw);
+
+      const [relinkedBatch] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.id, batch.id));
+      expect(relinkedBatch).toMatchObject({
+        ingredientId: created.id,
+        leafCategoryId: HARD_CHEESE,
+        unmatched: false,
+        rawName: null,
+      });
+      const [relinkedItem] = await database
+        .select()
+        .from(shoppingItems)
+        .where(eq(shoppingItems.id, item.id));
+      expect(relinkedItem).toMatchObject({
+        ingredientId: created.id,
+        name: null,
+        normalizedName: null,
+      });
+      expect(await unmatchedItems(raw)).toEqual([]);
+      expect(await unmatchedLines(raw)).toEqual([]);
+      expect(await unmatchedRecipeLines(raw)).toEqual([]);
+      const lines = await database
+        .select()
+        .from(shoppingTemplateLines)
+        .where(eq(shoppingTemplateLines.ingredientId, created.id));
+      expect(lines).toHaveLength(1);
+      const recipeLines = await database
+        .select()
+        .from(recipeIngredientLines)
+        .where(eq(recipeIngredientLines.ingredientId, created.id));
+      expect(recipeLines).toHaveLength(1);
+      expect(recipeLines[0]).toMatchObject({
+        rawName: null,
+        normalizedName: null,
+      });
+    });
+
+    it('records stock history for the relinked Batches', async () => {
+      const raw = unique('Kefir');
+      await unmatchedEverywhere(a, raw);
+      const created = await made(a, raw);
+      const familyA = await familyIdOf(`fi-a-${stamp}@example.com`);
+
+      const history = await database
+        .select()
+        .from(ingredientStockHistory)
+        .where(eq(ingredientStockHistory.ingredientId, created.id));
+      expect(history).toHaveLength(1);
+      expect(history[0]).toMatchObject({ familyId: familyA, usedUpAt: null });
+      const recent = (
+        (await a.get('/pantry/recently-stocked?locale=en&limit=50')).body as {
+          ingredients: Array<{ id: string }>;
+        }
+      ).ingredients;
+      expect(recent.map((i) => i.id)).toContain(created.id);
+    });
+
+    it('removes the matching Unmatched entries', async () => {
+      const raw = unique('Tempeh');
+      await unmatchedEverywhere(a, raw);
+      expect((await entriesFor(raw)).length).toBeGreaterThanOrEqual(3);
+
+      await made(a, raw);
+
+      expect(await entriesFor(raw)).toEqual([]);
+    });
+
+    it("leaves another Family's items of the same name untouched", async () => {
+      const raw = unique('Skyr');
+      await unmatchedEverywhere(a, raw);
+      await unmatchedEverywhere(b, raw);
+      const familyB = await familyIdOf(`fi-b-${stamp}@example.com`);
+
+      await made(a, raw);
+
+      const theirs = await entriesFor(raw);
+      expect(theirs.length).toBeGreaterThanOrEqual(3);
+      const [theirBatch] = await batchesNamed(raw);
+      expect(theirBatch).toMatchObject({
+        familyId: familyB,
+        ingredientId: null,
+        unmatched: true,
+        leafCategoryId: OTHER,
+      });
+      expect(await unmatchedItems(raw)).toHaveLength(1);
+      expect(await unmatchedLines(raw)).toHaveLength(1);
+      expect(await unmatchedRecipeLines(raw)).toHaveLength(1);
+    });
+
+    it('leaves items with a different name untouched', async () => {
+      const raw = unique('Miso');
+      const other = unique('Natto');
+      await unmatchedEverywhere(a, other);
+
+      await made(a, raw);
+
+      expect((await entriesFor(other)).length).toBeGreaterThanOrEqual(3);
+      expect(await batchesNamed(other)).toHaveLength(1);
+      expect(await unmatchedItems(other)).toHaveLength(1);
+      expect(await unmatchedLines(other)).toHaveLength(1);
+      expect(await unmatchedRecipeLines(other)).toHaveLength(1);
+    });
+
+    it('relinks items typed with different casing and spacing', async () => {
+      const raw = unique('Ginger Beer');
+      await unmatchedEverywhere(
+        a,
+        `  ${raw.toUpperCase().replace(' ', '   ')} `,
+      );
+
+      const created = await made(a, raw);
+
+      expect(await entriesFor(raw)).toEqual([]);
+      const rows = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.ingredientId, created.id));
+      expect(rows).toHaveLength(1);
+    });
+
+    it('shows an unmatched Batch as the Ingredient in the Pantry once it is added', async () => {
+      const raw = unique('Kombucha Pantry');
+      await a
+        .post('/pantry/batches/bulk?locale=en', {
+          batches: [
+            { rawName: raw, quantity: 1, unit: 'pcs', location: 'fridge' },
+          ],
+        })
+        .expect(201);
+      const before = (
+        (await a.get('/pantry?locale=en')).body as Pantry
+      ).batches.find((x) => x.name === raw);
+      expect(before).toMatchObject({ unmatched: true, ingredientId: null });
+
+      const created = await made(a, raw);
+
+      const pantry = ((await a.get('/pantry?locale=en')).body as Pantry)
+        .batches;
+      expect(pantry.find((x) => x.name === raw)).toMatchObject({
+        ingredientId: created.id,
+        unmatched: false,
+      });
     });
   });
 });

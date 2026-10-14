@@ -236,18 +236,6 @@ export class PantryService {
   }
 
   /**
-   * An existing Batch just became a Batch of the Ingredient (an Admin relinking an
-   * Unmatched Batch): same stock history effect as creating one.
-   */
-  async relinked(
-    executor: Executor,
-    familyId: string,
-    ingredientId: string,
-  ): Promise<void> {
-    await recordStocked(executor, familyId, [ingredientId]);
-  }
-
-  /**
    * The Leaf and Parent Category each body lands under, in body order, in at
    * most two queries however many bodies there are: matched bodies by their
    * Ingredient, Unmatched ones under their Parent's `is_other` Leaf. With no

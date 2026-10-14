@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
+import { familyIngredientRelinkQueryKeys } from './queryKeys';
 import type { AmountScale } from './usualAmounts';
 
 export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
@@ -191,7 +192,13 @@ export function useCreateFamilyIngredient(locale: string) {
         `/catalog/family-ingredients?${new URLSearchParams({ locale })}`,
         { method: 'POST', body: input },
       ),
+    // The Family's Unmatched items of this name were relinked to it as well.
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+        ...familyIngredientRelinkQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ]),
   });
 }

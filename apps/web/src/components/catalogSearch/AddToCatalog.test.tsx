@@ -213,12 +213,12 @@ describe('Add to your catalog', () => {
       stubViewport(1024);
       const calls = stubCatalog({ results: [] });
       const picked = vi.fn();
-      renderWithProviders(<Host onPicked={picked} />);
+      const { queryClient } = renderWithProviders(<Host onPicked={picked} />);
       const user = userEvent.setup();
       await type(user, typed);
       await screen.findByText(/No match for/);
       await user.click(addButton(typed));
-      return { user, calls, picked, dialog: await popover() };
+      return { user, calls, picked, queryClient, dialog: await popover() };
     }
 
     it('shows a title, a subtitle, the typed Name, a category search, a Unit and the actions', async () => {
@@ -353,6 +353,35 @@ describe('Add to your catalog', () => {
       // Picked: the token carries the Family tag and the popover is gone.
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.getByText('Family')).toBeVisible();
+    });
+
+    it("refreshes what the Family's Unmatched items were relinked in (Pantry, Shopping List, Templates, Recipes)", async () => {
+      const { user, dialog, picked, queryClient } = await open('Kombucha');
+      const keys = [
+        ['pantry', 'en'],
+        ['pantry', 'recently-stocked'],
+        ['shopping-list', 'en'],
+        ['shopping-templates', 'detail', 't1'],
+        ['recipes', 'list'],
+        ['suggestions', 'en'],
+      ];
+      for (const key of keys) queryClient.setQueryData(key, {});
+
+      await user.click(
+        within(dialog).getByRole('combobox', { name: 'Category' }),
+      );
+      await user.paste('spice');
+      await user.click(
+        await within(dialog).findByRole('option', { name: /Ground spices/ }),
+      );
+      await user.click(
+        within(dialog).getByRole('button', { name: /^Add & pick/ }),
+      );
+      await waitFor(() => expect(picked).toHaveBeenCalled());
+
+      for (const key of keys) {
+        expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+      }
     });
 
     it('offers "Pick {existing}" when the name already exists, and picks that Ingredient', async () => {
