@@ -1,6 +1,7 @@
 import {
   BatteryLowIcon,
   Box,
+  PlusIcon,
   StarFillIcon,
   StarIcon,
   border,
@@ -17,25 +18,31 @@ import { useStapleMutations, useStaples } from '../../../lib/staples';
 
 type Props = {
   ingredientId: string;
-  /** The Ingredient's name, for the toasts. */
+  /** The Ingredient's name, for the toasts and the Add batch label. */
   name: string;
+  /** An Unmatched Ingredient has no Staple or Running low: only Add batch. */
+  unmatched: boolean;
   runningLow: boolean;
   /** Flip Running low; the row sends it and says so. */
   onToggleLow: () => void;
+  /** Open the Add batch form with this Ingredient already picked. */
+  onAddBatch: () => void;
 };
 
 /**
- * The action row at the bottom of an open, matched Ingredient's card: a Staple chip and a Running
- * low chip. Each flips at once and says so in a toast with no Undo (Pantry batches handoff, section 3).
+ * The action row at the bottom of an open Ingredient's card: a Staple chip and a Running low chip
+ * (matched Ingredients only), then a round Add batch button. Each chip flips at once and says so in a
+ * toast with no Undo (Pantry batches handoff, section 3).
  */
 export function IngredientActions({
   ingredientId,
   name,
+  unmatched,
   runningLow,
   onToggleLow,
+  onAddBatch,
 }: Props) {
   const { t } = useTranslation('pantry');
-  const staple = useStapleChip(ingredientId, name);
 
   return (
     <Box
@@ -49,6 +56,51 @@ export function IngredientActions({
         '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
       }}
     >
+      {unmatched ? null : (
+        <MatchedChips
+          ingredientId={ingredientId}
+          name={name}
+          runningLow={runningLow}
+          onToggleLow={onToggleLow}
+        />
+      )}
+      <Box
+        component="button"
+        type="button"
+        aria-label={t('group.addBatch', { name })}
+        onClick={onAddBatch}
+        sx={[
+          actionButtonSx,
+          {
+            flex: '0 0 38px',
+            width: 38,
+            p: 0,
+            ml: 'auto',
+            borderRadius: '50%',
+            borderColor: 'transparent',
+            bgcolor: tokens.color.accentTint,
+            color: tokens.color.accentOnTint,
+          },
+        ]}
+      >
+        <PlusIcon size={16} strokeWidth={2.4} />
+      </Box>
+    </Box>
+  );
+}
+
+/** The Staple and Running low chips of a matched Ingredient. */
+function MatchedChips({
+  ingredientId,
+  name,
+  runningLow,
+  onToggleLow,
+}: Omit<Props, 'unmatched' | 'onAddBatch'>) {
+  const { t } = useTranslation('pantry');
+  const staple = useStapleChip(ingredientId, name);
+
+  return (
+    <>
       <ActionChip
         aria-label={t('a11y.makeStaple')}
         pressed={staple.isStaple}
@@ -69,7 +121,7 @@ export function IngredientActions({
       >
         {t('group.runningLow')}
       </ActionChip>
-    </Box>
+    </>
   );
 }
 
@@ -100,6 +152,25 @@ function useStapleChip(ingredientId: string, name: string) {
     },
   };
 }
+
+/** What the chips and the Add batch button share: 38 tall, outlined, pressing in to .96. */
+const actionButtonSx = {
+  height: 38,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: `${border.width} solid ${color.lineStrong}`,
+  font: 'inherit',
+  cursor: 'pointer',
+  transition: 'background-color .15s, color .15s, transform 80ms',
+  '&:active': { transform: 'scale(.96)' },
+  '& svg': { flex: '0 0 auto' },
+  '&:focus-visible': {
+    outline: `2px solid ${tokens.color.accent}`,
+    outlineOffset: 2,
+  },
+  '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+} as const;
 
 const PRESSED = {
   staple: {
@@ -139,32 +210,18 @@ function ActionChip({
       aria-disabled={ariaDisabled || undefined}
       onClick={onClick}
       sx={[
+        actionButtonSx,
         {
           flex: '1 1 0',
           minWidth: 0,
-          height: 38,
           px: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
           gap: '6px',
           borderRadius: radius.chip,
-          border: `${border.width} solid ${color.lineStrong}`,
           bgcolor: color.cardBg,
           color: tokens.color.ink,
-          font: 'inherit',
           fontSize: 13,
           fontWeight: 700,
           whiteSpace: 'nowrap',
-          cursor: 'pointer',
-          transition: 'background-color .15s, color .15s, transform 80ms',
-          '&:active': { transform: 'scale(.96)' },
-          '& svg': { flex: '0 0 auto' },
-          '&:focus-visible': {
-            outline: `2px solid ${tokens.color.accent}`,
-            outlineOffset: 2,
-          },
-          '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
         },
         pressed && { borderColor: 'transparent', ...PRESSED[tone] },
       ]}

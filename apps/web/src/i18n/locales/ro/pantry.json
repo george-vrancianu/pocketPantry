@@ -37,7 +37,8 @@
     "runningLow": "Pe sfârșite",
     "notLow": "Nu e pe sfârșite",
     "staple": "Produs de bază",
-    "makeStaple": "Fă-l produs de bază"
+    "makeStaple": "Fă-l produs de bază",
+    "addBatch": "Adaugă un lot de {{name}}"
   },
   "toast": {
     "low": {

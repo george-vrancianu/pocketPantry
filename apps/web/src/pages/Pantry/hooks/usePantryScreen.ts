@@ -15,6 +15,7 @@ import {
   type RollUp,
 } from '../../../lib/pantry';
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+import type { AddBatchStart } from './useAddBatchForm';
 
 /**
  * A roll-up row as shown. `gone`: every Batch of it is pending removal. The row stays (empty, so Undo
@@ -49,7 +50,11 @@ export function usePantryScreen() {
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);
   const { hiddenIds } = removal;
-  const [adding, setAdding] = useState(false);
+  // The Add batch form replaces the list while open; `from` is the row that opened it, if any.
+  const [adding, setAdding] = useState<{
+    start?: AddBatchStart;
+    from?: OpenIngredientKey;
+  } | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
   // One open Ingredient for the whole page: opening another closes it, in any Location.
@@ -95,9 +100,22 @@ export function usePantryScreen() {
     noMatches: batches.isSuccess && all.length > 0 && shown.length === 0,
     error: batches.error ? translateApiError(t, batches.error) : null,
     today,
-    adding,
-    startAdding: () => setAdding(true),
-    stopAdding: () => setAdding(false),
+    adding: adding !== null,
+    /** What the open Add batch form starts with: nothing (the header "+") or a row's Ingredient. */
+    addStart: adding?.start,
+    /** The row whose Add batch button opened the form, for focus to go back to. */
+    addingFrom: adding?.from,
+    startAdding: () => setAdding({}),
+    /** Add batch from an open card: its Ingredient picked, or its Unmatched name typed in. */
+    startAddingTo: (row: PantryRow) =>
+      setAdding({
+        start:
+          row.ingredientId === null
+            ? { unmatchedName: row.name }
+            : { ingredient: { id: row.ingredientId, name: row.name } },
+        from: row.openKey,
+      }),
+    stopAdding: () => setAdding(null),
     /** Open the Ingredient, closing any other; or close it if it is the open one. */
     toggleOpen: (key: OpenIngredientKey) =>
       setOpenKey((current) => (current === key ? null : key)),

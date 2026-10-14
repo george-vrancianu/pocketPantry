@@ -1501,6 +1501,197 @@ describe('PantryPage', () => {
         expect(lowChip()).not.toBeInTheDocument();
       });
 
+      describe('the Add batch button', () => {
+        const milk: CatalogSearchResult = {
+          id: 'milk-id',
+          name: 'Milk',
+          defaultUnit: 'l',
+          leafCategory: { id: 'milk', name: 'Milk' },
+          parentCategory: {
+            id: 'dairy',
+            name: 'Dairy',
+            aisle: { id: 'aisle', name: 'Dairy & eggs' },
+          },
+          defaults: { expiryDays: 7, location: 'fridge' },
+        };
+
+        /** The Pantry follows the saves, as the API does; Catalog search finds Milk. */
+        function stubAdding() {
+          let batches = [
+            batch({ id: 'milk-1', name: 'Milk', quantity: 1, unit: 'l' }),
+            batch({
+              id: 'zorblax-1',
+              name: 'Zorblax paste',
+              unmatched: true,
+              ingredientId: null,
+              location: 'cupboard',
+            }),
+          ];
+          const { fetchMock, calls } = stubApi({
+            'GET /api/pantry': () => Response.json({ batches, runningLow: [] }),
+            'GET /api/staples': () => Response.json({ staples: [] }),
+            'GET /api/settings/family': familySettings(3),
+            'GET /api/catalog/search': () =>
+              Response.json({ results: [parmesan, milk] }),
+            'POST /api/pantry/batches': () => {
+              const saved = batch({
+                id: 'milk-new',
+                name: 'Milk',
+                quantity: 2,
+                unit: 'l',
+                productDescription: 'Fresh',
+              });
+              batches = [...batches, saved];
+              return Response.json(saved, { status: 201 });
+            },
+          });
+          vi.stubGlobal('fetch', fetchMock);
+          return calls;
+        }
+
+        const addButton = (name: string) =>
+          screen.getByRole('button', { name: `Add a batch of ${name}` });
+
+        it('ends the action row of every open Ingredient, Unmatched included', async () => {
+          const user = userEvent.setup();
+          stubAdding();
+          renderWithProviders(<PantryPage />);
+
+          await openMilk(user);
+          expect(lowChip()!.nextElementSibling).toBe(addButton('Milk'));
+
+          await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
+          expect(addButton('Zorblax paste')).toBeVisible();
+          expect(stapleChip()).not.toBeInTheDocument();
+          expect(lowChip()).not.toBeInTheDocument();
+        });
+
+        it('opens Add batch with the Ingredient picked, and the open card shows the saved Batch', async () => {
+          const user = userEvent.setup();
+          const calls = stubAdding();
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          await user.click(addButton('Milk'));
+
+          screen.getByRole('form', { name: 'Add to Pantry' });
+          expect(
+            screen.getByRole('combobox', { name: 'Search ingredients' }),
+          ).toHaveValue('Milk');
+          // Milk's Catalog defaults, as if it had been picked from the search.
+          expect(
+            await screen.findByRole('button', {
+              name: /^Expires, .*, in 7 days$/,
+            }),
+          ).toBeInTheDocument();
+          expect(screen.getByLabelText('Location')).toHaveValue('fridge');
+          expect(
+            screen.getByRole('button', { name: 'Unit: L' }),
+          ).toBeInTheDocument();
+          expect(
+            screen.queryByRole('button', { name: /as Unmatched$/ }),
+          ).not.toBeInTheDocument();
+
+          await user.type(
+            screen.getByRole('textbox', { name: /Amount of Milk/ }),
+            '2',
+          );
+          await user.type(
+            screen.getByLabelText('Product description'),
+            'Fresh',
+          );
+          await user.click(
+            screen.getByRole('button', { name: 'Add to Pantry' }),
+          );
+
+          await waitFor(() =>
+            expect(
+              calls.find((call) => call.key === 'POST /api/pantry/batches')
+                ?.body,
+            ).toEqual({
+              ingredientId: 'milk-id',
+              quantity: 2,
+              unit: 'l',
+              location: 'fridge',
+              expiryDate: inDays(7),
+              productDescription: 'Fresh',
+            }),
+          );
+          // Back on the Pantry with Milk still open, now with the new Batch.
+          await waitFor(() => expect(batchRows()).toHaveLength(2));
+          expect(batchRows()[1]).toHaveTextContent(/Fresh/);
+        });
+
+        it("opens Add batch with an Unmatched Ingredient's name filled in, to save another Unmatched Batch", async () => {
+          const user = userEvent.setup();
+          const calls = stubAdding();
+          renderWithProviders(<PantryPage />);
+          await user.click(
+            await screen.findByRole('button', { name: /^Zorblax/ }),
+          );
+
+          await user.click(addButton('Zorblax paste'));
+
+          expect(
+            screen.getByRole('combobox', { name: 'Search ingredients' }),
+          ).toHaveValue('Zorblax paste');
+          expect(
+            screen.getByText(/"Zorblax paste" will be saved as Unmatched/),
+          ).toBeVisible();
+          await user.type(
+            screen.getByRole('textbox', { name: /Amount of Zorblax paste/ }),
+            '1',
+          );
+          await user.click(
+            screen.getByRole('button', { name: 'Add to Pantry' }),
+          );
+
+          await waitFor(() =>
+            expect(
+              calls.find((call) => call.key === 'POST /api/pantry/batches')
+                ?.body,
+            ).toMatchObject({ rawName: 'Zorblax paste', quantity: 1 }),
+          );
+        });
+
+        it('returns to the open card with focus on its row when cancelled', async () => {
+          const user = userEvent.setup();
+          const calls = stubAdding();
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          await user.click(addButton('Milk'));
+          await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+          const row = await screen.findByRole('button', { name: /^Milk/ });
+          await waitFor(() => expect(row).toHaveFocus());
+          expect(row).toHaveAttribute('aria-expanded', 'true');
+          expect(
+            calls.some((call) => call.key === 'POST /api/pantry/batches'),
+          ).toBe(false);
+        });
+
+        it('leaves the header "+" opening an empty form', async () => {
+          const user = userEvent.setup();
+          stubAdding();
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+          await user.click(addButton('Milk'));
+          await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+          await user.click(screen.getByRole('button', { name: 'Add batch' }));
+
+          expect(
+            screen.getByRole('combobox', { name: 'Search ingredients' }),
+          ).toHaveValue('');
+          expect(
+            screen.getByRole('textbox', {
+              name: 'Amount, for example 2 or 500 g',
+            }),
+          ).toBeInTheDocument();
+        });
+      });
+
       describe('the Staple chip', () => {
         it('makes the Ingredient a Staple at once, says so with no Undo, and sends the add', async () => {
           const user = userEvent.setup();

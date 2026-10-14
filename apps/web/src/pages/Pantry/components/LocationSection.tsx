@@ -16,6 +16,8 @@ type Props = {
   today: Date;
   onToggleOpen: (key: OpenIngredientKey) => void;
   onRemoveBatch: (batch: Batch) => void;
+  /** Open the Add batch form for this row's Ingredient. */
+  onAddBatch: (row: PantryRow) => void;
   /** Called when the last row is gone and this section unmounts, so focus can go elsewhere. */
   onEmptied: () => void;
   rowHint: PantryRowHint;
@@ -28,6 +30,7 @@ export function LocationSection({
   today,
   onToggleOpen,
   onRemoveBatch,
+  onAddBatch,
   onEmptied,
   rowHint,
 }: Props) {
@@ -58,6 +61,7 @@ export function LocationSection({
             today={today}
             onToggle={() => onToggleOpen(row.openKey)}
             onRemoveBatch={onRemoveBatch}
+            onAddBatch={() => onAddBatch(row)}
             rowHint={rowHint}
             onRowGone={() =>
               rows.length > 1 ? heading.current?.focus() : onEmptied()

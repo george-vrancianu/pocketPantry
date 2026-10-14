@@ -60,6 +60,8 @@ type Props = {
   /** Open this Ingredient (closing any other on the page), or close it when it is open. */
   onToggle: () => void;
   onRemoveBatch: (batch: Batch) => void;
+  /** Open the Add batch form with this Ingredient (or Unmatched name) already in it. */
+  onAddBatch: () => void;
   /** Called when removing or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
   rowHint: PantryRowHint;
@@ -67,12 +69,13 @@ type Props = {
   sx?: ComponentProps<typeof Box>['sx'];
 };
 
-/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple and Running low chips. */
+/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the action row. */
 export function RollUpRow({
   rollUp,
   today,
   onToggle,
   onRemoveBatch,
+  onAddBatch,
   onRowGone,
   rowHint,
   sx,
@@ -181,6 +184,8 @@ export function RollUpRow({
             component="button"
             type="button"
             ref={toggle}
+            // The page puts focus back here when Add batch, opened from this row, closes.
+            data-open-key={rollUp.openKey}
             aria-expanded={expanded}
             aria-controls={expanded && !rollUp.gone ? panelId : undefined}
             aria-describedby={
@@ -341,14 +346,14 @@ export function RollUpRow({
                 />
               ))}
             </Box>
-            {rollUp.unmatched ? null : (
-              <IngredientActions
-                ingredientId={rollUp.key}
-                name={rollUp.name}
-                runningLow={rollUp.runningLow}
-                onToggleLow={() => flipLow({ undo: false })}
-              />
-            )}
+            <IngredientActions
+              ingredientId={rollUp.key}
+              name={rollUp.name}
+              unmatched={rollUp.unmatched}
+              runningLow={rollUp.runningLow}
+              onToggleLow={() => flipLow({ undo: false })}
+              onAddBatch={onAddBatch}
+            />
           </Box>
         </Box>
       ) : null}

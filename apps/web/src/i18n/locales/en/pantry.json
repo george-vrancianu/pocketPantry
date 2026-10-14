@@ -36,7 +36,8 @@
     "runningLow": "Running low",
     "notLow": "Not low",
     "staple": "Staple",
-    "makeStaple": "Make Staple"
+    "makeStaple": "Make Staple",
+    "addBatch": "Add a batch of {{name}}"
   },
   "toast": {
     "low": {
