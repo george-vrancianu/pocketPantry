@@ -45,15 +45,20 @@ export function useTemplates(locale: string) {
   });
 }
 
-export function useTemplate(id: string, locale: string) {
+/** The query behind one Template's details; `useTemplates`-style callers fetching several share its cache. */
+export function templateQueryOptions(id: string, locale: string) {
   const today = localIso(new Date());
-  return useQuery({
+  return {
     queryKey: [...templateDetailsQueryKey, id, locale, today],
     queryFn: () =>
       apiRequest<Template>(
         `/shopping-templates/${id}?${new URLSearchParams({ locale, today })}`,
       ),
-  });
+  };
+}
+
+export function useTemplate(id: string, locale: string) {
+  return useQuery(templateQueryOptions(id, locale));
 }
 
 export type TemplateLineGroup = {

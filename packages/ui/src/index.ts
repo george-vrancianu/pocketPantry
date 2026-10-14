@@ -124,6 +124,7 @@ export {
   StarIcon,
   StarFillIcon,
   UndoIcon,
+  ImportIcon,
   Icon,
   type IconName,
   type IconProps,

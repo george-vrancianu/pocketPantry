@@ -26,6 +26,8 @@ export type ToastOptions = {
   bottom?: number;
   /** How long the toast stays, in ms. Defaults to 2600. */
   duration?: number;
+  /** Announce without interrupting (a status) instead of as an alert. */
+  polite?: boolean;
   /**
    * Something is waiting on this toast. Called once when the toast ends for
    * any reason (timeout, dismissed, replaced by another toast, or the provider
@@ -141,6 +143,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
           >
             <MuiSnackbarContent
+              role={current.polite ? 'status' : 'alert'}
               message={current.message}
               action={
                 current.action ? (

@@ -115,6 +115,14 @@ const ICON_NODES = {
     ['path', { d: 'M4 5h16v14H4z' }],
     ['path', { d: 'M4 10h16M10 10v9' }],
   ],
+  /** A tray with an arrow dropping into it: the shopping import handoff's `imp`. */
+  import: [
+    ['path', { d: 'M12 4v10M8 10.5l4 4 4-4' }],
+    [
+      'path',
+      { d: 'M4.5 14.5v3A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-3' },
+    ],
+  ],
   undo: [
     ['path', { d: 'M4 10h11a5 5 0 0 1 0 10h-3' }],
     ['path', { d: 'M8 6l-4 4 4 4' }],
@@ -229,6 +237,7 @@ export const DeleteIcon = handoff('trash');
 export const MoreIcon = handoff('more');
 export const SettingsIcon = handoff('sliders');
 export const TemplateIcon = handoff('template');
+export const ImportIcon = handoff('import');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
 export const BatteryLowIcon = handoff('battery-low');

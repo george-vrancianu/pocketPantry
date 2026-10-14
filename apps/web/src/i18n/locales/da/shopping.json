@@ -81,6 +81,31 @@
   "templatesFromSearch": "Eller start fra en skabelon",
   "seeAll": "Se alle",
   "import": {
-    "inTrolley": "I kurven"
+    "button": "Importér",
+    "title": "Importér",
+    "close": "Luk",
+    "aria": "Importér fra en skabelon",
+    "hint": "Afkryds hele skabeloner, eller åbn én for at vælge linjer. Du kan blande flere.",
+    "section": "Dine skabeloner · {{count}}",
+    "manage": "Administrer",
+    "tickLabel": "Importér {{name}}",
+    "selected": "{{ticked}} af {{total}} valgt",
+    "onListAddsUp": "På listen · lægges sammen",
+    "tooMany": "Op til 100 varer ad gangen",
+    "from": "Fra {{names}}",
+    "repeats_one": "{{count}} gentagelse lagt sammen",
+    "repeats_other": "{{count}} gentagelser lagt sammen",
+    "confirm_one": "Importér {{count}} vare",
+    "confirm_other": "Importér {{count}} varer",
+    "pending": "Importerer",
+    "pickOne": "Vælg en skabelon",
+    "done_one": "Importerede {{count}} vare fra {{name}}",
+    "done_other": "Importerede {{count}} varer fra {{name}}",
+    "doneMany_one": "Importerede {{count}} vare fra {{templates}}",
+    "doneMany_other": "Importerede {{count}} varer fra {{templates}}",
+    "none": "Ingen skabeloner endnu. Gem din liste som skabelon fra bunden af listen.",
+    "inTrolley": "I kurven",
+    "templateCount_one": "{{count}} skabelon",
+    "templateCount_other": "{{count}} skabeloner"
   }
 }

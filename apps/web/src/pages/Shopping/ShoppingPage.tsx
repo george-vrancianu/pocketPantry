@@ -22,6 +22,8 @@ import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveTemplateSheet } from './components/SaveTemplateSheet';
+import { ImportPill } from './components/ImportPill';
+import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
@@ -49,6 +51,7 @@ export function ShoppingPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
   const [saveOpen, setSaveOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
 
   // Every way in starts clean, with no error left from an earlier opening.
   const openSheet = (view: SheetView) => {
@@ -72,7 +75,10 @@ export function ShoppingPage() {
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
       <UnverifiedToast />
-      <AppScreenHeader title={t('shopping:title')} />
+      <AppScreenHeader
+        title={t('shopping:title')}
+        trailing={<ImportPill onClick={() => setApplyOpen(true)} />}
+      />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
@@ -135,6 +141,10 @@ export function ShoppingPage() {
         onAdd={screen.add}
         addError={screen.addError}
         suggestions={screen.suggestions}
+      />
+      <ApplyTemplatesSheet
+        open={applyOpen}
+        onClose={() => setApplyOpen(false)}
       />
       <SaveTemplateSheet open={saveOpen} onClose={() => setSaveOpen(false)} />
     </RowToggleErrorProvider>
