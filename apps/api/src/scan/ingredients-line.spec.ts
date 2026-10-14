@@ -6,6 +6,7 @@ const match: CatalogSearchResult = {
   id: 'milk-id',
   name: 'Milk',
   defaultUnit: 'ml',
+  amountScale: 'medium',
   leafCategory: { id: 'l', name: 'Milk' },
   parentCategory: { id: 'p', name: 'Dairy', aisle: { id: 'a', name: 'Dairy' } },
   defaults: { expiryDays: 7, location: 'fridge' },

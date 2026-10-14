@@ -8,6 +8,7 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import { amountScaleForParent } from '../amount-scale';
 import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
@@ -110,6 +111,15 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   ),
 ];
 
+const PARENT_OF_LEAF = new Map(
+  SEED_LEAVES.map((leaf) => [leaf.slug, leaf.parent]),
+);
+
+/** The Parent Category slug a seed Leaf belongs to, for its Ingredients' Amount Scale. */
+function parentSlugOfLeaf(leafSlug: string): string {
+  return PARENT_OF_LEAF.get(leafSlug) ?? '';
+}
+
 /**
  * The seed Aisles to insert. An Admin may reorder Aisles, so a seed Aisle the
  * Admin deleted can find its seed sort order taken; it then comes back last in
@@ -207,6 +217,7 @@ export async function seedCatalog(
           name: item.en,
           normalizedName: normalizeName(item.en),
           defaultUnit: item.unit,
+          amountScale: amountScaleForParent(parentSlugOfLeaf(item.leaf)),
         })),
       )
       .onConflictDoNothing({ target: ingredients.id });
