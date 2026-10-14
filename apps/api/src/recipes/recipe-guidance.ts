@@ -1,10 +1,10 @@
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
   eatingMoments,
-  ingredients,
   recipeEatingMomentTranslations,
   recipeEatingMoments,
   recipeNutritionNoteTranslations,
@@ -127,9 +127,11 @@ export { emptyTranslations as emptyGuidanceTranslations };
  */
 export async function loadResolvedGuidance(
   executor: Executor,
+  scope: CatalogScope,
   recipeId: string,
   locale: CatalogLocale,
 ): Promise<ResolvedGuidance> {
+  const ingredients = scope.ingredients(executor);
   const [[owner], pairings, uses] = await inOrder([
     executor
       .select({
@@ -234,7 +236,7 @@ export async function loadResolvedGuidance(
             .from(ingredients)
             .where(inArray(ingredients.id, linkedIngredientIds)),
     ]);
-  const names = await loadDisplayNames(executor, locale, [
+  const names = await loadDisplayNames(executor, scope, locale, [
     ...linkedIngredientIds,
     ...uses.map((u) => u.eatingMomentId),
   ]);

@@ -1,3 +1,4 @@
+import { catalogScope } from '../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt, sql } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
@@ -6,7 +7,6 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
   batches,
-  ingredients,
   ingredientStockHistory,
   shoppingItems,
   shoppingLists,
@@ -55,6 +55,7 @@ export class SuggestionsService {
    */
   async dismiss(memberId: string, ingredientId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
+    const ingredients = catalogScope(familyId).ingredients(this.database);
     const [found] = await this.database
       .select({ id: ingredients.id })
       .from(ingredients)
@@ -111,6 +112,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -151,6 +153,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.map((row) => row.ingredientId),
     );

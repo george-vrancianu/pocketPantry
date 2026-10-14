@@ -1,3 +1,4 @@
+import type { CatalogReader } from '../catalog/catalog-scope';
 import { Injectable, Logger } from '@nestjs/common';
 import { ApiException } from '../common/api-exception';
 import { z } from 'zod';
@@ -30,8 +31,9 @@ export class ReceiptScanService {
     input: ReceiptScanInput,
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
+    reader: CatalogReader,
   ): Promise<ReceiptScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
+    const catalog = await this.ingredientCatalog.getCatalogIn(reader, locale);
     const catalogPrompt = this.ingredientCatalog.toPrompt(catalog);
 
     let response: StructuredOutputResult;

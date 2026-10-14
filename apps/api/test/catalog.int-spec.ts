@@ -1,3 +1,4 @@
+import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
@@ -327,7 +328,9 @@ describe('Catalog (integration)', () => {
 
   describe('findExact', () => {
     const exact = (names: string[], locale: 'en' | 'ro' = 'en') =>
-      app.get(CatalogSearchService).findExact(names, locale);
+      app
+        .get(CatalogSearchService)
+        .findExact(catalogScope(SHARED_ONLY), names, locale);
 
     it('matches names, Synonyms and other-locale names, keyed by the name as given', async () => {
       const found = await exact([

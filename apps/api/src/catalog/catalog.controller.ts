@@ -30,10 +30,16 @@ export class CatalogController {
       'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
   })
   async parents(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(catalogParentsQuery))
     query: CatalogParentsQuery,
   ): Promise<{ parents: CatalogParent[] }> {
-    return { parents: await this.searchService.listParents(query.locale) };
+    return {
+      parents: await this.searchService.listParents(
+        await this.settings.catalogScopeForMember(member.id),
+        query.locale,
+      ),
+    };
   }
 
   @Get('search')
@@ -48,6 +54,7 @@ export class CatalogController {
   ): Promise<{ results: CatalogSearchResult[] }> {
     return {
       results: await this.searchService.search(
+        await this.settings.catalogScopeForMember(member.id),
         query.q,
         query.locale,
         query.limit,

@@ -1,13 +1,9 @@
+import { catalogScope } from '../../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray } from 'drizzle-orm';
 import { DATABASE } from '../../database/database.constants';
 import type { Database } from '../../database/database.types';
-import {
-  batches,
-  ingredients,
-  recipeIngredientLines,
-  recipes,
-} from '../../database/schema';
+import { batches, recipeIngredientLines, recipes } from '../../database/schema';
 import { unexpiredBatch } from '../../shopping/batch-presence';
 import { SettingsService } from '../../settings/settings.service';
 import { recipeNotFound } from '../recipe-errors';
@@ -65,6 +61,7 @@ export class PantryMatchingService {
     if (recipeRows.length === 0) return result;
     const visibleIds = recipeRows.map((row) => row.id);
 
+    const ingredients = catalogScope(familyId).ingredients(this.database);
     const lineRows = await this.database
       .select({
         id: recipeIngredientLines.id,

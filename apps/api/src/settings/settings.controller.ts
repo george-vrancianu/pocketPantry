@@ -64,10 +64,11 @@ export class SettingsController {
     summary: 'Parent and Leaf Categories a Default Expiry override can target',
   })
   categories(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<CategoryOptionsView> {
-    return this.settings.categoryOptions(query.locale);
+    return this.settings.categoryOptions(member.id, query.locale);
   }
 
   @Put('family/expiry-overrides/:categoryId')

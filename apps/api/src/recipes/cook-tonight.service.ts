@@ -1,9 +1,10 @@
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, inArray, isNull } from 'drizzle-orm';
 import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { ingredients, recipes } from '../database/schema';
+import { recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
 import { compareRecipeMatches, type LineMatch } from './matching/pantry-match';
@@ -89,7 +90,11 @@ export class CookTonightService {
       })
       .sort((a, b) => byRank(a.candidates[0], b.candidates[0]));
 
-    const names = await this.missingNames(groupsRanked, query.locale);
+    const names = await this.missingNames(
+      catalogScope(familyId),
+      groupsRanked,
+      query.locale,
+    );
     return {
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
         const [top, ...others] = candidates;
@@ -129,6 +134,7 @@ export class CookTonightService {
 
   /** Display names, in `locale`, of the Ingredients the near-miss cards are short of. */
   private async missingNames(
+    scope: CatalogScope,
     cards: { candidates: Candidate[] }[],
     locale: CookTonightQuery['locale'],
   ): Promise<Map<string, string>> {
@@ -139,11 +145,14 @@ export class CookTonightService {
       if (line?.ingredientId) wanted.add(line.ingredientId);
     }
     if (wanted.size === 0) return new Map();
+    const ingredients = scope.ingredients(this.database);
     const rows = await this.database
       .select({ id: ingredients.id, name: ingredients.name })
       .from(ingredients)
       .where(inArray(ingredients.id, [...wanted]));
-    const display = await loadDisplayNames(this.database, locale, [...wanted]);
+    const display = await loadDisplayNames(this.database, scope, locale, [
+      ...wanted,
+    ]);
     return new Map(
       rows.map((r) => [r.id, display.pick('ingredient', r.id, r.name)]),
     );

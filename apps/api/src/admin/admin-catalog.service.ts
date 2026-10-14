@@ -1,3 +1,4 @@
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
@@ -68,6 +69,13 @@ const notFound = (entity: EntityType | 'translation') =>
  * - deleting an entity deletes every translation and Synonym of it, in the
  *   same transaction, so no orphans remain.
  */
+// Admin curation reads shared Catalog rows only (ADR 0010).
+const adminScope = catalogScope(SHARED_ONLY);
+const sharedIngredients = (executor: Executor) =>
+  adminScope.ingredients(executor);
+const sharedTranslations = (executor: Executor) =>
+  adminScope.translations(executor);
+
 @Injectable()
 export class AdminCatalogService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
@@ -94,9 +102,9 @@ export class AdminCatalogService {
         .orderBy(leafCategories.normalizedName),
       this.database
         .select()
-        .from(ingredients)
-        .orderBy(ingredients.normalizedName),
-      this.database.select().from(catalogTranslations),
+        .from(sharedIngredients(this.database))
+        .orderBy(sharedIngredients(this.database).normalizedName),
+      this.database.select().from(sharedTranslations(this.database)),
       this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
       this.database.select().from(methods).orderBy(methods.normalizedName),
       this.database
@@ -556,10 +564,11 @@ export class AdminCatalogService {
           .where(eq(leafCategories.id, id));
         if (!leaf) throw notFound('leaf_category');
         if (leaf.isOther) throw otherLeafProtected();
+        const shared = sharedIngredients(tx);
         const [{ children }] = await tx
           .select({ children: count() })
-          .from(ingredients)
-          .where(eq(ingredients.leafCategoryId, id));
+          .from(shared)
+          .where(eq(shared.leafCategoryId, id));
         if (children > 0) {
           throw new ApiException(409, 'catalog.category_not_empty', {
             children,
@@ -638,15 +647,16 @@ export class AdminCatalogService {
           await this.claimName(tx, input.value, input.entityId);
         }
         if (input.kind === 'name') {
+          const translations = sharedTranslations(tx);
           const [existing] = await tx
-            .select({ id: catalogTranslations.id })
-            .from(catalogTranslations)
+            .select({ id: translations.id })
+            .from(translations)
             .where(
               and(
-                eq(catalogTranslations.entityType, input.entityType),
-                eq(catalogTranslations.entityId, input.entityId),
-                eq(catalogTranslations.locale, input.locale),
-                eq(catalogTranslations.kind, 'name'),
+                eq(translations.entityType, input.entityType),
+                eq(translations.entityId, input.entityId),
+                eq(translations.locale, input.locale),
+                eq(translations.kind, 'name'),
               ),
             );
           if (existing) {
@@ -717,17 +727,19 @@ export class AdminCatalogService {
     key: string,
     ingredientId?: string,
   ): Promise<boolean> {
+    const shared = sharedIngredients(tx);
+    const translations = sharedTranslations(tx);
     const owners = await tx
-      .select({ id: ingredients.id })
-      .from(ingredients)
-      .where(eq(ingredients.normalizedName, key));
+      .select({ id: shared.id })
+      .from(shared)
+      .where(eq(shared.normalizedName, key));
     const translated = await tx
-      .select({ id: catalogTranslations.entityId })
-      .from(catalogTranslations)
+      .select({ id: translations.entityId })
+      .from(translations)
       .where(
         and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.normalizedValue, key),
+          eq(translations.entityType, 'ingredient'),
+          eq(translations.normalizedValue, key),
         ),
       );
     return [...owners, ...translated].every(
@@ -822,10 +834,11 @@ export class AdminCatalogService {
   }
 
   private async requireTranslation(executor: Executor, id: string) {
+    const translations = sharedTranslations(executor);
     const [row] = await executor
       .select()
-      .from(catalogTranslations)
-      .where(eq(catalogTranslations.id, id));
+      .from(translations)
+      .where(eq(translations.id, id));
     if (!row) throw notFound('translation');
     return row;
   }
@@ -839,7 +852,7 @@ export class AdminCatalogService {
       aisle: aisles,
       parent_category: parentCategories,
       leaf_category: leafCategories,
-      ingredient: ingredients,
+      ingredient: sharedIngredients(executor),
       cuisine: cuisines,
       method: methods,
       eating_moment: eatingMoments,

@@ -36,6 +36,7 @@ export class ReceiptProposalService {
     locale: CatalogLocale,
     memberId: string,
   ): Promise<ProposedLine[]> {
+    const scope = await this.settings.catalogScopeForMember(memberId);
     const overrides = await this.settings.expiryOverridesForMember(memberId);
     const pantryLines = result.lines.filter((line) => line.includeInPantry);
 
@@ -47,7 +48,7 @@ export class ReceiptProposalService {
       ),
     ];
     const byId = new Map<string, CatalogSearchResult>(
-      (await this.catalogSearch.findByIds(ids, locale, overrides)).map(
+      (await this.catalogSearch.findByIds(scope, ids, locale, overrides)).map(
         (match) => [match.id, match],
       ),
     );
@@ -68,6 +69,7 @@ export class ReceiptProposalService {
       ),
     ];
     const byExactName = await this.catalogSearch.findExact(
+      scope,
       names,
       locale,
       overrides,

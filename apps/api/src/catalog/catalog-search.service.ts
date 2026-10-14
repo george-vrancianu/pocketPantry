@@ -2,18 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import {
-  aisles,
-  catalogTranslations,
-  ingredients,
-  leafCategories,
-  parentCategories,
-} from '../database/schema';
+import { aisles, leafCategories, parentCategories } from '../database/schema';
 import {
   type CatalogLocale,
   type CatalogParent,
   type CatalogSearchResult,
 } from './catalog.schemas';
+import type { CatalogScope } from './catalog-scope';
 import { loadDisplayNames } from './display-names';
 import {
   resolveCatalogDefaults,
@@ -33,6 +28,7 @@ export class CatalogSearchService {
    * back to English.
    */
   async search(
+    scope: CatalogScope,
     query: string,
     locale: CatalogLocale,
     limit: number,
@@ -40,6 +36,8 @@ export class CatalogSearchService {
   ): Promise<CatalogSearchResult[]> {
     const key = normalizeName(query);
     if (!key) return [];
+    const ingredients = scope.ingredients(this.database);
+    const catalogTranslations = scope.translations(this.database);
 
     // `key` contains only letters, digits, and spaces, so it is LIKE-safe.
     const prefix = `${key}%`;
@@ -55,15 +53,16 @@ export class CatalogSearchService {
       )
       SELECT c.id
       FROM candidates c
-      JOIN ${ingredients} i ON i.id = c.id
+      JOIN ${ingredients} ON ${ingredients.id} = c.id
       WHERE c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix}
-      GROUP BY c.id, i.normalized_name
+      GROUP BY c.id, ${ingredients.normalizedName}
       ORDER BY MIN(CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END),
-               i.normalized_name,
+               ${ingredients.normalizedName},
                c.id
       LIMIT ${limit}
     `);
     return this.findByIds(
+      scope,
       ranked.rows.map((row) => row.id),
       locale,
       overrides,
@@ -78,6 +77,7 @@ export class CatalogSearchService {
    * Ingredient, is left out so the caller keeps it Unmatched.
    */
   async findExact(
+    scope: CatalogScope,
     names: string[],
     locale: CatalogLocale,
     overrides: readonly ExpiryOverride[] = [],
@@ -90,6 +90,8 @@ export class CatalogSearchService {
     );
     const keys = [...new Set(keyOf.values())];
     if (keys.length === 0) return new Map();
+    const ingredients = scope.ingredients(this.database);
+    const catalogTranslations = scope.translations(this.database);
 
     const keyList = sql.join(
       keys.map((key) => sql`${key}`),
@@ -115,9 +117,9 @@ export class CatalogSearchService {
       ids.length === 1 ? ids : [],
     );
     const found = new Map(
-      (await this.findByIds([...new Set(unique)], locale, overrides)).map(
-        (match) => [match.id, match],
-      ),
+      (
+        await this.findByIds(scope, [...new Set(unique)], locale, overrides)
+      ).map((match) => [match.id, match]),
     );
     const result = new Map<string, CatalogSearchResult>();
     for (const [name, key] of keyOf) {
@@ -129,12 +131,16 @@ export class CatalogSearchService {
   }
 
   /** Every Parent Category with its name in `locale`, sorted by that name. */
-  async listParents(locale: CatalogLocale): Promise<CatalogParent[]> {
+  async listParents(
+    scope: CatalogScope,
+    locale: CatalogLocale,
+  ): Promise<CatalogParent[]> {
     const rows = await this.database
       .select({ id: parentCategories.id, name: parentCategories.name })
       .from(parentCategories);
     const { pick } = await loadDisplayNames(
       this.database,
+      scope,
       locale,
       rows.map((row) => row.id),
     );
@@ -148,12 +154,14 @@ export class CatalogSearchService {
 
   /** Ingredients by id, in the order given, shaped like a search result. Unknown ids are skipped. */
   async findByIds(
+    scope: CatalogScope,
     ids: string[],
     locale: CatalogLocale,
     overrides: readonly ExpiryOverride[] = [],
   ): Promise<CatalogSearchResult[]> {
     if (ids.length === 0) return [];
 
+    const ingredients = scope.ingredients(this.database);
     const rows = await this.database
       .select({
         id: ingredients.id,
@@ -185,6 +193,7 @@ export class CatalogSearchService {
 
     const names = await loadDisplayNames(
       this.database,
+      scope,
       locale,
       rows.flatMap((row) => [row.id, row.leafId, row.parentId, row.aisleId]),
     );

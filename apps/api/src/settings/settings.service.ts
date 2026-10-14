@@ -5,6 +5,7 @@ import {
   CATALOG_LOCALES,
   type CatalogLocale,
 } from '../catalog/catalog.schemas';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -36,6 +37,11 @@ export class SettingsService {
       .limit(1);
     if (!self) throw new ApiException(401, 'auth.unauthenticated');
     return self.familyId;
+  }
+
+  /** The Catalog scope of a Member's Family. */
+  async catalogScopeForMember(memberId: string): Promise<CatalogScope> {
+    return catalogScope(await this.familyIdOf(memberId));
   }
 
   expiryOverridesForMember(memberId: string): Promise<ExpiryOverride[]> {
@@ -71,6 +77,7 @@ export class SettingsService {
     const overrides = await this.expiryOverridesOf(familyId);
     const names = await loadDisplayNames(
       this.database,
+      catalogScope(familyId),
       locale,
       overrides.map((o) => o.entityId),
     );
@@ -137,7 +144,11 @@ export class SettingsService {
   }
 
   /** Parent Categories with their Leaf Categories: what an override can target. */
-  async categoryOptions(locale: CatalogLocale): Promise<CategoryOptionsView> {
+  async categoryOptions(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<CategoryOptionsView> {
+    const scope = await this.catalogScopeForMember(memberId);
     const parents = await this.database
       .select()
       .from(parentCategories)
@@ -146,7 +157,7 @@ export class SettingsService {
       .select()
       .from(leafCategories)
       .orderBy(asc(leafCategories.normalizedName));
-    const names = await loadDisplayNames(this.database, locale, [
+    const names = await loadDisplayNames(this.database, scope, locale, [
       ...parents.map((p) => p.id),
       ...leaves.map((l) => l.id),
     ]);
