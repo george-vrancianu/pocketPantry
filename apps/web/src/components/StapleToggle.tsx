@@ -66,7 +66,7 @@ export function StapleToggle({ ingredientId, name, onToggled }: Props) {
           onError: (error: unknown) => report(translateApiError(t, error)),
         };
         if (staple) remove.mutate(staple.id, options);
-        else add.mutate({ ingredientId }, options);
+        else add.mutate({ ingredientId, name }, options);
       }}
     >
       {staple ? <StarFillIcon size={20} /> : <StarIcon size={20} />}

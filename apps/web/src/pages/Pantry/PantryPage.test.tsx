@@ -1362,8 +1362,8 @@ describe('PantryPage', () => {
       );
     });
 
-    describe('Staple star', () => {
-      const staple = {
+    describe('the action row', () => {
+      const milkStaple = {
         id: 'staple-1',
         ingredientId: 'milk-id',
         name: 'Milk',
@@ -1372,105 +1372,15 @@ describe('PantryPage', () => {
         aisle: null,
       };
 
-      function stubStaples() {
-        const { fetchMock, calls } = stubApi({
-          'GET /api/pantry': () =>
-            Response.json({
-              batches: [
-                batch({ name: 'Milk', quantity: 1, unit: 'l' }),
-                batch({
-                  name: 'Zorblax paste',
-                  unmatched: true,
-                  ingredientId: null,
-                  location: 'cupboard',
-                }),
-              ],
-            }),
-          'GET /api/staples': () => Response.json({ staples: [] }),
-          'POST /api/staples': () => Response.json(staple, { status: 201 }),
-        });
-        vi.stubGlobal('fetch', fetchMock);
-        return calls;
-      }
-
-      it('toggles a Staple from a matched row and leaves an Unmatched row without a star', async () => {
-        const user = userEvent.setup();
-        const calls = stubStaples();
-        renderWithProviders(<PantryPage />);
-
-        await user.click(
-          await screen.findByRole('button', { name: /^Zorblax/ }),
-        );
-        expect(
-          screen.queryByRole('button', { name: /Zorblax paste a staple/ }),
-        ).not.toBeInTheDocument();
-        await user.click(screen.getByRole('button', { name: /^Milk/ }));
-        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
-        await waitFor(() =>
-          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
-        );
-
-        await user.click(star);
-        await waitFor(() =>
-          expect(
-            calls.find((c) => c.key === 'POST /api/staples')?.body,
-          ).toEqual({ ingredientId: 'milk-id' }),
-        );
-      });
-
-      it('shows a translated error in the page when the Staple limit is reached', async () => {
-        const user = userEvent.setup();
-        const { fetchMock } = stubApi({
-          'GET /api/pantry': () =>
-            Response.json({ batches: [batch({ name: 'Milk' })] }),
-          'GET /api/staples': () => Response.json({ staples: [] }),
-          'POST /api/staples': () =>
-            Response.json(
-              { code: 'shopping.staple_limit_reached', params: { max: 200 } },
-              { status: 409 },
-            ),
-        });
-        vi.stubGlobal('fetch', fetchMock);
-        renderWithProviders(<PantryPage />);
-
-        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
-        await waitFor(() =>
-          expect(star).not.toHaveAttribute('aria-disabled', 'true'),
-        );
-        await user.click(star);
-
-        expect(await screen.findByRole('alert')).toHaveTextContent(
-          'You can have up to 200 staples',
-        );
-      });
-
-      it('shows the star only while the row is expanded', async () => {
-        const user = userEvent.setup();
-        stubStaples();
-        renderWithProviders(<PantryPage />);
-
-        const toggle = await screen.findByRole('button', { name: /^Milk/ });
-        expect(
-          screen.queryByRole('button', { name: 'Make Milk a staple' }),
-        ).not.toBeInTheDocument();
-        await user.click(toggle);
-        expect(toggle).toHaveAttribute('aria-expanded', 'true');
-        expect(
-          screen.getByRole('button', { name: 'Make Milk a staple' }),
-        ).toBeInTheDocument();
-        await user.click(toggle);
-        expect(
-          screen.queryByRole('button', { name: 'Make Milk a staple' }),
-        ).not.toBeInTheDocument();
-      });
-    });
-
-    describe('Running low toggle', () => {
-      /** Running-low flags follow the PUT and DELETE calls, as the API does. `gate` holds a save open. */
-      function stubRunningLow({
-        failSave = false,
+      /**
+       * Staples and Running-low flags follow the requests, as the API does. `gate` holds every save
+       * open; `failSaves` refuses them.
+       */
+      function stubActions({
         gate,
+        failSaves = false,
+        staplesAtStart = [],
+        flaggedAtStart = [],
         batches = [
           batch({ name: 'Milk', quantity: 1, unit: 'l' }),
           batch({
@@ -1480,31 +1390,42 @@ describe('PantryPage', () => {
             location: 'cupboard',
           }),
         ],
-        flaggedAtStart = [],
       }: {
-        failSave?: boolean;
         gate?: Promise<void>;
-        batches?: Batch[];
+        failSaves?: boolean;
+        staplesAtStart?: (typeof milkStaple)[];
         flaggedAtStart?: string[];
+        batches?: Batch[];
       } = {}) {
+        let staples = staplesAtStart;
         const flagged = new Set<string>(flaggedAtStart);
+        const refused = () =>
+          Response.json({ code: 'errors.unknown' }, { status: 500 });
         const { fetchMock, calls } = stubApi({
           'GET /api/pantry': () =>
-            Response.json({
-              batches,
-              runningLow: [...flagged],
-            }),
-          'GET /api/staples': () => Response.json({ staples: [] }),
+            Response.json({ batches, runningLow: [...flagged] }),
+          'GET /api/staples': () => Response.json({ staples }),
+          'POST /api/staples': async () => {
+            await gate;
+            if (failSaves) return refused();
+            staples = [...staples, milkStaple];
+            return Response.json(milkStaple, { status: 201 });
+          },
+          'DELETE /api/staples/staple-1': async () => {
+            await gate;
+            if (failSaves) return refused();
+            staples = staples.filter((s) => s.id !== 'staple-1');
+            return new Response(null, { status: 204 });
+          },
           'PUT /api/pantry/running-low/milk-id': async () => {
             await gate;
-            if (failSave) {
-              return Response.json({ code: 'errors.unknown' }, { status: 500 });
-            }
+            if (failSaves) return refused();
             flagged.add('milk-id');
             return new Response(null, { status: 204 });
           },
           'DELETE /api/pantry/running-low/milk-id': async () => {
             await gate;
+            if (failSaves) return refused();
             flagged.delete('milk-id');
             return new Response(null, { status: 204 });
           },
@@ -1513,97 +1434,235 @@ describe('PantryPage', () => {
         return calls;
       }
 
-      const runningLowToggle = () =>
-        screen.queryByRole('button', { name: 'Mark running low' });
-
-      it('shows the toggle only on an expanded matched row, just before the Staple star', async () => {
-        const user = userEvent.setup();
-        stubRunningLow();
-        renderWithProviders(<PantryPage />);
-
-        const milk = await screen.findByRole('button', { name: /^Milk/ });
-        expect(runningLowToggle()).not.toBeInTheDocument();
-        await user.click(milk);
-
-        const toggle = screen.getByRole('button', { name: 'Mark running low' });
-        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
-        expect(toggle).toHaveAttribute('aria-pressed', 'false');
-        expect(toggle.nextElementSibling).toBe(star);
-
-        // Opening the Unmatched row closes Milk, and offers no toggle of its own.
-        await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
-        expect(runningLowToggle()).not.toBeInTheDocument();
-      });
-
-      it('sets the flag at once on tap, and clears it on the next tap', async () => {
-        const user = userEvent.setup();
+      function gated() {
         let release!: () => void;
         const gate = new Promise<void>((resolve) => (release = resolve));
-        const calls = stubRunningLow({ gate });
+        return { gate, release };
+      }
+
+      const stapleChip = () =>
+        screen.queryByRole('button', { name: 'Make Staple' });
+      const lowChip = () =>
+        screen.queryByRole('button', { name: 'Running low' });
+      /** The Running low marker on the Ingredient row itself. */
+      const lowMarker = (name = 'Milk') =>
+        within(
+          screen.getByRole('button', { name: new RegExp(`^${name}`) }),
+        ).queryByText('Running low', { ignore: '[aria-hidden] *' });
+
+      async function openMilk(user: ReturnType<typeof userEvent.setup>) {
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      }
+
+      it('ends the open card of a matched Ingredient with the Staple and Running low chips', async () => {
+        const user = userEvent.setup();
+        stubActions();
         renderWithProviders(<PantryPage />);
 
-        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-        const toggle = screen.getByRole('button', { name: 'Mark running low' });
-        await user.click(toggle);
-        // Held at the server: the toggle already shows the new state.
-        expect(toggle).toHaveAttribute('aria-pressed', 'true');
-        release();
-        await waitFor(() =>
-          expect(
-            calls.some((c) => c.key === 'PUT /api/pantry/running-low/milk-id'),
-          ).toBe(true),
-        );
-        await waitFor(() =>
-          expect(toggle).toHaveAttribute('aria-pressed', 'true'),
-        );
+        await screen.findByRole('button', { name: /^Milk/ });
+        expect(stapleChip()).not.toBeInTheDocument();
+        expect(lowChip()).not.toBeInTheDocument();
+        await openMilk(user);
 
-        await user.click(toggle);
-        await waitFor(() =>
-          expect(
-            calls.some(
-              (c) => c.key === 'DELETE /api/pantry/running-low/milk-id',
-            ),
-          ).toBe(true),
-        );
-        await waitFor(() =>
-          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
-        );
+        const staple = stapleChip()!;
+        const low = lowChip()!;
+        expect(staple).toHaveTextContent(/^Make Staple$/);
+        expect(staple).toHaveAttribute('aria-pressed', 'false');
+        expect(low).toHaveTextContent(/^Running low$/);
+        expect(low).toHaveAttribute('aria-pressed', 'false');
+        // After the Batches, Staple first.
+        const [lastBatch] = batchRows().slice(-1);
+        expect(
+          lastBatch.compareDocumentPosition(staple) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(staple.nextElementSibling).toBe(low);
+        // The header has neither the old star nor the old toggle.
+        expect(
+          screen.queryByRole('button', { name: /a staple$/ }),
+        ).not.toBeInTheDocument();
+        expect(
+          screen.queryByRole('button', { name: 'Mark running low' }),
+        ).not.toBeInTheDocument();
       });
 
-      it('rolls the toggle back and shows an error when the save fails', async () => {
+      it('shows neither chip on an Unmatched Ingredient', async () => {
         const user = userEvent.setup();
-        let release!: () => void;
-        const gate = new Promise<void>((resolve) => (release = resolve));
-        stubRunningLow({ failSave: true, gate });
+        stubActions();
         renderWithProviders(<PantryPage />);
 
-        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-        const toggle = screen.getByRole('button', { name: 'Mark running low' });
-        await user.click(toggle);
-        expect(toggle).toHaveAttribute('aria-pressed', 'true');
-
-        release();
-        await waitFor(() =>
-          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        await user.click(
+          await screen.findByRole('button', { name: /^Zorblax/ }),
         );
-        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(
+          screen.getByRole('group', { name: /^Zorblax paste, 1 batch/ }),
+        ).toBeVisible();
+        expect(stapleChip()).not.toBeInTheDocument();
+        expect(lowChip()).not.toBeInTheDocument();
+      });
+
+      describe('the Staple chip', () => {
+        it('makes the Ingredient a Staple at once, says so with no Undo, and sends the add', async () => {
+          const user = userEvent.setup();
+          const { gate, release } = gated();
+          const calls = stubActions({ gate });
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          const chip = stapleChip()!;
+          await user.click(chip);
+          // Held at the server: the chip already shows the new state.
+          expect(chip).toHaveAttribute('aria-pressed', 'true');
+          expect(chip).toHaveTextContent(/^Staple$/);
+          expect(await screen.findByText('Milk is a Staple')).toBeVisible();
+          expect(
+            screen.queryByRole('button', { name: 'Undo' }),
+          ).not.toBeInTheDocument();
+
+          release();
+          await waitFor(() =>
+            expect(
+              calls.find((c) => c.key === 'POST /api/staples')?.body,
+            ).toEqual({ ingredientId: 'milk-id' }),
+          );
+          await waitFor(() =>
+            expect(
+              calls.filter((c) => c.key === 'GET /api/staples'),
+            ).toHaveLength(2),
+          );
+          expect(chip).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('removes the Staple by its id, at once, and says so', async () => {
+          const user = userEvent.setup();
+          const calls = stubActions({ staplesAtStart: [milkStaple] });
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          const chip = stapleChip()!;
+          await waitFor(() =>
+            expect(chip).toHaveAttribute('aria-pressed', 'true'),
+          );
+          expect(chip).toHaveTextContent(/^Staple$/);
+          await user.click(chip);
+
+          expect(chip).toHaveAttribute('aria-pressed', 'false');
+          expect(chip).toHaveTextContent(/^Make Staple$/);
+          expect(
+            await screen.findByText('Milk is no longer a Staple'),
+          ).toBeVisible();
+          await waitFor(() =>
+            expect(
+              calls.some((c) => c.key === 'DELETE /api/staples/staple-1'),
+            ).toBe(true),
+          );
+        });
+
+        it('flips back and shows a translated error when the Staple limit is reached', async () => {
+          const user = userEvent.setup();
+          const { fetchMock } = stubApi({
+            'GET /api/pantry': () =>
+              Response.json({ batches: [batch({ name: 'Milk' })] }),
+            'GET /api/staples': () => Response.json({ staples: [] }),
+            'POST /api/staples': () =>
+              Response.json(
+                {
+                  code: 'shopping.staple_limit_reached',
+                  params: { max: 200 },
+                },
+                { status: 409 },
+              ),
+          });
+          vi.stubGlobal('fetch', fetchMock);
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          const chip = stapleChip()!;
+          await user.click(chip);
+
+          expect(await screen.findByRole('alert')).toHaveTextContent(
+            'You can have up to 200 staples',
+          );
+          expect(chip).toHaveAttribute('aria-pressed', 'false');
+        });
       });
 
       describe('the Running low chip', () => {
-        const chip = () => screen.queryByText('Running low');
+        it('sets the flag at once, on the chip and on the row, says so with no Undo, and clears it on the next press', async () => {
+          const user = userEvent.setup();
+          const { gate, release } = gated();
+          const calls = stubActions({ gate });
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
 
+          const chip = lowChip()!;
+          expect(lowMarker()).not.toBeInTheDocument();
+          await user.click(chip);
+          // Held at the server: the chip and the row's marker already show it.
+          expect(chip).toHaveAttribute('aria-pressed', 'true');
+          expect(lowMarker()).toBeVisible();
+          expect(
+            await screen.findByText('Milk marked running low'),
+          ).toBeVisible();
+          expect(
+            screen.queryByRole('button', { name: 'Undo' }),
+          ).not.toBeInTheDocument();
+          release();
+          await waitFor(() =>
+            expect(
+              calls.some(
+                (c) => c.key === 'PUT /api/pantry/running-low/milk-id',
+              ),
+            ).toBe(true),
+          );
+
+          await user.click(chip);
+          expect(chip).toHaveAttribute('aria-pressed', 'false');
+          expect(lowMarker()).not.toBeInTheDocument();
+          expect(
+            await screen.findByText('Milk no longer running low'),
+          ).toBeVisible();
+          await waitFor(() =>
+            expect(
+              calls.some(
+                (c) => c.key === 'DELETE /api/pantry/running-low/milk-id',
+              ),
+            ).toBe(true),
+          );
+        });
+
+        it('flips back and shows an error when the save fails', async () => {
+          const user = userEvent.setup();
+          const { gate, release } = gated();
+          stubActions({ gate, failSaves: true });
+          renderWithProviders(<PantryPage />);
+          await openMilk(user);
+
+          const chip = lowChip()!;
+          await user.click(chip);
+          expect(chip).toHaveAttribute('aria-pressed', 'true');
+
+          release();
+          await waitFor(() =>
+            expect(chip).toHaveAttribute('aria-pressed', 'false'),
+          );
+          expect(await screen.findByRole('alert')).toBeInTheDocument();
+        });
+      });
+
+      describe('the Running low marker on the row', () => {
         it('is hidden while the flag is off', async () => {
-          stubRunningLow({
+          stubActions({
             batches: [batch({ name: 'Milk', expiryDate: inDays(2) })],
           });
           renderWithProviders(<PantryPage />);
 
           await screen.findByRole('button', { name: /^Milk/ });
-          expect(chip()).not.toBeInTheDocument();
+          expect(lowMarker()).not.toBeInTheDocument();
         });
 
         it('shows on the collapsed row, after the expiry tag', async () => {
-          stubRunningLow({
+          stubActions({
             batches: [
               batch({
                 name: 'Milk',
@@ -1623,12 +1682,12 @@ describe('PantryPage', () => {
           expect(row.textContent).toBe(
             'Milk' + '1 L' + '2 d left' + '2 days left' + 'Running low',
           );
-          expect(chip()).toBeVisible();
+          expect(lowMarker()).toBeVisible();
         });
 
-        it('shows on the expanded row, which has no expiry tag of its own', async () => {
+        it('shows on the open row, which has no expiry tag of its own', async () => {
           const user = userEvent.setup();
-          stubRunningLow({
+          stubActions({
             batches: [
               batch({
                 name: 'Milk',
@@ -1641,23 +1700,19 @@ describe('PantryPage', () => {
           });
           renderWithProviders(<PantryPage />);
 
-          await user.click(
-            await screen.findByRole('button', { name: /^Milk/ }),
-          );
-          expect(chip()).toBeVisible();
-          // The expiry shows per Batch in the expanded panel, so the chip stays on the header.
+          await openMilk(user);
+          expect(lowMarker()).toBeVisible();
+          // The expiry shows per Batch in the open card, so the marker stays on the header.
           expect(
             within(
               screen.getByRole('group', { name: 'Milk, 1 batch' }),
             ).getByText('2 days left'),
           ).toBeVisible();
-          expect(
-            screen.getByRole('button', { name: 'Mark running low' }),
-          ).toHaveAttribute('aria-pressed', 'true');
+          expect(lowChip()).toHaveAttribute('aria-pressed', 'true');
         });
 
         it('shows when the ingredient has no expiry date', async () => {
-          stubRunningLow({
+          stubActions({
             batches: [
               batch({ name: 'Milk', quantity: 1, unit: 'l', expiryDate: null }),
             ],
@@ -1666,12 +1721,12 @@ describe('PantryPage', () => {
           renderWithProviders(<PantryPage />);
 
           await screen.findByRole('button', { name: /^Milk/ });
-          expect(chip()).toBeVisible();
+          expect(lowMarker()).toBeVisible();
         });
 
         it('shows in every Location section for the Ingredient, and toggling once updates them all', async () => {
           const user = userEvent.setup();
-          stubRunningLow({
+          stubActions({
             batches: [
               batch({
                 name: 'Milk',
@@ -1693,24 +1748,22 @@ describe('PantryPage', () => {
             name: 'Fridge · 1',
           });
           const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
-          expect(chip()).not.toBeInTheDocument();
+          const marker = (section: HTMLElement) =>
+            within(
+              within(section).getByRole('button', { name: /^Milk/ }),
+            ).queryByText('Running low', { ignore: '[aria-hidden] *' });
 
           await user.click(
             within(fridge).getByRole('button', { name: /^Milk/ }),
           );
-          await user.click(
-            screen.getByRole('button', { name: 'Mark running low' }),
-          );
+          await user.click(lowChip()!);
 
-          await waitFor(() =>
-            expect(within(fridge).getByText('Running low')).toBeVisible(),
-          );
-          expect(within(cupboard).getByText('Running low')).toBeVisible();
+          expect(marker(fridge)).toBeVisible();
+          expect(marker(cupboard)).toBeVisible();
 
-          await user.click(
-            screen.getByRole('button', { name: 'Mark running low' }),
-          );
-          await waitFor(() => expect(chip()).not.toBeInTheDocument());
+          await user.click(lowChip()!);
+          await waitFor(() => expect(marker(fridge)).not.toBeInTheDocument());
+          expect(marker(cupboard)).not.toBeInTheDocument();
         });
       });
     });

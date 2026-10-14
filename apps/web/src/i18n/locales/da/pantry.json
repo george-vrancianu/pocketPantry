@@ -18,8 +18,7 @@
   },
   "unmatched": "Umatchet",
   "runningLow": {
-    "chip": "Ved at løbe tør",
-    "toggle": "Markér som ved at løbe tør"
+    "chip": "Ved at løbe tør"
   },
   "all": "Alle",
   "filters": "Filtrer efter placering",
@@ -34,18 +33,26 @@
     "batches_one": "{{count}} parti",
     "batches_other": "{{count}} partier",
     "runningLow": "Ved at løbe tør",
-    "notLow": "Ikke tør"
+    "notLow": "Ikke tør",
+    "staple": "Basisvare",
+    "makeStaple": "Gør til basisvare"
   },
   "toast": {
     "low": {
       "on": "{{name}} er markeret som ved at løbe tør",
       "off": "{{name}} er ikke længere ved at løbe tør"
+    },
+    "staple": {
+      "on": "{{name}} er en basisvare",
+      "off": "{{name}} er ikke længere en basisvare"
     }
   },
   "a11y": {
     "markLow": "Markér som ved at løbe tør",
     "clearLow": "Fjern ved at løbe tør",
-    "lowKey": "Tryk L: {{action}}"
+    "lowKey": "Tryk L: {{action}}",
+    "makeStaple": "Gør til basisvare",
+    "removeStaple": "Fjern som basisvare"
   },
   "batch": {
     "noDate": "ingen dato"
