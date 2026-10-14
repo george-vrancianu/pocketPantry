@@ -35,18 +35,26 @@
     "batches_few": "{{count}} loturi",
     "batches_other": "{{count}} de loturi",
     "runningLow": "Pe sfârșite",
-    "notLow": "Nu e pe sfârșite"
+    "notLow": "Nu e pe sfârșite",
+    "staple": "Produs de bază",
+    "makeStaple": "Fă-l produs de bază"
   },
   "toast": {
     "low": {
       "on": "{{name}} marcat ca fiind pe sfârșite",
       "off": "{{name}} nu mai e pe sfârșite"
+    },
+    "staple": {
+      "on": "{{name}} e produs de bază",
+      "off": "{{name}} nu mai e produs de bază"
     }
   },
   "a11y": {
     "markLow": "Marchează ca fiind pe sfârșite",
     "clearLow": "Nu mai e pe sfârșite",
-    "lowKey": "Apasă L: {{action}}"
+    "lowKey": "Apasă L: {{action}}",
+    "makeStaple": "Fă-l produs de bază",
+    "removeStaple": "Scoate din produsele de bază"
   },
   "batch": {
     "noDate": "fără dată"
@@ -57,8 +65,7 @@
   },
   "unmatched": "Nepotrivit",
   "runningLow": {
-    "chip": "Pe sfârșite",
-    "toggle": "Marchează ca fiind pe sfârșite"
+    "chip": "Pe sfârșite"
   },
   "form": {
     "title": "Adaugă în cămară",

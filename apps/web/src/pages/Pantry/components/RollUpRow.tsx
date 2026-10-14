@@ -16,8 +16,6 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
-import { StapleToggle } from '../../../components/StapleToggle';
-import { RunningLowToggle } from '../../../components/RunningLowToggle';
 import { RunningLowChip } from '../../../components/RunningLowChip';
 import { ExpiryTag } from '../../../components/ExpiryTag';
 import { useExpiryTags, type Batch } from '../../../lib/pantry';
@@ -26,6 +24,7 @@ import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { useLiftIntoView } from '../hooks/useLiftIntoView';
 import { BatchDetail } from './BatchDetail';
+import { IngredientActions } from './IngredientActions';
 import { useRunningLowToggle } from '../hooks/useRunningLowToggle';
 import { LIFT_EASING, LIFT_MS } from './liftedBlock';
 
@@ -68,7 +67,7 @@ type Props = {
   sx?: ComponentProps<typeof Box>['sx'];
 };
 
-/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple star. */
+/** One Ingredient in a Location: total quantity and soonest expiry, expanding to each Batch (with its own expiry) and the Staple and Running low chips. */
 export function RollUpRow({
   rollUp,
   today,
@@ -91,12 +90,13 @@ export function RollUpRow({
   const lowToggle = useRunningLowToggle();
   const canToggleLow = !expanded && !rollUp.unmatched && !rollUp.gone;
   const [popChip, setPopChip] = useState(false);
-  const flipLow = () => {
+  // The swipe and L offer Undo; the open card's chip does not.
+  const flipLow = ({ undo = true }: { undo?: boolean } = {}) => {
     const on = !rollUp.runningLow;
     setPopChip(on);
     lowToggle.toggle(
       { ingredientId: rollUp.key, name: rollUp.name, on },
-      { undo: true },
+      { undo },
     );
   };
   // The timer reads the row as it is when it fires, not as it was at the release.
@@ -288,12 +288,6 @@ export function RollUpRow({
               <ChevronDownIcon size={18} />
             </Box>
           </Box>
-          {expanded && !rollUp.unmatched ? (
-            <>
-              <RunningLowToggle ingredientId={rollUp.key} />
-              <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
-            </>
-          ) : null}
         </Box>
       </SwipeToggle>
       {expanded && !rollUp.gone ? (
@@ -314,36 +308,47 @@ export function RollUpRow({
             '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
           }}
         >
-          <Box
-            component="ul"
-            sx={{
-              m: 0,
-              p: 0,
-              pb: '4px',
-              minHeight: 0,
-              overflow: 'hidden',
-              listStyle: 'none',
-              borderTop: `1px solid ${tokens.color.divider}`,
-            }}
-          >
-            {rollUp.batches.map((batch, index) => (
-              <BatchDetail
-                key={batch.id}
-                batch={batch}
-                index={index}
-                peek={
-                  index === 0 && rowHint.leader === panelId && rowHint.hint.peek
-                }
-                onLearned={rowHint.hint.onLearned}
-                today={today}
-                onRemove={onRemoveBatch}
-                onLeft={() =>
-                  rollUp.batches.length > 1
-                    ? toggle.current?.focus()
-                    : onRowGone()
-                }
+          {/* The one grid track: the Batches, then the action row at the bottom of the card. */}
+          <Box sx={{ minHeight: 0, overflow: 'hidden' }}>
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                p: 0,
+                pb: '4px',
+                listStyle: 'none',
+                borderTop: `1px solid ${tokens.color.divider}`,
+              }}
+            >
+              {rollUp.batches.map((batch, index) => (
+                <BatchDetail
+                  key={batch.id}
+                  batch={batch}
+                  index={index}
+                  peek={
+                    index === 0 &&
+                    rowHint.leader === panelId &&
+                    rowHint.hint.peek
+                  }
+                  onLearned={rowHint.hint.onLearned}
+                  today={today}
+                  onRemove={onRemoveBatch}
+                  onLeft={() =>
+                    rollUp.batches.length > 1
+                      ? toggle.current?.focus()
+                      : onRowGone()
+                  }
+                />
+              ))}
+            </Box>
+            {rollUp.unmatched ? null : (
+              <IngredientActions
+                ingredientId={rollUp.key}
+                name={rollUp.name}
+                runningLow={rollUp.runningLow}
+                onToggleLow={() => flipLow({ undo: false })}
               />
-            ))}
+            )}
           </Box>
         </Box>
       ) : null}

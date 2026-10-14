@@ -18,8 +18,7 @@
   },
   "unmatched": "Unmatched",
   "runningLow": {
-    "chip": "Running low",
-    "toggle": "Mark running low"
+    "chip": "Running low"
   },
   "all": "All",
   "filters": "Filter by location",
@@ -35,18 +34,26 @@
     "batches_one": "{{count}} batch",
     "batches_other": "{{count}} batches",
     "runningLow": "Running low",
-    "notLow": "Not low"
+    "notLow": "Not low",
+    "staple": "Staple",
+    "makeStaple": "Make Staple"
   },
   "toast": {
     "low": {
       "on": "{{name}} marked running low",
       "off": "{{name}} no longer running low"
+    },
+    "staple": {
+      "on": "{{name}} is a Staple",
+      "off": "{{name}} is no longer a Staple"
     }
   },
   "a11y": {
     "markLow": "Mark running low",
     "clearLow": "Clear running low",
-    "lowKey": "Press L: {{action}}"
+    "lowKey": "Press L: {{action}}",
+    "makeStaple": "Make Staple",
+    "removeStaple": "Remove Staple"
   },
   "batch": {
     "noDate": "no date"
