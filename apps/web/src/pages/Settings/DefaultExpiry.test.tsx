@@ -488,6 +488,22 @@ describe('Default expiry', () => {
       await waitFor(() => expect(rowOf('Milk')).toHaveFocus());
     });
 
+    it('returns focus to the row even when clicking it did not focus it (as in Safari)', async () => {
+      const user = userEvent.setup();
+      stubFamily([MILK]);
+      renderFamily();
+      const row = await rowOfAsync('Milk');
+      // fireEvent clicks without moving focus, as Safari does for buttons.
+      fireEvent.click(row);
+      expect(row).not.toHaveFocus();
+      const sheet = await screen.findByRole('dialog', { name: 'Milk' });
+
+      await user.keyboard('{Escape}');
+
+      await waitFor(() => expect(sheet).not.toBeInTheDocument());
+      await waitFor(() => expect(rowOf('Milk')).toHaveFocus());
+    });
+
     it('moves focus to the search field on open', async () => {
       const user = userEvent.setup();
       stubFamily([]);

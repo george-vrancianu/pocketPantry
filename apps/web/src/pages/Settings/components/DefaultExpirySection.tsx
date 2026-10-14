@@ -52,11 +52,9 @@ export function DefaultExpirySection() {
   const opener = useRef<HTMLElement | null>(null);
   const addButton = useRef<HTMLButtonElement>(null);
 
-  const openSheet = (start: SheetStart) => {
-    opener.current =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
+  // The opener is passed in: Safari does not focus a clicked button, so `activeElement` would be `<body>`.
+  const openSheet = (start: SheetStart, from: HTMLElement) => {
+    opener.current = from;
     setSheet((prev) => ({ open: true, start, session: prev.session + 1 }));
   };
   const closeSheet = () => setSheet((prev) => ({ ...prev, open: false }));
@@ -117,13 +115,12 @@ export function DefaultExpirySection() {
                 <Box
                   component="button"
                   type="button"
-                  onClick={(event) => {
-                    opener.current = event.currentTarget;
-                    openSheet({
-                      kind: 'edit',
-                      categoryId: override.categoryId,
-                    });
-                  }}
+                  onClick={(event) =>
+                    openSheet(
+                      { kind: 'edit', categoryId: override.categoryId },
+                      event.currentTarget,
+                    )
+                  }
                   sx={{
                     display: 'flex',
                     flex: 1,
@@ -186,10 +183,7 @@ export function DefaultExpirySection() {
       <Button
         ref={addButton}
         variant="secondary"
-        onClick={(event) => {
-          opener.current = event.currentTarget;
-          openSheet({ kind: 'pick' });
-        }}
+        onClick={(event) => openSheet({ kind: 'pick' }, event.currentTarget)}
       >
         {t('defaultExpiry.add')}
       </Button>
