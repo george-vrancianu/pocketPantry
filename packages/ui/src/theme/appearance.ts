@@ -42,14 +42,18 @@ export function parseAppearance(raw: string | null | undefined): Appearance {
   return DEFAULT_APPEARANCE;
 }
 
+/** The light Theme an appearance uses: its own, or Warm editorial if Dark-first was chosen. */
+export function lightTheme(appearance: Appearance): ThemeId {
+  return appearance.theme === 'dark' ? 'warm' : appearance.theme;
+}
+
 /** With Match system on, system dark mode uses Dark-first and light mode the chosen light Theme (Warm editorial if Dark-first was chosen). */
 export function resolveTheme(
   appearance: Appearance,
   systemDark: boolean,
 ): ThemeId {
   if (!appearance.matchSystem) return appearance.theme;
-  if (systemDark) return 'dark';
-  return appearance.theme === 'dark' ? 'warm' : appearance.theme;
+  return systemDark ? 'dark' : lightTheme(appearance);
 }
 
 /** The device's stored appearance; blocked storage reads as the default. */
