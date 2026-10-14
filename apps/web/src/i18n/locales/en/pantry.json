@@ -58,6 +58,8 @@
     "today": "Today",
     "within_one": "Within {{count}} day",
     "within_other": "Within {{count}} days",
+    "beyond_one": "More than {{count}} day",
+    "beyond_other": "More than {{count}} days",
     "quickPicks": "Quick picks",
     "usualDate": "Usual · {{date}}",
     "unitDay_one": "d",

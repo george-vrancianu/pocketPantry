@@ -57,6 +57,8 @@
     "today": "I dag",
     "within_one": "Inden for {{count}} dag",
     "within_other": "Inden for {{count}} dage",
+    "beyond_one": "Mere end {{count}} dag",
+    "beyond_other": "Mere end {{count}} dage",
     "quickPicks": "Hurtige valg",
     "usualDate": "Plejer · {{date}}",
     "unitDay_one": "d",

@@ -39,7 +39,7 @@ export type ExpiryCalendarProps = {
   today: Date;
   /** The Default Expiry in days, so the Usual date is always in the range; null when there is none. */
   usualDays: number | null;
-  /** Days from today through today + this are the Expiring Soon band. */
+  /** Colours the range from today to the chosen day: Expiring Soon when the day is at most this far out. */
   staleThresholdDays: number;
 };
 
@@ -95,7 +95,7 @@ const SELECTED_SHADOW = '0 4px 12px rgba(46,106,77,.28)';
 
 /**
  * The calendar card of the expiry sheet: weekday initials (Monday first), a vertically scrolling list of whole
- * months with sticky names, and a legend for the Expiring Soon band. It opens on the value's month (today's when
+ * months with sticky names, today through the chosen day tinted with a matching legend. It opens on the value's month (today's when
  * empty) and keeps its place when a day is tapped.
  */
 export function ExpiryCalendar({
@@ -110,6 +110,17 @@ export function ExpiryCalendar({
   const reduceMotion = usePrefersReducedMotion();
   const legendId = useId();
   const headingId = useId();
+  // Today through the chosen day is tinted, amber when the day is Expiring Soon and green when later.
+  const chosenDays = value === null ? null : daysUntil(value, today);
+  const range =
+    chosenDays === null || chosenDays < 0
+      ? null
+      : {
+          days: chosenDays,
+          tone: isExpiringSoon(chosenDays, staleThresholdDays)
+            ? ('soon' as const)
+            : ('ok' as const),
+        };
   const scroller = useRef<HTMLDivElement>(null);
   const { color } = tokens;
   // The range is fixed while the sheet is open, so clearing a far value doesn't pull the list out from under it.
@@ -273,9 +284,10 @@ export function ExpiryCalendar({
             '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           },
           '& .day[data-past]': { color: color.muted },
-          '& .day[data-band]': {
+          '& .day[data-range="soon"]': {
             backgroundColor: `color-mix(in srgb, ${color.soonBg} 70%, transparent)`,
           },
+          '& .day[data-range="ok"]': { backgroundColor: color.okBg },
           '& .day[aria-current="date"]::after': {
             content: '""',
             position: 'absolute',
@@ -329,7 +341,8 @@ export function ExpiryCalendar({
                       if (iso === null)
                         return <span key={column} role="gridcell" />;
                       const days = daysUntil(iso, today);
-                      const inBand = isExpiringSoon(days, staleThresholdDays);
+                      const inRange =
+                        range !== null && days >= 0 && days <= range.days;
                       return (
                         <Box key={iso} role="gridcell" sx={{ display: 'grid' }}>
                           <button
@@ -340,9 +353,9 @@ export function ExpiryCalendar({
                             aria-label={dayName.format(fromIso(iso))}
                             aria-pressed={iso === value}
                             aria-current={days === 0 ? 'date' : undefined}
-                            aria-describedby={inBand ? legendId : undefined}
+                            aria-describedby={inRange ? legendId : undefined}
                             data-past={days < 0 ? '' : undefined}
-                            data-band={inBand ? '' : undefined}
+                            data-range={inRange ? range.tone : undefined}
                             onFocus={() => setFocusIso(iso)}
                             onClick={() => onChange(iso)}
                           >
@@ -374,19 +387,26 @@ export function ExpiryCalendar({
           component="span"
           sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
-          <Box
-            component="span"
-            aria-hidden
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: '3px',
-              backgroundColor: color.soonBg,
-            }}
-          />
-          <span id={legendId}>
-            {t('picker.within', { count: staleThresholdDays })}
-          </span>
+          {range !== null && (
+            <>
+              <Box
+                component="span"
+                aria-hidden
+                sx={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '3px',
+                  backgroundColor:
+                    range.tone === 'soon' ? color.soonBg : color.okBg,
+                }}
+              />
+              <span id={legendId}>
+                {t(range.tone === 'soon' ? 'picker.within' : 'picker.beyond', {
+                  count: staleThresholdDays,
+                })}
+              </span>
+            </>
+          )}
         </Box>
         <Box
           component="button"

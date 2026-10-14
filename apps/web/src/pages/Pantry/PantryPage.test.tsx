@@ -871,7 +871,7 @@ describe('PantryPage', () => {
       expect(last?.behavior).toBe('auto');
     });
 
-    it('renders 14 Monday-first months, marks today, and tints today + Stale Threshold as the Expiring Soon band', async () => {
+    it('renders 14 Monday-first months and marks today', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
       const sheet = await openSheet(user);
@@ -915,19 +915,46 @@ describe('PantryPage', () => {
       expect(
         within(calendar).getByRole('button', { current: 'date' }),
       ).toHaveAccessibleName('Wednesday, October 14, 2026');
+    });
 
-      // Stale Threshold 3: today through 17 October, four days.
-      const band = within(calendar)
-        .getAllByRole('button')
-        .filter((day) => day.hasAttribute('aria-describedby'));
-      expect(band.map((day) => day.textContent)).toEqual([
+    it('tints today through the chosen day, as Expiring Soon within the Stale Threshold and as later beyond it', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
+      const tinted = () =>
+        within(calendar)
+          .getAllByRole('button')
+          .filter((day) => day.hasAttribute('aria-describedby'));
+
+      // Usual is 30 days out, beyond Stale Threshold 3: 14 October through 13 November.
+      expect(tinted()).toHaveLength(31);
+      expect(tinted()[0]).toHaveAccessibleName('Wednesday, October 14, 2026');
+      expect(tinted().at(-1)).toHaveAccessibleName('Friday, November 13, 2026');
+      for (const day of tinted())
+        expect(day).toHaveAccessibleDescription('More than 3 days');
+
+      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      expect(tinted().map((day) => day.textContent)).toEqual([
         '14',
         '15',
         '16',
         '17',
       ]);
-      for (const day of band)
+      for (const day of tinted())
         expect(day).toHaveAccessibleDescription('Within 3 days');
+
+      await user.click(
+        within(calendar).getByRole('button', {
+          name: 'Saturday, October 10, 2026',
+        }),
+      );
+      expect(tinted()).toHaveLength(0);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'No expiry' }),
+      );
+      expect(tinted()).toHaveLength(0);
     });
 
     it("opens straight on the value's month (today's when empty) and stays put when a day is tapped", async () => {
