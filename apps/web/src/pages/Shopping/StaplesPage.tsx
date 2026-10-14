@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { CatalogSearch } from '../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../components/catalogSearch/emptyState/BrowseByAisle';
 import { translateApiError } from '../../i18n/translateApiError';
 import { formatAmount, type Amount } from '../../lib/amount';
 import {
@@ -69,6 +70,7 @@ export function StaplesPage() {
         <Typography color="text.secondary">{t('staples:hint')}</Typography>
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
         <CatalogSearch
+          emptyState={<BrowseByAisle />}
           key={formKey}
           showUnit={false}
           onSelect={(ingredient) =>

@@ -16,6 +16,9 @@ export type ScanLanguage = (typeof SCAN_LANGUAGES)[number];
 
 export const catalogSearchQuery = z.object({
   q: z.string().max(100),
+  // Browse by aisle: an empty `q` lists the Aisle's Ingredients A to Z (limit 50); with `q` it filters within.
+  aisleId: z.uuid().optional(),
+  parentCategoryId: z.uuid().optional(),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   // 'shared' searches the shared Catalog only: Admin curation and Catalog Recipe editing.
@@ -29,6 +32,22 @@ export const catalogParentsQuery = z.object({
 export type CatalogParentsQuery = z.infer<typeof catalogParentsQuery>;
 
 export type CatalogParent = { id: string; name: string };
+
+export const catalogAislesQuery = z.object({
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  scope: z.enum(['family', 'shared']).default('family'),
+});
+export type CatalogAislesQuery = z.infer<typeof catalogAislesQuery>;
+
+/** An Aisle with its Parent Categories, for Browse by aisle. */
+export type CatalogAisle = {
+  id: string;
+  name: string;
+  parentCategories: CatalogParent[];
+};
+
+/** An empty-`q` Aisle listing returns at most this many Ingredients. */
+export const AISLE_LISTING_LIMIT = 50;
 
 export type CatalogSearchResult = {
   id: string;

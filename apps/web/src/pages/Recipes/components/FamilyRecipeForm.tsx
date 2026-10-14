@@ -2,6 +2,7 @@ import { Stack, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
@@ -125,6 +126,7 @@ export function FamilyRecipeForm({
         }
       >
         <CatalogSearch
+          emptyState={<BrowseByAisle />}
           key={searchKey}
           onSelect={(ingredient) => {
             addLine({

@@ -5,7 +5,7 @@ import { TemplateChips } from './TemplateChips';
 
 export type EmptySearchProps = {
   suggestions: Suggestions;
-  /** Selects a Gone tile's Ingredient through the search. */
+  /** Called as a Gone tile is picked, before the search selects it. */
   onPickGone: (suggestion: Suggestion) => void;
   /** Opens a template's apply view. */
   onOpenTemplate: (id: string) => void;
@@ -17,7 +17,7 @@ export type EmptySearchProps = {
 export function EmptySearch(props: EmptySearchProps) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
-      <GoneTiles suggestions={props.suggestions} onSelect={props.onPickGone} />
+      <GoneTiles suggestions={props.suggestions} onPick={props.onPickGone} />
       <TemplateChips
         onOpenTemplate={props.onOpenTemplate}
         onSeeAll={props.onSeeAllTemplates}

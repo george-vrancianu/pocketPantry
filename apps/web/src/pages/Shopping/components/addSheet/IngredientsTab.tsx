@@ -22,8 +22,6 @@ import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 
 /** What was picked in the search: a Catalog match, or the typed text as an Unmatched item. */
-type SelectResult = (ingredient: CatalogSearchResult) => void;
-
 type Chosen =
   | { kind: 'catalog'; result: CatalogSearchResult }
   | { kind: 'typed'; name: string };
@@ -154,13 +152,13 @@ export function IngredientsTab({
     }));
   };
 
-  // A Staple tile carries the Staple's amount; the search's select then opens the pick with it.
+  // A Staple tile carries the Staple's amount; the search's select, right after, opens the pick with it.
   const tileAmount = useRef<{
     id: string;
     quantity: string;
     unit: Unit;
   } | null>(null);
-  const pickGone = (suggestion: Suggestion, select: SelectResult) => {
+  const pickGone = (suggestion: Suggestion) => {
     tileAmount.current =
       suggestion.quantity !== null && suggestion.unit !== null
         ? {
@@ -169,7 +167,6 @@ export function IngredientsTab({
             unit: suggestion.unit,
           }
         : null;
-    select(suggestion.ingredient);
   };
 
   const submit = async () => {
@@ -217,14 +214,14 @@ export function IngredientsTab({
         onQueryChange={(value) =>
           onStateChange((s) => ({ ...s, query: value, open: null }))
         }
-        emptyState={({ select }) => (
+        emptyState={
           <EmptySearch
             suggestions={suggestions}
-            onPickGone={(suggestion) => pickGone(suggestion, select)}
+            onPickGone={pickGone}
             onOpenTemplate={onOpenTemplate}
             onSeeAllTemplates={onSeeAllTemplates}
           />
-        )}
+        }
       />
       {open ? (
         <Box

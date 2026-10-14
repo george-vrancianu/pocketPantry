@@ -650,3 +650,35 @@ describe('SuggestionsWidget', () => {
     expect(await screen.findByText('Nothing suggested')).toBeVisible();
   });
 });
+
+describe('StaplesPage Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const browseAisles = {
+    aisles: [
+      {
+        id: 'aisle-dairy',
+        name: 'Dairy & eggs',
+        parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+      },
+    ],
+  };
+
+  it('shows Browse by aisle in the Staples search', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [] }),
+      'GET /api/catalog/aisles': () => Response.json(browseAisles),
+      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+
+    await userEvent.click(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    ).toBeVisible();
+  });
+});

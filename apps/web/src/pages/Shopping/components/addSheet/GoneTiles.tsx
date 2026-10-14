@@ -1,5 +1,6 @@
 import { Box, Link, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { useEmptyStateSearch } from '../../../../components/catalogSearch/emptyState/context';
 import { IngredientTile } from '../../../../components/catalogSearch/emptyState/IngredientTile';
 import {
   MAX_TILES,
@@ -19,12 +20,13 @@ import { useSheetToast } from './SheetFooter';
 
 export type GoneTilesProps = {
   suggestions: Suggestions;
-  /** Selects the Ingredient through the search; the Suggestion is not dismissed. */
-  onSelect: (suggestion: Suggestion) => void;
+  /** Called just before the tile's Ingredient is selected through the search (the Suggestion is not dismissed), e.g. to carry a Staple's amount. */
+  onPick?: (suggestion: Suggestion) => void;
 };
 
 /** "Gone from your Pantry": expired, then Used Up, then missing Staples, as tiles saying why and when. */
-export function GoneTiles({ suggestions, onSelect }: GoneTilesProps) {
+export function GoneTiles({ suggestions, onPick }: GoneTilesProps) {
+  const search = useEmptyStateSearch();
   const { t } = useTranslation('catalog');
   const { t: tShopping } = useTranslation('shopping');
   const toast = useSheetToast();
@@ -79,7 +81,10 @@ export function GoneTiles({ suggestions, onSelect }: GoneTilesProps) {
         name={name}
         why={why}
         label={label}
-        onSelect={() => onSelect(suggestion)}
+        onSelect={() => {
+          onPick?.(suggestion);
+          search?.select(suggestion.ingredient);
+        }}
         action={
           <Box
             component="button"
