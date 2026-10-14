@@ -4,6 +4,7 @@ import {
   FALLBACK_LOCALE,
   SCAN_LANGUAGES,
 } from '../catalog/catalog.schemas';
+import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { AisleView } from '../catalog/ingredient-placement';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
@@ -13,6 +14,17 @@ export const pantryLocaleQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
 });
 export type PantryLocaleQuery = z.infer<typeof pantryLocaleQuery>;
+
+export const recentlyStockedQuery = pantryLocaleQuery.extend({
+  limit: z.coerce.number().int().min(1).max(50).default(8),
+});
+export type RecentlyStockedQuery = z.infer<typeof recentlyStockedQuery>;
+
+/** A Recently Stocked Ingredient: everything a search result carries, plus when and whether it is still in the Pantry. */
+export type RecentlyStockedView = CatalogSearchResult & {
+  lastStockedAt: string;
+  inPantry: boolean;
+};
 
 /**
  * Scan and save-from-Review endpoints: `locale` still names the Ingredients

@@ -2,6 +2,7 @@ import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
+import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { useAddBatchForm } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
@@ -29,6 +30,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
         onUseTyped={form.useTypedName}
+        emptyState={({ select }) => <RecentlyStocked onSelect={select} />}
       />
 
       {form.unmatchedName ? (
