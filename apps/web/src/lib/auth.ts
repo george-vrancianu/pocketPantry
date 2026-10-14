@@ -1,17 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { clearPendingTheme } from './appearance';
-
-export type Member = {
-  id: string;
-  name: string;
-  email: string;
-  role?: string;
-};
-
-export type Session = { user: Member } | null;
-
-export const sessionQueryKey = ['session'] as const;
+import { sessionQueryKey, type Session } from './session';
 
 export type SignInInput = { email: string; password: string };
 export type SignUpInput = SignInInput & { name: string };

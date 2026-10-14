@@ -9,7 +9,7 @@ import {
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
-import { sessionQueryKey, type Session } from './auth';
+import { sessionQueryKey, type Session } from './session';
 import { preferencesQueryKey, type MemberPreferences } from './settings';
 
 /** The device's appearance, kept current when it changes here or in another tab. */
@@ -100,7 +100,11 @@ export function syncPendingTheme(queryClient: QueryClient) {
   }).then(
     (saved) => {
       savesInFlight.delete(queryClient);
-      if (sessionMemberId(queryClient) !== memberId) return;
+      if (sessionMemberId(queryClient) !== memberId) {
+        // The Member changed during this save; the new Member's choice may be waiting.
+        syncPendingTheme(queryClient);
+        return;
+      }
       if (readPendingTheme(queryClient) === theme) {
         writePendingTheme(queryClient, null);
         // Only the Theme this request saved; a locale save may have landed meanwhile.
@@ -114,7 +118,10 @@ export function syncPendingTheme(queryClient: QueryClient) {
     },
     () => {
       savesInFlight.delete(queryClient);
-      if (sessionMemberId(queryClient) !== memberId) return;
+      if (sessionMemberId(queryClient) !== memberId) {
+        syncPendingTheme(queryClient);
+        return;
+      }
       // The read may have been cancelled for the choice; load it again.
       if (!queryClient.getQueryData(preferencesQueryKey)) {
         void queryClient.invalidateQueries({ queryKey: preferencesQueryKey });

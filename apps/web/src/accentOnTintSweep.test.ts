@@ -23,9 +23,10 @@ function offences() {
     const lines = source.split('\n');
     lines.forEach((line, index) => {
       if (!TINT_FILL.test(line)) return;
-      lines.slice(index, index + 4).forEach((near, offset) => {
+      const from = Math.max(0, index - 4);
+      lines.slice(from, index + 4).forEach((near, offset) => {
         if (ACCENT_TEXT.test(near)) {
-          found.push(`${path}:${index + 1 + offset} ${near.trim()}`);
+          found.push(`${path}:${from + 1 + offset} ${near.trim()}`);
         }
       });
     });

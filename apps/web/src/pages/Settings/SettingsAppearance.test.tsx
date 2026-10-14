@@ -451,6 +451,53 @@ describe('Settings Appearance', () => {
       );
     });
 
+    it('drops a save that settles after sign-out instead of writing it to the next session', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const calls = stubPreferences(
+        { locale: null, theme: 'warm' },
+        undefined,
+        {
+          id: 'member-a',
+        },
+      );
+      const stubbed = globalThis.fetch;
+      let settlePut = () => {};
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method !== 'PUT') return stubbed(input, init);
+        return new Promise<Response>((resolve) => {
+          settlePut = () =>
+            resolve(Response.json({ locale: 'ro', theme: 'minimal' }));
+        });
+      });
+      const { queryClient, i18n } = renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+      await vi.waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
+      );
+      // Member B signs in on the device and picks the same Theme before A's save settles.
+      localStorage.setItem(
+        'pp.appearance.unsynced',
+        JSON.stringify({ memberId: 'member-b', theme: 'minimal' }),
+      );
+      queryClient.setQueryData(['session'], {
+        user: { id: 'member-b', name: 'b', email: 'b@x.io' },
+      });
+      await act(async () => {
+        settlePut();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+
+      expect(
+        queryClient.getQueryData(['settings', 'preferences']),
+      ).toBeUndefined();
+      expect(i18n.language).not.toBe('ro');
+    });
+
     it('keeps a Theme chosen before preferences load when they arrive with the old value', async () => {
       stubSystemScheme(false);
       store({ theme: 'warm', matchSystem: false });
