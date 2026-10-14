@@ -1,13 +1,14 @@
 import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
-import { type Dispatch, type RefObject, type SetStateAction } from 'react';
+import {
+  useRef,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../../components/catalogSearch/CatalogSearch';
 import { AmountField } from '../../../../components/AmountField';
-import {
-  useFindCatalogResult,
-  type CatalogSearchResult,
-  type Unit,
-} from '../../../../lib/catalog';
+import { type CatalogSearchResult, type Unit } from '../../../../lib/catalog';
 import { parseAmountText } from '../../../../lib/pantry';
 import {
   isOnList,
@@ -21,6 +22,8 @@ import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 
 /** What was picked in the search: a Catalog match, or the typed text as an Unmatched item. */
+type SelectResult = (ingredient: CatalogSearchResult) => void;
+
 type Chosen =
   | { kind: 'catalog'; result: CatalogSearchResult }
   | { kind: 'typed'; name: string };
@@ -133,26 +136,40 @@ export function IngredientsTab({
   const hint = open ? mergeHint(onListLines, open.unit) : null;
   const amount = parseAmountText(open?.quantity ?? '');
 
-  const choose = (next: Chosen, query: string) =>
+  const choose = (next: Chosen, query: string) => {
+    const amount = tileAmount.current;
+    tileAmount.current = null;
+    const staple =
+      next.kind === 'catalog' && amount?.id === next.result.id ? amount : null;
     onStateChange((s) => ({
       ...s,
       query,
       open: {
         pick: next,
-        quantity: '',
-        unit: next.kind === 'catalog' ? next.result.defaultUnit : '',
+        quantity: staple?.quantity ?? '',
+        unit:
+          staple?.unit ??
+          (next.kind === 'catalog' ? next.result.defaultUnit : ''),
       },
     }));
+  };
 
-  // A Gone tile knows the Ingredient, not its search result: find it through the search, then pick it as a typed pick would.
-  const findResult = useFindCatalogResult(i18n.language);
-  const pickGone = async (suggestion: Suggestion) => {
-    const result = await findResult({
-      id: suggestion.ingredientId,
-      name: suggestion.name,
-    }).catch(() => null);
-    if (result) choose({ kind: 'catalog', result }, result.name);
-    else toast.show(t('catalog:search.pickFailed', { name: suggestion.name }));
+  // A Staple tile carries the Staple's amount; the search's select then opens the pick with it.
+  const tileAmount = useRef<{
+    id: string;
+    quantity: string;
+    unit: Unit;
+  } | null>(null);
+  const pickGone = (suggestion: Suggestion, select: SelectResult) => {
+    tileAmount.current =
+      suggestion.quantity !== null && suggestion.unit !== null
+        ? {
+            id: suggestion.ingredientId,
+            quantity: String(suggestion.quantity),
+            unit: suggestion.unit,
+          }
+        : null;
+    select(suggestion.ingredient);
   };
 
   const submit = async () => {
@@ -200,14 +217,14 @@ export function IngredientsTab({
         onQueryChange={(value) =>
           onStateChange((s) => ({ ...s, query: value, open: null }))
         }
-        emptyState={
+        emptyState={({ select }) => (
           <EmptySearch
             suggestions={suggestions}
-            onPickGone={(suggestion) => void pickGone(suggestion)}
+            onPickGone={(suggestion) => pickGone(suggestion, select)}
             onOpenTemplate={onOpenTemplate}
             onSeeAllTemplates={onSeeAllTemplates}
           />
-        }
+        )}
       />
       {open ? (
         <Box

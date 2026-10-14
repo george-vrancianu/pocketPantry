@@ -1,75 +1,75 @@
 import { Box, tokens } from '@pocket-pantry/ui';
-import { Children, type ReactNode } from 'react';
+import { Children, useId, type ReactNode } from 'react';
 
-/** The most tiles an empty-state block shows; the rest are reached by typing. */
+/** An empty-state block shows at most this many tiles; the rest are reached by typing. */
 export const MAX_TILES = 8;
 
 export type TileSectionProps = {
-  /** Also the region's accessible name. */
   heading: string;
-  /** Shown beside the heading when given. */
+  /** Shown at the right of the heading, when given. */
   count?: number;
-  /** Tiles; only the first {@link MAX_TILES} are shown. */
-  children: ReactNode;
-  /** Shown instead of the grid when there are no tiles. */
+  /** A control beside the heading, e.g. a link to manage the list. */
+  action?: ReactNode;
+  /** Shown instead of the grid when there are no tiles, e.g. "Nothing has run out or expired. Nice." */
   none?: string;
+  /** The tiles; only the first 8 are shown. */
+  children?: ReactNode;
 };
 
-/** A headed, two-column grid of at most 8 tiles for an empty-state block. */
+/** A labelled section holding a two-column grid of empty-state tiles. */
 export function TileSection({
   heading,
   count,
-  children,
+  action,
   none,
+  children,
 }: TileSectionProps) {
+  const headingId = useId();
+  const { color } = tokens;
   const tiles = Children.toArray(children).slice(0, MAX_TILES);
   return (
-    <Box component="section" aria-label={heading}>
+    <Box component="section" aria-labelledby={headingId}>
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'baseline',
           justifyContent: 'space-between',
-          mb: 1,
+          p: '12px 14px 6px',
+          fontSize: 11.5,
+          fontWeight: 600,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          color: color.muted,
         }}
       >
         <Box
           component="h3"
-          sx={{
-            m: 0,
-            fontSize: 11.5,
-            fontWeight: 600,
-            letterSpacing: '.06em',
-            textTransform: 'uppercase',
-            color: tokens.color.muted,
-          }}
+          id={headingId}
+          sx={{ m: 0, font: 'inherit', letterSpacing: 'inherit' }}
         >
           {heading}
         </Box>
-        {count !== undefined ? (
-          <Box
-            component="span"
-            sx={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              color: tokens.color.muted,
-              fontVariantNumeric: 'tabular-nums',
-            }}
-          >
-            {count}
+        {count !== undefined || action ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {count !== undefined ? (
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {count}
+              </span>
+            ) : null}
+            {action}
           </Box>
         ) : null}
       </Box>
-      {tiles.length === 0 ? (
-        none ? (
-          <Box sx={{ fontSize: 13, color: tokens.color.muted }}>{none}</Box>
-        ) : null
+      {tiles.length === 0 && none ? (
+        <Box sx={{ p: '4px 14px 14px', fontSize: 13, color: color.muted }}>
+          {none}
+        </Box>
       ) : (
         <Box
           sx={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 1,
+            gap: '8px',
+            p: '4px 14px 14px',
           }}
         >
           {tiles}

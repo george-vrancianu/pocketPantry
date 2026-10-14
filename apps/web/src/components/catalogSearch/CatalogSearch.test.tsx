@@ -796,6 +796,29 @@ describe('CatalogSearch host extension points (#266)', () => {
       expect(await screen.findByText('Gone from your Pantry')).toBeVisible();
     });
 
+    it('hands a function emptyState the search, so a tile pick goes through onSelect', async () => {
+      stubControlled();
+      const onSelect = vi.fn();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={onSelect}
+          emptyState={({ select }) => (
+            <button type="button" onClick={() => select(cheddar)}>
+              Cheddar tile
+            </button>
+          )}
+        />,
+      );
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('combobox'));
+      await user.click(
+        await screen.findByRole('button', { name: 'Cheddar tile' }),
+      );
+
+      expect(onSelect).toHaveBeenCalledWith(cheddar);
+      expect(screen.getByRole('combobox')).toHaveValue('Cheddar');
+    });
+
     it('goes away once something is typed, and returns when the field is cleared', async () => {
       const search = stubControlled();
       renderWithProviders(

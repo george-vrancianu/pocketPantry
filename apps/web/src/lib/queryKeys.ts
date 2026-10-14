@@ -15,3 +15,6 @@ export const templateDetailsQueryKey = [
 
 /** Every Recipe's Pantry match; its per-line "on your list" status goes stale when the Shopping List changes ('recipes' must match `recipesQueryKey`). */
 export const pantryMatchesQueryKey = ['recipes', 'pantry-match'] as const;
+
+/** The Family's Recently Stocked Ingredients. Under `['pantry']`, so anything that invalidates the Pantry (Scan save, Finish Shopping, relink, a Batch change) refetches it. */
+export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;

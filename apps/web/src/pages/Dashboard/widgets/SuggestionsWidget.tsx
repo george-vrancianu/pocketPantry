@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { localIso } from '../../../lib/pantry';
 import {
+  goneInOrder,
   useSuggestions,
   WIDGET_SUGGESTION_COUNT,
 } from '../../../lib/suggestions';
@@ -14,11 +15,10 @@ export function SuggestionsWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
   const staples = suggestions.data?.staples ?? [];
-  const all = [
-    ...staples,
-    ...(suggestions.data?.usedUp ?? []),
-    ...(suggestions.data?.expired ?? []),
-  ];
+  // Named in the order of the Shopping add sheet: expired, Used Up, then missing Staples.
+  const all = suggestions.data
+    ? goneInOrder(suggestions.data).map((entry) => entry.suggestion)
+    : [];
   const names = all.slice(0, WIDGET_SUGGESTION_COUNT).map((s) => s.name);
 
   return (

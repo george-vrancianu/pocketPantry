@@ -9,6 +9,7 @@ type Suggestion = {
   name: string;
   quantity: number | null;
   since: string | null;
+  ingredient: Record<string, unknown> & { name: string };
 };
 type Suggestions = {
   staples: Suggestion[];
@@ -230,13 +231,21 @@ describe('Expired Suggestions (integration)', () => {
     expect(await expiredIds(theirs)).toEqual([]);
   });
 
-  it('is dismissed for the Family, and restocking clears the dismissal', async () => {
+  it('is dismissed for the whole Family, and restocking clears the dismissal', async () => {
     const cookie = await signUp();
+    const member = await signUp();
+    const { inviteCode } = (await api('get', cookie, '/family').expect(200))
+      .body as { inviteCode: string };
+    await api('post', member, '/family/join')
+      .send({ code: inviteCode })
+      .expect(201);
     const other = await signUp();
     await addBatch(cookie, milk, '2026-10-01');
+    expect(await expiredIds(member)).toEqual([milk]);
 
     await dismiss(cookie, milk);
     expect(await expiredIds(cookie)).toEqual([]);
+    expect(await expiredIds(member)).toEqual([]);
 
     // A new Batch is a restock: the dismissal ends, so when it expires too the Suggestion returns.
     await addBatch(cookie, milk, '2026-10-05');
@@ -244,13 +253,85 @@ describe('Expired Suggestions (integration)', () => {
     expect(await expiredIds(other)).toEqual([]);
   });
 
-  it('dismissing an expired Suggestion does not hide the Ingredient once restocked fresh', async () => {
+  it('ignores Unmatched Batches', async () => {
     const cookie = await signUp();
-    await addBatch(cookie, milk, '2026-10-01');
-    await dismiss(cookie, milk);
-
-    await addBatch(cookie, milk, '2099-01-01');
+    await api('post', cookie, '/pantry/batches?locale=en')
+      .send({
+        rawName: 'Grandma special sauce',
+        quantity: 1,
+        unit: 'pcs',
+        location: 'fridge',
+        expiryDate: '2026-10-01',
+      })
+      .expect(201);
 
     expect(await expiredIds(cookie)).toEqual([]);
+  });
+
+  it('carries the full search result of every Suggestion, so a tap can select it', async () => {
+    const cookie = await signUp();
+    await addBatch(cookie, milk, '2026-10-01');
+    await api('post', cookie, '/staples?locale=en')
+      .send({ ingredientId: parmesan, quantity: 2, unit: 'pcs' })
+      .expect(201);
+    const eggs = seedId.ingredient('eggs');
+    const batch = await addBatch(cookie, eggs, null);
+    const real = Date.now();
+    jest.spyOn(Date, 'now').mockReturnValue(real + 11 * MINUTE);
+    await api('delete', cookie, `/pantry/batches/${batch.id}`).expect(204);
+    jest.restoreAllMocks();
+
+    const found = await suggestions(cookie);
+
+    for (const entry of [found.expired[0], found.staples[0], found.usedUp[0]]) {
+      const { ingredient } = entry as unknown as {
+        ingredient: {
+          id: string;
+          name: string;
+          defaultUnit: string;
+          leafCategory: { id: string; name: string };
+          parentCategory: {
+            aisle: { id: string; name: string };
+          };
+          defaults: { expiryDays: number | null };
+        };
+      };
+      expect(ingredient.id).toBe(entry.ingredientId);
+      expect(ingredient.name).toBe(entry.name);
+      expect(typeof ingredient.defaultUnit).toBe('string');
+      expect(ingredient.leafCategory.name).toEqual(expect.any(String));
+      expect(ingredient.parentCategory.aisle.name).toEqual(expect.any(String));
+      expect(ingredient.defaults).toHaveProperty('expiryDays');
+    }
+    expect(found.expired[0].ingredient.name).toBe('Milk');
+  });
+
+  it('names the search result in the requested locale', async () => {
+    const cookie = await signUp();
+    await addBatch(cookie, milk, '2026-10-01');
+
+    const body = (
+      await api(
+        'get',
+        cookie,
+        `/shopping-list/suggestions?locale=ro&today=${TODAY}`,
+      ).expect(200)
+    ).body as Suggestions;
+
+    expect(body.expired[0].ingredient.name).toBe('Lapte');
+  });
+
+  it('keeps a dismissed Staple hidden until it is restocked', async () => {
+    const cookie = await signUp();
+    await api('post', cookie, '/staples?locale=en')
+      .send({ ingredientId: milk })
+      .expect(201);
+    await dismiss(cookie, milk);
+    expect((await suggestions(cookie)).staples).toEqual([]);
+
+    await addBatch(cookie, milk, '2026-10-01');
+    expect(
+      (await suggestions(cookie)).staples.map((s) => s.ingredientId),
+    ).toEqual([milk]);
   });
 });

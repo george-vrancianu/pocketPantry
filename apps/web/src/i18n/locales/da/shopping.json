@@ -62,6 +62,11 @@
   "amount": {
     "add": "Føj {{name}} til listen"
   },
+  "suggestions": {
+    "manage": "Administrer",
+    "dismissed": "Afviste {{name}}",
+    "dismiss": "Afvis {{name}}"
+  },
   "templatesFromSearch": "Eller start fra en skabelon",
   "seeAll": "Se alle"
 }

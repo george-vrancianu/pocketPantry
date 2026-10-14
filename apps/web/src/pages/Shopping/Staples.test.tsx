@@ -19,15 +19,27 @@ import { StaplesPage } from './StaplesPage';
 const dairy = { id: 'a4', name: 'Dairy & eggs', sortOrder: 4 };
 const baking = { id: 'a6', name: 'Baking', sortOrder: 6 };
 
-const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => ({
-  ingredientId: 'milk-id',
-  name: 'Milk',
-  quantity: 2,
-  unit: 'l',
-  aisle: dairy,
-  since: null,
-  ...overrides,
-});
+const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => {
+  const id = overrides.ingredientId ?? 'milk-id';
+  const name = overrides.name ?? 'Milk';
+  return {
+    ingredientId: id,
+    name,
+    quantity: 2,
+    unit: 'l',
+    aisle: dairy,
+    since: null,
+    ingredient: {
+      id,
+      name,
+      defaultUnit: 'l',
+      leafCategory: { id: 'leaf', name },
+      parentCategory: { id: 'p', name: 'Dairy', aisle: dairy },
+      defaults: { expiryDays: 7, location: 'fridge' },
+    },
+    ...overrides,
+  };
+};
 const staple = (overrides: Partial<Staple> = {}): Staple => ({
   id: 's1',
   ingredientId: 'milk-id',
@@ -70,8 +82,7 @@ describe('Suggestions in the Add sheet', () => {
     return screen.findByRole('dialog');
   };
 
-  // The Suggestion chips (add with a suggested amount, Dismiss, Manage link, "all stocked") gave way to the
-  // Gone from your Pantry tiles, which GoneTiles.test.tsx covers.
+  // The Gone from your Pantry tiles (select, dismiss, Staples link) are covered by GoneTiles.test.tsx.
   it('shows the Gone tiles and the Template chips together while the search is empty, and both go once the Member types', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
@@ -153,7 +164,7 @@ describe('Suggestions in the Add sheet', () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/shopping-list': () => Response.json(list),
       'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [] }),
+        Response.json({ staples: [], usedUp: [], expired: [] }),
       'GET /api/staples': () => Response.json({ staples: [] }),
       'POST /api/staples': () => Response.json(staple(), { status: 201 }),
     });
@@ -575,6 +586,7 @@ describe('SuggestionsWidget', () => {
             suggestion({ ingredientId: name, name }),
           ),
           usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
+          expired: [],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -584,7 +596,7 @@ describe('SuggestionsWidget', () => {
     expect(link).toHaveAttribute('href', '/shopping');
     expect(link).toHaveTextContent('4');
     expect(link).toHaveTextContent('missing staples');
-    expect(link).toHaveTextContent('A, B, C…');
+    expect(link).toHaveTextContent('E, A, B…');
   });
 
   it('counts only missing Staples, but names Used Up Ingredients too', async () => {
@@ -593,6 +605,7 @@ describe('SuggestionsWidget', () => {
         Response.json({
           staples: [suggestion({ ingredientId: 'A', name: 'A' })],
           usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
+          expired: [],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -601,7 +614,7 @@ describe('SuggestionsWidget', () => {
     const link = await screen.findByRole('link', { name: 'Suggestions' });
     expect(link).toHaveTextContent('1');
     expect(link).toHaveTextContent('missing staple');
-    expect(link).toHaveTextContent('A, E');
+    expect(link).toHaveTextContent('E, A');
   });
 
   it('names expired Suggestions too', async () => {
@@ -629,7 +642,7 @@ describe('SuggestionsWidget', () => {
   it('says nothing is missing', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [] }),
+        Response.json({ staples: [], usedUp: [], expired: [] }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<SuggestionsWidget size="small" columns={2} />);

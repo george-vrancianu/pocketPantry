@@ -26,8 +26,16 @@
     "goneLabelUsedUp": "{{name}}, epuizat {{when}}",
     "goneLabelExpired": "{{name}}, expirat {{when}}",
     "goneLabelStaple": "{{name}}, produs de bază lipsă",
-    "today": "astăzi",
-    "daysAgo": "acum {{count}} z",
-    "pickFailed": "Nu am putut alege {{name}}. Încearcă să îl cauți."
+    "recentlyStocked": "Adăugate recent",
+    "stockedInPantry": "în cămară · adăugat {{when}}",
+    "stockedGone": "adăugat {{when}}",
+    "stockedInPantryLabel": "{{name}}, în cămară, adăugat {{when}}",
+    "stockedGoneLabel": "{{name}}, adăugat {{when}}",
+    "when": {
+      "today": "azi",
+      "days": "acum {{count}} z",
+      "weeks": "acum {{count}} săpt.",
+      "months": "acum {{count}} luni"
+    }
   }
 }

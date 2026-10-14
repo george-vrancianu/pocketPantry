@@ -1,27 +1,25 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, IngredientIcon, tokens } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { focusRing } from '../../../lib/focusRing';
-import { IngredientIconSlot } from '../../IngredientIconSlot';
+
+/** The line under a tile's name: a 12px decorative glyph, then text, in the reason's colour. */
+export type TileWhy = { glyph: string; text: string; color: string };
 
 export type IngredientTileProps = {
   ingredientId: string;
-  /** The Aisle, for the icon's tint. */
+  /** Null (an Ingredient without an Aisle) gets the neutral tint. */
   aisleId: string | null;
   name: string;
-  /** The "why" line under the name: a glyph and its text. */
-  why: { glyph: string; text: string; color: string };
-  /** The tile's accessible name, which says the same as the why line. */
+  why: TileWhy;
+  /** Accessible name; spells the why line out. */
   label: string;
   disabled?: boolean;
+  /** A secondary control (e.g. dismiss) at the tile's right edge, outside the select button. */
+  action?: ReactNode;
   onSelect: () => void;
 };
 
-const ellipsis = {
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-} as const;
-
-/** One tappable Ingredient in an empty-state block: icon in its Aisle tint, name and a "why" line. */
+/** One empty-state tile: the Ingredient's icon in its Aisle tint, its name, and why it is offered. */
 export function IngredientTile({
   ingredientId,
   aisleId,
@@ -29,10 +27,11 @@ export function IngredientTile({
   why,
   label,
   disabled = false,
+  action,
   onSelect,
 }: IngredientTileProps) {
   const { color } = tokens;
-  return (
+  const button = (
     <Box
       component="button"
       type="button"
@@ -42,33 +41,86 @@ export function IngredientTile({
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
+        gap: '8px',
         minWidth: 0,
-        p: '7px 10px 7px 7px',
-        border: `1px solid ${color.line}`,
-        borderRadius: `${tokens.radius.field}px`,
-        backgroundColor: color.surface,
-        color: color.ink,
+        ...(action ? { width: '100%', boxSizing: 'border-box' } : {}),
+        p: action ? '7px 34px 7px 7px' : '7px 10px 7px 7px',
+        textAlign: 'left',
         font: 'inherit',
-        textAlign: 'start',
-        cursor: 'pointer',
-        '&:disabled': { cursor: 'default', opacity: 0.6 },
-        ...focusRing(),
+        color: color.ink,
+        backgroundColor: color.surface,
+        border: `1px solid ${color.line}`,
+        borderRadius: `${tokens.radius.chip}px`,
+        cursor: disabled ? 'default' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
+        '&:hover:not(:disabled)': { backgroundColor: color.subtle },
+        ...focusRing(2),
       }}
     >
-      <Box sx={{ transform: 'scale(.68)', m: '-6px' }}>
-        <IngredientIconSlot ingredientId={ingredientId} aisleId={aisleId} />
+      <Box aria-hidden="true" sx={{ flexShrink: 0, display: 'grid' }}>
+        <IngredientIcon
+          ingredientId={ingredientId}
+          aisleId={aisleId ?? undefined}
+          size={26}
+        />
       </Box>
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Box sx={{ fontSize: 13.5, fontWeight: 600, ...ellipsis }}>{name}</Box>
         <Box
-          sx={{ fontSize: 11, fontWeight: 500, color: why.color, ...ellipsis }}
+          sx={{
+            fontSize: 13.5,
+            fontWeight: 600,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
         >
-          <Box component="span" aria-hidden sx={{ fontSize: 12 }}>
-            {why.glyph}
-          </Box>{' '}
-          {why.text}
+          {name}
         </Box>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: 11,
+            fontWeight: 500,
+            color: why.color,
+          }}
+        >
+          <Box
+            component="span"
+            aria-hidden="true"
+            sx={{ fontSize: 12, flexShrink: 0 }}
+          >
+            {why.glyph}
+          </Box>
+          <Box
+            component="span"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {why.text}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+  if (!action) return button;
+  return (
+    <Box sx={{ position: 'relative', minWidth: 0 }}>
+      {button}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          right: '6px',
+          transform: 'translateY(-50%)',
+          display: 'grid',
+        }}
+      >
+        {action}
       </Box>
     </Box>
   );

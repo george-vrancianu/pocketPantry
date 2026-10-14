@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { Unit } from './catalog';
-import { localIso } from './pantry';
+import type { CatalogSearchResult, Unit } from './catalog';
 import { suggestionsQueryKey } from './queryKeys';
 import { SHOPPING_POLL_INTERVAL_MS } from './shopping';
 import type { Aisle } from './staples';
@@ -15,6 +14,8 @@ export type Suggestion = {
   aisle: Aisle | null;
   /** Since when it is gone: a `YYYY-MM-DD` expiry date, an ISO timestamp (Used Up), or null (a Staple). */
   since: string | null;
+  /** The Ingredient as a search result, so a tile selects it without another request. */
+  ingredient: CatalogSearchResult;
 };
 
 /** One key per group: missing Staples, Ingredients recently used up, and Ingredients whose Batches have all expired. */
@@ -55,18 +56,6 @@ export function goneInOrder(suggestions: Suggestions): GoneEntry[] {
       'staple',
     ),
   ];
-}
-
-/** Whole local calendar days from `since` (a date or a timestamp) to `now`; never negative. */
-export function daysSince(since: string, now: Date = new Date()): number {
-  const day = (iso: string) => {
-    const [y, m, d] = iso.split('-').map(Number);
-    return Date.UTC(y, m - 1, d) / 86_400_000;
-  };
-  const sinceDay = /^\d{4}-\d{2}-\d{2}$/.test(since)
-    ? since
-    : localIso(new Date(since));
-  return Math.max(0, day(localIso(now)) - day(sinceDay));
 }
 
 /** Refreshed on an interval, like the list, so other Members' changes show up. */

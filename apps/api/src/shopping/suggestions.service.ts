@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt, isNotNull, sql } from 'drizzle-orm';
 import { catalogScope } from '../catalog/catalog-scope';
+import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -23,6 +24,9 @@ import {
 } from '../catalog/ingredient-placement';
 import type { SuggestionView, SuggestionsView } from './suggestions.schemas';
 
+/** A Suggestion before its search result is attached. */
+type Suggestion = Omit<SuggestionView, 'ingredient'>;
+
 /**
  * Suggestions are derived on read and never stored. Each group is a key of the
  * result, so the Used Up group can join `staples` without changing the shape.
@@ -32,6 +36,7 @@ export class SuggestionsService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly settings: SettingsService,
+    private readonly search: CatalogSearchService,
   ) {}
 
   async list(
@@ -40,10 +45,34 @@ export class SuggestionsService {
     today: string = utcToday(),
   ): Promise<SuggestionsView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    return {
+    const groups = {
       staples: await this.missingStaples(familyId, locale, today),
       usedUp: await this.usedUp(familyId, locale),
       expired: await this.expired(familyId, locale, today),
+    };
+    const ids = Object.values(groups).flatMap((group) =>
+      group.map((entry) => entry.ingredientId),
+    );
+    const found = new Map(
+      (
+        await this.search.findByIds(
+          catalogScope(familyId),
+          [...new Set(ids)],
+          locale,
+          await this.settings.expiryOverridesOf(familyId),
+        )
+      ).map((result) => [result.id, result]),
+    );
+    // An Ingredient the Family can no longer see in the Catalog has no result to select, so it is left out.
+    const withResult = (group: Suggestion[]): SuggestionView[] =>
+      group.flatMap((entry) => {
+        const ingredient = found.get(entry.ingredientId);
+        return ingredient ? [{ ...entry, ingredient }] : [];
+      });
+    return {
+      staples: withResult(groups.staples),
+      usedUp: withResult(groups.usedUp),
+      expired: withResult(groups.expired),
     };
   }
 
@@ -51,8 +80,9 @@ export class SuggestionsService {
    * Hides the Suggestion for the whole Family until a Batch of the Ingredient is
    * created and it then goes missing or Used Up again. A Used Up Suggestion is
    * dismissed by clearing `used_up_at` (ADR 0005); a Staple's by a dismissal row.
-   * A Staple is Used Up never, so one row or the other is enough; the row is only
-   * written for a Staple, so it cannot hide the Ingredient if it becomes one later.
+   * A Staple is Used Up never, so one row or the other is enough. The row is written
+   * for a Staple or an Ingredient with Batches (an expired one); a row left on an
+   * expired Ingredient also hides it if it later becomes a Staple, until it is restocked.
    */
   async dismiss(memberId: string, ingredientId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
@@ -99,7 +129,7 @@ export class SuggestionsService {
   private async usedUp(
     familyId: string,
     locale: CatalogLocale,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const since = new Date(Date.now() - USED_UP_WINDOW_MS);
     const rows = await this.database
       .select({
@@ -162,7 +192,7 @@ export class SuggestionsService {
     familyId: string,
     locale: CatalogLocale,
     today: string,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const rows = await this.database
       .select({
         ingredientId: batches.ingredientId,
@@ -213,7 +243,7 @@ export class SuggestionsService {
     familyId: string,
     locale: CatalogLocale,
     today: string,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const rows = await this.database
       .select({
         ingredientId: staples.ingredientId,

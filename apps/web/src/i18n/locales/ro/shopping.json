@@ -66,6 +66,11 @@
   "amount": {
     "add": "Adaugă {{name}} în listă"
   },
+  "suggestions": {
+    "manage": "Gestionează",
+    "dismissed": "Ai ignorat {{name}}",
+    "dismiss": "Ignoră {{name}}"
+  },
   "templatesFromSearch": "Sau începe de la un șablon",
   "seeAll": "Vezi tot"
 }

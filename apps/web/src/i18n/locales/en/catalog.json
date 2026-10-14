@@ -25,8 +25,16 @@
     "goneLabelUsedUp": "{{name}}, used up {{when}}",
     "goneLabelExpired": "{{name}}, expired {{when}}",
     "goneLabelStaple": "{{name}}, missing staple",
-    "today": "today",
-    "daysAgo": "{{count}}d ago",
-    "pickFailed": "Couldn’t pick {{name}}. Try searching for it."
+    "recentlyStocked": "Recently stocked",
+    "stockedInPantry": "in pantry · added {{when}}",
+    "stockedGone": "added {{when}}",
+    "stockedInPantryLabel": "{{name}}, in pantry, added {{when}}",
+    "stockedGoneLabel": "{{name}}, added {{when}}",
+    "when": {
+      "today": "today",
+      "days": "{{count}}d ago",
+      "weeks": "{{count}}w ago",
+      "months": "{{count}}mo ago"
+    }
   }
 }

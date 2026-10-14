@@ -90,6 +90,10 @@ _Avoid_: Pantry item, entry, stock line
 Where a Batch is stored: fridge, freezer, cupboard, or spices.
 _Avoid_: Storage, place
 
+**Recently Stocked**:
+The Ingredients a Family most recently added to the Pantry, newest first, whether or not they are still in it.
+_Avoid_: Recent, history, favourites
+
 **Product Description**:
 The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
 _Avoid_: Label, brand

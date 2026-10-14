@@ -1,8 +1,4 @@
-import {
-  keepPreviousData,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
 
@@ -35,37 +31,6 @@ export function useDebounced<T>(value: T, delayMs: number): T {
 
 export const catalogSearchQueryKey = ['catalog-search'] as const;
 
-const catalogSearchOptions = (
-  query: string,
-  locale: string,
-  scope: 'family' | 'shared',
-) => ({
-  queryKey: [...catalogSearchQueryKey, locale, scope, query],
-  queryFn: () => {
-    const params = new URLSearchParams({ q: query, locale });
-    if (scope === 'shared') params.set('scope', 'shared');
-    return apiRequest<{ results: CatalogSearchResult[] }>(
-      `/catalog/search?${params}`,
-    ).then((body) => body.results);
-  },
-  staleTime: 60_000,
-});
-
-/**
- * Looks an Ingredient up by id through the Catalog search (by its name), for a
- * host that knows an Ingredient but not its search result, such as a tile. Resolves
- * null when the search does not return it.
- */
-export function useFindCatalogResult(locale: string) {
-  const queryClient = useQueryClient();
-  return async (ingredient: { id: string; name: string }) => {
-    const results = await queryClient.fetchQuery(
-      catalogSearchOptions(ingredient.name.trim(), locale, 'family'),
-    );
-    return results.find((result) => result.id === ingredient.id) ?? null;
-  };
-}
-
 export type CatalogParent = { id: string; name: string };
 
 /** The Catalog's Parent Categories by name in `locale`; `enabled` holds the request back until a screen needs it. */
@@ -92,11 +57,19 @@ export function useCatalogSearch(
 ) {
   const debounced = useDebounced(query.trim(), 150);
   const result = useQuery({
-    ...catalogSearchOptions(debounced, locale, scope),
+    queryKey: [...catalogSearchQueryKey, locale, scope, debounced],
+    queryFn: () => {
+      const params = new URLSearchParams({ q: debounced, locale });
+      if (scope === 'shared') params.set('scope', 'shared');
+      return apiRequest<{ results: CatalogSearchResult[] }>(
+        `/catalog/search?${params}`,
+      ).then((body) => body.results);
+    },
     enabled: debounced.length > 0,
     // Keep the shown options (and their nodes) while the next query loads, so
     // a click mid-refresh still lands.
     placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
   return {
     ...result,
