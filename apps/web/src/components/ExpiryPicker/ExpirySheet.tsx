@@ -210,7 +210,8 @@ function Readout({
           </Box>
         </Box>
       )}
-      <ExpiryTag tag={tag} />
+      {/* "No expiry date" beside it already says it. */}
+      <ExpiryTag tag={tag} decorative={text === null} />
     </Box>
   );
 }

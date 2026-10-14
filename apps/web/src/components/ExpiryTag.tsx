@@ -8,10 +8,14 @@ const TONES = {
   ok: { bg: tokens.color.okBg, fg: tokens.color.okFg },
 } as const;
 
-type Props = { tag: ExpiryTagValue };
+type Props = {
+  tag: ExpiryTagValue;
+  /** Hide the tag from assistive tech, where the text beside it already says the same. */
+  decorative?: boolean;
+};
 
 /** The days-left tag (Expired / Today / Tomorrow / N d left / N d), or a dashed "No expiry". Never a date. */
-export function ExpiryTag({ tag }: Props) {
+export function ExpiryTag({ tag, decorative = false }: Props) {
   const { t } = useTranslation('pantry');
 
   let label: string;
@@ -47,6 +51,7 @@ export function ExpiryTag({ tag }: Props) {
   return (
     <Box
       component="span"
+      aria-hidden={decorative ? true : undefined}
       sx={{
         display: 'inline-flex',
         alignItems: 'center',

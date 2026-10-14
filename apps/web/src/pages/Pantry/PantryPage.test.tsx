@@ -1212,6 +1212,22 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBe('2026-11-30');
     });
 
+    it('does not read the dashed "No expiry" tag after "No expiry date" in the readout', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      await user.click(
+        within(sheet).getByRole('button', { name: 'No expiry' }),
+      );
+
+      const readout = within(sheet).getByRole('status');
+      expect(readout).toHaveTextContent('No expiry date');
+      expect(within(readout).getByText('No expiry')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+    });
+
     it('keeps the calendar tab stop on the day last focused, and Home/End go to the start and end of the week within the month', async () => {
       const user = userEvent.setup();
       await addParmesan(user);
