@@ -1,4 +1,4 @@
-import { tokens } from '@pocket-pantry/ui';
+import { THEMES } from '@pocket-pantry/ui';
 import {
   act,
   fireEvent,
@@ -16,6 +16,7 @@ import {
   type ShoppingList,
 } from '../../lib/shopping';
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
 import { Link, Route, Routes } from 'react-router-dom';
@@ -443,10 +444,7 @@ describe('ShoppingPage', () => {
         'data-ingredient-icon',
         'parmesan',
       );
-      expect(rowIcon(/^Item/)).toHaveAttribute(
-        'data-ingredient-tint',
-        '#E3ECF3',
-      );
+      expect(rowIcon(/^Item/)).toHaveAttribute('data-ingredient-tint', 'dairy');
     });
 
     it('shows an unmapped Ingredient the Default Icon, tinted by its Aisle', async () => {
@@ -455,10 +453,7 @@ describe('ShoppingPage', () => {
         'data-ingredient-icon',
         'default',
       );
-      expect(rowIcon(/^Item/)).toHaveAttribute(
-        'data-ingredient-tint',
-        '#E3ECF3',
-      );
+      expect(rowIcon(/^Item/)).toHaveAttribute('data-ingredient-tint', 'dairy');
     });
 
     it('shows an Unmatched item the Default Icon in the neutral tint', async () => {
@@ -469,7 +464,7 @@ describe('ShoppingPage', () => {
       );
       expect(rowIcon(/^Item/)).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
 
@@ -485,7 +480,7 @@ describe('ShoppingPage', () => {
       );
       expect(rowIcon(/^Item/)).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
 
@@ -499,9 +494,10 @@ describe('ShoppingPage', () => {
 
     it('greys the icon when the item is checked', async () => {
       await show([item({ id: 'x', ingredientId: PARMESAN_ID, checked: true })]);
-      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
-        color: '#66736B',
-      });
+      // Greyed to the active Theme's muted ink (Warm editorial by default).
+      expect(paintedColour(rowIcon(/^Item/)!.parentElement!, 'color')).toBe(
+        THEMES.warm.muted,
+      );
     });
   });
 
@@ -1363,7 +1359,7 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       const { option } = await findParmesanRow(userEvent.setup());
       expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'parmesan');
-      expect(icon(option)).toHaveAttribute('data-ingredient-tint', '#E3ECF3');
+      expect(icon(option)).toHaveAttribute('data-ingredient-tint', 'dairy');
       expect(icon(option)).toHaveAttribute('aria-hidden', 'true');
     });
 
@@ -1377,7 +1373,7 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       const { option } = await findParmesanRow(userEvent.setup());
       expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'default');
-      expect(icon(option)).toHaveAttribute('data-ingredient-tint', '#E3ECF3');
+      expect(icon(option)).toHaveAttribute('data-ingredient-tint', 'dairy');
     });
 
     it('tints an Aisle without a tint neutral', async () => {
@@ -1391,10 +1387,7 @@ describe('ShoppingPage', () => {
       renderWithProviders(<ShoppingPage />);
       const { option } = await findParmesanRow(userEvent.setup());
       expect(icon(option)).toHaveAttribute('data-ingredient-icon', 'parmesan');
-      expect(icon(option)).toHaveAttribute(
-        'data-ingredient-tint',
-        tokens.color.chipNeutral,
-      );
+      expect(icon(option)).toHaveAttribute('data-ingredient-tint', 'neutral');
     });
 
     it('shows the free-text row the neutral Default Icon', async () => {
@@ -1409,10 +1402,7 @@ describe('ShoppingPage', () => {
         name: /Add “Dragon fruit”/,
       });
       expect(icon(row)).toHaveAttribute('data-ingredient-icon', 'default');
-      expect(icon(row)).toHaveAttribute(
-        'data-ingredient-tint',
-        tokens.color.chipNeutral,
-      );
+      expect(icon(row)).toHaveAttribute('data-ingredient-tint', 'neutral');
     });
 
     describe('when the Ingredient is already on the list', () => {

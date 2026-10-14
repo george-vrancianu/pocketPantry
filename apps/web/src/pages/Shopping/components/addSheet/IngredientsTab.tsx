@@ -72,6 +72,7 @@ export type IngredientsTabProps = {
   error: string | null;
   staples: Suggestion[];
   usedUp: Suggestion[];
+  runningLow: Suggestion[];
   /** Called after each successful add. */
   onAdded: () => void;
   /** Opens a template's apply view. */
@@ -90,6 +91,7 @@ export function IngredientsTab({
   error,
   staples,
   usedUp,
+  runningLow,
   onAdded,
   onOpenTemplate,
   onSeeAllTemplates,
@@ -293,6 +295,7 @@ export function IngredientsTab({
         <EmptySearch
           staples={staples}
           usedUp={usedUp}
+          runningLow={runningLow}
           addedIds={state.suggestionsAdded}
           onAdd={onAdd}
           onOpenTemplate={onOpenTemplate}
@@ -318,7 +321,7 @@ export function IngredientsTab({
         sx={{
           position: 'relative',
           display: rows.length === 0 ? 'none' : 'block',
-          borderRadius: `${LIST_RADIUS}px`,
+          borderRadius: LIST_RADIUS,
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
         }}
@@ -374,7 +377,7 @@ export function IngredientsTab({
               backgroundColor: tokens.color.subtle,
               borderRadius:
                 openIndex === rows.length - 1
-                  ? `0 0 ${INNER_RADIUS}px ${INNER_RADIUS}px`
+                  ? `0 0 ${INNER_RADIUS} ${INNER_RADIUS}`
                   : 0,
             }}
           >

@@ -1,5 +1,5 @@
 {
-  "id": "5eb1597e-7bcb-412a-87b8-f3e08659f556",
+  "id": "c97bc9e3-6e60-411e-aefb-16f65ca7495d",
   "prevId": "ba672b2f-d62c-44d1-baab-5fe9b132b52f",
   "version": "7",
   "dialect": "postgresql",
@@ -1032,13 +1032,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "amount_scale": {
-          "name": "amount_scale",
-          "type": "amount_scale",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -3964,6 +3957,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "theme": {
+          "name": "theme",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -4110,15 +4109,6 @@
     }
   },
   "enums": {
-    "public.amount_scale": {
-      "name": "amount_scale",
-      "schema": "public",
-      "values": [
-        "low",
-        "medium",
-        "large"
-      ]
-    },
     "public.catalog_entity_type": {
       "name": "catalog_entity_type",
       "schema": "public",

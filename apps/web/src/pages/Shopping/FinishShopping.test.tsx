@@ -6,6 +6,12 @@ import type {
   FinishProposalLine,
 } from '../../lib/finishShopping';
 import type { ShoppingItem, ShoppingList } from '../../lib/shopping';
+import {
+  calendarDay,
+  quickPick,
+  quickPickTiles,
+  sheetButton,
+} from '../../test/expirySheet';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ShoppingPage } from './ShoppingPage';
 
@@ -189,8 +195,8 @@ describe('Finish Shopping review', () => {
     );
     await user.click(parmesan.getByRole('button', { name: /^Expires,/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Expires' });
-    await user.click(within(sheet).getByRole('button', { name: 'No expiry' }));
-    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await user.click(sheetButton(sheet, 'No expiry'));
+    await user.click(sheetButton(sheet, 'Done'));
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -472,7 +478,7 @@ describe('the expiry picker in the Finish Shopping Review', () => {
     user: ReturnType<typeof userEvent.setup>,
     sheet: HTMLElement,
   ) {
-    await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await user.click(sheetButton(sheet, 'Done'));
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -480,12 +486,10 @@ describe('the expiry picker in the Finish Shopping Review', () => {
 
   /** The quick-pick tiles, as "accessible name: pressed". */
   const quickPicks = (sheet: HTMLElement) =>
-    within(within(sheet).getByRole('group', { name: 'Quick picks' }))
-      .getAllByRole('button')
-      .map(
-        (tile) =>
-          `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
-      );
+    quickPickTiles(sheet).map(
+      (tile) =>
+        `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
+    );
 
   it("shows a line's pre-filled date as the Usual quick pick, selected", async () => {
     stubFinish();
@@ -548,12 +552,10 @@ describe('the expiry picker in the Finish Shopping Review', () => {
     await openReview();
 
     let sheet = await openSheet(user, 'Milk');
-    await user.click(within(sheet).getByRole('button', { name: /^1 week/ }));
+    await user.click(quickPick(sheet, /^1 week/));
     await closeSheet(user, sheet);
     sheet = await openSheet(user, 'Dragon fruit');
-    await user.click(
-      within(sheet).getByRole('button', { name: 'Thursday, December 3, 2026' }),
-    );
+    await user.click(calendarDay(sheet, 'Thursday, December 3, 2026'));
     await closeSheet(user, sheet);
     expect(
       within(screen.getByRole('region', { name: 'Milk' })).getByRole('button', {

@@ -5,6 +5,8 @@ import {
   IngredientsScanIcon,
   WarningIcon,
   tokens,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -93,9 +95,8 @@ export function RecipeRow({ recipe, card, filtering }: Props) {
             <>
               <Box
                 sx={{
-                  fontFamily: tokens.font.display,
+                  ...displayType,
                   fontSize: 17,
-                  fontWeight: 700,
                 }}
               >
                 {minutes}
@@ -133,7 +134,7 @@ function StatusPills({
       {card.canMake ? (
         <Pill
           icon={<CheckIcon size={13} />}
-          fg={tokens.color.accent}
+          fg={tokens.color.accentOnTint}
           bg={tokens.color.accentTint}
         >
           {card.recipe.id === recipeId
@@ -177,7 +178,7 @@ function Pill(props: {
         gap: '4px',
         px: '8px',
         py: '3px',
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         bgcolor: props.bg,
         color: props.fg,
         fontSize: 12,

@@ -242,6 +242,11 @@ describe('RecipeForm', () => {
     );
     const user = userEvent.setup();
     const save = screen.getByRole('button', { name: 'Save Recipe' });
+    // Each typed character re-renders the whole form; only the final value matters here, so paste it.
+    const enter = async (field: HTMLElement, text: string) => {
+      await user.click(field);
+      await user.paste(text);
+    };
 
     await user.clear(screen.getByLabelText(/Title \(English\)/));
     expect(screen.getByText('Enter a title.')).toBeInTheDocument();
@@ -252,19 +257,19 @@ describe('RecipeForm', () => {
     await user.type(screen.getByLabelText('Step 1'), 'Chop');
 
     const timer = screen.getByLabelText('Timer for Step 1 (minutes)');
-    await user.type(timer, '0.001');
+    await enter(timer, '0.001');
     expect(save).toBeDisabled();
     await user.clear(timer);
-    await user.type(timer, '0.0167');
+    await enter(timer, '0.0167');
     expect(save).toBeEnabled();
     await user.clear(timer);
 
-    await user.type(screen.getByLabelText('Prep (minutes)'), '100001');
+    await enter(screen.getByLabelText('Prep (minutes)'), '100001');
     expect(save).toBeDisabled();
     await user.clear(screen.getByLabelText('Prep (minutes)'));
     const quantity = screen.getByLabelText('Quantity of Milk');
     await user.clear(quantity);
-    await user.type(quantity, '1000001');
+    await enter(quantity, '1000001');
     expect(save).toBeDisabled();
   });
 

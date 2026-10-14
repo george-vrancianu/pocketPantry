@@ -1,11 +1,13 @@
 import {
+  AddButton,
   Box,
   Button,
   PantryIcon,
-  PlusIcon,
-  tokens,
   ProgressBar,
   Typography,
+  Card,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
@@ -28,15 +30,7 @@ export function SummaryCard({
   const { t } = useTranslation('shopping');
   const total = remaining + checked;
   return (
-    <Box
-      sx={{
-        p: '14px 14px 14px 16px',
-        bgcolor: 'background.paper',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: '20px',
-      }}
-    >
+    <Card sx={{ p: '14px 14px 14px 16px' }}>
       <Box
         sx={{
           display: 'flex',
@@ -48,9 +42,8 @@ export function SummaryCard({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             sx={{
-              fontFamily: 'var(--font-display)',
+              ...displayType,
               fontSize: 24,
-              fontWeight: 700,
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -69,28 +62,7 @@ export function SummaryCard({
             size="large"
           />
         </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('addItems')}
-          onClick={onAddItems}
-          sx={{
-            flexShrink: 0,
-            width: 52,
-            height: 52,
-            display: 'grid',
-            placeItems: 'center',
-            border: 0,
-            borderRadius: '18px',
-            cursor: 'pointer',
-            color: '#FFFFFF',
-            backgroundColor: tokens.color.accent,
-            boxShadow: '0 6px 14px rgba(46,106,77,.28)',
-            '&:hover': { backgroundColor: tokens.color.accentHover },
-          }}
-        >
-          <PlusIcon size={24} />
-        </Box>
+        <AddButton aria-label={t('addItems')} onClick={onAddItems} />
       </Box>
       {checked > 0 ? (
         <Box
@@ -114,7 +86,7 @@ export function SummaryCard({
             startIcon={<PantryIcon size={16} />}
             sx={{
               minHeight: 36,
-              borderRadius: 999,
+              borderRadius: radius.pill,
               px: 1.75,
               fontSize: 13.5,
               fontWeight: 700,
@@ -124,6 +96,6 @@ export function SummaryCard({
           </Button>
         </Box>
       ) : null}
-    </Box>
+    </Card>
   );
 }

@@ -21,6 +21,10 @@ import {
 } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
+import {
+  clearRunningLowOnRestock,
+  clearRunningLowWhenGone,
+} from './running-low-flags';
 import { recordRemoved, recordStocked } from './stock-history';
 import type {
   BatchView,
@@ -206,19 +210,16 @@ export class PantryService {
       .insert(batches)
       .values(values.map((value) => ({ ...value, createdAt: now })))
       .returning();
-    await recordStocked(
-      executor,
-      familyId,
-      inserted.map((row) => row.ingredientId),
-      now,
-    );
+    const ingredientIds = inserted.map((row) => row.ingredientId);
+    await recordStocked(executor, familyId, ingredientIds, now);
+    await clearRunningLowOnRestock(executor, familyId, ingredientIds);
     return inserted;
   }
 
   /**
    * The one way to delete Batches of a Family: an Ingredient left with none becomes
-   * Used Up. A future cook-deduction flow must delete through it. Returns the
-   * deleted Batches; ids of another Family are ignored.
+   * Used Up, and loses its "Running low" flag. A future cook-deduction flow must
+   * delete through it. Returns the deleted Batches; ids of another Family are ignored.
    */
   async deleteBatches(
     executor: Executor,
@@ -229,6 +230,11 @@ export class PantryService {
       .delete(batches)
       .where(and(inArray(batches.id, batchIds), eq(batches.familyId, familyId)))
       .returning();
+    await clearRunningLowWhenGone(
+      executor,
+      familyId,
+      deleted.map((row) => row.ingredientId),
+    );
     await recordRemoved(executor, familyId, deleted);
     return deleted;
   }

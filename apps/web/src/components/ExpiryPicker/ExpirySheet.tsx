@@ -93,7 +93,7 @@ export function ExpirySheet({
         <Stack direction="row" spacing={1.25} sx={{ px: 3, py: 1.5 }}>
           <Button
             type="button"
-            variant="text"
+            variant="ghost"
             aria-pressed={value === null}
             startIcon={<CloseIcon size={16} strokeWidth={2.4} />}
             onClick={() => onChange(null)}

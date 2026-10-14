@@ -8,7 +8,7 @@ type Props = {
   triggerName?: string;
   message: string;
   disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'text';
+  variant?: 'primary' | 'secondary' | 'ghost';
   onConfirm: () => void;
 };
 
@@ -89,7 +89,7 @@ export function ConfirmPrompt({
         <Button ref={confirmRef} disabled={disabled} onClick={onConfirm}>
           {t('confirm')}
         </Button>
-        <Button variant="text" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel}>
           {t('cancel')}
         </Button>
       </Stack>

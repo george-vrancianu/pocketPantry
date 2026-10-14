@@ -60,6 +60,8 @@ export const user = pgTable(
     familyRole: familyRole('family_role').notNull().default('member'),
     // Member Preference: 'en' | 'ro' | 'da' (validated in the API); null until chosen.
     locale: text('locale'),
+    // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
+    theme: text('theme'),
     ...timestamps,
   },
   (table) => [
@@ -245,7 +247,7 @@ export const ingredients = pgTable(
     defaultUnit: ingredientUnit('default_unit').notNull(),
     // Water, salt, pepper: Recipe matching always counts them as covered.
     pantryBasic: boolean('pantry_basic').notNull().default(false),
-    // Null reads as medium. Backfilled from the Parent Category by migration 0019.
+    // Null reads as medium. Backfilled from the Parent Category by migration 0021.
     amountScale: amountScale('amount_scale'),
     ...timestamps,
   },
@@ -581,6 +583,22 @@ export const staples = pgTable(
       sql`${table.quantity} IS NULL OR ${table.quantity} > 0`,
     ),
   ],
+);
+
+// A Family's manual "Running low" flag on an Ingredient. Row existence means on; no row
+// means off, as for Staples. Set and cleared from the Pantry toggle, never from quantities.
+export const runningLow = pgTable(
+  'running_low',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
 );
 
 // A dismissed Suggestion, hidden for the whole Family. Creating any Batch of the

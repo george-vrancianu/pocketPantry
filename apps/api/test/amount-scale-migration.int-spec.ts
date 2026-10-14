@@ -8,12 +8,12 @@ import {
   SEED_LEAVES,
 } from '../src/catalog/seed/catalog-seed-data';
 
-// Migration 0019 adds the Amount Scale column and backfills it from each
+// Migration 0021 adds the Amount Scale column and backfills it from each
 // Ingredient's Parent Category. Each test takes the column away, plays the
 // whole migration again inside a transaction that is rolled back, and checks
 // what it wrote.
 const statements = readFileSync(
-  resolve(process.cwd(), 'drizzle/0019_amount_scale.sql'),
+  resolve(process.cwd(), 'drizzle/0021_amount_scale.sql'),
   'utf8',
 )
   .split('--> statement-breakpoint')
@@ -24,7 +24,7 @@ const ids = {
   stray: '00000000-0000-4000-8000-000000001901',
 };
 
-describe('Migration 0019: Amount Scale backfill (integration)', () => {
+describe('Migration 0021: Amount Scale backfill (integration)', () => {
   let client: pg.Client;
 
   beforeAll(async () => {

@@ -39,7 +39,7 @@ export function IngredientList({
           {ingredients.map((item) => (
             <li key={item.id}>
               <Button
-                variant="text"
+                variant="ghost"
                 aria-label={t('ingredient.edit', {
                   name: localName(item, i18n.language),
                 })}

@@ -1,4 +1,12 @@
-import { Box, ClockIcon, IngredientsScanIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  ClockIcon,
+  IngredientsScanIcon,
+  tokens,
+  color,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -74,9 +82,9 @@ function Tile({ card }: { card: CookTonightCard }) {
         minHeight: 92,
         boxSizing: 'border-box',
         p: '12px 14px',
-        borderRadius: '18px',
+        borderRadius: radius.card,
         bgcolor: tokens.color.accent,
-        color: '#FFFFFF',
+        color: color.accentInk,
         textDecoration: 'none',
         display: 'flex',
         flexDirection: 'column',
@@ -87,9 +95,8 @@ function Tile({ card }: { card: CookTonightCard }) {
       <Box
         component="span"
         sx={{
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 17,
-          fontWeight: 700,
           lineHeight: 1.15,
           display: '-webkit-box',
           WebkitBoxOrient: 'vertical',
@@ -137,8 +144,8 @@ function Tile({ card }: { card: CookTonightCard }) {
               gap: '3px',
               px: '7px',
               py: '2px',
-              borderRadius: `${tokens.radius.chip}px`,
-              bgcolor: 'rgba(255,255,255,0.92)',
+              borderRadius: radius.pill,
+              bgcolor: tokens.color.urgentBg,
               color: tokens.color.urgentFg,
               fontSize: 11,
               fontWeight: 700,

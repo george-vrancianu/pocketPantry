@@ -1,3 +1,4 @@
+import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { recipeMatchingQueryKeys } from './queryKeys';
@@ -22,7 +23,11 @@ export type CategoryOptions = {
   }[];
 };
 
-export type MemberPreferences = { locale: Locale | null };
+/** `null` means never chosen: the default applies. */
+export type MemberPreferences = {
+  locale: Locale | null;
+  theme: ThemeId | null;
+};
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
 
@@ -123,6 +128,10 @@ export function useSaveLocale() {
         method: 'PUT',
         body: { locale },
       }),
-    onSuccess: (saved) => queryClient.setQueryData(preferencesQueryKey, saved),
+    // Only the locale this request saved; a Theme save may have landed meanwhile.
+    onSuccess: (saved) =>
+      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+        old ? { ...old, locale: saved.locale } : saved,
+      ),
   });
 }

@@ -6,6 +6,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  radius,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -39,7 +40,7 @@ export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
     return (
       <Stack spacing={2}>
         <Alert>{translateApiError(t, template.error)}</Alert>
-        <Button variant="text" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel}>
           {t('templates:apply.cancel')}
         </Button>
       </Stack>
@@ -99,7 +100,7 @@ export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
               bgcolor: 'background.paper',
               border: 1,
               borderColor: 'divider',
-              borderRadius: '20px',
+              borderRadius: radius.card,
             }}
           >
             {group.lines.map((line) => (
@@ -125,7 +126,7 @@ export function ApplyTemplatePicker({ templateId, onDone, onCancel }: Props) {
             ? t('templates:apply.confirming')
             : t('templates:apply.confirm', { count: ticked.length })}
         </Button>
-        <Button variant="text" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel}>
           {t('templates:apply.cancel')}
         </Button>
       </Stack>

@@ -4,6 +4,7 @@ import { Box } from '../atoms/Layout';
 import { tokens } from '../theme/tokens';
 import { ListRow } from './ListRow';
 import { SwipeRow, type SwipeRowLabels } from './SwipeRow';
+import { radius } from '../theme/themeVars';
 
 const meta: Meta = { title: 'Molecules/SwipeRow' };
 export default meta;
@@ -41,7 +42,7 @@ function List({
         p: 0,
         listStyle: 'none',
         bgcolor: tokens.color.surface,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: radius.card,
         overflow: 'hidden',
       }}
     >

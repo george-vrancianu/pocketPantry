@@ -13,7 +13,7 @@ export const DEFAULT_AMOUNT_SCALE: AmountScale = 'medium';
  * Default Amount Scale per Parent Category, keyed by the Parent's stable id. A
  * Parent not listed here, including the top-level "other" Parent, uses medium.
  * This is the one TypeScript source for the mapping; the migration that adds the
- * column (drizzle/0019_amount_scale.sql) carries the same ids, and a test checks
+ * column (drizzle/0021_amount_scale.sql) carries the same ids, and a test checks
  * the two agree.
  */
 const PARENT_AMOUNT_SCALE: Readonly<Record<string, AmountScale>> = {

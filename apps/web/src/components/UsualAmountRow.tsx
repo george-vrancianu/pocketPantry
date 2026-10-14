@@ -1,4 +1,11 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  Typography,
+  color as themeColor,
+  focusRing,
+  radius,
+  tokens,
+} from '@pocket-pantry/ui';
 import {
   useEffect,
   useLayoutEffect,
@@ -10,7 +17,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { Unit } from '../lib/catalog';
 import { fitChips } from '../lib/fitChips';
-import { focusRing } from '../lib/focusRing';
 import {
   parseTypedNumber,
   usualAmountsAscending,
@@ -170,18 +176,18 @@ export function UsualAmountRow({
                 height: '100%',
                 px: '10px',
                 border: 0,
-                borderRadius: `${tokens.radius.chip}px`,
+                borderRadius: radius.chip,
                 cursor: 'pointer',
                 font: 'inherit',
                 fontSize: 13.5,
                 fontWeight: 600,
                 fontVariantNumeric: 'tabular-nums',
                 backgroundColor: selected ? color.accent : color.chipNeutral,
-                color: selected ? '#FFFFFF' : color.ink,
+                color: selected ? themeColor.accentInk : color.ink,
                 transition: 'background-color .12s, transform .08s',
                 '&:active': { transform: 'scale(.96)' },
                 '&[hidden]': { display: 'none' },
-                ...focusRing(),
+                ...focusRing,
                 '@media (prefers-reduced-motion: reduce)': {
                   transition: 'none',
                   '&:active': { transform: 'none' },

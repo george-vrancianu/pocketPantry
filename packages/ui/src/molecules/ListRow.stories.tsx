@@ -4,6 +4,7 @@ import { CheckIcon, CloseIcon } from '../atoms/icons';
 import { Box } from '../atoms/Layout';
 import { tokens } from '../theme/tokens';
 import { ListRow, ListRowItem } from './ListRow';
+import { radius } from '../theme/themeVars';
 
 const meta = {
   title: 'Molecules/ListRow',
@@ -37,7 +38,7 @@ const tick = (
     sx={{
       width: 24,
       height: 24,
-      borderRadius: '8px',
+      borderRadius: radius.box,
       border: `2px solid ${tokens.color.tickBorder}`,
     }}
   />
@@ -52,7 +53,7 @@ const tag = (
       bgcolor: 'primary.light',
       px: 1,
       py: 0.5,
-      borderRadius: 999,
+      borderRadius: radius.pill,
     }}
   >
     Unmatched
@@ -90,7 +91,7 @@ export const CheckedStruckThrough: Story = {
         sx={{
           width: 24,
           height: 24,
-          borderRadius: '8px',
+          borderRadius: radius.box,
           bgcolor: 'primary.main',
           color: tokens.color.surface,
           display: 'flex',

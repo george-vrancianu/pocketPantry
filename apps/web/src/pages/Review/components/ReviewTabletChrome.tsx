@@ -1,4 +1,4 @@
-import { Box, Button, tokens } from '@pocket-pantry/ui';
+import { Box, Button, tokens, displayType, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { COUNTER_TONE, type Counts } from './ReviewCounters';
 
@@ -22,7 +22,7 @@ export function ReviewCounterChips({ save, check, excluded }: Counts) {
             height: 36,
             px: '14px',
             boxSizing: 'border-box',
-            borderRadius: `${tokens.radius.counter}px`,
+            borderRadius: radius.card,
             fontSize: 13,
             fontWeight: 600,
             whiteSpace: 'nowrap',
@@ -32,9 +32,8 @@ export function ReviewCounterChips({ save, check, excluded }: Counts) {
           <Box
             component="span"
             sx={{
-              fontFamily: tokens.font.display,
+              ...displayType,
               fontSize: 16,
-              fontWeight: 700,
             }}
           >
             {chip.value}
@@ -76,7 +75,7 @@ export function ReviewTabletFooter({
       </Box>
       <Box sx={{ display: 'flex', gap: '10px' }}>
         <Button
-          variant="text"
+          variant="ghost"
           onClick={onDiscard}
           sx={{
             bgcolor: tokens.color.surface,

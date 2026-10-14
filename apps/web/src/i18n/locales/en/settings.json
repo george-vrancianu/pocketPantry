@@ -29,5 +29,14 @@
     "days": "Days until expiry",
     "saved": "Saved.",
     "saveOverride": "Save override"
+  },
+  "appearance": {
+    "title": "Appearance",
+    "warm": "Warm editorial",
+    "minimal": "Minimal crisp",
+    "dark": "Dark-first",
+    "matchSystem": "Match system",
+    "matchSystemHint": "Dark-first when the phone is in dark mode, your light theme otherwise",
+    "usedInDark": "Used in dark mode"
   }
 }

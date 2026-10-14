@@ -1,4 +1,4 @@
-import { Box, RecipesIcon, tokens } from '@pocket-pantry/ui';
+import { Box, RecipesIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -129,7 +129,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
       sx={{
         display: 'block',
         p: '8px 10px',
-        borderRadius: '10px',
+        borderRadius: radius.control,
         border: `1px solid ${tokens.color.line}`,
         color: tokens.color.ink,
         textDecoration: 'none',

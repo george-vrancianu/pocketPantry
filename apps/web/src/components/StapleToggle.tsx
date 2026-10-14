@@ -1,4 +1,4 @@
-import { IconButton } from '@pocket-pantry/ui';
+import { IconButton, StarFillIcon, StarIcon } from '@pocket-pantry/ui';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
@@ -6,15 +6,20 @@ import { useStapleMutations, useStaples } from '../lib/staples';
 
 type Report = (message: string | null) => void;
 
-const StapleErrorContext = createContext<Report>(() => undefined);
+const RowToggleErrorContext = createContext<Report>(() => undefined);
 
-/** A page that lists StapleToggles owns their error: show `message` in its Alert and wrap the list in `StapleErrorProvider`. */
-export function useStapleErrors() {
+/** The page's error report for row toggles; the Staple and Running low toggles both call it. */
+export function useRowToggleReport(): Report {
+  return useContext(RowToggleErrorContext);
+}
+
+/** A page that lists row toggles (Staple, Running low) owns their error: show `message` in its Alert and wrap the list in `RowToggleErrorProvider`. */
+export function useRowToggleErrors() {
   const [message, setMessage] = useState<string | null>(null);
   return { message, report: setMessage };
 }
 
-export function StapleErrorProvider({
+export function RowToggleErrorProvider({
   report,
   children,
 }: {
@@ -22,9 +27,9 @@ export function StapleErrorProvider({
   children: ReactNode;
 }) {
   return (
-    <StapleErrorContext.Provider value={report}>
+    <RowToggleErrorContext.Provider value={report}>
       {children}
-    </StapleErrorContext.Provider>
+    </RowToggleErrorContext.Provider>
   );
 }
 
@@ -42,7 +47,7 @@ export function StapleToggle({ ingredientId, name, onToggled }: Props) {
   const staples = useStaples(i18n.language);
   const { add, remove } = useStapleMutations(i18n.language);
   const staple = staples.data?.find((s) => s.ingredientId === ingredientId);
-  const report = useContext(StapleErrorContext);
+  const report = useRowToggleReport();
   const busy = add.isPending || remove.isPending;
 
   return (
@@ -64,18 +69,7 @@ export function StapleToggle({ ingredientId, name, onToggled }: Props) {
         else add.mutate({ ingredientId }, options);
       }}
     >
-      <svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill={staple ? 'currentColor' : 'none'}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      >
-        <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" />
-      </svg>
+      {staple ? <StarFillIcon size={20} /> : <StarIcon size={20} />}
     </IconButton>
   );
 }

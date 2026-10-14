@@ -1,8 +1,10 @@
+import { THEMES } from '@pocket-pantry/ui';
 import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scanGuide as guide } from '../../test/scan';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -295,9 +297,12 @@ describe('Scan by double-tapping the guides', () => {
     await flush();
     expect(guide()).toHaveAttribute('data-armed', 'true');
     for (const corner of screen.getAllByTestId('scan-guide-corner')) {
-      expect(getComputedStyle(corner).borderTopColor).toBe(
-        'rgb(244, 244, 240)',
-      );
+      // Each corner draws its top or bottom side.
+      const side =
+        getComputedStyle(corner).top === '-2px'
+          ? 'border-top-color'
+          : 'border-bottom-color';
+      expect(paintedColour(corner, side)).toBe(THEMES.dark.ink);
     }
   });
 

@@ -73,6 +73,7 @@
   "suggestions": {
     "missingLabel": "Missing staples · {{count}}",
     "usedUpLabel": "Recently used up · {{count}}",
+    "runningLowLabel": "Running low · {{count}}",
     "stapleLabel": "Staples",
     "allStocked": "All your staples are stocked.",
     "manage": "Manage",

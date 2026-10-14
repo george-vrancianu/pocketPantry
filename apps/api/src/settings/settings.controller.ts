@@ -106,13 +106,15 @@ export class SettingsController {
   }
 
   @Put('preferences')
-  @ApiOperation({ summary: "Save the Member's locale" })
+  @ApiOperation({
+    summary: "Save the Member's locale and/or Theme; omitted ones are kept",
+  })
   async setPreferences(
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(updatePreferencesBody))
     body: UpdatePreferencesBody,
   ): Promise<PreferencesView> {
-    await this.settings.setLocale(member.id, body.locale);
-    return { locale: body.locale };
+    await this.settings.setPreferences(member.id, body);
+    return this.settings.getPreferences(member.id);
   }
 }

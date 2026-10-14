@@ -447,6 +447,37 @@ describe('Unmatched queue (integration)', () => {
   });
 
   describe('resolve to an existing Ingredient', () => {
+    it('clears the Running low flag of the relinked Family only, as a new Batch does', async () => {
+      const raw = name('restocked');
+      const alice = await newMember();
+      const bob = await newMember();
+      await saveBatches(alice, [{ rawName: raw }]);
+      const parmesan = seedId.ingredient('parmesan');
+      const setFlag = (cookie: string) =>
+        request(app.getHttpServer())
+          .put(`/api/pantry/running-low/${parmesan}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .expect(204);
+      const readFlags = async (cookie: string) =>
+        (
+          (await call(cookie).get('/pantry?locale=en').expect(200)).body as {
+            runningLow: string[];
+          }
+        ).runningLow;
+      await setFlag(alice);
+      await setFlag(bob);
+      expect(await readFlags(alice)).toContain(parmesan);
+
+      await resolve({
+        normalizedName: normalise(raw),
+        ingredientId: parmesan,
+      }).expect(201);
+
+      expect(await readFlags(alice)).not.toContain(parmesan);
+      expect(await readFlags(bob)).toContain(parmesan);
+    });
+
     it('relinks every Batch and Shopping Item, adds the Synonym in its locale and clears the queue', async () => {
       const raw = name('brânză');
       const alice = await newMember();

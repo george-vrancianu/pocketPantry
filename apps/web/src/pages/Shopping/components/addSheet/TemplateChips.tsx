@@ -1,7 +1,12 @@
-import { Box, TemplateIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  Chip,
+  TemplateIcon,
+  tokens,
+  insetFocusRing,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../../../../lib/focusRing';
 
 export type TemplateChipsProps = {
   /** Opens a template's apply view. */
@@ -56,7 +61,7 @@ export function TemplateChips({
             fontSize: 14,
             fontWeight: 700,
             cursor: 'pointer',
-            ...focusRing(),
+            ...insetFocusRing,
           }}
         >
           {t('shopping:seeAll')}
@@ -64,39 +69,13 @@ export function TemplateChips({
       </Box>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
         {templates.data.map((template) => (
-          <Box
+          <Chip
             key={template.id}
-            component="button"
-            type="button"
             onClick={() => onOpenTemplate(template.id)}
-            sx={{
-              minHeight: 40,
-              px: 1.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.75,
-              border: `1px solid ${color.line}`,
-              borderRadius: 999,
-              backgroundColor: color.surface,
-              color: color.ink,
-              font: 'inherit',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              ...focusRing(),
-            }}
-          >
-            <Box aria-hidden sx={{ display: 'flex', color: color.butterInk }}>
-              <TemplateIcon size={16} />
-            </Box>
-            {template.name}
-            <Box
-              component="span"
-              sx={{ fontSize: 12.5, fontWeight: 500, color: color.muted }}
-            >
-              {t('templates:list.items', { count: template.lineCount })}
-            </Box>
-          </Box>
+            icon={<TemplateIcon size={16} />}
+            label={template.name}
+            meta={t('templates:list.items', { count: template.lineCount })}
+          />
         ))}
       </Box>
     </Box>

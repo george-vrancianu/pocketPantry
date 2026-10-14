@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
+import { calendarDay, sheetButton } from '../../test/expirySheet';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { REVIEW_ROUTE, startReview } from '../../test/review';
@@ -414,9 +415,7 @@ describe('the expiry sheet in the Review table', () => {
   }
 
   async function done(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: 'Done' }),
-    );
+    await user.click(sheetButton(screen.getByRole('dialog'), 'Done'));
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -460,15 +459,12 @@ describe('the expiry sheet in the Review table', () => {
 
     const sheet = await openSheet(user);
     expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
-    expect(
-      within(sheet).getByRole('button', {
-        name: 'Thursday, December 24, 2026',
-      }),
-    ).toHaveAttribute('aria-pressed', 'true');
-
-    await user.click(
-      within(sheet).getByRole('button', { name: 'Monday, December 28, 2026' }),
+    expect(calendarDay(sheet, 'Thursday, December 24, 2026')).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
+
+    await user.click(calendarDay(sheet, 'Monday, December 28, 2026'));
     expect(screen.getByLabelText('Expiry date: Parmesan')).toHaveValue(
       '28.12.2026',
     );
@@ -496,7 +492,7 @@ describe('the expiry sheet in the Review table', () => {
     const user = userEvent.setup();
     const calls = renderReview([line({ lowConfidence: true })]);
     const sheet = await openSheet(user);
-    await user.click(within(sheet).getByRole('button', { name: 'No expiry' }));
+    await user.click(sheetButton(sheet, 'No expiry'));
     expect(screen.getByLabelText('Expiry date: Parmesan')).toHaveValue('');
     await done(user);
     expect(await saved(user, calls)).toMatchObject({ expiryDate: null });
@@ -510,9 +506,7 @@ describe('the expiry sheet in the Review table', () => {
       '13.12.2026',
     );
     const sheet = await openSheet(user);
-    await user.click(
-      within(sheet).getByRole('button', { name: 'Monday, December 28, 2026' }),
-    );
+    await user.click(calendarDay(sheet, 'Monday, December 28, 2026'));
     await done(user);
 
     await user.click(

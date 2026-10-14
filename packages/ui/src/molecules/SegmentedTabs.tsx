@@ -1,8 +1,10 @@
 import Box from '@mui/material/Box';
 import ButtonBase from '@mui/material/ButtonBase';
 import { useRef, type KeyboardEvent } from 'react';
+import { focusRing } from '../theme/focusRing';
 import { tokens } from '../theme/tokens';
 import { visuallyHidden } from '../theme/visuallyHidden';
+import { bodyFont, nestedRadius, radius, shadow } from '../theme/themeVars';
 
 export type SegmentedTab<T extends string> = {
   value: T;
@@ -70,7 +72,7 @@ export function SegmentedTabs<T extends string>({
         gap: '4px',
         p: '4px',
         backgroundColor: color.chipNeutral,
-        borderRadius: '16px',
+        borderRadius: radius.control,
       }}
     >
       {tabs.map((tab, index) => {
@@ -91,21 +93,21 @@ export function SegmentedTabs<T extends string>({
             tabIndex={selected ? 0 : -1}
             onClick={() => onChange(tab.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
-            sx={{
-              height: 40,
-              gap: '6px',
-              borderRadius: '12px',
-              fontSize: 14,
-              fontWeight: selected ? 700 : 600,
-              fontFamily: tokens.font.body,
-              backgroundColor: selected ? color.surface : 'transparent',
-              color: selected ? color.ink : color.muted,
-              boxShadow: selected ? '0 1px 2px rgba(23,35,28,.08)' : 'none',
-              '&:focus-visible': {
-                outline: `3px solid ${color.accent}`,
-                outlineOffset: 2,
+            sx={[
+              {
+                height: 40,
+                gap: '6px',
+                borderRadius: nestedRadius(radius.control, 4),
+                fontSize: 14,
+                fontWeight: selected ? 700 : 600,
+                fontFamily: bodyFont,
+                // Selected like the SegmentedControl: `seg-on` / `seg-on-ink`.
+                backgroundColor: selected ? 'pp.segOn' : 'transparent',
+                color: selected ? 'pp.segOnInk' : color.muted,
+                boxShadow: selected ? shadow.segment : 'none',
               },
-            }}
+              focusRing,
+            ]}
           >
             {tab.label}
             {tab.badge ? ' ' : null}
@@ -118,7 +120,7 @@ export function SegmentedTabs<T extends string>({
                   fontWeight: 700,
                   px: '6px',
                   py: '2px',
-                  borderRadius: `${tokens.radius.chip}px`,
+                  borderRadius: '999px',
                   backgroundColor: color.urgentBg,
                   color: color.urgentFg,
                 }}

@@ -35,7 +35,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
       ) : null}
       {!form.ingredient && !form.unmatchedName && form.typed ? (
         <Button
-          variant="text"
+          variant="ghost"
           type="button"
           onClick={form.markTypedAsUnmatched}
         >
@@ -94,7 +94,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         <Button type="submit" disabled={!form.canSave}>
           {form.saving ? t('form.saving') : t('form.save')}
         </Button>
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('form.cancel')}
         </Button>
       </Stack>

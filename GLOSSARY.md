@@ -140,8 +140,12 @@ _Avoid_: Template item, entry
 The state of an Ingredient whose last Batch was removed from the Pantry within the past 30 days. A Staple is never Used Up; it is missing instead.
 _Avoid_: Run out, finished, nothing left
 
+**Running low**:
+A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingredient still has at least one Batch. Per Family, never set automatically from quantities; cleared when a Batch is added or the last Batch is removed. Turning it off is the only way to clear it from the Running low Suggestions.
+_Avoid_: Low stock, almost out, low quantity
+
 **Suggestion**:
-A proposed Shopping Item, from a missing Staple or a Used Up Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing one hides it for the Family until the Ingredient is restocked and runs out again. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
+A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, or a Running low Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple or Used Up Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
 _Avoid_: Alert, notification, recommendation
 
 ### Scanning
@@ -282,5 +286,13 @@ Settings shared by all Members of a Family: Default Expiry overrides per Categor
 _Avoid_: Preferences (reserved for per-Member settings)
 
 **Member Preferences**:
-Settings private to a Member: locale and Dashboard layout.
+Settings private to a Member: locale, Theme and Dashboard layout.
 _Avoid_: Settings
+
+**Theme**:
+The app's look, one of Warm editorial (`warm`, the default), Minimal crisp (`minimal`) and Dark-first (`dark`). A Member Preference, so it follows the Member across devices.
+_Avoid_: Skin, colour scheme (MUI's mechanism behind a Theme), mode
+
+**Match system**:
+A per-device switch that makes the app follow the device's dark mode: Dark-first in dark mode, the Member's chosen light Theme in light mode (Warm editorial if they chose Dark-first). Stored on the device, not a Member Preference.
+_Avoid_: Auto theme, system theme

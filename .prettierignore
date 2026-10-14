@@ -6,3 +6,4 @@ apps/api/drizzle/meta
 pocket-pantry-handoff
 .agents
 .claude
+docs/handoffs

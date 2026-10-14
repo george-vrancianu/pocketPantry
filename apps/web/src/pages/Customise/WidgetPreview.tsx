@@ -5,6 +5,8 @@ import {
   RecipesIcon,
   ShoppingIcon,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import type { WidgetType } from '../../lib/dashboard';
@@ -16,7 +18,7 @@ const bar = (width: string, color: string) => (
       display: 'block',
       width,
       height: 7,
-      borderRadius: '4px',
+      borderRadius: radius.pill,
       bgcolor: color,
     }}
   />
@@ -49,13 +51,17 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
         tokens.color.accent,
         tokens.color.accent,
         tokens.color.accentMid,
-        '#CBD5C6',
-        '#CBD5C6',
+        tokens.color.chipNeutral,
+        tokens.color.chipNeutral,
       ].map((color, i) => (
         <Box
           key={i}
           component="span"
-          sx={{ height: 36, borderRadius: '6px', bgcolor: color }}
+          sx={{
+            height: 36,
+            borderRadius: nestedRadius(radius.control, 6),
+            bgcolor: color,
+          }}
         />
       ))}
     </Box>
@@ -85,7 +91,7 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
     >
       {bar('80%', tokens.color.accent)}
       {bar('55%', tokens.color.accentMid)}
-      {bar('35%', '#E3A54B')}
+      {bar('35%', tokens.color.butter)}
     </Box>
   ),
 };
@@ -96,7 +102,7 @@ export function WidgetPreview({ type }: { type: WidgetType }) {
       aria-hidden="true"
       sx={{
         height: 64,
-        borderRadius: '14px',
+        borderRadius: radius.control,
         bgcolor: tokens.color.bg,
         color: tokens.color.ink,
         p: '12px',

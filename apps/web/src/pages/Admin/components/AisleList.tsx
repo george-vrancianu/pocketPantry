@@ -107,7 +107,7 @@ export function AisleList({ aisles, onCreate, onEdit }: Props) {
                 <ChevronDownIcon />
               </IconButton>
               <Button
-                variant="text"
+                variant="ghost"
                 aria-label={t('admin:aisle.edit', { name })}
                 onClick={() => onEdit(aisle.id)}
               >

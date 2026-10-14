@@ -77,6 +77,7 @@
   "suggestions": {
     "missingLabel": "Produse de bază lipsă · {{count}}",
     "usedUpLabel": "Epuizate recent · {{count}}",
+    "runningLowLabel": "Pe cale să se termine · {{count}}",
     "stapleLabel": "Produse de bază",
     "allStocked": "Toate produsele tale de bază sunt în stoc.",
     "manage": "Gestionează",
