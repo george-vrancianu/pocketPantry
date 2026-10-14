@@ -5,14 +5,19 @@ import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { useAddBatchForm } from '../hooks/useAddBatchForm';
+import { useAddBatchForm, type AddBatchStart } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
 
-type Props = { onSaved: () => void; onCancel: () => void };
+type Props = {
+  onSaved: () => void;
+  onCancel: () => void;
+  /** Start with an Ingredient picked, or an Unmatched name typed in; empty without. */
+  start?: AddBatchStart;
+};
 
-export function AddBatchForm({ onSaved, onCancel }: Props) {
+export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const { t, i18n } = useTranslation('pantry');
-  const form = useAddBatchForm({ onSaved });
+  const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
@@ -27,7 +32,8 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
     >
       <CatalogSearch
         autoFocus
-        selected={form.ingredient}
+        defaultQuery={form.initialQuery}
+        selected={form.selected}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
         onUseTyped={form.chooseTypedName}

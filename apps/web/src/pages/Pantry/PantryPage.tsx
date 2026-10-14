@@ -12,11 +12,12 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   RowToggleErrorProvider,
   useRowToggleErrors,
-} from '../../components/StapleToggle';
+} from '../../components/RowToggleErrors';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
+import { RowKeyHints } from './components/RowKeyHints';
 import { PantryFilters } from './components/PantryFilters';
 import { usePantryRowHint } from './hooks/usePantryRowHint';
 import { usePantryScreen } from './hooks/usePantryScreen';
@@ -32,12 +33,20 @@ export function PantryPage() {
       .querySelector<HTMLElement>(`[aria-label="${t('pantry:add')}"]`)
       ?.focus();
 
-  // The header's Add button is replaced while the form is open: put focus back on it afterwards.
-  const wasAdding = useRef(false);
+  // The form replaces the list and the header's Add button while open: afterwards put focus back on
+  // the Ingredient row whose Add batch button opened it, or else on the header's Add button.
+  const wasAdding = useRef<{ from?: string } | null>(null);
   useEffect(() => {
-    if (wasAdding.current && !screen.adding) focusAdd();
-    wasAdding.current = screen.adding;
-  }, [screen.adding, t]);
+    const closedAdding = wasAdding.current;
+    if (closedAdding && !screen.adding) {
+      const row = [
+        ...document.querySelectorAll<HTMLElement>('[data-open-key]'),
+      ].find((element) => element.dataset.openKey === closedAdding.from);
+      if (row) row.focus();
+      else focusAdd();
+    }
+    wasAdding.current = screen.adding ? { from: screen.addingFrom } : null;
+  }, [screen.adding, screen.addingFrom, t]);
 
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
@@ -57,6 +66,7 @@ export function PantryPage() {
       <RowHintNote hint={rowHint.hint} />
       {screen.adding ? (
         <AddBatchForm
+          start={screen.addStart}
           onSaved={screen.stopAdding}
           onCancel={screen.stopAdding}
         />
@@ -94,15 +104,18 @@ export function PantryPage() {
               batchCount={section.batchCount}
               rows={section.rows}
               today={screen.today}
+              onToggleOpen={screen.toggleOpen}
               onRemoveBatch={(batch) =>
                 screen.removeBatch(batch.id, batch.name)
               }
+              onAddBatch={screen.startAddingTo}
               onEmptied={focusAdd}
               rowHint={rowHint}
             />
           ))}
         </Stack>
       )}
+      <RowKeyHints />
     </RowToggleErrorProvider>
   );
 }

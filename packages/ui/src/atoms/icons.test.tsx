@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  BatteryLowIcon,
   ClockIcon,
   CopyIcon,
   LogoutIcon,
@@ -57,6 +58,14 @@ describe('icons', () => {
     const svg = container.querySelector('svg')!;
     expect(svg.getAttribute('width')).toBe('16');
     expect(svg.getAttribute('stroke-width')).toBe('2.4');
+  });
+
+  it('draw the battery-low with a heavier charge bar', () => {
+    const { container } = render(<BatteryLowIcon />);
+    const paths = container.querySelectorAll('path');
+    expect(container.querySelector('rect')).not.toBeNull();
+    expect(paths[1]!.getAttribute('d')).toBe('M6.5 10.5v3');
+    expect(paths[1]!.getAttribute('stroke-width')).toBe('3.2');
   });
 
   it('register the Settings glyphs from the handoff set', () => {

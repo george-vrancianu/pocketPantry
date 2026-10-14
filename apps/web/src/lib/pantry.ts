@@ -240,6 +240,14 @@ function byExpiry(a: Batch, b: Batch): number {
   return a.expiryDate < b.expiryDate ? -1 : 1;
 }
 
+/** Soonest expiry first, none last, and the same expiry (or none) in the order the Batches were added. */
+function byExpiryThenAdded(a: Batch, b: Batch): number {
+  return (
+    byExpiry(a, b) ||
+    (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)
+  );
+}
+
 /** Roll Batches of the same Ingredient up into one row each, in order of soonest expiry. */
 export function rollUp(batches: Batch[]): RollUp[] {
   const groups = new Map<string, Batch[]>();
@@ -249,7 +257,7 @@ export function rollUp(batches: Batch[]): RollUp[] {
   }
   return [...groups.entries()]
     .map(([key, members]) => {
-      const sorted = [...members].sort(byExpiry);
+      const sorted = [...members].sort(byExpiryThenAdded);
       const sums = new Map<Unit, number>();
       for (const { quantity, unit } of sorted) {
         if (quantity === null || unit === null) continue;

@@ -329,6 +329,40 @@ describe('StaplesPage', () => {
     });
   });
 
+  it('offers no edit or removal on a Staple whose add is still out', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const { fetchMock, calls } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [] }),
+      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
+      'POST /api/staples': async () => {
+        await gate;
+        return Response.json(staple({ id: 's2', name: 'Flour' }), {
+          status: 201,
+        });
+      },
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'flo',
+    );
+    await user.click(await screen.findByRole('option', { name: /Flour/ }));
+
+    const row = await screen.findByRole('group', { name: 'Flour' });
+    expect(row).toHaveAttribute('aria-disabled', 'true');
+    act(() => row.focus());
+    await user.keyboard('{Enter}');
+    await user.keyboard('{Delete}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remove' })).toBeNull();
+    expect(deletes(calls)).toEqual([]);
+    release();
+  });
+
   it('offers no Use as typed on the Staples page: a Staple must be an Ingredient', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/staples': () => Response.json({ staples: [staple()] }),
