@@ -1,7 +1,7 @@
 import { Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';

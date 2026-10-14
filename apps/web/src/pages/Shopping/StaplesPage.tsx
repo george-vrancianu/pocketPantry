@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { CatalogSearch } from '../../components/CatalogSearch';
+import { CatalogSearch } from '../../components/catalogSearch/CatalogSearch';
 import { translateApiError } from '../../i18n/translateApiError';
 import { formatAmount, type Amount } from '../../lib/amount';
 import {
@@ -70,6 +70,7 @@ export function StaplesPage() {
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
         <CatalogSearch
           key={formKey}
+          showUnit={false}
           onSelect={(ingredient) =>
             add.mutate(
               { ingredientId: ingredient.id },

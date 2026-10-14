@@ -3,7 +3,17 @@
     "label": "Search ingredients",
     "placeholder": "Type an ingredient, e.g. parmesan",
     "searching": "Searching",
-    "noResults": "No ingredients found",
-    "resultCount": "Results: {{count}}"
+    "noResults": "No ingredients found.",
+    "resultCount_one": "{{count}} result",
+    "resultCount_other": "{{count}} results",
+    "failed": "Search failed.",
+    "noMatchFor": "No match for “{{query}}”",
+    "noMatchHint": "Check the spelling or try a shorter word.",
+    "errorTitle": "Couldn’t search right now",
+    "errorHint": "Check your connection and try again.",
+    "retry": "Retry",
+    "clear": "Clear search",
+    "change": "Change ingredient",
+    "selectedLabel": "Ingredient: {{name}}. Press Backspace to change"
   }
 }

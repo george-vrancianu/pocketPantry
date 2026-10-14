@@ -1,7 +1,7 @@
 import { Box } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { localName, type AdminCatalog } from '../../../lib/admin';
 import {
   useCreateRecipe,
