@@ -228,7 +228,7 @@ export function ApplyTemplateView({
                       sx={{
                         px: 1.25,
                         py: 0.25,
-                        borderRadius: 999,
+                        borderRadius: radius.pill,
                         fontSize: 11.5,
                         fontWeight: 700,
                         color: tag.fg,

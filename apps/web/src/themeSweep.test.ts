@@ -15,7 +15,7 @@ type Rule = { name: string; find: (line: string) => boolean };
 
 /** A `borderRadius` value that follows the Theme, or is a shape (circle, pill, square). */
 const THEMED_RADIUS =
-  /^(?:radius\.\w+|[A-Z_]*RADIUS|0|'50%'|999|'999px'|`[^`]*(?:var\(--pp-r-|\$\{radius\.)[^`]*`|'[^']*var\(--pp-r-[^']*'|\w+\(.*\))$/;
+  /^(?:radius\.\w+|[A-Z_]*RADIUS|0|'50%'|'999px'|`[^`]*(?:var\(--pp-r-|\$\{radius\.)[^`]*`|'[^']*var\(--pp-r-[^']*'|\w+\(.*\))$/;
 
 const rules: Rule[] = [
   {

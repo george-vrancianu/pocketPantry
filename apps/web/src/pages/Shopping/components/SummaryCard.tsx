@@ -7,6 +7,7 @@ import {
   Typography,
   Card,
   displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
@@ -85,7 +86,7 @@ export function SummaryCard({
             startIcon={<PantryIcon size={16} />}
             sx={{
               minHeight: 36,
-              borderRadius: 999,
+              borderRadius: radius.pill,
               px: 1.75,
               fontSize: 13.5,
               fontWeight: 700,

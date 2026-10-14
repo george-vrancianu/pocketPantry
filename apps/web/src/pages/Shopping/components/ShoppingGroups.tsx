@@ -187,7 +187,7 @@ function ChecklistRow({
                   bgcolor: tokens.color.accentTint,
                   px: 1,
                   py: 0.5,
-                  borderRadius: 999,
+                  borderRadius: radius.pill,
                 }}
               >
                 {t('item.unmatched')}

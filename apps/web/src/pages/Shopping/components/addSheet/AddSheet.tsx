@@ -7,6 +7,7 @@ import {
   segmentedTabPanelId,
   color,
   displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -137,7 +138,7 @@ export function AddSheet({
             alignItems: 'center',
             gap: 1,
             border: 0,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             cursor: 'pointer',
             backgroundColor: color.primary,
             color: color.primaryInk,
@@ -156,7 +157,7 @@ export function AddSheet({
                 px: '5px',
                 display: 'grid',
                 placeItems: 'center',
-                borderRadius: 999,
+                borderRadius: radius.pill,
                 backgroundColor: color.primaryInk,
                 color: color.primary,
                 fontSize: 11.5,

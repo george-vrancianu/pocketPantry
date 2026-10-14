@@ -127,7 +127,7 @@ export function ResultRow({
             flexShrink: 0,
             px: '9px',
             py: '3px',
-            borderRadius: 999,
+            borderRadius: radius.pill,
             backgroundColor: color.accentTint,
             color: color.accentOnTint,
             fontSize: 11,
