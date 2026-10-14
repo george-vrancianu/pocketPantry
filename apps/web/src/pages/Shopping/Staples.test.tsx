@@ -862,6 +862,28 @@ describe('SuggestionsWidget', () => {
     expect(link).toHaveTextContent('A, E');
   });
 
+  it('names expired Suggestions too', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [],
+          usedUp: [],
+          expired: [
+            {
+              ...suggestion({ ingredientId: 'spinach-id', name: 'Spinach' }),
+              since: '2026-10-13',
+            },
+          ],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: 'Suggestions' });
+    expect(link).toHaveTextContent('Spinach');
+    expect(link).not.toHaveTextContent('Nothing suggested');
+  });
+
   it('says nothing is missing', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
