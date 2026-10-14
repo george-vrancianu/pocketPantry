@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it } from 'vitest';
-import { paintedColour } from '../test/colour';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders } from '../test/render';
 import { AppLayout } from './AppLayout';
 

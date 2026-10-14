@@ -2,7 +2,7 @@ import { Box } from '@mui/material';
 import { tokens, writeAppearance } from '@pocket-pantry/ui';
 import { act, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { paintedColour } from './test/colour';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders } from './test/render';
 import { stubMatchMedia, stubSystemScheme } from './test/viewport';
 

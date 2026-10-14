@@ -16,7 +16,7 @@ import {
   type ShoppingList,
 } from '../../lib/shopping';
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
-import { paintedColour } from '../../test/colour';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
 import { Link, Route, Routes } from 'react-router-dom';

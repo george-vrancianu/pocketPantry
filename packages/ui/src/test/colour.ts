@@ -1,5 +1,10 @@
 type ColourProperty =
-  'color' | 'background-color' | 'border-top-color' | 'fill';
+  | 'color'
+  | 'background-color'
+  | 'background-image'
+  | 'border-top-color'
+  | 'border-bottom-color'
+  | 'fill';
 
 const VAR = /var\((--[\w-]+)\)/i;
 
