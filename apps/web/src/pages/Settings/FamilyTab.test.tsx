@@ -28,24 +28,29 @@ type StubOptions = {
   family?: Family;
   threshold?: number;
   saveStatus?: number;
+  /** Answers each PATCH in turn, replacing `saveStatus`. */
+  patch?: () => Promise<Response>;
 };
 
 function stubFamilyTab({
   family: current = family(),
   threshold = 7,
   saveStatus = 200,
+  patch,
 }: StubOptions = {}) {
   const { fetchMock, calls } = stubApi({
     'GET /api/family': () => Response.json(current),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: threshold, expiryOverrides: [] }),
     'PATCH /api/settings/family': () =>
-      saveStatus === 200
-        ? Response.json({})
-        : Response.json(
-            { code: 'internal_server_error', params: {} },
-            { status: saveStatus },
-          ),
+      patch
+        ? patch()
+        : saveStatus === 200
+          ? Response.json({})
+          : Response.json(
+              { code: 'internal_server_error', params: {} },
+              { status: saveStatus },
+            ),
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
@@ -327,6 +332,43 @@ describe('FamilyTab', () => {
         ),
       ).toBeInTheDocument();
       expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('7');
+    });
+
+    it('keeps the newer value when an older save fails while the newer one is in flight', async () => {
+      const answers: Array<(response: Response) => void> = [];
+      const calls = stubFamilyTab({
+        threshold: 7,
+        patch: () => new Promise((resolve) => answers.push(resolve)),
+      });
+      const user = userEvent.setup({
+        advanceTimers: (ms) => vi.advanceTimersByTime(ms),
+      });
+      renderWithProviders(<FamilyTab />);
+
+      await screen.findByLabelText('Expiring soon');
+      const plus = screen.getByRole('button', { name: 'One day more' });
+      await user.click(plus);
+      await vi.waitFor(() => expect(patches(calls)).toHaveLength(1), {
+        timeout: 2000,
+      });
+      await user.click(plus);
+      await vi.waitFor(() => expect(patches(calls)).toHaveLength(2), {
+        timeout: 2000,
+      });
+      expect(patches(calls)[1].body).toEqual({ staleThresholdDays: 9 });
+
+      answers[0](
+        Response.json(
+          { code: 'internal_server_error', params: {} },
+          { status: 500 },
+        ),
+      );
+      expect(
+        await screen.findByText(
+          'Something went wrong on our side. Please try again.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Expiring soon')).toHaveTextContent('9');
     });
 
     it('sends a pending change when the tab is left before the 600 ms pass', async () => {
