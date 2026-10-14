@@ -1,6 +1,5 @@
 import {
   Alert,
-  BookmarkIcon,
   Box,
   ChevronRightIcon,
   Link,
@@ -14,61 +13,21 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
-import { itemCount, useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */
   onOpenTemplate: (id: string) => void;
-  /** Opens the save view. */
-  onSave: () => void;
 };
 
-/** The Templates tab's list view: the save row, then one row per template. */
-export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
+/** The Templates tab's list view: one row per template. */
+export function TemplatesTab({ onOpenTemplate }: TemplatesTabProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
   const templates = useTemplates(i18n.language);
-  const shoppingList = useShoppingList(i18n.language);
-  const count = shoppingList.data ? itemCount(shoppingList.data.summary) : 0;
   const { color } = tokens;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
-      {count > 0 ? (
-        <Box
-          component="button"
-          type="button"
-          onClick={onSave}
-          sx={{
-            p: '10px 14px',
-            minHeight: 58,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            borderRadius: radius.card,
-            border: `1px solid ${color.line}`,
-            backgroundColor: color.surface,
-            color: 'inherit',
-            font: 'inherit',
-            textAlign: 'left',
-            cursor: 'pointer',
-            ...insetFocusRing,
-          }}
-        >
-          <Tile icon={<BookmarkIcon size={20} />} accent />
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ fontSize: 15, fontWeight: 600 }}>
-              {t('templates:save.row')}
-            </Box>
-            <Box sx={{ fontSize: 12.5, color: color.muted }}>
-              {t('templates:save.rowMeta', { count })}
-            </Box>
-          </Box>
-          <Box aria-hidden sx={{ display: 'flex', color: color.muted }}>
-            <ChevronRightIcon size={18} />
-          </Box>
-        </Box>
-      ) : null}
       <Box>
         <Box
           sx={{
