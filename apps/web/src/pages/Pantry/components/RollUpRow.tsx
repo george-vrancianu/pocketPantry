@@ -180,14 +180,11 @@ export function RollUpRow({
             // The rows pad themselves (12 pt): the elbow's stem sits under the roll-up's icon and the text lines up 50 pt in.
             ml: '2px',
             p: 0,
-            position: 'relative',
-            // The divider starts where the Batch rows used to, not under the elbows.
+            // A divider in its own line box (rows' opaque fills would cover an overlay), from the text column 38 pt in.
             '&::before': {
               content: '""',
-              position: 'absolute',
-              top: 0,
-              left: '36px',
-              right: 0,
+              display: 'block',
+              ml: '36px',
               borderTop: `1px solid ${tokens.color.divider}`,
             },
           }}

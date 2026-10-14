@@ -8,7 +8,7 @@ type Props = {
   ingredientId: string;
 };
 
-/** A low-battery toggle, outlined when off and in the `soon` pair when on, that flags an Ingredient as running low for the Family, or clears the flag. Its state is the Pantry's cache, so every row of the Ingredient agrees. */
+/** A low-battery toggle, in the `neutral` chip fill when off and the `soon` pair when on, that flags an Ingredient as running low for the Family, or clears the flag. Its state is the Pantry's cache, so every row of the Ingredient agrees. */
 export function RunningLowToggle({ ingredientId }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const runningLow = useRunningLow(i18n.language);
