@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
@@ -21,8 +22,9 @@ export class ProductScanService {
     input: ProductScanInput,
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
+    reader: CatalogReader,
   ): Promise<ProductScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
+    const catalog = await this.ingredientCatalog.getCatalogIn(reader, locale);
     const catalogPrompt = this.ingredientCatalog.toPrompt(catalog);
 
     const content: Array<Record<string, unknown>> = [

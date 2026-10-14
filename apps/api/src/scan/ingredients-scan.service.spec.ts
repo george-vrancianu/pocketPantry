@@ -45,7 +45,7 @@ describe('IngredientsScanService', () => {
   const respond = (data: unknown) =>
     generate.mockResolvedValue({ data, requestId: 'r' });
   const analyze = () =>
-    service.analyze({ ingredientsImage: IMAGE }, 'en', 'en');
+    service.analyze({ ingredientsImage: IMAGE }, 'en', 'en', 'family-1');
 
   it('parses every recognised item and sends the photo and Catalog to the provider', async () => {
     respond({ items: [item(), item({ productName: 'Eggs' })] });

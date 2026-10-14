@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray } from 'drizzle-orm';
 import type { ExpiryOverride } from '../catalog/catalog-defaults';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   CATALOG_LOCALES,
   type CatalogLocale,
@@ -38,6 +39,11 @@ export class SettingsService {
     return self.familyId;
   }
 
+  /** The Catalog scope of a Member's Family. */
+  async catalogScopeForMember(memberId: string): Promise<CatalogScope> {
+    return catalogScope(await this.familyIdOf(memberId));
+  }
+
   expiryOverridesForMember(memberId: string): Promise<ExpiryOverride[]> {
     return this.familyIdOf(memberId).then((id) => this.expiryOverridesOf(id));
   }
@@ -71,6 +77,7 @@ export class SettingsService {
     const overrides = await this.expiryOverridesOf(familyId);
     const names = await loadDisplayNames(
       this.database,
+      catalogScope(familyId),
       locale,
       overrides.map((o) => o.entityId),
     );
@@ -137,7 +144,11 @@ export class SettingsService {
   }
 
   /** Parent Categories with their Leaf Categories: what an override can target. */
-  async categoryOptions(locale: CatalogLocale): Promise<CategoryOptionsView> {
+  async categoryOptions(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<CategoryOptionsView> {
+    const scope = await this.catalogScopeForMember(memberId);
     const parents = await this.database
       .select()
       .from(parentCategories)
@@ -146,7 +157,7 @@ export class SettingsService {
       .select()
       .from(leafCategories)
       .orderBy(asc(leafCategories.normalizedName));
-    const names = await loadDisplayNames(this.database, locale, [
+    const names = await loadDisplayNames(this.database, scope, locale, [
       ...parents.map((p) => p.id),
       ...leaves.map((l) => l.id),
     ]);

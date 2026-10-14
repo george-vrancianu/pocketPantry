@@ -5,6 +5,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
+import { catalogScope, SHARED_ONLY } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogParentsQuery,
@@ -30,10 +31,16 @@ export class CatalogController {
       'List Parent Categories by name in the requested locale, for placing an Unmatched Batch',
   })
   async parents(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(catalogParentsQuery))
     query: CatalogParentsQuery,
   ): Promise<{ parents: CatalogParent[] }> {
-    return { parents: await this.searchService.listParents(query.locale) };
+    return {
+      parents: await this.searchService.listParents(
+        await this.settings.catalogScopeForMember(member.id),
+        query.locale,
+      ),
+    };
   }
 
   @Get('search')
@@ -48,6 +55,9 @@ export class CatalogController {
   ): Promise<{ results: CatalogSearchResult[] }> {
     return {
       results: await this.searchService.search(
+        query.scope === 'shared'
+          ? catalogScope(SHARED_ONLY)
+          : await this.settings.catalogScopeForMember(member.id),
         query.q,
         query.locale,
         query.limit,

@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq, ilike } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -638,7 +639,12 @@ describe('Recipe guidance (integration)', () => {
         },
       ]);
       try {
-        const view = await loadResolvedGuidance(database, mine, 'en');
+        const view = await loadResolvedGuidance(
+          database,
+          catalogScope(SHARED_ONLY),
+          mine,
+          'en',
+        );
         expect(view.pairings[0]).toMatchObject({
           label: 'foreign side',
           link: null,
