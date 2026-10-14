@@ -1,9 +1,10 @@
-import { tokens } from '@pocket-pantry/ui';
+import { THEMES } from '@pocket-pantry/ui';
 import { scanGuide } from '../../test/scan';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { paintedColour } from '../../test/colour';
 import { renderWithProviders } from '../../test/render';
 import { ScanPage } from './ScanPage';
 
@@ -35,6 +36,8 @@ vi.mock('../../lib/camera', async () => {
   };
 });
 
+const DARK = THEMES.dark;
+
 function renderScan() {
   return renderWithProviders(
     <Routes>
@@ -60,12 +63,41 @@ describe('Scan screen shell', () => {
     expect(style.overflow).toBe('hidden');
   });
 
-  it('stays dark in the light theme', () => {
-    renderScan();
-    const style = getComputedStyle(screen.getByTestId('scan-screen'));
-    expect(style.backgroundColor).not.toBe('');
-    // Colour comes from the camera palette, not the themed surface.
-    expect(style.backgroundColor).not.toMatch(/255,\s*255,\s*255/);
+  it.each(['warm', 'minimal'] as const)(
+    'renders in Dark-first under the %s Theme',
+    (theme) => {
+      localStorage.setItem(
+        'pp.appearance',
+        JSON.stringify({ theme, matchSystem: false }),
+      );
+      renderScan();
+      const shell = screen.getByTestId('scan-screen');
+      expect(document.documentElement.dataset.theme).toBe(theme);
+      expect(shell).toHaveAttribute('data-theme', 'dark');
+      expect(paintedColour(shell, 'background-color')).toBe(DARK.bg);
+      expect(paintedColour(shell, 'color')).toBe(DARK.ink);
+    },
+  );
+
+  it("leaves the rest of the app in the Member's Theme after closing", async () => {
+    localStorage.setItem(
+      'pp.appearance',
+      JSON.stringify({ theme: 'minimal', matchSystem: false }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/scan" element={<ScanPage />} />
+        <Route path="/" element={<p data-testid="home">Home</p>} />
+      </Routes>,
+      { route: '/scan' },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Close scanner' }),
+    );
+    const home = screen.getByTestId('home');
+    expect(document.documentElement.dataset.theme).toBe('minimal');
+    expect(document.querySelector('[data-theme="dark"]')).toBeNull();
+    expect(paintedColour(home, 'color')).toBe(THEMES.minimal.ink);
   });
 
   it('shows the torch button next to Close when the camera has a torch', () => {
@@ -141,11 +173,14 @@ describe('camera feed and overlays', () => {
     expect(style.height).toBe('100%');
   });
 
-  it('lays a radial vignette from transparent to 45% black over the feed', () => {
+  it('lays a radial vignette from transparent to 45% Dark-first background over the feed', () => {
     renderScan();
-    const style = getComputedStyle(screen.getByTestId('scan-vignette'));
+    const vignette = screen.getByTestId('scan-vignette');
+    const style = getComputedStyle(vignette);
     expect(style.backgroundImage).toContain('radial-gradient');
-    expect(style.backgroundImage).toMatch(/rgba\(0,\s*0,\s*0,\s*0\.45\)/);
+    expect(paintedColour(vignette, 'background-image')).toContain(
+      `${DARK.bg} 45%`,
+    );
     expect(style.pointerEvents).toBe('none');
   });
 
@@ -196,21 +231,7 @@ describe('Info sheet accessibility', () => {
     renderScan();
     await userEvent.click(infoButton());
     expect(
-      getComputedStyle(screen.getByTestId('info-scrim')).backgroundColor,
-    ).toMatch(/rgba\(0,\s*0,\s*0,\s*0\.45\)/);
-  });
-});
-
-describe('camera palette tokens', () => {
-  it('matches the handoff section 9 values exactly', () => {
-    expect(tokens.color).toMatchObject({
-      camFg: '#f4f4f0',
-      camDim: 'rgba(244,244,240,.62)',
-      camGlass: 'rgba(20,22,20,.55)',
-      camGlassStrong: 'rgba(20,22,20,.82)',
-      camAccent: '#9be38f',
-      camAccentInk: '#0c1a0f',
-      camWarn: '#ffcf5a',
-    });
+      paintedColour(screen.getByTestId('info-scrim'), 'background-color'),
+    ).toContain(`${DARK.bg} 45%`);
   });
 });

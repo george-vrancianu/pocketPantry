@@ -1,4 +1,5 @@
 import { Box, CheckIcon, tokens } from '@pocket-pantry/ui';
+import { shade, translucent } from './glass';
 import { useTranslation } from 'react-i18next';
 import {
   canRetry,
@@ -39,7 +40,7 @@ export function SessionStrip({
         flexDirection: 'column',
         justifyContent: 'flex-end',
         gap: '8px',
-        maskImage: 'linear-gradient(to bottom, transparent, #000 40%)',
+        maskImage: `linear-gradient(to bottom, transparent, ${tokens.color.bg} 40%)`,
         pointerEvents: 'none',
       }}
     >
@@ -76,8 +77,8 @@ export function SessionStrip({
               height: 60,
               borderRadius: '11px',
               overflow: 'hidden',
-              border: `1.5px solid ${failed ? tokens.color.camWarn : 'rgba(255,255,255,.35)'}`,
-              backgroundColor: tokens.color.camGlassStrong,
+              border: `1.5px solid ${failed ? tokens.color.soonFg : translucent(tokens.color.ink, 35)}`,
+              backgroundColor: translucent(tokens.color.surface, 82),
             }}
           >
             <Box
@@ -91,7 +92,7 @@ export function SessionStrip({
                 sx={{
                   position: 'absolute',
                   inset: 0,
-                  backgroundColor: 'rgba(0,0,0,.35)',
+                  backgroundColor: shade(35),
                 }}
               />
             ) : null}
@@ -104,8 +105,8 @@ export function SessionStrip({
                 right: 0,
                 display: 'flex',
                 justifyContent: 'center',
-                color: tokens.color.camFg,
-                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,.6))',
+                color: tokens.color.ink,
+                filter: `drop-shadow(0 1px 2px ${shade(60)})`,
                 '& svg': {
                   width: 12,
                   height: 12,
@@ -130,8 +131,8 @@ export function SessionStrip({
                   height: 18,
                   m: '-9px 0 0 -9px',
                   borderRadius: '50%',
-                  border: '2.5px solid rgba(255,255,255,.3)',
-                  borderTopColor: tokens.color.camFg,
+                  border: `2.5px solid ${translucent(tokens.color.ink, 30)}`,
+                  borderTopColor: tokens.color.ink,
                   animation: 'pp-scan-spin 0.8s linear infinite',
                   '@keyframes pp-scan-spin': {
                     to: { transform: 'rotate(1turn)' },
@@ -152,7 +153,7 @@ export function SessionStrip({
                       inset: 0,
                       p: 0,
                       border: 0,
-                      background: 'rgba(0,0,0,.35)',
+                      background: shade(35),
                       cursor: 'pointer',
                       pointerEvents: 'auto',
                     }}
@@ -172,8 +173,8 @@ export function SessionStrip({
                     justifyContent: 'center',
                     fontSize: 11,
                     fontWeight: 800,
-                    backgroundColor: tokens.color.camWarn,
-                    color: tokens.color.camAccentInk,
+                    backgroundColor: tokens.color.soonFg,
+                    color: tokens.color.bg,
                   }}
                 >
                   !
@@ -192,8 +193,8 @@ export function SessionStrip({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: tokens.color.camAccent,
-                  color: tokens.color.camAccentInk,
+                  backgroundColor: tokens.color.accent,
+                  color: tokens.color.bg,
                 }}
               >
                 <CheckIcon size={11} />

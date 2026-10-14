@@ -15,7 +15,7 @@ import {
   rubberBand,
   startsHorizontalDrag,
 } from '../../../lib/dialGesture';
-import { glassFocusRing } from './glass';
+import { glassFocusRing, shade, translucent } from './glass';
 
 const HAPTIC_MS = 6;
 const CLICK_GUARD_MS = 50;
@@ -219,8 +219,8 @@ export function ModeDial({
           fontWeight: 800,
           letterSpacing: '0.14em',
           textTransform: 'uppercase',
-          color: tokens.color.camAccent,
-          textShadow: '0 1px 6px rgba(0,0,0,.6)',
+          color: tokens.color.accent,
+          textShadow: `0 1px 6px ${shade(60)}`,
           animation: 'pp-dial-label .32s ease-out',
           '@keyframes pp-dial-label': {
             from: { opacity: 0, transform: 'translateY(5px)' },
@@ -248,8 +248,8 @@ export function ModeDial({
           transition: 'transform .15s',
           [reducedMotion]: { transition: 'none' },
           borderRadius: '50%',
-          border: `2.5px solid ${tokens.color.camAccent}`,
-          boxShadow: `0 0 0 6px color-mix(in srgb, ${tokens.color.camAccent} 14%, transparent)`,
+          border: `2.5px solid ${tokens.color.accent}`,
+          boxShadow: `0 0 0 6px ${translucent(tokens.color.accent, 14)}`,
           pointerEvents: 'none',
         }}
       />
@@ -295,7 +295,7 @@ export function ModeDial({
                 borderRadius: '50%',
                 background: 'transparent',
                 cursor: 'pointer',
-                color: active ? tokens.color.camAccent : tokens.color.camFg,
+                color: active ? tokens.color.accent : tokens.color.ink,
                 opacity: active ? 1 : 0.75,
                 transform: active ? 'none' : 'scale(.82)',
                 transition: 'color .25s, transform .25s, opacity .25s',
@@ -309,7 +309,7 @@ export function ModeDial({
                   strokeWidth: 2.1,
                   strokeLinecap: 'round',
                   strokeLinejoin: 'round',
-                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,.7))',
+                  filter: `drop-shadow(0 1px 3px ${shade(70)})`,
                 },
                 [reducedMotion]: { transition: 'none' },
               }}

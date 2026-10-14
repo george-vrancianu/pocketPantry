@@ -1,4 +1,9 @@
-type ColourProperty = 'color' | 'background-color' | 'border-top-color';
+type ColourProperty =
+  | 'color'
+  | 'background-color'
+  | 'background-image'
+  | 'border-top-color'
+  | 'border-bottom-color';
 
 /**
  * The colour an element paints for `property`, with Theme variables resolved
