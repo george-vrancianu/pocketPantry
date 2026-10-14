@@ -19,9 +19,7 @@ import {
   recipeIngredientLines,
   recipes,
   shoppingItems,
-  shoppingItemSourceRecipes,
   shoppingLists,
-  shoppingTemplateLines,
   unmatchedEntries,
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
