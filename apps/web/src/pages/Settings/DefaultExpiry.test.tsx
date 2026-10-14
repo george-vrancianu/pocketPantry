@@ -409,6 +409,28 @@ describe('Default expiry', () => {
       expect(writes(calls)).toEqual([]);
     });
 
+    it('offers "Use Catalog default" for a category with an override picked through "Set a category"', async () => {
+      const user = userEvent.setup();
+      const { calls } = stubFamily([MILK]);
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      await user.click(await screen.findByRole('button', { name: /Milk/ }));
+      const sheet = await screen.findByRole('dialog', { name: 'Milk' });
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Use Catalog default' }),
+      );
+
+      expect(screen.getByText('Milk uses the Catalog default')).toBeVisible();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog', { name: 'Milk' })).toBeNull(),
+      );
+      expect(screen.queryByRole('button', { name: /^Milk\b/ })).toBeNull();
+      expect(writes(calls)).toEqual([]);
+    });
+
     it('closes on Escape', async () => {
       const user = userEvent.setup();
       stubFamily([MILK]);
