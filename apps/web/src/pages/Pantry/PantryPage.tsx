@@ -17,6 +17,7 @@ import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddBatchForm } from './components/AddBatchForm';
 import { LocationSection } from './components/LocationSection';
+import { RunningLowKeyHints } from './components/RollUpRow';
 import { PantryFilters } from './components/PantryFilters';
 import { usePantryRowHint } from './hooks/usePantryRowHint';
 import { usePantryScreen } from './hooks/usePantryScreen';
@@ -104,6 +105,7 @@ export function PantryPage() {
           ))}
         </Stack>
       )}
+      <RunningLowKeyHints />
     </RowToggleErrorProvider>
   );
 }
