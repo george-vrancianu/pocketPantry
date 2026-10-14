@@ -861,4 +861,66 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
+
+  it('matches an Unmatched line to the Family Ingredient added from the Match dialog', async () => {
+    const kombucha: CatalogSearchResult = {
+      ...parmesan,
+      owner: 'family',
+      id: 'kombucha-id',
+      name: 'Kombucha',
+      defaultUnit: 'ml',
+      leafCategory: { id: 'drinks', name: 'Soft drinks' },
+      defaults: { expiryDays: 30, location: 'fridge' },
+    };
+    const calls = renderReview(
+      [line({ match: null, name: 'Kombucha', quantity: 1 })],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+        'GET /api/catalog/categories': () =>
+          Response.json({
+            categories: [
+              {
+                id: 'drinks',
+                name: 'Soft drinks',
+                parentCategory: { id: 'dairy', name: 'Drinks' },
+                aisle: { id: 'aisle', name: 'Drinks' },
+                defaults: { expiryDays: 30, location: 'fridge' },
+              },
+            ],
+          }),
+        'POST /api/catalog/family-ingredients': () =>
+          Response.json(kombucha, { status: 201 }),
+      },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Kombucha',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await userEvent.paste('Kombucha');
+    await userEvent.click(
+      await within(dialog).findByRole('option', {
+        name: /Add “Kombucha” to your catalog/,
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('combobox', { name: 'Category' }),
+    );
+    await userEvent.paste('soft');
+    await userEvent.click(
+      await screen.findByRole('option', { name: /Soft drinks/ }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^Add & pick/ }));
+
+    const panel = await screen.findByRole('group', { name: 'Kombucha' });
+    expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(
+      calls?.some((c) => c.key === 'POST /api/catalog/family-ingredients'),
+    ).toBe(true);
+  });
 });
