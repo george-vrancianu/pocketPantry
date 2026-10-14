@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes, useLocation } from 'react-router-dom';
+import { unmatchedQueueQueryKey } from '../../lib/unmatched';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubSystemScheme } from '../../test/viewport';
 import { SettingsPage } from './SettingsPage';
@@ -166,7 +167,7 @@ describe('Settings You tab', () => {
       const { queryClient } = renderWithProviders(<SettingsPage />, {
         route: '/settings',
       });
-      queryClient.setQueryData(['admin-unmatched', 'open'], {
+      queryClient.setQueryData(unmatchedQueueQueryKey('open'), {
         pages: [
           {
             entries: [{ normalizedName: 'a' }, { normalizedName: 'b' }],

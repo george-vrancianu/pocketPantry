@@ -12,39 +12,15 @@ import {
   Typography,
   useToast,
 } from '@pocket-pantry/ui';
-import { skipToken, useQuery } from '@tanstack/react-query';
-import type { InfiniteData } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { useSession, useSignOut } from '../../../lib/auth';
 import { useSaveLocale } from '../../../lib/settings';
+import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
 import { AppearanceCard } from './AppearanceCard';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
-
-type UnmatchedPage = {
-  entries: { normalizedName: string }[];
-  nextCursor: string | null;
-};
-
-/**
- * The open unmatched queue, only if the Admin page (or an earlier visit) already
- * loaded all of it. Subscribes to the cache and never fetches.
- */
-function useLoadedUnmatchedCount(enabled: boolean): number | null {
-  const { data } = useQuery<InfiniteData<UnmatchedPage>>({
-    queryKey: ['admin-unmatched', 'open'],
-    queryFn: skipToken,
-    enabled,
-  });
-  if (!data) return null;
-  const last = data.pages[data.pages.length - 1];
-  if (!last || last.nextCursor !== null) return null;
-  return new Set(
-    data.pages.flatMap((page) => page.entries.map((e) => e.normalizedName)),
-  ).size;
-}
 
 const initials = (name: string) =>
   name
