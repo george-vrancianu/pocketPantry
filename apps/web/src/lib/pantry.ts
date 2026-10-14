@@ -317,10 +317,22 @@ export function useRunningLow(locale: string) {
 
 /**
  * Set or clear the running low flag on an Ingredient. The cache is changed at once, so every row of
- * the Ingredient, in every Location section, shows the new state; a failed save puts the cache back.
+ * the Ingredient, in every Location section, shows the new state; a failed save undoes that one
+ * Ingredient's flag, leaving any other toggle made in the meantime as it is.
  */
 export function useSetRunningLow(locale: string) {
   const queryClient = useQueryClient();
+  const setFlag = (ingredientId: string, on: boolean) => {
+    const current = queryClient.getQueryData<PantryResponse>(
+      pantryQueryKey(locale),
+    );
+    if (!current) return;
+    const others = current.runningLow.filter((id) => id !== ingredientId);
+    queryClient.setQueryData<PantryResponse>(pantryQueryKey(locale), {
+      ...current,
+      runningLow: on ? [...others, ingredientId] : others,
+    });
+  };
   return useMutation({
     mutationFn: ({ ingredientId, on }: { ingredientId: string; on: boolean }) =>
       apiRequest<void>(`/pantry/running-low/${ingredientId}`, {
@@ -328,23 +340,9 @@ export function useSetRunningLow(locale: string) {
       }),
     onMutate: async ({ ingredientId, on }) => {
       await queryClient.cancelQueries({ queryKey: ['pantry'] });
-      const previous = queryClient.getQueryData<PantryResponse>(
-        pantryQueryKey(locale),
-      );
-      if (previous) {
-        const others = previous.runningLow.filter((id) => id !== ingredientId);
-        queryClient.setQueryData<PantryResponse>(pantryQueryKey(locale), {
-          ...previous,
-          runningLow: on ? [...others, ingredientId] : others,
-        });
-      }
-      return { previous };
+      setFlag(ingredientId, on);
     },
-    onError: (_error, _variables, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(pantryQueryKey(locale), context.previous);
-      }
-    },
+    onError: (_error, { ingredientId, on }) => setFlag(ingredientId, !on),
     onSettled: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ['pantry'] }),

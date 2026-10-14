@@ -207,6 +207,20 @@ describe('Running low flag (integration)', () => {
     expect((await readPantry(b.cookie)).runningLow).toEqual([]);
   });
 
+  it("leaves Family A's flag when Family B clears its own, for the same Ingredient", async () => {
+    const a = await signUp('Family A');
+    const b = await signUp('Family B');
+    await addBatch(a.cookie, parmesan);
+    await addBatch(b.cookie, parmesan);
+    await setRunningLow(a.cookie, parmesan).expect(204);
+    await setRunningLow(b.cookie, parmesan).expect(204);
+
+    await clearRunningLow(b.cookie, parmesan).expect(204);
+
+    expect((await readPantry(a.cookie)).runningLow).toEqual([parmesan]);
+    expect((await readPantry(b.cookie)).runningLow).toEqual([]);
+  });
+
   describe('automatic clearing', () => {
     const deleteBatch = (cookie: string, batchId: string) =>
       api('delete', cookie, `/pantry/batches/${batchId}`);

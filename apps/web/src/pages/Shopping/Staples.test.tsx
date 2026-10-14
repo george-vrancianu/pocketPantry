@@ -245,8 +245,15 @@ describe('Suggestions in the Add sheet', () => {
       'GET /api/shopping-list': () => Response.json(emptyList()),
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
-          staples: [],
-          usedUp: [],
+          staples: [suggestion()],
+          usedUp: [
+            suggestion({
+              ingredientId: 'eggs-id',
+              name: 'Eggs',
+              quantity: null,
+              unit: null,
+            }),
+          ],
           runningLow: [
             suggestion({
               ingredientId: 'parmesan-id',
@@ -262,9 +269,17 @@ describe('Suggestions in the Add sheet', () => {
     renderWithProviders(<ShoppingPage />);
     const dialog = await openSheet();
 
+    const runningLow = await within(dialog).findByRole('region', {
+      name: 'Running low · 1',
+    });
+    const usedUp = within(dialog).getByRole('region', {
+      name: 'Recently used up · 1',
+    });
     expect(
-      await within(dialog).findByRole('region', { name: 'Running low · 1' }),
-    ).toBeVisible();
+      usedUp.compareDocumentPosition(runningLow) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(runningLow).toBeVisible();
     expect(
       within(dialog).queryByRole('button', { name: 'Dismiss Parmesan' }),
     ).not.toBeInTheDocument();
@@ -294,6 +309,37 @@ describe('Suggestions in the Add sheet', () => {
       await within(dialog).findByText('Missing staples · 1'),
     ).toBeVisible();
     expect(within(dialog).queryByText(/Running low/)).not.toBeInTheDocument();
+  });
+
+  it('keeps the Staples Manage link when only Running low has entries', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [],
+          usedUp: [],
+          runningLow: [
+            suggestion({
+              ingredientId: 'parmesan-id',
+              name: 'Parmesan',
+              quantity: null,
+              unit: null,
+            }),
+          ],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+
+    expect(
+      await within(dialog).findByRole('region', { name: 'Running low · 1' }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByText('All your staples are stocked.'),
+    ).toBeVisible();
+    expect(within(dialog).getByText('Staples')).toBeVisible();
+    expect(within(dialog).getByRole('link', { name: 'Manage' })).toBeVisible();
   });
 
   it('keeps the added state when switching tabs and back', async () => {

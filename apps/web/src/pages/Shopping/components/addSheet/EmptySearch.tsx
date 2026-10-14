@@ -158,8 +158,7 @@ function SuggestionChips({
     </Box>
   );
 
-  const stocked =
-    staples.length === 0 && usedUp.length === 0 && runningLow.length === 0;
+  const stocked = staples.length === 0 && usedUp.length === 0;
   return (
     <>
       {dismiss.error ? (
@@ -195,15 +194,15 @@ function SuggestionChips({
                 },
               )
             : null}
-          {runningLow.length > 0
-            ? group(
-                t('suggestions.runningLowLabel', { count: runningLow.length }),
-                runningLow,
-                { running: true },
-              )
-            : null}
         </>
       )}
+      {runningLow.length > 0
+        ? group(
+            t('suggestions.runningLowLabel', { count: runningLow.length }),
+            runningLow,
+            { running: true },
+          )
+        : null}
     </>
   );
 }
