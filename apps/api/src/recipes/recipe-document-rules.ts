@@ -1,7 +1,8 @@
 import { eq, inArray } from 'drizzle-orm';
+import type { CatalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
-import { cuisines, ingredients, methods, recipes } from '../database/schema';
+import { cuisines, methods, recipes } from '../database/schema';
 
 /** The Ingredient Line fields both the Catalog and Family writers check. */
 interface RecipeLineShape {
@@ -49,6 +50,7 @@ export function recipeColumns(document: {
  */
 export async function validateRecipeDocument<L extends RecipeLineShape>(
   tx: Tx,
+  scope: CatalogScope,
   document: RecipeDocumentShape<L>,
   ingredientRule: (line: L, index: number) => void,
 ) {
@@ -73,6 +75,7 @@ export async function validateRecipeDocument<L extends RecipeLineShape>(
     ...new Set(document.lines.flatMap((l) => l.ingredientId ?? [])),
   ];
   if (wanted.length > 0) {
+    const ingredients = scope.ingredients(tx);
     const found = await tx
       .select({ id: ingredients.id })
       .from(ingredients)

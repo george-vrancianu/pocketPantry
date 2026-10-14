@@ -1,0 +1,174 @@
+import {
+  Box,
+  CloseIcon,
+  IconButton,
+  SearchIcon,
+  tokens,
+  visuallyHidden,
+  radius,
+  border,
+  color as themeColor,
+} from '@pocket-pantry/ui';
+import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { CatalogSearchResult } from '../../lib/catalog';
+import { SelectedToken } from './SelectedToken';
+
+export type SearchFieldProps = {
+  inputRef: Ref<HTMLInputElement>;
+  /** Accessible name when nothing is selected. */
+  label: string;
+  value: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
+  onFocus: () => void;
+  autoFocus?: boolean;
+  describedBy?: string;
+  /** Combobox wiring: the listbox it controls and whether it is showing. */
+  listboxId: string;
+  expanded: boolean;
+  activeOptionId?: string;
+  /** The picked ingredient; the field then shows it as a token over a hidden input. */
+  selected: CatalogSearchResult | null;
+  /** Clears the text (and the selection); wired to × and to the token. */
+  onClear: () => void;
+  /** Show the clear × even with no text (an Aisle is open). */
+  canClear?: boolean;
+  /** Rows are showing while newer results load: the spinner takes the right slot. */
+  refetching: boolean;
+  reducedMotion: boolean;
+};
+
+const SPINNER_SIZE = 18;
+
+/** The 50 pt search input: search icon, a right slot (spinner or clear ×), and the selected token. */
+export function SearchField({
+  inputRef,
+  label,
+  value,
+  onChange,
+  onKeyDown,
+  onFocus,
+  autoFocus,
+  describedBy,
+  listboxId,
+  expanded,
+  activeOptionId,
+  selected,
+  onClear,
+  canClear = false,
+  refetching,
+  reducedMotion,
+}: SearchFieldProps) {
+  const { color } = tokens;
+  const { t } = useTranslation('catalog');
+
+  const rightSlot = selected ? null : refetching ? (
+    <Box
+      data-testid="search-spinner"
+      data-spinning={reducedMotion ? 'false' : 'true'}
+      aria-hidden="true"
+      sx={{
+        width: SPINNER_SIZE,
+        height: SPINNER_SIZE,
+        m: '9px',
+        boxSizing: 'border-box',
+        borderRadius: '50%',
+        border: `2px solid ${color.accentTint}`,
+        borderTopColor: color.accent,
+        ...(reducedMotion
+          ? { opacity: 0.7 }
+          : {
+              '@keyframes pp-search-spin': {
+                to: { transform: 'rotate(360deg)' },
+              },
+              animation: 'pp-search-spin 800ms linear infinite',
+            }),
+      }}
+    />
+  ) : value || canClear ? (
+    <IconButton
+      label={t('search.clear')}
+      tone="plain"
+      size={34}
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={onClear}
+    >
+      <CloseIcon size={18} />
+    </IconButton>
+  ) : null;
+
+  return (
+    <Box
+      sx={{
+        position: 'relative',
+        height: 50,
+        display: 'flex',
+        alignItems: 'center',
+        borderRadius: radius.control,
+        border: `${border.field} solid ${selected ? 'transparent' : color.line}`,
+        backgroundColor: themeColor.fieldBg,
+        '&:focus-within': {
+          borderColor: selected ? 'transparent' : color.accent,
+          boxShadow: `0 0 0 3px ${color.accentTint}`,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          left: 14,
+          display: 'flex',
+          color: color.muted,
+        }}
+      >
+        <SearchIcon size={20} />
+      </Box>
+      <Box
+        component="input"
+        ref={inputRef}
+        role="combobox"
+        aria-label={
+          selected ? t('search.selectedLabel', { name: selected.name }) : label
+        }
+        aria-autocomplete="list"
+        aria-expanded={expanded}
+        aria-controls={listboxId}
+        aria-describedby={describedBy}
+        aria-activedescendant={activeOptionId}
+        autoComplete="off"
+        spellCheck={false}
+        enterKeyHint="search"
+        autoFocus={autoFocus}
+        placeholder={t('search.placeholder')}
+        value={value}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        onFocus={onFocus}
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          height: '100%',
+          pl: '46px',
+          pr: '44px',
+          border: 0,
+          outline: 0,
+          background: 'transparent',
+          font: 'inherit',
+          fontSize: 16,
+          fontWeight: 500,
+          color: color.ink,
+          '&::placeholder': { color: color.muted },
+          // As a token the real input stays for focus and semantics, but unseen.
+          ...(selected ? visuallyHidden : {}),
+        }}
+      />
+      <Box sx={{ position: 'absolute', right: 6, display: 'flex' }}>
+        {rightSlot}
+      </Box>
+      {selected ? (
+        <SelectedToken selected={selected} onClear={onClear} />
+      ) : null}
+    </Box>
+  );
+}

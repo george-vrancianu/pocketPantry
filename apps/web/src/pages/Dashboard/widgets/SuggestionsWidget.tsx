@@ -3,18 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { localIso } from '../../../lib/pantry';
 import {
+  goneInOrder,
   useSuggestions,
   WIDGET_SUGGESTION_COUNT,
 } from '../../../lib/suggestions';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
-/** How many Staples are missing, and the first few Suggestions by name; the card opens the Shopping List. */
+/** How many Ingredients are gone from the Pantry, and the first few by name; the card opens the Shopping List. */
 export function SuggestionsWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
   const suggestions = useSuggestions(i18n.language, localIso(new Date()));
-  const staples = suggestions.data?.staples ?? [];
-  const all = [...staples, ...(suggestions.data?.usedUp ?? [])];
+  // Named in the order of the Shopping add sheet: expired, Used Up, then missing Staples.
+  const all = suggestions.data
+    ? goneInOrder(suggestions.data).map((entry) => entry.suggestion)
+    : [];
   const names = all.slice(0, WIDGET_SUGGESTION_COUNT).map((s) => s.name);
 
   return (
@@ -39,13 +42,13 @@ export function SuggestionsWidget({ size, columns }: WidgetProps) {
           lineHeight: 1,
         }}
       >
-        {staples.length}
+        {all.length}
       </Box>
       <Box
         component="p"
         sx={{ m: 0, mt: '2px', fontSize: 13, fontWeight: 600 }}
       >
-        {t('widgets.suggestions.count', { count: staples.length })}
+        {t('widgets.suggestions.count', { count: all.length })}
       </Box>
       <Box
         component="p"

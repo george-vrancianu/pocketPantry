@@ -1,6 +1,7 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import request from 'supertest';
+import { catalogScope, SHARED_ONLY } from '../src/catalog/catalog-scope';
 import {
   SEED_INGREDIENTS,
   SEED_LEAVES,
@@ -29,6 +30,7 @@ type SearchResult = {
   id: string;
   name: string;
   defaultUnit: string;
+  amountScale: string;
   leafCategory: { id: string; name: string };
   parentCategory: {
     id: string;
@@ -152,6 +154,42 @@ describe('Catalog (integration)', () => {
     it('matches Ingredient names from any locale', async () => {
       const results = await search('parmezan', 'en');
       expect(results.map((r) => r.name)).toContain('Parmesan');
+    });
+
+    it('returns an Amount Scale on every Ingredient, from its Parent Category', async () => {
+      const scaleOf = async (query: string, id: string, locale = 'en') =>
+        (await search(query, locale)).find((r) => r.id === id)?.amountScale;
+      expect(await scaleOf('paprika', seedId.ingredient('paprika'))).toBe(
+        'low',
+      );
+      expect(await scaleOf('potato', seedId.ingredient('potato'))).toBe(
+        'large',
+      );
+      expect(await scaleOf('parmesan', seedId.ingredient('parmesan'))).toBe(
+        'medium',
+      );
+      // Basil sits under Herbs, which has no mapping, so it uses medium.
+      expect(await scaleOf('basil', seedId.ingredient('basil'))).toBe('medium');
+      for (const result of await search('a', 'en')) {
+        expect(['low', 'medium', 'large']).toContain(result.amountScale);
+      }
+    });
+
+    it('reads an Ingredient with no stored Amount Scale back as medium', async () => {
+      const id = seedId.ingredient('paprika');
+      await database
+        .update(ingredients)
+        .set({ amountScale: null })
+        .where(eq(ingredients.id, id));
+      try {
+        const [paprika] = await search('paprika', 'en');
+        expect(paprika).toMatchObject({ id, amountScale: 'medium' });
+      } finally {
+        await database
+          .update(ingredients)
+          .set({ amountScale: 'low' })
+          .where(eq(ingredients.id, id));
+      }
     });
 
     it('matches Synonyms', async () => {
@@ -327,7 +365,9 @@ describe('Catalog (integration)', () => {
 
   describe('findExact', () => {
     const exact = (names: string[], locale: 'en' | 'ro' = 'en') =>
-      app.get(CatalogSearchService).findExact(names, locale);
+      app
+        .get(CatalogSearchService)
+        .findExact(catalogScope(SHARED_ONLY), names, locale);
 
     it('matches names, Synonyms and other-locale names, keyed by the name as given', async () => {
       const found = await exact([

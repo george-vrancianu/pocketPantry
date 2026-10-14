@@ -13,7 +13,9 @@ export type IconButtonProps = Omit<
    * `surface` is the white circle with a border; `accent` is the filled primary action;
    * `plain` is a bare icon for dense rows; `urgent` is the red destructive action;
    * `urgentOutline` is the quieter destructive action: white with an urgent border;
-   * `accentOutline` is the quiet primary action: white with an accent border.
+   * `accentOutline` is the quiet primary action: white with an accent border;
+   * `neutral` is a toggle at rest, filled with the chip colour so it stands off a card;
+   * `soon` is a pressed toggle in the expiry `soon` pair (Running low).
    */
   tone?:
     | 'surface'
@@ -21,7 +23,9 @@ export type IconButtonProps = Omit<
     | 'plain'
     | 'urgent'
     | 'urgentOutline'
-    | 'accentOutline';
+    | 'accentOutline'
+    | 'neutral'
+    | 'soon';
   /** Width and height in px: 44 for headers, 40 inside dense form rows, 34 inside a pill. */
   size?: 34 | 40 | 44;
   href?: string;
@@ -73,6 +77,17 @@ export function IconButton({
       backgroundColor: color.surface,
       border: `1px solid ${color.accent}`,
       color: color.accent,
+    },
+    neutral: {
+      backgroundColor: color.chipNeutral,
+      color: color.ink,
+      '&:hover': { backgroundColor: color.accentTint },
+    },
+    soon: {
+      backgroundColor: color.soonBg,
+      color: color.soonFg,
+      border: `1px solid ${color.soonBorder}`,
+      '&:hover': { backgroundColor: color.soonHover },
     },
     urgentOutline: {
       backgroundColor: color.surface,

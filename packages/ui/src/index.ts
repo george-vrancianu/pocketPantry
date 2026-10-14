@@ -1,5 +1,6 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme, themeSelector } from './theme/theme';
+export { aisleTint } from './theme/aisleTints';
 export { tokens } from './theme/tokens';
 export { useForcedThemeColor } from './theme/useForcedThemeColor';
 export {
@@ -32,6 +33,7 @@ export {
   isThemeId,
   readAppearance,
   resolveTheme,
+  SYSTEM_DARK_QUERY,
   subscribeAppearance,
   writeAppearance,
   type Appearance,
@@ -82,6 +84,7 @@ export {
   BookmarkIcon,
   TemplateIcon,
   CalendarIcon,
+  SubItemIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
@@ -91,6 +94,10 @@ export {
   IngredientsScanIcon,
   CloseIcon,
   PlusIcon,
+  CopyIcon,
+  LogoutIcon,
+  UserIcon,
+  PhoneIcon,
   CustomiseIcon,
   FlashIcon,
   GalleryIcon,
@@ -113,6 +120,7 @@ export {
   BackIcon,
   MoreIcon,
   BranchIcon,
+  RunningLowIcon,
   StarIcon,
   StarFillIcon,
   UndoIcon,

@@ -1,7 +1,9 @@
-import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
+import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { useAddBatchForm, type AddBatchStart } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
@@ -18,6 +20,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const picked = form.ingredient?.name ?? form.unmatchedName;
 
   return (
     <Stack
@@ -29,9 +32,17 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
     >
       <CatalogSearch
         autoFocus
-        initialQuery={form.typed}
+        defaultQuery={form.initialQuery}
+        selected={form.selected}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
+        onUseTyped={form.chooseTypedName}
+        emptyState={
+          <>
+            <RecentlyStocked />
+            <BrowseByAisle />
+          </>
+        }
       />
 
       {form.unmatchedName ? (
@@ -39,59 +50,49 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
           {t('form.unmatchedNotice', { name: form.unmatchedName })}
         </Alert>
       ) : null}
-      {!form.ingredient && !form.unmatchedName && form.typed ? (
-        <Button
-          variant="ghost"
-          type="button"
-          onClick={form.markTypedAsUnmatched}
-        >
-          {t('form.useUnmatched', { name: form.typed })}
-        </Button>
+      {picked ? (
+        <>
+          <AmountLocationRow
+            name={picked}
+            amountScale={form.ingredient?.amountScale}
+            quantity={form.quantity}
+            unit={form.unit}
+            location={form.location}
+            quantityValid={form.quantityValid}
+            onQuantityChange={form.setQuantity}
+            onUnitChange={form.setUnit}
+            onLocationChange={form.setLocation}
+            onSubmit={() => formRef.current?.requestSubmit()}
+          />
+
+          <ExpiryField
+            id={`${id}-expiry`}
+            label={t('picker.label')}
+            value={form.expiryDate}
+            onChange={form.setExpiryDate}
+            usualDays={form.usualDays}
+            context={expiryContext(
+              {
+                name: picked,
+                quantity: form.quantity,
+                unit: form.unit,
+                location: form.location,
+              },
+              i18n.language,
+              t,
+            )}
+          />
+
+          <TextField
+            id={`${id}-description`}
+            label={t('form.description')}
+            placeholder={t('form.descriptionPlaceholder')}
+            value={form.description}
+            onChange={(event) => form.setDescription(event.target.value)}
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+          />
+        </>
       ) : null}
-      {!form.ingredient && !form.unmatchedName && !form.typed ? (
-        <Typography variant="meta" color="text.secondary">
-          {t('form.pickIngredient')}
-        </Typography>
-      ) : null}
-
-      <AmountLocationRow
-        name={form.ingredient?.name ?? form.unmatchedName ?? ''}
-        quantity={form.quantity}
-        unit={form.unit}
-        location={form.location}
-        quantityValid={form.quantityValid}
-        onQuantityChange={form.setQuantity}
-        onUnitChange={form.setUnit}
-        onLocationChange={form.setLocation}
-        onSubmit={() => formRef.current?.requestSubmit()}
-      />
-
-      <ExpiryField
-        id={`${id}-expiry`}
-        label={t('picker.label')}
-        value={form.expiryDate}
-        onChange={form.setExpiryDate}
-        usualDays={form.usualDays}
-        context={expiryContext(
-          {
-            name: form.ingredient?.name ?? form.unmatchedName ?? form.typed,
-            quantity: form.quantity,
-            unit: form.unit,
-            location: form.location,
-          },
-          i18n.language,
-          t,
-        )}
-      />
-
-      <TextField
-        id={`${id}-description`}
-        label={t('form.description')}
-        placeholder={t('form.descriptionPlaceholder')}
-        value={form.description}
-        onChange={(event) => form.setDescription(event.target.value)}
-        slotProps={{ htmlInput: { maxLength: 200 } }}
-      />
 
       {form.error ? <Alert>{form.error}</Alert> : null}
 

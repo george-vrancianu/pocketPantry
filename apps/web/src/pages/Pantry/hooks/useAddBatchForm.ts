@@ -45,7 +45,8 @@ export function useAddBatchForm({
   const [ingredient, setIngredient] = useState<PickedIngredient | null>(
     startingIngredient,
   );
-  const [typed, setTyped] = useState(() =>
+  // The text the search field starts with: the starting Ingredient's name, or the Unmatched name.
+  const [initialQuery] = useState(() =>
     start === undefined
       ? ''
       : 'ingredient' in start
@@ -56,7 +57,11 @@ export function useAddBatchForm({
     start && 'unmatchedName' in start ? start.unmatchedName : null,
   );
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState<Unit>('g');
+  // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
+  const [chosenUnit, setChosenUnit] = useState<Unit | null>(null);
+  // The unit a dropped Ingredient had on screen: kept while its name is edited, never carried to the next pick.
+  const [frozenUnit, setFrozenUnit] = useState<Unit | null>(null);
+  const unit: Unit = chosenUnit ?? frozenUnit ?? ingredient?.defaultUnit ?? 'g';
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
@@ -64,16 +69,18 @@ export function useAddBatchForm({
   const selectIngredient = (result: CatalogSearchResult) => {
     setIngredient(result);
     setUnmatchedName(null);
-    setTyped(result.name);
-    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
-    if (quantity.trim() === '') setUnit(result.defaultUnit);
+    // A frozen unit belonged to the dropped Ingredient: the new one's default applies.
+    setFrozenUnit(null);
+    // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
+    if (quantity.trim() === '') setChosenUnit(null);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
     const days = result.defaults.expiryDays;
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
 
   // A starting Ingredient has only its id and name: its Catalog defaults come from searching its
-  // name, which the search field has already asked for, and apply as if it had been picked there.
+  // name, which the search field has already asked for, and apply as if it had been picked there
+  // (so it then shows as the picked token).
   const startingLookup = useCatalogSearch(
     startingIngredient?.name ?? '',
     i18n.language,
@@ -87,15 +94,20 @@ export function useAddBatchForm({
     // Once, when the lookup lands; not again after the Member has picked or typed something else.
   }, [startingDefaults]);
 
-  const changeQuery = (query: string) => {
-    setTyped(query);
+  /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
+  const clearIngredient = () => {
+    if (ingredient && chosenUnit === null) setFrozenUnit(unit);
     setIngredient(null);
+  };
+
+  const changeQuery = () => {
+    clearIngredient();
     setUnmatchedName(null);
   };
 
-  const markTypedAsUnmatched = () => {
-    setUnmatchedName(typed.trim());
-    setIngredient(null);
+  const chooseTypedName = (name: string) => {
+    setUnmatchedName(name);
+    clearIngredient();
     setExpiryDate(null);
   };
 
@@ -126,7 +138,11 @@ export function useAddBatchForm({
 
   return {
     ingredient,
-    typed: typed.trim(),
+    /** The picked Ingredient as the search field's token: only once its Catalog result is on hand. */
+    selected: ingredient?.parentCategory
+      ? (ingredient as CatalogSearchResult)
+      : null,
+    initialQuery,
     unmatchedName,
     quantity,
     unit,
@@ -141,9 +157,9 @@ export function useAddBatchForm({
     error: addBatch.error ? translateApiError(t, addBatch.error) : null,
     selectIngredient,
     changeQuery,
-    markTypedAsUnmatched,
+    chooseTypedName,
     setQuantity,
-    setUnit,
+    setUnit: setChosenUnit,
     setLocation,
     setExpiryDate,
     setDescription,

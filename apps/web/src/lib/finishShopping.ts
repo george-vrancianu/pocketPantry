@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate } from './pantry';
+import type { AmountScale } from './usualAmounts';
 import { shoppingListQueryKey } from './shopping';
 
 /** A proposed Batch for one checked Shopping Item, pre-filled from the Catalog. */
@@ -16,6 +17,10 @@ export type FinishProposalLine = {
   unmatched: boolean;
   quantity: number | null;
   unit: Unit | null;
+  /** The Ingredient's own unit, for a line with no unit yet; null for an Unmatched line. */
+  defaultUnit: Unit | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched line. */
+  amountScale: AmountScale | null;
   location: StorageLocation;
   /** `YYYY-MM-DD`, or null when the Catalog has no Default Expiry. */
   expiryDate: string | null;

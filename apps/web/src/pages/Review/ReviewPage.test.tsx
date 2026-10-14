@@ -11,6 +11,7 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
@@ -351,7 +352,10 @@ describe('ReviewPage', () => {
     });
     expect(search).toHaveFocus();
     await userEvent.type(search, 'milk');
-    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    const option = await screen.findByRole('option', { name: /Milk/ });
+    // The match dialog has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Milk, Hard cheese · Dairy');
+    await userEvent.click(option);
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -483,6 +487,28 @@ describe('ReviewPage', () => {
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
     expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('offers no Use as typed in the match dialog, only the no-match hint', async () => {
+    const calls = renderReview(
+      [line({ match: null, name: 'Mystery jar', quantity: 1 })],
+      { 'GET /api/catalog/search': () => Response.json({ results: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
   });
 
   it.each([
@@ -781,5 +807,26 @@ describe('ReviewPage', () => {
         ),
       );
     });
+  });
+});
+
+describe('ReviewPage match dialog has no Browse by aisle', () => {
+  it('offers no Browse by aisle in Change match and never lists Aisles', async () => {
+    const calls = renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      { 'GET /api/catalog/aisles': () => Response.json({ aisles: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
+    expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
   });
 });

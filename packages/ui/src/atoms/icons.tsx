@@ -11,7 +11,6 @@ import {
   Wallet,
   Apple,
   ChevronUp,
-  Minus,
   GripVertical,
   TriangleAlert,
   CircleAlert,
@@ -20,6 +19,7 @@ import {
   ArrowLeftRight,
   Users,
   GitBranch,
+  BatteryLow,
   type LucideProps,
 } from 'lucide-react';
 
@@ -35,6 +35,23 @@ type IconNode = readonly (readonly [
  */
 const ICON_NODES = {
   plus: [['path', { d: 'M12 5v14M5 12h14' }]],
+  minus: [['path', { d: 'M5 12h14' }]],
+  copy: [
+    ['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }],
+    ['path', { d: 'M16 8V4H4v12h4' }],
+  ],
+  logout: [
+    ['path', { d: 'M14 4h5v16h-5' }],
+    ['path', { d: 'M10 8l-4 4 4 4M6 12h10' }],
+  ],
+  user: [
+    ['circle', { cx: '12', cy: '8', r: '4' }],
+    ['path', { d: 'M4.5 21a7.5 7.5 0 0 1 15 0' }],
+  ],
+  phone: [
+    ['rect', { x: '6', y: '2.5', width: '12', height: '19', rx: '2.5' }],
+    ['path', { d: 'M11 18.5h2' }],
+  ],
   close: [['path', { d: 'M6 6l12 12M18 6L6 18' }]],
   check: [['path', { d: 'M5 12l5 5 9-10' }]],
   search: [
@@ -113,6 +130,8 @@ const ICON_NODES = {
     ['path', { d: 'M22 10.5v3' }],
     ['path', { d: 'M6.5 10.5v3', strokeWidth: '3.2' }],
   ],
+  /** Not in the handoff set: a tree elbow that marks a row as belonging to the one above. */
+  'sub-item': [['path', { d: 'M6 3v8a5 5 0 0 0 5 5h9' }]],
 } as const satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICON_NODES;
@@ -187,6 +206,11 @@ function lucide(Glyph: ComponentType<LucideProps>) {
 }
 
 export const PlusIcon = handoff('plus');
+export const MinusIcon = handoff('minus');
+export const CopyIcon = handoff('copy');
+export const LogoutIcon = handoff('logout');
+export const UserIcon = handoff('user');
+export const PhoneIcon = handoff('phone');
 export const CloseIcon = handoff('close');
 export const CheckIcon = handoff('check');
 export const SearchIcon = handoff('search');
@@ -208,6 +232,7 @@ export const TemplateIcon = handoff('template');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
 export const BatteryLowIcon = handoff('battery-low');
+export const SubItemIcon = handoff('sub-item');
 
 export const HomeIcon = lucide(House);
 export const CustomiseIcon = lucide(LayoutGrid);
@@ -220,7 +245,6 @@ export const IngredientsScanIcon = lucide(Leaf);
 export const BudgetIcon = lucide(Wallet);
 export const NutritionIcon = lucide(Apple);
 export const ChevronUpIcon = lucide(ChevronUp);
-export const MinusIcon = lucide(Minus);
 export const GripIcon = lucide(GripVertical);
 export const WarningIcon = lucide(TriangleAlert);
 export const AlertIcon = lucide(CircleAlert);
@@ -229,3 +253,4 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+export const RunningLowIcon = lucide(BatteryLow);

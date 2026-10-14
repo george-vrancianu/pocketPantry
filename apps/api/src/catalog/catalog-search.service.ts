@@ -1,15 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
+import { aisles, leafCategories, parentCategories } from '../database/schema';
+import type { CatalogScope } from './catalog-scope';
 import {
-  aisles,
-  catalogTranslations,
-  ingredients,
-  leafCategories,
-  parentCategories,
-} from '../database/schema';
-import {
+  AISLE_LISTING_LIMIT,
+  type CatalogAisle,
   type CatalogLocale,
   type CatalogParent,
   type CatalogSearchResult,
@@ -21,6 +18,10 @@ import {
   type ExpiryOverride,
 } from './catalog-defaults';
 import { normalizeName } from './normalize';
+import { readAmountScale } from './amount-scale';
+
+/** Restricts a search to an Aisle, and within it to one Parent Category. */
+export type SearchWithin = { aisleId?: string; parentCategoryId?: string };
 
 @Injectable()
 export class CatalogSearchService {
@@ -30,16 +31,44 @@ export class CatalogSearchService {
    * Matching stage one: the normalised query is looked up against canonical
    * names, display names, and Synonyms in every locale. Exact hits rank first,
    * then prefixes, then word-prefixes. Names come back in `locale`, falling
-   * back to English.
+   * back to English. `within` restricts it to an Aisle (and a Parent
+   * Category); an empty query with an Aisle lists its Ingredients A to Z.
    */
   async search(
+    scope: CatalogScope,
     query: string,
     locale: CatalogLocale,
     limit: number,
     overrides: readonly ExpiryOverride[] = [],
+    within: SearchWithin = {},
   ): Promise<CatalogSearchResult[]> {
     const key = normalizeName(query);
-    if (!key) return [];
+    if (!key) {
+      return within.aisleId
+        ? this.listAisle(
+            scope,
+            within.aisleId,
+            within.parentCategoryId,
+            locale,
+            overrides,
+          )
+        : [];
+    }
+    const ingredients = scope.ingredients(this.database);
+    const catalogTranslations = scope.translations(this.database);
+    const placed = within.aisleId || within.parentCategoryId;
+    const placement = placed
+      ? sql`JOIN ${leafCategories} ON ${leafCategories.id} = ${ingredients.leafCategoryId}
+            JOIN ${parentCategories} ON ${parentCategories.id} = ${leafCategories.parentId}`
+      : sql``;
+    const inAisle = [
+      within.aisleId
+        ? sql`${parentCategories.aisleId} = ${within.aisleId}`
+        : null,
+      within.parentCategoryId
+        ? sql`${parentCategories.id} = ${within.parentCategoryId}`
+        : null,
+    ].flatMap((condition) => (condition ? [sql` AND ${condition}`] : []));
 
     // `key` contains only letters, digits, and spaces, so it is LIKE-safe.
     const prefix = `${key}%`;
@@ -55,19 +84,96 @@ export class CatalogSearchService {
       )
       SELECT c.id
       FROM candidates c
-      JOIN ${ingredients} i ON i.id = c.id
-      WHERE c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix}
-      GROUP BY c.id, i.normalized_name
+      JOIN ${ingredients} ON ${ingredients.id} = c.id
+      ${placement}
+      WHERE (c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix})${sql.join(inAisle)}
+      GROUP BY c.id, ${ingredients.normalizedName}
       ORDER BY MIN(CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END),
-               i.normalized_name,
+               ${ingredients.normalizedName},
                c.id
       LIMIT ${limit}
     `);
     return this.findByIds(
+      scope,
       ranked.rows.map((row) => row.id),
       locale,
       overrides,
     );
+  }
+
+  /** An Aisle's Ingredients (optionally one Parent Category's) by name in `locale`, A to Z, up to the listing limit. */
+  private async listAisle(
+    scope: CatalogScope,
+    aisleId: string,
+    parentCategoryId: string | undefined,
+    locale: CatalogLocale,
+    overrides: readonly ExpiryOverride[],
+  ): Promise<CatalogSearchResult[]> {
+    const ingredients = scope.ingredients(this.database);
+    const rows = await this.database
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .innerJoin(
+        leafCategories,
+        eq(ingredients.leafCategoryId, leafCategories.id),
+      )
+      .innerJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .where(
+        and(
+          eq(parentCategories.aisleId, aisleId),
+          parentCategoryId
+            ? eq(parentCategories.id, parentCategoryId)
+            : undefined,
+        ),
+      );
+    const found = await this.findByIds(
+      scope,
+      rows.map((row) => row.id),
+      locale,
+      overrides,
+    );
+    return found
+      .sort(
+        (a, b) =>
+          a.name.localeCompare(b.name, locale) || a.id.localeCompare(b.id),
+      )
+      .slice(0, AISLE_LISTING_LIMIT);
+  }
+
+  /** The Aisles in shop order, each with its Parent Categories, named in `locale`. */
+  async listAisles(
+    scope: CatalogScope,
+    locale: CatalogLocale,
+  ): Promise<CatalogAisle[]> {
+    const aisleRows = await this.database
+      .select({ id: aisles.id, name: aisles.name })
+      .from(aisles)
+      .orderBy(asc(aisles.sortOrder));
+    const parentRows = await this.database
+      .select({
+        id: parentCategories.id,
+        name: parentCategories.name,
+        aisleId: parentCategories.aisleId,
+      })
+      .from(parentCategories);
+    const { pick } = await loadDisplayNames(this.database, scope, locale, [
+      ...aisleRows.map((row) => row.id),
+      ...parentRows.map((row) => row.id),
+    ]);
+    return aisleRows.map((aisle) => ({
+      id: aisle.id,
+      name: pick('aisle', aisle.id, aisle.name),
+      parentCategories: parentRows
+        .filter((parent) => parent.aisleId === aisle.id)
+        .map((parent) => ({
+          id: parent.id,
+          name: pick('parent_category', parent.id, parent.name),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, locale)),
+    }));
   }
 
   /**
@@ -78,6 +184,7 @@ export class CatalogSearchService {
    * Ingredient, is left out so the caller keeps it Unmatched.
    */
   async findExact(
+    scope: CatalogScope,
     names: string[],
     locale: CatalogLocale,
     overrides: readonly ExpiryOverride[] = [],
@@ -90,6 +197,8 @@ export class CatalogSearchService {
     );
     const keys = [...new Set(keyOf.values())];
     if (keys.length === 0) return new Map();
+    const ingredients = scope.ingredients(this.database);
+    const catalogTranslations = scope.translations(this.database);
 
     const keyList = sql.join(
       keys.map((key) => sql`${key}`),
@@ -114,10 +223,11 @@ export class CatalogSearchService {
     const unique = [...idsByKey.values()].flatMap((ids) =>
       ids.length === 1 ? ids : [],
     );
-    const found = new Map(
-      (await this.findByIds([...new Set(unique)], locale, overrides)).map(
-        (match) => [match.id, match],
-      ),
+    const found = await this.mapByIds(
+      scope,
+      [...new Set(unique)],
+      locale,
+      overrides,
     );
     const result = new Map<string, CatalogSearchResult>();
     for (const [name, key] of keyOf) {
@@ -129,12 +239,16 @@ export class CatalogSearchService {
   }
 
   /** Every Parent Category with its name in `locale`, sorted by that name. */
-  async listParents(locale: CatalogLocale): Promise<CatalogParent[]> {
+  async listParents(
+    scope: CatalogScope,
+    locale: CatalogLocale,
+  ): Promise<CatalogParent[]> {
     const rows = await this.database
       .select({ id: parentCategories.id, name: parentCategories.name })
       .from(parentCategories);
     const { pick } = await loadDisplayNames(
       this.database,
+      scope,
       locale,
       rows.map((row) => row.id),
     );
@@ -146,19 +260,33 @@ export class CatalogSearchService {
       .sort((a, b) => a.name.localeCompare(b.name, locale));
   }
 
+  /** `findByIds` keyed by Ingredient id, for callers that join the results to their own rows. */
+  async mapByIds(
+    scope: CatalogScope,
+    ids: string[],
+    locale: CatalogLocale,
+    overrides: readonly ExpiryOverride[] = [],
+  ): Promise<Map<string, CatalogSearchResult>> {
+    const found = await this.findByIds(scope, ids, locale, overrides);
+    return new Map(found.map((result) => [result.id, result]));
+  }
+
   /** Ingredients by id, in the order given, shaped like a search result. Unknown ids are skipped. */
   async findByIds(
+    scope: CatalogScope,
     ids: string[],
     locale: CatalogLocale,
     overrides: readonly ExpiryOverride[] = [],
   ): Promise<CatalogSearchResult[]> {
     if (ids.length === 0) return [];
 
+    const ingredients = scope.ingredients(this.database);
     const rows = await this.database
       .select({
         id: ingredients.id,
         name: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
+        amountScale: ingredients.amountScale,
         leafId: leafCategories.id,
         leafName: leafCategories.name,
         leafExpiry: leafCategories.defaultExpiryDays,
@@ -185,6 +313,7 @@ export class CatalogSearchService {
 
     const names = await loadDisplayNames(
       this.database,
+      scope,
       locale,
       rows.flatMap((row) => [row.id, row.leafId, row.parentId, row.aisleId]),
     );
@@ -198,6 +327,7 @@ export class CatalogSearchService {
           id: row.id,
           name: display('ingredient', row.id, row.name),
           defaultUnit: row.defaultUnit,
+          amountScale: readAmountScale(row.amountScale),
           leafCategory: {
             id: row.leafId,
             name: display('leaf_category', row.leafId, row.leafName),

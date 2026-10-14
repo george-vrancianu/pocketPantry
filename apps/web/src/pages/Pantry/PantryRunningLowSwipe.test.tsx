@@ -18,6 +18,8 @@ function batch(overrides: Partial<Batch>): Batch {
     ingredientId: 'milk-id',
     unmatched: false,
     aisle: null,
+    amountScale: null,
+    defaultUnit: null,
     quantity: 1,
     unit: 'l',
     location: 'fridge',

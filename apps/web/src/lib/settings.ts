@@ -15,12 +15,18 @@ export type FamilySettings = {
   expiryOverrides: ExpiryOverride[];
 };
 
+/**
+ * A category a Default Expiry override can target. `catalogDays` is the Catalog's default for it in
+ * days (a Leaf without its own has its Parent's); `null` leaves the Catalog comparison out.
+ */
+export type CategoryOption = {
+  id: string;
+  name: string;
+  catalogDays: number | null;
+};
+
 export type CategoryOptions = {
-  parents: {
-    id: string;
-    name: string;
-    leaves: { id: string; name: string }[];
-  }[];
+  parents: (CategoryOption & { leaves: CategoryOption[] })[];
 };
 
 /** `null` means never chosen: the default applies. */
@@ -30,12 +36,14 @@ export type MemberPreferences = {
 };
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
+/** Family Settings in every locale; add the locale for one query. */
+export const familySettingsQueryKey = ['settings', 'family'] as const;
 
 const localeParams = (locale: string) => new URLSearchParams({ locale });
 
 export function useFamilySettings(locale: string) {
   return useQuery({
-    queryKey: ['settings', 'family', locale],
+    queryKey: [...familySettingsQueryKey, locale],
     queryFn: () =>
       apiRequest<FamilySettings>(`/settings/family?${localeParams(locale)}`),
   });
@@ -68,7 +76,7 @@ function useRefreshAfterFamilyChange() {
   const queryClient = useQueryClient();
   return () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['settings', 'family'] }),
+      queryClient.invalidateQueries({ queryKey: familySettingsQueryKey }),
       queryClient.invalidateQueries({ queryKey: ['pantry'] }),
       queryClient.invalidateQueries({ queryKey: ['catalog-search'] }),
       ...recipeMatchingQueryKeys.map((queryKey) =>

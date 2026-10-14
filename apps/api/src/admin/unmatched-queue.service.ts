@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import {
   ConcurrentMove,
@@ -40,6 +41,9 @@ type EntryRow = typeof unmatchedEntries.$inferSelect;
 
 const MAX_REFERENCES = 20;
 const MAX_LOCK_ATTEMPTS = 5;
+
+// The Unmatched queue is Admin curation: it reads shared Catalog rows only (the Family Ingredients ADR, #270).
+const adminScope = catalogScope(SHARED_ONLY);
 
 const notInQueue = () => new ApiException(404, 'unmatched.not_found');
 
@@ -660,10 +664,11 @@ export class UnmatchedQueueService {
   }
 
   private async requireIngredient(tx: Tx, id: string) {
+    const shared = adminScope.ingredients(tx);
     const [row] = await tx
       .select()
-      .from(ingredients)
-      .where(eq(ingredients.id, id))
+      .from(shared)
+      .where(eq(shared.id, id))
       // Blocks a concurrent delete of the Ingredient until we commit.
       .for('key share');
     if (!row)
@@ -682,14 +687,15 @@ export class UnmatchedQueueService {
     locale: string,
   ): Promise<boolean> {
     if (target.normalizedName === key) return false;
+    const translations = adminScope.translations(tx);
     const [existing] = await tx
-      .select({ id: catalogTranslations.id })
-      .from(catalogTranslations)
+      .select({ id: translations.id })
+      .from(translations)
       .where(
         and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.entityId, target.id),
-          eq(catalogTranslations.normalizedValue, key),
+          eq(translations.entityType, 'ingredient'),
+          eq(translations.entityId, target.id),
+          eq(translations.normalizedValue, key),
         ),
       )
       .limit(1);

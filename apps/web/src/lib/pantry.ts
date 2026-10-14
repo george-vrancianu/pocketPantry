@@ -7,8 +7,10 @@ import {
   templateDetailsQueryKey,
 } from './queryKeys';
 import type { Aisle } from './staples';
+import type { AmountScale } from './usualAmounts';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 import { useStaleThresholdDays } from './settings';
+import { fold } from './fold';
 
 /** A calendar date as `YYYY-MM-DD`. */
 export type IsoDate = string;
@@ -21,6 +23,10 @@ export type Batch = {
   unmatched: boolean;
   /** The Ingredient's Aisle; null for an Unmatched Batch. */
   aisle: Aisle | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
+  amountScale: AmountScale | null;
+  /** The Ingredient's own unit: what a Batch with no stored unit opens on; null for an Unmatched Batch. */
+  defaultUnit: Unit | null;
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;
@@ -186,21 +192,6 @@ export function groupByLocation(batches: Batch[]) {
 export type PantryFilter = 'all' | StorageLocation;
 
 export const FILTERS: PantryFilter[] = ['all', ...LOCATIONS];
-
-/**
- * Lower-case and strip diacritics so "mamaliga" finds "Mămăligă". The Danish
- * letters fold as the API's matching key does (æ→ae, ø→oe, å→aa), so "maelk"
- * finds "Mælk".
- */
-function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .toLocaleLowerCase()
-    .replace(/a\u030A/g, 'aa')
-    .replace(/æ/g, 'ae')
-    .replace(/ø/g, 'oe')
-    .replace(/\p{Diacritic}/gu, '');
-}
 
 /** Search matches the localised name and the Product Description. */
 export function matchesSearch(batch: Batch, query: string): boolean {
@@ -396,9 +387,9 @@ export function parseQuantity(text: string): {
   return { value, valid };
 }
 
-/** Parse a typed amount, where a decimal comma ("1,5") counts as a point. */
+/** Parse a typed amount, where a decimal comma ("1,5") counts as a point and surrounding spaces are ignored. */
 export function parseAmountText(text: string) {
-  return parseQuantity(text.replace(',', '.'));
+  return parseQuantity(text.trim().replace(',', '.'));
 }
 
 /** The fields to change; anything left out stays as it is. */

@@ -391,6 +391,100 @@ describe('Shopping Template screens', () => {
     );
   });
 
+  describe('adding a line with the shared search', () => {
+    /** The Template stub, plus a Catalog search that answers `results` for every query. */
+    const withSearch = (results: unknown[]) => {
+      const stub = statefulTemplate([milk]);
+      const answerTemplates = globalThis.fetch;
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = new URL(String(input), window.location.origin);
+        if (url.pathname === '/api/catalog/search') {
+          stub.calls.push({
+            key: 'GET /api/catalog/search',
+            search: url.search,
+            body: undefined,
+          });
+          return Promise.resolve(Response.json({ results }));
+        }
+        return answerTemplates(input, init);
+      });
+      return stub;
+    };
+    /** The add-line form (the page has other "Add to list" buttons). */
+    const addForm = () =>
+      screen
+        .getByRole('combobox', { name: 'Search ingredients' })
+        .closest('form') as HTMLElement;
+    const parmesan = {
+      id: 'parmesan-id',
+      name: 'Parmesan',
+      defaultUnit: 'g',
+      leafCategory: { id: 'hc', name: 'Hard cheese' },
+      parentCategory: {
+        id: 'd',
+        name: 'Dairy',
+        aisle: { id: 'aisle', name: 'Dairy & eggs' },
+      },
+      defaults: { expiryDays: 30, location: 'fridge' },
+    };
+
+    it('adds a typed name as an Unmatched line only through Use as typed', async () => {
+      const { calls } = withSearch([]);
+      renderEditor();
+      const user = userEvent.setup();
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const form = addForm();
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'Dragon fruit',
+      );
+      const useTyped = await screen.findByRole('option', {
+        name: /Use “Dragon fruit” as typed/,
+      });
+      expect(
+        within(form).getByRole('button', { name: 'Add to list' }),
+      ).toBeDisabled();
+      await user.click(useTyped);
+      await user.click(
+        within(form).getByRole('button', { name: 'Add to list' }),
+      );
+
+      await waitFor(() => expect(patches(calls)).toHaveLength(1));
+      expect(patches(calls)[0]).toEqual({
+        lines: [
+          { ingredientId: 'milk-id', quantity: 1, unit: 'l' },
+          { name: 'Dragon fruit' },
+        ],
+      });
+    });
+
+    it('adds a picked Catalog match by its id', async () => {
+      const { calls } = withSearch([parmesan]);
+      renderEditor();
+      const user = userEvent.setup();
+      await screen.findByRole('group', { name: 'Milk' });
+
+      const form = addForm();
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+      await user.click(
+        within(form).getByRole('button', { name: 'Add to list' }),
+      );
+
+      await waitFor(() => expect(patches(calls)).toHaveLength(1));
+      expect(patches(calls)[0]).toMatchObject({
+        lines: [
+          { ingredientId: 'milk-id', quantity: 1, unit: 'l' },
+          { ingredientId: 'parmesan-id' },
+        ],
+      });
+    });
+  });
+
   describe('editing the amount', () => {
     const openSheet = async (
       user: ReturnType<typeof userEvent.setup>,

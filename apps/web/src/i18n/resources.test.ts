@@ -72,6 +72,13 @@ describe('translation resources', () => {
     expect(LOCALES).toContain('da');
   });
 
+  it.each(LOCALES)('%s has the Usual Amount strings in common', (locale) => {
+    const amount = resources[locale].common.amount as Record<string, string>;
+    expect(amount.usual).toEqual(expect.any(String));
+    expect(amount.usualAmounts).toEqual(expect.any(String));
+    expect(amount.chip).toEqual(expect.any(String));
+  });
+
   it('has no empty strings', () => {
     for (const locale of LOCALES) {
       expect(JSON.stringify(resources[locale])).not.toContain('""');

@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import {
@@ -8,6 +7,8 @@ import {
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import { amountScaleForParent } from '../amount-scale';
+import { seedId, stableId } from './seed-ids';
 import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
@@ -19,6 +20,8 @@ import {
   SEED_PARENTS,
 } from './catalog-seed-data';
 import { assertCatalogSeedValid } from './validate-seed';
+
+export { seedId, stableId };
 
 type TranslationRow = typeof catalogTranslations.$inferInsert;
 
@@ -35,30 +38,6 @@ function synonymIdKey(value: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 }
-
-/** Deterministic UUID from a stable key, so seed rows keep their ids forever. */
-export function stableId(key: string): string {
-  const hex = createHash('sha1').update(`pocket-pantry:${key}`).digest('hex');
-  const variant = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `5${hex.slice(13, 16)}`,
-    `${variant}${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join('-');
-}
-
-export const seedId = {
-  aisle: (slug: string) => stableId(`aisle:${slug}`),
-  parent: (slug: string) => stableId(`parent:${slug}`),
-  leaf: (slug: string) => stableId(`leaf:${slug}`),
-  ingredient: (slug: string) => stableId(`ingredient:${slug}`),
-  recipe: (slug: string) => stableId(`recipe:${slug}`),
-  cuisine: (slug: string) => stableId(`cuisine:${slug}`),
-  method: (slug: string) => stableId(`method:${slug}`),
-  eatingMoment: (slug: string) => stableId(`eating-moment:${slug}`),
-};
 
 export function translationRows(
   entityType: EntityType,
@@ -109,6 +88,15 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
     `translation:ingredient:${seedId.ingredient('carrot')}:da:synonym:guleroedder`,
   ),
 ];
+
+const PARENT_OF_LEAF = new Map(
+  SEED_LEAVES.map((leaf) => [leaf.slug, leaf.parent]),
+);
+
+/** The Parent Category id a seed Leaf belongs to, for its Ingredients' Amount Scale. */
+function parentIdOfLeaf(leafSlug: string): string {
+  return seedId.parent(PARENT_OF_LEAF.get(leafSlug) ?? '');
+}
 
 /**
  * The seed Aisles to insert. An Admin may reorder Aisles, so a seed Aisle the
@@ -207,6 +195,7 @@ export async function seedCatalog(
           name: item.en,
           normalizedName: normalizeName(item.en),
           defaultUnit: item.unit,
+          amountScale: amountScaleForParent(parentIdOfLeaf(item.leaf)),
         })),
       )
       .onConflictDoNothing({ target: ingredients.id });

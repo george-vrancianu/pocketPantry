@@ -111,6 +111,8 @@ describe('defaultExpiryDate', () => {
 
 describe('groupByLocation', () => {
   const batch = (id: string, location: Batch['location']): Batch => ({
+    amountScale: null,
+    defaultUnit: null,
     id,
     name: id,
     ingredientId: id,
@@ -145,6 +147,8 @@ const make = (overrides: Partial<Batch>): Batch => ({
   ingredientId: 'milk',
   unmatched: false,
   aisle: null,
+  amountScale: null,
+  defaultUnit: null,
   quantity: null,
   unit: null,
   location: 'fridge',
@@ -254,6 +258,10 @@ describe('countByLocation', () => {
 describe('parseAmountText', () => {
   it('reads a decimal comma as a point', () => {
     expect(parseAmountText('1,5')).toEqual({ value: 1.5, valid: true });
+  });
+
+  it('ignores surrounding spaces, as the amount field does', () => {
+    expect(parseAmountText(' 2 ')).toEqual({ value: 2, valid: true });
   });
 
   it('keeps the parseQuantity rules', () => {

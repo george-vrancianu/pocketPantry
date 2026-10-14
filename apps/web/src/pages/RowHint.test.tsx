@@ -64,6 +64,8 @@ const line = {
   aisle: dairy,
 };
 const batch = (id: string): Batch => ({
+  amountScale: null,
+  defaultUnit: null,
   id,
   name: 'Milk',
   ingredientId: 'milk-id',

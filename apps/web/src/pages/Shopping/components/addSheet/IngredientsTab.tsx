@@ -1,22 +1,14 @@
-import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Alert, Box, Typography, radius, tokens } from '@pocket-pantry/ui';
 import {
-  useId,
-  useLayoutEffect,
   useRef,
-  useState,
   type Dispatch,
-  type KeyboardEvent,
   type RefObject,
   type SetStateAction,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useCatalogSearch,
-  type CatalogSearchResult,
-  type Unit,
-} from '../../../../lib/catalog';
+import { CatalogSearch } from '../../../../components/catalogSearch/CatalogSearch';
 import { AmountField } from '../../../../components/AmountField';
-import { normalizeName } from '../../../../lib/normalizeName';
+import { type CatalogSearchResult, type Unit } from '../../../../lib/catalog';
 import { parseAmountText } from '../../../../lib/pantry';
 import {
   isOnList,
@@ -25,21 +17,18 @@ import {
   type NewShoppingItem,
   type ShoppingItem,
 } from '../../../../lib/shopping';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestion, Suggestions } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 
-import { INNER_RADIUS, LIST_RADIUS, ResultRow } from './ResultRow';
-import { SearchField } from './SearchField';
+/** What was picked in the search: a Catalog match, or the typed text as an Unmatched item. */
+type Chosen =
+  | { kind: 'catalog'; result: CatalogSearchResult }
+  | { kind: 'typed'; name: string };
 
-/** A result row: a Catalog match, or the typed text as an Unmatched item. */
-type Row =
-  | { key: string; kind: 'catalog'; result: CatalogSearchResult }
-  | { key: 'free-text'; kind: 'unmatched'; name: string };
-
-/** The row being filled in; only one is open at a time. */
-export type OpenRow = {
-  key: string;
+/** The pick being filled in with an amount. */
+export type OpenPick = {
+  pick: Chosen;
   quantity: string;
   unit: Unit | '';
   /** An add was tried, so an invalid amount now shows its error. */
@@ -48,16 +37,17 @@ export type OpenRow = {
 
 /** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
 export type IngredientsState = {
+  /** The text in the search field. */
   query: string;
-  open: OpenRow | null;
-  /** Ingredient ids added from a Suggestion chip, until the Suggestions drop them. */
-  suggestionsAdded: string[];
+  open: OpenPick | null;
+  /** Bumped after an add to give the search a fresh, focused field. */
+  searchKey: number;
 };
 
 export const emptyIngredients: IngredientsState = {
   query: '',
   open: null,
-  suggestionsAdded: [],
+  searchKey: 0,
 };
 
 export type IngredientsTabProps = {
@@ -70,9 +60,7 @@ export type IngredientsTabProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, shown above the search. */
   error: string | null;
-  staples: Suggestion[];
-  usedUp: Suggestion[];
-  runningLow: Suggestion[];
+  suggestions: Suggestions;
   /** Called after each successful add. */
   onAdded: () => void;
   /** Opens a template's apply view. */
@@ -81,7 +69,7 @@ export type IngredientsTabProps = {
   onSeeAllTemplates: () => void;
 };
 
-/** The Ingredients tab: search the Catalog, open a result, give an amount, add. */
+/** The Ingredients tab: the shared search, then an amount for the pick, then add. */
 export function IngredientsTab({
   state,
   onStateChange,
@@ -89,16 +77,13 @@ export function IngredientsTab({
   adding,
   onAdd,
   error,
-  staples,
-  usedUp,
-  runningLow,
+  suggestions,
   onAdded,
   onOpenTemplate,
   onSeeAllTemplates,
 }: IngredientsTabProps) {
   const { t, i18n } = useTranslation('shopping');
   const toast = useSheetToast();
-  const listboxId = useId();
   const { query, open } = state;
   // What adding will do, following the server: it merges only on the same Ingredient (or typed name) and unit.
   const mergeHint = (lines: ShoppingItem[], unit: Unit | '') => {
@@ -123,297 +108,170 @@ export function IngredientsTab({
       ),
     });
   };
-  const setOpen = (next: OpenRow | null) =>
+  const setOpen = (next: OpenPick | null) =>
     onStateChange((s) => ({ ...s, open: next }));
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const listRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  // Where the amount panel sits: the open option's bottom edge, and its height.
-  const [panel, setPanel] = useState({ top: 0, height: 0 });
+  // Patches the open pick against the latest state, so two changes in one event (a unit change
+  // that also converts the number) both land.
+  const patchOpen = (patch: Partial<OpenPick>) =>
+    onStateChange((s) =>
+      s.open ? { ...s, open: { ...s.open, ...patch } } : s,
+    );
 
-  const search = useCatalogSearch(query, i18n.language);
-  // The loaded list (shared with the screen behind), for the "On list" hints.
+  // The loaded list (shared with the screen behind), for the "On list" hint.
   const list = useShoppingList(i18n.language);
   const unchecked = uncheckedItems(list.data);
-  const typed = query.trim();
-  // The debounce lags a cleared field, so go by what is typed now.
-  const results = typed && search.active ? (search.data ?? []) : [];
-  const rows: Row[] = results.map((result) => ({
-    key: result.id,
-    kind: 'catalog',
-    result,
-  }));
-  if (
-    typed &&
-    !search.isSearching &&
-    !results.some(
-      (result) => normalizeName(result.name) === normalizeName(typed),
-    )
-  ) {
-    rows.push({ key: 'free-text', kind: 'unmatched', name: typed });
-  }
-
-  // Rows come and go as results load; never point at one that is gone.
-  const active = activeIndex < rows.length ? activeIndex : -1;
-  const optionId = (index: number) => `${listboxId}-option-${index}`;
-  const openIndex = rows.findIndex((row) => row.key === open?.key);
-  const openRow = rows[openIndex];
-  const rowName = (row: Row) =>
-    row.kind === 'catalog' ? row.result.name : row.name;
+  const pick = open?.pick;
+  const pickName = pick
+    ? pick.kind === 'catalog'
+      ? pick.result.name
+      : pick.name
+    : '';
   // Unmatched lines merge on the normalised typed name, as the server does.
-  const onListLinesOf = (row: Row) =>
-    unchecked.filter((line) =>
-      isOnList(
-        line,
-        row.kind === 'catalog'
-          ? { ingredientId: row.result.id, name: row.result.name }
-          : { ingredientId: null, name: row.name },
-      ),
-    );
-  const panelShown = Boolean(open && openRow);
-  // The panel overlays the list (so the listbox stays a real box of options only)
-  // and the open option makes room for it; follow both as they resize, and the
-  // list itself, since a row above the option resizing moves it.
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    const panelEl = panelRef.current;
-    const option = openIndex >= 0 ? list?.children[openIndex] : undefined;
-    if (!list || !panelEl || !(option instanceof HTMLElement)) {
-      setPanel((prev) => (prev.height === 0 ? prev : { top: 0, height: 0 }));
-      return;
-    }
-    const measure = () => {
-      const next = {
-        top: option.offsetTop + option.offsetHeight,
-        height: panelEl.offsetHeight,
-      };
-      setPanel((prev) =>
-        prev.top === next.top && prev.height === next.height ? prev : next,
-      );
-    };
-    measure();
-    // jsdom has no ResizeObserver; the measurement above is then all we get.
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(panelEl);
-    observer.observe(option);
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, [openIndex, rows.length, panelShown]);
-  const hint =
-    open && openRow ? mergeHint(onListLinesOf(openRow), open.unit) : null;
+  const onListLines = pick
+    ? unchecked.filter((line) =>
+        isOnList(
+          line,
+          pick.kind === 'catalog'
+            ? { ingredientId: pick.result.id, name: pick.result.name }
+            : { ingredientId: null, name: pick.name },
+        ),
+      )
+    : [];
+  const hint = open ? mergeHint(onListLines, open.unit) : null;
   const amount = parseAmountText(open?.quantity ?? '');
 
-  const toggle = (row: Row) => {
-    setOpen(
-      open?.key === row.key
-        ? null
-        : {
-            key: row.key,
-            quantity: '',
-            unit: row.kind === 'catalog' ? row.result.defaultUnit : '',
-          },
-    );
+  const choose = (next: Chosen, query: string) => {
+    const amount = tileAmount.current;
+    tileAmount.current = null;
+    const staple =
+      next.kind === 'catalog' && amount?.id === next.result.id ? amount : null;
+    onStateChange((s) => ({
+      ...s,
+      query,
+      open: {
+        pick: next,
+        quantity: staple?.quantity ?? '',
+        unit:
+          staple?.unit ??
+          (next.kind === 'catalog' ? next.result.defaultUnit : ''),
+      },
+    }));
   };
 
-  const change = (value: string) => {
-    onStateChange((s) => ({ ...s, query: value, open: null }));
-    setActiveIndex(-1);
-  };
-
-  const keyDown = (event: KeyboardEvent) => {
-    if (event.key === 'ArrowDown' && rows.length > 0) {
-      event.preventDefault();
-      setActiveIndex((active + 1) % rows.length);
-    } else if (event.key === 'ArrowUp' && rows.length > 0) {
-      event.preventDefault();
-      setActiveIndex(active <= 0 ? rows.length - 1 : active - 1);
-    } else if (event.key === 'Enter' && rows.length > 0) {
-      event.preventDefault();
-      const row = rows[Math.max(active, 0)];
-      if (row) toggle(row);
-    }
+  // A Staple tile carries the Staple's amount; the search's select, right after, opens the pick with it.
+  const tileAmount = useRef<{
+    id: string;
+    quantity: string;
+    unit: Unit;
+  } | null>(null);
+  const pickGone = (suggestion: Suggestion) => {
+    tileAmount.current =
+      suggestion.quantity !== null && suggestion.unit !== null
+        ? {
+            id: suggestion.ingredientId,
+            quantity: String(suggestion.quantity),
+            unit: suggestion.unit,
+          }
+        : null;
   };
 
   const submit = async () => {
-    if (!open || !openRow) return;
+    if (!open || !pick) return;
     if (!amount.valid) {
       setOpen({ ...open, attempted: true });
       return;
     }
-    const name = rowName(openRow);
     const added = await onAdd({
-      ...(openRow.kind === 'catalog'
-        ? { ingredientId: openRow.result.id }
-        : { name }),
+      ...(pick.kind === 'catalog'
+        ? { ingredientId: pick.result.id }
+        : { name: pick.name }),
       ...(amount.value !== null ? { quantity: amount.value } : {}),
       ...(open.unit ? { unit: open.unit } : {}),
     });
     // On failure everything typed stays, and the sheet shows the error.
     if (!added) return;
-    toast.show(t('added', { name }));
+    toast.show(t('added', { name: pickName }));
     onAdded();
     onStateChange((s) => ({
       ...emptyIngredients,
-      suggestionsAdded: s.suggestionsAdded,
+      searchKey: s.searchKey + 1,
     }));
-    setActiveIndex(-1);
-    searchRef.current?.focus();
   };
-
-  let status = '';
-  if (typed && search.active && !search.isSearching) {
-    status =
-      results.length > 0
-        ? t('search.matches', { count: results.length })
-        : t('search.noMatch');
-  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.25 }}>
       {error ? <Alert>{error}</Alert> : null}
-      <SearchField
-        value={query}
-        onChange={change}
-        onClear={() => {
-          change('');
-          searchRef.current?.focus();
-        }}
-        onKeyDown={keyDown}
+      <CatalogSearch
+        key={state.searchKey}
+        // A fresh field after an add takes focus; the first one waits for the sheet to slide in.
+        autoFocus={state.searchKey > 0}
         inputRef={searchRef}
-        listboxId={listboxId}
-        expanded={rows.length > 0}
-        activeOptionId={active >= 0 ? optionId(active) : undefined}
+        defaultQuery={query}
+        // The empty state shows from the first paint and after a tab switch, before the field is focused.
+        defaultOpen={!pick}
+        rowTag={(row) =>
+          unchecked.some((line) => isOnList(line, row))
+            ? t('search.onList')
+            : null
+        }
+        selected={pick?.kind === 'catalog' ? pick.result : null}
+        onSelect={(result) => choose({ kind: 'catalog', result }, result.name)}
+        onUseTyped={(name) => choose({ kind: 'typed', name }, name)}
+        onQueryChange={(value) =>
+          onStateChange((s) => ({ ...s, query: value, open: null }))
+        }
+        emptyState={
+          <EmptySearch
+            suggestions={suggestions}
+            onPickGone={pickGone}
+            onOpenTemplate={onOpenTemplate}
+            onSeeAllTemplates={onSeeAllTemplates}
+          />
+        }
       />
-      {typed ? null : (
-        <EmptySearch
-          staples={staples}
-          usedUp={usedUp}
-          runningLow={runningLow}
-          addedIds={state.suggestionsAdded}
-          onAdd={onAdd}
-          onOpenTemplate={onOpenTemplate}
-          onSeeAllTemplates={onSeeAllTemplates}
-          onAdded={(ingredientId) => {
-            onAdded();
-            onStateChange((s) => ({
-              ...s,
-              suggestionsAdded: [...s.suggestionsAdded, ingredientId],
-            }));
-          }}
-        />
-      )}
-      <Typography
-        role="status"
-        variant="sectionLabel"
-        sx={{ minHeight: '1.5em', color: tokens.color.muted }}
-      >
-        {status}
-      </Typography>
-      <Box
-        hidden={rows.length === 0}
-        sx={{
-          position: 'relative',
-          display: rows.length === 0 ? 'none' : 'block',
-          borderRadius: LIST_RADIUS,
-          border: `1px solid ${tokens.color.line}`,
-          backgroundColor: tokens.color.surface,
-        }}
-      >
-        {/* Only options in the listbox. The open row's amount panel is a sibling
-            laid over the space the open option leaves under itself. */}
+      {open ? (
         <Box
-          ref={listRef}
-          role="listbox"
-          id={listboxId}
-          aria-label={t('search.placeholder')}
-          sx={{ display: 'flex', flexDirection: 'column' }}
+          sx={{
+            backgroundColor: tokens.color.subtle,
+            borderRadius: radius.card,
+            p: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+          }}
         >
-          {rows.map((row, index) => (
-            <ResultRow
-              key={row.key}
-              id={optionId(index)}
-              ingredientId={row.kind === 'catalog' ? row.result.id : undefined}
-              name={
-                row.kind === 'unmatched'
-                  ? t('search.freeText', { name: rowName(row) })
-                  : rowName(row)
-              }
-              highlight={row.kind === 'catalog' ? typed : undefined}
-              meta={
-                row.kind === 'catalog'
-                  ? `${row.result.leafCategory.name} · ${row.result.parentCategory.aisle.name}`
-                  : t('search.freeTextHint')
-              }
-              aisleId={
-                row.kind === 'catalog'
-                  ? row.result.parentCategory.aisle.id
-                  : undefined
-              }
-              onList={onListLinesOf(row).length > 0}
-              open={open?.key === row.key}
-              active={index === active}
-              onToggle={() => toggle(row)}
-              spaceBelow={index === openIndex ? panel.height : 0}
-              first={index === 0}
-              last={index === rows.length - 1}
-            />
-          ))}
-        </Box>
-        {open && openRow ? (
-          <Box
-            ref={panelRef}
-            sx={{
-              position: 'absolute',
-              top: panel.top,
-              left: 0,
-              right: 0,
-              backgroundColor: tokens.color.subtle,
-              borderRadius:
-                openIndex === rows.length - 1
-                  ? `0 0 ${INNER_RADIUS} ${INNER_RADIUS}`
-                  : 0,
+          <AmountField
+            name={pickName}
+            amountScale={
+              pick?.kind === 'catalog' ? pick.result.amountScale : null
+            }
+            quantity={open.quantity}
+            unit={open.unit}
+            onQuantityChange={(quantity, unit) =>
+              patchOpen({
+                quantity,
+                ...(unit !== undefined ? { unit } : {}),
+              })
+            }
+            onUnitChange={(unit) => patchOpen({ unit })}
+            error={
+              open.attempted && !amount.valid
+                ? t('finish.quantityInvalid')
+                : null
+            }
+            onSubmit={() => void submit()}
+            submit={{
+              label: t('amount.add', { name: pickName }),
+              disabled: adding,
             }}
-          >
-            <Box sx={{ p: '0 14px 12px 64px' }}>
-              <AmountField
-                name={rowName(openRow)}
-                quantity={open.quantity}
-                unit={open.unit}
-                onQuantityChange={(quantity, unit) =>
-                  setOpen({
-                    ...open,
-                    quantity,
-                    ...(unit !== undefined ? { unit } : {}),
-                  })
-                }
-                onUnitChange={(unit) => setOpen({ ...open, unit })}
-                error={
-                  open.attempted && !amount.valid
-                    ? t('finish.quantityInvalid')
-                    : null
-                }
-                onSubmit={() => void submit()}
-                submit={{
-                  label: t('amount.add', { name: rowName(openRow) }),
-                  disabled: adding,
-                }}
-              />
-            </Box>
-            {hint ? (
-              <Typography
-                sx={{
-                  p: '0 14px 12px 64px',
-                  fontSize: 12.5,
-                  color: tokens.color.muted,
-                }}
-              >
-                {hint}
-              </Typography>
-            ) : null}
-          </Box>
-        ) : null}
-      </Box>
+          />
+          {hint ? (
+            <Typography sx={{ fontSize: 12.5, color: tokens.color.muted }}>
+              {hint}
+            </Typography>
+          ) : null}
+        </Box>
+      ) : null}
     </Box>
   );
 }

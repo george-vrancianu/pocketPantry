@@ -4,13 +4,13 @@ import type { ReactNode } from 'react';
 type Props = {
   id: string;
   children: ReactNode;
-  /** Right-aligned inside the heading, so it is part of the heading's name. */
+  /** Follows the title inside the heading ("All recipes · 12"), so it is part of the heading's name. */
   count?: number;
   /** Right-aligned beside the heading (a link). */
   end?: ReactNode;
 };
 
-/** A small caps heading with something right-aligned (a link, a count). */
+/** A small caps heading with its count after the title and an optional right-aligned link. */
 export function SectionLabel({ id, children, count, end }: Props) {
   return (
     <Box
@@ -28,9 +28,6 @@ export function SectionLabel({ id, children, count, end }: Props) {
         sx={{
           m: 0,
           flex: 1,
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '8px',
           fontSize: 12,
           fontWeight: 700,
           letterSpacing: '0.06em',
@@ -38,10 +35,8 @@ export function SectionLabel({ id, children, count, end }: Props) {
           color: tokens.color.muted,
         }}
       >
-        <span>{children}</span>
-        {count === undefined ? null : (
-          <span style={{ fontWeight: 600, letterSpacing: 0 }}>{count}</span>
-        )}
+        {children}
+        {count === undefined ? null : ` · ${count}`}
       </Box>
       {end}
     </Box>
