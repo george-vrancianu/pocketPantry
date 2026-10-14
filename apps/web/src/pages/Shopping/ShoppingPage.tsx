@@ -2,6 +2,9 @@ import {
   Alert,
   Box,
   Button,
+  ImportIcon,
+  radius,
+  tokens,
   Spinner,
   Stack,
   Typography,
@@ -22,6 +25,7 @@ import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveTemplateSheet } from './components/SaveTemplateSheet';
+import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
@@ -49,6 +53,7 @@ export function ShoppingPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
   const [saveOpen, setSaveOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
 
   // Every way in starts clean, with no error left from an earlier opening.
   const openSheet = (view: SheetView) => {
@@ -72,7 +77,42 @@ export function ShoppingPage() {
   return (
     <RowToggleErrorProvider report={rowToggleErrors.report}>
       <UnverifiedToast />
-      <AppScreenHeader title={t('shopping:title')} />
+      <AppScreenHeader
+        title={t('shopping:title')}
+        trailing={
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('shopping:import.aria')}
+            onClick={() => setApplyOpen(true)}
+            sx={{
+              height: 40,
+              p: '0 14px 0 11px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              border: 0,
+              borderRadius: radius.pill,
+              cursor: 'pointer',
+              backgroundColor: tokens.color.surface,
+              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
+              color: tokens.color.ink,
+              font: 'inherit',
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            <Box
+              component="span"
+              aria-hidden
+              sx={{ display: 'flex', color: tokens.color.accent }}
+            >
+              <ImportIcon size={18} />
+            </Box>
+            {t('shopping:import.button')}
+          </Box>
+        }
+      />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
@@ -135,6 +175,10 @@ export function ShoppingPage() {
         onAdd={screen.add}
         addError={screen.addError}
         suggestions={screen.suggestions}
+      />
+      <ApplyTemplatesSheet
+        open={applyOpen}
+        onClose={() => setApplyOpen(false)}
       />
       <SaveTemplateSheet open={saveOpen} onClose={() => setSaveOpen(false)} />
     </RowToggleErrorProvider>
