@@ -129,6 +129,8 @@ Set `CLIENT_ORIGIN` in `.env` to the `https://….trycloudflare.com` address it 
 
 In development, set `SCAN_DEBUG_DIR=.scan-debug` in `.env` and restart. Every Scan then saves a folder in `apps/api/.scan-debug/` with the photos, the prompt, and the AI's raw answer (or the error). Use it to work out why something was misread. It only works with `NODE_ENV=development` (the API won't start with it in production), the folder is ignored by Git, and you should delete it when you're done, since receipts are personal.
 
+To try another model or reasoning effort on those captures, replay them with `npm run scan:replay -w @pocket-pantry/api -- --model gpt-6-luna --effort low --repeat 3`. See [the usage notes](apps/api/src/ai/scan-replay/README.md).
+
 ### Run it in production
 
 Build everything, then start the API with `WEB_DIST_DIR` set. The build and database steps need the dev tools, so install with `--include=dev` even when `NODE_ENV=production` is already set. The API then serves the web app from the same address, which keeps sign-in working in Safari.
