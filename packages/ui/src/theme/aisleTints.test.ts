@@ -32,6 +32,20 @@ describe('Aisle tints', () => {
     }
   });
 
+  it("uses the shopping handoff's dark pairs in Dark-first and leaves Minimal's light pairs", () => {
+    expect(AISLE_TINTS.dark.produce).toEqual({ bg: '#1F3A2A', fg: '#9FE0B4' });
+    expect(AISLE_TINTS.dark.bakery).toEqual({ bg: '#3A3118', fg: '#F2CF72' });
+    expect(AISLE_TINTS.dark.dairy).toEqual({ bg: '#1D2C38', fg: '#9CC3E3' });
+    expect(AISLE_TINTS.dark.meat).toEqual({ bg: '#3F241B', fg: '#FFA27E' });
+    expect(AISLE_TINTS.dark.pantry).toEqual({ bg: '#26312A', fg: '#B9C7BC' });
+    expect(AISLE_TINTS.dark.frozen).toEqual({ bg: '#232842', fg: '#AEB9EA' });
+    expect(AISLE_TINTS.dark.drinks).toEqual({ bg: '#33243A', fg: '#D7B3DF' });
+    expect(AISLE_TINTS.minimal.produce).toEqual({
+      bg: '#DDEBE2',
+      fg: '#2E6A4D',
+    });
+  });
+
   it('gives Warm its own handoff backgrounds, readable at 4.5:1', () => {
     expect(AISLE_TINTS.warm.produce.bg).toBe('#DFE7CF');
     expect(AISLE_TINTS.warm.bakery.bg).toBe('#F3E4BF');
