@@ -266,7 +266,7 @@ const tagFor=d=>d<0?['urg','Expired']:d===0?['urg','Today']:d<=S.thr?['soon',day
 /* ---------- building blocks ---------- */
 const scope=(icon,txt)=>'<span class="scope">'+svg(icon)+txt+'</span>';
 const lab=(t,sc)=>'<div class="lab"><span>'+t+'</span>'+(sc||'')+'</div>';
-const SC={device:()=>scope('phone','This phone'),you:()=>scope('user','Only you'),fam:()=>scope('users','Whole family')};
+const SC={device:()=>scope('phone','This phone'),you:()=>scope('user','Only you'),fam:()=>''};
 
 function tilesHTML(big){
   return '<div class="tiles'+(big?' big':'')+'" role="radiogroup" aria-label="Theme">'+THEME_IDS.map(id=>{
@@ -282,7 +282,7 @@ function tilesHTML(big){
       '</span><span class="tname">'+THEME_NAME[id]+'</span>'+(note?'<span class="tnote">'+note+'</span>':'')+'</button>';
   }).join('')+'</div>';
 }
-const matchRow=()=>'<div class="row" style="border-top:1px solid var(--divider);margin-top:12px;padding-bottom:0"><div class="tx"><div class="nm">Match system</div><div class="sub">Dark-first when the phone is in dark mode, your light theme otherwise</div></div><button class="tgl" role="switch" aria-label="Match system" aria-checked="'+S.pref.matchSystem+'" data-act="match"></button></div>';
+const matchRow=()=>'<div class="row" style="border-top:1px solid var(--divider);margin-top:12px;padding-bottom:0"><div class="tx"><div class="nm">Match system '+SC.device()+'</div><div class="sub">Dark-first when the phone is in dark mode, your light theme otherwise</div></div><button class="tgl" role="switch" aria-label="Match system" aria-checked="'+S.pref.matchSystem+'" data-act="match"></button></div>';
 const appearanceCard=big=>'<div class="card pad">'+tilesHTML(big)+matchRow()+'</div>';
 
 const langSeg=()=>'<div class="seg" role="radiogroup" aria-label="Language">'+LANGS.map(([id,n])=>'<button role="radio" aria-checked="'+(S.lang===id)+'" data-act="lang" data-id="'+id+'" lang="'+id+'">'+n+'</button>').join('')+'</div>';
@@ -317,7 +317,7 @@ const hdr=(back,title,act)=>'<div class="status"><span>9:41</span><span>●●�
 /* ---------- variants ---------- */
 function vA(){
   return hdr('Home','Settings')+'<div class="scroll">'+
-   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(false)+'</div>'+
+   '<div class="sec">'+lab('Appearance',SC.you())+appearanceCard(false)+'</div>'+
    '<div class="sec">'+lab('Language',SC.you())+langSeg()+'</div>'+
    '<div class="sec">'+lab('Pantry rules',SC.fam())+'<div class="card pad">'+thrBlock()+'<div class="div"></div>'+expiryBlock()+'</div></div>'+
    '<div class="sec">'+lab('Family')+famRow()+'</div>'+catalogRow()+
@@ -332,7 +332,7 @@ function vB(){
   if(S.route==='exp') return hdr('Settings','Default expiry','back')+'<div class="scroll"><div class="hint" style="padding:0 4px">Pre-fills the date when anyone in the family adds a batch. Categories you leave out use the Catalog default.</div><div class="card pad" style="padding-block:4px 14px">'+ovList()+addRow()+'</div></div>';
   const r=(act,to,icon,cls,name,val)=>'<button class="row" data-act="'+act+'" data-to="'+to+'"><span class="lead '+cls+'">'+svg(icon)+'</span><span class="tx nm">'+name+'</span><span class="val">'+val+'</span>'+chev()+'</button>';
   return hdr('Home','Settings')+'<div class="scroll">'+
-   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(true)+'</div>'+
+   '<div class="sec">'+lab('Appearance',SC.you())+appearanceCard(true)+'</div>'+
    '<div class="sec">'+lab('You')+'<div class="card lst">'+r('go','lang','globe','','Language',LANGS.find(l=>l[0]===S.lang)[1])+'</div></div>'+
    '<div class="sec">'+lab('Family pantry',SC.fam())+'<div class="card lst">'+r('go','thr','clock','b','Expiring soon',dayStr(S.thr))+r('go','exp','sliders','b','Default expiry',S.ov.length?S.ov.length+' set':'Catalog')+r('nav','/family','users','n','Family','3 members')+'</div></div>'+
    catalogRow()+
@@ -341,8 +341,8 @@ function vB(){
 function vC(){
   const tabs='<div class="tabs"><div class="seg" role="tablist"><button role="tab" aria-selected="'+(S.tab==='you')+'" data-act="tab" data-id="you">You</button><button role="tab" aria-selected="'+(S.tab==='fam')+'" data-act="tab" data-id="fam">Family</button></div></div>';
   let body;
-  if(S.tab==='you') body='<div class="hint" style="padding:0 4px">Only you see these. Appearance stays on this phone; language follows you.</div>'+
-   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(false)+'</div>'+
+  if(S.tab==='you') body='<div class="hint" style="padding:0 4px">Only you see these. Your theme and language follow you. Match system is set per phone.</div>'+
+   '<div class="sec">'+lab('Appearance',SC.you())+appearanceCard(false)+'</div>'+
    '<div class="sec">'+lab('Language',SC.you())+langSeg()+'</div>'+catalogRow()+
    '<div class="sec">'+lab('Account')+accountCard()+'</div>';
   else body='<div class="card pad"><div style="display:flex;align-items:center;gap:12px"><div class="tx"><div class="fam-name">Your family</div><div class="sub">You are the '+(S.owner?'Owner':'member')+' · 3 members</div></div>'+avs()+'</div>'+
@@ -473,9 +473,9 @@ function renderNotes(){
     '<li>Sign out asks inline, never in a browser dialog.</li>'+
     '<li>Five new icons on the 24 px grid: <code>globe</code>, <code>clock</code>, <code>users</code>, <code>logout</code>, <code>copy</code>.</li></ul></div>'+
    '<div class="npanel"><h2>Who a setting reaches</h2><div class="scopes">'+
-    '<span>This phone</span><span>Appearance (<code>pp.appearance</code> in local storage)</span>'+
-    '<span>Only you</span><span>Language (Member Preferences, follows you to any device)</span>'+
-    '<span>Whole family</span><span>Expiring soon, Default expiry (Family Settings, any member edits)</span>'+
+    '<span>Only you</span><span>Theme and Language (Member Preferences, follow you to any device; ADR 0010)</span>'+
+    '<span>This phone</span><span>Match system only (<code>pp.appearance</code> in local storage)</span>'+
+    '<span>Family tab</span><span>Expiring soon, Default expiry (Family Settings, any member edits). No scope caption; the tab intro says it.</span>'+
     '<span>Admins</span><span>Catalog link, shown only to admins</span></div></div>'+
    '<div class="npanel"><h2>Defaults taken (flag if wrong)</h2><ul>'+
     '<li>Stepper capped at 30 days (API allows 365). Proposed: keep 30.</li>'+

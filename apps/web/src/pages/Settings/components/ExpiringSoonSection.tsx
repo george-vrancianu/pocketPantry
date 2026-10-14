@@ -18,6 +18,7 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { useFamilySettings, useSetStaleThreshold } from '../../../lib/settings';
 import { expiryTagFor, localDate, localIso } from '../../../lib/pantry';
 import { useToday } from '../../../lib/useToday';
+import { SectionHeading } from './SectionHeading';
 
 /** The range the stepper offers. The API accepts 1 to 365; a stored value above the range is shown as it is. */
 const MIN_DAYS = 1;
@@ -113,14 +114,7 @@ export function ExpiringSoonSection() {
 
   return (
     <Stack component="section" spacing={1}>
-      <Typography
-        id={headingId}
-        variant="sectionLabel"
-        component="h3"
-        color="text.secondary"
-      >
-        {t('expiringSoon.title')}
-      </Typography>
+      <SectionHeading id={headingId} title={t('expiringSoon.title')} />
       <Card>
         <Stack spacing={2}>
           {loading ? (

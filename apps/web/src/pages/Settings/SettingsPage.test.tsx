@@ -3,15 +3,24 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ApplyMemberLocale } from '../../components/ApplyMemberLocale';
+import { ApplyMemberTheme } from '../../components/ApplyMemberTheme';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubSystemScheme } from '../../test/viewport';
 import { SettingsPage } from './SettingsPage';
 
 function stubSettings(savedLocale: string | null = null, role = 'member') {
+  let saved: { locale: string | null; theme: string | null } = {
+    locale: savedLocale,
+    theme: null,
+  };
   const { fetchMock, calls } = stubApi({
-    'GET /api/settings/preferences': () =>
-      Response.json({ locale: savedLocale, theme: null }),
-    'PUT /api/settings/preferences': () =>
-      Response.json({ locale: 'ro', theme: null }),
+    'GET /api/settings/preferences': () => Response.json(saved),
+    // A save answers with the merged preferences, as the API does.
+    'PUT /api/settings/preferences': () => {
+      saved = { ...saved, ...(calls.at(-1)?.body as object) };
+      return Response.json(saved);
+    },
+    'POST /api/auth/sign-out': () => Response.json({ success: true }),
     'GET /api/auth/get-session': () =>
       Response.json(
         role === 'admin'
@@ -37,13 +46,21 @@ function Harness() {
       </output>
       <Routes>
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/sign-in" element={<p>Sign in page</p>} />
       </Routes>
     </>
   );
 }
 
+const storeAppearance = (appearance: { theme: string; matchSystem: boolean }) =>
+  localStorage.setItem('pp.appearance', JSON.stringify(appearance));
+
+const themeTiles = async () =>
+  within(await screen.findByRole('radiogroup', { name: 'Appearance' }));
+
 describe('SettingsPage', () => {
   afterEach(() => {
+    document.documentElement.removeAttribute('data-theme');
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -163,6 +180,107 @@ describe('SettingsPage', () => {
     expect(scrollTo).toHaveBeenLastCalledWith(
       expect.objectContaining({ top: 90 }),
     );
+  });
+
+  it('applies a chosen Theme at once, stores it on the device and saves it on the Member', async () => {
+    stubSystemScheme(false);
+    storeAppearance({ theme: 'warm', matchSystem: false });
+    const calls = stubSettings('en');
+    renderWithProviders(
+      <>
+        <ApplyMemberTheme />
+        <SettingsPage />
+      </>,
+      { route: '/settings' },
+    );
+
+    await userEvent.click(
+      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+    );
+
+    expect(document.documentElement.dataset.theme).toBe('minimal');
+    expect(JSON.parse(localStorage.getItem('pp.appearance') ?? 'null')).toEqual(
+      { theme: 'minimal', matchSystem: false },
+    );
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PUT /api/settings/preferences',
+          body: { theme: 'minimal' },
+        }),
+      ),
+    );
+    expect(
+      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+    ).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('turns Match system off when Dark-first is picked with it on', async () => {
+    stubSystemScheme(false);
+    storeAppearance({ theme: 'warm', matchSystem: true });
+    const calls = stubSettings();
+    renderWithProviders(
+      <>
+        <ApplyMemberTheme />
+        <SettingsPage />
+      </>,
+      { route: '/settings' },
+    );
+    expect(
+      await screen.findByRole('switch', { name: 'Match system' }),
+    ).toHaveAttribute('aria-checked', 'true');
+
+    await userEvent.click(
+      (await themeTiles()).getByRole('radio', { name: 'Dark-first' }),
+    );
+
+    expect(
+      screen.getByRole('switch', { name: 'Match system' }),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    await vi.waitFor(() =>
+      expect(calls).toContainEqual(
+        expect.objectContaining({
+          key: 'PUT /api/settings/preferences',
+          body: { theme: 'dark' },
+        }),
+      ),
+    );
+  });
+
+  it('asks for an inline confirm before signing out, with Cancel', async () => {
+    const calls = stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Sign out' }),
+    );
+    expect(screen.getByText('Sign out of this phone?')).toBeInTheDocument();
+    expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByText('Sign out of this phone?')).toBeNull();
+    expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
+  });
+
+  it('signs out on confirm and replaces history to the sign-in page', async () => {
+    const calls = stubSettings();
+    const user = userEvent.setup();
+    renderWithProviders(<Harness />, { route: '/' });
+    await user.click(screen.getByRole('button', { name: 'Open settings' }));
+
+    await user.click(await screen.findByRole('button', { name: 'Sign out' }));
+    await user.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    await vi.waitFor(() =>
+      expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
+    );
+    expect(await screen.findByText('Sign in page')).toBeInTheDocument();
+    expect(screen.getByTestId('location').textContent).toBe('/sign-in');
+
+    // Replaced, not pushed: Back does not return to Settings.
+    await user.click(screen.getByRole('button', { name: 'Go back' }));
+    expect(screen.getByTestId('location').textContent).toBe('/');
   });
 
   it('saves the Member locale when the language is switched', async () => {

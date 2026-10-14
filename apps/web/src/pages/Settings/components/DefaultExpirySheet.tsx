@@ -121,7 +121,8 @@ export function DefaultExpirySheet({
     );
   };
 
-  const editing = start.kind === 'edit';
+  // "Use Catalog default" whenever the open category has an override, however it was reached.
+  const hasOverride = category !== null && overrideDays(category.id) !== null;
 
   return (
     <Sheet
@@ -174,7 +175,7 @@ export function DefaultExpirySheet({
                 gap: 1,
               }}
             >
-              {editing && category ? (
+              {hasOverride ? (
                 <Button
                   variant="ghost"
                   onClick={() => {
