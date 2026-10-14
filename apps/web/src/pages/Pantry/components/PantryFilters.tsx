@@ -1,6 +1,7 @@
 import { Box, Stack, TextField, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { FILTERS, type PantryFilter } from '../../../lib/pantry';
+import { border, colour, radius } from '../../../lib/themeVars';
 
 type Props = {
   query: string;
@@ -46,10 +47,12 @@ export function PantryFilters({
                 flexShrink: 0,
                 height: 40,
                 px: '14px',
-                borderRadius: '20px',
-                border: `1px solid ${active ? tokens.color.ink : tokens.color.line}`,
-                bgcolor: active ? tokens.color.ink : tokens.color.surface,
-                color: active ? '#FFFFFF' : tokens.color.ink,
+                borderRadius: radius.chip,
+                border: `${border.width} solid ${active ? tokens.color.accentTint : tokens.color.line}`,
+                bgcolor: active
+                  ? tokens.color.accentTint
+                  : tokens.color.surface,
+                color: active ? colour.accentOnTint : tokens.color.ink,
                 font: 'inherit',
                 fontSize: 13,
                 fontWeight: 600,

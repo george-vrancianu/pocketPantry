@@ -14,6 +14,7 @@ import {
   type RecipeFilterOptions,
 } from '../../../lib/recipes';
 import { bleedSx } from './bleed';
+import { border, colour, radius } from '../../../lib/themeVars';
 
 type Props = {
   value: RecipeBrowse;
@@ -57,7 +58,7 @@ export function RecipeFilters({ value, onChange, options }: Props) {
           },
         }}
         onChange={(event) => onChange({ ...value, search: event.target.value })}
-        sx={{ bgcolor: tokens.color.surface, borderRadius: '16px' }}
+        sx={{ bgcolor: colour.fieldBg, borderRadius: radius.control }}
       />
       <Box
         role="group"
@@ -130,10 +131,10 @@ function Chip(props: {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '4px',
-        borderRadius: `${tokens.radius.chip}px`,
-        border: `1px solid ${active ? tokens.color.ink : tokens.color.line}`,
-        bgcolor: active ? tokens.color.ink : tokens.color.surface,
-        color: active ? '#FFFFFF' : tokens.color.ink,
+        borderRadius: radius.chip,
+        border: `${border.width} solid ${active ? tokens.color.accentTint : tokens.color.line}`,
+        bgcolor: active ? tokens.color.accentTint : tokens.color.surface,
+        color: active ? colour.accentOnTint : tokens.color.ink,
         font: 'inherit',
         fontSize: 12.5,
         fontWeight: 600,

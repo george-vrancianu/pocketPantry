@@ -5,7 +5,6 @@ import {
   Typography,
   segmentedTabId,
   segmentedTabPanelId,
-  tokens,
 } from '@pocket-pantry/ui';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +19,7 @@ import {
   IngredientsTab,
   type IngredientsState,
 } from './IngredientsTab';
+import { colour, displayType } from '../../../../lib/themeVars';
 
 /** The Templates tab's sub-views: the list, the save view, or applying one template. */
 export type TemplatesView = 'list' | 'save' | { apply: string };
@@ -100,8 +100,6 @@ export function AddSheet({
     setTab('templates');
     setTemplatesView({ apply: templateId });
   };
-  const { color } = tokens;
-
   const header = (
     <Box sx={{ p: '10px 16px 10px 20px' }}>
       <Box
@@ -116,9 +114,8 @@ export function AddSheet({
         <Typography
           component="h2"
           sx={{
-            fontFamily: 'var(--font-display)',
+            ...displayType,
             fontSize: 22,
-            fontWeight: 700,
           }}
         >
           {t('sheet.title')}
@@ -141,8 +138,8 @@ export function AddSheet({
             border: 0,
             borderRadius: 999,
             cursor: 'pointer',
-            backgroundColor: color.ink,
-            color: '#FFFFFF',
+            backgroundColor: colour.primary,
+            color: colour.primaryInk,
             font: 'inherit',
             fontSize: 14,
             fontWeight: 700,
@@ -159,7 +156,8 @@ export function AddSheet({
                 display: 'grid',
                 placeItems: 'center',
                 borderRadius: 999,
-                backgroundColor: color.accent,
+                backgroundColor: colour.primaryInk,
+                color: colour.primary,
                 fontSize: 11.5,
                 fontWeight: 700,
               }}

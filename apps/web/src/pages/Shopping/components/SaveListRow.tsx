@@ -1,6 +1,7 @@
 import { BookmarkIcon, Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { focusRing } from '../../../lib/focusRing';
+import { border, colour, radius } from '../../../lib/themeVars';
 
 export type SaveListRowProps = {
   /** Items on the Shopping List. */
@@ -23,8 +24,8 @@ export function SaveListRow({ count, onClick }: SaveListRowProps) {
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        border: `1px dashed ${color.line}`,
-        borderRadius: '20px',
+        border: `${border.width} dashed ${colour.lineStrong}`,
+        borderRadius: radius.card,
         backgroundColor: 'transparent',
         color: 'inherit',
         font: 'inherit',
@@ -41,7 +42,7 @@ export function SaveListRow({ count, onClick }: SaveListRowProps) {
           height: 36,
           display: 'grid',
           placeItems: 'center',
-          borderRadius: '12px',
+          borderRadius: radius.control,
           backgroundColor: color.butter,
           color: color.butterInk,
         }}

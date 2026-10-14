@@ -13,6 +13,7 @@ import { ExcludedRow } from './ExcludedRow';
 import { ReviewGroup } from './ReviewGroup';
 import { ReviewRow } from './ReviewRow';
 import { rowGridSx } from './layout';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   state: ReviewState;
@@ -81,7 +82,7 @@ export function ReviewTable({
         mt: '14px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: radius.card,
         overflow: 'hidden',
       }}
     >

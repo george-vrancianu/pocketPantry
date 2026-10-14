@@ -27,6 +27,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
 import { useRowHint, type RowHint } from '../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../lib/useSwipeRowLabels';
 import { RowHintNote } from '../../components/RowHintNote';
+import { radius } from '../../lib/themeVars';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
@@ -99,7 +100,7 @@ export function StaplesPage() {
               bgcolor: 'background.paper',
               border: 1,
               borderColor: 'divider',
-              borderRadius: '20px',
+              borderRadius: radius.card,
               overflow: 'hidden',
             }}
           >

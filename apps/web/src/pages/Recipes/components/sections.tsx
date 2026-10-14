@@ -15,6 +15,7 @@ import { AddMissing, PantryHeading } from './PantryStatus';
 import { Section } from './Section';
 import { ServingsStepper } from './Servings';
 import { StepList, TipCallout } from './StepList';
+import { radius } from '../../../lib/themeVars';
 
 export type SectionProps = {
   recipe: RecipeDetail;
@@ -196,7 +197,7 @@ function DiffGroup({
               width: 22,
               height: 22,
               flexShrink: 0,
-              borderRadius: '7px',
+              borderRadius: radius.box,
               display: 'grid',
               placeItems: 'center',
               fontSize: 13,

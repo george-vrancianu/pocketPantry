@@ -82,6 +82,8 @@ export function ReceiptCropper({
       aria-modal="true"
       aria-label={t('crop.title')}
       tabIndex={-1}
+      // Photo editing reads best on a dark surround, so the cropper is always Dark-first.
+      data-theme="dark"
       onKeyDown={(event: KeyboardEvent<HTMLDivElement>) => {
         if (event.key === 'Escape') onCancel();
         if (event.key === 'Tab') trapFocus(event, dialog.current);
@@ -93,8 +95,9 @@ export function ReceiptCropper({
         zIndex: 1300,
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: '#000000',
-        color: '#FFFFFF',
+        colorScheme: 'dark',
+        backgroundColor: tokens.color.bg,
+        color: tokens.color.ink,
       }}
     >
       <Typography sx={{ p: 2, textAlign: 'center', fontSize: 14 }}>
@@ -147,21 +150,21 @@ export function ReceiptCropper({
       >
         <Button
           variant="text"
-          sx={{ color: '#FFFFFF' }}
+          sx={{ color: tokens.color.ink }}
           onClick={() => onCancel()}
         >
           {t('crop.cancel')}
         </Button>
         <Button
           variant="text"
-          sx={{ color: '#FFFFFF' }}
+          sx={{ color: tokens.color.ink }}
           onClick={() => setQuarterTurns((turns) => (turns + 3) % 4)}
         >
           {t('crop.rotateLeft')}
         </Button>
         <Button
           variant="text"
-          sx={{ color: '#FFFFFF' }}
+          sx={{ color: tokens.color.ink }}
           onClick={() => setQuarterTurns((turns) => (turns + 1) % 4)}
         >
           {t('crop.rotateRight')}

@@ -2,11 +2,19 @@ import { Box, ChevronRightIcon, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../../components/IngredientIconSlot';
 import { focusRingStyle } from '../../../../lib/focusRing';
+import { nestedRadius, radius } from '../../../../lib/themeVars';
 
 /** Radius of the bordered result list; its rows round their own ends (the list does not clip). */
-export const LIST_RADIUS = 20;
+export const LIST_RADIUS = radius.card;
 /** The same corner just inside the list's 1px border. */
-export const INNER_RADIUS = LIST_RADIUS - 1;
+export const INNER_RADIUS = nestedRadius(LIST_RADIUS, 1);
+/**
+ * A row's corners: the list does not clip (the unit popover must overflow it),
+ * so the first and last rows round their own ends. An open row's amount field
+ * sits right under it, so it keeps its bottom square.
+ */
+const ends = (top: boolean, bottom: boolean) =>
+  [top, top, bottom, bottom].map((end) => (end ? INNER_RADIUS : '0')).join(' ');
 
 export type ResultRowProps = {
   id: string;
@@ -66,9 +74,6 @@ export function ResultRow({
 }: ResultRowProps) {
   const { color } = tokens;
   const { t } = useTranslation('shopping');
-  // The list does not clip (the unit popover must overflow it), so round the ends here.
-  // An open row's amount field sits right under it, so it keeps its bottom square.
-  const radius = (end: boolean) => (end ? `${INNER_RADIUS}px` : 0);
   return (
     <Box
       id={id}
@@ -89,7 +94,7 @@ export function ResultRow({
         cursor: 'pointer',
         backgroundColor: open ? color.subtle : 'transparent',
         borderTop: first ? 0 : `1px solid ${color.divider}`,
-        borderRadius: `${radius(first)} ${radius(first)} ${radius(last && !open)} ${radius(last && !open)}`,
+        borderRadius: ends(first, last && !open),
         ...(active ? focusRingStyle() : { outline: 'none' }),
       }}
     >

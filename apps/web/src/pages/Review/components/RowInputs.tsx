@@ -11,6 +11,7 @@ import {
 } from '../../../lib/dateFormat';
 import { displayName, type ReviewLine } from '../../../lib/review';
 import { controlSx } from './Field';
+import { radius } from '../../../lib/themeVars';
 
 /**
  * The inputs of a Review line, shared by the phone edit panel and the tablet
@@ -54,7 +55,7 @@ export function QuantityUnitInput({
         display: 'flex',
         height: 40,
         boxSizing: 'border-box',
-        borderRadius: `${tokens.radius.field}px`,
+        borderRadius: radius.control,
         border: `1px solid ${border}`,
         bgcolor: tokens.color.surface,
         overflow: 'hidden',

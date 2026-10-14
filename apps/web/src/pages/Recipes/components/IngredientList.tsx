@@ -13,6 +13,7 @@ import { formatAmount } from '../../../lib/amount';
 import type { Unit } from '../../../lib/catalog';
 import type { PantryLine, RecipeDetailLine } from '../../../lib/recipes';
 import { LineStatusPill } from './PantryStatus';
+import { nestedRadius, radius } from '../../../lib/themeVars';
 
 type Props = {
   lines: RecipeDetailLine[];
@@ -125,7 +126,7 @@ function IngredientRow({
                     ml: '7px',
                     px: '7px',
                     py: '1px',
-                    borderRadius: '6px',
+                    borderRadius: nestedRadius(radius.control, 6),
                     fontSize: 12.5,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
@@ -216,7 +217,7 @@ export function IngredientList({
         overflow: 'hidden',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: radius.card,
       }}
     >
       {lines.map((line) => (

@@ -5,6 +5,7 @@ import type { PairingKind } from '../../../lib/recipeVocabulary';
 import type { DetailEatingMoment, DetailPairing } from '../../../lib/recipes';
 import { Section } from './Section';
 import type { SectionProps } from './sections';
+import { radius } from '../../../lib/themeVars';
 
 const KINDS: PairingKind[] = ['food', 'drink'];
 const POLARITIES: DetailEatingMoment['polarity'][] = ['good_for', 'avoid'];
@@ -80,7 +81,7 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
           py: '6px',
           bgcolor: tokens.color.surface,
           border: `1px solid ${tokens.color.line}`,
-          borderRadius: `${tokens.radius.card}px`,
+          borderRadius: radius.card,
         }}
       >
         {KINDS.map((kind, index) => {
@@ -143,7 +144,7 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
                   fontWeight: 700,
                   px: '10px',
                   py: '4px',
-                  borderRadius: `${tokens.radius.chip}px`,
+                  borderRadius: radius.pill,
                   bgcolor: avoid ? tokens.color.soonBg : tokens.color.okBg,
                   color: avoid ? tokens.color.soonFg : tokens.color.okFg,
                 }}

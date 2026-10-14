@@ -8,6 +8,7 @@ import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
+import { radius } from '../../../lib/themeVars';
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.
@@ -129,7 +130,7 @@ function CookCard({ card }: { card: CookTonightCard }) {
       sx={{
         display: 'block',
         p: '8px 10px',
-        borderRadius: '10px',
+        borderRadius: radius.control,
         border: `1px solid ${tokens.color.line}`,
         color: tokens.color.ink,
         textDecoration: 'none',

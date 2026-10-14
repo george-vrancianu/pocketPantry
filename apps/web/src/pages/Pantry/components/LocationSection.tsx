@@ -6,6 +6,7 @@ import type { Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { RollUpRow } from './RollUpRow';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   location: StorageLocation;
@@ -53,7 +54,7 @@ export function LocationSection({
           px: '14px',
           bgcolor: tokens.color.surface,
           border: `1px solid ${tokens.color.line}`,
-          borderRadius: `${tokens.radius.card}px`,
+          borderRadius: radius.card,
           overflow: 'hidden',
         }}
       >

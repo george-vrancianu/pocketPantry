@@ -13,6 +13,7 @@ import { SourceText } from './SourceText';
 import { RowEditPanel } from './RowEditPanel';
 import { StatusIcon } from './StatusIcon';
 import { ROW_TINT, panelId, rowGridSx, rowId, titleId } from './layout';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   line: ReviewLine;
@@ -136,7 +137,7 @@ export function ReviewRow({
               justifySelf: 'start',
               px: '8px',
               py: '2px',
-              borderRadius: `${tokens.radius.chip}px`,
+              borderRadius: radius.pill,
               bgcolor: tokens.color.soonBg,
               color: tokens.color.soonFg,
               fontSize: 12,

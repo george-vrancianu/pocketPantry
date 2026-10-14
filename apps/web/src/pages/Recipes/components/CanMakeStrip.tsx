@@ -6,6 +6,7 @@ import type { CookTonightCard } from '../../../lib/cookTonight';
 import { totalMinutes } from '../../../lib/recipes';
 import { bleedSx } from './bleed';
 import { SectionLabel } from './SectionLabel';
+import { colour, displayType, radius } from '../../../lib/themeVars';
 
 /** "You can make this": a carousel of tiles for the Recipes the Family Can Make tonight. */
 export function CanMakeStrip({ cards }: { cards: CookTonightCard[] }) {
@@ -74,9 +75,9 @@ function Tile({ card }: { card: CookTonightCard }) {
         minHeight: 92,
         boxSizing: 'border-box',
         p: '12px 14px',
-        borderRadius: '18px',
+        borderRadius: radius.card,
         bgcolor: tokens.color.accent,
-        color: '#FFFFFF',
+        color: colour.accentInk,
         textDecoration: 'none',
         display: 'flex',
         flexDirection: 'column',
@@ -87,9 +88,8 @@ function Tile({ card }: { card: CookTonightCard }) {
       <Box
         component="span"
         sx={{
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 17,
-          fontWeight: 700,
           lineHeight: 1.15,
           display: '-webkit-box',
           WebkitBoxOrient: 'vertical',
@@ -137,8 +137,8 @@ function Tile({ card }: { card: CookTonightCard }) {
               gap: '3px',
               px: '7px',
               py: '2px',
-              borderRadius: `${tokens.radius.chip}px`,
-              bgcolor: 'rgba(255,255,255,0.92)',
+              borderRadius: radius.pill,
+              bgcolor: tokens.color.urgentBg,
               color: tokens.color.urgentFg,
               fontSize: 11,
               fontWeight: 700,

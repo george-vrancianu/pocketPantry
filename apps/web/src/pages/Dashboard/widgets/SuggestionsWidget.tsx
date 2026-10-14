@@ -8,6 +8,7 @@ import {
 } from '../../../lib/suggestions';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
+import { displayType } from '../../../lib/themeVars';
 
 /** How many Staples are missing, and the first few Suggestions by name; the card opens the Shopping List. */
 export function SuggestionsWidget({ size, columns }: WidgetProps) {
@@ -34,9 +35,8 @@ export function SuggestionsWidget({ size, columns }: WidgetProps) {
         sx={{
           m: 0,
           mt: '8px',
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 40,
-          fontWeight: 700,
           lineHeight: 1,
         }}
       >
