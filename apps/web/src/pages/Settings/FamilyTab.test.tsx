@@ -66,6 +66,22 @@ describe('FamilyTab', () => {
     vi.restoreAllMocks();
   });
 
+  it('shows the Family intro under the Family card', async () => {
+    stubFamilyTab();
+    renderWithProviders(<FamilyTab />);
+
+    const lastOfCard = await screen.findByRole('link', {
+      name: 'Members and invites',
+    });
+    const intro = screen.getByText(
+      'Everyone in the family shares these. Any member can change them.',
+    );
+    expect(
+      lastOfCard.compareDocumentPosition(intro) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   describe('Family card', () => {
     it('shows skeleton rows while the Family loads', () => {
       vi.stubGlobal(

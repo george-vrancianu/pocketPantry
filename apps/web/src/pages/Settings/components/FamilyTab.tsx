@@ -5,16 +5,17 @@ import { ExpiringSoonSection } from './ExpiringSoonSection';
 import { FamilyCard } from './FamilyCard';
 
 /**
- * The Family tab. Shared Family settings: the Family card, Expiring soon, and Default expiry below them.
+ * The Family tab: the Family card, then the intro, then the shared Family Settings (Expiring soon and
+ * Default expiry).
  */
 export function FamilyTab() {
   const { t } = useTranslation('settings');
   return (
     <Stack spacing={3}>
+      <FamilyCard />
       <Typography variant="meta" color="text.secondary">
         {t('familyIntro')}
       </Typography>
-      <FamilyCard />
       <ExpiringSoonSection />
       <DefaultExpirySection />
     </Stack>
