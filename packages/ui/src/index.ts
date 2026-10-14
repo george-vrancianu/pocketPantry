@@ -32,6 +32,7 @@ export {
   isThemeId,
   readAppearance,
   resolveTheme,
+  SYSTEM_DARK_QUERY,
   subscribeAppearance,
   writeAppearance,
   type Appearance,
