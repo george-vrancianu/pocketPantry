@@ -1,9 +1,9 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Family } from '../../../lib/family';
-import { renderWithProviders, stubApi } from '../../../test/render';
-import { FamilyTab } from './FamilyTab';
+import type { Family } from '../../lib/family';
+import { renderWithProviders, stubApi } from '../../test/render';
+import { FamilyTab } from './components/FamilyTab';
 
 // The device's "today" is fixed so days-left and expiry tags are deterministic.
 const NOW = new Date(2026, 9, 14, 12);
