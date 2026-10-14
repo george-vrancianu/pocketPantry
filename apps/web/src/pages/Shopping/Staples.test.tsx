@@ -44,6 +44,7 @@ const emptyList = (groups: ShoppingList['groups'] = []): ShoppingList => ({
 });
 
 const flour: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'flour-id',
   name: 'Flour',
   defaultUnit: 'g',

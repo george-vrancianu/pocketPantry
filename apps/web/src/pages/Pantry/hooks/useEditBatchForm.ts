@@ -35,7 +35,10 @@ export function useEditBatchForm(
   const [quantity, setQuantity] = useState(
     batch.quantity === null ? '' : String(batch.quantity),
   );
-  const [unit, setUnit] = useState<Unit>(batch.unit ?? 'g');
+  // A Batch with no stored unit opens on its Ingredient's unit, so its family is the right one.
+  const [unit, setUnit] = useState<Unit>(
+    batch.unit ?? batch.defaultUnit ?? 'g',
+  );
   const [location, setLocation] = useState(batch.location);
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(
     batch.expiryDate,

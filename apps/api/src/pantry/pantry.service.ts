@@ -346,6 +346,13 @@ export class PantryService {
       aisle: row.ingredientId
         ? (placements.get(row.ingredientId)?.aisle ?? null)
         : null,
+      amountScale: row.ingredientId
+        ? (placements.get(row.ingredientId)?.amountScale ?? null)
+        : null,
+      // The Ingredient's own unit, for a Batch with no stored unit (null when Unmatched).
+      defaultUnit: row.ingredientId
+        ? (placements.get(row.ingredientId)?.defaultUnit ?? null)
+        : null,
       quantity: row.quantity,
       unit: row.unit,
       location: row.location,

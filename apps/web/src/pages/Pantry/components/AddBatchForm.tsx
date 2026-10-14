@@ -50,6 +50,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
 
       <AmountLocationRow
         name={form.ingredient?.name ?? form.unmatchedName ?? ''}
+        amountScale={form.ingredient?.amountScale}
         quantity={form.quantity}
         unit={form.unit}
         location={form.location}

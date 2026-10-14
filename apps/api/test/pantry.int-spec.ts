@@ -23,10 +23,12 @@ type Batch = {
   unmatched: boolean;
   quantity: number | null;
   unit: string | null;
+  defaultUnit: string | null;
   location: string;
   expiryDate: string | null;
   productDescription: string | null;
   aisle: { id: string; name: string; sortOrder: number } | null;
+  amountScale: 'low' | 'medium' | 'large' | null;
 };
 
 const inDays = (days: number) =>
@@ -388,6 +390,34 @@ describe('Pantry (integration)', () => {
     });
     expect(mystery.aisle).toBeNull();
     expect((await list(cookie, 'ro'))[0].aisle?.name).toBe('Lactate și ouă');
+  });
+
+  it("carries the Ingredient's Amount Scale on a matched Batch and null on an Unmatched one", async () => {
+    const { cookie } = await signUp();
+    await add(cookie, {
+      ingredientId: seedId.ingredient('milk'),
+      expiryDate: '2031-05-01',
+    }).expect(201);
+    await add(cookie, { rawName: 'Mystery', location: 'spices' }).expect(201);
+
+    const [milk, mystery] = await list(cookie);
+    // Dairy maps to medium.
+    expect(milk.amountScale).toBe('medium');
+    expect(mystery.amountScale).toBeNull();
+  });
+
+  it("carries the Ingredient's default unit on a Batch with no stored unit, and null on an Unmatched one", async () => {
+    const { cookie } = await signUp();
+    await add(cookie, {
+      ingredientId: seedId.ingredient('milk'),
+      expiryDate: '2031-05-01',
+    }).expect(201);
+    await add(cookie, { rawName: 'Mystery', location: 'spices' }).expect(201);
+
+    const [milk, mystery] = await list(cookie);
+    expect(milk.unit).toBeNull();
+    expect(milk.defaultUnit).toBe('l');
+    expect(mystery.defaultUnit).toBeNull();
   });
 
   it('scopes the Pantry to the Family: members of one Family share it, other Families do not see it', async () => {

@@ -7,10 +7,13 @@ import {
   type StorageLocation,
   type Unit,
 } from '../../../lib/catalog';
+import type { AmountScale } from '../../../lib/usualAmounts';
 
 type Props = {
   /** Name of the Ingredient, for the amount's accessible name. */
   name: string;
+  /** The Ingredient's Amount Scale; null or left out for an Unmatched name (no chips). */
+  amountScale?: AmountScale | null;
   quantity: string;
   unit: Unit;
   location: StorageLocation;
@@ -25,6 +28,7 @@ type Props = {
 /** The Batch amount and its Location on one line. A Batch amount always has a unit. */
 export function AmountLocationRow({
   name,
+  amountScale,
   quantity,
   unit,
   location,
@@ -65,6 +69,7 @@ export function AmountLocationRow({
             onSubmit();
           }}
           allowNoUnit={false}
+          amountScale={amountScale}
           label={t('common:amount.placeholder')}
           height={56}
           popoverAlign="start"

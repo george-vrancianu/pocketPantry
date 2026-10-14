@@ -125,6 +125,12 @@ export function IngredientsTab({
   };
   const setOpen = (next: OpenRow | null) =>
     onStateChange((s) => ({ ...s, open: next }));
+  // Patches the open row against the latest state, so two changes in one event (a unit change
+  // that also converts the number) both land.
+  const patchOpen = (patch: Partial<OpenRow>) =>
+    onStateChange((s) =>
+      s.open ? { ...s, open: { ...s.open, ...patch } } : s,
+    );
   const [activeIndex, setActiveIndex] = useState(-1);
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -378,16 +384,18 @@ export function IngredientsTab({
             <Box sx={{ p: '0 14px 12px 64px' }}>
               <AmountField
                 name={rowName(openRow)}
+                amountScale={
+                  openRow.kind === 'catalog' ? openRow.result.amountScale : null
+                }
                 quantity={open.quantity}
                 unit={open.unit}
                 onQuantityChange={(quantity, unit) =>
-                  setOpen({
-                    ...open,
+                  patchOpen({
                     quantity,
                     ...(unit !== undefined ? { unit } : {}),
                   })
                 }
-                onUnitChange={(unit) => setOpen({ ...open, unit })}
+                onUnitChange={(unit) => patchOpen({ unit })}
                 error={
                   open.attempted && !amount.valid
                     ? t('finish.quantityInvalid')

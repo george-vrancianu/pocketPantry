@@ -6,6 +6,7 @@ import { renderWithProviders } from '../test/render';
 import { CatalogSearch } from './CatalogSearch';
 
 const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: locale === 'ro' ? 'Parmezan' : 'Parmesan',
   defaultUnit: 'g',
@@ -22,6 +23,7 @@ const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
 });
 
 const cheddar: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'cheddar-id',
   name: 'Cheddar',
   defaultUnit: 'g',
