@@ -52,6 +52,7 @@ export const tokens = {
     urgentBorder: mix(urgentBg, 75, urgentFg),
     soonBg,
     soonFg,
+    soonHover: mix(soonBg, 85, soonFg),
     soonRow: mix(soonBg, 45, surface),
     soonIcon: soonFg,
     soonBorder: mix(soonBg, 60, soonFg),

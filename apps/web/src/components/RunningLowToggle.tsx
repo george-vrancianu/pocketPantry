@@ -20,7 +20,7 @@ export function RunningLowToggle({ ingredientId }: Props) {
     <IconButton
       label={t('runningLow.toggle')}
       aria-pressed={on}
-      tone={on ? 'soon' : 'surface'}
+      tone={on ? 'soon' : 'neutral'}
       size={40}
       ariaDisabled={save.isPending || runningLow.data === undefined}
       onClick={() =>

@@ -1603,7 +1603,7 @@ describe('PantryPage', () => {
           expect(chip()).not.toBeInTheDocument();
         });
 
-        it('shows on the collapsed row in place of the quantity', async () => {
+        it('shows on the collapsed row in place of the detail line', async () => {
           stubRunningLow({
             batches: [
               batch({
@@ -1626,6 +1626,40 @@ describe('PantryPage', () => {
           );
           expect(chip()).toBeVisible();
         });
+
+        it.each([
+          {
+            hides: 'the Batch count',
+            batches: [
+              batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+              batch({ name: 'Milk', quantity: 2, unit: 'l' }),
+            ],
+            region: 'Fridge · 2',
+          },
+          {
+            hides: 'the Product Description',
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                productDescription: 'Arla whole milk',
+              }),
+            ],
+            region: 'Fridge · 1',
+          },
+        ])(
+          'hides $hides on the collapsed row while flagged',
+          async ({ batches, region }) => {
+            stubRunningLow({ batches, flaggedAtStart: ['milk-id'] });
+            renderWithProviders(<PantryPage />);
+
+            const fridge = await screen.findByRole('region', { name: region });
+            expect(within(fridge).getByRole('listitem').textContent).toBe(
+              'Milk' + 'Running low',
+            );
+          },
+        );
 
         it('shows on the expanded row, which has no expiry tag of its own', async () => {
           const user = userEvent.setup();

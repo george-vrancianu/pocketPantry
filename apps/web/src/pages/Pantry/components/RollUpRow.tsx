@@ -180,7 +180,16 @@ export function RollUpRow({
             // The rows pad themselves (12 pt): the elbow's stem sits under the roll-up's icon and the text lines up 50 pt in.
             ml: '2px',
             p: 0,
-            borderTop: `1px solid ${tokens.color.divider}`,
+            position: 'relative',
+            // The divider starts where the Batch rows used to, not under the elbows.
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: '36px',
+              right: 0,
+              borderTop: `1px solid ${tokens.color.divider}`,
+            },
           }}
         >
           {rollUp.batches.map((batch, index) => (
