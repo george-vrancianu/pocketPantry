@@ -92,6 +92,7 @@
     "pickTitle": "Vælg en kategori",
     "pickHint": "Dens udløb udfylder nye batches",
     "search": "Søg i kategorier",
+    "loadingCategories": "Indlæser kategorier",
     "all": "Alle {{parent}}",
     "noMatch": "Ingen kategori matcher „{{query}}”.",
     "set": "Sat · {{days}} d",

@@ -192,6 +192,8 @@ export function DefaultExpirySection() {
         open={sheet.open}
         start={sheet.start}
         options={categories.data}
+        optionsPending={categories.isPending}
+        optionsError={categories.error}
         overrides={overrides}
         onClose={closeSheet}
         onExited={focusOpener}

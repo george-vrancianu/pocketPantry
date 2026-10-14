@@ -92,6 +92,7 @@
     "pickTitle": "Pick a category",
     "pickHint": "Its expiry pre-fills new batches",
     "search": "Search categories",
+    "loadingCategories": "Loading categories",
     "all": "All {{parent}}",
     "noMatch": "No category matches “{{query}}”.",
     "set": "Set · {{days}} d",

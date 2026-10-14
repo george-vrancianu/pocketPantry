@@ -47,12 +47,14 @@ function stubFamily(
   options: {
     put?: () => Response;
     del?: () => Response;
+    categories?: () => Response | Promise<Response>;
   } = {},
 ) {
   let current = overrides;
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () => Response.json(family(current)),
-    'GET /api/settings/categories': () => Response.json(categories),
+    'GET /api/settings/categories': () =>
+      options.categories?.() ?? Response.json(categories),
     'GET /api/settings/preferences': () =>
       Response.json({ locale: null, theme: null }),
     'GET /api/auth/get-session': () => Response.json(null),
@@ -231,6 +233,43 @@ describe('Default expiry', () => {
       expect(
         within(sheet).getByText('No category matches “zzz”.'),
       ).toBeVisible();
+    });
+
+    it('says the categories are loading while they load, not that none match', async () => {
+      const user = userEvent.setup();
+      stubFamily([], { categories: () => new Promise<Response>(() => {}) });
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+
+      expect(within(sheet).getByRole('status')).toHaveTextContent(
+        'Loading categories',
+      );
+      expect(within(sheet).queryByText(/No category matches/)).toBeNull();
+    });
+
+    it('shows the error when the categories fail to load', async () => {
+      const user = userEvent.setup();
+      stubFamily([], {
+        categories: () =>
+          Response.json({ code: 'unknown', params: {} }, { status: 500 }),
+      });
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+
+      expect(await within(sheet).findByRole('alert')).toHaveTextContent(
+        'Something went wrong. Please try again.',
+      );
+      expect(within(sheet).queryByText(/No category matches/)).toBeNull();
     });
 
     it('shows the override as "Set" beside a category, else the Catalog default', async () => {

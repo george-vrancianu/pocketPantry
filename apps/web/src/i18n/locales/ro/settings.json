@@ -93,6 +93,7 @@
     "pickTitle": "Alege o categorie",
     "pickHint": "Expirarea ei completează loturile noi",
     "search": "Caută categorii",
+    "loadingCategories": "Se încarcă categoriile",
     "all": "Toate {{parent}}",
     "noMatch": "Nicio categorie nu corespunde „{{query}}”.",
     "set": "Setat · {{days}} z",
