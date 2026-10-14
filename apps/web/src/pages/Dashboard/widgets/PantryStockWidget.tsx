@@ -4,11 +4,12 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { groupByLocation, useBatches } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
+import { displayType, radius } from '../../../lib/themeVars';
 
 const LOCATION_COLORS = {
   fridge: tokens.color.accent,
   freezer: tokens.color.accentMid,
-  cupboard: '#CBD5C6',
+  cupboard: tokens.color.chipNeutral,
   spices: tokens.color.butter,
 } as const;
 
@@ -42,9 +43,8 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
         sx={{
           m: 0,
           mt: '8px',
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 40,
-          fontWeight: 700,
           lineHeight: 1,
         }}
       >
@@ -74,7 +74,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
             sx={{
               flexGrow: count,
               bgcolor: LOCATION_COLORS[location],
-              borderRadius: '4px',
+              borderRadius: radius.pill,
             }}
           />
         ))}

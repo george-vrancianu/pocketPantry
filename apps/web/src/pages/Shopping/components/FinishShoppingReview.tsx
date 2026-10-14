@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
+import { radius } from '../../../lib/themeVars';
 
 type Props = { onDone: () => void; onCancel: () => void };
 
@@ -49,7 +50,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
             p: 2,
             border: 1,
             borderColor: 'divider',
-            borderRadius: '20px',
+            borderRadius: radius.card,
             opacity: dropped ? 0.5 : 1,
           }}
         >

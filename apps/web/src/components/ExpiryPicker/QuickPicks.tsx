@@ -9,6 +9,7 @@ import {
   type IsoDate,
 } from '../../lib/pantry';
 import { focusRing } from './focusRing';
+import { displayType, radius } from '../../lib/themeVars';
 
 const { color } = tokens;
 
@@ -88,7 +89,7 @@ export function QuickPicks({
           color: color.ink,
           backgroundColor: color.surface,
           border: `1.5px solid ${color.line}`,
-          borderRadius: `${tokens.radius.field}px`,
+          borderRadius: radius.control,
           cursor: 'pointer',
           transition:
             'background-color .12s, border-color .12s, transform .08s',
@@ -145,8 +146,7 @@ export function QuickPicks({
             <Box
               component="b"
               sx={{
-                fontFamily: tokens.font.display,
-                fontWeight: 700,
+                ...displayType,
                 fontSize: 20,
                 lineHeight: 1.05,
               }}

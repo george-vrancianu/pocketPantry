@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../lib/catalog';
+import { border, colour, nestedRadius, radius, shadow } from '../lib/themeVars';
 
 const TYPED_UNITS: Record<string, Unit> = {
   g: 'g',
@@ -160,9 +161,9 @@ export function AmountField({
             height,
             display: 'flex',
             alignItems: 'center',
-            borderRadius: '14px',
-            border: `1.5px solid ${error ? color.urgentFg : color.line}`,
-            backgroundColor: color.surface,
+            borderRadius: radius.control,
+            border: `${border.field} solid ${error ? color.urgentFg : color.line}`,
+            backgroundColor: colour.fieldBg,
             '&:focus-within': {
               borderColor: error ? color.urgentFg : color.accent,
               boxShadow: `0 0 0 3px ${color.accentTint}`,
@@ -183,7 +184,7 @@ export function AmountField({
                 fontWeight: 600,
                 lineHeight: 1,
                 color: color.muted,
-                backgroundColor: color.surface,
+                backgroundColor: colour.fieldBg,
                 pointerEvents: 'none',
               }}
             >
@@ -249,7 +250,7 @@ export function AmountField({
               alignItems: 'center',
               gap: '4px',
               border: 0,
-              borderRadius: '10px',
+              borderRadius: nestedRadius(radius.control, 5),
               cursor: 'pointer',
               backgroundColor: color.chipNeutral,
               color: color.ink,
@@ -282,10 +283,10 @@ export function AmountField({
                 maxWidth: 'min(260px, calc(100vw - 72px))',
                 gap: '2px',
                 p: '5px',
-                borderRadius: '14px',
-                border: `1px solid ${color.line}`,
+                borderRadius: radius.control,
+                border: `${border.width} solid ${color.line}`,
                 backgroundColor: color.surface,
-                boxShadow: 'var(--shadow-dock)',
+                boxShadow: shadow.float,
               }}
             >
               {(allowNoUnit ? (['', ...UNITS] as const) : UNITS).map(
@@ -303,7 +304,7 @@ export function AmountField({
                         minWidth: 40,
                         px: 1,
                         border: 0,
-                        borderRadius: '10px',
+                        borderRadius: nestedRadius(radius.control, 5),
                         cursor: 'pointer',
                         font: 'inherit',
                         fontSize: 13.5,
@@ -311,7 +312,7 @@ export function AmountField({
                         backgroundColor: selected
                           ? color.accent
                           : 'transparent',
-                        color: selected ? '#FFFFFF' : color.ink,
+                        color: selected ? colour.accentInk : color.ink,
                       }}
                     >
                       {option ? t(`common:units.${option}`) : '—'}
@@ -336,10 +337,10 @@ export function AmountField({
               display: 'grid',
               placeItems: 'center',
               border: 0,
-              borderRadius: '14px',
+              borderRadius: radius.control,
               cursor: 'pointer',
               backgroundColor: color.accent,
-              color: '#FFFFFF',
+              color: colour.accentInk,
               '&:disabled': { opacity: 0.5, cursor: 'default' },
             }}
           >

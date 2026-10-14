@@ -95,6 +95,7 @@ export function ReceiptCropper({
         zIndex: 1300,
         display: 'flex',
         flexDirection: 'column',
+        colorScheme: 'dark',
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
       }}
