@@ -1,0 +1,554 @@
+<title>PocketPantry Themes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,500;9..144,600;9..144,700,50&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a thin toolbar (theme + view), then a two-column workbench — token & component sheets on the left, the Shopping screen in a phone on the right. "Compare" shows the four phones in a row. The chrome around the sheets is neutral and theme-aware; everything inside a .skin is painted by that skin's own tokens. */
+:root{
+  --pg-bg:#ECEDE9; --pg-fg:#1A1D1B; --pg-muted:#5F665F; --pg-line:#D5D9D3; --pg-surface:#F7F8F5; --pg-accent:#2E6A4D; --pg-accent-ink:#fff;
+  --pg-font:'DM Sans',ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}}
+:root[data-theme="dark"]{--pg-bg:#131614;--pg-fg:#E8ECE7;--pg-muted:#9AA69C;--pg-line:#2A302B;--pg-surface:#1B1F1C;--pg-accent:#8BD4A6;--pg-accent-ink:#0B1A10;color-scheme:dark}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-fg);font-family:var(--pg-font);font-size:14px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.page{padding-inline:20px;padding-block:18px 60px;max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+
+/* Toolbar */
+.bar{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between}
+.bar h1{font-size:18px;font-weight:700;margin:0;letter-spacing:-.01em}
+.bar h1 small{display:block;font-weight:500;color:var(--pg-muted);font-size:13px;margin-top:2px}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.segc{display:flex;flex-wrap:wrap;background:var(--pg-surface);border:1px solid var(--pg-line);border-radius:12px;padding:3px;gap:2px}
+.segc button{border:0;background:transparent;border-radius:9px;height:34px;padding:0 12px;font-weight:600;font-size:13px;color:var(--pg-muted);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.segc button .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);flex:0 0 auto}
+.segc button[aria-selected="true"]{background:var(--pg-accent);color:var(--pg-accent-ink)}
+.segc button[aria-selected="true"] .dot{border-color:rgba(255,255,255,.5)}
+.lede{color:var(--pg-muted);max-width:66ch;margin:0;font-size:14px}
+.lede b{color:var(--pg-fg)}
+
+/* Workbench */
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:28px;align-items:start}
+.bench[hidden]{display:none}
+.sheets{display:flex;flex-direction:column;gap:18px;min-width:0}
+.sheet{border-radius:16px;padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px}
+.sheet h2{margin:0;font-size:12px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.sheet h2 span{font-weight:500;letter-spacing:0;text-transform:none;margin-left:8px}
+.phonecol{position:sticky;top:16px}
+.compare{display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
+.compare[hidden]{display:none}
+.cmp{display:flex;flex-direction:column;gap:10px;align-items:center}
+.cmp .lbl{font-weight:700;font-size:13px}
+.cmp .lbl small{display:block;color:var(--pg-muted);font-weight:500;font-size:12px}
+.brief{display:none}
+.about{border:1px solid var(--pg-line);background:var(--pg-surface);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.about h3{margin:0;font-size:14px}
+.about p{margin:0;color:var(--pg-muted);font-size:13.5px}
+@media (max-width:900px){.bench{grid-template-columns:minmax(0,1fr)}.phonecol{position:static;display:flex;justify-content:center}}
+
+/* ===== Skin-scoped styles: everything here reads the skin tokens set on .skin via JS ===== */
+.skin{color:var(--ink);font-family:var(--body);font-size:15px}
+.skin .sheet{background:var(--surface);border:var(--bw) solid var(--line);box-shadow:var(--shadow-card);border-radius:var(--r-card)}
+.skin .sheet-bg{background:var(--bg)}
+
+/* Palette */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.sw{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sw .chip{height:52px;border-radius:12px;border:1px solid rgba(0,0,0,.08);position:relative;display:flex;align-items:flex-end;padding:6px}
+.sw .chip i{font-style:normal;font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.85);color:#111}
+.sw b{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw small{font-size:11px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+/* Type specimen */
+.type{display:flex;flex-direction:column;gap:8px}
+.type .disp{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:34px;line-height:1.05;text-wrap:balance}
+.type .h2{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:22px;line-height:1.15}
+.type .body{font-size:15px;line-height:1.5;max-width:60ch}
+.type .cap{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.type .num{font-family:var(--display);font-weight:var(--display-w);font-size:28px;font-variant-numeric:tabular-nums}
+.type .meta{font-size:12px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:4px}
+
+/* Shape & elevation */
+.shape{display:flex;flex-wrap:wrap;gap:14px}
+.shape .box{width:120px;height:78px;background:var(--surface);border:var(--bw) solid var(--line);display:flex;align-items:flex-end;padding:8px;font-size:11.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.shape .box.c{border-radius:var(--r-card);box-shadow:var(--shadow-card)}
+.shape .box.k{border-radius:var(--r-ctl)}
+.shape .box.f{border-radius:var(--r-card);box-shadow:var(--shadow-float);border-color:transparent}
+.shape .box.t{background:var(--subtle);border-radius:var(--r-card);border-style:dashed}
+
+/* Icons */
+.icons{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:10px}
+.ic{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;border-radius:var(--r-ctl);background:var(--subtle)}
+.ic svg{width:24px;height:24px;color:var(--ink)}
+.ic small{font-size:11px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;overflow-wrap:anywhere}
+/* Appearance picker */
+.appear{display:flex;flex-direction:column;gap:12px}
+.appear .opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.appear .opt{border:2px solid var(--line);border-radius:var(--r-card);padding:8px;background:var(--surface);display:flex;flex-direction:column;gap:8px;text-align:left}
+.appear .opt[aria-checked="true"]{border-color:var(--accent)}
+.appear .opt .pv{height:72px;border-radius:calc(var(--r-card) - 6px);padding:8px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.appear .opt .pv i{display:block;height:8px;border-radius:4px;width:60%}
+.appear .opt .pv b{display:block;height:22px;border-radius:7px;width:40%;margin-top:auto}
+.appear .opt span{font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px}
+.appear .opt span svg{width:14px;height:14px;color:var(--accent);margin-left:auto}
+.appear .sys{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--r-ctl);background:var(--subtle)}
+.appear .sys b{font-size:14px;font-weight:600;display:block}
+.appear .sys small{font-size:12.5px;color:var(--muted)}
+/* Components */
+.rows{display:flex;flex-direction:column;gap:14px}
+.row-l{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.lab{width:100%;font-size:12px;color:var(--muted);font-weight:600}
+.btn{height:46px;padding:0 18px;border-radius:var(--r-ctl);border:var(--bw) solid transparent;font-weight:700;font-size:14.5px;display:inline-flex;align-items:center;gap:8px;transition:transform .08s,filter .12s,background .12s}
+.btn svg{width:18px;height:18px}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);box-shadow:var(--shadow-btn)}
+.btn.primary:hover{filter:brightness(.94)}
+.btn.secondary{background:var(--surface);border-color:var(--line-strong);color:var(--ink)}
+.btn.secondary:hover{background:var(--subtle)}
+.btn.tonal{background:var(--accent-tint);color:var(--accent-on-tint)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.ghost:hover{background:var(--accent-tint)}
+.btn.danger{background:var(--urgent-bg);color:var(--urgent-fg)}
+.btn.sm{height:36px;padding:0 14px;font-size:13.5px;border-radius:calc(var(--r-ctl) - 2px)}
+.btn.pill{border-radius:999px}
+.btn.icon{width:46px;padding:0;justify-content:center}
+.btn.fab{width:52px;height:52px;padding:0;justify-content:center;border-radius:var(--r-fab);background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-btn)}
+.btn.fab svg{width:24px;height:24px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+
+.chipx{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 10px;border-radius:var(--r-chip);background:var(--surface);border:var(--bw) solid var(--line);font-size:13.5px;font-weight:600}
+.chipx svg{width:15px;height:15px;color:var(--accent)}
+.chipx small{font-weight:500;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chipx.on{background:var(--accent-tint);border-color:transparent;color:var(--accent-on-tint)}
+.chipx.on svg{color:var(--accent-on-tint)}
+.chipx .x{margin-left:4px;padding-left:8px;border-left:1px solid var(--divider);color:var(--muted);display:flex}
+.chipx .x svg{width:12px;height:12px;color:var(--muted)}
+.tagx{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;letter-spacing:.01em}
+.tagx.acc{background:var(--accent-tint);color:var(--accent-on-tint)}
+.tagx.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.tagx.soon{background:var(--soon-bg);color:var(--soon-fg)}
+.tagx.urg{background:var(--urgent-bg);color:var(--urgent-fg)}
+
+.seg{display:flex;background:var(--chip);border-radius:var(--r-ctl);padding:4px;gap:4px;min-width:240px}
+.seg button{flex:1;border:0;background:transparent;border-radius:calc(var(--r-ctl) - 4px);height:36px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-selected="true"]{background:var(--seg-on);color:var(--seg-on-ink);font-weight:700;box-shadow:var(--shadow-seg)}
+
+.field{display:flex;align-items:center;height:50px;border-radius:var(--r-ctl);background:var(--field-bg);border:var(--bw-field) solid var(--line);padding:0 8px 0 14px;gap:10px;flex:1 1 220px;min-width:0}
+.field svg{width:20px;height:20px;color:var(--muted);flex:0 0 auto}
+.field input{flex:1;min-width:0;border:0;background:transparent;outline:none;font:inherit;font-size:16px;font-weight:500;color:var(--ink);height:100%}
+.field input::placeholder{color:var(--muted)}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.field .unit{height:32px;border:0;border-radius:calc(var(--r-ctl) - 5px);background:var(--chip);padding:0 10px;font-weight:700;font-size:13.5px;color:var(--ink)}
+.toggle{width:46px;height:28px;border-radius:999px;background:var(--box);border:0;position:relative;padding:0;flex:0 0 auto;transition:background .15s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.toggle[aria-checked="true"]{background:var(--accent)}
+.toggle[aria-checked="true"]::after{transform:translateX(18px)}
+.cb{width:24px;height:24px;border-radius:var(--r-box);border:2px solid var(--box);display:grid;place-items:center;flex:0 0 auto;background:transparent;padding:0;color:transparent}
+.cb svg{width:15px;height:15px}
+.cb.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* Cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.card{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .k{font-size:12px;color:var(--muted);font-weight:600}
+.card .v{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.card .t{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:17px;line-height:1.2}
+.card .m{font-size:13px;color:var(--muted)}
+.card .img{height:96px;border-radius:calc(var(--r-card) - 6px);background:linear-gradient(135deg,var(--accent-tint),var(--butter));margin:-2px 0 2px;position:relative;overflow:hidden}
+.card .img::after{content:"";position:absolute;inset:auto -10% -40% auto;width:70%;height:90%;border-radius:50%;background:var(--accent);opacity:.25}
+.card.media{padding:10px 10px 14px}
+.card.media .t,.card.media .m,.card.media .row-l{padding-inline:6px}
+.card .lrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--divider)}
+.card .lrow:first-of-type{border-top:0}
+.card .lrow .nm{flex:1;font-weight:600;font-size:15px}
+.card .lrow .qt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.card.list{padding:4px 16px}
+.prog{height:8px;border-radius:999px;background:var(--chip);overflow:hidden}
+.prog i{display:block;height:100%;width:33%;background:var(--accent);border-radius:999px}
+.toastx{display:inline-flex;align-items:center;gap:14px;background:var(--toast-bg);color:var(--toast-ink);border-radius:var(--r-ctl);padding:12px 16px;font-weight:600;font-size:14px;box-shadow:var(--shadow-float)}
+.toastx b{color:var(--toast-action);font-weight:700}
+
+/* ===== Phone with the Shopping screen ===== */
+.phone{width:390px;max-width:100%;height:780px;background:var(--bg);border-radius:44px;border:10px solid var(--bezel);position:relative;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.25);color:var(--ink);font-family:var(--body);font-size:15px;transition:background .2s}
+.phone .scr{position:absolute;inset:0;overflow:auto;padding:14px 20px 130px;scrollbar-width:none;display:flex;flex-direction:column;gap:18px}
+.phone .scr::-webkit-scrollbar{display:none}
+.stat{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:2px 6px 0}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding-top:6px}
+.hdr h1{margin:0;font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:30px;line-height:1}
+.hdr .av{width:34px;height:34px;border-radius:50%;background:var(--butter);color:var(--butter-ink);display:grid;place-items:center;font-weight:800;font-size:13px;font-family:var(--display)}
+.sum{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:14px 14px 14px 16px;display:flex;flex-direction:column;gap:10px}
+.sum .top{display:flex;gap:14px;align-items:center}
+.sum .big{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:26px;line-height:1.05;font-variant-numeric:tabular-nums}
+.sum .sub{font-size:13px;color:var(--muted);font-weight:500;margin-top:3px}
+.sum .prog{margin-top:9px}
+.sum .fin{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--divider);padding-top:10px;font-size:13px;color:var(--muted)}
+.sum .fin .btn{height:36px;font-size:13.5px;padding:0 12px 0 10px;background:var(--primary);color:var(--primary-ink);border-radius:999px;box-shadow:none}
+.sum .fin .btn svg{width:16px;height:16px}
+.sec{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:var(--muted);padding:0 6px 6px}
+.lst{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:4px 10px}
+.item{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 4px;border:0;background:transparent;width:100%;text-align:left}
+.item+.item{border-top:1px solid var(--divider)}
+.item .tx{flex:1;min-width:0}
+.item .nm{display:block;font-weight:600;font-size:15px}
+.item .qt{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.item.on .nm{text-decoration:line-through;color:var(--muted);font-weight:500}
+.item .star{width:34px;height:34px;border:0;background:transparent;border-radius:50%;display:grid;place-items:center;color:var(--muted);padding:0;flex:0 0 auto}
+.item .star svg{width:18px;height:18px}
+.item .star.on{color:var(--star)}
+.saverow{display:flex;align-items:center;gap:12px;width:100%;border:1px dashed var(--line-strong);background:transparent;border-radius:var(--r-card);padding:14px 16px;text-align:left}
+.saverow .ti{width:36px;height:36px;border-radius:calc(var(--r-ctl) - 2px);background:var(--butter);color:var(--butter-ink);display:grid;place-items:center;flex:0 0 auto}
+.saverow .ti svg{width:18px;height:18px}
+.saverow b{display:block;font-weight:600;font-size:15px}
+.saverow small{font-size:13px;color:var(--muted)}
+.dock{position:absolute;left:12px;right:12px;bottom:12px;height:72px;background:var(--dock-bg);backdrop-filter:blur(12px);border:var(--bw) solid var(--line);border-radius:var(--r-dock);box-shadow:var(--shadow-float);display:grid;grid-template-columns:repeat(4,1fr);align-items:center;padding:0 6px}
+.dock button{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted);height:56px;justify-content:center;border-radius:14px}
+.dock button svg{width:22px;height:22px}
+.dock button.on{color:var(--accent-on-tint);background:var(--accent-tint)}
+.toastp{position:absolute;left:20px;right:20px;bottom:98px;background:var(--toast-bg);color:var(--toast-ink);border-radius:var(--r-ctl);padding:12px 16px;font-weight:600;font-size:14px;box-shadow:var(--shadow-float);display:flex;justify-content:space-between;align-items:center;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none}
+.toastp.show{opacity:1;transform:none}
+.toastp b{color:var(--toast-action)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="page">
+  <div class="bar">
+    <h1>PocketPantry themes<small>Three user-selectable themes: tokens, icons, components, and the Shopping screen in each.</small></h1>
+    <div class="ctl">
+      <div class="segc" role="tablist" aria-label="Theme" id="themeSeg"></div>
+      <div class="segc" role="tablist" aria-label="View" id="viewSeg">
+        <button role="tab" aria-selected="true" data-view="focus">Focus</button>
+        <button role="tab" aria-selected="false" data-view="compare">Compare</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bench" id="bench">
+    <div class="sheets">
+      <div class="about" id="about"><h3></h3><p></p></div>
+      <div class="skin" id="skinSheets">
+        <div style="display:flex;flex-direction:column;gap:18px">
+        <section class="sheet">
+          <h2>Color <span id="paletteNote"></span></h2>
+          <div class="swatches" id="swatches"></div>
+        </section>
+        <section class="sheet">
+          <h2>Type</h2>
+          <div class="type">
+            <div class="disp">What's for dinner this week?</div>
+            <div class="h2">Add to list</div>
+            <p class="body" style="margin:0">Your pantry has 42 ingredients. Twelve of them run out in the next three days, and two recipes use most of what you have.</p>
+            <div class="cap">Missing staples · 4</div>
+            <div class="num">6 to buy</div>
+            <div class="meta" id="typeMeta"></div>
+          </div>
+        </section>
+        <section class="sheet">
+          <h2>Shape &amp; elevation</h2>
+          <div class="shape">
+            <div class="box c" id="rCard">card</div>
+            <div class="box k" id="rCtl">control</div>
+            <div class="box f">floating</div>
+            <div class="box t">tinted / dashed</div>
+          </div>
+        </section>
+        <section class="sheet">
+          <h2>Icons <span>24 px grid · 2 px stroke · round caps</span></h2>
+          <div class="icons" id="icons"></div>
+        </section>
+        <section class="sheet">
+          <h2>Appearance picker <span>Settings → Appearance</span></h2>
+          <div class="appear" id="appear"></div>
+        </section>
+        <section class="sheet">
+          <h2>Buttons</h2>
+          <div class="rows">
+            <div class="row-l">
+              <button class="btn primary">Add 3 items to list</button>
+              <button class="btn secondary">Manage</button>
+              <button class="btn tonal">Save template</button>
+              <button class="btn ghost">See all</button>
+              <button class="btn danger">Remove</button>
+              <button class="btn primary" disabled>Adding…</button>
+            </div>
+            <div class="row-l">
+              <button class="btn primary sm pill" id="pillBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Move 3 to Pantry</button>
+              <button class="btn secondary sm pill">Done</button>
+              <button class="btn fab" aria-label="Add items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+              <button class="btn secondary icon" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            </div>
+          </div>
+        </section>
+        <section class="sheet">
+          <h2>Chips, tags &amp; controls</h2>
+          <div class="rows">
+            <div class="row-l">
+              <span class="chipx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Milk <small>1 l</small><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></span>
+              <span class="chipx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Eggs <small>12 pcs</small></span>
+              <span class="chipx on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg>Butter</span>
+              <span class="tagx acc">On list</span><span class="tagx ok">In Pantry</span><span class="tagx soon">Soon</span><span class="tagx urg">Expired</span>
+            </div>
+            <div class="row-l">
+              <div class="seg" role="tablist"><button role="tab" aria-selected="true">Ingredients</button><button role="tab" aria-selected="false">Templates</button></div>
+              <button class="toggle" role="switch" aria-checked="true" aria-label="Staple"></button>
+              <button class="cb on" aria-label="Checked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></button>
+              <button class="cb" aria-label="Unchecked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></button>
+            </div>
+            <div class="row-l">
+              <label class="field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="f1" placeholder="Search ingredients"></label>
+              <label class="field" style="flex:0 1 180px"><input id="f2" placeholder="Amount" inputmode="decimal" style="font-weight:600"><button class="unit" type="button">kg ▾</button></label>
+            </div>
+          </div>
+        </section>
+        <section class="sheet sheet-bg">
+          <h2>Cards <span id="cardNote"></span></h2>
+          <div class="cards">
+            <div class="card"><div class="k">Expiring soon</div><div class="v">12</div><div class="prog"><i style="width:60%"></i></div><div class="m">5 of 12 used in a recipe</div></div>
+            <div class="card media"><div class="img"></div><div class="t">Shakshuka with feta</div><div class="m">35 min · uses 7 of 9</div><div class="row-l"><span class="tagx acc">Can cook</span><span class="tagx soon">2 expiring</span></div></div>
+            <div class="card list"><div class="lrow"><button class="cb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></button><span class="nm">Tomatoes</span><span class="qt">1 kg</span></div><div class="lrow"><button class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></button><span class="nm">Feta</span><span class="qt">200 g</span></div><div class="lrow"><button class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></button><span class="nm">Cumin</span><span class="qt">—</span></div></div>
+          </div>
+          <div class="row-l"><span class="toastx">Saved “Weekly shop” <b>Edit</b></span></div>
+        </section>
+        </div>
+      </div>
+    </div>
+    <div class="phonecol"><div class="skin" id="skinPhone"></div></div>
+  </div>
+
+  <div class="compare" id="compare" hidden></div>
+</div>
+
+<template id="phoneT">
+  <div class="phone">
+    <div class="scr">
+      <div class="stat"><span>9:41</span><span>●●●</span></div>
+      <div class="hdr"><h1>Shopping</h1><div class="av">GV</div></div>
+      <div class="sum">
+        <div class="top">
+          <div style="flex:1;min-width:0"><div class="big">6 to buy</div><div class="sub">3 of 9 in your basket</div><div class="prog"><i></i></div></div>
+          <button class="btn fab" aria-label="Add items"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        </div>
+        <div class="fin"><span>3 ticked off</span><button class="btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Move 3 to Pantry</button></div>
+      </div>
+      <div>
+        <div class="sec"><span>Produce</span><span>4</span></div>
+        <div class="lst">
+          <button class="item on"><span class="cb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Tomatoes</span><span class="qt">1 kg</span></span><span class="star on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Spinach</span><span class="qt">200 g</span></span><span class="tagx soon">Soon</span><span class="star"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Lemons</span><span class="qt">3 pcs</span></span><span class="star"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Red onions</span><span class="qt">500 g</span></span><span class="star on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+        </div>
+      </div>
+      <div>
+        <div class="sec"><span>Dairy &amp; eggs</span><span>3</span></div>
+        <div class="lst">
+          <button class="item on"><span class="cb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Milk</span><span class="qt">1 l</span></span><span class="star on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item on"><span class="cb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Feta</span><span class="qt">200 g</span></span><span class="star"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Eggs</span><span class="qt">12 pcs</span></span><span class="tagx acc">Staple</span><span class="star on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+        </div>
+      </div>
+      <div>
+        <div class="sec"><span>Pantry</span><span>2</span></div>
+        <div class="lst">
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Cumin</span><span class="qt">—</span></span><span class="star"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+          <button class="item"><span class="cb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5 9-10"/></svg></span><span class="tx"><span class="nm">Olive oil</span><span class="qt">750 ml</span></span><span class="star"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg></span></button>
+        </div>
+      </div>
+      <button class="saverow"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span><span><b>Save this list as a template</b><small>Reuse these 9 items next time</small></span></button>
+    </div>
+    <div class="toastp"><span>Added Spinach</span><b>Undo</b></div>
+    <div class="dock">
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16v13H4z"/><path d="M4 12h16M9 7V4h6v3"/></svg>Pantry</button>
+      <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Shopping</button>
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Recipes</button>
+      <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><path d="M8 12h8"/></svg>Scan</button>
+    </div>
+  </div>
+</template>
+
+<script>
+(function(){
+// Icon set: 24 px grid, 2 px stroke, round caps and joins. "fill" icons are filled variants of the same shape.
+const ICONS = {
+  'plus':'<path d="M12 5v14M5 12h14"/>',
+  'close':'<path d="M6 6l12 12M18 6L6 18"/>',
+  'check':'<path d="M5 12l5 5 9-10"/>',
+  'search':'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+  'chevron-down':'<path d="M6 9l6 6 6-6"/>',
+  'chevron-right':'<path d="M9 6l6 6-6 6"/>',
+  'chevron-left':'<path d="M15 6l-6 6 6 6"/>',
+  'star':'<path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>',
+  'star-fill':'<path fill="currentColor" stroke="none" d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/>',
+  'bookmark':'<path d="M6 3h12v18l-6-4-6 4z"/>',
+  'basket':'<path d="M4 10h16l-1.5 9h-13z"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  'pantry':'<path d="M4 7h16v13H4z"/><path d="M4 12h16M9 7V4h6v3"/>',
+  'recipes':'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+  'scan':'<path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><path d="M8 12h8"/>',
+  'info':'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  'trash':'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  'more':'<circle cx="5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="19" cy="12" r="1.3" fill="currentColor"/>',
+  'sliders':'<path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/>',
+  'template':'<path d="M4 5h16v14H4z"/><path d="M4 10h16M10 10v9"/>',
+  'undo':'<path d="M4 10h11a5 5 0 0 1 0 10h-3"/><path d="M8 6l-4 4 4 4"/>'
+};
+function svgIcon(name, extra){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'+(extra||'')+'>'+ICONS[name]+'</svg>'; }
+
+const THEMES = {
+  warm: {
+    name:'Warm editorial', tag:'Oat, olive & paprika', blurb:'A cookbook feel. Oat-coloured paper, olive as the working accent, paprika kept for warnings and removals, Fraunces for display with Instrument Sans for everything else. Cards sit on the paper with a soft warm shadow instead of a hard line.',
+    paletteNote:'light, warm neutrals', cardNote:'cream, hairline + warm shadow, radius 16',
+    typeMeta:'Fraunces 600 (soft) · Instrument Sans 400–700',
+    tokens:{
+      bg:'#F3EDE1', surface:'#FBF8F1', subtle:'#F6F1E6', ink:'#2B2418', muted:'#766A58', line:'#E6DCCB', 'line-strong':'#D6C9B2', divider:'#EFE7D8', chip:'#EAE1CF',
+      accent:'#5F6F2E', 'accent-ink':'#FFFFFF', 'accent-tint':'#E6EAD2', 'accent-on-tint':'#4A5722',
+      primary:'#5F6F2E', 'primary-ink':'#FFFFFF',
+      butter:'#F0C96B', 'butter-ink':'#4A3608', 'urgent-bg':'#F8DED1', 'urgent-fg':'#A8431C', 'soon-bg':'#F6E5BE', 'soon-fg':'#704E00', 'ok-bg':'#E6EAD2', 'ok-fg':'#4A5722',
+      box:'#C2B49A', star:'#C6882A', 'card-bg':'#FBF8F1', 'card-line':'#E9E0CF', 'field-bg':'#FFFDF8', 'seg-on':'#FBF8F1', 'seg-on-ink':'#2B2418',
+      'toast-bg':'#2B2418', 'toast-ink':'#FBF8F1', 'toast-action':'#F0C96B', 'dock-bg':'rgba(251,248,241,.94)', bezel:'#2B2418',
+      bw:'1px', 'bw-field':'1.5px', 'r-card':'16px', 'r-ctl':'12px', 'r-chip':'999px', 'r-fab':'50%', 'r-dock':'22px', 'r-box':'7px',
+      'shadow-card':'0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)', 'shadow-btn':'0 4px 12px rgba(95,111,46,.28)', 'shadow-float':'0 14px 34px -10px rgba(60,40,10,.28)', 'shadow-seg':'0 1px 2px rgba(60,40,10,.14)',
+      display:"'Fraunces',Georgia,'Times New Roman',serif", body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif", 'display-w':'600', 'display-ls':'-0.015em'
+    },
+    swatches:['bg','surface','ink','muted','line','chip','accent','accent-tint','butter','soon-bg','urgent-bg','urgent-fg']
+  },
+  minimal: {
+    name:'Minimal crisp', tag:'Chalk & ink', blurb:'Near-white surfaces, 8–12 pt radii, hairlines, no shadows. Ink-black primary buttons so the green is saved for state: progress, "on list", the active tab. Schibsted Grotesk for display, Figtree for body. Lists lose their card box and become flat rows with hairline separators.',
+    paletteNote:'light, cool-grey neutrals', cardNote:'flat white, hairline, radius 12',
+    typeMeta:'Schibsted Grotesk 700 · Figtree 400–700',
+    tokens:{
+      bg:'#FAFAF8', surface:'#FFFFFF', subtle:'#F3F4F1', ink:'#141614', muted:'#6B716B', line:'#E7E9E4', 'line-strong':'#CDD1CA', divider:'#EEF0EB', chip:'#EEF0EB',
+      accent:'#1E7A4E', 'accent-ink':'#FFFFFF', 'accent-tint':'#E1F2E8', 'accent-on-tint':'#176040',
+      primary:'#141614', 'primary-ink':'#FFFFFF',
+      butter:'#F5E1A4', 'butter-ink':'#5A4200', 'urgent-bg':'#FDE8E2', 'urgent-fg':'#B33A1E', 'soon-bg':'#FBF0CC', 'soon-fg':'#7A5600', 'ok-bg':'#EEF0EB', 'ok-fg':'#4D534D',
+      box:'#B9BEB8', star:'#D1A21C', 'card-bg':'#FFFFFF', 'card-line':'#E7E9E4', 'field-bg':'#FFFFFF', 'seg-on':'#141614', 'seg-on-ink':'#FFFFFF',
+      'toast-bg':'#141614', 'toast-ink':'#FFFFFF', 'toast-action':'#9BE0B8', 'dock-bg':'rgba(255,255,255,.96)', bezel:'#141614',
+      bw:'1px', 'bw-field':'1px', 'r-card':'12px', 'r-ctl':'10px', 'r-chip':'8px', 'r-fab':'12px', 'r-dock':'16px', 'r-box':'6px',
+      'shadow-card':'none', 'shadow-btn':'none', 'shadow-float':'0 8px 24px rgba(20,22,20,.10)', 'shadow-seg':'none',
+      display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif", body:"'Figtree',ui-sans-serif,system-ui,sans-serif", 'display-w':'700', 'display-ls':'-0.025em'
+    },
+    swatches:['bg','surface','ink','muted','line','chip','accent','accent-tint','primary','soon-bg','urgent-bg','ok-bg']
+  },
+  dark: {
+    name:'Dark-first', tag:'Moss & mint', blurb:'A deep moss background with elevated, borderless cards and a mint accent that reads as light rather than paint. Primary buttons are mint on dark ink. Sora for display, Albert Sans for body. With "Match system" on, this is the theme the app switches to when the phone is in dark mode.',
+    paletteNote:'dark', cardNote:'elevated, no border, radius 18',
+    typeMeta:'Sora 600 · Albert Sans 400–700',
+    tokens:{
+      bg:'#0F1512', surface:'#19211C', subtle:'#1F2922', ink:'#ECF2EC', muted:'#97A69B', line:'#26312A', 'line-strong':'#36433A', divider:'#27322B', chip:'#26312A',
+      accent:'#8FE0A8', 'accent-ink':'#0B1A10', 'accent-tint':'#1F3A2A', 'accent-on-tint':'#A9EDBD',
+      primary:'#8FE0A8', 'primary-ink':'#0B1A10',
+      butter:'#3D3418', 'butter-ink':'#F2CF72', 'urgent-bg':'#3F241B', 'urgent-fg':'#FFA27E', 'soon-bg':'#3A3118', 'soon-fg':'#F2CF72', 'ok-bg':'#26312A', 'ok-fg':'#B9C7BC',
+      box:'#4A574E', star:'#F2CF72', 'card-bg':'#19211C', 'card-line':'transparent', 'field-bg':'#111915', 'seg-on':'#2A3730', 'seg-on-ink':'#ECF2EC',
+      'toast-bg':'#ECF2EC', 'toast-ink':'#0F1512', 'toast-action':'#1E7A4E', 'dock-bg':'rgba(25,33,28,.9)', bezel:'#050807',
+      bw:'1px', 'bw-field':'1px', 'r-card':'18px', 'r-ctl':'14px', 'r-chip':'999px', 'r-fab':'16px', 'r-dock':'24px', 'r-box':'7px',
+      'shadow-card':'0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)', 'shadow-btn':'0 6px 18px rgba(143,224,168,.25)', 'shadow-float':'0 16px 40px rgba(0,0,0,.55)', 'shadow-seg':'0 1px 0 rgba(255,255,255,.06) inset',
+      display:"'Sora',ui-sans-serif,system-ui,sans-serif", body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif", 'display-w':'600', 'display-ls':'-0.02em'
+    },
+    swatches:['bg','surface','subtle','ink','muted','line','accent','accent-tint','butter-ink','soon-fg','urgent-fg','ok-bg']
+  }
+};
+const ORDER = ['warm','minimal','dark'];
+const DOTS = {warm:'#5F6F2E', minimal:'#141614', dark:'#8FE0A8'};
+window.PP_THEMES = THEMES; window.PP_ICONS = ICONS; // exported for the handoff generator
+
+function renderIcons(){
+  const h = document.getElementById('icons'); h.innerHTML='';
+  Object.keys(ICONS).forEach(n=>{ const d=document.createElement('div'); d.className='ic'; d.innerHTML=svgIcon(n)+'<small>'+n+'</small>'; h.appendChild(d); });
+}
+function renderAppearance(key){
+  const h = document.getElementById('appear');
+  let html='<div class="opts" role="radiogroup" aria-label="Theme">';
+  ORDER.forEach(k=>{ const t=THEMES[k].tokens;
+    html+='<button class="opt" role="radio" aria-checked="'+(k===key)+'" data-key="'+k+'"><span class="pv" style="background:'+t.bg+'"><i style="background:'+t.ink+'"></i><i style="background:'+t.muted+';width:40%"></i><b style="background:'+t.primary+'"></b></span><span>'+THEMES[k].name+(k===key?svgIcon('check'):'')+'</span></button>'; });
+  html+='</div><div class="sys"><div><b>Match system</b><small>Dark-first when the phone is in dark mode, your light theme otherwise</small></div><button class="toggle" role="switch" aria-checked="false" aria-label="Match system"></button></div>';
+  h.innerHTML=html;
+  h.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>select(b.dataset.key)));
+  h.querySelector('.toggle').addEventListener('click',e=>{const t=e.currentTarget;t.setAttribute('aria-checked',t.getAttribute('aria-checked')!=='true')});
+}
+
+function applySkin(el, key){
+  const t = THEMES[key].tokens;
+  el.dataset.skin = key;
+  for (const k in t) el.style.setProperty('--'+k, t[k]);
+}
+function mountPhone(host, key){
+  host.innerHTML='';
+  const ph = document.getElementById('phoneT').content.firstElementChild.cloneNode(true);
+  host.appendChild(ph);
+  applySkin(host, key);
+  wirePhone(ph);
+}
+function wirePhone(ph){
+  const toast = ph.querySelector('.toastp'); let tm;
+  ph.querySelectorAll('.item').forEach(it=>{
+    it.addEventListener('click', e=>{
+      if (e.target.closest('.star')) return;
+      it.classList.toggle('on'); it.querySelector('.cb').classList.toggle('on');
+      const n = ph.querySelectorAll('.item.on').length, tot = ph.querySelectorAll('.item').length;
+      ph.querySelector('.big').textContent = (tot-n)+' to buy';
+      ph.querySelector('.sub').textContent = n+' of '+tot+' in your basket';
+      ph.querySelector('.prog i').style.width = Math.round(n/tot*100)+'%';
+      ph.querySelector('.fin span').textContent = n+' ticked off';
+      ph.querySelector('.fin .btn').lastChild.textContent = 'Move '+n+' to Pantry';
+      ph.querySelector('.fin').style.display = n? '' : 'none';
+    });
+    it.querySelector('.star').addEventListener('click', e=>{
+      e.stopPropagation(); const s=e.currentTarget; s.classList.toggle('on');
+      const on=s.classList.contains('on'); s.innerHTML = svgIcon(on?'star-fill':'star');
+      show((on?'Starred ':'Unstarred ')+it.querySelector('.nm').textContent, 'Undo');
+    });
+  });
+  ph.querySelector('.fab').addEventListener('click', ()=>show('Add sheet opens here', ''));
+  ph.querySelector('.saverow').addEventListener('click', ()=>show('Saved “Weekly shop”', 'Edit'));
+  function show(msg, act){ toast.querySelector('span').textContent=msg; toast.querySelector('b').textContent=act; toast.classList.add('show'); clearTimeout(tm); tm=setTimeout(()=>toast.classList.remove('show'),2200); }
+}
+function renderSheets(key){
+  const T = THEMES[key], t = T.tokens;
+  const sk = document.getElementById('skinSheets'); applySkin(sk, key);
+  document.querySelector('#about h3').textContent = T.name+' · '+T.tag;
+  document.querySelector('#about p').textContent = T.blurb;
+  document.getElementById('paletteNote').textContent = T.paletteNote;
+  document.getElementById('cardNote').textContent = T.cardNote;
+  document.getElementById('typeMeta').textContent = T.typeMeta+' · display '+t['display-ls']+' tracking';
+  document.getElementById('rCard').textContent = 'card '+t['r-card'];
+  document.getElementById('rCtl').textContent = 'control '+t['r-ctl'];
+  const sw = document.getElementById('swatches'); sw.innerHTML='';
+  T.swatches.forEach(n=>{
+    const d=document.createElement('div'); d.className='sw';
+    d.innerHTML = '<div class="chip" style="background:'+t[n]+'"></div><b>--'+n+'</b><small>'+t[n]+'</small>';
+    sw.appendChild(d);
+  });
+  renderIcons(); renderAppearance(key);
+  mountPhone(document.getElementById('skinPhone'), key);
+}
+function renderCompare(){
+  const c = document.getElementById('compare'); if (c.dataset.done) return; c.dataset.done='1';
+  ORDER.forEach(k=>{
+    const w=document.createElement('div'); w.className='cmp';
+    const l=document.createElement('div'); l.className='lbl'; l.innerHTML=THEMES[k].name+'<small>'+THEMES[k].tag+'</small>';
+    const h=document.createElement('div'); h.className='skin'; mountPhone(h,k);
+    w.append(l,h); c.appendChild(w);
+  });
+}
+// Theme segmented control
+const seg = document.getElementById('themeSeg');
+ORDER.forEach(k=>{
+  const b=document.createElement('button'); b.setAttribute('role','tab'); b.dataset.key=k;
+  b.innerHTML='<span class="dot" style="background:'+DOTS[k]+'"></span>'+THEMES[k].name;
+  b.addEventListener('click',()=>select(k)); seg.appendChild(b);
+});
+function select(k){
+  seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-selected', b.dataset.key===k));
+  renderSheets(k);
+  try{localStorage.setItem('pp-look',k)}catch(e){}
+}
+document.querySelectorAll('#viewSeg button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#viewSeg button').forEach(x=>x.setAttribute('aria-selected', x===b));
+  const cmp = b.dataset.view==='compare';
+  document.getElementById('bench').hidden = cmp; document.getElementById('compare').hidden = !cmp;
+  if (cmp) renderCompare();
+}));
+let start='warm'; try{ const s=localStorage.getItem('pp-look'); if (s && THEMES[s]) start=s; }catch(e){}
+const hash = location.hash.replace('#',''); if (THEMES[hash]) start=hash;
+select(start);
+})();
+</script>
