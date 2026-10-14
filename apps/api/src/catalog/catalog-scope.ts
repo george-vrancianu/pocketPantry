@@ -1,4 +1,4 @@
-import { eq, isNull, or } from 'drizzle-orm';
+import { eq, isNull, or, sql } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
 import { catalogTranslations, ingredients } from '../database/schema';
 
@@ -26,6 +26,20 @@ export type CatalogScope = {
   ingredients(executor: Executor): ReturnType<typeof scopedIngredients>;
   translations(executor: Executor): ReturnType<typeof scopedTranslations>;
 };
+
+/**
+ * Exact-name tiers: a Family's own names (rank 0) win over shared ones (rank 1)
+ * when both claim a name. Family Synonyms join rank 0 when they exist.
+ */
+export const FAMILY_TIER = 0;
+export const SHARED_TIER = 1;
+
+/** The tier of each row of a scoped `ingredients` source, as an SQL expression. */
+export function ingredientTier(
+  scoped: ReturnType<CatalogScope['ingredients']>,
+) {
+  return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER} ELSE ${FAMILY_TIER} END`;
+}
 
 function scopedIngredients(executor: Executor, reader: CatalogReader) {
   const rows = executor.select().from(ingredients);

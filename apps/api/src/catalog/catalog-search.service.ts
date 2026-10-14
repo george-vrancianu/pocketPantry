@@ -4,7 +4,11 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
-import type { CatalogScope } from './catalog-scope';
+import {
+  ingredientTier,
+  SHARED_TIER,
+  type CatalogScope,
+} from './catalog-scope';
 import {
   AISLE_LISTING_LIMIT,
   type CatalogAisle,
@@ -208,22 +212,38 @@ export class CatalogSearchService {
       keys.map((key) => sql`${key}`),
       sql`, `,
     );
-    const hits = await this.database.execute<{ id: string; key: string }>(sql`
-      SELECT DISTINCT c.id, c.key
+    const hits = await this.database.execute<{
+      id: string;
+      key: string;
+      tier: number;
+    }>(sql`
+      SELECT DISTINCT c.id, c.key, c.tier
       FROM (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
+        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key,
+          ${ingredientTier(ingredients)} AS tier
         FROM ${ingredients}
         UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
+        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
+          ${SHARED_TIER}
         FROM ${catalogTranslations}
         WHERE ${catalogTranslations.entityType} = 'ingredient'
       ) c
       WHERE c.key = ANY(ARRAY[${keyList}]::text[])
     `);
-    const idsByKey = new Map<string, string[]>();
-    for (const { id, key } of hits.rows) {
-      idsByKey.set(key, [...(idsByKey.get(key) ?? []), id]);
+    // Per name, only the best tier that claims it counts; one Ingredient there
+    // is a hit, several are a clash and stay Unmatched.
+    const claims = new Map<string, { tier: number; ids: Set<string> }>();
+    for (const { id, key, tier } of hits.rows) {
+      const claim = claims.get(key);
+      if (!claim || tier < claim.tier) {
+        claims.set(key, { tier, ids: new Set([id]) });
+      } else if (tier === claim.tier) {
+        claim.ids.add(id);
+      }
     }
+    const idsByKey = new Map(
+      [...claims].map(([key, claim]) => [key, [...claim.ids]]),
+    );
     const unique = [...idsByKey.values()].flatMap((ids) =>
       ids.length === 1 ? ids : [],
     );

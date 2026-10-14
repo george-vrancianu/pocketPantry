@@ -72,8 +72,10 @@ export class IngredientCatalogService {
     };
   }
 
-  invalidate(): void {
-    this.cached.clear();
+  /** Drops the snapshot of `reader`, or of every reader when none is given. */
+  invalidate(reader?: CatalogReader): void {
+    if (reader === undefined) this.cached.clear();
+    else this.cached.delete(cacheKey(reader));
   }
 
   toPrompt(catalog: IngredientCatalog): string {
