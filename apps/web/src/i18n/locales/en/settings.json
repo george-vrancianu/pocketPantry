@@ -11,7 +11,6 @@
   "admin": "Catalog",
   "openAdmin": "Curate the Catalog",
   "account": "Account",
-  "signedInAs": "Signed in as {{name}}",
   "localeSaveFailed": "Could not save your language. Try again.",
   "signOut": "Sign out",
   "appearance": {
@@ -21,6 +20,25 @@
     "dark": "Dark-first",
     "matchSystem": "Match system",
     "matchSystemHint": "Dark-first when the phone is in dark mode, your light theme otherwise",
-    "usedInDark": "Used in dark mode"
-  }
+    "usedInDark": "Used in dark mode",
+    "usedInLight": "Used in light mode",
+    "syncedOnDevice": "Theme saved on this phone. We'll sync it when you're online.",
+    "lightOnlyToast": "{{name}} shows when the phone is in light mode.",
+    "darkEverywhereToast": "Dark-first everywhere. Match system is off."
+  },
+  "scope": {
+    "device": "This phone",
+    "you": "Only you",
+    "admins": "Admins"
+  },
+  "languageNames": {
+    "en": "English",
+    "ro": "Română",
+    "da": "Dansk"
+  },
+  "languageSaved": "Language saved",
+  "unmatched_one": "{{count}} unmatched name waiting",
+  "unmatched_other": "{{count}} unmatched names waiting",
+  "signOutConfirm": "Sign out of this phone?",
+  "cancel": "Cancel"
 }

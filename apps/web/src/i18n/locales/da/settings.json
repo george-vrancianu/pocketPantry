@@ -11,7 +11,6 @@
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",
   "account": "Konto",
-  "signedInAs": "Logget ind som {{name}}",
   "localeSaveFailed": "Dit sprog kunne ikke gemmes. Prøv igen.",
   "signOut": "Log ud",
   "appearance": {
@@ -21,6 +20,25 @@
     "dark": "Mørk først",
     "matchSystem": "Følg systemet",
     "matchSystemHint": "Mørk først, når telefonen er i mørk tilstand, ellers dit lyse tema",
-    "usedInDark": "Bruges i mørk tilstand"
-  }
+    "usedInDark": "Bruges i mørk tilstand",
+    "usedInLight": "Bruges i lys tilstand",
+    "syncedOnDevice": "Temaet er gemt på denne telefon. Vi synkroniserer det, når du er online.",
+    "lightOnlyToast": "{{name}} vises, når telefonen er i lys tilstand.",
+    "darkEverywhereToast": "Mørk først overalt. Følg systemet er slået fra."
+  },
+  "scope": {
+    "device": "Denne telefon",
+    "you": "Kun dig",
+    "admins": "Administratorer"
+  },
+  "languageNames": {
+    "en": "English",
+    "ro": "Română",
+    "da": "Dansk"
+  },
+  "languageSaved": "Sprog gemt",
+  "unmatched_one": "{{count}} umatchet navn venter",
+  "unmatched_other": "{{count}} umatchede navne venter",
+  "signOutConfirm": "Log ud af denne telefon?",
+  "cancel": "Annuller"
 }
