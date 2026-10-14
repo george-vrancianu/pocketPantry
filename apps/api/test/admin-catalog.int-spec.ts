@@ -615,7 +615,36 @@ describe('Admin role and Catalog curation (integration)', () => {
           })
           .expect(201)
       ).body as Body;
+      const second = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Moved item two ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      // A sibling Leaf under the same Parent, which the move must not touch.
+      const sibling = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: seedId.parent('spices'),
+            name: `Sibling leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const siblingItem = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: sibling.id,
+            name: `Sibling item ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
       expect(await scaleOf(first.id)).toBe('low');
+      expect(await scaleOf(second.id)).toBe('low');
+      expect(await scaleOf(siblingItem.id)).toBe('low');
 
       // Moving the Leaf to Produce (large) re-derives every Ingredient in it.
       await as(adminCookie)
@@ -624,6 +653,8 @@ describe('Admin role and Catalog curation (integration)', () => {
         })
         .expect(200);
       expect(await scaleOf(first.id)).toBe('large');
+      expect(await scaleOf(second.id)).toBe('large');
+      expect(await scaleOf(siblingItem.id)).toBe('low');
     });
 
     it('rejects deleting a Leaf Category that Batches still reference', async () => {

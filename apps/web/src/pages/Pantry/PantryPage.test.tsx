@@ -546,6 +546,87 @@ describe('PantryPage', () => {
     );
   });
 
+  it("takes the next Ingredient's own unit when the name is retyped after a pick", async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [eggs, parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '6',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'egg',
+    );
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.clear(search);
+    await user.type(search, 'parm');
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+
+    // The frozen pieces of Eggs do not carry over: Parmesan opens on its own grams.
+    expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ ingredientId: 'parmesan-id', quantity: 6, unit: 'g' }),
+    );
+  });
+
+  it('keeps a unit the Member chose from the chip when another Ingredient is picked', async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [parmesan, eggs]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '2',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.click(screen.getByRole('button', { name: 'Unit: g' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
+        name: 'kg',
+      }),
+    );
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.clear(search);
+    await user.type(search, 'egg');
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ ingredientId: 'eggs-id', unit: 'kg' }),
+    );
+  });
+
   it('sets the unit from the chip, converting the amount to it', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);

@@ -39,12 +39,6 @@ const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
     ? null
     : daysUntil(line.expiryDate, today);
 
-// numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
-function quantityOf(text: string) {
-  // The same reading as the amount field: a comma or a dot as the decimal mark.
-  return parseAmountText(text);
-}
-
 /** Review state for Finish Shopping: proposed Batches the Member can edit or drop before confirming. */
 export function useFinishReview({ onDone }: { onDone: () => void }) {
   const { t, i18n } = useTranslation();
@@ -62,7 +56,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
       edit,
       usualDays: usualDaysOf(line, today),
       dropped: dropped.has(line.itemId),
-      quantityValid: quantityOf(edit.quantity).valid,
+      quantityValid: parseAmountText(edit.quantity).valid,
     };
   });
   const kept = lines.filter((row) => !row.dropped);
@@ -112,7 +106,8 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
         {
           listId,
           lines: kept.map(({ line, edit }) => {
-            const { value } = quantityOf(edit.quantity);
+            // Reads a comma or a dot as the decimal mark, as the amount field does.
+            const { value } = parseAmountText(edit.quantity);
             return {
               itemId: line.itemId,
               quantity: value,

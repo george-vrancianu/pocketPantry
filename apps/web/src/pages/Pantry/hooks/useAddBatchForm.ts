@@ -28,7 +28,9 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const [quantity, setQuantity] = useState('');
   // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
   const [chosenUnit, setChosenUnit] = useState<Unit | null>(null);
-  const unit: Unit = chosenUnit ?? ingredient?.defaultUnit ?? 'g';
+  // The unit a dropped Ingredient had on screen: kept while its name is edited, never carried to the next pick.
+  const [frozenUnit, setFrozenUnit] = useState<Unit | null>(null);
+  const unit: Unit = chosenUnit ?? frozenUnit ?? ingredient?.defaultUnit ?? 'g';
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
@@ -37,7 +39,9 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setIngredient(result);
     setUnmatchedName(null);
     setTyped(result.name);
-    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
+    // A frozen unit belonged to the dropped Ingredient: the new one's default applies.
+    setFrozenUnit(null);
+    // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
     if (quantity.trim() === '') setChosenUnit(null);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
     const days = result.defaults.expiryDays;
@@ -46,7 +50,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
 
   /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
   const clearIngredient = () => {
-    if (ingredient && chosenUnit === null) setChosenUnit(unit);
+    if (ingredient && chosenUnit === null) setFrozenUnit(unit);
     setIngredient(null);
   };
 
