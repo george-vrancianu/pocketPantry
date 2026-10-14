@@ -77,7 +77,6 @@
   "defaultExpiry": {
     "title": "Standardudløb",
     "hint": "Udfylder datoen, når en i familien tilføjer en batch. Kategorier du ikke sætter, bruger Catalog-standarden.",
-    "list": "Standardudløb",
     "catalog": "Catalog {{days}} d",
     "catalogDefault_one": "Catalog-standard: {{count}} dag",
     "catalogDefault_other": "Catalog-standard: {{count}} dage",

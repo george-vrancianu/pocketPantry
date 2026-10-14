@@ -81,7 +81,6 @@
   "defaultExpiry": {
     "title": "Expirare implicită",
     "hint": "Completează data când cineva din familie adaugă un lot. Categoriile pe care nu le setezi folosesc valoarea din Catalog.",
-    "list": "Expirare implicită",
     "catalog": "Catalog {{days}} z",
     "catalogDefault_one": "Valoare implicită din Catalog: {{count}} zi",
     "catalogDefault_few": "Valoare implicită din Catalog: {{count}} zile",

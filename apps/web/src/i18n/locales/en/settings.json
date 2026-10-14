@@ -77,7 +77,6 @@
   "defaultExpiry": {
     "title": "Default expiry",
     "hint": "Pre-fills the date when anyone in the family adds a batch. Categories you leave out use the Catalog default.",
-    "list": "Default expiry",
     "catalog": "Catalog {{days}} d",
     "catalogDefault_one": "Catalog default {{count}} day",
     "catalogDefault_other": "Catalog default {{count}} days",
