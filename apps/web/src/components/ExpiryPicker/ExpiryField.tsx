@@ -12,6 +12,7 @@ import {
   useExpiryTags,
   type IsoDate,
 } from '../../lib/pantry';
+import { useToday } from '../../lib/useToday';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpirySheet } from './ExpirySheet';
 
@@ -47,7 +48,7 @@ export function ExpiryField({
   const rowId = id ?? fallbackId;
   const [open, setOpen] = useState(false);
   const row = useRef<HTMLButtonElement>(null);
-  const today = new Date();
+  const today = useToday();
   const { tagFor } = useExpiryTags(today);
   const { color } = tokens;
   const shown =

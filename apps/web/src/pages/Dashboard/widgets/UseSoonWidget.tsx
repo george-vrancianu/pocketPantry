@@ -5,13 +5,14 @@ import { translateApiError } from '../../../i18n/translateApiError';
 import { soonestExpiring } from '../../../lib/dashboard';
 import { ExpiryTag } from '../../../components/ExpiryTag';
 import { useBatches, useExpiryTags } from '../../../lib/pantry';
+import { useToday } from '../../../lib/useToday';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
 /** The three soonest-expiring Batches (Expired ones first) with their ExpiryTags. */
 export function UseSoonWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
-  const today = new Date();
+  const today = useToday();
   const batches = useBatches(i18n.language);
   const soonest = soonestExpiring(batches.data ?? []);
   const { tagFor } = useExpiryTags(today);

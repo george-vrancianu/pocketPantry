@@ -66,6 +66,7 @@ function stubPantry(batches: Batch[], search: CatalogSearchResult[] = []) {
 describe('PantryPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it('groups Batches by Location in the order given, with name, amount, description and ExpiryTag', async () => {
@@ -191,6 +192,9 @@ describe('PantryPage', () => {
     });
 
     it('shows the full date and tag in Batch detail, with the year only when it is not this year', async () => {
+      // Wednesday 14 October 2026. Only `Date` is faked, so the test cannot straddle midnight or New Year.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
       const user = userEvent.setup();
       stubPantry([
         batch({ id: 'a', quantity: 1, unit: 'l', expiryDate: inDays(0) }),
@@ -203,13 +207,28 @@ describe('PantryPage', () => {
       const [todays, later, undated] = within(
         screen.getByRole('list', { name: 'Batches of Milk' }),
       ).getAllByRole('group');
-      const thisYear = String(new Date().getFullYear());
-      expect(todays).toHaveTextContent(
-        /^1 L[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}Today/,
-      );
-      expect(todays).not.toHaveTextContent(thisYear);
+      expect(todays).toHaveTextContent(/^1 LWed, Oct 14Today/);
       expect(later).toHaveTextContent(/^2 LMon, Jun 9, 2031\d+ d(?! left)/);
       expect(undated).toHaveTextContent(/^3 LNo expiry/);
+    });
+
+    it('moves its tags on to the new day when the page is shown again after midnight', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 14, 23, 50));
+      const user = userEvent.setup();
+      stubPantry([
+        batch({ id: 'a', quantity: 1, unit: 'l', expiryDate: '2026-10-15' }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+      const batches = screen.getByRole('list', { name: 'Batches of Milk' });
+      expect(batches).toHaveTextContent('Tomorrow');
+
+      vi.setSystemTime(new Date(2026, 9, 15, 7, 0));
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      expect(batches).toHaveTextContent('Today');
     });
   });
 

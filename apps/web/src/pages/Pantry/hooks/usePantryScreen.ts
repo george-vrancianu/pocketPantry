@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
+import { useToday } from '../../../lib/useToday';
 import {
   countByLocation,
   groupByLocation,
@@ -21,7 +22,7 @@ export type PantryRow = RollUp & { gone: boolean };
 
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
-  const today = useMemo(() => new Date(), []);
+  const today = useToday();
   const batches = useBatches(i18n.language);
   const { mutateAsync: sendDelete } = useDeleteBatch();
   const removal = useDeferredRemoval(['pantry'], sendDelete);

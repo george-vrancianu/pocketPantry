@@ -15,6 +15,7 @@ import {
   type ExpiryTag as Tag,
   type IsoDate,
 } from '../../lib/pantry';
+import { useToday } from '../../lib/useToday';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpiryCalendar, type ExpiryCalendarHandle } from './ExpiryCalendar';
 import { QuickPicks } from './QuickPicks';
@@ -53,7 +54,7 @@ export function ExpirySheet({
 }: ExpirySheetProps) {
   const { t, i18n } = useTranslation('pantry');
   const quickPicks = useRef<HTMLDivElement>(null);
-  const today = new Date();
+  const today = useToday();
   const { staleThresholdDays, tagFor } = useExpiryTags(today);
   return (
     <Sheet
