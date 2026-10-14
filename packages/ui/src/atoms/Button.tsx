@@ -1,33 +1,153 @@
-import MuiButton, {
-  type ButtonProps as MuiButtonProps,
-} from '@mui/material/Button';
-import { tokens } from '../theme/tokens';
+import ButtonBase, { type ButtonBaseProps } from '@mui/material/ButtonBase';
+import type { Theme } from '@mui/material/styles';
+import type { ReactNode } from 'react';
+import { focusRing } from '../theme/focusRing';
+import { PlusIcon } from './icons';
 
-export type ButtonProps = Omit<MuiButtonProps, 'variant' | 'color'> & {
-  /** `primary` is the accent fill; `secondary` is the ink fill; `text` is a quiet link-like action. */
-  variant?: 'primary' | 'secondary' | 'text';
+export type ButtonVariant =
+  'primary' | 'secondary' | 'tonal' | 'ghost' | 'danger';
+
+export type ButtonProps = Omit<ButtonBaseProps, 'color'> & {
+  /**
+   * Handoff section 4. `primary` is the Theme primary (ink-black in Minimal
+   * crisp), `secondary` a bordered surface, `tonal` the accent tint, `ghost`
+   * accent text, `danger` the urgent pair. `text` is the old name of `ghost`.
+   */
+  variant?: ButtonVariant | 'text';
+  /** `sm` is 36 high for tight rows. */
+  size?: 'md' | 'sm';
+  /** `pill` is fully round, e.g. Done or Move N to Pantry. */
+  shape?: 'default' | 'pill';
+  /** Icon before the label. */
+  startIcon?: ReactNode;
+  fullWidth?: boolean;
 };
 
-export function Button({ variant = 'primary', sx, ...props }: ButtonProps) {
-  const muiVariant = variant === 'text' ? 'text' : 'contained';
+const palette = (theme: Theme) => (theme.vars ?? theme).palette;
+
+function variantSx(variant: ButtonVariant) {
+  return (theme: Theme) => {
+    const p = palette(theme);
+    switch (variant) {
+      case 'primary':
+        return {
+          backgroundColor: p.primary.main,
+          color: p.primary.contrastText,
+          boxShadow: 'var(--pp-shadow-btn)',
+          '&:hover': { filter: 'brightness(.94)' },
+        };
+      case 'secondary':
+        return {
+          backgroundColor: p.background.paper,
+          borderColor: p.pp.lineStrong,
+          color: p.text.primary,
+          '&:hover': { backgroundColor: p.pp.subtle },
+        };
+      case 'tonal':
+        return { backgroundColor: p.pp.accentTint, color: p.pp.accentOnTint };
+      case 'ghost':
+        return {
+          backgroundColor: 'transparent',
+          color: p.pp.accent,
+          '&:hover': { backgroundColor: p.pp.accentTint },
+        };
+      case 'danger':
+        return { backgroundColor: p.error.light, color: p.error.main };
+    }
+  };
+}
+
+/** Press feedback, left out under reduce-motion. */
+const press = {
+  '@media (prefers-reduced-motion: no-preference)': {
+    transition: 'transform 80ms, filter 120ms, background-color 120ms',
+    '&:active': { transform: 'scale(.97)' },
+  },
+} as const;
+
+const base = {
+  gap: '8px',
+  borderWidth: 'var(--pp-bw)',
+  borderStyle: 'solid',
+  borderColor: 'transparent',
+  fontFamily: 'var(--pp-body)',
+  fontWeight: 700,
+  whiteSpace: 'nowrap',
+  '& svg': { flexShrink: 0 },
+  '&.Mui-disabled': { opacity: 0.45, cursor: 'not-allowed' },
+} as const;
+
+/** The app's button, in the active Theme's colours and shapes. */
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  shape = 'default',
+  startIcon,
+  fullWidth,
+  children,
+  sx,
+  ...props
+}: ButtonProps) {
+  const small = size === 'sm';
   return (
-    <MuiButton
-      disableElevation
-      variant={muiVariant}
+    <ButtonBase
+      disableRipple
       sx={[
+        base,
         {
-          minHeight: 48,
-          borderRadius: `${tokens.radius.input}px`,
-          px: 3,
+          height: small ? 36 : 46,
+          px: small ? '14px' : '18px',
+          fontSize: small ? 13.5 : 14.5,
+          width: fullWidth ? '100%' : undefined,
+          borderRadius:
+            shape === 'pill'
+              ? '999px'
+              : small
+                ? 'calc(var(--pp-r-ctl) - 2px)'
+                : 'var(--pp-r-ctl)',
         },
-        variant === 'secondary' && {
-          backgroundColor: tokens.color.ink,
-          color: '#FFFFFF',
-          '&:hover': { backgroundColor: '#000000' },
-        },
+        variantSx(variant === 'text' ? 'ghost' : variant),
+        press,
+        focusRing,
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
       {...props}
-    />
+    >
+      {startIcon}
+      {children}
+    </ButtonBase>
+  );
+}
+
+export type AddButtonProps = Omit<ButtonBaseProps, 'children' | 'color'> & {
+  /** Names the action, e.g. "Add items"; the button shows only a plus. */
+  'aria-label': string;
+};
+
+/** The 52 x 52 Add button: `accent` fill, radius `r-fab` (round in Warm editorial). */
+export function AddButton({ sx, ...props }: AddButtonProps) {
+  return (
+    <ButtonBase
+      disableRipple
+      sx={[
+        (theme) => ({
+          flexShrink: 0,
+          width: 52,
+          height: 52,
+          borderRadius: 'var(--pp-r-fab)',
+          backgroundColor: palette(theme).pp.accent,
+          color: palette(theme).pp.accentInk,
+          boxShadow: 'var(--pp-shadow-btn)',
+          '&:hover': { filter: 'brightness(.94)' },
+          '&.Mui-disabled': { opacity: 0.45 },
+        }),
+        press,
+        focusRing,
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
+      {...props}
+    >
+      <PlusIcon size={24} />
+    </ButtonBase>
   );
 }
