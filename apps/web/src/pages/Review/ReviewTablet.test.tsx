@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -476,6 +476,19 @@ describe('the expiry sheet in the Review table', () => {
     expect(await saved(user, calls)).toMatchObject({
       expiryDate: '2026-12-28',
     });
+  });
+
+  it('returns focus to the calendar button when the sheet closes, even if a tap did not focus it', async () => {
+    const user = userEvent.setup();
+    renderReview([line({ lowConfidence: true })]);
+    const opener = screen.getByRole('button', {
+      name: 'Pick expiry date: Parmesan',
+    });
+    // Safari doesn't focus a button on tap, so a synthetic click leaves focus elsewhere.
+    fireEvent.click(opener);
+    await screen.findByRole('dialog', { name: 'Expires' });
+    await done(user);
+    expect(opener).toHaveFocus();
   });
 
   it('saves no expiry when No expiry is chosen in the sheet', async () => {

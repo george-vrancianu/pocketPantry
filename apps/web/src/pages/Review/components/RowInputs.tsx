@@ -1,5 +1,5 @@
 import { Box, CalendarIcon, tokens } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpirySheet, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS, type CatalogParent } from '../../../lib/catalog';
@@ -218,10 +218,12 @@ export function ExpiryButton({
 }) {
   const { t } = useTranslation('review');
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const empty = line.expiryDate === '';
   return (
     <>
       <Box
+        ref={button}
         id={id}
         component="button"
         type="button"
@@ -261,6 +263,8 @@ export function ExpiryButton({
         onChange={onChange}
         open={open}
         onClose={() => setOpen(false)}
+        // A tap doesn't always focus the button (Safari), so put focus back explicitly.
+        onExited={() => button.current?.focus()}
       />
     </>
   );
@@ -275,17 +279,21 @@ export function ExpirySheetFor({
   onChange,
   open,
   onClose,
+  onExited,
 }: {
   line: ReviewLine;
   onChange: Change;
   open: boolean;
   onClose: () => void;
+  /** After the close transition, to put focus back on the opener. */
+  onExited?: () => void;
 }) {
   const { t, i18n } = useTranslation(['pantry', 'common']);
   return (
     <ExpirySheet
       open={open}
       onClose={onClose}
+      onExited={onExited}
       value={isIsoDate(line.expiryDate) ? line.expiryDate : null}
       onChange={(value) =>
         onChange({ expiryDate: value ?? '', expiryExplicit: true })

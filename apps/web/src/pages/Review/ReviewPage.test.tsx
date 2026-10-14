@@ -700,6 +700,18 @@ describe('ReviewPage', () => {
       });
     });
 
+    it('returns focus to the expiry cell when the sheet closes, even if a tap did not focus it', async () => {
+      const user = userEvent.setup();
+      renderReview([sure()]);
+      await user.click(row('Parmesan'));
+      const cell = screen.getByRole('button', { name: /^Expiry date/ });
+      // Safari doesn't focus a button on tap, so a synthetic click leaves focus elsewhere.
+      fireEvent.click(cell);
+      await screen.findByRole('dialog', { name: 'Expires' });
+      await done(user);
+      expect(cell).toHaveFocus();
+    });
+
     it('saves no expiry when No expiry is chosen in the sheet', async () => {
       const user = userEvent.setup();
       const calls = renderReview([sure()]);

@@ -8,7 +8,7 @@ import {
   SwapIcon,
   tokens,
 } from '@pocket-pantry/ui';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import { formatDate } from '../../../lib/dateFormat';
@@ -107,6 +107,7 @@ export function TabletReviewRow({
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
   const [expirySheetOpen, setExpirySheetOpen] = useState(false);
+  const pickExpiry = useRef<HTMLButtonElement>(null);
   // Labels use the position-qualified `accessibleName`; the visible text stays the plain one.
   const name = displayName(line);
   const unmatched = line.match === null;
@@ -359,6 +360,7 @@ export function TabletReviewRow({
                     />
                   </Box>
                   <IconButton
+                    ref={pickExpiry}
                     label={named(t('review:pickExpiry'))}
                     tone="plain"
                     size={34}
@@ -373,6 +375,8 @@ export function TabletReviewRow({
                   onChange={onChange}
                   open={expirySheetOpen}
                   onClose={() => setExpirySheetOpen(false)}
+                  // A tap doesn't always focus the button (Safari), so put focus back explicitly.
+                  onExited={() => pickExpiry.current?.focus()}
                 />
                 {expiryError ? (
                   <CellError id={`${id('expiry')}-error`}>
