@@ -64,6 +64,13 @@ function stubFamily(
       current = current.filter((o) => o.categoryId !== 'l-milk');
       return options.del?.() ?? new Response(null, { status: 204 });
     },
+    'PUT /api/settings/family/expiry-overrides/l-cheese': () => {
+      current = [
+        ...current,
+        { categoryId: 'l-cheese', name: 'Hard cheese', days: 30 },
+      ];
+      return new Response(null, { status: 204 });
+    },
     'DELETE /api/settings/family/expiry-overrides/p-produce': () => {
       current = current.filter((o) => o.categoryId !== 'p-produce');
       return new Response(null, { status: 204 });
@@ -408,6 +415,35 @@ describe('Default expiry', () => {
           body: { days: 14 },
         }),
       ]);
+    });
+
+    it('creates a new override from "Set a category" and lists it', async () => {
+      const user = userEvent.setup();
+      const { calls } = stubFamily([MILK]);
+      renderFamily();
+      await user.click(
+        await screen.findByRole('button', { name: 'Set a category' }),
+      );
+      const picker = await screen.findByRole('dialog', {
+        name: 'Pick a category',
+      });
+      await user.click(
+        within(picker).getByRole('button', { name: /Hard cheese/ }),
+      );
+      const sheet = await screen.findByRole('dialog', { name: 'Hard cheese' });
+      await user.click(within(sheet).getByRole('button', { name: '1 month' }));
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+
+      expect(await screen.findByText('Hard cheese: 30 days')).toBeVisible();
+      expect(calls.filter((call) => call.key.startsWith('PUT'))).toEqual([
+        expect.objectContaining({
+          key: 'PUT /api/settings/family/expiry-overrides/l-cheese',
+          body: { days: 30 },
+        }),
+      ]);
+      const row = await waitFor(() => rowOf('Hard cheese'));
+      expect(within(row).getByText('Dairy · Catalog 60 d')).toBeVisible();
+      expect(within(row).getByText('30')).toBeVisible();
     });
 
     it('saving a category whose removal is still waiting on Undo drops that removal and sends only the PUT', async () => {
