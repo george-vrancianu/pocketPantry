@@ -138,6 +138,40 @@ describe('StructuredOutputAiService', () => {
       });
     });
 
+    it.each([
+      [
+        'openai',
+        responses({
+          input_tokens: 1200,
+          output_tokens: 300,
+          input_tokens_details: { cached_tokens: 1024 },
+          output_tokens_details: { reasoning_tokens: 250 },
+        }),
+      ],
+      [
+        'openai-compatible',
+        chat({
+          prompt_tokens: 1200,
+          completion_tokens: 300,
+          prompt_tokens_details: { cached_tokens: 1024 },
+          completion_tokens_details: { reasoning_tokens: 250 },
+        }),
+      ],
+    ])(
+      'returns the token usage with the answer (%s)',
+      async (provider, body) => {
+        jest.spyOn(Logger.prototype, 'log').mockImplementation();
+        respond(body);
+        const result = await serviceFor(provider).generate(request);
+        expect(result.usage).toEqual({
+          inputTokens: 1200,
+          outputTokens: 300,
+          cachedInputTokens: 1024,
+          reasoningTokens: 250,
+        });
+      },
+    );
+
     it('omits cached tokens when the provider does not report them', async () => {
       const log = jest.spyOn(Logger.prototype, 'log').mockImplementation();
       respond(chat({ prompt_tokens: 5, completion_tokens: 2 }));

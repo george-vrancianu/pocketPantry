@@ -21,6 +21,8 @@ export type StructuredOutputRequest = {
 export type StructuredOutputResult = {
   data: unknown;
   requestId: string | null;
+  /** Billed tokens, when the provider reported them. */
+  usage?: AiTokenUsage;
 };
 
 export type StructuredOutputErrorCode =
@@ -145,6 +147,20 @@ const chatUsageSchema = z
     cachedInputTokens: u.prompt_tokens_details?.cached_tokens,
     reasoningTokens: u.completion_tokens_details?.reasoning_tokens,
   }));
+
+/**
+ * Token usage from a provider body (`openai` is the Responses API, anything else Chat
+ * Completions). Best-effort telemetry: a missing or malformed block is `undefined`.
+ */
+export function readAiUsage(
+  provider: string,
+  body: unknown,
+): AiTokenUsage | undefined {
+  const schema: z.ZodType<AiTokenUsage> =
+    provider === 'openai' ? responsesUsageSchema : chatUsageSchema;
+  const usage = schema.safeParse((body as { usage?: unknown } | null)?.usage);
+  return usage.success ? usage.data : undefined;
+}
 
 const openAiResponsesBodySchema = z.object({
   status: z.string().optional(),
@@ -291,11 +307,16 @@ export class StructuredOutputAiService {
       trace.body = raw;
       const body: unknown = JSON.parse(raw);
       trace.body = body;
-      this.logUsage(isResponsesApi, body, request.schemaName, requestId);
+      const usage = readAiUsage(provider, body);
+      this.logUsage(usage, request.schemaName, requestId);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
         : this.readChatCompletionsText(body, requestId);
-      return { data: JSON.parse(text) as unknown, requestId };
+      return {
+        data: JSON.parse(text) as unknown,
+        requestId,
+        ...(usage ? { usage } : {}),
+      };
     } catch (error) {
       if (error instanceof ApiException) throw error;
       throw new ApiException(502, 'scan.result_invalid');
@@ -304,17 +325,12 @@ export class StructuredOutputAiService {
 
   /** Logs token counts only (never prompt, image or response content). */
   private logUsage(
-    isResponsesApi: boolean,
-    body: unknown,
+    usage: AiTokenUsage | undefined,
     schemaName: string,
     requestId: string | null,
   ) {
-    const schema: z.ZodType<AiTokenUsage> = isResponsesApi
-      ? responsesUsageSchema
-      : chatUsageSchema;
-    const usage = schema.safeParse((body as { usage?: unknown } | null)?.usage);
-    if (!usage.success) return;
-    const { cachedInputTokens, reasoningTokens, ...counts } = usage.data;
+    if (!usage) return;
+    const { cachedInputTokens, reasoningTokens, ...counts } = usage;
     this.logger.log({
       message: 'AI token usage',
       requestId,
