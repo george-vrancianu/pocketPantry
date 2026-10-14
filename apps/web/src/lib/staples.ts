@@ -41,6 +41,10 @@ export type NewStaple = StapleDraft & { name?: string };
 /** The Staple shown while an add is in flight; the refresh replaces it with the saved one. */
 const placeholderId = (ingredientId: string) => `pending:${ingredientId}`;
 
+/** Whether a Staple is the placeholder of an add in flight: it has no server id to edit or remove by. */
+export const isPendingStaple = (staple: Pick<Staple, 'id'>) =>
+  staple.id.startsWith('pending:');
+
 /**
  * Add, edit and remove Staples. Add and remove show in the cache at once and are taken back if
  * the server refuses; add and remove refresh the Staples and the suggestions once they settle.

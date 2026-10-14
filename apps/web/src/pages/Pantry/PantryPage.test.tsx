@@ -2105,6 +2105,40 @@ describe('PantryPage', () => {
           expect(chip).toHaveAttribute('aria-pressed', 'true');
         });
 
+        it('does nothing from another row of the Ingredient while the add is still out', async () => {
+          const user = userEvent.setup();
+          const { gate, release } = gated();
+          const calls = stubActions({
+            gate,
+            batches: [
+              batch({ name: 'Milk', location: 'fridge' }),
+              batch({ name: 'Milk', location: 'cupboard' }),
+            ],
+          });
+          renderWithProviders(<PantryPage />);
+          const fridge = await screen.findByRole('region', {
+            name: 'Fridge · 1',
+          });
+          const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
+
+          await user.click(
+            within(fridge).getByRole('button', { name: /^Milk/ }),
+          );
+          await user.click(stapleChip()!);
+          await user.click(
+            within(cupboard).getByRole('button', { name: /^Milk/ }),
+          );
+          // The add has no Staple id yet: the chip here has nothing to remove by.
+          await user.click(stapleChip()!);
+          expect(stapleChip()).toHaveAttribute('aria-pressed', 'true');
+
+          release();
+          expect(await screen.findByText('Milk is a Staple')).toBeVisible();
+          expect(
+            calls.filter((c) => c.key.startsWith('DELETE /api/staples')),
+          ).toEqual([]);
+        });
+
         it('removes the Staple by its id, at once, and says so', async () => {
           const user = userEvent.setup();
           const calls = stubActions({ staplesAtStart: [milkStaple] });
