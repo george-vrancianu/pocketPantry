@@ -2,11 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
+import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
 import type { CatalogScope } from './catalog-scope';
 import {
   AISLE_LISTING_LIMIT,
   type CatalogAisle,
+  type CatalogCategory,
   type CatalogLocale,
   type CatalogParent,
   type CatalogSearchResult,
@@ -19,6 +21,8 @@ import {
 } from './catalog-defaults';
 import { normalizeName } from './normalize';
 import { readAmountScale } from './amount-scale';
+
+const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
 
 /** Restricts a search to an Aisle, and within it to one Parent Category. */
 export type SearchWithin = { aisleId?: string; parentCategoryId?: string };
@@ -238,6 +242,129 @@ export class CatalogSearchService {
     return result;
   }
 
+  /**
+   * Leaf Categories a Family Ingredient can be filed under, named in `locale`.
+   * An empty query offers only the top-level "Other" Leaf. Otherwise ranks
+   * Leaf starts with, Leaf contains, Parent contains, Aisle contains, then A to Z.
+   */
+  async listCategories(
+    scope: CatalogScope,
+    query: string,
+    locale: CatalogLocale,
+    limit: number,
+    overrides: readonly ExpiryOverride[],
+  ): Promise<CatalogCategory[]> {
+    const key = normalizeName(query);
+    const rows = await this.database
+      .select({
+        leafId: leafCategories.id,
+        leafName: leafCategories.name,
+        leafExpiry: leafCategories.defaultExpiryDays,
+        leafLocation: leafCategories.defaultLocation,
+        isOther: leafCategories.isOther,
+        parentId: parentCategories.id,
+        parentName: parentCategories.name,
+        parentExpiry: parentCategories.defaultExpiryDays,
+        parentLocation: parentCategories.defaultLocation,
+        aisleId: aisles.id,
+        aisleName: aisles.name,
+      })
+      .from(leafCategories)
+      .innerJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .innerJoin(aisles, eq(parentCategories.aisleId, aisles.id))
+      .where(
+        key
+          ? undefined
+          : and(
+              eq(leafCategories.isOther, true),
+              eq(parentCategories.id, TOP_LEVEL_OTHER_PARENT_ID),
+            ),
+      );
+    const { pick } = await loadDisplayNames(
+      this.database,
+      scope,
+      locale,
+      rows.flatMap((row) => [row.leafId, row.parentId, row.aisleId]),
+    );
+    const named = rows.map((row) => ({
+      row,
+      leaf: pick('leaf_category', row.leafId, row.leafName),
+      parent: pick('parent_category', row.parentId, row.parentName),
+      aisle: pick('aisle', row.aisleId, row.aisleName),
+    }));
+    const tierOf = (entry: (typeof named)[number]): number => {
+      if (!key) return 0;
+      const leaf = normalizeName(entry.leaf);
+      if (leaf.startsWith(key)) return 0;
+      if (leaf.includes(key)) return 1;
+      if (normalizeName(entry.parent).includes(key)) return 2;
+      if (normalizeName(entry.aisle).includes(key)) return 3;
+      return 4;
+    };
+    return named
+      .map((entry) => ({ entry, tier: tierOf(entry) }))
+      .filter(({ tier }) => tier < 4)
+      .sort(
+        (a, b) =>
+          a.tier - b.tier ||
+          a.entry.leaf.localeCompare(b.entry.leaf, locale) ||
+          a.entry.row.leafId.localeCompare(b.entry.row.leafId),
+      )
+      .slice(0, limit)
+      .map(({ entry: { row, leaf, parent, aisle } }) => ({
+        id: row.leafId,
+        name: leaf,
+        parentCategory: { id: row.parentId, name: parent },
+        aisle: { id: row.aisleId, name: aisle },
+        defaults: {
+          ...resolveCatalogDefaults(
+            {
+              defaultExpiryDays: row.leafExpiry,
+              defaultLocation: row.leafLocation,
+            },
+            {
+              defaultExpiryDays: row.parentExpiry,
+              defaultLocation: row.parentLocation,
+            },
+          ),
+          expiryDays: resolveExpiryDays(
+            { id: row.leafId, defaultExpiryDays: row.leafExpiry },
+            { id: row.parentId, defaultExpiryDays: row.parentExpiry },
+            overrides,
+          ),
+        },
+      }));
+  }
+
+  /**
+   * The Ingredient (visible to `scope`) whose canonical name, display name in
+   * any locale, or Synonym equals `key` (a normalised name), if any. Shared
+   * rows win over the Family's own.
+   */
+  async findIdByName(scope: CatalogScope, key: string): Promise<string | null> {
+    const ingredients = scope.ingredients(this.database);
+    const catalogTranslations = scope.translations(this.database);
+    const hits = await this.database.execute<{ id: string }>(sql`
+      SELECT c.id
+      FROM (
+        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
+        FROM ${ingredients}
+        UNION ALL
+        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
+        FROM ${catalogTranslations}
+        WHERE ${catalogTranslations.entityType} = 'ingredient'
+      ) c
+      JOIN ${ingredients} ON ${ingredients.id} = c.id
+      WHERE c.key = ${key}
+      ORDER BY (${ingredients.ownerFamilyId} IS NOT NULL), c.id
+      LIMIT 1
+    `);
+    return hits.rows[0]?.id ?? null;
+  }
+
   /** Every Parent Category with its name in `locale`, sorted by that name. */
   async listParents(
     scope: CatalogScope,
@@ -287,6 +414,7 @@ export class CatalogSearchService {
         name: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
         amountScale: ingredients.amountScale,
+        ownerFamilyId: ingredients.ownerFamilyId,
         leafId: leafCategories.id,
         leafName: leafCategories.name,
         leafExpiry: leafCategories.defaultExpiryDays,
@@ -326,6 +454,7 @@ export class CatalogSearchService {
         {
           id: row.id,
           name: display('ingredient', row.id, row.name),
+          owner: row.ownerFamilyId ? ('family' as const) : ('catalog' as const),
           defaultUnit: row.defaultUnit,
           amountScale: readAmountScale(row.amountScale),
           leafCategory: {

@@ -30,6 +30,7 @@ const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => {
     aisle: dairy,
     since: null,
     ingredient: {
+      owner: 'catalog',
       amountScale: 'medium',
       id,
       name,
@@ -58,6 +59,7 @@ const emptyList = (groups: ShoppingList['groups'] = []): ShoppingList => ({
 });
 
 const flour: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'flour-id',
   name: 'Flour',
@@ -743,5 +745,54 @@ describe('StaplesPage Browse by aisle', () => {
     expect(
       await screen.findByRole('button', { name: 'Dairy & eggs' }),
     ).toBeVisible();
+  });
+});
+
+describe('Add to your catalog (#270)', () => {
+  it('is offered in the Staples search, which has no Use as typed', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+    await screen.findByRole('group', { name: 'Milk' });
+
+    await userEvent.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await userEvent.paste('kombucha');
+
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(
+      screen.getByRole('button', { name: 'Add “kombucha” to your catalog' }),
+    ).toBeVisible();
+  });
+
+  it('is offered in the Shopping add sheet, above Use as typed', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [], usedUp: [], expired: [] }),
+      'GET /api/shopping-templates': () => Response.json({ templates: [] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add items' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await userEvent.paste('kombucha');
+
+    const options = await within(dialog).findAllByRole('option');
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
   });
 });

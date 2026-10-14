@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
 import type { AmountScale } from './usualAmounts';
@@ -12,6 +12,8 @@ export type CatalogSearchResult = {
   defaults: { expiryDays: number | null; location: StorageLocation | null };
   id: string;
   name: string;
+  /** `family` for a Family Ingredient only this Family sees; `catalog` for a shared one. */
+  owner: 'catalog' | 'family';
   defaultUnit: Unit;
   /** How much a Member usually buys at once; always present. */
   amountScale: AmountScale;
@@ -133,4 +135,63 @@ export function useCatalogSearch(
     /** The trimmed query the results belong to (it lags what is typed). */
     query: debounced,
   };
+}
+
+/** A Leaf Category a Family Ingredient can be filed under. */
+export type CatalogCategory = {
+  id: string;
+  name: string;
+  parentCategory: { id: string; name: string };
+  aisle: { id: string; name: string };
+  defaults: { expiryDays: number | null; location: StorageLocation | null };
+};
+
+/**
+ * Leaf Categories matching `query` in `locale` (an empty query offers Other
+ * only). Held back until `enabled`, so a closed form makes no request.
+ */
+export function useCatalogCategories(
+  query: string,
+  locale: string,
+  enabled = true,
+) {
+  const debounced = useDebounced(query.trim(), 150);
+  const result = useQuery({
+    queryKey: ['catalog-categories', locale, debounced],
+    queryFn: () =>
+      apiRequest<{ categories: CatalogCategory[] }>(
+        `/catalog/categories?${new URLSearchParams({ q: debounced, locale })}`,
+      ).then((body) => body.categories),
+    enabled,
+    placeholderData: (previous) => previous,
+    staleTime: 60_000,
+  });
+  return {
+    ...result,
+    isSearching: query.trim() !== debounced || result.isFetching,
+  };
+}
+
+export type FamilyIngredientInput = {
+  name: string;
+  leafCategoryId: string;
+  defaultUnit: Unit;
+};
+
+/**
+ * Adds a Family Ingredient (named in `locale`, the locale it was typed in).
+ * A name that is taken fails with `catalog.family_ingredient_exists` and the
+ * existing result in `params.existing`.
+ */
+export function useCreateFamilyIngredient(locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: FamilyIngredientInput) =>
+      apiRequest<CatalogSearchResult>(
+        `/catalog/family-ingredients?${new URLSearchParams({ locale })}`,
+        { method: 'POST', body: input },
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+  });
 }

@@ -1,5 +1,6 @@
 import {
   Box,
+  BookPlusIcon,
   CloseIcon,
   IconButton,
   SearchIcon,
@@ -12,6 +13,7 @@ import {
 import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
+import { ADD_TO_CATALOG_TRIGGER } from './AddToCatalog';
 import { SelectedToken } from './SelectedToken';
 
 export type SearchFieldProps = {
@@ -34,6 +36,8 @@ export type SearchFieldProps = {
   onClear: () => void;
   /** Show the clear × even with no text (an Aisle is open). */
   canClear?: boolean;
+  /** The "Add to your catalog" button, shown before the clear × while text is typed. */
+  addToCatalog?: { label: string; open: boolean; onOpen: () => void } | null;
   /** Rows are showing while newer results load: the spinner takes the right slot. */
   refetching: boolean;
   reducedMotion: boolean;
@@ -57,6 +61,7 @@ export function SearchField({
   selected,
   onClear,
   canClear = false,
+  addToCatalog = null,
   refetching,
   reducedMotion,
 }: SearchFieldProps) {
@@ -150,7 +155,7 @@ export function SearchField({
           minWidth: 0,
           height: '100%',
           pl: '46px',
-          pr: '44px',
+          pr: addToCatalog && !selected ? '88px' : '44px',
           border: 0,
           outline: 0,
           background: 'transparent',
@@ -163,7 +168,21 @@ export function SearchField({
           ...(selected ? visuallyHidden : {}),
         }}
       />
-      <Box sx={{ position: 'absolute', right: 6, display: 'flex' }}>
+      <Box sx={{ position: 'absolute', right: 6, display: 'flex', gap: '2px' }}>
+        {addToCatalog && !selected ? (
+          <IconButton
+            {...{ [ADD_TO_CATALOG_TRIGGER]: '' }}
+            label={addToCatalog.label}
+            aria-haspopup="dialog"
+            aria-expanded={addToCatalog.open}
+            tone={addToCatalog.open ? 'accent' : 'accentOutline'}
+            size={34}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={addToCatalog.onOpen}
+          >
+            <BookPlusIcon size={18} />
+          </IconButton>
+        ) : null}
         {rightSlot}
       </Box>
       {selected ? (

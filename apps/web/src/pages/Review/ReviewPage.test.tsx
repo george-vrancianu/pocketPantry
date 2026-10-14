@@ -11,6 +11,7 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
@@ -828,5 +829,36 @@ describe('ReviewPage match dialog has no Browse by aisle', () => {
 
     expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
     expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
+  });
+});
+
+describe('ReviewPage: Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is offered in the Match dialog search, which has no Use as typed', async () => {
+    // A low-confidence line shows its Change button without opening the row.
+    renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+      },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await within(dialog).findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
 });

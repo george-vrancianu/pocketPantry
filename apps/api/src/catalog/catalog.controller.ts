@@ -1,4 +1,12 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -6,9 +14,16 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
 import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
+import { FamilyIngredientsService } from './family-ingredients.service';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
+  catalogCategoriesQuery,
+  familyIngredientBody,
+  familyIngredientQuery,
+  type CatalogCategoriesQuery,
+  type CatalogCategory,
+  type FamilyIngredientBody,
   catalogParentsQuery,
   type CatalogAisle,
   type CatalogAislesQuery,
@@ -25,6 +40,7 @@ import {
 export class CatalogController {
   constructor(
     private readonly searchService: CatalogSearchService,
+    private readonly familyIngredients: FamilyIngredientsService,
     private readonly settings: SettingsService,
   ) {}
 
@@ -87,6 +103,51 @@ export class CatalogController {
         },
       ),
     };
+  }
+
+  @Get('categories')
+  @ApiOperation({
+    summary:
+      'Search Leaf Categories (with Parent, Aisle and effective Default Expiry) to file a Family Ingredient under',
+  })
+  async categories(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(catalogCategoriesQuery))
+    query: CatalogCategoriesQuery,
+  ): Promise<{ categories: CatalogCategory[] }> {
+    return {
+      categories: await this.searchService.listCategories(
+        await this.settings.catalogScopeForMember(member.id),
+        query.q,
+        query.locale,
+        query.limit,
+        await this.settings.expiryOverridesForMember(member.id),
+      ),
+    };
+  }
+
+  @Post('family-ingredients')
+  @HttpCode(201)
+  @ApiOperation({
+    summary:
+      "Add an Ingredient only the caller's Family sees; 409 with the existing Ingredient when the name is taken",
+  })
+  async createFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familyIngredientBody))
+    body: FamilyIngredientBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familyIngredients.create(
+      {
+        id: await this.settings.familyIdOf(member.id),
+        memberId: member.id,
+      },
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
   }
 
   /** The Catalog scope a request asks for: shared rows only, or the Member's Family. */

@@ -10,6 +10,12 @@ const statements = readFileSync(
   resolve(process.cwd(), 'drizzle/0012_fold_danish_letters.sql'),
   'utf8',
 )
+  // Since 0022 a name is unique per owner, so the collision check is replayed over
+  // shared rows only: other suites' Family Ingredients may repeat a name across Families.
+  .replaceAll(
+    "FROM ingredients t LEFT JOIN pp_rekey r ON r.tbl = 'ingredients' AND r.id = t.id::text",
+    "FROM ingredients t LEFT JOIN pp_rekey r ON r.tbl = 'ingredients' AND r.id = t.id::text WHERE t.owner_family_id IS NULL",
+  )
   .split('--> statement-breakpoint')
   .map((statement) => statement.trim())
   .filter((statement) => statement !== '');

@@ -34,6 +34,31 @@
       "days": "{{count}} d siden",
       "weeks": "{{count}} u siden",
       "months": "{{count}} md siden"
-    }
+    },
+    "addToCatalog": "Føj “{{query}}” til dit katalog",
+    "addToCatalogHint": "Vælg kategori én gang · kun din familie ser den",
+    "familyTag": "Familie"
+  },
+  "catalogAdd": {
+    "title": "Føj til dit katalog",
+    "subtitle": "Kun din familie ser den. Administratorer kan senere føje den til alles katalog.",
+    "name": "Navn",
+    "category": "Kategori",
+    "placeholder": "Søg i kategorier, f.eks. krydderier",
+    "typeToSearch": "skriv for at søge i kategorier",
+    "noMatch": "Ingen kategori matcher. Prøv afdelingens navn.",
+    "change": "Skift kategori",
+    "pickOne": "vælg en",
+    "unit": "Enhed",
+    "expiryDays_one": "{{count}} d",
+    "expiryDays_other": "{{count}} d",
+    "noExpiry": "Ingen udløbsdato",
+    "add": "Tilføj og vælg",
+    "cancel": "Annuller",
+    "close": "Luk",
+    "pick": "Vælg {{name}}",
+    "exists": "“{{name}}” findes allerede i kataloget.",
+    "failed": "Kunne ikke tilføje den. Tjek din forbindelse, og prøv igen.",
+    "added": "Tilføjede {{name}} til din families katalog · {{category}}"
   }
 }

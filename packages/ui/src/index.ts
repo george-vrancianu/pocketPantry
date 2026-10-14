@@ -92,6 +92,7 @@ export {
   IngredientsScanIcon,
   CloseIcon,
   PlusIcon,
+  BookPlusIcon,
   CustomiseIcon,
   FlashIcon,
   GalleryIcon,

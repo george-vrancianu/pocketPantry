@@ -32,6 +32,7 @@ const ingredient = (
   name: string,
   parent = 'dairy-parent',
 ): CatalogSearchResult => ({
+  owner: 'catalog',
   amountScale: 'medium',
   id,
   name,

@@ -44,6 +44,7 @@ function batch(overrides: Partial<Batch>): Batch {
 }
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
@@ -721,7 +722,7 @@ describe('PantryPage', () => {
     expect(post?.body).not.toHaveProperty('ingredientId');
   });
 
-  it('saves Use as typed from the keyboard when it is the only option', async () => {
+  it('saves Use as typed from the keyboard when nothing matches', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], []);
     renderWithProviders(<PantryPage />);
@@ -732,7 +733,8 @@ describe('PantryPage', () => {
       'Zorblax paste',
     );
     await screen.findByRole('option', { name: /Use “Zorblax paste” as typed/ });
-    await user.keyboard('{Enter}');
+    // "Add to your catalog" is the first option when nothing matches (#270); Use as typed is second.
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
     await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
 
     expect(
@@ -3093,5 +3095,30 @@ describe('PantryPage Browse by aisle', () => {
     expect(
       recent.compareDocumentPosition(browse) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+  });
+});
+
+describe('PantryPage: Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers Add to your catalog in the Add batch search, above Use as typed when nothing matches', async () => {
+    const user = userEvent.setup();
+    stubPantry([], []);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await user.paste('kombucha');
+
+    const options = await screen.findAllByRole('option');
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
+    expect(
+      screen.getByRole('button', { name: 'Add “kombucha” to your catalog' }),
+    ).toBeVisible();
   });
 });

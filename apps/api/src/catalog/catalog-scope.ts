@@ -1,3 +1,4 @@
+import { eq, isNull, or } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
 import { catalogTranslations, ingredients } from '../database/schema';
 
@@ -11,14 +12,14 @@ export const SHARED_ONLY = Symbol('catalog.shared-only');
 export type CatalogReader = string | typeof SHARED_ONLY;
 
 /**
- * The only way to read Ingredients and Catalog translations (the Family Ingredients ADR, #270).
+ * The only way to read Ingredients and Catalog translations (ADR 0011).
  * Each method returns a subquery with the table's columns, to use wherever the
  * table would be: `.from(scope.ingredients(db))`, a join, or a raw-SQL source.
  * Callers never filter by owner themselves, so forgetting the scope is the one
  * mistake that could leak one Family's names to another.
  *
- * Today every row is shared, so every scope yields the whole Catalog. Family
- * Ingredients and Family Synonyms add their owner predicate here and nowhere else.
+ * A Family reader gets shared rows plus its own Family Ingredients; `SHARED_ONLY`
+ * gets shared rows only. Family Synonyms add their predicate here too.
  * Inserts, updates and deletes still target the tables directly.
  */
 export type CatalogScope = {
@@ -26,8 +27,18 @@ export type CatalogScope = {
   translations(executor: Executor): ReturnType<typeof scopedTranslations>;
 };
 
-function scopedIngredients(executor: Executor) {
-  return executor.select().from(ingredients).as('ingredients');
+function scopedIngredients(executor: Executor, reader: CatalogReader) {
+  const rows = executor.select().from(ingredients);
+  return (
+    reader === SHARED_ONLY
+      ? rows.where(isNull(ingredients.ownerFamilyId))
+      : rows.where(
+          or(
+            isNull(ingredients.ownerFamilyId),
+            eq(ingredients.ownerFamilyId, reader),
+          ),
+        )
+  ).as('ingredients');
 }
 
 function scopedTranslations(executor: Executor) {
@@ -35,9 +46,8 @@ function scopedTranslations(executor: Executor) {
 }
 
 export function catalogScope(reader: CatalogReader): CatalogScope {
-  void reader;
   return {
-    ingredients: scopedIngredients,
+    ingredients: (executor) => scopedIngredients(executor, reader),
     translations: scopedTranslations,
   };
 }
