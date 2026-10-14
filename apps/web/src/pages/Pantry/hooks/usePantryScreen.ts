@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { StorageLocation } from '../../../lib/catalog';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useToday } from '../../../lib/useToday';
@@ -19,7 +20,24 @@ import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
  * A roll-up row as shown. `gone`: every Batch of it is pending removal. The row stays (empty, so Undo
  * brings it back as it was, expanded) until the delete has been sent, and then it collapses away.
  */
-export type PantryRow = RollUp & { gone: boolean; runningLow: boolean };
+export type PantryRow = RollUp & {
+  gone: boolean;
+  runningLow: boolean;
+  /** This row's key for the page's one open Ingredient. */
+  openKey: OpenIngredientKey;
+  open: boolean;
+};
+
+/**
+ * Which Ingredient is open on the page: the Location and the roll-up key. A plain string, so it can
+ * later be kept across navigation (issue 261). The same Ingredient in another Location is another row.
+ */
+export type OpenIngredientKey = string;
+
+export const openIngredientKey = (
+  location: StorageLocation,
+  rowKey: string,
+): OpenIngredientKey => `${location}/${rowKey}`;
 
 export function usePantryScreen() {
   const { t, i18n } = useTranslation();
@@ -34,6 +52,8 @@ export function usePantryScreen() {
   const [adding, setAdding] = useState(false);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PantryFilter>('all');
+  // One open Ingredient for the whole page: opening another closes it, in any Location.
+  const [openKey, setOpenKey] = useState<OpenIngredientKey | null>(null);
 
   const all = batches.data ?? [];
   // Chip counts follow the search, so they always say how many Batches the chip would show.
@@ -55,7 +75,14 @@ export function usePantryScreen() {
           remaining.length === row.batches.length || gone
             ? row
             : rollUp(remaining)[0];
-        return { ...current, gone, runningLow: flagged.has(current.key) };
+        const key = openIngredientKey(group.location, current.key);
+        return {
+          ...current,
+          gone,
+          runningLow: flagged.has(current.key),
+          openKey: key,
+          open: key === openKey,
+        };
       }),
     })),
     counts: countByLocation(searched.filter(live)),
@@ -71,6 +98,9 @@ export function usePantryScreen() {
     adding,
     startAdding: () => setAdding(true),
     stopAdding: () => setAdding(false),
+    /** Open the Ingredient, closing any other; or close it if it is the open one. */
+    toggleOpen: (key: OpenIngredientKey) =>
+      setOpenKey((current) => (current === key ? null : key)),
     removeBatch: removal.remove,
     retry: () => void batches.refetch(),
   };

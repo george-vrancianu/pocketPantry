@@ -31,7 +31,10 @@
   "batchCount_one": "{{count}} batch",
   "batchCount_few": "{{count}} batches",
   "batchCount_other": "{{count}} batches",
-  "batchesOf": "Batches of {{name}}",
+  "group": {
+    "batches_one": "{{count}} batch",
+    "batches_other": "{{count}} batches"
+  },
   "noDetails": "No quantity set",
   "edit": {
     "title": "Edit {{name}} batch",

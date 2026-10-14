@@ -211,7 +211,7 @@ describe('PantryPage', () => {
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
 
       const [todays, later, undated] = within(
-        screen.getByRole('list', { name: 'Batches of Milk' }),
+        screen.getByRole('group', { name: 'Milk, 3 batches' }),
       ).getAllByRole('group');
       expect(todays).toHaveTextContent(/^1 LWed, Oct 14Today/);
       expect(later).toHaveTextContent(/^2 LMon, Jun 9, 2031\d+ d(?! left)/);
@@ -227,7 +227,7 @@ describe('PantryPage', () => {
       ]);
       renderWithProviders(<PantryPage />);
       await user.click(await screen.findByRole('button', { name: /^Milk/ }));
-      const batches = screen.getByRole('list', { name: 'Batches of Milk' });
+      const batches = screen.getByRole('group', { name: 'Milk, 1 batch' });
       expect(batches).toHaveTextContent('Tomorrow');
 
       vi.setSystemTime(new Date(2026, 9, 15, 7, 0));
@@ -1307,7 +1307,7 @@ describe('PantryPage', () => {
     /** The Batch rows of an expanded roll-up, in order. */
     const batchRows = (name = 'Milk') =>
       within(
-        screen.getByRole('list', { name: `Batches of ${name}` }),
+        screen.getByRole('group', { name: new RegExp(`^${name}, \\d+ batch`) }),
       ).getAllByRole('group');
     /** The keyboard path to the editor sheet: focus the row, press Enter. */
     async function openEditor(
@@ -1530,10 +1530,9 @@ describe('PantryPage', () => {
         expect(toggle).toHaveAttribute('aria-pressed', 'false');
         expect(toggle.nextElementSibling).toBe(star);
 
+        // Opening the Unmatched row closes Milk, and offers no toggle of its own.
         await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
-        expect(
-          screen.getAllByRole('button', { name: 'Mark running low' }),
-        ).toHaveLength(1);
+        expect(runningLowToggle()).not.toBeInTheDocument();
       });
 
       it('sets the flag at once on tap, and clears it on the next tap', async () => {
@@ -1649,7 +1648,7 @@ describe('PantryPage', () => {
           // The expiry shows per Batch in the expanded panel, so the chip stays on the header.
           expect(
             within(
-              screen.getByRole('list', { name: 'Batches of Milk' }),
+              screen.getByRole('group', { name: 'Milk, 1 batch' }),
             ).getByText('2 days left'),
           ).toBeVisible();
           expect(
@@ -1767,6 +1766,158 @@ describe('PantryPage', () => {
       expect(toggle).not.toHaveTextContent(/40 d40 days$/);
       const [detail] = batchRows('Parmesan');
       expect(detail).toHaveTextContent(/^Grana Padano 200g.*40 d/);
+    });
+
+    describe('opening an Ingredient', () => {
+      const row = (name: string) =>
+        screen.getByRole('button', { name: new RegExp(`^${name}`) });
+
+      it('shows a chevron at the end of every row, single-Batch rows included, turned while open', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+
+        for (const name of ['Milk', 'Parmesan', 'Rice']) {
+          const chevron = within(row(name)).getByTestId('chevron');
+          expect(chevron).toHaveAttribute('aria-hidden', 'true');
+          expect(row(name).lastElementChild).toBe(chevron);
+          expect(chevron).toHaveStyle({ transform: 'none' });
+        }
+
+        await user.click(row('Parmesan'));
+        expect(within(row('Parmesan')).getByTestId('chevron')).toHaveStyle({
+          transform: 'rotate(180deg)',
+        });
+        expect(within(row('Milk')).getByTestId('chevron')).toHaveStyle({
+          transform: 'none',
+        });
+      });
+
+      it('keeps one Ingredient open on the whole page, across Locations', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+
+        await user.click(row('Milk'));
+        expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
+
+        // Parmesan is in the Freezer, Milk in the Fridge.
+        await user.click(row('Parmesan'));
+        expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'true');
+        expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
+        expect(
+          screen.queryByRole('group', { name: /^Milk, / }),
+        ).not.toBeInTheDocument();
+
+        await user.click(row('Rice'));
+        expect(row('Rice')).toHaveAttribute('aria-expanded', 'true');
+        expect(row('Parmesan')).toHaveAttribute('aria-expanded', 'false');
+
+        // Tapping the open Ingredient's header closes it.
+        await user.click(row('Rice'));
+        expect(row('Rice')).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('group', { name: /batch/ })).toBeNull();
+      });
+
+      it('opens only the tapped Location when the Ingredient is in two', async () => {
+        const user = userEvent.setup();
+        stubManaged([
+          ...stock(),
+          batch({ id: 'milk-3', name: 'Milk', location: 'freezer' }),
+        ]);
+        renderWithProviders(<PantryPage />);
+        const freezer = await screen.findByRole('region', {
+          name: /^Freezer/,
+        });
+        const fridge = screen.getByRole('region', { name: /^Fridge/ });
+
+        await user.click(
+          within(freezer).getByRole('button', { name: /^Milk/ }),
+        );
+        expect(
+          within(freezer).getByRole('button', { name: /^Milk/ }),
+        ).toHaveAttribute('aria-expanded', 'true');
+        expect(
+          within(fridge).getByRole('button', { name: /^Milk/ }),
+        ).toHaveAttribute('aria-expanded', 'false');
+      });
+
+      it('controls a group named for the Ingredient and its Batch count', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+        expect(row('Milk')).not.toHaveAttribute('aria-controls');
+
+        await user.click(row('Milk'));
+        const body = screen.getByRole('group', { name: 'Milk, 2 batches' });
+        expect(row('Milk')).toHaveAttribute('aria-controls', body.id);
+        expect(within(body).getAllByRole('group')).toHaveLength(2);
+
+        await user.click(row('Parmesan'));
+        expect(
+          screen.getByRole('group', { name: 'Parmesan, 1 batch' }),
+        ).toBeInTheDocument();
+      });
+
+      it.each([
+        ['da', 'Mælk, 2 partier', 'Parmesan, 1 parti'],
+        ['ro', 'Lapte, 2 loturi', 'Parmezan, 1 lot'],
+      ] as const)(
+        'names the group with the %s plural',
+        async (locale, two, one) => {
+          const user = userEvent.setup();
+          stubManaged([
+            batch({ id: 'a', name: two.split(',')[0] }),
+            batch({ id: 'b', name: two.split(',')[0] }),
+            batch({
+              id: 'c',
+              name: one.split(',')[0],
+              ingredientId: 'parmesan-id',
+            }),
+          ]);
+          renderWithProviders(<PantryPage />, { locale });
+          await user.click(
+            await screen.findByRole('button', {
+              name: new RegExp(`^${two.split(',')[0]}`),
+            }),
+          );
+          expect(screen.getByRole('group', { name: two })).toBeInTheDocument();
+          await user.click(row(one.split(',')[0]));
+          expect(screen.getByRole('group', { name: one })).toBeInTheDocument();
+        },
+      );
+
+      it('keeps focus on the row when it opens, and returns it there when closed from inside', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await screen.findByRole('button', { name: /^Milk/ });
+
+        await user.click(row('Milk'));
+        expect(row('Milk')).toHaveFocus();
+
+        act(() => batchRows()[0].focus());
+        await user.keyboard('{Escape}');
+        expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
+        expect(row('Milk')).toHaveFocus();
+      });
+
+      it('lets Escape cancel a Batch removal first, without closing the Ingredient', async () => {
+        const user = userEvent.setup();
+        stubManaged(stock());
+        renderWithProviders(<PantryPage />);
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+
+        act(() => batchRows()[0].focus());
+        await user.keyboard('{Delete}');
+        expect(screen.getByRole('button', { name: 'Remove' })).toBeVisible();
+        await user.keyboard('{Escape}');
+
+        expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
+      });
     });
 
     it('edits a Batch and sends only that Batch', async () => {

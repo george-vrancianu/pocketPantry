@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
 import type { Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
-import type { PantryRow } from '../hooks/usePantryScreen';
+import type { OpenIngredientKey, PantryRow } from '../hooks/usePantryScreen';
 import { RollUpRow } from './RollUpRow';
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
   batchCount: number;
   rows: PantryRow[];
   today: Date;
+  onToggleOpen: (key: OpenIngredientKey) => void;
   onRemoveBatch: (batch: Batch) => void;
   /** Called when the last row is gone and this section unmounts, so focus can go elsewhere. */
   onEmptied: () => void;
@@ -24,6 +25,7 @@ export function LocationSection({
   batchCount,
   rows,
   today,
+  onToggleOpen,
   onRemoveBatch,
   onEmptied,
   rowHint,
@@ -54,6 +56,7 @@ export function LocationSection({
             key={row.key}
             rollUp={row}
             today={today}
+            onToggle={() => onToggleOpen(row.openKey)}
             onRemoveBatch={onRemoveBatch}
             rowHint={rowHint}
             onRowGone={() =>
