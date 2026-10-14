@@ -38,6 +38,7 @@ const line = (
   unmatched: false,
   quantity: null,
   unit: null,
+  defaultUnit: null,
   location: 'fridge',
   expiryDate: null,
   amountScale: null,
@@ -366,6 +367,81 @@ describe('Finish Shopping review', () => {
     expect(
       review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     ).toBeDisabled();
+  });
+
+  it('accepts a comma decimal, as Romanian and Danish keyboards type it', async () => {
+    const calls = stubFinish({
+      'POST /api/shopping-list/finish': () =>
+        Response.json({ listId: 'l2', batchCount: 3 }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    const review = within(await openReview());
+    const parmesan = within(
+      await review.findByRole('region', { name: 'Parmesan' }),
+    );
+    const amount = parmesan.getByRole('textbox', {
+      name: /Amount of Parmesan/,
+    });
+
+    await user.clear(amount);
+    await user.type(amount, '1,5');
+    await user.click(
+      review.getByRole('button', { name: 'Add 3 items to Pantry' }),
+    );
+
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/shopping-list/finish'),
+      ).toBeDefined(),
+    );
+    const body = calls.find((c) => c.key === 'POST /api/shopping-list/finish')
+      ?.body as { lines: Array<{ itemId: string; quantity: number | null }> };
+    expect(body.lines.find((l) => l.itemId === 'i1')?.quantity).toBe(1.5);
+  });
+
+  it("opens a line with no unit on its Ingredient's unit, and offers that unit's family", async () => {
+    const noUnit: FinishProposal = {
+      listId: 'l1',
+      lines: [
+        line({
+          itemId: 'i1',
+          name: 'Parmesan',
+          defaultUnit: 'g',
+          amountScale: 'medium',
+        }),
+        line({
+          itemId: 'i2',
+          name: 'Milk',
+          defaultUnit: 'l',
+          amountScale: 'large',
+        }),
+        line({
+          itemId: 'i3',
+          name: 'Dragon fruit',
+          unmatched: true,
+          location: 'cupboard',
+        }),
+      ],
+    };
+    stubFinish({
+      'GET /api/shopping-list/finish': () => Response.json(noUnit),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const user = userEvent.setup();
+    const review = within(await openReview());
+    const parmesan = within(
+      await review.findByRole('region', { name: 'Parmesan' }),
+    );
+    const milk = within(await review.findByRole('region', { name: 'Milk' }));
+
+    await user.click(parmesan.getByRole('button', { name: 'Unit: g' }));
+    expect(parmesan.getByRole('button', { name: 'kg' })).toBeInTheDocument();
+    expect(parmesan.queryByRole('button', { name: 'ml' })).toBeNull();
+
+    await user.click(milk.getByRole('button', { name: 'Unit: L' }));
+    expect(milk.getByRole('button', { name: 'ml' })).toBeInTheDocument();
+    expect(milk.queryByRole('button', { name: 'g' })).toBeNull();
   });
 });
 

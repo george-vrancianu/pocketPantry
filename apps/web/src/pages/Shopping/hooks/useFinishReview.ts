@@ -9,7 +9,7 @@ import {
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
-import { daysUntil, type IsoDate } from '../../../lib/pantry';
+import { daysUntil, parseAmountText, type IsoDate } from '../../../lib/pantry';
 import { shoppingListQueryKey } from '../../../lib/shopping';
 
 export type ReviewEdit = {
@@ -20,11 +20,12 @@ export type ReviewEdit = {
   expiryDate: IsoDate | null;
 };
 
+// Only an Unmatched line with no unit lands here; it has no Amount Scale, so every unit is offered.
 const FALLBACK_UNIT: Unit = 'pcs';
 
 const initialEdit = (line: FinishProposalLine): ReviewEdit => ({
   quantity: line.quantity === null ? '' : String(line.quantity),
-  unit: line.unit ?? FALLBACK_UNIT,
+  unit: line.unit ?? line.defaultUnit ?? FALLBACK_UNIT,
   location: line.location,
   expiryDate: line.expiryDate,
 });
@@ -40,10 +41,12 @@ const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
 
 // numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
 function quantityOf(text: string): { valid: boolean; value: number | null } {
-  if (text.trim() === '') return { valid: true, value: null };
-  const value = Number(text);
+  // The same reading as the amount field: a comma or a dot as the decimal mark.
+  const parsed = parseAmountText(text);
+  if (!parsed.valid) return { valid: false, value: null };
+  if (parsed.value === null) return { valid: true, value: null };
+  const value = parsed.value;
   const valid =
-    Number.isFinite(value) &&
     value >= 0.001 &&
     value <= 1_000_000 &&
     Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;

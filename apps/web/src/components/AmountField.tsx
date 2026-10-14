@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../lib/catalog';
 import {
   convertQuantity,
-  parseQuantity,
+  parseTypedNumber,
   stepAmount,
   unitsInFamily,
   type AmountScale,
@@ -145,7 +145,7 @@ export function AmountField({
   const choose = (next: Unit | '') => {
     split.current = null;
     // Within a family the number is rescaled, so the amount stays the same (1.5 kg is 1500 g).
-    const value = parseQuantity(quantity);
+    const value = parseTypedNumber(quantity);
     if (
       amountScale &&
       unit &&
@@ -182,7 +182,7 @@ export function AmountField({
     const direction = event.key === 'ArrowUp' ? 1 : -1;
     const empty = quantity.trim() === '';
     if (empty && direction < 0) return;
-    const current = empty ? 0 : parseQuantity(quantity);
+    const current = empty ? 0 : parseTypedNumber(quantity);
     if (current === null) return;
     onQuantityChange(
       String(stepAmount(current, direction, unit, event.shiftKey)),

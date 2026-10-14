@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -272,5 +272,44 @@ describe('AmountField usual amount chips', () => {
     expect(
       screen.queryByRole('group', { name: 'Usual amounts for Paprika' }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('AmountField usual amount keyboard access', () => {
+  it('selects the focused chip with Space', async () => {
+    renderWithProviders(<Harness unit="g" start="" />);
+    const user = userEvent.setup();
+    await user.type(field(), '5');
+
+    chip('250 g').focus();
+    await user.keyboard(' ');
+
+    expect(field()).toHaveValue('250');
+    expect(chip('250 g')).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('reaches the chips with Tab, after the unit control', async () => {
+    renderWithProviders(<Harness unit="g" start="5" />);
+    const user = userEvent.setup();
+
+    field().focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Unit: g' })).toHaveFocus();
+
+    await user.tab();
+    expect(chip('100 g')).toHaveFocus();
+  });
+
+  it('fits the chips again when only the language changes', async () => {
+    const { i18n } = renderWithProviders(<Harness unit="g" start="250" />);
+    const reads = vi.fn(() => 60);
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockImplementation(
+      reads,
+    );
+
+    await act(() => i18n.changeLanguage('ro'));
+
+    // The chips are measured again in the new language, so a longer label is fitted too.
+    expect(reads).toHaveBeenCalled();
   });
 });

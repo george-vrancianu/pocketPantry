@@ -3,6 +3,7 @@ import {
   amountScaleForParent,
   readAmountScale,
 } from './amount-scale';
+import { seedId } from './seed/seed-ids';
 
 describe('Amount Scale', () => {
   describe('amountScaleForParent', () => {
@@ -17,19 +18,25 @@ describe('Amount Scale', () => {
       ['oils', 'large'],
       ['produce', 'large'],
     ])('maps the %s Parent Category to %s', (slug, scale) => {
-      expect(amountScaleForParent(slug)).toBe(scale);
+      expect(amountScaleForParent(seedId.parent(slug))).toBe(scale);
     });
 
     it.each(['other', 'herbs', 'seafood', 'frozen', 'canned-goods', 'unknown'])(
       'gives the unmapped %s Parent Category medium',
       (slug) => {
-        expect(amountScaleForParent(slug)).toBe('medium');
+        expect(amountScaleForParent(seedId.parent(slug))).toBe('medium');
       },
     );
 
+    it('gives the top-level Other Parent medium', () => {
+      expect(amountScaleForParent(seedId.parent('other'))).toBe('medium');
+    });
+
     it('only ever returns a scale from the three names', () => {
       for (const slug of ['spices', 'produce', 'other', 'herbs']) {
-        expect(AMOUNT_SCALES).toContain(amountScaleForParent(slug));
+        expect(AMOUNT_SCALES).toContain(
+          amountScaleForParent(seedId.parent(slug)),
+        );
       }
     });
   });

@@ -106,6 +106,8 @@ export type BatchView = {
   aisle: AisleView | null;
   /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
   amountScale: AmountScale | null;
+  /** The Ingredient's own unit: what a Batch with no stored unit opens on; null for an Unmatched Batch. */
+  defaultUnit: (typeof ingredientUnit.enumValues)[number] | null;
   quantity: number | null;
   unit: (typeof ingredientUnit.enumValues)[number] | null;
   location: (typeof storageLocation.enumValues)[number];

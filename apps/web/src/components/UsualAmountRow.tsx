@@ -12,7 +12,7 @@ import type { Unit } from '../lib/catalog';
 import { fitChips } from '../lib/fitChips';
 import { focusRing } from '../lib/focusRing';
 import {
-  parseQuantity,
+  parseTypedNumber,
   usualAmountsAscending,
   usualAmountsInPriority,
   type AmountScale,
@@ -55,7 +55,7 @@ export function UsualAmountRow({
     () => (unit ? usualAmountsInPriority(unit, scale) : []),
     [unit, scale],
   );
-  const current = parseQuantity(quantity);
+  const current = parseTypedNumber(quantity);
   const pinned = current === null ? -1 : values.indexOf(current);
   const visible = unit !== '' && quantity.trim() !== '';
 
@@ -92,7 +92,8 @@ export function UsualAmountRow({
         pinned: pinned >= 0 ? pinned : null,
       }),
     );
-  }, [visible, values, pinned, resizes]);
+    // The language is in the deps: a longer label in another locale needs its own fit.
+  }, [visible, values, pinned, resizes, i18n.language]);
 
   const format = (value: number) =>
     new Intl.NumberFormat(i18n.language).format(value);

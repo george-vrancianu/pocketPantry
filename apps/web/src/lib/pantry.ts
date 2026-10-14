@@ -24,6 +24,8 @@ export type Batch = {
   aisle: Aisle | null;
   /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
   amountScale: AmountScale | null;
+  /** The Ingredient's own unit: what a Batch with no stored unit opens on; null for an Unmatched Batch. */
+  defaultUnit: Unit | null;
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;

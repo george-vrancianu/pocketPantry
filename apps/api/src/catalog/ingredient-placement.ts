@@ -6,6 +6,7 @@ import type { Executor } from '../database/database.types';
 import {
   aisles,
   ingredients,
+  ingredientUnit,
   leafCategories,
   parentCategories,
 } from '../database/schema';
@@ -15,6 +16,8 @@ export type AisleView = { id: string; name: string; sortOrder: number };
 export type IngredientPlacement = {
   name: string;
   aisle: AisleView | null;
+  /** The Ingredient's own unit: what a line with no unit yet opens on. */
+  defaultUnit: (typeof ingredientUnit.enumValues)[number];
   amountScale: AmountScale;
 };
 
@@ -32,6 +35,7 @@ export async function loadIngredientPlacements(
       aisleId: aisles.id,
       aisleName: aisles.name,
       aisleSortOrder: aisles.sortOrder,
+      defaultUnit: ingredients.defaultUnit,
       amountScale: ingredients.amountScale,
     })
     .from(ingredients)
@@ -58,6 +62,7 @@ export async function loadIngredientPlacements(
           name: pick('aisle', row.aisleId, row.aisleName),
           sortOrder: row.aisleSortOrder,
         },
+        defaultUnit: row.defaultUnit,
         amountScale: readAmountScale(row.amountScale),
       },
     ]),

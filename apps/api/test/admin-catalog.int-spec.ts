@@ -233,6 +233,42 @@ describe('Admin role and Catalog curation (integration)', () => {
   describe('Ingredients', () => {
     const leafId = seedId.leaf('hard-cheese');
 
+    it('gives a new Ingredient the Amount Scale of its Parent Category, and re-derives it when moved to another Leaf', async () => {
+      const scaleOf = async (id: string) =>
+        (
+          await database
+            .select({ scale: ingredients.amountScale })
+            .from(ingredients)
+            .where(eq(ingredients.id, id))
+        )[0]?.scale;
+
+      // Spices are a low scale, so a new Spices Ingredient must not read as medium.
+      const spice = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: seedId.leaf('ground-spices'),
+            name: `Sumac ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      expect(await scaleOf(spice.id)).toBe('low');
+
+      // Moving it to a Produce Leaf (large) re-derives the scale from the new Parent.
+      await as(adminCookie)
+        .patch(`/ingredients/${spice.id}`, {
+          leafCategoryId: seedId.leaf('root-vegetables'),
+        })
+        .expect(200);
+      expect(await scaleOf(spice.id)).toBe('large');
+
+      // An edit that leaves the Leaf alone keeps the scale.
+      await as(adminCookie)
+        .patch(`/ingredients/${spice.id}`, { defaultUnit: 'kg' })
+        .expect(200);
+      expect(await scaleOf(spice.id)).toBe('large');
+    });
+
     it('creates, edits, renames and deletes an Ingredient, keeping translations consistent', async () => {
       const created = (
         await as(adminCookie)

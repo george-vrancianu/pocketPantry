@@ -97,6 +97,7 @@ export class FinishShoppingService {
           // A Batch needs a unit whenever it has a quantity.
           unit:
             row.unit ?? (quantity === null ? null : (row.defaultUnit ?? 'pcs')),
+          defaultUnit: row.defaultUnit,
           amountScale: row.ingredientId
             ? readAmountScale(row.amountScale)
             : null,

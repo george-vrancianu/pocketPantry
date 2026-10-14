@@ -3,14 +3,6 @@ import { UNITS, type Unit } from './catalog';
 /** How a catalog Ingredient is bought: decides which Usual Amount chips it offers. */
 export const AMOUNT_SCALES = ['low', 'medium', 'large'] as const;
 export type AmountScale = (typeof AMOUNT_SCALES)[number];
-export const DEFAULT_AMOUNT_SCALE: AmountScale = 'medium';
-
-/** A null or unknown stored scale reads as medium. */
-export function resolveAmountScale(
-  value: string | null | undefined,
-): AmountScale {
-  return AMOUNT_SCALES.find((scale) => scale === value) ?? DEFAULT_AMOUNT_SCALE;
-}
 
 type UnitFamily = 'mass' | 'volume' | 'count';
 
@@ -79,13 +71,16 @@ export function usualAmountsAscending(
   return [...usualAmountsInPriority(unit, scale)].sort((a, b) => a - b);
 }
 
-/** Rescales a number between two units of the same family; the amount stays the same. */
+/**
+ * Rescales a number between two units of the same family; the amount stays the same. Rounded to three
+ * decimals, the most the server stores, so 2.5 g is 0.003 kg.
+ */
 export function convertQuantity(value: number, from: Unit, to: Unit): number {
-  return clean((value * PER_BASE[from]) / PER_BASE[to]);
+  return Math.round((value * PER_BASE[from] * 1000) / PER_BASE[to]) / 1000;
 }
 
-/** A typed quantity, with a comma or a dot as the decimal mark; null when there is no number. */
-export function parseQuantity(text: string): number | null {
+/** A number typed with a comma or a dot as the decimal mark; null when there is no number. */
+export function parseTypedNumber(text: string): number | null {
   const trimmed = text.trim().replace(',', '.');
   if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
   return Number(trimmed);

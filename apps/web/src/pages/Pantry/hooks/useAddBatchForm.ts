@@ -26,7 +26,9 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const [typed, setTyped] = useState('');
   const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState<Unit>('g');
+  // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
+  const [chosenUnit, setChosenUnit] = useState<Unit | null>(null);
+  const unit: Unit = chosenUnit ?? ingredient?.defaultUnit ?? 'g';
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
@@ -35,8 +37,8 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setIngredient(result);
     setUnmatchedName(null);
     setTyped(result.name);
-    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
-    if (quantity.trim() === '') setUnit(result.defaultUnit);
+    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
+    if (quantity.trim() === '') setChosenUnit(null);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
     const days = result.defaults.expiryDays;
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
@@ -98,7 +100,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     changeQuery,
     markTypedAsUnmatched,
     setQuantity,
-    setUnit,
+    setUnit: setChosenUnit,
     setLocation,
     setExpiryDate,
     setDescription,

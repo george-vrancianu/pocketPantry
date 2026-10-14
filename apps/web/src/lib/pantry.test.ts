@@ -112,6 +112,7 @@ describe('defaultExpiryDate', () => {
 describe('groupByLocation', () => {
   const batch = (id: string, location: Batch['location']): Batch => ({
     amountScale: null,
+    defaultUnit: null,
     id,
     name: id,
     ingredientId: id,
@@ -147,6 +148,7 @@ const make = (overrides: Partial<Batch>): Batch => ({
   unmatched: false,
   aisle: null,
   amountScale: null,
+  defaultUnit: null,
   quantity: null,
   unit: null,
   location: 'fridge',

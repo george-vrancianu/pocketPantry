@@ -17,6 +17,8 @@ export type FinishProposalLine = {
   unmatched: boolean;
   quantity: number | null;
   unit: Unit | null;
+  /** The Ingredient's own unit, for a line with no unit yet; null for an Unmatched line. */
+  defaultUnit: Unit | null;
   /** The Ingredient's Amount Scale; null for an Unmatched line. */
   amountScale: AmountScale | null;
   location: StorageLocation;

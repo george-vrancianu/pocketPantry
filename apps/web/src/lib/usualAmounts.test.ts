@@ -1,26 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   convertQuantity,
-  parseQuantity,
-  resolveAmountScale,
+  parseTypedNumber,
   stepAmount,
   usualAmountsAscending,
   unitsInFamily,
   usualAmountsInPriority,
 } from './usualAmounts';
-
-describe('resolveAmountScale', () => {
-  it('reads a null or unknown scale as medium', () => {
-    expect(resolveAmountScale(null)).toBe('medium');
-    expect(resolveAmountScale(undefined)).toBe('medium');
-    expect(resolveAmountScale('huge')).toBe('medium');
-  });
-
-  it('keeps the three known scales', () => {
-    expect(resolveAmountScale('low')).toBe('low');
-    expect(resolveAmountScale('large')).toBe('large');
-  });
-});
 
 describe('usualAmountsInPriority', () => {
   it.each([
@@ -81,18 +67,25 @@ describe('convertQuantity', () => {
   it('leaves the number alone for the same unit', () => {
     expect(convertQuantity(3, 'pcs', 'pcs')).toBe(3);
   });
+
+  it('rounds the converted number to three decimals, the most the server stores', () => {
+    // 2.5 g is 0.0025 kg; the server takes at most three decimals.
+    expect(convertQuantity(2.5, 'g', 'kg')).toBe(0.003);
+    expect(convertQuantity(1.2345, 'l', 'ml')).toBe(1234.5);
+    expect(convertQuantity(1.2345, 'ml', 'l')).toBe(0.001);
+  });
 });
 
-describe('parseQuantity', () => {
+describe('parseTypedNumber', () => {
   it('reads dot and comma decimals', () => {
-    expect(parseQuantity('1.5')).toBe(1.5);
-    expect(parseQuantity('1,5')).toBe(1.5);
-    expect(parseQuantity(' 250 ')).toBe(250);
+    expect(parseTypedNumber('1.5')).toBe(1.5);
+    expect(parseTypedNumber('1,5')).toBe(1.5);
+    expect(parseTypedNumber(' 250 ')).toBe(250);
   });
 
   it('has no number for an empty or non-numeric field', () => {
-    expect(parseQuantity('')).toBeNull();
-    expect(parseQuantity('abc')).toBeNull();
+    expect(parseTypedNumber('')).toBeNull();
+    expect(parseTypedNumber('abc')).toBeNull();
   });
 });
 

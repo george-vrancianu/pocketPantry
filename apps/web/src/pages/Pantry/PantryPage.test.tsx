@@ -26,6 +26,7 @@ function batch(overrides: Partial<Batch>): Batch {
     unmatched: false,
     aisle: null,
     amountScale: null,
+    defaultUnit: null,
     quantity: null,
     unit: null,
     location: 'fridge',
@@ -435,6 +436,41 @@ describe('PantryPage', () => {
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
       ).toMatchObject({ quantity: 1.5, unit: 'kg' }),
+    );
+  });
+
+  it("takes the Ingredient's own unit when only an amount was typed before the pick", async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [eggs]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '6',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'egg',
+    );
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+
+    // Eggs open on pieces, so the unit stays in the count family.
+    expect(
+      screen.getByRole('button', { name: 'Unit: pcs' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ quantity: 6, unit: 'pcs' }),
     );
   });
 
@@ -1361,6 +1397,31 @@ describe('PantryPage', () => {
   });
 
   describe('managing the Pantry', () => {
+    it("opens a Batch with no stored unit on its Ingredient's unit", async () => {
+      const user = userEvent.setup();
+      stubManaged([
+        batch({
+          id: 'eggs-1',
+          name: 'Eggs',
+          ingredientId: 'eggs-id',
+          defaultUnit: 'pcs',
+          amountScale: 'medium',
+          quantity: null,
+          unit: null,
+          expiryDate: inDays(5),
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(await screen.findByRole('button', { name: /^Eggs/ }));
+      await openEditor(user, batchRows('Eggs')[0]);
+      const form = screen.getByRole('form', { name: 'Edit Eggs batch' });
+
+      expect(
+        within(form).getByRole('button', { name: 'Unit: pcs' }),
+      ).toBeInTheDocument();
+    });
+
     const stock = () => [
       batch({
         id: 'milk-1',
