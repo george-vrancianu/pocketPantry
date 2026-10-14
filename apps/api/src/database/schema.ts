@@ -151,6 +151,9 @@ export const ingredientUnit = pgEnum('ingredient_unit', [
   'pcs',
 ]);
 
+// How much of an Ingredient a Member usually buys at once. Null reads as medium.
+export const amountScale = pgEnum('amount_scale', ['low', 'medium', 'large']);
+
 export const catalogEntityType = pgEnum('catalog_entity_type', [
   'aisle',
   'parent_category',
@@ -242,6 +245,8 @@ export const ingredients = pgTable(
     defaultUnit: ingredientUnit('default_unit').notNull(),
     // Water, salt, pepper: Recipe matching always counts them as covered.
     pantryBasic: boolean('pantry_basic').notNull().default(false),
+    // Null reads as medium. Backfilled from the Parent Category by migration 0019.
+    amountScale: amountScale('amount_scale'),
     ...timestamps,
   },
   (table) => [
