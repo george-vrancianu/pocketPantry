@@ -2911,3 +2911,25 @@ describe('ShoppingPage', () => {
     expect(url.searchParams.get('locale')).toBe('ro');
   });
 });
+
+describe('ShoppingPage add sheet has no Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('keeps its chips but offers no Browse by aisle and never lists Aisles', async () => {
+    const { calls } = stubShopping({
+      'GET /api/catalog/aisles': () => Response.json({ aisles: [] }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add items' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+    const search = within(dialog).getByRole('combobox', {
+      name: 'Search ingredients',
+    });
+    await userEvent.click(search);
+
+    expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
+    expect(calls.some((c) => c.key === 'GET /api/catalog/aisles')).toBe(false);
+  });
+});

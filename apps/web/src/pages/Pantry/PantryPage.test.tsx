@@ -2451,3 +2451,44 @@ describe('PantryPage', () => {
     });
   });
 });
+
+describe('PantryPage Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const browseAisles = {
+    aisles: [
+      {
+        id: 'aisle-dairy',
+        name: 'Dairy & eggs',
+        parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+      },
+    ],
+  };
+
+  it('shows Browse by aisle in the add-batch search, and opening an aisle searches it', async () => {
+    const user = userEvent.setup();
+    const { fetchMock, calls } = stubApi({
+      'GET /api/pantry': () => Response.json({ batches: [] }),
+      'GET /api/settings/family': familySettings(3),
+      'GET /api/catalog/aisles': () => Response.json(browseAisles),
+      'GET /api/catalog/search': () => Response.json({ results: [parmesan] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+
+    expect(screen.getByText('Browse by aisle')).toBeVisible();
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('aisle-dairy');
+      expect(params.get('scope')).not.toBe('shared');
+    });
+  });
+});

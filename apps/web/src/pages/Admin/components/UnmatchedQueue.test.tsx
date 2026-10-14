@@ -634,3 +634,29 @@ describe('UnmatchedQueue', () => {
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
 });
+
+describe('UnmatchedQueue Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Browse by aisle in the resolver search', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry], nextCursor: null }),
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [{ id: 'a1', name: 'Dairy & eggs', parentCategories: [] }],
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Cheese' }),
+    );
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+  });
+});
