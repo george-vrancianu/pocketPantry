@@ -18,6 +18,7 @@
   },
   "unmatched": "Unmatched",
   "runningLow": {
+    "chip": "Running low",
     "toggle": "Mark running low"
   },
   "all": "All",

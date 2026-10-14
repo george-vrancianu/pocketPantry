@@ -38,6 +38,7 @@
   },
   "unmatched": "Nepotrivit",
   "runningLow": {
+    "chip": "Pe sfârșite",
     "toggle": "Marchează ca fiind pe sfârșite"
   },
   "form": {

@@ -18,6 +18,7 @@
   },
   "unmatched": "Umatchet",
   "runningLow": {
+    "chip": "Ved at løbe tør",
     "toggle": "Markér som ved at løbe tør"
   },
   "all": "Alle",
