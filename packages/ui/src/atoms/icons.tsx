@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   Users,
   GitBranch,
+  BatteryLow,
   type LucideProps,
 } from 'lucide-react';
 
@@ -107,6 +108,8 @@ const ICON_NODES = {
     ['rect', { x: '3', y: '5', width: '18', height: '16', rx: '3' }],
     ['path', { d: 'M3 10h18M8 3v4M16 3v4' }],
   ],
+  /** Not in the handoff set: a tree elbow that marks a row as belonging to the one above. */
+  'sub-item': [['path', { d: 'M6 3v8a5 5 0 0 0 5 5h9' }]],
 } as const satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICON_NODES;
@@ -201,6 +204,7 @@ export const SettingsIcon = handoff('sliders');
 export const TemplateIcon = handoff('template');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
+export const SubItemIcon = handoff('sub-item');
 
 export const HomeIcon = lucide(House);
 export const CustomiseIcon = lucide(LayoutGrid);
@@ -222,3 +226,4 @@ export const ArrowLeftIcon = lucide(ArrowLeft);
 export const SwapIcon = lucide(ArrowLeftRight);
 export const PeopleIcon = lucide(Users);
 export const BranchIcon = lucide(GitBranch);
+export const RunningLowIcon = lucide(BatteryLow);

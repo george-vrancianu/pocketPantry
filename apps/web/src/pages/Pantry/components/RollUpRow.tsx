@@ -57,18 +57,21 @@ export function RollUpRow({
     // Only when the row becomes gone, not on every render while it is.
   }, [rollUp.gone]);
 
-  const detail = [
-    rollUp.totals
-      .map((total) =>
-        formatAmount(total.quantity, total.unit, i18n.language, t),
-      )
-      .join(' + ') || null,
-    rollUp.batches.length > 1
-      ? t('batchCount', { count: rollUp.batches.length })
-      : rollUp.batches[0].productDescription,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // Running low stands in for the whole detail line: amounts and Batches no longer matter once it is flagged.
+  const detail = rollUp.runningLow
+    ? null
+    : [
+        rollUp.totals
+          .map((total) =>
+            formatAmount(total.quantity, total.unit, i18n.language, t),
+          )
+          .join(' + ') || null,
+        rollUp.batches.length > 1
+          ? t('batchCount', { count: rollUp.batches.length })
+          : rollUp.batches[0].productDescription,
+      ]
+        .filter(Boolean)
+        .join(' · ');
 
   return (
     <Box
@@ -140,22 +143,24 @@ export function RollUpRow({
                 </Box>
               ) : null}
             </Typography>
-            {detail ? (
+            {detail || rollUp.runningLow ? (
               <Typography
                 component="span"
                 sx={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   fontSize: 12,
                   color: tokens.color.muted,
                   mt: '2px',
                 }}
               >
+                {rollUp.runningLow ? <RunningLowChip /> : null}
                 {detail}
               </Typography>
             ) : null}
           </Box>
           {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
-          {rollUp.runningLow ? <RunningLowChip /> : null}
         </Box>
         {expanded && !rollUp.unmatched ? (
           <>
@@ -172,8 +177,8 @@ export function RollUpRow({
           sx={{
             mt: 0,
             mb: 1,
-            // The rows pad themselves (12 pt), so their content lines up 50 pt in.
-            ml: '38px',
+            // The rows pad themselves (12 pt): the elbow's stem sits under the roll-up's icon and the text lines up 50 pt in.
+            ml: '2px',
             p: 0,
             borderTop: `1px solid ${tokens.color.divider}`,
           }}

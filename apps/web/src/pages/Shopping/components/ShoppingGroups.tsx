@@ -53,31 +53,14 @@ export function ShoppingGroups({
             key={group.aisle?.id ?? 'unmatched'}
             aria-label={title}
           >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                mx: 0.5,
-                mb: 1,
-              }}
+            <Typography
+              component="h2"
+              variant="sectionLabel"
+              color="text.secondary"
+              sx={{ display: 'block', mx: 0.5, mb: 1 }}
             >
-              <Typography
-                component="h2"
-                variant="sectionLabel"
-                color="text.secondary"
-              >
-                {title}
-              </Typography>
-              <Typography
-                component="span"
-                variant="sectionLabel"
-                color="text.secondary"
-                sx={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {group.items.length}
-              </Typography>
-            </Box>
+              {`${title} · ${group.items.length}`}
+            </Typography>
             <Card
               component="ul"
               variant="list"

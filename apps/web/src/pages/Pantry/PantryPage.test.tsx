@@ -1603,7 +1603,7 @@ describe('PantryPage', () => {
           expect(chip()).not.toBeInTheDocument();
         });
 
-        it('shows on the collapsed row, after the expiry tag', async () => {
+        it('shows on the collapsed row in place of the quantity', async () => {
           stubRunningLow({
             batches: [
               batch({
@@ -1622,7 +1622,7 @@ describe('PantryPage', () => {
           });
           const row = within(fridge).getByRole('listitem');
           expect(row.textContent).toBe(
-            'Milk' + '1 L' + '2 d left' + '2 days left' + 'Running low',
+            'Milk' + 'Running low' + '2 d left' + '2 days left',
           );
           expect(chip()).toBeVisible();
         });

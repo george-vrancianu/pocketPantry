@@ -2,8 +2,10 @@ import {
   Box,
   ListRow,
   Sheet,
+  SubItemIcon,
   SwipeRow,
   Typography,
+  tokens,
   useToast,
   type SwipeRowHandle,
 } from '@pocket-pantry/ui';
@@ -28,7 +30,7 @@ type Props = {
 };
 
 /**
- * One Batch inside an expanded roll-up row: its own amount, Product Description, full expiry date and tag. Swipe left
+ * One Batch inside an expanded roll-up row, led by a tree elbow under the roll-up's icon: its own amount, Product Description, full expiry date and tag. Swipe left
  * to remove it; hold (or press Enter) to edit it in a sheet, which also offers "Remove from Pantry".
  */
 export function BatchDetail({
@@ -71,6 +73,11 @@ export function BatchDetail({
         onRemove={() => onRemove(batch)}
       >
         <ListRow
+          leading={
+            <Box sx={{ display: 'flex', color: tokens.color.muted }}>
+              <SubItemIcon size={24} />
+            </Box>
+          }
           title={detail || t('noDetails')}
           meta={expires}
           tags={<ExpiryTag tag={tag} />}
