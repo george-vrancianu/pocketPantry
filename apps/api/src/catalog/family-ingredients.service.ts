@@ -3,8 +3,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
-import type { Tx } from '../database/database.types';
+import type { Database, Tx } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
 import {
   batches,
@@ -98,7 +97,7 @@ export class FamilyIngredientsService {
           createdByUserId: family.memberId,
           nameLocale: locale,
         });
-        await this.relinkUnmatched(tx, family.id, key, {
+        await this.relinkFamilyUnmatched(tx, family.id, key, {
           id,
           leafCategoryId: body.leafCategoryId,
         });
@@ -125,12 +124,14 @@ export class FamilyIngredientsService {
    * Shopping Items, Template lines and Recipe lines with this normalised name
    * get the Ingredient, and their Unmatched entries go (ADR 0011).
    */
-  private async relinkUnmatched(
+  private async relinkFamilyUnmatched(
     tx: Tx,
     familyId: string,
     key: string,
     target: { id: string; leafCategoryId: string },
   ): Promise<void> {
+    // Accepted race: a Pantry save or Shopping List add that matched the old
+    // Catalog and commits after this read stays Unmatched (and in the Admin queue).
     const named = eq(unmatchedEntries.normalizedName, key);
     const batchEntries = await tx
       .select({ id: unmatchedEntries.id, rowId: batches.id })

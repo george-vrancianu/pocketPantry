@@ -363,6 +363,7 @@ describe('Add to your catalog', () => {
         ['shopping-list', 'en'],
         ['shopping-templates', 'detail', 't1'],
         ['recipes', 'list'],
+        ['suggestions', 'en'],
       ];
       for (const key of keys) queryClient.setQueryData(key, {});
 

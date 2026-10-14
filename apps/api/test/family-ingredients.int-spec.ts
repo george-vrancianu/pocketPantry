@@ -590,7 +590,6 @@ describe('Family Ingredients (integration)', () => {
   });
 
   describe("relinking the Family's Unmatched items", () => {
-    const LEAF = seedId.leaf('hard-cheese');
     type Pantry = {
       batches: Array<{
         id: string;
@@ -667,7 +666,6 @@ describe('Family Ingredients (integration)', () => {
       await unmatchedEverywhere(a, raw);
       const [batch] = await batchesNamed(raw);
       const [item] = await unmatchedItems(raw);
-      expect(batch.leafCategoryId).not.toBe(LEAF);
       expect(batch.leafCategoryId).toBe(OTHER);
 
       const created = await made(a, raw);
@@ -778,7 +776,10 @@ describe('Family Ingredients (integration)', () => {
 
     it('relinks items typed with different casing and spacing', async () => {
       const raw = unique('Ginger Beer');
-      await unmatchedEverywhere(a, raw.toUpperCase());
+      await unmatchedEverywhere(
+        a,
+        `  ${raw.toUpperCase().replace(' ', '   ')} `,
+      );
 
       const created = await made(a, raw);
 
