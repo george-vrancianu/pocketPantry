@@ -1,8 +1,8 @@
 import { tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { CatalogSearchResult } from '../../../lib/catalog';
 import { useRecentlyStocked } from '../../../lib/recentlyStocked';
 import { daysSince } from '../../../lib/relativeDays';
+import { useEmptyStateSearch } from './context';
 import { IngredientTile } from './IngredientTile';
 import { MAX_TILES, TileSection } from './TileSection';
 
@@ -20,15 +20,12 @@ function useShortAgo() {
 }
 
 /** The Pantry search's empty state: what the Family most recently added, in the Pantry or not. Hidden until something was stocked. */
-export function RecentlyStocked({
-  onSelect,
-}: {
-  onSelect: (ingredient: CatalogSearchResult) => void;
-}) {
+export function RecentlyStocked() {
   const { t, i18n } = useTranslation('catalog');
+  const search = useEmptyStateSearch();
   const recent = useRecentlyStocked(i18n.language, MAX_TILES);
   const ago = useShortAgo();
-  if (!recent.data || recent.data.length === 0) return null;
+  if (!search || !recent.data || recent.data.length === 0) return null;
   return (
     <TileSection heading={t('search.recentlyStocked')}>
       {recent.data.map((ingredient) => {
@@ -60,7 +57,7 @@ export function RecentlyStocked({
                   })
                 : t('search.stockedGoneLabel', { name: ingredient.name, when })
             }
-            onSelect={() => onSelect(ingredient)}
+            onSelect={() => search.select(ingredient)}
           />
         );
       })}

@@ -469,3 +469,43 @@ describe('RecipeGuidance', () => {
     );
   });
 });
+
+describe('RecipeGuidance Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Browse by aisle in the linked Ingredient search, on the shared Catalog', async () => {
+    const calls = open(recipe, {
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [{ id: 'a1', name: 'Dairy & eggs', parentCategories: [] }],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+    );
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('a1');
+      expect(params.get('scope')).toBe('shared');
+    });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+});

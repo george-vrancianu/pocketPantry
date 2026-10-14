@@ -709,3 +709,54 @@ describe('EditFamilyRecipePage', () => {
     ).toContain('locale=en');
   });
 });
+
+describe('Family Recipe Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const browseAisles = {
+    aisles: [
+      {
+        id: 'aisle-dairy',
+        name: 'Dairy & eggs',
+        parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+      },
+    ],
+  };
+  const aisleRoutes = {
+    'GET /api/catalog/aisles': () => Response.json(browseAisles),
+    'GET /api/catalog/search': () => Response.json({ results: [] }),
+  };
+
+  it('shows Browse by aisle in the ingredient search of the recipe form', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', aisleRoutes);
+
+    await user.click(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    ).toBeVisible();
+  });
+
+  it('shows Browse by aisle in the Guidance link search', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      ...aisleRoutes,
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+
+    await user.click(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+  });
+});

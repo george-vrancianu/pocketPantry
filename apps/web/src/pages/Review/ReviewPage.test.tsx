@@ -815,3 +815,24 @@ describe('ReviewPage', () => {
     });
   });
 });
+
+describe('ReviewPage match dialog has no Browse by aisle', () => {
+  it('offers no Browse by aisle in Change match and never lists Aisles', async () => {
+    const calls = renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      { 'GET /api/catalog/aisles': () => Response.json({ aisles: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
+    expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
+  });
+});

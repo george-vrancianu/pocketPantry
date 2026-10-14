@@ -6,6 +6,7 @@ import type { CatalogSearchResult } from '../../lib/catalog';
 import { renderWithProviders } from '../../test/render';
 import { stubMotion } from '../../test/viewport';
 import { CatalogSearch, type CatalogSearchProps } from './CatalogSearch';
+import { useEmptyStateSearch } from './emptyState/context';
 
 /** The seeded Dairy & eggs Aisle, so the icon tint is a real one. */
 const DAIRY_AISLE = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
@@ -775,6 +776,15 @@ describe('CatalogSearch', () => {
   });
 });
 
+function CheddarTile() {
+  const search = useEmptyStateSearch();
+  return (
+    <button type="button" onClick={() => search?.select(cheddar)}>
+      Cheddar tile
+    </button>
+  );
+}
+
 describe('CatalogSearch host extension points (#266)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -796,18 +806,11 @@ describe('CatalogSearch host extension points (#266)', () => {
       expect(await screen.findByText('Gone from your Pantry')).toBeVisible();
     });
 
-    it('hands a function emptyState the search, so a tile pick goes through onSelect', async () => {
+    it('lets an empty-state block pick through the search, so the pick goes through onSelect', async () => {
       stubControlled();
       const onSelect = vi.fn();
       renderWithProviders(
-        <CatalogSearch
-          onSelect={onSelect}
-          emptyState={({ select }) => (
-            <button type="button" onClick={() => select(cheddar)}>
-              Cheddar tile
-            </button>
-          )}
-        />,
+        <CatalogSearch onSelect={onSelect} emptyState={<CheddarTile />} />,
       );
       const user = userEvent.setup();
       await user.click(screen.getByRole('combobox'));
