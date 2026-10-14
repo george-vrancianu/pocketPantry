@@ -108,10 +108,13 @@
     "done_one": "Am importat {{count}} produs din {{name}}",
     "done_few": "Am importat {{count}} produse din {{name}}",
     "done_other": "Am importat {{count}} de produse din {{name}}",
-    "doneMany_one": "Am importat {{count}} produs din {{templates}} șabloane",
-    "doneMany_few": "Am importat {{count}} produse din {{templates}} șabloane",
-    "doneMany_other": "Am importat {{count}} de produse din {{templates}} șabloane",
+    "doneMany_one": "Am importat {{count}} produs din {{templates}}",
+    "doneMany_few": "Am importat {{count}} produse din {{templates}}",
+    "doneMany_other": "Am importat {{count}} de produse din {{templates}}",
     "none": "Niciun șablon încă. Salvează lista ca șablon de la finalul listei.",
-    "inTrolley": "În coș"
+    "inTrolley": "În coș",
+    "templateCount_one": "{{count}} șablon",
+    "templateCount_few": "{{count}} șabloane",
+    "templateCount_other": "{{count}} de șabloane"
   }
 }

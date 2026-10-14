@@ -87,7 +87,9 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
     const data = detailQueries[index]?.data;
     if (data) details.set(summary.id, data);
   });
-  const detailsError = detailQueries.find((query) => query.error)?.error;
+  // Templates whose lines failed to load; local, so closing the sheet clears it.
+  const [failed, setFailed] = useState<ReadonlyMap<string, unknown>>(new Map());
+  const detailsError = [...failed.values()][0];
   const listSettled = !shoppingList.isPending;
 
   // A ticked Template joins the selection once its lines (and the list the
@@ -95,22 +97,35 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
   // dropped; the error shows above.
   useEffect(() => {
     if (pending.size === 0 || !listSettled) return;
+    // A cached error does not count while the retry is still running.
     const settled = summaries
       .map((summary, index) => ({
         id: summary.id,
         query: detailQueries[index],
       }))
       .filter(
-        ({ id, query }) => pending.has(id) && (query?.data || query?.error),
+        ({ id, query }) =>
+          pending.has(id) &&
+          (query?.data || (query?.isError && query.fetchStatus === 'idle')),
       );
     if (settled.length === 0) return;
     setSelection((current) =>
-      settled.reduce((next, { query }) => {
-        return query?.data
-          ? includeTemplate(next, query.data, shoppingList.data)
-          : next;
-      }, current),
+      settled.reduce(
+        (next, { query }) =>
+          query?.data
+            ? includeTemplate(next, query.data, shoppingList.data)
+            : next,
+        current,
+      ),
     );
+    const errors = settled.filter(({ query }) => !query?.data);
+    if (errors.length > 0) {
+      setFailed((current) => {
+        const next = new Map(current);
+        errors.forEach(({ id, query }) => next.set(id, query?.error));
+        return next;
+      });
+    }
     setPending((current) => {
       const next = new Set(current);
       settled.forEach(({ id }) => next.delete(id));
@@ -123,6 +138,11 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
       setSelection(removeTemplate(selection, summary.id));
       return;
     }
+    setFailed((current) => {
+      const next = new Map(current);
+      next.delete(summary.id);
+      return next;
+    });
     setPending((current) => {
       const next = new Set(current);
       if (!next.delete(summary.id)) next.add(summary.id);
@@ -147,7 +167,9 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
               })
             : t('shopping:import.doneMany', {
                 count: summary.items,
-                templates: pickedNames.length,
+                templates: t('shopping:import.templateCount', {
+                  count: pickedNames.length,
+                }),
               }),
           { duration: 3000, polite: true },
         );
@@ -290,9 +312,12 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
             <Alert>{translateApiError(t, templates.error)}</Alert>
           ) : null}
           {templates.data && summaries.length === 0 ? (
-            <Typography color="text.secondary">
+            <Card
+              variant="list"
+              sx={{ p: 2, fontSize: 13.5, color: tokens.color.muted }}
+            >
               {t('shopping:import.none')}
-            </Typography>
+            </Card>
           ) : null}
           {summaries.length > 0 ? (
             <Card variant="list" sx={{ p: 0 }}>
@@ -345,7 +370,6 @@ function TemplateRow({
   const { t } = useTranslation(['shopping', 'templates']);
   const { color } = tokens;
   const included = state !== 'excluded';
-  const partial = state === 'all' || state === 'mixed';
   return (
     <Box sx={{ '& + &': { borderTop: `1px solid ${color.divider}` } }}>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -375,7 +399,7 @@ function TemplateRow({
               display: 'grid',
               placeItems: 'center',
               borderRadius: radius.box,
-              border: `2px solid ${partial ? color.accent : color.tickBorder}`,
+              border: `2px solid ${included ? color.accent : color.tickBorder}`,
               backgroundColor:
                 state === 'all'
                   ? color.accent

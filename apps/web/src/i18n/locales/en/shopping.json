@@ -102,9 +102,11 @@
     "pickOne": "Pick a template",
     "done_one": "Imported {{count}} item from {{name}}",
     "done_other": "Imported {{count}} items from {{name}}",
-    "doneMany_one": "Imported {{count}} item from {{templates}} templates",
-    "doneMany_other": "Imported {{count}} items from {{templates}} templates",
+    "doneMany_one": "Imported {{count}} item from {{templates}}",
+    "doneMany_other": "Imported {{count}} items from {{templates}}",
     "none": "No templates yet. Save your list as one from the end of the list.",
-    "inTrolley": "In trolley"
+    "inTrolley": "In trolley",
+    "templateCount_one": "{{count}} template",
+    "templateCount_other": "{{count}} templates"
   }
 }

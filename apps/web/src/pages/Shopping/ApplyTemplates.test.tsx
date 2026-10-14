@@ -97,6 +97,8 @@ function stub(
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/shopping-list': () => Response.json(list),
+    'GET /api/shopping-list/suggestions': () =>
+      Response.json({ expired: [], usedUp: [], staples: [], runningLow: [] }),
     'GET /api/shopping-templates': () =>
       Response.json({
         templates: summaries.filter((s) =>
@@ -323,6 +325,12 @@ describe('Import sheet', () => {
     );
     await waitFor(() =>
       expect(
+        calls.filter((c) => c.key === 'GET /api/shopping-list/suggestions')
+          .length,
+      ).toBeGreaterThan(1),
+    );
+    await waitFor(() =>
+      expect(
         screen.getByRole('button', { name: 'Import from a template' }),
       ).toHaveFocus(),
     );
@@ -456,5 +464,40 @@ describe('Import sheet', () => {
     expect(
       within(dialog).getByRole('button', { name: 'Pick a template' }),
     ).toBeDisabled();
+  });
+
+  it('shows a failed detail fetch, clears it on reopen, and includes the template on a retry', async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    stub({
+      'GET /api/shopping-templates/t1': () =>
+        fail
+          ? Response.json(
+              { code: 'internal_error', params: {} },
+              { status: 500 },
+            )
+          : Response.json(taco),
+    });
+    renderWithProviders(<ShoppingPage />);
+    let dialog = await openImport(user);
+    const box = await within(dialog).findByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    await user.click(box);
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    expect(box).toHaveAttribute('aria-checked', 'false');
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    dialog = await openImport(user);
+    await within(dialog).findByRole('checkbox', { name: 'Import Taco night' });
+    expect(within(dialog).queryByRole('alert')).toBeNull();
+
+    fail = false;
+    const again = within(dialog).getByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    await user.click(again);
+    await waitFor(() => expect(again).toHaveAttribute('aria-checked', 'mixed'));
   });
 });

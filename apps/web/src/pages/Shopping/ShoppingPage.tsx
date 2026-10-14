@@ -2,9 +2,6 @@ import {
   Alert,
   Box,
   Button,
-  ImportIcon,
-  radius,
-  tokens,
   Spinner,
   Stack,
   Typography,
@@ -25,6 +22,7 @@ import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveTemplateSheet } from './components/SaveTemplateSheet';
+import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
@@ -79,39 +77,7 @@ export function ShoppingPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
-        trailing={
-          <Box
-            component="button"
-            type="button"
-            aria-label={t('shopping:import.aria')}
-            onClick={() => setApplyOpen(true)}
-            sx={{
-              height: 40,
-              p: '0 14px 0 11px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '7px',
-              border: 0,
-              borderRadius: radius.pill,
-              cursor: 'pointer',
-              backgroundColor: tokens.color.surface,
-              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
-              color: tokens.color.ink,
-              font: 'inherit',
-              fontSize: 14,
-              fontWeight: 700,
-            }}
-          >
-            <Box
-              component="span"
-              aria-hidden
-              sx={{ display: 'flex', color: tokens.color.accent }}
-            >
-              <ImportIcon size={18} />
-            </Box>
-            {t('shopping:import.button')}
-          </Box>
-        }
+        trailing={<ImportPill onClick={() => setApplyOpen(true)} />}
       />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
