@@ -1,16 +1,12 @@
 import {
+  AddButton,
   Box,
   Button,
   PantryIcon,
-  PlusIcon,
-  tokens,
   ProgressBar,
   Typography,
   Card,
-  color,
   displayType,
-  radius,
-  shadow,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 
@@ -65,28 +61,7 @@ export function SummaryCard({
             size="large"
           />
         </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('addItems')}
-          onClick={onAddItems}
-          sx={{
-            flexShrink: 0,
-            width: 52,
-            height: 52,
-            display: 'grid',
-            placeItems: 'center',
-            border: 0,
-            borderRadius: radius.fab,
-            cursor: 'pointer',
-            color: color.accentInk,
-            backgroundColor: tokens.color.accent,
-            boxShadow: shadow.button,
-            '&:hover': { backgroundColor: tokens.color.accentHover },
-          }}
-        >
-          <PlusIcon size={24} />
-        </Box>
+        <AddButton aria-label={t('addItems')} onClick={onAddItems} />
       </Box>
       {checked > 0 ? (
         <Box

@@ -1,6 +1,7 @@
 import {
   Box,
   ChevronDownIcon,
+  FieldUnit,
   PlusIcon,
   Typography,
   tokens,
@@ -239,32 +240,15 @@ export function AmountField({
               color: tokens.color.ink,
             }}
           />
-          <Box
-            component="button"
-            type="button"
+          <FieldUnit
             aria-label={t('common:amount.unit', { unit: unitLabel })}
             aria-expanded={picking}
             onClick={() => setPicking((value) => !value)}
-            sx={{
-              mr: '5px',
-              height: 32,
-              px: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              border: 0,
-              borderRadius: nestedRadius(radius.control, 5),
-              cursor: 'pointer',
-              backgroundColor: tokens.color.chipNeutral,
-              color: tokens.color.ink,
-              font: 'inherit',
-              fontSize: 13.5,
-              fontWeight: 700,
-            }}
+            sx={{ mr: '5px', px: 1, gap: '4px' }}
           >
             {unitLabel}
             <ChevronDownIcon size={14} />
-          </Box>
+          </FieldUnit>
           {picking ? (
             <Box
               role="group"

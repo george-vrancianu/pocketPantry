@@ -1,12 +1,4 @@
-import {
-  Box,
-  Stack,
-  TextField,
-  tokens,
-  border,
-  color,
-  radius,
-} from '@pocket-pantry/ui';
+import { Box, Chip, Stack, TextField } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { FILTERS, type PantryFilter } from '../../../lib/pantry';
 
@@ -44,30 +36,12 @@ export function PantryFilters({
         {FILTERS.map((chip) => {
           const active = chip === filter;
           return (
-            <Box
+            <Chip
               key={chip}
-              component="button"
-              type="button"
-              aria-pressed={active}
+              selected={active}
               onClick={() => onFilterChange(chip)}
-              sx={{
-                flexShrink: 0,
-                height: 40,
-                px: '14px',
-                borderRadius: radius.chip,
-                border: `${border.width} solid ${active ? tokens.color.accentTint : tokens.color.line}`,
-                bgcolor: active
-                  ? tokens.color.accentTint
-                  : tokens.color.surface,
-                color: active ? color.accentOnTint : tokens.color.ink,
-                font: 'inherit',
-                fontSize: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {`${chip === 'all' ? t('all') : t(`common:locations.${chip}`)} · ${counts[chip]}`}
-            </Box>
+              label={`${chip === 'all' ? t('all') : t(`common:locations.${chip}`)} · ${counts[chip]}`}
+            />
           );
         })}
       </Box>

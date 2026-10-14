@@ -1,15 +1,14 @@
 import {
   Box,
+  Chip,
   CloseIcon,
   InputAdornment,
   SearchIcon,
   TextField,
   tokens,
-  border,
   color,
   radius,
 } from '@pocket-pantry/ui';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   isFiltering,
@@ -75,19 +74,19 @@ export function RecipeFilters({ value, onChange, options }: Props) {
         }}
       >
         {isFiltering(value) ? (
-          <Chip onClick={() => onChange(NONE)}>
-            <CloseIcon size={14} />
-            {t('clear')}
-          </Chip>
+          <Chip
+            icon={<CloseIcon size={14} />}
+            label={t('clear')}
+            onClick={() => onChange(NONE)}
+          />
         ) : null}
         {cuisines.map((cuisine) => (
           <Chip
             key={cuisine.id}
-            active={value.cuisineId === cuisine.id}
+            selected={value.cuisineId === cuisine.id}
             onClick={() => toggle('cuisineId', cuisine.id)}
-          >
-            {cuisine.name}
-          </Chip>
+            label={cuisine.name}
+          />
         ))}
         {cuisines.length > 0 && methods.length > 0 ? (
           <Box
@@ -103,47 +102,12 @@ export function RecipeFilters({ value, onChange, options }: Props) {
         {methods.map((method) => (
           <Chip
             key={method.id}
-            active={value.methodId === method.id}
+            selected={value.methodId === method.id}
             onClick={() => toggle('methodId', method.id)}
-          >
-            {method.name}
-          </Chip>
+            label={method.name}
+          />
         ))}
       </Box>
-    </Box>
-  );
-}
-
-function Chip(props: {
-  active?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  const { active } = props;
-  return (
-    <Box
-      component="button"
-      type="button"
-      aria-pressed={active}
-      onClick={props.onClick}
-      sx={{
-        flexShrink: 0,
-        height: 32,
-        px: '12px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        borderRadius: radius.chip,
-        border: `${border.width} solid ${active ? tokens.color.accentTint : tokens.color.line}`,
-        bgcolor: active ? tokens.color.accentTint : tokens.color.surface,
-        color: active ? color.accentOnTint : tokens.color.ink,
-        font: 'inherit',
-        fontSize: 12.5,
-        fontWeight: 600,
-        cursor: 'pointer',
-      }}
-    >
-      {props.children}
     </Box>
   );
 }
