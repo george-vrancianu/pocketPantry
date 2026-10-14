@@ -36,6 +36,29 @@
       "days": "acum {{count}} z",
       "weeks": "acum {{count}} săpt.",
       "months": "acum {{count}} luni"
-    }
+    },
+    "addToCatalog": "Adaugă „{{query}}” în catalogul tău",
+    "addToCatalogHint": "Alege categoria o singură dată · doar familia ta o vede",
+    "familyTag": "Familie"
+  },
+  "catalogAdd": {
+    "title": "Adaugă în catalogul tău",
+    "subtitle": "Doar familia ta îl vede. Administratorii îl pot adăuga mai târziu în catalogul tuturor.",
+    "name": "Nume",
+    "category": "Categorie",
+    "placeholder": "Caută categorii, de ex. condimente",
+    "typeToSearch": "scrie pentru a căuta categorii",
+    "noMatch": "Nicio categorie nu se potrivește. Încearcă numele raionului.",
+    "loading": "Se caută categorii",
+    "change": "Schimbă categoria",
+    "pickOne": "alege una",
+    "unit": "Unitate",
+    "add": "Adaugă și alege",
+    "cancel": "Anulează",
+    "close": "Închide",
+    "pick": "Alege {{name}}",
+    "exists": "„{{name}}” este deja în catalog.",
+    "failed": "Nu l-am putut adăuga. Verifică conexiunea și încearcă din nou.",
+    "added": "{{name}} a fost adăugat în catalogul familiei tale · {{category}}"
   }
 }

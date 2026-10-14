@@ -14,6 +14,7 @@ import type { ProposedLine } from './scan';
 const today = new Date(2026, 9, 1);
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',

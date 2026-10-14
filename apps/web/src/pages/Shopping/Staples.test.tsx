@@ -30,6 +30,7 @@ const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => {
     aisle: dairy,
     since: null,
     ingredient: {
+      owner: 'catalog',
       amountScale: 'medium',
       id,
       name,
@@ -58,6 +59,7 @@ const emptyList = (groups: ShoppingList['groups'] = []): ShoppingList => ({
 });
 
 const flour: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'flour-id',
   name: 'Flour',

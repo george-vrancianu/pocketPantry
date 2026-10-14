@@ -776,7 +776,10 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
       'kombucha',
     );
 
-    const options = await screen.findAllByRole('option');
+    // Only the search listbox's options: the form's native selects have options too.
+    const options = within(await screen.findByRole('listbox')).getAllByRole(
+      'option',
+    );
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
     expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
   });
@@ -799,7 +802,9 @@ describe('Family Recipe form: Add to your catalog (#270)', () => {
       'kombucha',
     );
 
-    const options = await screen.findAllByRole('option');
+    const options = within(await screen.findByRole('listbox')).getAllByRole(
+      'option',
+    );
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });

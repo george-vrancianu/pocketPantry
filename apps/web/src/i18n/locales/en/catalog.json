@@ -34,6 +34,29 @@
       "days": "{{count}}d ago",
       "weeks": "{{count}}w ago",
       "months": "{{count}}mo ago"
-    }
+    },
+    "addToCatalog": "Add “{{query}}” to your catalog",
+    "addToCatalogHint": "Pick its category once · only your family sees it",
+    "familyTag": "Family"
+  },
+  "catalogAdd": {
+    "title": "Add to your catalog",
+    "subtitle": "Only your family sees it. Admins may add it to everyone's catalog later.",
+    "name": "Name",
+    "category": "Category",
+    "placeholder": "Search categories, e.g. spices",
+    "typeToSearch": "type to search categories",
+    "noMatch": "No category matches. Try the aisle name.",
+    "loading": "Searching categories",
+    "change": "Change category",
+    "pickOne": "pick one",
+    "unit": "Unit",
+    "add": "Add & pick",
+    "cancel": "Cancel",
+    "close": "Close",
+    "pick": "Pick {{name}}",
+    "exists": "“{{name}}” is already in the catalog.",
+    "failed": "Couldn’t add it. Check your connection and try again.",
+    "added": "Added {{name}} to your family's catalog · {{category}}"
   }
 }

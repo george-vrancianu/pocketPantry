@@ -11,6 +11,7 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
@@ -837,9 +838,13 @@ describe('ReviewPage: Add to your catalog (#270)', () => {
   });
 
   it('is offered in the Match dialog search, which has no Use as typed', async () => {
-    renderReview([sure()], {
-      'GET /api/catalog/search': () => Response.json({ results: [] }),
-    });
+    // A low-confidence line shows its Change button without opening the row.
+    renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+      },
+    );
     await userEvent.click(
       screen.getByRole('button', { name: /Parmesan.*Change/ }),
     );

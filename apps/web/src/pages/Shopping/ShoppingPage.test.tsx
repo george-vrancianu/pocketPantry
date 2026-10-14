@@ -77,6 +77,7 @@ const base = list([
 ]);
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
@@ -1432,7 +1433,9 @@ describe('ShoppingPage', () => {
       ).toBeVisible();
       // The sheet's own free-text row is gone.
       expect(
-        within(dialog).queryByRole('option', { name: /Add “Dragon fruit”/ }),
+        within(dialog).queryByRole('option', {
+          name: /Add “Dragon fruit” to (the )?list/,
+        }),
       ).toBeNull();
     });
 
@@ -1920,7 +1923,7 @@ describe('ShoppingPage', () => {
       expect(posts(calls)[0]?.body).toEqual({ name: 'Dragon fruit' });
     });
 
-    it('picks Use as typed with Enter when it is the only option', async () => {
+    it('picks Use as typed with the arrow keys and Enter when nothing matches', async () => {
       const { calls } = stubShopping({
         'GET /api/catalog/search': () => Response.json({ results: [] }),
         'POST /api/shopping-list/items': () => Response.json(base),
@@ -1933,7 +1936,8 @@ describe('ShoppingPage', () => {
       await within(dialog).findByRole('option', {
         name: /Use “Dragon fruit” as typed/,
       });
-      await user.keyboard('{Enter}');
+      // "Add to your catalog" is the first option when nothing matches (#270); Use as typed is second.
+      await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
       await user.click(
         within(dialog).getByRole('button', {
           name: 'Add Dragon fruit to the list',
