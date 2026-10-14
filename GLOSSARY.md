@@ -286,5 +286,13 @@ Settings shared by all Members of a Family: Default Expiry overrides per Categor
 _Avoid_: Preferences (reserved for per-Member settings)
 
 **Member Preferences**:
-Settings private to a Member: locale and Dashboard layout.
+Settings private to a Member: locale, Theme and Dashboard layout.
 _Avoid_: Settings
+
+**Theme**:
+The app's look, one of Warm editorial (`warm`, the default), Minimal crisp (`minimal`) and Dark-first (`dark`). A Member Preference, so it follows the Member across devices.
+_Avoid_: Skin, colour scheme (MUI's mechanism behind a Theme), mode
+
+**Match system**:
+A per-device switch that makes the app follow the device's dark mode: Dark-first in dark mode, the Member's chosen light Theme in light mode (Warm editorial if they chose Dark-first). Stored on the device, not a Member Preference.
+_Avoid_: Auto theme, system theme

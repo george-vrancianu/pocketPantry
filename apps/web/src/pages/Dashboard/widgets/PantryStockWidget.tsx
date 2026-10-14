@@ -1,4 +1,10 @@
-import { Box, PantryIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  PantryIcon,
+  tokens,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { groupByLocation, useBatches } from '../../../lib/pantry';
@@ -8,7 +14,7 @@ import type { WidgetProps } from './types';
 const LOCATION_COLORS = {
   fridge: tokens.color.accent,
   freezer: tokens.color.accentMid,
-  cupboard: '#CBD5C6',
+  cupboard: tokens.color.chipNeutral,
   spices: tokens.color.butter,
 } as const;
 
@@ -42,9 +48,8 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
         sx={{
           m: 0,
           mt: '8px',
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 40,
-          fontWeight: 700,
           lineHeight: 1,
         }}
       >
@@ -74,7 +79,7 @@ export function PantryStockWidget({ size, columns }: WidgetProps) {
             sx={{
               flexGrow: count,
               bgcolor: LOCATION_COLORS[location],
-              borderRadius: '4px',
+              borderRadius: radius.pill,
             }}
           />
         ))}

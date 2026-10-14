@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   tokens,
+  displayType,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -69,9 +70,8 @@ export function RecipesPage() {
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box
               sx={{
-                fontFamily: tokens.font.display,
+                ...displayType,
                 fontSize: 18,
-                fontWeight: 700,
               }}
             >
               {filtering ? t('recipes:noMatches') : t('recipes:empty')}

@@ -1,4 +1,14 @@
-import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
+import {
+  Box,
+  tokens,
+  usePrefersReducedMotion,
+  color,
+  displayType,
+  nestedRadius,
+  radius,
+  shadow,
+  focusRing,
+} from '@pocket-pantry/ui';
 import {
   useCallback,
   useEffect,
@@ -21,7 +31,6 @@ import {
   type IsoDate,
 } from '../../lib/pantry';
 import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
-import { focusRing } from './focusRing';
 
 export type ExpiryCalendarHandle = {
   /**
@@ -90,9 +99,6 @@ function keyTarget(iso: IsoDate, key: string): IsoDate | null {
 /** A Monday, for the weekday initials. */
 const MONDAY = new Date(2024, 0, 1);
 
-/** Selected-day lift: the handoff's `--shadow-btn` in the accent; the app has no shadow token for it. */
-const SELECTED_SHADOW = '0 4px 12px rgba(46,106,77,.28)';
-
 /**
  * The calendar card of the expiry sheet: weekday initials (Monday first), a vertically scrolling list of whole
  * months with sticky names, and a legend for the Expiring Soon band. It opens on the value's month (today's when
@@ -111,7 +117,6 @@ export function ExpiryCalendar({
   const legendId = useId();
   const headingId = useId();
   const scroller = useRef<HTMLDivElement>(null);
-  const { color } = tokens;
   // The range is fixed while the sheet is open, so clearing a far value doesn't pull the list out from under it.
   const [months] = useState(() =>
     calendarMonths(
@@ -191,8 +196,9 @@ export function ExpiryCalendar({
     gridTemplateColumns: 'repeat(7, 1fr)',
     gap: '2px',
   } as const;
+  // A mask: only its alpha counts, so the colour is not a Theme colour.
   const fade =
-    'linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 18px), transparent)';
+    'linear-gradient(to bottom, transparent, black 14px, black calc(100% - 18px), transparent)';
 
   return (
     <Box
@@ -200,9 +206,9 @@ export function ExpiryCalendar({
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        backgroundColor: color.surface,
-        border: `1px solid ${color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
+        backgroundColor: tokens.color.surface,
+        border: `1px solid ${tokens.color.line}`,
+        borderRadius: radius.card,
       }}
     >
       <Box
@@ -210,7 +216,7 @@ export function ExpiryCalendar({
         sx={{
           ...grid,
           p: '8px 8px 4px',
-          borderBottom: `1px solid ${color.divider}`,
+          borderBottom: `1px solid ${tokens.color.divider}`,
         }}
       >
         {Array.from({ length: 7 }, (_, index) => (
@@ -220,7 +226,7 @@ export function ExpiryCalendar({
             sx={{
               fontSize: 11,
               fontWeight: 700,
-              color: color.muted,
+              color: tokens.color.muted,
               textAlign: 'center',
               letterSpacing: '.04em',
             }}
@@ -264,17 +270,17 @@ export function ExpiryCalendar({
             fontSize: 13.5,
             fontWeight: 600,
             fontVariantNumeric: 'tabular-nums',
-            color: color.ink,
+            color: tokens.color.ink,
             backgroundColor: 'transparent',
             cursor: 'pointer',
             transition: 'background-color .1s',
-            '&:hover': { backgroundColor: color.chipNeutral },
+            '&:hover': { backgroundColor: tokens.color.chipNeutral },
             ...focusRing,
             '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           },
-          '& .day[data-past]': { color: color.muted },
+          '& .day[data-past]': { color: tokens.color.muted },
           '& .day[data-band]': {
-            backgroundColor: `color-mix(in srgb, ${color.soonBg} 70%, transparent)`,
+            backgroundColor: `color-mix(in srgb, ${tokens.color.soonBg} 70%, transparent)`,
           },
           '& .day[aria-current="date"]::after': {
             content: '""',
@@ -285,15 +291,15 @@ export function ExpiryCalendar({
             height: 4,
             ml: '-2px',
             borderRadius: '50%',
-            backgroundColor: color.accent,
+            backgroundColor: tokens.color.accent,
           },
           '& .day[aria-pressed="true"]': {
-            backgroundColor: color.accent,
-            color: color.surface,
-            boxShadow: SELECTED_SHADOW,
+            backgroundColor: tokens.color.accent,
+            color: color.accentInk,
+            boxShadow: shadow.button,
           },
           '& .day[aria-pressed="true"]::after': {
-            backgroundColor: color.surface,
+            backgroundColor: color.accentInk,
           },
         }}
       >
@@ -314,10 +320,9 @@ export function ExpiryCalendar({
                   zIndex: 1,
                   m: 0,
                   p: '8px 4px 4px',
-                  backgroundColor: color.surface,
-                  fontFamily: tokens.font.display,
+                  backgroundColor: tokens.color.surface,
+                  ...displayType,
                   fontSize: 15,
-                  fontWeight: 700,
                 }}
               >
                 {monthName.format(month.first)}
@@ -365,9 +370,9 @@ export function ExpiryCalendar({
           justifyContent: 'space-between',
           minHeight: 36,
           p: '6px 10px',
-          borderTop: `1px solid ${color.divider}`,
+          borderTop: `1px solid ${tokens.color.divider}`,
           fontSize: 12.5,
-          color: color.muted,
+          color: tokens.color.muted,
         }}
       >
         <Box
@@ -380,8 +385,8 @@ export function ExpiryCalendar({
             sx={{
               width: 10,
               height: 10,
-              borderRadius: '3px',
-              backgroundColor: color.soonBg,
+              borderRadius: nestedRadius(radius.box, 4),
+              backgroundColor: tokens.color.soonBg,
             }}
           />
           <span id={legendId}>
@@ -395,12 +400,12 @@ export function ExpiryCalendar({
           sx={{
             p: '4px 2px',
             border: 0,
-            borderRadius: '6px',
+            borderRadius: nestedRadius(radius.control, 6),
             backgroundColor: 'transparent',
             font: 'inherit',
             fontSize: 13,
             fontWeight: 700,
-            color: color.accent,
+            color: tokens.color.accent,
             cursor: 'pointer',
             ...focusRing,
           }}

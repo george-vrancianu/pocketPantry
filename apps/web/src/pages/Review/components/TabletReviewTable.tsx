@@ -1,4 +1,4 @@
-import { Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import { Box, tokens, visuallyHidden, radius } from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
@@ -166,7 +166,7 @@ export function TabletReviewTable({
         mt: '24px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.table}px`,
+        borderRadius: radius.card,
         overflow: 'hidden',
       }}
     >

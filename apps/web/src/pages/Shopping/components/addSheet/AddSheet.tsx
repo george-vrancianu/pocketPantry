@@ -5,7 +5,9 @@ import {
   Typography,
   segmentedTabId,
   segmentedTabPanelId,
-  tokens,
+  color,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -103,8 +105,6 @@ export function AddSheet({
     setTab('templates');
     setTemplatesView({ apply: templateId });
   };
-  const { color } = tokens;
-
   const header = (
     <Box sx={{ p: '10px 16px 10px 20px' }}>
       <Box
@@ -119,9 +119,8 @@ export function AddSheet({
         <Typography
           component="h2"
           sx={{
-            fontFamily: 'var(--font-display)',
+            ...displayType,
             fontSize: 22,
-            fontWeight: 700,
           }}
         >
           {t('sheet.title')}
@@ -142,10 +141,10 @@ export function AddSheet({
             alignItems: 'center',
             gap: 1,
             border: 0,
-            borderRadius: 999,
+            borderRadius: radius.pill,
             cursor: 'pointer',
-            backgroundColor: color.ink,
-            color: '#FFFFFF',
+            backgroundColor: color.primary,
+            color: color.primaryInk,
             font: 'inherit',
             fontSize: 14,
             fontWeight: 700,
@@ -161,8 +160,9 @@ export function AddSheet({
                 px: '5px',
                 display: 'grid',
                 placeItems: 'center',
-                borderRadius: 999,
-                backgroundColor: color.accent,
+                borderRadius: radius.pill,
+                backgroundColor: color.primaryInk,
+                color: color.primary,
                 fontSize: 11.5,
                 fontWeight: 700,
               }}

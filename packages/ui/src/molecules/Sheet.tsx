@@ -12,12 +12,13 @@ import { useToastHost } from './ToastProvider';
 import { tokens } from '../theme/tokens';
 import { useBreakpointUp } from '../theme/useBreakpointUp';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
+import { palette, radius, shadow } from '../theme/themeVars';
 
 /** How long the phone sheet slides in and out, ms. */
 const SLIDE_MS = 340;
 const SLIDE_EASING = 'cubic-bezier(.2,.8,.2,1)';
-const SCRIM = 'rgba(23,35,28,.38)';
-const RADIUS = 28;
+/** The Themes define no scrim; a translucent black reads on light and dark alike. */
+const SCRIM = `color-mix(in srgb, ${palette('common-black')} 38%, transparent)`;
 
 export type SheetProps = {
   open: boolean;
@@ -104,14 +105,15 @@ export function Sheet({
             overflow: 'hidden',
             backgroundColor: color.bg,
             backgroundImage: 'none',
+            boxShadow: shadow.float,
             ...(centred
-              ? { borderRadius: `${RADIUS}px`, maxHeight: '80vh' }
+              ? { borderRadius: radius.sheet, maxHeight: '80vh' }
               : {
                   m: 0,
                   width: '100%',
                   height: size === 'tall' ? '90dvh' : 'auto',
                   maxHeight: '90dvh',
-                  borderRadius: `${RADIUS}px ${RADIUS}px 0 0`,
+                  borderRadius: `${radius.sheet} ${radius.sheet} 0 0`,
                 }),
           },
         },
@@ -126,7 +128,7 @@ export function Sheet({
             height: 5,
             mt: 1,
             mx: 'auto',
-            borderRadius: 999,
+            borderRadius: '999px',
             backgroundColor: color.line,
           }}
         />

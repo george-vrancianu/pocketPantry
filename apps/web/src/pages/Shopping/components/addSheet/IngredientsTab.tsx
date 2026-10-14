@@ -315,7 +315,7 @@ export function IngredientsTab({
         sx={{
           position: 'relative',
           display: rows.length === 0 ? 'none' : 'block',
-          borderRadius: `${LIST_RADIUS}px`,
+          borderRadius: LIST_RADIUS,
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
         }}
@@ -371,7 +371,7 @@ export function IngredientsTab({
               backgroundColor: tokens.color.subtle,
               borderRadius:
                 openIndex === rows.length - 1
-                  ? `0 0 ${INNER_RADIUS}px ${INNER_RADIUS}px`
+                  ? `0 0 ${INNER_RADIUS} ${INNER_RADIUS}`
                   : 0,
             }}
           >

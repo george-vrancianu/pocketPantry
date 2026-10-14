@@ -8,6 +8,10 @@ import {
   Typography,
   tokens,
   useToast,
+  color,
+  displayType,
+  radius,
+  insetFocusRing,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +22,6 @@ import {
   useShoppingList,
 } from '../../../../lib/shopping';
 import { BackButton } from './BackButton';
-import { focusRing } from '../../../../lib/focusRing';
 import { SheetFooter } from './SheetFooter';
 import {
   groupByAisle,
@@ -51,7 +54,6 @@ export function ApplyTemplateView({
   const apply = useApplyTemplate(i18n.language);
   // Only the lines the Member has flipped; every other line keeps its default.
   const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
-  const { color } = tokens;
 
   const back = (
     <BackButton
@@ -110,7 +112,7 @@ export function ApplyTemplateView({
         startIcon={<PlusIcon size={18} />}
         disabled={ticked.length === 0 || apply.isPending}
         onClick={submit}
-        sx={{ minHeight: 48, borderRadius: '16px' }}
+        sx={{ minHeight: 48, borderRadius: radius.control }}
       >
         {apply.isPending
           ? t('templates:apply.confirming')
@@ -126,14 +128,13 @@ export function ApplyTemplateView({
         <Typography
           component="h3"
           sx={{
-            fontFamily: 'var(--font-display)',
+            ...displayType,
             fontSize: 22,
-            fontWeight: 700,
           }}
         >
           {name}
         </Typography>
-        <Typography variant="meta" sx={{ color: color.muted }}>
+        <Typography variant="meta" sx={{ color: tokens.color.muted }}>
           {t('templates:apply.hint')}
         </Typography>
       </Box>
@@ -146,15 +147,15 @@ export function ApplyTemplateView({
           <Typography
             component="h4"
             variant="sectionLabel"
-            sx={{ mx: 0.5, mb: 1, color: color.muted }}
+            sx={{ mx: 0.5, mb: 1, color: tokens.color.muted }}
           >
             {group.title ?? t('templates:apply.unmatchedGroup')}
           </Typography>
           <Box
             sx={{
-              borderRadius: '20px',
-              border: `1px solid ${color.line}`,
-              backgroundColor: color.surface,
+              borderRadius: radius.card,
+              border: `1px solid ${tokens.color.line}`,
+              backgroundColor: tokens.color.surface,
             }}
           >
             {group.lines.map((line) => {
@@ -185,8 +186,8 @@ export function ApplyTemplateView({
                     alignItems: 'center',
                     gap: 1.5,
                     cursor: 'pointer',
-                    '& + &': { borderTop: `1px solid ${color.divider}` },
-                    ...focusRing(),
+                    '& + &': { borderTop: `1px solid ${tokens.color.divider}` },
+                    ...insetFocusRing,
                   }}
                 >
                   <Box
@@ -197,10 +198,10 @@ export function ApplyTemplateView({
                       height: 24,
                       display: 'grid',
                       placeItems: 'center',
-                      borderRadius: '8px',
-                      border: `2px solid ${on ? color.accent : '#A7B3AA'}`,
-                      backgroundColor: on ? color.accent : 'transparent',
-                      color: '#FFFFFF',
+                      borderRadius: radius.box,
+                      border: `2px solid ${on ? tokens.color.accent : color.box}`,
+                      backgroundColor: on ? tokens.color.accent : 'transparent',
+                      color: color.accentInk,
                     }}
                   >
                     {on ? <CheckIcon size={14} /> : null}
@@ -214,7 +215,7 @@ export function ApplyTemplateView({
                         sx={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: color.muted,
+                          color: tokens.color.muted,
                         }}
                       >
                         {amount}
@@ -227,7 +228,7 @@ export function ApplyTemplateView({
                       sx={{
                         px: 1.25,
                         py: 0.25,
-                        borderRadius: 999,
+                        borderRadius: radius.pill,
                         fontSize: 11.5,
                         fontWeight: 700,
                         color: tag.fg,

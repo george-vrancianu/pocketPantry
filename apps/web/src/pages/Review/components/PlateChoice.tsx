@@ -1,4 +1,4 @@
-import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Alert, Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -17,7 +17,7 @@ const buttonSx = {
   gap: 2,
   minHeight: 44,
   px: 1.5,
-  borderRadius: `${tokens.radius.input}px`,
+  borderRadius: radius.control,
   border: `1px solid ${tokens.color.line}`,
   backgroundColor: tokens.color.surface,
   color: 'inherit',

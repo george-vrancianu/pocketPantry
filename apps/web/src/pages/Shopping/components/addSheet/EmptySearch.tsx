@@ -8,6 +8,7 @@ import {
   PlusIcon,
   Typography,
   tokens,
+  radius,
 } from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -249,7 +250,7 @@ function SuggestionChip({
         alignItems: 'center',
         height: 38,
         listStyle: 'none',
-        borderRadius: 999,
+        borderRadius: radius.pill,
         border: `1px solid ${added ? color.accentMid : color.line}`,
         backgroundColor: added ? color.accentTint : color.surface,
         color: color.ink,

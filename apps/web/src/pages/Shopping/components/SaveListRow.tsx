@@ -1,6 +1,13 @@
-import { BookmarkIcon, Box, tokens } from '@pocket-pantry/ui';
+import {
+  BookmarkIcon,
+  Box,
+  tokens,
+  border,
+  color,
+  radius,
+  focusRing,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { focusRing } from '../../../lib/focusRing';
 
 export type SaveListRowProps = {
   /** Items on the Shopping List. */
@@ -11,7 +18,6 @@ export type SaveListRowProps = {
 /** The dashed row under the last Aisle that opens the Add sheet on Templates, save. */
 export function SaveListRow({ count, onClick }: SaveListRowProps) {
   const { t } = useTranslation('templates');
-  const { color } = tokens;
   return (
     <Box
       component="button"
@@ -23,14 +29,14 @@ export function SaveListRow({ count, onClick }: SaveListRowProps) {
         display: 'flex',
         alignItems: 'center',
         gap: 1.5,
-        border: `1px dashed ${color.line}`,
-        borderRadius: '20px',
+        border: `${border.width} dashed ${color.lineStrong}`,
+        borderRadius: radius.card,
         backgroundColor: 'transparent',
         color: 'inherit',
         font: 'inherit',
         textAlign: 'left',
         cursor: 'pointer',
-        ...focusRing(2),
+        ...focusRing,
       }}
     >
       <Box
@@ -41,16 +47,16 @@ export function SaveListRow({ count, onClick }: SaveListRowProps) {
           height: 36,
           display: 'grid',
           placeItems: 'center',
-          borderRadius: '12px',
-          backgroundColor: color.butter,
-          color: color.butterInk,
+          borderRadius: radius.control,
+          backgroundColor: tokens.color.butter,
+          color: tokens.color.butterInk,
         }}
       >
         <BookmarkIcon size={18} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box sx={{ fontSize: 15, fontWeight: 600 }}>{t('save.row')}</Box>
-        <Box sx={{ fontSize: 13, color: color.muted }}>
+        <Box sx={{ fontSize: 13, color: tokens.color.muted }}>
           {t('save.rowHint', { count })}
         </Box>
       </Box>

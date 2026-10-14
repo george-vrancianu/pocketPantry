@@ -388,6 +388,7 @@ describe('Settings (integration)', () => {
         (await call(cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: null,
+        theme: null,
       });
     });
 
@@ -425,6 +426,7 @@ describe('Settings (integration)', () => {
         (await call(otherDevice, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: 'ro',
+        theme: null,
       });
     });
 
@@ -439,6 +441,7 @@ describe('Settings (integration)', () => {
         (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
       ).toEqual({
         locale: null,
+        theme: null,
       });
     });
 
@@ -449,7 +452,7 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'da' });
+      ).toEqual({ locale: 'da', theme: null });
       const [row] = await database
         .select({ locale: user.locale })
         .from(user)
@@ -462,7 +465,82 @@ describe('Settings (integration)', () => {
       await call(cookie, 'put', '/preferences')
         .send({ locale: 'fr' })
         .expect(400);
+    });
+
+    it('reject a save with nothing to update', async () => {
+      const { cookie } = await signUp();
       await call(cookie, 'put', '/preferences').send({}).expect(400);
+    });
+
+    it('save the Theme on the Member and return the full Member Preferences', async () => {
+      const { cookie, userId } = await signUp();
+      expect(
+        (
+          await call(cookie, 'put', '/preferences')
+            .send({ theme: 'dark' })
+            .expect(200)
+        ).body,
+      ).toEqual({ locale: null, theme: 'dark' });
+      expect(
+        (await call(cookie, 'get', '/preferences').expect(200)).body,
+      ).toEqual({ locale: null, theme: 'dark' });
+      const [row] = await database
+        .select({ theme: user.theme })
+        .from(user)
+        .where(eq(user.id, userId));
+      expect(row.theme).toBe('dark');
+    });
+
+    it('keep the locale when only the Theme is saved, and the Theme when only the locale is', async () => {
+      const { cookie } = await signUp();
+      await call(cookie, 'put', '/preferences')
+        .send({ locale: 'ro' })
+        .expect(200);
+      await call(cookie, 'put', '/preferences')
+        .send({ theme: 'minimal' })
+        .expect(200);
+      expect(
+        (await call(cookie, 'get', '/preferences').expect(200)).body,
+      ).toEqual({ locale: 'ro', theme: 'minimal' });
+
+      expect(
+        (
+          await call(cookie, 'put', '/preferences')
+            .send({ locale: 'da' })
+            .expect(200)
+        ).body,
+      ).toEqual({ locale: 'da', theme: 'minimal' });
+    });
+
+    it('save the locale and the Theme together', async () => {
+      const { cookie } = await signUp();
+      await call(cookie, 'put', '/preferences')
+        .send({ locale: 'en', theme: 'warm' })
+        .expect(200);
+      expect(
+        (await call(cookie, 'get', '/preferences').expect(200)).body,
+      ).toEqual({ locale: 'en', theme: 'warm' });
+    });
+
+    it('reject an unknown Theme', async () => {
+      const { cookie } = await signUp();
+      await call(cookie, 'put', '/preferences')
+        .send({ theme: 'neon' })
+        .expect(400);
+      await call(cookie, 'put', '/preferences')
+        .send({ theme: null })
+        .expect(400);
+    });
+
+    it('read an unknown stored Theme as never chosen', async () => {
+      const { cookie, userId } = await signUp();
+      await database
+        .update(user)
+        .set({ theme: 'sage' })
+        .where(eq(user.id, userId));
+      expect(
+        (await call(cookie, 'get', '/preferences').expect(200)).body,
+      ).toEqual({ locale: null, theme: null });
     });
   });
 });

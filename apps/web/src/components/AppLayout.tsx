@@ -2,6 +2,7 @@ import { PageLayout } from '@pocket-pantry/ui';
 import { Outlet, useLocation } from 'react-router-dom';
 import { dockStateFor } from '../lib/dockState';
 import { ApplyMemberLocale } from './ApplyMemberLocale';
+import { ApplyMemberTheme } from './ApplyMemberTheme';
 import { AppDock } from './AppDock';
 
 /** The line editor, whose tablet layout is a wide table (the overview of cards is not). */
@@ -14,6 +15,7 @@ export function AppLayout() {
   return (
     <>
       <ApplyMemberLocale />
+      <ApplyMemberTheme />
       <PageLayout withDock={dock.visible} wide={isWide(pathname)}>
         <Outlet />
       </PageLayout>

@@ -1,5 +1,5 @@
 {
-  "id": "ddbd8149-cbf2-408f-90a1-37b2d9acb650",
+  "id": "c97bc9e3-6e60-411e-aefb-16f65ca7495d",
   "prevId": "ba672b2f-d62c-44d1-baab-5fe9b132b52f",
   "version": "7",
   "dialect": "postgresql",
@@ -2845,80 +2845,6 @@
       },
       "isRLSEnabled": false
     },
-    "public.running_low": {
-      "name": "running_low",
-      "schema": "",
-      "columns": {
-        "family_id": {
-          "name": "family_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ingredient_id": {
-          "name": "ingredient_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "running_low_family_id_family_id_fk": {
-          "name": "running_low_family_id_family_id_fk",
-          "tableFrom": "running_low",
-          "tableTo": "family",
-          "columnsFrom": [
-            "family_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "running_low_ingredient_id_ingredients_id_fk": {
-          "name": "running_low_ingredient_id_ingredients_id_fk",
-          "tableFrom": "running_low",
-          "tableTo": "ingredients",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "running_low_family_id_ingredient_id_pk": {
-          "name": "running_low_family_id_ingredient_id_pk",
-          "columns": [
-            "family_id",
-            "ingredient_id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.scan_usage": {
       "name": "scan_usage",
       "schema": "",
@@ -4027,6 +3953,12 @@
         },
         "locale": {
           "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "theme": {
+          "name": "theme",
           "type": "text",
           "primaryKey": false,
           "notNull": false

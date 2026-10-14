@@ -1,6 +1,5 @@
 import {
   Alert,
-  Box,
   Link,
   ListRow,
   Spinner,
@@ -9,6 +8,7 @@ import {
   Typography,
   useToast,
   type SwipeRowHandle,
+  Card,
 } from '@pocket-pantry/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -89,19 +89,11 @@ export function StaplesPage() {
           </Typography>
         ) : null}
         {visible && visible.length > 0 ? (
-          <Box
+          <Card
             component="ul"
+            variant="list"
             aria-label={t('staples:listLabel')}
-            sx={{
-              listStyle: 'none',
-              m: 0,
-              p: 0,
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: '20px',
-              overflow: 'hidden',
-            }}
+            sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
           >
             {visible.map((staple, index) => (
               <StapleRow
@@ -115,7 +107,7 @@ export function StaplesPage() {
                 onRemove={() => removal.remove(staple.id, staple.name)}
               />
             ))}
-          </Box>
+          </Card>
         ) : null}
       </Stack>
     </>

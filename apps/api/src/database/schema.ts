@@ -60,6 +60,8 @@ export const user = pgTable(
     familyRole: familyRole('family_role').notNull().default('member'),
     // Member Preference: 'en' | 'ro' | 'da' (validated in the API); null until chosen.
     locale: text('locale'),
+    // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
+    theme: text('theme'),
     ...timestamps,
   },
   (table) => [

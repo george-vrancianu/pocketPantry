@@ -1,8 +1,8 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 import { DockItem } from '../molecules/DockItem';
-import { tokens } from '../theme/tokens';
 import { DOCK_BOTTOM, DOCK_HEIGHT } from '../theme/dock';
+import { border, radius, shadow } from '../theme/themeVars';
 
 export type DockEntry = {
   key: string;
@@ -18,7 +18,11 @@ export type DockProps = {
   activeKey?: string;
 };
 
-/** The floating bottom navigation. Handoff section 5 and 9 for sizes. */
+/**
+ * The floating bottom navigation. Sizes from pocket-pantry-handoff sections 5
+ * and 9; colours, border, radius and shadow follow the Theme
+ * (docs/handoffs/themes/handoff.md section 4).
+ */
 export function Dock({ label, items, activeKey }: DockProps) {
   return (
     <Box
@@ -39,10 +43,14 @@ export function Dock({ label, items, activeKey }: DockProps) {
         display: 'grid',
         gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
         gap: { xs: '4px', md: '6px' },
-        backgroundColor: 'rgba(255,255,255,0.94)',
-        border: `1px solid ${tokens.color.line}`,
-        borderRadius: { xs: `${tokens.radius.dock}px`, md: '28px' },
-        boxShadow: tokens.shadow.dock,
+        bgcolor: 'pp.dockBg',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderWidth: border.width,
+        borderStyle: 'solid',
+        borderColor: 'pp.line',
+        borderRadius: radius.dock,
+        boxShadow: shadow.float,
       }}
     >
       {items.map((item) => (

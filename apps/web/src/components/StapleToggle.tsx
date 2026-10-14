@@ -1,4 +1,4 @@
-import { IconButton } from '@pocket-pantry/ui';
+import { IconButton, StarFillIcon, StarIcon } from '@pocket-pantry/ui';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../i18n/translateApiError';
@@ -69,18 +69,7 @@ export function StapleToggle({ ingredientId, name, onToggled }: Props) {
         else add.mutate({ ingredientId }, options);
       }}
     >
-      <svg
-        aria-hidden="true"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill={staple ? 'currentColor' : 'none'}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      >
-        <path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z" />
-      </svg>
+      {staple ? <StarFillIcon size={20} /> : <StarIcon size={20} />}
     </IconButton>
   );
 }
