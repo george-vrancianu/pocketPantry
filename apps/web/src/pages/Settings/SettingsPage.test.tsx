@@ -169,7 +169,9 @@ describe('SettingsPage', () => {
     const calls = stubSettings();
     renderWithProviders(<SettingsPage />, { route: '/settings' });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'RO' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Română' }),
+    );
     await vi.waitFor(() =>
       expect(calls).toContainEqual(
         expect.objectContaining({
@@ -184,7 +186,7 @@ describe('SettingsPage', () => {
     const calls = stubSettings();
     renderWithProviders(<SettingsPage />, { route: '/settings' });
 
-    await userEvent.click(await screen.findByRole('button', { name: 'DA' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Dansk' }));
     await vi.waitFor(() =>
       expect(calls).toContainEqual(
         expect.objectContaining({

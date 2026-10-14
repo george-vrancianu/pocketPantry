@@ -11,7 +11,6 @@
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
   "account": "Cont",
-  "signedInAs": "Autentificat ca {{name}}",
   "localeSaveFailed": "Nu am putut salva limba. Încearcă din nou.",
   "signOut": "Deconectare",
   "appearance": {
@@ -21,8 +20,27 @@
     "dark": "Întâi întunecat",
     "matchSystem": "Urmează sistemul",
     "matchSystemHint": "Întâi întunecat când telefonul este în modul întunecat, altfel tema ta luminoasă",
-    "usedInDark": "Folosită în modul întunecat"
+    "usedInDark": "Folosită în modul întunecat",
+    "usedInLight": "Folosită în modul luminos",
+    "syncedOnDevice": "Tema a fost salvată pe acest telefon. O vom sincroniza când ești online.",
+    "lightOnlyToast": "{{name}} apare când telefonul este în modul luminos.",
+    "darkEverywhereToast": "Întâi întunecat peste tot. Urmează sistemul este dezactivat."
   },
+  "scope": {
+    "device": "Pe acest telefon",
+    "you": "Doar tu",
+    "admins": "Administratori"
+  },
+  "languageNames": {
+    "en": "English",
+    "ro": "Română",
+    "da": "Dansk"
+  },
+  "languageSaved": "Limba a fost salvată",
+  "unmatched_one": "{{count}} nume nepotrivit așteaptă",
+  "unmatched_other": "{{count}} nume nepotrivite așteaptă",
+  "signOutConfirm": "Te deconectezi de pe acest telefon?",
+  "cancel": "Renunță",
   "defaultExpiry": {
     "title": "Expirare implicită",
     "hint": "Completează data când cineva din familie adaugă un lot. Categoriile pe care nu le setezi folosesc valoarea din Catalog.",
