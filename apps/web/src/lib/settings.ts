@@ -16,13 +16,13 @@ export type FamilySettings = {
 };
 
 /**
- * A category a Default Expiry override can target. `catalogDays` is the Catalog's default for it,
- * when the API sends one; without it the sheet and rows leave the Catalog comparison out.
+ * A category a Default Expiry override can target. `catalogDays` is the Catalog's default for it in
+ * days (a Leaf without its own has its Parent's); `null` leaves the Catalog comparison out.
  */
 export type CategoryOption = {
   id: string;
   name: string;
-  catalogDays?: number | null;
+  catalogDays: number | null;
 };
 
 export type CategoryOptions = {
