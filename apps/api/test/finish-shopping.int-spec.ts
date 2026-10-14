@@ -142,12 +142,15 @@ describe('Finish Shopping (integration)', () => {
       quantity: 200,
       unit: 'g',
       location: 'fridge',
+      // Dairy maps to medium: the Amount Scale the review's Usual Amount chips use.
+      amountScale: 'medium',
     });
     expect(cheese.expiryDate).not.toBeNull();
     expect(unmatched).toMatchObject({
       unmatched: true,
       quantity: 2,
       unit: 'pcs',
+      amountScale: null,
     });
   });
 

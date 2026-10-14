@@ -65,8 +65,8 @@ export type AmountFieldProps = {
   height?: number;
   /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
   popoverAlign?: 'start' | 'end';
-  /** The Ingredient's Amount Scale; given, the field draws its Usual Amount chips under it. */
-  amountScale?: AmountScale;
+  /** The Ingredient's Amount Scale; given, the field draws its Usual Amount chips under it. Null or left out (an Unmatched name) means no chips. */
+  amountScale?: AmountScale | null;
 };
 
 /**

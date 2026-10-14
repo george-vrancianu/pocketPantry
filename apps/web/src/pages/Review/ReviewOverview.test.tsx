@@ -21,6 +21,7 @@ vi.mock('../../lib/camera', () => ({
 }));
 
 const milk: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',
   defaultUnit: 'l',

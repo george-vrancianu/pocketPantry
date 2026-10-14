@@ -7,6 +7,7 @@ import {
   templateDetailsQueryKey,
 } from './queryKeys';
 import type { Aisle } from './staples';
+import type { AmountScale } from './usualAmounts';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 import { useStaleThresholdDays } from './settings';
 
@@ -21,6 +22,8 @@ export type Batch = {
   unmatched: boolean;
   /** The Ingredient's Aisle; null for an Unmatched Batch. */
   aisle: Aisle | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
+  amountScale: AmountScale | null;
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;

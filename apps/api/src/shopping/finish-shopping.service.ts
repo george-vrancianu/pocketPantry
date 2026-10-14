@@ -13,6 +13,7 @@ import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
+import { readAmountScale, type AmountScale } from '../catalog/amount-scale';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
@@ -45,6 +46,7 @@ type CheckedRow = {
   unit: (typeof shoppingItems.$inferSelect)['unit'];
   canonicalName: string | null;
   defaultUnit: (typeof ingredients.$inferSelect)['defaultUnit'] | null;
+  amountScale: AmountScale | null;
   leaf: typeof leafCategories.$inferSelect | null;
   parent: typeof parentCategories.$inferSelect | null;
 };
@@ -95,6 +97,9 @@ export class FinishShoppingService {
           // A Batch needs a unit whenever it has a quantity.
           unit:
             row.unit ?? (quantity === null ? null : (row.defaultUnit ?? 'pcs')),
+          amountScale: row.ingredientId
+            ? readAmountScale(row.amountScale)
+            : null,
           location: defaults.location ?? FALLBACK_LOCATION,
           expiryDate: expiryDays === null ? null : addDays(today, expiryDays),
         };
@@ -271,6 +276,7 @@ export class FinishShoppingService {
         unit: shoppingItems.unit,
         canonicalName: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
+        amountScale: ingredients.amountScale,
         leaf: leafCategories,
         parent: parentCategories,
       })

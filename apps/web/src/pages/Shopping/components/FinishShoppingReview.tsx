@@ -7,8 +7,9 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { AmountField } from '../../../components/AmountField';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { LOCATIONS, UNITS } from '../../../lib/catalog';
+import { LOCATIONS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
 
 type Props = { onDone: () => void; onCancel: () => void };
@@ -74,47 +75,27 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
           </Stack>
           {dropped ? null : (
             <>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  label={t('shopping:add.quantity')}
-                  type="number"
-                  value={edit.quantity}
-                  error={!quantityValid}
-                  helperText={
-                    quantityValid
-                      ? undefined
-                      : t('shopping:finish.quantityInvalid')
-                  }
-                  onChange={(event) =>
-                    review.edit(line.itemId, { quantity: event.target.value })
-                  }
-                  slotProps={{
-                    htmlInput: {
-                      min: 0,
-                      max: 1_000_000,
-                      step: 'any',
-                      inputMode: 'decimal',
-                    },
-                  }}
-                />
-                <TextField
-                  select
-                  label={t('shopping:add.unit')}
-                  value={edit.unit}
-                  onChange={(event) =>
-                    review.edit(line.itemId, {
-                      unit: event.target.value as typeof edit.unit,
-                    })
-                  }
-                  slotProps={{ select: { native: true } }}
-                >
-                  {UNITS.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {t(`common:units.${unit}`)}
-                    </option>
-                  ))}
-                </TextField>
-              </Stack>
+              <AmountField
+                name={line.name}
+                quantity={edit.quantity}
+                unit={edit.unit}
+                onQuantityChange={(quantity, unit) =>
+                  review.edit(line.itemId, {
+                    quantity,
+                    ...(unit ? { unit } : {}),
+                  })
+                }
+                onUnitChange={(unit) => {
+                  if (unit) review.edit(line.itemId, { unit });
+                }}
+                error={
+                  quantityValid ? null : t('shopping:finish.quantityInvalid')
+                }
+                // Enter has no save here; Confirm below keeps the lines.
+                onSubmit={() => {}}
+                allowNoUnit={false}
+                amountScale={line.amountScale}
+              />
               <TextField
                 select
                 label={t('pantry:form.location')}

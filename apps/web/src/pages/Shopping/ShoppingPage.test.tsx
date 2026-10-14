@@ -76,6 +76,7 @@ const base = list([
 ]);
 
 const parmesan: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
@@ -1643,6 +1644,80 @@ describe('ShoppingPage', () => {
       });
     });
 
+    describe('Usual amounts', () => {
+      beforeEach(() => {
+        vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(300);
+        vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(
+          60,
+        );
+      });
+      afterEach(() => vi.restoreAllMocks());
+
+      const chipLabels = (group: HTMLElement) =>
+        within(group)
+          .getAllByRole('button')
+          .map((chip) => chip.getAttribute('aria-label'));
+
+      it('offers the usual amounts of the picked Ingredient, scaled by its Amount Scale', async () => {
+        withParmesan({
+          'GET /api/catalog/search': () =>
+            Response.json({
+              results: [{ ...parmesan, amountScale: 'large' }],
+            }),
+        });
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        await user.type(
+          within(dialog).getByRole('textbox', {
+            name: 'Amount of Parmesan, for example 2 or 500 g',
+          }),
+          '2',
+        );
+
+        expect(
+          chipLabels(
+            within(dialog).getByRole('group', {
+              name: 'Usual amounts for Parmesan',
+            }),
+          ),
+        ).toEqual(['500 g', '1,000 g', '2,000 g', '5,000 g']);
+      });
+
+      it('splits a typed unit off first, so the chips follow it', async () => {
+        withParmesan({
+          'GET /api/catalog/search': () =>
+            Response.json({
+              results: [{ ...parmesan, amountScale: 'large' }],
+            }),
+        });
+        renderWithProviders(<ShoppingPage />);
+        const user = userEvent.setup();
+        const { dialog, option } = await findParmesanRow(user);
+
+        await user.click(option);
+        await user.type(
+          within(dialog).getByRole('textbox', {
+            name: 'Amount of Parmesan, for example 2 or 500 g',
+          }),
+          '2 kg',
+        );
+
+        expect(
+          within(dialog).getByRole('button', { name: 'Unit: kg' }),
+        ).toBeVisible();
+        expect(
+          chipLabels(
+            within(dialog).getByRole('group', {
+              name: 'Usual amounts for Parmesan',
+            }),
+          ),
+        ).toEqual(['0.5 kg', '1 kg', '2 kg', '5 kg']);
+      });
+    });
+
     it('adds a Catalog Match with amount and unit, then resets the search', async () => {
       const { calls } = withParmesan();
       renderWithProviders(<ShoppingPage />);
@@ -1974,11 +2049,11 @@ describe('ShoppingPage', () => {
       const amount = within(dialog).getByRole('textbox', {
         name: /Amount of Parmesan/,
       });
-      await user.type(amount, '2 pc');
+      await user.type(amount, '2 kg');
       await user.click(
-        within(dialog).getByRole('button', { name: 'Unit: pcs' }),
+        within(dialog).getByRole('button', { name: 'Unit: kg' }),
       );
-      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
+      await user.click(within(dialog).getByRole('button', { name: 'g' }));
       await user.type(amount, 'x');
       await user.clear(amount);
       await user.type(amount, '3{Enter}');
@@ -1987,7 +2062,7 @@ describe('ShoppingPage', () => {
       expect(posts(calls)[0]?.body).toEqual({
         ingredientId: 'parmesan-id',
         quantity: 3,
-        unit: 'kg',
+        unit: 'g',
       });
     });
 
@@ -1999,17 +2074,17 @@ describe('ShoppingPage', () => {
 
       await user.click(option);
       await user.click(within(dialog).getByRole('button', { name: 'Unit: g' }));
-      await user.click(within(dialog).getByRole('button', { name: 'ml' }));
+      await user.click(within(dialog).getByRole('button', { name: 'kg' }));
       await user.type(
         within(dialog).getByRole('textbox', { name: /Amount of Parmesan/ }),
-        '2 kg{Enter}',
+        '2 g{Enter}',
       );
 
       await waitFor(() => expect(posts(calls)).toHaveLength(1));
       expect(posts(calls)[0]?.body).toEqual({
         ingredientId: 'parmesan-id',
         quantity: 2,
-        unit: 'kg',
+        unit: 'g',
       });
     });
 

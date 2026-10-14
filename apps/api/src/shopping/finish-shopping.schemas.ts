@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
+import type { AmountScale } from '../catalog/amount-scale';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { batchQuantity } from '../common/quantity';
 
@@ -47,6 +48,8 @@ export type FinishProposalLine = {
   unmatched: boolean;
   quantity: number | null;
   unit: (typeof ingredientUnit.enumValues)[number] | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched line. */
+  amountScale: AmountScale | null;
   location: (typeof storageLocation.enumValues)[number];
   /** ISO date (YYYY-MM-DD) from Default Expiry, or null when the Catalog has none. */
   expiryDate: string | null;

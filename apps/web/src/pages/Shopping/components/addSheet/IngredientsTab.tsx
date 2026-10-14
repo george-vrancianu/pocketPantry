@@ -375,6 +375,9 @@ export function IngredientsTab({
             <Box sx={{ p: '0 14px 12px 64px' }}>
               <AmountField
                 name={rowName(openRow)}
+                amountScale={
+                  openRow.kind === 'catalog' ? openRow.result.amountScale : null
+                }
                 quantity={open.quantity}
                 unit={open.unit}
                 onQuantityChange={(quantity, unit) =>

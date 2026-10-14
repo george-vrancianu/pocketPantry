@@ -1,5 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import type { CatalogLocale } from './catalog.schemas';
+import { readAmountScale, type AmountScale } from './amount-scale';
 import { loadDisplayNames } from './display-names';
 import type { Executor } from '../database/database.types';
 import {
@@ -14,6 +15,7 @@ export type AisleView = { id: string; name: string; sortOrder: number };
 export type IngredientPlacement = {
   name: string;
   aisle: AisleView | null;
+  amountScale: AmountScale;
 };
 
 /** Localised name and Aisle of each Ingredient, for lists shown in shop order. */
@@ -30,6 +32,7 @@ export async function loadIngredientPlacements(
       aisleId: aisles.id,
       aisleName: aisles.name,
       aisleSortOrder: aisles.sortOrder,
+      amountScale: ingredients.amountScale,
     })
     .from(ingredients)
     .innerJoin(
@@ -55,6 +58,7 @@ export async function loadIngredientPlacements(
           name: pick('aisle', row.aisleId, row.aisleName),
           sortOrder: row.aisleSortOrder,
         },
+        amountScale: readAmountScale(row.amountScale),
       },
     ]),
   );

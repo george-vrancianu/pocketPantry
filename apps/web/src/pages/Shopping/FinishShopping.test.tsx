@@ -40,6 +40,7 @@ const line = (
   unit: null,
   location: 'fridge',
   expiryDate: null,
+  amountScale: null,
   ...overrides,
 });
 
@@ -52,6 +53,7 @@ const proposal: FinishProposal = {
       quantity: 200,
       unit: 'g',
       expiryDate: '2026-11-01',
+      amountScale: 'large',
     }),
     line({ itemId: 'i2', name: 'Milk', quantity: 1, unit: 'l' }),
     line({
@@ -75,6 +77,17 @@ function stubFinish(routes: Record<string, () => Response> = {}) {
   return calls;
 }
 
+/** Chips are 60 px wide and the row 300 px: four fit, so the first four by priority show. */
+function mockChipRow() {
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(300);
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(60);
+}
+
+const chipLabels = (group: HTMLElement) =>
+  within(group)
+    .getAllByRole('button')
+    .map((chip) => chip.getAttribute('aria-label'));
+
 async function openReview() {
   await userEvent.click(
     await screen.findByRole('button', { name: 'Move 3 to Pantry' }),
@@ -83,7 +96,10 @@ async function openReview() {
 }
 
 describe('Finish Shopping review', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
 
   it('offers Finish Shopping only when something is checked', async () => {
     stubFinish({
@@ -103,6 +119,29 @@ describe('Finish Shopping review', () => {
     expect(screen.queryByText(/ticked off/)).not.toBeInTheDocument();
   });
 
+  it('offers each matched line the usual amounts of its Ingredient, and none for an Unmatched line', async () => {
+    mockChipRow();
+    stubFinish();
+    renderWithProviders(<ShoppingPage />);
+
+    const review = await openReview();
+
+    const parmesan = await within(review).findByRole('region', {
+      name: 'Parmesan',
+    });
+    expect(
+      chipLabels(
+        within(parmesan).getByRole('group', {
+          name: 'Usual amounts for Parmesan',
+        }),
+      ),
+    ).toEqual(['500 g', '1,000 g', '2,000 g', '5,000 g']);
+    const dragon = within(review).getByRole('region', { name: 'Dragon fruit' });
+    expect(
+      within(dragon).queryByRole('group', { name: /Usual amounts/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('pre-fills a Batch per checked item with Location and expiry', async () => {
     stubFinish();
     renderWithProviders(<ShoppingPage />);
@@ -112,8 +151,10 @@ describe('Finish Shopping review', () => {
     const parmesan = within(
       await within(review).findByRole('region', { name: 'Parmesan' }),
     );
-    expect(parmesan.getByLabelText('Quantity')).toHaveValue(200);
-    expect(parmesan.getByLabelText('Unit')).toHaveValue('g');
+    expect(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    ).toHaveValue('200');
+    expect(parmesan.getByRole('button', { name: 'Unit: g' })).toBeVisible();
     expect(parmesan.getByLabelText('Location')).toHaveValue('fridge');
     expect(
       parmesan.getByRole('button', { name: /^Expires, Sunday, November 1\b/ }),
@@ -138,8 +179,13 @@ describe('Finish Shopping review', () => {
       await review.findByRole('region', { name: 'Parmesan' }),
     );
     await user.selectOptions(parmesan.getByLabelText('Location'), 'freezer');
-    await user.clear(parmesan.getByLabelText('Quantity'));
-    await user.type(parmesan.getByLabelText('Quantity'), '150');
+    await user.clear(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
+    await user.type(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '150',
+    );
     await user.click(parmesan.getByRole('button', { name: /^Expires,/ }));
     const sheet = await screen.findByRole('dialog', { name: 'Expires' });
     await user.click(within(sheet).getByRole('button', { name: 'No expiry' }));
@@ -196,14 +242,24 @@ describe('Finish Shopping review', () => {
       await review.findByRole('region', { name: 'Parmesan' }),
     );
 
-    await user.clear(parmesan.getByLabelText('Quantity'));
-    await user.type(parmesan.getByLabelText('Quantity'), '0');
+    await user.clear(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
+    await user.type(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '0',
+    );
     expect(
       review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     ).toBeDisabled();
 
-    await user.clear(parmesan.getByLabelText('Quantity'));
-    await user.type(parmesan.getByLabelText('Quantity'), '5');
+    await user.clear(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
+    await user.type(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '5',
+    );
     await user.click(
       review.getByRole('button', { name: 'Add 3 items to Pantry' }),
     );
@@ -299,8 +355,13 @@ describe('Finish Shopping review', () => {
       await review.findByRole('region', { name: 'Parmesan' }),
     );
 
-    await user.clear(parmesan.getByLabelText('Quantity'));
-    await user.type(parmesan.getByLabelText('Quantity'), '1000001');
+    await user.clear(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+    );
+    await user.type(
+      parmesan.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '1000001',
+    );
 
     expect(
       review.getByRole('button', { name: 'Add 3 items to Pantry' }),
