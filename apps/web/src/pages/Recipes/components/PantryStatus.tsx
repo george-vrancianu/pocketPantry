@@ -2,7 +2,7 @@ import {
   Alert,
   Box,
   Button,
-  CartIcon,
+  ShoppingIcon,
   CheckCircleIcon,
   Stack,
   Typography,
@@ -163,7 +163,7 @@ export function AddMissing({
     <Stack spacing={1}>
       <Button
         fullWidth
-        startIcon={<CartIcon size={18} />}
+        startIcon={<ShoppingIcon size={18} />}
         disabled={adding || stale || added}
         onClick={onAddMissing}
         sx={{ fontSize: 15, fontWeight: 700 }}

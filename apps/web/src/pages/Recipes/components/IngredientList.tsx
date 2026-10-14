@@ -1,7 +1,7 @@
 import {
   Alert,
   Box,
-  CartIcon,
+  ShoppingIcon,
   CheckIcon,
   IconButton,
   tokens,
@@ -177,7 +177,7 @@ function IngredientRow({
               ariaDisabled={added || addDisabled}
               onClick={onAdd}
             >
-              {added ? <CheckIcon size={18} /> : <CartIcon size={18} />}
+              {added ? <CheckIcon size={18} /> : <ShoppingIcon size={18} />}
             </IconButton>
           </Box>
         ) : null}
