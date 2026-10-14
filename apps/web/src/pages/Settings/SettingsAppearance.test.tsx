@@ -18,10 +18,11 @@ const stored = (): Stored =>
 const rootTheme = () => document.documentElement.dataset.theme;
 
 /** The API with this Member's saved preferences; a save echoes the merged result. */
-function stubPreferences(saved: {
-  locale: string | null;
-  theme: string | null;
-}) {
+function stubPreferences(
+  saved: { locale: string | null; theme: string | null },
+  /** While `online` is false, saves fail as they do offline. */
+  network = { online: true },
+) {
   let current = { ...saved };
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () =>
@@ -32,6 +33,14 @@ function stubPreferences(saved: {
     'PUT /api/settings/preferences': () => Response.json(current),
   });
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'PUT' && !network.online) {
+      calls.push({
+        key: 'PUT /api/settings/preferences (failed)',
+        search: '',
+        body: JSON.parse(String(init.body)),
+      });
+      return Promise.reject(new TypeError('Failed to fetch'));
+    }
     if (init?.method === 'PUT' && typeof init.body === 'string') {
       current = { ...current, ...JSON.parse(init.body) };
     }
@@ -221,6 +230,45 @@ describe('Settings Appearance', () => {
     );
   });
 
+  it('applies each Theme of an arrow-key burst at once but saves only the latest after the save in flight', async () => {
+    stubSystemScheme(false);
+    store({ theme: 'warm', matchSystem: false });
+    const calls = stubPreferences({ locale: null, theme: 'warm' });
+    const stubbed = globalThis.fetch;
+    const held: Array<() => void> = [];
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method !== 'PUT') return stubbed(input, init);
+      return new Promise<Response>((resolve) => {
+        held.push(() => resolve(stubbed(input, init)));
+      });
+    });
+    renderSettings();
+    const saved = () =>
+      calls
+        .filter((c) => c.key === 'PUT /api/settings/preferences')
+        .map((c) => c.body);
+
+    const tiles = await themeTiles();
+    tiles.getByRole('radio', { name: 'Warm editorial' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(rootTheme()).toBe('minimal');
+    await userEvent.keyboard('{ArrowRight}');
+    expect(rootTheme()).toBe('dark');
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(rootTheme()).toBe('minimal');
+    await userEvent.keyboard('{ArrowRight}');
+    expect(rootTheme()).toBe('dark');
+
+    await vi.waitFor(() => expect(held).toHaveLength(1));
+    held[0]();
+    await vi.waitFor(() => expect(held).toHaveLength(2));
+    held[1]();
+    await vi.waitFor(() =>
+      expect(saved()).toEqual([{ theme: 'minimal' }, { theme: 'dark' }]),
+    );
+    expect(rootTheme()).toBe('dark');
+  });
+
   it('applies a different Theme saved on the Member when preferences load', async () => {
     stubSystemScheme(false);
     store({ theme: 'warm', matchSystem: false });
@@ -239,5 +287,109 @@ describe('Settings Appearance', () => {
 
     await vi.waitFor(() => expect(rootTheme()).toBe('warm'));
     expect(stored()).toEqual({ theme: 'warm', matchSystem: false });
+  });
+
+  describe('a Theme chosen offline or before preferences load', () => {
+    const saves = (calls: Array<{ key: string; body: unknown }>) =>
+      calls.filter((c) => c.key === 'PUT /api/settings/preferences');
+
+    it('keeps an unsaved device choice over the server value on the next load, and re-sends it', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const network = { online: false };
+      const calls = stubPreferences({ locale: null, theme: 'warm' }, network);
+      const { unmount } = renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+      await vi.waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'PUT /api/settings/preferences (failed)',
+        ),
+      );
+      expect(rootTheme()).toBe('minimal');
+      unmount();
+      network.online = true;
+
+      // The next load: the server still says Warm, but the device's unsynced choice wins and is re-sent.
+      renderSettings();
+      await themeTiles();
+      await vi.waitFor(() =>
+        expect(saves(calls)).toEqual([
+          expect.objectContaining({ body: { theme: 'minimal' } }),
+        ]),
+      );
+      expect(rootTheme()).toBe('minimal');
+      expect(stored()).toEqual({ theme: 'minimal', matchSystem: false });
+    });
+
+    it('re-sends a failed save when the device comes back online, and then follows the server again', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const network = { online: false };
+      const calls = stubPreferences({ locale: null, theme: 'warm' }, network);
+      const { unmount } = renderSettings();
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Dark-first' }),
+      );
+      await vi.waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'PUT /api/settings/preferences (failed)',
+        ),
+      );
+      // Let any retry from the preferences read settle while still offline.
+      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      expect(saves(calls)).toEqual([]);
+
+      network.online = true;
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+      await vi.waitFor(() =>
+        expect(saves(calls)).toEqual([
+          expect.objectContaining({ body: { theme: 'dark' } }),
+        ]),
+      );
+      unmount();
+
+      // Synced, so the Member's Theme from another device applies on the next load.
+      stubPreferences({ locale: null, theme: 'minimal' });
+      renderSettings();
+      await vi.waitFor(() => expect(rootTheme()).toBe('minimal'));
+    });
+
+    it('keeps a Theme chosen before preferences load when they arrive with the old value', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const calls = stubPreferences({ locale: null, theme: 'warm' });
+      const stubbed = globalThis.fetch;
+      let loadPreferences = () => {};
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        const read =
+          String(input).endsWith('/api/settings/preferences') &&
+          (init?.method ?? 'GET') === 'GET';
+        if (!read) return stubbed(input, init);
+        // Answers with what the server held before the save below.
+        return new Promise<Response>((resolve) => {
+          loadPreferences = () =>
+            resolve(Response.json({ locale: null, theme: 'warm' }));
+        });
+      });
+      renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+      await vi.waitFor(() => expect(saves(calls)).toHaveLength(1));
+      await act(async () => {
+        loadPreferences();
+        // React Query hands the result to observers on a timer.
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+
+      expect(rootTheme()).toBe('minimal');
+      expect(stored()).toEqual({ theme: 'minimal', matchSystem: false });
+    });
   });
 });
