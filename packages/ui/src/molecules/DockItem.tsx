@@ -25,7 +25,7 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
         {
           flexDirection: 'column',
           gap: '3px',
-          // Concentric with the dock, 8 px inside its edge.
+          // Concentric with the dock, 8 px inside its padding edge.
           borderRadius: nestedRadius(radius.dock, 8),
           color: colour,
           bgcolor: background,
@@ -36,12 +36,12 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
         focusRing,
       ]}
     >
+      {/* The icon row: a fixed height keeps labels aligned across tabs. */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 52,
           height: 32,
         }}
       >
