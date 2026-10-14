@@ -32,7 +32,20 @@
   "batchCount_other": "{{count}} partier",
   "group": {
     "batches_one": "{{count}} parti",
-    "batches_other": "{{count}} partier"
+    "batches_other": "{{count}} partier",
+    "runningLow": "Ved at løbe tør",
+    "notLow": "Ikke tør"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} er markeret som ved at løbe tør",
+      "off": "{{name}} er ikke længere ved at løbe tør"
+    }
+  },
+  "a11y": {
+    "markLow": "Markér som ved at løbe tør",
+    "clearLow": "Fjern ved at løbe tør",
+    "lowKey": "Tryk L: {{action}}"
   },
   "noDetails": "Ingen mængde angivet",
   "edit": {

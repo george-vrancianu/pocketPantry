@@ -1,11 +1,12 @@
 import {
   Box,
   ChevronDownIcon,
+  SwipeToggle,
   Typography,
   tokens,
   radius,
 } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -17,6 +18,33 @@ import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { BatchDetail } from './BatchDetail';
+import { useRunningLowToggle } from '../hooks/useRunningLowToggle';
+
+/** The row springs back before the flag flips (Pantry batches handoff, section 6). */
+const FLAG_FLIP_MS = 220;
+
+const LOW_KEY_HINT_IDS = {
+  mark: 'pantry-low-key-mark',
+  clear: 'pantry-low-key-clear',
+};
+
+/**
+ * The closed rows' description, "Press L: Mark running low" (or Clear). Rendered once by the page, so
+ * each row points at it rather than carrying its own copy.
+ */
+export function RunningLowKeyHints() {
+  const { t } = useTranslation('pantry');
+  return (
+    <>
+      <span id={LOW_KEY_HINT_IDS.mark} hidden>
+        {t('a11y.lowKey', { action: t('a11y.markLow') })}
+      </span>
+      <span id={LOW_KEY_HINT_IDS.clear} hidden>
+        {t('a11y.lowKey', { action: t('a11y.clearLow') })}
+      </span>
+    </>
+  );
+}
 
 type Props = {
   rollUp: PantryRow;
@@ -46,6 +74,36 @@ export function RollUpRow({
   // A row without an expiry shows no tag; only Batch detail says "No expiry".
   const tag =
     rollUp.soonestExpiry === null ? null : tagFor(rollUp.soonestExpiry);
+
+  // Swipe (or L) on a closed, matched row toggles Running low. Open rows leave the swipe to their Batches.
+  const lowToggle = useRunningLowToggle();
+  const canToggleLow = !expanded && !rollUp.unmatched && !rollUp.gone;
+  const [popChip, setPopChip] = useState(false);
+  const flipLow = () => {
+    const on = !rollUp.runningLow;
+    setPopChip(on);
+    lowToggle.toggle(
+      { ingredientId: rollUp.key, name: rollUp.name, on },
+      { undo: true },
+    );
+  };
+  // The timer reads the row as it is when it fires, not as it was at the release.
+  const latestFlip = useRef(flipLow);
+  latestFlip.current = flipLow;
+  const flipTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  useEffect(() => () => clearTimeout(flipTimer.current), []);
+  const onSwipeToggle = () => {
+    clearTimeout(flipTimer.current);
+    flipTimer.current = setTimeout(() => latestFlip.current(), FLAG_FLIP_MS);
+  };
+  const onRowKeyDown = (event: KeyboardEvent) => {
+    if (!canToggleLow || event.key.toLowerCase() !== 'l') return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    event.preventDefault();
+    flipLow();
+  };
 
   // Tell the first-use hint when this roll-up is showing Batch rows to swipe.
   const showingBatches = expanded && !rollUp.gone;
@@ -97,110 +155,132 @@ export function RollUpRow({
         '&:first-of-type': { borderTop: 0 },
       }}
     >
-      <Box
-        // Awaiting its delete: nothing to expand, and nothing to focus.
-        inert={rollUp.gone || undefined}
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          opacity: rollUp.gone ? 0.5 : 1,
-        }}
+      <SwipeToggle
+        label={t(rollUp.runningLow ? 'group.notLow' : 'group.runningLow')}
+        onToggle={onSwipeToggle}
+        disabled={!canToggleLow}
       >
         <Box
-          component="button"
-          type="button"
-          ref={toggle}
-          aria-expanded={expanded}
-          aria-controls={expanded && !rollUp.gone ? panelId : undefined}
-          onClick={onToggle}
+          // Awaiting its delete: nothing to expand, and nothing to focus.
+          inert={rollUp.gone || undefined}
           sx={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            flexGrow: 1,
-            minWidth: 0,
-            minHeight: 60,
-            p: 0,
-            border: 0,
-            bgcolor: 'transparent',
-            color: 'inherit',
-            font: 'inherit',
-            textAlign: 'left',
-            cursor: 'pointer',
+            gap: '4px',
+            opacity: rollUp.gone ? 0.5 : 1,
           }}
         >
-          <IngredientIconSlot
-            ingredientId={rollUp.ingredientId}
-            aisleId={rollUp.aisleId}
-          />
-          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography
-              component="span"
-              sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}
-            >
-              {rollUp.name}
-              {rollUp.unmatched ? (
-                <Box
-                  component="span"
-                  sx={{
-                    ml: 1,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    px: '8px',
-                    py: '2px',
-                    borderRadius: radius.pill,
-                    bgcolor: tokens.color.soonBg,
-                    color: tokens.color.soonFg,
-                  }}
-                >
-                  {t('unmatched')}
-                </Box>
-              ) : null}
-            </Typography>
-            {detail ? (
-              <Typography
-                component="span"
-                sx={{
-                  display: 'block',
-                  fontSize: 12,
-                  color: tokens.color.muted,
-                  mt: '2px',
-                }}
-              >
-                {detail}
-              </Typography>
-            ) : null}
-          </Box>
-          {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
-          {rollUp.runningLow ? <RunningLowChip /> : null}
           <Box
-            component="span"
-            aria-hidden="true"
-            data-testid="chevron"
+            component="button"
+            type="button"
+            ref={toggle}
+            aria-expanded={expanded}
+            aria-controls={expanded && !rollUp.gone ? panelId : undefined}
+            aria-describedby={
+              canToggleLow
+                ? rollUp.runningLow
+                  ? LOW_KEY_HINT_IDS.clear
+                  : LOW_KEY_HINT_IDS.mark
+                : undefined
+            }
+            aria-keyshortcuts={canToggleLow ? 'L' : undefined}
+            onClick={onToggle}
+            onKeyDown={onRowKeyDown}
             sx={{
-              display: 'grid',
-              placeItems: 'center',
-              flexShrink: 0,
-              width: 28,
-              height: 28,
-              borderRadius: '50%',
-              color: tokens.color.muted,
-              transform: expanded ? 'rotate(180deg)' : 'none',
-              transition: 'transform 260ms cubic-bezier(.2,.8,.2,1)',
-              '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              flexGrow: 1,
+              minWidth: 0,
+              minHeight: 60,
+              p: 0,
+              border: 0,
+              bgcolor: 'transparent',
+              color: 'inherit',
+              font: 'inherit',
+              textAlign: 'left',
+              cursor: 'pointer',
+              // Inset: the swipe wrapper clips anything outside the row.
+              '&:focus-visible': {
+                outline: `2px solid ${tokens.color.accent}`,
+                outlineOffset: -2,
+              },
             }}
           >
-            <ChevronDownIcon size={18} />
+            <IngredientIconSlot
+              ingredientId={rollUp.ingredientId}
+              aisleId={rollUp.aisleId}
+            />
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography
+                component="span"
+                sx={{ display: 'block', fontSize: 15, fontWeight: 600 }}
+              >
+                {rollUp.name}
+                {rollUp.unmatched ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      ml: 1,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      px: '8px',
+                      py: '2px',
+                      borderRadius: radius.pill,
+                      bgcolor: tokens.color.soonBg,
+                      color: tokens.color.soonFg,
+                    }}
+                  >
+                    {t('unmatched')}
+                  </Box>
+                ) : null}
+              </Typography>
+              {detail ? (
+                <Typography
+                  component="span"
+                  sx={{
+                    display: 'block',
+                    fontSize: 12,
+                    color: tokens.color.muted,
+                    mt: '2px',
+                  }}
+                >
+                  {detail}
+                </Typography>
+              ) : null}
+            </Box>
+            {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
+            {rollUp.runningLow ? <RunningLowChip pop={popChip} /> : null}
+            <Box
+              component="span"
+              aria-hidden="true"
+              data-testid="chevron"
+              sx={{
+                display: 'grid',
+                placeItems: 'center',
+                flexShrink: 0,
+                width: 28,
+                height: 28,
+                borderRadius: '50%',
+                color: tokens.color.muted,
+                transform: expanded ? 'rotate(180deg)' : 'none',
+                transition: 'transform 260ms cubic-bezier(.2,.8,.2,1)',
+                '@media (prefers-reduced-motion: reduce)': {
+                  transition: 'none',
+                },
+              }}
+            >
+              <ChevronDownIcon size={18} />
+            </Box>
           </Box>
+          {expanded && !rollUp.unmatched ? (
+            <>
+              <RunningLowToggle ingredientId={rollUp.key} />
+              <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+            </>
+          ) : null}
         </Box>
-        {expanded && !rollUp.unmatched ? (
-          <>
-            <RunningLowToggle ingredientId={rollUp.key} />
-            <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
-          </>
-        ) : null}
-      </Box>
+      </SwipeToggle>
       {expanded && !rollUp.gone ? (
         <Box
           id={panelId}

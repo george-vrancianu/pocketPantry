@@ -1,0 +1,57 @@
+import { useToast } from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
+import { useRowToggleReport } from '../../../components/StapleToggle';
+import { translateApiError } from '../../../i18n/translateApiError';
+import { useSetRunningLow } from '../../../lib/pantry';
+import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
+
+export type RunningLowChange = {
+  ingredientId: string;
+  /** The Ingredient's name, for the toast. */
+  name: string;
+  /** The flag as it will be. */
+  on: boolean;
+};
+
+/**
+ * Flags an Ingredient as running low, or clears it, and says so in a toast: "{name} marked running
+ * low" / "{name} no longer running low". With `undo` (the swipe and its `L` key) the toast offers
+ * Undo for 5 s, which sends the opposite change. A failed save is reported to the page's Alert.
+ */
+export function useRunningLowToggle() {
+  const { t, i18n } = useTranslation('pantry');
+  const save = useSetRunningLow(i18n.language);
+  const toast = useToast();
+  const report = useRowToggleReport();
+
+  const send = (ingredientId: string, on: boolean) =>
+    save.mutate(
+      { ingredientId, on },
+      {
+        onSuccess: () => report(null),
+        onError: (error: unknown) => report(translateApiError(t, error)),
+      },
+    );
+
+  return {
+    toggle: (
+      { ingredientId, name, on }: RunningLowChange,
+      { undo = false }: { undo?: boolean } = {},
+    ) => {
+      send(ingredientId, on);
+      toast.show(
+        t(on ? 'toast.low.on' : 'toast.low.off', { name }),
+        undo
+          ? {
+              duration: UNDO_WINDOW_MS,
+              action: {
+                label: t('common:row.undo'),
+                onClick: () => send(ingredientId, !on),
+              },
+            }
+          : undefined,
+      );
+    },
+    isPending: save.isPending,
+  };
+}
