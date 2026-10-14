@@ -7,6 +7,7 @@ import { createPocketPantryTheme, ppCssVariables } from './theme';
 import { isThemeId } from './appearance';
 import { THEMES } from './themes';
 import { tokens, tokensAsCssVariables } from './tokens';
+import './fonts.css';
 
 type Props = {
   children: ReactNode;
@@ -23,6 +24,8 @@ const globalStyles = {
   body: {
     margin: 0,
     fontFamily: tokens.font.body,
+    // Warm editorial's Fraunces at SOFT 50; the other five families have no SOFT axis and ignore it.
+    fontVariationSettings: "'SOFT' 50",
     color: tokens.color.ink,
     transition: colourTransition,
   },
