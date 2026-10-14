@@ -79,5 +79,8 @@
     "goneLabelStaple": "{{name}}, manglende basisvare"
   },
   "templatesFromSearch": "Eller start fra en skabelon",
-  "seeAll": "Se alle"
+  "seeAll": "Se alle",
+  "import": {
+    "inTrolley": "I kurven"
+  }
 }

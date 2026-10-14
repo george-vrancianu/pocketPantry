@@ -13,20 +13,22 @@ import {
   radius,
   insetFocusRing,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
+import { useShoppingList, type ShoppingList } from '../../../../lib/shopping';
 import {
-  isOnList,
-  uncheckedItems,
-  useShoppingList,
-} from '../../../../lib/shopping';
+  bulkBody,
+  lineTag,
+  lineTagKey,
+} from '../../../../lib/templateSelection';
+import { useSingleTemplateSelection } from '../../../../lib/useSingleTemplateSelection';
 import { BackButton } from './BackButton';
 import { SheetFooter } from './SheetFooter';
 import {
   groupByAisle,
   useApplyTemplate,
   useTemplate,
+  type Template,
   type TemplateLine,
 } from '../../../../lib/shoppingTemplates';
 
@@ -48,12 +50,8 @@ export function ApplyTemplateView({
   onApplied,
 }: ApplyTemplateViewProps) {
   const { t, i18n } = useTranslation(['templates', 'common']);
-  const toast = useToast();
   const template = useTemplate(templateId, i18n.language);
   const shoppingList = useShoppingList(i18n.language);
-  const apply = useApplyTemplate(i18n.language);
-  // Only the lines the Member has flipped; every other line keeps its default.
-  const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
 
   const back = (
     <BackButton
@@ -63,7 +61,9 @@ export function ApplyTemplateView({
     />
   );
 
-  if (template.isPending) return <Spinner label={t('common:loading')} />;
+  // Defaults depend on the trolley, so wait for the list (an error falls back to none).
+  if (template.isPending || shoppingList.isPending)
+    return <Spinner label={t('common:loading')} />;
   if (template.error || !template.data) {
     return (
       <Box>
@@ -73,25 +73,38 @@ export function ApplyTemplateView({
     );
   }
 
-  const { name, lines } = template.data;
-  const isTicked = (line: TemplateLine) =>
-    !line.inPantry !== flipped.has(line.id);
-  const ticked = lines.filter(isTicked);
+  return (
+    <Loaded
+      template={template.data}
+      list={shoppingList.data}
+      back={back}
+      onApplied={onApplied}
+    />
+  );
+}
 
-  // Unchecked items already on the list.
-  const unchecked = uncheckedItems(shoppingList.data);
-  const lineOnList = (line: TemplateLine) =>
-    unchecked.some((item) => isOnList(item, line));
-
-  const toggle = (id: string) =>
-    setFlipped((current) => {
-      const next = new Set(current);
-      if (!next.delete(id)) next.add(id);
-      return next;
-    });
+function Loaded({
+  template,
+  list,
+  back,
+  onApplied,
+}: {
+  template: Template;
+  list: ShoppingList | undefined;
+  back: React.ReactNode;
+  onApplied: () => void;
+}) {
+  const { t, i18n } = useTranslation(['templates', 'common', 'shopping']);
+  const toast = useToast();
+  const apply = useApplyTemplate(i18n.language);
+  const { name, lines } = template;
+  const { selection, isTicked, ticked, toggle } = useSingleTemplateSelection(
+    template,
+    list,
+  );
 
   const submit = () =>
-    apply.mutate(ticked, {
+    apply.mutate(bulkBody(selection, [template]), {
       onSuccess: () => {
         onApplied();
         toast.show(t('templates:apply.added', { count: ticked.length, name }));
@@ -159,11 +172,13 @@ export function ApplyTemplateView({
             }}
           >
             {group.lines.map((line) => {
-              const tag = line.inPantry
-                ? { text: t('templates:apply.inPantry'), ...okTag }
-                : lineOnList(line)
-                  ? { text: t('templates:apply.onList'), ...soonTag }
-                  : null;
+              const tagKind = lineTag(line, list);
+              const tag = tagKind
+                ? {
+                    text: t(lineTagKey[tagKind]),
+                    ...(tagKind === 'onList' ? soonTag : okTag),
+                  }
+                : null;
               const amount = amountOf(line);
               const on = isTicked(line);
               return (
@@ -172,11 +187,11 @@ export function ApplyTemplateView({
                   role="checkbox"
                   aria-checked={on}
                   tabIndex={0}
-                  onClick={() => toggle(line.id)}
+                  onClick={() => toggle(line)}
                   onKeyDown={(event: React.KeyboardEvent) => {
                     if (event.key === ' ' || event.key === 'Enter') {
                       event.preventDefault();
-                      toggle(line.id);
+                      toggle(line);
                     }
                   }}
                   sx={{
