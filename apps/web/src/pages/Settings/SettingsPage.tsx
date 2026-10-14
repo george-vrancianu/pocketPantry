@@ -14,6 +14,7 @@ import { AppScreenHeader } from '../../components/AppScreenHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useSession, useSignOut } from '../../lib/auth';
 import { useSaveLocale } from '../../lib/settings';
+import { AppearanceCard } from './components/AppearanceCard';
 import { FamilySettingsSection } from './components/FamilySettingsSection';
 
 export function SettingsPage() {
@@ -48,6 +49,7 @@ export function SettingsPage() {
             />
           </Box>
           {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
+          <AppearanceCard />
         </Stack>
         {session.data?.user.role === 'admin' ? (
           <Stack

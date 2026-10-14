@@ -29,5 +29,14 @@
     "days": "Zile până la expirare",
     "saved": "Salvat.",
     "saveOverride": "Salvează valoarea"
+  },
+  "appearance": {
+    "title": "Aspect",
+    "warm": "Cald editorial",
+    "minimal": "Minimal clar",
+    "dark": "Întâi întunecat",
+    "matchSystem": "Urmează sistemul",
+    "matchSystemHint": "Întâi întunecat când telefonul este în modul întunecat, altfel tema ta luminoasă",
+    "usedInDark": "Folosită în modul întunecat"
   }
 }

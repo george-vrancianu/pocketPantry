@@ -1,3 +1,4 @@
+import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import { recipeMatchingQueryKeys } from './queryKeys';
@@ -22,7 +23,11 @@ export type CategoryOptions = {
   }[];
 };
 
-export type MemberPreferences = { locale: Locale | null };
+/** `null` means never chosen: the default applies. */
+export type MemberPreferences = {
+  locale: Locale | null;
+  theme: ThemeId | null;
+};
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
 

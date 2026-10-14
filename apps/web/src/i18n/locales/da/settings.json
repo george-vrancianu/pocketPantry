@@ -28,5 +28,14 @@
     "days": "Dage til udløb",
     "saved": "Gemt.",
     "saveOverride": "Gem tilsidesættelse"
+  },
+  "appearance": {
+    "title": "Udseende",
+    "warm": "Varm redaktionel",
+    "minimal": "Minimal og skarp",
+    "dark": "Mørk først",
+    "matchSystem": "Følg systemet",
+    "matchSystemHint": "Mørk først, når telefonen er i mørk tilstand, ellers dit lyse tema",
+    "usedInDark": "Bruges i mørk tilstand"
   }
 }
