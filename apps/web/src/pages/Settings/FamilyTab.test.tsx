@@ -105,7 +105,9 @@ describe('FamilyTab', () => {
       stubFamilyTab();
       renderWithProviders(<FamilyTab />);
 
-      expect(await screen.findByText('Your family')).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Your family' }),
+      ).toBeInTheDocument();
       expect(screen.getByText(/You are the Owner/)).toBeInTheDocument();
       expect(screen.getByText(/2 members/)).toBeInTheDocument();
     });
