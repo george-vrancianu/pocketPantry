@@ -49,7 +49,10 @@
     "noUnit": "unit",
     "units": "Units",
     "invalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals.",
-    "unitRequired": "Choose a unit for the amount."
+    "unitRequired": "Choose a unit for the amount.",
+    "usual": "usual amount",
+    "presets": "Usual amounts for {{name}}",
+    "chip": "{{value}} {{unit}}"
   },
   "edit": {
     "removeFromList": "Remove from list",

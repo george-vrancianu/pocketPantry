@@ -15,6 +15,14 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../lib/catalog';
+import {
+  convertQuantity,
+  parseQuantity,
+  stepAmount,
+  unitsInFamily,
+  type AmountScale,
+} from '../lib/usualAmounts';
+import { UsualAmountRow } from './UsualAmountRow';
 
 const TYPED_UNITS: Record<string, Unit> = {
   g: 'g',
@@ -57,6 +65,8 @@ export type AmountFieldProps = {
   height?: number;
   /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
   popoverAlign?: 'start' | 'end';
+  /** The Ingredient's Amount Scale; given, the field draws its Usual Amount chips under it. */
+  amountScale?: AmountScale;
 };
 
 /**
@@ -77,6 +87,7 @@ export function AmountField({
   label,
   height = 44,
   popoverAlign = 'end',
+  amountScale,
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
   const { color } = tokens;
@@ -133,9 +144,27 @@ export function AmountField({
   };
   const choose = (next: Unit | '') => {
     split.current = null;
+    // Within a family the number is rescaled, so the amount stays the same (1.5 kg is 1500 g).
+    const value = parseQuantity(quantity);
+    if (
+      amountScale &&
+      unit &&
+      next &&
+      next !== unit &&
+      value !== null &&
+      unitsInFamily(unit).includes(next)
+    ) {
+      onQuantityChange(String(convertQuantity(value, unit, next)));
+    }
     onUnitChange(next);
     setPicking(false);
     input.current?.focus();
+  };
+  // With chips, the unit moves within its family only; elsewhere every unit is offered.
+  const offered: readonly Unit[] = amountScale ? unitsInFamily(unit) : UNITS;
+  const pick = (value: number) => {
+    split.current = null;
+    onQuantityChange(String(value));
   };
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && picking) {
@@ -144,6 +173,20 @@ export function AmountField({
       setPicking(false);
       input.current?.focus();
     }
+  };
+  // Up and down step the amount; an empty field only steps up.
+  const step = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    split.current = null;
+    const direction = event.key === 'ArrowUp' ? 1 : -1;
+    const empty = quantity.trim() === '';
+    if (empty && direction < 0) return;
+    const current = empty ? 0 : parseQuantity(quantity);
+    if (current === null) return;
+    onQuantityChange(
+      String(stepAmount(current, direction, unit, event.shiftKey)),
+    );
   };
   const blur = (event: FocusEvent<HTMLElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) setPicking(false);
@@ -214,10 +257,12 @@ export function AmountField({
                 ) && event.target.selectionStart === event.target.value.length,
               )
             }
-            onKeyDown={(event: KeyboardEvent) => {
+            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
                 onSubmit();
+              } else {
+                step(event);
               }
             }}
             sx={{
@@ -288,7 +333,7 @@ export function AmountField({
                 boxShadow: 'var(--shadow-dock)',
               }}
             >
-              {(allowNoUnit ? (['', ...UNITS] as const) : UNITS).map(
+              {(allowNoUnit ? (['', ...offered] as const) : offered).map(
                 (option) => {
                   const selected = option === unit;
                   return (
@@ -347,6 +392,15 @@ export function AmountField({
           </Box>
         ) : null}
       </Box>
+      {amountScale ? (
+        <UsualAmountRow
+          name={name}
+          scale={amountScale}
+          unit={unit}
+          quantity={quantity}
+          onPick={pick}
+        />
+      ) : null}
       {error ? (
         <Typography
           id={errorId}
