@@ -11,8 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
-  StapleErrorProvider,
-  useStapleErrors,
+  RowToggleErrorProvider,
+  useRowToggleErrors,
 } from '../../components/StapleToggle';
 import { RowHintNote } from '../../components/RowHintNote';
 import { useRowHint } from '../../lib/useRowHint';
@@ -28,7 +28,7 @@ import { useShoppingScreen } from './hooks/useShoppingScreen';
 export function ShoppingPage() {
   const { t } = useTranslation(['shopping', 'common']);
   const screen = useShoppingScreen();
-  const stapleErrors = useStapleErrors();
+  const rowToggleErrors = useRowToggleErrors();
   const [reviewing, setReviewing] = useState(false);
   const hint = useRowHint(
     'shopping',
@@ -68,13 +68,15 @@ export function ShoppingPage() {
   }
 
   return (
-    <StapleErrorProvider report={stapleErrors.report}>
+    <RowToggleErrorProvider report={rowToggleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader title={t('shopping:title')} />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
         {screen.error ? <Alert>{screen.error}</Alert> : null}
-        {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
+        {rowToggleErrors.message ? (
+          <Alert>{rowToggleErrors.message}</Alert>
+        ) : null}
         {screen.isLoading ? <Spinner label={t('common:loading')} /> : null}
         {!screen.list && !screen.isLoading ? (
           <Button onClick={screen.retry}>{t('common:retry')}</Button>
@@ -132,7 +134,8 @@ export function ShoppingPage() {
         addError={screen.addError}
         staples={screen.staples}
         usedUp={screen.usedUp}
+        runningLow={screen.runningLow}
       />
-    </StapleErrorProvider>
+    </RowToggleErrorProvider>
   );
 }

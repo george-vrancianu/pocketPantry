@@ -3,6 +3,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
+import { RunningLowToggle } from '../../../components/RunningLowToggle';
+import { RunningLowChip } from '../../../components/RunningLowChip';
 import { ExpiryTag } from '../../../components/ExpiryTag';
 import { useExpiryTags, type Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
@@ -153,9 +155,13 @@ export function RollUpRow({
             ) : null}
           </Box>
           {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
+          {rollUp.runningLow ? <RunningLowChip /> : null}
         </Box>
         {expanded && !rollUp.unmatched ? (
-          <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+          <>
+            <RunningLowToggle ingredientId={rollUp.key} />
+            <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+          </>
         ) : null}
       </Box>
       {expanded && !rollUp.gone ? (

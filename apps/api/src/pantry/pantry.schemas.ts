@@ -95,6 +95,9 @@ export type UpdateBatchBody = z.infer<typeof updateBatchBody>;
 export const batchIdParam = z.object({ id: z.uuid() });
 export type BatchIdParam = z.infer<typeof batchIdParam>;
 
+export const ingredientIdParam = z.object({ ingredientId: z.uuid() });
+export type IngredientIdParam = z.infer<typeof ingredientIdParam>;
+
 export type BatchView = {
   id: string;
   /** Localised Ingredient name, or the typed name for an Unmatched Batch. */

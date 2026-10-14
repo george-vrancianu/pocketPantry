@@ -580,6 +580,22 @@ export const staples = pgTable(
   ],
 );
 
+// A Family's manual "Running low" flag on an Ingredient. Row existence means on; no row
+// means off, as for Staples. Set and cleared from the Pantry toggle, never from quantities.
+export const runningLow = pgTable(
+  'running_low',
+  {
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id),
+    ...timestamps,
+  },
+  (table) => [primaryKey({ columns: [table.familyId, table.ingredientId] })],
+);
+
 // A dismissed Suggestion, hidden for the whole Family. Creating any Batch of the
 // Ingredient deletes the row. Not tied to Staples, so Used Up Suggestions can share it.
 export const suggestionDismissals = pgTable(

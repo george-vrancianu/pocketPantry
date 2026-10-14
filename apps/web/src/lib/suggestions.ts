@@ -14,8 +14,12 @@ export type Suggestion = {
   aisle: Aisle | null;
 };
 
-/** One key per group: missing Staples first, then Ingredients recently used up. */
-export type Suggestions = { staples: Suggestion[]; usedUp: Suggestion[] };
+/** One key per group: missing Staples first, then Ingredients recently used up, then Ingredients flagged running low. */
+export type Suggestions = {
+  staples: Suggestion[];
+  usedUp: Suggestion[];
+  runningLow: Suggestion[];
+};
 
 /** Refreshed on an interval, like the list, so other Members' changes show up. */
 export function useSuggestions(locale: string, today: string) {

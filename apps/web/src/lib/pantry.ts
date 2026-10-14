@@ -285,13 +285,70 @@ export function rollUp(batches: Batch[]): RollUp[] {
     .sort((a, b) => byExpiry(a.batches[0], b.batches[0]));
 }
 
-export function useBatches(locale: string) {
+/** The Pantry read: the Family's Batches, and the Ids of Ingredients flagged running low. */
+export type PantryResponse = { batches: Batch[]; runningLow: string[] };
+
+const pantryQueryKey = (locale: string) => ['pantry', locale] as const;
+
+const batchesOf = (body: PantryResponse) => body.batches;
+const runningLowOf = (body: PantryResponse) => new Set(body.runningLow);
+
+/** One cached Pantry read; the hooks below select from it, so they share one request. */
+function usePantryQuery<T>(
+  locale: string,
+  select: (body: PantryResponse) => T,
+) {
   return useQuery({
-    queryKey: ['pantry', locale],
+    queryKey: pantryQueryKey(locale),
     queryFn: () =>
-      apiRequest<{ batches: Batch[] }>(
-        `/pantry?${new URLSearchParams({ locale })}`,
-      ).then((body) => body.batches),
+      apiRequest<PantryResponse>(`/pantry?${new URLSearchParams({ locale })}`),
+    select,
+  });
+}
+
+export function useBatches(locale: string) {
+  return usePantryQuery(locale, batchesOf);
+}
+
+/** The Ingredient ids flagged running low for the Family, from the same read as the Batches. */
+export function useRunningLow(locale: string) {
+  return usePantryQuery(locale, runningLowOf);
+}
+
+/**
+ * Set or clear the running low flag on an Ingredient. The cache is changed at once, so every row of
+ * the Ingredient, in every Location section, shows the new state; a failed save undoes that one
+ * Ingredient's flag, leaving any other toggle made in the meantime as it is.
+ */
+export function useSetRunningLow(locale: string) {
+  const queryClient = useQueryClient();
+  const setFlag = (ingredientId: string, on: boolean) => {
+    const current = queryClient.getQueryData<PantryResponse>(
+      pantryQueryKey(locale),
+    );
+    if (!current) return;
+    const others = current.runningLow.filter((id) => id !== ingredientId);
+    queryClient.setQueryData<PantryResponse>(pantryQueryKey(locale), {
+      ...current,
+      runningLow: on ? [...others, ingredientId] : others,
+    });
+  };
+  return useMutation({
+    mutationFn: ({ ingredientId, on }: { ingredientId: string; on: boolean }) =>
+      apiRequest<void>(`/pantry/running-low/${ingredientId}`, {
+        method: on ? 'PUT' : 'DELETE',
+      }),
+    onMutate: async ({ ingredientId, on }) => {
+      await queryClient.cancelQueries({ queryKey: ['pantry'] });
+      setFlag(ingredientId, on);
+    },
+    onError: (_error, { ingredientId, on }) => setFlag(ingredientId, !on),
+    onSettled: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+        // The Running low group of the shopping suggestions is built from the flags.
+        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      ]),
   });
 }
 

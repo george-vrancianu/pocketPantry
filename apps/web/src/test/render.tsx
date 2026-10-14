@@ -31,7 +31,9 @@ export function renderWithProviders(
 }
 
 /** A fetch stub that answers by method and path, e.g. `'POST /api/auth/sign-in/email'`. */
-export function stubApi(routes: Record<string, (url: URL) => Response>) {
+export function stubApi(
+  routes: Record<string, (url: URL) => Response | Promise<Response>>,
+) {
   const calls: Array<{ key: string; search: string; body: unknown }> = [];
   const fetchMock = (input: RequestInfo | URL, init?: RequestInit) => {
     // The app calls relative `/api/...` paths, as a browser resolves them against the page.

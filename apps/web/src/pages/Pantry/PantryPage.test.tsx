@@ -1466,6 +1466,256 @@ describe('PantryPage', () => {
       });
     });
 
+    describe('Running low toggle', () => {
+      /** Running-low flags follow the PUT and DELETE calls, as the API does. `gate` holds a save open. */
+      function stubRunningLow({
+        failSave = false,
+        gate,
+        batches = [
+          batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+          batch({
+            name: 'Zorblax paste',
+            unmatched: true,
+            ingredientId: null,
+            location: 'cupboard',
+          }),
+        ],
+        flaggedAtStart = [],
+      }: {
+        failSave?: boolean;
+        gate?: Promise<void>;
+        batches?: Batch[];
+        flaggedAtStart?: string[];
+      } = {}) {
+        const flagged = new Set<string>(flaggedAtStart);
+        const { fetchMock, calls } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({
+              batches,
+              runningLow: [...flagged],
+            }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'PUT /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            if (failSave) {
+              return Response.json({ code: 'errors.unknown' }, { status: 500 });
+            }
+            flagged.add('milk-id');
+            return new Response(null, { status: 204 });
+          },
+          'DELETE /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            flagged.delete('milk-id');
+            return new Response(null, { status: 204 });
+          },
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        return calls;
+      }
+
+      const runningLowToggle = () =>
+        screen.queryByRole('button', { name: 'Mark running low' });
+
+      it('shows the toggle only on an expanded matched row, just before the Staple star', async () => {
+        const user = userEvent.setup();
+        stubRunningLow();
+        renderWithProviders(<PantryPage />);
+
+        const milk = await screen.findByRole('button', { name: /^Milk/ });
+        expect(runningLowToggle()).not.toBeInTheDocument();
+        await user.click(milk);
+
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
+        expect(toggle).toHaveAttribute('aria-pressed', 'false');
+        expect(toggle.nextElementSibling).toBe(star);
+
+        await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
+        expect(
+          screen.getAllByRole('button', { name: 'Mark running low' }),
+        ).toHaveLength(1);
+      });
+
+      it('sets the flag at once on tap, and clears it on the next tap', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        const calls = stubRunningLow({ gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        // Held at the server: the toggle already shows the new state.
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        release();
+        await waitFor(() =>
+          expect(
+            calls.some((c) => c.key === 'PUT /api/pantry/running-low/milk-id'),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'true'),
+        );
+
+        await user.click(toggle);
+        await waitFor(() =>
+          expect(
+            calls.some(
+              (c) => c.key === 'DELETE /api/pantry/running-low/milk-id',
+            ),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+      });
+
+      it('rolls the toggle back and shows an error when the save fails', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        stubRunningLow({ failSave: true, gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+        release();
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+      });
+
+      describe('the Running low chip', () => {
+        const chip = () => screen.queryByText('Running low');
+
+        it('is hidden while the flag is off', async () => {
+          stubRunningLow({
+            batches: [batch({ name: 'Milk', expiryDate: inDays(2) })],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await screen.findByRole('button', { name: /^Milk/ });
+          expect(chip()).not.toBeInTheDocument();
+        });
+
+        it('shows on the collapsed row, after the expiry tag', async () => {
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                expiryDate: inDays(2),
+              }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          const fridge = await screen.findByRole('region', {
+            name: 'Fridge · 1',
+          });
+          const row = within(fridge).getByRole('listitem');
+          expect(row.textContent).toBe(
+            'Milk' + '1 L' + '2 d left' + '2 days left' + 'Running low',
+          );
+          expect(chip()).toBeVisible();
+        });
+
+        it('shows on the expanded row, which has no expiry tag of its own', async () => {
+          const user = userEvent.setup();
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                expiryDate: inDays(2),
+              }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await user.click(
+            await screen.findByRole('button', { name: /^Milk/ }),
+          );
+          expect(chip()).toBeVisible();
+          // The expiry shows per Batch in the expanded panel, so the chip stays on the header.
+          expect(
+            within(
+              screen.getByRole('list', { name: 'Batches of Milk' }),
+            ).getByText('2 days left'),
+          ).toBeVisible();
+          expect(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          ).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('shows when the ingredient has no expiry date', async () => {
+          stubRunningLow({
+            batches: [
+              batch({ name: 'Milk', quantity: 1, unit: 'l', expiryDate: null }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await screen.findByRole('button', { name: /^Milk/ });
+          expect(chip()).toBeVisible();
+        });
+
+        it('shows in every Location section for the Ingredient, and toggling once updates them all', async () => {
+          const user = userEvent.setup();
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                location: 'fridge',
+                quantity: 1,
+                unit: 'l',
+              }),
+              batch({
+                name: 'Milk',
+                location: 'cupboard',
+                quantity: 1,
+                unit: 'l',
+              }),
+            ],
+          });
+          renderWithProviders(<PantryPage />);
+
+          const fridge = await screen.findByRole('region', {
+            name: 'Fridge · 1',
+          });
+          const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
+          expect(chip()).not.toBeInTheDocument();
+
+          await user.click(
+            within(fridge).getByRole('button', { name: /^Milk/ }),
+          );
+          await user.click(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          );
+
+          await waitFor(() =>
+            expect(within(fridge).getByText('Running low')).toBeVisible(),
+          );
+          expect(within(cupboard).getByText('Running low')).toBeVisible();
+
+          await user.click(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          );
+          await waitFor(() => expect(chip()).not.toBeInTheDocument());
+        });
+      });
+    });
+
     it('lists totals separately when the units differ', async () => {
       stubManaged([
         batch({ name: 'Flour', ingredientId: 'f', quantity: 500, unit: 'g' }),

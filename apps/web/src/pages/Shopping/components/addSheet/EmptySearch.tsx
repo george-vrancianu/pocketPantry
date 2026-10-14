@@ -4,12 +4,13 @@ import {
   CheckIcon,
   CloseIcon,
   Link,
+  ChevronDownIcon,
   PlusIcon,
   Typography,
   tokens,
   radius,
 } from '@pocket-pantry/ui';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import type { NewShoppingItem } from '../../../../lib/shopping';
@@ -25,6 +26,8 @@ export type EmptySearchProps = {
   staples: Suggestion[];
   /** Ingredients recently used up, in Aisle order. */
   usedUp: Suggestion[];
+  /** Ingredients flagged running low, in Aisle order. No dismiss: turning the flag off is the dismissal. */
+  runningLow: Suggestion[];
   /** Ingredient ids already added from a chip; their chips stay disabled until the Suggestions drop them. */
   addedIds: string[];
   /** Resolves true when added. */
@@ -50,7 +53,15 @@ export function EmptySearch(props: EmptySearchProps) {
   );
 }
 
-function SectionHeader({ label, manage }: { label: string; manage?: string }) {
+function SectionHeader({
+  label,
+  manage,
+  icon,
+}: {
+  label: string;
+  manage?: string;
+  icon?: ReactNode;
+}) {
   return (
     <Box
       sx={{
@@ -60,7 +71,12 @@ function SectionHeader({ label, manage }: { label: string; manage?: string }) {
         mb: 1,
       }}
     >
-      <Typography component="h3" variant="sectionLabel">
+      <Typography
+        component="h3"
+        variant="sectionLabel"
+        sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+      >
+        {icon}
         {label}
       </Typography>
       {manage ? (
@@ -75,6 +91,7 @@ function SectionHeader({ label, manage }: { label: string; manage?: string }) {
 function SuggestionChips({
   staples,
   usedUp,
+  runningLow,
   addedIds,
   onAdd,
   onAdded,
@@ -110,9 +127,19 @@ function SuggestionChips({
       () => undefined, // dismiss.error shows it
     );
 
-  const group = (label: string, suggestions: Suggestion[], manage?: string) => (
+  const group = (
+    label: string,
+    suggestions: Suggestion[],
+    options: { manage?: string; running?: boolean } = {},
+  ) => (
     <Box component="section" aria-label={label}>
-      <SectionHeader label={label} manage={manage} />
+      <SectionHeader
+        label={label}
+        manage={options.manage}
+        icon={
+          options.running ? <ChevronDownIcon size={14} aria-hidden /> : null
+        }
+      />
       <Box
         component="ul"
         sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, m: 0, p: 0 }}
@@ -124,7 +151,8 @@ function SuggestionChips({
             added={addedIds.includes(suggestion.ingredientId)}
             pending={pending.includes(suggestion.ingredientId)}
             onAdd={() => void add(suggestion)}
-            onDismiss={() => remove(suggestion)}
+            // Running low has no dismiss: turning the flag off is what removes it.
+            onDismiss={options.running ? undefined : () => remove(suggestion)}
           />
         ))}
       </Box>
@@ -153,7 +181,7 @@ function SuggestionChips({
             ? group(
                 t('suggestions.missingLabel', { count: staples.length }),
                 staples,
-                t('suggestions.manage'),
+                { manage: t('suggestions.manage') },
               )
             : null}
           {usedUp.length > 0
@@ -161,11 +189,21 @@ function SuggestionChips({
                 t('suggestions.usedUpLabel', { count: usedUp.length }),
                 usedUp,
                 // With no missing Staples this is the first header, so it carries Manage.
-                staples.length === 0 ? t('suggestions.manage') : undefined,
+                {
+                  manage:
+                    staples.length === 0 ? t('suggestions.manage') : undefined,
+                },
               )
             : null}
         </>
       )}
+      {runningLow.length > 0
+        ? group(
+            t('suggestions.runningLowLabel', { count: runningLow.length }),
+            runningLow,
+            { running: true },
+          )
+        : null}
     </>
   );
 }
@@ -181,7 +219,8 @@ function SuggestionChip({
   added: boolean;
   pending: boolean;
   onAdd: () => void;
-  onDismiss: () => void;
+  /** Absent for a chip that cannot be dismissed (Running low). */
+  onDismiss?: () => void;
 }) {
   const { t } = useTranslation('shopping');
   const { color } = tokens;
@@ -250,20 +289,22 @@ function SuggestionChip({
           </Box>
         ) : null}
       </Box>
-      <Box
-        component="button"
-        type="button"
-        aria-label={t('suggestions.dismiss', { name: suggestion.name })}
-        onClick={onDismiss}
-        sx={{
-          ...part,
-          px: 1.25,
-          color: color.muted,
-          borderLeft: `1px solid ${color.divider}`,
-        }}
-      >
-        <CloseIcon size={13} aria-hidden />
-      </Box>
+      {onDismiss ? (
+        <Box
+          component="button"
+          type="button"
+          aria-label={t('suggestions.dismiss', { name: suggestion.name })}
+          onClick={onDismiss}
+          sx={{
+            ...part,
+            px: 1.25,
+            color: color.muted,
+            borderLeft: `1px solid ${color.divider}`,
+          }}
+        >
+          <CloseIcon size={13} aria-hidden />
+        </Box>
+      ) : null}
     </Box>
   );
 }
