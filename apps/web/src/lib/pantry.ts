@@ -285,13 +285,67 @@ export function rollUp(batches: Batch[]): RollUp[] {
     .sort((a, b) => byExpiry(a.batches[0], b.batches[0]));
 }
 
-export function useBatches(locale: string) {
+/** The Pantry read: the Family's Batches, and the Ids of Ingredients flagged running low. */
+export type PantryResponse = { batches: Batch[]; runningLow: string[] };
+
+const pantryQueryKey = (locale: string) => ['pantry', locale] as const;
+
+const batchesOf = (body: PantryResponse) => body.batches;
+const runningLowOf = (body: PantryResponse) => new Set(body.runningLow);
+
+/** One cached Pantry read; the hooks below select from it, so they share one request. */
+function usePantryQuery<T>(
+  locale: string,
+  select: (body: PantryResponse) => T,
+) {
   return useQuery({
-    queryKey: ['pantry', locale],
+    queryKey: pantryQueryKey(locale),
     queryFn: () =>
-      apiRequest<{ batches: Batch[] }>(
-        `/pantry?${new URLSearchParams({ locale })}`,
-      ).then((body) => body.batches),
+      apiRequest<PantryResponse>(`/pantry?${new URLSearchParams({ locale })}`),
+    select,
+  });
+}
+
+export function useBatches(locale: string) {
+  return usePantryQuery(locale, batchesOf);
+}
+
+/** The Ingredient ids flagged running low for the Family, from the same read as the Batches. */
+export function useRunningLow(locale: string) {
+  return usePantryQuery(locale, runningLowOf);
+}
+
+/**
+ * Set or clear the running low flag on an Ingredient. The cache is changed at once, so every row of
+ * the Ingredient, in every Location section, shows the new state; a failed save puts the cache back.
+ */
+export function useSetRunningLow(locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ingredientId, on }: { ingredientId: string; on: boolean }) =>
+      apiRequest<void>(`/pantry/running-low/${ingredientId}`, {
+        method: on ? 'PUT' : 'DELETE',
+      }),
+    onMutate: async ({ ingredientId, on }) => {
+      await queryClient.cancelQueries({ queryKey: ['pantry'] });
+      const previous = queryClient.getQueryData<PantryResponse>(
+        pantryQueryKey(locale),
+      );
+      if (previous) {
+        const others = previous.runningLow.filter((id) => id !== ingredientId);
+        queryClient.setQueryData<PantryResponse>(pantryQueryKey(locale), {
+          ...previous,
+          runningLow: on ? [...others, ingredientId] : others,
+        });
+      }
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(pantryQueryKey(locale), context.previous);
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['pantry'] }),
   });
 }
 

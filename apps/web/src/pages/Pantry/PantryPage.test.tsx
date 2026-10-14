@@ -1516,6 +1516,124 @@ describe('PantryPage', () => {
       });
     });
 
+    describe('Running low toggle', () => {
+      /** Running-low flags follow the PUT and DELETE calls, as the API does. `gate` holds a save open. */
+      function stubRunningLow({
+        failSave = false,
+        gate,
+      }: { failSave?: boolean; gate?: Promise<void> } = {}) {
+        const flagged = new Set<string>();
+        const { fetchMock, calls } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({
+              batches: [
+                batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+                batch({
+                  name: 'Zorblax paste',
+                  unmatched: true,
+                  ingredientId: null,
+                  location: 'cupboard',
+                }),
+              ],
+              runningLow: [...flagged],
+            }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'PUT /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            if (failSave) {
+              return Response.json({ code: 'errors.unknown' }, { status: 500 });
+            }
+            flagged.add('milk-id');
+            return new Response(null, { status: 204 });
+          },
+          'DELETE /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            flagged.delete('milk-id');
+            return new Response(null, { status: 204 });
+          },
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        return calls;
+      }
+
+      const runningLowToggle = () =>
+        screen.queryByRole('button', { name: 'Mark running low' });
+
+      it('shows the toggle only on an expanded matched row, just before the Staple star', async () => {
+        const user = userEvent.setup();
+        stubRunningLow();
+        renderWithProviders(<PantryPage />);
+
+        const milk = await screen.findByRole('button', { name: /^Milk/ });
+        expect(runningLowToggle()).not.toBeInTheDocument();
+        await user.click(milk);
+
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
+        expect(toggle).toHaveAttribute('aria-pressed', 'false');
+        expect(toggle.nextElementSibling).toBe(star);
+
+        await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
+        expect(
+          screen.getAllByRole('button', { name: 'Mark running low' }),
+        ).toHaveLength(1);
+      });
+
+      it('sets the flag at once on tap, and clears it on the next tap', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        const calls = stubRunningLow({ gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        // Held at the server: the toggle already shows the new state.
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        release();
+        await waitFor(() =>
+          expect(
+            calls.some((c) => c.key === 'PUT /api/pantry/running-low/milk-id'),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'true'),
+        );
+
+        await user.click(toggle);
+        await waitFor(() =>
+          expect(
+            calls.some(
+              (c) => c.key === 'DELETE /api/pantry/running-low/milk-id',
+            ),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+      });
+
+      it('rolls the toggle back and shows an error when the save fails', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        stubRunningLow({ failSave: true, gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+        release();
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+      });
+    });
+
     it('lists totals separately when the units differ', async () => {
       stubManaged([
         batch({ name: 'Flour', ingredientId: 'f', quantity: 500, unit: 'g' }),

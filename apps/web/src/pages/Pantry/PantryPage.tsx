@@ -10,8 +10,8 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
-  StapleErrorProvider,
-  useStapleErrors,
+  RowToggleErrorProvider,
+  useRowToggleErrors,
 } from '../../components/StapleToggle';
 import { RowHintNote } from '../../components/RowHintNote';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
@@ -24,7 +24,7 @@ import { usePantryScreen } from './hooks/usePantryScreen';
 export function PantryPage() {
   const { t } = useTranslation(['pantry', 'common']);
   const screen = usePantryScreen();
-  const stapleErrors = useStapleErrors();
+  const rowToggleErrors = useRowToggleErrors();
   const rowHint = usePantryRowHint();
 
   const focusAdd = () =>
@@ -40,7 +40,7 @@ export function PantryPage() {
   }, [screen.adding, t]);
 
   return (
-    <StapleErrorProvider report={stapleErrors.report}>
+    <RowToggleErrorProvider report={rowToggleErrors.report}>
       <UnverifiedToast />
       <AppScreenHeader
         title={t('pantry:title')}
@@ -63,7 +63,9 @@ export function PantryPage() {
       ) : (
         <Stack spacing={1}>
           {screen.error ? <Alert>{screen.error}</Alert> : null}
-          {stapleErrors.message ? <Alert>{stapleErrors.message}</Alert> : null}
+          {rowToggleErrors.message ? (
+            <Alert>{rowToggleErrors.message}</Alert>
+          ) : null}
           {screen.error ? (
             <Button onClick={screen.retry}>{t('common:retry')}</Button>
           ) : null}
@@ -101,6 +103,6 @@ export function PantryPage() {
           ))}
         </Stack>
       )}
-    </StapleErrorProvider>
+    </RowToggleErrorProvider>
   );
 }

@@ -37,6 +37,9 @@
     "save": "Salvează modificările"
   },
   "unmatched": "Nepotrivit",
+  "runningLow": {
+    "toggle": "Marchează ca fiind pe sfârșite"
+  },
   "form": {
     "title": "Adaugă în cămară",
     "cancel": "Anulează",

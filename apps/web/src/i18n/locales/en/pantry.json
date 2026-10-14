@@ -17,6 +17,9 @@
     "none": "No expiry"
   },
   "unmatched": "Unmatched",
+  "runningLow": {
+    "toggle": "Mark running low"
+  },
   "all": "All",
   "filters": "Filter by location",
   "search": {
