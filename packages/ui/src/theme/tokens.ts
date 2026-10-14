@@ -1,39 +1,64 @@
-/** Design tokens from pocket-pantry-handoff/HANDOFF.md section 4. */
+/** A Theme colour from the active MUI colour scheme, e.g. `palette('pp-accent')`. */
+const palette = (path: string) => `var(--mui-palette-${path})`;
+
+/** A mix of two Theme colours, for legacy shades the Themes don't define. */
+const mix = (a: string, percent: number, b: string) =>
+  `color-mix(in srgb, ${a} ${percent}%, ${b})`;
+
+const bg = palette('background-default');
+const surface = palette('background-paper');
+const ink = palette('text-primary');
+const muted = palette('text-secondary');
+const accent = palette('pp-accent');
+const urgentBg = palette('error-light');
+const urgentFg = palette('error-main');
+const soonBg = palette('warning-light');
+const soonFg = palette('warning-main');
+
+/**
+ * Legacy design tokens from pocket-pantry-handoff/HANDOFF.md section 4, kept
+ * in their old shape so every importer follows the active Theme unchanged.
+ * Colours are references to the Theme's variables (docs/handoffs/themes);
+ * legacy keys with no Theme token are mapped to the nearest one or mixed from
+ * two. Prefer `theme.vars.palette` in new code; this module goes once the
+ * sweep has moved everything over.
+ */
 export const tokens = {
   color: {
-    bg: '#EEF1EA',
-    surface: '#FFFFFF',
-    ink: '#17231C',
-    muted: '#55635A',
-    line: '#DCE3D8',
-    divider: '#EEF1EA',
-    subtle: '#F7F9F5',
-    chipNeutral: '#E2E8DD',
+    bg,
+    surface,
+    ink,
+    muted,
+    line: palette('pp-line'),
+    divider: palette('divider'),
+    subtle: palette('pp-subtle'),
+    chipNeutral: palette('pp-chip'),
     /** Greyed text of a checked-off row. */
-    checkedText: '#66736B',
+    checkedText: muted,
     /** Border of an unchecked tick box. */
-    tickBorder: '#A7B3AA',
-    accent: '#2E6A4D',
-    accentHover: '#1F4D37',
-    accentTint: '#DDEBE2',
-    accentMid: '#8DBBA0',
-    accentSoftOnDark: '#CFE3D7',
-    butter: '#F3D27A',
-    butterInk: '#4A3B0B',
-    urgentBg: '#FBE6DA',
-    urgentHover: '#F6D3BE',
-    urgentFg: '#B54A17',
-    urgentRow: '#FDF3EC',
-    urgentBorder: '#F2CDB8',
-    soonBg: '#F6EBC8',
-    soonFg: '#6E5200',
-    soonRow: '#FBF5E1',
-    soonIcon: '#8A6700',
-    soonBorder: '#E3B94B',
-    okBg: '#EEF1EA',
-    okFg: '#55635A',
+    tickBorder: palette('pp-box'),
+    accent,
+    accentHover: mix(accent, 82, ink),
+    accentTint: palette('pp-accentTint'),
+    accentMid: mix(accent, 55, surface),
+    accentSoftOnDark: palette('pp-accentOnTint'),
+    butter: palette('secondary-main'),
+    butterInk: palette('secondary-contrastText'),
+    urgentBg,
+    urgentHover: mix(urgentBg, 85, urgentFg),
+    urgentFg,
+    urgentRow: mix(urgentBg, 45, surface),
+    urgentBorder: mix(urgentBg, 75, urgentFg),
+    soonBg,
+    soonFg,
+    soonRow: mix(soonBg, 45, surface),
+    soonIcon: soonFg,
+    soonBorder: mix(soonBg, 60, soonFg),
+    okBg: palette('success-light'),
+    okFg: palette('success-main'),
+    // The always-dark camera palette (--cam-*), the same in every Theme until
+    // the Scan screen is forced into Dark-first (#246). `cameraBg` is the screen behind it.
     cameraBg: '#101813',
-    // The always-dark camera palette (--cam-*), unchanged by the light theme. `cameraBg` is the screen behind it.
     camFg: '#f4f4f0',
     camDim: 'rgba(244,244,240,.62)',
     camGlass: 'rgba(20,22,20,.55)',
@@ -44,8 +69,8 @@ export const tokens = {
     camWarn: '#ffcf5a',
   },
   font: {
-    display: "'Bricolage Grotesque', sans-serif",
-    body: "'DM Sans', sans-serif",
+    display: 'var(--pp-display)',
+    body: 'var(--pp-body)',
   },
   radius: {
     dock: 26,
@@ -58,14 +83,14 @@ export const tokens = {
     chip: 999,
   },
   shadow: {
-    dock: '0 10px 30px rgba(23,35,28,0.12)',
+    dock: 'var(--pp-shadow-float)',
   },
 } as const;
 
 const kebab = (name: string) =>
   name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
-/** The handoff's tokens as `:root` CSS variables (`--accent-hover`, `--r-dock`, ...). */
+/** The legacy tokens as `:root` CSS variables (`--accent-hover`, `--r-dock`, ...). */
 export function tokensAsCssVariables(): Record<string, string> {
   const vars: Record<string, string> = {};
   for (const [name, value] of Object.entries(tokens.color)) {

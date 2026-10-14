@@ -1,4 +1,4 @@
-import { tokens } from '@pocket-pantry/ui';
+import { THEMES, tokens } from '@pocket-pantry/ui';
 import {
   act,
   fireEvent,
@@ -16,6 +16,7 @@ import {
   type ShoppingList,
 } from '../../lib/shopping';
 import type { Template, TemplateLine } from '../../lib/shoppingTemplates';
+import { paintedColour } from '../../test/colour';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubMotion, stubViewport } from '../../test/viewport';
 import { Link, Route, Routes } from 'react-router-dom';
@@ -498,9 +499,10 @@ describe('ShoppingPage', () => {
 
     it('greys the icon when the item is checked', async () => {
       await show([item({ id: 'x', ingredientId: PARMESAN_ID, checked: true })]);
-      expect(rowIcon(/^Item/)?.parentElement).toHaveStyle({
-        color: '#66736B',
-      });
+      // Greyed to the active Theme's muted ink (Warm editorial by default).
+      expect(paintedColour(rowIcon(/^Item/)!.parentElement!, 'color')).toBe(
+        THEMES.warm.muted,
+      );
     });
   });
 
