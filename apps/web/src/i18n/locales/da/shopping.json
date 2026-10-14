@@ -63,10 +63,6 @@
     "add": "Føj {{name}} til listen"
   },
   "suggestions": {
-    "missingLabel": "Manglende basisvarer · {{count}}",
-    "usedUpLabel": "Brugt op for nylig · {{count}}",
-    "stapleLabel": "Basisvarer",
-    "allStocked": "Alle dine basisvarer er på lager.",
     "manage": "Administrer",
     "dismissed": "Afviste {{name}}",
     "dismiss": "Afvis {{name}}"

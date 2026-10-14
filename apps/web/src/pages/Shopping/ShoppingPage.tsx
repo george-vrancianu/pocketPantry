@@ -130,8 +130,7 @@ export function ShoppingPage() {
         adding={screen.adding}
         onAdd={screen.add}
         addError={screen.addError}
-        staples={screen.staples}
-        usedUp={screen.usedUp}
+        suggestions={screen.suggestions}
       />
     </StapleErrorProvider>
   );

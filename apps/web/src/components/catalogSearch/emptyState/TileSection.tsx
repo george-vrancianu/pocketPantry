@@ -8,6 +8,8 @@ export type TileSectionProps = {
   heading: string;
   /** Shown at the right of the heading, when given. */
   count?: number;
+  /** A control beside the heading, e.g. a link to manage the list. */
+  action?: ReactNode;
   /** Shown instead of the grid when there are no tiles, e.g. "Nothing has run out or expired. Nice." */
   none?: string;
   /** The tiles; only the first 8 are shown. */
@@ -18,6 +20,7 @@ export type TileSectionProps = {
 export function TileSection({
   heading,
   count,
+  action,
   none,
   children,
 }: TileSectionProps) {
@@ -45,8 +48,15 @@ export function TileSection({
         >
           {heading}
         </Box>
-        {count !== undefined ? (
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+        {count !== undefined || action ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {count !== undefined ? (
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {count}
+              </span>
+            ) : null}
+            {action}
+          </Box>
         ) : null}
       </Box>
       {tiles.length === 0 && none ? (

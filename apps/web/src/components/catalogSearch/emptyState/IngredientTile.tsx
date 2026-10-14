@@ -1,4 +1,5 @@
 import { Box, IngredientIcon, tokens } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { focusRing } from '../../../lib/focusRing';
 
 /** The line under a tile's name: a 12px decorative glyph, then text, in the reason's colour. */
@@ -13,6 +14,8 @@ export type IngredientTileProps = {
   /** Accessible name; spells the why line out. */
   label: string;
   disabled?: boolean;
+  /** A secondary control (e.g. dismiss) at the tile's right edge, outside the select button. */
+  action?: ReactNode;
   onSelect: () => void;
 };
 
@@ -24,10 +27,11 @@ export function IngredientTile({
   why,
   label,
   disabled = false,
+  action,
   onSelect,
 }: IngredientTileProps) {
   const { color } = tokens;
-  return (
+  const button = (
     <Box
       component="button"
       type="button"
@@ -39,7 +43,8 @@ export function IngredientTile({
         alignItems: 'center',
         gap: '8px',
         minWidth: 0,
-        p: '7px 10px 7px 7px',
+        ...(action ? { width: '100%', boxSizing: 'border-box' } : {}),
+        p: action ? '7px 34px 7px 7px' : '7px 10px 7px 7px',
         textAlign: 'left',
         font: 'inherit',
         color: color.ink,
@@ -99,6 +104,23 @@ export function IngredientTile({
             {why.text}
           </Box>
         </Box>
+      </Box>
+    </Box>
+  );
+  if (!action) return button;
+  return (
+    <Box sx={{ position: 'relative', minWidth: 0 }}>
+      {button}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '50%',
+          right: '6px',
+          transform: 'translateY(-50%)',
+          display: 'grid',
+        }}
+      >
+        {action}
       </Box>
     </Box>
   );

@@ -1,9 +1,14 @@
 import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
-import { type Dispatch, type RefObject, type SetStateAction } from 'react';
+import {
+  useRef,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../../components/catalogSearch/CatalogSearch';
 import { AmountField } from '../../../../components/AmountField';
-import type { CatalogSearchResult, Unit } from '../../../../lib/catalog';
+import { type CatalogSearchResult, type Unit } from '../../../../lib/catalog';
 import { parseAmountText } from '../../../../lib/pantry';
 import {
   isOnList,
@@ -12,7 +17,7 @@ import {
   type NewShoppingItem,
   type ShoppingItem,
 } from '../../../../lib/shopping';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestion, Suggestions } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
 import { useSheetToast } from './SheetFooter';
 
@@ -35,8 +40,6 @@ export type IngredientsState = {
   /** The text in the search field. */
   query: string;
   open: OpenPick | null;
-  /** Ingredient ids added from a Suggestion chip, until the Suggestions drop them. */
-  suggestionsAdded: string[];
   /** Bumped after an add to give the search a fresh, focused field. */
   searchKey: number;
 };
@@ -44,7 +47,6 @@ export type IngredientsState = {
 export const emptyIngredients: IngredientsState = {
   query: '',
   open: null,
-  suggestionsAdded: [],
   searchKey: 0,
 };
 
@@ -58,8 +60,7 @@ export type IngredientsTabProps = {
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, shown above the search. */
   error: string | null;
-  staples: Suggestion[];
-  usedUp: Suggestion[];
+  suggestions: Suggestions;
   /** Called after each successful add. */
   onAdded: () => void;
   /** Opens a template's apply view. */
@@ -76,8 +77,7 @@ export function IngredientsTab({
   adding,
   onAdd,
   error,
-  staples,
-  usedUp,
+  suggestions,
   onAdded,
   onOpenTemplate,
   onSeeAllTemplates,
@@ -134,16 +134,40 @@ export function IngredientsTab({
   const hint = open ? mergeHint(onListLines, open.unit) : null;
   const amount = parseAmountText(open?.quantity ?? '');
 
-  const choose = (next: Chosen, query: string) =>
+  const choose = (next: Chosen, query: string) => {
+    const amount = tileAmount.current;
+    tileAmount.current = null;
+    const staple =
+      next.kind === 'catalog' && amount?.id === next.result.id ? amount : null;
     onStateChange((s) => ({
       ...s,
       query,
       open: {
         pick: next,
-        quantity: '',
-        unit: next.kind === 'catalog' ? next.result.defaultUnit : '',
+        quantity: staple?.quantity ?? '',
+        unit:
+          staple?.unit ??
+          (next.kind === 'catalog' ? next.result.defaultUnit : ''),
       },
     }));
+  };
+
+  // A Staple tile carries the Staple's amount; the search's select, right after, opens the pick with it.
+  const tileAmount = useRef<{
+    id: string;
+    quantity: string;
+    unit: Unit;
+  } | null>(null);
+  const pickGone = (suggestion: Suggestion) => {
+    tileAmount.current =
+      suggestion.quantity !== null && suggestion.unit !== null
+        ? {
+            id: suggestion.ingredientId,
+            quantity: String(suggestion.quantity),
+            unit: suggestion.unit,
+          }
+        : null;
+  };
 
   const submit = async () => {
     if (!open || !pick) return;
@@ -164,7 +188,6 @@ export function IngredientsTab({
     onAdded();
     onStateChange((s) => ({
       ...emptyIngredients,
-      suggestionsAdded: s.suggestionsAdded,
       searchKey: s.searchKey + 1,
     }));
   };
@@ -193,19 +216,10 @@ export function IngredientsTab({
         }
         emptyState={
           <EmptySearch
-            staples={staples}
-            usedUp={usedUp}
-            addedIds={state.suggestionsAdded}
-            onAdd={onAdd}
+            suggestions={suggestions}
+            onPickGone={pickGone}
             onOpenTemplate={onOpenTemplate}
             onSeeAllTemplates={onSeeAllTemplates}
-            onAdded={(ingredientId) => {
-              onAdded();
-              onStateChange((s) => ({
-                ...s,
-                suggestionsAdded: [...s.suggestionsAdded, ingredientId],
-              }));
-            }}
           />
         }
       />
