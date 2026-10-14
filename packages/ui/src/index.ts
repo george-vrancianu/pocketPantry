@@ -1,6 +1,7 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme, themeSelector } from './theme/theme';
 export { tokens } from './theme/tokens';
+export { useForcedThemeColor } from './theme/useForcedThemeColor';
 export {
   bodyFont,
   border,

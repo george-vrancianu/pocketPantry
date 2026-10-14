@@ -20,6 +20,16 @@ describe('Chip', () => {
     expect(getComputedStyle(chip).borderRadius).toBe('var(--pp-r-chip)');
   });
 
+  it('truncates a long label with an ellipsis inside the chip, keeping the full name', () => {
+    const name = 'A very long family template name that cannot fit a phone';
+    render(<Chip label={name} meta="12 items" onClick={() => undefined} />);
+    const chip = screen.getByRole('button', { name: `${name} 12 items` });
+    expect(getComputedStyle(chip).maxWidth).toBe('100%');
+    const label = screen.getByText(name);
+    expect(getComputedStyle(label).overflow).toBe('hidden');
+    expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+  });
+
   it('turns accent tint when on, and says it is pressed', () => {
     render(
       <div data-theme="dark">

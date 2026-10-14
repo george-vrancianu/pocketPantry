@@ -79,6 +79,21 @@ describe('Scan screen shell', () => {
     },
   );
 
+  it("paints the browser chrome in Dark-first's bg while open, then the root Theme's", () => {
+    localStorage.setItem(
+      'pp.appearance',
+      JSON.stringify({ theme: 'minimal', matchSystem: false }),
+    );
+    const meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    document.head.append(meta);
+    const { unmount } = renderScan();
+    expect(meta.content).toBe(DARK.bg);
+    unmount();
+    expect(meta.content).toBe(THEMES.minimal.bg);
+    meta.remove();
+  });
+
   it("leaves the rest of the app in the Member's Theme after closing", async () => {
     localStorage.setItem(
       'pp.appearance',

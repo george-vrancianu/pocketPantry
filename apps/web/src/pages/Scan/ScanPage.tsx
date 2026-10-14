@@ -1,5 +1,6 @@
 import {
   Alert,
+  bodyFont,
   Box,
   CloseIcon,
   FlashIcon,
@@ -10,6 +11,7 @@ import {
   visuallyHidden,
   tokens,
   radius,
+  useForcedThemeColor,
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +46,7 @@ const roundButton = (size: number) => ({
  */
 export function ScanPage() {
   const { t } = useTranslation('scan');
+  useForcedThemeColor('dark');
   const screen = useScanScreen();
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -61,6 +64,8 @@ export function ScanPage() {
         overflow: 'hidden',
         backgroundColor: tokens.color.bg,
         color: tokens.color.ink,
+        // Resolved under this subtree's Theme, not inherited from the root's.
+        fontFamily: bodyFont,
       }}
     >
       <Box

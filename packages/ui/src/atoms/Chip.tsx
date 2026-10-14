@@ -27,6 +27,8 @@ const pill = (selected: boolean | undefined) => (theme: Theme) => {
     display: 'inline-flex',
     alignItems: 'center',
     flexShrink: 0,
+    // A long name shrinks to the row, ellipsised.
+    maxWidth: '100%',
     gap: '6px',
     height: 36,
     boxSizing: 'border-box',
@@ -72,7 +74,12 @@ export function Chip({
           {icon}
         </Box>
       ) : null}
-      {label}
+      <Box
+        component="span"
+        sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}
+      >
+        {label}
+      </Box>
       {meta ? (
         <>
           {' '}
@@ -113,6 +120,7 @@ export function Chip({
         sx={[
           {
             height: '100%',
+            minWidth: 0,
             gap: '6px',
             pl: icon ? '10px' : '12px',
             pr: '4px',
