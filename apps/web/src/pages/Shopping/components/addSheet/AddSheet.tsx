@@ -48,7 +48,7 @@ export type AddSheetProps = {
 /**
  * The Add sheet: a header with Done, the Ingredients and Templates tabs, and
  * the selected tab's panel. It owns everything that belongs to one opening
- * (tab, Templates sub-view, query, open row, typed amount and unit, adds so
+ * (tab, Templates sub-view, query, pick, typed amount and unit, adds so
  * far) so it survives switching tabs. All of it resets whenever the sheet
  * opens; the lists polled behind it never reset it.
  */

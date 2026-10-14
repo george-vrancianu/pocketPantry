@@ -46,15 +46,25 @@ export function useCatalogParents(locale: string, enabled = true) {
   });
 }
 
-/** Catalog search, with names in `locale`. Idle for a blank query. */
-export function useCatalogSearch(query: string, locale: string) {
+/**
+ * Catalog search, with names in `locale`. Idle for a blank query. `shared`
+ * searches the shared Catalog only (Admin); `family` adds the Family's own.
+ */
+export function useCatalogSearch(
+  query: string,
+  locale: string,
+  scope: 'family' | 'shared' = 'family',
+) {
   const debounced = useDebounced(query.trim(), 150);
   const result = useQuery({
-    queryKey: [...catalogSearchQueryKey, locale, debounced],
-    queryFn: () =>
-      apiRequest<{ results: CatalogSearchResult[] }>(
-        `/catalog/search?${new URLSearchParams({ q: debounced, locale })}`,
-      ).then((body) => body.results),
+    queryKey: [...catalogSearchQueryKey, locale, scope, debounced],
+    queryFn: () => {
+      const params = new URLSearchParams({ q: debounced, locale });
+      if (scope === 'shared') params.set('scope', 'shared');
+      return apiRequest<{ results: CatalogSearchResult[] }>(
+        `/catalog/search?${params}`,
+      ).then((body) => body.results);
+    },
     enabled: debounced.length > 0,
     // Keep the shown options (and their nodes) while the next query loads, so
     // a click mid-refresh still lands.
@@ -66,5 +76,7 @@ export function useCatalogSearch(query: string, locale: string) {
     // Typing ahead of the debounce counts as still searching.
     isSearching: query.trim() !== debounced || result.isFetching,
     active: debounced.length > 0,
+    /** The trimmed query the results belong to (it lags what is typed). */
+    query: debounced,
   };
 }

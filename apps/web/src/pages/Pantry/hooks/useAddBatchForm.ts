@@ -23,7 +23,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const [ingredient, setIngredient] = useState<CatalogSearchResult | null>(
     null,
   );
-  const [typed, setTyped] = useState('');
   const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<Unit>('g');
@@ -34,7 +33,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const selectIngredient = (result: CatalogSearchResult) => {
     setIngredient(result);
     setUnmatchedName(null);
-    setTyped(result.name);
     // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
     if (quantity.trim() === '') setUnit(result.defaultUnit);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
@@ -42,14 +40,13 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
 
-  const changeQuery = (query: string) => {
-    setTyped(query);
+  const changeQuery = () => {
     setIngredient(null);
     setUnmatchedName(null);
   };
 
-  const markTypedAsUnmatched = () => {
-    setUnmatchedName(typed.trim());
+  const useTypedName = (name: string) => {
+    setUnmatchedName(name);
     setIngredient(null);
     setExpiryDate(null);
   };
@@ -81,7 +78,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
 
   return {
     ingredient,
-    typed: typed.trim(),
     unmatchedName,
     quantity,
     unit,
@@ -96,7 +92,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     error: addBatch.error ? translateApiError(t, addBatch.error) : null,
     selectIngredient,
     changeQuery,
-    markTypedAsUnmatched,
+    useTypedName,
     setQuantity,
     setUnit,
     setLocation,

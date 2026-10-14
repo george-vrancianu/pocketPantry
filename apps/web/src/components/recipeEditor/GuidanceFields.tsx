@@ -51,6 +51,8 @@ type FieldsProps = {
   RecipePicker: RecipePickerComponent;
   /** Name of a linked Ingredient the Pairing already carries, when known. */
   ingredientName?: (id: string) => string | undefined;
+  /** Which Catalog the Ingredient link searches: `shared` for Catalog Recipes (Admin). */
+  ingredientScope?: 'family' | 'shared';
 };
 
 /**
@@ -65,6 +67,7 @@ export function GuidanceFields({
   canAddMoments = true,
   RecipePicker,
   ingredientName,
+  ingredientScope,
 }: FieldsProps) {
   const { t } = useTranslation(['admin', 'recipes']);
   const problems = guidanceProblems(draft);
@@ -117,6 +120,7 @@ export function GuidanceFields({
             last={index === draft.pairings.length - 1}
             RecipePicker={RecipePicker}
             ingredientName={ingredientName}
+            ingredientScope={ingredientScope}
             onChange={(patch) => patchPairing(pairing.key, patch)}
             onMove={(offset) =>
               change({ pairings: moved(draft.pairings, index, offset) })
@@ -335,6 +339,7 @@ type RowProps = {
   last: boolean;
   RecipePicker: RecipePickerComponent;
   ingredientName?: (id: string) => string | undefined;
+  ingredientScope?: 'family' | 'shared';
   onChange: (patch: Partial<PairingDraft>) => void;
   onMove: (offset: -1 | 1) => void;
   onRemove: () => void;
@@ -347,6 +352,7 @@ function PairingRow({
   last,
   RecipePicker,
   ingredientName,
+  ingredientScope,
   onChange,
   onMove,
   onRemove,
@@ -449,6 +455,7 @@ function PairingRow({
           ) : null}
           <CatalogSearch
             showUnit={false}
+            scope={ingredientScope}
             label={t('admin:recipe.guidance.pairings.linkIngredientTarget', p)}
             describedBy={linkedName ? linkedId : undefined}
             onSelect={(ingredient) =>

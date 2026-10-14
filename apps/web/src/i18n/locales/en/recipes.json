@@ -95,8 +95,6 @@
     "title": "Title",
     "copyHint": "This is a copy to change. Nothing is saved until you save it.",
     "tipsHint": "Copied Tips stay with their Steps; add your own after saving the Variant.",
-    "freeTextLabel": "Or add an ingredient by name",
-    "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This Recipe cannot be edited.",
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",

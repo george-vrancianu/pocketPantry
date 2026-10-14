@@ -2115,7 +2115,12 @@ describe('ShoppingPage', () => {
 
       expect(await within(dialog).findByRole('alert')).toBeVisible();
       expect(amount).toHaveValue('100');
-      expect(search(dialog)).toHaveValue('parm');
+      // The pick stays a token in the field.
+      expect(
+        within(dialog).getByRole('combobox', {
+          name: 'Ingredient: Parmesan. Press Backspace to change',
+        }),
+      ).toHaveValue('Parmesan');
       expect(
         within(dialog).getByRole('button', { name: 'Done' }),
       ).toBeVisible();

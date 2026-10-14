@@ -12,6 +12,8 @@
     "noMatchHint": "Verifică ortografia sau încearcă un cuvânt mai scurt.",
     "errorTitle": "Nu putem căuta acum",
     "errorHint": "Verifică conexiunea și încearcă din nou.",
+    "useTyped": "Folosește „{{name}}” așa cum l-ai scris",
+    "useTypedHint": "Nu e în catalog · se salvează ca element nepotrivit",
     "retry": "Reîncearcă",
     "clear": "Șterge căutarea",
     "change": "Schimbă ingredientul",

@@ -130,6 +130,7 @@ export function UnmatchedResolver({ entry, catalog, onDone, onCancel }: Props) {
         <Stack spacing={1}>
           <CatalogSearch
             showUnit={false}
+            scope="shared"
             onSelect={(ingredient) =>
               setPicked({ id: ingredient.id, name: ingredient.name })
             }

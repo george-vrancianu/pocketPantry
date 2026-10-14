@@ -23,25 +23,24 @@ export type AddItemFormProps = {
 };
 
 /**
- * Type a name and pick the Catalog Match, with an optional quantity and unit.
- * A name left without a pick is added as an Unmatched Shopping Item.
+ * Pick the Catalog Match, or "Use as typed" for a name the Catalog does not
+ * have (added as an Unmatched Shopping Item), with an optional quantity and unit.
  */
 export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
   const { t } = useTranslation('shopping');
-  const [typed, setTyped] = useState('');
+  const [typedName, setTypedName] = useState<string | null>(null);
   const [match, setMatch] = useState<CatalogSearchResult | null>(null);
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState<Unit | ''>('');
   // Remounts the search box to clear it after an add.
   const [formKey, setFormKey] = useState(0);
 
-  const name = typed.trim();
-  const unmatched = name.length > 0 && match === null;
+  const name = match?.name ?? typedName;
   const amount = parseQuantity(quantity);
 
   const select = (ingredient: CatalogSearchResult) => {
     setMatch(ingredient);
-    setTyped(ingredient.name);
+    setTypedName(null);
     setUnit(ingredient.defaultUnit);
   };
 
@@ -54,7 +53,7 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
       ...(unit ? { unit } : {}),
     });
     if (!added) return;
-    setTyped('');
+    setTypedName(null);
     setMatch(null);
     setQuantity('');
     setUnit('');
@@ -67,12 +66,16 @@ export function AddItemForm({ adding, onAdd }: AddItemFormProps) {
         <CatalogSearch
           key={formKey}
           onSelect={select}
-          onQueryChange={(query) => {
-            setTyped(query);
+          onQueryChange={() => {
+            setTypedName(null);
+            setMatch(null);
+          }}
+          onUseTyped={(typed) => {
+            setTypedName(typed);
             setMatch(null);
           }}
         />
-        {unmatched ? (
+        {typedName ? (
           <Typography variant="meta" color="text.secondary">
             {t('add.unmatchedHint')}
           </Typography>

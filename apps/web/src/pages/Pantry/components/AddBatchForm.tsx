@@ -1,4 +1,4 @@
-import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
@@ -13,6 +13,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
   const form = useAddBatchForm({ onSaved });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
+  const picked = form.ingredient?.name ?? form.unmatchedName;
 
   return (
     <Stack
@@ -27,6 +28,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         selected={form.ingredient}
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
+        onUseTyped={form.useTypedName}
       />
 
       {form.unmatchedName ? (
@@ -34,59 +36,48 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
           {t('form.unmatchedNotice', { name: form.unmatchedName })}
         </Alert>
       ) : null}
-      {!form.ingredient && !form.unmatchedName && form.typed ? (
-        <Button
-          variant="text"
-          type="button"
-          onClick={form.markTypedAsUnmatched}
-        >
-          {t('form.useUnmatched', { name: form.typed })}
-        </Button>
+      {picked ? (
+        <>
+          <AmountLocationRow
+            name={picked}
+            quantity={form.quantity}
+            unit={form.unit}
+            location={form.location}
+            quantityValid={form.quantityValid}
+            onQuantityChange={form.setQuantity}
+            onUnitChange={form.setUnit}
+            onLocationChange={form.setLocation}
+            onSubmit={() => formRef.current?.requestSubmit()}
+          />
+
+          <ExpiryField
+            id={`${id}-expiry`}
+            label={t('picker.label')}
+            value={form.expiryDate}
+            onChange={form.setExpiryDate}
+            usualDays={form.usualDays}
+            context={expiryContext(
+              {
+                name: picked,
+                quantity: form.quantity,
+                unit: form.unit,
+                location: form.location,
+              },
+              i18n.language,
+              t,
+            )}
+          />
+
+          <TextField
+            id={`${id}-description`}
+            label={t('form.description')}
+            placeholder={t('form.descriptionPlaceholder')}
+            value={form.description}
+            onChange={(event) => form.setDescription(event.target.value)}
+            slotProps={{ htmlInput: { maxLength: 200 } }}
+          />
+        </>
       ) : null}
-      {!form.ingredient && !form.unmatchedName && !form.typed ? (
-        <Typography variant="meta" color="text.secondary">
-          {t('form.pickIngredient')}
-        </Typography>
-      ) : null}
-
-      <AmountLocationRow
-        name={form.ingredient?.name ?? form.unmatchedName ?? ''}
-        quantity={form.quantity}
-        unit={form.unit}
-        location={form.location}
-        quantityValid={form.quantityValid}
-        onQuantityChange={form.setQuantity}
-        onUnitChange={form.setUnit}
-        onLocationChange={form.setLocation}
-        onSubmit={() => formRef.current?.requestSubmit()}
-      />
-
-      <ExpiryField
-        id={`${id}-expiry`}
-        label={t('picker.label')}
-        value={form.expiryDate}
-        onChange={form.setExpiryDate}
-        usualDays={form.usualDays}
-        context={expiryContext(
-          {
-            name: form.ingredient?.name ?? form.unmatchedName ?? form.typed,
-            quantity: form.quantity,
-            unit: form.unit,
-            location: form.location,
-          },
-          i18n.language,
-          t,
-        )}
-      />
-
-      <TextField
-        id={`${id}-description`}
-        label={t('form.description')}
-        placeholder={t('form.descriptionPlaceholder')}
-        value={form.description}
-        onChange={(event) => form.setDescription(event.target.value)}
-        slotProps={{ htmlInput: { maxLength: 200 } }}
-      />
 
       {form.error ? <Alert>{form.error}</Alert> : null}
 

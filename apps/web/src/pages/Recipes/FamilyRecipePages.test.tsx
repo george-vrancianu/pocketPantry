@@ -340,6 +340,7 @@ describe('NewVariantPage', () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     fireEvent.change(await screen.findByLabelText(/^Title/), {
@@ -348,10 +349,15 @@ describe('NewVariantPage', () => {
     fireEvent.change(screen.getByLabelText('Cuisine'), {
       target: { value: 'c-fr' },
     });
-    fireEvent.change(screen.getByLabelText('Or add an ingredient by name'), {
-      target: { value: 'Gran’s herbs' },
-    });
-    await user.click(screen.getByRole('button', { name: 'Add name' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Gran’s herbs',
+    );
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Gran’s herbs” as typed/,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: 'Save Variant' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();

@@ -53,14 +53,6 @@
     }
   },
   "search": {
-    "placeholder": "Søg efter ingredienser",
-    "clear": "Ryd søgning",
-    "matches_one": "{{count}} match",
-    "matches_other": "{{count}} match",
-    "noMatch": "Intet match i kataloget",
-    "freeText": "Tilføj “{{name}}”",
-    "freeTextHint": "Ikke i kataloget, tilføjes som fri tekst",
-    "onList": "På listen",
     "onListHint": "Allerede på din liste. Hvis du tilføjer igen, øges mængden.",
     "onListOtherUnit": "Allerede på din liste i {{unit}}; det tilføjer en separat linje.",
     "onListOtherUnits": "Allerede på din liste i andre enheder; det tilføjer en separat linje.",

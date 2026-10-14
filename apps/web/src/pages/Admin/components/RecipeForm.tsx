@@ -110,6 +110,7 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
       >
         <CatalogSearch
           key={searchKey}
+          scope="shared"
           onSelect={(ingredient) => {
             change({
               lines: [
