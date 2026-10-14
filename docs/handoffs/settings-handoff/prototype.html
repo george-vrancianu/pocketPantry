@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PocketPantry Settings</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Instrument+Sans:wght@400;500;600;700&family=Schibsted+Grotesk:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&family=Albert+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: workbench page (controls on top, phone left, variant notes right). The phone paints with the app's own theme tokens from docs/themes/themes.ts. */
+:root{
+  --pg:#EEEBE4; --pg-panel:#F8F6F1; --pg-ink:#22201B; --pg-muted:#6E685C; --pg-line:#DCD6CA; --pg-accent:#5F6F2E; --pg-accent-ink:#FFFFFF;
+  --pg-sans:'Instrument Sans',ui-sans-serif,system-ui,sans-serif; --pg-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--pg:#121512;--pg-panel:#1A1E1B;--pg-ink:#E8ECE6;--pg-muted:#9AA39B;--pg-line:#2C332E;--pg-accent:#8FE0A8;--pg-accent-ink:#0B1A10;color-scheme:dark}}
+:root[data-theme="dark"]{--pg:#121512;--pg-panel:#1A1E1B;--pg-ink:#E8ECE6;--pg-muted:#9AA39B;--pg-line:#2C332E;--pg-accent:#8FE0A8;--pg-accent-ink:#0B1A10;color-scheme:dark}
+body{background:var(--pg);color:var(--pg-ink);font-family:var(--pg-sans);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent,var(--pg-accent));outline-offset:2px}
+
+/* ---------- workbench chrome ---------- */
+.wb{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:flex-end;justify-content:space-between}
+.eyebrow{font-family:var(--pg-mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--pg-muted)}
+.top h1{margin:4px 0 0;font-size:24px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pseg{display:flex;background:var(--pg-panel);border:1px solid var(--pg-line);border-radius:10px;padding:3px;gap:3px}
+.pseg button{padding:7px 12px;border-radius:7px;font-size:13px;font-weight:600;color:var(--pg-muted);white-space:nowrap}
+.pseg button[aria-pressed="true"]{background:var(--pg-ink);color:var(--pg)}
+.pchk{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--pg-muted);background:var(--pg-panel);border:1px solid var(--pg-line);border-radius:10px;padding:8px 11px}
+.pchk input{accent-color:var(--pg-accent);margin:0}
+.stage{display:grid;grid-template-columns:auto minmax(0,1fr);gap:28px;align-items:start}
+.phone{width:390px;height:800px;border-radius:46px;padding:10px;background:#111;box-shadow:0 30px 60px -30px rgba(0,0,0,.45);position:sticky;top:max(16px,env(safe-area-inset-top,0px))}
+.phone>.app{border-radius:36px}
+.notes{display:flex;flex-direction:column;gap:16px;min-width:0}
+.npanel{background:var(--pg-panel);border:1px solid var(--pg-line);border-radius:14px;padding:16px 18px}
+.npanel h2{margin:0 0 8px;font-size:15px;font-weight:700}
+.npanel h2 small{font-family:var(--pg-mono);font-weight:500;font-size:11px;color:var(--pg-muted);letter-spacing:.05em;text-transform:uppercase;margin-right:8px}
+.npanel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:13.5px;line-height:1.5;max-width:65ch}
+.npanel b{font-weight:700}
+.npanel code{font-family:var(--pg-mono);font-size:12px}
+.scopes{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px;line-height:1.45}
+.scopes span:nth-child(odd){font-family:var(--pg-mono);font-size:11.5px;color:var(--pg-muted);padding-top:2px}
+@media (max-width:860px){.stage{grid-template-columns:minmax(0,1fr)}.phone{position:relative;top:0;margin:0 auto}}
+@media (max-width:440px){.phone{width:100%;height:760px;border-radius:0;padding:0;background:none;box-shadow:none}.phone>.app{border-radius:16px;border:1px solid var(--pg-line)}}
+
+/* ---------- app (inside the phone, painted by theme tokens) ---------- */
+.app{height:100%;position:relative;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;transition:background-color .2s,color .2s}
+.app *{transition:background-color .2s,border-color .2s,color .2s}
+.status{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:13px;font-weight:600}
+.hdr{flex:none;padding:4px 18px 8px;display:flex;flex-direction:column;gap:2px}
+.back{display:inline-flex;align-items:center;gap:2px;color:var(--accent);font-weight:600;font-size:14px;align-self:flex-start;margin-left:-6px;padding:4px 6px;border-radius:8px}
+.back svg{width:18px;height:18px}
+.ttl{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:30px;line-height:1.1;margin:0}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 16px 48px;display:flex;flex-direction:column;gap:20px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.sec{display:flex;flex-direction:column;gap:8px}
+.lab{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:0 4px;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.scope{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;letter-spacing:0;text-transform:none}
+.scope svg{width:13px;height:13px}
+.card{background:var(--card-bg);border:var(--bw) solid var(--card-line);border-radius:var(--r-card);box-shadow:var(--shadow-card)}
+.pad{padding:14px 16px}
+.lst{padding:0 16px}
+.row{display:flex;align-items:center;gap:12px;min-height:54px;padding:9px 0;border-top:1px solid var(--divider);width:100%;text-align:left}
+.row:first-child{border-top:0}
+.tx{flex:1;min-width:0}
+.nm{font-size:15px;font-weight:600;line-height:1.3}
+.sub{font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.val{color:var(--muted);font-size:14px;white-space:nowrap}
+.chev{width:18px;height:18px;color:var(--muted);flex:none}
+.lead{width:36px;height:36px;border-radius:calc(var(--r-ctl) - 2px);background:var(--accent-tint);color:var(--accent-on-tint);display:grid;place-items:center;flex:none}
+.lead svg{width:19px;height:19px}
+.lead.b{background:var(--butter);color:var(--butter-ink)}
+.lead.n{background:var(--chip);color:var(--ink)}
+.h3{font-size:13px;font-weight:700;margin:0;color:var(--ink)}
+.hint{font-size:12.5px;color:var(--muted);line-height:1.45}
+.div{height:1px;background:var(--divider);margin:14px -16px}
+
+/* appearance tiles */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{display:flex;flex-direction:column;gap:6px;padding:5px 5px 8px;border:2px solid var(--line);border-radius:calc(var(--r-ctl) + 3px);background:var(--surface);text-align:left;min-width:0}
+.tile[aria-checked="true"]{border-color:var(--accent)}
+.pv{position:relative;display:block;height:72px;border-radius:var(--r-ctl);padding:8px;overflow:hidden;border:1px solid rgba(128,128,128,.18)}
+.pv .aa{display:block;font-size:19px;line-height:1}
+.pv .bar{display:block;height:5px;border-radius:3px;margin-top:6px;width:78%}
+.pv .bar.s{width:52%;opacity:.8;margin-top:4px}
+.pv .pb{position:absolute;left:8px;bottom:8px;height:12px;width:38%}
+.pv .mc{display:none}
+.pv .ck{position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center}
+.pv .ck svg{width:13px;height:13px;stroke-width:3}
+.tname{font-size:13px;font-weight:700;padding:0 3px;line-height:1.2}
+.tnote{font-size:11.5px;color:var(--muted);padding:0 3px;line-height:1.3;margin-top:-3px}
+.tiles.big .pv{height:118px;padding:10px}
+.tiles.big .pv .aa{font-size:24px}
+.tiles.big .pv .mc{display:block;position:absolute;left:10px;right:10px;bottom:30px;height:26px;border-radius:7px}
+.tiles.big .pv .pb{left:10px;bottom:10px;width:46%;height:13px}
+.tiles.big .tname{font-size:13.5px}
+
+/* toggle, segmented, stepper */
+.tgl{width:46px;height:28px;border-radius:999px;background:var(--box);position:relative;flex:none}
+.tgl::after{content:"";position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s}
+.tgl[aria-checked="true"]{background:var(--accent)}
+.tgl[aria-checked="true"]::after{transform:translateX(18px)}
+.seg{display:flex;gap:4px;padding:4px;background:var(--chip);border-radius:var(--r-ctl)}
+.seg button{flex:1;min-width:0;height:38px;border-radius:calc(var(--r-ctl) - 3px);font-size:14px;font-weight:600;color:var(--ink)}
+.seg button[aria-checked="true"],.seg button[aria-selected="true"]{background:var(--seg-on);color:var(--seg-on-ink);box-shadow:var(--shadow-seg);font-weight:700}
+.step{display:flex;align-items:center;gap:6px;flex:none}
+.sb{width:38px;height:38px;border-radius:var(--r-ctl);background:var(--chip);display:grid;place-items:center;color:var(--ink)}
+.sb svg{width:18px;height:18px}
+.sb:disabled{opacity:.4;cursor:default}
+.sv{min-width:62px;text-align:center;font-family:var(--display);font-weight:var(--display-w);font-size:20px;font-variant-numeric:tabular-nums;line-height:1}
+.sv small{display:block;font-family:var(--body);font-size:11px;font-weight:600;color:var(--muted);margin-top:3px}
+.step.lg .sb{width:52px;height:52px}
+.step.lg .sv{font-size:40px;min-width:110px}
+.step.lg .sv small{font-size:13px}
+
+/* tags + sample ladder */
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px;white-space:nowrap;line-height:1.2}
+.tag.urg{background:var(--urgent-bg);color:var(--urgent-fg)}
+.tag.soon{background:var(--soon-bg);color:var(--soon-fg)}
+.tag.ok{background:var(--ok-bg);color:var(--ok-fg)}
+.tag.acc{background:var(--accent-tint);color:var(--accent-on-tint)}
+.ladder{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:12px}
+.ld{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:7px 9px;border-radius:calc(var(--r-ctl) - 2px);background:var(--subtle);font-size:13px;font-weight:600;min-width:0}
+.ld span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* overrides */
+.ov{display:flex;align-items:center;gap:10px;min-height:52px;padding:7px 0;border-top:1px solid var(--divider)}
+.ov:first-child{border-top:0}
+.ov .tx{cursor:pointer}
+.ovv{font-family:var(--display);font-weight:var(--display-w);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ovv small{font-family:var(--body);font-size:12px;color:var(--muted);font-weight:600}
+.ib{width:32px;height:32px;border-radius:calc(var(--r-ctl) - 2px);display:grid;place-items:center;color:var(--muted);flex:none}
+.ib svg{width:17px;height:17px}
+.ib:hover{background:var(--chip)}
+.dash{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;margin-top:8px;padding:0 12px;border:1px dashed var(--line-strong);border-radius:var(--r-ctl);color:var(--accent);font-weight:600;font-size:14px}
+.dash svg{width:18px;height:18px}
+.empty{font-size:13px;color:var(--muted);padding:10px 0 2px;line-height:1.45}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 18px;border-radius:var(--r-ctl);font-size:14.5px;font-weight:700;white-space:nowrap}
+.btn svg{width:17px;height:17px}
+.btn.primary{background:var(--primary);color:var(--primary-ink);box-shadow:var(--shadow-btn)}
+.btn.secondary{background:var(--surface);border:1px solid var(--line-strong);color:var(--ink)}
+.btn.ghost{color:var(--accent)}
+.btn.danger{background:var(--urgent-bg);color:var(--urgent-fg)}
+.btn.full{width:100%}
+.btn:active{transform:scale(.97)}
+
+/* family */
+.avs{display:flex}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;border:2px solid var(--card-bg);margin-left:-8px;background:var(--accent-tint);color:var(--accent-on-tint)}
+.av:first-child{margin-left:0}
+.av.b{background:var(--butter);color:var(--butter-ink)}
+.av.c{background:var(--chip);color:var(--ink)}
+.fam-name{font-family:var(--display);font-weight:var(--display-w);letter-spacing:var(--display-ls);font-size:21px;line-height:1.15}
+.code{display:flex;align-items:center;gap:10px;margin-top:12px;padding:8px 8px 8px 14px;border-radius:var(--r-ctl);background:var(--subtle)}
+.code b{font-family:var(--display);font-size:19px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.code .tx{min-width:0}
+.mem{display:flex;align-items:center;gap:10px;min-height:46px;border-top:1px solid var(--divider)}
+.mem .av{margin:0;border:0}
+
+/* sticky tabs (variant C) */
+.tabs{flex:none;padding:2px 16px 8px;background:var(--bg)}
+
+/* sheet + toast */
+.scrim{position:absolute;inset:0;background:rgba(10,12,10,.42);z-index:20;animation:fade .18s}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;max-height:88%;display:flex;flex-direction:column;background:var(--surface);border-radius:var(--r-card) var(--r-card) 0 0;box-shadow:var(--shadow-float);animation:up .22s cubic-bezier(.2,.8,.2,1)}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--line-strong);margin:8px auto 4px;flex:none}
+.sh-h{display:flex;align-items:flex-start;gap:8px;padding:6px 18px 10px;flex:none}
+.sh-h .ttl{font-size:22px}
+.sh-b{overflow-y:auto;padding:0 18px 12px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.sh-b>*{flex:none}
+.sh-f{flex:none;display:flex;gap:10px;justify-content:space-between;padding:10px 18px 18px;border-top:1px solid var(--divider)}
+.field{display:flex;align-items:center;gap:8px;height:46px;padding:0 12px;background:var(--field-bg);border:var(--bw-field) solid var(--line);border-radius:var(--r-ctl)}
+.field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-tint)}
+.field svg{width:19px;height:19px;color:var(--muted);flex:none}
+.field input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;color:var(--ink)}
+.grp{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:8px 2px 2px}
+.pick{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:6px 2px;border-top:1px solid var(--divider);text-align:left}
+.qp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.qp button{height:54px;border-radius:var(--r-ctl);border:1px solid var(--line);background:var(--field-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:var(--display);font-weight:var(--display-w);font-size:17px}
+.qp button small{font-family:var(--body);font-size:10.5px;font-weight:600;color:var(--muted)}
+.qp button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.qp button[aria-pressed="true"] small{color:var(--accent-ink)}
+.cmp{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-ctl);background:var(--subtle);font-size:13px}
+.toast{position:absolute;left:16px;right:16px;bottom:22px;z-index:30;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r-ctl);background:var(--toast-bg);color:var(--toast-ink);box-shadow:var(--shadow-float);font-size:14px;font-weight:600;animation:up .2s}
+.toast .tx{line-height:1.35}
+.toast button{color:var(--toast-action);font-weight:700;display:inline-flex;gap:5px;align-items:center}
+.toast button svg{width:16px;height:16px}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.app,.app *{transition:none!important;animation:none!important}.btn:active{transform:none}}
+</style>
+
+<div class="wb">
+  <div class="top">
+    <div>
+      <div class="eyebrow">PocketPantry · prototype · 14 Oct 2026</div>
+      <h1>Settings page · variant C chosen</h1>
+    </div>
+    <div class="ctrls">
+      <div class="pseg" role="group" aria-label="Variant" id="vsel">
+        <button data-v="A">A · One page</button>
+        <button data-v="B">B · Index + pages</button>
+        <button data-v="C">C · You / Family ✓</button>
+      </div>
+      <label class="pchk"><input type="checkbox" id="sysdark"> Phone in dark mode</label>
+      <label class="pchk"><input type="checkbox" id="admin" checked> Admin</label>
+      <label class="pchk"><input type="checkbox" id="owner" checked> Owner</label>
+      <label class="pchk"><input type="checkbox" id="expired"> Code expired</label>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone"><div class="app" id="app"></div></div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- themes (verbatim values from docs/themes/themes.ts) ---------- */
+const THEMES={
+warm:{bg:"#F3EDE1",surface:"#FBF8F1",subtle:"#F6F1E6",ink:"#2B2418",muted:"#766A58",line:"#E6DCCB","line-strong":"#D6C9B2",divider:"#EFE7D8",chip:"#EAE1CF",accent:"#5F6F2E","accent-ink":"#FFFFFF","accent-tint":"#E6EAD2","accent-on-tint":"#4A5722",primary:"#5F6F2E","primary-ink":"#FFFFFF",butter:"#F0C96B","butter-ink":"#4A3608","urgent-bg":"#F8DED1","urgent-fg":"#A8431C","soon-bg":"#F6E5BE","soon-fg":"#704E00","ok-bg":"#E6EAD2","ok-fg":"#4A5722",box:"#C2B49A",star:"#C6882A","card-bg":"#FBF8F1","card-line":"#E9E0CF","field-bg":"#FFFDF8","seg-on":"#FBF8F1","seg-on-ink":"#2B2418","toast-bg":"#2B2418","toast-ink":"#FBF8F1","toast-action":"#F0C96B","dock-bg":"rgba(251,248,241,.94)",bezel:"#2B2418",bw:"1px","bw-field":"1.5px","r-card":"16px","r-ctl":"12px","r-chip":"999px","r-fab":"50%","r-dock":"22px","r-box":"7px","shadow-card":"0 1px 2px rgba(60,40,10,.06), 0 8px 24px -12px rgba(60,40,10,.18)","shadow-btn":"0 4px 12px rgba(95,111,46,.28)","shadow-float":"0 14px 34px -10px rgba(60,40,10,.28)","shadow-seg":"0 1px 2px rgba(60,40,10,.14)",display:"'Fraunces',Georgia,'Times New Roman',serif",body:"'Instrument Sans',ui-sans-serif,system-ui,sans-serif","display-w":"600","display-ls":"-0.015em"},
+minimal:{bg:"#FAFAF8",surface:"#FFFFFF",subtle:"#F3F4F1",ink:"#141614",muted:"#6B716B",line:"#E7E9E4","line-strong":"#CDD1CA",divider:"#EEF0EB",chip:"#EEF0EB",accent:"#1E7A4E","accent-ink":"#FFFFFF","accent-tint":"#E1F2E8","accent-on-tint":"#176040",primary:"#141614","primary-ink":"#FFFFFF",butter:"#F5E1A4","butter-ink":"#5A4200","urgent-bg":"#FDE8E2","urgent-fg":"#B33A1E","soon-bg":"#FBF0CC","soon-fg":"#7A5600","ok-bg":"#EEF0EB","ok-fg":"#4D534D",box:"#B9BEB8",star:"#D1A21C","card-bg":"#FFFFFF","card-line":"#E7E9E4","field-bg":"#FFFFFF","seg-on":"#141614","seg-on-ink":"#FFFFFF","toast-bg":"#141614","toast-ink":"#FFFFFF","toast-action":"#9BE0B8","dock-bg":"rgba(255,255,255,.96)",bezel:"#141614",bw:"1px","bw-field":"1px","r-card":"12px","r-ctl":"10px","r-chip":"8px","r-fab":"12px","r-dock":"16px","r-box":"6px","shadow-card":"none","shadow-btn":"none","shadow-float":"0 8px 24px rgba(20,22,20,.10)","shadow-seg":"none",display:"'Schibsted Grotesk',ui-sans-serif,system-ui,sans-serif",body:"'Figtree',ui-sans-serif,system-ui,sans-serif","display-w":"700","display-ls":"-0.025em"},
+dark:{bg:"#0F1512",surface:"#19211C",subtle:"#1F2922",ink:"#ECF2EC",muted:"#97A69B",line:"#26312A","line-strong":"#36433A",divider:"#27322B",chip:"#26312A",accent:"#8FE0A8","accent-ink":"#0B1A10","accent-tint":"#1F3A2A","accent-on-tint":"#A9EDBD",primary:"#8FE0A8","primary-ink":"#0B1A10",butter:"#3D3418","butter-ink":"#F2CF72","urgent-bg":"#3F241B","urgent-fg":"#FFA27E","soon-bg":"#3A3118","soon-fg":"#F2CF72","ok-bg":"#26312A","ok-fg":"#B9C7BC",box:"#4A574E",star:"#F2CF72","card-bg":"#19211C","card-line":"transparent","field-bg":"#111915","seg-on":"#2A3730","seg-on-ink":"#ECF2EC","toast-bg":"#ECF2EC","toast-ink":"#0F1512","toast-action":"#1E7A4E","dock-bg":"rgba(25,33,28,.9)",bezel:"#050807",bw:"1px","bw-field":"1px","r-card":"18px","r-ctl":"14px","r-chip":"999px","r-fab":"16px","r-dock":"24px","r-box":"7px","shadow-card":"0 1px 0 rgba(255,255,255,.04) inset, 0 10px 30px -12px rgba(0,0,0,.6)","shadow-btn":"0 6px 18px rgba(143,224,168,.25)","shadow-float":"0 16px 40px rgba(0,0,0,.55)","shadow-seg":"0 1px 0 rgba(255,255,255,.06) inset",display:"'Sora',ui-sans-serif,system-ui,sans-serif",body:"'Albert Sans',ui-sans-serif,system-ui,sans-serif","display-w":"600","display-ls":"-0.02em"}};
+const THEME_IDS=['warm','minimal','dark'];
+const THEME_NAME={warm:'Warm editorial',minimal:'Minimal crisp',dark:'Dark-first'};
+function applyTheme(el,id){const t=THEMES[id];for(const k in t)el.style.setProperty('--'+k,t[k]);el.style.colorScheme=id==='dark'?'dark':'light';}
+function resolveTheme(p,sysDark){if(!p.matchSystem)return p.theme;if(sysDark)return 'dark';return p.theme==='dark'?'warm':p.theme;}
+
+/* ---------- icons (icons.tsx + 5 new ones on the same grid, marked NEW) ---------- */
+const I={
+plus:'<path d="M12 5v14M5 12h14"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',check:'<path d="M5 12l5 5 9-10"/>',search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
+'chevron-right':'<path d="M9 6l6 6-6 6"/>','chevron-left':'<path d="M15 6l-6 6 6 6"/>',pantry:'<path d="M4 7h16v13H4z"/><path d="M4 12h16M9 7V4h6v3"/>',
+info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',sliders:'<path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/>',
+undo:'<path d="M4 10h11a5 5 0 0 1 0 10h-3"/><path d="M8 6l-4 4 4 4"/>',minus:'<path d="M5 12h14"/>',
+/* NEW */ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+/* NEW */ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+/* NEW */ users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+/* NEW */ logout:'<path d="M14 4h5v16h-5"/><path d="M10 8l-4 4 4 4M6 12h10"/>',
+/* NEW */ copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V4H4v12h4"/>',
+phone:'<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>'};
+const svg=n=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- sample data ---------- */
+const CATS=[
+ {p:'Produce',id:'produce',items:[['leafy','Leafy greens',5],['berries','Berries',4],['tomatoes','Tomatoes',7],['herbs','Fresh herbs',5],['roots','Root vegetables',21]]},
+ {p:'Dairy & eggs',id:'dairy',items:[['milk','Milk',7],['yogurt','Yogurt',14],['softcheese','Soft cheese',10],['eggs','Eggs',28]]},
+ {p:'Bakery',id:'bakery',items:[['bread','Bread',5],['pastry','Pastries',3]]},
+ {p:'Meat & fish',id:'meat',items:[['poultry','Poultry',2],['mince','Minced meat',2],['fish','Fresh fish',2]]}];
+const CAT={};CATS.forEach(g=>{CAT['all-'+g.id]={id:'all-'+g.id,name:'All '+g.p.toLowerCase(),parent:g.p,def:null,whole:true};g.items.forEach(([id,name,def])=>CAT[id]={id,name,parent:g.p,def});});
+const LANGS=[['en','English'],['ro','Română'],['da','Dansk']];
+const SAMPLE=[['Milk',0],['Spinach',2],['Feta',4],['Eggs',9]];
+const MEMBERS=[['GV','George','You · Owner',''],['AV','Ana','Member','b'],['MV','Matei','Member','c']];
+const QUICK=[[3,'3 d'],[5,'5 d'],[7,'1 wk'],[14,'2 wk'],[30,'1 mo']];
+
+const S={variant:'C',expired:false,pref:{theme:'warm',matchSystem:true},sysDark:false,admin:true,owner:true,lang:'en',thr:3,
+  ov:[{id:'leafy',d:4},{id:'bread',d:3},{id:'milk',d:6}],route:null,tab:'you',sheet:null,toast:null,confirmOut:false};
+try{const v=localStorage.getItem('pp-settings-variant-c');if(['A','B','C'].includes(v))S.variant=v;}catch(e){}
+try{S.sysDark=matchMedia('(prefers-color-scheme: dark)').matches;}catch(e){}
+
+const app=document.getElementById('app');
+const dayStr=d=>d+' day'+(d===1?'':'s');
+const tagFor=d=>d<0?['urg','Expired']:d===0?['urg','Today']:d<=S.thr?['soon',dayStr(d)]:['ok',dayStr(d)];
+
+/* ---------- building blocks ---------- */
+const scope=(icon,txt)=>'<span class="scope">'+svg(icon)+txt+'</span>';
+const lab=(t,sc)=>'<div class="lab"><span>'+t+'</span>'+(sc||'')+'</div>';
+const SC={device:()=>scope('phone','This phone'),you:()=>scope('user','Only you'),fam:()=>scope('users','Whole family')};
+
+function tilesHTML(big){
+  return '<div class="tiles'+(big?' big':'')+'" role="radiogroup" aria-label="Theme">'+THEME_IDS.map(id=>{
+    const t=THEMES[id],sel=S.pref.theme===id;
+    const note=S.pref.matchSystem&&id==='dark'?'Used in dark mode':(S.pref.matchSystem&&sel?'Used in light mode':'');
+    return '<button class="tile" role="radio" aria-checked="'+sel+'" tabindex="'+(sel?0:-1)+'" data-act="theme" data-id="'+id+'">'+
+      '<span class="pv" style="background:'+t.bg+';color:'+t.ink+'">'+
+        '<span class="aa" style="font-family:'+t.display.replace(/"/g,'')+';font-weight:'+t['display-w']+'">Aa</span>'+
+        '<span class="bar" style="background:'+t.ink+'"></span><span class="bar s" style="background:'+t.muted+'"></span>'+
+        '<span class="mc" style="background:'+t['card-bg']+';box-shadow:'+t['shadow-card']+';border:1px solid '+(t['card-line']==='transparent'?'transparent':t['card-line'])+'"></span>'+
+        '<span class="pb" style="background:'+t.primary+';border-radius:'+(parseInt(t['r-ctl'])/2)+'px"></span>'+
+        (sel?'<span class="ck" style="background:'+t.accent+';color:'+t['accent-ink']+'">'+svg('check')+'</span>':'')+
+      '</span><span class="tname">'+THEME_NAME[id]+'</span>'+(note?'<span class="tnote">'+note+'</span>':'')+'</button>';
+  }).join('')+'</div>';
+}
+const matchRow=()=>'<div class="row" style="border-top:1px solid var(--divider);margin-top:12px;padding-bottom:0"><div class="tx"><div class="nm">Match system</div><div class="sub">Dark-first when the phone is in dark mode, your light theme otherwise</div></div><button class="tgl" role="switch" aria-label="Match system" aria-checked="'+S.pref.matchSystem+'" data-act="match"></button></div>';
+const appearanceCard=big=>'<div class="card pad">'+tilesHTML(big)+matchRow()+'</div>';
+
+const langSeg=()=>'<div class="seg" role="radiogroup" aria-label="Language">'+LANGS.map(([id,n])=>'<button role="radio" aria-checked="'+(S.lang===id)+'" data-act="lang" data-id="'+id+'" lang="'+id+'">'+n+'</button>').join('')+'</div>';
+
+function stepper(lg){
+  return '<div class="step'+(lg?' lg':'')+'"><button class="sb" data-act="thr" data-d="-1" aria-label="One day fewer"'+(S.thr<=1?' disabled':'')+'>'+svg('minus')+'</button>'+
+   '<div class="sv" aria-live="polite">'+S.thr+'<small>'+(S.thr===1?'day':'days')+'</small></div>'+
+   '<button class="sb" data-act="thr" data-d="1" aria-label="One day more"'+(S.thr>=30?' disabled':'')+'>'+svg('plus')+'</button></div>';
+}
+const ladder=()=>'<div class="ladder" aria-label="Preview">'+SAMPLE.map(([n,d])=>{const[c,t]=tagFor(d);return '<div class="ld"><span>'+n+'</span><span class="tag '+c+'">'+t+'</span></div>';}).join('')+'</div>';
+const thrBlock=()=>'<div style="display:flex;align-items:center;gap:12px"><div class="tx"><div class="nm">Expiring soon</div><div class="sub">Batches turn amber this many days before they expire</div></div>'+stepper(false)+'</div>'+ladder();
+
+function ovList(){
+  if(!S.ov.length) return '<div class="empty">Catalog defaults are used for every category. Add one to set your own.</div>';
+  return S.ov.map(o=>{const c=CAT[o.id];return '<div class="ov"><div class="tx" data-act="editov" data-id="'+o.id+'" role="button" tabindex="0"><div class="nm">'+esc(c.name)+'</div><div class="sub">'+esc(c.parent)+(c.def?' · Catalog '+c.def+' d':' · every category without its own')+'</div></div>'+
+   '<span class="ovv">'+o.d+' <small>d</small></span><button class="ib" data-act="rmov" data-id="'+o.id+'" aria-label="Use the Catalog default for '+esc(c.name)+'">'+svg('close')+'</button></div>';}).join('');
+}
+const addRow=()=>'<button class="dash" data-act="addov">'+svg('plus')+'Set a category</button>';
+const expiryBlock=()=>'<h3 class="h3">Default expiry</h3><div class="hint" style="margin-top:2px">Pre-fills the date when you add a batch. Replaces the Catalog default.</div><div style="margin-top:4px">'+ovList()+'</div>'+addRow();
+
+const avs=()=>'<span class="avs">'+MEMBERS.map(m=>'<span class="av '+m[3]+'">'+m[0]+'</span>').join('')+'</span>';
+const famRow=()=>'<div class="card lst"><button class="row" data-act="nav" data-to="/family">'+avs()+'<span class="tx"><span class="nm" style="display:block">Your family</span><span class="sub" style="display:block">3 members · invite code inside</span></span>'+svg('chevron-right').replace('<svg','<svg class="chev"')+'</button></div>';
+const catalogRow=()=>S.admin?'<div class="sec">'+lab('Catalog',scope('info','Admins'))+'<div class="card lst"><button class="row" data-act="nav" data-to="/admin"><span class="lead n">'+svg('pantry')+'</span><span class="tx"><span class="nm" style="display:block">Curate the Catalog</span><span class="sub" style="display:block">12 unmatched names waiting</span></span>'+chev()+'</button></div></div>':'';
+function chev(){return svg('chevron-right').replace('<svg','<svg class="chev"');}
+function accountCard(){
+  return '<div class="card pad"><div style="display:flex;align-items:center;gap:12px"><span class="av" style="width:40px;height:40px;font-size:14px;margin:0;border:0">GV</span><div class="tx"><div class="nm">George Vrancianu</div><div class="sub">george@example.com</div></div></div>'+
+  (S.confirmOut?'<div class="cmp" style="margin-top:12px"><span>Sign out of this phone?</span><span style="display:flex;gap:6px"><button class="btn ghost" style="height:36px;padding:0 10px" data-act="out0">Cancel</button><button class="btn danger" style="height:36px;padding:0 12px" data-act="out2">Sign out</button></span></div>'
+   :'<button class="btn secondary full" style="margin-top:12px" data-act="out1">'+svg('logout')+'Sign out</button>')+'</div>';
+}
+const hdr=(back,title,act)=>'<div class="status"><span>9:41</span><span>●●● 5G</span></div><div class="hdr"><button class="back" data-act="'+(act||'nav')+'" data-to="/">'+svg('chevron-left')+back+'</button><h2 class="ttl">'+title+'</h2></div>';
+
+/* ---------- variants ---------- */
+function vA(){
+  return hdr('Home','Settings')+'<div class="scroll">'+
+   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(false)+'</div>'+
+   '<div class="sec">'+lab('Language',SC.you())+langSeg()+'</div>'+
+   '<div class="sec">'+lab('Pantry rules',SC.fam())+'<div class="card pad">'+thrBlock()+'<div class="div"></div>'+expiryBlock()+'</div></div>'+
+   '<div class="sec">'+lab('Family')+famRow()+'</div>'+catalogRow()+
+   '<div class="sec">'+lab('Account')+accountCard()+'</div></div>';
+}
+function vB(){
+  if(S.route==='lang') return hdr('Settings','Language','back')+'<div class="scroll"><div class="hint" style="padding:0 4px">Only you see this. It follows you to every device. Scans keep their own language on the camera.</div><div class="card lst" role="radiogroup" aria-label="Language">'+
+    LANGS.map(([id,n])=>'<button class="row" role="radio" aria-checked="'+(S.lang===id)+'" data-act="lang" data-id="'+id+'"><span class="tx nm" lang="'+id+'">'+n+'</span>'+(S.lang===id?'<span style="color:var(--accent);width:20px;height:20px">'+svg('check')+'</span>':'')+'</button>').join('')+'</div></div>';
+  if(S.route==='thr') return hdr('Settings','Expiring soon','back')+'<div class="scroll"><div class="card pad" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 16px">'+stepper(true)+
+    '<div class="hint" style="text-align:center;max-width:30ch">A batch turns amber this many days before it expires. Shared by the whole family.</div></div>'+
+    '<div class="sec">'+lab('How your Pantry will look')+'<div class="card pad" style="padding-top:2px">'+ladder()+'</div></div></div>';
+  if(S.route==='exp') return hdr('Settings','Default expiry','back')+'<div class="scroll"><div class="hint" style="padding:0 4px">Pre-fills the date when anyone in the family adds a batch. Categories you leave out use the Catalog default.</div><div class="card pad" style="padding-block:4px 14px">'+ovList()+addRow()+'</div></div>';
+  const r=(act,to,icon,cls,name,val)=>'<button class="row" data-act="'+act+'" data-to="'+to+'"><span class="lead '+cls+'">'+svg(icon)+'</span><span class="tx nm">'+name+'</span><span class="val">'+val+'</span>'+chev()+'</button>';
+  return hdr('Home','Settings')+'<div class="scroll">'+
+   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(true)+'</div>'+
+   '<div class="sec">'+lab('You')+'<div class="card lst">'+r('go','lang','globe','','Language',LANGS.find(l=>l[0]===S.lang)[1])+'</div></div>'+
+   '<div class="sec">'+lab('Family pantry',SC.fam())+'<div class="card lst">'+r('go','thr','clock','b','Expiring soon',dayStr(S.thr))+r('go','exp','sliders','b','Default expiry',S.ov.length?S.ov.length+' set':'Catalog')+r('nav','/family','users','n','Family','3 members')+'</div></div>'+
+   catalogRow()+
+   '<div class="sec">'+lab('Account')+accountCard()+'</div></div>';
+}
+function vC(){
+  const tabs='<div class="tabs"><div class="seg" role="tablist"><button role="tab" aria-selected="'+(S.tab==='you')+'" data-act="tab" data-id="you">You</button><button role="tab" aria-selected="'+(S.tab==='fam')+'" data-act="tab" data-id="fam">Family</button></div></div>';
+  let body;
+  if(S.tab==='you') body='<div class="hint" style="padding:0 4px">Only you see these. Appearance stays on this phone; language follows you.</div>'+
+   '<div class="sec">'+lab('Appearance',SC.device())+appearanceCard(false)+'</div>'+
+   '<div class="sec">'+lab('Language',SC.you())+langSeg()+'</div>'+catalogRow()+
+   '<div class="sec">'+lab('Account')+accountCard()+'</div>';
+  else body='<div class="card pad"><div style="display:flex;align-items:center;gap:12px"><div class="tx"><div class="fam-name">Your family</div><div class="sub">You are the '+(S.owner?'Owner':'member')+' · 3 members</div></div>'+avs()+'</div>'+
+   (S.expired
+     ?'<div class="code"><div class="tx"><div class="sub" style="margin:0"><span class="tag urg">Expired</span></div><div class="sub" style="color:var(--ink);margin-top:4px">'+(S.owner?'Generate a new code to invite someone.':'Ask the Owner to generate a new code.')+'</div></div>'+(S.owner?'<button class="btn secondary" style="height:38px;padding:0 12px" data-act="nav" data-to="/family">New code</button>':'')+'</div>'
+     :'<div class="code"><div class="tx"><div class="sub" style="margin:0">Invite code · expires in 5 days</div><b>K7PM 3QXR</b></div><button class="btn secondary" style="height:38px;padding:0 12px" data-act="copy" aria-label="Copy invite code">'+svg('copy')+'Copy</button></div>')+
+   '<button class="row" style="margin-top:8px;min-height:44px;padding-bottom:0" data-act="nav" data-to="/family"><span class="tx nm" style="color:var(--accent)">Members and invites</span>'+chev()+'</button></div>'+
+   '<div class="hint" style="padding:0 4px">Everyone in the family shares these. Any member can change them.</div>'+
+   '<div class="sec">'+lab('Expiring soon')+'<div class="card pad">'+thrBlock()+'</div></div>'+
+   '<div class="sec">'+lab('Default expiry')+'<div class="card pad" style="padding-block:4px 14px">'+ovList()+addRow()+'</div></div>';
+  return hdr('Home','Settings')+tabs+'<div class="scroll">'+body+'</div>';
+}
+
+/* ---------- sheet ---------- */
+function sheetHTML(){
+  const sh=S.sheet;if(!sh)return '';
+  let h='<div class="scrim" data-act="closesheet"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="Default expiry"><div class="grab"></div>';
+  if(sh.mode==='pick'){
+    h+='<div class="sh-h"><div class="tx"><h2 class="ttl">Pick a category</h2><div class="sub">Its expiry pre-fills new batches</div></div><button class="ib" data-act="closesheet" aria-label="Close">'+svg('close')+'</button></div>'+
+      '<div class="sh-b"><label class="field">'+svg('search')+'<input id="catq" placeholder="Search categories" value="'+esc(sh.q)+'" autocomplete="off"></label><div id="catlist">'+catList()+'</div></div>';
+  }else{
+    const c=CAT[sh.cat],has=S.ov.some(o=>o.id===sh.cat);
+    h+='<div class="sh-h">'+(sh.fromPick?'<button class="ib" data-act="topick" aria-label="Back">'+svg('chevron-left')+'</button>':'')+'<div class="tx"><h2 class="ttl">'+esc(c.name)+'</h2><div class="sub">'+esc(c.parent)+(c.def?' · Catalog default '+dayStr(c.def):'')+'</div></div><button class="ib" data-act="closesheet" aria-label="Close">'+svg('close')+'</button></div>'+
+     '<div class="sh-b"><div class="qp" role="group" aria-label="Quick picks">'+QUICK.map(([d,l])=>'<button data-act="qd" data-d="'+d+'" aria-pressed="'+(sh.days===d)+'">'+l.split(' ')[0]+'<small>'+l.split(' ')[1]+'</small></button>').join('')+'</div>'+
+     '<div class="cmp"><span><b style="font-weight:700">'+dayStr(sh.days)+'</b>'+(c.def?' <span style="color:var(--muted)">· Catalog says '+c.def+'</span>':'')+'</span><span class="step"><button class="sb" data-act="sd" data-d="-1" aria-label="One day fewer"'+(sh.days<=1?' disabled':'')+'>'+svg('minus')+'</button><button class="sb" data-act="sd" data-d="1" aria-label="One day more">'+svg('plus')+'</button></span></div></div>'+
+     '<div class="sh-f">'+(has?'<button class="btn ghost" data-act="rmov" data-id="'+sh.cat+'">Use Catalog default</button>':'<span></span>')+'<button class="btn primary" style="border-radius:999px" data-act="saveov">Save</button></div>';
+  }
+  return h+'</div>';
+}
+function catList(){
+  const q=(S.sheet.q||'').trim().toLowerCase();let out='';
+  CATS.forEach(g=>{
+    const ids=['all-'+g.id].concat(g.items.map(i=>i[0])).filter(id=>!q||CAT[id].name.toLowerCase().includes(q)||g.p.toLowerCase().includes(q));
+    if(!ids.length)return;
+    out+='<div class="grp">'+g.p+'</div>'+ids.map(id=>{const c=CAT[id],o=S.ov.find(x=>x.id===id);
+      return '<button class="pick" data-act="pickcat" data-id="'+id+'"><span class="tx"><span class="nm" style="display:block">'+esc(c.name)+'</span>'+(c.whole?'<span class="sub" style="display:block">Every '+g.p.toLowerCase()+' category without its own</span>':'')+'</span>'+
+        (o?'<span class="tag acc">Set · '+o.d+' d</span>':(c.def?'<span class="val">Catalog '+c.def+' d</span>':''))+'</button>';}).join('');
+  });
+  return out||'<div class="empty">No category matches “'+esc(q)+'”.</div>';
+}
+
+/* ---------- render ---------- */
+let lastKey='',tTimer;
+function render(){
+  const key=S.variant+'|'+S.route+'|'+S.tab;const sc=app.querySelector('.scroll');const top=sc&&key===lastKey?sc.scrollTop:0;
+  applyTheme(app,resolveTheme(S.pref,S.sysDark));
+  app.innerHTML=(S.variant==='A'?vA():S.variant==='B'?vB():vC())+sheetHTML()+
+    (S.toast?'<div class="toast" role="status"><span class="tx" style="flex:1">'+S.toast.msg+'</span>'+(S.toast.undo?'<button data-act="undo">'+svg('undo')+'Undo</button>':'')+'</div>':'');
+  const ns=app.querySelector('.scroll');if(ns)ns.scrollTop=top;lastKey=key;
+  document.querySelectorAll('#vsel button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===S.variant));
+  renderNotes();
+}
+function toast(msg,undo){S.toast={msg,undo};clearTimeout(tTimer);tTimer=setTimeout(()=>{S.toast=null;render();},undo?5000:2800);}
+
+app.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act,id=el.dataset.id;
+  switch(a){
+    case 'theme':
+      if(id==='dark'&&S.pref.matchSystem){S.pref={theme:'dark',matchSystem:false};toast('Dark-first everywhere. Match system is off.');}
+      else{S.pref.theme=id;if(S.pref.matchSystem&&S.sysDark)toast(THEME_NAME[id]+' shows when the phone is in light mode.');}
+      break;
+    case 'match':S.pref.matchSystem=!S.pref.matchSystem;if(S.pref.matchSystem&&S.pref.theme==='dark')S.pref.theme='warm';break;
+    case 'lang':S.lang=id;toast('Language saved');break;
+    case 'thr':S.thr=Math.max(1,Math.min(30,S.thr+ +el.dataset.d));break;
+    case 'go':S.route=el.dataset.to;break;
+    case 'back':S.route=null;break;
+    case 'tab':S.tab=id;break;
+    case 'nav':toast(el.dataset.to==='/'?'Back to Home':'Opens '+el.dataset.to+' (existing page)');break;
+    case 'copy':try{navigator.clipboard.writeText('K7PM3QXR').catch(()=>{});}catch(_){}toast('Invite code copied');break;
+    case 'out1':S.confirmOut=true;break;
+    case 'out0':S.confirmOut=false;break;
+    case 'out2':S.confirmOut=false;toast('Signed out (prototype)');break;
+    case 'addov':S.sheet={mode:'pick',q:''};break;
+    case 'editov':{const o=S.ov.find(x=>x.id===id);S.sheet={mode:'days',cat:id,days:o.d};break;}
+    case 'pickcat':{const o=S.ov.find(x=>x.id===id),c=CAT[id];S.sheet={mode:'days',cat:id,days:o?o.d:(c.def||7),fromPick:true};break;}
+    case 'topick':S.sheet={mode:'pick',q:''};break;
+    case 'qd':S.sheet.days=+el.dataset.d;break;
+    case 'sd':S.sheet.days=Math.max(1,S.sheet.days+ +el.dataset.d);break;
+    case 'saveov':{const sh=S.sheet,o=S.ov.find(x=>x.id===sh.cat);if(o)o.d=sh.days;else S.ov.push({id:sh.cat,d:sh.days});S.sheet=null;toast(CAT[sh.cat].name+': '+dayStr(sh.days));break;}
+    case 'rmov':{const i=S.ov.findIndex(x=>x.id===id);if(i<0)break;const removed=S.ov.splice(i,1)[0];S.sheet=null;S.undo={i,removed};toast(CAT[id].name+' uses the Catalog default',true);break;}
+    case 'undo':if(S.undo){S.ov.splice(S.undo.i,0,S.undo.removed);S.undo=null;}S.toast=null;clearTimeout(tTimer);break;
+    case 'closesheet':S.sheet=null;break;
+  }
+  render();
+  if(a==='addov'||a==='topick'){const q=app.querySelector('#catq');q&&q.focus();}
+  if(a==='theme'){const t=app.querySelector('.tile[aria-checked="true"]');t&&t.focus();}
+});
+app.addEventListener('input',e=>{if(e.target.id==='catq'){S.sheet.q=e.target.value;app.querySelector('#catlist').innerHTML=catList();}});
+app.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&S.sheet){S.sheet=null;render();return;}
+  const t=e.target.closest('.tile');
+  if(t&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const i=THEME_IDS.indexOf(t.dataset.id),n=THEME_IDS[(i+(e.key==='ArrowRight'||e.key==='ArrowDown'?1:2))%3];t.parentNode.querySelector('[data-id="'+n+'"]').click();}
+  if(e.key==='Enter'&&e.target.matches('[role="button"][data-act]'))e.target.click();
+});
+document.getElementById('vsel').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.variant=b.dataset.v;S.route=null;S.sheet=null;try{localStorage.setItem('pp-settings-variant-c',S.variant);}catch(_){}render();});
+const sd=document.getElementById('sysdark');sd.checked=S.sysDark;sd.onchange=()=>{S.sysDark=sd.checked;render();};
+document.getElementById('admin').onchange=e=>{S.admin=e.target.checked;render();};
+document.getElementById('owner').onchange=e=>{S.owner=e.target.checked;render();};
+document.getElementById('expired').onchange=e=>{S.expired=e.target.checked;render();};
+
+/* ---------- notes ---------- */
+const NOTES={
+A:{t:'One page, grouped cards',li:[
+ 'Everything on one scroll, in this order: <b>Appearance</b>, Language, Pantry rules, Family, Catalog (admins), Account. Nothing is more than one tap away.',
+ 'Appearance is the handoff §4.1 picker as-is: three preview tiles (radiogroup) and the Match system toggle. The tiles show each theme’s own paper, ink, button colour and display face, so the choice reads before you tap.',
+ '<b>Pantry rules</b> joins the two Family Settings in one card. “Expiring soon” is a stepper (1–30) with a live preview of four sample batches, so the threshold is visible as tag colours instead of a number in a form.',
+ 'Default expiry overrides become rows. Tap a row to change it, × to drop it (Undo for 5 s), “Set a category” opens a sheet with search and the expiry quick picks.',
+ 'Every change saves on its own; the Save buttons go away.']},
+B:{t:'Index with sub-pages',li:[
+ 'Appearance gets the hero slot with larger tiles (a card and a button in each preview). Everything below is a row with its current value on the right.',
+ 'Language, Expiring soon and Default expiry each open their own page. Family and Catalog link to the pages that exist today.',
+ 'Shortest first screen and the most room per setting (big stepper, full override list). Costs a tap for anything but the theme.',
+ 'Fits best if Settings grows: notifications, units and scan defaults would be more rows, not a longer page.']},
+C:{t:'You / Family tabs (chosen)',li:[
+ 'Splits by who a setting affects. <b>You</b> (opens first): Appearance, Language, Catalog, Account. <b>Family</b>: the family card with the invite code, Expiring soon, Default expiry.',
+ 'Answers “will my partner see this change?” without reading a caption on each section.',
+ 'Brings the invite code to Settings with a Copy button; member management still lives on /family.',
+ 'The Family card has no name: the API has no family name field, so it reads “Your family”. Tick <b>Code expired</b> and <b>Owner</b> above for the expired-code states.',
+ 'Spec: <code>handoff.md</code> next to this file. A and B stay here for reference only.']}};
+function renderNotes(){
+  const n=NOTES[S.variant];
+  document.getElementById('notes').innerHTML=
+   '<div class="npanel"><h2><small>Variant '+S.variant+'</small>'+n.t+'</h2><ul>'+n.li.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'+
+   '<div class="npanel"><h2>Shared across all three</h2><ul>'+
+    '<li>Appearance is always first. Tapping a tile applies the theme at once (200 ms colour fade). With Match system on, the Dark-first tile reads “Used in dark mode”; tapping it turns Match system off and says so in a toast.</li>'+
+    '<li>Tick <b>Phone in dark mode</b> above to see Match system switch the whole screen.</li>'+
+    '<li>Language uses each language’s own name (English · Română · Dansk). The prototype copy stays in English.</li>'+
+    '<li>Sign out asks inline, never in a browser dialog.</li>'+
+    '<li>Five new icons on the 24 px grid: <code>globe</code>, <code>clock</code>, <code>users</code>, <code>logout</code>, <code>copy</code>.</li></ul></div>'+
+   '<div class="npanel"><h2>Who a setting reaches</h2><div class="scopes">'+
+    '<span>This phone</span><span>Appearance (<code>pp.appearance</code> in local storage)</span>'+
+    '<span>Only you</span><span>Language (Member Preferences, follows you to any device)</span>'+
+    '<span>Whole family</span><span>Expiring soon, Default expiry (Family Settings, any member edits)</span>'+
+    '<span>Admins</span><span>Catalog link, shown only to admins</span></div></div>'+
+   '<div class="npanel"><h2>Defaults taken (flag if wrong)</h2><ul>'+
+    '<li>Stepper capped at 30 days (API allows 365). Proposed: keep 30.</li>'+
+    '<li>Whole-aisle overrides (“All produce”) kept, as today.</li>'+
+    '<li>Threshold saves 600 ms after the last tap, not on every tap.</li></ul></div>';
+}
+render();
+</script>
+
+</html>

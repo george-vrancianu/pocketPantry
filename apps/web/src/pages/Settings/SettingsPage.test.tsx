@@ -1,37 +1,17 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { CategoryOptions, FamilySettings } from '../../lib/settings';
-import { renderWithProviders, stubApi } from '../../test/render';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { ApplyMemberLocale } from '../../components/ApplyMemberLocale';
+import { renderWithProviders, stubApi } from '../../test/render';
 import { SettingsPage } from './SettingsPage';
 
-const categories: CategoryOptions = {
-  parents: [
-    {
-      id: 'dairy',
-      name: 'Dairy',
-      leaves: [{ id: 'hard-cheese', name: 'Hard cheese' }],
-    },
-  ],
-};
-
-function stubSettings(
-  family: FamilySettings,
-  savedLocale: string | null = null,
-  role = 'member',
-) {
+function stubSettings(savedLocale: string | null = null, role = 'member') {
   const { fetchMock, calls } = stubApi({
-    'GET /api/settings/family': () => Response.json(family),
-    'GET /api/settings/categories': () => Response.json(categories),
-    'PATCH /api/settings/family': () => Response.json({}),
-    'PUT /api/settings/family/expiry-overrides/hard-cheese': () =>
-      Response.json({}),
-    'DELETE /api/settings/family/expiry-overrides/hard-cheese': () =>
-      Response.json({}),
-    'PUT /api/settings/preferences': () => Response.json({ locale: 'ro' }),
     'GET /api/settings/preferences': () =>
-      Response.json({ locale: savedLocale }),
+      Response.json({ locale: savedLocale, theme: null }),
+    'PUT /api/settings/preferences': () =>
+      Response.json({ locale: 'ro', theme: null }),
     'GET /api/auth/get-session': () =>
       Response.json(
         role === 'admin'
@@ -43,124 +23,151 @@ function stubSettings(
   return calls;
 }
 
+/** Shows where the router is, and lets a test go back a history entry. */
+function Harness() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return (
+    <>
+      <button onClick={() => navigate('/settings')}>Open settings</button>
+      <button onClick={() => navigate(-1)}>Go back</button>
+      <output data-testid="location">
+        {location.pathname}
+        {location.search}
+      </output>
+      <Routes>
+        <Route path="/settings" element={<SettingsPage />} />
+      </Routes>
+    </>
+  );
+}
+
 describe('SettingsPage', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
-  it('shows Family Settings and Member Preferences in English', async () => {
-    stubSettings({
-      staleThresholdDays: 4,
-      expiryOverrides: [
-        {
-          categoryId: 'hard-cheese',
-          name: 'Hard cheese',
-          days: 14,
-        },
-      ],
-    });
-    renderWithProviders(<SettingsPage />);
+  it('opens on the You tab with Appearance first', async () => {
+    stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
 
+    expect(await screen.findByRole('tab', { name: 'You' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByRole('tab', { name: 'Family' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    const panel = screen.getByRole('tabpanel', { name: 'You' });
     expect(
-      await screen.findByRole('heading', { name: 'Family Settings' }),
+      within(panel).getByRole('heading', { name: 'Appearance' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Member Preferences')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Stale Threshold (days)')).toHaveValue(
-      4,
-    );
-    expect(await screen.findByText('Hard cheese: 14 days')).toBeInTheDocument();
-  });
-
-  it('shows the same screen in Romanian', async () => {
-    stubSettings({
-      staleThresholdDays: 3,
-      expiryOverrides: [
-        {
-          categoryId: 'hard-cheese',
-          name: 'Brânză tare',
-          days: 1,
-        },
-      ],
-    });
-    renderWithProviders(<SettingsPage />, { locale: 'ro' });
-
     expect(
-      await screen.findByRole('heading', { name: 'Setările familiei' }),
+      screen.queryByText(
+        'Everyone in the family shares these. Any member can change them.',
+      ),
+    ).toBeNull();
+  });
+
+  it('opens on the Family tab for ?tab=family', async () => {
+    stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings?tab=family' });
+
+    expect(await screen.findByRole('tab', { name: 'Family' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    const panel = screen.getByRole('tabpanel', { name: 'Family' });
+    expect(
+      within(panel).getByText(
+        'Everyone in the family shares these. Any member can change them.',
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText('Preferințe de membru')).toBeInTheDocument();
-    expect(await screen.findByLabelText('Prag de expirare (zile)')).toHaveValue(
-      3,
-    );
-    expect(await screen.findByText('Brânză tare: 1 zi')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Appearance' })).toBeNull();
   });
 
-  it('saves the Stale Threshold', async () => {
-    const calls = stubSettings({ staleThresholdDays: 3, expiryOverrides: [] });
-    renderWithProviders(<SettingsPage />);
+  it('exposes the tabs as a named tablist with tab and tabpanel roles', async () => {
+    stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
 
-    const input = await screen.findByLabelText('Stale Threshold (days)');
-    await screen.findByDisplayValue('3');
-    await userEvent.clear(input);
-    await userEvent.type(input, '5');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Save threshold' }),
-    );
-
-    await vi.waitFor(() =>
-      expect(calls).toContainEqual(
-        expect.objectContaining({
-          key: 'PATCH /api/settings/family',
-          body: { staleThresholdDays: 5 },
-        }),
-      ),
-    );
-  });
-
-  it('adds and removes a Default Expiry override for a Category', async () => {
-    const calls = stubSettings({
-      staleThresholdDays: 3,
-      expiryOverrides: [
-        {
-          categoryId: 'hard-cheese',
-          name: 'Hard cheese',
-          days: 14,
-        },
-      ],
+    const tablist = await screen.findByRole('tablist', {
+      name: 'Settings sections',
     });
-    renderWithProviders(<SettingsPage />);
+    const tabs = within(tablist).getAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['You', 'Family']);
+    expect(screen.getAllByRole('tabpanel')).toHaveLength(1);
+  });
 
-    await userEvent.selectOptions(
-      await screen.findByLabelText('Category'),
-      await screen.findByRole('option', { name: 'Hard cheese' }),
+  it('moves between tabs with the arrow keys', async () => {
+    stubSettings();
+    const user = userEvent.setup();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+    const you = await screen.findByRole('tab', { name: 'You' });
+    you.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('tab', { name: 'Family' })).toHaveAttribute(
+      'aria-selected',
+      'true',
     );
-    await userEvent.type(screen.getByLabelText('Days until expiry'), '9');
-    await userEvent.click(
-      screen.getByRole('button', { name: 'Save override' }),
+    expect(screen.getByRole('tab', { name: 'Family' })).toHaveFocus();
+
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByRole('tab', { name: 'You' })).toHaveAttribute(
+      'aria-selected',
+      'true',
     );
-    await vi.waitFor(() =>
-      expect(calls).toContainEqual(
-        expect.objectContaining({
-          key: 'PUT /api/settings/family/expiry-overrides/hard-cheese',
-          body: { days: 9 },
-        }),
-      ),
+  });
+
+  it('replaces the history entry when switching tabs, so Back still leaves Settings', async () => {
+    stubSettings();
+    const user = userEvent.setup();
+    renderWithProviders(<Harness />, { route: '/' });
+
+    await user.click(screen.getByRole('button', { name: 'Open settings' }));
+    await user.click(await screen.findByRole('tab', { name: 'Family' }));
+    expect(screen.getByTestId('location').textContent).toBe(
+      '/settings?tab=family',
     );
 
-    await userEvent.click(
-      await screen.findByRole('button', {
-        name: 'Remove override for Hard cheese',
-      }),
+    await user.click(screen.getByRole('button', { name: 'Go back' }));
+    expect(screen.getByTestId('location').textContent).toBe('/');
+  });
+
+  it('keeps each tab at its own scroll position while the page is mounted', async () => {
+    stubSettings();
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    Object.defineProperty(window, 'scrollY', {
+      configurable: true,
+      writable: true,
+      value: 240,
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
+
+    await user.click(await screen.findByRole('tab', { name: 'Family' }));
+    expect(scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ top: 0 }),
     );
-    await vi.waitFor(() =>
-      expect(calls.map((c) => c.key)).toContain(
-        'DELETE /api/settings/family/expiry-overrides/hard-cheese',
-      ),
+
+    window.scrollY = 90;
+    await user.click(screen.getByRole('tab', { name: 'You' }));
+    expect(scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ top: 240 }),
+    );
+
+    await user.click(screen.getByRole('tab', { name: 'Family' }));
+    expect(scrollTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ top: 90 }),
     );
   });
 
   it('saves the Member locale when the language is switched', async () => {
-    const calls = stubSettings({ staleThresholdDays: 3, expiryOverrides: [] });
-    renderWithProviders(<SettingsPage />);
+    const calls = stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
 
     await userEvent.click(await screen.findByRole('button', { name: 'RO' }));
     await vi.waitFor(() =>
@@ -173,9 +180,9 @@ describe('SettingsPage', () => {
     );
   });
 
-  it('offers Dansk and saves da as the Member locale', async () => {
-    const calls = stubSettings({ staleThresholdDays: 3, expiryOverrides: [] });
-    renderWithProviders(<SettingsPage />);
+  it('shows the tabs in Danish once Dansk is chosen', async () => {
+    const calls = stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
 
     await userEvent.click(await screen.findByRole('button', { name: 'DA' }));
     await vi.waitFor(() =>
@@ -187,26 +194,45 @@ describe('SettingsPage', () => {
       ),
     );
     expect(
-      await screen.findByRole('heading', { name: 'Familieindstillinger' }),
+      await screen.findByRole('tab', { name: 'Familie' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the tabs in Romanian', async () => {
+    stubSettings();
+    renderWithProviders(<SettingsPage />, {
+      route: '/settings?tab=family',
+      locale: 'ro',
+    });
+
+    expect(await screen.findByRole('tab', { name: 'Familie' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(
+      screen.getByText(
+        'Toți din familie împart aceste setări. Orice membru le poate schimba.',
+      ),
     ).toBeInTheDocument();
   });
 
   it('applies the locale saved on the Member when the app loads', async () => {
-    stubSettings({ staleThresholdDays: 3, expiryOverrides: [] }, 'ro');
+    stubSettings('ro');
     renderWithProviders(
       <>
         <ApplyMemberLocale />
         <SettingsPage />
       </>,
+      { route: '/settings?tab=family' },
     );
     expect(
-      await screen.findByRole('heading', { name: 'Setările familiei' }),
+      await screen.findByRole('tab', { name: 'Familie' }),
     ).toBeInTheDocument();
   });
 
   it('labels the Admin block as a Catalog region with a heading for Admins', async () => {
-    stubSettings({ staleThresholdDays: 3, expiryOverrides: [] }, null, 'admin');
-    renderWithProviders(<SettingsPage />);
+    stubSettings(null, 'admin');
+    renderWithProviders(<SettingsPage />, { route: '/settings' });
 
     const heading = await screen.findByRole('heading', { name: 'Catalog' });
     const region = screen.getByRole('region', { name: 'Catalog' });
