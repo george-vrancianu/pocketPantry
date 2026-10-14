@@ -1206,6 +1206,47 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBe('2026-11-30');
     });
 
+    it('keeps the calendar tab stop on the day last focused, and Home/End go to the start and end of the week within the month', async () => {
+      const user = userEvent.setup();
+      await addParmesan(user);
+      const sheet = await openSheet(user);
+      const focused = () => document.activeElement?.getAttribute('aria-label');
+      await focusLandsOn(() =>
+        within(sheet).getByRole('button', { name: /^Usual,/ }),
+      );
+      act(() =>
+        within(sheet)
+          .getByRole('button', { name: /^1 mo,/ })
+          .focus(),
+      );
+      await user.tab();
+      expect(focused()).toBe('Friday, November 13, 2026');
+
+      await user.keyboard('{ArrowRight}');
+      await user.tab();
+      expect(
+        within(sheet).getByRole('button', { name: 'Today' }),
+      ).toHaveFocus();
+      await user.tab({ shift: true });
+      expect(focused()).toBe('Saturday, November 14, 2026');
+
+      // Weeks run Monday to Sunday.
+      await user.keyboard('{Home}');
+      expect(focused()).toBe('Monday, November 9, 2026');
+      await user.keyboard('{End}');
+      expect(focused()).toBe('Sunday, November 15, 2026');
+
+      // The first and last weeks of a month are cut at the month's edge.
+      await user.keyboard('{PageUp}{ArrowLeft>14/}');
+      expect(focused()).toBe('Thursday, October 1, 2026');
+      await user.keyboard('{Home}');
+      expect(focused()).toBe('Thursday, October 1, 2026');
+      await user.keyboard('{ArrowRight>30/}');
+      expect(focused()).toBe('Saturday, October 31, 2026');
+      await user.keyboard('{End}');
+      expect(focused()).toBe('Saturday, October 31, 2026');
+    });
+
     it('labels each day with its full date in the UI locale, and reports only the selected day as pressed', async () => {
       const user = userEvent.setup();
       stubPantry([], [parmesan]);

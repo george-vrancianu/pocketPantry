@@ -1,6 +1,7 @@
 import { Box, tokens, usePrefersReducedMotion } from '@pocket-pantry/ui';
 import {
   useCallback,
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -14,6 +15,7 @@ import {
   daysUntil,
   defaultExpiryDate,
   fromIso,
+  localDate,
   localIso,
   type IsoDate,
 } from '../../lib/pantry';
@@ -49,8 +51,9 @@ const ARROW_STEP: Record<string, number> = {
 };
 
 /**
- * The day a key moves focus to from `iso`, or null when it doesn't move: arrows stay within the month, and
- * Page Up/Down keep the day of the month, falling back to the last day of a shorter month.
+ * The day a key moves focus to from `iso`, or null when it doesn't move: arrows stay within the month, Home/End
+ * go to the Monday/Sunday of the week (cut at the month's edge), and Page Up/Down keep the day of the month,
+ * falling back to the last day of a shorter month.
  */
 function keyTarget(iso: string, key: string): string | null {
   const day = fromIso(iso);
@@ -62,6 +65,13 @@ function keyTarget(iso: string, key: string): string | null {
       day.getDate() + step,
     );
     return next.getMonth() === day.getMonth() ? localIso(next) : null;
+  }
+  if (key === 'Home' || key === 'End') {
+    const weekday = (day.getDay() + 6) % 7; // Monday is 0
+    const offset = key === 'Home' ? -weekday : 6 - weekday;
+    const length = daysInMonth(day.getFullYear(), day.getMonth());
+    const date = Math.min(Math.max(day.getDate() + offset, 1), length);
+    return localIso(localDate(day.getFullYear(), day.getMonth(), date));
   }
   const months = key === 'PageDown' ? 1 : key === 'PageUp' ? -1 : 0;
   if (months === 0) return null;
@@ -130,10 +140,15 @@ export function ExpiryCalendar({
 
   useImperativeHandle(ref, () => ({ scrollToMonth }), [scrollToMonth]);
 
-  // The calendar is a single Tab stop: the selected day when it is shown, otherwise today.
+  // The calendar is a single Tab stop: the selected day when it is shown, otherwise today (until a day is focused).
   const shown = (iso: string | null) =>
     iso !== null && months.some((month) => month.key === monthKey(iso));
-  const tabStop = shown(value) ? value : localIso(today);
+  const initialStop = shown(value) ? value : localIso(today);
+  // Roving tabindex: the Tab stop follows the focused day, so Shift+Tab back lands where the arrows left off.
+  const [focusIso, setFocusIso] = useState<IsoDate | null>(null);
+  // A new selection (a quick pick, No expiry) takes the Tab stop back.
+  useEffect(() => setFocusIso(null), [value]);
+  const tabStop = focusIso !== null && shown(focusIso) ? focusIso : initialStop;
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     const from = (event.target as HTMLElement).closest<HTMLElement>('.day')
@@ -147,6 +162,7 @@ export function ExpiryCalendar({
       return;
     }
     event.preventDefault();
+    setFocusIso(to);
     scroller.current
       ?.querySelector<HTMLElement>(`.day[data-iso="${to}"]`)
       ?.focus();
@@ -326,6 +342,7 @@ export function ExpiryCalendar({
                             aria-describedby={inBand ? legendId : undefined}
                             data-past={days < 0 ? '' : undefined}
                             data-band={inBand ? '' : undefined}
+                            onFocus={() => setFocusIso(iso)}
                             onClick={() => onChange(iso)}
                           >
                             {fromIso(iso).getDate()}
