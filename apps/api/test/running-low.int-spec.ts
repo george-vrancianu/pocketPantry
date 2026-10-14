@@ -36,7 +36,7 @@ describe('Running low flag (integration)', () => {
   }
 
   const api = (
-    method: 'get' | 'put' | 'post' | 'delete',
+    method: 'get' | 'put' | 'post' | 'patch' | 'delete',
     cookie: string,
     path: string,
   ) =>
@@ -205,5 +205,110 @@ describe('Running low flag (integration)', () => {
 
     expect((await readPantry(a.cookie)).runningLow).toEqual([parmesan]);
     expect((await readPantry(b.cookie)).runningLow).toEqual([]);
+  });
+
+  describe('automatic clearing', () => {
+    const deleteBatch = (cookie: string, batchId: string) =>
+      api('delete', cookie, `/pantry/batches/${batchId}`);
+    const editBatch = (cookie: string, batchId: string, body: object) =>
+      api('patch', cookie, `/pantry/batches/${batchId}?locale=en`).send(body);
+    const addBatchBody = async (cookie: string, body: object) =>
+      (
+        await api('post', cookie, '/pantry/batches?locale=en')
+          .send(body)
+          .expect(201)
+      ).body as { id: string };
+
+    it('clears the flag when a new Batch of the Ingredient is created', async () => {
+      const { cookie } = await signUp();
+      await addBatch(cookie, milk);
+      await setRunningLow(cookie, milk).expect(204);
+
+      await addBatch(cookie, milk);
+
+      expect((await readPantry(cookie)).runningLow).toEqual([]);
+    });
+
+    it('clears the flag when Batches are saved together from a Scan', async () => {
+      const { cookie } = await signUp();
+      await addBatch(cookie, milk);
+      await setRunningLow(cookie, milk).expect(204);
+
+      await api('post', cookie, '/pantry/batches/bulk?locale=en')
+        .send({
+          batches: [
+            { ingredientId: milk, quantity: 1, unit: 'l', location: 'fridge' },
+          ],
+        })
+        .expect(201);
+
+      expect((await readPantry(cookie)).runningLow).toEqual([]);
+    });
+
+    it('clears the flag when the last Batch of the Ingredient is removed', async () => {
+      const { cookie } = await signUp();
+      const batch = await addBatchBody(cookie, { ingredientId: milk });
+      await setRunningLow(cookie, milk).expect(204);
+
+      await deleteBatch(cookie, batch.id).expect(204);
+
+      expect((await readPantry(cookie)).runningLow).toEqual([]);
+    });
+
+    it('keeps the flag when a Batch is removed and others of the Ingredient remain', async () => {
+      const { cookie } = await signUp();
+      const first = await addBatchBody(cookie, { ingredientId: milk });
+      await addBatchBody(cookie, { ingredientId: milk });
+      await setRunningLow(cookie, milk).expect(204);
+
+      await deleteBatch(cookie, first.id).expect(204);
+
+      expect((await readPantry(cookie)).runningLow).toEqual([milk]);
+    });
+
+    it('keeps the flag when a Batch is edited in quantity, expiry or Location', async () => {
+      const { cookie } = await signUp();
+      const batch = await addBatchBody(cookie, {
+        ingredientId: milk,
+        quantity: 1,
+        unit: 'l',
+        location: 'fridge',
+        expiryDate: '2030-01-01',
+      });
+      await setRunningLow(cookie, milk).expect(204);
+
+      await editBatch(cookie, batch.id, { quantity: 2 }).expect(200);
+      await editBatch(cookie, batch.id, { expiryDate: '2031-01-01' }).expect(
+        200,
+      );
+      await editBatch(cookie, batch.id, { location: 'cupboard' }).expect(200);
+
+      expect((await readPantry(cookie)).runningLow).toEqual([milk]);
+    });
+
+    it("clears only the acting Family's flag when its last Batch goes", async () => {
+      const a = await signUp('Family A');
+      const b = await signUp('Family B');
+      const aBatch = await addBatchBody(a.cookie, { ingredientId: parmesan });
+      await addBatch(b.cookie, parmesan);
+      await setRunningLow(a.cookie, parmesan).expect(204);
+      await setRunningLow(b.cookie, parmesan).expect(204);
+
+      await deleteBatch(a.cookie, aBatch.id).expect(204);
+
+      expect((await readPantry(a.cookie)).runningLow).toEqual([]);
+      expect((await readPantry(b.cookie)).runningLow).toEqual([parmesan]);
+    });
+
+    it("does not clear a Family's flag when another Family adds a Batch", async () => {
+      const a = await signUp('Family A');
+      const b = await signUp('Family B');
+      await addBatch(a.cookie, parmesan);
+      await setRunningLow(a.cookie, parmesan).expect(204);
+
+      await addBatch(b.cookie, parmesan);
+
+      expect((await readPantry(a.cookie)).runningLow).toEqual([parmesan]);
+    });
   });
 });
