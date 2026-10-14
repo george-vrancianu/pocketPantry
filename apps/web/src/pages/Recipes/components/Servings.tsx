@@ -6,6 +6,7 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { radius } from '../../../lib/themeVars';
 
 /** The most Servings the API will match or add for (keep in step with MAX_MATCH_SERVINGS in apps/api/src/recipes/recipe-pantry.schemas.ts). */
 export const MAX_SERVINGS = 100;
@@ -35,7 +36,7 @@ export function ServingsStepper({
         px: '3px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         fontSize: 13.5,
         fontWeight: 700,
       }}

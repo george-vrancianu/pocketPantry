@@ -1,6 +1,7 @@
 import { Box, Button, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { COUNTER_TONE, type Counts } from './ReviewCounters';
+import { displayType, radius } from '../../../lib/themeVars';
 
 /** The tablet header's three counter chips: one row beside the title instead of the phone's tiles. */
 export function ReviewCounterChips({ save, check, excluded }: Counts) {
@@ -22,7 +23,7 @@ export function ReviewCounterChips({ save, check, excluded }: Counts) {
             height: 36,
             px: '14px',
             boxSizing: 'border-box',
-            borderRadius: `${tokens.radius.counter}px`,
+            borderRadius: radius.card,
             fontSize: 13,
             fontWeight: 600,
             whiteSpace: 'nowrap',
@@ -32,9 +33,8 @@ export function ReviewCounterChips({ save, check, excluded }: Counts) {
           <Box
             component="span"
             sx={{
-              fontFamily: tokens.font.display,
+              ...displayType,
               fontSize: 16,
-              fontWeight: 700,
             }}
           >
             {chip.value}

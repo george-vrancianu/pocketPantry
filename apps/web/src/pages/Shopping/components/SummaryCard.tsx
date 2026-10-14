@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { colour, displayType, radius, shadow } from '../../../lib/themeVars';
 
 export type SummaryCardProps = {
   remaining: number;
@@ -34,7 +35,7 @@ export function SummaryCard({
         bgcolor: 'background.paper',
         border: 1,
         borderColor: 'divider',
-        borderRadius: '20px',
+        borderRadius: radius.card,
       }}
     >
       <Box
@@ -48,9 +49,8 @@ export function SummaryCard({
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             sx={{
-              fontFamily: 'var(--font-display)',
+              ...displayType,
               fontSize: 24,
-              fontWeight: 700,
               fontVariantNumeric: 'tabular-nums',
             }}
           >
@@ -81,11 +81,11 @@ export function SummaryCard({
             display: 'grid',
             placeItems: 'center',
             border: 0,
-            borderRadius: '18px',
+            borderRadius: radius.fab,
             cursor: 'pointer',
-            color: '#FFFFFF',
+            color: colour.accentInk,
             backgroundColor: tokens.color.accent,
-            boxShadow: '0 6px 14px rgba(46,106,77,.28)',
+            boxShadow: shadow.button,
             '&:hover': { backgroundColor: tokens.color.accentHover },
           }}
         >

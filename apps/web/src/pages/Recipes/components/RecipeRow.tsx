@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom';
 import type { CookTonightCard } from '../../../lib/cookTonight';
 import { totalMinutes, type RecipeListItem } from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
+import { displayType, radius } from '../../../lib/themeVars';
 
 type Props = {
   recipe: RecipeListItem;
@@ -93,9 +94,8 @@ export function RecipeRow({ recipe, card, filtering }: Props) {
             <>
               <Box
                 sx={{
-                  fontFamily: tokens.font.display,
+                  ...displayType,
                   fontSize: 17,
-                  fontWeight: 700,
                 }}
               >
                 {minutes}
@@ -177,7 +177,7 @@ function Pill(props: {
         gap: '4px',
         px: '8px',
         py: '3px',
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         bgcolor: props.bg,
         color: props.fg,
         fontSize: 12,

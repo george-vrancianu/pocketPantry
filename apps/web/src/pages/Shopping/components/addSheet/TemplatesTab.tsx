@@ -14,6 +14,7 @@ import { translateApiError } from '../../../../i18n/translateApiError';
 import { itemCount, useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
 import { focusRing } from '../../../../lib/focusRing';
+import { radius } from '../../../../lib/themeVars';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */
@@ -43,7 +44,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
-            borderRadius: '20px',
+            borderRadius: radius.card,
             border: `1px solid ${color.line}`,
             backgroundColor: color.surface,
             color: 'inherit',
@@ -97,7 +98,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
         {templates.data && templates.data.length > 0 ? (
           <Box
             sx={{
-              borderRadius: '20px',
+              borderRadius: radius.card,
               border: `1px solid ${color.line}`,
               backgroundColor: color.surface,
             }}
@@ -185,7 +186,7 @@ function Tile({
         height: 40,
         display: 'grid',
         placeItems: 'center',
-        borderRadius: '13px',
+        borderRadius: radius.control,
         backgroundColor: accent ? color.accentTint : color.butter,
         color: accent ? color.accent : color.butterInk,
       }}

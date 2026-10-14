@@ -7,6 +7,7 @@ import {
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
+import { border, colour, radius } from '../../../../lib/themeVars';
 
 export type SearchFieldProps = {
   value: string;
@@ -40,9 +41,9 @@ export function SearchField({
         height: 50,
         display: 'flex',
         alignItems: 'center',
-        borderRadius: '16px',
-        border: `1.5px solid ${color.line}`,
-        backgroundColor: color.surface,
+        borderRadius: radius.control,
+        border: `${border.field} solid ${color.line}`,
+        backgroundColor: colour.fieldBg,
         '&:focus-within': {
           borderColor: color.accent,
           boxShadow: `0 0 0 3px ${color.accentTint}`,

@@ -2,6 +2,7 @@ import { Box, TextField, Typography } from '@pocket-pantry/ui';
 import { useId, useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCatalogSearch, type CatalogSearchResult } from '../lib/catalog';
+import { radius } from '../lib/themeVars';
 
 export type CatalogSearchProps = {
   onSelect: (ingredient: CatalogSearchResult) => void;
@@ -135,7 +136,7 @@ export function CatalogSearch({
                 cursor: 'pointer',
                 px: 2,
                 py: 1,
-                borderRadius: 1,
+                borderRadius: radius.control,
                 bgcolor: index === activeIndex ? 'action.selected' : undefined,
                 '&:hover': { bgcolor: 'action.hover' },
               }}

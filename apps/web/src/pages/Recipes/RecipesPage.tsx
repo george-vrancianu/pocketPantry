@@ -22,6 +22,7 @@ import { CanMakeStrip } from './components/CanMakeStrip';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
+import { displayType } from '../../lib/themeVars';
 
 /** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
 export function RecipesPage() {
@@ -69,9 +70,8 @@ export function RecipesPage() {
           <Box sx={{ textAlign: 'center', py: '32px' }}>
             <Box
               sx={{
-                fontFamily: tokens.font.display,
+                ...displayType,
                 fontSize: 18,
-                fontWeight: 700,
               }}
             >
               {filtering ? t('recipes:noMatches') : t('recipes:empty')}

@@ -1,5 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { displayType, radius } from '../../../lib/themeVars';
 
 export type Counts = { save: number; check: number; excluded: number };
 
@@ -43,7 +44,7 @@ export function ReviewCounters({ save, check, excluded }: Counts) {
         <Box
           key={tile.key}
           sx={{
-            borderRadius: `${tokens.radius.input}px`,
+            borderRadius: radius.control,
             px: '12px',
             py: '10px',
             ...COUNTER_TONE[tile.key],
@@ -51,9 +52,8 @@ export function ReviewCounters({ save, check, excluded }: Counts) {
         >
           <Box
             sx={{
-              fontFamily: tokens.font.display,
+              ...displayType,
               fontSize: 24,
-              fontWeight: 700,
               lineHeight: 1.1,
             }}
           >

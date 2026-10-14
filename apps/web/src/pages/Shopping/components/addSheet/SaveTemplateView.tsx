@@ -19,6 +19,7 @@ import {
 } from '../../../../lib/shoppingTemplates';
 import { BackButton } from './BackButton';
 import { SheetFooter, TOAST_ABOVE_SHEET, useSheetToast } from './SheetFooter';
+import { radius } from '../../../../lib/themeVars';
 
 export type SaveTemplateViewProps = {
   /** Back to the list of templates; also where a successful save returns. */
@@ -84,7 +85,7 @@ export function SaveTemplateView({ onBack }: SaveTemplateViewProps) {
         startIcon={<BookmarkIcon size={18} />}
         disabled={!canSave}
         onClick={() => save()}
-        sx={{ minHeight: 48, borderRadius: '16px' }}
+        sx={{ minHeight: 48, borderRadius: radius.control }}
       >
         {createFromList.isPending
           ? t('templates:save.saving')
