@@ -155,6 +155,13 @@
       "when": 1791993760477,
       "tag": "0021_amount_scale",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792015501944,
+      "tag": "0022_family_ingredients",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ const match: CatalogSearchResult = {
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
+  owner: 'catalog',
   amountScale: 'medium',
   leafCategory: { id: 'l', name: 'Hard cheese' },
   parentCategory: { id: 'p', name: 'Dairy', aisle: { id: 'a', name: 'Dairy' } },

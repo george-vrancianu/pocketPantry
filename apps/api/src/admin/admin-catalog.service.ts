@@ -576,12 +576,12 @@ export class AdminCatalogService {
           .where(eq(leafCategories.id, id));
         if (!leaf) throw notFound('leaf_category');
         if (leaf.isOther) throw otherLeafProtected();
-        // Counts shared Ingredients only: #270/#275 must also count Family Ingredients in this Leaf.
-        const shared = adminScope.ingredients(tx);
+        // Counts every Ingredient in the Leaf, Family Ingredients included
+        // (deliberately not through a Catalog scope: this is a structural count, not a read).
         const [{ children }] = await tx
           .select({ children: count() })
-          .from(shared)
-          .where(eq(shared.leafCategoryId, id));
+          .from(ingredients)
+          .where(eq(ingredients.leafCategoryId, id));
         if (children > 0) {
           throw new ApiException(409, 'catalog.category_not_empty', {
             children,

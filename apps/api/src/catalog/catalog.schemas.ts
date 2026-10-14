@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ingredientUnit } from '../database/schema';
+import { ingredientUnit } from '../database/schema';
 import type { ResolvedCatalogDefaults } from './catalog-defaults';
 import type { AmountScale } from './amount-scale';
 
@@ -52,9 +52,38 @@ export type CatalogAisle = {
 /** An empty-`q` Aisle listing returns at most this many Ingredients. */
 export const AISLE_LISTING_LIMIT = 50;
 
+export const familyIngredientQuery = z.object({
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+});
+
+export const familyIngredientBody = z.object({
+  name: z.string().trim().min(1).max(100),
+  leafCategoryId: z.uuid(),
+  defaultUnit: z.enum(ingredientUnit.enumValues),
+});
+export type FamilyIngredientBody = z.infer<typeof familyIngredientBody>;
+
+export const catalogCategoriesQuery = z.object({
+  q: z.string().max(100).default(''),
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type CatalogCategoriesQuery = z.infer<typeof catalogCategoriesQuery>;
+
+/** A Leaf Category to file a Family Ingredient under, with where it sits and its effective defaults. */
+export type CatalogCategory = {
+  id: string;
+  name: string;
+  parentCategory: { id: string; name: string };
+  aisle: { id: string; name: string };
+  defaults: ResolvedCatalogDefaults;
+};
+
 export type CatalogSearchResult = {
   id: string;
   name: string;
+  /** 'family' for a Family Ingredient (ADR 0011), 'catalog' for a shared row. */
+  owner: 'catalog' | 'family';
   defaultUnit: (typeof ingredientUnit.enumValues)[number];
   /** How much a Member usually buys at once; always present, medium when unset. */
   amountScale: AmountScale;

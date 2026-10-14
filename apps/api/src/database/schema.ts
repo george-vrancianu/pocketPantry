@@ -249,10 +249,26 @@ export const ingredients = pgTable(
     pantryBasic: boolean('pantry_basic').notNull().default(false),
     // Null reads as medium. Backfilled from the Parent Category by migration 0021.
     amountScale: amountScale('amount_scale'),
+    // Null = shared Catalog row; set = a Family Ingredient only that Family sees (ADR 0011).
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
+    // The Member who added a Family Ingredient; kept as null if they leave.
+    createdByUserId: text('created_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
+    nameLocale: text('name_locale'),
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('ingredients_normalized_name_idx').on(table.normalizedName),
+    // Shared names are unique among shared rows; a Family's own names among that Family's.
+    uniqueIndex('ingredients_normalized_name_idx')
+      .on(table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('ingredients_family_normalized_name_idx')
+      .on(table.ownerFamilyId, table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NOT NULL`),
     index('ingredients_leaf_category_idx').on(table.leafCategoryId),
   ],
 );
