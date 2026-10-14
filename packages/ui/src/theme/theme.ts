@@ -12,6 +12,7 @@ import {
   type ThemeId,
   type ThemeTokens,
 } from './themes';
+import { aisleTintCssVariables } from './aisleTints';
 import { tokens } from './tokens';
 
 declare module '@mui/material/styles' {
@@ -138,12 +139,13 @@ export function themeSelector(id: ThemeId | '%s') {
   return `[data-theme="${id}"]`;
 }
 
-/** `--pp-*` variables per Theme selector; Warm editorial is also the `:root` default. */
+/** `--pp-*` variables (non-colour tokens and Aisle tints) per Theme selector; Warm editorial is also the `:root` default. */
 export function ppCssVariables(): Record<string, Record<string, string>> {
   const styles: Record<string, Record<string, string>> = {};
   for (const id of THEME_IDS) {
     const vars: Record<string, string> = {};
     for (const key of NON_COLOUR_TOKENS) vars[`--pp-${key}`] = THEMES[id][key];
+    Object.assign(vars, aisleTintCssVariables(id));
     const selector =
       id === 'warm' ? `:root, ${themeSelector(id)}` : themeSelector(id);
     styles[selector] = vars;

@@ -18,7 +18,7 @@ export type IngredientIconProps = {
 
 /**
  * The Ingredient Icon: a bare duotone SVG, its outline in the current text
- * colour and its body filled with the Aisle's light tint. Decorative. The slot
+ * colour and its body filled with the Aisle's tint for the Theme it sits in. Decorative. The slot
  * it sits in belongs to the caller.
  */
 export function IngredientIcon({
@@ -34,7 +34,7 @@ export function IngredientIcon({
     mapped && Object.hasOwn(INGREDIENT_ICONS, mapped)
       ? mapped
       : DEFAULT_ICON_KEY;
-  const tint = aisleTint(aisleId).light;
+  const tint = aisleTint(aisleId);
   return (
     <svg
       aria-hidden
@@ -48,13 +48,15 @@ export function IngredientIcon({
       strokeLinecap="round"
       strokeLinejoin="round"
       data-ingredient-icon={key}
-      data-ingredient-tint={tint}
+      data-ingredient-tint={tint.name}
+      // Body paths inherit the fill; the rest set their own.
+      style={{ fill: tint.bg }}
     >
       {INGREDIENT_ICONS[key].parts.map((part, index) => (
         <path
           key={index}
           d={part.d}
-          fill={part.body ? tint : part.dot ? 'currentColor' : 'none'}
+          fill={part.body ? undefined : part.dot ? 'currentColor' : 'none'}
           vectorEffect={
             size > FIXED_STROKE_ABOVE ? 'non-scaling-stroke' : undefined
           }
