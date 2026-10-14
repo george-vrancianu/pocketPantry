@@ -1,4 +1,4 @@
-import { Alert, Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Alert, Box, Typography, radius, tokens } from '@pocket-pantry/ui';
 import {
   useRef,
   type Dispatch,
@@ -110,6 +110,12 @@ export function IngredientsTab({
   };
   const setOpen = (next: OpenPick | null) =>
     onStateChange((s) => ({ ...s, open: next }));
+  // Patches the open pick against the latest state, so two changes in one event (a unit change
+  // that also converts the number) both land.
+  const patchOpen = (patch: Partial<OpenPick>) =>
+    onStateChange((s) =>
+      s.open ? { ...s, open: { ...s.open, ...patch } } : s,
+    );
 
   // The loaded list (shared with the screen behind), for the "On list" hint.
   const list = useShoppingList(i18n.language);
@@ -227,7 +233,7 @@ export function IngredientsTab({
         <Box
           sx={{
             backgroundColor: tokens.color.subtle,
-            borderRadius: `${tokens.radius.card}px`,
+            borderRadius: radius.card,
             p: '12px 14px',
             display: 'flex',
             flexDirection: 'column',
@@ -236,16 +242,18 @@ export function IngredientsTab({
         >
           <AmountField
             name={pickName}
+            amountScale={
+              pick?.kind === 'catalog' ? pick.result.amountScale : null
+            }
             quantity={open.quantity}
             unit={open.unit}
             onQuantityChange={(quantity, unit) =>
-              setOpen({
-                ...open,
+              patchOpen({
                 quantity,
                 ...(unit !== undefined ? { unit } : {}),
               })
             }
-            onUnitChange={(unit) => setOpen({ ...open, unit })}
+            onUnitChange={(unit) => patchOpen({ unit })}
             error={
               open.attempted && !amount.valid
                 ? t('finish.quantityInvalid')

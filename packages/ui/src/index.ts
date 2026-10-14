@@ -1,7 +1,42 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
-export { createPocketPantryTheme } from './theme/theme';
-export { tokens } from './theme/tokens';
+export { createPocketPantryTheme, themeSelector } from './theme/theme';
 export { aisleTint } from './theme/aisleTints';
+export { tokens } from './theme/tokens';
+export { useForcedThemeColor } from './theme/useForcedThemeColor';
+export {
+  bodyFont,
+  border,
+  color,
+  displayType,
+  nestedRadius,
+  palette,
+  radius,
+  shadow,
+} from './theme/themeVars';
+export {
+  focusRing,
+  focusRingStyle,
+  insetFocusRing,
+  insetFocusRingStyle,
+} from './theme/focusRing';
+export {
+  THEME_IDS,
+  THEME_META,
+  THEMES,
+  type ThemeId,
+  type ThemeMeta,
+  type ThemeTokens,
+} from './theme/themes';
+export {
+  APPEARANCE_STORAGE_KEY,
+  DEFAULT_APPEARANCE,
+  isThemeId,
+  readAppearance,
+  resolveTheme,
+  subscribeAppearance,
+  writeAppearance,
+  type Appearance,
+} from './theme/appearance';
 export {
   IngredientIcon,
   type IngredientIconProps,
@@ -12,10 +47,19 @@ export { DOCK_BOTTOM, DOCK_HEIGHT } from './theme/dock';
 export { visuallyHidden } from './theme/visuallyHidden';
 
 export { Alert, type AlertProps } from './atoms/Alert';
-export { Button, type ButtonProps } from './atoms/Button';
+export {
+  AddButton,
+  Button,
+  type AddButtonProps,
+  type ButtonProps,
+  type ButtonVariant,
+} from './atoms/Button';
+export { Card, type CardProps } from './atoms/Card';
+export { Chip, type ChipProps } from './atoms/Chip';
 export { Checkbox, type CheckboxProps } from './atoms/Checkbox';
 export { Collapse, type CollapseProps } from './atoms/Collapse';
 export { Dialog, type DialogProps } from './atoms/Dialog';
+export { FieldUnit, type FieldUnitProps } from './atoms/FieldUnit';
 export {
   InputAdornment,
   type InputAdornmentProps,
@@ -26,7 +70,9 @@ export { Link, type LinkProps } from './atoms/Link';
 export { ProgressBar, type ProgressBarProps } from './atoms/ProgressBar';
 export { Snackbar, type SnackbarProps } from './atoms/Snackbar';
 export { Spinner } from './atoms/Spinner';
+export { Tag, type TagProps, type TagTone } from './atoms/Tag';
 export { TextField, type TextFieldProps } from './atoms/TextField';
+export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
   BudgetIcon,
@@ -36,6 +82,7 @@ export {
   BookmarkIcon,
   TemplateIcon,
   CalendarIcon,
+  SubItemIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
@@ -43,9 +90,6 @@ export {
   CheckIcon,
   ClockIcon,
   IngredientsScanIcon,
-  PlateScanIcon,
-  ProductScanIcon,
-  ReceiptScanIcon,
   CloseIcon,
   PlusIcon,
   CustomiseIcon,
@@ -64,14 +108,19 @@ export {
   AlertIcon,
   CheckCircleIcon,
   DeleteIcon,
-  EditIcon,
   SwapIcon,
   PeopleIcon,
   ArrowLeftIcon,
   BackIcon,
   MoreIcon,
   BranchIcon,
-  CartIcon,
+  RunningLowIcon,
+  StarIcon,
+  StarFillIcon,
+  UndoIcon,
+  Icon,
+  type IconName,
+  type IconProps,
 } from './atoms/icons';
 
 export {

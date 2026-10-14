@@ -1,4 +1,4 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Card, Typography } from '@pocket-pantry/ui';
 import { useId, type ReactNode } from 'react';
 
 /** A titled block of the detail page. */
@@ -19,17 +19,9 @@ export function Section({
         {title}
       </Typography>
       {card ? (
-        <Box
-          sx={{
-            px: '16px',
-            py: '8px',
-            bgcolor: tokens.color.surface,
-            border: `1px solid ${tokens.color.line}`,
-            borderRadius: `${tokens.radius.card}px`,
-          }}
-        >
+        <Card variant="list" sx={{ py: '8px' }}>
           {children}
-        </Box>
+        </Card>
       ) : (
         children
       )}

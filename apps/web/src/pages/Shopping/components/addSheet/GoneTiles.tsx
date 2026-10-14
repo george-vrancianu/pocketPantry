@@ -1,4 +1,4 @@
-import { Box, Link, tokens } from '@pocket-pantry/ui';
+import { Box, Link, tokens, focusRing } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useEmptyStateSearch } from '../../../../components/catalogSearch/emptyState/context';
 import { IngredientTile } from '../../../../components/catalogSearch/emptyState/IngredientTile';
@@ -7,7 +7,6 @@ import {
   TileSection,
 } from '../../../../components/catalogSearch/emptyState/TileSection';
 import { useShortAgo } from '../../../../components/catalogSearch/emptyState/useShortAgo';
-import { focusRing } from '../../../../lib/focusRing';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import {
   goneInOrder,
@@ -106,7 +105,7 @@ export function GoneTiles({ suggestions, onPick }: GoneTilesProps) {
               borderRadius: '50%',
               cursor: 'pointer',
               '&:hover': { backgroundColor: color.subtle },
-              ...focusRing(1),
+              ...focusRing,
             }}
           >
             <span aria-hidden="true">×</span>

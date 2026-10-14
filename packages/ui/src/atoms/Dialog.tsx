@@ -4,7 +4,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import type { ReactNode } from 'react';
 import { useBreakpointUp } from '../theme/useBreakpointUp';
-import { tokens } from '../theme/tokens';
+import { radius, shadow } from '../theme/themeVars';
 
 export type DialogProps = {
   open: boolean;
@@ -30,7 +30,6 @@ export function Dialog({
   actions,
 }: DialogProps) {
   const centred = useBreakpointUp('md');
-  const radius = `${tokens.radius.card}px`;
   return (
     <MuiDialog
       open={open}
@@ -45,12 +44,13 @@ export function Dialog({
       slotProps={{
         paper: {
           sx: centred
-            ? { borderRadius: radius }
+            ? { borderRadius: radius.sheet, boxShadow: shadow.float }
             : {
                 m: 0,
                 width: '100%',
                 maxHeight: '85dvh',
-                borderRadius: `${radius} ${radius} 0 0`,
+                boxShadow: shadow.float,
+                borderRadius: `${radius.sheet} ${radius.sheet} 0 0`,
               },
         },
       }}

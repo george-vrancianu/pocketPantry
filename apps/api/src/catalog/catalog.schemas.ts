@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ingredientUnit } from '../database/schema';
 import type { ResolvedCatalogDefaults } from './catalog-defaults';
+import type { AmountScale } from './amount-scale';
 
 export const CATALOG_LOCALES = ['en', 'ro', 'da'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
@@ -53,6 +54,8 @@ export type CatalogSearchResult = {
   id: string;
   name: string;
   defaultUnit: (typeof ingredientUnit.enumValues)[number];
+  /** How much a Member usually buys at once; always present, medium when unset. */
+  amountScale: AmountScale;
   leafCategory: { id: string; name: string };
   parentCategory: {
     id: string;

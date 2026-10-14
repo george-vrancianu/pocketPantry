@@ -35,6 +35,7 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
     >
       <AmountLocationRow
         name={batch.name}
+        amountScale={batch.amountScale}
         quantity={form.quantity}
         unit={form.unit}
         location={form.location}
@@ -75,7 +76,7 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
         <Button type="submit" disabled={!form.canSave}>
           {form.saving ? t('form.saving') : t('edit.save')}
         </Button>
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('form.cancel')}
         </Button>
       </Stack>

@@ -8,7 +8,7 @@ import { CatalogSearch } from '../CatalogSearch';
 import { BrowseByAisle } from './BrowseByAisle';
 
 const DAIRY_AISLE = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
-const DAIRY_TINT = '#E3ECF3';
+const DAIRY_TINT = 'dairy';
 const BAKERY_AISLE = 'bakery-aisle-id';
 
 const aisles = [
@@ -32,6 +32,7 @@ const ingredient = (
   name: string,
   parent = 'dairy-parent',
 ): CatalogSearchResult => ({
+  amountScale: 'medium',
   id,
   name,
   defaultUnit: 'g',

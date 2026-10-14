@@ -4,6 +4,8 @@ import {
   ChevronRightIcon,
   Typography,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -88,7 +90,7 @@ export function ExpiryField({
           alignItems: 'center',
           gap: '12px',
           p: '8px 10px 8px 14px',
-          borderRadius: `${tokens.radius.field}px`,
+          borderRadius: radius.control,
           border: `1.5px solid ${color.line}`,
           backgroundColor: color.surface,
           color: color.ink,
@@ -110,9 +112,9 @@ export function ExpiryField({
             height: 36,
             display: 'grid',
             placeItems: 'center',
-            borderRadius: `${tokens.radius.field - 2}px`,
+            borderRadius: nestedRadius(radius.control, 2),
             backgroundColor: color.accentTint,
-            color: color.accent,
+            color: color.accentOnTint,
           }}
         >
           <CalendarIcon size={18} />

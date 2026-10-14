@@ -12,6 +12,7 @@ import { normalizeName } from '../catalog/normalize';
 import { exceedsMaxQuantity } from '../common/quantity';
 import { sumQuantities } from '../shopping/shopping.service';
 import { PantryService } from '../pantry/pantry.service';
+import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
@@ -303,6 +304,8 @@ export class UnmatchedQueueService {
       relinkedBatchRows.map((row) => row.familyId),
     )) {
       await this.pantry.relinked(tx, familyId, target.id);
+      // Same as a Batch insert: the Family has restocked this Ingredient.
+      await clearRunningLowOnRestock(tx, familyId, [target.id]);
     }
 
     // Family Recipe lines: the line keeps its quantity, unit, note and position.

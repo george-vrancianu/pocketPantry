@@ -5,6 +5,7 @@ import { MoreIcon } from '../atoms/icons';
 import { IconButton } from '../atoms/IconButton';
 import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
+import { nestedRadius, radius, shadow } from '../theme/themeVars';
 
 export type ActionMenuItem = {
   label: string;
@@ -55,9 +56,9 @@ export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
             sx: {
               minWidth: 190,
               mt: '6px',
-              borderRadius: '16px',
+              borderRadius: radius.card,
               border: `1px solid ${tokens.color.line}`,
-              boxShadow: tokens.shadow.dock,
+              boxShadow: shadow.float,
             },
           },
           list: { sx: { p: '6px' } },
@@ -78,7 +79,8 @@ export function ActionMenu({ label, items, buttonRef }: ActionMenuProps) {
                 gap: '10px',
                 height: 44,
                 px: '12px',
-                borderRadius: '10px',
+                // Concentric with the menu, 6 px inside its edge.
+                borderRadius: nestedRadius(radius.card, 6),
                 fontSize: 15,
                 fontWeight: 600,
                 color: urgent ? tokens.color.urgentFg : tokens.color.ink,

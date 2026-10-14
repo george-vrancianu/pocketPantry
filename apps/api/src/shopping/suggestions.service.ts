@@ -9,6 +9,7 @@ import type { Database, Executor } from '../database/database.types';
 import {
   batches,
   ingredientStockHistory,
+  runningLow,
   shoppingItems,
   shoppingLists,
   staples,
@@ -48,6 +49,7 @@ export class SuggestionsService {
     const groups = {
       staples: await this.missingStaples(familyId, locale, today),
       usedUp: await this.usedUp(familyId, locale),
+      runningLow: await this.runningLowGroup(familyId, locale),
       expired: await this.expired(familyId, locale, today),
     };
     const ids = Object.values(groups).flatMap((group) =>
@@ -72,6 +74,7 @@ export class SuggestionsService {
     return {
       staples: withResult(groups.staples),
       usedUp: withResult(groups.usedUp),
+      runningLow: withResult(groups.runningLow),
       expired: withResult(groups.expired),
     };
   }
@@ -231,6 +234,43 @@ export class SuggestionsService {
         unit: null,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
         since: row.latestExpiry,
+      }))
+      .sort(byShopOrder);
+  }
+
+  /**
+   * Running low: the Family has flagged the Ingredient, it has at least one Batch
+   * (expired or not), and it is not on the active list. Derived on read; turning
+   * the flag off is the only dismissal.
+   */
+  private async runningLowGroup(
+    familyId: string,
+    locale: CatalogLocale,
+  ): Promise<Suggestion[]> {
+    const rows = await this.database
+      .select({ ingredientId: runningLow.ingredientId })
+      .from(runningLow)
+      .where(
+        and(
+          eq(runningLow.familyId, familyId),
+          sql`EXISTS (SELECT 1 FROM ${batches} WHERE ${batches.familyId} = ${familyId} AND ${batches.ingredientId} = ${runningLow.ingredientId})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${shoppingItems} INNER JOIN ${shoppingLists} ON ${shoppingLists.id} = ${shoppingItems.listId} WHERE ${shoppingLists.familyId} = ${familyId} AND ${shoppingLists.status} = 'active' AND ${shoppingItems.ingredientId} = ${runningLow.ingredientId})`,
+        ),
+      );
+    const placements = await loadIngredientPlacements(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      rows.map((row) => row.ingredientId),
+    );
+    return rows
+      .map((row) => ({
+        ingredientId: row.ingredientId,
+        name: placements.get(row.ingredientId)?.name ?? '',
+        quantity: null,
+        unit: null,
+        aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: null,
       }))
       .sort(byShopOrder);
   }

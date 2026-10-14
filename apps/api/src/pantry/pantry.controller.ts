@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   batchIdParam,
+  ingredientIdParam,
   createBatchBody,
   createBatchesBody,
   updateBatchBody,
@@ -27,6 +29,7 @@ import {
   scanQuery,
   type BatchView,
   type BatchIdParam,
+  type IngredientIdParam,
   type CreateBatchBody,
   type CreateBatchesBody,
   type UpdateBatchBody,
@@ -35,6 +38,7 @@ import {
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
 import { RecentlyStockedService } from './recently-stocked.service';
+import { RunningLowService } from './running-low.service';
 
 @ApiTags('pantry')
 @Controller('pantry')
@@ -43,6 +47,7 @@ export class PantryController {
   constructor(
     private readonly pantry: PantryService,
     private readonly recentlyStocked: RecentlyStockedService,
+    private readonly runningLow: RunningLowService,
   ) {}
 
   @Get('recently-stocked')
@@ -66,15 +71,44 @@ export class PantryController {
 
   @Get()
   @ApiOperation({
-    summary: "The Family's Batches, soonest expiry first, names localised",
+    summary:
+      "The Family's Batches, soonest expiry first, names localised, and the Ingredients flagged running low",
   })
   async list(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
-  ): Promise<{ batches: BatchView[] }> {
+  ): Promise<{ batches: BatchView[]; runningLow: string[] }> {
     return {
       batches: await this.pantry.list(member.id, query.locale),
+      runningLow: await this.runningLow.list(member.id),
     };
+  }
+
+  @Put('running-low/:ingredientId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Flag an Ingredient as running low for the Family (idempotent); cleared by the Pantry toggle',
+  })
+  async setRunningLow(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(ingredientIdParam))
+    params: IngredientIdParam,
+  ): Promise<void> {
+    await this.runningLow.set(member.id, params.ingredientId);
+  }
+
+  @Delete('running-low/:ingredientId')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Clear the running low flag on an Ingredient (idempotent)',
+  })
+  async clearRunningLow(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(ingredientIdParam))
+    params: IngredientIdParam,
+  ): Promise<void> {
+    await this.runningLow.clear(member.id, params.ingredientId);
   }
 
   @Post('batches')

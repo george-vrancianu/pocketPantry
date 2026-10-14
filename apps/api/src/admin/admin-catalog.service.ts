@@ -2,6 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import {
+  amountScaleForParent,
+  type AmountScale,
+} from '../catalog/amount-scale';
 import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -525,6 +529,8 @@ export class AdminCatalogService {
 
   updateLeafCategory(id: string, input: LeafCategoryUpdate) {
     return this.write(async (tx) => {
+      // The new Parent when this update moves the Leaf; its Ingredients re-derive their scale.
+      let movedToParent: string | null = null;
       if (input.parentId) {
         await this.requireRow(tx, 'parent_category', input.parentId);
         const [current] = await tx
@@ -537,6 +543,9 @@ export class AdminCatalogService {
         if (current?.isOther && current.parentId !== input.parentId) {
           throw otherLeafProtected();
         }
+        if (current && current.parentId !== input.parentId) {
+          movedToParent = input.parentId;
+        }
       }
       const [row] = await tx
         .update(leafCategories)
@@ -544,6 +553,12 @@ export class AdminCatalogService {
         .where(eq(leafCategories.id, id))
         .returning();
       if (!row) throw notFound('leaf_category');
+      if (movedToParent) {
+        await tx
+          .update(ingredients)
+          .set({ amountScale: amountScaleForParent(movedToParent) })
+          .where(eq(ingredients.leafCategoryId, id));
+      }
       if (input.name) {
         await this.renameCanonicalName(tx, 'leaf_category', id, input.name);
       }
@@ -589,10 +604,11 @@ export class AdminCatalogService {
   async createIngredientIn(tx: Tx, input: IngredientCreate) {
     await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
     const normalizedName = await this.claimName(tx, input.name);
+    const amountScale = await this.amountScaleOfLeaf(tx, input.leafCategoryId);
     const id = randomUUID();
     const [row] = await tx
       .insert(ingredients)
-      .values({ id, ...input, normalizedName })
+      .values({ id, ...input, normalizedName, amountScale })
       .returning();
     await this.addCanonicalName(tx, 'ingredient', id, input.name);
     return row;
@@ -604,9 +620,15 @@ export class AdminCatalogService {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
       }
       if (input.name) await this.claimName(tx, input.name, id);
+      // A new Leaf may sit under another Parent, whose Amount Scale the Ingredient takes.
+      const amountScale = input.leafCategoryId
+        ? {
+            amountScale: await this.amountScaleOfLeaf(tx, input.leafCategoryId),
+          }
+        : {};
       const [row] = await tx
         .update(ingredients)
-        .set({ ...input, ...this.normalized(input.name) })
+        .set({ ...input, ...this.normalized(input.name), ...amountScale })
         .where(eq(ingredients.id, id))
         .returning();
       if (!row) throw notFound('ingredient');
@@ -839,6 +861,18 @@ export class AdminCatalogService {
       .where(eq(translations.id, id));
     if (!row) throw notFound('translation');
     return row;
+  }
+
+  /** The default Amount Scale of an Ingredient in this Leaf: its Parent Category's. */
+  private async amountScaleOfLeaf(
+    executor: Executor,
+    leafId: string,
+  ): Promise<AmountScale> {
+    const [leaf] = await executor
+      .select({ parentId: leafCategories.parentId })
+      .from(leafCategories)
+      .where(eq(leafCategories.id, leafId));
+    return amountScaleForParent(leaf.parentId);
   }
 
   private async requireRow(

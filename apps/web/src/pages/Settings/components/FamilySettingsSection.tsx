@@ -132,7 +132,7 @@ export function FamilySettingsSection() {
               })}
             </span>
             <Button
-              variant="text"
+              variant="ghost"
               disabled={removeOverride.isPending}
               aria-label={t('family.removeOverride', { name: override.name })}
               onClick={() => {

@@ -1,4 +1,4 @@
-import { Box, CalendarIcon, tokens } from '@pocket-pantry/ui';
+import { Box, CalendarIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExpirySheet, expiryContext } from '../../../components/ExpiryPicker';
@@ -54,7 +54,7 @@ export function QuantityUnitInput({
         display: 'flex',
         height: 40,
         boxSizing: 'border-box',
-        borderRadius: `${tokens.radius.field}px`,
+        borderRadius: radius.control,
         border: `1px solid ${border}`,
         bgcolor: tokens.color.surface,
         overflow: 'hidden',

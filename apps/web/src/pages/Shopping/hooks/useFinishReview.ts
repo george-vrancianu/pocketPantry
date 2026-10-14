@@ -9,7 +9,7 @@ import {
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
-import { daysUntil, type IsoDate } from '../../../lib/pantry';
+import { daysUntil, parseAmountText, type IsoDate } from '../../../lib/pantry';
 import { shoppingListQueryKey } from '../../../lib/shopping';
 
 export type ReviewEdit = {
@@ -20,11 +20,12 @@ export type ReviewEdit = {
   expiryDate: IsoDate | null;
 };
 
+// Only an Unmatched line with no unit lands here; it has no Amount Scale, so every unit is offered.
 const FALLBACK_UNIT: Unit = 'pcs';
 
 const initialEdit = (line: FinishProposalLine): ReviewEdit => ({
   quantity: line.quantity === null ? '' : String(line.quantity),
-  unit: line.unit ?? FALLBACK_UNIT,
+  unit: line.unit ?? line.defaultUnit ?? FALLBACK_UNIT,
   location: line.location,
   expiryDate: line.expiryDate,
 });
@@ -37,18 +38,6 @@ const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
   line.unmatched || line.expiryDate === null
     ? null
     : daysUntil(line.expiryDate, today);
-
-// numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
-function quantityOf(text: string): { valid: boolean; value: number | null } {
-  if (text.trim() === '') return { valid: true, value: null };
-  const value = Number(text);
-  const valid =
-    Number.isFinite(value) &&
-    value >= 0.001 &&
-    value <= 1_000_000 &&
-    Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;
-  return { valid, value: valid ? value : null };
-}
 
 /** Review state for Finish Shopping: proposed Batches the Member can edit or drop before confirming. */
 export function useFinishReview({ onDone }: { onDone: () => void }) {
@@ -67,7 +56,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
       edit,
       usualDays: usualDaysOf(line, today),
       dropped: dropped.has(line.itemId),
-      quantityValid: quantityOf(edit.quantity).valid,
+      quantityValid: parseAmountText(edit.quantity).valid,
     };
   });
   const kept = lines.filter((row) => !row.dropped);
@@ -117,7 +106,8 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
         {
           listId,
           lines: kept.map(({ line, edit }) => {
-            const { value } = quantityOf(edit.quantity);
+            // Reads a comma or a dot as the decimal mark, as the amount field does.
+            const { value } = parseAmountText(edit.quantity);
             return {
               itemId: line.itemId,
               quantity: value,

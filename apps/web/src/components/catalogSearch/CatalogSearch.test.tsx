@@ -10,9 +10,10 @@ import { useEmptyStateSearch } from './emptyState/context';
 
 /** The seeded Dairy & eggs Aisle, so the icon tint is a real one. */
 const DAIRY_AISLE = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
-const DAIRY_TINT = '#E3ECF3';
+const DAIRY_TINT = 'dairy';
 
 const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: locale === 'ro' ? 'Parmezan' : 'Parmesan',
   defaultUnit: 'g',
@@ -29,6 +30,7 @@ const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
 });
 
 const cheddar: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'cheddar-id',
   name: 'Cheddar',
   defaultUnit: 'g',

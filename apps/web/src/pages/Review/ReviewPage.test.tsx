@@ -4,12 +4,14 @@ import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import type { ProposedLine } from '../../lib/scan';
+import { calendarDay, sheetButton } from '../../test/expirySheet';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
@@ -690,11 +692,7 @@ describe('ReviewPage', () => {
     }
 
     async function done(user: ReturnType<typeof userEvent.setup>) {
-      await user.click(
-        within(screen.getByRole('dialog')).getByRole('button', {
-          name: 'Done',
-        }),
-      );
+      await user.click(sheetButton(screen.getByRole('dialog'), 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -712,11 +710,7 @@ describe('ReviewPage', () => {
       await user.click(cell);
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
       expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Friday, February 5, 2027',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Friday, February 5, 2027'));
       await done(user);
       expect(cell).toHaveFocus();
       expect(cell).toHaveAccessibleName('Expiry date 05.02.2027');

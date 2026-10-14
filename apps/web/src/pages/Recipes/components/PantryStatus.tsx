@@ -2,13 +2,14 @@ import {
   Alert,
   Box,
   Button,
-  CartIcon,
+  ShoppingIcon,
   CheckCircleIcon,
   Stack,
   Typography,
   WarningIcon,
   tokens,
   visuallyHidden,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
@@ -29,7 +30,7 @@ const { color } = tokens;
 function pillTone(line: PantryLine) {
   if (line.pantryBasic) return { bg: color.okBg, fg: color.okFg, ok: true };
   if (line.status === 'covered')
-    return { bg: color.accentTint, fg: color.accent, ok: true };
+    return { bg: color.accentTint, fg: color.accentOnTint, ok: true };
   if (line.status === 'short')
     return { bg: color.soonBg, fg: color.soonFg, ok: false };
   return { bg: color.urgentBg, fg: color.urgentFg, ok: false };
@@ -73,7 +74,7 @@ export function LineStatusPill({
         sx={{
           display: 'inline-flex',
           p: '4px',
-          borderRadius: `${tokens.radius.chip}px`,
+          borderRadius: radius.pill,
           bgcolor: tone.bg,
           color: tone.fg,
         }}
@@ -95,7 +96,7 @@ export function LineStatusPill({
         gap: '4px',
         px: '9px',
         py: '4px',
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         bgcolor: tone.bg,
         color: tone.fg,
         fontSize: 12,
@@ -163,7 +164,7 @@ export function AddMissing({
     <Stack spacing={1}>
       <Button
         fullWidth
-        startIcon={<CartIcon size={18} />}
+        startIcon={<ShoppingIcon size={18} />}
         disabled={adding || stale || added}
         onClick={onAddMissing}
         sx={{ fontSize: 15, fontWeight: 700 }}

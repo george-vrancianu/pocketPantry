@@ -63,6 +63,9 @@
     "add": "Føj {{name}} til listen"
   },
   "suggestions": {
+    "runningLowLabel": "Løber tør · {{count}}",
+    "runningLowWhy": "løber tør",
+    "runningLowTile": "{{name}}, løber tør",
     "manage": "Administrer",
     "dismissed": "Afviste {{name}}",
     "dismiss": "Afvis {{name}}"

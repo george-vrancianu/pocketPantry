@@ -1,7 +1,6 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, focusRing, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { useCatalogAisles } from '../../../lib/catalog';
-import { focusRing } from '../../../lib/focusRing';
 import { AisleSwatch } from '../AisleSwatch';
 import { useEmptyStateSearch } from './context';
 
@@ -39,7 +38,7 @@ export function BrowseByAisle() {
               gap: '8px',
               minHeight: 36,
               p: '0 12px',
-              borderRadius: `${tokens.radius.chip}px`,
+              borderRadius: radius.chip,
               border: `1px solid ${color.line}`,
               backgroundColor: color.surface,
               color: color.ink,
@@ -47,10 +46,10 @@ export function BrowseByAisle() {
               fontSize: 13.5,
               fontWeight: 600,
               cursor: 'pointer',
-              ...focusRing(2),
+              ...focusRing,
             }}
           >
-            <AisleSwatch aisleId={aisle.id} size={10} radius={3} />
+            <AisleSwatch aisleId={aisle.id} size={10} />
             {aisle.name}
           </Box>
         ))}

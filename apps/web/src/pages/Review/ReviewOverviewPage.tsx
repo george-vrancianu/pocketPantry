@@ -7,6 +7,8 @@ import {
   Spinner,
   Typography,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { readScans } from '../../lib/scanReads';
@@ -191,7 +193,7 @@ export function ReviewOverviewPage() {
           display: 'flex',
           gap: 1.5,
           p: 1.5,
-          borderRadius: `${tokens.radius.card}px`,
+          borderRadius: radius.card,
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
         }}
@@ -204,7 +206,7 @@ export function ReviewOverviewPage() {
             flex: 'none',
             width: 56,
             height: 72,
-            borderRadius: '10px',
+            borderRadius: nestedRadius(radius.control, 2),
             objectFit: 'cover',
           }}
         />
@@ -340,10 +342,10 @@ export function ReviewOverviewPage() {
                     sx={{
                       px: '10px',
                       py: '2px',
-                      borderRadius: `${tokens.radius.chip}px`,
+                      borderRadius: radius.pill,
                       fontSize: 12,
                       backgroundColor: tokens.color.accentTint,
-                      color: tokens.color.accent,
+                      color: tokens.color.accentOnTint,
                     }}
                   >
                     {displayName(line)}

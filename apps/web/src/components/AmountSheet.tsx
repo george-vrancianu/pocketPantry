@@ -185,7 +185,7 @@ function AmountForm({
         <Button type="submit" disabled={saving}>
           {saving ? t('edit.saving') : t('edit.save')}
         </Button>
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('cancel')}
         </Button>
       </Stack>

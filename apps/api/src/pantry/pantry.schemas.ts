@@ -6,6 +6,7 @@ import {
 } from '../catalog/catalog.schemas';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { AisleView } from '../catalog/ingredient-placement';
+import type { AmountScale } from '../catalog/amount-scale';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { BATCH_SOURCES } from '../unmatched/unmatched-entries';
 import { batchQuantity } from '../common/quantity';
@@ -107,6 +108,9 @@ export type UpdateBatchBody = z.infer<typeof updateBatchBody>;
 export const batchIdParam = z.object({ id: z.uuid() });
 export type BatchIdParam = z.infer<typeof batchIdParam>;
 
+export const ingredientIdParam = z.object({ ingredientId: z.uuid() });
+export type IngredientIdParam = z.infer<typeof ingredientIdParam>;
+
 export type BatchView = {
   id: string;
   /** Localised Ingredient name, or the typed name for an Unmatched Batch. */
@@ -115,6 +119,10 @@ export type BatchView = {
   unmatched: boolean;
   /** The Ingredient's Aisle, localised; null for an Unmatched Batch. */
   aisle: AisleView | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
+  amountScale: AmountScale | null;
+  /** The Ingredient's own unit: what a Batch with no stored unit opens on; null for an Unmatched Batch. */
+  defaultUnit: (typeof ingredientUnit.enumValues)[number] | null;
   quantity: number | null;
   unit: (typeof ingredientUnit.enumValues)[number] | null;
   location: (typeof storageLocation.enumValues)[number];

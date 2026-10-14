@@ -17,11 +17,13 @@ import {
   parentCategories,
   user,
 } from '../database/schema';
-import type {
-  CategoryOptionsView,
-  ExpiryOverrideView,
-  FamilySettingsView,
-  PreferencesView,
+import {
+  THEME_IDS,
+  type CategoryOptionsView,
+  type ExpiryOverrideView,
+  type FamilySettingsView,
+  type PreferencesView,
+  type UpdatePreferencesBody,
 } from './settings.schemas';
 
 /** Family Settings (shared by every Member of a Family) and Member Preferences (private). */
@@ -182,19 +184,24 @@ export class SettingsService {
 
   async getPreferences(memberId: string): Promise<PreferencesView> {
     const [row] = await this.database
-      .select({ locale: user.locale })
+      .select({ locale: user.locale, theme: user.theme })
       .from(user)
       .where(eq(user.id, memberId))
       .limit(1);
     if (!row) throw new ApiException(401, 'auth.unauthenticated');
     const locale = CATALOG_LOCALES.find((l) => l === row.locale) ?? null;
-    return { locale };
+    const theme = THEME_IDS.find((t) => t === row.theme) ?? null;
+    return { locale, theme };
   }
 
-  async setLocale(memberId: string, locale: CatalogLocale): Promise<void> {
+  /** Saves only the given preferences; the others keep their stored value. */
+  async setPreferences(
+    memberId: string,
+    preferences: UpdatePreferencesBody,
+  ): Promise<void> {
     await this.database
       .update(user)
-      .set({ locale })
+      .set({ locale: preferences.locale, theme: preferences.theme })
       .where(eq(user.id, memberId));
   }
 

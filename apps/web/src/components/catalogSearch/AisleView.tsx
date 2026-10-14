@@ -1,7 +1,6 @@
-import { Box, CloseIcon, tokens } from '@pocket-pantry/ui';
+import { Box, CloseIcon, tokens, focusRing, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogAisle } from '../../lib/catalog';
-import { focusRing } from '../../lib/focusRing';
 import { AisleSwatch } from './AisleSwatch';
 
 export type AisleViewHeaderProps = {
@@ -49,7 +48,7 @@ export function AisleViewHeader({
           p: '10px 10px 10px 14px',
         }}
       >
-        <AisleSwatch aisleId={aisle.id} size={12} radius={4} />
+        <AisleSwatch aisleId={aisle.id} size={12} />
         <Box sx={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600 }}>
           {aisle.name}
           <Box
@@ -78,7 +77,7 @@ export function AisleViewHeader({
             display: 'grid',
             placeItems: 'center',
             cursor: 'pointer',
-            ...focusRing(2),
+            ...focusRing,
           }}
         >
           <CloseIcon size={16} />
@@ -100,7 +99,7 @@ export function AisleViewHeader({
                 sx={{
                   minHeight: 30,
                   p: '0 12px',
-                  borderRadius: `${tokens.radius.chip}px`,
+                  borderRadius: radius.chip,
                   border: `1px solid ${on ? color.accent : color.line}`,
                   backgroundColor: on ? color.accentTint : color.surface,
                   color: on ? color.accentHover : color.ink,
@@ -108,7 +107,7 @@ export function AisleViewHeader({
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  ...focusRing(2),
+                  ...focusRing,
                 }}
               >
                 {parent.name}

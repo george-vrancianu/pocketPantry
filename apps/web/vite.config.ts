@@ -1,6 +1,24 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+// A relative path, not the package name: Vite bundles the config's local
+// imports but hands workspace packages to Node, which can't resolve the UI
+// package's extensionless TypeScript imports.
+import { prePaintScript } from '../../packages/ui/src/theme/appearance';
+
+/**
+ * Inlines the appearance pre-paint script at the end of `<head>`, after the
+ * `theme-color` tags it updates and before React mounts, so the first paint
+ * is already in the right Theme.
+ */
+function prePaintTheme(): Plugin {
+  return {
+    name: 'pocket-pantry:pre-paint-theme',
+    transformIndexHtml: () => [
+      { tag: 'script', children: prePaintScript(), injectTo: 'head' },
+    ],
+  };
+}
 
 // The app calls `/api` on its own origin, so a phone or HTTPS tunnel only needs Vite's port.
 // Only the API's own prefix: a route like `/apiary` stays with the app.
@@ -13,7 +31,7 @@ const allowedHosts = [
 ];
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), prePaintTheme()],
   server: {
     // Bind to every interface so phones on the local network can reach Vite.
     // The API allows these origins on ports 5173 and 5174.

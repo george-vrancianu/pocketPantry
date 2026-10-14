@@ -18,16 +18,18 @@ export type Suggestion = {
   ingredient: CatalogSearchResult;
 };
 
-/** One key per group: missing Staples, Ingredients recently used up, and Ingredients whose Batches have all expired. */
+/** One key per group: missing Staples, Ingredients recently used up, Ingredients flagged running low, and Ingredients whose Batches have all expired. */
 export type Suggestions = {
   staples: Suggestion[];
   usedUp: Suggestion[];
+  runningLow: Suggestion[];
   expired: Suggestion[];
 };
 
 export const noSuggestions: Suggestions = {
   staples: [],
   usedUp: [],
+  runningLow: [],
   expired: [],
 };
 

@@ -3,6 +3,7 @@ import {
   tokens,
   usePrefersReducedMotion,
   visuallyHidden,
+  radius,
 } from '@pocket-pantry/ui';
 import {
   useId,
@@ -331,7 +332,7 @@ export function CatalogSearch({
         hidden={!panelVisible}
         sx={{
           mt: 1,
-          borderRadius: `${tokens.radius.card}px`,
+          borderRadius: radius.card,
           border: `1px solid ${tokens.color.line}`,
           backgroundColor: tokens.color.surface,
           overflow: 'hidden',

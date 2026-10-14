@@ -64,6 +64,9 @@
     "add": "Add {{name}} to the list"
   },
   "suggestions": {
+    "runningLowLabel": "Running low · {{count}}",
+    "runningLowWhy": "running low",
+    "runningLowTile": "{{name}}, running low",
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
     "dismiss": "Dismiss {{name}}"

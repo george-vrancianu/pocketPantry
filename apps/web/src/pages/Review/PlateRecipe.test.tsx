@@ -10,6 +10,7 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const rice: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'rice-id',
   name: 'Rice',
   defaultUnit: 'g',

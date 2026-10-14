@@ -4,6 +4,8 @@ import {
   DeleteIcon,
   SwapIcon,
   tokens,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
@@ -274,9 +276,9 @@ export function RowEditPanel({
               flexGrow: 1,
               height: 40,
               border: 0,
-              borderRadius: `${tokens.radius.field}px`,
+              borderRadius: radius.control,
               bgcolor: tokens.color.accent,
-              color: tokens.color.surface,
+              color: color.accentInk,
               fontFamily: 'inherit',
               fontSize: 14,
               fontWeight: 700,

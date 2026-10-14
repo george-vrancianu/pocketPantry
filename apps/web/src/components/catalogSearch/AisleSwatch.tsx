@@ -1,28 +1,26 @@
-import { aisleTint, Box } from '@pocket-pantry/ui';
+import { aisleTint, Box, color, radius } from '@pocket-pantry/ui';
 
-/** A small rounded square in an Aisle's tint. */
+/** A small rounded square in the Aisle's tint, which follows the Theme. */
 export function AisleSwatch({
   aisleId,
   size,
-  radius,
 }: {
   aisleId: string;
   size: number;
-  radius: number;
 }) {
-  const tint = aisleTint(aisleId).light;
+  const tint = aisleTint(aisleId);
   return (
     <Box
       aria-hidden="true"
       data-testid="aisle-swatch"
-      data-tint={tint}
+      data-tint={tint.name}
       sx={{
         flexShrink: 0,
         width: size,
         height: size,
-        borderRadius: `${radius}px`,
-        backgroundColor: tint,
-        boxShadow: 'inset 0 0 0 1px rgba(0,0,0,.08)',
+        borderRadius: radius.box,
+        backgroundColor: tint.bg,
+        boxShadow: `inset 0 0 0 1px ${color.cardLine}`,
       }}
     />
   );

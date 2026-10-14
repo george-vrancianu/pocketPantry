@@ -25,7 +25,11 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   );
   const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
-  const [unit, setUnit] = useState<Unit>('g');
+  // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
+  const [chosenUnit, setChosenUnit] = useState<Unit | null>(null);
+  // The unit a dropped Ingredient had on screen: kept while its name is edited, never carried to the next pick.
+  const [frozenUnit, setFrozenUnit] = useState<Unit | null>(null);
+  const unit: Unit = chosenUnit ?? frozenUnit ?? ingredient?.defaultUnit ?? 'g';
   const [location, setLocation] = useState<StorageLocation>(FALLBACK_LOCATION);
   const [expiryDate, setExpiryDate] = useState<IsoDate | null>(null);
   const [description, setDescription] = useState('');
@@ -33,21 +37,29 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const selectIngredient = (result: CatalogSearchResult) => {
     setIngredient(result);
     setUnmatchedName(null);
-    // Keep a unit typed with an amount before the pick ("2 kg", then Parmesan).
-    if (quantity.trim() === '') setUnit(result.defaultUnit);
+    // A frozen unit belonged to the dropped Ingredient: the new one's default applies.
+    setFrozenUnit(null);
+    // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
+    if (quantity.trim() === '') setChosenUnit(null);
     setLocation(result.defaults.location ?? FALLBACK_LOCATION);
     const days = result.defaults.expiryDays;
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
 
-  const changeQuery = () => {
+  /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
+  const clearIngredient = () => {
+    if (ingredient && chosenUnit === null) setFrozenUnit(unit);
     setIngredient(null);
+  };
+
+  const changeQuery = () => {
+    clearIngredient();
     setUnmatchedName(null);
   };
 
   const useTypedName = (name: string) => {
     setUnmatchedName(name);
-    setIngredient(null);
+    clearIngredient();
     setExpiryDate(null);
   };
 
@@ -94,7 +106,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     changeQuery,
     useTypedName,
     setQuantity,
-    setUnit,
+    setUnit: setChosenUnit,
     setLocation,
     setExpiryDate,
     setDescription,

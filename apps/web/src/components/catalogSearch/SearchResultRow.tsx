@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { RowTag } from './RowTag';
@@ -77,7 +77,7 @@ export function SearchResultRow({
                 top: 10,
                 bottom: 10,
                 width: 3,
-                borderRadius: 2,
+                borderRadius: radius.pill,
                 backgroundColor: color.accent,
               },
             }
@@ -117,7 +117,7 @@ export function SearchResultRow({
               px: '6px',
               py: '2px',
               border: `1px solid ${color.line}`,
-              borderRadius: '6px',
+              borderRadius: radius.box,
               color: color.muted,
               fontSize: 11,
               fontWeight: 600,
@@ -132,7 +132,7 @@ export function SearchResultRow({
               flexShrink: 0,
               px: '8px',
               py: '5px',
-              borderRadius: 999,
+              borderRadius: radius.pill,
               backgroundColor: color.chipNeutral,
               color: color.muted,
               fontSize: 11.5,

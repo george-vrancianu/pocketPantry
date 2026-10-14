@@ -1,9 +1,15 @@
 import {
   Box,
   ChevronDownIcon,
+  FieldUnit,
   PlusIcon,
   Typography,
   tokens,
+  border,
+  color,
+  nestedRadius,
+  radius,
+  shadow,
 } from '@pocket-pantry/ui';
 import {
   useId,
@@ -15,6 +21,14 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNITS, type Unit } from '../lib/catalog';
+import {
+  convertQuantity,
+  parseTypedNumber,
+  stepAmount,
+  unitsInFamily,
+  type AmountScale,
+} from '../lib/usualAmounts';
+import { UsualAmountRow } from './UsualAmountRow';
 
 const TYPED_UNITS: Record<string, Unit> = {
   g: 'g',
@@ -57,6 +71,8 @@ export type AmountFieldProps = {
   height?: number;
   /** The edge the unit popover lines up with: 'end' when the field reaches the right edge, 'start' when something sits to its right. */
   popoverAlign?: 'start' | 'end';
+  /** The Ingredient's Amount Scale; given, the field draws its Usual Amount chips under it. Null or left out (an Unmatched name) means no chips. */
+  amountScale?: AmountScale | null;
 };
 
 /**
@@ -77,9 +93,9 @@ export function AmountField({
   label,
   height = 44,
   popoverAlign = 'end',
+  amountScale,
 }: AmountFieldProps) {
   const { t } = useTranslation('common');
-  const { color } = tokens;
   const errorId = useId();
   const inputId = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -133,9 +149,27 @@ export function AmountField({
   };
   const choose = (next: Unit | '') => {
     split.current = null;
+    // Within a family the number is rescaled, so the amount stays the same (1.5 kg is 1500 g).
+    const value = parseTypedNumber(quantity);
+    if (
+      amountScale &&
+      unit &&
+      next &&
+      next !== unit &&
+      value !== null &&
+      unitsInFamily(unit).includes(next)
+    ) {
+      onQuantityChange(String(convertQuantity(value, unit, next)));
+    }
     onUnitChange(next);
     setPicking(false);
     input.current?.focus();
+  };
+  // With chips, the unit moves within its family only; elsewhere every unit is offered.
+  const offered: readonly Unit[] = amountScale ? unitsInFamily(unit) : UNITS;
+  const pick = (value: number) => {
+    split.current = null;
+    onQuantityChange(String(value));
   };
   const keyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && picking) {
@@ -144,6 +178,20 @@ export function AmountField({
       setPicking(false);
       input.current?.focus();
     }
+  };
+  // Up and down step the amount; an empty field only steps up.
+  const step = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
+    event.preventDefault();
+    split.current = null;
+    const direction = event.key === 'ArrowUp' ? 1 : -1;
+    const empty = quantity.trim() === '';
+    if (empty && direction < 0) return;
+    const current = empty ? 0 : parseTypedNumber(quantity);
+    if (current === null) return;
+    onQuantityChange(
+      String(stepAmount(current, direction, unit, event.shiftKey)),
+    );
   };
   const blur = (event: FocusEvent<HTMLElement>) => {
     if (!event.currentTarget.contains(event.relatedTarget)) setPicking(false);
@@ -160,12 +208,12 @@ export function AmountField({
             height,
             display: 'flex',
             alignItems: 'center',
-            borderRadius: '14px',
-            border: `1.5px solid ${error ? color.urgentFg : color.line}`,
-            backgroundColor: color.surface,
+            borderRadius: radius.control,
+            border: `${border.field} solid ${error ? tokens.color.urgentFg : tokens.color.line}`,
+            backgroundColor: color.fieldBg,
             '&:focus-within': {
-              borderColor: error ? color.urgentFg : color.accent,
-              boxShadow: `0 0 0 3px ${color.accentTint}`,
+              borderColor: error ? tokens.color.urgentFg : tokens.color.accent,
+              boxShadow: `0 0 0 3px ${tokens.color.accentTint}`,
             },
           }}
         >
@@ -182,8 +230,8 @@ export function AmountField({
                 fontSize: 12,
                 fontWeight: 600,
                 lineHeight: 1,
-                color: color.muted,
-                backgroundColor: color.surface,
+                color: tokens.color.muted,
+                backgroundColor: color.fieldBg,
                 pointerEvents: 'none',
               }}
             >
@@ -214,10 +262,13 @@ export function AmountField({
                 ) && event.target.selectionStart === event.target.value.length,
               )
             }
-            onKeyDown={(event: KeyboardEvent) => {
+            onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
               if (event.key === 'Enter') {
                 event.preventDefault();
                 onSubmit();
+              } else if (amountScale) {
+                // Only fields with Usual Amount chips step; the others keep the arrow keys.
+                step(event);
               }
             }}
             sx={{
@@ -232,35 +283,18 @@ export function AmountField({
               fontSize: 16,
               fontWeight: 600,
               fontVariantNumeric: 'tabular-nums',
-              color: color.ink,
+              color: tokens.color.ink,
             }}
           />
-          <Box
-            component="button"
-            type="button"
+          <FieldUnit
             aria-label={t('common:amount.unit', { unit: unitLabel })}
             aria-expanded={picking}
             onClick={() => setPicking((value) => !value)}
-            sx={{
-              mr: '5px',
-              height: 32,
-              px: 1,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              border: 0,
-              borderRadius: '10px',
-              cursor: 'pointer',
-              backgroundColor: color.chipNeutral,
-              color: color.ink,
-              font: 'inherit',
-              fontSize: 13.5,
-              fontWeight: 700,
-            }}
+            sx={{ mr: '5px', px: 1, gap: '4px' }}
           >
             {unitLabel}
             <ChevronDownIcon size={14} />
-          </Box>
+          </FieldUnit>
           {picking ? (
             <Box
               role="group"
@@ -282,13 +316,13 @@ export function AmountField({
                 maxWidth: 'min(260px, calc(100vw - 72px))',
                 gap: '2px',
                 p: '5px',
-                borderRadius: '14px',
-                border: `1px solid ${color.line}`,
-                backgroundColor: color.surface,
-                boxShadow: 'var(--shadow-dock)',
+                borderRadius: radius.control,
+                border: `${border.width} solid ${tokens.color.line}`,
+                backgroundColor: tokens.color.surface,
+                boxShadow: shadow.float,
               }}
             >
-              {(allowNoUnit ? (['', ...UNITS] as const) : UNITS).map(
+              {(allowNoUnit ? (['', ...offered] as const) : offered).map(
                 (option) => {
                   const selected = option === unit;
                   return (
@@ -303,15 +337,15 @@ export function AmountField({
                         minWidth: 40,
                         px: 1,
                         border: 0,
-                        borderRadius: '10px',
+                        borderRadius: nestedRadius(radius.control, 5),
                         cursor: 'pointer',
                         font: 'inherit',
                         fontSize: 13.5,
                         fontWeight: 700,
                         backgroundColor: selected
-                          ? color.accent
+                          ? tokens.color.accent
                           : 'transparent',
-                        color: selected ? '#FFFFFF' : color.ink,
+                        color: selected ? color.accentInk : tokens.color.ink,
                       }}
                     >
                       {option ? t(`common:units.${option}`) : '—'}
@@ -336,10 +370,10 @@ export function AmountField({
               display: 'grid',
               placeItems: 'center',
               border: 0,
-              borderRadius: '14px',
+              borderRadius: radius.control,
               cursor: 'pointer',
-              backgroundColor: color.accent,
-              color: '#FFFFFF',
+              backgroundColor: tokens.color.accent,
+              color: color.accentInk,
               '&:disabled': { opacity: 0.5, cursor: 'default' },
             }}
           >
@@ -347,11 +381,20 @@ export function AmountField({
           </Box>
         ) : null}
       </Box>
+      {amountScale ? (
+        <UsualAmountRow
+          name={name}
+          scale={amountScale}
+          unit={unit}
+          quantity={quantity}
+          onPick={pick}
+        />
+      ) : null}
       {error ? (
         <Typography
           id={errorId}
           variant="meta"
-          sx={{ display: 'block', mt: 0.75, color: color.urgentFg }}
+          sx={{ display: 'block', mt: 0.75, color: tokens.color.urgentFg }}
         >
           {error}
         </Typography>

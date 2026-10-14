@@ -67,6 +67,9 @@
     "add": "Adaugă {{name}} în listă"
   },
   "suggestions": {
+    "runningLowLabel": "Pe cale să se termine · {{count}}",
+    "runningLowWhy": "pe cale să se termine",
+    "runningLowTile": "{{name}}, pe cale să se termine",
     "manage": "Gestionează",
     "dismissed": "Ai ignorat {{name}}",
     "dismiss": "Ignoră {{name}}"

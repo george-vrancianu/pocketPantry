@@ -1,4 +1,4 @@
-import { Box, PlusIcon, tokens } from '@pocket-pantry/ui';
+import { Box, PlusIcon, tokens, radius, nestedRadius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { RowTag } from './RowTag';
 
@@ -55,7 +55,7 @@ export function UseTypedRow({
                 top: 10,
                 bottom: 10,
                 width: 3,
-                borderRadius: 2,
+                borderRadius: radius.pill,
                 backgroundColor: color.accent,
               },
             }
@@ -71,7 +71,7 @@ export function UseTypedRow({
           height: 38,
           display: 'grid',
           placeItems: 'center',
-          borderRadius: '11px',
+          borderRadius: nestedRadius(radius.control, 5),
           backgroundColor: color.chipNeutral,
           color: color.muted,
         }}
@@ -79,7 +79,7 @@ export function UseTypedRow({
         <PlusIcon size={20} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Box sx={{ fontSize: 15, fontWeight: 600, color: color.accent }}>
+        <Box sx={{ fontSize: 15, fontWeight: 600, color: color.accentOnTint }}>
           {t('search.useTyped', { name })}
         </Box>
         <Box sx={{ fontSize: 13, color: color.muted }}>

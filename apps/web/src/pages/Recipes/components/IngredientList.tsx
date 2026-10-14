@@ -1,11 +1,14 @@
 import {
   Alert,
   Box,
-  CartIcon,
+  ShoppingIcon,
   CheckIcon,
   IconButton,
   tokens,
   usePrefersReducedMotion,
+  Card,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -125,7 +128,7 @@ function IngredientRow({
                     ml: '7px',
                     px: '7px',
                     py: '1px',
-                    borderRadius: '6px',
+                    borderRadius: nestedRadius(radius.control, 6),
                     fontSize: 12.5,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
@@ -134,7 +137,7 @@ function IngredientRow({
                       : tokens.color.accentTint,
                     color: optionalOrBasic
                       ? tokens.color.muted
-                      : tokens.color.accent,
+                      : tokens.color.accentOnTint,
                   }}
                 >
                   {amount}
@@ -177,7 +180,7 @@ function IngredientRow({
               ariaDisabled={added || addDisabled}
               onClick={onAdd}
             >
-              {added ? <CheckIcon size={18} /> : <CartIcon size={18} />}
+              {added ? <CheckIcon size={18} /> : <ShoppingIcon size={18} />}
             </IconButton>
           </Box>
         ) : null}
@@ -206,18 +209,11 @@ export function IngredientList({
   'aria-label': label,
 }: Props) {
   return (
-    <Box
+    <Card
       component="ul"
+      variant="list"
       aria-label={label}
-      sx={{
-        listStyle: 'none',
-        m: 0,
-        p: 0,
-        overflow: 'hidden',
-        bgcolor: tokens.color.surface,
-        border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
-      }}
+      sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
     >
       {lines.map((line) => (
         <IngredientRow
@@ -233,6 +229,6 @@ export function IngredientList({
           onAdd={() => onAddLine(line)}
         />
       ))}
-    </Box>
+    </Card>
   );
 }

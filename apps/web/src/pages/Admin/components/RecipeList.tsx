@@ -25,7 +25,7 @@ export function RecipeList({ onCreate, onEdit }: Props) {
   const row = (recipe: AdminRecipeListItem) => (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
       <Button
-        variant="text"
+        variant="ghost"
         aria-label={t('admin:recipe.edit', { title: recipe.title })}
         onClick={() => onEdit(recipe.id)}
       >

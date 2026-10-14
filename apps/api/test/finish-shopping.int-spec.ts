@@ -27,6 +27,7 @@ type Proposal = {
     unmatched: boolean;
     quantity: number | null;
     unit: string | null;
+    defaultUnit: string | null;
     location: string;
     expiryDate: string | null;
   }>;
@@ -142,13 +143,52 @@ describe('Finish Shopping (integration)', () => {
       quantity: 200,
       unit: 'g',
       location: 'fridge',
+      // Dairy maps to medium: the Amount Scale the review's Usual Amount chips use.
+      amountScale: 'medium',
     });
     expect(cheese.expiryDate).not.toBeNull();
     expect(unmatched).toMatchObject({
       unmatched: true,
       quantity: 2,
       unit: 'pcs',
+      amountScale: null,
     });
+  });
+
+  it('offers each matched line its Ingredient default unit, even without a quantity', async () => {
+    const { cookie } = await signUp();
+    const eggs = await ingredientId(cookie, 'eggs');
+    const parmesan = await ingredientId(cookie, 'parmesan');
+    await addItem(cookie, { ingredientId: eggs });
+    await addItem(cookie, { ingredientId: parmesan });
+    const list = await addItem(cookie, { name: 'Zorblax' });
+    await check(cookie, itemIdByName(list, 'Eggs'));
+    await check(cookie, itemIdByName(list, 'Parmesan'));
+    await check(cookie, itemIdByName(list, 'Zorblax'));
+
+    const result = await proposal(cookie);
+
+    // No stored unit: the line stays unit-less, but the client can open on the
+    // Ingredient's own unit, so eggs take pieces and Parmesan grams.
+    expect(result.lines).toEqual([
+      expect.objectContaining({
+        name: 'Eggs',
+        quantity: null,
+        unit: null,
+        defaultUnit: 'pcs',
+      }),
+      expect.objectContaining({
+        name: 'Parmesan',
+        quantity: null,
+        unit: null,
+        defaultUnit: 'g',
+      }),
+      expect.objectContaining({
+        name: 'Zorblax',
+        unmatched: true,
+        defaultUnit: null,
+      }),
+    ]);
   });
 
   it("counts Default Expiry from the Member's local date", async () => {

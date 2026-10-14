@@ -103,12 +103,13 @@ describe('Expired Suggestions (integration)', () => {
   const milk = seedId.ingredient('milk');
   const parmesan = seedId.ingredient('parmesan');
 
-  it('always returns the expired group, empty for a new Family', async () => {
+  it('always returns the expired and running low groups, empty for a new Family', async () => {
     const cookie = await signUp();
 
     expect(await suggestions(cookie)).toEqual({
       staples: [],
       usedUp: [],
+      runningLow: [],
       expired: [],
     });
   });

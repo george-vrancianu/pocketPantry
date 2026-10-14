@@ -30,6 +30,7 @@ const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => {
     aisle: dairy,
     since: null,
     ingredient: {
+      amountScale: 'medium',
       id,
       name,
       defaultUnit: 'l',
@@ -57,6 +58,7 @@ const emptyList = (groups: ShoppingList['groups'] = []): ShoppingList => ({
 });
 
 const flour: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'flour-id',
   name: 'Flour',
   defaultUnit: 'g',
@@ -126,6 +128,67 @@ describe('Suggestions in the Add sheet', () => {
     expect(
       within(dialog).queryByRole('button', { name: /Taco night/ }),
     ).toBeNull();
+  });
+
+  it('shows a Running low section below the Gone tiles; picking a tile selects it through the search, with no dismiss control', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [suggestion()],
+          usedUp: [],
+          expired: [],
+          runningLow: [
+            suggestion({
+              ingredientId: 'flour-id',
+              name: 'Flour',
+              quantity: null,
+              unit: null,
+            }),
+          ],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+
+    const section = await within(dialog).findByRole('region', {
+      name: 'Running low · 1',
+    });
+    const gone = within(dialog).getByRole('region', {
+      name: 'Gone from your Pantry',
+    });
+    expect(
+      gone.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Not a Gone tile: the Gone section holds Milk only.
+    expect(
+      within(gone).queryByRole('button', { name: /Flour/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(section).queryByRole('button', { name: /Dismiss/ }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(
+      within(section).getByRole('button', { name: 'Flour, running low' }),
+    );
+    expect(
+      await within(dialog).findByRole('textbox', { name: /Amount of Flour/ }),
+    ).toBeVisible();
+  });
+
+  it('hides the Running low section when no Ingredient is flagged', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [suggestion()], usedUp: [], runningLow: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+
+    await within(dialog).findByRole('button', { name: 'Milk, missing staple' });
+    expect(within(dialog).queryByText(/Running low/)).not.toBeInTheDocument();
   });
 
   it('has no Suggestions section or header Staples link on the page', async () => {

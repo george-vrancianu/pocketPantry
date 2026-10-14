@@ -1,6 +1,5 @@
-import { Box, InfoIcon, tokens } from '@pocket-pantry/ui';
+import { Box, InfoIcon, tokens, focusRing, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { focusRing } from '../../lib/focusRing';
 
 /** The inline `role="alert"` row for a failed search, with Retry. */
 export function ErrorRow({ onRetry }: { onRetry: () => void }) {
@@ -40,14 +39,14 @@ export function ErrorRow({ onRetry }: { onRetry: () => void }) {
           px: '12px',
           py: '9px',
           border: `1.5px solid ${color.urgentFg}`,
-          borderRadius: 999,
+          borderRadius: radius.pill,
           background: 'none',
           color: color.urgentFg,
           font: 'inherit',
           fontSize: 13,
           fontWeight: 700,
           cursor: 'pointer',
-          ...focusRing(2),
+          ...focusRing,
         }}
       >
         {t('search.retry')}

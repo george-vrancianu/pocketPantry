@@ -233,6 +233,42 @@ describe('Admin role and Catalog curation (integration)', () => {
   describe('Ingredients', () => {
     const leafId = seedId.leaf('hard-cheese');
 
+    it('gives a new Ingredient the Amount Scale of its Parent Category, and re-derives it when moved to another Leaf', async () => {
+      const scaleOf = async (id: string) =>
+        (
+          await database
+            .select({ scale: ingredients.amountScale })
+            .from(ingredients)
+            .where(eq(ingredients.id, id))
+        )[0]?.scale;
+
+      // Spices are a low scale, so a new Spices Ingredient must not read as medium.
+      const spice = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: seedId.leaf('ground-spices'),
+            name: `Sumac ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      expect(await scaleOf(spice.id)).toBe('low');
+
+      // Moving it to a Produce Leaf (large) re-derives the scale from the new Parent.
+      await as(adminCookie)
+        .patch(`/ingredients/${spice.id}`, {
+          leafCategoryId: seedId.leaf('root-vegetables'),
+        })
+        .expect(200);
+      expect(await scaleOf(spice.id)).toBe('large');
+
+      // An edit that leaves the Leaf alone keeps the scale.
+      await as(adminCookie)
+        .patch(`/ingredients/${spice.id}`, { defaultUnit: 'kg' })
+        .expect(200);
+      expect(await scaleOf(spice.id)).toBe('large');
+    });
+
     it('creates, edits, renames and deletes an Ingredient, keeping translations consistent', async () => {
       const created = (
         await as(adminCookie)
@@ -551,6 +587,75 @@ describe('Admin role and Catalog curation (integration)', () => {
       batchIds.push(batch.id);
       return batch.id;
     }
+
+    it('re-derives the Amount Scale of every Ingredient in a Leaf moved to another Parent', async () => {
+      const scaleOf = async (id: string) =>
+        (
+          await database
+            .select({ scale: ingredients.amountScale })
+            .from(ingredients)
+            .where(eq(ingredients.id, id))
+        )[0]?.scale;
+
+      // A new Leaf under Spices (low), so its Ingredient starts low and leaves the seeded Leaves alone.
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: seedId.parent('spices'),
+            name: `Moved leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const first = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Moved item ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      const second = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Moved item two ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      // A sibling Leaf under the same Parent, which the move must not touch.
+      const sibling = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: seedId.parent('spices'),
+            name: `Sibling leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const siblingItem = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: sibling.id,
+            name: `Sibling item ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      expect(await scaleOf(first.id)).toBe('low');
+      expect(await scaleOf(second.id)).toBe('low');
+      expect(await scaleOf(siblingItem.id)).toBe('low');
+
+      // Moving the Leaf to Produce (large) re-derives every Ingredient in it.
+      await as(adminCookie)
+        .patch(`/leaf-categories/${leaf.id}`, {
+          parentId: seedId.parent('produce'),
+        })
+        .expect(200);
+      expect(await scaleOf(first.id)).toBe('large');
+      expect(await scaleOf(second.id)).toBe('large');
+      expect(await scaleOf(siblingItem.id)).toBe('low');
+    });
 
     it('rejects deleting a Leaf Category that Batches still reference', async () => {
       const leaf = (

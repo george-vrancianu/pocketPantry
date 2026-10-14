@@ -1,5 +1,4 @@
-import { tokens } from '@pocket-pantry/ui';
-import { focusRing } from '../../../lib/focusRing';
+import { tokens, insetFocusRing } from '@pocket-pantry/ui';
 import type { RowStatus } from '../../../lib/review';
 
 /**
@@ -106,5 +105,5 @@ export const linkButtonSx = {
   fontSize: 13,
   fontWeight: 700,
   cursor: 'pointer',
-  ...focusRing(),
+  ...insetFocusRing,
 } as const;

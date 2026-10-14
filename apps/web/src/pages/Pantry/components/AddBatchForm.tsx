@@ -48,6 +48,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         <>
           <AmountLocationRow
             name={picked}
+            amountScale={form.ingredient?.amountScale}
             quantity={form.quantity}
             unit={form.unit}
             location={form.location}
@@ -93,7 +94,7 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         <Button type="submit" disabled={!form.canSave}>
           {form.saving ? t('form.saving') : t('form.save')}
         </Button>
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('form.cancel')}
         </Button>
       </Stack>

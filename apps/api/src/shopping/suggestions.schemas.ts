@@ -20,9 +20,10 @@ export type SuggestionView = {
   ingredient: CatalogSearchResult;
 };
 
-/** One key per group: missing Staples, Used Up Ingredients and expired Ingredients (the last two carry no quantity). */
+/** One key per group: missing Staples, Used Up, Running low and expired Ingredients (Used Up, Running low and expired carry no quantity). */
 export type SuggestionsView = {
   staples: SuggestionView[];
   usedUp: SuggestionView[];
+  runningLow: SuggestionView[];
   expired: SuggestionView[];
 };

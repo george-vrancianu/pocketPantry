@@ -5,10 +5,12 @@ import {
   Stack,
   TextField,
   Typography,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { AmountField } from '../../../components/AmountField';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { LOCATIONS, UNITS } from '../../../lib/catalog';
+import { LOCATIONS } from '../../../lib/catalog';
 import { useFinishReview } from '../hooks/useFinishReview';
 
 type Props = { onDone: () => void; onCancel: () => void };
@@ -30,7 +32,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
       </Typography>
       {review.error ? <Alert>{review.error}</Alert> : null}
       {review.stale ? (
-        <Button type="button" variant="text" onClick={review.reload}>
+        <Button type="button" variant="ghost" onClick={review.reload}>
           {t('shopping:finish.reload')}
         </Button>
       ) : null}
@@ -49,7 +51,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
             p: 2,
             border: 1,
             borderColor: 'divider',
-            borderRadius: '20px',
+            borderRadius: radius.card,
             opacity: dropped ? 0.5 : 1,
           }}
         >
@@ -62,7 +64,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
               {line.unmatched ? ` (${t('shopping:item.unmatched')})` : ''}
             </Typography>
             <Button
-              variant="text"
+              variant="ghost"
               type="button"
               aria-pressed={dropped}
               onClick={() => review.toggleDrop(line.itemId)}
@@ -74,47 +76,27 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
           </Stack>
           {dropped ? null : (
             <>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  label={t('shopping:add.quantity')}
-                  type="number"
-                  value={edit.quantity}
-                  error={!quantityValid}
-                  helperText={
-                    quantityValid
-                      ? undefined
-                      : t('shopping:finish.quantityInvalid')
-                  }
-                  onChange={(event) =>
-                    review.edit(line.itemId, { quantity: event.target.value })
-                  }
-                  slotProps={{
-                    htmlInput: {
-                      min: 0,
-                      max: 1_000_000,
-                      step: 'any',
-                      inputMode: 'decimal',
-                    },
-                  }}
-                />
-                <TextField
-                  select
-                  label={t('shopping:add.unit')}
-                  value={edit.unit}
-                  onChange={(event) =>
-                    review.edit(line.itemId, {
-                      unit: event.target.value as typeof edit.unit,
-                    })
-                  }
-                  slotProps={{ select: { native: true } }}
-                >
-                  {UNITS.map((unit) => (
-                    <option key={unit} value={unit}>
-                      {t(`common:units.${unit}`)}
-                    </option>
-                  ))}
-                </TextField>
-              </Stack>
+              <AmountField
+                name={line.name}
+                quantity={edit.quantity}
+                unit={edit.unit}
+                onQuantityChange={(quantity, unit) =>
+                  review.edit(line.itemId, {
+                    quantity,
+                    ...(unit ? { unit } : {}),
+                  })
+                }
+                onUnitChange={(unit) => {
+                  if (unit) review.edit(line.itemId, { unit });
+                }}
+                error={
+                  quantityValid ? null : t('shopping:finish.quantityInvalid')
+                }
+                // Enter has no save here; Confirm below keeps the lines.
+                onSubmit={() => {}}
+                allowNoUnit={false}
+                amountScale={line.amountScale}
+              />
               <TextField
                 select
                 label={t('pantry:form.location')}
@@ -167,7 +149,7 @@ export function FinishShoppingReview({ onDone, onCancel }: Props) {
               : t('shopping:finish.confirm', { count: review.keptCount })}
           </Button>
         )}
-        <Button type="button" variant="text" onClick={onCancel}>
+        <Button type="button" variant="ghost" onClick={onCancel}>
           {t('shopping:finish.cancel')}
         </Button>
       </Stack>

@@ -33,7 +33,7 @@ export function useShoppingScreen() {
 
   return {
     list: visible,
-    suggestions: suggestions.data ?? noSuggestions,
+    suggestions: { ...noSuggestions, ...suggestions.data },
     isLoading: list.isPending,
     error: error ? translateApiError(t, error) : null,
     adding: add.isPending,

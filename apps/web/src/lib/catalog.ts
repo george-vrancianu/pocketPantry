@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { apiRequest } from './api';
+import type { AmountScale } from './usualAmounts';
 
 export const LOCATIONS = ['fridge', 'freezer', 'cupboard', 'spices'] as const;
 export type StorageLocation = (typeof LOCATIONS)[number];
@@ -12,6 +13,8 @@ export type CatalogSearchResult = {
   id: string;
   name: string;
   defaultUnit: Unit;
+  /** How much a Member usually buys at once; always present. */
+  amountScale: AmountScale;
   leafCategory: { id: string; name: string };
   parentCategory: {
     id: string;

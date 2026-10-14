@@ -1,8 +1,10 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
+import { RunningLowToggle } from '../../../components/RunningLowToggle';
+import { RunningLowChip } from '../../../components/RunningLowChip';
 import { ExpiryTag } from '../../../components/ExpiryTag';
 import { useExpiryTags, type Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
@@ -55,18 +57,21 @@ export function RollUpRow({
     // Only when the row becomes gone, not on every render while it is.
   }, [rollUp.gone]);
 
-  const detail = [
-    rollUp.totals
-      .map((total) =>
-        formatAmount(total.quantity, total.unit, i18n.language, t),
-      )
-      .join(' + ') || null,
-    rollUp.batches.length > 1
-      ? t('batchCount', { count: rollUp.batches.length })
-      : rollUp.batches[0].productDescription,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  // Running low stands in for the whole detail line: amounts and Batches no longer matter once it is flagged.
+  const detail = rollUp.runningLow
+    ? null
+    : [
+        rollUp.totals
+          .map((total) =>
+            formatAmount(total.quantity, total.unit, i18n.language, t),
+          )
+          .join(' + ') || null,
+        rollUp.batches.length > 1
+          ? t('batchCount', { count: rollUp.batches.length })
+          : rollUp.batches[0].productDescription,
+      ]
+        .filter(Boolean)
+        .join(' · ');
 
   return (
     <Box
@@ -129,7 +134,7 @@ export function RollUpRow({
                     fontWeight: 700,
                     px: '8px',
                     py: '2px',
-                    borderRadius: `${tokens.radius.chip}px`,
+                    borderRadius: radius.pill,
                     bgcolor: tokens.color.soonBg,
                     color: tokens.color.soonFg,
                   }}
@@ -138,16 +143,19 @@ export function RollUpRow({
                 </Box>
               ) : null}
             </Typography>
-            {detail ? (
+            {detail || rollUp.runningLow ? (
               <Typography
                 component="span"
                 sx={{
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
                   fontSize: 12,
                   color: tokens.color.muted,
                   mt: '2px',
                 }}
               >
+                {rollUp.runningLow ? <RunningLowChip /> : null}
                 {detail}
               </Typography>
             ) : null}
@@ -155,7 +163,10 @@ export function RollUpRow({
           {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
         </Box>
         {expanded && !rollUp.unmatched ? (
-          <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+          <>
+            <RunningLowToggle ingredientId={rollUp.key} />
+            <StapleToggle ingredientId={rollUp.key} name={rollUp.name} />
+          </>
         ) : null}
       </Box>
       {expanded && !rollUp.gone ? (
@@ -166,10 +177,16 @@ export function RollUpRow({
           sx={{
             mt: 0,
             mb: 1,
-            // The rows pad themselves (12 pt), so their content lines up 50 pt in.
-            ml: '38px',
+            // The rows pad themselves (12 pt): the elbow's stem sits under the roll-up's icon and the text lines up 50 pt in.
+            ml: '2px',
             p: 0,
-            borderTop: `1px solid ${tokens.color.divider}`,
+            // A divider in its own block (rows' opaque fills would cover an overlay), starting 38 pt in, past the elbows.
+            '&::before': {
+              content: '""',
+              display: 'block',
+              ml: '36px',
+              borderTop: `1px solid ${tokens.color.divider}`,
+            },
           }}
         >
           {rollUp.batches.map((batch, index) => (

@@ -1,4 +1,4 @@
-import { Box, CloseIcon, IconButton, tokens } from '@pocket-pantry/ui';
+import { Box, CloseIcon, IconButton, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
@@ -27,9 +27,9 @@ export function SelectedToken({
         gap: 1,
         pl: '12px',
         pr: '6px',
-        borderRadius: '16px',
+        borderRadius: radius.control,
         backgroundColor: color.accentTint,
-        color: color.accent,
+        color: color.accentOnTint,
         cursor: 'pointer',
       }}
     >

@@ -1,5 +1,4 @@
-import { BackIcon, Box, tokens } from '@pocket-pantry/ui';
-import { focusRing } from '../../../../lib/focusRing';
+import { BackIcon, Box, tokens, insetFocusRing } from '@pocket-pantry/ui';
 
 export type BackButtonProps = {
   /** Where it goes, e.g. "All templates". */
@@ -30,7 +29,7 @@ export function BackButton({ label, onClick, mb }: BackButtonProps) {
         fontSize: 14,
         fontWeight: 700,
         cursor: 'pointer',
-        ...focusRing(),
+        ...insetFocusRing,
       }}
     >
       <BackIcon size={16} aria-hidden />

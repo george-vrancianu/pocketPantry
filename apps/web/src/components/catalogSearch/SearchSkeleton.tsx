@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius, nestedRadius } from '@pocket-pantry/ui';
 
 const TITLE_WIDTHS = ['58%', '44%', '66%', '50%'];
 const META_WIDTHS = ['36%', '40%', '30%', '42%'];
@@ -21,7 +21,7 @@ export function SearchSkeleton({ animate }: { animate: boolean }) {
         overflow: 'hidden',
         width,
         height,
-        borderRadius: `${height / 2}px`,
+        borderRadius: radius.pill,
         backgroundColor: color.chipNeutral,
         ...(animate
           ? {
@@ -29,8 +29,8 @@ export function SearchSkeleton({ animate }: { animate: boolean }) {
                 content: '""',
                 position: 'absolute',
                 inset: 0,
-                background:
-                  'linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent)',
+                background: `linear-gradient(90deg, transparent, ${tokens.color.surface}, transparent)`,
+                opacity: 0.6,
                 animation: `pp-search-shimmer 1.4s ${delay}ms infinite`,
               },
             }
@@ -73,7 +73,7 @@ export function SearchSkeleton({ animate }: { animate: boolean }) {
               sx={{
                 width: 30,
                 height: 30,
-                borderRadius: '9px',
+                borderRadius: nestedRadius(radius.control, 6),
                 backgroundColor: color.chipNeutral,
               }}
             />

@@ -376,11 +376,12 @@ describe('RecipeGuidance', () => {
   it('removes and reorders Pairings, and stops at 10', async () => {
     const calls = open();
     const user = userEvent.setup();
-    const add = () => screen.getByRole('button', { name: 'Add a Pairing' });
-    await user.click(add());
+    // Looked up once: a role query re-scans every Pairing's buttons, and this one stays put.
+    const add = screen.getByRole('button', { name: 'Add a Pairing' });
+    await user.click(add);
     await user.type(screen.getByLabelText('Label of Pairing 1'), 'One');
     await user.type(screen.getByLabelText('Reason for Pairing 1'), 'r');
-    await user.click(add());
+    await user.click(add);
     await user.type(screen.getByLabelText('Label of Pairing 2'), 'Two');
     await user.type(screen.getByLabelText('Reason for Pairing 2'), 'r');
     await user.click(screen.getByRole('button', { name: 'Move Pairing 2 up' }));
@@ -388,9 +389,9 @@ describe('RecipeGuidance', () => {
     await user.click(screen.getByRole('button', { name: 'Remove Pairing 2' }));
     expect(screen.queryByLabelText('Label of Pairing 2')).toBeNull();
 
-    for (let i = 0; i < 9; i++) await user.click(add());
+    for (let i = 0; i < 9; i++) await user.click(add);
     expect(screen.getByLabelText('Label of Pairing 10')).toBeInTheDocument();
-    expect(add()).toBeDisabled();
+    expect(add).toBeDisabled();
     expect(
       screen.getByText('A Recipe can have at most 10 Pairings.'),
     ).toBeInTheDocument();

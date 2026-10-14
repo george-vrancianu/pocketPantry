@@ -18,6 +18,7 @@ import {
   type ExpiryOverride,
 } from './catalog-defaults';
 import { normalizeName } from './normalize';
+import { readAmountScale } from './amount-scale';
 
 /** Restricts a search to an Aisle, and within it to one Parent Category. */
 export type SearchWithin = { aisleId?: string; parentCategoryId?: string };
@@ -273,6 +274,7 @@ export class CatalogSearchService {
         id: ingredients.id,
         name: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
+        amountScale: ingredients.amountScale,
         leafId: leafCategories.id,
         leafName: leafCategories.name,
         leafExpiry: leafCategories.defaultExpiryDays,
@@ -313,6 +315,7 @@ export class CatalogSearchService {
           id: row.id,
           name: display('ingredient', row.id, row.name),
           defaultUnit: row.defaultUnit,
+          amountScale: readAmountScale(row.amountScale),
           leafCategory: {
             id: row.leafId,
             name: display('leaf_category', row.leafId, row.leafName),

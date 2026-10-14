@@ -1,6 +1,11 @@
-import { Box, IngredientIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  IngredientIcon,
+  tokens,
+  focusRing,
+  radius,
+} from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
-import { focusRing } from '../../../lib/focusRing';
 
 /** The line under a tile's name: a 12px decorative glyph, then text, in the reason's colour. */
 export type TileWhy = { glyph: string; text: string; color: string };
@@ -50,11 +55,11 @@ export function IngredientTile({
         color: color.ink,
         backgroundColor: color.surface,
         border: `1px solid ${color.line}`,
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.chip,
         cursor: disabled ? 'default' : 'pointer',
         opacity: disabled ? 0.6 : 1,
         '&:hover:not(:disabled)': { backgroundColor: color.subtle },
-        ...focusRing(2),
+        ...focusRing,
       }}
     >
       <Box aria-hidden="true" sx={{ flexShrink: 0, display: 'grid' }}>

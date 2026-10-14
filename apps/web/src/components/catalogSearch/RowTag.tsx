@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 
 /** A host's short per-row pill (for example "On list"). */
 export function RowTag({ children }: { children: string }) {
@@ -10,9 +10,9 @@ export function RowTag({ children }: { children: string }) {
         flexShrink: 0,
         px: '9px',
         py: '3px',
-        borderRadius: 999,
+        borderRadius: radius.pill,
         backgroundColor: color.accentTint,
-        color: color.accent,
+        color: color.accentOnTint,
         fontSize: 11,
         fontWeight: 700,
       }}

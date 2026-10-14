@@ -18,9 +18,19 @@ export const expiryOverrideBody = z.object({
 });
 export type ExpiryOverrideBody = z.infer<typeof expiryOverrideBody>;
 
-export const updatePreferencesBody = z.object({
-  locale: z.enum(CATALOG_LOCALES),
-});
+/** The Theme ids a Member can choose: the UI package's THEME_IDS (packages/ui/src/theme/themeIds.test.ts fails if they drift). */
+export const THEME_IDS = ['warm', 'minimal', 'dark'] as const;
+export type ThemeId = (typeof THEME_IDS)[number];
+
+/** A partial save: whatever is omitted keeps its stored value. An empty body has nothing to update and is rejected. */
+export const updatePreferencesBody = z
+  .object({
+    locale: z.enum(CATALOG_LOCALES).optional(),
+    theme: z.enum(THEME_IDS).optional(),
+  })
+  .refine((body) => body.locale !== undefined || body.theme !== undefined, {
+    message: 'Nothing to update',
+  });
 export type UpdatePreferencesBody = z.infer<typeof updatePreferencesBody>;
 
 export type ExpiryOverrideView = {
@@ -45,4 +55,5 @@ export type CategoryOptionsView = {
 
 export type PreferencesView = {
   locale: (typeof CATALOG_LOCALES)[number] | null;
+  theme: ThemeId | null;
 };

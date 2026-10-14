@@ -8,6 +8,9 @@ import {
   type SwipeRowHandle,
   Typography,
   useToast,
+  Card,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -50,43 +53,18 @@ export function ShoppingGroups({
             key={group.aisle?.id ?? 'unmatched'}
             aria-label={title}
           >
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                mx: 0.5,
-                mb: 1,
-              }}
+            <Typography
+              component="h2"
+              variant="sectionLabel"
+              color="text.secondary"
+              sx={{ display: 'block', mx: 0.5, mb: 1 }}
             >
-              <Typography
-                component="h2"
-                variant="sectionLabel"
-                color="text.secondary"
-              >
-                {title}
-              </Typography>
-              <Typography
-                component="span"
-                variant="sectionLabel"
-                color="text.secondary"
-                sx={{ fontVariantNumeric: 'tabular-nums' }}
-              >
-                {group.items.length}
-              </Typography>
-            </Box>
-            <Box
+              {`${title} · ${group.items.length}`}
+            </Typography>
+            <Card
               component="ul"
-              sx={{
-                listStyle: 'none',
-                m: 0,
-                p: 0,
-                bgcolor: 'background.paper',
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: '20px',
-                overflow: 'hidden',
-              }}
+              variant="list"
+              sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
             >
               {group.items.map((item, itemIndex) => (
                 <ChecklistRow
@@ -100,7 +78,7 @@ export function ShoppingGroups({
                   onRemove={onRemove}
                 />
               ))}
-            </Box>
+            </Card>
           </Box>
         );
       })}
@@ -161,12 +139,12 @@ function ChecklistRow({
                   width: 24,
                   height: 24,
                   boxSizing: 'border-box',
-                  borderRadius: '8px',
+                  borderRadius: radius.box,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   ...(item.checked
-                    ? { bgcolor: 'primary.main', color: tokens.color.surface }
+                    ? { bgcolor: tokens.color.accent, color: color.accentInk }
                     : { border: `2px solid ${tokens.color.tickBorder}` }),
                 }}
               >
@@ -188,11 +166,11 @@ function ChecklistRow({
                 sx={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: 'primary.main',
-                  bgcolor: 'primary.light',
+                  color: color.accentOnTint,
+                  bgcolor: tokens.color.accentTint,
                   px: 1,
                   py: 0.5,
-                  borderRadius: 999,
+                  borderRadius: radius.pill,
                 }}
               >
                 {t('item.unmatched')}

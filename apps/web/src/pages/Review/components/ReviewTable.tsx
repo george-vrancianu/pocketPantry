@@ -1,4 +1,4 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import {
@@ -81,7 +81,7 @@ export function ReviewTable({
         mt: '14px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: radius.card,
         overflow: 'hidden',
       }}
     >

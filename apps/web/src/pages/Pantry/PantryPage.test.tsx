@@ -1,4 +1,3 @@
-import { tokens } from '@pocket-pantry/ui';
 import { focusManager } from '@tanstack/react-query';
 import {
   act,
@@ -11,6 +10,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { defaultExpiryDate, type Batch } from '../../lib/pantry';
+import {
+  calendarDay,
+  calendarDays,
+  quickPick,
+  quickPickTiles,
+  sheetButton,
+} from '../../test/expirySheet';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { trackScrolling } from '../../test/scroll';
 import { stubMotion } from '../../test/viewport';
@@ -25,6 +31,8 @@ function batch(overrides: Partial<Batch>): Batch {
     ingredientId: 'milk-id',
     unmatched: false,
     aisle: null,
+    amountScale: null,
+    defaultUnit: null,
     quantity: null,
     unit: null,
     location: 'fridge',
@@ -36,6 +44,7 @@ function batch(overrides: Partial<Batch>): Batch {
 }
 
 const parmesan: CatalogSearchResult = {
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
@@ -47,6 +56,18 @@ const parmesan: CatalogSearchResult = {
   },
   defaults: { expiryDays: 30, location: 'fridge' },
 };
+
+/** Chips are 60 px wide and the row 300 px: four fit, so the first four by priority show. */
+function mockChipRow() {
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(300);
+  vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(60);
+}
+
+/** The Usual Amount chips shown in a group, by their accessible names. */
+const chipLabels = (group: HTMLElement) =>
+  within(group)
+    .getAllByRole('button')
+    .map((chip) => chip.getAttribute('aria-label'));
 
 /** The Family Settings response, with the Stale Threshold the tags are coloured by. */
 const familySettings = (staleThresholdDays: number) => () =>
@@ -269,7 +290,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
       expect(iconOf('Parmesan')).toHaveAttribute('aria-hidden', 'true');
     });
@@ -286,7 +307,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
     });
 
@@ -306,7 +327,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
 
@@ -327,7 +348,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax paste')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
   });
@@ -392,6 +413,30 @@ describe('PantryPage', () => {
     expect(addButton).toHaveFocus();
   });
 
+  it('offers the usual amounts for the Ingredient picked from the Catalog, scaled by its Amount Scale', async () => {
+    mockChipRow();
+    const user = userEvent.setup();
+    stubPantry([], [{ ...parmesan, amountScale: 'large' }]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '2',
+    );
+
+    expect(
+      chipLabels(
+        screen.getByRole('group', { name: 'Usual amounts for Parmesan' }),
+      ),
+    ).toEqual(['500 g', '1,000 g', '2,000 g', '5,000 g']);
+  });
+
   it('takes a typed unit with the amount and offers no "no unit" option', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);
@@ -412,7 +457,7 @@ describe('PantryPage', () => {
       within(screen.getByRole('group', { name: 'Units' }))
         .getAllByRole('button')
         .map((button) => button.textContent),
-    ).toEqual(['g', 'kg', 'ml', 'L', 'pcs']);
+    ).toEqual(['g', 'kg']);
 
     await user.type(amount, '{Enter}');
     await waitFor(() =>
@@ -449,7 +494,128 @@ describe('PantryPage', () => {
     );
   });
 
-  it('sets the unit from the chip', async () => {
+  it('keeps the unit of a picked Ingredient when its name is edited after an amount', async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [eggs]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'egg',
+    );
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Eggs/ }),
+      '6',
+    );
+    await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.type(search, 'Eggs x');
+    await user.click(
+      await screen.findByRole('option', { name: /Use “Eggs x” as typed/ }),
+    );
+    // The form is hidden while the name is edited; the unit it had still applies.
+    expect(
+      screen.getByRole('button', { name: 'Unit: pcs' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ rawName: 'Eggs x', quantity: 6, unit: 'pcs' }),
+    );
+  });
+
+  it("takes the next Ingredient's own unit when the name is retyped after a pick", async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [eggs, parmesan]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'egg',
+    );
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Eggs/ }),
+      '6',
+    );
+    await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.type(search, 'parm');
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+
+    // The frozen pieces of Eggs do not carry over: Parmesan opens on its own grams.
+    expect(screen.getByRole('button', { name: 'Unit: g' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ ingredientId: 'parmesan-id', quantity: 6, unit: 'g' }),
+    );
+  });
+
+  it('keeps a unit the Member chose from the chip when another Ingredient is picked', async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [parmesan, eggs]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'parm',
+    );
+    await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /Amount of Parmesan/ }),
+      '2',
+    );
+    await user.click(screen.getByRole('button', { name: 'Unit: g' }));
+    await user.click(
+      within(screen.getByRole('group', { name: 'Units' })).getByRole('button', {
+        name: 'kg',
+      }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Change ingredient' }));
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.type(search, 'egg');
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+
+    expect(
+      screen.getByRole('button', { name: 'Unit: kg' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ ingredientId: 'eggs-id', unit: 'kg' }),
+    );
+  });
+
+  it('sets the unit from the chip, converting the amount to it', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);
     renderWithProviders(<PantryPage />);
@@ -475,10 +641,11 @@ describe('PantryPage', () => {
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    // 2 g is the same amount as 0.002 kg, so the number is rescaled with the unit.
     await waitFor(() =>
       expect(
         calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
-      ).toMatchObject({ quantity: 2, unit: 'kg' }),
+      ).toMatchObject({ quantity: 0.002, unit: 'kg' }),
     );
   });
 
@@ -502,9 +669,8 @@ describe('PantryPage', () => {
     await user.clear(amount);
     await user.type(amount, '1.2345');
     expect(amount).not.toHaveAttribute('aria-invalid');
-    // Past the unit chip, out of the amount field.
-    await user.tab();
-    await user.tab();
+    // Out of the amount field (past its unit and Usual Amount chips).
+    await user.click(screen.getByLabelText('Location'));
     expect(screen.getByLabelText('Location')).toHaveFocus();
     expect(amount).toHaveAttribute('aria-invalid', 'true');
     expect(
@@ -728,21 +894,16 @@ describe('PantryPage', () => {
         'Fri, Nov 13in 30 days30 d',
       );
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Friday, November 20, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Friday, November 20, 2026'));
       expect(within(sheet).getByRole('status')).toHaveTextContent(
         'Fri, Nov 20in 37 days37 d',
       );
-      expect(
-        within(sheet).getByRole('button', {
-          name: 'Friday, November 20, 2026',
-        }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      expect(calendarDay(sheet, 'Friday, November 20, 2026')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -775,9 +936,12 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
-    /** The sheet focuses a tile once its open transition ends, which can take a while on a busy machine. */
-    const focusLandsOn = (element: () => HTMLElement) =>
-      waitFor(() => expect(element()).toHaveFocus(), { timeout: 5000 });
+    /**
+     * The sheet focuses a tile once its open transition ends, which can take a while on a busy machine. The tile is
+     * looked up once: polling a role query here would slow the very transition it waits for.
+     */
+    const focusLandsOn = (element: HTMLElement) =>
+      waitFor(() => expect(element).toHaveFocus(), { timeout: 5000 });
 
     async function openSheet(user: ReturnType<typeof userEvent.setup>) {
       await user.click(screen.getByRole('button', { name: /^Expires,/ }));
@@ -789,8 +953,7 @@ describe('PantryPage', () => {
       const calls = await addParmesan(user);
       const sheet = await openSheet(user);
       const readout = within(sheet).getByRole('status');
-      const pick = (name: string) =>
-        user.click(within(sheet).getByRole('button', { name }));
+      const pick = (name: string) => user.click(calendarDay(sheet, name));
 
       // Stale Threshold 3: Today, Tomorrow, "N d left" up to 3, then "N d".
       await pick('Wednesday, October 14, 2026');
@@ -815,7 +978,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       const calls = await addParmesan(user);
       const sheet = await openSheet(user);
-      const noExpiry = within(sheet).getByRole('button', { name: 'No expiry' });
+      const noExpiry = sheetButton(sheet, 'No expiry');
       expect(noExpiry).toHaveAttribute('aria-pressed', 'false');
 
       await user.click(noExpiry);
@@ -838,12 +1001,10 @@ describe('PantryPage', () => {
 
     /** The quick-pick tiles, as "accessible name: pressed". */
     const quickPicks = (sheet: HTMLElement) =>
-      within(within(sheet).getByRole('group', { name: 'Quick picks' }))
-        .getAllByRole('button')
-        .map(
-          (tile) =>
-            `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
-        );
+      quickPickTiles(sheet).map(
+        (tile) =>
+          `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
+      );
 
     it('shows the pre-filled Default Expiry as the Usual quick pick, selected, ahead of 3 d to 1 mo', async () => {
       const user = userEvent.setup();
@@ -859,10 +1020,10 @@ describe('PantryPage', () => {
         '2 weeks, Wednesday, October 28: false',
         '1 month, Friday, November 13: false',
       ]);
-      const usual = within(sheet).getByRole('button', { name: /^Usual/ });
+      const usual = quickPick(sheet, /^Usual/);
       expect(usual).toHaveTextContent('30d');
       expect(usual).toHaveTextContent('Usual · Nov 13');
-      const week = within(sheet).getByRole('button', { name: /^1 week/ });
+      const week = quickPick(sheet, /^1 week/);
       expect(week).toHaveTextContent('1wk');
       expect(week).toHaveTextContent('Oct 21');
     });
@@ -879,31 +1040,29 @@ describe('PantryPage', () => {
         return [last?.child?.querySelector('h3')?.textContent, last?.behavior];
       };
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       expect(readout).toHaveTextContent('Sat, Oct 17in 3 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
-      await user.click(within(sheet).getByRole('button', { name: /^5 days,/ }));
+      await user.click(quickPick(sheet, /^5 days,/));
       expect(readout).toHaveTextContent('Mon, Oct 19in 5 days');
-      await user.click(within(sheet).getByRole('button', { name: /^1 week,/ }));
+      await user.click(quickPick(sheet, /^1 week,/));
       expect(readout).toHaveTextContent('Wed, Oct 21in 7 days');
-      await user.click(
-        within(sheet).getByRole('button', { name: /^1 month,/ }),
-      );
+      await user.click(quickPick(sheet, /^1 month,/));
       expect(readout).toHaveTextContent('Fri, Nov 13in 30 days');
       expect(shown()).toEqual(['November 2026', 'smooth']);
-      await user.click(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await user.click(quickPick(sheet, /^2 weeks,/));
       expect(readout).toHaveTextContent('Wed, Oct 28in 14 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
-      expect(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      ).toHaveAttribute('aria-pressed', 'true');
-      expect(
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      ).toHaveAttribute('aria-pressed', 'false');
+      expect(quickPick(sheet, /^2 weeks,/)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(quickPick(sheet, /^Usual,/)).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -915,23 +1074,16 @@ describe('PantryPage', () => {
       await addParmesan(user);
       const sheet = await openSheet(user);
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Thursday, October 22, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Thursday, October 22, 2026'));
       expect(quickPicks(sheet).every((tile) => tile.endsWith(': false'))).toBe(
         true,
       );
       // A calendar day 3 days out does light up 3 d.
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Saturday, October 17, 2026',
-        }),
+      await user.click(calendarDay(sheet, 'Saturday, October 17, 2026'));
+      expect(quickPick(sheet, /^3 days,/)).toHaveAttribute(
+        'aria-pressed',
+        'true',
       );
-      expect(
-        within(sheet).getByRole('button', { name: /^3 days,/ }),
-      ).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('has no Usual tile for an Unmatched name', async () => {
@@ -983,7 +1135,9 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
 
       expect(
-        within(sheet).queryByRole('button', { name: /^Usual/ }),
+        within(
+          within(sheet).getByRole('group', { name: 'Quick picks' }),
+        ).queryByRole('button', { name: /^Usual/ }),
       ).not.toBeInTheDocument();
       expect(quickPicks(sheet)).toHaveLength(5);
     });
@@ -996,7 +1150,7 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
       const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       const last = scrolling.scrolledTo(calendar);
       expect(last?.child?.querySelector('h3')).toHaveTextContent(
         'October 2026',
@@ -1050,9 +1204,9 @@ describe('PantryPage', () => {
       ).toHaveAccessibleName('Wednesday, October 14, 2026');
 
       // Stale Threshold 3: today through 17 October, four days.
-      const band = within(calendar)
-        .getAllByRole('button')
-        .filter((day) => day.hasAttribute('aria-describedby'));
+      const band = calendarDays(sheet).filter((day) =>
+        day.hasAttribute('aria-describedby'),
+      );
       expect(band.map((day) => day.textContent)).toEqual([
         '14',
         '15',
@@ -1080,24 +1234,18 @@ describe('PantryPage', () => {
       let sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Wednesday, December 2, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Wednesday, December 2, 2026'));
       expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['December 2026', 'auto', 1]);
 
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1118,7 +1266,7 @@ describe('PantryPage', () => {
       // The sheet opens on November, the month of Parmesan's Default Expiry.
       expect(shown()).toEqual(['November 2026', 'auto']);
 
-      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      await user.click(sheetButton(sheet, 'Today'));
       expect(shown()).toEqual(['October 2026', 'smooth']);
       // Today only scrolls; the value is unchanged.
       expect(within(sheet).getByRole('status')).toHaveTextContent(
@@ -1164,13 +1312,11 @@ describe('PantryPage', () => {
       expect(
         scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
       ).toHaveTextContent('April 2028');
-      const day = within(calendar).getByRole('button', {
-        name: 'Friday, April 14, 2028',
-      });
+      const day = calendarDay(sheet, 'Friday, April 14, 2028');
       expect(day).toHaveAttribute('aria-pressed', 'true');
 
       // Move away with a quick pick, then pick the far day again.
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       expect(day).toHaveAttribute('aria-pressed', 'false');
       await user.click(day);
       expect(day).toHaveAttribute('aria-pressed', 'true');
@@ -1178,7 +1324,7 @@ describe('PantryPage', () => {
         'Fri, Apr 14, 2028',
       );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1210,19 +1356,18 @@ describe('PantryPage', () => {
         await screen.findByRole('option', { name: /Chopped tomatoes/ }),
       );
       let sheet = await openSheet(user);
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
 
       sheet = await openSheet(user);
-      await user.click(within(sheet).getByRole('button', { name: /^Usual,/ }));
-      expect(
-        within(sheet).getByRole('button', { name: 'Friday, April 14, 2028' }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      await user.click(quickPick(sheet, /^Usual,/));
+      expect(calendarDay(sheet, 'Friday, April 14, 2028')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('focuses the selected quick pick on open (the first when none is selected) and returns focus to the summary row on close', async () => {
@@ -1230,12 +1375,8 @@ describe('PantryPage', () => {
       await addParmesan(user);
 
       let sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      await user.click(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      await user.click(quickPick(sheet, /^2 weeks,/));
       await user.keyboard('{Escape}');
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
@@ -1245,25 +1386,17 @@ describe('PantryPage', () => {
       ).toHaveFocus();
 
       sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^2 weeks,/));
       // A day that matches no quick pick: focus goes to the first tile next time.
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Thursday, October 22, 2026',
-        }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(calendarDay(sheet, 'Thursday, October 22, 2026'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       expect(screen.getByRole('button', { name: /^Expires,/ })).toHaveFocus();
 
       sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
     });
 
     it('returns focus to the summary row when the sheet was opened without focusing it', async () => {
@@ -1273,7 +1406,7 @@ describe('PantryPage', () => {
       // A touch tap on some browsers (Safari) doesn't focus the button it opens from.
       fireEvent.click(row);
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1287,20 +1420,12 @@ describe('PantryPage', () => {
       const focused = () => document.activeElement?.getAttribute('aria-label');
 
       // The calendar is one Tab stop, on the selected day.
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      act(() =>
-        within(sheet)
-          .getByRole('button', { name: /^1 month,/ })
-          .focus(),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      act(() => quickPick(sheet, /^1 month,/).focus());
       await user.tab();
       expect(focused()).toBe('Friday, November 13, 2026');
       await user.tab();
-      expect(
-        within(sheet).getByRole('button', { name: 'Today' }),
-      ).toHaveFocus();
+      expect(sheetButton(sheet, 'Today')).toHaveFocus();
       await user.tab({ shift: true });
       expect(focused()).toBe('Friday, November 13, 2026');
 
@@ -1338,7 +1463,7 @@ describe('PantryPage', () => {
       expect(within(sheet).getByRole('status')).toHaveTextContent(
         'Mon, Nov 30',
       );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1349,9 +1474,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       await addParmesan(user);
       const sheet = await openSheet(user);
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
+      await user.click(sheetButton(sheet, 'No expiry'));
 
       const readout = within(sheet).getByRole('status');
       expect(readout).toHaveTextContent('No expiry date');
@@ -1366,22 +1489,14 @@ describe('PantryPage', () => {
       await addParmesan(user);
       const sheet = await openSheet(user);
       const focused = () => document.activeElement?.getAttribute('aria-label');
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      act(() =>
-        within(sheet)
-          .getByRole('button', { name: /^1 month,/ })
-          .focus(),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      act(() => quickPick(sheet, /^1 month,/).focus());
       await user.tab();
       expect(focused()).toBe('Friday, November 13, 2026');
 
       await user.keyboard('{ArrowRight}');
       await user.tab();
-      expect(
-        within(sheet).getByRole('button', { name: 'Today' }),
-      ).toHaveFocus();
+      expect(sheetButton(sheet, 'Today')).toHaveFocus();
       await user.tab({ shift: true });
       expect(focused()).toBe('Saturday, November 14, 2026');
 
@@ -1415,25 +1530,20 @@ describe('PantryPage', () => {
       );
       await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
       const sheet = await openSheet(user);
-      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      const pressed = within(calendar)
-        .getAllByRole('button')
-        .filter((day) => day.getAttribute('aria-pressed') === 'true');
+      const pressed = calendarDays(sheet).filter(
+        (day) => day.getAttribute('aria-pressed') === 'true',
+      );
       expect(pressed.map((day) => day.getAttribute('aria-label'))).toEqual([
         'Friday, November 13, 2026',
       ]);
 
       await act(() => i18n.changeLanguage('ro'));
       expect(
-        within(calendar).getByRole('button', {
-          name: 'vineri, 13 noiembrie 2026',
-        }),
+        calendarDay(sheet, 'vineri, 13 noiembrie 2026', 'noiembrie 2026'),
       ).toHaveAttribute('aria-pressed', 'true');
       expect(
-        within(calendar).getByRole('button', {
-          name: 'sâmbătă, 14 noiembrie 2026',
-        }),
+        calendarDay(sheet, 'sâmbătă, 14 noiembrie 2026', 'noiembrie 2026'),
       ).toHaveAttribute('aria-pressed', 'false');
     });
 
@@ -1445,7 +1555,7 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
       const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      await user.click(sheetButton(sheet, 'Today'));
       const last = scrolling.scrolledTo(calendar);
       expect(last?.child?.querySelector('h3')).toHaveTextContent(
         'October 2026',
@@ -1455,6 +1565,31 @@ describe('PantryPage', () => {
   });
 
   describe('managing the Pantry', () => {
+    it("opens a Batch with no stored unit on its Ingredient's unit", async () => {
+      const user = userEvent.setup();
+      stubManaged([
+        batch({
+          id: 'eggs-1',
+          name: 'Eggs',
+          ingredientId: 'eggs-id',
+          defaultUnit: 'pcs',
+          amountScale: 'medium',
+          quantity: null,
+          unit: null,
+          expiryDate: inDays(5),
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(await screen.findByRole('button', { name: /^Eggs/ }));
+      await openEditor(user, batchRows('Eggs')[0]);
+      const form = screen.getByRole('form', { name: 'Edit Eggs batch' });
+
+      expect(
+        within(form).getByRole('button', { name: 'Unit: pcs' }),
+      ).toBeInTheDocument();
+    });
+
     const stock = () => [
       batch({
         id: 'milk-1',
@@ -1649,6 +1784,290 @@ describe('PantryPage', () => {
       });
     });
 
+    describe('Running low toggle', () => {
+      /** Running-low flags follow the PUT and DELETE calls, as the API does. `gate` holds a save open. */
+      function stubRunningLow({
+        failSave = false,
+        gate,
+        batches = [
+          batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+          batch({
+            name: 'Zorblax paste',
+            unmatched: true,
+            ingredientId: null,
+            location: 'cupboard',
+          }),
+        ],
+        flaggedAtStart = [],
+      }: {
+        failSave?: boolean;
+        gate?: Promise<void>;
+        batches?: Batch[];
+        flaggedAtStart?: string[];
+      } = {}) {
+        const flagged = new Set<string>(flaggedAtStart);
+        const { fetchMock, calls } = stubApi({
+          'GET /api/pantry': () =>
+            Response.json({
+              batches,
+              runningLow: [...flagged],
+            }),
+          'GET /api/staples': () => Response.json({ staples: [] }),
+          'PUT /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            if (failSave) {
+              return Response.json({ code: 'errors.unknown' }, { status: 500 });
+            }
+            flagged.add('milk-id');
+            return new Response(null, { status: 204 });
+          },
+          'DELETE /api/pantry/running-low/milk-id': async () => {
+            await gate;
+            flagged.delete('milk-id');
+            return new Response(null, { status: 204 });
+          },
+        });
+        vi.stubGlobal('fetch', fetchMock);
+        return calls;
+      }
+
+      const runningLowToggle = () =>
+        screen.queryByRole('button', { name: 'Mark running low' });
+
+      it('shows the toggle only on an expanded matched row, just before the Staple star', async () => {
+        const user = userEvent.setup();
+        stubRunningLow();
+        renderWithProviders(<PantryPage />);
+
+        const milk = await screen.findByRole('button', { name: /^Milk/ });
+        expect(runningLowToggle()).not.toBeInTheDocument();
+        await user.click(milk);
+
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        const star = screen.getByRole('button', { name: 'Make Milk a staple' });
+        expect(toggle).toHaveAttribute('aria-pressed', 'false');
+        expect(toggle.nextElementSibling).toBe(star);
+
+        await user.click(screen.getByRole('button', { name: /^Zorblax/ }));
+        expect(
+          screen.getAllByRole('button', { name: 'Mark running low' }),
+        ).toHaveLength(1);
+      });
+
+      it('sets the flag at once on tap, and clears it on the next tap', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        const calls = stubRunningLow({ gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        // Held at the server: the toggle already shows the new state.
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+        release();
+        await waitFor(() =>
+          expect(
+            calls.some((c) => c.key === 'PUT /api/pantry/running-low/milk-id'),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'true'),
+        );
+
+        await user.click(toggle);
+        await waitFor(() =>
+          expect(
+            calls.some(
+              (c) => c.key === 'DELETE /api/pantry/running-low/milk-id',
+            ),
+          ).toBe(true),
+        );
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+      });
+
+      it('rolls the toggle back and shows an error when the save fails', async () => {
+        const user = userEvent.setup();
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => (release = resolve));
+        stubRunningLow({ failSave: true, gate });
+        renderWithProviders(<PantryPage />);
+
+        await user.click(await screen.findByRole('button', { name: /^Milk/ }));
+        const toggle = screen.getByRole('button', { name: 'Mark running low' });
+        await user.click(toggle);
+        expect(toggle).toHaveAttribute('aria-pressed', 'true');
+
+        release();
+        await waitFor(() =>
+          expect(toggle).toHaveAttribute('aria-pressed', 'false'),
+        );
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+      });
+
+      describe('the Running low chip', () => {
+        const chip = () => screen.queryByText('Running low');
+
+        it('is hidden while the flag is off', async () => {
+          stubRunningLow({
+            batches: [batch({ name: 'Milk', expiryDate: inDays(2) })],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await screen.findByRole('button', { name: /^Milk/ });
+          expect(chip()).not.toBeInTheDocument();
+        });
+
+        it('shows on the collapsed row in place of the detail line', async () => {
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                expiryDate: inDays(2),
+              }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          const fridge = await screen.findByRole('region', {
+            name: 'Fridge · 1',
+          });
+          const row = within(fridge).getByRole('listitem');
+          expect(row.textContent).toBe(
+            'Milk' + 'Running low' + '2 d left' + '2 days left',
+          );
+          expect(chip()).toBeVisible();
+        });
+
+        it.each([
+          {
+            hides: 'the Batch count',
+            batches: [
+              batch({ name: 'Milk', quantity: 1, unit: 'l' }),
+              batch({ name: 'Milk', quantity: 2, unit: 'l' }),
+            ],
+            region: 'Fridge · 2',
+          },
+          {
+            hides: 'the Product Description',
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                productDescription: 'Arla whole milk',
+              }),
+            ],
+            region: 'Fridge · 1',
+          },
+        ])(
+          'hides $hides on the collapsed row while flagged',
+          async ({ batches, region }) => {
+            stubRunningLow({ batches, flaggedAtStart: ['milk-id'] });
+            renderWithProviders(<PantryPage />);
+
+            const fridge = await screen.findByRole('region', { name: region });
+            expect(within(fridge).getByRole('listitem').textContent).toBe(
+              'Milk' + 'Running low',
+            );
+          },
+        );
+
+        it('shows on the expanded row, which has no expiry tag of its own', async () => {
+          const user = userEvent.setup();
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                quantity: 1,
+                unit: 'l',
+                expiryDate: inDays(2),
+              }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await user.click(
+            await screen.findByRole('button', { name: /^Milk/ }),
+          );
+          expect(chip()).toBeVisible();
+          // The expiry shows per Batch in the expanded panel, so the chip stays on the header.
+          expect(
+            within(
+              screen.getByRole('list', { name: 'Batches of Milk' }),
+            ).getByText('2 days left'),
+          ).toBeVisible();
+          expect(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          ).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('shows when the ingredient has no expiry date', async () => {
+          stubRunningLow({
+            batches: [
+              batch({ name: 'Milk', quantity: 1, unit: 'l', expiryDate: null }),
+            ],
+            flaggedAtStart: ['milk-id'],
+          });
+          renderWithProviders(<PantryPage />);
+
+          await screen.findByRole('button', { name: /^Milk/ });
+          expect(chip()).toBeVisible();
+        });
+
+        it('shows in every Location section for the Ingredient, and toggling once updates them all', async () => {
+          const user = userEvent.setup();
+          stubRunningLow({
+            batches: [
+              batch({
+                name: 'Milk',
+                location: 'fridge',
+                quantity: 1,
+                unit: 'l',
+              }),
+              batch({
+                name: 'Milk',
+                location: 'cupboard',
+                quantity: 1,
+                unit: 'l',
+              }),
+            ],
+          });
+          renderWithProviders(<PantryPage />);
+
+          const fridge = await screen.findByRole('region', {
+            name: 'Fridge · 1',
+          });
+          const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
+          expect(chip()).not.toBeInTheDocument();
+
+          await user.click(
+            within(fridge).getByRole('button', { name: /^Milk/ }),
+          );
+          await user.click(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          );
+
+          await waitFor(() =>
+            expect(within(fridge).getByText('Running low')).toBeVisible(),
+          );
+          expect(within(cupboard).getByText('Running low')).toBeVisible();
+
+          await user.click(
+            screen.getByRole('button', { name: 'Mark running low' }),
+          );
+          await waitFor(() => expect(chip()).not.toBeInTheDocument());
+        });
+      });
+    });
+
     it('lists totals separately when the units differ', async () => {
       stubManaged([
         batch({ name: 'Flour', ingredientId: 'f', quantity: 500, unit: 'g' }),
@@ -1730,10 +2149,8 @@ describe('PantryPage', () => {
       );
       await user.click(within(form).getByRole('button', { name: /^Expires,/ }));
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(
           screen.queryByRole('dialog', { name: 'Expires' }),
@@ -1794,6 +2211,56 @@ describe('PantryPage', () => {
       );
       const patch = calls.find((c) => c.key.startsWith('PATCH'));
       expect(patch?.body).toEqual({ productDescription: 'Opened jar' });
+    });
+
+    it('offers the usual amounts of the Batch Ingredient, and marks the one its amount matches', async () => {
+      mockChipRow();
+      const user = userEvent.setup();
+      stubManaged([
+        batch({
+          id: 'paprika',
+          name: 'Paprika',
+          ingredientId: 'paprika-id',
+          amountScale: 'low',
+          quantity: 50,
+          unit: 'g',
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Paprika/ }));
+      await openEditor(user, batchRows('Paprika')[0]);
+
+      expect(
+        chipLabels(
+          screen.getByRole('group', { name: 'Usual amounts for Paprika' }),
+        ),
+      ).toEqual(['10 g', '20 g', '50 g', '100 g']);
+      expect(screen.getByText('usual amount')).toBeVisible();
+    });
+
+    it('shows and leaves unchanged a stored amount that matches no chip', async () => {
+      mockChipRow();
+      const user = userEvent.setup();
+      const calls = stubManaged([
+        batch({
+          id: 'paprika',
+          name: 'Paprika',
+          ingredientId: 'paprika-id',
+          amountScale: 'low',
+          quantity: 333,
+          unit: 'g',
+        }),
+      ]);
+      renderWithProviders(<PantryPage />);
+      await user.click(await screen.findByRole('button', { name: /^Paprika/ }));
+      await openEditor(user, batchRows('Paprika')[0]);
+
+      expect(
+        screen.getByRole('textbox', { name: /Amount of Paprika/ }),
+      ).toHaveValue('333');
+      expect(screen.queryByText('usual amount')).not.toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Save changes' }));
+      expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
     });
 
     it('edits the amount and unit in one input, next to the Location', async () => {
@@ -2081,9 +2548,7 @@ describe('PantryPage', () => {
           'Fri, Oct 16in 2 days2 d left',
         );
         expect(
-          within(within(sheet).getByRole('group', { name: 'Quick picks' }))
-            .getAllByRole('button')
-            .map((tile) => tile.getAttribute('aria-label')),
+          quickPickTiles(sheet).map((tile) => tile.getAttribute('aria-label')),
         ).toEqual([
           '3 days, Saturday, October 17',
           '5 days, Monday, October 19',
@@ -2097,9 +2562,7 @@ describe('PantryPage', () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^1 week/ }),
-        );
+        await user.click(quickPick(sheet, /^1 week/));
         await user.keyboard('{Escape}');
         await waitFor(() =>
           expect(
@@ -2146,21 +2609,17 @@ describe('PantryPage', () => {
         expect(
           scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
         ).toHaveTextContent('April 2028');
-        const day = within(calendar).getByRole('button', {
-          name: 'Friday, April 14, 2028',
-        });
+        const day = calendarDay(sheet, 'Friday, April 14, 2028');
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^3 days,/ }),
-        );
+        await user.click(quickPick(sheet, /^3 days,/));
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');
         expect(within(sheet).getByRole('status')).toHaveTextContent(
           'Fri, Apr 14, 2028',
         );
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),
@@ -2207,18 +2666,14 @@ describe('PantryPage', () => {
         expect(
           scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
         ).toHaveTextContent('July 2026');
-        const day = within(calendar).getByRole('button', {
-          name: 'Tuesday, July 14, 2026',
-        });
+        const day = calendarDay(sheet, 'Tuesday, July 14, 2026');
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^3 days,/ }),
-        );
+        await user.click(quickPick(sheet, /^3 days,/));
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),
@@ -2241,12 +2696,8 @@ describe('PantryPage', () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);
 
-        await user.click(
-          within(sheet).getByRole('button', {
-            name: 'Thursday, December 3, 2026',
-          }),
-        );
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(calendarDay(sheet, 'Thursday, December 3, 2026'));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),

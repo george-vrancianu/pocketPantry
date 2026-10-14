@@ -5,6 +5,9 @@ import {
   SearchIcon,
   tokens,
   visuallyHidden,
+  radius,
+  border,
+  color as themeColor,
 } from '@pocket-pantry/ui';
 import type { ChangeEvent, KeyboardEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -102,9 +105,9 @@ export function SearchField({
         height: 50,
         display: 'flex',
         alignItems: 'center',
-        borderRadius: `${tokens.radius.input}px`,
-        border: `1.5px solid ${selected ? 'transparent' : color.line}`,
-        backgroundColor: color.surface,
+        borderRadius: radius.control,
+        border: `${border.field} solid ${selected ? 'transparent' : color.line}`,
+        backgroundColor: themeColor.fieldBg,
         '&:focus-within': {
           borderColor: selected ? 'transparent' : color.accent,
           boxShadow: `0 0 0 3px ${color.accentTint}`,

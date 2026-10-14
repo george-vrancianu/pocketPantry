@@ -31,6 +31,8 @@ import {
   tokens,
   usePrefersReducedMotion,
   visuallyHidden,
+  border,
+  radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -214,9 +216,9 @@ function WidgetRow({
             minWidth: 44,
             height: 44,
             px: '12px',
-            borderRadius: '12px',
-            border: `1px solid ${tokens.color.line}`,
-            bgcolor: '#F7F9F5',
+            borderRadius: radius.control,
+            border: `${border.width} solid ${tokens.color.line}`,
+            bgcolor: tokens.color.subtle,
             color: canResize ? tokens.color.ink : tokens.color.muted,
             fontFamily: 'inherit',
             fontSize: 12,
@@ -445,7 +447,7 @@ export function CustomisePage() {
               p: '0 10px',
               bgcolor: tokens.color.surface,
               border: `1px solid ${tokens.color.line}`,
-              borderRadius: '20px',
+              borderRadius: radius.card,
               overflow: 'hidden',
             }}
           >
@@ -509,7 +511,7 @@ export function CustomisePage() {
                     gridColumn: `span ${widgetSpan(WIDGET_REGISTRY[type].defaultSize, columns).columns}`,
                     bgcolor: tokens.color.surface,
                     border: `1px solid ${tokens.color.line}`,
-                    borderRadius: '20px',
+                    borderRadius: radius.card,
                     p: '10px',
                   }}
                 >
