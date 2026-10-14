@@ -2,11 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  compareCapture,
+  compareDebugCapture,
   estimateCostUsd,
-  loadCaptures,
+  loadDebugCaptures,
   renderReport,
-  type Capture,
+  type DebugCapture,
 } from './scan-replay';
 
 const PROMPT =
@@ -63,7 +63,7 @@ function writeCapture(
   );
 }
 
-describe('loadCaptures', () => {
+describe('loadDebugCaptures', () => {
   let root: string;
   beforeEach(() => {
     root = mkdtempSync(join(tmpdir(), 'scan-replay-'));
@@ -73,11 +73,11 @@ describe('loadCaptures', () => {
   it('rebuilds the recorded request with its photos as data URLs', async () => {
     writeCapture(root, '2026-10-08-a');
 
-    const { captures, skipped } = await loadCaptures(root);
+    const { debugCaptures, skipped } = await loadDebugCaptures(root);
 
     expect(skipped).toEqual([]);
-    expect(captures).toHaveLength(1);
-    const [capture] = captures;
+    expect(debugCaptures).toHaveLength(1);
+    const [capture] = debugCaptures;
     expect(capture.name).toBe('2026-10-08-a');
     expect(capture.request).toEqual({
       prompt: PROMPT,
@@ -100,15 +100,15 @@ describe('loadCaptures', () => {
     });
   });
 
-  it('skips and lists captures with an error outcome or a missing image', async () => {
+  it('skips and lists debug captures with an error outcome or a missing image', async () => {
     writeCapture(root, 'b-error', { outcome: 'error' });
     writeCapture(root, 'c-missing-image', { writeImages: [] });
     writeCapture(root, 'a-ok');
     mkdirSync(join(root, 'not-a-capture'));
 
-    const { captures, skipped } = await loadCaptures(root);
+    const { debugCaptures, skipped } = await loadDebugCaptures(root);
 
-    expect(captures.map((c) => c.name)).toEqual(['a-ok']);
+    expect(debugCaptures.map((c) => c.name)).toEqual(['a-ok']);
     expect(skipped).toEqual([
       {
         name: 'b-error',
@@ -119,14 +119,16 @@ describe('loadCaptures', () => {
     ]);
   });
 
-  it('loads only the named captures when a filter is given', async () => {
+  it('loads only the named debug captures when a filter is given', async () => {
     writeCapture(root, 'a');
     writeCapture(root, 'b');
     writeCapture(root, 'c');
 
-    const { captures } = await loadCaptures(root, { only: ['c', 'a'] });
+    const { debugCaptures } = await loadDebugCaptures(root, {
+      only: ['c', 'a'],
+    });
 
-    expect(captures.map((c) => c.name)).toEqual(['a', 'c']);
+    expect(debugCaptures.map((c) => c.name)).toEqual(['a', 'c']);
   });
 });
 
@@ -189,7 +191,7 @@ function receiptLine(
   };
 }
 
-function receiptCapture(lines: unknown[]): Capture {
+function receiptCapture(lines: unknown[]): DebugCapture {
   return {
     name: 'receipt-1',
     request: {
@@ -213,7 +215,7 @@ const receipt = (lines: unknown[], merchantName = 'Shop') => ({
   lines,
 });
 
-describe('compareCapture', () => {
+describe('compareDebugCapture', () => {
   it('lists what a replay changed against the recorded receipt answer', () => {
     const capture = receiptCapture([
       receiptLine('MILK 1L', { matchedIngredientId: MILK_ID }),
@@ -221,7 +223,7 @@ describe('compareCapture', () => {
       receiptLine('BAG', { lineType: 'fee', includeInPantry: false }),
     ]);
 
-    const comparison = compareCapture(capture, 'gpt-6-luna', [
+    const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
       {
         ok: true,
         durationMs: 8000,
@@ -278,7 +280,7 @@ describe('compareCapture', () => {
       data: receipt(lines),
     });
 
-    const comparison = compareCapture(capture, 'gpt-6-luna', [
+    const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
       ok([receiptLine('MILK 1L'), receiptLine('BREAD')]),
       ok([receiptLine('MILK 1L')]),
       ok([receiptLine('MILK 1L', { purchasedCount: 2 }), receiptLine('BREAD')]),
@@ -322,7 +324,7 @@ describe('compareCapture', () => {
       data: receipt(lines),
     });
 
-    const comparison = compareCapture(capture, 'gpt-6-luna', [
+    const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
       run([
         receiptLine('1,000 Buc x 6,59 LAPTE INTEGRAL 3.5% 1L'),
         receiptLine('1,000 Buc x 6,59 LAPTE INTEGRAL 3.5% 1L'),
@@ -358,7 +360,7 @@ describe('compareCapture', () => {
         quantityPerItem: 1.5,
         quantityUnit: unit,
       });
-    const comparison = compareCapture(receiptCapture([line('L')]), 'm', [
+    const comparison = compareDebugCapture(receiptCapture([line('L')]), 'm', [
       { ok: true, durationMs: 1, data: receipt([line('l')]) },
     ]);
     expect(comparison.runs[0].changes).toEqual([]);
@@ -366,7 +368,7 @@ describe('compareCapture', () => {
 
   it('reports no disagreement for a single run', () => {
     const capture = receiptCapture([receiptLine('MILK 1L')]);
-    const comparison = compareCapture(capture, 'gpt-6-luna', [
+    const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
       { ok: true, durationMs: 1, data: receipt([receiptLine('BREAD')]) },
     ]);
     expect(comparison.disagreements).toEqual([]);
@@ -466,7 +468,7 @@ describe('compareCapture', () => {
   ])(
     'compares the parts that matter for %s',
     (schemaName, recordedData, replayedData, changes) => {
-      const capture: Capture = {
+      const capture: DebugCapture = {
         name: 'c',
         request: {
           prompt: CATALOG_PROMPT,
@@ -476,7 +478,7 @@ describe('compareCapture', () => {
         },
         recorded: { model: 'gpt-4o-mini', data: recordedData },
       };
-      const comparison = compareCapture(capture, 'gpt-6-luna', [
+      const comparison = compareDebugCapture(capture, 'gpt-6-luna', [
         { ok: true, durationMs: 1, data: replayedData },
       ]);
       expect(comparison.runs[0].changes).toEqual(changes);
@@ -486,7 +488,7 @@ describe('compareCapture', () => {
 
 describe('renderReport', () => {
   it('reports per capture the runs, their differences, disagreements and totals', () => {
-    const comparison = compareCapture(
+    const comparison = compareDebugCapture(
       receiptCapture([
         receiptLine('MILK 1L', { matchedIngredientId: MILK_ID }),
         receiptLine('BREAD'),
@@ -523,7 +525,7 @@ describe('renderReport', () => {
     });
 
     expect(report).toContain(
-      '# Scan replay: gpt-6-luna, effort none, 3 runs per capture',
+      '# Scan replay: gpt-6-luna, effort none, 3 runs per debug capture',
     );
     expect(report).toContain('1 replayed, 1 skipped');
     expect(report).toContain('Estimated replay cost: $0.0070');
@@ -556,7 +558,7 @@ describe('renderReport', () => {
       model: 'gpt-6-luna',
       effort: 'none',
       repeat: 2,
-      comparisons: [compareCapture(capture, 'gpt-6-luna', [same, same])],
+      comparisons: [compareDebugCapture(capture, 'gpt-6-luna', [same, same])],
       skipped: [],
     });
     expect(report).toContain('All 2 runs agree.');

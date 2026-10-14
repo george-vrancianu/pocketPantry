@@ -1,30 +1,30 @@
 // CLI entry: `npm run scan:replay -w @pocket-pantry/api -- --model gpt-6-luna --effort low --repeat 3`.
-// Resends Scan debug captures through StructuredOutputAiService and writes a local report.
+// Resends debug captures through StructuredOutputAiService and writes a local report.
 // See README.md next to this file.
-import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { parseArgs, parseEnv } from 'node:util';
+import { parseArgs } from 'node:util';
 import type { ConfigService } from '@nestjs/config';
-import type { AppConfig } from '../../config/env';
+import {
+  REASONING_EFFORTS,
+  type AppConfig,
+  type ReasoningEffort,
+} from '../../config/env';
 import { ApiException } from '../../common/api-exception';
 import {
   StructuredOutputAiError,
   StructuredOutputAiService,
 } from '../structured-output-ai.service';
 import {
-  compareCapture,
-  loadCaptures,
+  compareDebugCapture,
+  loadDebugCaptures,
   renderReport,
   type ReplayRun,
 } from './scan-replay';
 
-const EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh'] as const;
-type Effort = (typeof EFFORTS)[number];
-
 const { values } = parseArgs({
   options: {
-    captures: { type: 'string', default: '.scan-debug' },
+    'debug-captures': { type: 'string', default: '.scan-debug' },
     model: { type: 'string' },
     effort: { type: 'string' },
     repeat: { type: 'string', default: '1' },
@@ -34,22 +34,19 @@ const { values } = parseArgs({
   },
 });
 
-/** Same files, same order as the API's ConfigModule; the shell environment wins. */
+/** Same files, same order as the API's ConfigModule; a file never overrides what is already set. */
 function loadEnvFiles(): void {
   for (const file of ['.env.local', '.env', '../../.env']) {
-    let parsed: Record<string, string | undefined>;
     try {
-      parsed = parseEnv(readFileSync(resolve(file), 'utf8'));
+      process.loadEnvFile(resolve(process.cwd(), file));
     } catch {
-      continue;
-    }
-    for (const [key, value] of Object.entries(parsed)) {
-      if (process.env[key] === undefined && value !== '') {
-        process.env[key] = value;
-      }
+      // No such file: rely on the others and the environment.
     }
   }
 }
+
+/** `KEY=` means unset, as in validateEnv. */
+const env = (key: string): string | undefined => process.env[key] || undefined;
 
 /** Error code plus what the provider did (`reason`, HTTP status), never response content. */
 function describe(error: unknown): string {
@@ -72,29 +69,31 @@ function fail(message: string): never {
 
 async function main(): Promise<void> {
   loadEnvFiles();
-  const model = values.model ?? process.env.AI_VISION_MODEL;
+  const model = values.model ?? env('AI_VISION_MODEL');
   if (!model) fail('Pass --model (or set AI_VISION_MODEL).');
-  const effortArg = values.effort ?? process.env.AI_REASONING_EFFORT;
   // `unset` replays without a reasoning effort, as gpt-4o-mini runs today.
+  const effortLabel = values.effort ?? env('AI_REASONING_EFFORT') ?? 'unset';
   const effort =
-    effortArg === undefined || effortArg === 'unset'
+    effortLabel === 'unset'
       ? undefined
-      : (EFFORTS as readonly string[]).includes(effortArg)
-        ? (effortArg as Effort)
-        : fail(`--effort must be one of ${EFFORTS.join(', ')} or unset.`);
+      : (REASONING_EFFORTS as readonly string[]).includes(effortLabel)
+        ? (effortLabel as ReasoningEffort)
+        : fail(
+            `--effort must be one of ${REASONING_EFFORTS.join(', ')} or unset.`,
+          );
   const repeat = Number(values.repeat);
   if (!Number.isInteger(repeat) || repeat < 1) fail('--repeat must be >= 1.');
   const limit = values.limit === undefined ? undefined : Number(values.limit);
 
   const settings: Partial<AppConfig> = {
-    // Never `development`: replays must not write new Scan debug captures.
+    // Never `development`: replays must not write new debug captures.
     NODE_ENV: 'test',
     AI_PROVIDER:
-      process.env.AI_PROVIDER === 'openai-compatible'
+      env('AI_PROVIDER') === 'openai-compatible'
         ? 'openai-compatible'
         : 'openai',
-    AI_API_KEY: process.env.AI_API_KEY,
-    AI_BASE_URL: process.env.AI_BASE_URL,
+    AI_API_KEY: env('AI_API_KEY'),
+    AI_BASE_URL: env('AI_BASE_URL'),
     AI_VISION_MODEL: model,
     AI_REASONING_EFFORT: effort,
   };
@@ -103,23 +102,23 @@ async function main(): Promise<void> {
     get: (key: keyof AppConfig) => settings[key],
   } as ConfigService<AppConfig, true>);
 
-  const captureDir = resolve(values.captures);
-  const loaded = await loadCaptures(captureDir, {
+  const debugCaptureDir = resolve(values['debug-captures']);
+  const loaded = await loadDebugCaptures(debugCaptureDir, {
     only: values.only?.split(',').map((name) => name.trim()),
   });
-  const captures = loaded.captures.slice(0, limit);
+  const debugCaptures = loaded.debugCaptures.slice(0, limit);
   console.log(
-    `Replaying ${captures.length} capture(s) from ${captureDir} on ${model} (effort ${effortArg ?? 'unset'}), ${repeat} run(s) each.`,
+    `Replaying ${debugCaptures.length} debug capture(s) from ${debugCaptureDir} on ${model} (effort ${effortLabel}), ${repeat} run(s) each.`,
   );
 
   const comparisons = [];
   const answers: Record<string, ReplayRun[]> = {};
-  for (const capture of captures) {
+  for (const debugCapture of debugCaptures) {
     const runs: ReplayRun[] = [];
     for (let run = 1; run <= repeat; run++) {
       const started = Date.now();
       try {
-        const result = await service.generate(capture.request);
+        const result = await service.generate(debugCapture.request);
         runs.push({
           ok: true,
           data: result.data,
@@ -134,22 +133,22 @@ async function main(): Promise<void> {
         });
       }
       console.log(
-        `  ${capture.name} run ${run}: ${runs[runs.length - 1].ok ? 'ok' : 'failed'}`,
+        `  ${debugCapture.name} run ${run}: ${runs[runs.length - 1].ok ? 'ok' : 'failed'}`,
       );
     }
-    answers[capture.name] = runs;
-    comparisons.push(compareCapture(capture, model, runs));
+    answers[debugCapture.name] = runs;
+    comparisons.push(compareDebugCapture(debugCapture, model, runs));
   }
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outDir = join(
     resolve(values.out),
-    `${stamp}-${model.replace(/[^a-z0-9._-]/gi, '_')}-${effortArg ?? 'unset'}`,
+    `${stamp}-${model.replace(/[^a-z0-9._-]/gi, '_')}-${effortLabel}`,
   );
   await mkdir(outDir, { recursive: true });
   const report = renderReport({
     model,
-    effort: effortArg ?? 'unset',
+    effort: effortLabel,
     repeat,
     comparisons,
     skipped: loaded.skipped,

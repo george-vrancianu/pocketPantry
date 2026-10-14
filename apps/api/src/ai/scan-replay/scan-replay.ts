@@ -5,9 +5,16 @@ import {
   type AiTokenUsage,
   type StructuredOutputRequest,
 } from '../structured-output-ai.service';
+import { INGREDIENTS_SCAN_SCHEMA_NAME } from '../../scan/ingredients-scan.schemas';
+import {
+  PLATE_DISHES_SCHEMA_NAME,
+  PLATE_INGREDIENTS_SCHEMA_NAME,
+} from '../../scan/plate-scan.schemas';
+import { PRODUCT_SCAN_SCHEMA_NAME } from '../../scan/product-scan.schemas';
+import { RECEIPT_SCAN_SCHEMA_NAME } from '../../scan/receipt-scan.schemas';
 
-/** One Scan debug capture (a folder written under `SCAN_DEBUG_DIR`), ready to resend. */
-export type Capture = {
+/** One debug capture (a folder written under `SCAN_DEBUG_DIR`), ready to resend. */
+export type DebugCapture = {
   name: string;
   request: StructuredOutputRequest;
   recorded: {
@@ -18,7 +25,7 @@ export type Capture = {
   };
 };
 
-export type SkippedCapture = { name: string; reason: string };
+export type SkippedDebugCapture = { name: string; reason: string };
 
 const MIME_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -45,33 +52,33 @@ type RecordedResponse = {
 };
 
 /**
- * Reads every capture folder in `root`, in name (= time) order. A capture that recorded an
- * error, lost a photo, or is not a capture at all is skipped and listed, never fatal.
+ * Reads every debug capture folder in `root`, in name (= time) order. A folder that recorded
+ * an error, lost a photo, or is not a debug capture at all is skipped and listed, never fatal.
  */
-export async function loadCaptures(
+export async function loadDebugCaptures(
   root: string,
   { only }: { only?: string[] } = {},
-): Promise<{ captures: Capture[]; skipped: SkippedCapture[] }> {
+): Promise<{ debugCaptures: DebugCapture[]; skipped: SkippedDebugCapture[] }> {
   const entries = await readdir(root, { withFileTypes: true });
   const names = entries
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .filter((name) => !only || only.includes(name))
     .sort();
-  const captures: Capture[] = [];
-  const skipped: SkippedCapture[] = [];
+  const debugCaptures: DebugCapture[] = [];
+  const skipped: SkippedDebugCapture[] = [];
   for (const name of names) {
-    const result = await loadCapture(join(root, name), name);
+    const result = await loadDebugCapture(join(root, name), name);
     if ('reason' in result) skipped.push(result);
-    else captures.push(result);
+    else debugCaptures.push(result);
   }
-  return { captures, skipped };
+  return { debugCaptures, skipped };
 }
 
-async function loadCapture(
+async function loadDebugCapture(
   dir: string,
   name: string,
-): Promise<Capture | SkippedCapture> {
+): Promise<DebugCapture | SkippedDebugCapture> {
   let request: RecordedRequest;
   let response: RecordedResponse;
   try {
@@ -122,7 +129,7 @@ async function loadCapture(
   };
 }
 
-/** One replay of a capture: the answer, or the error the service threw. */
+/** One replay of a debug capture: the answer, or the error the service threw. */
 export type ReplayRun =
   | { ok: true; data: unknown; usage?: AiTokenUsage; durationMs: number }
   | { ok: false; error: string; durationMs: number };
@@ -142,7 +149,7 @@ export type Disagreement = {
   values: { value: string; runs: number[] }[];
 };
 
-type Stats = {
+type AnswerStats = {
   lines: number;
   matched: number;
   usage?: AiTokenUsage;
@@ -150,18 +157,18 @@ type Stats = {
   durationMs?: number;
 };
 
-export type RunComparison = Stats & {
+export type RunComparison = AnswerStats & {
   run: number;
   ok: boolean;
   error?: string;
   changes: Change[];
 };
 
-export type CaptureComparison = {
+export type DebugCaptureComparison = {
   name: string;
   schemaName: string;
   recordedModel: string;
-  recorded: Stats;
+  recorded: AnswerStats;
   runs: RunComparison[];
   disagreements: Disagreement[];
 };
@@ -170,7 +177,7 @@ export type CaptureComparison = {
  * One line of an answer. `key` pairs it with the same line in another answer: exactly, or
  * (`fuzzy`) by similar text, since a model reads the same receipt line slightly differently.
  */
-type Item = {
+type AnswerLine = {
   key: string;
   fuzzy: boolean;
   label: string;
@@ -180,14 +187,14 @@ type Item = {
 /** What the report compares in an answer: top-level fields and its lines. */
 type Answer = {
   fields: Record<string, string>;
-  items: Item[];
+  lines: AnswerLine[];
   matched: number;
 };
 
-/** An answer whose lines are keyed by the line they pair with across all answers of a capture. */
-type View = {
+/** An answer whose lines are keyed by the line they pair with across all answers of a debug capture. */
+type AlignedAnswer = {
   fields: Record<string, string>;
-  items: Map<string, { label: string; fields: Record<string, string> }>;
+  lines: Map<string, { label: string; fields: Record<string, string> }>;
   matched: number;
 };
 
@@ -198,38 +205,41 @@ const FOUND = 'found';
 const MISSING = 'missing';
 
 /** Compares each replay with the recorded answer, and the replays with each other. */
-export function compareCapture(
-  capture: Capture,
+export function compareDebugCapture(
+  debugCapture: DebugCapture,
   model: string,
   runs: ReplayRun[],
-): CaptureComparison {
-  const catalog = catalogNames(capture.request.prompt);
+): DebugCaptureComparison {
+  const catalog = catalogNames(debugCapture.request.prompt);
   const answerOf = (data: unknown) =>
-    readAnswer(capture.request.schemaName, data, catalog);
+    readAnswer(debugCapture.request.schemaName, data, catalog);
   const okRuns = runs.flatMap((run, index) =>
     run.ok ? [{ index, answer: answerOf(run.data) }] : [],
   );
-  const [recorded, ...aligned] = align([
-    answerOf(capture.recorded.data),
+  const [recorded, ...alignedRuns] = align([
+    answerOf(debugCapture.recorded.data),
     ...okRuns.map((run) => run.answer),
   ]);
-  const views: (View | undefined)[] = runs.map(() => undefined);
-  okRuns.forEach(({ index }, n) => (views[index] = aligned[n]));
+  const byRun: (AlignedAnswer | undefined)[] = runs.map(() => undefined);
+  okRuns.forEach(({ index }, n) => (byRun[index] = alignedRuns[n]));
 
   return {
-    name: capture.name,
-    schemaName: capture.request.schemaName,
-    recordedModel: capture.recorded.model,
+    name: debugCapture.name,
+    schemaName: debugCapture.request.schemaName,
+    recordedModel: debugCapture.recorded.model,
     recorded: {
-      lines: recorded.items.size,
+      lines: recorded.lines.size,
       matched: recorded.matched,
-      usage: capture.recorded.usage,
-      costUsd: estimateCostUsd(capture.recorded.model, capture.recorded.usage),
-      durationMs: capture.recorded.durationMs,
+      usage: debugCapture.recorded.usage,
+      costUsd: estimateCostUsd(
+        debugCapture.recorded.model,
+        debugCapture.recorded.usage,
+      ),
+      durationMs: debugCapture.recorded.durationMs,
     },
     runs: runs.map((run, index): RunComparison => {
-      const view = views[index];
-      if (!run.ok || !view) {
+      const answer = byRun[index];
+      if (!run.ok || !answer) {
         return {
           run: index + 1,
           ok: false,
@@ -243,32 +253,36 @@ export function compareCapture(
       return {
         run: index + 1,
         ok: true,
-        lines: view.items.size,
-        matched: view.matched,
+        lines: answer.lines.size,
+        matched: answer.matched,
         usage: run.usage,
         costUsd: estimateCostUsd(model, run.usage),
         durationMs: run.durationMs,
-        changes: diffViews(recorded, view),
+        changes: diffAnswers(recorded, answer),
       };
     }),
     disagreements: disagreements(
-      views.flatMap((view, index) => (view ? [{ run: index + 1, view }] : [])),
+      byRun.flatMap((answer, index) =>
+        answer ? [{ run: index + 1, answer }] : [],
+      ),
     ),
   };
 }
 
 /** Fields and lines the successful runs disagree on; none with fewer than two. */
-function disagreements(runs: { run: number; view: View }[]): Disagreement[] {
+function disagreements(
+  runs: { run: number; answer: AlignedAnswer }[],
+): Disagreement[] {
   if (runs.length < 2) return [];
   const result: Disagreement[] = [];
   const compare = (
     item: string | undefined,
     field: string,
-    valueOf: (view: View) => string | undefined,
+    valueOf: (answer: AlignedAnswer) => string | undefined,
   ) => {
     const values: Disagreement['values'] = [];
-    for (const { run, view } of runs) {
-      const value = valueOf(view);
+    for (const { run, answer } of runs) {
+      const value = valueOf(answer);
       if (value === undefined) continue;
       const seen = values.find((entry) => entry.value === value);
       if (seen) seen.runs.push(run);
@@ -279,35 +293,45 @@ function disagreements(runs: { run: number; view: View }[]): Disagreement[] {
     }
   };
 
-  const fields = new Set(runs.flatMap(({ view }) => Object.keys(view.fields)));
+  const fields = new Set(
+    runs.flatMap(({ answer }) => Object.keys(answer.fields)),
+  );
   for (const field of fields) {
-    compare(undefined, field, (view) => view.fields[field] ?? MISSING);
+    compare(undefined, field, (answer) => answer.fields[field] ?? MISSING);
   }
-  const items = new Map<string, { label: string; fields: Set<string> }>();
-  for (const { view } of runs) {
-    for (const [key, item] of view.items) {
-      const entry = items.get(key) ?? { label: item.label, fields: new Set() };
+  const lineFields = new Map<string, { label: string; fields: Set<string> }>();
+  for (const { answer } of runs) {
+    for (const [key, item] of answer.lines) {
+      const entry = lineFields.get(key) ?? {
+        label: item.label,
+        fields: new Set(),
+      };
       Object.keys(item.fields).forEach((field) => entry.fields.add(field));
-      items.set(key, entry);
+      lineFields.set(key, entry);
     }
   }
-  for (const [key, { label, fields: itemFields }] of items) {
-    compare(label, 'line', (view) => (view.items.has(key) ? FOUND : MISSING));
+  for (const [key, { label, fields: itemFields }] of lineFields) {
+    compare(label, 'line', (answer) =>
+      answer.lines.has(key) ? FOUND : MISSING,
+    );
     for (const field of itemFields) {
-      compare(label, field, (view) => view.items.get(key)?.fields[field]);
+      compare(label, field, (answer) => answer.lines.get(key)?.fields[field]);
     }
   }
   return result;
 }
 
-function diffViews(recorded: View, replayed: View): Change[] {
+function diffAnswers(
+  recorded: AlignedAnswer,
+  replayed: AlignedAnswer,
+): Change[] {
   const changes: Change[] = diffFields(
     recorded.fields,
     replayed.fields,
     undefined,
   );
-  for (const [key, item] of recorded.items) {
-    const other = replayed.items.get(key);
+  for (const [key, item] of recorded.lines) {
+    const other = replayed.lines.get(key);
     if (!other) {
       changes.push({
         item: item.label,
@@ -319,8 +343,8 @@ function diffViews(recorded: View, replayed: View): Change[] {
       changes.push(...diffFields(item.fields, other.fields, item.label));
     }
   }
-  for (const [key, item] of replayed.items) {
-    if (!recorded.items.has(key)) {
+  for (const [key, item] of replayed.lines) {
+    if (!recorded.lines.has(key)) {
       changes.push({
         item: item.label,
         field: 'line',
@@ -358,9 +382,10 @@ function catalogNames(prompt: string): Map<string, string> {
   return names;
 }
 
-type Line = Record<string, unknown>;
+type RawLine = Record<string, unknown>;
 
-const text = (value: unknown): string =>
+/** A raw answer value as report text: strings as is, anything else as JSON, null as `-`. */
+const displayValue = (value: unknown): string =>
   typeof value === 'string'
     ? value
     : (JSON.stringify(value ?? null) ?? '-').replace(/^null$/, '-');
@@ -369,41 +394,41 @@ const text = (value: unknown): string =>
  * Keys every answer's lines so a line pairs with the same line in the other answers: each
  * line joins the most similar unclaimed line seen so far, or starts a new one.
  */
-function align(answers: Answer[]): View[] {
-  const known: { item: Item; id: string }[] = [];
+function align(answers: Answer[]): AlignedAnswer[] {
+  const seenLines: { line: AnswerLine; id: string }[] = [];
   return answers.map((answer) => {
-    const candidates: { line: number; known: number; score: number }[] = [];
-    answer.items.forEach((item, line) =>
-      known.forEach((other, index) => {
-        const score = similarity(item, other.item);
-        if (score >= SAME_LINE) candidates.push({ line, known: index, score });
+    const pairings: { line: number; seenLine: number; score: number }[] = [];
+    answer.lines.forEach((item, line) =>
+      seenLines.forEach((seen, seenLine) => {
+        const score = similarity(item, seen.line);
+        if (score >= SAME_LINE) pairings.push({ line, seenLine, score });
       }),
     );
-    candidates.sort((a, b) => b.score - a.score);
-    const ids: (string | undefined)[] = answer.items.map(() => undefined);
+    pairings.sort((a, b) => b.score - a.score);
+    const ids: (string | undefined)[] = answer.lines.map(() => undefined);
     const claimed = new Set<number>();
-    for (const { line, known: index } of candidates) {
-      if (ids[line] !== undefined || claimed.has(index)) continue;
-      ids[line] = known[index].id;
-      claimed.add(index);
+    for (const { line, seenLine } of pairings) {
+      if (ids[line] !== undefined || claimed.has(seenLine)) continue;
+      ids[line] = seenLines[seenLine].id;
+      claimed.add(seenLine);
     }
-    const items: View['items'] = new Map();
-    answer.items.forEach((item, line) => {
+    const lines: AlignedAnswer['lines'] = new Map();
+    answer.lines.forEach((item, line) => {
       let id = ids[line];
       let label = item.label;
       if (id === undefined) {
-        id = String(known.length);
-        known.push({ item, id });
+        id = String(seenLines.length);
+        seenLines.push({ line: item, id });
       } else {
-        label = known[Number(id)].item.label;
+        label = seenLines[Number(id)].line.label;
       }
-      items.set(id, { label, fields: item.fields });
+      lines.set(id, { label, fields: item.fields });
     });
-    return { fields: answer.fields, items, matched: answer.matched };
+    return { fields: answer.fields, lines, matched: answer.matched };
   });
 }
 
-function similarity(a: Item, b: Item): number {
+function similarity(a: AnswerLine, b: AnswerLine): number {
   if (a.key === b.key) return 1;
   if (!a.fuzzy || !b.fuzzy) return 0;
   const left = bigrams(a.key);
@@ -430,31 +455,31 @@ function readAnswer(
   data: unknown,
   catalog: Map<string, string>,
 ): Answer {
-  const answer = (data ?? {}) as Line;
-  const ingredient = (line: Line): string => {
+  const answer = (data ?? {}) as RawLine;
+  const ingredient = (line: RawLine): string => {
     const id = line.matchedIngredientId;
     if (typeof id === 'string') return catalog.get(id.toLowerCase()) ?? id;
-    return `unmatched (${text(line.fallbackIngredientName)})`;
+    return `unmatched (${displayValue(line.fallbackIngredientName)})`;
   };
-  const isMatched = (line: Line) =>
+  const isMatched = (line: RawLine) =>
     typeof line.matchedIngredientId === 'string';
-  const linesOf = (value: unknown): Line[] =>
-    Array.isArray(value) ? (value as Line[]) : [];
+  const linesOf = (value: unknown): RawLine[] =>
+    Array.isArray(value) ? (value as RawLine[]) : [];
 
   switch (schemaName) {
-    case 'grocery_receipt_scan': {
+    case RECEIPT_SCAN_SCHEMA_NAME: {
       const lines = linesOf(answer.lines);
       return {
         fields: {
-          merchant: text(answer.merchantName),
-          purchaseDate: text(answer.purchaseDate),
+          merchant: displayValue(answer.merchantName),
+          purchaseDate: displayValue(answer.purchaseDate),
         },
-        items: lines.map((line) => ({
-          key: normalize(text(line.sourceText)),
+        lines: lines.map((line) => ({
+          key: normalize(displayValue(line.sourceText)),
           fuzzy: true,
-          label: text(line.sourceText),
+          label: displayValue(line.sourceText),
           fields: {
-            type: `${text(line.lineType)}${line.includeInPantry === false ? ' (excluded)' : ''}`,
+            type: `${displayValue(line.lineType)}${line.includeInPantry === false ? ' (excluded)' : ''}`,
             ingredient: ingredient(line),
             quantity: receiptQuantity(line),
           },
@@ -462,41 +487,41 @@ function readAnswer(
         matched: lines.filter(isMatched).length,
       };
     }
-    case 'grocery_product_scan':
+    case PRODUCT_SCAN_SCHEMA_NAME:
       return {
         fields: {
           ingredient: ingredient(answer),
-          expiryDate: text(answer.expiryDate),
+          expiryDate: displayValue(answer.expiryDate),
         },
-        items: [],
+        lines: [],
         matched: isMatched(answer) ? 1 : 0,
       };
-    case 'grocery_ingredients_photo_scan':
-    case 'selected_recipe_ingredients': {
+    case INGREDIENTS_SCAN_SCHEMA_NAME:
+    case PLATE_INGREDIENTS_SCHEMA_NAME: {
       const lines = linesOf(answer.items);
       return {
         fields: {},
-        items: lines.map((line): Item => ({
+        lines: lines.map((line): AnswerLine => ({
           key: normalize(ingredient(line)),
           fuzzy: false,
           label: ingredient(line),
           fields:
-            schemaName === 'selected_recipe_ingredients'
+            schemaName === PLATE_INGREDIENTS_SCHEMA_NAME
               ? {
-                  quantity: `${text(line.quantity)}${line.unit ? ` ${text(line.unit).toLowerCase()}` : ''} (${text(line.quantityType)})`,
+                  quantity: `${displayValue(line.quantity)}${line.unit ? ` ${displayValue(line.unit).toLowerCase()}` : ''} (${displayValue(line.quantityType)})`,
                 }
               : {},
         })),
         matched: lines.filter(isMatched).length,
       };
     }
-    case 'plate_recipe_suggestions':
+    case PLATE_DISHES_SCHEMA_NAME:
       return {
         fields: {},
-        items: linesOf(answer.matches).map((line) => ({
-          key: normalize(text(line.title)),
+        lines: linesOf(answer.matches).map((line) => ({
+          key: normalize(displayValue(line.title)),
           fuzzy: false,
-          label: text(line.title),
+          label: displayValue(line.title),
           fields: {},
         })),
         matched: 0,
@@ -504,18 +529,18 @@ function readAnswer(
     default:
       return {
         fields: { answer: JSON.stringify(data) },
-        items: [],
+        lines: [],
         matched: 0,
       };
   }
 }
 
-function receiptQuantity(line: Line): string {
+function receiptQuantity(line: RawLine): string {
   const perItem =
     line.quantityPerItem === null || line.quantityPerItem === undefined
       ? ''
-      : ` x ${text(line.quantityPerItem)}${line.quantityUnit ? ` ${text(line.quantityUnit).toLowerCase()}` : ''}`;
-  return `${text(line.purchasedCount)}${perItem} (${text(line.quantityType)})`;
+      : ` x ${displayValue(line.quantityPerItem)}${line.quantityUnit ? ` ${displayValue(line.quantityUnit).toLowerCase()}` : ''}`;
+  return `${displayValue(line.purchasedCount)}${perItem} (${displayValue(line.quantityType)})`;
 }
 
 /** Case, spacing and decimal commas are reading noise, not a different line. */
@@ -526,8 +551,8 @@ export type ReportInput = {
   model: string;
   effort: string;
   repeat: number;
-  comparisons: CaptureComparison[];
-  skipped: SkippedCapture[];
+  comparisons: DebugCaptureComparison[];
+  skipped: SkippedDebugCapture[];
 };
 
 /** The replay report as Markdown. It quotes receipt lines: personal data, keep it local. */
@@ -542,9 +567,9 @@ export function renderReport({
     .flatMap((c) => c.runs)
     .reduce((sum, run) => sum + (run.costUsd ?? 0), 0);
   const out: string[] = [
-    `# Scan replay: ${model}, effort ${effort}, ${repeat} runs per capture`,
+    `# Scan replay: ${model}, effort ${effort}, ${repeat} runs per debug capture`,
     '',
-    `Captures: ${comparisons.length} replayed, ${skipped.length} skipped. Estimated replay cost: ${usd(totalCost)}`,
+    `Debug captures: ${comparisons.length} replayed, ${skipped.length} skipped. Estimated replay cost: ${usd(totalCost)}`,
   ];
   if (skipped.length) {
     out.push('', '## Skipped', '');
@@ -605,7 +630,7 @@ const usd = (value: number | undefined) =>
 const seconds = (ms: number | undefined) =>
   ms === undefined ? '-' : `${(ms / 1000).toFixed(1)}s`;
 
-function statsRow(run: string, model: string, stats: Stats): string {
+function statsRow(run: string, model: string, stats: AnswerStats): string {
   const { usage } = stats;
   return `| ${run} | ${model} | ${stats.lines} | ${stats.matched} | ${count(usage?.inputTokens)} | ${count(usage?.cachedInputTokens)} | ${count(usage?.outputTokens)} | ${count(usage?.reasoningTokens)} | ${usd(stats.costUsd)} | ${seconds(stats.durationMs)} |`;
 }
