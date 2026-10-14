@@ -33,7 +33,20 @@
   "group": {
     "batches_one": "{{count}} lot",
     "batches_few": "{{count}} loturi",
-    "batches_other": "{{count}} de loturi"
+    "batches_other": "{{count}} de loturi",
+    "runningLow": "Pe sfârșite",
+    "notLow": "Nu e pe sfârșite"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} marcat ca fiind pe sfârșite",
+      "off": "{{name}} nu mai e pe sfârșite"
+    }
+  },
+  "a11y": {
+    "markLow": "Marchează ca fiind pe sfârșite",
+    "clearLow": "Nu mai e pe sfârșite",
+    "lowKey": "Apasă L: {{action}}"
   },
   "batch": {
     "noDate": "fără dată"

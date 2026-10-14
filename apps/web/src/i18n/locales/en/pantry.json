@@ -33,7 +33,20 @@
   "batchCount_other": "{{count}} batches",
   "group": {
     "batches_one": "{{count}} batch",
-    "batches_other": "{{count}} batches"
+    "batches_other": "{{count}} batches",
+    "runningLow": "Running low",
+    "notLow": "Not low"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} marked running low",
+      "off": "{{name}} no longer running low"
+    }
+  },
+  "a11y": {
+    "markLow": "Mark running low",
+    "clearLow": "Clear running low",
+    "lowKey": "Press L: {{action}}"
   },
   "batch": {
     "noDate": "no date"

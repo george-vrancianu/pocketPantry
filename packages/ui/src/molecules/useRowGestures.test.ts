@@ -4,8 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   swipeOffset,
   swipeZone,
+  toggleOffset,
+  toggleZone,
   useRowGestures,
-  type RowGestureOptions,
+  type RemoveGestureOptions,
 } from './useRowGestures';
 
 const WIDTH = 350; // the 390 pt reference; delete line 350 * 2/3 * 0.985 = 229.8
@@ -33,7 +35,7 @@ function pointer(x: number, y = 0, id = 1, interactive = false) {
   };
 }
 
-function setup(options: Partial<RowGestureOptions> = {}) {
+function setup(options: Partial<RemoveGestureOptions> = {}) {
   const onAsk = vi.fn();
   const onDelete = vi.fn();
   const view = renderHook(() =>
@@ -226,7 +228,7 @@ describe('useRowGestures', () => {
 });
 
 describe('hold to edit', () => {
-  function holdSetup(options: Partial<RowGestureOptions> = {}) {
+  function holdSetup(options: Partial<RemoveGestureOptions> = {}) {
     vi.useFakeTimers();
     const onHold = vi.fn();
     const rig = setup({ onHold, ...options });
@@ -410,5 +412,140 @@ describe('onLearned', () => {
     act(() => rig.bind().onPointerDown(pointer(100, 20)));
     act(() => vi.advanceTimersByTime(500));
     expect(onLearned).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('toggle mode', () => {
+  function toggleSetup(options: { disabled?: boolean } = {}) {
+    const onToggle = vi.fn();
+    const onLearned = vi.fn();
+    const view = renderHook(() =>
+      useRowGestures({ mode: 'toggle', onToggle, onLearned, ...options }),
+    );
+    const bind = () => view.result.current.bind;
+    const drag = (dx: number, dy = 0) => {
+      act(() => bind().onPointerDown(pointer(300, 0)));
+      act(() => bind().onPointerMove(pointer(300 + dx, dy)));
+    };
+    const release = (dx: number) =>
+      act(() => bind().onPointerUp(pointer(300 + dx)));
+    return { view, bind, drag, release, onToggle, onLearned };
+  }
+
+  describe('maths', () => {
+    it('follows the finger to 1.4 x reveal (128.8 pt), then at .35', () => {
+      expect(toggleOffset(-50)).toBe(-50);
+      expect(toggleOffset(-128.8)).toBeCloseTo(-128.8);
+      expect(toggleOffset(-228.8)).toBeCloseTo(-163.8);
+    });
+
+    it('rubber-bands a right drag at .25', () => {
+      expect(toggleOffset(100)).toBe(25);
+    });
+
+    it('has a single zone from 92 pt', () => {
+      expect(toggleZone(-91.9)).toBe(0);
+      expect(toggleZone(-92)).toBe(1);
+      expect(toggleZone(-300)).toBe(1);
+      expect(toggleZone(120)).toBe(0);
+    });
+  });
+
+  it('starts after 8 pt of mostly horizontal movement and captures the pointer', () => {
+    const { view, bind, drag } = toggleSetup();
+    drag(-8);
+    expect(view.result.current.dragging).toBe(false);
+    act(() => bind().onPointerDown(pointer(300)));
+    const move = pointer(280, 5);
+    act(() => bind().onPointerMove(move));
+    expect(view.result.current.dragging).toBe(true);
+    expect(view.result.current.x).toBe(-20);
+    expect(move.currentTarget.setPointerCapture).toHaveBeenCalledWith(1);
+  });
+
+  it('never reaches the remove zone however far the row goes', () => {
+    const { view, drag } = toggleSetup();
+    drag(-300);
+    expect(view.result.current.zone).toBe(1);
+    expect(view.result.current.x).toBeCloseTo(-128.8 - (300 - 128.8) * 0.35);
+  });
+
+  it('toggles on a release inside the zone, and springs back', () => {
+    const { view, drag, release, onToggle, onLearned } = toggleSetup();
+    drag(-92);
+    expect(view.result.current.zone).toBe(1);
+    release(-92);
+    expect(onToggle).toHaveBeenCalledOnce();
+    expect(onLearned).toHaveBeenCalledOnce();
+    expect(view.result.current).toMatchObject({
+      x: 0,
+      zone: 0,
+      dragging: false,
+    });
+  });
+
+  it('springs back without toggling on a release short of the zone', () => {
+    const { view, drag, release, onToggle } = toggleSetup();
+    drag(-91);
+    release(-91);
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(view.result.current.x).toBe(0);
+  });
+
+  it('springs back without toggling after a far drag to the right', () => {
+    const { view, drag, release, onToggle } = toggleSetup();
+    drag(200);
+    expect(view.result.current.x).toBe(50);
+    release(200);
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(view.result.current.x).toBe(0);
+  });
+
+  it('cancels on vertical movement', () => {
+    const { view, drag, release, onToggle } = toggleSetup();
+    drag(-5, 20);
+    act(() => view.result.current.bind.onPointerMove(pointer(150, 20)));
+    expect(view.result.current.dragging).toBe(false);
+    release(-150);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('springs back without toggling on pointercancel, even in the zone', () => {
+    const { view, bind, drag, onToggle } = toggleSetup();
+    drag(-150);
+    act(() => bind().onPointerCancel(pointer(150)));
+    expect(view.result.current.x).toBe(0);
+    expect(view.result.current.dragging).toBe(false);
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it('vibrates 10 ms on entering the zone', () => {
+    const buzz = vi.fn();
+    Object.defineProperty(navigator, 'vibrate', {
+      value: buzz,
+      configurable: true,
+    });
+    const { bind, drag } = toggleSetup();
+    drag(-60);
+    expect(buzz).not.toHaveBeenCalled();
+    act(() => bind().onPointerMove(pointer(300 - 100)));
+    expect(buzz).toHaveBeenCalledWith(10);
+  });
+
+  it('swallows the click after a drag', () => {
+    const { bind, drag, release } = toggleSetup();
+    drag(-40);
+    release(-40);
+    const click = pointer(260);
+    act(() => bind().onClickCapture(click));
+    expect(click.preventDefault).toHaveBeenCalled();
+  });
+
+  it('ignores pointers while disabled', () => {
+    const { view, drag, release, onToggle } = toggleSetup({ disabled: true });
+    drag(-120);
+    expect(view.result.current.dragging).toBe(false);
+    release(-120);
+    expect(onToggle).not.toHaveBeenCalled();
   });
 });

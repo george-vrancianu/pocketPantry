@@ -107,6 +107,12 @@ const ICON_NODES = {
     ['rect', { x: '3', y: '5', width: '18', height: '16', rx: '3' }],
     ['path', { d: 'M3 10h18M8 3v4M16 3v4' }],
   ],
+  /** Not in the handoff set: the Pantry batches handoff's battery-low, the Running low flag. */
+  'battery-low': [
+    ['rect', { x: '2.5', y: '7', width: '17', height: '10', rx: '2.5' }],
+    ['path', { d: 'M22 10.5v3' }],
+    ['path', { d: 'M6.5 10.5v3', strokeWidth: '3.2' }],
+  ],
 } as const satisfies Record<string, IconNode>;
 
 export type IconName = keyof typeof ICON_NODES;
@@ -201,6 +207,7 @@ export const SettingsIcon = handoff('sliders');
 export const TemplateIcon = handoff('template');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
+export const BatteryLowIcon = handoff('battery-low');
 
 export const HomeIcon = lucide(House);
 export const CustomiseIcon = lucide(LayoutGrid);

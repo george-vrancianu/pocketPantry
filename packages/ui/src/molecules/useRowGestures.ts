@@ -9,6 +9,9 @@ const DELETE_LINE_SLACK = 0.985;
 export const MOVE_TOLERANCE_PT = 8;
 const RIGHT_RUBBER_BAND = 0.25;
 const PAST_LINE_RUBBER_BAND = 0.4;
+/** Toggle mode: past this many reveals the row follows the finger at `PAST_TOGGLE_RUBBER_BAND`. */
+const TOGGLE_FOLLOW_REVEALS = 1.4;
+const PAST_TOGGLE_RUBBER_BAND = 0.35;
 /** How long after a drag the click that follows it is still swallowed. */
 const CLICK_GUARD_MS = 350;
 
@@ -26,10 +29,24 @@ const HAPTIC_ARMED = 18;
 const HAPTIC_DELETE_LINE = [14, 40, 22];
 const HAPTIC_FLY_OFF = [10, 30, 30];
 
-/** 0: the tab is sliding in, 1: the tab is fully in view, 2: past the delete line. */
+/**
+ * 0: the tab is sliding in, 1: the tab is fully in view, 2: past the delete line.
+ * Toggle mode has no zone 2.
+ */
 export type SwipeZone = 0 | 1 | 2;
 
-export type RowGestureOptions = {
+type SharedGestureOptions = {
+  /** Ignore pointers, e.g. while the row is confirming or leaving. */
+  disabled?: boolean;
+  /** Width of the tab, the zone 1 distance. */
+  reveal?: number;
+  /** Movement before a drag starts. */
+  moveTolerance?: number;
+};
+
+/** Swipe to remove: zone 1 asks, zone 2 deletes. */
+export type RemoveGestureOptions = SharedGestureOptions & {
+  mode?: 'remove';
   /** Release in zone 1: the row asks for confirmation. */
   onAsk: () => void;
   /** Release in zone 2: the row flies off and is removed. */
@@ -41,19 +58,26 @@ export type RowGestureOptions = {
   onHold?: () => void;
   /** A swipe was released in zone 1 or 2, or a hold armed: the Member has used a gesture. */
   onLearned?: () => void;
-  /** Ignore pointers, e.g. while the row is confirming or leaving. */
-  disabled?: boolean;
-  /** Width of the trash tab, the zone 1 distance. */
-  reveal?: number;
   /** Fraction of the row width that starts zone 2. */
   deleteFraction?: number;
-  /** Movement before a drag starts. */
-  moveTolerance?: number;
 };
 
-type Tuning = Required<
-  Pick<RowGestureOptions, 'reveal' | 'deleteFraction' | 'moveTolerance'>
->;
+/** Swipe to toggle a flag: one zone at `reveal`; every release springs back. */
+export type ToggleGestureOptions = SharedGestureOptions & {
+  mode: 'toggle';
+  /** Released inside the zone. */
+  onToggle: () => void;
+  /** A swipe was released inside the zone. */
+  onLearned?: () => void;
+};
+
+export type RowGestureOptions = RemoveGestureOptions | ToggleGestureOptions;
+
+type Tuning = {
+  reveal: number;
+  deleteFraction: number;
+  moveTolerance: number;
+};
 
 const DEFAULTS: Tuning = {
   reveal: REVEAL_PT,
@@ -86,6 +110,19 @@ export function swipeZone(
   const drag = -dx;
   if (drag >= deleteLine(width, deleteFraction)) return 2;
   return drag >= reveal ? 1 : 0;
+}
+
+/** Toggle mode: where the row sits for a finger that moved `dx` (negative is left). */
+export function toggleOffset(dx: number, reveal = REVEAL_PT): number {
+  if (dx >= 0) return dx * RIGHT_RUBBER_BAND;
+  const follow = reveal * TOGGLE_FOLLOW_REVEALS;
+  if (-dx <= follow) return dx;
+  return -(follow + (-dx - follow) * PAST_TOGGLE_RUBBER_BAND);
+}
+
+/** Toggle mode: 1 once the row has moved a full `reveal` left, else 0. */
+export function toggleZone(dx: number, reveal = REVEAL_PT): SwipeZone {
+  return -dx >= reveal ? 1 : 0;
 }
 
 /** Buzz where the browser can; a nicety, never an error. */
@@ -140,7 +177,9 @@ export type RowGestures = {
 export function useRowGestures(options: RowGestureOptions): RowGestures {
   const tuning: Tuning = {
     reveal: options.reveal ?? DEFAULTS.reveal,
-    deleteFraction: options.deleteFraction ?? DEFAULTS.deleteFraction,
+    deleteFraction:
+      (options.mode === 'toggle' ? undefined : options.deleteFraction) ??
+      DEFAULTS.deleteFraction,
     moveTolerance: options.moveTolerance ?? DEFAULTS.moveTolerance,
   };
   const latest = useRef({ options, tuning });
@@ -222,7 +261,7 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         armed: false,
       };
       press.current = current;
-      if (!o.onHold) return;
+      if (o.mode === 'toggle' || !o.onHold) return;
       const target = event.target as Element | null;
       if (target?.closest?.(INTERACTIVE)) return;
       const origin = {
@@ -242,7 +281,9 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         clearTimeout(openTimer.current);
         openTimer.current = setTimeout(() => {
           const { options: latestOptions } = latest.current;
-          if (!latestOptions.disabled) latestOptions.onHold?.();
+          if (latestOptions.mode !== 'toggle' && !latestOptions.disabled) {
+            latestOptions.onHold?.();
+          }
         }, HOLD_OPEN_MS);
       }, HOLD_MS);
     },
@@ -251,7 +292,8 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       if (!current || event.pointerId !== current.id) return;
       const dx = event.clientX - current.x;
       const dy = event.clientY - current.y;
-      const { tuning: t } = latest.current;
+      const { tuning: t, options: o } = latest.current;
+      const toggle = o.mode === 'toggle';
       // An armed row is committed to editing: no swipe from here.
       if (current.armed) return;
       if (Math.hypot(dx, dy) > t.moveTolerance) cancelHold();
@@ -271,14 +313,19 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
           // The pointer may already be gone.
         }
       }
-      const zone = swipeZone(dx, current.width, t);
+      const zone = toggle
+        ? toggleZone(dx, t.reveal)
+        : swipeZone(dx, current.width, t);
       if (zone !== current.zone) {
         if (zone === 1 && current.zone === 0) vibrate(HAPTIC_REVEAL);
         if (zone === 2) vibrate(HAPTIC_DELETE_LINE);
         current.zone = zone;
       }
       current.dx = dx;
-      setView({ x: swipeOffset(dx, current.width, t), zone, dragging: true });
+      const x = toggle
+        ? toggleOffset(dx, t.reveal)
+        : swipeOffset(dx, current.width, t);
+      setView({ x, zone, dragging: true });
     },
     onPointerUp: (event) => {
       const current = press.current;
@@ -295,6 +342,11 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         event.currentTarget.releasePointerCapture?.(event.pointerId);
       } catch {
         // Already released.
+      }
+      if (o.mode === 'toggle') {
+        setView({ x: 0, zone: 0, dragging: false });
+        if (current.zone === 1) o.onToggle();
+        return;
       }
       if (current.zone === 2) {
         setView((v) => ({ ...v, dragging: false }));
