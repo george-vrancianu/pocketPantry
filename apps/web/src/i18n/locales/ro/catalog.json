@@ -53,6 +53,7 @@
     "pickOne": "alege una",
     "unit": "Unitate",
     "expiryDays_one": "{{count}} z",
+    "expiryDays_few": "{{count}} z",
     "expiryDays_other": "{{count}} z",
     "noExpiry": "Fără expirare",
     "add": "Adaugă și alege",

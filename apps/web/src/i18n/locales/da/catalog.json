@@ -52,7 +52,7 @@
     "unit": "Enhed",
     "expiryDays_one": "{{count}} d",
     "expiryDays_other": "{{count}} d",
-    "noExpiry": "Ingen udløb",
+    "noExpiry": "Ingen udløbsdato",
     "add": "Tilføj og vælg",
     "cancel": "Annuller",
     "close": "Luk",

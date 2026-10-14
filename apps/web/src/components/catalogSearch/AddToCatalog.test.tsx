@@ -496,4 +496,12 @@ describe('Add to your catalog', () => {
       expect(screen.getByText('Family')).toBeVisible();
     });
   });
+  it('pluralises the Default Expiry chip in Romanian, which needs the few form', () => {
+    const { i18n } = renderWithProviders(<div />);
+    const chip = (count: number) =>
+      i18n.t('catalog:catalogAdd.expiryDays', { count, lng: 'ro' });
+    expect(chip(7)).toBe('7 z');
+    expect(chip(1)).toBe('1 z');
+    expect(chip(60)).toBe('60 z');
+  });
 });
