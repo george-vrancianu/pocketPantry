@@ -1,4 +1,12 @@
-import { Box, ClockIcon, Stack, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  ClockIcon,
+  Stack,
+  tokens,
+  Card,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RecipeDetailStep, RecipeDetailTip } from '../../../lib/recipes';
 
@@ -19,7 +27,7 @@ export function TipCallout({ tip }: { tip: RecipeDetailTip }) {
         mt: '8px',
         px: '11px',
         py: '9px',
-        borderRadius: '12px',
+        borderRadius: radius.control,
         bgcolor: tokens.color.subtle,
         border: `1px dashed ${tokens.color.line}`,
         fontSize: 13,
@@ -72,18 +80,11 @@ export function StepList({
 }) {
   const { t } = useTranslation('recipes');
   return (
-    <Box
+    <Card
       component="ol"
+      variant="list"
       aria-label={label}
-      sx={{
-        listStyle: 'none',
-        m: 0,
-        px: '16px',
-        py: '4px',
-        bgcolor: tokens.color.surface,
-        border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
-      }}
+      sx={{ listStyle: 'none', m: 0 }}
     >
       {steps.map((step, index) => (
         <Box
@@ -103,12 +104,11 @@ export function StepList({
               height: 28,
               borderRadius: '50%',
               bgcolor: tokens.color.ink,
-              color: '#FFFFFF',
+              color: tokens.color.surface,
               display: 'grid',
               placeItems: 'center',
-              fontFamily: tokens.font.display,
+              ...displayType,
               fontSize: 14,
-              fontWeight: 700,
             }}
           >
             {index + 1}
@@ -125,9 +125,9 @@ export function StepList({
                     gap: '5px',
                     height: 32,
                     px: '11px',
-                    borderRadius: `${tokens.radius.chip}px`,
+                    borderRadius: radius.pill,
                     bgcolor: tokens.color.accentTint,
-                    color: tokens.color.accent,
+                    color: tokens.color.accentOnTint,
                     fontSize: 12.5,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',
@@ -142,6 +142,6 @@ export function StepList({
           </Box>
         </Box>
       ))}
-    </Box>
+    </Card>
   );
 }

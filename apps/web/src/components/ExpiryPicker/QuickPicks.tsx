@@ -1,4 +1,11 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  tokens,
+  bodyFont,
+  displayType,
+  radius,
+  focusRing,
+} from '@pocket-pantry/ui';
 import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,7 +15,6 @@ import {
   fullDate,
   type IsoDate,
 } from '../../lib/pantry';
-import { focusRing } from './focusRing';
 
 const { color } = tokens;
 
@@ -88,7 +94,7 @@ export function QuickPicks({
           color: color.ink,
           backgroundColor: color.surface,
           border: `1.5px solid ${color.line}`,
-          borderRadius: `${tokens.radius.field}px`,
+          borderRadius: radius.control,
           cursor: 'pointer',
           transition:
             'background-color .12s, border-color .12s, transform .08s',
@@ -102,7 +108,7 @@ export function QuickPicks({
         '& .tile[aria-pressed="true"]': {
           backgroundColor: color.accentTint,
           borderColor: 'transparent',
-          color: color.accent,
+          color: color.accentOnTint,
         },
         '& .tile[data-usual]::before': {
           content: '""',
@@ -145,8 +151,7 @@ export function QuickPicks({
             <Box
               component="b"
               sx={{
-                fontFamily: tokens.font.display,
-                fontWeight: 700,
+                ...displayType,
                 fontSize: 20,
                 lineHeight: 1.05,
               }}
@@ -156,7 +161,7 @@ export function QuickPicks({
                 component="small"
                 sx={{
                   ml: '2px',
-                  fontFamily: tokens.font.body,
+                  fontFamily: bodyFont,
                   fontSize: 12,
                   fontWeight: 600,
                   ...muted,

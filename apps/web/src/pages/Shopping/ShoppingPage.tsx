@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  displayType,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -94,9 +95,8 @@ export function ShoppingPage() {
               >
                 <Typography
                   sx={{
-                    fontFamily: 'var(--font-display)',
+                    ...displayType,
                     fontSize: 18,
-                    fontWeight: 700,
                   }}
                 >
                   {t('shopping:empty.title')}

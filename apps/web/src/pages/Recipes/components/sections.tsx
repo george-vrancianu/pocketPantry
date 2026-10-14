@@ -1,4 +1,11 @@
-import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  Link,
+  Stack,
+  Typography,
+  tokens,
+  radius,
+} from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -160,7 +167,11 @@ function useEntryText() {
 }
 
 const DIFF_KEYS = {
-  added: { key: '+', bg: tokens.color.accentTint, fg: tokens.color.accent },
+  added: {
+    key: '+',
+    bg: tokens.color.accentTint,
+    fg: tokens.color.accentOnTint,
+  },
   removed: { key: '−', bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
   swapped: { key: '⇄', bg: tokens.color.soonBg, fg: tokens.color.soonFg },
 };
@@ -196,7 +207,7 @@ function DiffGroup({
               width: 22,
               height: 22,
               flexShrink: 0,
-              borderRadius: '7px',
+              borderRadius: radius.box,
               display: 'grid',
               placeItems: 'center',
               fontSize: 13,

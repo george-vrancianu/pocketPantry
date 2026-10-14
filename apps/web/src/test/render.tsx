@@ -27,7 +27,7 @@ export function renderWithProviders(
       </QueryClientProvider>
     </I18nextProvider>,
   );
-  return { ...result, i18n };
+  return { ...result, i18n, queryClient };
 }
 
 /** A fetch stub that answers by method and path, e.g. `'POST /api/auth/sign-in/email'`. */

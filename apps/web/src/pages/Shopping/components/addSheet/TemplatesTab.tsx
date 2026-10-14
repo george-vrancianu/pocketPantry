@@ -8,12 +8,14 @@ import {
   TemplateIcon,
   Typography,
   tokens,
+  Card,
+  radius,
+  insetFocusRing,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
 import { itemCount, useShoppingList } from '../../../../lib/shopping';
 import { useTemplates } from '../../../../lib/shoppingTemplates';
-import { focusRing } from '../../../../lib/focusRing';
 
 export type TemplatesTabProps = {
   /** Opens the apply view of a template. */
@@ -43,14 +45,14 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
-            borderRadius: '20px',
+            borderRadius: radius.card,
             border: `1px solid ${color.line}`,
             backgroundColor: color.surface,
             color: 'inherit',
             font: 'inherit',
             textAlign: 'left',
             cursor: 'pointer',
-            ...focusRing(),
+            ...insetFocusRing,
           }}
         >
           <Tile icon={<BookmarkIcon size={20} />} accent />
@@ -95,13 +97,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
           </Typography>
         ) : null}
         {templates.data && templates.data.length > 0 ? (
-          <Box
-            sx={{
-              borderRadius: '20px',
-              border: `1px solid ${color.line}`,
-              backgroundColor: color.surface,
-            }}
-          >
+          <Card variant="list" sx={{ p: 0 }}>
             {templates.data.map((template) => (
               <Box
                 key={template.id}
@@ -123,7 +119,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
                   font: 'inherit',
                   textAlign: 'left',
                   cursor: 'pointer',
-                  ...focusRing(),
+                  ...insetFocusRing,
                 }}
               >
                 <Tile icon={<TemplateIcon size={20} />} />
@@ -161,7 +157,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
                 </Box>
               </Box>
             ))}
-          </Box>
+          </Card>
         ) : null}
       </Box>
     </Box>
@@ -185,9 +181,9 @@ function Tile({
         height: 40,
         display: 'grid',
         placeItems: 'center',
-        borderRadius: '13px',
+        borderRadius: radius.control,
         backgroundColor: accent ? color.accentTint : color.butter,
-        color: accent ? color.accent : color.butterInk,
+        color: accent ? color.accentOnTint : color.butterInk,
       }}
     >
       {icon}

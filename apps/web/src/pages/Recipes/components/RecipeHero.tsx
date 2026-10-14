@@ -5,6 +5,8 @@ import {
   Stack,
   Typography,
   tokens,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -81,9 +83,8 @@ export function RecipeHero({
           variant="h1"
           sx={{
             mt: '4px',
-            fontFamily: tokens.font.display,
+            ...displayType,
             fontSize: 28,
-            fontWeight: 700,
             letterSpacing: '-.02em',
             lineHeight: 1.08,
           }}
@@ -108,7 +109,7 @@ export function RecipeHero({
             sx={{
               bgcolor: tokens.color.surface,
               border: `1px solid ${tokens.color.line}`,
-              borderRadius: '12px',
+              borderRadius: radius.control,
               px: '6px',
               py: '8px',
               textAlign: 'center',
@@ -132,9 +133,8 @@ export function RecipeHero({
               sx={{
                 m: 0,
                 mt: '2px',
-                fontFamily: tokens.font.display,
+                ...displayType,
                 fontSize: wide ? 13 : 17,
-                fontWeight: 700,
                 lineHeight: wide ? 1.2 : undefined,
                 fontVariantNumeric: 'tabular-nums',
               }}

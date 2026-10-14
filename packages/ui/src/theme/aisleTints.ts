@@ -1,40 +1,102 @@
-import { tokens } from './tokens';
+import type { ThemeId } from './themes';
+import { palette } from './themeVars';
 
-/** An Aisle's tint for Ingredient Icons, per theme. Dark is stored but unused until a dark theme exists. */
-type AisleTint = { light: string; dark: string };
+/** An Aisle tint: a background and the text that sits on it. */
+export type AisleTint = { bg: string; fg: string };
 
-const produce = { light: '#DDEBE2', dark: '#24392E' };
-const bakery = { light: '#F6EBC8', dark: '#3B3320' };
-const dairy = { light: '#E3ECF3', dark: '#243440' };
-const meat = { light: '#FBE6DA', dark: '#42291E' };
-const frozen = { light: '#E6E9F4', dark: '#272C3F' };
-const pantry = { light: '#E2E8DD', dark: '#2B332C' };
-const drinks = { light: '#EFE6F1', dark: '#362A3A' };
+export const AISLE_TINT_NAMES = [
+  'produce',
+  'bakery',
+  'dairy',
+  'meat',
+  'frozen',
+  'pantry',
+  'drinks',
+] as const;
+
+/** A tinted Aisle group; `neutral` is any Aisle without one. */
+export type AisleTintName = (typeof AISLE_TINT_NAMES)[number] | 'neutral';
+
+/** An Aisle tint with its own colour pair in each Theme. */
+type TintedAisleName = Exclude<AisleTintName, 'neutral'>;
+
+/** The shopping handoff's pairs (docs/handoffs/shopping, section 4), kept in both light Themes. */
+const light: Record<TintedAisleName, AisleTint> = {
+  produce: { bg: '#DDEBE2', fg: '#2E6A4D' },
+  bakery: { bg: '#F6EBC8', fg: '#6E5200' },
+  dairy: { bg: '#E3ECF3', fg: '#2F5674' },
+  meat: { bg: '#FBE6DA', fg: '#B54A17' },
+  frozen: { bg: '#E6E9F4', fg: '#3E4C7A' },
+  pantry: { bg: '#E2E8DD', fg: '#3C4A41' },
+  drinks: { bg: '#EFE6F1', fg: '#6A3F72' },
+};
 
 /**
- * Icon tints by Aisle id. The ids are the seeded Aisles' stable ids
+ * Dark-first: the light pair's hues with the background at 20 % and the text
+ * at 85 % lightness (themes handoff section 6.3). By eye, Bakery and Meat
+ * lost some saturation so they don't glow on the moss background.
+ */
+const dark: Record<TintedAisleName, AisleTint> = {
+  produce: { bg: '#26402F', fg: '#CAE8D9' },
+  bakery: { bg: '#4C3F1A', fg: '#FFECB3' },
+  dairy: { bg: '#1F3647', fg: '#C9DBE9' },
+  meat: { bg: '#4F2A17', fg: '#F6CEBB' },
+  frozen: { bg: '#1F2847', fg: '#CCD2E5' },
+  pantry: { bg: '#323D29', fg: '#D5DDD8' },
+  drinks: { bg: '#3C2541', fg: '#E0CEE4' },
+};
+
+/** Aisle tints keyed by Theme, next to the Theme tokens. */
+export const AISLE_TINTS: Readonly<
+  Record<ThemeId, Record<TintedAisleName, AisleTint>>
+> = { warm: light, minimal: light, dark };
+
+/**
+ * Tints by Aisle id. The ids are the seeded Aisles' stable ids
  * (`seedId.aisle(slug)` in apps/api/src/catalog/seed/seed-catalog.ts); Aisles
  * have no slug column, so the slug is noted beside each.
  */
-const aisleTints: Readonly<Record<string, AisleTint>> = {
-  '1dff107d-5280-500f-807e-d694a53e24d9': produce, // fruit-veg
-  '28ebc9e6-2bd5-5698-ba01-8a4a0b232e36': bakery, // bakery
-  '5275409d-8e0e-584a-8b21-94dfdcf2edb0': meat, // meat-fish
-  '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf': dairy, // dairy-eggs
-  'b658eb31-01a3-52d2-8f87-255332e5c6c6': frozen, // frozen
-  'b81caa56-7e3c-5d0d-a59d-f74137b77e08': pantry, // dry-goods
-  '94e1e744-1a94-5ace-9390-7a379077ab77': pantry, // tins-jars
-  '8e7904b6-9b1e-5bb1-b2fe-5be62dfd0750': bakery, // oils-spices
-  '233a1edd-a872-5885-bbf3-d77182e67050': drinks, // snacks-drinks
+const tintByAisle: Readonly<Record<string, AisleTintName>> = {
+  '1dff107d-5280-500f-807e-d694a53e24d9': 'produce', // fruit-veg
+  '28ebc9e6-2bd5-5698-ba01-8a4a0b232e36': 'bakery', // bakery
+  '5275409d-8e0e-584a-8b21-94dfdcf2edb0': 'meat', // meat-fish
+  '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf': 'dairy', // dairy-eggs
+  'b658eb31-01a3-52d2-8f87-255332e5c6c6': 'frozen', // frozen
+  'b81caa56-7e3c-5d0d-a59d-f74137b77e08': 'pantry', // dry-goods
+  '94e1e744-1a94-5ace-9390-7a379077ab77': 'pantry', // tins-jars
+  '8e7904b6-9b1e-5bb1-b2fe-5be62dfd0750': 'bakery', // oils-spices
+  '233a1edd-a872-5885-bbf3-d77182e67050': 'drinks', // snacks-drinks
 };
 
-/** The tint for an Aisle; no Aisle, "Other" and any Admin-created Aisle get the neutral chip. */
-export function aisleTint(aisleId?: string | null): AisleTint {
-  return (
-    (aisleId ? aisleTints[aisleId] : undefined) ?? {
-      light: tokens.color.chipNeutral,
-      // Placeholder until the dark theme is designed; dark values are unused for now.
-      dark: tokens.color.chipNeutral,
-    }
-  );
+/** `--pp-aisle-<name>-bg|fg` for one Theme, written per Theme selector. */
+export function aisleTintCssVariables(id: ThemeId): Record<string, string> {
+  const vars: Record<string, string> = {};
+  for (const name of AISLE_TINT_NAMES) {
+    vars[`--pp-aisle-${name}-bg`] = AISLE_TINTS[id][name].bg;
+    vars[`--pp-aisle-${name}-fg`] = AISLE_TINTS[id][name].fg;
+  }
+  return vars;
+}
+
+/**
+ * An Aisle's tint as CSS variable references, so it follows the Theme of the
+ * subtree it is painted in. No Aisle, "Other" and any Admin-created Aisle get
+ * the neutral chip with muted text.
+ */
+export function aisleTint(
+  aisleId?: string | null,
+): AisleTint & { name: AisleTintName } {
+  const name = (aisleId ? tintByAisle[aisleId] : undefined) ?? 'neutral';
+  if (name === 'neutral') {
+    return {
+      name,
+      bg: palette('pp-chip'),
+      fg: palette('text-secondary'),
+    };
+  }
+  return {
+    name,
+    bg: `var(--pp-aisle-${name}-bg)`,
+    fg: `var(--pp-aisle-${name}-fg)`,
+  };
 }

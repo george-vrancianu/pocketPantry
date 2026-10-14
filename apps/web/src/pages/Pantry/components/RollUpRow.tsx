@@ -1,4 +1,4 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
@@ -129,7 +129,7 @@ export function RollUpRow({
                     fontWeight: 700,
                     px: '8px',
                     py: '2px',
-                    borderRadius: `${tokens.radius.chip}px`,
+                    borderRadius: radius.pill,
                     bgcolor: tokens.color.soonBg,
                     color: tokens.color.soonFg,
                   }}

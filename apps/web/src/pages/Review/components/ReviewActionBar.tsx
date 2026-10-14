@@ -31,7 +31,7 @@ export function ReviewActionBar({
     >
       <Box sx={{ display: 'flex', gap: '10px', maxWidth: 960, mx: 'auto' }}>
         <Button
-          variant="text"
+          variant="ghost"
           onClick={onDiscard}
           sx={{
             bgcolor: tokens.color.surface,

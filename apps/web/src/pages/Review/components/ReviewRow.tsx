@@ -1,5 +1,11 @@
-import { focusRing } from '../../../lib/focusRing';
-import { Box, Collapse, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import {
+  Box,
+  Collapse,
+  tokens,
+  visuallyHidden,
+  radius,
+  insetFocusRing,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import type { ScanMode } from '../../../lib/scan';
@@ -95,7 +101,7 @@ export function ReviewRow({
           fontFamily: 'inherit',
           textAlign: 'left',
           cursor: 'pointer',
-          ...focusRing(),
+          ...insetFocusRing,
         }}
       >
         <Box
@@ -136,7 +142,7 @@ export function ReviewRow({
               justifySelf: 'start',
               px: '8px',
               py: '2px',
-              borderRadius: `${tokens.radius.chip}px`,
+              borderRadius: radius.pill,
               bgcolor: tokens.color.soonBg,
               color: tokens.color.soonFg,
               fontSize: 12,

@@ -1,4 +1,3 @@
-import { tokens } from '@pocket-pantry/ui';
 import { focusManager } from '@tanstack/react-query';
 import {
   act,
@@ -11,6 +10,13 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { defaultExpiryDate, type Batch } from '../../lib/pantry';
+import {
+  calendarDay,
+  calendarDays,
+  quickPick,
+  quickPickTiles,
+  sheetButton,
+} from '../../test/expirySheet';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { trackScrolling } from '../../test/scroll';
 import { stubMotion } from '../../test/viewport';
@@ -258,7 +264,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
       expect(iconOf('Parmesan')).toHaveAttribute('aria-hidden', 'true');
     });
@@ -275,7 +281,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
     });
 
@@ -295,7 +301,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
 
@@ -316,7 +322,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax paste')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
   });
@@ -595,21 +601,16 @@ describe('PantryPage', () => {
         'Fri, Nov 13in 30 days30 d',
       );
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Friday, November 20, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Friday, November 20, 2026'));
       expect(within(sheet).getByRole('status')).toHaveTextContent(
         'Fri, Nov 20in 37 days37 d',
       );
-      expect(
-        within(sheet).getByRole('button', {
-          name: 'Friday, November 20, 2026',
-        }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      expect(calendarDay(sheet, 'Friday, November 20, 2026')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -642,9 +643,12 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
 
-    /** The sheet focuses a tile once its open transition ends, which can take a while on a busy machine. */
-    const focusLandsOn = (element: () => HTMLElement) =>
-      waitFor(() => expect(element()).toHaveFocus(), { timeout: 5000 });
+    /**
+     * The sheet focuses a tile once its open transition ends, which can take a while on a busy machine. The tile is
+     * looked up once: polling a role query here would slow the very transition it waits for.
+     */
+    const focusLandsOn = (element: HTMLElement) =>
+      waitFor(() => expect(element).toHaveFocus(), { timeout: 5000 });
 
     async function openSheet(user: ReturnType<typeof userEvent.setup>) {
       await user.click(screen.getByRole('button', { name: /^Expires,/ }));
@@ -656,8 +660,7 @@ describe('PantryPage', () => {
       const calls = await addParmesan(user);
       const sheet = await openSheet(user);
       const readout = within(sheet).getByRole('status');
-      const pick = (name: string) =>
-        user.click(within(sheet).getByRole('button', { name }));
+      const pick = (name: string) => user.click(calendarDay(sheet, name));
 
       // Stale Threshold 3: Today, Tomorrow, "N d left" up to 3, then "N d".
       await pick('Wednesday, October 14, 2026');
@@ -682,7 +685,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       const calls = await addParmesan(user);
       const sheet = await openSheet(user);
-      const noExpiry = within(sheet).getByRole('button', { name: 'No expiry' });
+      const noExpiry = sheetButton(sheet, 'No expiry');
       expect(noExpiry).toHaveAttribute('aria-pressed', 'false');
 
       await user.click(noExpiry);
@@ -705,12 +708,10 @@ describe('PantryPage', () => {
 
     /** The quick-pick tiles, as "accessible name: pressed". */
     const quickPicks = (sheet: HTMLElement) =>
-      within(within(sheet).getByRole('group', { name: 'Quick picks' }))
-        .getAllByRole('button')
-        .map(
-          (tile) =>
-            `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
-        );
+      quickPickTiles(sheet).map(
+        (tile) =>
+          `${tile.getAttribute('aria-label')}: ${tile.getAttribute('aria-pressed')}`,
+      );
 
     it('shows the pre-filled Default Expiry as the Usual quick pick, selected, ahead of 3 d to 1 mo', async () => {
       const user = userEvent.setup();
@@ -726,10 +727,10 @@ describe('PantryPage', () => {
         '2 weeks, Wednesday, October 28: false',
         '1 month, Friday, November 13: false',
       ]);
-      const usual = within(sheet).getByRole('button', { name: /^Usual/ });
+      const usual = quickPick(sheet, /^Usual/);
       expect(usual).toHaveTextContent('30d');
       expect(usual).toHaveTextContent('Usual · Nov 13');
-      const week = within(sheet).getByRole('button', { name: /^1 week/ });
+      const week = quickPick(sheet, /^1 week/);
       expect(week).toHaveTextContent('1wk');
       expect(week).toHaveTextContent('Oct 21');
     });
@@ -746,31 +747,29 @@ describe('PantryPage', () => {
         return [last?.child?.querySelector('h3')?.textContent, last?.behavior];
       };
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       expect(readout).toHaveTextContent('Sat, Oct 17in 3 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
-      await user.click(within(sheet).getByRole('button', { name: /^5 days,/ }));
+      await user.click(quickPick(sheet, /^5 days,/));
       expect(readout).toHaveTextContent('Mon, Oct 19in 5 days');
-      await user.click(within(sheet).getByRole('button', { name: /^1 week,/ }));
+      await user.click(quickPick(sheet, /^1 week,/));
       expect(readout).toHaveTextContent('Wed, Oct 21in 7 days');
-      await user.click(
-        within(sheet).getByRole('button', { name: /^1 month,/ }),
-      );
+      await user.click(quickPick(sheet, /^1 month,/));
       expect(readout).toHaveTextContent('Fri, Nov 13in 30 days');
       expect(shown()).toEqual(['November 2026', 'smooth']);
-      await user.click(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await user.click(quickPick(sheet, /^2 weeks,/));
       expect(readout).toHaveTextContent('Wed, Oct 28in 14 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
-      expect(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      ).toHaveAttribute('aria-pressed', 'true');
-      expect(
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      ).toHaveAttribute('aria-pressed', 'false');
+      expect(quickPick(sheet, /^2 weeks,/)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      expect(quickPick(sheet, /^Usual,/)).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -782,23 +781,16 @@ describe('PantryPage', () => {
       await addParmesan(user);
       const sheet = await openSheet(user);
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Thursday, October 22, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Thursday, October 22, 2026'));
       expect(quickPicks(sheet).every((tile) => tile.endsWith(': false'))).toBe(
         true,
       );
       // A calendar day 3 days out does light up 3 d.
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Saturday, October 17, 2026',
-        }),
+      await user.click(calendarDay(sheet, 'Saturday, October 17, 2026'));
+      expect(quickPick(sheet, /^3 days,/)).toHaveAttribute(
+        'aria-pressed',
+        'true',
       );
-      expect(
-        within(sheet).getByRole('button', { name: /^3 days,/ }),
-      ).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('has no Usual tile for an Unmatched name', async () => {
@@ -850,7 +842,9 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
 
       expect(
-        within(sheet).queryByRole('button', { name: /^Usual/ }),
+        within(
+          within(sheet).getByRole('group', { name: 'Quick picks' }),
+        ).queryByRole('button', { name: /^Usual/ }),
       ).not.toBeInTheDocument();
       expect(quickPicks(sheet)).toHaveLength(5);
     });
@@ -863,7 +857,7 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
       const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       const last = scrolling.scrolledTo(calendar);
       expect(last?.child?.querySelector('h3')).toHaveTextContent(
         'October 2026',
@@ -917,9 +911,9 @@ describe('PantryPage', () => {
       ).toHaveAccessibleName('Wednesday, October 14, 2026');
 
       // Stale Threshold 3: today through 17 October, four days.
-      const band = within(calendar)
-        .getAllByRole('button')
-        .filter((day) => day.hasAttribute('aria-describedby'));
+      const band = calendarDays(sheet).filter((day) =>
+        day.hasAttribute('aria-describedby'),
+      );
       expect(band.map((day) => day.textContent)).toEqual([
         '14',
         '15',
@@ -947,24 +941,18 @@ describe('PantryPage', () => {
       let sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
 
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Wednesday, December 2, 2026',
-        }),
-      );
+      await user.click(calendarDay(sheet, 'Wednesday, December 2, 2026'));
       expect(monthShown(sheet)).toEqual(['November 2026', 'auto', 1]);
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       sheet = await openSheet(user);
       expect(monthShown(sheet)).toEqual(['December 2026', 'auto', 1]);
 
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -985,7 +973,7 @@ describe('PantryPage', () => {
       // The sheet opens on November, the month of Parmesan's Default Expiry.
       expect(shown()).toEqual(['November 2026', 'auto']);
 
-      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      await user.click(sheetButton(sheet, 'Today'));
       expect(shown()).toEqual(['October 2026', 'smooth']);
       // Today only scrolls; the value is unchanged.
       expect(within(sheet).getByRole('status')).toHaveTextContent(
@@ -1031,13 +1019,11 @@ describe('PantryPage', () => {
       expect(
         scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
       ).toHaveTextContent('April 2028');
-      const day = within(calendar).getByRole('button', {
-        name: 'Friday, April 14, 2028',
-      });
+      const day = calendarDay(sheet, 'Friday, April 14, 2028');
       expect(day).toHaveAttribute('aria-pressed', 'true');
 
       // Move away with a quick pick, then pick the far day again.
-      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
+      await user.click(quickPick(sheet, /^3 days,/));
       expect(day).toHaveAttribute('aria-pressed', 'false');
       await user.click(day);
       expect(day).toHaveAttribute('aria-pressed', 'true');
@@ -1045,7 +1031,7 @@ describe('PantryPage', () => {
         'Fri, Apr 14, 2028',
       );
 
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1077,19 +1063,18 @@ describe('PantryPage', () => {
         await screen.findByRole('option', { name: /Chopped tomatoes/ }),
       );
       let sheet = await openSheet(user);
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
 
       sheet = await openSheet(user);
-      await user.click(within(sheet).getByRole('button', { name: /^Usual,/ }));
-      expect(
-        within(sheet).getByRole('button', { name: 'Friday, April 14, 2028' }),
-      ).toHaveAttribute('aria-pressed', 'true');
+      await user.click(quickPick(sheet, /^Usual,/));
+      expect(calendarDay(sheet, 'Friday, April 14, 2028')).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('focuses the selected quick pick on open (the first when none is selected) and returns focus to the summary row on close', async () => {
@@ -1097,12 +1082,8 @@ describe('PantryPage', () => {
       await addParmesan(user);
 
       let sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      await user.click(
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      await user.click(quickPick(sheet, /^2 weeks,/));
       await user.keyboard('{Escape}');
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
@@ -1112,25 +1093,17 @@ describe('PantryPage', () => {
       ).toHaveFocus();
 
       sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^2 weeks,/));
       // A day that matches no quick pick: focus goes to the first tile next time.
-      await user.click(
-        within(sheet).getByRole('button', {
-          name: 'Thursday, October 22, 2026',
-        }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(calendarDay(sheet, 'Thursday, October 22, 2026'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       expect(screen.getByRole('button', { name: /^Expires,/ })).toHaveFocus();
 
       sheet = await openSheet(user);
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
     });
 
     it('returns focus to the summary row when the sheet was opened without focusing it', async () => {
@@ -1140,7 +1113,7 @@ describe('PantryPage', () => {
       // A touch tap on some browsers (Safari) doesn't focus the button it opens from.
       fireEvent.click(row);
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1154,20 +1127,12 @@ describe('PantryPage', () => {
       const focused = () => document.activeElement?.getAttribute('aria-label');
 
       // The calendar is one Tab stop, on the selected day.
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      act(() =>
-        within(sheet)
-          .getByRole('button', { name: /^1 month,/ })
-          .focus(),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      act(() => quickPick(sheet, /^1 month,/).focus());
       await user.tab();
       expect(focused()).toBe('Friday, November 13, 2026');
       await user.tab();
-      expect(
-        within(sheet).getByRole('button', { name: 'Today' }),
-      ).toHaveFocus();
+      expect(sheetButton(sheet, 'Today')).toHaveFocus();
       await user.tab({ shift: true });
       expect(focused()).toBe('Friday, November 13, 2026');
 
@@ -1205,7 +1170,7 @@ describe('PantryPage', () => {
       expect(within(sheet).getByRole('status')).toHaveTextContent(
         'Mon, Nov 30',
       );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
@@ -1216,9 +1181,7 @@ describe('PantryPage', () => {
       const user = userEvent.setup();
       await addParmesan(user);
       const sheet = await openSheet(user);
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
+      await user.click(sheetButton(sheet, 'No expiry'));
 
       const readout = within(sheet).getByRole('status');
       expect(readout).toHaveTextContent('No expiry date');
@@ -1233,22 +1196,14 @@ describe('PantryPage', () => {
       await addParmesan(user);
       const sheet = await openSheet(user);
       const focused = () => document.activeElement?.getAttribute('aria-label');
-      await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^Usual,/ }),
-      );
-      act(() =>
-        within(sheet)
-          .getByRole('button', { name: /^1 month,/ })
-          .focus(),
-      );
+      await focusLandsOn(quickPick(sheet, /^Usual,/));
+      act(() => quickPick(sheet, /^1 month,/).focus());
       await user.tab();
       expect(focused()).toBe('Friday, November 13, 2026');
 
       await user.keyboard('{ArrowRight}');
       await user.tab();
-      expect(
-        within(sheet).getByRole('button', { name: 'Today' }),
-      ).toHaveFocus();
+      expect(sheetButton(sheet, 'Today')).toHaveFocus();
       await user.tab({ shift: true });
       expect(focused()).toBe('Saturday, November 14, 2026');
 
@@ -1282,25 +1237,20 @@ describe('PantryPage', () => {
       );
       await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
       const sheet = await openSheet(user);
-      const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      const pressed = within(calendar)
-        .getAllByRole('button')
-        .filter((day) => day.getAttribute('aria-pressed') === 'true');
+      const pressed = calendarDays(sheet).filter(
+        (day) => day.getAttribute('aria-pressed') === 'true',
+      );
       expect(pressed.map((day) => day.getAttribute('aria-label'))).toEqual([
         'Friday, November 13, 2026',
       ]);
 
       await act(() => i18n.changeLanguage('ro'));
       expect(
-        within(calendar).getByRole('button', {
-          name: 'vineri, 13 noiembrie 2026',
-        }),
+        calendarDay(sheet, 'vineri, 13 noiembrie 2026', 'noiembrie 2026'),
       ).toHaveAttribute('aria-pressed', 'true');
       expect(
-        within(calendar).getByRole('button', {
-          name: 'sâmbătă, 14 noiembrie 2026',
-        }),
+        calendarDay(sheet, 'sâmbătă, 14 noiembrie 2026', 'noiembrie 2026'),
       ).toHaveAttribute('aria-pressed', 'false');
     });
 
@@ -1312,7 +1262,7 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
       const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      await user.click(within(sheet).getByRole('button', { name: 'Today' }));
+      await user.click(sheetButton(sheet, 'Today'));
       const last = scrolling.scrolledTo(calendar);
       expect(last?.child?.querySelector('h3')).toHaveTextContent(
         'October 2026',
@@ -1597,10 +1547,8 @@ describe('PantryPage', () => {
       );
       await user.click(within(form).getByRole('button', { name: /^Expires,/ }));
       const sheet = await screen.findByRole('dialog', { name: 'Expires' });
-      await user.click(
-        within(sheet).getByRole('button', { name: 'No expiry' }),
-      );
-      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await user.click(sheetButton(sheet, 'No expiry'));
+      await user.click(sheetButton(sheet, 'Done'));
       await waitFor(() =>
         expect(
           screen.queryByRole('dialog', { name: 'Expires' }),
@@ -1948,9 +1896,7 @@ describe('PantryPage', () => {
           'Fri, Oct 16in 2 days2 d left',
         );
         expect(
-          within(within(sheet).getByRole('group', { name: 'Quick picks' }))
-            .getAllByRole('button')
-            .map((tile) => tile.getAttribute('aria-label')),
+          quickPickTiles(sheet).map((tile) => tile.getAttribute('aria-label')),
         ).toEqual([
           '3 days, Saturday, October 17',
           '5 days, Monday, October 19',
@@ -1964,9 +1910,7 @@ describe('PantryPage', () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^1 week/ }),
-        );
+        await user.click(quickPick(sheet, /^1 week/));
         await user.keyboard('{Escape}');
         await waitFor(() =>
           expect(
@@ -2013,21 +1957,17 @@ describe('PantryPage', () => {
         expect(
           scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
         ).toHaveTextContent('April 2028');
-        const day = within(calendar).getByRole('button', {
-          name: 'Friday, April 14, 2028',
-        });
+        const day = calendarDay(sheet, 'Friday, April 14, 2028');
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^3 days,/ }),
-        );
+        await user.click(quickPick(sheet, /^3 days,/));
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');
         expect(within(sheet).getByRole('status')).toHaveTextContent(
           'Fri, Apr 14, 2028',
         );
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),
@@ -2074,18 +2014,14 @@ describe('PantryPage', () => {
         expect(
           scrolling.scrolledTo(calendar)?.child?.querySelector('h3'),
         ).toHaveTextContent('July 2026');
-        const day = within(calendar).getByRole('button', {
-          name: 'Tuesday, July 14, 2026',
-        });
+        const day = calendarDay(sheet, 'Tuesday, July 14, 2026');
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(
-          within(sheet).getByRole('button', { name: /^3 days,/ }),
-        );
+        await user.click(quickPick(sheet, /^3 days,/));
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),
@@ -2108,12 +2044,8 @@ describe('PantryPage', () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);
 
-        await user.click(
-          within(sheet).getByRole('button', {
-            name: 'Thursday, December 3, 2026',
-          }),
-        );
-        await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+        await user.click(calendarDay(sheet, 'Thursday, December 3, 2026'));
+        await user.click(sheetButton(sheet, 'Done'));
         await waitFor(() =>
           expect(
             screen.queryByRole('dialog', { name: 'Expires' }),

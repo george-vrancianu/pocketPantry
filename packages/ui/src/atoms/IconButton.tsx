@@ -46,7 +46,7 @@ export function IconButton({
   const toneStyles = {
     accent: {
       backgroundColor: color.accent,
-      color: '#FFFFFF',
+      color: 'pp.accentInk',
       '&:hover': { backgroundColor: color.accentHover },
     },
     surface: {
@@ -66,10 +66,13 @@ export function IconButton({
       '&:hover': { backgroundColor: color.urgentHover },
     },
     accentOutline: {
+      '&:hover': {
+        backgroundColor: color.accentTint,
+        color: color.accentOnTint,
+      },
       backgroundColor: color.surface,
-      color: color.accent,
       border: `1px solid ${color.accent}`,
-      '&:hover': { backgroundColor: color.accentTint },
+      color: color.accent,
     },
     urgentOutline: {
       backgroundColor: color.surface,

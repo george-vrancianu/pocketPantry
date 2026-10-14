@@ -1,81 +1,61 @@
-/** Design tokens from pocket-pantry-handoff/HANDOFF.md section 4. */
+import { palette } from './themeVars';
+
+/** A mix of two Theme colours, for legacy shades the Themes don't define. */
+const mix = (a: string, percent: number, b: string) =>
+  `color-mix(in srgb, ${a} ${percent}%, ${b})`;
+
+const bg = palette('background-default');
+const surface = palette('background-paper');
+const ink = palette('text-primary');
+const muted = palette('text-secondary');
+const accent = palette('pp-accent');
+const urgentBg = palette('error-light');
+const urgentFg = palette('error-main');
+const soonBg = palette('warning-light');
+const soonFg = palette('warning-main');
+
+/**
+ * The legacy colour tokens from pocket-pantry-handoff/HANDOFF.md section 4,
+ * kept in their old shape as a shim so existing importers follow the active
+ * Theme unchanged. Each is a reference to a Theme variable
+ * (docs/handoffs/themes); legacy keys with no Theme token are mapped to the
+ * nearest one or mixed from two. New code doesn't import this: it reads
+ * colours through MUI (`theme.vars.palette`, sx paths like `'pp.accent'`) or
+ * `color` / `palette()`, and other tokens through the themeVars helpers.
+ */
 export const tokens = {
   color: {
-    bg: '#EEF1EA',
-    surface: '#FFFFFF',
-    ink: '#17231C',
-    muted: '#55635A',
-    line: '#DCE3D8',
-    divider: '#EEF1EA',
-    subtle: '#F7F9F5',
-    chipNeutral: '#E2E8DD',
+    bg,
+    surface,
+    ink,
+    muted,
+    line: palette('pp-line'),
+    divider: palette('divider'),
+    subtle: palette('pp-subtle'),
+    chipNeutral: palette('pp-chip'),
     /** Greyed text of a checked-off row. */
-    checkedText: '#66736B',
+    checkedText: muted,
     /** Border of an unchecked tick box. */
-    tickBorder: '#A7B3AA',
-    accent: '#2E6A4D',
-    accentHover: '#1F4D37',
-    accentTint: '#DDEBE2',
-    accentMid: '#8DBBA0',
-    accentSoftOnDark: '#CFE3D7',
-    butter: '#F3D27A',
-    butterInk: '#4A3B0B',
-    urgentBg: '#FBE6DA',
-    urgentHover: '#F6D3BE',
-    urgentFg: '#B54A17',
-    urgentRow: '#FDF3EC',
-    urgentBorder: '#F2CDB8',
-    soonBg: '#F6EBC8',
-    soonFg: '#6E5200',
-    soonRow: '#FBF5E1',
-    soonIcon: '#8A6700',
-    soonBorder: '#E3B94B',
-    okBg: '#EEF1EA',
-    okFg: '#55635A',
-    cameraBg: '#101813',
-    // The always-dark camera palette (--cam-*), unchanged by the light theme. `cameraBg` is the screen behind it.
-    camFg: '#f4f4f0',
-    camDim: 'rgba(244,244,240,.62)',
-    camGlass: 'rgba(20,22,20,.55)',
-    camGlassStrong: 'rgba(20,22,20,.82)',
-    camScrim: 'rgba(0,0,0,0.45)',
-    camAccent: '#9be38f',
-    camAccentInk: '#0c1a0f',
-    camWarn: '#ffcf5a',
-  },
-  font: {
-    display: "'Bricolage Grotesque', sans-serif",
-    body: "'DM Sans', sans-serif",
-  },
-  radius: {
-    dock: 26,
-    widget: 22,
-    card: 20,
-    input: 16,
-    field: 12,
-    table: 24,
-    counter: 18,
-    chip: 999,
-  },
-  shadow: {
-    dock: '0 10px 30px rgba(23,35,28,0.12)',
+    tickBorder: palette('pp-box'),
+    accent,
+    accentHover: mix(accent, 82, ink),
+    accentTint: palette('pp-accentTint'),
+    /** Text on `accentTint`; plain `accent` falls short of 4.5:1 there in Warm editorial. */
+    accentOnTint: palette('pp-accentOnTint'),
+    accentMid: mix(accent, 55, surface),
+    butter: palette('secondary-main'),
+    butterInk: palette('secondary-contrastText'),
+    urgentBg,
+    urgentHover: mix(urgentBg, 85, urgentFg),
+    urgentFg,
+    urgentRow: mix(urgentBg, 45, surface),
+    urgentBorder: mix(urgentBg, 75, urgentFg),
+    soonBg,
+    soonFg,
+    soonRow: mix(soonBg, 45, surface),
+    soonIcon: soonFg,
+    soonBorder: mix(soonBg, 60, soonFg),
+    okBg: palette('success-light'),
+    okFg: palette('success-main'),
   },
 } as const;
-
-const kebab = (name: string) =>
-  name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-
-/** The handoff's tokens as `:root` CSS variables (`--accent-hover`, `--r-dock`, ...). */
-export function tokensAsCssVariables(): Record<string, string> {
-  const vars: Record<string, string> = {};
-  for (const [name, value] of Object.entries(tokens.color)) {
-    vars[`--${kebab(name)}`] = value;
-  }
-  vars['--font-display'] = tokens.font.display;
-  vars['--font-body'] = tokens.font.body;
-  for (const [name, value] of Object.entries(tokens.radius)) {
-    vars[`--r-${name}`] = `${value}px`;
-  }
-  vars['--shadow-dock'] = tokens.shadow.dock;
-  return vars;
-}

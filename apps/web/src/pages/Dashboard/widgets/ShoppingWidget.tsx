@@ -1,4 +1,4 @@
-import { Box, ShoppingIcon, tokens } from '@pocket-pantry/ui';
+import { Box, ShoppingIcon, tokens, displayType } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { firstUncheckedNames } from '../../../lib/dashboard';
@@ -35,9 +35,8 @@ export function ShoppingWidget({ size, columns }: WidgetProps) {
         sx={{
           m: 0,
           mt: '8px',
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 40,
-          fontWeight: 700,
           lineHeight: 1,
         }}
       >
