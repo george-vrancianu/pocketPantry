@@ -24,7 +24,7 @@ export function ApplyMemberTheme() {
     : undefined;
   useEffect(() => {
     if (saved === undefined) return;
-    if (readPendingTheme()) {
+    if (readPendingTheme(queryClient)) {
       syncPendingTheme(queryClient);
       return;
     }

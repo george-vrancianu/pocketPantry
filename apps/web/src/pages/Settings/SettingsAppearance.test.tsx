@@ -22,13 +22,21 @@ function stubPreferences(
   saved: { locale: string | null; theme: string | null },
   /** While `online` is false, saves fail as they do offline. */
   network = { online: true },
+  /** The signed-in Member; the session answers with it. */
+  member: { id: string } | null = null,
 ) {
   let current = { ...saved };
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
     'GET /api/settings/categories': () => Response.json({ parents: [] }),
-    'GET /api/auth/get-session': () => Response.json(null),
+    'GET /api/auth/get-session': () =>
+      Response.json(
+        member && {
+          user: { id: member.id, name: member.id, email: `${member.id}@x.io` },
+        },
+      ),
+    'POST /api/auth/sign-out': () => Response.json({ success: true }),
     'GET /api/settings/preferences': () => Response.json(current),
     'PUT /api/settings/preferences': () => Response.json(current),
   });
@@ -357,6 +365,90 @@ describe('Settings Appearance', () => {
       stubPreferences({ locale: null, theme: 'minimal' });
       renderSettings();
       await vi.waitFor(() => expect(rootTheme()).toBe('minimal'));
+    });
+
+    it('does not carry an unsynced Theme over to the next Member after sign-out', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const network = { online: false };
+      const calls = stubPreferences({ locale: null, theme: 'warm' }, network, {
+        id: 'member-a',
+      });
+      const first = renderSettings();
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+      await vi.waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain(
+          'PUT /api/settings/preferences (failed)',
+        ),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+      await vi.waitFor(() =>
+        expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
+      );
+      first.unmount();
+
+      network.online = true;
+      const second = stubPreferences({ locale: null, theme: 'dark' }, network, {
+        id: 'member-b',
+      });
+      renderSettings();
+      await vi.waitFor(() => expect(rootTheme()).toBe('dark'));
+      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      expect(saves(second)).toEqual([]);
+      expect(stored()).toEqual({ theme: 'dark', matchSystem: false });
+    });
+
+    it('ignores an unsynced Theme that another Member chose on this device', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'minimal', matchSystem: false });
+      localStorage.setItem(
+        'pp.appearance.unsynced',
+        JSON.stringify({ memberId: 'member-a', theme: 'minimal' }),
+      );
+      const calls = stubPreferences(
+        { locale: null, theme: 'dark' },
+        { online: true },
+        { id: 'member-b' },
+      );
+      renderSettings();
+
+      await vi.waitFor(() => expect(rootTheme()).toBe('dark'));
+      await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+      expect(saves(calls)).toEqual([]);
+    });
+
+    it('sends a newer choice made while a failing save was in flight', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      const calls = stubPreferences({ locale: null, theme: 'warm' });
+      const stubbed = globalThis.fetch;
+      let puts = 0;
+      let failFirst = () => {};
+      vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method !== 'PUT') return stubbed(input, init);
+        puts += 1;
+        if (puts > 1) return stubbed(input, init);
+        return new Promise<Response>((_, reject) => {
+          failFirst = () => reject(new TypeError('Server error'));
+        });
+      });
+      renderSettings();
+
+      const tiles = await themeTiles();
+      await userEvent.click(
+        tiles.getByRole('radio', { name: 'Minimal crisp' }),
+      );
+      await vi.waitFor(() => expect(puts).toBe(1));
+      await userEvent.click(tiles.getByRole('radio', { name: 'Dark-first' }));
+      await act(async () => failFirst());
+
+      await vi.waitFor(() =>
+        expect(saves(calls)).toContainEqual(
+          expect.objectContaining({ body: { theme: 'dark' } }),
+        ),
+      );
     });
 
     it('keeps a Theme chosen before preferences load when they arrive with the old value', async () => {

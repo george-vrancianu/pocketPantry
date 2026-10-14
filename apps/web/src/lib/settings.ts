@@ -128,6 +128,10 @@ export function useSaveLocale() {
         method: 'PUT',
         body: { locale },
       }),
-    onSuccess: (saved) => queryClient.setQueryData(preferencesQueryKey, saved),
+    // Only the locale this request saved; a Theme save may have landed meanwhile.
+    onSuccess: (saved) =>
+      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+        old ? { ...old, locale: saved.locale } : saved,
+      ),
   });
 }

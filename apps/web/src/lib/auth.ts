@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { clearPendingTheme } from './appearance';
 
 export type Member = {
   id: string;
@@ -54,6 +55,7 @@ export function useSignOut() {
     mutationFn: () =>
       apiRequest('/auth/sign-out', { method: 'POST', body: {} }),
     onSuccess: () => {
+      clearPendingTheme();
       queryClient.clear();
       queryClient.setQueryData(sessionQueryKey, null);
     },
