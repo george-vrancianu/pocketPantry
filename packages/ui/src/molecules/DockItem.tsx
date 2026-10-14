@@ -12,10 +12,10 @@ export type DockItemProps = {
 };
 
 export function DockItem({ label, href, icon, active = false }: DockItemProps) {
-  // The active tab: an outline icon on the accent tint pill, label in the
-  // same on-tint colour. Inactive tabs are muted.
+  // The active tab: the whole button on the accent tint, icon and label in
+  // the on-tint colour. Inactive tabs are muted.
   const colour = active ? 'pp.accentOnTint' : 'text.secondary';
-  const pillBackground = active ? 'pp.accentTint' : 'transparent';
+  const background = active ? 'pp.accentTint' : 'transparent';
 
   return (
     <ButtonBase
@@ -25,9 +25,10 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
         {
           flexDirection: 'column',
           gap: '3px',
-          // Concentric with the dock, 8 px inside its edge.
+          // Concentric with the dock, 8 px inside its padding edge.
           borderRadius: nestedRadius(radius.dock, 8),
           color: colour,
+          bgcolor: background,
           fontSize: 11,
           fontWeight: active ? 700 : 600,
           fontFamily: bodyFont,
@@ -35,15 +36,13 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
         focusRing,
       ]}
     >
+      {/* The icon row: a fixed height keeps labels aligned across tabs. */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 52,
           height: 32,
-          borderRadius: '999px',
-          bgcolor: pillBackground,
         }}
       >
         {icon}
