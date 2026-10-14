@@ -1,4 +1,4 @@
-import { fromIso, localIso } from '../../lib/pantry';
+import { fromIso, localDate, localIso, type IsoDate } from '../../lib/pantry';
 
 export type CalendarMonth = {
   /** `YYYY-MM`. */
@@ -14,44 +14,60 @@ export const monthKey = (iso: string) => iso.slice(0, 7);
 
 /** How many days a month has; `monthIndex` is 0-based. */
 export const daysInMonth = (year: number, monthIndex: number) =>
-  new Date(year, monthIndex + 1, 0).getDate();
+  localDate(year, monthIndex + 1, 0).getDate();
 
 function weeksOf(year: number, monthIndex: number): (string | null)[][] {
-  const first = new Date(year, monthIndex, 1);
+  const first = localDate(year, monthIndex, 1);
   // Weeks start on Monday in every locale.
   const lead = (first.getDay() + 6) % 7;
   const length = daysInMonth(year, monthIndex);
   const cells: (string | null)[] = Array.from({ length: lead }, () => null);
   for (let day = 1; day <= length; day += 1)
-    cells.push(localIso(new Date(year, monthIndex, day)));
+    cells.push(localIso(localDate(year, monthIndex, day)));
   while (cells.length % 7 !== 0) cells.push(null);
   return Array.from({ length: cells.length / 7 }, (_, row) =>
     cells.slice(row * 7, row * 7 + 7),
   );
 }
 
+/** How far from today's year a value or Usual date may be and still widen the range. */
+const MAX_YEARS_AWAY = 10;
+
+/** The month (`YYYY-MM`) of `iso` when it is within `MAX_YEARS_AWAY` years of `today`; otherwise null. */
+function nearMonth(today: Date, iso: IsoDate | null | undefined) {
+  if (!iso) return null;
+  const year = Number(iso.slice(0, 4));
+  return Math.abs(year - today.getFullYear()) <= MAX_YEARS_AWAY
+    ? monthKey(iso)
+    : null;
+}
+
 /**
- * The calendar's months: one month before `today` through twelve after, extended to the value's month when the
- * value is earlier or later.
+ * The calendar's months: one month before `today` through twelve after, extended to the value's month and the
+ * Usual date's month when they are earlier or later, but only within ten years of today. Anything further out
+ * (the API takes any year) would render tens of thousands of months, so it doesn't widen the range.
  */
 export function calendarMonths(
   today: Date,
-  value: string | null,
+  value: IsoDate | null,
+  usual: IsoDate | null = null,
 ): CalendarMonth[] {
-  const oneBefore = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const oneBefore = localDate(today.getFullYear(), today.getMonth() - 1, 1);
   const twelveAhead = monthKey(
-    localIso(new Date(today.getFullYear(), today.getMonth() + 12, 1)),
+    localIso(localDate(today.getFullYear(), today.getMonth() + 12, 1)),
   );
-  const valueMonth = value === null ? null : monthKey(value);
+  const extras = [nearMonth(today, value), nearMonth(today, usual)].filter(
+    (key): key is string => key !== null,
+  );
+  const earliest = [monthKey(localIso(oneBefore)), ...extras].sort()[0];
+  const last = [twelveAhead, ...extras].sort().at(-1)!;
   const start =
-    valueMonth !== null && valueMonth < monthKey(localIso(oneBefore))
-      ? fromIso(`${valueMonth}-01`)
-      : oneBefore;
-  const last =
-    valueMonth !== null && valueMonth > twelveAhead ? valueMonth : twelveAhead;
+    earliest === monthKey(localIso(oneBefore))
+      ? oneBefore
+      : fromIso(`${earliest}-01`);
   const months: CalendarMonth[] = [];
   for (let offset = 0; ; offset += 1) {
-    const first = new Date(start.getFullYear(), start.getMonth() + offset, 1);
+    const first = localDate(start.getFullYear(), start.getMonth() + offset, 1);
     const key = monthKey(localIso(first));
     if (key > last) return months;
     months.push({

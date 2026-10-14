@@ -1029,6 +1029,46 @@ describe('PantryPage', () => {
       expect((await save(user, calls)).expiryDate).toBe('2028-04-14');
     });
 
+    it('renders the Usual date even when the sheet opened without a value, so tapping Usual shows it selected', async () => {
+      const user = userEvent.setup();
+      stubPantry(
+        [],
+        [
+          {
+            ...parmesan,
+            id: 'tomatoes-id',
+            name: 'Chopped tomatoes',
+            defaults: { expiryDays: 548, location: 'cupboard' },
+          },
+        ],
+      );
+      renderWithProviders(<PantryPage />);
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.type(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+        'tomat',
+      );
+      await user.click(
+        await screen.findByRole('option', { name: /Chopped tomatoes/ }),
+      );
+      let sheet = await openSheet(user);
+      await user.click(
+        within(sheet).getByRole('button', { name: 'No expiry' }),
+      );
+      await user.click(within(sheet).getByRole('button', { name: 'Done' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+
+      sheet = await openSheet(user);
+      await user.click(within(sheet).getByRole('button', { name: /^Usual,/ }));
+      expect(
+        within(sheet).getByRole('button', { name: 'Friday, April 14, 2028' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+    });
+
     it('focuses the selected quick pick on open (the first when none is selected) and returns focus to the summary row on close', async () => {
       const user = userEvent.setup();
       await addParmesan(user);

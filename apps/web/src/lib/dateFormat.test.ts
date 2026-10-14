@@ -53,14 +53,25 @@ describe('maskDateInput', () => {
 });
 
 describe('parseDateInput', () => {
+  it('accepts the first and last supported years', () => {
+    expect(parseDateInput('01.01.1900')).toBe('1900-01-01');
+    expect(parseDateInput('31.12.2199')).toBe('2199-12-31');
+  });
+
   it('turns a complete day-first date into ISO', () => {
     expect(parseDateInput('08.10.2027')).toBe('2027-10-08');
   });
 
-  it.each(['08.10.202', '31.02.2027', '00.10.2027', ''])(
-    'has no date for %s',
-    (text) => {
-      expect(parseDateInput(text)).toBeNull();
-    },
-  );
+  it.each([
+    '08.10.202',
+    '31.02.2027',
+    '00.10.2027',
+    '',
+    '31.12.9999',
+    '01.05.0024',
+    '31.12.1899',
+    '01.01.2200',
+  ])('has no date for %s', (text) => {
+    expect(parseDateInput(text)).toBeNull();
+  });
 });

@@ -57,7 +57,7 @@ export type ExpiryTag =
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function localIso(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function dayNumber(iso: string): number {
@@ -108,7 +108,14 @@ export function useExpiryTags(today: Date): {
 /** A `YYYY-MM-DD` calendar date as local midnight, for formatting. */
 export function fromIso(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  return localDate(y, m - 1, d);
+}
+
+/** Local midnight of a date. Unlike `new Date(y, m, d)`, years 0 to 99 stay as written. */
+export function localDate(year: number, monthIndex: number, day: number): Date {
+  const date = new Date(2000, 0, 1);
+  date.setFullYear(year, monthIndex, day);
+  return date;
 }
 
 /**

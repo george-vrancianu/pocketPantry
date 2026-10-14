@@ -149,6 +149,7 @@ function SheetBody({
         value={value}
         onChange={onChange}
         today={today}
+        usualDays={usualDays}
         staleThresholdDays={staleThresholdDays}
       />
     </Box>

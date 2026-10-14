@@ -10,7 +10,13 @@ import {
   type Ref,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { daysUntil, fromIso, localIso, type IsoDate } from '../../lib/pantry';
+import {
+  daysUntil,
+  defaultExpiryDate,
+  fromIso,
+  localIso,
+  type IsoDate,
+} from '../../lib/pantry';
 import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
 import { focusRing } from './focusRing';
 
@@ -28,6 +34,8 @@ export type ExpiryCalendarProps = {
   /** A day was tapped. */
   onChange: (iso: string) => void;
   today: Date;
+  /** The Default Expiry in days, so the Usual date is always in the range; null when there is none. */
+  usualDays: number | null;
   /** Days from today through today + this are the Expiring Soon band. */
   staleThresholdDays: number;
 };
@@ -84,6 +92,7 @@ export function ExpiryCalendar({
   value,
   onChange,
   today,
+  usualDays,
   staleThresholdDays,
 }: ExpiryCalendarProps) {
   const { t, i18n } = useTranslation('pantry');
@@ -93,7 +102,13 @@ export function ExpiryCalendar({
   const scroller = useRef<HTMLDivElement>(null);
   const { color } = tokens;
   // The range is fixed while the sheet is open, so clearing a far value doesn't pull the list out from under it.
-  const [months] = useState(() => calendarMonths(today, value));
+  const [months] = useState(() =>
+    calendarMonths(
+      today,
+      value,
+      usualDays === null ? null : defaultExpiryDate(usualDays, today),
+    ),
+  );
 
   const scrollToMonth = useCallback(
     (iso: string, smooth: boolean) => {
