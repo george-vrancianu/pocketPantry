@@ -126,7 +126,7 @@ describe('ShoppingPage', () => {
     ).toHaveAttribute('aria-valuenow', '50');
     expect(
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
-    ).toEqual(['Fruit & veg', 'Dairy & eggs']);
+    ).toEqual(['Fruit & veg · 1', 'Dairy & eggs · 1']);
     expect(screen.getByText('250 g')).toBeVisible();
     // Focusing the row announces the state: it is part of the group's description.
     expect(
@@ -1233,10 +1233,11 @@ describe('ShoppingPage', () => {
       screen.queryByRole('button', { name: 'Finish shopping' }),
     ).not.toBeInTheDocument();
     const produceSection = screen.getByRole('region', { name: 'Fruit & veg' });
-    const heading = within(produceSection).getByRole('heading', {
-      name: 'Fruit & veg',
-    });
-    expect(heading.parentElement).toHaveTextContent('Fruit & veg1');
+    expect(
+      within(produceSection).getByRole('heading', {
+        name: 'Fruit & veg · 1',
+      }),
+    ).toBeVisible();
   });
 
   describe('Add sheet', () => {

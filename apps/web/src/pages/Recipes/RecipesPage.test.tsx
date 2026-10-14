@@ -253,7 +253,7 @@ describe('RecipesPage', () => {
     it('heads the list "All Recipes" with its count and shows the Variants hint', async () => {
       setup(() => [omelette, soup]);
       const heading = await screen.findByRole('heading', { name: ALL });
-      expect(heading).toHaveTextContent('2');
+      expect(heading).toHaveTextContent(/^All Recipes · 2$/i);
       expect(
         screen.getByText(
           'Search or pick a filter to see Variants on their own.',
@@ -266,7 +266,7 @@ describe('RecipesPage', () => {
       await findRow('Omelette');
       await userEvent.click(await chip('Italian'));
       const heading = await screen.findByRole('heading', { name: MATCHES });
-      expect(heading).toHaveTextContent('1');
+      expect(heading).toHaveTextContent(/^Matches · 1$/i);
       expect(
         screen.queryByRole('heading', { name: ALL }),
       ).not.toBeInTheDocument();

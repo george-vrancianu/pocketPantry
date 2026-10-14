@@ -1,4 +1,13 @@
-import { Box, Chip, Stack, TextField } from '@pocket-pantry/ui';
+import {
+  Box,
+  Chip,
+  InputAdornment,
+  SearchIcon,
+  Stack,
+  TextField,
+  color,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { FILTERS, type PantryFilter } from '../../../lib/pantry';
 
@@ -26,7 +35,17 @@ export function PantryFilters({
         label={t('search.label')}
         placeholder={t('search.placeholder')}
         value={query}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon size={18} />
+              </InputAdornment>
+            ),
+          },
+        }}
         onChange={(event) => onQueryChange(event.target.value)}
+        sx={{ bgcolor: color.fieldBg, borderRadius: radius.control }}
       />
       <Box
         role="group"
