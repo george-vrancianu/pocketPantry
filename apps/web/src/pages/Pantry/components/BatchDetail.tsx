@@ -9,11 +9,11 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { expiryChipFor, type Batch } from '../../../lib/pantry';
+import { ExpiryTag } from '../../../components/ExpiryTag';
+import { fullDate, useExpiryTags, type Batch } from '../../../lib/pantry';
 import { formatAmount } from '../../../lib/amount';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { EditBatchForm } from './EditBatchForm';
-import { ExpiryChip } from './ExpiryChip';
 
 type Props = {
   batch: Batch;
@@ -28,7 +28,7 @@ type Props = {
 };
 
 /**
- * One Batch inside an expanded roll-up row: its own amount, expiry and Product Description. Swipe left
+ * One Batch inside an expanded roll-up row: its own amount, Product Description, full expiry date and tag. Swipe left
  * to remove it; hold (or press Enter) to edit it in a sheet, which also offers "Remove from Pantry".
  */
 export function BatchDetail({
@@ -42,7 +42,7 @@ export function BatchDetail({
   const { t, i18n } = useTranslation('pantry');
   const toast = useToast();
   const labels = useSwipeRowLabels(batch.name, 'pantry', { hold: true });
-  const chip = expiryChipFor(batch.expiryDate, today, batch.expiringSoon);
+  const tag = useExpiryTags(today).tagFor(batch.expiryDate);
   const [editing, setEditing] = useState(false);
   const row = useRef<SwipeRowHandle>(null);
   // "Remove from Pantry" closes the sheet and asks once it has finished closing (focus is back on the row).
@@ -53,6 +53,10 @@ export function BatchDetail({
       ? null
       : formatAmount(batch.quantity, batch.unit, i18n.language, t);
   const detail = [amount, batch.productDescription].filter(Boolean).join(' · ');
+  const expires =
+    batch.expiryDate === null
+      ? null
+      : fullDate(batch.expiryDate, today, i18n.language);
 
   return (
     <>
@@ -68,7 +72,8 @@ export function BatchDetail({
       >
         <ListRow
           title={detail || t('noDetails')}
-          tags={chip ? <ExpiryChip chip={chip} /> : null}
+          meta={expires}
+          tags={<ExpiryTag tag={tag} />}
         />
       </SwipeRow>
       <Sheet

@@ -34,6 +34,7 @@ export {
   SearchIcon,
   BookmarkIcon,
   TemplateIcon,
+  CalendarIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,

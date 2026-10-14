@@ -1,5 +1,6 @@
 import {
   Box,
+  CalendarIcon,
   CheckIcon,
   DeleteIcon,
   IconButton,
@@ -7,7 +8,7 @@ import {
   SwapIcon,
   tokens,
 } from '@pocket-pantry/ui';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
 import { formatDate } from '../../../lib/dateFormat';
@@ -24,6 +25,7 @@ import {
   CategorySelect,
   DescriptionInput,
   ExpiryInput,
+  ReviewLineExpirySheet,
   LocationSelect,
   NameInput,
   QuantityUnitInput,
@@ -104,6 +106,8 @@ export function TabletReviewRow({
 }: Props) {
   const { t } = useTranslation(['review', 'common', 'pantry']);
   const [expiryTouched, setExpiryTouched] = useState(false);
+  const [expirySheetOpen, setExpirySheetOpen] = useState(false);
+  const pickExpiry = useRef<HTMLButtonElement>(null);
   // Labels use the position-qualified `accessibleName`; the visible text stays the plain one.
   const name = displayName(line);
   const unmatched = line.match === null;
@@ -343,14 +347,36 @@ export function TabletReviewRow({
               </Box>
             ) : (
               <>
-                <ExpiryInput
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ExpiryInput
+                      line={line}
+                      onChange={onChange}
+                      id={id('expiry')}
+                      error={expiryError}
+                      errorId={`${id('expiry')}-error`}
+                      onBlur={() => setExpiryTouched(true)}
+                      ariaLabel={named(t('review:field.expiry'))}
+                    />
+                  </Box>
+                  <IconButton
+                    ref={pickExpiry}
+                    label={named(t('review:pickExpiry'))}
+                    tone="plain"
+                    size={34}
+                    aria-haspopup="dialog"
+                    onClick={() => setExpirySheetOpen(true)}
+                  >
+                    <CalendarIcon size={18} />
+                  </IconButton>
+                </Box>
+                <ReviewLineExpirySheet
                   line={line}
                   onChange={onChange}
-                  id={id('expiry')}
-                  error={expiryError}
-                  errorId={`${id('expiry')}-error`}
-                  onBlur={() => setExpiryTouched(true)}
-                  ariaLabel={named(t('review:field.expiry'))}
+                  open={expirySheetOpen}
+                  onClose={() => setExpirySheetOpen(false)}
+                  // A tap doesn't always focus the button (Safari), so put focus back explicitly.
+                  onExited={() => pickExpiry.current?.focus()}
                 />
                 {expiryError ? (
                   <CellError id={`${id('expiry')}-error`}>

@@ -7,6 +7,7 @@ import {
   useUpdateBatch,
   type Batch,
   type BatchEdit,
+  type IsoDate,
 } from '../../../lib/pantry';
 
 /** Only the fields that differ from the Batch as the form opened: untouched fields never overwrite another Member's edit. */
@@ -36,7 +37,9 @@ export function useEditBatchForm(
   );
   const [unit, setUnit] = useState<Unit>(batch.unit ?? 'g');
   const [location, setLocation] = useState(batch.location);
-  const [expiryDate, setExpiryDate] = useState(batch.expiryDate ?? '');
+  const [expiryDate, setExpiryDate] = useState<IsoDate | null>(
+    batch.expiryDate,
+  );
   const [description, setDescription] = useState(
     batch.productDescription ?? '',
   );
@@ -51,7 +54,7 @@ export function useEditBatchForm(
       quantity: parsed.value,
       unit,
       location,
-      expiryDate: expiryDate === '' ? null : expiryDate,
+      expiryDate,
       productDescription: description.trim() || null,
     });
     if (Object.keys(edit).length === 0) {

@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -53,6 +53,8 @@ function renderReview(
       Response.json({ parents: [{ id: 'dairy-id', name: 'Dairy' }] }),
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
     'POST /api/shopping-list/items/bulk': () => Response.json({ items: [] }),
+    'GET /api/settings/family': () =>
+      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
   });
   vi.stubGlobal('fetch', fetchMock);
   renderWithProviders(
@@ -380,14 +382,172 @@ describe('Review layout breakpoint', () => {
   });
 });
 
+describe('the expiry sheet in the Review table', () => {
+  // Wednesday 14 October 2026. Only `Date` is faked, so timers and transitions run as usual.
+  beforeEach(() => {
+    stubViewport(1180);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 14, 15, 30));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  async function openSheet(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(
+      screen.getByRole('button', { name: 'Pick expiry date: Parmesan' }),
+    );
+    return screen.findByRole('dialog', { name: 'Expires' });
+  }
+
+  async function saved(
+    user: ReturnType<typeof userEvent.setup>,
+    calls: ReturnType<typeof renderReview>,
+  ) {
+    await user.click(screen.getByRole('button', { name: 'Save 1 item' }));
+    await screen.findByText('pantry screen');
+    const body = calls.find((c) => c.key === 'POST /api/pantry/batches/bulk')
+      ?.body as { batches: object[] };
+    return body.batches[0];
+  }
+
+  async function done(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Done' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  }
+
+  it('keeps the typed dd.mm.yyyy field, and a typed date is saved as ISO', async () => {
+    const user = userEvent.setup();
+    const calls = renderReview([line({ lowConfidence: true })]);
+    const expiry = screen.getByLabelText('Expiry date: Parmesan');
+    expect(expiry).toHaveValue('24.12.2026');
+    await user.clear(expiry);
+    await user.type(expiry, '01022027');
+    expect(expiry).toHaveValue('01.02.2027');
+    expect(await saved(user, calls)).toMatchObject({
+      expiryDate: '2027-02-01',
+    });
+  });
+
+  it('says a typed impossible date is wrong only once the field is left', async () => {
+    const user = userEvent.setup();
+    renderReview([line({ lowConfidence: true })]);
+    const expiry = screen.getByLabelText('Expiry date: Parmesan');
+    await user.clear(expiry);
+    await user.type(expiry, '31022027');
+    expect(
+      screen.queryByText('Enter a real date as dd.mm.yyyy.'),
+    ).not.toBeInTheDocument();
+    await user.tab();
+    expect(
+      screen.getByText('Enter a real date as dd.mm.yyyy.'),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the sheet from the cell's calendar button with the line's context, and a picked day fills the cell and is saved", async () => {
+    const user = userEvent.setup();
+    const calls = renderReview([line({ lowConfidence: true })]);
+    const opener = screen.getByRole('button', {
+      name: 'Pick expiry date: Parmesan',
+    });
+    expect(opener).toHaveAttribute('aria-haspopup', 'dialog');
+
+    const sheet = await openSheet(user);
+    expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
+    expect(
+      within(sheet).getByRole('button', {
+        name: 'Thursday, December 24, 2026',
+      }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(
+      within(sheet).getByRole('button', { name: 'Monday, December 28, 2026' }),
+    );
+    expect(screen.getByLabelText('Expiry date: Parmesan')).toHaveValue(
+      '28.12.2026',
+    );
+    await done(user);
+    expect(opener).toHaveFocus();
+    expect(await saved(user, calls)).toMatchObject({
+      expiryDate: '2026-12-28',
+    });
+  });
+
+  it('returns focus to the calendar button when the sheet closes, even if a tap did not focus it', async () => {
+    const user = userEvent.setup();
+    renderReview([line({ lowConfidence: true })]);
+    const opener = screen.getByRole('button', {
+      name: 'Pick expiry date: Parmesan',
+    });
+    // Safari doesn't focus a button on tap, so a synthetic click leaves focus elsewhere.
+    fireEvent.click(opener);
+    await screen.findByRole('dialog', { name: 'Expires' });
+    await done(user);
+    expect(opener).toHaveFocus();
+  });
+
+  it('saves no expiry when No expiry is chosen in the sheet', async () => {
+    const user = userEvent.setup();
+    const calls = renderReview([line({ lowConfidence: true })]);
+    const sheet = await openSheet(user);
+    await user.click(within(sheet).getByRole('button', { name: 'No expiry' }));
+    expect(screen.getByLabelText('Expiry date: Parmesan')).toHaveValue('');
+    await done(user);
+    expect(await saved(user, calls)).toMatchObject({ expiryDate: null });
+  });
+
+  it('keeps a picked date when the Match changes, instead of the new default', async () => {
+    const user = userEvent.setup();
+    renderReview([line({ lowConfidence: true, expiryDate: null })]);
+    // No date was read, so the cell holds Parmesan's Default Expiry (60 days).
+    expect(screen.getByLabelText('Expiry date: Parmesan')).toHaveValue(
+      '13.12.2026',
+    );
+    const sheet = await openSheet(user);
+    await user.click(
+      within(sheet).getByRole('button', { name: 'Monday, December 28, 2026' }),
+    );
+    await done(user);
+
+    await user.click(
+      screen.getByRole('button', { name: 'Change match for Parmesan' }),
+    );
+    await user.type(
+      within(
+        screen.getByRole('dialog', { name: 'Change match for Parmesan' }),
+      ).getByRole('combobox', { name: 'Search ingredients' }),
+      'milk',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('Expiry date: Milk')).toHaveValue(
+      '28.12.2026',
+    );
+  });
+
+  it('has no calendar button for Plate', () => {
+    renderReview([line({ lowConfidence: true })], 'plate');
+    expect(
+      screen.queryByRole('button', { name: /^Pick expiry date/ }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe('tablet column template', () => {
   it('uses fixed widths so Produs takes the remainder', () => {
     expect(tabletTemplate(false)).toBe(
-      '24px minmax(0,1fr) 120px 104px 112px 112px 144px',
+      '24px minmax(0,1fr) 120px 104px 144px 112px 144px',
     );
     expect(tabletTemplate(true)).toBe('24px minmax(0,1fr) 120px 112px 144px');
     expect(tabletTemplate(false, true)).toBe(
-      '24px minmax(0,1fr) 150px 150px 150px 120px 144px',
+      '24px minmax(0,1fr) 150px 150px 180px 120px 144px',
     );
   });
 });

@@ -1,5 +1,7 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, CalendarIcon, tokens } from '@pocket-pantry/ui';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ExpirySheet, expiryContext } from '../../../components/ExpiryPicker';
 import { LOCATIONS, UNITS, type CatalogParent } from '../../../lib/catalog';
 import {
   formatDate,
@@ -7,7 +9,7 @@ import {
   maskDateInput,
   parseDateInput,
 } from '../../../lib/dateFormat';
-import type { ReviewLine } from '../../../lib/review';
+import { displayName, type ReviewLine } from '../../../lib/review';
 import { controlSx } from './Field';
 
 /**
@@ -190,6 +192,124 @@ export function ExpiryInput({
         });
       }}
       sx={{ ...controlSx, fontVariantNumeric: 'tabular-nums' }}
+    />
+  );
+}
+
+/**
+ * The phone's expiry cell: the whole control is one button that shows the date as `dd.mm.yyyy` and opens the
+ * expiry sheet. Its name is the Field's label plus the date (`labelledBy`).
+ */
+export function ExpiryButton({
+  line,
+  onChange,
+  id,
+  error,
+  errorId,
+  labelId,
+}: {
+  line: ReviewLine;
+  onChange: Change;
+  id: string;
+  error: boolean;
+  errorId: string;
+  /** The visible label above the cell. */
+  labelId: string;
+}) {
+  const { t } = useTranslation('review');
+  const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const empty = line.expiryDate === '';
+  return (
+    <>
+      <Box
+        ref={button}
+        id={id}
+        component="button"
+        type="button"
+        aria-haspopup="dialog"
+        aria-labelledby={`${labelId} ${id}-value`}
+        aria-describedby={error ? errorId : undefined}
+        onClick={() => setOpen(true)}
+        sx={{
+          ...controlSx,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          textAlign: 'left',
+          cursor: 'pointer',
+          ...(error ? { borderColor: tokens.color.urgentFg } : null),
+        }}
+      >
+        <Box
+          component="span"
+          id={`${id}-value`}
+          sx={{
+            fontVariantNumeric: 'tabular-nums',
+            color: empty ? tokens.color.muted : undefined,
+          }}
+        >
+          {empty
+            ? t('expiryPlaceholder')
+            : isIsoDate(line.expiryDate)
+              ? formatDate(line.expiryDate)
+              : line.expiryDate}
+        </Box>
+        <CalendarIcon size={18} color={tokens.color.muted} />
+      </Box>
+      <ReviewLineExpirySheet
+        line={line}
+        onChange={onChange}
+        open={open}
+        onClose={() => setOpen(false)}
+        // A tap doesn't always focus the button (Safari), so put focus back explicitly.
+        onExited={() => button.current?.focus()}
+      />
+    </>
+  );
+}
+
+/**
+ * The expiry picker's sheet for one line. A date (or No expiry) picked in it is written to the line as an explicit
+ * expiry, the same as a typed one. Usual is the Match's Default Expiry; there is none for an Unmatched line.
+ */
+export function ReviewLineExpirySheet({
+  line,
+  onChange,
+  open,
+  onClose,
+  onExited,
+}: {
+  line: ReviewLine;
+  onChange: Change;
+  open: boolean;
+  onClose: () => void;
+  /** After the close transition, to put focus back on the opener. */
+  onExited?: () => void;
+}) {
+  const { t, i18n } = useTranslation(['pantry', 'common']);
+  return (
+    <ExpirySheet
+      open={open}
+      onClose={onClose}
+      onExited={onExited}
+      value={isIsoDate(line.expiryDate) ? line.expiryDate : null}
+      onChange={(value) =>
+        onChange({ expiryDate: value ?? '', expiryExplicit: true })
+      }
+      usualDays={line.match?.defaults.expiryDays ?? null}
+      context={expiryContext(
+        {
+          name: displayName(line),
+          quantity: line.quantity,
+          unit: line.unit,
+          location: line.location,
+        },
+        i18n.language,
+        t,
+      )}
+      title={t('pantry:picker.label')}
     />
   );
 }

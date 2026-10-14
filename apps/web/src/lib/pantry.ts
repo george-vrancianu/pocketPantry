@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from './api';
 import {
   recipeMatchingQueryKeys,
@@ -7,6 +8,10 @@ import {
 } from './queryKeys';
 import type { Aisle } from './staples';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
+import { useStaleThresholdDays } from './settings';
+
+/** A calendar date as `YYYY-MM-DD`. */
+export type IsoDate = string;
 
 export type Batch = {
   id: string;
@@ -19,11 +24,8 @@ export type Batch = {
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;
-  /** `YYYY-MM-DD`, or null. */
-  expiryDate: string | null;
+  expiryDate: IsoDate | null;
   productDescription: string | null;
-  /** Within the Family's Stale Threshold; derived by the API, never stored on the Batch. */
-  expiringSoon: boolean;
   createdAt: string;
 };
 
@@ -40,43 +42,129 @@ export type NewBatch = {
   unit?: Unit | null;
   location: StorageLocation;
   /** `null` means no expiry. */
-  expiryDate: string | null;
+  expiryDate: IsoDate | null;
   productDescription?: string | null;
 };
 
-export type ExpiryChip =
-  | { tone: 'urgent'; kind: 'today' | 'expired' }
-  | { tone: 'soon'; kind: 'days'; days: number }
-  | { tone: 'ok'; kind: 'date'; expiryDate: string };
+/** The days-left tag of an expiry date; `none` (no date) is shown only where its absence is worth saying. */
+export type ExpiryTagState =
+  | { tone: 'none'; kind: 'none' }
+  | { tone: 'urgent'; kind: 'expired' | 'today' }
+  | { tone: 'soon'; kind: 'tomorrow' }
+  | { tone: 'soon'; kind: 'daysLeft'; days: number }
+  | { tone: 'ok'; kind: 'days'; days: number };
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
 export function localIso(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${String(date.getFullYear()).padStart(4, '0')}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function dayNumber(iso: string): number {
+function dayNumber(iso: IsoDate): number {
   const [y, m, d] = iso.split('-').map(Number);
   return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
 /** Whole calendar days from `today` to the expiry date (negative once expired). */
-export function daysUntil(expiryDate: string, today: Date): number {
+export function daysUntil(expiryDate: IsoDate, today: Date): number {
   return dayNumber(expiryDate) - dayNumber(localIso(today));
 }
 
-/** `expiringSoon` comes from the API, which applies the Family's Stale Threshold. */
-export function expiryChipFor(
-  expiryDate: string | null,
+/** Expiring Soon: from today through the Stale Threshold, in days. */
+export function isExpiringSoon(days: number, staleThresholdDays: number) {
+  return days >= 0 && days <= staleThresholdDays;
+}
+
+/**
+ * The tag for an expiry date on the device's local `today`. Expiring Soon (at most the Family's Stale
+ * Threshold days away) is amber, and so is tomorrow at any threshold; it always counts in days.
+ */
+export function expiryTagFor(
+  expiryDate: IsoDate | null,
   today: Date,
-  expiringSoon: boolean,
-): ExpiryChip | null {
-  if (!expiryDate) return null;
+  staleThresholdDays: number,
+): ExpiryTagState {
+  if (expiryDate === null) return { tone: 'none', kind: 'none' };
   const days = daysUntil(expiryDate, today);
   if (days < 0) return { tone: 'urgent', kind: 'expired' };
   if (days === 0) return { tone: 'urgent', kind: 'today' };
-  if (expiringSoon) return { tone: 'soon', kind: 'days', days };
-  return { tone: 'ok', kind: 'date', expiryDate };
+  if (days === 1) return { tone: 'soon', kind: 'tomorrow' };
+  if (isExpiringSoon(days, staleThresholdDays))
+    return { tone: 'soon', kind: 'daysLeft', days };
+  return { tone: 'ok', kind: 'days', days };
+}
+
+/**
+ * The Family's Stale Threshold, and the tag an expiry date gets on `today` with it. Changing the threshold
+ * re-colours every tag on the next render.
+ */
+export function useExpiryTags(today: Date): {
+  staleThresholdDays: number;
+  tagFor: (expiryDate: IsoDate | null) => ExpiryTagState;
+} {
+  const { i18n } = useTranslation();
+  const staleThresholdDays = useStaleThresholdDays(i18n.language);
+  return {
+    staleThresholdDays,
+    tagFor: (expiryDate) => expiryTagFor(expiryDate, today, staleThresholdDays),
+  };
+}
+
+/** A `YYYY-MM-DD` calendar date as local midnight, for formatting. */
+export function fromIso(iso: IsoDate): Date {
+  const [y, m, d] = iso.split('-').map(Number);
+  return localDate(y, m - 1, d);
+}
+
+/** Local midnight of a date. Unlike `new Date(y, m, d)`, years 0 to 99 stay as written. */
+export function localDate(year: number, monthIndex: number, day: number): Date {
+  const date = new Date(2000, 0, 1);
+  date.setFullYear(year, monthIndex, day);
+  return date;
+}
+
+/**
+ * "Sat, Oct 11" in the UI locale, with the year only when it is not this year. `long` spells the weekday and
+ * month out ("Saturday, October 11"), for accessible names.
+ */
+export function fullDate(
+  expiryDate: IsoDate,
+  today: Date,
+  locale: string,
+  width: 'short' | 'long' = 'short',
+): string {
+  const date = fromIso(expiryDate);
+  return new Intl.DateTimeFormat(locale, {
+    weekday: width,
+    day: 'numeric',
+    month: width,
+    year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+  }).format(date);
+}
+
+/** "in 10 days", "tomorrow", "today", "yesterday", "3 days ago" in the UI locale. */
+export function relativeDay(
+  expiryDate: IsoDate,
+  today: Date,
+  locale: string,
+): string {
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(
+    daysUntil(expiryDate, today),
+    'day',
+  );
+}
+
+/** An expiry date and how far away it is, e.g. `{ date: 'Sat, Oct 11', relative: 'in 10 days' }`. */
+export function dateAndRelativeDay(
+  expiryDate: IsoDate,
+  today: Date,
+  locale: string,
+  width: 'short' | 'long' = 'short',
+): { date: string; relative: string } {
+  return {
+    date: fullDate(expiryDate, today, locale, width),
+    relative: relativeDay(expiryDate, today, locale),
+  };
 }
 
 /** The pre-filled expiry (a `YYYY-MM-DD` string, or empty) for a Catalog default in days. */
@@ -197,13 +285,12 @@ export function rollUp(batches: Batch[]): RollUp[] {
     .sort((a, b) => byExpiry(a.batches[0], b.batches[0]));
 }
 
-export function useBatches(locale: string, today: Date) {
-  const localToday = localIso(today);
+export function useBatches(locale: string) {
   return useQuery({
-    queryKey: ['pantry', locale, localToday],
+    queryKey: ['pantry', locale],
     queryFn: () =>
       apiRequest<{ batches: Batch[] }>(
-        `/pantry?${new URLSearchParams({ locale, today: localToday })}`,
+        `/pantry?${new URLSearchParams({ locale })}`,
       ).then((body) => body.batches),
   });
 }

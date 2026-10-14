@@ -94,8 +94,12 @@ _Avoid_: Storage, place
 The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
 _Avoid_: Label, brand
 
+**Expired**:
+A Batch whose expiry date is before today. A Batch that expires today is not yet Expired, and a Batch with no expiry date never is. Derived at read time, never stored on the Batch.
+_Avoid_: Stale, gone off, past date
+
 **Expiring Soon**:
-A Batch whose expiry date falls within the Family's Stale Threshold. Derived at read time from the expiry date and the current threshold, never stored on the Batch; a Batch with no expiry date is never Expiring Soon.
+A Batch that is not Expired and whose expiry date is at most the Family's Stale Threshold days away, today included. Derived at read time from the expiry date and the current threshold, never stored on the Batch; a Batch with no expiry date is never Expiring Soon.
 _Avoid_: About to go stale, going off
 
 **Stale Threshold**:

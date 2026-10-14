@@ -9,13 +9,15 @@ import {
   useFinishShopping,
   type FinishProposalLine,
 } from '../../../lib/finishShopping';
+import { daysUntil, type IsoDate } from '../../../lib/pantry';
 import { shoppingListQueryKey } from '../../../lib/shopping';
 
 export type ReviewEdit = {
   quantity: string;
   unit: Unit;
   location: StorageLocation;
-  expiryDate: string;
+  /** Null for no expiry. */
+  expiryDate: IsoDate | null;
 };
 
 const FALLBACK_UNIT: Unit = 'pcs';
@@ -24,8 +26,17 @@ const initialEdit = (line: FinishProposalLine): ReviewEdit => ({
   quantity: line.quantity === null ? '' : String(line.quantity),
   unit: line.unit ?? FALLBACK_UNIT,
   location: line.location,
-  expiryDate: line.expiryDate ?? '',
+  expiryDate: line.expiryDate,
 });
+
+/**
+ * The "Usual" quick pick: the proposal's pre-filled date in days from today, the purchase day. None for an Unmatched
+ * line or a line the Catalog gave no Default Expiry.
+ */
+const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
+  line.unmatched || line.expiryDate === null
+    ? null
+    : daysUntil(line.expiryDate, today);
 
 // numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
 function quantityOf(text: string): { valid: boolean; value: number | null } {
@@ -48,11 +59,13 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
   const [edits, setEdits] = useState<Record<string, Partial<ReviewEdit>>>({});
   const [dropped, setDropped] = useState<ReadonlySet<string>>(new Set());
 
+  const today = new Date();
   const lines = (proposal.data?.lines ?? []).map((line) => {
     const edit = { ...initialEdit(line), ...edits[line.itemId] };
     return {
       line,
       edit,
+      usualDays: usualDaysOf(line, today),
       dropped: dropped.has(line.itemId),
       quantityValid: quantityOf(edit.quantity).valid,
     };
@@ -110,7 +123,7 @@ export function useFinishReview({ onDone }: { onDone: () => void }) {
               quantity: value,
               unit: value === null ? null : edit.unit,
               location: edit.location,
-              expiryDate: edit.expiryDate === '' ? null : edit.expiryDate,
+              expiryDate: edit.expiryDate,
             };
           }),
           droppedItemIds: lines

@@ -2,13 +2,14 @@ import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/CatalogSearch';
+import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { useAddBatchForm } from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
 
 type Props = { onSaved: () => void; onCancel: () => void };
 
 export function AddBatchForm({ onSaved, onCancel }: Props) {
-  const { t } = useTranslation('pantry');
+  const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -59,13 +60,22 @@ export function AddBatchForm({ onSaved, onCancel }: Props) {
         onSubmit={() => formRef.current?.requestSubmit()}
       />
 
-      <TextField
+      <ExpiryField
         id={`${id}-expiry`}
-        type="date"
-        label={t('form.expiry')}
+        label={t('picker.label')}
         value={form.expiryDate}
-        onChange={(event) => form.setExpiryDate(event.target.value)}
-        slotProps={{ inputLabel: { shrink: true } }}
+        onChange={form.setExpiryDate}
+        usualDays={form.usualDays}
+        context={expiryContext(
+          {
+            name: form.ingredient?.name ?? form.unmatchedName ?? form.typed,
+            quantity: form.quantity,
+            unit: form.unit,
+            location: form.location,
+          },
+          i18n.language,
+          t,
+        )}
       />
 
       <TextField

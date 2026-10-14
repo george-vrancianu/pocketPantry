@@ -1,6 +1,7 @@
 import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { RemoveLink } from '../../../components/RemoveLink';
 import type { Batch, BatchEdit } from '../../../lib/pantry';
 import { useEditBatchForm } from '../hooks/useEditBatchForm';
@@ -15,7 +16,7 @@ type Props = {
 };
 
 export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
-  const { t } = useTranslation('pantry');
+  const { t, i18n } = useTranslation('pantry');
   const form = useEditBatchForm(batch, { onSaved });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
@@ -43,13 +44,23 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
         onLocationChange={form.setLocation}
         onSubmit={() => formRef.current?.requestSubmit()}
       />
-      <TextField
+      {/* No Usual tile: the Default Expiry counts from the purchase date, which a Batch doesn't carry. */}
+      <ExpiryField
         id={`${id}-expiry`}
-        type="date"
-        label={t('form.expiry')}
+        label={t('picker.label')}
         value={form.expiryDate}
-        onChange={(event) => form.setExpiryDate(event.target.value)}
-        slotProps={{ inputLabel: { shrink: true } }}
+        onChange={form.setExpiryDate}
+        usualDays={null}
+        context={expiryContext(
+          {
+            name: batch.name,
+            quantity: form.quantity,
+            unit: form.unit,
+            location: form.location,
+          },
+          i18n.language,
+          t,
+        )}
       />
       <TextField
         id={`${id}-description`}

@@ -43,11 +43,7 @@ export class PantryService {
   ) {}
 
   /** The Family's Batches, soonest expiry first; Batches without an expiry come last. */
-  async list(
-    memberId: string,
-    locale: CatalogLocale,
-    today?: string,
-  ): Promise<BatchView[]> {
+  async list(memberId: string, locale: CatalogLocale): Promise<BatchView[]> {
     const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database
       .select()
@@ -58,7 +54,7 @@ export class PantryService {
         asc(batches.createdAt),
         asc(batches.id),
       );
-    return this.toViews(rows, locale, familyId, today);
+    return this.toViews(rows, locale);
   }
 
   async create(
@@ -107,7 +103,7 @@ export class PantryService {
       );
       return inserted;
     });
-    return this.toViews(rows, locale, familyId);
+    return this.toViews(rows, locale);
   }
 
   private toRow(
@@ -179,7 +175,7 @@ export class PantryService {
       .returning();
     // Deleted by another Member between the read and the update.
     if (!row) throw new ApiException(404, 'pantry.batch_not_found');
-    return (await this.toViews([row], locale, familyId))[0];
+    return (await this.toViews([row], locale))[0];
   }
 
   /** Another Family's Batch is indistinguishable from a missing one. */
@@ -327,11 +323,7 @@ export class PantryService {
   private async toViews(
     rows: BatchRow[],
     locale: CatalogLocale,
-    familyId: string,
-    today: string = new Date().toISOString().slice(0, 10),
   ): Promise<BatchView[]> {
-    const threshold = await this.settings.staleThresholdOf(familyId);
-    const latestSoon = addDays(today, threshold);
     const placements = await loadIngredientPlacements(
       this.database,
       locale,
@@ -353,7 +345,6 @@ export class PantryService {
       location: row.location,
       expiryDate: row.expiryDate,
       productDescription: row.productDescription,
-      expiringSoon: row.expiryDate !== null && row.expiryDate <= latestSoon,
       createdAt: row.createdAt,
     }));
   }

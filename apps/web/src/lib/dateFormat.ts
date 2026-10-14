@@ -40,10 +40,16 @@ export function maskDateInput(text: string): string {
     .join('.');
 }
 
-/** A complete `dd.MM.yyyy` that is a real date, as ISO; otherwise null. */
+/** The years a typed date may have; the API accepts more, but the calendar has to stay renderable. */
+const MIN_YEAR = 1900;
+const MAX_YEAR = 2199;
+
+/** A complete `dd.MM.yyyy` in 1900 to 2199 that is a real date, as ISO; otherwise null. */
 export function parseDateInput(text: string): string | null {
   const parts = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(text);
   if (!parts) return null;
+  const year = Number(parts[3]);
+  if (year < MIN_YEAR || year > MAX_YEAR) return null;
   const iso = `${parts[3]}-${parts[2]}-${parts[1]}`;
   return isIsoDate(iso) ? iso : null;
 }

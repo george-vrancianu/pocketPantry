@@ -47,7 +47,7 @@ export class PantryController {
     @Query(new ZodValidationPipe(pantryLocaleQuery)) query: PantryLocaleQuery,
   ): Promise<{ batches: BatchView[] }> {
     return {
-      batches: await this.pantry.list(member.id, query.locale, query.today),
+      batches: await this.pantry.list(member.id, query.locale),
     };
   }
 
