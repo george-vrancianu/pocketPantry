@@ -18,7 +18,7 @@ export const expiryOverrideBody = z.object({
 });
 export type ExpiryOverrideBody = z.infer<typeof expiryOverrideBody>;
 
-/** The Theme ids a Member can choose; the web app's Theme definitions use the same ids. */
+/** The Theme ids a Member can choose: the UI package's THEME_IDS (packages/ui/src/theme/themeIds.test.ts fails if they drift). */
 export const THEME_IDS = ['warm', 'minimal', 'dark'] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
