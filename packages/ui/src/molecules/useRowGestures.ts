@@ -67,8 +67,6 @@ export type ToggleGestureOptions = SharedGestureOptions & {
   mode: 'toggle';
   /** Released inside the zone. */
   onToggle: () => void;
-  /** A swipe was released inside the zone. */
-  onLearned?: () => void;
 };
 
 export type RowGestureOptions = RemoveGestureOptions | ToggleGestureOptions;
@@ -276,7 +274,8 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
         if (press.current !== current) return;
         current.armed = true;
         vibrate(HAPTIC_ARMED);
-        latest.current.options.onLearned?.();
+        const { options: armedOptions } = latest.current;
+        if (armedOptions.mode !== 'toggle') armedOptions.onLearned?.();
         setHold({ pressing: true, armed: true, origin });
         clearTimeout(openTimer.current);
         openTimer.current = setTimeout(() => {
@@ -337,7 +336,7 @@ export function useRowGestures(options: RowGestureOptions): RowGestures {
       if (!current.dragging) return;
       swallowNextClick();
       const { options: o } = latest.current;
-      if (current.zone > 0) o.onLearned?.();
+      if (current.zone > 0 && o.mode !== 'toggle') o.onLearned?.();
       try {
         event.currentTarget.releasePointerCapture?.(event.pointerId);
       } catch {

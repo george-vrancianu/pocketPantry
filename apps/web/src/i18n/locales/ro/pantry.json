@@ -31,9 +31,9 @@
   "batchCount_few": "{{count}} loturi",
   "batchCount_other": "{{count}} de loturi",
   "group": {
-    "batches_one": "{{count}} lot",
-    "batches_few": "{{count}} loturi",
-    "batches_other": "{{count}} de loturi",
+    "label_one": "{{name}}, {{count}} lot",
+    "label_few": "{{name}}, {{count}} loturi",
+    "label_other": "{{name}}, {{count}} de loturi",
     "runningLow": "Pe sfârșite",
     "notLow": "Nu e pe sfârșite",
     "staple": "Produs de bază",
@@ -53,7 +53,8 @@
   "a11y": {
     "markLow": "Marchează ca fiind pe sfârșite",
     "clearLow": "Nu mai e pe sfârșite",
-    "lowKey": "Apasă L: {{action}}",
+    "lowKey": "Apasă L: {{action}}.",
+    "stapleKey": "Apasă S: {{action}}.",
     "makeStaple": "Fă-l produs de bază",
     "removeStaple": "Scoate din produsele de bază"
   },

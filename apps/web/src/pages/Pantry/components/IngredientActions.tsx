@@ -6,22 +6,22 @@ import {
   StarIcon,
   border,
   color,
+  focusRing,
   radius,
   tokens,
-  useToast,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRowToggleReport } from '../../../components/StapleToggle';
-import { translateApiError } from '../../../i18n/translateApiError';
-import { useStapleMutations, useStaples } from '../../../lib/staples';
+import type { StapleToggleState } from '../../../components/useStapleToggle';
+import { keyframesSx } from '../../../lib/keyframesSx';
 
 type Props = {
-  ingredientId: string;
-  /** The Ingredient's name, for the toasts and the Add batch label. */
+  /** The Ingredient's name, for the Add batch label. */
   name: string;
   /** An Unmatched Ingredient has no Staple or Running low: only Add batch. */
   unmatched: boolean;
+  /** The row's Staple state and toggle, which says so in a toast once saved. */
+  staple: StapleToggleState;
   runningLow: boolean;
   /** Flip Running low; the row sends it and says so. */
   onToggleLow: () => void;
@@ -35,9 +35,9 @@ type Props = {
  * toast with no Undo (Pantry batches handoff, section 3).
  */
 export function IngredientActions({
-  ingredientId,
   name,
   unmatched,
+  staple,
   runningLow,
   onToggleLow,
   onAddBatch,
@@ -51,18 +51,38 @@ export function IngredientActions({
         gap: '8px',
         p: '10px 12px',
         borderTop: `1px solid ${tokens.color.divider}`,
-        animation: 'pp-actions-in 200ms 120ms both',
-        '@keyframes pp-actions-in': { from: { opacity: 0 } },
-        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+        ...keyframesSx('pp-actions-in', '200ms 120ms both', {
+          from: { opacity: 0 },
+        }),
       }}
     >
       {unmatched ? null : (
-        <MatchedChips
-          ingredientId={ingredientId}
-          name={name}
-          runningLow={runningLow}
-          onToggleLow={onToggleLow}
-        />
+        <>
+          {/* Named by its label, "Make Staple" or "Staple", and pressed while it is one. */}
+          <ActionChip
+            pressed={staple.isStaple}
+            tone="staple"
+            ariaDisabled={!staple.ready}
+            onClick={staple.toggle}
+            icon={
+              staple.isStaple ? (
+                <StarFillIcon size={16} />
+              ) : (
+                <StarIcon size={16} />
+              )
+            }
+          >
+            {t(staple.isStaple ? 'group.staple' : 'group.makeStaple')}
+          </ActionChip>
+          <ActionChip
+            pressed={runningLow}
+            tone="low"
+            onClick={onToggleLow}
+            icon={<BatteryLowIcon size={16} strokeWidth={2.2} />}
+          >
+            {t('group.runningLow')}
+          </ActionChip>
+        </>
       )}
       <Box
         component="button"
@@ -89,70 +109,6 @@ export function IngredientActions({
   );
 }
 
-/** The Staple and Running low chips of a matched Ingredient. */
-function MatchedChips({
-  ingredientId,
-  name,
-  runningLow,
-  onToggleLow,
-}: Omit<Props, 'unmatched' | 'onAddBatch'>) {
-  const { t } = useTranslation('pantry');
-  const staple = useStapleChip(ingredientId, name);
-
-  return (
-    <>
-      <ActionChip
-        aria-label={t('a11y.makeStaple')}
-        pressed={staple.isStaple}
-        tone="staple"
-        ariaDisabled={!staple.ready}
-        onClick={staple.toggle}
-        icon={
-          staple.isStaple ? <StarFillIcon size={16} /> : <StarIcon size={16} />
-        }
-      >
-        {t(staple.isStaple ? 'group.staple' : 'group.makeStaple')}
-      </ActionChip>
-      <ActionChip
-        pressed={runningLow}
-        tone="low"
-        onClick={onToggleLow}
-        icon={<BatteryLowIcon size={16} strokeWidth={2.2} />}
-      >
-        {t('group.runningLow')}
-      </ActionChip>
-    </>
-  );
-}
-
-/** Whether the Ingredient is a Staple, from the Staples query, and a toggle that says so. */
-function useStapleChip(ingredientId: string, name: string) {
-  const { t, i18n } = useTranslation('pantry');
-  const staples = useStaples(i18n.language);
-  const { add, remove } = useStapleMutations(i18n.language);
-  const toast = useToast();
-  const report = useRowToggleReport();
-  const staple = staples.data?.find((s) => s.ingredientId === ingredientId);
-  // An add in flight has no server id yet to remove by, so the chip waits for it to settle.
-  const ready =
-    staples.data !== undefined && !add.isPending && !remove.isPending;
-
-  return {
-    isStaple: staple !== undefined,
-    ready,
-    toggle: () => {
-      if (!ready) return;
-      const options = {
-        onSuccess: () => report(null),
-        onError: (error: unknown) => report(translateApiError(t, error)),
-      };
-      if (staple) remove.mutate(staple.id, options);
-      else add.mutate({ ingredientId, name }, options);
-      toast.show(t(staple ? 'toast.staple.off' : 'toast.staple.on', { name }));
-    },
-  };
-}
-
 /** What the chips and the Add batch button share: 38 tall, outlined, pressing in to .96. */
 const actionButtonSx = {
   height: 38,
@@ -165,14 +121,12 @@ const actionButtonSx = {
   transition: 'background-color .15s, color .15s, transform 80ms',
   '&:active': { transform: 'scale(.96)' },
   '& svg': { flex: '0 0 auto' },
-  '&:focus-visible': {
-    outline: `2px solid ${tokens.color.accent}`,
-    outlineOffset: 2,
-  },
+  ...focusRing,
   '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
 } as const;
 
-const PRESSED = {
+/** Each chip's fill while pressed. */
+const PRESSED_FILL = {
   staple: {
     bgcolor: tokens.color.accentTint,
     color: tokens.color.accentOnTint,
@@ -184,12 +138,11 @@ const PRESSED = {
 type ChipProps = {
   pressed: boolean;
   /** The chip's fill while pressed: accent tint with a star-coloured icon, or butter. */
-  tone: keyof typeof PRESSED;
+  tone: keyof typeof PRESSED_FILL;
   icon: ReactNode;
   children: ReactNode;
   onClick: () => void;
   ariaDisabled?: boolean;
-  'aria-label'?: string;
 };
 
 function ActionChip({
@@ -199,13 +152,11 @@ function ActionChip({
   children,
   onClick,
   ariaDisabled,
-  'aria-label': ariaLabel,
 }: ChipProps) {
   return (
     <Box
       component="button"
       type="button"
-      aria-label={ariaLabel}
       aria-pressed={pressed}
       aria-disabled={ariaDisabled || undefined}
       onClick={onClick}
@@ -223,7 +174,7 @@ function ActionChip({
           fontWeight: 700,
           whiteSpace: 'nowrap',
         },
-        pressed && { borderColor: 'transparent', ...PRESSED[tone] },
+        pressed && { borderColor: 'transparent', ...PRESSED_FILL[tone] },
       ]}
     >
       {icon}

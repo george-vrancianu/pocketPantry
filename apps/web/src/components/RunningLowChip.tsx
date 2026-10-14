@@ -1,15 +1,16 @@
 import { Tag } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
+import { keyframesSx } from '../lib/keyframesSx';
 
 /** Scale .4 -> 1 with an overshoot, as the flag turns on (Pantry batches handoff, section 6). */
-const popSx = {
-  animation: 'pp-running-low-pop 420ms cubic-bezier(.2,.8,.2,1.4)',
-  '@keyframes pp-running-low-pop': {
+const popSx = keyframesSx(
+  'pp-running-low-pop',
+  '420ms cubic-bezier(.2,.8,.2,1.4)',
+  {
     from: { transform: 'scale(.4)', opacity: 0 },
     to: { transform: 'none', opacity: 1 },
   },
-  '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-};
+);
 
 /**
  * The "Running low" chip, in the expiry tag's style (the `soon` tone). The caller shows it while the

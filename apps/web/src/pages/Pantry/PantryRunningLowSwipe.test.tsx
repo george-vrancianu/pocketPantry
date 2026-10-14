@@ -28,9 +28,19 @@ function batch(overrides: Partial<Batch>): Batch {
   };
 }
 
-/** Running-low flags follow the PUT and DELETE calls, as the API does. */
+const milkStaple = {
+  id: 'staple-1',
+  ingredientId: 'milk-id',
+  name: 'Milk',
+  quantity: null,
+  unit: null,
+  aisle: null,
+};
+
+/** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
 function stubRunningLow(flaggedAtStart: string[] = []) {
   const flagged = new Set<string>(flaggedAtStart);
+  let staples: (typeof milkStaple)[] = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () =>
       Response.json({
@@ -48,7 +58,15 @@ function stubRunningLow(flaggedAtStart: string[] = []) {
       }),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
-    'GET /api/staples': () => Response.json({ staples: [] }),
+    'GET /api/staples': () => Response.json({ staples }),
+    'POST /api/staples': () => {
+      staples = [milkStaple];
+      return Response.json(milkStaple, { status: 201 });
+    },
+    'DELETE /api/staples/staple-1': () => {
+      staples = [];
+      return new Response(null, { status: 204 });
+    },
     'PUT /api/pantry/running-low/milk-id': () => {
       flagged.add('milk-id');
       return new Response(null, { status: 204 });
@@ -68,6 +86,10 @@ const chip = (name = 'Milk') =>
   within(row(name)).queryByText('Running low', { ignore: '[aria-hidden] *' });
 const saves = (calls: { key: string }[]) =>
   calls.map((call) => call.key).filter((key) => key.includes('/running-low/'));
+const stapleSaves = (calls: { key: string }[]) =>
+  calls
+    .map((call) => call.key)
+    .filter((key) => /^(POST|DELETE) \/api\/staples/.test(key));
 
 /** Press on the row at x=300, move to `300 + dx`. */
 function drag(target: HTMLElement, dx: number) {
@@ -185,8 +207,10 @@ describe('swiping an Ingredient row to toggle Running low', () => {
     it('toggles Running low on a focused closed row, which says so', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       const calls = await renderPage();
-      expect(row('Milk')).toHaveAccessibleDescription(
-        'Press L: Mark running low',
+      await waitFor(() =>
+        expect(row('Milk')).toHaveAccessibleDescription(
+          'Press L: Mark running low. Press S: Make Staple.',
+        ),
       );
 
       row('Milk').focus();
@@ -196,7 +220,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       );
       await waitFor(() => expect(chip()).toBeVisible());
       expect(row('Milk')).toHaveAccessibleDescription(
-        'Press L: Clear running low',
+        'Press L: Clear running low. Press S: Make Staple.',
       );
       expect(row('Milk')).toHaveFocus();
       expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
@@ -214,6 +238,51 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       await user.keyboard('l');
       await settle();
       expect(saves(calls)).toEqual([]);
+    });
+  });
+
+  describe('the S key', () => {
+    it('makes a focused closed row a Staple, and then no longer one, saying so each time', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const calls = await renderPage();
+      await waitFor(() =>
+        expect(row('Milk')).toHaveAccessibleDescription(
+          'Press L: Mark running low. Press S: Make Staple.',
+        ),
+      );
+
+      row('Milk').focus();
+      await user.keyboard('s');
+      expect(await screen.findByText('Milk is a Staple')).toBeVisible();
+      expect(stapleSaves(calls)).toEqual(['POST /api/staples']);
+      await waitFor(() =>
+        expect(row('Milk')).toHaveAccessibleDescription(
+          'Press L: Mark running low. Press S: Remove Staple.',
+        ),
+      );
+      expect(row('Milk')).toHaveFocus();
+      expect(row('Milk')).toHaveAttribute('aria-expanded', 'false');
+
+      await user.keyboard('s');
+      expect(
+        await screen.findByText('Milk is no longer a Staple'),
+      ).toBeVisible();
+      expect(stapleSaves(calls)).toEqual([
+        'POST /api/staples',
+        'DELETE /api/staples/staple-1',
+      ]);
+    });
+
+    it('does nothing on an open row or an Unmatched row', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      const calls = await renderPage();
+      row('Zorblax paste').focus();
+      await user.keyboard('s');
+
+      await user.click(row('Milk'));
+      await user.keyboard('s');
+      await settle();
+      expect(stapleSaves(calls)).toEqual([]);
     });
   });
 });

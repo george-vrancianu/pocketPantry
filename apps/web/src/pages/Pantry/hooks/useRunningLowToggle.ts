@@ -1,7 +1,6 @@
 import { useToast } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { useRowToggleReport } from '../../../components/StapleToggle';
-import { translateApiError } from '../../../i18n/translateApiError';
+import { useRowToggleOutcome } from '../../../components/RowToggleErrors';
 import { useSetRunningLow } from '../../../lib/pantry';
 import { UNDO_WINDOW_MS } from '../../../lib/useDeferredRemoval';
 
@@ -22,16 +21,10 @@ export function useRunningLowToggle() {
   const { t, i18n } = useTranslation('pantry');
   const save = useSetRunningLow(i18n.language);
   const toast = useToast();
-  const report = useRowToggleReport();
+  const outcome = useRowToggleOutcome();
 
   const send = (ingredientId: string, on: boolean) =>
-    save.mutate(
-      { ingredientId, on },
-      {
-        onSuccess: () => report(null),
-        onError: (error: unknown) => report(translateApiError(t, error)),
-      },
-    );
+    save.mutate({ ingredientId, on }, outcome());
 
   return {
     toggle: (

@@ -1,37 +1,6 @@
 import { IconButton, StarFillIcon, StarIcon } from '@pocket-pantry/ui';
-import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../i18n/translateApiError';
-import { useStapleMutations, useStaples } from '../lib/staples';
-
-type Report = (message: string | null) => void;
-
-const RowToggleErrorContext = createContext<Report>(() => undefined);
-
-/** The page's error report for row toggles; the Staple and Running low toggles both call it. */
-export function useRowToggleReport(): Report {
-  return useContext(RowToggleErrorContext);
-}
-
-/** A page that lists row toggles (Staple, Running low) owns their error: show `message` in its Alert and wrap the list in `RowToggleErrorProvider`. */
-export function useRowToggleErrors() {
-  const [message, setMessage] = useState<string | null>(null);
-  return { message, report: setMessage };
-}
-
-export function RowToggleErrorProvider({
-  report,
-  children,
-}: {
-  report: Report;
-  children: ReactNode;
-}) {
-  return (
-    <RowToggleErrorContext.Provider value={report}>
-      {children}
-    </RowToggleErrorContext.Provider>
-  );
-}
+import { useStapleToggle } from './useStapleToggle';
 
 type Props = {
   ingredientId: string;
@@ -43,33 +12,19 @@ type Props = {
 
 /** A ★ that marks an Ingredient as a Staple, or unmarks it. Unmatched names have no toggle. */
 export function StapleToggle({ ingredientId, name, onToggled }: Props) {
-  const { t, i18n } = useTranslation('staples');
-  const staples = useStaples(i18n.language);
-  const { add, remove } = useStapleMutations(i18n.language);
-  const staple = staples.data?.find((s) => s.ingredientId === ingredientId);
-  const report = useRowToggleReport();
-  const busy = add.isPending || remove.isPending;
+  const { t } = useTranslation('staples');
+  const staple = useStapleToggle(ingredientId, name, onToggled);
 
   return (
     <IconButton
-      label={t(staple ? 'toggle.remove' : 'toggle.add', { name })}
-      aria-pressed={staple !== undefined}
+      label={t(staple.isStaple ? 'toggle.remove' : 'toggle.add', { name })}
+      aria-pressed={staple.isStaple}
       tone="plain"
       size={40}
-      ariaDisabled={busy || staples.data === undefined}
-      onClick={() => {
-        const options = {
-          onSuccess: () => {
-            report(null);
-            onToggled?.(!staple);
-          },
-          onError: (error: unknown) => report(translateApiError(t, error)),
-        };
-        if (staple) remove.mutate(staple.id, options);
-        else add.mutate({ ingredientId, name }, options);
-      }}
+      ariaDisabled={!staple.ready}
+      onClick={staple.toggle}
     >
-      {staple ? <StarFillIcon size={20} /> : <StarIcon size={20} />}
+      {staple.isStaple ? <StarFillIcon size={20} /> : <StarIcon size={20} />}
     </IconButton>
   );
 }

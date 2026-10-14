@@ -39,10 +39,12 @@ export function useAddBatchForm({
   const { t, i18n } = useTranslation();
   const addBatch = useAddBatch(i18n.language);
 
-  const [seed] = useState(() =>
+  const [startingIngredient] = useState(() =>
     start && 'ingredient' in start ? start.ingredient : null,
   );
-  const [ingredient, setIngredient] = useState<PickedIngredient | null>(seed);
+  const [ingredient, setIngredient] = useState<PickedIngredient | null>(
+    startingIngredient,
+  );
   const [typed, setTyped] = useState(() =>
     start === undefined
       ? ''
@@ -72,12 +74,18 @@ export function useAddBatchForm({
 
   // A starting Ingredient has only its id and name: its Catalog defaults come from searching its
   // name, which the search field has already asked for, and apply as if it had been picked there.
-  const seedLookup = useCatalogSearch(seed?.name ?? '', i18n.language);
-  const seedResult = seedLookup.data?.find((result) => result.id === seed?.id);
+  const startingLookup = useCatalogSearch(
+    startingIngredient?.name ?? '',
+    i18n.language,
+  );
+  const startingDefaults = startingLookup.data?.find(
+    (result) => result.id === startingIngredient?.id,
+  );
   useEffect(() => {
-    if (seedResult && ingredient === seed) selectIngredient(seedResult);
+    if (startingDefaults && ingredient === startingIngredient)
+      selectIngredient(startingDefaults);
     // Once, when the lookup lands; not again after the Member has picked or typed something else.
-  }, [seedResult]);
+  }, [startingDefaults]);
 
   const changeQuery = (query: string) => {
     setTyped(query);
