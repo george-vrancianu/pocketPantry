@@ -178,7 +178,13 @@ export function IngredientsTab({
         autoFocus={state.searchKey > 0}
         inputRef={searchRef}
         defaultQuery={query}
-        defaultOpen
+        // The chips show from the first paint and after a tab switch, before the field is focused.
+        defaultOpen={!pick}
+        rowTag={(row) =>
+          unchecked.some((line) => isOnList(line, row))
+            ? t('search.onList')
+            : null
+        }
         selected={pick?.kind === 'catalog' ? pick.result : null}
         onSelect={(result) => choose({ kind: 'catalog', result }, result.name)}
         onUseTyped={(name) => choose({ kind: 'typed', name }, name)}

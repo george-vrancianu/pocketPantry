@@ -1480,6 +1480,7 @@ describe('ShoppingPage', () => {
         const user = userEvent.setup();
         const { dialog, option } = await findParmesanRow(user);
 
+        expect(within(option).queryByText('On list')).toBeNull();
         await user.click(option);
         expect(amountHint(dialog)).toBeNull();
       });
@@ -1623,6 +1624,7 @@ describe('ShoppingPage', () => {
         const row = await within(dialog).findByRole('option', {
           name: /Use “Dragon fruit” as typed/,
         });
+        expect(within(row).getByText('On list')).toBeVisible();
         await user.click(row);
         expect(
           within(dialog).getByText(
@@ -1646,6 +1648,7 @@ describe('ShoppingPage', () => {
         const user = userEvent.setup();
         const { dialog, option } = await findParmesanRow(user);
 
+        expect(within(option).getByText('On list')).toBeVisible();
         expect(amountHint(dialog)).toBeNull();
         await user.click(option);
         expect(

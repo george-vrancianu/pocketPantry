@@ -54,6 +54,7 @@
     }
   },
   "search": {
+    "onList": "On list",
     "onListHint": "Already on your list. Adding again increases the amount.",
     "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",
     "onListOtherUnits": "Already on your list in other units. This adds a separate line.",

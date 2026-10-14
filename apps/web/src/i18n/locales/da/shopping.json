@@ -53,6 +53,7 @@
     }
   },
   "search": {
+    "onList": "På listen",
     "onListHint": "Allerede på din liste. Hvis du tilføjer igen, øges mængden.",
     "onListOtherUnit": "Allerede på din liste i {{unit}}; det tilføjer en separat linje.",
     "onListOtherUnits": "Allerede på din liste i andre enheder; det tilføjer en separat linje.",

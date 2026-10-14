@@ -47,10 +47,18 @@ export type CatalogSearchProps = {
   onUseTyped?: (name: string) => void;
   /** `shared` searches the shared Catalog only (Admin); default `family`. */
   scope?: 'family' | 'shared';
+  /**
+   * A short pill for a row (for example "On list"), or null for none. Called
+   * for each result (with its id) and for the Use as typed row (id null).
+   */
+  rowTag?: (row: {
+    ingredientId: string | null;
+    name: string;
+  }) => string | null;
+  /** Show the empty state before the field is focused (it then stays until typing, a pick or Escape). */
+  defaultOpen?: boolean;
   /** The text the field starts with, for a host that keeps it across remounts. */
   defaultQuery?: string;
-  /** Start with the empty state showing, before the field has been focused. */
-  defaultOpen?: boolean;
   /** The search input, for a host that moves focus into it. */
   inputRef?: RefObject<HTMLInputElement | null>;
 };
@@ -72,6 +80,7 @@ export function CatalogSearch({
   onUseTyped,
   scope = 'family',
   defaultQuery = '',
+  rowTag,
   defaultOpen = false,
   inputRef: hostInputRef,
 }: CatalogSearchProps) {
@@ -119,7 +128,6 @@ export function CatalogSearch({
     typed !== '' &&
     search.active &&
     search.data !== undefined &&
-    !search.isSearching &&
     !failed &&
     !results.some(
       (result) => normalizeName(result.name) === normalizeName(typed),
@@ -201,9 +209,11 @@ export function CatalogSearch({
     } else if (
       event.key === 'Enter' &&
       useTypedOffered &&
+      !search.isSearching &&
       results.length === 0
     ) {
-      // The only option left is "Use as typed" (a result needs an arrow first).
+      // The only option left is "Use as typed" (a result needs an arrow first),
+      // once the results for what is typed have arrived.
       event.preventDefault();
       pick(0);
     } else if (event.key === 'Escape' && open && (typed !== '' || emptyShown)) {
@@ -229,18 +239,7 @@ export function CatalogSearch({
     showPanel && typed !== '' && (expanded || firstLoad || failed || noMatch);
 
   return (
-    <Box
-      sx={{ position: 'relative' }}
-      onBlur={(event) => {
-        // Leaving the whole search closes the empty state, not a pick in progress.
-        if (
-          typed === '' &&
-          !event.currentTarget.contains(event.relatedTarget)
-        ) {
-          setOpen(false);
-        }
-      }}
-    >
+    <Box sx={{ position: 'relative' }}>
       <SearchField
         inputRef={inputRef}
         label={name}
@@ -307,6 +306,7 @@ export function CatalogSearch({
                 active={index === active}
                 dimmed={refetching && !reducedMotion && index !== active}
                 first={index === 0}
+                tag={rowTag?.({ ingredientId: result.id, name: result.name })}
                 onSelect={() => select(result)}
               />
             ))}
@@ -316,6 +316,7 @@ export function CatalogSearch({
               name={typed}
               active={results.length === active}
               first={results.length === 0}
+              tag={rowTag?.({ ingredientId: null, name: typed })}
               onSelect={useTyped}
             />
           ) : null}

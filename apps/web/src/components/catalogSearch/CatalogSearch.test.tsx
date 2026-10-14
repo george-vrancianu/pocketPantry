@@ -816,6 +816,44 @@ describe('CatalogSearch host extension points (#266)', () => {
       expect(await screen.findByText('Gone from your Pantry')).toBeVisible();
     });
 
+    it('stays when focus leaves the field without typing', async () => {
+      stubControlled();
+      renderWithProviders(
+        <div>
+          <CatalogSearch
+            onSelect={() => {}}
+            emptyState={<p>Gone from your Pantry</p>}
+          />
+          <button type="button">Elsewhere</button>
+        </div>,
+      );
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('combobox'));
+      await screen.findByText('Gone from your Pantry');
+
+      await user.click(screen.getByRole('button', { name: 'Elsewhere' }));
+      expect(screen.getByRole('combobox')).not.toHaveFocus();
+
+      expect(screen.getByText('Gone from your Pantry')).toBeVisible();
+    });
+
+    it('closes on Escape', async () => {
+      stubControlled();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={() => {}}
+          emptyState={<p>Gone from your Pantry</p>}
+        />,
+      );
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('combobox'));
+      await screen.findByText('Gone from your Pantry');
+
+      await user.keyboard('{Escape}');
+
+      expect(screen.queryByText('Gone from your Pantry')).toBeNull();
+    });
+
     it('lets a button inside it be clicked, though that takes focus off the field', async () => {
       stubControlled();
       const onTile = vi.fn();
@@ -935,6 +973,71 @@ describe('CatalogSearch host extension points (#266)', () => {
       await screen.findAllByTestId('search-skeleton');
 
       expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    });
+
+    it('stays while the next results load, and Enter waits for them', async () => {
+      const search = stubControlled();
+      const onUseTyped = vi.fn();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'zzz');
+      await search.respond('zzz', []);
+      await useTyped('zzz');
+
+      await user.keyboard('z');
+      await vi.waitFor(() => expect(search.asked('zzzz')).toBe(true));
+      expect(
+        screen.getByRole('option', { name: /Use “zzzz” as typed/ }),
+      ).toBeVisible();
+      await user.keyboard('{Enter}');
+      expect(onUseTyped).not.toHaveBeenCalled();
+
+      await search.respond('zzzz', []);
+      await vi.waitFor(() =>
+        expect(screen.queryByTestId('search-spinner')).not.toBeInTheDocument(),
+      );
+      await user.keyboard('{Enter}');
+      expect(onUseTyped).toHaveBeenCalledWith('zzzz');
+    });
+
+    it('can tag rows through rowTag: results and the typed row', async () => {
+      const search = stubControlled();
+      renderWithProviders(
+        <CatalogSearch
+          onSelect={() => {}}
+          onUseTyped={() => {}}
+          rowTag={({ ingredientId }) =>
+            ingredientId ? 'On list' : 'Typed tag'
+          }
+        />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+
+      const [row, typedRow] = await screen.findAllByRole('option');
+      expect(within(row).getByText('On list')).toBeVisible();
+      expect(row).toHaveAccessibleName(/On list/);
+      expect(within(typedRow).getByText('Typed tag')).toBeVisible();
+    });
+
+    it('shows no tag when rowTag returns null', async () => {
+      const search = stubControlled();
+      renderWithProviders(
+        <CatalogSearch onSelect={() => {}} rowTag={() => null} />,
+      );
+      const user = userEvent.setup();
+
+      await typeQuery(user, 'che');
+      await search.respond('che', [cheddar]);
+
+      const row = await screen.findByRole('option');
+      expect(row).toHaveAccessibleName(/^Cheddar/);
+      expect(within(row).queryByText('On list')).toBeNull();
     });
 
     it('is picked by Enter when it is the only option', async () => {

@@ -57,6 +57,7 @@
     }
   },
   "search": {
+    "onList": "Pe listă",
     "onListHint": "Este deja pe listă. Dacă o adaugi din nou, cantitatea crește.",
     "onListOtherUnit": "Este deja pe listă în {{unit}}; se adaugă o linie separată.",
     "onListOtherUnits": "Este deja pe listă în alte unități; se adaugă o linie separată.",
