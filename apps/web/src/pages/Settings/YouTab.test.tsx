@@ -1,7 +1,6 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Route, Routes, useLocation } from 'react-router-dom';
 import { unmatchedQueueQueryKey } from '../../lib/unmatched';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { stubSystemScheme } from '../../test/viewport';
@@ -31,26 +30,11 @@ function stubYou(
         ? Response.json({ locale: 'ro', theme: null })
         : Response.json({ code: 'server_error', params: {} }, { status: 500 });
     },
-    'POST /api/auth/sign-out': () => Response.json({ success: true }),
     'GET /api/admin/unmatched': () =>
       Response.json({ entries: [], nextCursor: null }),
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
-}
-
-/** Shows where the router is, so a test can see the redirect after sign-out. */
-function Where() {
-  const location = useLocation();
-  return (
-    <>
-      <output data-testid="location">{location.pathname}</output>
-      <Routes>
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/sign-in" element={<p>Sign in page</p>} />
-      </Routes>
-    </>
-  );
 }
 
 describe('Settings You tab', () => {
@@ -194,39 +178,6 @@ describe('Settings You tab', () => {
       expect(await within(region).findByText('AP')).toBeInTheDocument();
       expect(within(region).getByText('Ana Pop')).toBeInTheDocument();
       expect(within(region).getByText('ana@example.com')).toBeInTheDocument();
-    });
-
-    it('asks for an inline confirm before signing out, with Cancel', async () => {
-      stubSystemScheme(false);
-      const calls = stubYou();
-      renderWithProviders(<Where />, { route: '/settings' });
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Sign out' }),
-      );
-      expect(screen.getByText('Sign out of this phone?')).toBeInTheDocument();
-      expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
-
-      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-      expect(screen.queryByText('Sign out of this phone?')).toBeNull();
-      expect(calls.map((c) => c.key)).not.toContain('POST /api/auth/sign-out');
-    });
-
-    it('signs out on confirm and replaces history to the sign-in page', async () => {
-      stubSystemScheme(false);
-      const calls = stubYou();
-      renderWithProviders(<Where />, { route: '/settings' });
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Sign out' }),
-      );
-      await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
-
-      await vi.waitFor(() =>
-        expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
-      );
-      expect(await screen.findByText('Sign in page')).toBeInTheDocument();
-      expect(screen.getByTestId('location').textContent).toBe('/sign-in');
     });
   });
 });

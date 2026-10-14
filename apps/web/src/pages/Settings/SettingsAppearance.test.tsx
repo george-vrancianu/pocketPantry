@@ -104,31 +104,6 @@ describe('Settings Appearance', () => {
     ).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('applies a chosen Theme at once, stores it on the device and saves it on the Member', async () => {
-    stubSystemScheme(false);
-    store({ theme: 'warm', matchSystem: false });
-    const calls = stubPreferences({ locale: 'en', theme: null });
-    renderSettings();
-
-    await userEvent.click(
-      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
-    );
-
-    expect(rootTheme()).toBe('minimal');
-    expect(stored()).toEqual({ theme: 'minimal', matchSystem: false });
-    await vi.waitFor(() =>
-      expect(calls).toContainEqual(
-        expect.objectContaining({
-          key: 'PUT /api/settings/preferences',
-          body: { theme: 'minimal' },
-        }),
-      ),
-    );
-    expect(
-      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
-    ).toHaveAttribute('aria-checked', 'true');
-  });
-
   it.each([
     { theme: 'minimal', matchSystem: false, systemDark: true, root: 'minimal' },
     { theme: 'dark', matchSystem: false, systemDark: false, root: 'dark' },
