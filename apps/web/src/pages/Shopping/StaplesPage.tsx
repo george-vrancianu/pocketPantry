@@ -1,6 +1,5 @@
 import {
   Alert,
-  Box,
   Link,
   ListRow,
   Spinner,
@@ -9,6 +8,7 @@ import {
   Typography,
   useToast,
   type SwipeRowHandle,
+  Card,
 } from '@pocket-pantry/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,7 +27,6 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval';
 import { useRowHint, type RowHint } from '../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../lib/useSwipeRowLabels';
 import { RowHintNote } from '../../components/RowHintNote';
-import { radius } from '../../lib/themeVars';
 
 /** The Family's Staples: add by Catalog search, set a preferred quantity and unit, or remove. */
 export function StaplesPage() {
@@ -90,19 +89,11 @@ export function StaplesPage() {
           </Typography>
         ) : null}
         {visible && visible.length > 0 ? (
-          <Box
+          <Card
             component="ul"
+            variant="list"
             aria-label={t('staples:listLabel')}
-            sx={{
-              listStyle: 'none',
-              m: 0,
-              p: 0,
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: radius.card,
-              overflow: 'hidden',
-            }}
+            sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
           >
             {visible.map((staple, index) => (
               <StapleRow
@@ -116,7 +107,7 @@ export function StaplesPage() {
                 onRemove={() => removal.remove(staple.id, staple.name)}
               />
             ))}
-          </Box>
+          </Card>
         ) : null}
       </Stack>
     </>

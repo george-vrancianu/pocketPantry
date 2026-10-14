@@ -1,4 +1,4 @@
-import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Link, Stack, Typography, tokens, Card } from '@pocket-pantry/ui';
 import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PairingKind } from '../../../lib/recipeVocabulary';
@@ -75,15 +75,7 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
   if (pairings.length === 0) return null;
   return (
     <Section title={t('sections.pairings')}>
-      <Box
-        sx={{
-          px: '16px',
-          py: '6px',
-          bgcolor: tokens.color.surface,
-          border: `1px solid ${tokens.color.line}`,
-          borderRadius: radius.card,
-        }}
-      >
+      <Card variant="list" sx={{ py: '6px' }}>
         {KINDS.map((kind, index) => {
           const items = pairings.filter((p) => p.kind === kind);
           if (items.length === 0) return null;
@@ -113,7 +105,7 @@ function PairingsSection({ pairings }: { pairings: DetailPairing[] }) {
             </div>
           );
         })}
-      </Box>
+      </Card>
     </Section>
   );
 }

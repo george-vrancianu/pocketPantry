@@ -6,6 +6,7 @@ import {
   IconButton,
   tokens,
   usePrefersReducedMotion,
+  Card,
 } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -207,18 +208,11 @@ export function IngredientList({
   'aria-label': label,
 }: Props) {
   return (
-    <Box
+    <Card
       component="ul"
+      variant="list"
       aria-label={label}
-      sx={{
-        listStyle: 'none',
-        m: 0,
-        p: 0,
-        overflow: 'hidden',
-        bgcolor: tokens.color.surface,
-        border: `1px solid ${tokens.color.line}`,
-        borderRadius: radius.card,
-      }}
+      sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
     >
       {lines.map((line) => (
         <IngredientRow
@@ -234,6 +228,6 @@ export function IngredientList({
           onAdd={() => onAddLine(line)}
         />
       ))}
-    </Box>
+    </Card>
   );
 }
