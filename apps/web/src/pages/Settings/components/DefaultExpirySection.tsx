@@ -11,13 +11,15 @@ import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
+  familySettingsQueryKey,
   useCategoryOptions,
   useFamilySettings,
   useRemoveExpiryOverride,
 } from '../../../lib/settings';
-import { lookupCategory, type CategoryRef } from '../defaultExpiry';
 import { useDeferredRemoval } from '../../../lib/useDeferredRemoval';
+import { lookupCategory } from '../defaultExpiry';
 import { DefaultExpirySheet, type SheetStart } from './DefaultExpirySheet';
+import { SectionHeading } from './SectionHeading';
 
 type SheetState = { open: boolean; start: SheetStart; session: number };
 
@@ -32,7 +34,7 @@ export function DefaultExpirySection() {
   const categories = useCategoryOptions(i18n.language);
   const removeOverride = useRemoveExpiryOverride();
   const removal = useDeferredRemoval(
-    ['settings', 'family'],
+    familySettingsQueryKey,
     removeOverride.mutateAsync,
   );
 
@@ -63,27 +65,16 @@ export function DefaultExpirySection() {
     else addButton.current?.focus();
   };
 
-  const useCatalog = (category: CategoryRef) => {
-    removal.remove(
-      category.id,
-      category.name,
-      t('defaultExpiry.removed', { name: category.name }),
-    );
-  };
+  /** Remove the override with Undo, so the category falls back to its Catalog default. */
+  const revertToCatalog = ({ id, name }: { id: string; name: string }) =>
+    removal.remove(id, name, t('defaultExpiry.removed', { name }));
 
   const error = settings.error ? translateApiError(t, settings.error) : null;
   const headingId = `${id}-heading`;
 
   return (
     <Stack component="section" spacing={2} aria-labelledby={headingId}>
-      <Typography
-        id={headingId}
-        variant="sectionLabel"
-        component="h2"
-        color="text.secondary"
-      >
-        {t('defaultExpiry.title')}
-      </Typography>
+      <SectionHeading id={headingId} title={t('defaultExpiry.title')} />
       <Typography variant="meta" color="text.secondary">
         {t('defaultExpiry.hint')}
       </Typography>
@@ -175,11 +166,10 @@ export function DefaultExpirySection() {
                   })}
                   size={40}
                   onClick={() =>
-                    removal.remove(
-                      override.categoryId,
-                      override.name,
-                      t('defaultExpiry.removed', { name: override.name }),
-                    )
+                    revertToCatalog({
+                      id: override.categoryId,
+                      name: override.name,
+                    })
                   }
                 >
                   <CloseIcon size={18} />
@@ -211,7 +201,7 @@ export function DefaultExpirySection() {
         overrides={overrides}
         onClose={closeSheet}
         onExited={focusOpener}
-        onUseCatalog={useCatalog}
+        onUseCatalog={revertToCatalog}
       />
     </Stack>
   );

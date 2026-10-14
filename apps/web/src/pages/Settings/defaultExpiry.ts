@@ -19,12 +19,28 @@ export function startingDays(
 
 export type CategoryRef = {
   id: string;
+  /** For a parent category, the parent's name. */
   name: string;
   parentName: string;
   /** A parent category: the override covers every category without its own. */
   wholeParent: boolean;
   catalogDays: number | null;
 };
+
+/** The parent itself (`leaf` omitted), or one of its leaves. */
+function categoryRef(
+  parent: CategoryOption,
+  leaf?: CategoryOption,
+): CategoryRef {
+  const category = leaf ?? parent;
+  return {
+    id: category.id,
+    name: category.name,
+    parentName: parent.name,
+    wholeParent: leaf === undefined,
+    catalogDays: category.catalogDays,
+  };
+}
 
 /** The category with this id, leaf or parent, with the parent it sits under. */
 export function lookupCategory(
@@ -33,38 +49,16 @@ export function lookupCategory(
 ): CategoryRef | null {
   if (!options) return null;
   for (const parent of options.parents) {
-    if (parent.id === id) {
-      return {
-        id,
-        name: parent.name,
-        parentName: parent.name,
-        wholeParent: true,
-        catalogDays: parent.catalogDays,
-      };
-    }
+    if (parent.id === id) return categoryRef(parent);
     const leaf = parent.leaves.find((candidate) => candidate.id === id);
-    if (leaf) {
-      return {
-        id,
-        name: leaf.name,
-        parentName: parent.name,
-        wholeParent: false,
-        catalogDays: leaf.catalogDays,
-      };
-    }
+    if (leaf) return categoryRef(parent, leaf);
   }
   return null;
 }
 
-export type CategoryRow = {
-  id: string;
-  /** For "All {parent}", the parent's name. */
-  name: string;
-  parentName: string;
-  wholeParent: boolean;
+export type CategoryRow = CategoryRef & {
   /** The Family's override for this category, if any. */
   override: number | null;
-  catalogDays: number | null;
 };
 
 export type CategoryGroup = {
@@ -87,30 +81,19 @@ export function groupCategories(
   const matches = (text: string) =>
     needle === '' || normalizeName(text).includes(needle);
 
+  const row = (category: CategoryRef): CategoryRow => ({
+    ...category,
+    override: overrides[category.id] ?? null,
+  });
+
   const groups: CategoryGroup[] = [];
   for (const parent of options.parents) {
     const parentMatches = matches(parent.name);
     const rows: CategoryRow[] = [];
-    if (parentMatches) {
-      rows.push({
-        id: parent.id,
-        name: parent.name,
-        parentName: parent.name,
-        wholeParent: true,
-        override: overrides[parent.id] ?? null,
-        catalogDays: parent.catalogDays,
-      });
-    }
+    if (parentMatches) rows.push(row(categoryRef(parent)));
     for (const leaf of parent.leaves) {
       if (!parentMatches && !matches(leaf.name)) continue;
-      rows.push({
-        id: leaf.id,
-        name: leaf.name,
-        parentName: parent.name,
-        wholeParent: false,
-        override: overrides[leaf.id] ?? null,
-        catalogDays: leaf.catalogDays,
-      });
+      rows.push(row(categoryRef(parent, leaf)));
     }
     if (rows.length > 0) groups.push({ parent, rows });
   }
