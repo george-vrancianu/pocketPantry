@@ -1,6 +1,7 @@
 import Box, { type BoxProps } from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
+import { bodyFont, radius, themePalette } from '../theme/themeVars';
 
 export type TagTone = 'accent' | 'ok' | 'soon' | 'urgent';
 
@@ -16,7 +17,7 @@ export type TagProps = Omit<BoxProps, 'children'> & {
 };
 
 const pair = (tone: TagTone) => (theme: Theme) => {
-  const p = (theme.vars ?? theme).palette;
+  const p = themePalette(theme);
   const [backgroundColor, color] = {
     accent: [p.pp.accentTint, p.pp.accentOnTint],
     ok: [p.success.light, p.success.main],
@@ -38,8 +39,8 @@ export function Tag({ tone, icon, children, sx, ...props }: TagProps) {
           gap: '4px',
           px: '8px',
           py: '3px',
-          borderRadius: '999px',
-          fontFamily: 'var(--pp-body)',
+          borderRadius: radius.pill,
+          fontFamily: bodyFont,
           fontSize: 11,
           fontWeight: 700,
           letterSpacing: '.01em',

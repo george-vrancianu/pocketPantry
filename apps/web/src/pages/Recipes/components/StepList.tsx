@@ -1,7 +1,14 @@
-import { Box, ClockIcon, Stack, tokens, Card } from '@pocket-pantry/ui';
+import {
+  Box,
+  ClockIcon,
+  Stack,
+  tokens,
+  Card,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RecipeDetailStep, RecipeDetailTip } from '../../../lib/recipes';
-import { displayType, radius } from '../../../lib/themeVars';
 
 function formatTimer(seconds: number) {
   const minutes = Math.floor(seconds / 60);

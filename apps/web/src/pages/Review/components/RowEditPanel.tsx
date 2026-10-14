@@ -4,6 +4,8 @@ import {
   DeleteIcon,
   SwapIcon,
   tokens,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
@@ -23,7 +25,6 @@ import {
   QuantityUnitInput,
 } from './RowInputs';
 import { fieldId, panelId } from './layout';
-import { colour, radius } from '../../../lib/themeVars';
 
 type Props = {
   line: ReviewLine;
@@ -277,7 +278,7 @@ export function RowEditPanel({
               border: 0,
               borderRadius: radius.control,
               bgcolor: tokens.color.accent,
-              color: colour.accentInk,
+              color: color.accentInk,
               fontFamily: 'inherit',
               fontSize: 14,
               fontWeight: 700,

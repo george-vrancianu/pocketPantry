@@ -4,6 +4,8 @@ import {
   ChevronRightIcon,
   Typography,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import { useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +17,6 @@ import {
 import { useToday } from '../../lib/useToday';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpirySheet } from './ExpirySheet';
-import { nestedRadius, radius } from '../../lib/themeVars';
 
 export type ExpiryFieldProps = {
   /** The summary row's id (the label above points at it). */

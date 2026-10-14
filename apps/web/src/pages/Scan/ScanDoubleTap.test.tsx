@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scanGuide as guide } from '../../test/scan';
-import { paintedColour } from '../../test/colour';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { ScanPage } from './ScanPage';
 

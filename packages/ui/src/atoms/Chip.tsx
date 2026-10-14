@@ -4,6 +4,7 @@ import type { Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { focusRing } from '../theme/focusRing';
 import { CloseIcon } from './icons';
+import { bodyFont, border, radius, themePalette } from '../theme/themeVars';
 
 export type ChipProps = Omit<ButtonBaseProps, 'children' | 'color'> & {
   label: ReactNode;
@@ -21,7 +22,7 @@ export type ChipProps = Omit<ButtonBaseProps, 'children' | 'color'> & {
 
 /** Handoff section 4 Chip: 36 high, radius `r-chip`, `surface` + `line`; on is `accent-tint` with no border. */
 const pill = (selected: boolean | undefined) => (theme: Theme) => {
-  const p = (theme.vars ?? theme).palette;
+  const p = themePalette(theme);
   return {
     display: 'inline-flex',
     alignItems: 'center',
@@ -29,13 +30,13 @@ const pill = (selected: boolean | undefined) => (theme: Theme) => {
     gap: '6px',
     height: 36,
     boxSizing: 'border-box',
-    borderRadius: 'var(--pp-r-chip)',
-    borderWidth: 'var(--pp-bw)',
+    borderRadius: radius.chip,
+    borderWidth: border.width,
     borderStyle: 'solid',
     borderColor: selected ? 'transparent' : p.pp.line,
     backgroundColor: selected ? p.pp.accentTint : p.background.paper,
     color: selected ? p.pp.accentOnTint : p.text.primary,
-    fontFamily: 'var(--pp-body)',
+    fontFamily: bodyFont,
     fontSize: 13.5,
     fontWeight: 600,
     whiteSpace: 'nowrap',
@@ -115,7 +116,7 @@ export function Chip({
             gap: '6px',
             pl: icon ? '10px' : '12px',
             pr: '4px',
-            borderRadius: 'var(--pp-r-chip)',
+            borderRadius: radius.chip,
             font: 'inherit',
             color: 'inherit',
           },
@@ -131,12 +132,12 @@ export function Chip({
         onClick={onDismiss}
         sx={[
           (theme) => {
-            const p = (theme.vars ?? theme).palette;
+            const p = themePalette(theme);
             return {
               height: '100%',
               pl: '4px',
               pr: '12px',
-              borderRadius: '0 var(--pp-r-chip) var(--pp-r-chip) 0',
+              borderRadius: `0 ${radius.chip} ${radius.chip} 0`,
               color: p.text.secondary,
               // The divider sits on the inner span so it stays short.
               '& > span': {

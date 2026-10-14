@@ -69,7 +69,7 @@ export function DashboardPage() {
         <Box>
           <Alert severity="error">{translateApiError(t, layout.error)}</Alert>
           <Button
-            variant="text"
+            variant="ghost"
             onClick={() => void layout.refetch()}
             sx={{ mt: 1 }}
           >

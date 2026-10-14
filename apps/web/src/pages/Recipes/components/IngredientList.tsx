@@ -7,6 +7,8 @@ import {
   tokens,
   usePrefersReducedMotion,
   Card,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +16,6 @@ import { formatAmount } from '../../../lib/amount';
 import type { Unit } from '../../../lib/catalog';
 import type { PantryLine, RecipeDetailLine } from '../../../lib/recipes';
 import { LineStatusPill } from './PantryStatus';
-import { nestedRadius, radius } from '../../../lib/themeVars';
 
 type Props = {
   lines: RecipeDetailLine[];

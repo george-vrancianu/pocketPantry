@@ -1,4 +1,12 @@
-import { Box, ClockIcon, IngredientsScanIcon, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  ClockIcon,
+  IngredientsScanIcon,
+  tokens,
+  color,
+  displayType,
+  radius,
+} from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -6,7 +14,6 @@ import type { CookTonightCard } from '../../../lib/cookTonight';
 import { totalMinutes } from '../../../lib/recipes';
 import { bleedSx } from './bleed';
 import { SectionLabel } from './SectionLabel';
-import { colour, displayType, radius } from '../../../lib/themeVars';
 
 /** "You can make this": a carousel of tiles for the Recipes the Family Can Make tonight. */
 export function CanMakeStrip({ cards }: { cards: CookTonightCard[] }) {
@@ -77,7 +84,7 @@ function Tile({ card }: { card: CookTonightCard }) {
         p: '12px 14px',
         borderRadius: radius.card,
         bgcolor: tokens.color.accent,
-        color: colour.accentInk,
+        color: color.accentInk,
         textDecoration: 'none',
         display: 'flex',
         flexDirection: 'column',

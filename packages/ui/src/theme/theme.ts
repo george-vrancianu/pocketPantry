@@ -14,7 +14,14 @@ import {
   type ThemeTokens,
 } from './themes';
 import { aisleTintCssVariables } from './aisleTints';
-import { tokens } from './tokens';
+import {
+  bodyFont,
+  border,
+  displayType,
+  palette,
+  radius,
+  themePalette,
+} from './themeVars';
 
 declare module '@mui/material/styles' {
   interface TypographyVariants {
@@ -70,8 +77,6 @@ declare module '@mui/material/Typography' {
     meta: true;
   }
 }
-
-const { radius } = tokens;
 
 /** One Theme's palette: the matching handoff tokens in MUI's standard keys, the rest under `pp`. */
 function schemePalette(id: ThemeId): PaletteOptions {
@@ -156,20 +161,13 @@ export function ppCssVariables(): Record<string, Record<string, string>> {
 
 /** An Alert's background and text: the Theme's ok, soon or urgent pair. */
 function statusPair(theme: Theme, key: 'success' | 'warning' | 'error') {
-  const { light, main } = (theme.vars ?? theme).palette[key];
+  const { light, main } = themePalette(theme)[key];
   return {
     backgroundColor: light,
     color: main,
     '& .MuiAlert-icon': { color: main },
   };
 }
-
-/** Display type follows the Theme's display face, weight and tracking. */
-const display = {
-  fontFamily: 'var(--pp-display)',
-  fontWeight: 'var(--pp-display-w)',
-  letterSpacing: 'var(--pp-display-ls)',
-} as const;
 
 export type ThemeOptions = {
   /** Component used when a button or link has an `href`, e.g. a router link. */
@@ -196,23 +194,23 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
     },
     defaultColorScheme: 'warm',
     breakpoints: { values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 } },
-    shape: { borderRadius: radius.input },
+    shape: { borderRadius: radius.control },
     typography: {
-      fontFamily: 'var(--pp-body)',
+      fontFamily: bodyFont,
       fontSize: 15,
       htmlFontSize: 16,
-      h1: { ...display, fontSize: 30, lineHeight: 1.05 },
-      h2: { ...display, fontSize: 28, lineHeight: 1.1 },
-      h3: { ...display, fontSize: 22, lineHeight: 1.15 },
-      h4: { ...display, fontSize: 20, lineHeight: 1.15 },
+      h1: { ...displayType, fontSize: 30, lineHeight: 1.05 },
+      h2: { ...displayType, fontSize: 28, lineHeight: 1.1 },
+      h3: { ...displayType, fontSize: 22, lineHeight: 1.15 },
+      h4: { ...displayType, fontSize: 20, lineHeight: 1.15 },
       body1: { fontSize: 15, fontWeight: 500, lineHeight: 1.4 },
       body2: { fontSize: 15, fontWeight: 600, lineHeight: 1.4 },
-      stat: { ...display, fontSize: 40, lineHeight: 1 },
+      stat: { ...displayType, fontSize: 40, lineHeight: 1 },
       meta: { fontSize: 13, fontWeight: 500, lineHeight: 1.4 },
       caption: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
       // Themes handoff section 4: 12/700 caps, .07 em, `muted`.
       sectionLabel: {
-        color: 'var(--mui-palette-text-secondary)',
+        color: palette('text-secondary'),
         fontSize: 12,
         fontWeight: 700,
         letterSpacing: '0.07em',
@@ -249,9 +247,9 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       MuiOutlinedInput: {
         styleOverrides: {
           root: ({ theme }) => {
-            const { pp } = (theme.vars ?? theme).palette;
+            const { pp } = themePalette(theme);
             return {
-              borderRadius: 'var(--pp-r-ctl)',
+              borderRadius: radius.control,
               backgroundColor: pp.fieldBg,
               minHeight: 50,
               fontWeight: 500,
@@ -261,14 +259,14 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
                 boxShadow: `0 0 0 3px ${pp.accentTint}`,
                 [`& .${outlinedInputClasses.notchedOutline}`]: {
                   borderColor: pp.accent,
-                  borderWidth: 'var(--pp-bw-field)',
+                  borderWidth: border.field,
                 },
               },
             };
           },
           notchedOutline: ({ theme }) => ({
-            borderColor: (theme.vars ?? theme).palette.pp.line,
-            borderWidth: 'var(--pp-bw-field)',
+            borderColor: themePalette(theme).pp.line,
+            borderWidth: border.field,
           }),
         },
       },
@@ -279,9 +277,9 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       MuiAlert: {
         styleOverrides: {
           root: ({ theme }) => {
-            const { pp } = (theme.vars ?? theme).palette;
+            const { pp } = themePalette(theme);
             return {
-              borderRadius: 'var(--pp-r-ctl)',
+              borderRadius: radius.control,
               fontWeight: 500,
               variants: [
                 ...(['success', 'warning', 'error'] as const).map(

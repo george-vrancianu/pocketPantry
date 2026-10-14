@@ -231,7 +231,7 @@ export function PlateRecipeSave({
       {save.error ? <Alert>{translateApiError(t, save.error)}</Alert> : null}
       <Stack direction="row" spacing={1}>
         <Button
-          variant="text"
+          variant="ghost"
           onClick={() => setIngredientIds(null)}
           disabled={save.isPending}
         >

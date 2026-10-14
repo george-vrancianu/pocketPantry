@@ -1,6 +1,5 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, displayType, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { displayType, radius } from '../../../lib/themeVars';
 
 export type Counts = { save: number; check: number; excluded: number };
 

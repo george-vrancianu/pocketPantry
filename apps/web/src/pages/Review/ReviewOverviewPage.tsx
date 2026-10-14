@@ -7,6 +7,8 @@ import {
   Spinner,
   Typography,
   tokens,
+  nestedRadius,
+  radius,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { readScans } from '../../lib/scanReads';
@@ -40,7 +42,6 @@ import {
   useScanSession,
   type SessionScan,
 } from '../../lib/scanSession';
-import { nestedRadius, radius } from '../../lib/themeVars';
 
 const MAX_CHIPS = 8;
 

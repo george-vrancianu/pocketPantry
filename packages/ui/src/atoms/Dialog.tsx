@@ -4,9 +4,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import type { ReactNode } from 'react';
 import { useBreakpointUp } from '../theme/useBreakpointUp';
-
-/** One step rounder than the Theme's cards, like the Sheet. */
-const RADIUS = 'calc(var(--pp-r-card) + 8px)';
+import { radius, shadow } from '../theme/themeVars';
 
 export type DialogProps = {
   open: boolean;
@@ -46,13 +44,13 @@ export function Dialog({
       slotProps={{
         paper: {
           sx: centred
-            ? { borderRadius: RADIUS, boxShadow: 'var(--pp-shadow-float)' }
+            ? { borderRadius: radius.sheet, boxShadow: shadow.float }
             : {
                 m: 0,
                 width: '100%',
                 maxHeight: '85dvh',
-                boxShadow: 'var(--pp-shadow-float)',
-                borderRadius: `${RADIUS} ${RADIUS} 0 0`,
+                boxShadow: shadow.float,
+                borderRadius: `${radius.sheet} ${radius.sheet} 0 0`,
               },
         },
       }}

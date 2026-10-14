@@ -7,6 +7,9 @@ import {
   Toggle,
   Typography,
   type ThemeId,
+  nestedRadius,
+  radius,
+  focusRing,
 } from '@pocket-pantry/ui';
 import { useId, useRef, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,8 +18,6 @@ import {
   useAppearance,
   useChooseTheme,
 } from '../../../lib/appearance';
-import { focusRing } from '../../../lib/focusRing';
-import { nestedRadius, radius } from '../../../lib/themeVars';
 
 const NEXT_KEYS = ['ArrowRight', 'ArrowDown'];
 const PREVIOUS_KEYS = ['ArrowLeft', 'ArrowUp'];
@@ -76,72 +77,76 @@ export function AppearanceCard() {
             const selected = theme === appearance.theme;
             const usedInDark = appearance.matchSystem && theme === 'dark';
             return (
-              <Stack key={theme} spacing={0.5} sx={{ minWidth: 0 }}>
+              <Box
+                key={theme}
+                component="button"
+                type="button"
+                ref={(node: HTMLButtonElement | null) => {
+                  tiles.current[theme] = node;
+                }}
+                role="radio"
+                aria-checked={selected}
+                // Named by the Theme alone; the dark-mode note is its description.
+                aria-labelledby={`${id}-name-${theme}`}
+                aria-describedby={usedInDark ? `${id}-used-in-dark` : undefined}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => choose(theme)}
+                onKeyDown={(event) => onKeyDown(event, theme)}
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'stretch',
+                  gap: 0.75,
+                  minWidth: 0,
+                  p: 0.75,
+                  borderWidth: 2,
+                  borderStyle: 'solid',
+                  borderColor: selected ? 'pp.accent' : 'pp.line',
+                  borderRadius: radius.control,
+                  bgcolor: 'transparent',
+                  color: 'inherit',
+                  font: 'inherit',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  ...focusRing,
+                }}
+              >
+                <ThemePreview theme={theme} />
                 <Box
-                  component="button"
-                  type="button"
-                  ref={(node: HTMLButtonElement | null) => {
-                    tiles.current[theme] = node;
-                  }}
-                  role="radio"
-                  aria-checked={selected}
-                  aria-describedby={usedInDark ? `${id}-dark` : undefined}
-                  tabIndex={selected ? 0 : -1}
-                  onClick={() => choose(theme)}
-                  onKeyDown={(event) => onKeyDown(event, theme)}
                   sx={{
                     display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                    gap: 0.75,
-                    p: 0.75,
-                    borderWidth: 2,
-                    borderStyle: 'solid',
-                    borderColor: selected ? 'pp.accent' : 'pp.line',
-                    borderRadius: radius.control,
-                    bgcolor: 'transparent',
-                    color: 'inherit',
-                    font: 'inherit',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    ...focusRing(2),
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 0.5,
+                    minHeight: 20,
                   }}
                 >
-                  <ThemePreview theme={theme} />
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 0.5,
-                      minHeight: 20,
-                    }}
+                  <Typography
+                    component="span"
+                    id={`${id}-name-${theme}`}
+                    sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}
                   >
-                    <Typography
+                    {t(`appearance.${theme}`)}
+                  </Typography>
+                  {selected ? (
+                    <Box
                       component="span"
-                      sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.2 }}
+                      sx={{ color: 'pp.accent', display: 'inline-flex' }}
                     >
-                      {t(`appearance.${theme}`)}
-                    </Typography>
-                    {selected ? (
-                      <Box
-                        component="span"
-                        sx={{ color: 'pp.accent', display: 'inline-flex' }}
-                      >
-                        <CheckIcon size={18} />
-                      </Box>
-                    ) : null}
-                  </Box>
+                      <CheckIcon size={18} />
+                    </Box>
+                  ) : null}
                 </Box>
                 {usedInDark ? (
                   <Typography
-                    id={`${id}-dark`}
+                    id={`${id}-used-in-dark`}
+                    component="span"
                     sx={{ fontSize: 12.5, color: 'text.secondary' }}
                   >
                     {t('appearance.usedInDark')}
                   </Typography>
                 ) : null}
-              </Stack>
+              </Box>
             );
           })}
         </Box>

@@ -9,11 +9,11 @@ import {
   WarningIcon,
   tokens,
   visuallyHidden,
+  radius,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import type { PantryLine, PantryMatch } from '../../../lib/recipes';
-import { radius } from '../../../lib/themeVars';
 
 /** Required, non-Basic lines the server would add (short or missing). */
 const addable = (line: PantryLine) =>

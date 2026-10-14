@@ -1,4 +1,4 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
@@ -9,7 +9,6 @@ import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { BatchDetail } from './BatchDetail';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   rollUp: PantryRow;

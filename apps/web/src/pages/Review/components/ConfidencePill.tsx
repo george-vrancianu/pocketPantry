@@ -1,32 +1,19 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Tag, type TagTone } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RowStatus } from '../../../lib/review';
-import { radius } from '../../../lib/themeVars';
 
-const TONE: Record<RowStatus, { bgcolor: string; color: string }> = {
-  low: { bgcolor: tokens.color.urgentBg, color: tokens.color.urgentFg },
-  qty: { bgcolor: tokens.color.soonBg, color: tokens.color.soonFg },
-  ok: { bgcolor: tokens.color.accentTint, color: tokens.color.accent },
+const TONE: Record<RowStatus, TagTone> = {
+  low: 'urgent',
+  qty: 'soon',
+  ok: 'accent',
 };
 
 /** The tablet's Încredere column: the status as words, beside the status icon, so colour is never the only signal. */
 export function ConfidencePill({ status }: { status: RowStatus }) {
   const { t } = useTranslation('review');
   return (
-    <Box
-      component="span"
-      sx={{
-        justifySelf: 'start',
-        px: '10px',
-        py: '3px',
-        borderRadius: radius.pill,
-        fontSize: 12,
-        fontWeight: 700,
-        whiteSpace: 'nowrap',
-        ...TONE[status],
-      }}
-    >
+    <Tag tone={TONE[status]} sx={{ justifySelf: 'start' }}>
       {t(`confidence.${status}`)}
-    </Box>
+    </Tag>
   );
 }

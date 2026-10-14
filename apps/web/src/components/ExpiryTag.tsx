@@ -1,12 +1,13 @@
-import { AlertIcon, Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
+import { AlertIcon, Box, Tag, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { ExpiryTagState } from '../lib/pantry';
-import { radius } from '../lib/themeVars';
 
-const TONES = {
-  urgent: { bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
-  soon: { bg: tokens.color.soonBg, fg: tokens.color.soonFg },
-  ok: { bg: tokens.color.okBg, fg: tokens.color.okFg },
+/** "No expiry": dashed and muted, so a missing date reads as deliberate rather than broken. */
+const NO_EXPIRY = {
+  bgcolor: 'transparent',
+  color: tokens.color.muted,
+  outline: `1px dashed ${tokens.color.muted}`,
+  outlineOffset: '-1px',
 } as const;
 
 type Props = {
@@ -38,38 +39,21 @@ export function ExpiryTag({ tag, decorative = false }: Props) {
       spoken = t('expiry.daysLong', { count: tag.days });
   }
 
-  const colours =
-    tag.tone === 'none'
-      ? {
-          bgcolor: 'transparent',
-          color: tokens.color.muted,
-          // Dashed, so a missing date reads as deliberate rather than broken.
-          outline: `1px dashed ${tokens.color.muted}`,
-          outlineOffset: '-1px',
-        }
-      : { bgcolor: TONES[tag.tone].bg, color: TONES[tag.tone].fg };
-
   return (
-    <Box
-      component="span"
+    <Tag
+      // The tone is overridden for "No expiry"; any Tag tone will do.
+      tone={tag.tone === 'none' ? 'ok' : tag.tone}
       aria-hidden={decorative ? true : undefined}
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        fontSize: 12,
-        fontWeight: 700,
-        px: '10px',
-        py: '4px',
-        borderRadius: radius.pill,
-        fontVariantNumeric: 'tabular-nums',
-        whiteSpace: 'nowrap',
-        ...colours,
-      }}
+      icon={
+        tag.kind === 'expired' ? (
+          <AlertIcon size={12} strokeWidth={2.2} />
+        ) : undefined
+      }
+      sx={[
+        { fontVariantNumeric: 'tabular-nums' },
+        tag.tone === 'none' ? NO_EXPIRY : {},
+      ]}
     >
-      {tag.kind === 'expired' ? (
-        <AlertIcon size={12} strokeWidth={2.2} />
-      ) : null}
       {spoken === null ? (
         label
       ) : (
@@ -80,6 +64,6 @@ export function ExpiryTag({ tag, decorative = false }: Props) {
           </Box>
         </>
       )}
-    </Box>
+    </Tag>
   );
 }

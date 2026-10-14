@@ -6,6 +6,7 @@ import type { Theme } from '@mui/material/styles';
 import { useId, type ChangeEvent } from 'react';
 import { focusRing } from '../theme/focusRing';
 import { CheckIcon } from './icons';
+import { radius, themePalette } from '../theme/themeVars';
 
 export type CheckboxProps = {
   label: string;
@@ -19,14 +20,14 @@ export type CheckboxProps = {
 /** Handoff section 4: a 24 box, radius `r-box`, 2 px `box` border; checked is an `accent` fill with an `accent-ink` tick. */
 function boxSx(checked: boolean) {
   return (theme: Theme) => {
-    const { pp } = (theme.vars ?? theme).palette;
+    const { pp } = themePalette(theme);
     const fill = checked ? pp.accent : 'transparent';
     return {
       width: 24,
       height: 24,
       p: 0,
       flex: '0 0 auto',
-      borderRadius: 'var(--pp-r-box)',
+      borderRadius: radius.box,
       border: '2px solid',
       borderColor: checked ? pp.accent : pp.box,
       backgroundColor: fill,

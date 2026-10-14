@@ -112,7 +112,7 @@ export function EatingMomentList({ moments, onCreate, onEdit }: Props) {
                 <ChevronDownIcon />
               </IconButton>
               <Button
-                variant="text"
+                variant="ghost"
                 aria-label={t('admin:eatingMoment.edit', { name })}
                 onClick={() => onEdit(moment.id)}
               >

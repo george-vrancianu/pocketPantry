@@ -3,6 +3,14 @@ import type { Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { focusRing } from '../theme/focusRing';
 import { PlusIcon } from './icons';
+import {
+  bodyFont,
+  border,
+  nestedRadius,
+  radius,
+  shadow,
+  themePalette,
+} from '../theme/themeVars';
 
 export type ButtonVariant =
   'primary' | 'secondary' | 'tonal' | 'ghost' | 'danger';
@@ -11,9 +19,9 @@ export type ButtonProps = Omit<ButtonBaseProps, 'color'> & {
   /**
    * Handoff section 4. `primary` is the Theme primary (ink-black in Minimal
    * crisp), `secondary` a bordered surface, `tonal` the accent tint, `ghost`
-   * accent text, `danger` the urgent pair. `text` is the old name of `ghost`.
+   * accent text, `danger` the urgent pair.
    */
-  variant?: ButtonVariant | 'text';
+  variant?: ButtonVariant;
   /** `sm` is 36 high for tight rows. */
   size?: 'md' | 'sm';
   /** `pill` is fully round, e.g. Done or Move N to Pantry. */
@@ -23,17 +31,15 @@ export type ButtonProps = Omit<ButtonBaseProps, 'color'> & {
   fullWidth?: boolean;
 };
 
-const palette = (theme: Theme) => (theme.vars ?? theme).palette;
-
 function variantSx(variant: ButtonVariant) {
   return (theme: Theme) => {
-    const p = palette(theme);
+    const p = themePalette(theme);
     switch (variant) {
       case 'primary':
         return {
           backgroundColor: p.primary.main,
           color: p.primary.contrastText,
-          boxShadow: 'var(--pp-shadow-btn)',
+          boxShadow: shadow.button,
           '&:hover': { filter: 'brightness(.94)' },
         };
       case 'secondary':
@@ -67,10 +73,10 @@ const press = {
 
 const base = {
   gap: '8px',
-  borderWidth: 'var(--pp-bw)',
+  borderWidth: border.width,
   borderStyle: 'solid',
   borderColor: 'transparent',
-  fontFamily: 'var(--pp-body)',
+  fontFamily: bodyFont,
   fontWeight: 700,
   whiteSpace: 'nowrap',
   '& svg': { flexShrink: 0 },
@@ -103,10 +109,10 @@ export function Button({
             shape === 'pill'
               ? '999px'
               : small
-                ? 'calc(var(--pp-r-ctl) - 2px)'
-                : 'var(--pp-r-ctl)',
+                ? nestedRadius(radius.control, 2)
+                : radius.control,
         },
-        variantSx(variant === 'text' ? 'ghost' : variant),
+        variantSx(variant),
         press,
         focusRing,
         ...(Array.isArray(sx) ? sx : [sx]),
@@ -134,10 +140,10 @@ export function AddButton({ sx, ...props }: AddButtonProps) {
           flexShrink: 0,
           width: 52,
           height: 52,
-          borderRadius: 'var(--pp-r-fab)',
-          backgroundColor: palette(theme).pp.accent,
-          color: palette(theme).pp.accentInk,
-          boxShadow: 'var(--pp-shadow-btn)',
+          borderRadius: radius.fab,
+          backgroundColor: themePalette(theme).pp.accent,
+          color: themePalette(theme).pp.accentInk,
+          boxShadow: shadow.button,
           '&:hover': { filter: 'brightness(.94)' },
           '&.Mui-disabled': { opacity: 0.45 },
         }),

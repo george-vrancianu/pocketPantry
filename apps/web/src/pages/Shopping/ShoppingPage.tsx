@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   Typography,
+  displayType,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +24,6 @@ import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
-import { displayType } from '../../lib/themeVars';
 
 export function ShoppingPage() {
   const { t } = useTranslation(['shopping', 'common']);

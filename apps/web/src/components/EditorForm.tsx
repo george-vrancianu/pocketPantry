@@ -77,13 +77,13 @@ export function EditorForm({
             ? (savingLabel ?? t('admin:common.saving'))
             : (saveLabel ?? t('admin:common.save'))}
         </Button>
-        <Button variant="text" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel}>
           {t('admin:common.cancel')}
         </Button>
       </Stack>
       {onDelete ? (
         <ConfirmAction
-          variant="text"
+          variant="ghost"
           label={t('admin:common.delete')}
           message={t('admin:common.deleteConfirm')}
           disabled={deleting}

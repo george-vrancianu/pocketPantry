@@ -56,7 +56,7 @@ describe('FieldUnit', () => {
     const unit = screen.getByRole('button', { name: 'Unit: kg' });
     expect(paintedColour(unit, 'background-color')).toBe('#EEF0EB');
     expect(getComputedStyle(unit).borderRadius).toBe(
-      'calc(var(--pp-r-ctl) - 5px)',
+      'max(2px, calc(var(--pp-r-ctl) - 5px))',
     );
   });
 });

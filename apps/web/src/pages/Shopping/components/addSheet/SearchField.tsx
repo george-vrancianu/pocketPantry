@@ -4,10 +4,12 @@ import {
   IconButton,
   SearchIcon,
   tokens,
+  border,
+  color,
+  radius,
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
-import { border, colour, radius } from '../../../../lib/themeVars';
 
 export type SearchFieldProps = {
   value: string;
@@ -33,7 +35,6 @@ export function SearchField({
   activeOptionId,
 }: SearchFieldProps) {
   const { t } = useTranslation('shopping');
-  const { color } = tokens;
   return (
     <Box
       sx={{
@@ -42,11 +43,11 @@ export function SearchField({
         display: 'flex',
         alignItems: 'center',
         borderRadius: radius.control,
-        border: `${border.field} solid ${color.line}`,
-        backgroundColor: colour.fieldBg,
+        border: `${border.field} solid ${tokens.color.line}`,
+        backgroundColor: color.fieldBg,
         '&:focus-within': {
-          borderColor: color.accent,
-          boxShadow: `0 0 0 3px ${color.accentTint}`,
+          borderColor: tokens.color.accent,
+          boxShadow: `0 0 0 3px ${tokens.color.accentTint}`,
         },
       }}
     >
@@ -55,7 +56,7 @@ export function SearchField({
           position: 'absolute',
           left: 14,
           display: 'flex',
-          color: color.muted,
+          color: tokens.color.muted,
         }}
       >
         <SearchIcon size={20} />
@@ -88,7 +89,7 @@ export function SearchField({
           font: 'inherit',
           fontSize: 16,
           fontWeight: 500,
-          color: color.ink,
+          color: tokens.color.ink,
         }}
       />
       {value ? (

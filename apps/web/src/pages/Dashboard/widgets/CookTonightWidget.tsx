@@ -1,4 +1,4 @@
-import { Box, RecipesIcon, tokens } from '@pocket-pantry/ui';
+import { Box, RecipesIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -8,7 +8,6 @@ import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
 import { localIso } from '../../../lib/pantry';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
-import { radius } from '../../../lib/themeVars';
 
 /**
  * How many cards a Widget has room for; the API ranks them, the Widget only cuts.

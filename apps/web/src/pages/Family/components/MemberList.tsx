@@ -43,7 +43,7 @@ export function MemberList({
             {!member.isOwner && isOwner ? (
               <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                 <ConfirmAction
-                  variant="text"
+                  variant="ghost"
                   label={t('makeOwner')}
                   triggerName={t('makeOwnerNamed', { name: member.name })}
                   message={t('makeOwnerConfirm', { name: member.name })}
@@ -51,7 +51,7 @@ export function MemberList({
                   onConfirm={() => onMakeOwner(member)}
                 />
                 <ConfirmAction
-                  variant="text"
+                  variant="ghost"
                   label={t('remove')}
                   triggerName={t('removeNamed', { name: member.name })}
                   message={t('removeConfirm', { name: member.name })}

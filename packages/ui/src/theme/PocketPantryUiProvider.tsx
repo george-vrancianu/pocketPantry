@@ -6,7 +6,8 @@ import { appearanceStorageManager } from './appearanceStorageManager';
 import { createPocketPantryTheme, ppCssVariables } from './theme';
 import { isThemeId } from './appearance';
 import { THEMES } from './themes';
-import { tokens, tokensAsCssVariables } from './tokens';
+import { focusRingStyle } from './focusRing';
+import { bodyFont, palette } from './themeVars';
 import './fonts.css';
 
 type Props = {
@@ -18,22 +19,17 @@ type Props = {
 const colourTransition = 'background-color 200ms, color 200ms';
 
 const globalStyles = {
-  ':root': tokensAsCssVariables(),
   ...ppCssVariables(),
   html: { transition: colourTransition },
   body: {
     margin: 0,
-    fontFamily: tokens.font.body,
+    fontFamily: bodyFont,
     // Warm editorial's Fraunces at SOFT 50; the other five families have no SOFT axis and ignore it.
     fontVariationSettings: "'SOFT' 50",
-    color: tokens.color.ink,
+    color: palette('text-primary'),
     transition: colourTransition,
   },
-  // Handoff section 10: 2 px accent outline, 2 px offset.
-  ':focus-visible': {
-    outline: `2px solid ${tokens.color.accent}`,
-    outlineOffset: 2,
-  },
+  ':focus-visible': focusRingStyle,
   // Also makes the Theme change instant.
   '@media (prefers-reduced-motion: reduce)': {
     '*, *::before, *::after': {

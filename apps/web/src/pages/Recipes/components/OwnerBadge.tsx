@@ -1,7 +1,6 @@
-import { Box, PeopleIcon, tokens } from '@pocket-pantry/ui';
+import { Box, PeopleIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RecipeOwner } from '../../../lib/recipes';
-import { radius } from '../../../lib/themeVars';
 
 /** The one place a Family-owned Recipe is marked, as a butter pill; renders nothing for the Catalog's. */
 export function OwnerBadge({ owner }: { owner: RecipeOwner }) {

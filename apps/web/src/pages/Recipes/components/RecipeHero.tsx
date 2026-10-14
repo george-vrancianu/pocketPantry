@@ -5,12 +5,13 @@ import {
   Stack,
   Typography,
   tokens,
+  displayType,
+  radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { totalMinutes, type RecipeDetail } from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
-import { displayType, radius } from '../../../lib/themeVars';
 
 /** The Recipe's eyebrow (Base Recipe link), title with Family pill, fact cells and archived notice. */
 export function RecipeHero({

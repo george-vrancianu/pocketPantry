@@ -107,7 +107,7 @@ export function RecipeStepsSection({
                         {tip.text}
                       </Typography>
                       <Button
-                        variant="text"
+                        variant="ghost"
                         aria-label={t('admin:recipe.steps.removeTip', {
                           n: tipIndex + 1,
                           step: number,
@@ -156,7 +156,7 @@ export function RecipeStepsSection({
                       >
                         {t('admin:recipe.steps.removeWithTips')}
                       </Button>
-                      <Button variant="text" onClick={() => setRemoving(null)}>
+                      <Button variant="ghost" onClick={() => setRemoving(null)}>
                         {t('admin:recipe.steps.keep')}
                       </Button>
                     </Stack>

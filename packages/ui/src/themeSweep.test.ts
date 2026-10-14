@@ -13,8 +13,8 @@ const sources = import.meta.glob<string>(
     '!./test/**',
     '!./theme/themes.ts',
     '!./theme/aisleTints.ts',
-    // The legacy shim, on its way out with the old radii.
-    '!./theme/tokens.ts',
+    // The helpers that name the Theme's variables.
+    '!./theme/themeVars.ts',
   ],
   { query: '?raw', import: 'default', eager: true },
 );
@@ -23,7 +23,7 @@ type Rule = { name: string; find: (line: string) => boolean };
 
 /** A `borderRadius` that follows the Theme, or is a shape (circle, pill, square). */
 const THEMED_RADIUS =
-  /^(?:[A-Z_]*RADIUS|0|'50%'|999|'999px'|`[^`]*(?:var\(--pp-r-|\$\{RADIUS\})[^`]*`|'[^']*var\(--pp-r-[^']*')$/;
+  /^(?:radius\.\w+|0|'50%'|999|'999px'|`[^`]*\$\{radius\.[^`]*`|\w+\(.*\))$/;
 
 const rules: Rule[] = [
   {
@@ -32,6 +32,11 @@ const rules: Rule[] = [
   },
   { name: 'rgb/hsl colour', find: (line) => /\b(?:rgba?|hsla?)\(/.test(line) },
   { name: 'old font name', find: (line) => /Bricolage|DM Sans/.test(line) },
+  {
+    // Typed helpers in theme/themeVars.ts name every Theme variable.
+    name: 'raw Theme variable',
+    find: (line) => /var\(--(?:pp|mui-palette)-/.test(line),
+  },
   { name: 'fixed radius token', find: (line) => /tokens\.radius/.test(line) },
   {
     name: 'fixed borderRadius',
@@ -49,8 +54,8 @@ function offences() {
   const found: string[] = [];
   for (const [path, source] of Object.entries(sources)) {
     source.split('\n').forEach((line, index) => {
-      // Comments may cite issues (#252); MUI's `shape` base radius is a number by design.
-      if (/^\s*(?:\*|\/\/)/.test(line) || /\bshape:/.test(line)) return;
+      // Comments may cite issues (#252).
+      if (/^\s*(?:\*|\/\/)/.test(line)) return;
       for (const rule of rules) {
         if (rule.find(line)) {
           found.push(`${path}:${index + 1} ${rule.name}: ${line.trim()}`);

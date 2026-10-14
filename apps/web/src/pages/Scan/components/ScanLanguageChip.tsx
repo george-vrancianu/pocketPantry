@@ -1,9 +1,8 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { Locale, ScanLanguage } from '../../../i18n/resources';
 import { glassControl, glassFocusRing } from './glass';
 import { scanLanguageOptions } from '../../../lib/scanLanguage';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   value: ScanLanguage;

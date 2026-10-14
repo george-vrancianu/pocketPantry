@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { paintedColour } from '../../../test/colour';
+import { paintedColour } from '@pocket-pantry/ui/test/colour';
 import { renderWithProviders } from '../../../test/render';
 import { PantryFilters } from './PantryFilters';
 

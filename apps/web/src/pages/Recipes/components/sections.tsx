@@ -1,4 +1,11 @@
-import { Box, Link, Stack, Typography, tokens } from '@pocket-pantry/ui';
+import {
+  Box,
+  Link,
+  Stack,
+  Typography,
+  tokens,
+  radius,
+} from '@pocket-pantry/ui';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
@@ -15,7 +22,6 @@ import { AddMissing, PantryHeading } from './PantryStatus';
 import { Section } from './Section';
 import { ServingsStepper } from './Servings';
 import { StepList, TipCallout } from './StepList';
-import { radius } from '../../../lib/themeVars';
 
 export type SectionProps = {
   recipe: RecipeDetail;

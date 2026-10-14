@@ -19,6 +19,7 @@ import {
   vibrate,
 } from './useRowGestures';
 import { visuallyHidden } from '../theme/visuallyHidden';
+import { nestedRadius, radius } from '../theme/themeVars';
 
 /** The confirmation counts down this long, then the row returns to idle. */
 const CONFIRM_MS = 6000;
@@ -720,7 +721,7 @@ function ConfirmButton({
         flexShrink: 0,
         height: 34,
         px: '14px',
-        borderRadius: 'calc(var(--pp-r-ctl) - 2px)',
+        borderRadius: nestedRadius(radius.control, 2),
         font: 'inherit',
         fontSize: 13.5,
         fontWeight: 700,

@@ -5,6 +5,8 @@ import {
   Typography,
   segmentedTabId,
   segmentedTabPanelId,
+  color,
+  displayType,
 } from '@pocket-pantry/ui';
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +21,6 @@ import {
   IngredientsTab,
   type IngredientsState,
 } from './IngredientsTab';
-import { colour, displayType } from '../../../../lib/themeVars';
 
 /** The Templates tab's sub-views: the list, the save view, or applying one template. */
 export type TemplatesView = 'list' | 'save' | { apply: string };
@@ -138,8 +139,8 @@ export function AddSheet({
             border: 0,
             borderRadius: 999,
             cursor: 'pointer',
-            backgroundColor: colour.primary,
-            color: colour.primaryInk,
+            backgroundColor: color.primary,
+            color: color.primaryInk,
             font: 'inherit',
             fontSize: 14,
             fontWeight: 700,
@@ -156,8 +157,8 @@ export function AddSheet({
                 display: 'grid',
                 placeItems: 'center',
                 borderRadius: 999,
-                backgroundColor: colour.primaryInk,
-                color: colour.primary,
+                backgroundColor: color.primaryInk,
+                color: color.primary,
                 fontSize: 11.5,
                 fontWeight: 700,
               }}

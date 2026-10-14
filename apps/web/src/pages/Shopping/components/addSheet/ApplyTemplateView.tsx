@@ -8,6 +8,10 @@ import {
   Typography,
   tokens,
   useToast,
+  color,
+  displayType,
+  radius,
+  insetFocusRing,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +22,6 @@ import {
   useShoppingList,
 } from '../../../../lib/shopping';
 import { BackButton } from './BackButton';
-import { focusRing } from '../../../../lib/focusRing';
 import { SheetFooter } from './SheetFooter';
 import {
   groupByAisle,
@@ -26,7 +29,6 @@ import {
   useTemplate,
   type TemplateLine,
 } from '../../../../lib/shoppingTemplates';
-import { colour, displayType, radius } from '../../../../lib/themeVars';
 
 export type ApplyTemplateViewProps = {
   templateId: string;
@@ -52,7 +54,6 @@ export function ApplyTemplateView({
   const apply = useApplyTemplate(i18n.language);
   // Only the lines the Member has flipped; every other line keeps its default.
   const [flipped, setFlipped] = useState<ReadonlySet<string>>(new Set());
-  const { color } = tokens;
 
   const back = (
     <BackButton
@@ -133,7 +134,7 @@ export function ApplyTemplateView({
         >
           {name}
         </Typography>
-        <Typography variant="meta" sx={{ color: color.muted }}>
+        <Typography variant="meta" sx={{ color: tokens.color.muted }}>
           {t('templates:apply.hint')}
         </Typography>
       </Box>
@@ -146,15 +147,15 @@ export function ApplyTemplateView({
           <Typography
             component="h4"
             variant="sectionLabel"
-            sx={{ mx: 0.5, mb: 1, color: color.muted }}
+            sx={{ mx: 0.5, mb: 1, color: tokens.color.muted }}
           >
             {group.title ?? t('templates:apply.unmatchedGroup')}
           </Typography>
           <Box
             sx={{
               borderRadius: radius.card,
-              border: `1px solid ${color.line}`,
-              backgroundColor: color.surface,
+              border: `1px solid ${tokens.color.line}`,
+              backgroundColor: tokens.color.surface,
             }}
           >
             {group.lines.map((line) => {
@@ -185,8 +186,8 @@ export function ApplyTemplateView({
                     alignItems: 'center',
                     gap: 1.5,
                     cursor: 'pointer',
-                    '& + &': { borderTop: `1px solid ${color.divider}` },
-                    ...focusRing(),
+                    '& + &': { borderTop: `1px solid ${tokens.color.divider}` },
+                    ...insetFocusRing,
                   }}
                 >
                   <Box
@@ -198,9 +199,9 @@ export function ApplyTemplateView({
                       display: 'grid',
                       placeItems: 'center',
                       borderRadius: radius.box,
-                      border: `2px solid ${on ? color.accent : colour.box}`,
-                      backgroundColor: on ? color.accent : 'transparent',
-                      color: colour.accentInk,
+                      border: `2px solid ${on ? tokens.color.accent : color.box}`,
+                      backgroundColor: on ? tokens.color.accent : 'transparent',
+                      color: color.accentInk,
                     }}
                   >
                     {on ? <CheckIcon size={14} /> : null}
@@ -214,7 +215,7 @@ export function ApplyTemplateView({
                         sx={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: color.muted,
+                          color: tokens.color.muted,
                         }}
                       >
                         {amount}

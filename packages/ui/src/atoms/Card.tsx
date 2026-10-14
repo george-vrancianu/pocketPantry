@@ -1,5 +1,6 @@
 import Box, { type BoxProps } from '@mui/material/Box';
 import type { Theme } from '@mui/material/styles';
+import { border, radius, shadow, themePalette } from '../theme/themeVars';
 
 export type CardProps = BoxProps & {
   /**
@@ -18,18 +19,18 @@ const padding = {
 
 /** The card's edge per Theme: hairline + warm shadow, hairline only, or borderless with an inner highlight. */
 const edge = (theme: Theme) => {
-  const { pp } = (theme.vars ?? theme).palette;
+  const { pp } = themePalette(theme);
   return {
     backgroundColor: pp.cardBg,
     // Longhands: jsdom drops shorthands that hold `var()`.
-    borderTopWidth: 'var(--pp-bw)',
-    borderRightWidth: 'var(--pp-bw)',
-    borderBottomWidth: 'var(--pp-bw)',
-    borderLeftWidth: 'var(--pp-bw)',
+    borderTopWidth: border.width,
+    borderRightWidth: border.width,
+    borderBottomWidth: border.width,
+    borderLeftWidth: border.width,
     borderStyle: 'solid',
     borderColor: pp.cardLine,
-    borderRadius: 'var(--pp-r-card)',
-    boxShadow: 'var(--pp-shadow-card)',
+    borderRadius: radius.card,
+    boxShadow: shadow.card,
     transition: 'background-color 200ms, color 200ms, box-shadow 200ms',
   };
 };

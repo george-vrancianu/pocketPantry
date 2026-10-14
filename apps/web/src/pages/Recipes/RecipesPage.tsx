@@ -5,6 +5,7 @@ import {
   Spinner,
   Stack,
   tokens,
+  displayType,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,6 @@ import { CanMakeStrip } from './components/CanMakeStrip';
 import { RecipeFilters } from './components/RecipeFilters';
 import { RecipeRow } from './components/RecipeRow';
 import { SectionLabel } from './components/SectionLabel';
-import { displayType } from '../../lib/themeVars';
 
 /** Browse Recipes: Base Recipes by default, Variants too once a search or filter is active. */
 export function RecipesPage() {

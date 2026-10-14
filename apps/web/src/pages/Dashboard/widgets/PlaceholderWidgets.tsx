@@ -1,9 +1,8 @@
-import { Box, tokens } from '@pocket-pantry/ui';
+import { Box, tokens, displayType, radius } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WidgetCard } from './WidgetCard';
 import type { WidgetProps } from './types';
-import { displayType, radius } from '../../../lib/themeVars';
 
 /** Static Widgets for features that do not exist yet, clearly marked as coming soon. */
 function Placeholder({
