@@ -16,6 +16,17 @@
     "retry": "Prøv igen",
     "clear": "Ryd søgning",
     "change": "Skift ingrediens",
-    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte"
+    "selectedLabel": "Ingrediens: {{name}}. Tryk på Backspace for at skifte",
+    "recentlyStocked": "Senest tilføjet",
+    "stockedInPantry": "i spisekammeret · tilføjet {{when}}",
+    "stockedGone": "tilføjet {{when}}",
+    "stockedInPantryLabel": "{{name}}, i spisekammeret, tilføjet {{when}}",
+    "stockedGoneLabel": "{{name}}, tilføjet {{when}}",
+    "when": {
+      "today": "i dag",
+      "days": "{{count}} d siden",
+      "weeks": "{{count}} u siden",
+      "months": "{{count}} md siden"
+    }
   }
 }

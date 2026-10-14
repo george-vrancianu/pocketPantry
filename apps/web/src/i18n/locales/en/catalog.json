@@ -16,6 +16,17 @@
     "retry": "Retry",
     "clear": "Clear search",
     "change": "Change ingredient",
-    "selectedLabel": "Ingredient: {{name}}. Press Backspace to change"
+    "selectedLabel": "Ingredient: {{name}}. Press Backspace to change",
+    "recentlyStocked": "Recently stocked",
+    "stockedInPantry": "in pantry · added {{when}}",
+    "stockedGone": "added {{when}}",
+    "stockedInPantryLabel": "{{name}}, in pantry, added {{when}}",
+    "stockedGoneLabel": "{{name}}, added {{when}}",
+    "when": {
+      "today": "today",
+      "days": "{{count}}d ago",
+      "weeks": "{{count}}w ago",
+      "months": "{{count}}mo ago"
+    }
   }
 }

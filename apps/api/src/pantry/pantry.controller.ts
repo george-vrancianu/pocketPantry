@@ -21,6 +21,9 @@ import {
   createBatchesBody,
   updateBatchBody,
   pantryLocaleQuery,
+  recentlyStockedQuery,
+  type RecentlyStockedQuery,
+  type RecentlyStockedView,
   scanQuery,
   type BatchView,
   type BatchIdParam,
@@ -31,12 +34,35 @@ import {
   type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
+import { RecentlyStockedService } from './recently-stocked.service';
 
 @ApiTags('pantry')
 @Controller('pantry')
 @UseGuards(AuthGuard)
 export class PantryController {
-  constructor(private readonly pantry: PantryService) {}
+  constructor(
+    private readonly pantry: PantryService,
+    private readonly recentlyStocked: RecentlyStockedService,
+  ) {}
+
+  @Get('recently-stocked')
+  @ApiOperation({
+    summary:
+      'The Ingredients the Family most recently added to the Pantry, newest first, in the Pantry or not',
+  })
+  async recentlyStockedList(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(recentlyStockedQuery))
+    query: RecentlyStockedQuery,
+  ): Promise<{ ingredients: RecentlyStockedView[] }> {
+    return {
+      ingredients: await this.recentlyStocked.list(
+        member.id,
+        query.locale,
+        query.limit,
+      ),
+    };
+  }
 
   @Get()
   @ApiOperation({

@@ -17,6 +17,17 @@
     "retry": "Reîncearcă",
     "clear": "Șterge căutarea",
     "change": "Schimbă ingredientul",
-    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba"
+    "selectedLabel": "Ingredient: {{name}}. Apasă Backspace pentru a schimba",
+    "recentlyStocked": "Adăugate recent",
+    "stockedInPantry": "în cămară · adăugat {{when}}",
+    "stockedGone": "adăugat {{when}}",
+    "stockedInPantryLabel": "{{name}}, în cămară, adăugat {{when}}",
+    "stockedGoneLabel": "{{name}}, adăugat {{when}}",
+    "when": {
+      "today": "azi",
+      "days": "acum {{count}} z",
+      "weeks": "acum {{count}} săpt.",
+      "months": "acum {{count}} luni"
+    }
   }
 }

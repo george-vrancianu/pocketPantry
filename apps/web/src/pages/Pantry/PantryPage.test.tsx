@@ -52,8 +52,19 @@ const parmesan: CatalogSearchResult = {
 const familySettings = (staleThresholdDays: number) => () =>
   Response.json({ staleThresholdDays, expiryOverrides: [] });
 
-function stubPantry(batches: Batch[], search: CatalogSearchResult[] = []) {
+type Stocked = CatalogSearchResult & {
+  lastStockedAt: string;
+  inPantry: boolean;
+};
+
+function stubPantry(
+  batches: Batch[],
+  search: CatalogSearchResult[] = [],
+  recentlyStocked: Stocked[] = [],
+) {
   const { fetchMock, calls } = stubApi({
+    'GET /api/pantry/recently-stocked': () =>
+      Response.json({ ingredients: recentlyStocked }),
     'GET /api/pantry': () => Response.json({ batches }),
     'GET /api/settings/family': familySettings(3),
     'GET /api/catalog/search': () => Response.json({ results: search }),
@@ -2448,6 +2459,111 @@ describe('PantryPage', () => {
       expect(
         screen.getByRole('button', { name: 'Freezer · 0' }),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('Recently Stocked tiles on the Add batch search', () => {
+    const daysAgo = (days: number) =>
+      new Date(Date.now() - days * 86_400_000).toISOString();
+    const milk: Stocked = {
+      ...parmesan,
+      id: 'milk-id',
+      name: 'Milk',
+      defaultUnit: 'ml',
+      lastStockedAt: daysAgo(0),
+      inPantry: true,
+    };
+    const stocked: Stocked[] = [
+      milk,
+      {
+        ...parmesan,
+        lastStockedAt: daysAgo(17),
+        inPantry: false,
+      },
+    ];
+
+    it('shows tiles with the in-Pantry state and a short relative time', async () => {
+      const user = userEvent.setup();
+      stubPantry([], [], stocked);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      const section = await screen.findByRole('region', {
+        name: 'Recently stocked',
+      });
+
+      const milkTile = within(section).getByRole('button', {
+        name: 'Milk, in pantry, added today',
+      });
+      expect(milkTile).toHaveTextContent('●in pantry · added today');
+      const parmesanTile = within(section).getByRole('button', {
+        name: 'Parmesan, added 2w ago',
+      });
+      expect(parmesanTile).toHaveTextContent('+added 2w ago');
+    });
+
+    it('selects the tapped Ingredient through the search and shows the form', async () => {
+      const user = userEvent.setup();
+      stubPantry([], [], stocked);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /^Parmesan, added/ }),
+      );
+
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Ingredient: Parmesan. Press Backspace to change',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Location')).toHaveValue('fridge');
+      expect(
+        screen.getByRole('button', { name: 'Add to Pantry' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Recently stocked' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('hides the section when nothing has been stocked', async () => {
+      const user = userEvent.setup();
+      stubPantry([], [], []);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      await screen.findByRole('combobox', { name: 'Search ingredients' });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('region', { name: 'Recently stocked' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(screen.queryByText('Recently stocked')).not.toBeInTheDocument();
+    });
+
+    it('shows at most 8 tiles', async () => {
+      const user = userEvent.setup();
+      const many = Array.from({ length: 10 }, (_, i) => ({
+        ...milk,
+        id: `ing-${i}`,
+        name: `Item ${i}`,
+      }));
+      stubPantry([], [], many);
+      renderWithProviders(<PantryPage />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Add batch' }),
+      );
+      const section = await screen.findByRole('region', {
+        name: 'Recently stocked',
+      });
+      expect(within(section).getAllByRole('button')).toHaveLength(8);
     });
   });
 });

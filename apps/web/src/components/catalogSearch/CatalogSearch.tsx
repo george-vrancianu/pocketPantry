@@ -23,6 +23,11 @@ import { SearchResultRow } from './SearchResultRow';
 import { SearchSkeleton } from './SearchSkeleton';
 import { UseTypedRow } from './UseTypedRow';
 
+/** What the search offers an empty-state block, so its picks go through the search (token, field text, close) like a typed pick. */
+export type EmptyStateContext = {
+  select: (ingredient: CatalogSearchResult) => void;
+};
+
 export type CatalogSearchProps = {
   onSelect: (ingredient: CatalogSearchResult) => void;
   autoFocus?: boolean;
@@ -41,8 +46,11 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
-  /** Host blocks shown while the field is focused and empty. */
-  emptyState?: ReactNode;
+  /**
+   * Host blocks shown while the field is focused and empty. A function gets the
+   * search's `select`, for tiles that pick an Ingredient.
+   */
+  emptyState?: ReactNode | ((search: EmptyStateContext) => ReactNode);
   /** When given, the no-match state ends with a "Use “…” as typed" option. */
   onUseTyped?: (name: string) => void;
   /** `shared` searches the shared Catalog only (Admin); default `family`. */
@@ -261,9 +269,14 @@ export function CatalogSearch({
         {status}
       </Box>
       {emptyShown ? (
-        // Taps inside land without the field losing focus.
-        <Box onMouseDown={(event) => event.preventDefault()} sx={{ mt: 2 }}>
-          {emptyState}
+        // Taps inside land without the field losing focus. A block that renders nothing leaves no gap.
+        <Box
+          onMouseDown={(event) => event.preventDefault()}
+          sx={{ mt: 2, '&:empty': { display: 'none' } }}
+        >
+          {typeof emptyState === 'function'
+            ? emptyState({ select })
+            : emptyState}
         </Box>
       ) : null}
       <Box
