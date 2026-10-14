@@ -15,6 +15,7 @@ import {
   shoppingLists,
   unmatchedEntries,
 } from '../database/schema';
+import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { lockFamilies } from '../family/family-locks';
 import { amountScaleForParent } from './amount-scale';
 import type { ExpiryOverride } from './catalog-defaults';
@@ -36,6 +37,7 @@ export class FamilyIngredientsService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly search: CatalogSearchService,
+    private readonly scanCatalog: IngredientCatalogService,
   ) {}
 
   /**
@@ -110,6 +112,8 @@ export class FamilyIngredientsService {
       }
       throw error;
     }
+    // The next Scan hands the model the new Ingredient, not a cached Catalog.
+    this.scanCatalog.invalidate(family.id);
     const [created] = await this.search.findByIds(
       scope,
       [id],
