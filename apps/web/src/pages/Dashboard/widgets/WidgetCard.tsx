@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   /** Accessible name of the card, also its visible title in most Widgets. */
@@ -53,7 +54,7 @@ export function WidgetCard({
         minHeight: size === 'small' ? 136 : undefined,
         boxSizing: 'border-box',
         p: padding,
-        borderRadius: `${tokens.radius.widget}px`,
+        borderRadius: radius.card,
         bgcolor: butter ? tokens.color.butter : tokens.color.surface,
         border: butter ? 0 : `1px solid ${tokens.color.line}`,
         color: tokens.color.ink,

@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WidgetCard } from './WidgetCard';
 import type { WidgetProps } from './types';
+import { displayType, radius } from '../../../lib/themeVars';
 
 /** Static Widgets for features that do not exist yet, clearly marked as coming soon. */
 function Placeholder({
@@ -41,7 +42,7 @@ function Placeholder({
             fontWeight: 700,
             px: '8px',
             py: '2px',
-            borderRadius: `${tokens.radius.chip}px`,
+            borderRadius: radius.pill,
             bgcolor: tokens.color.soonBg,
             color: tokens.color.soonFg,
             whiteSpace: 'nowrap',
@@ -84,7 +85,7 @@ export function MealPlanWidget({ size, columns }: WidgetProps) {
             aria-hidden="true"
             sx={{
               height: 44,
-              borderRadius: '12px',
+              borderRadius: radius.control,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -110,13 +111,13 @@ function Bar({ value, color }: { value: number; color: string }) {
   return (
     <Box
       aria-hidden="true"
-      sx={{ height: 6, borderRadius: 3, bgcolor: tokens.color.bg }}
+      sx={{ height: 6, borderRadius: radius.pill, bgcolor: tokens.color.bg }}
     >
       <Box
         sx={{
           width: `${value}%`,
           height: '100%',
-          borderRadius: 3,
+          borderRadius: radius.pill,
           bgcolor: color,
         }}
       />
@@ -137,9 +138,8 @@ export function BudgetWidget({ size, columns }: WidgetProps) {
         sx={{
           m: 0,
           mb: '8px',
-          fontFamily: tokens.font.display,
+          ...displayType,
           fontSize: 28,
-          fontWeight: 700,
         }}
       >
         {t('widgets.budget.sample')}

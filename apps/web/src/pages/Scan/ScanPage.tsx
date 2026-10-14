@@ -24,6 +24,7 @@ import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanScreen } from './hooks/useScanScreen';
+import { radius } from '../../lib/themeVars';
 
 const roundButton = (size: number) => ({
   display: 'flex',
@@ -185,7 +186,7 @@ export function ScanPage() {
             gap: '6px',
             height: 40,
             px: '12px',
-            borderRadius: '20px',
+            borderRadius: radius.pill,
             border: 0,
             fontSize: 14,
             fontWeight: 800,
@@ -207,7 +208,7 @@ export function ScanPage() {
                 minWidth: 20,
                 height: 20,
                 px: '6px',
-                borderRadius: '10px',
+                borderRadius: radius.pill,
                 fontSize: 12,
                 lineHeight: '20px',
                 textAlign: 'center',

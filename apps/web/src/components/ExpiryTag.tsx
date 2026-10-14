@@ -1,6 +1,7 @@
 import { AlertIcon, Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { ExpiryTagState } from '../lib/pantry';
+import { radius } from '../lib/themeVars';
 
 const TONES = {
   urgent: { bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
@@ -60,7 +61,7 @@ export function ExpiryTag({ tag, decorative = false }: Props) {
         fontWeight: 700,
         px: '10px',
         py: '4px',
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         fontVariantNumeric: 'tabular-nums',
         whiteSpace: 'nowrap',
         ...colours,

@@ -22,6 +22,13 @@ import {
 } from '../../lib/pantry';
 import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
 import { focusRing } from './focusRing';
+import {
+  colour,
+  displayType,
+  nestedRadius,
+  radius,
+  shadow,
+} from '../../lib/themeVars';
 
 export type ExpiryCalendarHandle = {
   /**
@@ -89,9 +96,6 @@ function keyTarget(iso: IsoDate, key: string): IsoDate | null {
 
 /** A Monday, for the weekday initials. */
 const MONDAY = new Date(2024, 0, 1);
-
-/** Selected-day lift: the handoff's `--shadow-btn` in the accent; the app has no shadow token for it. */
-const SELECTED_SHADOW = '0 4px 12px rgba(46,106,77,.28)';
 
 /**
  * The calendar card of the expiry sheet: weekday initials (Monday first), a vertically scrolling list of whole
@@ -191,8 +195,9 @@ export function ExpiryCalendar({
     gridTemplateColumns: 'repeat(7, 1fr)',
     gap: '2px',
   } as const;
+  // A mask: only its alpha counts, so the colour is not a Theme colour.
   const fade =
-    'linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 18px), transparent)';
+    'linear-gradient(to bottom, transparent, black 14px, black calc(100% - 18px), transparent)';
 
   return (
     <Box
@@ -202,7 +207,7 @@ export function ExpiryCalendar({
         overflow: 'hidden',
         backgroundColor: color.surface,
         border: `1px solid ${color.line}`,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: radius.card,
       }}
     >
       <Box
@@ -289,11 +294,11 @@ export function ExpiryCalendar({
           },
           '& .day[aria-pressed="true"]': {
             backgroundColor: color.accent,
-            color: color.surface,
-            boxShadow: SELECTED_SHADOW,
+            color: colour.accentInk,
+            boxShadow: shadow.button,
           },
           '& .day[aria-pressed="true"]::after': {
-            backgroundColor: color.surface,
+            backgroundColor: colour.accentInk,
           },
         }}
       >
@@ -315,9 +320,8 @@ export function ExpiryCalendar({
                   m: 0,
                   p: '8px 4px 4px',
                   backgroundColor: color.surface,
-                  fontFamily: tokens.font.display,
+                  ...displayType,
                   fontSize: 15,
-                  fontWeight: 700,
                 }}
               >
                 {monthName.format(month.first)}
@@ -380,7 +384,7 @@ export function ExpiryCalendar({
             sx={{
               width: 10,
               height: 10,
-              borderRadius: '3px',
+              borderRadius: nestedRadius(radius.box, 4),
               backgroundColor: color.soonBg,
             }}
           />
@@ -395,7 +399,7 @@ export function ExpiryCalendar({
           sx={{
             p: '4px 2px',
             border: 0,
-            borderRadius: '6px',
+            borderRadius: nestedRadius(radius.control, 6),
             backgroundColor: 'transparent',
             font: 'inherit',
             fontSize: 13,

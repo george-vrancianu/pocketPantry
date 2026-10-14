@@ -18,6 +18,7 @@ import type { RowHint } from '../../../lib/useRowHint';
 import { useSwipeRowLabels } from '../../../lib/useSwipeRowLabels';
 import { StapleToggle } from '../../../components/StapleToggle';
 import type { ShoppingGroup, ShoppingItem } from '../../../lib/shopping';
+import { colour, radius } from '../../../lib/themeVars';
 
 /** Greyed text colour of a checked row, shared by its name and icon. */
 const CHECKED_TEXT = tokens.color.checkedText;
@@ -84,7 +85,7 @@ export function ShoppingGroups({
                 bgcolor: 'background.paper',
                 border: 1,
                 borderColor: 'divider',
-                borderRadius: '20px',
+                borderRadius: radius.card,
                 overflow: 'hidden',
               }}
             >
@@ -161,12 +162,12 @@ function ChecklistRow({
                   width: 24,
                   height: 24,
                   boxSizing: 'border-box',
-                  borderRadius: '8px',
+                  borderRadius: radius.box,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   ...(item.checked
-                    ? { bgcolor: 'primary.main', color: tokens.color.surface }
+                    ? { bgcolor: tokens.color.accent, color: colour.accentInk }
                     : { border: `2px solid ${tokens.color.tickBorder}` }),
                 }}
               >
@@ -188,8 +189,8 @@ function ChecklistRow({
                 sx={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: 'primary.main',
-                  bgcolor: 'primary.light',
+                  color: colour.accentOnTint,
+                  bgcolor: tokens.color.accentTint,
                   px: 1,
                   py: 0.5,
                   borderRadius: 999,

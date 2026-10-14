@@ -13,6 +13,7 @@ import type { ScanMode } from '../../../lib/scan';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
 import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   state: ReviewState;
@@ -166,7 +167,7 @@ export function TabletReviewTable({
         mt: '24px',
         bgcolor: tokens.color.surface,
         border: `1px solid ${tokens.color.line}`,
-        borderRadius: `${tokens.radius.table}px`,
+        borderRadius: radius.card,
         overflow: 'hidden',
       }}
     >

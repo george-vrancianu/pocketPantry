@@ -1,5 +1,6 @@
 import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useId, type ReactNode } from 'react';
+import { radius } from '../../../lib/themeVars';
 
 /** A titled block of the detail page. */
 export function Section({
@@ -25,7 +26,7 @@ export function Section({
             py: '8px',
             bgcolor: tokens.color.surface,
             border: `1px solid ${tokens.color.line}`,
-            borderRadius: `${tokens.radius.card}px`,
+            borderRadius: radius.card,
           }}
         >
           {children}

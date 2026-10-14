@@ -23,6 +23,7 @@ import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
+import { displayType } from '../../lib/themeVars';
 
 export function ShoppingPage() {
   const { t } = useTranslation(['shopping', 'common']);
@@ -94,9 +95,8 @@ export function ShoppingPage() {
               >
                 <Typography
                   sx={{
-                    fontFamily: 'var(--font-display)',
+                    ...displayType,
                     fontSize: 18,
-                    fontWeight: 700,
                   }}
                 >
                   {t('shopping:empty.title')}

@@ -1,5 +1,6 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
+import { radius } from '../../../lib/themeVars';
 
 /** The 40 px, 12 px-radius control look shared by every input in the edit panel. */
 export const controlSx = {
@@ -7,7 +8,7 @@ export const controlSx = {
   width: '100%',
   height: 40,
   px: '12px',
-  borderRadius: `${tokens.radius.field}px`,
+  borderRadius: radius.control,
   border: `1px solid ${tokens.color.line}`,
   bgcolor: tokens.color.surface,
   color: tokens.color.ink,

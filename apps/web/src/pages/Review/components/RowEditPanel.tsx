@@ -23,6 +23,7 @@ import {
   QuantityUnitInput,
 } from './RowInputs';
 import { fieldId, panelId } from './layout';
+import { colour, radius } from '../../../lib/themeVars';
 
 type Props = {
   line: ReviewLine;
@@ -274,9 +275,9 @@ export function RowEditPanel({
               flexGrow: 1,
               height: 40,
               border: 0,
-              borderRadius: `${tokens.radius.field}px`,
+              borderRadius: radius.control,
               bgcolor: tokens.color.accent,
-              color: tokens.color.surface,
+              color: colour.accentInk,
               fontFamily: 'inherit',
               fontSize: 14,
               fontWeight: 700,

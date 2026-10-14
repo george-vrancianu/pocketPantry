@@ -26,6 +26,7 @@ import {
   useTemplate,
   type TemplateLine,
 } from '../../../../lib/shoppingTemplates';
+import { colour, displayType, radius } from '../../../../lib/themeVars';
 
 export type ApplyTemplateViewProps = {
   templateId: string;
@@ -110,7 +111,7 @@ export function ApplyTemplateView({
         startIcon={<PlusIcon size={18} />}
         disabled={ticked.length === 0 || apply.isPending}
         onClick={submit}
-        sx={{ minHeight: 48, borderRadius: '16px' }}
+        sx={{ minHeight: 48, borderRadius: radius.control }}
       >
         {apply.isPending
           ? t('templates:apply.confirming')
@@ -126,9 +127,8 @@ export function ApplyTemplateView({
         <Typography
           component="h3"
           sx={{
-            fontFamily: 'var(--font-display)',
+            ...displayType,
             fontSize: 22,
-            fontWeight: 700,
           }}
         >
           {name}
@@ -152,7 +152,7 @@ export function ApplyTemplateView({
           </Typography>
           <Box
             sx={{
-              borderRadius: '20px',
+              borderRadius: radius.card,
               border: `1px solid ${color.line}`,
               backgroundColor: color.surface,
             }}
@@ -197,10 +197,10 @@ export function ApplyTemplateView({
                       height: 24,
                       display: 'grid',
                       placeItems: 'center',
-                      borderRadius: '8px',
-                      border: `2px solid ${on ? color.accent : '#A7B3AA'}`,
+                      borderRadius: radius.box,
+                      border: `2px solid ${on ? color.accent : colour.box}`,
                       backgroundColor: on ? color.accent : 'transparent',
-                      color: '#FFFFFF',
+                      color: colour.accentInk,
                     }}
                   >
                     {on ? <CheckIcon size={14} /> : null}

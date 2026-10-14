@@ -9,6 +9,7 @@ import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { formatAmount } from '../../../lib/amount';
 import { BatchDetail } from './BatchDetail';
+import { radius } from '../../../lib/themeVars';
 
 type Props = {
   rollUp: PantryRow;
@@ -129,7 +130,7 @@ export function RollUpRow({
                     fontWeight: 700,
                     px: '8px',
                     py: '2px',
-                    borderRadius: `${tokens.radius.chip}px`,
+                    borderRadius: radius.pill,
                     bgcolor: tokens.color.soonBg,
                     color: tokens.color.soonFg,
                   }}

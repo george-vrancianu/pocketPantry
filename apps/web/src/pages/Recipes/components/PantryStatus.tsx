@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import type { PantryLine, PantryMatch } from '../../../lib/recipes';
+import { radius } from '../../../lib/themeVars';
 
 /** Required, non-Basic lines the server would add (short or missing). */
 const addable = (line: PantryLine) =>
@@ -73,7 +74,7 @@ export function LineStatusPill({
         sx={{
           display: 'inline-flex',
           p: '4px',
-          borderRadius: `${tokens.radius.chip}px`,
+          borderRadius: radius.pill,
           bgcolor: tone.bg,
           color: tone.fg,
         }}
@@ -95,7 +96,7 @@ export function LineStatusPill({
         gap: '4px',
         px: '9px',
         py: '4px',
-        borderRadius: `${tokens.radius.chip}px`,
+        borderRadius: radius.pill,
         bgcolor: tone.bg,
         color: tone.fg,
         fontSize: 12,
