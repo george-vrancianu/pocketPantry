@@ -242,6 +242,10 @@ describe('parseAmountText', () => {
     expect(parseAmountText('1,5')).toEqual({ value: 1.5, valid: true });
   });
 
+  it('ignores surrounding spaces, as the amount field does', () => {
+    expect(parseAmountText(' 2 ')).toEqual({ value: 2, valid: true });
+  });
+
   it('keeps the parseQuantity rules', () => {
     expect(parseAmountText('')).toEqual({ value: null, valid: true });
     expect(parseAmountText('1,2345').valid).toBe(false);

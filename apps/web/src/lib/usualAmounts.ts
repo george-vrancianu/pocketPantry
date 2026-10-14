@@ -73,10 +73,13 @@ export function usualAmountsAscending(
 
 /**
  * Rescales a number between two units of the same family; the amount stays the same. Rounded to three
- * decimals, the most the server stores, so 2.5 g is 0.003 kg.
+ * decimals, the most the server stores, so 2.5 g is 0.003 kg. A non-zero amount that would round to zero
+ * keeps its unrounded value, so the validator flags it instead of storing 0.
  */
 export function convertQuantity(value: number, from: Unit, to: Unit): number {
-  return Math.round((value * PER_BASE[from] * 1000) / PER_BASE[to]) / 1000;
+  const exact = (value * PER_BASE[from]) / PER_BASE[to];
+  const rounded = Math.round(exact * 1000) / 1000;
+  return rounded === 0 && value !== 0 ? exact : rounded;
 }
 
 /** A number typed with a comma or a dot as the decimal mark; null when there is no number. */

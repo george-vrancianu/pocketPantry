@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import pg from 'pg';
 import { amountScaleForParent } from '../src/catalog/amount-scale';
-import { seedId } from '../src/catalog/seed/seed-catalog';
+import { seedId } from '../src/catalog/seed/seed-ids';
 import {
   SEED_INGREDIENTS,
   SEED_LEAVES,

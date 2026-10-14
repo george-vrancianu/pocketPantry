@@ -524,6 +524,8 @@ export class AdminCatalogService {
 
   updateLeafCategory(id: string, input: LeafCategoryUpdate) {
     return this.write(async (tx) => {
+      // The new Parent when this update moves the Leaf; its Ingredients re-derive their scale.
+      let movedToParent: string | null = null;
       if (input.parentId) {
         await this.requireRow(tx, 'parent_category', input.parentId);
         const [current] = await tx
@@ -536,6 +538,9 @@ export class AdminCatalogService {
         if (current?.isOther && current.parentId !== input.parentId) {
           throw otherLeafProtected();
         }
+        if (current && current.parentId !== input.parentId) {
+          movedToParent = input.parentId;
+        }
       }
       const [row] = await tx
         .update(leafCategories)
@@ -543,6 +548,12 @@ export class AdminCatalogService {
         .where(eq(leafCategories.id, id))
         .returning();
       if (!row) throw notFound('leaf_category');
+      if (movedToParent) {
+        await tx
+          .update(ingredients)
+          .set({ amountScale: amountScaleForParent(movedToParent) })
+          .where(eq(ingredients.leafCategoryId, id));
+      }
       if (input.name) {
         await this.renameCanonicalName(tx, 'leaf_category', id, input.name);
       }

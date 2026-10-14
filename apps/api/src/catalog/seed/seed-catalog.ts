@@ -9,8 +9,6 @@ import {
 } from '../../database/schema';
 import { amountScaleForParent } from '../amount-scale';
 import { seedId, stableId } from './seed-ids';
-
-export { seedId, stableId };
 import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
@@ -22,6 +20,8 @@ import {
   SEED_PARENTS,
 } from './catalog-seed-data';
 import { assertCatalogSeedValid } from './validate-seed';
+
+export { seedId, stableId };
 
 type TranslationRow = typeof catalogTranslations.$inferInsert;
 

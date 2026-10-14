@@ -44,15 +44,21 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
 
+  /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
+  const clearIngredient = () => {
+    if (ingredient && chosenUnit === null) setChosenUnit(unit);
+    setIngredient(null);
+  };
+
   const changeQuery = (query: string) => {
     setTyped(query);
-    setIngredient(null);
+    clearIngredient();
     setUnmatchedName(null);
   };
 
   const markTypedAsUnmatched = () => {
     setUnmatchedName(typed.trim());
-    setIngredient(null);
+    clearIngredient();
     setExpiryDate(null);
   };
 

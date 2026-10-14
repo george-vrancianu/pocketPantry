@@ -501,6 +501,51 @@ describe('PantryPage', () => {
     );
   });
 
+  it('keeps the unit of a picked Ingredient when its name is edited after an amount', async () => {
+    const user = userEvent.setup();
+    const eggs: CatalogSearchResult = {
+      ...parmesan,
+      id: 'eggs-id',
+      name: 'Eggs',
+      defaultUnit: 'pcs',
+      amountScale: 'medium',
+    };
+    const calls = stubPantry([], [eggs]);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('textbox', { name: 'Amount, for example 2 or 500 g' }),
+      '6',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'egg',
+    );
+    await user.click(await screen.findByRole('option', { name: /Eggs/ }));
+    const search = screen.getByRole('combobox', { name: 'Search ingredients' });
+    await user.clear(search);
+    await user.type(search, 'Eggs x');
+
+    expect(
+      screen.getByRole('button', { name: 'Unit: pcs' }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Not in the Catalog? Add "Eggs x" as Unmatched',
+      }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Unit: pcs' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+      ).toMatchObject({ rawName: 'Eggs x', quantity: 6, unit: 'pcs' }),
+    );
+  });
+
   it('sets the unit from the chip, converting the amount to it', async () => {
     const user = userEvent.setup();
     const calls = stubPantry([], [parmesan]);

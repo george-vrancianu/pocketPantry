@@ -588,6 +588,44 @@ describe('Admin role and Catalog curation (integration)', () => {
       return batch.id;
     }
 
+    it('re-derives the Amount Scale of every Ingredient in a Leaf moved to another Parent', async () => {
+      const scaleOf = async (id: string) =>
+        (
+          await database
+            .select({ scale: ingredients.amountScale })
+            .from(ingredients)
+            .where(eq(ingredients.id, id))
+        )[0]?.scale;
+
+      // A new Leaf under Spices (low), so its Ingredient starts low and leaves the seeded Leaves alone.
+      const leaf = (
+        await as(adminCookie)
+          .post('/leaf-categories', {
+            parentId: seedId.parent('spices'),
+            name: `Moved leaf ${stamp}`,
+          })
+          .expect(201)
+      ).body as Body;
+      const first = (
+        await as(adminCookie)
+          .post('/ingredients', {
+            leafCategoryId: leaf.id,
+            name: `Moved item ${stamp}`,
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as Body;
+      expect(await scaleOf(first.id)).toBe('low');
+
+      // Moving the Leaf to Produce (large) re-derives every Ingredient in it.
+      await as(adminCookie)
+        .patch(`/leaf-categories/${leaf.id}`, {
+          parentId: seedId.parent('produce'),
+        })
+        .expect(200);
+      expect(await scaleOf(first.id)).toBe('large');
+    });
+
     it('rejects deleting a Leaf Category that Batches still reference', async () => {
       const leaf = (
         await as(adminCookie)

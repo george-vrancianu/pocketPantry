@@ -336,9 +336,9 @@ export function parseQuantity(text: string): {
   return { value, valid };
 }
 
-/** Parse a typed amount, where a decimal comma ("1,5") counts as a point. */
+/** Parse a typed amount, where a decimal comma ("1,5") counts as a point and surrounding spaces are ignored. */
 export function parseAmountText(text: string) {
-  return parseQuantity(text.replace(',', '.'));
+  return parseQuantity(text.trim().replace(',', '.'));
 }
 
 /** The fields to change; anything left out stays as it is. */

@@ -74,6 +74,12 @@ describe('convertQuantity', () => {
     expect(convertQuantity(1.2345, 'l', 'ml')).toBe(1234.5);
     expect(convertQuantity(1.2345, 'ml', 'l')).toBe(0.001);
   });
+
+  it('keeps a non-zero amount that would round to zero, so the validator flags it', () => {
+    // 0.4 g is 0.0004 kg: rounding it to 0 would silently store 0 g.
+    expect(convertQuantity(0.4, 'g', 'kg')).toBeCloseTo(0.0004, 10);
+    expect(convertQuantity(0.4, 'g', 'kg')).not.toBe(0);
+  });
 });
 
 describe('parseTypedNumber', () => {

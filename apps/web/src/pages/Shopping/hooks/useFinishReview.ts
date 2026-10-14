@@ -40,17 +40,9 @@ const usualDaysOf = (line: FinishProposalLine, today: Date): number | null =>
     : daysUntil(line.expiryDate, today);
 
 // numeric(10,3) on the server: 0.001 to 1,000,000, at most 3 decimals.
-function quantityOf(text: string): { valid: boolean; value: number | null } {
+function quantityOf(text: string) {
   // The same reading as the amount field: a comma or a dot as the decimal mark.
-  const parsed = parseAmountText(text);
-  if (!parsed.valid) return { valid: false, value: null };
-  if (parsed.value === null) return { valid: true, value: null };
-  const value = parsed.value;
-  const valid =
-    value >= 0.001 &&
-    value <= 1_000_000 &&
-    Math.abs(Math.round(value * 1000) - value * 1000) < 1e-6;
-  return { valid, value: valid ? value : null };
+  return parseAmountText(text);
 }
 
 /** Review state for Finish Shopping: proposed Batches the Member can edit or drop before confirming. */
