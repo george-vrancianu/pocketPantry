@@ -1,10 +1,11 @@
-import { Box, Card, Typography } from '@pocket-pantry/ui';
+import { Box, Typography } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
 import type { Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { OpenIngredientKey, PantryRow } from '../hooks/usePantryScreen';
+import { blockEdges, liftedBlockSx } from './liftedBlock';
 import { RollUpRow } from './RollUpRow';
 
 type Props = {
@@ -33,6 +34,7 @@ export function LocationSection({
   const { t } = useTranslation('pantry');
   const headingId = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const edges = blockEdges(rows);
   return (
     <Box component="section" aria-labelledby={headingId} sx={{ mb: 2 }}>
       <Typography
@@ -46,14 +48,12 @@ export function LocationSection({
       >
         {`${t(`common:locations.${location}`)} · ${batchCount}`}
       </Typography>
-      <Card
-        component="ul"
-        variant="list"
-        sx={{ listStyle: 'none', m: 0, py: 0, px: '14px', overflow: 'hidden' }}
-      >
-        {rows.map((row) => (
+      {/* The Location card is a stack of row blocks, so the open one can lift out of it. */}
+      <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+        {rows.map((row, index) => (
           <RollUpRow
             key={row.key}
+            sx={liftedBlockSx(edges[index])}
             rollUp={row}
             today={today}
             onToggle={() => onToggleOpen(row.openKey)}
@@ -64,7 +64,7 @@ export function LocationSection({
             }
           />
         ))}
-      </Card>
+      </Box>
     </Box>
   );
 }

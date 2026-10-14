@@ -35,7 +35,9 @@
     "batches_one": "{{count}} batch",
     "batches_other": "{{count}} batches"
   },
-  "noDetails": "No quantity set",
+  "batch": {
+    "noDate": "no date"
+  },
   "edit": {
     "title": "Edit {{name}} batch",
     "save": "Save changes"

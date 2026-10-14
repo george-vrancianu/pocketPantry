@@ -35,7 +35,9 @@
     "batches_few": "{{count}} loturi",
     "batches_other": "{{count}} de loturi"
   },
-  "noDetails": "Fără cantitate",
+  "batch": {
+    "noDate": "fără dată"
+  },
   "edit": {
     "title": "Editează lotul de {{name}}",
     "save": "Salvează modificările"

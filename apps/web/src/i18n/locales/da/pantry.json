@@ -34,7 +34,9 @@
     "batches_one": "{{count}} parti",
     "batches_other": "{{count}} partier"
   },
-  "noDetails": "Ingen mængde angivet",
+  "batch": {
+    "noDate": "ingen dato"
+  },
   "edit": {
     "title": "Rediger partiet {{name}}",
     "save": "Gem ændringer"
