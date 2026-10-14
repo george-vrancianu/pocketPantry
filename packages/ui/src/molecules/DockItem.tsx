@@ -1,7 +1,6 @@
 import ButtonBase from '@mui/material/ButtonBase';
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
-import { tokens } from '../theme/tokens';
 
 export type DockItemProps = {
   label: string;
@@ -11,12 +10,10 @@ export type DockItemProps = {
 };
 
 export function DockItem({ label, href, icon, active = false }: DockItemProps) {
-  const { color } = tokens;
-  const pill = active
-    ? { backgroundColor: color.accentTint, color: color.accent }
-    : {};
-
-  const labelColor = active ? color.accent : color.muted;
+  // The active tab: an outline icon on the accent tint pill, label in the
+  // same on-tint colour. Inactive tabs are muted.
+  const colour = active ? 'pp.accentOnTint' : 'text.secondary';
+  const pillBackground = active ? 'pp.accentTint' : 'transparent';
 
   return (
     <ButtonBase
@@ -26,10 +23,10 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
         flexDirection: 'column',
         gap: '3px',
         borderRadius: '18px',
-        color: labelColor,
+        color: colour,
         fontSize: 11,
         fontWeight: active ? 700 : 600,
-        fontFamily: tokens.font.body,
+        fontFamily: 'var(--pp-body)',
       }}
     >
       <Box
@@ -40,7 +37,7 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
           width: 52,
           height: 32,
           borderRadius: '16px',
-          ...pill,
+          bgcolor: pillBackground,
         }}
       >
         {icon}

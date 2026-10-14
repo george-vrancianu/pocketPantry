@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { paintedColour } from '../test/colour';
 import { renderWithProviders } from '../test/render';
 import { AppLayout } from './AppLayout';
 
@@ -16,6 +17,10 @@ function renderAt(route: string) {
   );
 }
 
+afterEach(() => {
+  document.documentElement.removeAttribute('data-theme');
+});
+
 describe('AppLayout Dock', () => {
   it('renders no Dock navigation or links behind the camera on /scan', () => {
     renderAt('/scan');
@@ -27,5 +32,23 @@ describe('AppLayout Dock', () => {
   it('still renders the Dock on other screens', () => {
     renderAt('/pantry');
     expect(screen.getByRole('navigation')).toBeInTheDocument();
+  });
+
+  it('paints the dock and its tabs from the active Theme', () => {
+    localStorage.setItem(
+      'pp.appearance',
+      JSON.stringify({ theme: 'dark', matchSystem: false }),
+    );
+    renderAt('/pantry');
+    const dock = screen.getByRole('navigation');
+    expect(paintedColour(dock, 'background-color')).toBe('RGBA(25,33,28,.9)');
+
+    const active = screen.getByRole('link', { current: 'page' });
+    const pill = active.querySelector('svg')!.parentElement!;
+    expect(paintedColour(pill, 'background-color')).toBe('#1F3A2A');
+    expect(paintedColour(active, 'color')).toBe('#A9EDBD');
+
+    const inactive = screen.getByRole('link', { name: /shopping/i });
+    expect(paintedColour(inactive, 'color')).toBe('#97A69B');
   });
 });
