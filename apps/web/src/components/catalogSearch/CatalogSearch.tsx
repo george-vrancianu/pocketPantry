@@ -14,8 +14,14 @@ import {
   type RefObject,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCatalogSearch, type CatalogSearchResult } from '../../lib/catalog';
+import {
+  useCatalogSearch,
+  type CatalogAisle,
+  type CatalogSearchResult,
+} from '../../lib/catalog';
 import { normalizeName } from '../../lib/normalizeName';
+import { AisleViewHeader } from './AisleView';
+import { CatalogSearchBrowseContext } from './browse';
 import { ErrorRow } from './ErrorRow';
 import { NoMatchRow } from './NoMatchRow';
 import { SearchField } from './SearchField';
@@ -96,21 +102,31 @@ export function CatalogSearch({
   const [query, setQuery] = useState(defaultQuery);
   const [open, setOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const search = useCatalogSearch(query, i18n.language, scope);
+  // The aisle view (Browse by aisle): an Aisle opened from the empty state, and the Parent Category narrowing it.
+  const [aisle, setAisle] = useState<CatalogAisle | null>(null);
+  const [parentCategoryId, setParentCategoryId] = useState<string | null>(null);
+  const search = useCatalogSearch(
+    query,
+    i18n.language,
+    scope,
+    aisle ? { aisleId: aisle.id, parentCategoryId } : null,
+  );
   const typed = query.trim();
+  // Something to list: the typed text, or an opened Aisle.
+  const querying = typed !== '' || aisle !== null;
 
   // A failed search keeps the rows that were already showing, under the error row.
   const [lastRows, setLastRows] = useState<CatalogSearchResult[]>([]);
   if (search.data && search.data !== lastRows) setLastRows(search.data);
-  const failed = typed !== '' && search.active && search.isError;
+  const failed = querying && search.active && search.isError;
   const loaded = search.data ?? (failed ? lastRows : undefined);
   // The debounce lags a cleared field, so go by what is typed now.
-  const results = typed && search.active ? (loaded ?? []) : [];
+  const results = querying && search.active ? (loaded ?? []) : [];
 
-  const firstLoad = typed !== '' && search.active && !search.data && !failed;
+  const firstLoad = querying && search.active && !search.data && !failed;
   // Any data on hand (even none matching) keeps the panel and shows the spinner.
   const refetching =
-    typed !== '' &&
+    querying &&
     search.active &&
     search.data !== undefined &&
     search.isSearching &&
@@ -136,7 +152,9 @@ export function CatalogSearch({
 
   const showPanel = open && !selected;
   const expanded = showPanel && optionCount > 0;
-  const emptyShown = Boolean(emptyState) && open && typed === '' && !selected;
+  const aisleShown = aisle !== null && showPanel;
+  const emptyShown =
+    Boolean(emptyState) && open && typed === '' && !selected && !aisle;
   const active = activeIndex < optionCount ? activeIndex : -1;
 
   const change = (event: ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +172,16 @@ export function CatalogSearch({
     inputRef.current?.focus();
   };
 
+  const leaveAisle = () => {
+    setAisle(null);
+    setParentCategoryId(null);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+  };
+
   const select = (ingredient: CatalogSearchResult) => {
+    setAisle(null);
+    setParentCategoryId(null);
     setQuery(ingredient.name);
     setOpen(false);
     setActiveIndex(-1);
@@ -216,7 +243,11 @@ export function CatalogSearch({
       // once the results for what is typed have arrived.
       event.preventDefault();
       pick(0);
-    } else if (event.key === 'Escape' && open && (typed !== '' || emptyShown)) {
+    } else if (
+      event.key === 'Escape' &&
+      open &&
+      (typed !== '' || emptyShown || aisleShown)
+    ) {
       event.preventDefault();
       setOpen(false);
       setActiveIndex(-1);
@@ -236,7 +267,9 @@ export function CatalogSearch({
   }
 
   const panelVisible =
-    showPanel && typed !== '' && (expanded || firstLoad || failed || noMatch);
+    showPanel &&
+    (aisleShown ||
+      (typed !== '' && (expanded || firstLoad || failed || noMatch)));
 
   return (
     <Box sx={{ position: 'relative' }}>
@@ -263,7 +296,18 @@ export function CatalogSearch({
       {emptyShown ? (
         // Taps inside land without the field losing focus.
         <Box onMouseDown={(event) => event.preventDefault()} sx={{ mt: 2 }}>
-          {emptyState}
+          <CatalogSearchBrowseContext.Provider
+            value={{
+              scope,
+              openAisle: (opened) => {
+                setAisle(opened);
+                setParentCategoryId(null);
+                setActiveIndex(-1);
+              },
+            }}
+          >
+            {emptyState}
+          </CatalogSearchBrowseContext.Provider>
         </Box>
       ) : null}
       <Box
@@ -276,6 +320,20 @@ export function CatalogSearch({
           overflow: 'hidden',
         }}
       >
+        {aisle && aisleShown ? (
+          <AisleViewHeader
+            aisle={aisle}
+            parentCategoryId={parentCategoryId}
+            onParentCategory={setParentCategoryId}
+            query={search.query}
+            count={
+              search.data && !search.isSearching && !failed
+                ? search.data.length
+                : null
+            }
+            onLeave={leaveAisle}
+          />
+        ) : null}
         {failed ? (
           <ErrorRow
             onRetry={() => {
@@ -286,7 +344,9 @@ export function CatalogSearch({
           />
         ) : null}
         {firstLoad ? <SearchSkeleton animate={!reducedMotion} /> : null}
-        {noMatch ? <NoMatchRow query={search.query} /> : null}
+        {noMatch ? (
+          <NoMatchRow query={search.query} inAisle={aisle !== null} />
+        ) : null}
         <Box
           component="ul"
           id={listId}

@@ -3,7 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 
 /** The non-interactive "No match for “…”" row with its hint. */
-export function NoMatchRow({ query }: { query: string }) {
+export function NoMatchRow({
+  query,
+  inAisle = false,
+}: {
+  query: string;
+  /** Inside an opened Aisle the hint points at the Aisle instead. */
+  inAisle?: boolean;
+}) {
   const { color } = tokens;
   const { t } = useTranslation('catalog');
   return (
@@ -19,7 +26,7 @@ export function NoMatchRow({ query }: { query: string }) {
           {t('search.noMatchFor', { query })}
         </Box>
         <Box sx={{ fontSize: 13, color: color.muted }}>
-          {t('search.noMatchHint')}
+          {t(inAisle ? 'search.noMatchAisleHint' : 'search.noMatchHint')}
         </Box>
       </Box>
     </Box>

@@ -2479,11 +2479,15 @@ describe('PantryPage Browse by aisle', () => {
     await user.click(
       screen.getByRole('combobox', { name: 'Search ingredients' }),
     );
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
     await user.click(
       await screen.findByRole('button', { name: 'Dairy & eggs' }),
     );
 
-    expect(screen.getByText('Browse by aisle')).toBeVisible();
+    // The aisle view takes the block's place in the list (handoff 4.4).
+    expect(
+      screen.getByRole('button', { name: 'Leave Dairy & eggs' }),
+    ).toBeVisible();
     await vi.waitFor(() => {
       const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
       const params = new URLSearchParams(search.at(-1)?.search);

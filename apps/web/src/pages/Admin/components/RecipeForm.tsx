@@ -2,6 +2,7 @@ import { Box } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import { localName, type AdminCatalog } from '../../../lib/admin';
 import {
   useCreateRecipe,
@@ -109,6 +110,7 @@ export function RecipeForm({ recipe, catalog, onSaved, onCancel }: Props) {
         onChange={(lines) => change({ lines })}
       >
         <CatalogSearch
+          emptyState={<BrowseByAisle />}
           key={searchKey}
           scope="shared"
           onSelect={(ingredient) => {
