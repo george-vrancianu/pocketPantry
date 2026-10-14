@@ -30,7 +30,7 @@ const { color } = tokens;
 function pillTone(line: PantryLine) {
   if (line.pantryBasic) return { bg: color.okBg, fg: color.okFg, ok: true };
   if (line.status === 'covered')
-    return { bg: color.accentTint, fg: color.accent, ok: true };
+    return { bg: color.accentTint, fg: color.accentOnTint, ok: true };
   if (line.status === 'short')
     return { bg: color.soonBg, fg: color.soonFg, ok: false };
   return { bg: color.urgentBg, fg: color.urgentFg, ok: false };

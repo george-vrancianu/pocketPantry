@@ -108,7 +108,7 @@ export function QuickPicks({
         '& .tile[aria-pressed="true"]': {
           backgroundColor: color.accentTint,
           borderColor: 'transparent',
-          color: color.accent,
+          color: color.accentOnTint,
         },
         '& .tile[data-usual]::before': {
           content: '""',

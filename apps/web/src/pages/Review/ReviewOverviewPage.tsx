@@ -345,7 +345,7 @@ export function ReviewOverviewPage() {
                       borderRadius: radius.pill,
                       fontSize: 12,
                       backgroundColor: tokens.color.accentTint,
-                      color: tokens.color.accent,
+                      color: tokens.color.accentOnTint,
                     }}
                   >
                     {displayName(line)}

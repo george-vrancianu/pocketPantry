@@ -129,7 +129,7 @@ export function ResultRow({
             py: '3px',
             borderRadius: 999,
             backgroundColor: color.accentTint,
-            color: color.accent,
+            color: color.accentOnTint,
             fontSize: 11,
             fontWeight: 700,
           }}

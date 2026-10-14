@@ -114,7 +114,7 @@ export function ExpiryField({
             placeItems: 'center',
             borderRadius: nestedRadius(radius.control, 2),
             backgroundColor: color.accentTint,
-            color: color.accent,
+            color: color.accentOnTint,
           }}
         >
           <CalendarIcon size={18} />

@@ -183,7 +183,7 @@ function Tile({
         placeItems: 'center',
         borderRadius: radius.control,
         backgroundColor: accent ? color.accentTint : color.butter,
-        color: accent ? color.accent : color.butterInk,
+        color: accent ? color.accentOnTint : color.butterInk,
       }}
     >
       {icon}

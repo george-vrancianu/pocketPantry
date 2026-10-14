@@ -127,7 +127,7 @@ export function StepList({
                     px: '11px',
                     borderRadius: radius.pill,
                     bgcolor: tokens.color.accentTint,
-                    color: tokens.color.accent,
+                    color: tokens.color.accentOnTint,
                     fontSize: 12.5,
                     fontWeight: 700,
                     fontVariantNumeric: 'tabular-nums',

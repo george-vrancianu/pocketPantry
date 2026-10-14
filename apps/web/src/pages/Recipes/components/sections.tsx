@@ -167,7 +167,11 @@ function useEntryText() {
 }
 
 const DIFF_KEYS = {
-  added: { key: '+', bg: tokens.color.accentTint, fg: tokens.color.accent },
+  added: {
+    key: '+',
+    bg: tokens.color.accentTint,
+    fg: tokens.color.accentOnTint,
+  },
   removed: { key: '−', bg: tokens.color.urgentBg, fg: tokens.color.urgentFg },
   swapped: { key: '⇄', bg: tokens.color.soonBg, fg: tokens.color.soonFg },
 };

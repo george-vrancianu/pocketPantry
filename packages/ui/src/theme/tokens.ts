@@ -40,6 +40,8 @@ export const tokens = {
     accent,
     accentHover: mix(accent, 82, ink),
     accentTint: palette('pp-accentTint'),
+    /** Text on `accentTint`; plain `accent` falls short of 4.5:1 there in Warm editorial. */
+    accentOnTint: palette('pp-accentOnTint'),
     accentMid: mix(accent, 55, surface),
     butter: palette('secondary-main'),
     butterInk: palette('secondary-contrastText'),

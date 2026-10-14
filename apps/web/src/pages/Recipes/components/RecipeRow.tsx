@@ -134,7 +134,7 @@ function StatusPills({
       {card.canMake ? (
         <Pill
           icon={<CheckIcon size={13} />}
-          fg={tokens.color.accent}
+          fg={tokens.color.accentOnTint}
           bg={tokens.color.accentTint}
         >
           {card.recipe.id === recipeId

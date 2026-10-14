@@ -47,7 +47,7 @@ export function RowHintPill({ visible, children }: RowHintPillProps) {
           py: '7px',
           borderRadius: 999,
           bgcolor: tokens.color.accentTint,
-          color: tokens.color.accent,
+          color: tokens.color.accentOnTint,
           fontSize: 12.5,
           fontWeight: 600,
         }}

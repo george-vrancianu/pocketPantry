@@ -55,7 +55,10 @@ function variantSx(variant: ButtonVariant) {
         return {
           backgroundColor: 'transparent',
           color: p.pp.accent,
-          '&:hover': { backgroundColor: p.pp.accentTint },
+          '&:hover': {
+            backgroundColor: p.pp.accentTint,
+            color: p.pp.accentOnTint,
+          },
         };
       case 'danger':
         return { backgroundColor: p.error.light, color: p.error.main };

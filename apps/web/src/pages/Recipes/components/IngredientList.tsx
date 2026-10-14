@@ -137,7 +137,7 @@ function IngredientRow({
                       : tokens.color.accentTint,
                     color: optionalOrBasic
                       ? tokens.color.muted
-                      : tokens.color.accent,
+                      : tokens.color.accentOnTint,
                   }}
                 >
                   {amount}
