@@ -113,7 +113,11 @@ describe('UseSoonWidget', () => {
         within(region)
           .getAllByRole('listitem')
           .map((row) => row.textContent),
-      ).toEqual(['Feta5 d left', 'Ham7 d left', 'Butter12 d']),
+      ).toEqual([
+        'Feta5 d left5 days left',
+        'Ham7 d left7 days left',
+        'Butter12 d12 days',
+      ]),
     );
   });
 

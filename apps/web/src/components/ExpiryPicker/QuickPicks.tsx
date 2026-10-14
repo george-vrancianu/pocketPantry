@@ -12,16 +12,16 @@ import { focusRing } from './focusRing';
 
 const { color } = tokens;
 
-type PickUnit = 'unitDay' | 'unitWeek' | 'unitMonth';
+type PickUnit = 'Day' | 'Week' | 'Month';
 type QuickPick = { days: number; amount: number; unit: PickUnit; usual?: true };
 
 /** 3 d, 5 d, 1 wk, 2 wk, 1 mo. A month is always 30 days. */
 const QUICK: QuickPick[] = [
-  { days: 3, amount: 3, unit: 'unitDay' },
-  { days: 5, amount: 5, unit: 'unitDay' },
-  { days: 7, amount: 1, unit: 'unitWeek' },
-  { days: 14, amount: 2, unit: 'unitWeek' },
-  { days: 30, amount: 1, unit: 'unitMonth' },
+  { days: 3, amount: 3, unit: 'Day' },
+  { days: 5, amount: 5, unit: 'Day' },
+  { days: 7, amount: 1, unit: 'Week' },
+  { days: 14, amount: 2, unit: 'Week' },
+  { days: 30, amount: 1, unit: 'Month' },
 ];
 
 export type QuickPicksProps = {
@@ -53,7 +53,7 @@ export function QuickPicks({
     usualDays === null
       ? QUICK
       : [
-          { days: usualDays, amount: usualDays, unit: 'unitDay', usual: true },
+          { days: usualDays, amount: usualDays, unit: 'Day', usual: true },
           ...QUICK,
         ];
   const usualPressed = usualDays !== null && days === usualDays;
@@ -121,8 +121,9 @@ export function QuickPicks({
     >
       {picks.map((pick) => {
         const iso = defaultExpiryDate(pick.days, today);
-        const unit = t(`picker.${pick.unit}`);
-        const amount = `${pick.amount} ${unit}`;
+        // The tile shows the abbreviation; its name spells the amount out in full words.
+        const unit = t(`picker.unit${pick.unit}`, { count: pick.amount });
+        const amount = t(`picker.amount${pick.unit}`, { count: pick.amount });
         const date = fullDate(iso, today, i18n.language, 'long');
         const landsOn = short.format(fromIso(iso));
         const pressed = pick.usual

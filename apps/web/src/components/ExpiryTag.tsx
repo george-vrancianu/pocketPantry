@@ -1,4 +1,4 @@
-import { AlertIcon, Box, tokens } from '@pocket-pantry/ui';
+import { AlertIcon, Box, tokens, visuallyHidden } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { ExpiryTag as ExpiryTagValue } from '../lib/pantry';
 
@@ -15,6 +15,8 @@ export function ExpiryTag({ tag }: Props) {
   const { t } = useTranslation('pantry');
 
   let label: string;
+  // The abbreviation is for the eye; a screen reader gets the whole, pluralised words.
+  let spoken: string | null = null;
   switch (tag.kind) {
     case 'none':
     case 'expired':
@@ -24,9 +26,11 @@ export function ExpiryTag({ tag }: Props) {
       break;
     case 'daysLeft':
       label = t('expiry.daysLeft', { count: tag.days });
+      spoken = t('expiry.daysLeftLong', { count: tag.days });
       break;
     case 'days':
       label = t('expiry.days', { count: tag.days });
+      spoken = t('expiry.daysLong', { count: tag.days });
   }
 
   const colours =
@@ -60,7 +64,16 @@ export function ExpiryTag({ tag }: Props) {
       {tag.kind === 'expired' ? (
         <AlertIcon size={12} strokeWidth={2.2} />
       ) : null}
-      {label}
+      {spoken === null ? (
+        label
+      ) : (
+        <>
+          <span aria-hidden="true">{label}</span>
+          <Box component="span" sx={visuallyHidden}>
+            {spoken}
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

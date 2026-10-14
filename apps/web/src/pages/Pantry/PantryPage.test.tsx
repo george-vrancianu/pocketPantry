@@ -99,7 +99,7 @@ describe('PantryPage', () => {
     const rows = within(fridge).getAllByRole('listitem');
     expect(rows.map((row) => row.textContent)).toEqual([
       'Yogurt' + '500 g · Greek, opened' + 'Today',
-      'Spinach' + '2 d left',
+      'Spinach' + '2 d left' + '2 days left',
     ]);
 
     const cupboard = screen.getByRole('region', { name: 'Cupboard · 1' });
@@ -136,9 +136,9 @@ describe('PantryPage', () => {
           'Bread' + 'Expired',
           'Yogurt' + 'Today',
           'Spinach' + 'Tomorrow',
-          'Feta' + '3 d left',
-          'Ham' + '4 d',
-          'Butter' + '9 d',
+          'Feta' + '3 d left' + '3 days left',
+          'Ham' + '4 d' + '4 days',
+          'Butter' + '9 d' + '9 days',
           'Mustard',
         ]),
       );
@@ -166,9 +166,9 @@ describe('PantryPage', () => {
           'Bread' + 'Expired',
           'Yogurt' + 'Today',
           'Spinach' + 'Tomorrow',
-          'Feta' + '3 d',
-          'Ham' + '4 d',
-          'Butter' + '9 d',
+          'Feta' + '3 d' + '3 days',
+          'Ham' + '4 d' + '4 days',
+          'Butter' + '9 d' + '9 days',
           'Mustard',
         ]),
       );
@@ -183,9 +183,9 @@ describe('PantryPage', () => {
           'Bread' + 'Expired',
           'Yogurt' + 'Today',
           'Spinach' + 'Tomorrow',
-          'Feta' + '3 d left',
-          'Ham' + '4 d left',
-          'Butter' + '9 d',
+          'Feta' + '3 d left' + '3 days left',
+          'Ham' + '4 d left' + '4 days left',
+          'Butter' + '9 d' + '9 days',
           'Mustard',
         ]),
       );
@@ -637,7 +637,7 @@ describe('PantryPage', () => {
       );
 
       expect(
-        screen.getByRole('button', { name: 'Expires, No expiry date' }),
+        screen.getByRole('button', { name: 'Expires, no expiry date' }),
       ).toBeInTheDocument();
       expect((await save(user, calls)).expiryDate).toBeNull();
     });
@@ -696,7 +696,7 @@ describe('PantryPage', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       const row = screen.getByRole('button', {
-        name: 'Expires, No expiry date',
+        name: 'Expires, no expiry date',
       });
       expect(row).toHaveTextContent('No expiry date');
       expect(row).toHaveTextContent('Tap to set one');
@@ -719,17 +719,17 @@ describe('PantryPage', () => {
 
       // Parmesan's Default Expiry is 30 days, the same as 1 mo: only Usual lights up.
       expect(quickPicks(sheet)).toEqual([
-        'Usual, 30 d, Friday, November 13: true',
-        '3 d, Saturday, October 17: false',
-        '5 d, Monday, October 19: false',
-        '1 wk, Wednesday, October 21: false',
-        '2 wk, Wednesday, October 28: false',
-        '1 mo, Friday, November 13: false',
+        'Usual, 30 days, Friday, November 13: true',
+        '3 days, Saturday, October 17: false',
+        '5 days, Monday, October 19: false',
+        '1 week, Wednesday, October 21: false',
+        '2 weeks, Wednesday, October 28: false',
+        '1 month, Friday, November 13: false',
       ]);
       const usual = within(sheet).getByRole('button', { name: /^Usual/ });
       expect(usual).toHaveTextContent('30d');
       expect(usual).toHaveTextContent('Usual · Nov 13');
-      const week = within(sheet).getByRole('button', { name: /^1 wk/ });
+      const week = within(sheet).getByRole('button', { name: /^1 week/ });
       expect(week).toHaveTextContent('1wk');
       expect(week).toHaveTextContent('Oct 21');
     });
@@ -746,21 +746,25 @@ describe('PantryPage', () => {
         return [last?.child?.querySelector('h3')?.textContent, last?.behavior];
       };
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
       expect(readout).toHaveTextContent('Sat, Oct 17in 3 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
-      await user.click(within(sheet).getByRole('button', { name: /^5 d,/ }));
+      await user.click(within(sheet).getByRole('button', { name: /^5 days,/ }));
       expect(readout).toHaveTextContent('Mon, Oct 19in 5 days');
-      await user.click(within(sheet).getByRole('button', { name: /^1 wk,/ }));
+      await user.click(within(sheet).getByRole('button', { name: /^1 week,/ }));
       expect(readout).toHaveTextContent('Wed, Oct 21in 7 days');
-      await user.click(within(sheet).getByRole('button', { name: /^1 mo,/ }));
+      await user.click(
+        within(sheet).getByRole('button', { name: /^1 month,/ }),
+      );
       expect(readout).toHaveTextContent('Fri, Nov 13in 30 days');
       expect(shown()).toEqual(['November 2026', 'smooth']);
-      await user.click(within(sheet).getByRole('button', { name: /^2 wk,/ }));
+      await user.click(
+        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
+      );
       expect(readout).toHaveTextContent('Wed, Oct 28in 14 days');
       expect(shown()).toEqual(['October 2026', 'smooth']);
       expect(
-        within(sheet).getByRole('button', { name: /^2 wk,/ }),
+        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
       ).toHaveAttribute('aria-pressed', 'true');
       expect(
         within(sheet).getByRole('button', { name: /^Usual,/ }),
@@ -793,7 +797,7 @@ describe('PantryPage', () => {
         }),
       );
       expect(
-        within(sheet).getByRole('button', { name: /^3 d,/ }),
+        within(sheet).getByRole('button', { name: /^3 days,/ }),
       ).toHaveAttribute('aria-pressed', 'true');
     });
 
@@ -813,11 +817,11 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
 
       expect(quickPicks(sheet)).toEqual([
-        '3 d, Saturday, October 17: false',
-        '5 d, Monday, October 19: false',
-        '1 wk, Wednesday, October 21: false',
-        '2 wk, Wednesday, October 28: false',
-        '1 mo, Friday, November 13: false',
+        '3 days, Saturday, October 17: false',
+        '5 days, Monday, October 19: false',
+        '1 week, Wednesday, October 21: false',
+        '2 weeks, Wednesday, October 28: false',
+        '1 month, Friday, November 13: false',
       ]);
     });
 
@@ -859,7 +863,7 @@ describe('PantryPage', () => {
       const sheet = await openSheet(user);
       const calendar = within(sheet).getByRole('group', { name: 'Calendar' });
 
-      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
       const last = scrolling.scrolledTo(calendar);
       expect(last?.child?.querySelector('h3')).toHaveTextContent(
         'October 2026',
@@ -1033,7 +1037,7 @@ describe('PantryPage', () => {
       expect(day).toHaveAttribute('aria-pressed', 'true');
 
       // Move away with a quick pick, then pick the far day again.
-      await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+      await user.click(within(sheet).getByRole('button', { name: /^3 days,/ }));
       expect(day).toHaveAttribute('aria-pressed', 'false');
       await user.click(day);
       expect(day).toHaveAttribute('aria-pressed', 'true');
@@ -1096,7 +1100,9 @@ describe('PantryPage', () => {
       await focusLandsOn(() =>
         within(sheet).getByRole('button', { name: /^Usual,/ }),
       );
-      await user.click(within(sheet).getByRole('button', { name: /^2 wk,/ }));
+      await user.click(
+        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
+      );
       await user.keyboard('{Escape}');
       await waitFor(() =>
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
@@ -1107,7 +1113,7 @@ describe('PantryPage', () => {
 
       sheet = await openSheet(user);
       await focusLandsOn(() =>
-        within(sheet).getByRole('button', { name: /^2 wk,/ }),
+        within(sheet).getByRole('button', { name: /^2 weeks,/ }),
       );
       // A day that matches no quick pick: focus goes to the first tile next time.
       await user.click(
@@ -1153,7 +1159,7 @@ describe('PantryPage', () => {
       );
       act(() =>
         within(sheet)
-          .getByRole('button', { name: /^1 mo,/ })
+          .getByRole('button', { name: /^1 month,/ })
           .focus(),
       );
       await user.tab();
@@ -1216,7 +1222,7 @@ describe('PantryPage', () => {
       );
       act(() =>
         within(sheet)
-          .getByRole('button', { name: /^1 mo,/ })
+          .getByRole('button', { name: /^1 month,/ })
           .focus(),
       );
       await user.tab();
@@ -1385,7 +1391,9 @@ describe('PantryPage', () => {
 
       const fridge = await screen.findByRole('region', { name: 'Fridge · 2' });
       const [row] = within(fridge).getAllByRole('listitem');
-      expect(row.textContent).toBe('Milk' + '1.5 L · 2 batches' + '2 d left');
+      expect(row.textContent).toBe(
+        'Milk' + '1.5 L · 2 batches' + '2 d left' + '2 days left',
+      );
     });
 
     describe('Staple star', () => {
@@ -1537,10 +1545,10 @@ describe('PantryPage', () => {
       renderWithProviders(<PantryPage />);
 
       const toggle = await screen.findByRole('button', { name: /^Parmesan/ });
-      expect(toggle).toHaveTextContent(/40 d$/);
+      expect(toggle).toHaveTextContent(/40 d40 days$/);
       await user.click(toggle);
 
-      expect(toggle).not.toHaveTextContent(/40 d$/);
+      expect(toggle).not.toHaveTextContent(/40 d40 days$/);
       const [detail] = batchRows('Parmesan');
       expect(detail).toHaveTextContent(/^Grana Padano 200g.*40 d/);
     });
@@ -1928,11 +1936,11 @@ describe('PantryPage', () => {
             .getAllByRole('button')
             .map((tile) => tile.getAttribute('aria-label')),
         ).toEqual([
-          '3 d, Saturday, October 17',
-          '5 d, Monday, October 19',
-          '1 wk, Wednesday, October 21',
-          '2 wk, Wednesday, October 28',
-          '1 mo, Friday, November 13',
+          '3 days, Saturday, October 17',
+          '5 days, Monday, October 19',
+          '1 week, Wednesday, October 21',
+          '2 weeks, Wednesday, October 28',
+          '1 month, Friday, November 13',
         ]);
       });
 
@@ -1940,7 +1948,9 @@ describe('PantryPage', () => {
         const user = userEvent.setup();
         const { calls, form, sheet } = await openExpirySheet(user);
 
-        await user.click(within(sheet).getByRole('button', { name: /^1 wk/ }));
+        await user.click(
+          within(sheet).getByRole('button', { name: /^1 week/ }),
+        );
         await user.keyboard('{Escape}');
         await waitFor(() =>
           expect(
@@ -1992,7 +2002,9 @@ describe('PantryPage', () => {
         });
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+        await user.click(
+          within(sheet).getByRole('button', { name: /^3 days,/ }),
+        );
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');
@@ -2051,7 +2063,9 @@ describe('PantryPage', () => {
         });
         expect(day).toHaveAttribute('aria-pressed', 'true');
 
-        await user.click(within(sheet).getByRole('button', { name: /^3 d,/ }));
+        await user.click(
+          within(sheet).getByRole('button', { name: /^3 days,/ }),
+        );
         expect(day).toHaveAttribute('aria-pressed', 'false');
         await user.click(day);
         expect(day).toHaveAttribute('aria-pressed', 'true');

@@ -364,12 +364,12 @@ describe('the expiry picker in the Finish Shopping Review', () => {
     const sheet = await openSheet(user, 'Parmesan');
     expect(sheet).toHaveTextContent('Parmesan · 200 g · Fridge');
     expect(quickPicks(sheet)).toEqual([
-      'Usual, 18 d, Sunday, November 1: true',
-      '3 d, Saturday, October 17: false',
-      '5 d, Monday, October 19: false',
-      '1 wk, Wednesday, October 21: false',
-      '2 wk, Wednesday, October 28: false',
-      '1 mo, Friday, November 13: false',
+      'Usual, 18 days, Sunday, November 1: true',
+      '3 days, Saturday, October 17: false',
+      '5 days, Monday, October 19: false',
+      '1 week, Wednesday, October 21: false',
+      '2 weeks, Wednesday, October 28: false',
+      '1 month, Friday, November 13: false',
     ]);
   });
 
@@ -411,7 +411,7 @@ describe('the expiry picker in the Finish Shopping Review', () => {
     await openReview();
 
     let sheet = await openSheet(user, 'Milk');
-    await user.click(within(sheet).getByRole('button', { name: /^1 wk/ }));
+    await user.click(within(sheet).getByRole('button', { name: /^1 week/ }));
     await closeSheet(user, sheet);
     sheet = await openSheet(user, 'Dragon fruit');
     await user.click(
