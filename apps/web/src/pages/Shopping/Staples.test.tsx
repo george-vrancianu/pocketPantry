@@ -745,3 +745,52 @@ describe('StaplesPage Browse by aisle', () => {
     ).toBeVisible();
   });
 });
+
+describe('Add to your catalog (#270)', () => {
+  it('is offered in the Staples search, which has no Use as typed', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+    await screen.findByRole('group', { name: 'Milk' });
+
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(
+      screen.getByRole('button', { name: 'Add “kombucha” to your catalog' }),
+    ).toBeVisible();
+  });
+
+  it('is offered in the Shopping add sheet, above Use as typed', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [], usedUp: [], expired: [] }),
+      'GET /api/shopping-templates': () => Response.json({ templates: [] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Add items' }),
+    );
+    const dialog = await screen.findByRole('dialog');
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await within(dialog).findAllByRole('option');
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
+  });
+});

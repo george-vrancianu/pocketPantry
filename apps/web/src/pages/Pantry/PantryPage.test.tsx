@@ -3095,3 +3095,28 @@ describe('PantryPage Browse by aisle', () => {
     ).toBeTruthy();
   });
 });
+
+describe('PantryPage: Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers Add to your catalog in the Add batch search, above Use as typed when nothing matches', async () => {
+    const user = userEvent.setup();
+    stubPantry([], []);
+    renderWithProviders(<PantryPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Add batch' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await screen.findAllByRole('option');
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
+    expect(
+      screen.getByRole('button', { name: 'Add “kombucha” to your catalog' }),
+    ).toBeVisible();
+  });
+});

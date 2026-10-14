@@ -760,3 +760,47 @@ describe('Family Recipe Browse by aisle', () => {
     expect(await screen.findByText('Browse by aisle')).toBeVisible();
   });
 });
+
+describe('Family Recipe form: Add to your catalog (#270)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('offers it in the ingredient search, above Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await screen.findByLabelText(/^Title/);
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await screen.findAllByRole('option');
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
+  });
+
+  it('offers it in a Guidance link search, which has no Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+
+    await user.type(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+      'kombucha',
+    );
+
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+  });
+});

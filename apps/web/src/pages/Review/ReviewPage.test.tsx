@@ -830,3 +830,30 @@ describe('ReviewPage match dialog has no Browse by aisle', () => {
     expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
   });
 });
+
+describe('ReviewPage: Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is offered in the Match dialog search, which has no Use as typed', async () => {
+    renderReview([sure()], {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await within(dialog).findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+  });
+});

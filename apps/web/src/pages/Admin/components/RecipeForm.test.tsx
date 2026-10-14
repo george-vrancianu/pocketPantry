@@ -383,3 +383,33 @@ describe('RecipeForm Browse by aisle', () => {
     }
   });
 });
+
+describe('RecipeForm: no Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers neither the button nor the option when nothing matches', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
+    expect(screen.queryByText(/to your catalog/)).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('option', { name: /to your catalog/ }),
+    ).toBeNull();
+  });
+});
