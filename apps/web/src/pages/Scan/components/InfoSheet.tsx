@@ -2,7 +2,7 @@ import { Box, Typography, tokens } from '@pocket-pantry/ui';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_MODES } from '../../../lib/scan';
-import { glassFocusRing } from './glass';
+import { glassFocusRing, shade, translucent } from './glass';
 
 const FOCUSABLE =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -49,7 +49,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
         inset: 0,
         display: 'flex',
         alignItems: 'flex-end',
-        backgroundColor: tokens.color.camScrim,
+        backgroundColor: shade(45),
       }}
     >
       <Box
@@ -64,9 +64,9 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
           pt: 1.5,
           pb: 'calc(24px + env(safe-area-inset-bottom))',
           borderRadius: '28px 28px 0 0',
-          backgroundColor: tokens.color.camGlassStrong,
+          backgroundColor: translucent(tokens.color.surface, 82),
           backdropFilter: 'blur(14px)',
-          color: tokens.color.camFg,
+          color: tokens.color.ink,
         }}
       >
         <Box
@@ -77,7 +77,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             mx: 'auto',
             mb: 2,
             borderRadius: 2,
-            backgroundColor: tokens.color.camDim,
+            backgroundColor: tokens.color.muted,
           }}
         />
         <Typography
@@ -87,7 +87,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
         >
           {t('info.title')}
         </Typography>
-        <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.camDim }}>
+        <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
           {t('info.body')}
         </Typography>
         <Box
@@ -97,7 +97,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
           {SCAN_MODES.map((mode) => (
             <Box component="li" key={mode} sx={{ mt: 0.75 }}>
               <strong>{t(`mode.${mode}`)}</strong>{' '}
-              <Box component="span" sx={{ color: tokens.color.camDim }}>
+              <Box component="span" sx={{ color: tokens.color.muted }}>
                 {t(`detail.${mode}`)}
               </Box>
               {mode === 'receipt'
@@ -105,7 +105,7 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
                     (key) => (
                       <Box
                         key={key}
-                        sx={{ mt: 0.5, color: tokens.color.camDim }}
+                        sx={{ mt: 0.5, color: tokens.color.muted }}
                       >
                         {t(key)}
                       </Box>
@@ -129,8 +129,8 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
             fontSize: 15,
             fontWeight: 700,
             cursor: 'pointer',
-            backgroundColor: tokens.color.camAccent,
-            color: tokens.color.camAccentInk,
+            backgroundColor: tokens.color.accent,
+            color: tokens.color.bg,
             '&:focus-visible': glassFocusRing,
           }}
         >

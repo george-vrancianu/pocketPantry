@@ -12,7 +12,12 @@ import {
 } from '@pocket-pantry/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { glassControl, glassFocusRing } from './components/glass';
+import {
+  glassControl,
+  glassFocusRing,
+  shade,
+  translucent,
+} from './components/glass';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { SessionStrip } from './components/SessionStrip';
 import { ModeDial } from './components/ModeDial';
@@ -32,7 +37,10 @@ const roundButton = (size: number) => ({
   '&:focus-visible': glassFocusRing,
 });
 
-/** The dark camera screen (handoff section 7). */
+/**
+ * The dark camera screen (handoff section 7). It is always in Dark-first,
+ * whatever the Member's Theme, so the chrome never washes out the camera view.
+ */
 export function ScanPage() {
   const { t } = useTranslation('scan');
   const screen = useScanScreen();
@@ -44,13 +52,14 @@ export function ScanPage() {
   return (
     <Box
       data-testid="scan-screen"
+      data-theme="dark"
       sx={{
         position: 'fixed',
         inset: 0,
         zIndex: 20,
         overflow: 'hidden',
-        backgroundColor: tokens.color.cameraBg,
-        color: tokens.color.camFg,
+        backgroundColor: tokens.color.bg,
+        color: tokens.color.ink,
       }}
     >
       <Box
@@ -76,7 +85,7 @@ export function ScanPage() {
           position: 'absolute',
           inset: 0,
           pointerEvents: 'none',
-          background: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${tokens.color.camScrim} 100%)`,
+          backgroundImage: `radial-gradient(ellipse at 50% 45%, transparent 55%, ${shade(45)} 100%)`,
         }}
       />
       <Viewfinder
@@ -120,8 +129,8 @@ export function ScanPage() {
             sx={{
               ...roundButton(40),
               ...(screen.flash && {
-                backgroundColor: tokens.color.camFg,
-                color: tokens.color.ink,
+                backgroundColor: tokens.color.ink,
+                color: tokens.color.bg,
               }),
             }}
           >
@@ -181,8 +190,8 @@ export function ScanPage() {
             fontSize: 14,
             fontWeight: 800,
             fontFamily: 'inherit',
-            backgroundColor: tokens.color.camFg,
-            color: tokens.color.camAccentInk,
+            backgroundColor: tokens.color.ink,
+            color: tokens.color.bg,
             opacity: screen.scans.length === 0 ? 0.45 : 1,
             cursor: screen.scans.length === 0 ? 'default' : 'pointer',
             '&:focus-visible': glassFocusRing,
@@ -204,12 +213,9 @@ export function ScanPage() {
                 textAlign: 'center',
                 backgroundColor:
                   screen.pending > 0
-                    ? tokens.color.camWarn
-                    : tokens.color.camGlassStrong,
-                color:
-                  screen.pending > 0
-                    ? tokens.color.camAccentInk
-                    : tokens.color.camFg,
+                    ? tokens.color.soonFg
+                    : translucent(tokens.color.surface, 82),
+                color: screen.pending > 0 ? tokens.color.bg : tokens.color.ink,
               }}
             >
               {screen.scans.length}

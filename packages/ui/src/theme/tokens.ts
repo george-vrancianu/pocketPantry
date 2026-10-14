@@ -56,17 +56,6 @@ export const tokens = {
     soonBorder: mix(soonBg, 60, soonFg),
     okBg: palette('success-light'),
     okFg: palette('success-main'),
-    // The always-dark camera palette (--cam-*), the same in every Theme until
-    // the Scan screen is forced into Dark-first (#246). `cameraBg` is the screen behind it.
-    cameraBg: '#101813',
-    camFg: '#f4f4f0',
-    camDim: 'rgba(244,244,240,.62)',
-    camGlass: 'rgba(20,22,20,.55)',
-    camGlassStrong: 'rgba(20,22,20,.82)',
-    camScrim: 'rgba(0,0,0,0.45)',
-    camAccent: '#9be38f',
-    camAccentInk: '#0c1a0f',
-    camWarn: '#ffcf5a',
   },
   font: {
     display: 'var(--pp-display)',
