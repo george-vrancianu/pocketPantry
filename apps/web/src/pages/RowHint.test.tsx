@@ -273,7 +273,7 @@ describe('first-use row hint', () => {
         await screen.findByRole('button', { name: /Milk/ }),
       );
       const rows = within(
-        screen.getByRole('list', { name: /Batches of Milk/ }),
+        screen.getByRole('group', { name: 'Milk, 2 batches' }),
       ).getAllByRole('group');
       expect(rows).toHaveLength(2);
       await waitFor(() => expect(peeking()).toBe(contentOf(rows[0])));

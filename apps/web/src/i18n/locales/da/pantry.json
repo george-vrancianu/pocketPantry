@@ -30,7 +30,10 @@
   "noMatches": "Ingen partier matcher.",
   "batchCount_one": "{{count}} parti",
   "batchCount_other": "{{count}} partier",
-  "batchesOf": "Partier af {{name}}",
+  "group": {
+    "batches_one": "{{count}} parti",
+    "batches_other": "{{count}} partier"
+  },
   "noDetails": "Ingen mængde angivet",
   "edit": {
     "title": "Rediger partiet {{name}}",

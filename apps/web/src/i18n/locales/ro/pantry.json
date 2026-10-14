@@ -30,7 +30,11 @@
   "batchCount_one": "{{count}} lot",
   "batchCount_few": "{{count}} loturi",
   "batchCount_other": "{{count}} de loturi",
-  "batchesOf": "Loturi de {{name}}",
+  "group": {
+    "batches_one": "{{count}} lot",
+    "batches_few": "{{count}} loturi",
+    "batches_other": "{{count}} de loturi"
+  },
   "noDetails": "Fără cantitate",
   "edit": {
     "title": "Editează lotul de {{name}}",

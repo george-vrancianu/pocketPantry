@@ -1,5 +1,11 @@
-import { Box, Typography, tokens, radius } from '@pocket-pantry/ui';
-import { useEffect, useId, useRef, useState } from 'react';
+import {
+  Box,
+  ChevronDownIcon,
+  Typography,
+  tokens,
+  radius,
+} from '@pocket-pantry/ui';
+import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IngredientIconSlot } from '../../../components/IngredientIconSlot';
 import { StapleToggle } from '../../../components/StapleToggle';
@@ -15,6 +21,8 @@ import { BatchDetail } from './BatchDetail';
 type Props = {
   rollUp: PantryRow;
   today: Date;
+  /** Open this Ingredient (closing any other on the page), or close it when it is open. */
+  onToggle: () => void;
   onRemoveBatch: (batch: Batch) => void;
   /** Called when removing or moving a Batch leaves this row with nothing, so focus can go elsewhere. */
   onRowGone: () => void;
@@ -25,12 +33,13 @@ type Props = {
 export function RollUpRow({
   rollUp,
   today,
+  onToggle,
   onRemoveBatch,
   onRowGone,
   rowHint,
 }: Props) {
   const { t, i18n } = useTranslation('pantry');
-  const [expanded, setExpanded] = useState(false);
+  const expanded = rollUp.open;
   const panelId = useId();
   const toggle = useRef<HTMLButtonElement>(null);
   const { tagFor } = useExpiryTags(today);
@@ -56,6 +65,15 @@ export function RollUpRow({
     }
     // Only when the row becomes gone, not on every render while it is.
   }, [rollUp.gone]);
+
+  // Escape inside the open body closes it, and focus goes back to the row. A Batch row that used
+  // the key (its removal confirmation) has already prevented the default.
+  const closeFromInside = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    event.preventDefault();
+    onToggle();
+    toggle.current?.focus();
+  };
 
   const detail = [
     rollUp.totals
@@ -95,7 +113,7 @@ export function RollUpRow({
           ref={toggle}
           aria-expanded={expanded}
           aria-controls={expanded && !rollUp.gone ? panelId : undefined}
-          onClick={() => setExpanded((open) => !open)}
+          onClick={onToggle}
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -156,6 +174,25 @@ export function RollUpRow({
           </Box>
           {tag && !expanded ? <ExpiryTag tag={tag} /> : null}
           {rollUp.runningLow ? <RunningLowChip /> : null}
+          <Box
+            component="span"
+            aria-hidden="true"
+            data-testid="chevron"
+            sx={{
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              color: tokens.color.muted,
+              transform: expanded ? 'rotate(180deg)' : 'none',
+              transition: 'transform 260ms cubic-bezier(.2,.8,.2,1)',
+              '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
+            }}
+          >
+            <ChevronDownIcon size={18} />
+          </Box>
         </Box>
         {expanded && !rollUp.unmatched ? (
           <>
@@ -166,35 +203,40 @@ export function RollUpRow({
       </Box>
       {expanded && !rollUp.gone ? (
         <Box
-          component="ul"
           id={panelId}
-          aria-label={t('batchesOf', { name: rollUp.name })}
-          sx={{
-            mt: 0,
-            mb: 1,
-            // The rows pad themselves (12 pt), so their content lines up 50 pt in.
-            ml: '38px',
-            p: 0,
-            borderTop: `1px solid ${tokens.color.divider}`,
-          }}
+          role="group"
+          aria-label={`${rollUp.name}, ${t('group.batches', { count: rollUp.batches.length })}`}
+          onKeyDown={closeFromInside}
         >
-          {rollUp.batches.map((batch, index) => (
-            <BatchDetail
-              key={batch.id}
-              batch={batch}
-              peek={
-                index === 0 && rowHint.leader === panelId && rowHint.hint.peek
-              }
-              onLearned={rowHint.hint.onLearned}
-              today={today}
-              onRemove={onRemoveBatch}
-              onLeft={() =>
-                rollUp.batches.length > 1
-                  ? toggle.current?.focus()
-                  : onRowGone()
-              }
-            />
-          ))}
+          <Box
+            component="ul"
+            sx={{
+              mt: 0,
+              mb: 1,
+              // The rows pad themselves (12 pt), so their content lines up 50 pt in.
+              ml: '38px',
+              p: 0,
+              borderTop: `1px solid ${tokens.color.divider}`,
+            }}
+          >
+            {rollUp.batches.map((batch, index) => (
+              <BatchDetail
+                key={batch.id}
+                batch={batch}
+                peek={
+                  index === 0 && rowHint.leader === panelId && rowHint.hint.peek
+                }
+                onLearned={rowHint.hint.onLearned}
+                today={today}
+                onRemove={onRemoveBatch}
+                onLeft={() =>
+                  rollUp.batches.length > 1
+                    ? toggle.current?.focus()
+                    : onRowGone()
+                }
+              />
+            ))}
+          </Box>
         </Box>
       ) : null}
     </Box>
