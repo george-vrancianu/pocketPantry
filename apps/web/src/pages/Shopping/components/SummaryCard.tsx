@@ -6,6 +6,7 @@ import {
   tokens,
   ProgressBar,
   Typography,
+  Card,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { colour, displayType, radius, shadow } from '../../../lib/themeVars';
@@ -29,15 +30,7 @@ export function SummaryCard({
   const { t } = useTranslation('shopping');
   const total = remaining + checked;
   return (
-    <Box
-      sx={{
-        p: '14px 14px 14px 16px',
-        bgcolor: 'background.paper',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: radius.card,
-      }}
-    >
+    <Card sx={{ p: '14px 14px 14px 16px' }}>
       <Box
         sx={{
           display: 'flex',
@@ -124,6 +117,6 @@ export function SummaryCard({
           </Button>
         </Box>
       ) : null}
-    </Box>
+    </Card>
   );
 }

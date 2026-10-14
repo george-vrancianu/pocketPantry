@@ -1,4 +1,3 @@
-import { tokens } from '@pocket-pantry/ui';
 import { focusManager } from '@tanstack/react-query';
 import {
   act,
@@ -258,7 +257,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
       expect(iconOf('Parmesan')).toHaveAttribute('aria-hidden', 'true');
     });
@@ -275,7 +274,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax')).toHaveAttribute(
         'data-ingredient-tint',
-        '#E3ECF3',
+        'dairy',
       );
     });
 
@@ -295,7 +294,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Parmesan')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
 
@@ -316,7 +315,7 @@ describe('PantryPage', () => {
       );
       expect(iconOf('Zorblax paste')).toHaveAttribute(
         'data-ingredient-tint',
-        tokens.color.chipNeutral,
+        'neutral',
       );
     });
   });

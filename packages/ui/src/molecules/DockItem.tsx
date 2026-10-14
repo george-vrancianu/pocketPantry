@@ -22,7 +22,8 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
       sx={{
         flexDirection: 'column',
         gap: '3px',
-        borderRadius: '18px',
+        // Concentric with the dock, 8 px inside its edge.
+        borderRadius: 'calc(var(--pp-r-dock) - 8px)',
         color: colour,
         fontSize: 11,
         fontWeight: active ? 700 : 600,
@@ -36,7 +37,7 @@ export function DockItem({ label, href, icon, active = false }: DockItemProps) {
           justifyContent: 'center',
           width: 52,
           height: 32,
-          borderRadius: '16px',
+          borderRadius: '999px',
           bgcolor: pillBackground,
         }}
       >

@@ -8,6 +8,7 @@ import {
   type SwipeRowHandle,
   Typography,
   useToast,
+  Card,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,18 +77,10 @@ export function ShoppingGroups({
                 {group.items.length}
               </Typography>
             </Box>
-            <Box
+            <Card
               component="ul"
-              sx={{
-                listStyle: 'none',
-                m: 0,
-                p: 0,
-                bgcolor: 'background.paper',
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: radius.card,
-                overflow: 'hidden',
-              }}
+              variant="list"
+              sx={{ listStyle: 'none', m: 0, p: 0, overflow: 'hidden' }}
             >
               {group.items.map((item, itemIndex) => (
                 <ChecklistRow
@@ -101,7 +94,7 @@ export function ShoppingGroups({
                   onRemove={onRemove}
                 />
               ))}
-            </Box>
+            </Card>
           </Box>
         );
       })}

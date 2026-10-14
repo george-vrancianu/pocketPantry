@@ -1,10 +1,9 @@
-import { Alert, Box, Spinner, tokens } from '@pocket-pantry/ui';
+import { Alert, Box, Card, Spinner, tokens } from '@pocket-pantry/ui';
 import type { ElementType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { WidgetSize } from '../../../lib/dashboard';
 import { widgetSpan, type GridColumns } from '../../../lib/layoutColumns';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   /** Accessible name of the card, also its visible title in most Widgets. */
@@ -42,7 +41,7 @@ export function WidgetCard({
   const Component: ElementType = linked ? Link : 'section';
 
   return (
-    <Box
+    <Card
       component={Component}
       {...(linked ? { to } : {})}
       aria-label={label}
@@ -54,12 +53,12 @@ export function WidgetCard({
         minHeight: size === 'small' ? 136 : undefined,
         boxSizing: 'border-box',
         p: padding,
-        borderRadius: radius.card,
-        bgcolor: butter ? tokens.color.butter : tokens.color.surface,
-        border: butter ? 0 : `1px solid ${tokens.color.line}`,
+        // The butter Widget is a filled card with no edge line.
+        ...(butter
+          ? { bgcolor: tokens.color.butter, borderColor: 'transparent' }
+          : {}),
         color: tokens.color.ink,
         textDecoration: 'none',
-        minWidth: 0,
       }}
     >
       {isLoading ? (
@@ -71,7 +70,7 @@ export function WidgetCard({
       ) : (
         children
       )}
-    </Box>
+    </Card>
   );
 }
 

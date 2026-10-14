@@ -3,6 +3,7 @@ import {
   createColorScheme,
   createTheme,
   type PaletteOptions,
+  type Theme,
 } from '@mui/material/styles';
 import type { CSSProperties, ElementType } from 'react';
 import {
@@ -12,6 +13,7 @@ import {
   type ThemeId,
   type ThemeTokens,
 } from './themes';
+import { aisleTintCssVariables } from './aisleTints';
 import { tokens } from './tokens';
 
 declare module '@mui/material/styles' {
@@ -138,17 +140,28 @@ export function themeSelector(id: ThemeId | '%s') {
   return `[data-theme="${id}"]`;
 }
 
-/** `--pp-*` variables per Theme selector; Warm editorial is also the `:root` default. */
+/** `--pp-*` variables (non-colour tokens and Aisle tints) per Theme selector; Warm editorial is also the `:root` default. */
 export function ppCssVariables(): Record<string, Record<string, string>> {
   const styles: Record<string, Record<string, string>> = {};
   for (const id of THEME_IDS) {
     const vars: Record<string, string> = {};
     for (const key of NON_COLOUR_TOKENS) vars[`--pp-${key}`] = THEMES[id][key];
+    Object.assign(vars, aisleTintCssVariables(id));
     const selector =
       id === 'warm' ? `:root, ${themeSelector(id)}` : themeSelector(id);
     styles[selector] = vars;
   }
   return styles;
+}
+
+/** An Alert's background and text: the Theme's ok, soon or urgent pair. */
+function statusPair(theme: Theme, key: 'success' | 'warning' | 'error') {
+  const { light, main } = (theme.vars ?? theme).palette[key];
+  return {
+    backgroundColor: light,
+    color: main,
+    '& .MuiAlert-icon': { color: main },
+  };
 }
 
 /** Display type follows the Theme's display face, weight and tracking. */
@@ -197,10 +210,12 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       stat: { ...display, fontSize: 40, lineHeight: 1 },
       meta: { fontSize: 13, fontWeight: 500, lineHeight: 1.4 },
       caption: { fontSize: 12, fontWeight: 500, lineHeight: 1.4 },
+      // Themes handoff section 4: 12/700 caps, .07 em, `muted`.
       sectionLabel: {
+        color: 'var(--mui-palette-text-secondary)',
         fontSize: 12,
         fontWeight: 700,
-        letterSpacing: '0.06em',
+        letterSpacing: '0.07em',
         textTransform: 'uppercase',
         lineHeight: 1.4,
       },
@@ -260,9 +275,32 @@ export function createPocketPantryTheme({ linkComponent }: ThemeOptions = {}) {
       MuiInputLabel: {
         styleOverrides: { root: { fontWeight: 600 } },
       },
+      // Status pairs straight from the Theme, rather than MUI's mixes of `main`.
       MuiAlert: {
         styleOverrides: {
-          root: { borderRadius: radius.input, fontWeight: 500 },
+          root: ({ theme }) => {
+            const { pp } = (theme.vars ?? theme).palette;
+            return {
+              borderRadius: 'var(--pp-r-ctl)',
+              fontWeight: 500,
+              variants: [
+                ...(['success', 'warning', 'error'] as const).map(
+                  (severity) => ({
+                    props: { variant: 'standard', severity },
+                    style: statusPair(theme, severity),
+                  }),
+                ),
+                {
+                  props: { variant: 'standard', severity: 'info' },
+                  style: {
+                    backgroundColor: pp.accentTint,
+                    color: pp.accentOnTint,
+                    '& .MuiAlert-icon': { color: pp.accentOnTint },
+                  },
+                },
+              ],
+            };
+          },
         },
       },
     },

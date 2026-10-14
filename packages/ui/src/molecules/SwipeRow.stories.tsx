@@ -41,7 +41,7 @@ function List({
         p: 0,
         listStyle: 'none',
         bgcolor: tokens.color.surface,
-        borderRadius: `${tokens.radius.card}px`,
+        borderRadius: 'var(--pp-r-card)',
         overflow: 'hidden',
       }}
     >

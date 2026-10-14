@@ -1,4 +1,4 @@
-import { Box, ClockIcon, Stack, tokens } from '@pocket-pantry/ui';
+import { Box, ClockIcon, Stack, tokens, Card } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { RecipeDetailStep, RecipeDetailTip } from '../../../lib/recipes';
 import { displayType, radius } from '../../../lib/themeVars';
@@ -73,18 +73,11 @@ export function StepList({
 }) {
   const { t } = useTranslation('recipes');
   return (
-    <Box
+    <Card
       component="ol"
+      variant="list"
       aria-label={label}
-      sx={{
-        listStyle: 'none',
-        m: 0,
-        px: '16px',
-        py: '4px',
-        bgcolor: tokens.color.surface,
-        border: `1px solid ${tokens.color.line}`,
-        borderRadius: radius.card,
-      }}
+      sx={{ listStyle: 'none', m: 0 }}
     >
       {steps.map((step, index) => (
         <Box
@@ -142,6 +135,6 @@ export function StepList({
           </Box>
         </Box>
       ))}
-    </Box>
+    </Card>
   );
 }

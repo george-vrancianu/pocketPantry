@@ -1,4 +1,4 @@
-import { Box, Typography, tokens } from '@pocket-pantry/ui';
+import { Box, Card, Typography } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StorageLocation } from '../../../lib/catalog';
@@ -6,7 +6,6 @@ import type { Batch } from '../../../lib/pantry';
 import type { PantryRowHint } from '../hooks/usePantryRowHint';
 import type { PantryRow } from '../hooks/usePantryScreen';
 import { RollUpRow } from './RollUpRow';
-import { radius } from '../../../lib/themeVars';
 
 type Props = {
   location: StorageLocation;
@@ -45,18 +44,10 @@ export function LocationSection({
       >
         {`${t(`common:locations.${location}`)} · ${batchCount}`}
       </Typography>
-      <Box
+      <Card
         component="ul"
-        sx={{
-          listStyle: 'none',
-          m: 0,
-          py: 0,
-          px: '14px',
-          bgcolor: tokens.color.surface,
-          border: `1px solid ${tokens.color.line}`,
-          borderRadius: radius.card,
-          overflow: 'hidden',
-        }}
+        variant="list"
+        sx={{ listStyle: 'none', m: 0, py: 0, px: '14px', overflow: 'hidden' }}
       >
         {rows.map((row) => (
           <RollUpRow
@@ -70,7 +61,7 @@ export function LocationSection({
             }
           />
         ))}
-      </Box>
+      </Card>
     </Box>
   );
 }

@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import { tokens } from '../theme/tokens';
 
 export type ProgressBarProps = {
   /** Accessible name of the bar. */
@@ -7,11 +6,11 @@ export type ProgressBarProps = {
   /** Completed amount, between 0 and `max`. */
   value: number;
   max: number;
-  /** `large` is an 8 px bar on the neutral chip track. Defaults to `default`. */
+  /** `large` is 8 px high, `default` 6. */
   size?: 'default' | 'large';
 };
 
-/** Handoff section 5: 6 px bar with an accent fill. */
+/** Themes handoff section 4: an `accent` fill on the `chip` track. */
 export function ProgressBar({
   label,
   value,
@@ -30,9 +29,8 @@ export function ProgressBar({
       aria-valuenow={percent}
       sx={{
         height,
-        borderRadius: `${height / 2}px`,
-        backgroundColor:
-          size === 'large' ? tokens.color.chipNeutral : tokens.color.bg,
+        borderRadius: '999px',
+        backgroundColor: 'pp.chip',
         overflow: 'hidden',
       }}
     >
@@ -40,7 +38,8 @@ export function ProgressBar({
         sx={{
           height,
           width: `${percent}%`,
-          backgroundColor: tokens.color.accent,
+          borderRadius: '999px',
+          backgroundColor: 'pp.accent',
         }}
       />
     </Box>

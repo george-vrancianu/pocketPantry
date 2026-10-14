@@ -13,7 +13,6 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { aboveDock, DOCK_HEIGHT } from '../theme/dock';
-import { tokens } from '../theme/tokens';
 import { usePrefersReducedMotion } from '../theme/usePrefersReducedMotion';
 
 /** How long a toast stays unless it says otherwise, ms. */
@@ -152,26 +151,30 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                       current.action?.onClick();
                       setOpen(false);
                     }}
-                    sx={{
-                      color: '#BFE0CC',
+                    sx={(theme) => ({
+                      color: (theme.vars ?? theme).palette.pp.toastAction,
                       fontSize: 14,
                       fontWeight: 700,
                       textTransform: 'none',
                       minWidth: 0,
-                    }}
+                    })}
                   >
                     {current.action.label}
                   </MuiButton>
                 ) : undefined
               }
-              sx={{
-                bgcolor: tokens.color.ink,
-                color: '#FFFFFF',
+              // Handoff section 4 Snackbar: light on the dark Theme, dark on the light ones.
+              sx={(theme) => ({
+                bgcolor: (theme.vars ?? theme).palette.pp.toastBg,
+                color: (theme.vars ?? theme).palette.pp.toastInk,
+                fontFamily: 'var(--pp-body)',
                 fontSize: 14,
                 fontWeight: 600,
-                borderRadius: '16px',
-                boxShadow: 'none',
-              }}
+                px: '16px',
+                py: '6px',
+                borderRadius: 'var(--pp-r-ctl)',
+                boxShadow: 'var(--pp-shadow-float)',
+              })}
             />
           </MuiSnackbar>
         </ToastPortal>

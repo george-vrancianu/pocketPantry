@@ -720,7 +720,7 @@ function ConfirmButton({
         flexShrink: 0,
         height: 34,
         px: '14px',
-        borderRadius: '10px',
+        borderRadius: 'calc(var(--pp-r-ctl) - 2px)',
         font: 'inherit',
         fontSize: 13.5,
         fontWeight: 700,

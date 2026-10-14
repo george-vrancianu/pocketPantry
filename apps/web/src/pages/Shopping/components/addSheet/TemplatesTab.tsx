@@ -8,6 +8,7 @@ import {
   TemplateIcon,
   Typography,
   tokens,
+  Card,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../../i18n/translateApiError';
@@ -96,13 +97,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
           </Typography>
         ) : null}
         {templates.data && templates.data.length > 0 ? (
-          <Box
-            sx={{
-              borderRadius: radius.card,
-              border: `1px solid ${color.line}`,
-              backgroundColor: color.surface,
-            }}
-          >
+          <Card variant="list" sx={{ p: 0 }}>
             {templates.data.map((template) => (
               <Box
                 key={template.id}
@@ -162,7 +157,7 @@ export function TemplatesTab({ onOpenTemplate, onSave }: TemplatesTabProps) {
                 </Box>
               </Box>
             ))}
-          </Box>
+          </Card>
         ) : null}
       </Box>
     </Box>
