@@ -54,13 +54,6 @@
     }
   },
   "search": {
-    "placeholder": "Search ingredients",
-    "clear": "Clear search",
-    "matches_one": "{{count}} match",
-    "matches_other": "{{count}} matches",
-    "noMatch": "No catalog match",
-    "freeText": "Add “{{name}}”",
-    "freeTextHint": "Not in the catalog, added as free text",
     "onList": "On list",
     "onListHint": "Already on your list. Adding again increases the amount.",
     "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",

@@ -10,14 +10,18 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCatalogSearch, type CatalogSearchResult } from '../../lib/catalog';
+import { normalizeName } from '../../lib/normalizeName';
 import { ErrorRow } from './ErrorRow';
 import { NoMatchRow } from './NoMatchRow';
 import { SearchField } from './SearchField';
 import { SearchResultRow } from './SearchResultRow';
 import { SearchSkeleton } from './SearchSkeleton';
+import { UseTypedRow } from './UseTypedRow';
 
 export type CatalogSearchProps = {
   onSelect: (ingredient: CatalogSearchResult) => void;
@@ -37,6 +41,26 @@ export type CatalogSearchProps = {
    * `onQueryChange` reports an empty query (and may also drop it for any change).
    */
   selected?: CatalogSearchResult | null;
+  /** Host blocks shown while the field is focused and empty. */
+  emptyState?: ReactNode;
+  /** When given, the no-match state ends with a "Use “…” as typed" option. */
+  onUseTyped?: (name: string) => void;
+  /** `shared` searches the shared Catalog only (Admin); default `family`. */
+  scope?: 'family' | 'shared';
+  /**
+   * A short pill for a row (for example "On list"), or null for none. Called
+   * for each result (with its id) and for the Use as typed row (id null).
+   */
+  rowTag?: (row: {
+    ingredientId: string | null;
+    name: string;
+  }) => string | null;
+  /** Show the empty state before the field is focused (it then stays until typing, a pick or Escape). */
+  defaultOpen?: boolean;
+  /** The text the field starts with, for a host that keeps it across remounts. */
+  defaultQuery?: string;
+  /** The search input, for a host that moves focus into it. */
+  inputRef?: RefObject<HTMLInputElement | null>;
 };
 
 /**
@@ -52,19 +76,27 @@ export function CatalogSearch({
   describedBy,
   showUnit = true,
   selected = null,
+  emptyState,
+  onUseTyped,
+  scope = 'family',
+  defaultQuery = '',
+  rowTag,
+  defaultOpen = false,
+  inputRef: hostInputRef,
 }: CatalogSearchProps) {
   const { t, i18n } = useTranslation('catalog');
   const id = useId();
   const name = label ?? t('search.label');
   const listId = `${id}-list`;
   const optionId = (index: number) => `${id}-option-${index}`;
-  const inputRef = useRef<HTMLInputElement>(null);
+  const ownInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = hostInputRef ?? ownInputRef;
   const reducedMotion = usePrefersReducedMotion();
 
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(defaultQuery);
+  const [open, setOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const search = useCatalogSearch(query, i18n.language);
+  const search = useCatalogSearch(query, i18n.language, scope);
   const typed = query.trim();
 
   // A failed search keeps the rows that were already showing, under the error row.
@@ -78,7 +110,11 @@ export function CatalogSearch({
   const firstLoad = typed !== '' && search.active && !search.data && !failed;
   // Any data on hand (even none matching) keeps the panel and shows the spinner.
   const refetching =
-    typed !== '' && search.data !== undefined && search.isSearching && !failed;
+    typed !== '' &&
+    search.active &&
+    search.data !== undefined &&
+    search.isSearching &&
+    !failed;
   const noMatch =
     typed !== '' &&
     search.active &&
@@ -86,9 +122,22 @@ export function CatalogSearch({
     results.length === 0 &&
     !failed;
 
+  // "Use as typed" ends the list unless a result already has the typed name.
+  const useTypedOffered =
+    onUseTyped !== undefined &&
+    typed !== '' &&
+    search.active &&
+    search.data !== undefined &&
+    !failed &&
+    !results.some(
+      (result) => normalizeName(result.name) === normalizeName(typed),
+    );
+  const optionCount = results.length + (useTypedOffered ? 1 : 0);
+
   const showPanel = open && !selected;
-  const expanded = showPanel && results.length > 0;
-  const active = activeIndex < results.length ? activeIndex : -1;
+  const expanded = showPanel && optionCount > 0;
+  const emptyShown = Boolean(emptyState) && open && typed === '' && !selected;
+  const active = activeIndex < optionCount ? activeIndex : -1;
 
   const change = (event: ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -99,7 +148,7 @@ export function CatalogSearch({
 
   const clear = () => {
     setQuery('');
-    setOpen(false);
+    setOpen(true);
     setActiveIndex(-1);
     onQueryChange?.('');
     inputRef.current?.focus();
@@ -110,6 +159,18 @@ export function CatalogSearch({
     setOpen(false);
     setActiveIndex(-1);
     onSelect(ingredient);
+  };
+
+  const useTyped = () => {
+    setOpen(false);
+    setActiveIndex(-1);
+    onUseTyped?.(typed);
+  };
+
+  /** Picks option `index`: a result, or the "Use as typed" option after them. */
+  const pick = (index: number) => {
+    if (index < results.length) select(results[index]);
+    else useTyped();
   };
 
   const keyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -128,24 +189,34 @@ export function CatalogSearch({
       }
       return;
     }
-    if (event.key === 'ArrowDown' && results.length > 0) {
+    if (event.key === 'ArrowDown' && optionCount > 0) {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex((active + 1) % results.length);
-    } else if (event.key === 'ArrowUp' && results.length > 0) {
+      setActiveIndex((active + 1) % optionCount);
+    } else if (event.key === 'ArrowUp' && optionCount > 0) {
       event.preventDefault();
       setOpen(true);
-      setActiveIndex(active <= 0 ? results.length - 1 : active - 1);
+      setActiveIndex(active <= 0 ? optionCount - 1 : active - 1);
     } else if (event.key === 'Home' && expanded && active >= 0) {
       event.preventDefault();
       setActiveIndex(0);
     } else if (event.key === 'End' && expanded && active >= 0) {
       event.preventDefault();
-      setActiveIndex(results.length - 1);
+      setActiveIndex(optionCount - 1);
     } else if (event.key === 'Enter' && expanded && active >= 0) {
       event.preventDefault();
-      select(results[active]);
-    } else if (event.key === 'Escape' && open) {
+      pick(active);
+    } else if (
+      event.key === 'Enter' &&
+      useTypedOffered &&
+      !search.isSearching &&
+      results.length === 0
+    ) {
+      // The only option left is "Use as typed" (a result needs an arrow first),
+      // once the results for what is typed have arrived.
+      event.preventDefault();
+      pick(0);
+    } else if (event.key === 'Escape' && open && (typed !== '' || emptyShown)) {
       event.preventDefault();
       setOpen(false);
       setActiveIndex(-1);
@@ -175,9 +246,7 @@ export function CatalogSearch({
         value={query}
         onChange={change}
         onKeyDown={keyDown}
-        onFocus={() => {
-          if (typed) setOpen(true);
-        }}
+        onFocus={() => setOpen(true)}
         autoFocus={autoFocus}
         describedBy={describedBy}
         listboxId={listId}
@@ -191,6 +260,12 @@ export function CatalogSearch({
       <Box role="status" aria-live="polite" sx={visuallyHidden}>
         {status}
       </Box>
+      {emptyShown ? (
+        // Taps inside land without the field losing focus.
+        <Box onMouseDown={(event) => event.preventDefault()} sx={{ mt: 2 }}>
+          {emptyState}
+        </Box>
+      ) : null}
       <Box
         hidden={!panelVisible}
         sx={{
@@ -211,7 +286,7 @@ export function CatalogSearch({
           />
         ) : null}
         {firstLoad ? <SearchSkeleton animate={!reducedMotion} /> : null}
-        {noMatch ? <NoMatchRow query={typed} /> : null}
+        {noMatch ? <NoMatchRow query={search.query} /> : null}
         <Box
           component="ul"
           id={listId}
@@ -231,9 +306,20 @@ export function CatalogSearch({
                 active={index === active}
                 dimmed={refetching && !reducedMotion && index !== active}
                 first={index === 0}
+                tag={rowTag?.({ ingredientId: result.id, name: result.name })}
                 onSelect={() => select(result)}
               />
             ))}
+          {useTypedOffered ? (
+            <UseTypedRow
+              id={optionId(results.length)}
+              name={typed}
+              active={results.length === active}
+              first={results.length === 0}
+              tag={rowTag?.({ ingredientId: null, name: typed })}
+              onSelect={useTyped}
+            />
+          ) : null}
         </Box>
       </Box>
     </Box>

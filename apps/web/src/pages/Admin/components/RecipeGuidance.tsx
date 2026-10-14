@@ -80,6 +80,7 @@ export function RecipeGuidance({ recipe, catalog }: Props) {
         }}
         momentOptions={momentOptions}
         RecipePicker={RecipePicker}
+        ingredientScope="shared"
         ingredientName={(id) => {
           const item = catalog.ingredients.find((i) => i.id === id);
           return item ? localName(item, i18n.language) : undefined;

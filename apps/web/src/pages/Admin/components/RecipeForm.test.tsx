@@ -92,6 +92,30 @@ describe('RecipeForm', () => {
     vi.unstubAllGlobals();
   });
 
+  it('searches the shared Catalog only, and offers no Use as typed', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const user = userEvent.setup();
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mi',
+    );
+    await screen.findByRole('option', { name: /Milk/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+
   it('creates a Base Recipe from title, an Ingredient with its default unit, and a Step', async () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/catalog/search': () => Response.json({ results: [milk] }),

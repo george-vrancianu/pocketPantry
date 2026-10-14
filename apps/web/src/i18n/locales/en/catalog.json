@@ -11,6 +11,8 @@
     "noMatchHint": "Check the spelling or try a shorter word.",
     "errorTitle": "Couldn’t search right now",
     "errorHint": "Check your connection and try again.",
+    "useTyped": "Use “{{name}}” as typed",
+    "useTypedHint": "Not in the catalog · saved as an unmatched item",
     "retry": "Retry",
     "clear": "Clear search",
     "change": "Change ingredient",

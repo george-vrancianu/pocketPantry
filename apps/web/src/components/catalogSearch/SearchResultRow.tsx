@@ -1,6 +1,7 @@
 import { Box, tokens } from '@pocket-pantry/ui';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
+import { RowTag } from './RowTag';
 import { Highlighted, matchRange } from './matchRange';
 
 export type SearchResultRowProps = {
@@ -15,6 +16,8 @@ export type SearchResultRowProps = {
   /** Faded while newer results load. */
   dimmed: boolean;
   first: boolean;
+  /** The host's pill for this row, if any. */
+  tag?: string | null;
   onSelect: () => void;
 };
 
@@ -31,6 +34,7 @@ export function SearchResultRow({
   active,
   dimmed,
   first,
+  tag = null,
   onSelect,
 }: SearchResultRowProps) {
   const { color } = tokens;
@@ -43,7 +47,7 @@ export function SearchResultRow({
       id={id}
       role="option"
       aria-selected={active}
-      aria-label={[result.name, meta, showUnit ? result.defaultUnit : null]
+      aria-label={[result.name, meta, showUnit ? result.defaultUnit : null, tag]
         .filter(Boolean)
         .join(', ')}
       data-dimmed={dimmed ? 'true' : undefined}
@@ -102,6 +106,7 @@ export function SearchResultRow({
           {` · ${result.parentCategory.aisle.name}`}
         </Box>
       </Box>
+      {tag ? <RowTag>{tag}</RowTag> : null}
       {showUnit ? (
         active ? (
           <Box

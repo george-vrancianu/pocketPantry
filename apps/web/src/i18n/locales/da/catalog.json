@@ -11,6 +11,8 @@
     "noMatchHint": "Tjek stavningen, eller prøv et kortere ord.",
     "errorTitle": "Kunne ikke søge lige nu",
     "errorHint": "Tjek din forbindelse, og prøv igen.",
+    "useTyped": "Brug “{{name}}” som skrevet",
+    "useTypedHint": "Ikke i kataloget · gemmes som umatchet vare",
     "retry": "Prøv igen",
     "clear": "Ryd søgning",
     "change": "Skift ingrediens",
