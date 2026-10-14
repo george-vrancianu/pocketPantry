@@ -358,11 +358,15 @@ describe('StructuredOutputAiService', () => {
       expect(body.max_output_tokens).toBe(400);
     });
 
-    it('leaves temperature out above effort none, where the API rejects it', async () => {
-      const body = await sentBody('openai', 'low');
-      expect(body.reasoning).toEqual({ effort: 'low' });
-      expect(body).not.toHaveProperty('temperature');
-    });
+    // Probed on gpt-6-luna: every effort above none rejects temperature 0.
+    it.each(['low', 'medium', 'high', 'xhigh'])(
+      'leaves temperature out at effort %s, where the API rejects it',
+      async (effort) => {
+        const body = await sentBody('openai', effort);
+        expect(body.reasoning).toEqual({ effort });
+        expect(body).not.toHaveProperty('temperature');
+      },
+    );
 
     it('adds room for reasoning tokens to the output budget', async () => {
       // A gpt-6-luna Product Scan at effort low used 202 reasoning tokens of 297 output.

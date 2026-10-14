@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
-import type { AppConfig } from '../config/env';
+import type { AppConfig, ReasoningEffort } from '../config/env';
 import {
   createScanDebugRecorder,
   type ScanDebugCall,
@@ -44,11 +44,10 @@ export class StructuredOutputAiError extends ApiException {
   }
 }
 
-type ReasoningEffort = NonNullable<AppConfig['AI_REASONING_EFFORT']>;
-
 /**
  * `temperature: 0` keeps receipt reads repeatable. gpt-6-luna accepts it only at effort
- * `none` (no reasoning) and rejects it at every other effort, on both APIs.
+ * `none` (no reasoning) and rejects it at low, medium, high and xhigh (probed on both APIs
+ * for low, on Responses for the rest). It has no `minimal` effort at all.
  */
 function acceptsTemperature(effort: ReasoningEffort | undefined): boolean {
   return effort === undefined || effort === 'none';

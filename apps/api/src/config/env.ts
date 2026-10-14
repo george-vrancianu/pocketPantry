@@ -1,6 +1,17 @@
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 
+/** Reasoning efforts AI_REASONING_EFFORT accepts. */
+export const REASONING_EFFORTS = [
+  'none',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
 const envSchema = z.object({
   NODE_ENV: z
     .enum(['development', 'test', 'production'])
@@ -15,9 +26,7 @@ const envSchema = z.object({
   AI_BASE_URL: z.url().optional(),
   AI_VISION_MODEL: z.string().min(1).default('gpt-4o-mini-2024-07-18'),
   /** Reasoning effort for a reasoning model such as gpt-6-luna. Unset: none is sent (gpt-4o-mini). */
-  AI_REASONING_EFFORT: z
-    .enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh'])
-    .optional(),
+  AI_REASONING_EFFORT: z.enum(REASONING_EFFORTS).optional(),
   /** Scan Cap: Scans per Member per UTC day. 0 disables the cap (unlimited). */
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
