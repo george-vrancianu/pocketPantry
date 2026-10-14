@@ -1,10 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
-import { catalogTranslations } from '../database/schema';
+import { catalogEntityType } from '../database/schema';
+import type { CatalogScope } from './catalog-scope';
 import { type CatalogLocale, FALLBACK_LOCALE } from './catalog.schemas';
 
-export type EntityType =
-  (typeof catalogTranslations.entityType.enumValues)[number];
+export type EntityType = (typeof catalogEntityType.enumValues)[number];
 
 export type DisplayNames = {
   /** The name in the requested locale, else English, else the canonical name. */
@@ -14,25 +14,27 @@ export type DisplayNames = {
 /** Loads display names for the given Catalog entities in `locale`, with the English fallback. */
 export async function loadDisplayNames(
   database: Executor,
+  scope: CatalogScope,
   locale: CatalogLocale,
   entityIds: string[],
 ): Promise<DisplayNames> {
+  const translations = scope.translations(database);
   const rows =
     entityIds.length === 0
       ? []
       : await database
           .select({
-            entityType: catalogTranslations.entityType,
-            entityId: catalogTranslations.entityId,
-            locale: catalogTranslations.locale,
-            value: catalogTranslations.value,
+            entityType: translations.entityType,
+            entityId: translations.entityId,
+            locale: translations.locale,
+            value: translations.value,
           })
-          .from(catalogTranslations)
+          .from(translations)
           .where(
             and(
-              eq(catalogTranslations.kind, 'name'),
-              inArray(catalogTranslations.locale, [locale, FALLBACK_LOCALE]),
-              inArray(catalogTranslations.entityId, [...new Set(entityIds)]),
+              eq(translations.kind, 'name'),
+              inArray(translations.locale, [locale, FALLBACK_LOCALE]),
+              inArray(translations.entityId, [...new Set(entityIds)]),
             ),
           );
   const byKey = new Map(

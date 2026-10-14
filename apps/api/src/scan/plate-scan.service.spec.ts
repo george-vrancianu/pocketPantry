@@ -113,7 +113,11 @@ describe('PlateScanService', () => {
   describe('findIngredients', () => {
     it('asks about the dish without an image and returns catalog-validated items', async () => {
       provider({ items: [item()] });
-      const { items } = await service.findIngredients('Pizza', 'en');
+      const { items } = await service.findIngredients(
+        'Pizza',
+        'en',
+        'family-1',
+      );
       expect(items[0]).toMatchObject({
         matchedIngredientId: milkId,
         matchedIngredientName: 'Milk',
@@ -132,7 +136,11 @@ describe('PlateScanService', () => {
           item({ matchedIngredientId: strangerId, matchConfidence: 0.95 }),
         ],
       });
-      const { items } = await service.findIngredients('Pizza', 'en');
+      const { items } = await service.findIngredients(
+        'Pizza',
+        'en',
+        'family-1',
+      );
       expect(items[0]).toMatchObject({
         matchedIngredientId: null,
         matchedIngredientName: null,
@@ -143,11 +151,11 @@ describe('PlateScanService', () => {
     it('rejects an id that is not a UUID, and a negative quantity', async () => {
       provider({ items: [item({ matchedIngredientId: 'milk' })] });
       await expect(
-        service.findIngredients('Pizza', 'en'),
+        service.findIngredients('Pizza', 'en', 'family-1'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
       provider({ items: [item({ quantity: -1 })] });
       await expect(
-        service.findIngredients('Pizza', 'en'),
+        service.findIngredients('Pizza', 'en', 'family-1'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
 
@@ -159,7 +167,7 @@ describe('PlateScanService', () => {
       ).toBe(true);
       provider({ items: [item({ quantity: top })] });
       await expect(
-        service.findIngredients('Pizza', 'en'),
+        service.findIngredients('Pizza', 'en', 'family-1'),
       ).resolves.toBeDefined();
       expect(
         addShoppingItemBody.safeParse({
@@ -169,14 +177,14 @@ describe('PlateScanService', () => {
       ).toBe(false);
       provider({ items: [item({ quantity: top + 1 })] });
       await expect(
-        service.findIngredients('Pizza', 'en'),
+        service.findIngredients('Pizza', 'en', 'family-1'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
 
     it('rejects more than a plate could hold', async () => {
       provider({ items: Array.from({ length: 101 }, () => item()) });
       await expect(
-        service.findIngredients('Pizza', 'en'),
+        service.findIngredients('Pizza', 'en', 'family-1'),
       ).rejects.toMatchObject({ code: 'scan.result_invalid' });
     });
   });

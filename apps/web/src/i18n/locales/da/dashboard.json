@@ -27,8 +27,8 @@
     "suggestions": {
       "title": "Forslag",
       "empty": "Ingen forslag",
-      "count_one": "manglende basisvare",
-      "count_other": "manglende basisvarer"
+      "count_one": "væk fra dit spisekammer",
+      "count_other": "væk fra dit spisekammer"
     },
     "cookTonight": {
       "title": "Lav mad i aften",

@@ -90,6 +90,10 @@ _Avoid_: Pantry item, entry, stock line
 Where a Batch is stored: fridge, freezer, cupboard, or spices.
 _Avoid_: Storage, place
 
+**Recently Stocked**:
+The Ingredients a Family most recently added to the Pantry, newest first, whether or not they are still in it.
+_Avoid_: Recent, history, favourites
+
 **Product Description**:
 The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
 _Avoid_: Label, brand
@@ -145,7 +149,7 @@ A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingr
 _Avoid_: Low stock, almost out, low quantity
 
 **Suggestion**:
-A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, or a Running low Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple or Used Up Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
+A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, a Running low Ingredient, or an Ingredient whose Batches are all Expired, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple, Used Up or Expired Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
 _Avoid_: Alert, notification, recommendation
 
 ### Scanning

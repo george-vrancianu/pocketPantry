@@ -100,6 +100,7 @@ describe('ReceiptScanService', () => {
       { receiptImage: 'data:image/jpeg;base64,YQ==' },
       'ro',
       'ro',
+      'family-1',
     );
     expect(result.items[0]).toMatchObject({
       matchedIngredientId: ingredientId,
@@ -200,6 +201,7 @@ describe('ReceiptScanService', () => {
         { receiptImage: 'data:image/jpeg;base64,YQ==' },
         'ro',
         'ro',
+        'family-1',
       );
       expect(receiptScanResultSchema.safeParse(result).success).toBe(true);
       expect(result.lines[0]).toMatchObject({
@@ -257,6 +259,7 @@ describe('ReceiptScanService', () => {
       { receiptImage: 'data:image/jpeg;base64,YQ==' },
       'ro',
       'ro',
+      'family-1',
     );
     expect(result.items).toEqual([]);
     expect(result.lines[0]).toMatchObject({
@@ -284,6 +287,7 @@ describe('ReceiptScanService', () => {
         { receiptImage: 'data:image/jpeg;base64,YQ==' },
         'ro',
         'ro',
+        'family-1',
       ),
     ).rejects.toMatchObject({ code: 'scan.provider_incomplete' });
     expect(warnMock).toHaveBeenCalledWith(
@@ -314,6 +318,7 @@ describe('ReceiptScanService', () => {
         { receiptImage: 'data:image/jpeg;base64,YQ==' },
         'ro',
         'ro',
+        'family-1',
       ),
     ).rejects.toMatchObject({
       code: 'scan.result_invalid',

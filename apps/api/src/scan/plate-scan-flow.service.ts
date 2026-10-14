@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
@@ -67,11 +68,16 @@ export class PlateScanFlowService {
     if (!this.uses.claim(signature, input.dishTitle, expiresAt)) {
       throw new ApiException(400, 'scan.plate_token_invalid');
     }
+    const familyId = await this.settings.familyIdOf(memberId);
     let items: Awaited<
       ReturnType<PlateScanService['findIngredients']>
     >['items'];
     try {
-      ({ items } = await this.plate.findIngredients(input.dishTitle, locale));
+      ({ items } = await this.plate.findIngredients(
+        input.dishTitle,
+        locale,
+        familyId,
+      ));
     } catch (error) {
       this.uses.release(signature, input.dishTitle);
       throw error;
@@ -86,6 +92,7 @@ export class PlateScanFlowService {
     const matches = new Map(
       (
         await this.catalogSearch.findByIds(
+          catalogScope(familyId),
           ids,
           locale,
           await this.settings.expiryOverridesForMember(memberId),

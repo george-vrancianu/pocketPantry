@@ -5,9 +5,11 @@ import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   FALLBACK_LOCALE,
   type CatalogLocale,
+  type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -17,7 +19,6 @@ import { readAmountScale, type AmountScale } from '../catalog/amount-scale';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
-  ingredients,
   leafCategories,
   parentCategories,
   shoppingItems,
@@ -45,7 +46,7 @@ type CheckedRow = {
   quantity: string | null;
   unit: (typeof shoppingItems.$inferSelect)['unit'];
   canonicalName: string | null;
-  defaultUnit: (typeof ingredients.$inferSelect)['defaultUnit'] | null;
+  defaultUnit: CatalogSearchResult['defaultUnit'] | null;
   amountScale: AmountScale | null;
   leaf: typeof leafCategories.$inferSelect | null;
   parent: typeof parentCategories.$inferSelect | null;
@@ -67,10 +68,15 @@ export class FinishShoppingService {
   ): Promise<FinishProposal> {
     const { listId, familyId } = await this.activeList(this.database, memberId);
     const overrides = await this.settings.expiryOverridesOf(familyId);
-    const rows = await this.checkedRows(this.database, listId);
+    const rows = await this.checkedRows(
+      this.database,
+      catalogScope(familyId),
+      listId,
+    );
     const other = await this.otherTarget(this.database);
     const names = await loadDisplayNames(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.flatMap((row) => (row.ingredientId ? [row.ingredientId] : [])),
     );
@@ -132,7 +138,7 @@ export class FinishShoppingService {
         throw new ApiException(409, 'shopping.list_changed');
       }
 
-      const rows = await this.checkedRows(tx, listId);
+      const rows = await this.checkedRows(tx, catalogScope(familyId), listId);
       const accounted = [
         ...body.lines.map((line) => line.itemId),
         ...body.droppedItemIds,
@@ -266,8 +272,10 @@ export class FinishShoppingService {
 
   private checkedRows(
     executor: Executor,
+    scope: CatalogScope,
     listId: string,
   ): Promise<CheckedRow[]> {
+    const ingredients = scope.ingredients(executor);
     return executor
       .select({
         id: shoppingItems.id,

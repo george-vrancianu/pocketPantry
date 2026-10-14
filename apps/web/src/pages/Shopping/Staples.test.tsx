@@ -19,14 +19,28 @@ import { StaplesPage } from './StaplesPage';
 const dairy = { id: 'a4', name: 'Dairy & eggs', sortOrder: 4 };
 const baking = { id: 'a6', name: 'Baking', sortOrder: 6 };
 
-const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => ({
-  ingredientId: 'milk-id',
-  name: 'Milk',
-  quantity: 2,
-  unit: 'l',
-  aisle: dairy,
-  ...overrides,
-});
+const suggestion = (overrides: Partial<Suggestion> = {}): Suggestion => {
+  const id = overrides.ingredientId ?? 'milk-id';
+  const name = overrides.name ?? 'Milk';
+  return {
+    ingredientId: id,
+    name,
+    quantity: 2,
+    unit: 'l',
+    aisle: dairy,
+    since: null,
+    ingredient: {
+      amountScale: 'medium',
+      id,
+      name,
+      defaultUnit: 'l',
+      leafCategory: { id: 'leaf', name },
+      parentCategory: { id: 'p', name: 'Dairy', aisle: dairy },
+      defaults: { expiryDays: 7, location: 'fridge' },
+    },
+    ...overrides,
+  };
+};
 const staple = (overrides: Partial<Staple> = {}): Staple => ({
   id: 's1',
   ingredientId: 'milk-id',
@@ -70,13 +84,61 @@ describe('Suggestions in the Add sheet', () => {
     return screen.findByRole('dialog');
   };
 
-  it('shows both groups with counts and a Manage link to Staples', async () => {
+  // The Gone from your Pantry tiles (select, dismiss, Staples link) are covered by GoneTiles.test.tsx.
+  it('shows the Gone tiles and the Template chips together while the search is empty, and both go once the Member types', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list': () => Response.json(emptyList()),
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({ staples: [suggestion()], usedUp: [], expired: [] }),
+      'GET /api/shopping-templates': () =>
+        Response.json({
+          templates: [
+            {
+              id: 't1',
+              name: 'Taco night',
+              lineCount: 2,
+              previewNames: ['Milk', 'Tomato'],
+            },
+          ],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openSheet();
+
+    expect(
+      await within(dialog).findByRole('button', {
+        name: 'Milk, missing staple',
+      }),
+    ).toBeVisible();
+    expect(
+      await within(dialog).findByRole('button', { name: /Taco night/ }),
+    ).toBeVisible();
+    expect(within(dialog).getByText('Or start from a template')).toBeVisible();
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'flo',
+    );
+    await within(dialog).findByRole('option', { name: /Flour/ });
+    expect(
+      within(dialog).queryByRole('button', { name: 'Milk, missing staple' }),
+    ).toBeNull();
+    expect(
+      within(dialog).queryByRole('button', { name: /Taco night/ }),
+    ).toBeNull();
+  });
+
+  it('shows a Running low section below the Gone tiles; picking a tile selects it through the search, with no dismiss control', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
-          staples: [
-            suggestion(),
+          staples: [suggestion()],
+          usedUp: [],
+          expired: [],
+          runningLow: [
             suggestion({
               ingredientId: 'flour-id',
               name: 'Flour',
@@ -84,219 +146,38 @@ describe('Suggestions in the Add sheet', () => {
               unit: null,
             }),
           ],
-          usedUp: [
-            suggestion({
-              ingredientId: 'eggs-id',
-              name: 'Eggs',
-              quantity: 6,
-              unit: 'pcs',
-            }),
-          ],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<ShoppingPage />);
-
     const dialog = await openSheet();
 
-    expect(
-      await within(dialog).findByText('Missing staples · 2'),
-    ).toBeVisible();
-    expect(within(dialog).getByText('Recently used up · 1')).toBeVisible();
-    const milk = within(dialog).getByRole('button', {
-      name: 'Add Milk to the list',
+    const section = await within(dialog).findByRole('region', {
+      name: 'Running low',
     });
-    expect(milk).toHaveTextContent('2 L');
-    expect(
-      within(dialog).getByRole('button', { name: 'Add Flour to the list' }),
-    ).not.toHaveTextContent(/\d/);
-    expect(
-      within(dialog).getByRole('button', { name: 'Add Eggs to the list' }),
-    ).toBeVisible();
-    expect(
-      within(dialog).getByRole('link', { name: 'Manage' }),
-    ).toHaveAttribute('href', '/shopping/staples');
-  });
-
-  it('adds with the suggested quantity and unit, then shows the added state, the toast and the Done count', async () => {
-    let suggestions = [suggestion()];
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: suggestions }),
-      'POST /api/shopping-list/items': () => Response.json(emptyList()),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-
-    await userEvent.click(
-      await within(dialog).findByRole('button', {
-        name: 'Add Milk to the list',
-      }),
-    );
-
-    await waitFor(() =>
-      expect(
-        calls.find((c) => c.key === 'POST /api/shopping-list/items')?.body,
-      ).toEqual({ ingredientId: 'milk-id', quantity: 2, unit: 'l' }),
-    );
-    expect(await screen.findByText('Added Milk')).toBeVisible();
-    expect(
-      within(dialog).getByRole('button', { name: 'Done, 1 added' }),
-    ).toBeVisible();
-    // Disabled until the Suggestions refetch drops it.
-    expect(
-      within(dialog).getByRole('button', { name: 'Add Milk to the list' }),
-    ).toBeDisabled();
-
-    suggestions = [];
-    window.dispatchEvent(new Event('visibilitychange'));
-    await waitFor(() =>
-      expect(
-        within(dialog).queryByRole('button', { name: 'Add Milk to the list' }),
-      ).not.toBeInTheDocument(),
-    );
-  });
-
-  it('keeps every chip disabled while its add is pending and sends one request each', async () => {
-    let release: () => void = () => undefined;
-    const gate = new Promise<void>((resolve) => (release = resolve));
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({
-          staples: [
-            suggestion(),
-            suggestion({ ingredientId: 'flour-id', name: 'Flour' }),
-          ],
-        }),
-      'POST /api/shopping-list/items': () => Response.json(emptyList()),
-    });
-    const slowFetch = async (...args: Parameters<typeof fetch>) => {
-      const url = String(args[0]);
-      if (url.includes('/shopping-list/items')) await gate;
-      return fetchMock(...args);
-    };
-    vi.stubGlobal('fetch', slowFetch);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-    const milk = await within(dialog).findByRole('button', {
-      name: 'Add Milk to the list',
-    });
-    const flourChip = within(dialog).getByRole('button', {
-      name: 'Add Flour to the list',
-    });
-
-    await userEvent.click(milk);
-    await userEvent.click(flourChip);
-    await userEvent.click(milk);
-
-    expect(milk).toBeDisabled();
-    expect(flourChip).toBeDisabled();
-    release();
-    await waitFor(() =>
-      expect(
-        within(dialog).getByRole('button', { name: 'Done, 2 added' }),
-      ).toBeVisible(),
-    );
-    expect(milk).toBeDisabled();
-    expect(flourChip).toBeDisabled();
-    expect(
-      calls.filter((c) => c.key === 'POST /api/shopping-list/items'),
-    ).toHaveLength(2);
-  });
-
-  it('adds a Used Up Ingredient with no quantity', async () => {
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({
-          staples: [],
-          usedUp: [
-            suggestion({
-              ingredientId: 'eggs-id',
-              name: 'Eggs',
-              quantity: null,
-              unit: null,
-            }),
-          ],
-        }),
-      'POST /api/shopping-list/items': () => Response.json(emptyList()),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-
-    await userEvent.click(
-      await within(dialog).findByRole('button', {
-        name: 'Add Eggs to the list',
-      }),
-    );
-
-    await waitFor(() =>
-      expect(
-        calls.find((c) => c.key === 'POST /api/shopping-list/items')?.body,
-      ).toEqual({ ingredientId: 'eggs-id' }),
-    );
-  });
-
-  it('shows a Running low group after the other groups, adds from it with no dismiss action', async () => {
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({
-          staples: [suggestion()],
-          usedUp: [
-            suggestion({
-              ingredientId: 'eggs-id',
-              name: 'Eggs',
-              quantity: null,
-              unit: null,
-            }),
-          ],
-          runningLow: [
-            suggestion({
-              ingredientId: 'parmesan-id',
-              name: 'Parmesan',
-              quantity: null,
-              unit: null,
-            }),
-          ],
-        }),
-      'POST /api/shopping-list/items': () => Response.json(emptyList()),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-
-    const runningLow = await within(dialog).findByRole('region', {
-      name: 'Running low · 1',
-    });
-    const usedUp = within(dialog).getByRole('region', {
-      name: 'Recently used up · 1',
+    const gone = within(dialog).getByRole('region', {
+      name: 'Gone from your Pantry',
     });
     expect(
-      usedUp.compareDocumentPosition(runningLow) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      gone.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(runningLow).toBeVisible();
+    // Not a Gone tile: the Gone section holds Milk only.
     expect(
-      within(dialog).queryByRole('button', { name: 'Dismiss Parmesan' }),
+      within(gone).queryByRole('button', { name: /Flour/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(section).queryByRole('button', { name: /Dismiss/ }),
     ).not.toBeInTheDocument();
 
     await userEvent.click(
-      within(dialog).getByRole('button', { name: 'Add Parmesan to the list' }),
+      within(section).getByRole('button', { name: 'Flour, running low' }),
     );
-
-    await waitFor(() =>
-      expect(
-        calls.find((c) => c.key === 'POST /api/shopping-list/items')?.body,
-      ).toEqual({ ingredientId: 'parmesan-id' }),
-    );
+    expect(
+      await within(dialog).findByRole('textbox', { name: /Amount of Flour/ }),
+    ).toBeVisible();
   });
 
-  it('hides the Running low group when no Ingredient is flagged', async () => {
+  it('hides the Running low section when no Ingredient is flagged', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
       'GET /api/shopping-list/suggestions': () =>
@@ -306,147 +187,24 @@ describe('Suggestions in the Add sheet', () => {
     renderWithProviders(<ShoppingPage />);
     const dialog = await openSheet();
 
-    expect(
-      await within(dialog).findByText('Missing staples · 1'),
-    ).toBeVisible();
+    await within(dialog).findByRole('button', { name: 'Milk, missing staple' });
     expect(within(dialog).queryByText(/Running low/)).not.toBeInTheDocument();
   });
 
-  it('keeps the Staples Manage link when only Running low has entries', async () => {
+  it('has no Suggestions section or header Staples link on the page', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
       'GET /api/shopping-list/suggestions': () =>
-        Response.json({
-          staples: [],
-          usedUp: [],
-          runningLow: [
-            suggestion({
-              ingredientId: 'parmesan-id',
-              name: 'Parmesan',
-              quantity: null,
-              unit: null,
-            }),
-          ],
-        }),
+        Response.json({ staples: [suggestion()], usedUp: [], expired: [] }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
 
-    expect(
-      await within(dialog).findByRole('region', { name: 'Running low · 1' }),
-    ).toBeVisible();
-    expect(
-      within(dialog).getByText('All your staples are stocked.'),
-    ).toBeVisible();
-    expect(within(dialog).getByText('Staples')).toBeVisible();
-    expect(within(dialog).getByRole('link', { name: 'Manage' })).toBeVisible();
-  });
-
-  it('keeps the added state when switching tabs and back', async () => {
-    const { fetchMock } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [suggestion()] }),
-      'POST /api/shopping-list/items': () => Response.json(emptyList()),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-    await userEvent.click(
-      await within(dialog).findByRole('button', {
-        name: 'Add Milk to the list',
-      }),
-    );
-    await screen.findByText('Added Milk');
-
-    await userEvent.click(
-      within(dialog).getByRole('tab', { name: 'Templates' }),
-    );
-    await userEvent.click(
-      within(dialog).getByRole('tab', { name: 'Ingredients' }),
-    );
-
-    expect(
-      within(dialog).getByRole('button', { name: 'Add Milk to the list' }),
-    ).toBeDisabled();
-  });
-
-  it('dismisses a Suggestion for the Family and shows a toast', async () => {
-    let suggestions = [suggestion()];
-    const { fetchMock, calls } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: suggestions }),
-      'POST /api/shopping-list/suggestions/milk-id/dismiss': () => {
-        suggestions = [];
-        return new Response(null, { status: 204 });
-      },
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-
-    await userEvent.click(
-      await within(dialog).findByRole('button', { name: 'Dismiss Milk' }),
-    );
-
-    expect(await screen.findByText('Dismissed Milk')).toBeVisible();
-    expect(
-      screen.queryByRole('button', { name: 'Undo' }),
-    ).not.toBeInTheDocument();
-    expect(calls.map((c) => c.key)).toContain(
-      'POST /api/shopping-list/suggestions/milk-id/dismiss',
-    );
-    await waitFor(() =>
-      expect(
-        within(dialog).queryByRole('button', { name: 'Dismiss Milk' }),
-      ).not.toBeInTheDocument(),
-    );
-  });
-
-  it('says all Staples are stocked when there are no Suggestions', async () => {
-    const { fetchMock } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [] }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
-    const dialog = await openSheet();
-
-    expect(
-      await within(dialog).findByText('All your staples are stocked.'),
-    ).toBeVisible();
-    expect(within(dialog).getByText('Staples')).toBeVisible();
-    expect(within(dialog).getByRole('link', { name: 'Manage' })).toBeVisible();
-    expect(screen.queryByText(/Missing staples/)).not.toBeInTheDocument();
-  });
-
-  it('hides the Suggestions once the Member types, and has no Suggestions section or header Staples link on the page', async () => {
-    const { fetchMock } = stubApi({
-      'GET /api/shopping-list': () => Response.json(emptyList()),
-      'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [suggestion()] }),
-      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
-    renderWithProviders(<ShoppingPage />);
     await screen.findByText(/Your list is empty/);
+
     expect(
       screen.queryByRole('link', { name: 'Staples' }),
     ).not.toBeInTheDocument();
-
-    const dialog = await openSheet();
-    await userEvent.type(
-      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
-      'flo',
-    );
-    await waitFor(() =>
-      expect(
-        within(dialog).queryByRole('button', { name: 'Add Milk to the list' }),
-      ).not.toBeInTheDocument(),
-    );
   });
 
   it('toggles a Staple from a Shopping Item', async () => {
@@ -469,7 +227,7 @@ describe('Suggestions in the Add sheet', () => {
     const { fetchMock, calls } = stubApi({
       'GET /api/shopping-list': () => Response.json(list),
       'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [] }),
+        Response.json({ staples: [], usedUp: [], expired: [] }),
       'GET /api/staples': () => Response.json({ staples: [] }),
       'POST /api/staples': () => Response.json(staple(), { status: 201 }),
     });
@@ -560,12 +318,38 @@ describe('StaplesPage', () => {
       screen.getByRole('combobox', { name: 'Search ingredients' }),
       'flo',
     );
-    await userEvent.click(await screen.findByRole('option', { name: /Flour/ }));
+    const option = await screen.findByRole('option', { name: /Flour/ });
+    // The Staples search has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Flour, Flour · Baking');
+    await userEvent.click(option);
 
     expect(await screen.findByRole('group', { name: 'Flour' })).toBeVisible();
     expect(calls.find((c) => c.key === 'POST /api/staples')?.body).toEqual({
       ingredientId: 'flour-id',
     });
+  });
+
+  it('offers no Use as typed on the Staples page: a Staple must be an Ingredient', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [staple()] }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+    await screen.findByRole('group', { name: 'Milk' });
+
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
   });
 
   describe('editing the amount', () => {
@@ -857,7 +641,7 @@ describe('StaplesPage', () => {
 });
 
 describe('SuggestionsWidget', () => {
-  it('shows the count of missing Staples, the first few Suggestions of both groups, and links to Shopping', async () => {
+  it('counts everything gone from the Pantry, names the first few, and links to Shopping', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
@@ -865,6 +649,7 @@ describe('SuggestionsWidget', () => {
             suggestion({ ingredientId: name, name }),
           ),
           usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
+          expired: [],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -872,36 +657,91 @@ describe('SuggestionsWidget', () => {
 
     const link = await screen.findByRole('link', { name: 'Suggestions' });
     expect(link).toHaveAttribute('href', '/shopping');
-    expect(link).toHaveTextContent('4');
-    expect(link).toHaveTextContent('missing staples');
-    expect(link).toHaveTextContent('A, B, C…');
+    expect(link).toHaveTextContent('5');
+    expect(link).toHaveTextContent('gone from your Pantry');
+    expect(link).toHaveTextContent('E, A, B…');
   });
 
-  it('counts only missing Staples, but names Used Up Ingredients too', async () => {
+  it('counts the Staples and the Used Up Ingredients it names', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
         Response.json({
           staples: [suggestion({ ingredientId: 'A', name: 'A' })],
           usedUp: [suggestion({ ingredientId: 'E', name: 'E' })],
+          expired: [],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
 
     const link = await screen.findByRole('link', { name: 'Suggestions' });
-    expect(link).toHaveTextContent('1');
-    expect(link).toHaveTextContent('missing staple');
-    expect(link).toHaveTextContent('A, E');
+    expect(link).toHaveTextContent('2');
+    expect(link).toHaveTextContent('gone from your Pantry');
+    expect(link).toHaveTextContent('E, A');
+  });
+
+  it('names expired Suggestions too', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/shopping-list/suggestions': () =>
+        Response.json({
+          staples: [],
+          usedUp: [],
+          expired: [
+            {
+              ...suggestion({ ingredientId: 'spinach-id', name: 'Spinach' }),
+              since: '2026-10-13',
+            },
+          ],
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
+
+    const link = await screen.findByRole('link', { name: 'Suggestions' });
+    expect(link).toHaveTextContent('Spinach');
+    expect(link).not.toHaveTextContent('Nothing suggested');
   });
 
   it('says nothing is missing', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list/suggestions': () =>
-        Response.json({ staples: [] }),
+        Response.json({ staples: [], usedUp: [], expired: [] }),
     });
     vi.stubGlobal('fetch', fetchMock);
     renderWithProviders(<SuggestionsWidget size="small" columns={2} />);
 
     expect(await screen.findByText('Nothing suggested')).toBeVisible();
+  });
+});
+
+describe('StaplesPage Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const browseAisles = {
+    aisles: [
+      {
+        id: 'aisle-dairy',
+        name: 'Dairy & eggs',
+        parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+      },
+    ],
+  };
+
+  it('shows Browse by aisle in the Staples search', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/staples': () => Response.json({ staples: [] }),
+      'GET /api/catalog/aisles': () => Response.json(browseAisles),
+      'GET /api/catalog/search': () => Response.json({ results: [flour] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(<StaplesPage />);
+
+    await userEvent.click(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    ).toBeVisible();
   });
 });

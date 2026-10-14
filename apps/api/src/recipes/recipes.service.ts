@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull, notInArray } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
@@ -276,13 +277,18 @@ export class RecipesService {
 
   /** The coded rules a Catalog Recipe document must meet, checked before any write. */
   private validate(tx: Tx, document: RecipeDocument) {
-    return validateRecipeDocument(tx, document, (line, index) => {
-      if (line.ingredientId === null) {
-        throw new ApiException(400, 'recipes.ingredient_required', {
-          line: index,
-        });
-      }
-    });
+    return validateRecipeDocument(
+      tx,
+      catalogScope(SHARED_ONLY),
+      document,
+      (line, index) => {
+        if (line.ingredientId === null) {
+          throw new ApiException(400, 'recipes.ingredient_required', {
+            line: index,
+          });
+        }
+      },
+    );
   }
 
   private async writeLines(

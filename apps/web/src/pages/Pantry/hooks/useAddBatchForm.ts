@@ -23,7 +23,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const [ingredient, setIngredient] = useState<CatalogSearchResult | null>(
     null,
   );
-  const [typed, setTyped] = useState('');
   const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
   const [quantity, setQuantity] = useState('');
   // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
@@ -38,7 +37,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
   const selectIngredient = (result: CatalogSearchResult) => {
     setIngredient(result);
     setUnmatchedName(null);
-    setTyped(result.name);
     // A frozen unit belonged to the dropped Ingredient: the new one's default applies.
     setFrozenUnit(null);
     // Keep a unit the Member chose with an amount before the pick ("2 kg", then Parmesan); with no amount, the new Ingredient's unit applies.
@@ -54,14 +52,13 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     setIngredient(null);
   };
 
-  const changeQuery = (query: string) => {
-    setTyped(query);
+  const changeQuery = () => {
     clearIngredient();
     setUnmatchedName(null);
   };
 
-  const markTypedAsUnmatched = () => {
-    setUnmatchedName(typed.trim());
+  const chooseTypedName = (name: string) => {
+    setUnmatchedName(name);
     clearIngredient();
     setExpiryDate(null);
   };
@@ -93,7 +90,6 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
 
   return {
     ingredient,
-    typed: typed.trim(),
     unmatchedName,
     quantity,
     unit,
@@ -108,7 +104,7 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     error: addBatch.error ? translateApiError(t, addBatch.error) : null,
     selectIngredient,
     changeQuery,
-    markTypedAsUnmatched,
+    chooseTypedName,
     setQuantity,
     setUnit: setChosenUnit,
     setLocation,

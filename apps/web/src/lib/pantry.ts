@@ -10,6 +10,7 @@ import type { Aisle } from './staples';
 import type { AmountScale } from './usualAmounts';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 import { useStaleThresholdDays } from './settings';
+import { fold } from './fold';
 
 /** A calendar date as `YYYY-MM-DD`. */
 export type IsoDate = string;
@@ -191,21 +192,6 @@ export function groupByLocation(batches: Batch[]) {
 export type PantryFilter = 'all' | StorageLocation;
 
 export const FILTERS: PantryFilter[] = ['all', ...LOCATIONS];
-
-/**
- * Lower-case and strip diacritics so "mamaliga" finds "Mămăligă". The Danish
- * letters fold as the API's matching key does (æ→ae, ø→oe, å→aa), so "maelk"
- * finds "Mælk".
- */
-function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .toLocaleLowerCase()
-    .replace(/a\u030A/g, 'aa')
-    .replace(/æ/g, 'ae')
-    .replace(/ø/g, 'oe')
-    .replace(/\p{Diacritic}/gu, '');
-}
 
 /** Search matches the localised name and the Product Description. */
 export function matchesSearch(batch: Batch, query: string): boolean {

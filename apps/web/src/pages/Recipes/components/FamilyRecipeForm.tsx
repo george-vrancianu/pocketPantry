@@ -1,7 +1,8 @@
-import { Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
+import { Stack, Typography } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/CatalogSearch';
+import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import type { FamilyRecipeDocument } from '../../../lib/familyRecipes';
 import { useRecipeFilters } from '../../../lib/recipes';
 import type { GuidanceInput } from '../../../lib/adminRecipes';
@@ -63,7 +64,6 @@ export function FamilyRecipeForm({
   const [guidanceDraft, setGuidanceDraft] = useState<GuidanceDraft | null>(
     guidance?.initial ?? null,
   );
-  const [freeName, setFreeName] = useState('');
   const [titleTouched, setTitleTouched] = useState(false);
   const problems = problemsOf(draft);
   const guidanceBad = guidanceDraft
@@ -82,12 +82,6 @@ export function FamilyRecipeForm({
         { key: newKey(), quantity: '', optional: false, note: '', ...line },
       ],
     });
-  const addFreeName = () => {
-    const name = freeName.trim();
-    if (!name) return;
-    addLine({ ingredientId: '', name, unit: 'g' });
-    setFreeName('');
-  };
 
   return (
     <EditorForm
@@ -132,6 +126,7 @@ export function FamilyRecipeForm({
         }
       >
         <CatalogSearch
+          emptyState={<BrowseByAisle />}
           key={searchKey}
           onSelect={(ingredient) => {
             addLine({
@@ -141,27 +136,11 @@ export function FamilyRecipeForm({
             });
             setSearchKey((value) => value + 1);
           }}
+          onUseTyped={(name) => {
+            addLine({ ingredientId: '', name, unit: 'g' });
+            setSearchKey((value) => value + 1);
+          }}
         />
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
-          <TextField
-            label={t('recipes:family.freeTextLabel')}
-            value={freeName}
-            onChange={(event) => setFreeName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                addFreeName();
-              }
-            }}
-          />
-          <Button
-            variant="secondary"
-            disabled={freeName.trim() === ''}
-            onClick={addFreeName}
-          >
-            {t('recipes:family.freeTextAdd')}
-          </Button>
-        </Stack>
       </RecipeLinesSection>
 
       <RecipeStepsSection
