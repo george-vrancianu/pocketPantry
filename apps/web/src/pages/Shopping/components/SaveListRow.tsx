@@ -15,7 +15,7 @@ export type SaveListRowProps = {
   onClick: () => void;
 };
 
-/** The dashed row under the last Aisle that opens the Add sheet on Templates, save. */
+/** The dashed row under the last Aisle that opens the Save as template sheet. */
 export function SaveListRow({ count, onClick }: SaveListRowProps) {
   const { t } = useTranslation('templates');
   return (

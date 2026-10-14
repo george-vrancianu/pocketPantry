@@ -21,6 +21,7 @@ import { UnverifiedToast } from '../../components/UnverifiedToast';
 import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
+import { SaveTemplateSheet } from './components/SaveTemplateSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
@@ -47,6 +48,7 @@ export function ShoppingPage() {
   }, [groupCount]);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
+  const [saveOpen, setSaveOpen] = useState(false);
 
   // Every way in starts clean, with no error left from an earlier opening.
   const openSheet = (view: SheetView) => {
@@ -119,7 +121,7 @@ export function ShoppingPage() {
             {screen.list.groups.length > 0 ? (
               <SaveListRow
                 count={itemCount(screen.list.summary)}
-                onClick={() => openSheet({ tab: 'templates', view: 'save' })}
+                onClick={() => setSaveOpen(true)}
               />
             ) : null}
           </>
@@ -134,6 +136,7 @@ export function ShoppingPage() {
         addError={screen.addError}
         suggestions={screen.suggestions}
       />
+      <SaveTemplateSheet open={saveOpen} onClose={() => setSaveOpen(false)} />
     </RowToggleErrorProvider>
   );
 }

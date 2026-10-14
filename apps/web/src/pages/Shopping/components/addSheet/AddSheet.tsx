@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
 import { ApplyTemplateView } from './ApplyTemplateView';
 import { SheetFooterContext } from './SheetFooter';
-import { SaveTemplateView } from './SaveTemplateView';
 import { TemplatesTab } from './TemplatesTab';
 import type { Suggestions } from '../../../../lib/suggestions';
 import {
@@ -23,8 +22,8 @@ import {
   type IngredientsState,
 } from './IngredientsTab';
 
-/** The Templates tab's sub-views: the list, the save view, or applying one template. */
-export type TemplatesView = 'list' | 'save' | { apply: string };
+/** The Templates tab's sub-views: the list or applying one template. */
+export type TemplatesView = 'list' | { apply: string };
 
 /** Where the sheet opens. */
 export type SheetView =
@@ -229,13 +228,8 @@ export function AddSheet({
               onBack={() => setTemplatesView('list')}
               onApplied={onClose}
             />
-          ) : templatesView === 'save' ? (
-            <SaveTemplateView onBack={() => setTemplatesView('list')} />
           ) : (
-            <TemplatesTab
-              onOpenTemplate={openTemplate}
-              onSave={() => setTemplatesView('save')}
-            />
+            <TemplatesTab onOpenTemplate={openTemplate} />
           )}
         </Box>
       </Sheet>
