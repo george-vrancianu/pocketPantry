@@ -1,6 +1,24 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
-export { createPocketPantryTheme } from './theme/theme';
+export { createPocketPantryTheme, themeSelector } from './theme/theme';
 export { tokens } from './theme/tokens';
+export {
+  THEME_IDS,
+  THEME_META,
+  THEMES,
+  type ThemeId,
+  type ThemeMeta,
+  type ThemeTokens,
+} from './theme/themes';
+export {
+  APPEARANCE_STORAGE_KEY,
+  DEFAULT_APPEARANCE,
+  isThemeId,
+  readAppearance,
+  resolveTheme,
+  subscribeAppearance,
+  writeAppearance,
+  type Appearance,
+} from './theme/appearance';
 export {
   IngredientIcon,
   type IngredientIconProps,

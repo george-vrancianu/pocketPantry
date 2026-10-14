@@ -1,7 +1,11 @@
-import { CssBaseline, GlobalStyles, ThemeProvider } from '@mui/material';
-import { useMemo, type ElementType, type ReactNode } from 'react';
+import { CssBaseline, GlobalStyles } from '@mui/material';
+import { ThemeProvider, useColorScheme } from '@mui/material/styles';
+import { useEffect, useMemo, type ElementType, type ReactNode } from 'react';
 import { ToastProvider } from '../molecules/ToastProvider';
-import { createPocketPantryTheme } from './theme';
+import { appearanceStorageManager } from './appearanceStorageManager';
+import { createPocketPantryTheme, ppCssVariables } from './theme';
+import { isThemeId } from './appearance';
+import { THEMES } from './themes';
 import { tokens, tokensAsCssVariables } from './tokens';
 
 type Props = {
@@ -10,14 +14,24 @@ type Props = {
   linkComponent?: ElementType;
 };
 
+const colourTransition = 'background-color 200ms, color 200ms';
+
 const globalStyles = {
   ':root': tokensAsCssVariables(),
-  body: { margin: 0, fontFamily: tokens.font.body, color: tokens.color.ink },
+  ...ppCssVariables(),
+  html: { transition: colourTransition },
+  body: {
+    margin: 0,
+    fontFamily: tokens.font.body,
+    color: tokens.color.ink,
+    transition: colourTransition,
+  },
   // Handoff section 10: 2 px accent outline, 2 px offset.
   ':focus-visible': {
     outline: `2px solid ${tokens.color.accent}`,
     outlineOffset: 2,
   },
+  // Also makes the Theme change instant.
   '@media (prefers-reduced-motion: reduce)': {
     '*, *::before, *::after': {
       animationDuration: '0.01ms !important',
@@ -26,15 +40,30 @@ const globalStyles = {
   },
 };
 
+/** Keeps the browser's `theme-color` on the active Theme's bg after the pre-paint script has set it. */
+function ThemeColorMeta() {
+  const { colorScheme } = useColorScheme();
+  useEffect(() => {
+    if (!isThemeId(colorScheme)) return;
+    for (const meta of document.querySelectorAll<HTMLMetaElement>(
+      'meta[name="theme-color"]',
+    )) {
+      meta.content = THEMES[colorScheme].bg;
+    }
+  }, [colorScheme]);
+  return null;
+}
+
 export function PocketPantryUiProvider({ children, linkComponent }: Props) {
   const theme = useMemo(
     () => createPocketPantryTheme({ linkComponent }),
     [linkComponent],
   );
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme} storageManager={appearanceStorageManager}>
       <CssBaseline />
       <GlobalStyles styles={globalStyles} />
+      <ThemeColorMeta />
       <ToastProvider>{children}</ToastProvider>
     </ThemeProvider>
   );
