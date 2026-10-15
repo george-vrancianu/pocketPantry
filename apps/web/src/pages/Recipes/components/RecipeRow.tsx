@@ -66,7 +66,8 @@ type LayoutProps = {
   /** A line between the title and the meta. */
   above?: ReactNode;
   meta: string[];
-  minutes: number | null;
+  /** Undefined leaves the time column out. */
+  minutes?: number | null;
   pills?: ReactNode;
   /** Makes the row a link... */
   to?: string;
@@ -115,30 +116,36 @@ export function RecipeRowLayout({
         ) : null}
         {pills}
       </Box>
-      <Box
-        sx={{
-          textAlign: 'right',
-          fontVariantNumeric: 'tabular-nums',
-          flexShrink: 0,
-        }}
-      >
-        {minutes === null ? (
-          <Box
-            sx={{ fontSize: 11, fontWeight: 600, color: tokens.color.muted }}
-          >
-            —
-          </Box>
-        ) : (
-          <>
-            <Box sx={{ ...displayType, fontSize: 17 }}>{minutes}</Box>
+      {minutes === undefined ? null : (
+        <Box
+          sx={{
+            textAlign: 'right',
+            fontVariantNumeric: 'tabular-nums',
+            flexShrink: 0,
+          }}
+        >
+          {minutes === null ? (
             <Box
               sx={{ fontSize: 11, fontWeight: 600, color: tokens.color.muted }}
             >
-              {t('minutesShort')}
+              —
             </Box>
-          </>
-        )}
-      </Box>
+          ) : (
+            <>
+              <Box sx={{ ...displayType, fontSize: 17 }}>{minutes}</Box>
+              <Box
+                sx={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: tokens.color.muted,
+                }}
+              >
+                {t('minutesShort')}
+              </Box>
+            </>
+          )}
+        </Box>
+      )}
       {to !== undefined || onClick !== undefined ? (
         <Box aria-hidden sx={{ display: 'flex', color: tokens.color.muted }}>
           <ChevronRightIcon size={16} />

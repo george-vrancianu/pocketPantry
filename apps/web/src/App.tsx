@@ -11,6 +11,7 @@ import {
   EditMealPlanPage,
   NewMealPlanPage,
 } from './pages/MealPlans/MealPlanFormPage';
+import { MealPlanPage } from './pages/MealPlans/MealPlanPage';
 import { MealPlansPage } from './pages/MealPlans/MealPlansPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
 import {
@@ -53,6 +54,7 @@ export function App() {
           />
           <Route path="meal-plans" element={<MealPlansPage />} />
           <Route path="meal-plans/new" element={<NewMealPlanPage />} />
+          <Route path="meal-plans/:id" element={<MealPlanPage />} />
           <Route path="meal-plans/:id/edit" element={<EditMealPlanPage />} />
           <Route path="scan" element={<ScanPage />} />
           <Route path="scan/review" element={<ReviewOverviewPage />} />

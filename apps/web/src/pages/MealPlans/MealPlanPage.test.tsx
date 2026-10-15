@@ -1,0 +1,412 @@
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MealPlanDetail } from '../../lib/mealPlans';
+import type { RecipeListItem } from '../../lib/recipes';
+import { renderWithProviders, stubApi } from '../../test/render';
+import { issue, iso, plan, slot, useFixedToday } from '../../test/mealPlans';
+import { MealPlanPage } from './MealPlanPage';
+
+/** Yesterday, today and tomorrow. */
+const week = (over: Partial<MealPlanDetail> = {}): MealPlanDetail =>
+  plan({
+    id: 'p1',
+    startOffset: -1,
+    days: 3,
+    servings: 2,
+    slots: [
+      slot(-1, 0, 'lunch', { status: null, recipeTitle: 'Old soup' }),
+      slot(-1, 1, 'breakfast', { recipeTitle: 'Porridge' }),
+      slot(-1, 1, 'dinner', {
+        recipeTitle: 'Tomato pasta',
+        status: 'short',
+        issues: [
+          issue(),
+          issue({
+            ingredientId: 'ing-2',
+            name: 'Cheese',
+            kind: 'short',
+            quantity: 100,
+            reason: { code: 'onlyInPantry', amount: 50, unit: 'g' },
+          }),
+          issue({
+            ingredientId: 'ing-3',
+            name: 'Salt',
+            kind: 'uncertain',
+            quantity: null,
+            unit: null,
+            reason: { code: 'noQuantity' },
+          }),
+        ],
+      }),
+      slot(-1, 2, 'lunch', {
+        recipeTitle: 'Rice bowl',
+        status: 'onList',
+        issues: [issue({ ingredientId: 'ing-4', name: 'Rice', onList: true })],
+      }),
+      slot(-1, 2, 'dinner', {
+        recipeTitle: 'Retired stew',
+        status: 'unavailable',
+        unavailable: true,
+      }),
+    ],
+    forecast: { tag: { kind: 'short', count: 1 }, days: [] },
+    ...over,
+  });
+
+const recipe = (id: string, title: string): RecipeListItem => ({
+  id,
+  title,
+  parentId: null,
+  base: null,
+  cuisine: null,
+  method: null,
+  variantCount: 0,
+  servings: 2,
+  prepMinutes: 10,
+  cookMinutes: 20,
+  difficulty: null,
+  owner: 'catalog',
+});
+
+const shoppingList = () =>
+  Response.json({ id: 'l', groups: [], summary: { remaining: 0, checked: 0 } });
+
+function setup(view: MealPlanDetail = week(), extra = {}) {
+  const api = stubApi({
+    'GET /api/meal-plans/p1': () => Response.json(view),
+    'GET /api/recipes': (url) => {
+      const search = url.searchParams.get('search');
+      return Response.json({
+        recipes: [
+          recipe('rc-1', 'Lemon pasta'),
+          recipe('rc-2', 'Green curry'),
+        ].filter((r) => !search || r.title.toLowerCase().includes(search)),
+      });
+    },
+    'GET /api/recipes/filters': () =>
+      Response.json({ cuisines: [], methods: [], eatingMoments: [] }),
+    'PUT /api/meal-plans/p1/slots/1/lunch': () => Response.json(view),
+    'PUT /api/meal-plans/p1/slots/1/dinner': () => Response.json(view),
+    'DELETE /api/meal-plans/p1/slots/1/dinner': () =>
+      new Response(null, { status: 204 }),
+    'POST /api/meal-plans/p1/fill': () => Response.json(view),
+    'GET /api/shopping-list': shoppingList,
+    ...extra,
+  });
+  vi.stubGlobal('fetch', api.fetchMock);
+  return api;
+}
+
+const renderPage = (route = '/meal-plans/p1') =>
+  renderWithProviders(
+    <Routes>
+      <Route path="/meal-plans/:id" element={<MealPlanPage />} />
+    </Routes>,
+    { route },
+  );
+
+const dayCard = (name: RegExp) => screen.getByRole('region', { name });
+
+describe('Meal Plan page', () => {
+  beforeEach(useFixedToday);
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows a card per day with Breakfast, Lunch and Dinner rows and a status per filled row', async () => {
+    setup();
+    renderPage();
+
+    const today = await screen.findByRole('region', { name: /Today/ });
+    const rows = within(today).getAllByRole('listitem');
+    expect(rows).toHaveLength(3);
+    expect(within(rows[0]).getByText('Porridge')).toBeVisible();
+    expect(within(rows[0]).getByText('Covered')).toBeVisible();
+    expect(
+      within(rows[1]).getByRole('button', { name: /^Add Lunch/ }),
+    ).toBeVisible();
+    expect(within(rows[2]).getByText('Tomato pasta')).toBeVisible();
+    expect(within(rows[2]).getByText('2 short')).toBeVisible();
+
+    const tomorrow = dayCard(/Fri/);
+    expect(within(tomorrow).getByText('On list')).toBeVisible();
+    expect(within(tomorrow).getByText('No longer available')).toBeVisible();
+  });
+
+  it('summarises the forecast in the header', async () => {
+    setup();
+    renderPage();
+    expect(await screen.findByText('1 slot short from Thu')).toBeVisible();
+  });
+
+  it('leaves past days read-only with no status', async () => {
+    setup();
+    renderPage();
+
+    const past = await screen.findByRole('region', { name: /Wed/ });
+    expect(within(past).getByText('Old soup')).toBeVisible();
+    expect(within(past).queryByRole('button')).toBeNull();
+    expect(within(past).queryByText('Covered')).toBeNull();
+    expect(within(past).queryByText(/short/)).toBeNull();
+  });
+
+  it('opens the line detail with the forecast reasons, including uncertain', async () => {
+    setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    const dialog = await screen.findByRole('dialog', { name: /Tomato pasta/ });
+    expect(within(dialog).getByText('Tomatoes')).toBeVisible();
+    expect(within(dialog).getByText('Not in your Pantry')).toBeVisible();
+    expect(within(dialog).getByText('Cheese')).toBeVisible();
+    expect(within(dialog).getByText('Only 50 g in your Pantry')).toBeVisible();
+    expect(within(dialog).getByText('Salt')).toBeVisible();
+    expect(within(dialog).getByText("Can't tell")).toBeVisible();
+  });
+
+  it('shows an unavailable Recipe as no longer available', async () => {
+    setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Retired stew/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).getByText('This Recipe is no longer available.'),
+    ).toBeVisible();
+    expect(within(dialog).getByRole('button', { name: 'Clear' })).toBeVisible();
+  });
+
+  it('sets a Recipe in an empty slot through the picker, with search', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    expect(await within(picker).findByText('Green curry')).toBeVisible();
+    await u.type(within(picker).getByRole('searchbox'), 'lemon');
+    await waitFor(() =>
+      expect(within(picker).queryByText('Green curry')).toBeNull(),
+    );
+    await u.click(within(picker).getByText('Lemon pasta'));
+
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/lunch')
+          ?.body,
+      ).toEqual({ recipeId: 'rc-1' }),
+    );
+  });
+
+  it('changes the Recipe of a filled slot', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    await u.click(await screen.findByRole('button', { name: 'Change Recipe' }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    await u.click(await within(picker).findByText('Green curry'));
+
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/dinner')
+          ?.body,
+      ).toEqual({ recipeId: 'rc-2' }),
+    );
+  });
+
+  it('clears a slot', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    await u.click(await screen.findByRole('button', { name: 'Clear' }));
+
+    await waitFor(() =>
+      expect(
+        api.calls.some(
+          (c) => c.key === 'DELETE /api/meal-plans/p1/slots/1/dinner',
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it('overrides Servings for one slot, and follows the plan again at the plan Servings', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    const dialog = await screen.findByRole('dialog');
+    await u.click(
+      within(dialog).getByRole('button', { name: 'More Servings' }),
+    );
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/dinner')
+          ?.body,
+      ).toEqual({ recipeId: 'r-1-dinner', servings: 3 }),
+    );
+  });
+
+  it('follows the plan when the override goes back to the plan Servings', async () => {
+    const view = week();
+    view.slots = view.slots.map((s) =>
+      s.recipeTitle === 'Tomato pasta'
+        ? { ...s, servings: 3, servingsOverride: 3 }
+        : s,
+    );
+    const api = setup(view);
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    const dialog = await screen.findByRole('dialog');
+    await u.click(
+      within(dialog).getByRole('button', { name: 'Fewer Servings' }),
+    );
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/dinner')
+          ?.body,
+      ).toEqual({ recipeId: 'r-1-dinner' }),
+    );
+  });
+
+  it('fills with the switch off by default and on when turned on', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: 'Fill' }));
+    await waitFor(() =>
+      expect(api.calls.filter((c) => c.key.endsWith('/fill'))).toHaveLength(1),
+    );
+    await u.click(screen.getByRole('switch', { name: 'Only what I have' }));
+    await u.click(screen.getByRole('button', { name: 'Fill' }));
+    await waitFor(() =>
+      expect(api.calls.filter((c) => c.key.endsWith('/fill'))).toHaveLength(2),
+    );
+    const bodies = api.calls
+      .filter((c) => c.key.endsWith('/fill'))
+      .map((c) => c.body);
+    expect(bodies).toEqual([{ onlyWhatIHave: false }, { onlyWhatIHave: true }]);
+  });
+
+  describe('Add missing', () => {
+    const addMissing = () => ({
+      'POST /api/meal-plans/add-missing': () =>
+        Response.json({ createdIds: ['sh1', 'sh2'], count: 2 }),
+      'DELETE /api/shopping-list/items/sh1': shoppingList,
+      'DELETE /api/shopping-list/items/sh2': shoppingList,
+    });
+
+    it('adds for the plan and undoes exactly what it created', async () => {
+      const api = setup(week(), addMissing());
+      const u = userEvent.setup();
+      renderPage();
+
+      await u.click(
+        await screen.findByRole('button', { name: 'Add 2 missing' }),
+      );
+      expect(
+        await screen.findByText('2 added to the Shopping List'),
+      ).toBeVisible();
+      expect(
+        api.calls.find((c) => c.key === 'POST /api/meal-plans/add-missing')
+          ?.body,
+      ).toEqual({ scope: 'plan', planId: 'p1' });
+
+      await u.click(screen.getByRole('button', { name: 'Undo' }));
+      await waitFor(() =>
+        expect(
+          api.calls
+            .filter((c) => c.key.startsWith('DELETE /api/shopping-list'))
+            .map((c) => c.key),
+        ).toEqual([
+          'DELETE /api/shopping-list/items/sh1',
+          'DELETE /api/shopping-list/items/sh2',
+        ]),
+      );
+    });
+
+    it('adds for one day', async () => {
+      const api = setup(week(), addMissing());
+      const u = userEvent.setup();
+      renderPage();
+
+      const today = await screen.findByRole('region', { name: /Today/ });
+      await u.click(
+        within(today).getByRole('button', { name: /Add missing for/ }),
+      );
+      await waitFor(() =>
+        expect(
+          api.calls.find((c) => c.key === 'POST /api/meal-plans/add-missing')
+            ?.body,
+        ).toEqual({ scope: 'date', date: iso(0) }),
+      );
+    });
+
+    it('adds one line from the line detail', async () => {
+      const api = setup(week(), addMissing());
+      const u = userEvent.setup();
+      renderPage();
+
+      await u.click(
+        await screen.findByRole('button', { name: /Tomato pasta/ }),
+      );
+      const dialog = await screen.findByRole('dialog');
+      await u.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Tomatoes to the Shopping List',
+        }),
+      );
+      await waitFor(() =>
+        expect(
+          api.calls.find((c) => c.key === 'POST /api/meal-plans/add-missing')
+            ?.body,
+        ).toEqual({ scope: 'ingredient', ingredientId: 'ing-1' }),
+      );
+    });
+  });
+
+  it('opens on the day of the deep link', async () => {
+    setup();
+    renderPage(`/meal-plans/p1?day=${iso(1)}`);
+
+    const heading = await screen.findByRole('heading', { name: /Fri/ });
+    await waitFor(() => expect(heading).toHaveFocus());
+  });
+
+  it('shows the error when a slot write fails', async () => {
+    setup(week(), {
+      'PUT /api/meal-plans/p1/slots/1/lunch': () =>
+        Response.json(
+          { code: 'meal_plan.day_in_past', params: {} },
+          { status: 409 },
+        ),
+    });
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    await u.click(await within(picker).findByText('Lemon pasta'));
+    expect(
+      await screen.findByText("That day has passed and can't be changed."),
+    ).toBeVisible();
+  });
+});

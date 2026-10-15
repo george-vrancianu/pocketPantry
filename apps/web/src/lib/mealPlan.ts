@@ -264,7 +264,7 @@ export function slotsInOrder(day: WindowDay): WindowSlot[] {
 }
 
 /** How many short ingredients a slot lists that are not on the Shopping List yet. */
-export function unlistedShortCount(slot: WindowSlot): number {
+export function unlistedShortCount(slot: Pick<WindowSlot, 'issues'>): number {
   return slot.issues.filter(
     (issue) => issue.kind !== 'uncertain' && !issue.onList,
   ).length;
