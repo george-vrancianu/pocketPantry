@@ -281,6 +281,21 @@ describe('Family catalog (integration)', () => {
       });
     });
 
+    it('lets it take the name of its own Synonym, which then goes', async () => {
+      const created = await made(a, unique('Plain'));
+      const alias = unique('Fancy');
+      const synonym = await synonymOf(a, alias, created.id);
+
+      const res = await patch(a, created.id, { name: alias });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ id: created.id, name: alias });
+      expect((await catalogOf(a)).synonyms.map((s) => s.id)).not.toContain(
+        synonym.id,
+      );
+      expect(await searchIds(a, alias)).toContain(created.id);
+    });
+
     it('lets another Family use a name the first Family no longer holds', async () => {
       const created = await made(a, unique('Freed'));
       await patch(a, created.id, { name: unique('Renamed') }).expect(200);
@@ -501,6 +516,66 @@ describe('Family catalog (integration)', () => {
       });
     });
 
+    it('keeps the discarded name out of the Admin queue when its Shopping Item is later bought', async () => {
+      const name = unique('Bought later');
+      const created = await made(a, name);
+      const list = (
+        await a
+          .post('/shopping-list/items', { ingredientId: created.id })
+          .expect(200)
+      ).body as {
+        groups: { items: { id: string; ingredientId: string | null }[] }[];
+      };
+      const itemId = list.groups
+        .flatMap((g) => g.items)
+        .find((i) => i.ingredientId === created.id)!.id;
+      await remove(a, created.id).expect(204);
+      await a
+        .patch(`/shopping-list/items/${itemId}`, { checked: true })
+        .expect(200);
+
+      const finish = (await a.get('/shopping-list/finish').expect(200))
+        .body as {
+        listId: string;
+        lines: Array<{
+          itemId: string;
+          quantity: number | null;
+          unit: string | null;
+          location: string;
+          expiryDate: string | null;
+        }>;
+      };
+      const line = finish.lines.find((l) => l.itemId === itemId)!;
+      await a
+        .post('/shopping-list/finish')
+        .send({
+          listId: finish.listId,
+          droppedItemIds: [],
+          lines: [
+            {
+              itemId,
+              quantity: line.quantity,
+              unit: line.unit,
+              location: line.location,
+              expiryDate: line.expiryDate,
+            },
+          ],
+        })
+        .expect(200);
+
+      const [batch] = await database
+        .select()
+        .from(batches)
+        .where(eq(batches.rawName, name));
+      expect(batch).toMatchObject({ unmatched: true, ingredientId: null });
+      expect(
+        await database
+          .select()
+          .from(unmatchedEntries)
+          .where(eq(unmatchedEntries.normalizedName, normalizeName(name))),
+      ).toEqual([]);
+    });
+
     it('answers 404 for a shared Ingredient, a missing one and another Family, deleting nothing', async () => {
       const created = await made(a, unique('Protected'));
       expect((await remove(a, parmesan)).status).toBe(404);
@@ -535,11 +610,19 @@ describe('Family catalog (integration)', () => {
     it('answers 404 for another Family, a shared Synonym and a missing one', async () => {
       const created = await made(a, unique('Target'));
       const synonym = await synonymOf(a, unique('Mine'), created.id);
-      const [shared] = await database
-        .select()
-        .from(catalogTranslations)
-        .where(eq(catalogTranslations.entityId, parmesan))
-        .limit(1);
+      // A shared Synonym of its own, so no other suite's rows are involved.
+      const sharedId = randomUUID();
+      const sharedValue = unique('shared-syn');
+      await database.insert(catalogTranslations).values({
+        id: sharedId,
+        entityType: 'ingredient',
+        entityId: parmesan,
+        locale: 'en',
+        kind: 'synonym',
+        value: sharedValue,
+        normalizedValue: normalizeName(sharedValue),
+      });
+      const shared = { id: sharedId };
 
       expect(
         (await b.del(`/catalog/family-synonyms/${synonym.id}`)).status,
@@ -558,6 +641,9 @@ describe('Family catalog (integration)', () => {
       expect((await catalogOf(a)).synonyms.map((s) => s.id)).toContain(
         synonym.id,
       );
+      await database
+        .delete(catalogTranslations)
+        .where(eq(catalogTranslations.id, sharedId));
     });
   });
 });

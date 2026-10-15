@@ -218,7 +218,9 @@ export class FinishShoppingService {
 
   /**
    * Unmatched Shopping Items become Unmatched Batches: queue the Batches too,
-   * in the locale the name was first saved in (the Shopping Item's entry).
+   * in the locale the name was first saved in (the Shopping Item's entry). An
+   * item without an entry was made Unmatched by a Family deleting its Family
+   * Ingredient (ADR 0011): the Family discarded that name, so it is not queued.
    */
   private async queueUnmatchedBatches(
     tx: Tx,
@@ -238,9 +240,11 @@ export class FinishShoppingService {
         ),
       );
     const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
+    const queued = unmatched.filter(({ itemId }) => localeOf.has(itemId));
+    if (queued.length === 0) return;
     await recordUnmatched(
       tx,
-      unmatched.map(({ batchId, itemId, rawName }) => ({
+      queued.map(({ batchId, itemId, rawName }) => ({
         rawName,
         locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
         source: 'finish_shopping' as const,

@@ -158,7 +158,19 @@ export class FamilyCatalogService {
         if (!current) throw notFound('ingredient');
         if (key && key !== current.normalizedName) {
           const clashId = await this.search.findIdByName(scope, key, tx);
-          if (clashId) {
+          if (clashId === id) {
+            // One of its own Synonyms: the name replaces it.
+            await tx
+              .delete(catalogTranslations)
+              .where(
+                and(
+                  eq(catalogTranslations.entityType, 'ingredient'),
+                  eq(catalogTranslations.entityId, id),
+                  eq(catalogTranslations.normalizedValue, key),
+                  ownedTranslation(familyId),
+                ),
+              );
+          } else if (clashId) {
             const [existing] = await this.search.findByIds(
               scope,
               [clashId],
