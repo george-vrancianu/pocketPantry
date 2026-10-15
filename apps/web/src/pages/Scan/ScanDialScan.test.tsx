@@ -18,6 +18,7 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: true,
     capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
     setTorch: () => Promise.resolve(true),
+    watchBarcodes: () => () => {},
     focusForScan: () => {
       camera.focuses += 1;
       return {
