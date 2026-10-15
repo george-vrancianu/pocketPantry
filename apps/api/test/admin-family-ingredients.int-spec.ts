@@ -577,6 +577,8 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       fallbackIngredientName: 'Something else',
       expiryDate: null,
       expiryText: null,
+      netQuantity: null,
+      netUnit: null,
       confidence: 0.95,
     });
     const scan = async (who: Who, productName: string) => {

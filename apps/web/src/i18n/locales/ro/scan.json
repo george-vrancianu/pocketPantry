@@ -28,7 +28,8 @@
     "product": "Produs",
     "receipt": "Bon",
     "plate": "Farfurie",
-    "ingredients": "Ingrediente"
+    "ingredients": "Ingrediente",
+    "barcode": "Cod de bare"
   },
   "guide": {
     "scan": "Scanează: atinge de două ori sau apasă Enter",
@@ -66,5 +67,11 @@
   "discardScans_other": "Renunți la {{count}} de fotografii?",
   "discarded": "Eliminate",
   "capReached": "Limita zilnică de scanări a fost atinsă",
-  "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou."
+  "notAdded": "Fotografia nu a putut fi adăugată. Încearcă din nou.",
+  "overlay": {
+    "noCamera": "Camera nu este disponibilă. Verifică permisiunea camerei sau completează formularul manual.",
+    "photoFailed": "Fotografia nu a putut fi folosită. Încearcă din nou.",
+    "pointAtBarcode": "Îndreaptă camera spre codul de bare.",
+    "barcodeNotFound": "Nu am găsit niciun produs pentru acest cod de bare. Fă în schimb o poză produsului."
+  }
 }

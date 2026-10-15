@@ -70,7 +70,7 @@ export type CatalogSearchProps = {
   }) => string | null;
   /** Show the empty state before the field is focused (it then stays until typing, a pick or Escape). */
   defaultOpen?: boolean;
-  /** The text the field starts with, for a host that keeps it across remounts. */
+  /** The text the field starts with, for a host that keeps it across remounts. A later change to it replaces the text. */
   defaultQuery?: string;
   /** The search input, for a host that moves focus into it. */
   inputRef?: RefObject<HTMLInputElement | null>;
@@ -107,6 +107,13 @@ export function CatalogSearch({
   const reducedMotion = usePrefersReducedMotion();
 
   const [query, setQuery] = useState(defaultQuery);
+  // The host can set the text after the first render (a Barcode Lookup's product name): a new
+  // `defaultQuery` replaces the typed text. Typing never changes the prop, so it is not undone.
+  const [seenDefault, setSeenDefault] = useState(defaultQuery);
+  if (seenDefault !== defaultQuery) {
+    setSeenDefault(defaultQuery);
+    setQuery(defaultQuery);
+  }
   const [open, setOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
   // Add to your catalog is showing (popover or Sheet).

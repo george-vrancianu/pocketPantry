@@ -35,7 +35,8 @@
     "provider_incomplete": "Scanningen blev ikke færdig. Prøv igen.",
     "result_invalid": "Vi kunne ikke læse det foto. Prøv et tydeligere.",
     "plate_token_invalid": "Den liste over retter er udløbet. Læs det igen.",
-    "not_configured": "Scanning er ikke sat op på denne server endnu."
+    "not_configured": "Scanning er ikke sat op på denne server endnu.",
+    "product_not_found": "Vi kunne ikke læse et produkt fra det foto. Udfyld formularen selv, eller prøv igen."
   },
   "shopping": {
     "item_not_found": "Vi kunne ikke finde den vare på listen.",
@@ -128,6 +129,9 @@
   "family_synonyms": {
     "not_found": "Synonymet er ikke længere i køen. Måske har en anden allerede tilføjet det.",
     "shared_name_exists": "Navnet bruges allerede af en anden ingrediens."
+  },
+  "barcode": {
+    "provider_unavailable": "Opslag af stregkoder er ikke tilgængeligt lige nu. Prøv igen, eller udfyld formularen selv."
   },
   "meal_plan": {
     "cap_reached": "Jeres familie kan have {{cap}} madplaner. Slet en for at få plads.",

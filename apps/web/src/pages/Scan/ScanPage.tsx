@@ -26,7 +26,7 @@ import { SessionStrip } from './components/SessionStrip';
 import { ModeDial } from './components/ModeDial';
 import { InfoSheet } from './components/InfoSheet';
 import { Viewfinder } from './components/Viewfinder';
-import { useScanScreen } from './hooks/useScanScreen';
+import { useScanScreen, type ScanScreenModes } from './hooks/useScanScreen';
 
 const roundButton = (size: number) => ({
   display: 'flex',
@@ -40,14 +40,16 @@ const roundButton = (size: number) => ({
   '&:focus-visible': glassFocusRing,
 });
 
+export type ScanPageProps = ScanScreenModes;
+
 /**
  * The dark camera screen (handoff section 7). It is always in Dark-first,
  * whatever the Member's Theme, so the chrome never washes out the camera view.
  */
-export function ScanPage() {
+export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
-  const screen = useScanScreen();
+  const screen = useScanScreen({ modes, defaultMode, rememberMode });
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
@@ -272,6 +274,7 @@ export function ScanPage() {
         ) : null}
 
         <ModeDial
+          modes={screen.modes}
           mode={screen.mode}
           disabled={screen.modesDisabled || infoOpen}
           keysDisabled={screen.modesDisabled || infoOpen || screen.reading}

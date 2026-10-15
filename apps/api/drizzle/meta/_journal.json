@@ -176,6 +176,20 @@
       "when": 1792076351745,
       "tag": "0024_meal_plans",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792087653752,
+      "tag": "0025_open_food_facts_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792087654586,
+      "tag": "0026_known_barcodes",
+      "breakpoints": true
     }
   ]
 }

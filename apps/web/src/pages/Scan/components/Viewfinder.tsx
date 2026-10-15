@@ -10,8 +10,8 @@ import {
   type PointerEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ScanMode } from '../../../lib/scan';
-import { GUIDE_CENTER_Y, SCAN_GUIDES } from '../../../lib/scanGuides';
+import type { CameraMode } from '../../../lib/cameraMode';
+import { GUIDE_CENTER_Y, guideFor } from '../../../lib/scanGuides';
 import { isDoubleTap, type Tap } from '../../../lib/doubleTap';
 
 const ARMED_MS = 320;
@@ -34,7 +34,7 @@ const CORNERS = [
 ] as const;
 
 type Props = {
-  mode: ScanMode;
+  mode: CameraMode;
   /** Double-tap (or Enter / Space) on the guide. */
   onScan: () => void;
   disabled: boolean;
@@ -48,7 +48,7 @@ type Props = {
  */
 export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
   const { t } = useTranslation('scan');
-  const { width, height } = SCAN_GUIDES[mode];
+  const { width, height } = guideFor(mode);
   const [armed, setArmed] = useState(false);
   const timer = useRef<number | undefined>(undefined);
   const [pulse, setPulse] = useState(false);
@@ -157,9 +157,11 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
         data-testid="scan-guide"
         data-armed={armed ? 'true' : undefined}
         data-pulse={pulse ? 'true' : undefined}
-        role="button"
-        tabIndex={0}
-        aria-label={t('guide.scan')}
+        // Barcode reads on its own: the guide only shows where to aim.
+        role={mode === 'barcode' ? undefined : 'button'}
+        tabIndex={mode === 'barcode' ? undefined : 0}
+        aria-label={mode === 'barcode' ? undefined : t('guide.scan')}
+        aria-hidden={mode === 'barcode' ? true : undefined}
         aria-disabled={disabled || undefined}
         ref={guideRef}
         onPointerDown={onPointerDown}

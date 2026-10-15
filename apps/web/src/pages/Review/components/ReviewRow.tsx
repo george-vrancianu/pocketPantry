@@ -17,7 +17,7 @@ import {
 } from '../../../lib/review';
 import { SourceText } from './SourceText';
 import { RowEditPanel } from './RowEditPanel';
-import { StatusIcon } from './StatusIcon';
+import { StatusIcon } from '../../../components/StatusIcon';
 import { ROW_TINT, panelId, rowGridSx, rowId, titleId } from './layout';
 
 type Props = {

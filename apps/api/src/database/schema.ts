@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { OpenFoodFactsProduct } from '../barcode/open-food-facts.client';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -1084,3 +1085,47 @@ export const mealPlanSlots = pgTable(
     ),
   ],
 );
+
+// A Family's Known Barcode (ADR 0013): what the Family last saved a barcode as, an
+// Ingredient or an Unmatched raw name (the same match-state rule as a Batch), plus the
+// Product Description. Written when a Batch is created with a `barcode`; the latest
+// save wins. Deleting the Ingredient deletes the row; an Admin merge re-points it.
+export const knownBarcodes = pgTable(
+  'known_barcodes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    barcode: text('barcode').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id, {
+      onDelete: 'cascade',
+    }),
+    rawName: text('raw_name'),
+    // The matching key of `rawName`, so a Family Ingredient, Synonym or Admin resolve can relink it.
+    normalizedName: text('normalized_name'),
+    productDescription: text('product_description'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('known_barcodes_family_barcode_idx').on(
+      table.familyId,
+      table.barcode,
+    ),
+    index('known_barcodes_ingredient_idx').on(table.ingredientId),
+    index('known_barcodes_normalized_name_idx').on(table.normalizedName),
+    check(
+      'known_barcodes_match_state',
+      sql`(${table.ingredientId} IS NOT NULL AND ${table.rawName} IS NULL) OR (${table.ingredientId} IS NULL AND ${table.rawName} IS NOT NULL)`,
+    ),
+  ],
+);
+
+// Open Food Facts cache (ADR 0013): shared by every Family, keyed by barcode.
+// Holds only Open Food Facts data, never Family data. A null payload is a
+// "not found". Entries are kept 30 days (hit) or 1 day (not found) from `fetchedAt`.
+export const openFoodFactsCache = pgTable('open_food_facts_cache', {
+  barcode: text('barcode').primaryKey(),
+  product: jsonb('product').$type<OpenFoodFactsProduct | null>(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+});
