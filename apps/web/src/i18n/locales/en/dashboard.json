@@ -55,5 +55,30 @@
       "carbs": "Carbs",
       "fat": "Fat"
     }
+  },
+  "health": {
+    "title": "Pantry health",
+    "verdict": {
+      "good": "In good shape",
+      "some": "A few things to sort",
+      "attention": "Needs attention"
+    },
+    "toDo_one": "{{count}} to do",
+    "toDo_other": "{{count}} to do",
+    "nothingToDo": "Nothing to do",
+    "toDoLong_one": "{{count}} thing to do",
+    "toDoLong_other": "{{count}} things to do",
+    "progress_one": "Add {{count}} more to the Pantry to get your score",
+    "progress_other": "Add {{count}} more to the Pantry to get your score",
+    "factor": {
+      "fresh": "Fresh",
+      "staples": "Staples",
+      "dated": "Dated",
+      "rotation": "Rotation"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "close": "Close"
   }
 }

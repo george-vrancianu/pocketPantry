@@ -2,6 +2,7 @@ import {
   Box,
   ClockIcon,
   PantryIcon,
+  PulseIcon,
   RecipesIcon,
   ShoppingIcon,
   tokens,
@@ -32,6 +33,7 @@ const centred = (icon: ReactNode) => (
 
 /** Decorative mini preview of a Widget type for the Add widgets gallery. */
 const PREVIEWS: Record<WidgetType, ReactNode> = {
+  health: centred(<PulseIcon size={30} />),
   'use-soon': centred(<ClockIcon size={30} />),
   shopping: centred(<ShoppingIcon size={30} />),
   'pantry-stock': centred(<PantryIcon size={30} />),

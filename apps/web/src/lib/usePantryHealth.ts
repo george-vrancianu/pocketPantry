@@ -1,0 +1,74 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  healthTodos,
+  pantryHealth,
+  type HealthInput,
+  type HealthTodo,
+  type PantryHealth,
+} from './health';
+import { localIso, useBatches, useRunningLow } from './pantry';
+import { useStaleThresholdDays } from './settings';
+import { useShoppingList } from './shopping';
+import { useStaples } from './staples';
+import { useToday } from './useToday';
+
+export type PantryHealthState = {
+  isPending: boolean;
+  error: Error | null;
+  /** The number of Batches in the Pantry, scored or not. */
+  batchCount: number;
+  health: PantryHealth;
+  todos: HealthTodo[];
+};
+
+/** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List and Stale Threshold reads. */
+export function usePantryHealth(): PantryHealthState {
+  const { i18n } = useTranslation();
+  const locale = i18n.language;
+  const today = localIso(useToday());
+  const batches = useBatches(locale);
+  const runningLow = useRunningLow(locale);
+  const staples = useStaples(locale);
+  const shopping = useShoppingList(locale);
+  const staleThresholdDays = useStaleThresholdDays(locale);
+
+  const input = useMemo<HealthInput>(
+    () => ({
+      today,
+      staleThresholdDays,
+      batches: batches.data ?? [],
+      staples: staples.data ?? [],
+      runningLow: runningLow.data ?? new Set(),
+      onShoppingList: new Set(
+        (shopping.data?.groups ?? [])
+          .flatMap((group) => group.items)
+          .flatMap((item) => (item.ingredientId ? [item.ingredientId] : [])),
+      ),
+      // Dismissed Suggestions join in with the Health To-do list.
+      dismissed: new Set(),
+    }),
+    [
+      today,
+      staleThresholdDays,
+      batches.data,
+      staples.data,
+      runningLow.data,
+      shopping.data,
+    ],
+  );
+  const health = useMemo(() => pantryHealth(input), [input]);
+  const todos = useMemo(() => healthTodos(input), [input]);
+
+  return {
+    isPending:
+      batches.isPending ||
+      staples.isPending ||
+      shopping.isPending ||
+      runningLow.isPending,
+    error: batches.error ?? staples.error ?? shopping.error,
+    batchCount: input.batches.length,
+    health,
+    todos,
+  };
+}
