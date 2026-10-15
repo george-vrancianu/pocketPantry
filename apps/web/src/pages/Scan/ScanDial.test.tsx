@@ -133,3 +133,25 @@ describe('Scan mode dial', () => {
     expect(selected()).toEqual(['Receipt']);
   });
 });
+
+describe('Scan page opened with its own modes', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('starts in the default mode, offers only the given modes, and neither loads nor saves the last mode', () => {
+    localStorage.setItem('pocket-pantry.scan-mode', 'plate');
+    renderWithProviders(
+      <ScanPage
+        modes={['product', 'receipt']}
+        defaultMode="receipt"
+        rememberMode={false}
+      />,
+    );
+    expect(
+      within(dial())
+        .getAllByRole('radio')
+        .map((radio) => radio.getAttribute('aria-label')),
+    ).toEqual(['Product', 'Receipt']);
+    expect(item('Receipt')).toBeChecked();
+    expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('plate');
+  });
+});
