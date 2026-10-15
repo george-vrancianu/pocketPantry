@@ -546,6 +546,8 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
+    await waitFor(() => expect(camera.shots).toBe(1));
+    await act(async () => {});
 
     expect(await save(user, calls)).toMatchObject({
       ingredientId: 'yogurt-id',
@@ -564,6 +566,8 @@ describe('Learn barcodes from Product photos', () => {
     await shoot(user);
     release();
     await screen.findByTestId('prefilled-ingredient');
+    await waitFor(() => expect(camera.shots).toBe(1));
+    await act(async () => {});
 
     expect(await save(user, calls)).not.toHaveProperty('barcode');
   });
@@ -580,6 +584,8 @@ describe('Learn barcodes from Product photos', () => {
     release();
     await screen.findByTestId('prefilled-ingredient');
 
+    await waitFor(() => expect(camera.shots).toBe(1));
+    await act(async () => {});
     expect(screen.queryByRole('alert')).toBeNull();
     expect(await save(user, calls)).not.toHaveProperty('barcode');
   });
