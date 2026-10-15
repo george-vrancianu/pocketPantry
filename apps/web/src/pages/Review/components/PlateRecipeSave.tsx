@@ -6,6 +6,7 @@ import {
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
+import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AllergenIndicator } from '../../../components/AllergenIndicator';
@@ -93,11 +94,14 @@ export function PlateRecipeSave({
     wasOpen.current = open;
   }, [open]);
   const save = useSaveFromPlate(i18n.language);
+  // "Show" in the hidden-by-Allergies note asks for the closest matches again, hidden ones too.
+  const [showHidden, setShowHidden] = useState(false);
   const matches = usePlateMatches(
     {
       locale: i18n.language,
       dishTitle,
       ingredientIds: ingredientIds ?? [],
+      ...(showHidden ? { showHidden: true as const } : {}),
     },
     open,
   );
@@ -105,14 +109,16 @@ export function PlateRecipeSave({
   const found = useRecipes(
     { search: searching ? search : '', cuisineId: '', methodId: '' },
     i18n.language,
-    { searchOnly: true },
+    // A title search is a deliberate look-up with no note to show, so it lists every Recipe
+    // (each still carries its Allergy indicator); only the suggested matches hide.
+    { searchOnly: true, showHidden: true },
   );
 
-  const closestBases = matches.data ?? [];
+  const closestBases = matches.data?.matches ?? [];
   const listed = new Set(closestBases.map((s) => s.id));
   const results = !searching
     ? []
-    : (found.data ?? []).filter(
+    : (found.data?.recipes ?? []).filter(
         (recipe) =>
           recipe.owner === 'catalog' &&
           recipe.parentId === null &&
@@ -192,6 +198,10 @@ export function PlateRecipeSave({
             {t('plateRecipe.loading')}
           </Typography>
         ) : null}
+        <HiddenByAllergiesNote
+          count={matches.data?.hiddenByAllergiesCount ?? 0}
+          onShow={() => setShowHidden(true)}
+        />
         {closestBases.map((match, index) => (
           <BaseOption
             key={match.id}

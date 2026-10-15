@@ -574,9 +574,10 @@ describe('Settings Appearance', () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
+      // The mounted You tab may read preferences again for the new session; A's answer is not it.
       expect(
         queryClient.getQueryData(['settings', 'preferences']),
-      ).toBeUndefined();
+      ).not.toMatchObject({ locale: 'ro', theme: 'minimal' });
       expect(i18n.language).not.toBe('ro');
     });
 

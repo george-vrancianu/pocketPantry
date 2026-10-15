@@ -94,11 +94,20 @@ function setup(
   cards: CookTonightCard[] = [],
   /** Holds every filtered list response until it resolves. */
   gate?: Promise<void>,
+  /** How many Recipes "Hide Recipes with my Allergies" left out, unless the request shows them. */
+  hidden = 0,
 ) {
+  const hiddenFor = (url: URL) =>
+    url.searchParams.get('showHidden') === 'true' ? 0 : hidden;
   const { fetchMock, calls } = stubApi({
-    'GET /api/recipes': (url) => Response.json({ recipes: list(url) }),
+    'GET /api/recipes': (url) =>
+      Response.json({
+        recipes: list(url),
+        hiddenByAllergiesCount: hiddenFor(url),
+      }),
     'GET /api/recipes/filters': () => Response.json(filters),
-    'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
+    'GET /api/recipes/cook-tonight': (url) =>
+      Response.json({ cards, hiddenByAllergiesCount: hiddenFor(url) }),
   });
   vi.stubGlobal(
     'fetch',
@@ -733,6 +742,61 @@ describe('RecipesPage', () => {
       expect(tilesOf(strip)[0].getAttribute('aria-label')).toContain(
         'Contains Peanuts, Milk',
       );
+    });
+  });
+
+  describe('hidden by Allergies', () => {
+    const note = (count: string) =>
+      screen.findByText(`${count} hidden by your Allergies`);
+
+    it('says how many Recipes are hidden, with a Show button', async () => {
+      setup(() => [omelette], [], undefined, 3);
+      expect(await note('3 Recipes')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
+    });
+
+    it('says "1 Recipe" in the singular', async () => {
+      setup(() => [omelette], [], undefined, 1);
+      expect(await note('1 Recipe')).toBeVisible();
+    });
+
+    it('shows no note when nothing is hidden', async () => {
+      setup(() => [omelette]);
+      await findRow('Omelette');
+      expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Show' })).toBeNull();
+    });
+
+    it('asks for the hidden Recipes, in the list and the Can Make strip, when Show is pressed', async () => {
+      const user = userEvent.setup();
+      const calls = setup(
+        (url) =>
+          url.searchParams.get('showHidden') === 'true'
+            ? [omelette, soup]
+            : [omelette],
+        [],
+        undefined,
+        1,
+      );
+      await user.click(await screen.findByRole('button', { name: 'Show' }));
+      expect(await findRow('Soup')).toBeVisible();
+      expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+      const cookTonight = calls.filter(
+        (c) => c.key === 'GET /api/recipes/cook-tonight',
+      );
+      expect(
+        new URLSearchParams(cookTonight.at(-1)!.search).get('showHidden'),
+      ).toBe('true');
+    });
+
+    it('does not ask to show hidden Recipes on the first load', async () => {
+      const calls = setup(() => [omelette]);
+      await findRow('Omelette');
+      for (const call of calls.filter((c) =>
+        c.key.startsWith('GET /api/recipes'),
+      )) {
+        expect(new URLSearchParams(call.search).has('showHidden')).toBe(false);
+      }
     });
   });
 });

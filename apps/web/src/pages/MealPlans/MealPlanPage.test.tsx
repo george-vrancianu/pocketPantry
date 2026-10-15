@@ -514,6 +514,12 @@ describe('Meal Plan page', () => {
         .filter((c) => c.key === 'GET /api/recipes')
         .every((c) => c.search.includes('includeVariants=true')),
     ).toBe(true);
+    // Plan Slots never hide (ADR 0012): the picker asks for Recipes hidden by the Member's Allergies too.
+    expect(
+      api.calls
+        .filter((c) => c.key === 'GET /api/recipes')
+        .every((c) => c.search.includes('showHidden=true')),
+    ).toBe(true);
   });
 
   it('marks a line already on the list in its pill', async () => {

@@ -50,7 +50,10 @@
     "familyCanSee": "Toți din familia ta îți pot vedea alergiile.",
     "loadFailed": "Lista de alergeni nu a putut fi încărcată.",
     "saveFailed": "Alergiile nu au putut fi salvate. Încearcă din nou.",
-    "noAccount": "Cineva fără cont? Adaugă o alergie a familiei în fila Familie."
+    "noAccount": "Cineva fără cont? Adaugă o alergie a familiei în fila Familie.",
+    "hideRecipes": "Ascunde rețetele cu alergiile mele",
+    "hideRecipesHint": "Lasă deoparte rețetele cu alergiile tale sau cu alergiile familiei din lista de rețete, „Poți găti”, „Gătește diseară” și potrivirile din Plate Scan. Alergiile altor membri nu ascund niciodată o rețetă. Poți deschide oricând orice rețetă, iar planul de mese le arată pe toate.",
+    "hideSaveFailed": "Setarea nu a putut fi salvată. Încearcă din nou."
   },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
