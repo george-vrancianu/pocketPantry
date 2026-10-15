@@ -7,10 +7,10 @@ import {
   type HealthTodo,
   type PantryHealth,
 } from './health';
-import { localIso, useBatches, useRunningLow } from './pantry';
+import { localIso, useBatches, useRunningLow, type Batch } from './pantry';
 import { useFamilySettings, useStaleThresholdDays } from './settings';
 import { useShoppingList } from './shopping';
-import { useStaples } from './staples';
+import { useStaples, type Staple } from './staples';
 import { useSuggestions } from './suggestions';
 import { useToday } from './useToday';
 
@@ -21,6 +21,10 @@ export type PantryHealthState = {
   batchCount: number;
   health: PantryHealth;
   todos: HealthTodo[];
+  /** What the Health To-dos' item ids point at. */
+  batches: Batch[];
+  staples: Staple[];
+  staleThresholdDays: number;
 };
 
 /** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
@@ -80,5 +84,8 @@ export function usePantryHealth(): PantryHealthState {
     batchCount: input.batches.length,
     health,
     todos,
+    batches: batches.data ?? [],
+    staples: staples.data ?? [],
+    staleThresholdDays,
   };
 }

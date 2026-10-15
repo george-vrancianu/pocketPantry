@@ -1,0 +1,487 @@
+import {
+  BatteryLowIcon,
+  Box,
+  Button,
+  CalendarIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CookIcon,
+  DeleteIcon,
+  HourglassIcon,
+  StarIcon,
+  tokens,
+  usePrefersReducedMotion,
+  visuallyHidden,
+} from '@pocket-pantry/ui';
+import { useId, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  HEALTH_TODO_KEYS,
+  isForgotten,
+  type HealthTodo,
+  type HealthTodoGroup,
+  type HealthTodoKey,
+} from '../../lib/health';
+import { localIso, useExpiryTags } from '../../lib/pantry';
+import type { PantryHealthState } from '../../lib/usePantryHealth';
+import { ExpiryTag } from '../ExpiryTag';
+import { IngredientIconSlot } from '../IngredientIconSlot';
+import { expiringSoonDay, todoTitle } from './todoText';
+import { todoItems, type TodoItem } from './todoItems';
+
+const GROUPS: HealthTodoGroup[] = ['now', 'week', 'tidy'];
+
+/** Severity icon and colour pair of each Health To-do; colour is never the only signal. */
+const SEVERITY: Record<
+  HealthTodoKey,
+  { icon: ReactNode; background: string; color: string }
+> = {
+  expired: {
+    icon: <DeleteIcon size={16} strokeWidth={2.2} />,
+    background: tokens.color.urgentBg,
+    color: tokens.color.urgentFg,
+  },
+  missingStaples: {
+    icon: <StarIcon size={16} strokeWidth={2.2} />,
+    background: tokens.color.urgentBg,
+    color: tokens.color.urgentFg,
+  },
+  expiringSoon: {
+    icon: <CookIcon size={16} strokeWidth={2.2} />,
+    background: tokens.color.soonBg,
+    color: tokens.color.soonFg,
+  },
+  runningLow: {
+    icon: <BatteryLowIcon size={16} strokeWidth={2.2} />,
+    background: tokens.color.butter,
+    color: tokens.color.butterInk,
+  },
+  undated: {
+    icon: <CalendarIcon size={16} strokeWidth={2.2} />,
+    background: tokens.color.chipNeutral,
+    color: tokens.color.ink,
+  },
+};
+
+const OPEN_MS = 300;
+const EASING = 'cubic-bezier(.2,.8,.2,1)';
+const NAMES_SHOWN = 3;
+
+type Props = {
+  state: PantryHealthState;
+  today: Date;
+};
+
+/** The Health To-dos grouped Now / This week / Tidy up, then a pill for each one with nothing to do. */
+export function HealthTodos({ state, today }: Props) {
+  const { t, i18n } = useTranslation('dashboard');
+  const { tagFor } = useExpiryTags(today);
+  const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
+  const { todos, batches, staples, staleThresholdDays } = state;
+  const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
+  const itemsOf = (todo: HealthTodo) =>
+    todoItems(todo, {
+      t,
+      locale: i18n.language,
+      today,
+      batches,
+      staples,
+    });
+
+  const firstGroup = GROUPS.find((group) =>
+    todos.some((todo) => todo.group === group),
+  );
+  const todayIso = localIso(today);
+  const doneKeys: Array<HealthTodoKey | 'rotation'> = [
+    ...HEALTH_TODO_KEYS.filter(
+      (key) => !todos.some((todo) => todo.key === key),
+    ),
+    ...(batches.some((batch) => isForgotten(batch, todayIso))
+      ? []
+      : (['rotation'] as const)),
+  ];
+  // A Health To-do that is gone must not reopen when it comes back.
+  if (openKey !== null && !todos.some((todo) => todo.key === openKey))
+    setOpenKey(null);
+
+  return (
+    <Box sx={{ p: '4px 18px 30px' }}>
+      {todos.length === 0 ? (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            py: '16px',
+            fontSize: 13.5,
+            color: tokens.color.muted,
+          }}
+        >
+          <Box
+            aria-hidden="true"
+            sx={{
+              flexShrink: 0,
+              width: 30,
+              height: 30,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: tokens.color.accentTint,
+              color: tokens.color.accent,
+            }}
+          >
+            <CheckIcon size={16} />
+          </Box>
+          {t('health.allDone')}
+        </Box>
+      ) : null}
+      {GROUPS.map((group) => {
+        const inGroup = todos.filter((todo) => todo.group === group);
+        if (inGroup.length === 0) return null;
+        return (
+          <Box component="section" key={group}>
+            <Box
+              component="h3"
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                m: 0,
+                pt: group === firstGroup ? '2px' : '12px',
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                color: tokens.color.muted,
+              }}
+            >
+              <span>{t(`health.group.${group}`)}</span>
+              <span>{inGroup.length}</span>
+            </Box>
+            <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+              {inGroup.map((todo) => (
+                <TodoRow
+                  key={todo.key}
+                  todo={todo}
+                  title={todoTitle(t, todo, day)}
+                  items={itemsOf(todo)}
+                  open={openKey === todo.key}
+                  onToggle={() =>
+                    setOpenKey(openKey === todo.key ? null : todo.key)
+                  }
+                  tagFor={tagFor}
+                />
+              ))}
+            </Box>
+          </Box>
+        );
+      })}
+      {doneKeys.length > 0 ? (
+        <Box
+          component="ul"
+          sx={{
+            listStyle: 'none',
+            m: 0,
+            p: 0,
+            pt: '14px',
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '6px',
+          }}
+        >
+          {doneKeys.map((key) => (
+            <Box
+              component="li"
+              key={key}
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                p: '4px 9px 4px 7px',
+                borderRadius: '999px',
+                bgcolor: tokens.color.subtle,
+                color: tokens.color.muted,
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              <Box
+                component="span"
+                aria-hidden="true"
+                sx={{ display: 'flex', color: tokens.color.accent }}
+              >
+                <CheckIcon size={12} />
+              </Box>
+              {t(`health.done.${key}`)}
+            </Box>
+          ))}
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+type RowProps = {
+  todo: HealthTodo;
+  title: string;
+  items: TodoItem[];
+  open: boolean;
+  onToggle: () => void;
+  tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
+};
+
+function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
+  const { t } = useTranslation('dashboard');
+  const reduceMotion = usePrefersReducedMotion();
+  const itemsId = useId();
+  const count = todo.itemIds.length;
+  const severity = SEVERITY[todo.key];
+  const names = items
+    .slice(0, NAMES_SHOWN)
+    .map((item) => item.name)
+    .join(', ');
+  const subline =
+    items.length > NAMES_SHOWN
+      ? t('health.moreNames', { names, count: items.length - NAMES_SHOWN })
+      : names;
+  const bulkName = t(`health.todo.${todo.key}.bulkName`, { count });
+  const bulkProps =
+    todo.key === 'expiringSoon'
+      ? { href: '/recipes' }
+      : // Only Recipes does anything yet; the other fixes arrive with their own tickets.
+        { disabled: true };
+
+  return (
+    <Box
+      component="li"
+      sx={{
+        borderTop: `1px solid ${tokens.color.divider}`,
+        '&:first-of-type': { borderTop: 0 },
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minHeight: 54,
+          py: '6px',
+        }}
+      >
+        <Box
+          component="button"
+          type="button"
+          aria-expanded={open}
+          aria-controls={itemsId}
+          onClick={onToggle}
+          sx={{
+            all: 'unset',
+            boxSizing: 'border-box',
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            cursor: 'pointer',
+            '&:focus-visible': {
+              outline: `2px solid ${tokens.color.accent}`,
+              outlineOffset: 2,
+            },
+          }}
+        >
+          <Box
+            component="span"
+            aria-hidden="true"
+            sx={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              display: 'grid',
+              placeItems: 'center',
+              bgcolor: severity.background,
+              color: severity.color,
+            }}
+          >
+            {severity.icon}
+          </Box>
+          <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+            <Box
+              component="span"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: 14.5,
+                fontWeight: 600,
+              }}
+            >
+              {title}
+              {todo.gain > 0 ? (
+                <Box
+                  component="span"
+                  sx={{
+                    p: '1px 6px',
+                    borderRadius: '999px',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    bgcolor: tokens.color.accentTint,
+                    color: tokens.color.accentOnTint,
+                  }}
+                >
+                  <span aria-hidden="true">+{todo.gain}</span>
+                  <Box component="span" sx={visuallyHidden}>
+                    {t('health.gainSpoken', { count: todo.gain })}
+                  </Box>
+                </Box>
+              ) : null}
+              <Box
+                component="span"
+                aria-hidden="true"
+                sx={{
+                  display: 'flex',
+                  color: tokens.color.muted,
+                  transform: open ? 'rotate(180deg)' : 'none',
+                  transition: reduceMotion
+                    ? 'none'
+                    : `transform ${OPEN_MS}ms ${EASING}`,
+                }}
+              >
+                <ChevronDownIcon size={18} />
+              </Box>
+            </Box>
+            <Box
+              component="span"
+              sx={{
+                display: 'block',
+                fontSize: 12.5,
+                color: tokens.color.muted,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {subline}
+            </Box>
+          </Box>
+        </Box>
+        <Button
+          variant={todo.group === 'now' ? 'primary' : 'secondary'}
+          size="sm"
+          shape="pill"
+          aria-label={bulkName}
+          sx={{
+            flexShrink: 0,
+            minHeight: 32,
+            height: 32,
+            fontSize: 12.5,
+            fontWeight: 700,
+          }}
+          {...bulkProps}
+        >
+          {t(`health.todo.${todo.key}.bulk`)}
+        </Button>
+      </Box>
+      {/* Always mounted: toggling only moves the row height, so the transition survives. */}
+      <Box
+        id={itemsId}
+        sx={{
+          display: 'grid',
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: reduceMotion
+            ? 'none'
+            : `grid-template-rows ${OPEN_MS}ms ${EASING}`,
+        }}
+      >
+        <Box
+          sx={{
+            overflow: 'hidden',
+            visibility: open ? 'visible' : 'hidden',
+            transition: reduceMotion
+              ? 'none'
+              : `visibility 0s linear ${open ? 0 : OPEN_MS}ms`,
+          }}
+        >
+          <Box
+            component="ul"
+            sx={{
+              listStyle: 'none',
+              m: 0,
+              p: '0 0 10px 42px',
+              display: 'grid',
+              gap: '2px',
+            }}
+          >
+            {items.map((item) => (
+              <TodoItemRow key={item.id} item={item} tagFor={tagFor} />
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+function TodoItemRow({
+  item,
+  tagFor,
+}: {
+  item: TodoItem;
+  tagFor: RowProps['tagFor'];
+}) {
+  return (
+    <Box
+      component="li"
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        minHeight: 42,
+        p: '4px 8px 4px 6px',
+        borderRadius: '10px',
+        bgcolor: tokens.color.subtle,
+      }}
+    >
+      <IngredientIconSlot
+        ingredientId={item.ingredientId}
+        aisleId={item.aisleId}
+      />
+      <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+        <Box
+          component="span"
+          sx={{ display: 'block', fontSize: 13.5, fontWeight: 600 }}
+        >
+          {item.name}
+        </Box>
+        <Box
+          component="span"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: 12,
+            color: tokens.color.muted,
+          }}
+        >
+          {item.forgotten ? (
+            <Box component="span" aria-hidden="true" sx={{ display: 'flex' }}>
+              <HourglassIcon size={12} />
+            </Box>
+          ) : null}
+          <Box
+            component="span"
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.line}
+          </Box>
+        </Box>
+      </Box>
+      {item.expiryDate !== null ? (
+        <ExpiryTag tag={tagFor(item.expiryDate)} />
+      ) : null}
+    </Box>
+  );
+}

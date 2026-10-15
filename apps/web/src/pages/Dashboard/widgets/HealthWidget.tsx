@@ -19,14 +19,21 @@ import {
   verdictOf,
 } from '../../../lib/health';
 import { usePantryHealth } from '../../../lib/usePantryHealth';
+import { useToday } from '../../../lib/useToday';
+import {
+  expiringSoonDay,
+  todoTitle,
+} from '../../../components/HealthSheet/todoText';
 import { WidgetCard, WidgetTitle } from './WidgetCard';
 import type { WidgetProps } from './types';
 
 /** The Pantry Health score in a ring with its verdict and to-do count; tapping it opens the sheet. */
 export function HealthWidget({ size, columns }: WidgetProps) {
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('dashboard');
+  const today = useToday();
   const [open, setOpen] = useState(false);
-  const { isPending, error, batchCount, health, todos } = usePantryHealth();
+  const state = usePantryHealth();
+  const { isPending, error, batchCount, health, todos } = state;
   const wide = size !== 'small';
 
   const todoCount = todos.length;
@@ -34,6 +41,17 @@ export function HealthWidget({ size, columns }: WidgetProps) {
     todoCount === 0
       ? t('health.nothingToDo')
       : t('health.toDo', { count: todoCount });
+  const firstTodo = todos[0];
+  const wideSubline = firstTodo
+    ? t('health.toDoFirst', {
+        count: todoCount,
+        title: todoTitle(
+          t,
+          firstTodo,
+          expiringSoonDay(today, state.staleThresholdDays, i18n.language),
+        ),
+      })
+    : subline;
   const spokenTodos =
     todoCount === 0
       ? t('health.nothingToDoSpoken')
@@ -103,9 +121,12 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                     display: 'block',
                     fontSize: 12.5,
                     color: tokens.color.muted,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  {subline}
+                  {wideSubline}
                 </Box>
               </Box>
               <Box
@@ -166,8 +187,8 @@ export function HealthWidget({ size, columns }: WidgetProps) {
       <HealthSheet
         open={open}
         onClose={() => setOpen(false)}
-        health={health}
-        batchCount={batchCount}
+        state={state}
+        today={today}
       />
     </>
   );

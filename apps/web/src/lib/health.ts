@@ -81,17 +81,19 @@ const isLive = (batch: HealthBatch, input: HealthInput) =>
   batch.expiryDate === null || daysLeft(batch, input) >= 0;
 
 /** Whole days since the Batch was added, by the device's calendar. */
-const ageDays = (batch: HealthBatch, input: HealthInput) =>
-  -daysUntil(localIso(new Date(batch.createdAt)), todayDate(input));
+export const ageDays = (
+  batch: Pick<HealthBatch, 'createdAt'>,
+  today: IsoDate,
+) => -daysUntil(localIso(new Date(batch.createdAt)), fromIso(today));
 
 const overdueRatio = (batch: HealthBatch, input: HealthInput) =>
-  ageDays(batch, input) / FORGOTTEN_AFTER_DAYS[batch.location];
+  ageDays(batch, input.today) / FORGOTTEN_AFTER_DAYS[batch.location];
 
 /** An undated Batch older than its Location's limit. A dated Batch is never Forgotten. */
-function isForgotten(batch: HealthBatch, input: HealthInput): boolean {
+export function isForgotten(batch: HealthBatch, today: IsoDate): boolean {
   return (
     batch.expiryDate === null &&
-    ageDays(batch, input) > FORGOTTEN_AFTER_DAYS[batch.location]
+    ageDays(batch, today) > FORGOTTEN_AFTER_DAYS[batch.location]
   );
 }
 
@@ -137,7 +139,7 @@ export function pantryHealth(input: HealthInput): PantryHealth {
   const datedShare = dated.length / batches.length;
   const rotation =
     1 -
-    batches.filter((batch) => isForgotten(batch, input)).length /
+    batches.filter((batch) => isForgotten(batch, input.today)).length /
       batches.length;
 
   const percent = (value: number) => Math.round(value * 100);
@@ -158,6 +160,14 @@ export function pantryHealth(input: HealthInput): PantryHealth {
 
 export type HealthTodoKey =
   'expired' | 'missingStaples' | 'expiringSoon' | 'runningLow' | 'undated';
+/** The Health To-do keys in display order. */
+export const HEALTH_TODO_KEYS: HealthTodoKey[] = [
+  'expired',
+  'missingStaples',
+  'expiringSoon',
+  'runningLow',
+  'undated',
+];
 export type HealthTodoGroup = 'now' | 'week' | 'tidy';
 
 export type HealthTodo = {
@@ -166,7 +176,41 @@ export type HealthTodo = {
   factor: HealthFactor;
   /** Batch ids (expired, expiringSoon, undated) or Ingredient ids (missingStaples, runningLow). */
   itemIds: string[];
+  /** Points the bulk fix adds to the score; 0 hides the pill (also while not scored). */
+  gain: number;
 };
+
+type PendingTodo = Omit<HealthTodo, 'gain'>;
+
+/** The input after the bulk fix of a Health To-do, or null when the fix cannot be simulated. */
+function afterFix(todo: PendingTodo, input: HealthInput): HealthInput | null {
+  const ids = new Set(todo.itemIds);
+  switch (todo.key) {
+    case 'expired':
+      return {
+        ...input,
+        batches: input.batches.filter((batch) => !ids.has(batch.id)),
+      };
+    case 'missingStaples':
+    case 'runningLow':
+      return {
+        ...input,
+        onShoppingList: new Set([...input.onShoppingList, ...ids]),
+      };
+    case 'expiringSoon': // The fix is cooking, which cannot be simulated.
+    case 'undated': // Simulated once Batches carry their Default Expiry.
+      return null;
+  }
+}
+
+/** Points the bulk fix adds to the score, 0 when it adds none, cannot be simulated or the Pantry is not scored. */
+function gainOf(todo: PendingTodo, input: HealthInput): number {
+  const now = pantryHealth(input);
+  const fixed = afterFix(todo, input);
+  if (!now.scored || fixed === null) return 0;
+  const after = pantryHealth(fixed);
+  return after.scored ? Math.max(0, after.total - now.total) : 0;
+}
 
 const byDaysLeft = (input: HealthInput) => (a: HealthBatch, b: HealthBatch) =>
   daysLeft(a, input) - daysLeft(b, input);
@@ -199,11 +243,11 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
   );
   const undated = input.batches.filter((batch) => batch.expiryDate === null);
   const forgotten = undated
-    .filter((batch) => isForgotten(batch, input))
+    .filter((batch) => isForgotten(batch, input.today))
     .sort((a, b) => overdueRatio(b, input) - overdueRatio(a, input));
-  const rest = undated.filter((batch) => !isForgotten(batch, input));
+  const rest = undated.filter((batch) => !isForgotten(batch, input.today));
 
-  const todos: HealthTodo[] = [
+  const todos: PendingTodo[] = [
     {
       key: 'expired',
       group: 'now',
@@ -235,5 +279,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
       itemIds: [...forgotten, ...rest].map((batch) => batch.id),
     },
   ];
-  return todos.filter((todo) => todo.itemIds.length > 0);
+  return todos
+    .filter((todo) => todo.itemIds.length > 0)
+    .map((todo) => ({ ...todo, gain: gainOf(todo, input) }));
 }

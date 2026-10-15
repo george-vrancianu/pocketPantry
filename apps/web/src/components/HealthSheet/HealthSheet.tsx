@@ -8,22 +8,21 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  FACTORS,
-  MIN_BATCHES_FOR_SCORE,
-  type PantryHealth,
-} from '../../lib/health';
+import { FACTORS, MIN_BATCHES_FOR_SCORE } from '../../lib/health';
+import type { PantryHealthState } from '../../lib/usePantryHealth';
 import { ScoreRing } from './HealthRing';
+import { HealthTodos } from './HealthTodos';
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  health: PantryHealth;
-  batchCount: number;
+  state: PantryHealthState;
+  today: Date;
 };
 
 /** The Pantry health sheet. Its header carries the score; the Health To-dos come below. */
-export function HealthSheet({ open, onClose, health, batchCount }: Props) {
+export function HealthSheet({ open, onClose, state, today }: Props) {
+  const { health, batchCount } = state;
   const { t } = useTranslation('dashboard');
   const closeButton = useRef<HTMLButtonElement>(null);
   const missing = MIN_BATCHES_FOR_SCORE - batchCount;
@@ -78,7 +77,7 @@ export function HealthSheet({ open, onClose, health, batchCount }: Props) {
         </Box>
       }
     >
-      {null}
+      <HealthTodos state={state} today={today} />
     </Sheet>
   );
 }

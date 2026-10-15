@@ -86,6 +86,76 @@
     "factorValue": "{{name}} {{value}}",
     "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
     "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "group": {
+      "now": "Acum",
+      "week": "Săptămâna aceasta",
+      "tidy": "Ordine"
+    },
+    "toDoFirst": "{{count}} de făcut · {{title}}",
+    "allDone": "Nimic de făcut. Totul este în termen, în stoc și la locul lui.",
+    "moreNames": "{{names}} +{{count}}",
+    "gainSpoken_one": "crește scorul cu {{count}}",
+    "gainSpoken_few": "crește scorul cu {{count}}",
+    "gainSpoken_other": "crește scorul cu {{count}}",
+    "todo": {
+      "expired": {
+        "title_one": "Aruncă {{count}} expirat",
+        "title_few": "Aruncă {{count}} expirate",
+        "title_other": "Aruncă {{count}} de expirate",
+        "bulk": "Aruncă",
+        "bulkName_one": "Aruncă {{count}} expirat",
+        "bulkName_few": "Aruncă {{count}} expirate",
+        "bulkName_other": "Aruncă {{count}} de expirate"
+      },
+      "missingStaples": {
+        "title_one": "Adaugă {{count}} produs de bază",
+        "title_few": "Adaugă {{count}} produse de bază",
+        "title_other": "Adaugă {{count}} de produse de bază",
+        "bulk": "Adaugă",
+        "bulkName_one": "Adaugă {{count}} produs de bază",
+        "bulkName_few": "Adaugă {{count}} produse de bază",
+        "bulkName_other": "Adaugă {{count}} de produse de bază"
+      },
+      "expiringSoon": {
+        "title": "Folosește {{count}} până {{day}}",
+        "bulk": "Rețete",
+        "bulkName": "Rețete"
+      },
+      "runningLow": {
+        "title_one": "Reface stocul: {{count}} aproape terminat",
+        "title_few": "Reface stocul: {{count}} aproape terminate",
+        "title_other": "Reface stocul: {{count}} de aproape terminate",
+        "bulk": "Adaugă",
+        "bulkName_one": "Adaugă {{count}} aproape terminat",
+        "bulkName_few": "Adaugă {{count}} aproape terminate",
+        "bulkName_other": "Adaugă {{count}} de aproape terminate"
+      },
+      "undated": {
+        "title_one": "Datează {{count}} lot",
+        "title_few": "Datează {{count}} loturi",
+        "title_other": "Datează {{count}} de loturi",
+        "bulk": "Datează toate",
+        "bulkName_one": "Datează toate ({{count}} lot)",
+        "bulkName_few": "Datează toate cele {{count}} loturi",
+        "bulkName_other": "Datează toate cele {{count}} de loturi"
+      }
+    },
+    "done": {
+      "expired": "Nimic expirat",
+      "missingStaples": "Produse de bază acoperite",
+      "expiringSoon": "Nimic care expiră curând",
+      "runningLow": "Nimic aproape terminat",
+      "undated": "Totul are dată",
+      "rotation": "Nimic uitat"
+    },
+    "line": {
+      "since": "din {{day}}",
+      "staple": "Produs de bază",
+      "usual": "de obicei {{amount}}",
+      "noneLeft": "nu a mai rămas",
+      "age": "vechi de {{count}} z",
+      "inLocation": "{{duration}} în {{location}}"
+    },
     "close": "Închide"
   }
 }
