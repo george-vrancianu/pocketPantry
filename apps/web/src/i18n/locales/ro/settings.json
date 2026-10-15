@@ -174,7 +174,7 @@
   },
   "familyAllergies": {
     "title": "Alergiile familiei",
-    "hint": "Pentru persoane din familia ta fără cont, de exemplu un copil. Orice membru le poate adăuga sau elimina și se numără ca alergiile tuturor.",
+    "hint": "Pentru persoane din familia ta fără cont, de exemplu un copil. Orice membru le poate adăuga sau elimina, iar ele contează ca alergiile tuturor.",
     "empty": "Nicio alergie a familiei încă.",
     "family": "Familie",
     "allergen": "Alergen",

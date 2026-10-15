@@ -350,10 +350,25 @@ describe('deriveAllergens', () => {
       )?.entries;
       expect(entries?.map((e) => e.owner)).toEqual([
         OWN,
-        { kind: 'family', label: 'Mia' },
         { kind: 'family', label: 'Leo' },
+        { kind: 'family', label: 'Mia' },
       ]);
       expect(entries?.every((e) => e.lines[0].lineId === butter.id)).toBe(true);
+    });
+
+    it('groups Family Allergies by label (unlabeled first, then alphabetical), then by Allergen order', () => {
+      const entries = warn(everything(), [
+        family(MILK, 'Mia'),
+        family(PEANUTS, 'Leo'),
+        family(PEANUTS, 'Mia'),
+        family(GLUTEN, null),
+      ])?.entries;
+      expect(entries?.map((e) => [e.owner, e.allergenId])).toEqual([
+        [{ kind: 'family', label: null }, GLUTEN],
+        [{ kind: 'family', label: 'Leo' }, PEANUTS],
+        [{ kind: 'family', label: 'Mia' }, MILK],
+        [{ kind: 'family', label: 'Mia' }, PEANUTS],
+      ]);
     });
 
     it('keeps two Members with the same name apart', () => {

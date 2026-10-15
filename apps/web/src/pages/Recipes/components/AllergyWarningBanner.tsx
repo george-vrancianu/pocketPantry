@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import type { AllergyWarning, AllergyWarningEntry } from '../../../lib/recipes';
 
 /** Whose Allergy it is, as it reads in "Optional ingredient contains Milk: Mia". */
-function whose(entry: AllergyWarningEntry, t: TFunction): string {
+function whose(entry: AllergyWarningEntry, t: TFunction, count = 1): string {
   const { owner } = entry;
-  if (owner.kind === 'own') return t('allergyWarning.whoOwn');
+  if (owner.kind === 'own') return t('allergyWarning.whoOwn', { count });
   if (owner.kind === 'family') {
     return owner.label ?? t('allergyWarning.whoFamily');
   }
@@ -22,10 +22,13 @@ function personKey({ owner }: AllergyWarningEntry): string {
 /** One person's Allergies in the Recipe, split by severity; names keep the API's order. */
 type Person = {
   key: string;
-  who: string;
+  /** How the person reads, given how many Allergies the phrase covers ("your Allergy"/"your Allergies"). */
+  who: (count: number) => string;
   own: boolean;
   strong: string[];
   soft: string[];
+  /** The distinct optional lines behind `soft`, so the note can say "ingredient" or "ingredients". */
+  softLines: Set<string>;
 };
 
 /** Groups entries by person, in the API's order (first appearance of each person). */
@@ -37,14 +40,18 @@ function peopleOf(entries: AllergyWarningEntry[], t: TFunction): Person[] {
     if (!person) {
       person = {
         key,
-        who: whose(entry, t),
+        who: (count) => whose(entry, t, count),
         own: entry.owner.kind === 'own',
         strong: [],
         soft: [],
+        softLines: new Set(),
       };
       people.set(key, person);
     }
     person[entry.severity].push(entry.allergen.name);
+    if (entry.severity === 'soft') {
+      for (const line of entry.lines) person.softLines.add(line.lineId);
+    }
   }
   return [...people.values()];
 }
@@ -92,8 +99,9 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
                       ? 'allergyWarning.strongOwn'
                       : 'allergyWarning.strongOther',
                     {
+                      count: p.strong.length,
                       names: p.strong.join(', '),
-                      who: p.who,
+                      who: p.who(p.strong.length),
                     },
                   )}
                 </Typography>
@@ -103,8 +111,9 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
           {yoursSoft.map((p) => (
             <Typography key={`optional-${p.key}`}>
               {t('allergyWarning.optionalLine', {
+                count: p.softLines.size,
                 names: p.soft.join(', '),
-                who: p.who,
+                who: p.who(p.soft.length),
               })}
             </Typography>
           ))}
@@ -124,7 +133,7 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
                       <Typography key={p.key} component="span" variant="meta">
                         {t('allergyWarning.strongOther', {
                           names: p.strong.join(', '),
-                          who: p.who,
+                          who: p.who(1),
                         })}
                       </Typography>,
                     ]
@@ -138,7 +147,7 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
                       >
                         {t('allergyWarning.memberOptional', {
                           names: p.soft.join(', '),
-                          who: p.who,
+                          who: p.who(1),
                         })}
                       </Typography>,
                     ]

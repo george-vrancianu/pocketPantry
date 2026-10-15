@@ -130,8 +130,8 @@
     "shared_name_exists": "Navnet bruges allerede af en anden ingrediens."
   },
   "settings": {
-    "family_allergy_exists": "Den allergen er allerede på listen med samme navn.",
-    "allergen_not_found": "Den allergen findes ikke længere.",
+    "family_allergy_exists": "Allergenet er allerede på listen med samme navn.",
+    "allergen_not_found": "Allergenet findes ikke længere.",
     "family_allergy_not_found": "Den familieallergi er ikke længere på listen. Måske har en anden allerede fjernet den."
   }
 }

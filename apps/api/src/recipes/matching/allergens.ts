@@ -215,7 +215,11 @@ function uniqueAllergies(allergies: readonly AllergyInput[]): AllergyInput[] {
 
 const OWNER_TIER = { own: 0, family: 1, member: 2 } as const;
 
-/** Own, then Family (by Allergen order); then other Members by name (then Allergen order). Stable otherwise. */
+/**
+ * Own; then Family grouped by label (unlabeled first, then alphabetical); then other Members
+ * grouped by name (then id). Within a person, Allergen order. Grouping each person together
+ * means the banner's per-person phrases never reorder anything. Stable otherwise.
+ */
 function compareOwners(
   a: Pick<AllergyWarningEntry, 'allergenId' | 'owner'>,
   b: Pick<AllergyWarningEntry, 'allergenId' | 'owner'>,
@@ -223,6 +227,15 @@ function compareOwners(
 ): number {
   const tier = OWNER_TIER[a.owner.kind] - OWNER_TIER[b.owner.kind];
   if (tier !== 0) return tier;
+  if (a.owner.kind === 'family' && b.owner.kind === 'family') {
+    const [x, y] = [a.owner.label, b.owner.label];
+    if (x !== y) {
+      if (x === null) return -1;
+      if (y === null) return 1;
+      const byLabel = x.localeCompare(y);
+      if (byLabel !== 0) return byLabel;
+    }
+  }
   if (a.owner.kind === 'member' && b.owner.kind === 'member') {
     const byName = a.owner.name.localeCompare(b.owner.name);
     if (byName !== 0) return byName;

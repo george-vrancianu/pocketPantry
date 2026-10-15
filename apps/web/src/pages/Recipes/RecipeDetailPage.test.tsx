@@ -1160,7 +1160,7 @@ describe('RecipeDetailPage', () => {
       });
       expect(banner).toHaveAttribute('data-severity', 'strong');
       expect(
-        within(banner).getByText('Contains Peanuts, Milk: your Allergy'),
+        within(banner).getByText('Contains Peanuts, Milk: your Allergies'),
       ).toBeInTheDocument();
       const tabs = screen.getByRole('tablist');
       expect(
@@ -1357,12 +1357,37 @@ describe('RecipeDetailPage', () => {
           }),
         );
         const view = await banner();
-        expect(view.getAllByText(/your Allergy/)).toHaveLength(1);
+        expect(view.getAllByText(/your Allerg/)).toHaveLength(1);
         expect(
-          view.getByText('Contains Peanuts, Milk: your Allergy'),
+          view.getByText('Contains Peanuts, Milk: your Allergies'),
         ).toBeInTheDocument();
         expect(view.getByText('Mia: Tree nuts, Sesame')).toBeInTheDocument();
         expect(view.getByText('Ana: Eggs, Fish')).toBeInTheDocument();
+      });
+
+      it('pluralises the optional note when it covers several optional lines', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              severity: 'soft',
+              entries: [
+                entry('a-nuts', 'Tree nuts', own, {
+                  severity: 'soft',
+                  lineId: 'l2',
+                }),
+                entry('a-milk', 'Milk', own, {
+                  severity: 'soft',
+                  lineId: 'l3',
+                }),
+              ],
+            }),
+          }),
+        );
+        expect(
+          (await banner()).getByText(
+            'Optional ingredients contain Tree nuts, Milk: your Allergies',
+          ),
+        ).toBeInTheDocument();
       });
 
       it('keeps two Members with the same name apart', async () => {
@@ -1438,7 +1463,7 @@ describe('RecipeDetailPage', () => {
         const view = await banner();
         expect(view.getByText('Ana: Milk')).toBeInTheDocument();
         expect(view.getByText('Ben: Tree nuts')).toBeInTheDocument();
-        expect(view.queryByText(/your Allergy/)).toBeNull();
+        expect(view.queryByText(/your Allerg/)).toBeNull();
       });
 
       it('marks an optional-only Allergy of another Member as optional', async () => {
