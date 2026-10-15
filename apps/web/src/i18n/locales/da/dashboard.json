@@ -224,7 +224,6 @@
     "close": "Luk",
     "aria": {
       "column": "{{date}}: {{summary}}",
-      "columnToday": "I dag, {{date}}: {{summary}}",
       "meals_one": "{{count}} måltid, {{status}}",
       "meals_other": "{{count}} måltider, {{status}}",
       "allUnavailable_one": "{{count}} måltid utilgængeligt",

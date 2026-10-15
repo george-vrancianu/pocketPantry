@@ -82,12 +82,7 @@ export function baseAmount(
 }
 
 /** The accessible name of a day column: "Saturday 17 October: 2 meals, short". */
-export function columnName(
-  t: T,
-  language: string,
-  day: WindowDay,
-  today: IsoDate,
-): string {
+export function columnName(t: T, language: string, day: WindowDay): string {
   const unavailable = day.slots.filter((slot) => slot.unavailable).length;
   let summary: string;
   if (day.slots.length === 0) {
@@ -96,21 +91,17 @@ export function columnName(
     summary = t('mealPlan.aria.allUnavailable', { count: day.slots.length });
   } else {
     summary = t('mealPlan.aria.meals', {
-      count: day.slots.length,
+      count: day.slots.length - unavailable,
       status: t(`mealPlan.aria.status.${day.status as 'covered'}`),
     });
     if (unavailable > 0) {
       summary += `, ${t('mealPlan.aria.alsoUnavailable', { count: unavailable })}`;
     }
   }
-  const date = fullDate(language, day.date);
-  return t(
-    day.date === today ? 'mealPlan.aria.columnToday' : 'mealPlan.aria.column',
-    {
-      date,
-      summary,
-    },
-  );
+  return t('mealPlan.aria.column', {
+    date: fullDate(language, day.date),
+    summary,
+  });
 }
 
 /** Who the earlier meals were: one by Recipe, two by Mealtime, more as a count. */

@@ -226,7 +226,6 @@
     "close": "Close",
     "aria": {
       "column": "{{date}}: {{summary}}",
-      "columnToday": "Today, {{date}}: {{summary}}",
       "meals_one": "{{count}} meal, {{status}}",
       "meals_other": "{{count}} meals, {{status}}",
       "allUnavailable_one": "{{count}} meal unavailable",

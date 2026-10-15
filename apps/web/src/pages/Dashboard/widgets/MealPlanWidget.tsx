@@ -10,9 +10,8 @@ import {
   Tag,
   tokens,
   color,
-  border,
 } from '@pocket-pantry/ui';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   BAR_FILL,
@@ -24,6 +23,7 @@ import {
   fullDate,
   shortWeekday,
 } from '../../../components/MealPlanPopover/mealPlanText';
+import { plainAction } from '../../../components/MealPlanPopover/plainAction';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   barStatuses,
@@ -33,7 +33,7 @@ import {
   type PlanTag,
   type WindowDay,
 } from '../../../lib/mealPlan';
-import { localIso } from '../../../lib/pantry';
+import { localIso, type IsoDate } from '../../../lib/pantry';
 import { useMealPlanLegend } from '../../../lib/useMealPlanLegend';
 import { useToday } from '../../../lib/useToday';
 import { WidgetCard } from './WidgetCard';
@@ -134,15 +134,15 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const todayIso = localIso(useToday());
   const mealWindow = useMealWindow(language, todayIso);
   const legend = useMealPlanLegend();
-  const [open, setOpen] = useState<number | null>(null);
+  // Keyed by date, not column, so a refetch that shifts the window keeps the same day open.
+  const [openDate, setOpenDate] = useState<IsoDate | null>(null);
   const columnRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const openRef = useRef<number | null>(null);
-  openRef.current = open;
+  const openIndexRef = useRef(-1);
 
   const close = useCallback((returnFocus: boolean) => {
-    const index = openRef.current;
-    setOpen(null);
-    if (returnFocus && index !== null) {
+    const index = openIndexRef.current;
+    setOpenDate(null);
+    if (returnFocus && index >= 0) {
       columnRefs.current[index]?.focus({ preventScroll: true });
     }
   }, []);
@@ -156,7 +156,15 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const view = mealWindow.data;
   const days = view?.days ?? [];
   const planned = days.length > 0;
-  const openDay = open !== null ? days[open] : undefined;
+  // A date no longer in the window shows nothing; the effect below then forgets it.
+  const open =
+    openDate === null ? -1 : days.findIndex((d) => d.date === openDate);
+  openIndexRef.current = open;
+  const openDay = open >= 0 ? days[open] : undefined;
+
+  useEffect(() => {
+    if (openDate !== null && view && open < 0) setOpenDate(null);
+  }, [openDate, view, open]);
 
   const toggle = (index: number) => {
     if (open === index) {
@@ -164,7 +172,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
       return;
     }
     legend.markSeen();
-    setOpen(index);
+    setOpenDate(days[index].date);
   };
 
   return (
@@ -236,7 +244,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
                     aria-haspopup="dialog"
                     aria-expanded={isOpen}
                     aria-current={isToday ? 'date' : undefined}
-                    aria-label={columnName(t, language, day, todayIso)}
+                    aria-label={columnName(t, language, day)}
                     onClick={() => toggle(index)}
                     sx={{
                       all: 'unset',
@@ -401,22 +409,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
             ) : (
               <>
                 <span>{t('mealPlan.nothingThisWeek')}</span>
-                <Box
-                  component="span"
-                  sx={{
-                    height: 32,
-                    px: '12px',
-                    borderRadius: radius.pill,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    fontSize: 12.5,
-                    fontWeight: 700,
-                    whiteSpace: 'nowrap',
-                    border: `${border.width} solid ${color.lineStrong}`,
-                    backgroundColor: color.cardBg,
-                    color: tokens.color.ink,
-                  }}
-                >
+                <Box component="span" sx={plainAction}>
                   {t('mealPlan.planWeek')}
                 </Box>
               </>
@@ -424,13 +417,14 @@ export function MealPlanWidget({ columns }: WidgetProps) {
           </Box>
         ) : null}
       </Box>
-      {openDay && open !== null ? (
+      {openDay ? (
         <MealPlanPopover
           days={days}
           index={open}
           today={todayIso}
           anchor={columnRefs.current[open] ?? null}
-          onStep={setOpen}
+          card={columnRefs.current[open]?.closest('section') ?? null}
+          onStep={(index) => setOpenDate(days[index].date)}
           onClose={close}
           isInsideTrigger={isInsideColumn}
         />

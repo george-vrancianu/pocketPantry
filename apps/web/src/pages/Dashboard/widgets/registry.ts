@@ -1,5 +1,6 @@
 import {
   BudgetIcon,
+  CalendarIcon,
   ClockIcon,
   NutritionIcon,
   PulseIcon,
@@ -79,7 +80,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   'meal-plan': {
     component: MealPlanWidget,
     nameKey: 'widgets.mealPlan.title',
-    icon: RecipesIcon,
+    icon: CalendarIcon,
     sizes: ['wide'],
     defaultSize: 'wide',
   },

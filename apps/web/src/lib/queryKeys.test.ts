@@ -4,6 +4,7 @@ import { mealWindowQueryKey } from './mealPlan';
 import {
   catalogChangeQueryKeys,
   mealPlanQueryKey,
+  recipeChangeQueryKeys,
   recipeMatchingQueryKeys,
   shoppingListChangeQueryKeys,
 } from './queryKeys';
@@ -16,6 +17,7 @@ describe('Meal plan forecast query keys', () => {
     ['a Pantry change', recipeMatchingQueryKeys],
     ['a Shopping List change', shoppingListChangeQueryKeys],
     ['a Catalog change', catalogChangeQueryKeys],
+    ['a Recipe change', recipeChangeQueryKeys],
     ['a plan change', [mealPlanQueryKey]],
   ])('go stale after %s', async (_name, keys) => {
     const queryClient = new QueryClient();

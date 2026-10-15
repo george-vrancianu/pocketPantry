@@ -179,7 +179,7 @@ describe('MealPlanWidget week columns', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: 'Today, Thursday 15 October: 2 meals, short',
+        name: 'Thursday 15 October: 2 meals, short',
       }),
     ).toBeInTheDocument();
     expect(
@@ -215,6 +215,34 @@ describe('MealPlanWidget week columns', () => {
     expect(
       screen.getByText('Bars: B · L · D').closest('[aria-hidden]'),
     ).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('counts only the available meals in a column name, then the unavailable ones', async () => {
+    stub(
+      windowOf([
+        day(0, [
+          { mealtime: 'lunch', status: 'covered' },
+          { mealtime: 'dinner', status: 'unavailable' },
+        ]),
+      ]),
+    );
+    renderWidget();
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'Thursday 15 October: 1 meal, covered, 1 unavailable',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('marks today with aria-current rather than in its name', async () => {
+    stub(windowOf(week(2)));
+    renderWidget();
+
+    const today = await screen.findByRole('button', {
+      name: /^Thursday 15 October/,
+    });
+    expect(today).toHaveAttribute('aria-current', 'date');
   });
 
   it('colours each bar by its meal: covered, short, on list, unavailable, empty', async () => {
@@ -701,6 +729,91 @@ describe('MealPlanWidget day popover', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Saturday' }),
     ).toBeInTheDocument();
+  });
+
+  it('leaves focus on the field tapped outside the popover', async () => {
+    const u = user();
+    stub(windowOf(week(3)));
+    renderWidget();
+    const field = document.createElement('input');
+    document.body.append(field);
+
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    await screen.findByRole('dialog');
+    await u.click(field);
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(field).toHaveFocus();
+    field.remove();
+  });
+
+  describe('when the window refetches while a popover is open', () => {
+    it('keeps showing the same date even if its column moves', async () => {
+      const u = user();
+      let view = windowOf(week(4));
+      stub(() => view);
+      const { queryClient } = renderWidget();
+
+      await u.click(
+        (await screen.findAllByRole('button', { name: /meal/ }))[2],
+      );
+      await screen.findByRole('dialog', { name: 'Saturday' });
+
+      view = windowOf([1, 2, 3].map((offset) => day(offset)));
+      await queryClient.invalidateQueries();
+
+      await waitFor(() => expect(columns()).toHaveLength(3));
+      expect(
+        screen.getByRole('dialog', { name: 'Saturday' }),
+      ).toBeInTheDocument();
+    });
+
+    it('closes when its date leaves the window', async () => {
+      const u = user();
+      let view = windowOf(week(4));
+      stub(() => view);
+      const { queryClient } = renderWidget();
+
+      await u.click(
+        (await screen.findAllByRole('button', { name: /meal/ }))[2],
+      );
+      await screen.findByRole('dialog', { name: 'Saturday' });
+
+      view = windowOf([day(0), day(1)]);
+      await queryClient.invalidateQueries();
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+    });
+  });
+
+  it('is as wide as the card less 24 px, up to 340', async () => {
+    const u = user();
+    stub(windowOf(week(3)));
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: HTMLElement) {
+        const width = this.tagName === 'SECTION' ? 300 : 0;
+        return {
+          left: 0,
+          top: 0,
+          width,
+          height: 0,
+          right: width,
+          bottom: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        } as DOMRect;
+      },
+    );
+    renderWidget();
+
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    expect(await screen.findByRole('dialog')).toHaveStyle({ width: '276px' });
   });
 
   describe('placement', () => {

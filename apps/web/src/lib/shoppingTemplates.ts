@@ -4,7 +4,10 @@ import type { Unit } from './catalog';
 import { localIso } from './pantry';
 import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
-import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
+import {
+  shoppingListChangeQueryKeys,
+  templateDetailsQueryKey,
+} from './queryKeys';
 
 export type TemplateSummary = {
   id: string;
@@ -145,11 +148,12 @@ export function useApplyTemplate(locale: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: NewShoppingItem[]) => postShoppingItems(locale, body),
-    // Suggestions hide while the Ingredient is on the list.
+    // Suggestions hide while the Ingredient is on the list; Recipe matches and the Meal Plan forecast show it too.
     onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-      ]),
+      Promise.all(
+        [shoppingListQueryKey, ...shoppingListChangeQueryKeys].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }

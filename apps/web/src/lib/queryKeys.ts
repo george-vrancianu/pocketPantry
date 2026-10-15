@@ -27,6 +27,9 @@ export const shoppingListChangeQueryKeys = [
   mealPlanQueryKey,
 ] as const;
 
+/** Everything a Recipe change (edit, archive, new variant, Catalog rename) makes stale: every Recipe query and the Meal Plan forecast, whose slots may turn unavailable ('recipes' must match `recipesQueryKey`). */
+export const recipeChangeQueryKeys = [['recipes'], mealPlanQueryKey] as const;
+
 /** The Family's Recently Stocked Ingredients. Under `['pantry']`, so anything that invalidates the Pantry (Scan save, Finish Shopping, relink, a Batch change) refetches it. */
 export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;
 

@@ -18,7 +18,6 @@ import {
   tokens,
   usePrefersReducedMotion,
   useBreakpointUp,
-  color,
 } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import {
@@ -47,7 +46,10 @@ import {
   longWeekday,
   reasonText,
 } from './mealPlanText';
+import { plainAction } from './plainAction';
 
+/** Widest the popover grows, px. */
+const MAX_WIDTH = 340;
 /** Gap between the column and the popover, px. */
 const GAP = 10;
 /** Closest the popover comes to the screen's side edges, px. */
@@ -71,6 +73,8 @@ type Props = {
   today: IsoDate;
   /** The column the popover points at. */
   anchor: HTMLElement | null;
+  /** The Widget card; the popover is as wide as it less 2 x EDGE, up to MAX_WIDTH. */
+  card: HTMLElement | null;
   onStep: (index: number) => void;
   /** `returnFocus` is false when the column has scrolled away. */
   onClose: (returnFocus: boolean) => void;
@@ -117,17 +121,7 @@ const statusMark = (slot: WindowSlot, t: TFunction<'dashboard'>) => {
         </Tag>
       );
     case 'unavailable':
-      return (
-        <Tag
-          tone="accent"
-          sx={{
-            backgroundColor: tokens.color.chipNeutral,
-            color: tokens.color.muted,
-          }}
-        >
-          {t('mealPlan.status.unavailable')}
-        </Tag>
-      );
+      return <Tag tone="neutral">{t('mealPlan.status.unavailable')}</Tag>;
   }
 };
 
@@ -325,21 +319,6 @@ function MealBlock({ slot, today }: { slot: WindowSlot; today: IsoDate }) {
   );
 }
 
-const plainAction = {
-  height: 32,
-  px: '12px',
-  borderRadius: radius.pill,
-  fontSize: 12.5,
-  fontWeight: 700,
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '5px',
-  border: `${border.width} solid ${color.lineStrong}`,
-  backgroundColor: color.cardBg,
-  color: tokens.color.ink,
-  whiteSpace: 'nowrap',
-} as const;
-
 /**
  * A day's meals in a non-modal dialog anchored under (or, near the Dock, above) its column, with ‹ › to step
  * through the planned days. The page it would link to does not exist yet, so "Edit day", "Plan a meal" and
@@ -350,6 +329,7 @@ export function MealPlanPopover({
   index,
   today,
   anchor,
+  card,
   onStep,
   onClose,
   isInsideTrigger,
@@ -371,6 +351,10 @@ export function MealPlanPopover({
     const popover = popoverRef.current;
     if (!popover || !anchor) return;
     const column = anchor.getBoundingClientRect();
+    const cardWidth = card?.getBoundingClientRect().width;
+    popover.style.width = `${
+      cardWidth ? Math.min(MAX_WIDTH, cardWidth - 2 * EDGE) : MAX_WIDTH
+    }px`;
     const viewHeight = window.innerHeight;
     const viewWidth = window.innerWidth;
     if (column.bottom < 0 || column.top > viewHeight) {
@@ -408,7 +392,7 @@ export function MealPlanPopover({
         ? previous
         : { left, top, arrowX, placement },
     );
-  }, [anchor, dockHeight]);
+  }, [anchor, card, dockHeight]);
 
   // Place before paint, and again when the day (and so the height) or the anchor changes.
   useLayoutEffect(() => {
@@ -438,9 +422,14 @@ export function MealPlanPopover({
       if (popoverRef.current?.contains(target) || isInsideTrigger(target)) {
         return;
       }
-      onCloseRef.current(true);
-      // The press then moves focus to what was tapped; the column gets it back once that has happened.
-      setTimeout(() => anchor?.focus({ preventScroll: true }), 0);
+      onCloseRef.current(false);
+      // The press then moves focus to what was tapped; the column gets it only if that left focus nowhere.
+      setTimeout(() => {
+        const active = document.activeElement;
+        if (!active || active === document.body) {
+          anchor?.focus({ preventScroll: true });
+        }
+      }, 0);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onPointerDown);
@@ -482,7 +471,7 @@ export function MealPlanPopover({
       sx={{
         position: 'fixed',
         zIndex: 1250,
-        width: `min(340px, calc(100vw - ${2 * EDGE}px))`,
+        width: MAX_WIDTH,
         maxHeight: 470,
         display: 'flex',
         flexDirection: 'column',
@@ -625,10 +614,7 @@ export function MealPlanPopover({
             display: 'flex',
           }}
         >
-          <Box
-            component="span"
-            sx={{ ...plainAction, flex: 1, justifyContent: 'center' }}
-          >
+          <Box component="span" sx={plainAction}>
             <CalendarIcon size={14} />
             {t('mealPlan.editDay')}
           </Box>
