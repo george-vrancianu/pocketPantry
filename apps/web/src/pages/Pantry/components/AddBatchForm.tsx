@@ -6,6 +6,7 @@ import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/Brow
 import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { StatusIcon } from '../../../components/StatusIcon';
+import { saveOverlayMode } from '../../../lib/cameraMode';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
   useAddBatchForm,
@@ -21,18 +22,20 @@ type Props = {
   start?: AddBatchStart;
 };
 
-/** The camera the form opens: Product only for now, so no dial. */
-const FORM_CAMERA_MODES = ['product'] as const;
+/** The camera the form opens: a Product photo or a barcode, never the Scan page's other modes. */
+const FORM_CAMERA_MODES = ['product', 'barcode'] as const;
 
 export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const { t: tReview } = useTranslation('review');
+  const { t: tScan } = useTranslation('scan');
   const cameraButton = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
+  const busy = camera.reading || camera.lookingUp;
   // After the overlay closes, focus goes back to the button that opened it.
   const wasOpen = useRef(false);
   useEffect(() => {
@@ -63,17 +66,19 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
         type="button"
         variant="ghost"
         ref={cameraButton}
-        aria-disabled={camera.reading || undefined}
-        className={camera.reading ? 'Mui-disabled' : undefined}
+        aria-disabled={busy || undefined}
+        className={busy ? 'Mui-disabled' : undefined}
         onClick={() => {
-          if (!camera.reading) camera.openCamera();
+          if (!busy) camera.openCamera();
         }}
       >
         {t('form.prefill.open')}
       </Button>
-      {camera.reading ? (
+      {busy ? (
         <Typography role="status" color="text.secondary">
-          {t('form.prefill.reading')}
+          {camera.lookingUp
+            ? t('form.prefill.lookingUp')
+            : t('form.prefill.reading')}
         </Typography>
       ) : null}
       <div aria-live="polite" data-testid="prefill-read-error">
@@ -82,10 +87,20 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
-          defaultMode="product"
+          defaultMode={camera.openMode}
+          onModeChange={saveOverlayMode}
+          notice={
+            camera.barcodeMissed ? tScan('overlay.barcodeNotFound') : undefined
+          }
           onResult={camera.onResult}
           onCancel={camera.cancel}
         />
+      ) : null}
+
+      {camera.fromOpenFoodFacts ? (
+        <Typography variant="caption" color="text.secondary">
+          {t('form.prefill.credit')}
+        </Typography>
       ) : null}
 
       <CatalogSearch

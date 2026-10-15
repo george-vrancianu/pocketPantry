@@ -16,6 +16,53 @@ export function cameraConstraints(): MediaStreamConstraints {
   };
 }
 
+/** Barcodes a product carries: EAN-13, EAN-8, UPC-A and UPC-E. */
+export const BARCODE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
+
+type Detector = {
+  detect(source: HTMLVideoElement): Promise<Array<{ rawValue: string }>>;
+};
+type NativeDetector = {
+  new (options: { formats: string[] }): Detector;
+  getSupportedFormats(): Promise<string[]>;
+};
+
+let detector: Promise<Detector> | null = null;
+
+/** The browser's detector where it reads all four formats; otherwise the ZXing WASM one, loaded on first use. */
+function loadDetector(): Promise<Detector> {
+  detector ??= (async () => {
+    const native = (window as { BarcodeDetector?: NativeDetector })
+      .BarcodeDetector;
+    try {
+      const supported = (await native?.getSupportedFormats()) ?? [];
+      if (native && BARCODE_FORMATS.every((f) => supported.includes(f))) {
+        return new native({ formats: BARCODE_FORMATS });
+      }
+    } catch {
+      // Fall through to the ponyfill.
+    }
+    const { createZXingDetector } = await import('./barcodeDecoder');
+    return createZXingDetector(BARCODE_FORMATS);
+  })();
+  // A failed load (offline) must not stick: the next try starts again.
+  detector.catch(() => (detector = null));
+  return detector;
+}
+
+/** The first product barcode in the current video frame (8, 12 or 13 digits), or null. */
+export async function readBarcode(
+  video: HTMLVideoElement,
+): Promise<string | null> {
+  const found = await (await loadDetector()).detect(video);
+  return (
+    found.find((code) => /^(?:\d{8}|\d{12}|\d{13})$/.test(code.rawValue))
+      ?.rawValue ?? null
+  );
+}
+
+const SCAN_INTERVAL_MS = 250;
+
 export type CameraStatus = 'starting' | 'ready' | 'unavailable';
 
 type TorchConstraints = MediaTrackConstraints & {
@@ -93,5 +140,35 @@ export function useCamera() {
     }
   }, []);
 
-  return { videoRef, status, torchSupported, capture, setTorch };
+  /**
+   * Reads barcodes from the live preview until the first one, which goes to `onCode`. Returns a
+   * function that stops the watch. Starting it is what first loads a ZXing decoder.
+   */
+  const watchBarcodes = useCallback((onCode: (code: string) => void) => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = async () => {
+      const video = videoRef.current;
+      try {
+        const code =
+          video && video.readyState >= 2 ? await readBarcode(video) : null;
+        if (stopped) return;
+        if (code) {
+          stopped = true;
+          onCode(code);
+          return;
+        }
+      } catch {
+        // A frame that cannot be read, or a decoder that has not loaded yet: try the next one.
+      }
+      if (!stopped) timer = setTimeout(() => void tick(), SCAN_INTERVAL_MS);
+    };
+    void tick();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, []);
+
+  return { videoRef, status, torchSupported, capture, setTorch, watchBarcodes };
 }

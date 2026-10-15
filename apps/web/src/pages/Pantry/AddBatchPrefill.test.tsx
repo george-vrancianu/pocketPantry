@@ -21,6 +21,7 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: false,
     capture: () => Promise.resolve(new Blob(['frame'])),
     setTorch: () => Promise.resolve(true),
+    watchBarcodes: () => () => {},
   }),
 }));
 vi.mock('../../lib/image', () => ({
@@ -116,7 +117,7 @@ async function openForm(user: ReturnType<typeof userEvent.setup>) {
 }
 
 const cameraButton = () =>
-  screen.getByRole('button', { name: 'Fill from a photo' });
+  screen.getByRole('button', { name: 'Fill from the camera' });
 
 async function shoot(user: ReturnType<typeof userEvent.setup>) {
   await user.click(cameraButton());
@@ -127,6 +128,8 @@ async function shoot(user: ReturnType<typeof userEvent.setup>) {
 describe('Prefill the add-Batch form from a Product Scan', () => {
   beforeEach(() => {
     localStorage.clear();
+    // These tests are about the Product mode; Barcode is covered in AddBatchBarcode.test.tsx.
+    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
     camera.status = 'ready';
     camera.prepare = null;
   });
@@ -134,7 +137,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     vi.unstubAllGlobals();
   });
 
-  it('opens a camera overlay with only Product (no dial), and cancelling keeps the form', async () => {
+  it('opens a camera overlay in the remembered mode, and cancelling keeps the form', async () => {
     const user = userEvent.setup();
     const { calls } = stubProductScan(() => Response.json({ lines: [line()] }));
     renderWithProviders(
@@ -154,7 +157,6 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
 
     await user.click(cameraButton());
     expect(screen.getByTestId('camera-overlay')).toBeInTheDocument();
-    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Reading as')).toBeInTheDocument();
     // The host page's URL is left alone.
     expect(screen.getByTestId('where')).toHaveTextContent(
@@ -222,7 +224,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
     renderWithProviders(<PantryPage />, { locale: 'ro' });
     await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
-    await user.click(screen.getByRole('button', { name: /poză/ }));
+    await user.click(screen.getByRole('button', { name: /camera/ }));
     screen.getByTestId('scan-guide').focus();
     await user.keyboard('{Enter}');
     release();
@@ -324,7 +326,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     ).toBeInTheDocument();
     for (const field of ['ingredient', 'amount', 'expiry', 'description'])
       expect(screen.getByTestId(`prefilled-${field}`)).toHaveTextContent(
-        'Filled from your photo',
+        'Filled from the product',
       );
     expect(screen.queryByText(/Low confidence/)).not.toBeInTheDocument();
 

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
+import { BarcodeModule } from './barcode/barcode.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { ApiExceptionFilter } from './common/api-exception.filter';
 import { validateEnv } from './config/env';
@@ -31,6 +32,7 @@ import { SettingsModule } from './settings/settings.module';
     ShoppingModule,
     PantryModule,
     ScanModule,
+    BarcodeModule,
     DashboardModule,
     SettingsModule,
     RecipesModule,

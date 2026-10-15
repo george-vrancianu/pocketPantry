@@ -28,7 +28,8 @@
     "product": "Product",
     "receipt": "Receipt",
     "plate": "Plate",
-    "ingredients": "Ingredients"
+    "ingredients": "Ingredients",
+    "barcode": "Barcode"
   },
   "guide": {
     "scan": "Scan: double-tap or press Enter",
@@ -65,6 +66,8 @@
   "notAdded": "That photo could not be added. Try again.",
   "overlay": {
     "noCamera": "The camera is not available. Check the camera permission, or fill the form by hand.",
-    "photoFailed": "That photo could not be used. Try again."
+    "photoFailed": "That photo could not be used. Try again.",
+    "pointAtBarcode": "Point the camera at the barcode.",
+    "barcodeNotFound": "No product found for that barcode. Take a photo of the product instead."
   }
 }
