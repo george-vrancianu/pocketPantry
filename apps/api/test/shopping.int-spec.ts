@@ -3,11 +3,18 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { shoppingLists, user } from '../src/database/schema';
+import {
+  recipes,
+  shoppingItemSourceRecipes,
+  shoppingLists,
+  user,
+} from '../src/database/schema';
+import { ShoppingService } from '../src/shopping/shopping.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Item = {
   id: string;
+  ingredientId: string | null;
   name: string;
   quantity: number | null;
   unit: string | null;
@@ -454,6 +461,85 @@ describe('Shopping List (integration)', () => {
         .get('/api/shopping-list')
         .set('origin', TEST_ORIGIN)
         .expect(401);
+    });
+  });
+  describe('addItemsWithSourceRecipes (Source Recipes per item)', () => {
+    const makeRecipe = async () => {
+      const id = crypto.randomUUID();
+      await database
+        .insert(recipes)
+        .values({ id, familyId: null, title: `Sources ${id}`, servings: 2 });
+      return id;
+    };
+    const sourcesOf = async (itemId: string) =>
+      (
+        await database
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, itemId))
+      )
+        .map((row) => row.recipeId)
+        .sort();
+
+    it('records several Source Recipes per item, on merged-into items too, and reports only the newly inserted items', async () => {
+      const { cookie, userId } = await signUp('Sources');
+      const eggs = await ingredientId(cookie, 'egg');
+      const feta = await ingredientId(cookie, 'feta');
+      const [r1, r2, r3] = [
+        await makeRecipe(),
+        await makeRecipe(),
+        await makeRecipe(),
+      ];
+      const existing = items(
+        await add(cookie, { ingredientId: eggs, quantity: 2, unit: 'pcs' }),
+      )[0];
+
+      const result = await app.get(ShoppingService).addItemsWithSourceRecipes(
+        userId,
+        [
+          {
+            item: { ingredientId: eggs, quantity: 3, unit: 'pcs' },
+            recipeIds: [r1, r2, r3],
+          },
+          { item: { ingredientId: feta }, recipeIds: [r1] },
+        ],
+        'en',
+      );
+
+      const listed = items(result.list);
+      const eggsItem = listed.find((i) => i.id === existing.id);
+      const fetaItem = listed.find((i) => i.ingredientId === feta);
+      expect(eggsItem?.quantity).toBe(5);
+      expect(fetaItem).toBeDefined();
+      expect(result.insertedIds).toEqual([fetaItem!.id]);
+      expect(await sourcesOf(existing.id)).toEqual([r1, r2, r3].sort());
+      expect(await sourcesOf(fetaItem!.id)).toEqual([r1]);
+    });
+    it("reports an item inserted and then merged into within one call once, with the union of both entries' Recipes", async () => {
+      const { cookie, userId } = await signUp('Twice');
+      const feta = await ingredientId(cookie, 'feta');
+      const [r1, r2] = [await makeRecipe(), await makeRecipe()];
+
+      const result = await app.get(ShoppingService).addItemsWithSourceRecipes(
+        userId,
+        [
+          {
+            item: { ingredientId: feta, quantity: 100, unit: 'g' },
+            recipeIds: [r1],
+          },
+          {
+            item: { ingredientId: feta, quantity: 50, unit: 'g' },
+            recipeIds: [r1, r2],
+          },
+        ],
+        'en',
+      );
+
+      const listed = items(result.list);
+      expect(listed).toHaveLength(1);
+      expect(listed[0].quantity).toBe(150);
+      expect(result.insertedIds).toEqual([listed[0].id]);
+      expect(await sourcesOf(listed[0].id)).toEqual([r1, r2].sort());
     });
   });
 });
