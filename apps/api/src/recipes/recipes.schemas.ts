@@ -371,7 +371,7 @@ export type RecipeAllergenItem = {
 
 /** A Recipe's Allergens, derived from its own Ingredient Lines (ADR 0014). */
 export type RecipeAllergens = {
-  /** In Recipe order. */
+  /** In the Admin-curated Allergen order. */
   items: RecipeAllergenItem[];
   /** Lines that could not be checked: untagged Family Ingredients and Unmatched lines. */
   uncheckedCount: number;
@@ -409,7 +409,7 @@ export type AllergyWarningView = {
  * whose Allergy it is (`owners`). The line markers stay on detail. Null when nothing the viewer must avoid is,
  * or might be, in the Recipe.
  *
- * #359's `hidden` and `hiddenByAllergiesCount` will sit beside this warning, not inside it.
+ * Hiding (`hidden`, `hiddenByAllergiesCount`) is reported beside this warning, not inside it.
  */
 export type CompactAllergyWarning = {
   /** As on Recipe detail: `strong` when any Allergen is in a required line; `soft` otherwise. */

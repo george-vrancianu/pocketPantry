@@ -153,7 +153,7 @@ export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
  * since (checked false with the review flag set); a Family Ingredient once a Member tagged it
  * (or ticked "None"); an Unmatched line never. Unchecked lines are counted, never assumed free.
  */
-export function isLineChecked(line: Pick<AllergenLine, 'ingredient'>): boolean {
+function isLineChecked(line: Pick<AllergenLine, 'ingredient'>): boolean {
   const { ingredient } = line;
   if (!ingredient) return false;
   if (ingredient.ownerFamilyId !== null) return ingredient.allergensChecked;
@@ -234,12 +234,17 @@ function warningFor<L extends AllergenLine>(
           tier: countsAsViewersOwn(allergy.owner)
             ? ('yours' as const)
             : ('members' as const),
-          severity: found.optionalOnly
-            ? ('soft' as const)
-            : ('strong' as const),
+          severity: found.sources.some(
+            (line) => !line.optional && isLineChecked(line),
+          )
+            ? ('strong' as const)
+            : ('soft' as const),
           lines: found.sources.map((line) => ({
             lineId: line.id,
-            severity: line.optional ? ('soft' as const) : ('strong' as const),
+            severity:
+              !line.optional && isLineChecked(line)
+                ? ('strong' as const)
+                : ('soft' as const),
           })),
         },
       ];

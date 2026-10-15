@@ -110,7 +110,7 @@ export function PlateRecipeSave({
     { search: searching ? search : '', cuisineId: '', methodId: '' },
     i18n.language,
     // A title search is a deliberate look-up with no note to show, so it lists every Recipe
-    // (each still carries its Allergy indicator); only the suggested matches hide.
+    // (each still carries its Allergy indicator); only the suggested matches hide (ADR 0014 records this exception).
     { searchOnly: true, showHidden: true },
   );
 

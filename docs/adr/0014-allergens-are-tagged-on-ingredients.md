@@ -8,7 +8,7 @@ Members need an Allergy Warning on any Recipe that contains one of their Allergi
 - A shared Ingredient with no Allergen tags contains none. A Family Ingredient with no tags is Unchecked until a Member tags it, and ticking "no Allergens" counts as tagging it. One exception: a shared Ingredient promoted from Family copies none of which a Member checked stays Unchecked until an Admin saves its Allergens, as "no tags" there means nobody has looked, not "contains none". An Unmatched Ingredient Line is always Unchecked. Unchecked lines give the softer Allergy Warning and never hide a Recipe.
 - When a Family Ingredient is promoted or merged ([ADR 0011](0011-family-ingredients-are-owned-ingredients.md)), its tags carry over for the Admin to review.
 - A line that is optional gives the softer Allergy Warning and never hides a Recipe.
-- Hiding uses only the viewer's own Allergies and Family Allergies. It applies to browsing and matching: the Recipes list and search, the Can Make strip, the Cook Tonight Widget and Plate Scan matches. A Recipe's own page, the Variants list, Pairing links, Meal Plans and Admin pages never hide a Recipe. Each Variant is judged on its own Ingredient Lines.
+- Hiding uses only the viewer's own Allergies and Family Allergies. It applies to browsing and matching: the Recipes list and search, the Can Make strip, the Cook Tonight Widget and Plate Scan matches. A Recipe's own page, the Variants list, Pairing links, Meal Plans and Admin pages never hide a Recipe. Each Variant is judged on its own Ingredient Lines. One exception: the title search when saving a Plate Scan as a Recipe always shows hidden Recipes, as a deliberate look-up.
 
 ## Considered Options
 

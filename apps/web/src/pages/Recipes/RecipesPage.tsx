@@ -70,10 +70,14 @@ export function RecipesPage() {
           options={filters.data}
         />
         <HiddenByAllergiesNote
-          count={Math.max(
-            recipes.data?.hiddenByAllergiesCount ?? 0,
-            cookTonight.data?.hiddenByAllergiesCount ?? 0,
-          )}
+          count={
+            filtering
+              ? (recipes.data?.hiddenByAllergiesCount ?? 0)
+              : Math.max(
+                  recipes.data?.hiddenByAllergiesCount ?? 0,
+                  cookTonight.data?.hiddenByAllergiesCount ?? 0,
+                )
+          }
           onShow={() => setShowHidden(true)}
         />
         {recipes.error ? (

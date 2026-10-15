@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { familyAllergies } from '../src/database/schema';
+import { familyAllergies, recipes } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
   RecipeDetail,
@@ -95,6 +95,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
   });
 
   afterAll(async () => {
+    await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
     await app.close();
   });
 

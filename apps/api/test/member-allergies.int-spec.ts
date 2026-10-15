@@ -1,8 +1,10 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
+import { recipes as recipesTable } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
   FamilyRecipeEdit,
@@ -18,6 +20,7 @@ jest.setTimeout(30_000);
 // Spec: #350 / #356, ADR 0014. A Member's Allergies and the Allergy Warning on a Recipe's page.
 describe('Allergies and the Allergy Warning (integration)', () => {
   let app: NestFastifyApplication;
+  let database: Database;
   let admin: ReturnType<typeof client>;
   let recipes: ReturnType<typeof client>;
   let settings: ReturnType<typeof client>;
@@ -59,7 +62,7 @@ describe('Allergies and the Allergy Warning (integration)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    const database = app.get<Database>(DATABASE);
+    database = app.get<Database>(DATABASE);
     const adminEmail = `allergies-admin-${stamp}@example.com`;
     const cookie = await signUp(app, adminEmail, 'Admin');
     await promoteToAdmin(database, adminEmail);
@@ -78,6 +81,9 @@ describe('Allergies and the Allergy Warning (integration)', () => {
   });
 
   afterAll(async () => {
+    await database
+      .delete(recipesTable)
+      .where(ilike(recipesTable.title, `%${stamp}-%`));
     await app.close();
   });
 

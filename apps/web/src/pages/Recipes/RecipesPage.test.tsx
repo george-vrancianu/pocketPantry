@@ -777,6 +777,21 @@ describe('RecipesPage', () => {
       expect(await note('4 Recipes')).toBeVisible();
     });
 
+    it("counts only the list's hidden Recipes while a search is active", async () => {
+      setup(
+        (url) => (filtered(url) ? [frittata] : [omelette]),
+        [card()],
+        undefined,
+        1,
+        4,
+      );
+      const user = userEvent.setup();
+      expect(await note('4 Recipes')).toBeVisible();
+      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
+      expect(await note('1 Recipe')).toBeVisible();
+      expect(screen.queryByText('4 hidden by your Allergies')).toBeNull();
+    });
+
     it('says "1 Recipe" in the singular', async () => {
       setup(() => [omelette], [], undefined, 1);
       expect(await note('1 Recipe')).toBeVisible();

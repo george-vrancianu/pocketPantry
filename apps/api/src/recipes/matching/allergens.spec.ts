@@ -622,8 +622,29 @@ describe('deriveAllergens', () => {
         allergies,
       });
       expect(tagged.allergyWarning?.uncheckedCount).toBe(1);
+      expect(tagged.allergyWarning?.severity).toBe('soft');
       expect(tagged.hidden).toBe(false);
       expect(tagged.blocksFill).toBe(false);
+    });
+
+    it('gives a soft warning, entry and line for a tagged required Unchecked line', () => {
+      const unchecked = line({
+        allergenIds: [MILK],
+        ingredient: uncheckedFamily,
+      });
+      const { allergyWarning } = deriveAllergens({
+        lines: [unchecked],
+        allergenOrder: ORDER,
+        allergies: [own(MILK)],
+      });
+      expect(allergyWarning?.severity).toBe('soft');
+      expect(allergyWarning?.entries).toMatchObject([
+        {
+          allergenId: MILK,
+          severity: 'soft',
+          lines: [{ lineId: unchecked.id, severity: 'soft' }],
+        },
+      ]);
     });
 
     it('is false without a matching Allergy', () => {

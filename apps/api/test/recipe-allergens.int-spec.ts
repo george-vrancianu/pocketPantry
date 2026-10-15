@@ -1,10 +1,14 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { ilike, inArray } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredientAllergens, ingredients } from '../src/database/schema';
+import {
+  ingredientAllergens,
+  ingredients,
+  recipes,
+} from '../src/database/schema';
 import type {
   AdminRecipeDetail,
   FamilyRecipeEdit,
@@ -26,6 +30,7 @@ describe('Recipe detail Allergens (integration)', () => {
   let familyRecipes: ReturnType<typeof client>;
   const stamp = Date.now();
   let n = 0;
+  const familyIngredientIds: string[] = [];
   const title = (label: string) => `${label} ${stamp}-${++n}`;
 
   // Seed tags: parmesan and butter contain milk, peanuts contain peanuts.
@@ -72,6 +77,15 @@ describe('Recipe detail Allergens (integration)', () => {
   });
 
   afterAll(async () => {
+    await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
+    if (familyIngredientIds.length > 0) {
+      await database
+        .delete(ingredientAllergens)
+        .where(inArray(ingredientAllergens.ingredientId, familyIngredientIds));
+      await database
+        .delete(ingredients)
+        .where(inArray(ingredients.id, familyIngredientIds));
+    }
     await app.close();
   });
 
@@ -147,8 +161,8 @@ describe('Recipe detail Allergens (integration)', () => {
 
   describe('a Family Recipe', () => {
     it('counts an Unmatched line and an untagged Family Ingredient as Unchecked, and a tagged one as checked', async () => {
-      const familyIngredient = async (name: string) =>
-        (
+      const familyIngredient = async (name: string) => {
+        const made = (
           await family
             .post('/catalog/family-ingredients?locale=en', {
               name: `${name} ${stamp}`,
@@ -157,17 +171,16 @@ describe('Recipe detail Allergens (integration)', () => {
             })
             .expect(201)
         ).body as { id: string };
+        familyIngredientIds.push(made.id);
+        return made;
+      };
       const tagged = await familyIngredient('Zq nut spread');
       const untagged = await familyIngredient('Zq mystery paste');
-      // Tagging Family Ingredients arrives with its own endpoints; set the state directly.
-      await database
-        .update(ingredients)
-        .set({ allergensChecked: true })
-        .where(eq(ingredients.id, tagged.id));
-      await database.insert(ingredientAllergens).values({
-        ingredientId: tagged.id,
-        allergenId: seedId.allergen('peanuts'),
-      });
+      await family
+        .put(`/catalog/family-ingredients/${tagged.id}/allergens`, {
+          allergenIds: [seedId.allergen('peanuts')],
+        })
+        .expect(200);
 
       const created = (
         await familyRecipes

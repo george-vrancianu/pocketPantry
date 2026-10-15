@@ -342,7 +342,7 @@ export type AllergyWarnings = {
  * Whether a list should leave out hidden Recipes (#359): the Member's preference is on and the
  * request did not ask to show hidden ones. Detail, Variants lists and Pairing links never ask.
  */
-export const hidesAllergyRecipes = (
+const hidesAllergyRecipes = (
   preferences: { hideRecipesWithAllergies: boolean },
   showHidden: boolean | undefined,
 ): boolean => preferences.hideRecipesWithAllergies && showHidden !== true;
