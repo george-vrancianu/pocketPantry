@@ -11,6 +11,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [
     {

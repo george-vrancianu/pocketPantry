@@ -6,6 +6,7 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
+import { adminRecipesQueryKey } from './adminRecipes';
 import { recipeChangeQueryKeys } from './queryKeys';
 import { shoppingListQueryKey } from './shopping';
 
@@ -16,7 +17,8 @@ export type EntityType =
   | 'ingredient'
   | 'cuisine'
   | 'method'
-  | 'eating_moment';
+  | 'eating_moment'
+  | 'allergen';
 
 export type AdminTranslation = {
   id: string;
@@ -49,6 +51,8 @@ export type AdminIngredient = Translated & {
   defaultUnit: Unit;
   /** Recipe matching always counts a Pantry Basic as covered. */
   pantryBasic: boolean;
+  /** The Allergens this shared Ingredient contains; none means it contains none. */
+  allergenIds: string[];
 };
 
 /** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
@@ -61,7 +65,14 @@ export type AdminEatingMoment = Translated & {
   archived: boolean;
 };
 
+/** An Allergen: an ordered, retirable name list. Retired ones are hidden from the pickers. */
+export type AdminAllergen = Translated & {
+  sortOrder: number;
+  archived: boolean;
+};
+
 export type AdminCatalog = {
+  allergens: AdminAllergen[];
   aisles: AdminAisle[];
   cuisines: AdminListEntry[];
   methods: AdminListEntry[];
@@ -100,6 +111,8 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
+        // The Admin Recipe editor shows Allergens derived from Ingredient tags.
+        queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey }),
         ...recipeChangeQueryKeys.map((queryKey) =>
           queryClient.invalidateQueries({ queryKey }),
         ),
@@ -188,6 +201,32 @@ export function useArchiveEatingMoment() {
       `${base}/eating-moments/${id}/${archive ? 'archive' : 'unarchive'}`,
       { method: 'POST' },
     ),
+  );
+}
+
+export function useSaveAllergen(id?: string) {
+  return useAdminWrite((input: { name: string }) =>
+    apiRequest(`${base}/allergens${id ? `/${id}` : ''}`, {
+      method: id ? 'PATCH' : 'POST',
+      body: input,
+    }),
+  );
+}
+/** Retires or brings back an Allergen; it is never deleted. */
+export function useArchiveAllergen() {
+  return useAdminWrite(({ id, archive }: { id: string; archive: boolean }) =>
+    apiRequest(`${base}/allergens/${id}/${archive ? 'archive' : 'unarchive'}`, {
+      method: 'POST',
+    }),
+  );
+}
+/** Replaces the Allergens a shared Ingredient contains (empty = none). */
+export function useSetIngredientAllergens(id: string) {
+  return useAdminWrite((allergenIds: string[]) =>
+    apiRequest(`${base}/ingredients/${id}/allergens`, {
+      method: 'PUT',
+      body: { allergenIds },
+    }),
   );
 }
 
