@@ -96,9 +96,11 @@ function setup(
   gate?: Promise<void>,
   /** How many Recipes "Hide Recipes with my Allergies" left out, unless the request shows them. */
   hidden = 0,
+  /** How many Can Make groups were left out, when that differs from the list's count. */
+  hiddenCards = hidden,
 ) {
-  const hiddenFor = (url: URL) =>
-    url.searchParams.get('showHidden') === 'true' ? 0 : hidden;
+  const hiddenFor = (url: URL, count = hidden) =>
+    url.searchParams.get('showHidden') === 'true' ? 0 : count;
   const { fetchMock, calls } = stubApi({
     'GET /api/recipes': (url) =>
       Response.json({
@@ -107,7 +109,10 @@ function setup(
       }),
     'GET /api/recipes/filters': () => Response.json(filters),
     'GET /api/recipes/cook-tonight': (url) =>
-      Response.json({ cards, hiddenByAllergiesCount: hiddenFor(url) }),
+      Response.json({
+        cards,
+        hiddenByAllergiesCount: hiddenFor(url, hiddenCards),
+      }),
   });
   vi.stubGlobal(
     'fetch',
@@ -753,6 +758,11 @@ describe('RecipesPage', () => {
       setup(() => [omelette], [], undefined, 3);
       expect(await note('3 Recipes')).toBeVisible();
       expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
+    });
+
+    it("counts the Can Make strip's hidden cards when they outnumber the list's", async () => {
+      setup(() => [omelette], [], undefined, 1, 4);
+      expect(await note('4 Recipes')).toBeVisible();
     });
 
     it('says "1 Recipe" in the singular', async () => {

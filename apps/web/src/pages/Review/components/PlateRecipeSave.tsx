@@ -6,10 +6,10 @@ import {
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
-import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AllergenIndicator } from '../../../components/AllergenIndicator';
+import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   matchedIngredientIds,
