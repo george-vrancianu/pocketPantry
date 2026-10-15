@@ -147,12 +147,15 @@
       "expired_one": "Removed {{count}} expired",
       "expired_other": "Removed {{count}} expired",
       "tossed": "Tossed {{name}}",
-      "used": "Used {{name}}"
+      "used": "Used {{name}}",
+      "added_one": "{{count}} added to the Shopping List",
+      "added_other": "{{count}} added to the Shopping List"
     },
     "item": {
       "toss": "Toss {{name}}",
       "used": "Used",
-      "usedName": "Used {{name}}"
+      "usedName": "Used {{name}}",
+      "add": "Add {{name}}"
     }
   }
 }

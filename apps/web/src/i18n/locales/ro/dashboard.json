@@ -163,12 +163,16 @@
       "expired_few": "Ai eliminat {{count}} produse expirate",
       "expired_other": "Ai eliminat {{count}} de produse expirate",
       "tossed": "Ai aruncat {{name}}",
-      "used": "Ai folosit {{name}}"
+      "used": "Ai folosit {{name}}",
+      "added_one": "{{count}} adăugat pe lista de cumpărături",
+      "added_few": "{{count}} adăugate pe lista de cumpărături",
+      "added_other": "{{count}} adăugate pe lista de cumpărături"
     },
     "item": {
       "toss": "Aruncă {{name}}",
       "used": "Folosit",
-      "usedName": "Ai folosit {{name}}"
+      "usedName": "Ai folosit {{name}}",
+      "add": "Adaugă {{name}}"
     }
   }
 }

@@ -145,12 +145,15 @@
       "expired_one": "Fjernede {{count}} udløbet vare",
       "expired_other": "Fjernede {{count}} udløbne",
       "tossed": "Smed {{name}} ud",
-      "used": "Brugte {{name}}"
+      "used": "Brugte {{name}}",
+      "added_one": "{{count}} føjet til indkøbslisten",
+      "added_other": "{{count}} føjet til indkøbslisten"
     },
     "item": {
       "toss": "Smid {{name}} ud",
       "used": "Brugt",
-      "usedName": "Brugte {{name}}"
+      "usedName": "Brugte {{name}}",
+      "add": "Tilføj {{name}}"
     }
   }
 }

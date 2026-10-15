@@ -9,6 +9,7 @@ import {
   DeleteIcon,
   HourglassIcon,
   IconButton,
+  PlusIcon,
   StarIcon,
   tokens,
   usePrefersReducedMotion,
@@ -29,6 +30,7 @@ import { ExpiryTag } from '../ExpiryTag';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { expiringSoonDay, todoTitle } from './todoText';
 import { todoItems, type TodoItem } from './todoItems';
+import { useAddToShoppingList, type ShoppingFix } from './useAddToShoppingList';
 
 const GROUPS: HealthTodoGroup[] = ['now', 'week', 'tidy'];
 
@@ -80,6 +82,7 @@ export function HealthTodos({ state, today }: Props) {
   const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
   const { todos, batches, staples, staleThresholdDays, tossBatches, markUsed } =
     state;
+  const shopping = useAddToShoppingList(state);
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
     todoItems(todo, {
@@ -173,6 +176,7 @@ export function HealthTodos({ state, today }: Props) {
                   tagFor={tagFor}
                   onToss={tossBatches}
                   onUsed={markUsed}
+                  shopping={shopping}
                 />
               ))}
             </Box>
@@ -233,9 +237,10 @@ type RowProps = {
   tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
   onToss: PantryHealthState['tossBatches'];
   onUsed: PantryHealthState['markUsed'];
+  shopping: ShoppingFix;
 };
 
-/** What a Member can do to one item of a Health To-do on its own row; the rest arrive with their own tickets. */
+/** What a Member can do to one item of a Health To-do on its own row. */
 function itemAction(todo: Pick<HealthTodo, 'key'>, item: TodoItem) {
   if (todo.key === 'expired' || (todo.key === 'undated' && item.forgotten))
     return 'toss';
@@ -252,6 +257,7 @@ function TodoRow({
   tagFor,
   onToss,
   onUsed,
+  shopping,
 }: RowProps) {
   const { t } = useTranslation('dashboard');
   const reduceMotion = usePrefersReducedMotion();
@@ -267,6 +273,7 @@ function TodoRow({
       ? t('health.moreNames', { names, count: items.length - NAMES_SHOWN })
       : names;
   const bulkName = t(`health.todo.${todo.key}.bulkName`, { count });
+  const addsToList = todo.key === 'missingStaples' || todo.key === 'runningLow';
   const bulkProps =
     todo.key === 'expiringSoon'
       ? { href: '/recipes' }
@@ -275,8 +282,13 @@ function TodoRow({
             onClick: () =>
               onToss(todo.itemIds, t('health.toast.expired', { count })),
           }
-        : // The other fixes arrive with their own tickets.
-          { disabled: true };
+        : addsToList
+          ? {
+              disabled: shopping.isPending,
+              onClick: () => void shopping.add(todo.key, todo.itemIds),
+            }
+          : // Date all does nothing yet; it arrives with its own ticket.
+            { disabled: true };
 
   return (
     <Box
@@ -447,6 +459,12 @@ function TodoRow({
                 action={itemAction(todo, item)}
                 onToss={(message) => onToss([item.id], message)}
                 onUsed={(message) => onUsed([item.id], message)}
+                onAdd={
+                  addsToList
+                    ? () => void shopping.add(todo.key, [item.id])
+                    : undefined
+                }
+                addDisabled={shopping.isPending}
               />
             ))}
           </Box>
@@ -462,12 +480,17 @@ function TodoItemRow({
   action,
   onToss,
   onUsed,
+  onAdd,
+  addDisabled,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
   action: ReturnType<typeof itemAction>;
   onToss: (message: string) => void;
   onUsed: (message: string) => void;
+  /** Set where the item's action is adding it to the Shopping List. */
+  onAdd?: () => void;
+  addDisabled: boolean;
 }) {
   const { t } = useTranslation('dashboard');
   return (
@@ -545,6 +568,17 @@ function TodoItemRow({
         >
           {t('health.item.used')}
         </Button>
+      ) : null}
+      {onAdd ? (
+        <IconButton
+          label={t('health.item.add', { name: item.name })}
+          tone="accentOutline"
+          size={34}
+          disabled={addDisabled}
+          onClick={onAdd}
+        >
+          <PlusIcon size={16} />
+        </IconButton>
       ) : null}
     </Box>
   );

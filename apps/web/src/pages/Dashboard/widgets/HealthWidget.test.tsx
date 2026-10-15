@@ -66,7 +66,7 @@ function stub(
   settings: () => Response | Promise<Response> = () =>
     Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
   dismissed: string[] = [],
-  extraRoutes: Parameters<typeof stubApi>[0] = {},
+  extraRoutes: Record<string, (url: URL) => Response | Promise<Response>> = {},
 ) {
   const { fetchMock, calls } = stubApi({
     ...extraRoutes,
@@ -87,6 +87,7 @@ function stub(
         groups: [],
         summary: { remaining: 0, checked: 0 },
       }),
+    ...extraRoutes,
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
@@ -652,7 +653,7 @@ describe('HealthWidget', () => {
       ).toHaveTextContent('3 to do · Toss 1 expired');
     });
 
-    it('gives each bulk button its full accessible name, and Add and Date all wait for their tickets', async () => {
+    it('gives each bulk button its full accessible name; Date all waits for its own ticket', async () => {
       const { sheet } = await open(
         [
           batch({ expiryDate: iso(-1) }),
@@ -669,7 +670,7 @@ describe('HealthWidget', () => {
       ).toBeEnabled();
       expect(
         within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
-      ).toBeDisabled();
+      ).toBeEnabled();
       expect(
         within(sheet).getByRole('button', { name: 'Date all (1 Batch)' }),
       ).toBeDisabled();
@@ -795,6 +796,241 @@ describe('HealthWidget', () => {
         expanded: true,
       });
       expect(expired).toBeInTheDocument();
+    });
+  });
+
+  describe('adding to the Shopping List', () => {
+    type Line = {
+      id: string;
+      ingredientId: string;
+      quantity?: number;
+      unit?: string;
+    };
+
+    /** A Shopping List the stubbed API keeps: bulk-add appends (ids in request order), delete removes. */
+    function shoppingApi() {
+      const lines: Line[] = [];
+      let next = 0;
+      const view = () => ({
+        id: 'l1',
+        groups: [
+          {
+            aisle: null,
+            items: lines.map((line) => ({
+              ...line,
+              name: line.ingredientId,
+              quantity: line.quantity ?? null,
+              unit: line.unit ?? null,
+              checked: false,
+              unmatched: false,
+            })),
+          },
+        ],
+        summary: { remaining: lines.length, checked: 0 },
+      });
+      const deleted: string[] = [];
+      let gate: Promise<void> = Promise.resolve();
+      const routes: Record<string, () => Response> = {
+        'GET /api/shopping-list': () => Response.json(view()),
+      };
+      return {
+        lines,
+        deleted,
+        routes,
+        /** Holds the bulk-add response until the returned release is called. */
+        holdAdd: () => {
+          let release = () => {};
+          gate = new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          return release;
+        },
+        waitForGate: () => gate,
+        /** Adds the lines a bulk-add request names and answers with the list and their ids. */
+        add: (items: Array<Omit<Line, 'id'>>) => {
+          const createdIds = items.map((item) => {
+            next += 1;
+            lines.push({ id: `sh${next}`, ...item });
+            return `sh${next}`;
+          });
+          return Response.json({ ...view(), createdIds });
+        },
+        remove: (id: string) => {
+          const at = lines.findIndex((line) => line.id === id);
+          if (at >= 0) lines.splice(at, 1);
+          deleted.push(id);
+          return Response.json(view());
+        },
+      };
+    }
+
+    async function openWith(
+      batches: Batch[],
+      staples: Staple[],
+      runningLow: string[] = [],
+    ) {
+      const shopping = shoppingApi();
+      const calls = stub({ batches, runningLow }, staples, undefined, [], {
+        ...shopping.routes,
+        'POST /api/shopping-list/items/bulk': async () => {
+          await shopping.waitForGate();
+          const { body } = calls
+            .filter((call) => call.key === 'POST /api/shopping-list/items/bulk')
+            .at(-1) as { body: { items: Array<Omit<Line, 'id'>> } };
+          return shopping.add(body.items);
+        },
+        'DELETE /api/shopping-list/items/sh1': () => shopping.remove('sh1'),
+        'DELETE /api/shopping-list/items/sh2': () => shopping.remove('sh2'),
+        'DELETE /api/shopping-list/items/sh3': () => shopping.remove('sh3'),
+      });
+      stubMotion(true);
+      const user = userEvent.setup();
+      renderWithProviders(<HealthWidget size="wide" columns={2} />);
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      const posts = () =>
+        calls
+          .filter((call) => call.key === 'POST /api/shopping-list/items/bulk')
+          .map((call) => call.body);
+      return { user, sheet, shopping, posts, calls };
+    }
+
+    const filler = (count: number) =>
+      Array.from({ length: count }, () => batch());
+    const flour = {
+      ...staple('flour'),
+      name: 'Flour',
+      quantity: 1,
+      unit: 'kg' as const,
+    };
+    const salt = { ...staple('salt'), name: 'Salt' };
+
+    it('adds every missing Staple with its preferred amount, and the Health To-do drops out', async () => {
+      const { user, sheet, posts } = await openWith(filler(10), [flour, salt]);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+
+      expect(posts()).toEqual([
+        {
+          items: [
+            { ingredientId: 'flour', quantity: 1, unit: 'kg' },
+            { ingredientId: 'salt' },
+          ],
+        },
+      ]);
+      await waitFor(() =>
+        expect(sheet).not.toHaveTextContent(/Add \d+ Staples/),
+      );
+      expect(sheet).toHaveTextContent('Staples covered');
+    });
+
+    it('announces the count and the new score in a toast', async () => {
+      const { user, sheet } = await openWith(filler(10), [flour, salt]);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+
+      // Staples go from 0 to 0.5 each: 40 + 15 + 15 + 15 = 85 from 70.
+      expect(
+        await screen.findByText('2 added to the Shopping List · score 85'),
+      ).toBeInTheDocument();
+    });
+
+    it('adds a single Staple from its row with a plus button', async () => {
+      const { user, sheet, posts } = await openWith(filler(10), [flour, salt]);
+      await user.click(disclosure(sheet, /^Add 2 Staples/));
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add Flour' }),
+      );
+
+      expect(posts()).toEqual([
+        { items: [{ ingredientId: 'flour', quantity: 1, unit: 'kg' }] },
+      ]);
+      await waitFor(() =>
+        expect(
+          within(sheet).queryByRole('button', { name: 'Add Flour' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(
+        within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
+      ).toBeInTheDocument();
+    });
+
+    it('adds the Running low Ingredients, one at a time or together, without an amount', async () => {
+      const { user, sheet, posts } = await openWith(
+        [
+          batch({ name: 'Milk', ingredientId: 'milk' }),
+          batch({ name: 'Eggs', ingredientId: 'eggs' }),
+          ...filler(8),
+        ],
+        [],
+        ['milk', 'eggs'],
+      );
+      await user.click(disclosure(sheet, /^Restock 2 running low/));
+
+      await user.click(within(sheet).getByRole('button', { name: 'Add Milk' }));
+      await waitFor(() =>
+        expect(
+          within(sheet).queryByRole('button', { name: 'Add Milk' }),
+        ).not.toBeInTheDocument(),
+      );
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 1 running low' }),
+      );
+
+      expect(posts()).toEqual([
+        { items: [{ ingredientId: 'milk' }] },
+        { items: [{ ingredientId: 'eggs' }] },
+      ]);
+    });
+
+    it('undoes exactly the Shopping Items the add returned, leaving others alone', async () => {
+      const { user, sheet, shopping } = await openWith(filler(10), [
+        flour,
+        salt,
+      ]);
+      shopping.lines.push({ id: 'sh0', ingredientId: 'butter' });
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+      await screen.findByText(/^2 added to the Shopping List/);
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => expect(shopping.deleted).toEqual(['sh1', 'sh2']));
+      expect(shopping.lines.map((line) => line.id)).toEqual(['sh0']);
+      expect(
+        await within(sheet).findByRole('button', { name: 'Add 2 Staples' }),
+      ).toBeInTheDocument();
+    });
+
+    it('still shows the toast when the sheet is closed before the add answers', async () => {
+      const { user, sheet, shopping } = await openWith(filler(10), [
+        flour,
+        salt,
+      ]);
+      const release = shopping.holdAdd();
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+
+      await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      release();
+
+      expect(
+        await screen.findByText(/^2 added to the Shopping List/),
+      ).toBeInTheDocument();
     });
   });
 

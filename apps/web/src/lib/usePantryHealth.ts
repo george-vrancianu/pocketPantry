@@ -26,6 +26,8 @@ export type PantryHealthState = {
   error: Error | null;
   /** The number of Batches in the Pantry, scored or not. */
   batchCount: number;
+  /** What the score and Health To-dos were computed from, for scoring a fix before it lands. */
+  input: HealthInput;
   health: PantryHealth;
   todos: HealthTodo[];
   /** What the Health To-dos' item ids point at. */
@@ -129,6 +131,7 @@ export function usePantryHealth(): PantryHealthState {
     tossBatches: removeBatches,
     markUsed: removeBatches,
     batchCount: input.batches.length,
+    input,
     health,
     todos,
     batches: stocked,
