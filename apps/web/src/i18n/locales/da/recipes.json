@@ -41,7 +41,7 @@
   },
   "allergyIndicator": {
     "strong": "Indeholder {{names}}",
-    "soft": "Kan indeholde {{names}}",
+    "optional": "Valgfrit: indeholder {{names}}",
     "unchecked": "Ikke fuldt tjekket"
   },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",

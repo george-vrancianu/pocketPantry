@@ -3,6 +3,7 @@ import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner } from './matching/allergens';
+import type { PlateMatch } from './plate-matches';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -386,6 +387,8 @@ export type AllergyWarningView = {
  * Recipe detail, one item per Allergen (not per person) named in the viewer's locale. The line
  * markers and whose-Allergy names stay on detail. Null when nothing the viewer must avoid is,
  * or might be, in the Recipe.
+ *
+ * #359's `hidden` and `hiddenByAllergiesCount` will sit beside this warning, not inside it.
  */
 export type CompactAllergyWarning = {
   /** As on Recipe detail: `strong` when any Allergen is in a required line; `soft` otherwise. */
@@ -506,3 +509,8 @@ export type CookTonightCard = {
 };
 
 export type CookTonightView = { cards: CookTonightCard[] };
+
+/** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
+export type PlateMatchView = PlateMatch & {
+  allergyWarning: CompactAllergyWarning | null;
+};

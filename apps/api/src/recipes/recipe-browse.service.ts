@@ -101,7 +101,7 @@ export class RecipeBrowseService {
         locale,
         matching.flatMap((r) => [r.cuisineId, r.methodId]),
       ),
-      loadViewerAllergies(this.database, memberId).then((allergies) =>
+      loadViewerAllergies(this.database, memberId, familyId).then((allergies) =>
         loadAllergyWarnings(
           this.database,
           catalogScope(familyId),
@@ -179,7 +179,7 @@ export class RecipeBrowseService {
       };
     };
     const [viewerAllergies, variants, { base, diff }] = await Promise.all([
-      loadViewerAllergies(this.database, memberId),
+      loadViewerAllergies(this.database, memberId, familyId),
       row.parentId
         ? Promise.resolve([])
         : this.variantsOf(row.id, familyId, locale),

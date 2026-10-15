@@ -527,9 +527,9 @@ describe('CookTonightWidget', () => {
     const link = await within(region).findByRole('link', {
       name: /Pesto Pasta/,
     });
-    expect(link).toHaveAccessibleName(/May contain Tree nuts/);
+    expect(link).toHaveAccessibleName(/Optional: contains Tree nuts/);
     expect(
-      within(link).getByRole('img', { name: 'May contain Tree nuts' }),
+      within(link).getByRole('img', { name: 'Optional: contains Tree nuts' }),
     ).toHaveAttribute('data-severity', 'soft');
     expect(within(region).getAllByRole('img')).toHaveLength(1);
   });

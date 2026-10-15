@@ -82,7 +82,21 @@ function setup(view: MealPlanDetail = week(), extra = {}) {
       return Response.json({
         recipes: [
           recipe('rc-1', 'Lemon pasta'),
-          recipe('rc-2', 'Green curry'),
+          {
+            ...recipe('rc-2', 'Green curry'),
+            allergyWarning: {
+              severity: 'strong' as const,
+              allergens: [
+                {
+                  id: 'a-pn',
+                  name: 'Peanuts',
+                  tier: 'yours' as const,
+                  severity: 'strong' as const,
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          },
         ].filter((r) => !search || r.title.toLowerCase().includes(search)),
       });
     },
@@ -194,6 +208,9 @@ describe('Meal Plan page', () => {
       name: 'Choose a Recipe',
     });
     expect(await within(picker).findByText('Green curry')).toBeVisible();
+    expect(
+      within(picker).getByRole('img', { name: 'Contains Peanuts' }),
+    ).toBeVisible();
     await u.type(within(picker).getByRole('searchbox'), 'lemon');
     await waitFor(() =>
       expect(within(picker).queryByText('Green curry')).toBeNull(),

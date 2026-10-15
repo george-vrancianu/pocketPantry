@@ -102,7 +102,7 @@ export class CookTonightService {
       catalogScope(familyId),
       groupsRanked.map(({ candidates }) => candidates[0].row.id),
       query.locale,
-      await loadViewerAllergies(this.database, memberId),
+      await loadViewerAllergies(this.database, memberId, familyId),
     );
     return {
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {

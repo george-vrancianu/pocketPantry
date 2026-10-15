@@ -214,6 +214,46 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
         uncheckedCount: 0,
       });
       expect(of(soft.id).recipe.allergyWarning?.severity).toBe('soft');
+      for (const recipe of [strong, soft]) {
+        const detail = await detailWarning(recipe.id);
+        const compact = of(recipe.id).recipe.allergyWarning;
+        expect(compact?.severity).toBe(detail?.severity);
+        expect(compact?.allergens.map((a) => a.name)).toEqual(
+          detail?.entries.map((e) => e.allergen.name),
+        );
+      }
+    });
+
+    it("gives a Variant card the Variant's own warning, not its base's", async () => {
+      // Both are near misses with the same rank; the Variant's title sorts first, so it is the card.
+      const base = await create([g('flour')]);
+      const variant = (
+        await admin
+          .post(`/${base.id}/variants`, {
+            title: `Aaa Indicator Variant ${stamp}-${++n}`,
+          })
+          .expect(201)
+      ).body as AdminRecipeDetail;
+      await admin
+        .put(`/${variant.id}`, {
+          title: variant.title,
+          servings: 4,
+          lines: [g('parmesan')],
+          steps: [{ text: 'Cook' }],
+        })
+        .expect(200);
+      await mine(MILK);
+      const { cards } = (
+        await recipesApi
+          .get('/cook-tonight?locale=en&today=2026-10-11')
+          .expect(200)
+      ).body as CookTonightView;
+      const card = cards.find((c) => c.base.id === base.id)!;
+      expect(card.recipe.id).toBe(variant.id);
+      expect(card.recipe.allergyWarning?.severity).toBe('strong');
+      expect(card.recipe.allergyWarning?.allergens.map((a) => a.name)).toEqual([
+        'Milk',
+      ]);
     });
   });
 
@@ -244,6 +284,36 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
         ],
         uncheckedCount: 0,
       });
+      expect(match.allergyWarning?.severity).toBe(
+        (await detailWarning(dish.id))?.severity,
+      );
+    });
+
+    it('is soft when only an optional line contains the Allergen, as on Recipe detail', async () => {
+      const word = `Plate ${stamp}-${++n}`;
+      const dish = await create(
+        [g('flour'), g('parmesan', { optional: true })],
+        word,
+      );
+      await mine(MILK);
+      const { matches } = (
+        await recipesApi
+          .post('/plate-matches', {
+            locale: 'en',
+            dishTitle: word,
+            ingredientIds: [seedId.ingredient('flour')],
+          })
+          .expect(200)
+      ).body as {
+        matches: { id: string; allergyWarning: CompactAllergyWarning | null }[];
+      };
+      const compact = matches.find((m) => m.id === dish.id)!.allergyWarning;
+      const detail = await detailWarning(dish.id);
+      expect(compact?.severity).toBe('soft');
+      expect(compact?.severity).toBe(detail?.severity);
+      expect(compact?.allergens).toEqual([
+        { id: MILK, name: 'Milk', tier: 'yours', severity: 'soft' },
+      ]);
     });
   });
 });

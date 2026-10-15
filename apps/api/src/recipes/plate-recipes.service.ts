@@ -6,24 +6,15 @@ import type { Database } from '../database/database.types';
 import { recipeIngredientLines, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
-import {
-  rankPlateMatches,
-  type PlateCandidate,
-  type PlateMatch,
-} from './plate-matches';
+import { rankPlateMatches, type PlateCandidate } from './plate-matches';
 import { loadAllergyWarnings, loadViewerAllergies } from './recipe-allergens';
 import { recipeTitles } from './recipe-view';
 import type {
-  CompactAllergyWarning,
   FamilyRecipeEdit,
   FromPlateBody,
   PlateMatchesBody,
+  PlateMatchView,
 } from './recipes.schemas';
-
-/** A closest-match Recipe with the viewer's compact Allergy Warning. */
-export type PlateMatchView = PlateMatch & {
-  allergyWarning: CompactAllergyWarning | null;
-};
 
 /** Saving a Plate Scan dish as a Family Recipe, and finding its closest Catalog base. */
 @Injectable()
@@ -84,7 +75,7 @@ export class PlateRecipesService {
       catalogScope(familyId),
       ranked.map((m) => m.id),
       body.locale,
-      await loadViewerAllergies(this.database, memberId),
+      await loadViewerAllergies(this.database, memberId, familyId),
     );
     return ranked.map((m) => ({
       ...m,

@@ -37,16 +37,22 @@ type SourceLine = AllergenLine & { ingredientName: string };
 export async function loadViewerAllergies(
   executor: Executor,
   memberId: string,
+  /** The Member's Family when the caller already has it; saves a lookup. */
+  knownFamilyId?: string,
 ): Promise<AllergyInput[]> {
-  const [self] = await executor
-    .select({ familyId: user.familyId })
-    .from(user)
-    .where(eq(user.id, memberId))
-    .limit(1);
+  const familyId =
+    knownFamilyId ??
+    (
+      await executor
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.id, memberId))
+        .limit(1)
+    )[0]?.familyId;
   const [own, family, members] = await Promise.all([
     loadMemberAllergenIds(executor, memberId),
-    self ? loadFamilyAllergies(executor, self.familyId) : [],
-    self ? loadOtherMemberAllergies(executor, self.familyId, memberId) : [],
+    familyId ? loadFamilyAllergies(executor, familyId) : [],
+    familyId ? loadOtherMemberAllergies(executor, familyId, memberId) : [],
   ]);
   return [
     ...own.map((allergenId) => ({ allergenId, owner: OWN })),
@@ -217,6 +223,9 @@ export async function loadRecipeAllergens(
  * matches), through the same `deriveAllergens` as Recipe detail. Lines and Allergen tags are
  * loaded in a fixed number of queries, however many Recipes. A Recipe with no warning is
  * absent from the map; with no Allergies at all nothing is queried.
+ *
+ * #359's `hidden` and `hiddenByAllergiesCount` will sit beside these compact warnings
+ * (derived by the same `deriveAllergens` call); they are not built here.
  */
 export async function loadAllergyWarnings(
   executor: Executor,

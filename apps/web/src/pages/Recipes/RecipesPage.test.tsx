@@ -695,7 +695,9 @@ describe('RecipesPage', () => {
       ]);
       const row = await findRow('Omelette');
       expect(
-        within(row).getByRole('img', { name: 'May contain Peanuts, Milk' }),
+        within(row).getByRole('img', {
+          name: 'Optional: contains Peanuts, Milk',
+        }),
       ).toHaveAttribute('data-severity', 'soft');
     });
 

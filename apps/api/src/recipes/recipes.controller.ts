@@ -19,10 +19,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
-import {
-  PlateRecipesService,
-  type PlateMatchView,
-} from './plate-recipes.service';
+import { PlateRecipesService } from './plate-recipes.service';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
@@ -44,6 +41,7 @@ import {
   type FamilyRecipeUpdate,
   type FromPlateBody,
   type PlateMatchesBody,
+  type PlateMatchView,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
