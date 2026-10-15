@@ -6,6 +6,7 @@ import type {
   BaseUnit,
   DayStatus,
   IssueKind,
+  Mealtime,
   PlanTag,
   SlotStatus,
 } from '../recipes/matching/plan-forecast';
@@ -17,8 +18,6 @@ export const MAX_SERVINGS = 1000;
 export const MAX_NAME_LENGTH = 60;
 /** How far ahead of the Member's today a plan may start. */
 export const MAX_START_AHEAD_DAYS = 14;
-
-export type Mealtime = (typeof mealtime.enumValues)[number];
 
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const mealPlanQuery = localeQuery.extend({

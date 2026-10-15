@@ -12,7 +12,7 @@ import {
 } from './mealPlan';
 import type { IsoDate } from './pantry';
 import { shoppingListQueryKey, useShoppingMutations } from './shopping';
-import { mealPlanQueryKey, shoppingListChangeQueryKeys } from './queryKeys';
+import { shoppingListChangeQueryKeys } from './queryKeys';
 import { useHealthToast } from './useHealthToast';
 
 /**
@@ -30,11 +30,9 @@ export function useAddMissing(locale: string, today: IsoDate) {
 
   const refetch = () =>
     Promise.all(
-      [
-        shoppingListQueryKey,
-        mealPlanQueryKey,
-        ...shoppingListChangeQueryKeys,
-      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      [shoppingListQueryKey, ...shoppingListChangeQueryKeys].map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
     );
 
   const undo = async (createdIds: string[]) => {

@@ -18,7 +18,6 @@ import {
   dayLabel,
   shortWeekday,
 } from '../../components/MealPlanPopover/mealPlanText';
-import { type Mealtime } from '../../lib/mealPlan';
 import { localIso, type IsoDate } from '../../lib/pantry';
 import {
   dateRange,
@@ -31,14 +30,13 @@ import {
   useMealPlan,
   useMealPlanMutations,
   type MealPlanDetail,
+  type SlotKey,
 } from '../../lib/mealPlanPage';
 import { useAddMissing } from '../../lib/useAddMissing';
 import { useToday } from '../../lib/useToday';
 import { DayCard } from './components/DayCard';
 import { RecipePickerSheet } from './components/RecipePickerSheet';
 import { SlotSheet } from './components/SlotSheet';
-
-type SlotRef = { dayIndex: number; mealtime: Mealtime };
 
 /** One Meal Plan: the forecast summary, Fill, Add missing, and a card per day with its three Mealtimes. `?day=` opens on a day. */
 export function MealPlanPage() {
@@ -52,8 +50,8 @@ export function MealPlanPage() {
   const mutations = useMealPlanMutations(language, today);
   const addMissing = useAddMissing(language, today);
   const [onlyWhatIHave, setOnlyWhatIHave] = useState(false);
-  const [detail, setDetail] = useState<SlotRef | null>(null);
-  const [picking, setPicking] = useState<SlotRef | null>(null);
+  const [detail, setDetail] = useState<SlotKey | null>(null);
+  const [picking, setPicking] = useState<SlotKey | null>(null);
   const headings = useRef(new Map<IsoDate, HTMLHeadingElement>());
 
   const view = plan.data;
@@ -87,7 +85,7 @@ export function MealPlanPage() {
     : null;
 
   const labelOf = (iso: IsoDate) => dayLabel(language, iso);
-  const contextOf = (ref: SlotRef) => {
+  const contextOf = (ref: SlotKey) => {
     const day = days[ref.dayIndex];
     return t('mealPlans:picker.for', {
       mealtime: t(`mealPlans:mealtime.${ref.mealtime}`),
@@ -100,7 +98,7 @@ export function MealPlanPage() {
     : undefined;
 
   const putSlot = (
-    ref: SlotRef,
+    ref: SlotKey,
     recipeId: string,
     servings?: number,
     onSuccess?: () => void,

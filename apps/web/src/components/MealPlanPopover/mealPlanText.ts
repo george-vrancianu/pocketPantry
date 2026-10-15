@@ -9,13 +9,9 @@ import {
   type WindowDay,
   unlistedShortCount,
 } from '../../lib/mealPlan';
-import { fromIso, type IsoDate } from '../../lib/pantry';
+import { dateLocale, fromIso, type IsoDate } from '../../lib/pantry';
 
 type T = TFunction<'dashboard'>;
-
-/** English dates read day first here ("Saturday 17 October"), as Romanian and Danish already do. */
-const dateLocale = (language: string) =>
-  language === 'en' ? 'en-GB' : language;
 
 const format = (
   language: string,
@@ -99,9 +95,9 @@ export function readableAmount(
   unit: BaseUnit | null,
 ): { quantity: number; unit: Unit | null } {
   if (unit === 'g' && quantity >= 1000)
-    return { quantity: quantity / 1000, unit: 'kg' };
+    return { quantity: Math.round(quantity) / 1000, unit: 'kg' };
   if (unit === 'ml' && quantity >= 1000)
-    return { quantity: quantity / 1000, unit: 'l' };
+    return { quantity: Math.round(quantity) / 1000, unit: 'l' };
   return { quantity, unit: unit as Unit | null };
 }
 

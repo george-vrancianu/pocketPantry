@@ -1,4 +1,4 @@
-/** Every Meal Plan read: the Widget's window and (later) the plan pages. The Plan Forecast goes stale when the Pantry, the Shopping List, the Recipes or the plans change. */
+/** Every Meal Plan read: the Widget's window and the plan pages. The Plan Forecast goes stale when the Pantry, the Shopping List, the Recipes or the plans change. */
 export const mealPlanQueryKey = ['meal-plans'] as const;
 
 /** Every Cook Tonight view, Recipe Pantry match and Meal Plan forecast ('recipes' must match `recipesQueryKey`, which cannot be imported here without a cycle); refetch after anything that changes the Pantry. */

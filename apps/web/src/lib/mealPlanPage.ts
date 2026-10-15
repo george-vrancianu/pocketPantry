@@ -12,7 +12,13 @@ import {
   type PlanTag,
   type SlotStatus,
 } from './mealPlan';
-import { fromIso, localDate, localIso, type IsoDate } from './pantry';
+import {
+  dateLocale,
+  fromIso,
+  localDate,
+  localIso,
+  type IsoDate,
+} from './pantry';
 import { mealPlanQueryKey } from './queryKeys';
 import { translateApiError } from '../i18n/translateApiError';
 
@@ -69,9 +75,6 @@ export function planPhase(
   if (planEnd(plan) < today) return 'past';
   return plan.startDate > today ? 'upcoming' : 'current';
 }
-
-const dateLocale = (language: string) =>
-  language === 'en' ? 'en-GB' : language;
 
 /** "20–26 Oct", or "20 Oct" for a one-day plan. */
 export function dateRange(
