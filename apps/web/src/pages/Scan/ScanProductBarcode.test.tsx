@@ -8,7 +8,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { resetReads } from '../../lib/scanReads';
+import { PHOTO_DECODE_TIMEOUT_MS, resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { scanViaGuide } from '../../test/scan';
@@ -70,7 +70,7 @@ const line = (name: string) => ({
 });
 const CODE = '5941234567890';
 
-/** A button that goes to the overview, as the browser Back does. */
+/** Stands in for the browser Back button (jsdom has none): goes to the overview, leaving the editor. */
 function BackToOverview() {
   const navigate = useNavigate();
   return (
@@ -143,7 +143,10 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     resetReads();
     localStorage.clear();
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   it('sends the barcode found in the photo with the saved Batch, without Open Food Facts credit', async () => {
     const user = userEvent.setup();
@@ -330,6 +333,66 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     expect(camera.decodes).toHaveLength(1);
     await decoded(null, 0);
     await waitFor(() => expect(camera.decodes).toHaveLength(2));
+  });
+
+  it('gives up on a hung decode so the next photo is still decoded', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    renderScan();
+    const photos = [1, 2].map(
+      (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('gallery-input'), {
+        target: { files: photos },
+      });
+    });
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(camera.decodes).toHaveLength(1);
+    await act(() => vi.advanceTimersByTimeAsync(PHOTO_DECODE_TIMEOUT_MS));
+    expect(camera.decodes).toHaveLength(2);
+  });
+
+  it('skips the decode of a photo whose card was removed before its turn', async () => {
+    const user = userEvent.setup();
+    renderScan();
+    const photos = [1, 2, 3].map(
+      (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('gallery-input'), {
+        target: { files: photos },
+      });
+    });
+    await waitFor(() => expect(states()).toEqual(['read', 'read', 'read']));
+    await waitFor(() => expect(camera.decodes).toHaveLength(1));
+    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    const removes = await screen.findAllByRole('button', {
+      name: 'Remove photo',
+    });
+    await user.click(removes[1]);
+    await decoded(null, 0);
+    await decoded(null, 1);
+    await flush();
+    expect(camera.decodes).toHaveLength(2);
+  });
+
+  it('does not pre-type the Match search of an Unmatched Product line carrying a decoded barcode', async () => {
+    const user = userEvent.setup();
+    renderScan();
+    readLines = [{ ...line('Mystery'), match: null }];
+    scanViaGuide();
+    await waitFor(() => expect(states()).toEqual(['read']));
+    await decoded(CODE);
+    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(await screen.findByTestId('card-result'));
+    const match = (await screen.findAllByRole('button')).find(
+      (button) => button.getAttribute('aria-haspopup') === 'dialog',
+    )!;
+    await user.click(match);
+
+    expect(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+    ).toHaveValue('');
   });
 
   it('keeps the barcode when the Member renames an Unmatched line', async () => {
