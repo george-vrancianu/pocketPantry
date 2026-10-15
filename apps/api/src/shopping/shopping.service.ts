@@ -86,8 +86,8 @@ export class ShoppingService {
 
   /**
    * Adds every item with the merge rules, in one transaction: all of them or none.
-   * Not the same as `insertedIds` of `addItemsWithSourceRecipes`: `createdIds` includes merge targets.
    * `createdIds` are the Shopping Items created or merged into, one per body in request order.
+   * Not the same as `insertedIds` of `addItemsWithSourceRecipes`: `createdIds` includes merge targets.
    */
   async addItems(
     memberId: string,
