@@ -16,22 +16,43 @@ import { resizeImage } from '../../../lib/image';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import {
-  isScanMode,
   loadScanMode,
   saveScanMode,
+  SCAN_MODES,
   type ScanMode,
 } from '../../../lib/scan';
 
+/** What opens the camera decides which Scan Modes it offers and which one it starts in. */
+export type ScanScreenModes = {
+  /** In dial order. Defaults to all four Scan Modes. */
+  modes?: readonly ScanMode[];
+  /** Used when the URL names no allowed mode. Defaults to the Scan Mode used last. */
+  defaultMode?: ScanMode;
+};
+
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
-export function useScanScreen() {
+export function useScanScreen(config: ScanScreenModes = {}) {
+  const modes = config.modes ?? SCAN_MODES;
+  // Only the main Scan page (all four modes) remembers its mode across visits.
+  const remembersMode = config.modes === undefined;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
-  const mode: ScanMode = isScanMode(requested) ? requested : loadScanMode();
+  const allowed = (value: string | null): value is ScanMode =>
+    modes.some((item) => item === value);
+  const fallback =
+    config.defaultMode ?? (remembersMode ? loadScanMode() : null);
+  const mode: ScanMode = allowed(requested)
+    ? requested
+    : fallback && allowed(fallback)
+      ? fallback
+      : modes[0];
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
-  useEffect(() => saveScanMode(mode), [mode]);
+  useEffect(() => {
+    if (remembersMode) saveScanMode(mode);
+  }, [mode, remembersMode]);
 
   const camera = useCamera();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
@@ -236,6 +257,7 @@ export function useScanScreen() {
   const error = localError ? t(`errors:${localError}`) : null;
 
   return {
+    modes,
     mode,
     uiLocale: locale,
     scanLanguage,

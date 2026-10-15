@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SCAN_MODES, type ScanMode } from '../../../lib/scan';
+import { type ScanMode } from '../../../lib/scan';
 import {
   DIAL_ITEM_WIDTH,
   releaseTarget,
@@ -61,12 +61,15 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
  * press the left and right arrow keys, to change mode.
  */
 export function ModeDial({
+  modes,
   mode,
   disabled,
   keysDisabled,
   dragEndedAt,
   onChange,
 }: {
+  /** The modes the camera was opened with, in dial order. Hidden when there is only one. */
+  modes: readonly ScanMode[];
   mode: ScanMode;
   disabled: boolean;
   /** Also true while an overlay or a read owns the arrow keys. */
@@ -76,16 +79,16 @@ export function ModeDial({
   onChange: (mode: ScanMode) => void;
 }) {
   const { t } = useTranslation('scan');
-  const index = SCAN_MODES.indexOf(mode);
+  const index = modes.indexOf(mode);
 
-  const latest = useRef({ index, keysDisabled, onChange });
-  latest.current = { index, keysDisabled, onChange };
+  const latest = useRef({ modes, index, keysDisabled, onChange });
+  latest.current = { modes, index, keysDisabled, onChange };
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const step =
         event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
-      const { index, keysDisabled, onChange } = latest.current;
-      const next = SCAN_MODES[index + step];
+      const { modes, index, keysDisabled, onChange } = latest.current;
+      const next = modes[index + step];
       if (!step || !next || keysDisabled) return;
       if (event.defaultPrevented || event.isComposing) return;
       if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -125,7 +128,7 @@ export function ModeDial({
   ) =>
     rubberBand(
       start.startOffset - (event.clientX - start.x),
-      (SCAN_MODES.length - 1) * DIAL_ITEM_WIDTH,
+      (modes.length - 1) * DIAL_ITEM_WIDTH,
     );
   const dragging = dragOffset !== null;
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
@@ -178,9 +181,9 @@ export function ModeDial({
       dx: event.clientX - start.x,
       dt: Math.max(1, performance.now() - start.t),
       index: start.startIndex,
-      count: SCAN_MODES.length,
+      count: modes.length,
     });
-    if (target !== index) onChange(SCAN_MODES[target]);
+    if (target !== index) onChange(modes[target]);
   };
 
   const groupRef = useRef<HTMLDivElement>(null);
@@ -195,6 +198,8 @@ export function ModeDial({
       group.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
     }
   }, [mode]);
+
+  if (modes.length < 2) return null;
 
   return (
     <Box
@@ -270,7 +275,7 @@ export function ModeDial({
           [reducedMotion]: { transition: 'none' },
         }}
       >
-        {SCAN_MODES.map((item) => {
+        {modes.map((item) => {
           const active = item === mode;
           return (
             <Box
