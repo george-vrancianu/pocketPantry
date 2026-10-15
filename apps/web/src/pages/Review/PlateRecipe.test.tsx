@@ -391,7 +391,13 @@ describe('Plate Scan: save as a Recipe', () => {
         allergyWarning: {
           severity: 'strong',
           allergens: [
-            { id: 'a-pn', name: 'Peanuts', tier: 'yours', severity: 'strong' },
+            {
+              id: 'a-pn',
+              name: 'Peanuts',
+              tier: 'yours',
+              severity: 'strong',
+              owners: [{ kind: 'own' }],
+            },
           ],
           uncheckedCount: 0,
         },

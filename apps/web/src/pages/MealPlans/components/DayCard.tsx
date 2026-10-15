@@ -1,6 +1,10 @@
 import { Box, Button, Card, focusRing, Tag, tokens } from '@pocket-pantry/ui';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  AllergenIndicator,
+  allergenIndicatorLabel,
+} from '../../../components/AllergenIndicator';
 import { statusMark } from '../../../components/MealPlanPopover/statusMark';
 import {
   dayLabel,
@@ -43,6 +47,7 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
 ) {
   const { t, i18n } = useTranslation('mealPlans');
   const { t: tDashboard } = useTranslation('dashboard');
+  const { t: tRecipes } = useTranslation('recipes');
   const language = i18n.language;
   const headingId = `day-${day.date}`;
   const missing = day.past ? 0 : missingFor([day]).length;
@@ -134,7 +139,19 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
               key={mealtime}
               title={slot.recipeTitle}
               meta={[mealtimeName, t('servings', { count: slot.servings })]}
-              pills={day.past ? null : <StatusTag slot={slot} />}
+              pills={
+                <>
+                  {day.past ? null : <StatusTag slot={slot} />}
+                  {slot.allergyWarning ? (
+                    <Box sx={{ mt: '6px' }}>
+                      <AllergenIndicator
+                        warning={slot.allergyWarning}
+                        withOwners
+                      />
+                    </Box>
+                  ) : null}
+                </>
+              }
               dimmed={day.past}
               onClick={day.past ? undefined : () => onOpenSlot(mealtime)}
               aria-label={[
@@ -145,6 +162,9 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
                 }),
                 !day.past && slot.status
                   ? statusLabel(tDashboard, { ...slot, status: slot.status })
+                  : null,
+                slot.allergyWarning
+                  ? allergenIndicatorLabel(tRecipes, slot.allergyWarning, true)
                   : null,
               ]
                 .filter(Boolean)

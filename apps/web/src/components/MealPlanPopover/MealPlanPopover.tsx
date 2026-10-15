@@ -20,6 +20,7 @@ import {
   usePrefersReducedMotion,
   useBreakpointUp,
 } from '@pocket-pantry/ui';
+import { AllergenIndicator } from '../AllergenIndicator';
 import {
   useCallback,
   useId,
@@ -295,6 +296,11 @@ function MealBlock({
         </Box>
         {statusMark(slot, t)}
       </Box>
+      {slot.allergyWarning ? (
+        <Box>
+          <AllergenIndicator warning={slot.allergyWarning} withOwners />
+        </Box>
+      ) : null}
       {slot.issues.length > 0 ? (
         <Box
           component="ul"

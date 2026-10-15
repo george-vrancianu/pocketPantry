@@ -1,14 +1,37 @@
 import { Box, WarningIcon, radius, tokens } from '@pocket-pantry/ui';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
-import type { CompactAllergyWarning } from '../lib/recipes';
+import type {
+  CompactAllergyOwner,
+  CompactAllergyWarning,
+} from '../lib/recipes';
+
+/** "you", a Family Allergy's label ("Family" when it has none) or a Member's name. */
+function ownerName(t: TFunction, owner: CompactAllergyOwner): string {
+  if (owner.kind === 'own') return t('allergyIndicator.ownerYou');
+  if (owner.kind === 'family') {
+    return owner.label ?? t('allergyWarning.whoFamily');
+  }
+  return owner.name;
+}
 
 /** The warning as phrases: strong Allergens first, then the ones only in optional lines. */
-function phrases(t: TFunction, warning: CompactAllergyWarning): string[] {
+function phrases(
+  t: TFunction,
+  warning: CompactAllergyWarning,
+  withOwners: boolean,
+): string[] {
+  const nameOf = (a: CompactAllergyWarning['allergens'][number]) =>
+    withOwners && a.owners.length > 0
+      ? t('allergyIndicator.withOwners', {
+          name: a.name,
+          owners: a.owners.map((owner) => ownerName(t, owner)).join(', '),
+        })
+      : a.name;
   const named = (severity: 'strong' | 'soft') =>
     warning.allergens
       .filter((a) => a.severity === severity)
-      .map((a) => a.name)
+      .map(nameOf)
       .join(', ');
   const strong = named('strong');
   const optional = named('soft');
@@ -30,9 +53,10 @@ function phrases(t: TFunction, warning: CompactAllergyWarning): string[] {
 export function allergenIndicatorLabel(
   t: TFunction,
   warning: CompactAllergyWarning,
+  withOwners = false,
 ): string {
   return [
-    ...phrases(t, warning),
+    ...phrases(t, warning, withOwners),
     warning.uncheckedCount > 0
       ? t('allergyWarning.unchecked', {
           count: warning.uncheckedCount,
@@ -51,14 +75,17 @@ export function allergenIndicatorLabel(
  */
 export function AllergenIndicator({
   warning,
+  withOwners = false,
 }: {
   warning: CompactAllergyWarning | null | undefined;
+  /** Name whose Allergy each Allergen is ("Peanuts (Ana)"), as a Plan Slot does. */
+  withOwners?: boolean;
 }) {
   const { t } = useTranslation('recipes');
   if (!warning) return null;
   const strong = warning.severity === 'strong';
-  const label = allergenIndicatorLabel(t, warning);
-  const allergenPhrases = phrases(t, warning);
+  const label = allergenIndicatorLabel(t, warning, withOwners);
+  const allergenPhrases = phrases(t, warning, withOwners);
   const text =
     allergenPhrases.length > 0
       ? allergenPhrases.join('; ')

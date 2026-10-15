@@ -92,6 +92,7 @@ function setup(view: MealPlanDetail = week(), extra = {}) {
                   name: 'Peanuts',
                   tier: 'yours' as const,
                   severity: 'strong' as const,
+                  owners: [{ kind: 'own' as const }],
                 },
               ],
               uncheckedCount: 0,
@@ -149,6 +150,44 @@ describe('Meal Plan page', () => {
     const tomorrow = dayCard(/Fri/);
     expect(within(tomorrow).getByText('On list')).toBeVisible();
     expect(within(tomorrow).getByText('No longer available')).toBeVisible();
+  });
+
+  it('shows the Allergy Warning on a Plan Slot, naming whose Allergy it is', async () => {
+    setup(
+      week({
+        slots: [
+          slot(-1, 1, 'dinner', {
+            recipeTitle: 'Satay',
+            allergyWarning: {
+              severity: 'strong',
+              allergens: [
+                {
+                  id: 'a-pn',
+                  name: 'Peanuts',
+                  tier: 'members',
+                  severity: 'strong',
+                  owners: [{ kind: 'member', name: 'Ana' }],
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          }),
+          slot(-1, 1, 'breakfast', { recipeTitle: 'Porridge' }),
+        ],
+      }),
+    );
+    renderPage();
+
+    const today = await screen.findByRole('region', { name: /Today/ });
+    const satay = within(today).getByRole('button', { name: /Satay/ });
+    expect(within(satay).getByRole('img')).toHaveAccessibleName(
+      'Contains Peanuts (Ana)',
+    );
+    expect(satay).toHaveAccessibleName(
+      expect.stringContaining('Contains Peanuts (Ana)'),
+    );
+    const porridge = within(today).getByRole('button', { name: /Porridge/ });
+    expect(within(porridge).queryByRole('img')).toBeNull();
   });
 
   it('summarises the forecast in the header', async () => {

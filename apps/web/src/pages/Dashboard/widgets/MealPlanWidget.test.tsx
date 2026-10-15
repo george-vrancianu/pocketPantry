@@ -30,6 +30,7 @@ type Meal = {
   issues?: PlanIssue[];
   minutes?: number | null;
   unavailable?: boolean;
+  allergyWarning?: WindowSlot['allergyWarning'];
 };
 
 const slot = (offset: number, meal: Meal): WindowSlot => ({
@@ -43,6 +44,7 @@ const slot = (offset: number, meal: Meal): WindowSlot => ({
   servingsOverride: null,
   unavailable: meal.unavailable ?? meal.status === 'unavailable',
   minutes: meal.minutes === undefined ? 25 : meal.minutes,
+  allergyWarning: meal.allergyWarning ?? null,
   aisle: null,
   status: meal.status ?? 'covered',
   issues: meal.issues ?? [],
@@ -520,6 +522,41 @@ describe('MealPlanWidget day popover', () => {
       within(dialog).getByRole('link', { name: 'Edit day' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Today' })).toHaveFocus();
+  });
+
+  it('shows the Allergy Warning on a meal, naming whose Allergy it is', async () => {
+    const u = user();
+    stub(
+      windowOf([
+        day(0, [
+          {
+            mealtime: 'dinner',
+            title: 'Satay',
+            allergyWarning: {
+              severity: 'strong',
+              allergens: [
+                {
+                  id: 'a-pn',
+                  name: 'Peanuts',
+                  tier: 'yours',
+                  severity: 'strong',
+                  owners: [{ kind: 'own' }, { kind: 'family', label: 'Mia' }],
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          },
+          { mealtime: 'lunch', title: 'Soup' },
+        ]),
+      ]),
+    );
+    renderWidget();
+
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog', { name: 'Today' });
+    const indicators = within(dialog).getAllByRole('img');
+    expect(indicators).toHaveLength(1);
+    expect(indicators[0]).toHaveAccessibleName('Contains Peanuts (you, Mia)');
   });
 
   it('words the reasons a line is short', async () => {
