@@ -1,6 +1,7 @@
 import {
   aisleTint,
   BackIcon,
+  Button,
   CalendarIcon,
   Box,
   ChevronRightIcon,
@@ -10,6 +11,8 @@ import {
   DOCK_BOTTOM,
   DOCK_HEIGHT,
   focusRing,
+  IconButton,
+  PlusIcon,
   radius,
   ShoppingIcon,
   shadow,
@@ -32,8 +35,10 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { keyframesSx } from '../../lib/keyframesSx';
 import {
+  dayMissing,
   slotsInOrder,
   unlistedShortCount,
+  type AddMissingScope,
   type PlanIssue,
   type WindowDay,
   type WindowSlot,
@@ -80,6 +85,10 @@ type Props = {
   onClose: (returnFocus: boolean) => void;
   /** Elements whose taps are not "outside": the day columns, which handle their own taps. */
   isInsideTrigger: (target: Node) => boolean;
+  /** Adds what is missing for a scope to the Shopping List. */
+  onAdd: (scope: AddMissingScope) => void;
+  /** True while an add is in flight; the add buttons wait. */
+  adding: boolean;
 };
 
 const ghostButton = {
@@ -125,7 +134,17 @@ const statusMark = (slot: WindowSlot, t: TFunction<'dashboard'>) => {
   }
 };
 
-function IssueLine({ issue, today }: { issue: PlanIssue; today: IsoDate }) {
+function IssueLine({
+  issue,
+  today,
+  onAdd,
+  adding,
+}: {
+  issue: PlanIssue;
+  today: IsoDate;
+  onAdd: Props['onAdd'];
+  adding: boolean;
+}) {
   const { t, i18n } = useTranslation('dashboard');
   const language = i18n.language;
   const uncertain = issue.kind === 'uncertain';
@@ -198,12 +217,38 @@ function IssueLine({ issue, today }: { issue: PlanIssue; today: IsoDate }) {
         <Tag tone="soon" sx={{ py: '2px', px: '7px' }}>
           {t('mealPlan.status.onList')}
         </Tag>
+      ) : !uncertain ? (
+        <IconButton
+          label={t('mealPlan.addLine', { name: issue.name })}
+          tone="accentOutline"
+          size={34}
+          disabled={adding}
+          onClick={() =>
+            onAdd(
+              issue.ingredientId
+                ? { scope: 'ingredient', ingredientId: issue.ingredientId }
+                : { scope: 'ingredient', name: issue.name },
+            )
+          }
+        >
+          <PlusIcon size={14} strokeWidth={2.6} />
+        </IconButton>
       ) : null}
     </Box>
   );
 }
 
-function MealBlock({ slot, today }: { slot: WindowSlot; today: IsoDate }) {
+function MealBlock({
+  slot,
+  today,
+  onAdd,
+  adding,
+}: {
+  slot: WindowSlot;
+  today: IsoDate;
+  onAdd: Props['onAdd'];
+  adding: boolean;
+}) {
   const { t } = useTranslation('dashboard');
   const tint = aisleTint(slot.aisle?.id);
   const initials = Array.from(slot.recipeTitle).slice(0, 2).join('');
@@ -311,6 +356,8 @@ function MealBlock({ slot, today }: { slot: WindowSlot; today: IsoDate }) {
               key={`${issue.ingredientId ?? issue.name}-${issue.kind}`}
               issue={issue}
               today={today}
+              onAdd={onAdd}
+              adding={adding}
             />
           ))}
         </Box>
@@ -333,6 +380,8 @@ export function MealPlanPopover({
   onStep,
   onClose,
   isInsideTrigger,
+  onAdd,
+  adding,
 }: Props) {
   const { t, i18n } = useTranslation('dashboard');
   const language = i18n.language;
@@ -441,6 +490,7 @@ export function MealPlanPopover({
 
   const slots = slotsInOrder(day);
   const hasMeals = slots.length > 0;
+  const missing = dayMissing(day);
   const statusWord =
     day.status === 'covered'
       ? t('mealPlan.legend.covered')
@@ -579,7 +629,13 @@ export function MealPlanPopover({
         {hasMeals ? (
           <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
             {slots.map((slot) => (
-              <MealBlock key={slot.mealtime} slot={slot} today={today} />
+              <MealBlock
+                key={slot.mealtime}
+                slot={slot}
+                today={today}
+                onAdd={onAdd}
+                adding={adding}
+              />
             ))}
           </Box>
         ) : (
@@ -612,8 +668,23 @@ export function MealPlanPopover({
             p: '10px 16px 14px',
             borderTop: `1px solid ${tokens.color.divider}`,
             display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
           }}
         >
+          {missing.length > 0 ? (
+            <Button
+              variant="primary"
+              size="sm"
+              shape="pill"
+              startIcon={<PlusIcon size={14} strokeWidth={2.6} />}
+              disabled={adding}
+              onClick={() => onAdd({ scope: 'date', date: day.date })}
+              sx={{ flexShrink: 0, minHeight: 32, height: 32, fontSize: 12.5 }}
+            >
+              {t('mealPlan.addNMissing', { count: missing.length })}
+            </Button>
+          ) : null}
           <Box component="span" sx={plainAction}>
             <CalendarIcon size={14} />
             {t('mealPlan.editDay')}

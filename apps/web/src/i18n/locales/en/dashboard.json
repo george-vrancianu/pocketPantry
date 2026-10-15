@@ -182,6 +182,15 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "editDay": "Edit day",
+    "missingForPlan": "Missing for the plan:",
+    "moreMissing": "+{{count}}",
+    "addN": "Add {{count}}",
+    "addNMissing": "Add {{count}} missing",
+    "addLine": "Add {{name}} to the Shopping List",
+    "toast": {
+      "added_one": "{{count}} added to the Shopping List",
+      "added_other": "{{count}} added to the Shopping List"
+    },
     "planMeal": "Plan a meal",
     "startPlan": "Start a plan",
     "slot": {

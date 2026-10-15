@@ -203,6 +203,16 @@
     "today": "Azi",
     "tomorrow": "Mâine",
     "editDay": "Editează ziua",
+    "missingForPlan": "Lipsesc pentru plan:",
+    "moreMissing": "+{{count}}",
+    "addN": "Adaugă {{count}}",
+    "addNMissing": "Adaugă {{count}} lipsă",
+    "addLine": "Adaugă {{name}} pe lista de cumpărături",
+    "toast": {
+      "added_one": "{{count}} adăugat pe lista de cumpărături",
+      "added_few": "{{count}} adăugate pe lista de cumpărături",
+      "added_other": "{{count}} adăugate pe lista de cumpărături"
+    },
     "planMeal": "Planifică o masă",
     "startPlan": "Începe un plan",
     "slot": {

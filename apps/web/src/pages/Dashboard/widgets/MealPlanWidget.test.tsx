@@ -913,3 +913,251 @@ describe('MealPlanWidget day popover', () => {
     });
   });
 });
+
+describe('MealPlanWidget Add missing', () => {
+  const user = () => userEvent.setup();
+
+  const eggs = issue({ ingredientId: 'eggs', name: 'Eggs', quantity: 2 });
+  const lemons = issue({
+    ingredientId: 'lemons',
+    name: 'Lemons',
+    kind: 'missing',
+    quantity: 1,
+  });
+  const feta = issue({ ingredientId: 'feta', name: 'Feta', quantity: 100 });
+  const flour = issue({ ingredientId: 'flour', name: 'Flour', quantity: 500 });
+  const missingOf = (...issues: PlanIssue[]) =>
+    issues.map((i) => ({
+      ingredientId: i.ingredientId,
+      name: i.name,
+      quantity: i.quantity,
+      unit: i.unit,
+      recipeIds: ['r'],
+    }));
+
+  const shortWeek = () =>
+    windowOf(
+      [
+        day(0, [{ status: 'short', issues: [eggs, lemons] }]),
+        day(1, [{ status: 'short', issues: [eggs] }]),
+        day(2, [{ status: 'short', issues: [feta, flour] }]),
+      ],
+      {
+        tag: { kind: 'short', count: 3 },
+        missing: missingOf(eggs, lemons, feta, flour),
+      },
+    );
+
+  /** A window that turns into `after` once the add has been posted; the Shopping List delete is recorded. */
+  function setup(
+    before: MealWindow,
+    after: MealWindow,
+    created = ['sh1', 'sh2', 'sh3'],
+  ) {
+    let current = before;
+    const deleted: string[] = [];
+    let release = () => {};
+    let gate = Promise.resolve();
+    const list = () =>
+      Response.json({
+        id: 'l',
+        groups: [],
+        summary: { remaining: 0, checked: 0 },
+      });
+    const { fetchMock, calls } = stubApi({
+      'GET /api/meal-plans/window': () => Response.json(current),
+      'GET /api/shopping-list': list,
+      'POST /api/meal-plans/add-missing': async () => {
+        await gate;
+        current = after;
+        return Response.json({ createdIds: created, count: created.length });
+      },
+      ...Object.fromEntries(
+        ['sh1', 'sh2', 'sh3'].map((id) => [
+          `DELETE /api/shopping-list/items/${id}`,
+          () => {
+            deleted.push(id);
+            return list();
+          },
+        ]),
+      ),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return {
+      calls,
+      deleted,
+      posts: () =>
+        calls
+          .filter((call) => call.key === 'POST /api/meal-plans/add-missing')
+          .map((call) => call.body),
+      hold: () => {
+        gate = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        return () => release();
+      },
+    };
+  }
+
+  const allOnList = (view: MealWindow): MealWindow => ({
+    ...view,
+    tag: { kind: 'coveredOnceYouShop' },
+    missing: [],
+    days: view.days.map((d) => ({
+      ...d,
+      status: 'onList',
+      slots: d.slots.map((s) => ({
+        ...s,
+        status: 'onList',
+        issues: s.issues.map((i) => ({ ...i, onList: true })),
+      })),
+    })),
+  });
+
+  it('hides the footer when nothing missing is left off the Shopping List', async () => {
+    stub(windowOf(week(3), { missing: [] }));
+    renderWidget();
+
+    await screen.findAllByRole('button', { name: /meal/ });
+    expect(screen.queryByText(/Missing for the plan/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /^Add \d+$/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('names the first three missing Ingredients and the rest in the footer', async () => {
+    setup(shortWeek(), allOnList(shortWeek()));
+    renderWidget();
+
+    const footer = await screen.findByText(/Missing for the plan:/);
+    expect(footer).toHaveTextContent(
+      'Missing for the plan: Eggs, Lemons, Feta',
+    );
+    expect(footer).toHaveTextContent('+1');
+    expect(screen.getByRole('button', { name: 'Add 4' })).toBeInTheDocument();
+  });
+
+  it('adds the whole window from the footer, sending only its scope, and says how many', async () => {
+    const u = user();
+    const api = setup(shortWeek(), allOnList(shortWeek()));
+    renderWidget();
+
+    await u.click(await screen.findByRole('button', { name: 'Add 4' }));
+
+    expect(
+      await screen.findByText('3 added to the Shopping List'),
+    ).toBeInTheDocument();
+    expect(api.posts()).toEqual([{ scope: 'window' }]);
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Missing for the plan/),
+      ).not.toBeInTheDocument(),
+    );
+    // The Widget reads the forecast again once the add settles.
+    await waitFor(() =>
+      expect(
+        api.calls.filter((c) => c.key === 'GET /api/meal-plans/window').length,
+      ).toBeGreaterThan(1),
+    );
+  });
+
+  it('undoes exactly the Shopping Items the add created', async () => {
+    const u = user();
+    const api = setup(shortWeek(), allOnList(shortWeek()), ['sh1', 'sh3']);
+    renderWidget();
+    await u.click(await screen.findByRole('button', { name: 'Add 4' }));
+    await screen.findByText('2 added to the Shopping List');
+
+    await u.click(screen.getByRole('button', { name: 'Undo' }));
+
+    await waitFor(() => expect(api.deleted).toEqual(['sh1', 'sh3']));
+  });
+
+  it('adds one day from the popover, sending only its date', async () => {
+    const u = user();
+    const api = setup(shortWeek(), allOnList(shortWeek()), ['sh1', 'sh2']);
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    await u.click(
+      within(dialog).getByRole('button', { name: 'Add 2 missing' }),
+    );
+
+    await screen.findByText('2 added to the Shopping List');
+    expect(api.posts()).toEqual([{ scope: 'date', date: iso(0) }]);
+  });
+
+  it('adds one Ingredient from its + line, sending only that Ingredient', async () => {
+    const u = user();
+    const api = setup(shortWeek(), allOnList(shortWeek()), ['sh1']);
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    await u.click(
+      within(dialog).getByRole('button', {
+        name: 'Add Lemons to the Shopping List',
+      }),
+    );
+
+    await screen.findByText('1 added to the Shopping List');
+    expect(api.posts()).toEqual([
+      { scope: 'ingredient', ingredientId: 'lemons' },
+    ]);
+  });
+
+  it('flips the added Ingredients to "On list" at once, before the server answers', async () => {
+    const u = user();
+    const api = setup(shortWeek(), allOnList(shortWeek()), ['sh1']);
+    const release = api.hold();
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    await u.click(
+      within(dialog).getByRole('button', {
+        name: 'Add Lemons to the Shopping List',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        within(dialog).queryByRole('button', {
+          name: 'Add Lemons to the Shopping List',
+        }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(within(dialog).getAllByText('On list').length).toBeGreaterThan(0);
+    // Eggs is still to add; the day button counts one less.
+    expect(
+      within(dialog).getByRole('button', { name: 'Add 1 missing' }),
+    ).toBeInTheDocument();
+    release();
+    await screen.findByText('1 added to the Shopping List');
+  });
+
+  it('hides the day Add and the + buttons once everything on that day is on the list', async () => {
+    const u = user();
+    stub(
+      windowOf(
+        [day(0, [{ status: 'onList', issues: [{ ...eggs, onList: true }] }])],
+        {
+          missing: [],
+          tag: { kind: 'coveredOnceYouShop' },
+        },
+      ),
+    );
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      within(dialog).queryByRole('button', { name: /missing$/ }),
+    ).toBeNull();
+    expect(
+      within(dialog).queryByRole('button', { name: /to the Shopping List/ }),
+    ).toBeNull();
+    expect(within(dialog).getAllByText('On list').length).toBeGreaterThan(0);
+  });
+});
