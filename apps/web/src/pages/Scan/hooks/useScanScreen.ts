@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useCamera } from '../../../lib/camera';
-import { readScans } from '../../../lib/scanReads';
+import { readBarcode, useCamera } from '../../../lib/camera';
+import { decodePhotoBarcode, readScans } from '../../../lib/scanReads';
 import {
   capReached,
   MAX_SESSION_SCANS,
@@ -187,10 +187,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         });
         return false;
       }
+      const id = crypto.randomUUID();
       dispatchScanSession({
         type: 'enqueue',
         scan: {
-          id: crypto.randomUUID(),
+          id,
           mode,
           scanLanguage: mode === 'plate' ? undefined : scanLanguage,
           image,
@@ -198,6 +199,9 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         },
       });
       readScans(i18n.language);
+      // The full frame, before it was resized for the read: barcodes need the resolution.
+      if (mode === 'product')
+        decodePhotoBarcode(id, source, (photo) => readBarcode(photo));
     }
     return false;
   };
@@ -261,6 +265,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
               scan: { ...base, id, image, thumbnail: image },
             });
             readScans(i18n.language);
+            if (base.mode === 'product')
+              decodePhotoBarcode(id, file, (photo) => readBarcode(photo));
           },
           () => setLocalError('scan.image_invalid'),
         )
