@@ -114,6 +114,10 @@ afterEach(() => {
   localStorage.clear();
 });
 
+/** Whether the toast with this text sits in the polite live region (spec #323), not the assertive one. */
+const politeToast = (text: string | RegExp) =>
+  screen.getByText(text).closest('[role="status"]') !== null;
+
 describe('HealthWidget', () => {
   it('shows the score, verdict and to-do count on the wide card, named for a screen reader', async () => {
     stub(tenBatchPantry());
@@ -941,6 +945,7 @@ describe('HealthWidget', () => {
       expect(
         await screen.findByText('2 added to the Shopping List · score 85'),
       ).toBeInTheDocument();
+      expect(politeToast('2 added to the Shopping List · score 85')).toBe(true);
     });
 
     it('adds a single Staple from its row with a plus button', async () => {
@@ -1103,6 +1108,7 @@ describe('HealthWidget', () => {
       expect(
         await screen.findByText('Removed 2 expired · score 63'),
       ).toBeInTheDocument();
+      expect(politeToast('Removed 2 expired · score 63')).toBe(true);
       expect(bulkDeletes(calls)).toHaveLength(0);
 
       await afterWindow();
@@ -1238,11 +1244,13 @@ describe('HealthWidget', () => {
       });
 
     /** A Pantry the stubbed API keeps: a PATCH changes the Batch's expiry date. */
-    async function openWith(batches: Batch[]) {
+    async function openWith(batches: Batch[], failing: string[] = []) {
       const pantry = batches.map((b) => ({ ...b }));
       const patches: Array<{ id: string; expiryDate: unknown }> = [];
       const patchRoute = (id: string) => async (url: URL) => {
         void url;
+        if (failing.includes(id))
+          return Response.json({ message: 'boom' }, { status: 500 });
         const { body } = calls
           .filter((call) => call.key === `PATCH /api/pantry/batches/${id}`)
           .at(-1) as { body: { expiryDate: string | null } };
@@ -1376,6 +1384,7 @@ describe('HealthWidget', () => {
           /^2 given their usual expiry · edit any in Pantry/,
         ),
       ).toBeInTheDocument();
+      expect(politeToast(/^2 given their usual expiry/)).toBe(true);
       const remaining = await within(sheet).findByRole('button', {
         name: /^Date 1 Batch/,
       });
@@ -1383,6 +1392,24 @@ describe('HealthWidget', () => {
       expect(
         within(sheet).getByRole('button', { name: 'Set date for Mystery jar' }),
       ).toBeInTheDocument();
+    });
+
+    it('says some dates did not save', async () => {
+      const { user, sheet, patches } = await openWith(
+        [pesto(), jam(), ...filler(8)],
+        ['jam'],
+      );
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Date all 2 Batches' }),
+      );
+
+      expect(
+        await screen.findByText(
+          /^1 given their usual expiry.*· 1 date could not be saved/,
+        ),
+      ).toBeInTheDocument();
+      expect(patches).toEqual([{ id: 'pesto', expiryDate: isoIn(25) }]);
     });
 
     it('puts every date back on Undo after Date all', async () => {

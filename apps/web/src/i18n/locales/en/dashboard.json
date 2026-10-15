@@ -152,7 +152,10 @@
       "added_other": "{{count}} added to the Shopping List",
       "dated": "{{name}} dated",
       "usual_one": "{{count}} given their usual expiry · edit any in Pantry",
-      "usual_other": "{{count}} given their usual expiry · edit any in Pantry"
+      "usual_other": "{{count}} given their usual expiry · edit any in Pantry",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} date could not be saved",
+      "notSaved_other": "{{count}} dates could not be saved"
     },
     "item": {
       "toss": "Toss {{name}}",

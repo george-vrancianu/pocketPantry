@@ -203,34 +203,59 @@ export type HealthTodo = {
 
 type PendingTodo = Omit<HealthTodo, 'gain'>;
 
+/** The input without these Batches (ids), as after Toss or Used. */
+export function withoutBatches(
+  input: HealthInput,
+  ids: Iterable<string>,
+): HealthInput {
+  const gone = new Set(ids);
+  return {
+    ...input,
+    batches: input.batches.filter((batch) => !gone.has(batch.id)),
+  };
+}
+
+/** The input with these Ingredients (ids) on the Shopping List, as after an Add. */
+export function withOnShoppingList(
+  input: HealthInput,
+  ingredientIds: Iterable<string>,
+): HealthInput {
+  return {
+    ...input,
+    onShoppingList: new Set([...input.onShoppingList, ...ingredientIds]),
+  };
+}
+
+/** The input with these Batches given these expiry dates (by Batch id), as after dating them. */
+export function withExpiryDates(
+  input: HealthInput,
+  dates: ReadonlyMap<string, IsoDate | null>,
+): HealthInput {
+  return {
+    ...input,
+    batches: input.batches.map((batch) => ({
+      ...batch,
+      expiryDate: dates.get(batch.id) ?? batch.expiryDate,
+    })),
+  };
+}
+
 /** The input after the bulk fix of a Health To-do, or null when the fix cannot be simulated. */
 function afterFix(todo: PendingTodo, input: HealthInput): HealthInput | null {
-  const ids = new Set(todo.itemIds);
   switch (todo.key) {
     case 'expired':
-      return {
-        ...input,
-        batches: input.batches.filter((batch) => !ids.has(batch.id)),
-      };
+      return withoutBatches(input, todo.itemIds);
     case 'missingStaples':
     case 'runningLow':
-      return {
-        ...input,
-        onShoppingList: new Set([...input.onShoppingList, ...ids]),
-      };
-    case 'undated':
-      return {
-        ...input,
-        batches: input.batches.map((batch) =>
-          ids.has(batch.id)
-            ? {
-                ...batch,
-                expiryDate:
-                  usualExpiryDate(batch, input.today) ?? batch.expiryDate,
-              }
-            : batch,
-        ),
-      };
+      return withOnShoppingList(input, todo.itemIds);
+    case 'undated': {
+      const ids = new Set(todo.itemIds);
+      const dates = new Map<string, IsoDate | null>();
+      for (const batch of input.batches)
+        if (ids.has(batch.id))
+          dates.set(batch.id, usualExpiryDate(batch, input.today));
+      return withExpiryDates(input, dates);
+    }
     case 'expiringSoon': // The fix is cooking, which cannot be simulated.
       return null;
   }

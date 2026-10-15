@@ -2,8 +2,8 @@ import { useToast } from '@pocket-pantry/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
-import { pantryHealth, type HealthTodoKey } from '../../lib/health';
-import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
+import { withOnShoppingList, type HealthTodoKey } from '../../lib/health';
+import { useHealthToast } from '../../lib/useHealthToast';
 import {
   shoppingListQueryKey,
   useShoppingMutations,
@@ -23,7 +23,7 @@ export type ShoppingFix = {
  */
 export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
   const { t, i18n } = useTranslation('dashboard');
-  const { t: tCommon } = useTranslation('common');
+  const { messageWithScore, undoOptions } = useHealthToast();
   const toast = useToast();
   const queryClient = useQueryClient();
   const { addMany, remove } = useShoppingMutations(i18n.language);
@@ -65,26 +65,11 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
       toast.show(translateApiError(t, error));
       return;
     }
-    const after = pantryHealth({
-      ...state.input,
-      onShoppingList: new Set([
-        ...state.input.onShoppingList,
-        ...ingredientIds,
-      ]),
-    });
     // The count is Ingredients added; two of them may have merged into one line.
     const message = t('health.toast.added', { count: ingredientIds.length });
     toast.show(
-      after.scored
-        ? t('health.toast.withScore', { message, score: after.total })
-        : message,
-      {
-        duration: UNDO_WINDOW_MS,
-        action: {
-          label: tCommon('row.undo'),
-          onClick: () => void undo(createdIds),
-        },
-      },
+      messageWithScore(withOnShoppingList(state.input, ingredientIds), message),
+      undoOptions(() => void undo(createdIds)),
     );
   };
 

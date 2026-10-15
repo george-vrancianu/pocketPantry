@@ -1,11 +1,12 @@
 import { useToast } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../i18n/translateApiError';
-import { pantryHealth, usualExpiryDate } from '../../lib/health';
+import { usualExpiryDate, withExpiryDates } from '../../lib/health';
 import { useUpdateBatch, type Batch, type IsoDate } from '../../lib/pantry';
 import type { PantryHealthState } from '../../lib/usePantryHealth';
-import { UNDO_WINDOW_MS } from '../../lib/useDeferredRemoval';
+import { useHealthToast } from '../../lib/useHealthToast';
 
 export type DateFix = {
   isPending: boolean;
@@ -23,15 +24,28 @@ type Change = { id: string; expiryDate: IsoDate | null };
  */
 export function useDateBatches(state: PantryHealthState): DateFix {
   const { t, i18n } = useTranslation('dashboard');
-  const { t: tCommon } = useTranslation('common');
+  const { messageWithScore, undoOptions } = useHealthToast();
   const toast = useToast();
   const queryClient = useQueryClient();
   const update = useUpdateBatch(i18n.language);
+  // One mutation tracks only its latest call, so the whole batch of PATCHes is counted here.
+  const [running, setRunning] = useState(0);
+
+  const track = async <T>(work: Promise<T>) => {
+    setRunning((n) => n + 1);
+    try {
+      return await work;
+    } finally {
+      setRunning((n) => n - 1);
+    }
+  };
 
   const patch = (changes: Change[]) =>
-    Promise.allSettled(
-      changes.map(({ id, expiryDate }) =>
-        update.mutateAsync({ id, edit: { expiryDate } }),
+    track(
+      Promise.allSettled(
+        changes.map(({ id, expiryDate }) =>
+          update.mutateAsync({ id, edit: { expiryDate } }),
+        ),
       ),
     );
 
@@ -58,26 +72,24 @@ export function useDateBatches(state: PantryHealthState): DateFix {
       return;
     }
     const dates = new Map(landed.map((change) => [change.id, change]));
-    const after = pantryHealth({
-      ...state.input,
-      batches: state.input.batches.map((batch) => ({
-        ...batch,
-        expiryDate: dates.get(batch.id)?.expiryDate ?? batch.expiryDate,
-      })),
-    });
     const text = message(landed.length);
+    const notSaved = changes.length - landed.length;
     toast.show(
-      after.scored
-        ? t('health.toast.withScore', { message: text, score: after.total })
-        : text,
-      {
-        duration: UNDO_WINDOW_MS,
-        action: {
-          label: tCommon('row.undo'),
-          onClick: () =>
-            void undo(previous.filter((change) => dates.has(change.id))),
-        },
-      },
+      messageWithScore(
+        withExpiryDates(
+          state.input,
+          new Map(landed.map((change) => [change.id, change.expiryDate])),
+        ),
+        notSaved > 0
+          ? t('health.toast.withNotSaved', {
+              message: text,
+              notSaved: t('health.toast.notSaved', { count: notSaved }),
+            })
+          : text,
+      ),
+      undoOptions(
+        () => void undo(previous.filter((change) => dates.has(change.id))),
+      ),
     );
   };
 
@@ -105,5 +117,5 @@ export function useDateBatches(state: PantryHealthState): DateFix {
       () => t('health.toast.dated', { name: batch.name }),
     );
 
-  return { isPending: update.isPending, dateAll, setDate };
+  return { isPending: running > 0, dateAll, setDate };
 }

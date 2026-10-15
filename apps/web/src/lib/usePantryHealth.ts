@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   healthTodos,
   pantryHealth,
+  withoutBatches,
   type HealthInput,
   type HealthTodo,
   type PantryHealth,
@@ -19,6 +20,7 @@ import { useShoppingList } from './shopping';
 import { useStaples, type Staple } from './staples';
 import { useSuggestions } from './suggestions';
 import { useDeferredRemoval } from './useDeferredRemoval';
+import { useHealthToast } from './useHealthToast';
 import { useToday } from './useToday';
 
 export type PantryHealthState = {
@@ -45,7 +47,8 @@ export type PantryHealthState = {
 
 /** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
 export function usePantryHealth(): PantryHealthState {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
+  const { messageWithScore } = useHealthToast();
   const locale = i18n.language;
   const today = localIso(useToday());
   const batches = useBatches(locale);
@@ -57,12 +60,7 @@ export function usePantryHealth(): PantryHealthState {
   const staleThresholdDays = useStaleThresholdDays(locale);
 
   const { mutateAsync: sendDeleteMany } = useDeleteBatches();
-  const removal = useDeferredRemoval(
-    ['pantry'],
-    // Only `remove` of one record uses this; Pantry health always removes through `removeMany`.
-    (id: string) => sendDeleteMany([id]),
-    sendDeleteMany,
-  );
+  const removal = useDeferredRemoval(['pantry'], undefined, sendDeleteMany);
   const { hiddenIds } = removal;
   const stocked = useMemo(
     () => (batches.data ?? []).filter((batch) => !hiddenIds.has(batch.id)),
@@ -97,19 +95,10 @@ export function usePantryHealth(): PantryHealthState {
   const todos = useMemo(() => healthTodos(input), [input]);
 
   const removeBatches = (ids: string[], message: string) => {
-    const gone = new Set(ids);
-    const after = pantryHealth({
-      ...input,
-      batches: input.batches.filter((batch) => !gone.has(batch.id)),
-    });
     removal.removeMany(
       ids,
-      after.scored
-        ? t('dashboard:health.toast.withScore', {
-            message,
-            score: after.total,
-          })
-        : message,
+      messageWithScore(withoutBatches(input, ids), message),
+      { polite: true },
     );
   };
 

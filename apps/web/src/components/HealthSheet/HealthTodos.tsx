@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import {
   HEALTH_TODO_KEYS,
   isForgotten,
+  usualExpiryDate,
   type HealthTodo,
   type HealthTodoGroup,
   type HealthTodoKey,
@@ -184,7 +185,7 @@ export function HealthTodos({ state, today }: Props) {
                   dating={dating}
                   canDateAll={batches.some(
                     (batch) =>
-                      batch.defaultExpiryDays !== null &&
+                      usualExpiryDate(batch, todayIso) !== null &&
                       todo.itemIds.includes(batch.id),
                   )}
                   onSetDate={setSettingDateId}

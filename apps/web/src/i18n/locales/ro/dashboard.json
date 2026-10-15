@@ -170,7 +170,11 @@
       "dated": "{{name}} are acum dată",
       "usual_one": "{{count}} lot a primit data obișnuită de expirare · modifică în cămară",
       "usual_few": "{{count}} loturi au primit data obișnuită de expirare · modifică în cămară",
-      "usual_other": "{{count}} de loturi au primit data obișnuită de expirare · modifică în cămară"
+      "usual_other": "{{count}} de loturi au primit data obișnuită de expirare · modifică în cămară",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} dată nu a putut fi salvată",
+      "notSaved_few": "{{count}} date nu au putut fi salvate",
+      "notSaved_other": "{{count}} de date nu au putut fi salvate"
     },
     "item": {
       "toss": "Aruncă {{name}}",

@@ -27,6 +27,15 @@ function Harness() {
       >
         remove a and b
       </button>
+      <button
+        onClick={() => {
+          const ids = ['a', 'b'];
+          removal.removeMany(ids, 'Removed first');
+          removal.removeMany(ids, 'Removed again');
+        }}
+      >
+        remove a and b twice
+      </button>
       <button onClick={() => removal.removeMany(['c'], 'Removed c')}>
         remove c
       </button>
@@ -84,6 +93,21 @@ describe('useDeferredRemoval, several rows at once', () => {
     expect(rowsShown()).toEqual(['a', 'b', 'c']);
     expect(sendMany).not.toHaveBeenCalled();
     expect(sendOne).not.toHaveBeenCalled();
+  });
+
+  it('treats the same ids passed twice as two removals: Undo brings them back and sends nothing', async () => {
+    setup();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    await user.click(screen.getByText('remove a and b twice'));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    // The first removal was replaced by the second, so it is sent at once.
+    expect(sendMany).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    await act(() => vi.advanceTimersByTimeAsync(UNDO_WINDOW_MS + 100));
+
+    expect(sendMany).toHaveBeenCalledTimes(1);
   });
 
   it('only undoes the latest removal: a new one sends the earlier bulk delete at once', async () => {

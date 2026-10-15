@@ -150,7 +150,10 @@
       "added_other": "{{count}} føjet til indkøbslisten",
       "dated": "{{name}} er nu dateret",
       "usual_one": "{{count}} fik sin sædvanlige udløbsdato · ret i spisekammeret",
-      "usual_other": "{{count}} fik deres sædvanlige udløbsdato · ret i spisekammeret"
+      "usual_other": "{{count}} fik deres sædvanlige udløbsdato · ret i spisekammeret",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} dato kunne ikke gemmes",
+      "notSaved_other": "{{count}} datoer kunne ikke gemmes"
     },
     "item": {
       "toss": "Smid {{name}} ud",
