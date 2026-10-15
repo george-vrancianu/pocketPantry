@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import {
   amountScaleForParent,

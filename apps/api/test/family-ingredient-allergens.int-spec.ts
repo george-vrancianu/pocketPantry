@@ -144,10 +144,11 @@ describe('Family Ingredient Allergens (integration)', () => {
   describe('creating a Family Ingredient', () => {
     it('with chips is tagged and checked', async () => {
       const row = await made(a, { allergenIds: [PEANUTS, MILK] });
-      expect(await rowOf(a, row.id)).toMatchObject({
-        allergensChecked: true,
-        allergenIds: expect.arrayContaining([PEANUTS, MILK]),
-      });
+      const stored = await rowOf(a, row.id);
+      expect(stored?.allergensChecked).toBe(true);
+      expect([...(stored?.allergenIds ?? [])].sort()).toEqual(
+        [PEANUTS, MILK].sort(),
+      );
     });
 
     it('with "None" (an empty list) is checked with no tags', async () => {
@@ -174,10 +175,10 @@ describe('Family Ingredient Allergens (integration)', () => {
         .where(eq(allergens.id, EGGS));
       try {
         const retired = await create(a, name, { allergenIds: [EGGS] });
-        expect([retired.status, retired.body.code]).toEqual([
-          409,
-          'catalog.allergen_retired',
-        ]);
+        expect([
+          retired.status,
+          (retired.body as { code: string }).code,
+        ]).toEqual([409, 'catalog.allergen_retired']);
       } finally {
         await database
           .update(allergens)
@@ -229,7 +230,9 @@ describe('Family Ingredient Allergens (integration)', () => {
         await tag(a, row.id, [EGGS]).expect(200);
         const other = await made(a);
         const res = await tag(a, other.id, [EGGS]).expect(409);
-        expect(res.body.code).toBe('catalog.allergen_retired');
+        expect((res.body as { code: string }).code).toBe(
+          'catalog.allergen_retired',
+        );
       } finally {
         await database
           .update(allergens)
