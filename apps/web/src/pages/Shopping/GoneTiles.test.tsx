@@ -65,17 +65,6 @@ function stubShopping(
     'GET /api/shopping-list/suggestions': () =>
       Response.json({ staples: [], usedUp: [], expired: [], ...groups }),
     'GET /api/catalog/search': () => Response.json({ results: [milkResult] }),
-    'GET /api/shopping-templates': () =>
-      Response.json({
-        templates: [
-          {
-            id: 't1',
-            name: 'Taco night',
-            lineCount: 1,
-            previewNames: ['Milk'],
-          },
-        ],
-      }),
     ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -86,7 +75,7 @@ async function openSheet() {
   await userEvent.click(
     await screen.findByRole('button', { name: 'Add items' }),
   );
-  return screen.findByRole('dialog', { name: 'Add to list' });
+  return screen.findByRole('dialog', { name: 'Add items' });
 }
 
 /** The tiles in grid order. */
@@ -247,24 +236,6 @@ describe('Gone from your Pantry (Shopping add sheet)', () => {
       within(section).getByText('Nothing has run out or expired. Nice.'),
     ).toBeVisible();
     expect(within(section).queryByRole('button')).toBeNull();
-  });
-
-  it('keeps the Shopping Templates below the Gone tiles', async () => {
-    stubShopping({ expired: [gone('Spinach', '2026-10-13')] });
-    renderWithProviders(<ShoppingPage />);
-
-    const dialog = await openSheet();
-
-    const section = await within(dialog).findByRole('region', {
-      name: 'Gone from your Pantry',
-    });
-    const templates = await within(dialog).findByRole('button', {
-      name: /Taco night/,
-    });
-    expect(
-      section.compareDocumentPosition(templates) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 
   it('counts a timestamp late on the previous local day as 1d ago', async () => {

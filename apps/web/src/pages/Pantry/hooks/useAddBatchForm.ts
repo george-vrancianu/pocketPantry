@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import type {
-  CatalogSearchResult,
-  StorageLocation,
-  Unit,
+import {
+  useCatalogSearch,
+  type CatalogSearchResult,
+  type StorageLocation,
+  type Unit,
 } from '../../../lib/catalog';
 import {
   defaultExpiryDate,
@@ -13,17 +14,48 @@ import {
   type IsoDate,
 } from '../../../lib/pantry';
 
+/**
+ * What the form starts with, from an open Ingredient card: the Ingredient (its id and name; the
+ * form looks up its Catalog defaults), or the typed name of an Unmatched one.
+ */
+export type AddBatchStart =
+  | { ingredient: Pick<CatalogSearchResult, 'id' | 'name'> }
+  | { unmatchedName: string };
+
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
 
+/** The picked Ingredient: a Catalog search result, or a starting one whose defaults are still loading. */
+type PickedIngredient = Pick<CatalogSearchResult, 'id' | 'name'> &
+  Partial<CatalogSearchResult>;
+
 /** Add-Batch form state: Catalog defaults pre-fill Location and expiry, and the Member can override them. */
-export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
+export function useAddBatchForm({
+  onSaved,
+  start,
+}: {
+  onSaved: () => void;
+  start?: AddBatchStart;
+}) {
   const { t, i18n } = useTranslation();
   const addBatch = useAddBatch(i18n.language);
 
-  const [ingredient, setIngredient] = useState<CatalogSearchResult | null>(
-    null,
+  const [startingIngredient] = useState(() =>
+    start && 'ingredient' in start ? start.ingredient : null,
   );
-  const [unmatchedName, setUnmatchedName] = useState<string | null>(null);
+  const [ingredient, setIngredient] = useState<PickedIngredient | null>(
+    startingIngredient,
+  );
+  // The text the search field starts with: the starting Ingredient's name, or the Unmatched name.
+  const [initialQuery] = useState(() =>
+    start === undefined
+      ? ''
+      : 'ingredient' in start
+        ? start.ingredient.name
+        : start.unmatchedName,
+  );
+  const [unmatchedName, setUnmatchedName] = useState<string | null>(() =>
+    start && 'unmatchedName' in start ? start.unmatchedName : null,
+  );
   const [quantity, setQuantity] = useState('');
   // The Member's own unit choice, or none: then the picked Ingredient's default unit applies.
   const [chosenUnit, setChosenUnit] = useState<Unit | null>(null);
@@ -45,6 +77,31 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     const days = result.defaults.expiryDays;
     setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
   };
+
+  // A starting Ingredient has only its id and name: its Catalog defaults come from searching its
+  // name, which the search field has already asked for, and apply as if it had been picked there
+  // (so it then shows as the picked token).
+  const startingLookup = useCatalogSearch(
+    startingIngredient?.name ?? '',
+    i18n.language,
+  );
+  const startingDefaults = startingLookup.data?.find(
+    (result) => result.id === startingIngredient?.id,
+  );
+  // The fields stay editable while the lookup is out: what the Member sets in that time is kept.
+  // The lookup can also miss (the name search may not return the id): the save still sends the
+  // starting `ingredientId`, and Location and expiry stay on their fallbacks.
+  const [touched, setTouched] = useState({ location: false, expiry: false });
+  useEffect(() => {
+    if (!startingDefaults || ingredient !== startingIngredient) return;
+    setIngredient(startingDefaults);
+    if (!touched.location)
+      setLocation(startingDefaults.defaults.location ?? FALLBACK_LOCATION);
+    const days = startingDefaults.defaults.expiryDays;
+    if (!touched.expiry)
+      setExpiryDate(days === null ? null : defaultExpiryDate(days, new Date()));
+    // Once, when the lookup lands; not again after the Member has picked or typed something else.
+  }, [startingDefaults]);
 
   /** Dropping the picked Ingredient must not change the unit on screen: freeze the Ingredient's unit first. */
   const clearIngredient = () => {
@@ -90,13 +147,18 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
 
   return {
     ingredient,
+    /** The picked Ingredient as the search field's token: only once its Catalog result is on hand. */
+    selected: ingredient?.parentCategory
+      ? (ingredient as CatalogSearchResult)
+      : null,
+    initialQuery,
     unmatchedName,
     quantity,
     unit,
     location,
     expiryDate,
     /** The Default Expiry in days for the "Usual" quick pick: only for a chosen Ingredient that has one. */
-    usualDays: ingredient?.defaults.expiryDays ?? null,
+    usualDays: ingredient?.defaults?.expiryDays ?? null,
     description,
     canSave,
     quantityValid,
@@ -107,8 +169,14 @@ export function useAddBatchForm({ onSaved }: { onSaved: () => void }) {
     chooseTypedName,
     setQuantity,
     setUnit: setChosenUnit,
-    setLocation,
-    setExpiryDate,
+    setLocation: (value: StorageLocation) => {
+      setTouched((was) => ({ ...was, location: true }));
+      setLocation(value);
+    },
+    setExpiryDate: (value: IsoDate | null) => {
+      setTouched((was) => ({ ...was, expiry: true }));
+      setExpiryDate(value);
+    },
     setDescription,
     submit,
   };

@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray } from 'drizzle-orm';
-import type { ExpiryOverride } from '../catalog/catalog-defaults';
+import {
+  resolveCatalogDefaults,
+  type ExpiryOverride,
+} from '../catalog/catalog-defaults';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
   CATALOG_LOCALES,
@@ -145,7 +148,10 @@ export class SettingsService {
       );
   }
 
-  /** Parent Categories with their Leaf Categories: what an override can target. */
+  /**
+   * Parent Categories with their Leaf Categories: what an override can target, each with its
+   * Catalog Default Expiry (`catalogDays`; a Leaf without its own uses its Parent's).
+   */
   async categoryOptions(
     memberId: string,
     locale: CatalogLocale,
@@ -170,11 +176,13 @@ export class SettingsService {
         .map((parent) => ({
           id: parent.id,
           name: names.pick('parent_category', parent.id, parent.name),
+          catalogDays: parent.defaultExpiryDays,
           leaves: leaves
             .filter((leaf) => leaf.parentId === parent.id)
             .map((leaf) => ({
               id: leaf.id,
               name: names.pick('leaf_category', leaf.id, leaf.name),
+              catalogDays: resolveCatalogDefaults(leaf, parent).expiryDays,
             }))
             .sort(byName),
         }))

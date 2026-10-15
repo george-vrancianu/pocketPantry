@@ -12,6 +12,8 @@ import {
 export type SegmentedControlOption<T extends string> = {
   value: T;
   label: string;
+  /** Language of the label, when it differs from the page's (e.g. a language's own name). */
+  lang?: string;
 };
 
 export type SegmentedControlProps<T extends string> = {
@@ -20,6 +22,8 @@ export type SegmentedControlProps<T extends string> = {
   options: SegmentedControlOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Stretch to the container's width, sharing it evenly between the options. */
+  fullWidth?: boolean;
 };
 
 /** A row of toggle buttons where exactly one is pressed. */
@@ -28,13 +32,14 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  fullWidth = false,
 }: SegmentedControlProps<T>) {
   return (
     <Box
       role="group"
       aria-label={label}
       sx={(theme) => ({
-        display: 'inline-flex',
+        display: fullWidth ? 'flex' : 'inline-flex',
         gap: '4px',
         p: '4px',
         backgroundColor: themePalette(theme).pp.chip,
@@ -47,6 +52,7 @@ export function SegmentedControl<T extends string>({
           <ButtonBase
             key={option.value}
             aria-pressed={selected}
+            lang={option.lang}
             onClick={() => onChange(option.value)}
             sx={[
               (theme) => {
@@ -54,6 +60,7 @@ export function SegmentedControl<T extends string>({
                 return {
                   minHeight: 36,
                   minWidth: 56,
+                  flex: fullWidth ? 1 : undefined,
                   px: '16px',
                   borderRadius: nestedRadius(radius.control, 4),
                   fontSize: 14,

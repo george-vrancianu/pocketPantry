@@ -44,11 +44,13 @@ describe('AppLayout Dock', () => {
     expect(paintedColour(dock, 'background-color')).toBe('RGBA(25,33,28,.9)');
 
     const active = screen.getByRole('link', { current: 'page' });
-    const pill = active.querySelector('svg')!.parentElement!;
-    expect(paintedColour(pill, 'background-color')).toBe('#1F3A2A');
+    expect(paintedColour(active, 'background-color')).toBe('#1F3A2A');
     expect(paintedColour(active, 'color')).toBe('#A9EDBD');
 
     const inactive = screen.getByRole('link', { name: /shopping/i });
+    expect(paintedColour(inactive, 'background-color')).toBe(
+      'RGBA(0, 0, 0, 0)',
+    );
     expect(paintedColour(inactive, 'color')).toBe('#97A69B');
   });
 });

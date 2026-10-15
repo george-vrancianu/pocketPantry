@@ -11,7 +11,6 @@ import {
   Wallet,
   Apple,
   ChevronUp,
-  Minus,
   GripVertical,
   TriangleAlert,
   CircleAlert,
@@ -36,6 +35,23 @@ type IconNode = readonly (readonly [
  */
 const ICON_NODES = {
   plus: [['path', { d: 'M12 5v14M5 12h14' }]],
+  minus: [['path', { d: 'M5 12h14' }]],
+  copy: [
+    ['rect', { x: '8', y: '8', width: '12', height: '12', rx: '2' }],
+    ['path', { d: 'M16 8V4H4v12h4' }],
+  ],
+  logout: [
+    ['path', { d: 'M14 4h5v16h-5' }],
+    ['path', { d: 'M10 8l-4 4 4 4M6 12h10' }],
+  ],
+  user: [
+    ['circle', { cx: '12', cy: '8', r: '4' }],
+    ['path', { d: 'M4.5 21a7.5 7.5 0 0 1 15 0' }],
+  ],
+  phone: [
+    ['rect', { x: '6', y: '2.5', width: '12', height: '19', rx: '2.5' }],
+    ['path', { d: 'M11 18.5h2' }],
+  ],
   close: [['path', { d: 'M6 6l12 12M18 6L6 18' }]],
   'book-plus': [
     [
@@ -108,6 +124,14 @@ const ICON_NODES = {
     ['path', { d: 'M4 5h16v14H4z' }],
     ['path', { d: 'M4 10h16M10 10v9' }],
   ],
+  /** A tray with an arrow dropping into it: the shopping import handoff's `imp`. */
+  import: [
+    ['path', { d: 'M12 4v10M8 10.5l4 4 4-4' }],
+    [
+      'path',
+      { d: 'M4.5 14.5v3A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-3' },
+    ],
+  ],
   undo: [
     ['path', { d: 'M4 10h11a5 5 0 0 1 0 10h-3' }],
     ['path', { d: 'M8 6l-4 4 4 4' }],
@@ -116,6 +140,12 @@ const ICON_NODES = {
   calendar: [
     ['rect', { x: '3', y: '5', width: '18', height: '16', rx: '3' }],
     ['path', { d: 'M3 10h18M8 3v4M16 3v4' }],
+  ],
+  /** Not in the handoff set: the Pantry batches handoff's battery-low, the Running low flag. */
+  'battery-low': [
+    ['rect', { x: '2.5', y: '7', width: '17', height: '10', rx: '2.5' }],
+    ['path', { d: 'M22 10.5v3' }],
+    ['path', { d: 'M6.5 10.5v3', strokeWidth: '3.2' }],
   ],
   /** Not in the handoff set: a tree elbow that marks a row as belonging to the one above. */
   'sub-item': [['path', { d: 'M6 3v8a5 5 0 0 0 5 5h9' }]],
@@ -193,6 +223,11 @@ function lucide(Glyph: ComponentType<LucideProps>) {
 }
 
 export const PlusIcon = handoff('plus');
+export const MinusIcon = handoff('minus');
+export const CopyIcon = handoff('copy');
+export const LogoutIcon = handoff('logout');
+export const UserIcon = handoff('user');
+export const PhoneIcon = handoff('phone');
 export const CloseIcon = handoff('close');
 export const BookPlusIcon = handoff('book-plus');
 export const CheckIcon = handoff('check');
@@ -212,8 +247,10 @@ export const DeleteIcon = handoff('trash');
 export const MoreIcon = handoff('more');
 export const SettingsIcon = handoff('sliders');
 export const TemplateIcon = handoff('template');
+export const ImportIcon = handoff('import');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
+export const BatteryLowIcon = handoff('battery-low');
 export const SubItemIcon = handoff('sub-item');
 
 export const HomeIcon = lucide(House);
@@ -227,7 +264,6 @@ export const IngredientsScanIcon = lucide(Leaf);
 export const BudgetIcon = lucide(Wallet);
 export const NutritionIcon = lucide(Apple);
 export const ChevronUpIcon = lucide(ChevronUp);
-export const MinusIcon = lucide(Minus);
 export const GripIcon = lucide(GripVertical);
 export const WarningIcon = lucide(TriangleAlert);
 export const AlertIcon = lucide(CircleAlert);

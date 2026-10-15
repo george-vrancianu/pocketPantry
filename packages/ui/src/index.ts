@@ -33,6 +33,7 @@ export {
   isThemeId,
   readAppearance,
   resolveTheme,
+  SYSTEM_DARK_QUERY,
   subscribeAppearance,
   writeAppearance,
   type Appearance,
@@ -75,6 +76,7 @@ export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
+  BatteryLowIcon,
   BudgetIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -93,6 +95,10 @@ export {
   CloseIcon,
   PlusIcon,
   BookPlusIcon,
+  CopyIcon,
+  LogoutIcon,
+  UserIcon,
+  PhoneIcon,
   CustomiseIcon,
   FlashIcon,
   GalleryIcon,
@@ -119,6 +125,7 @@ export {
   StarIcon,
   StarFillIcon,
   UndoIcon,
+  ImportIcon,
   Icon,
   type IconName,
   type IconProps,
@@ -155,10 +162,13 @@ export {
   type SwipeRowLabels,
   type SwipeRowProps,
 } from './molecules/SwipeRow';
+export { SwipeToggle, type SwipeToggleProps } from './molecules/SwipeToggle';
 export {
   useRowGestures,
+  type RemoveGestureOptions,
   type RowGestureOptions,
   type RowGestures,
+  type ToggleGestureOptions,
   type SwipeZone,
 } from './molecules/useRowGestures';
 export { DockItem, type DockItemProps } from './molecules/DockItem';

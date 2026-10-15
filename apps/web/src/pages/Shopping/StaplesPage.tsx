@@ -19,6 +19,7 @@ import { BrowseByAisle } from '../../components/catalogSearch/emptyState/BrowseB
 import { translateApiError } from '../../i18n/translateApiError';
 import { formatAmount, type Amount } from '../../lib/amount';
 import {
+  isPendingStaple,
   staplesQueryKey,
   useStapleMutations,
   useStaples,
@@ -75,7 +76,7 @@ export function StaplesPage() {
           showUnit={false}
           onSelect={(ingredient) =>
             add.mutate(
-              { ingredientId: ingredient.id },
+              { ingredientId: ingredient.id, name: ingredient.name },
               { onSettled: () => setFormKey((key) => key + 1) },
             )
           }
@@ -143,7 +144,8 @@ function StapleRow({
         ref={row}
         name={staple.name}
         labels={labels}
-        disabled={editing}
+        // A Staple whose add is still out has no id to save or remove by yet.
+        disabled={editing || isPendingStaple(staple)}
         peek={peek}
         onLearned={onLearned}
         onEdit={() => setEditing(true)}

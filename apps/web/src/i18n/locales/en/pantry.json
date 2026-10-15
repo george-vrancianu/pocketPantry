@@ -18,8 +18,7 @@
   },
   "unmatched": "Unmatched",
   "runningLow": {
-    "chip": "Running low",
-    "toggle": "Mark running low"
+    "chip": "Running low"
   },
   "all": "All",
   "filters": "Filter by location",
@@ -31,8 +30,36 @@
   "batchCount_one": "{{count}} batch",
   "batchCount_few": "{{count}} batches",
   "batchCount_other": "{{count}} batches",
-  "batchesOf": "Batches of {{name}}",
-  "noDetails": "No quantity set",
+  "group": {
+    "label_one": "{{name}}, {{count}} batch",
+    "label_other": "{{name}}, {{count}} batches",
+    "runningLow": "Running low",
+    "notLow": "Not low",
+    "staple": "Staple",
+    "makeStaple": "Make Staple",
+    "addBatch": "Add a batch of {{name}}"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} marked running low",
+      "off": "{{name}} no longer running low"
+    },
+    "staple": {
+      "on": "{{name}} is a Staple",
+      "off": "{{name}} is no longer a Staple"
+    }
+  },
+  "a11y": {
+    "markLow": "Mark running low",
+    "clearLow": "Clear running low",
+    "lowKey": "Press L: {{action}}.",
+    "stapleKey": "Press S: {{action}}.",
+    "makeStaple": "Make Staple",
+    "removeStaple": "Remove Staple"
+  },
+  "batch": {
+    "noDate": "no date"
+  },
   "edit": {
     "title": "Edit {{name}} batch",
     "save": "Save changes"

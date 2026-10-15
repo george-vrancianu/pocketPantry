@@ -1,111 +1,43 @@
 import {
-  Alert,
   Box,
-  Button,
-  Link,
-  SignOutIcon,
-  Stack,
-  Typography,
+  SegmentedTabs,
+  segmentedTabId,
+  segmentedTabPanelId,
 } from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { LanguageSwitcher } from '../../components/LanguageSwitcher';
-import { useSession, useSignOut } from '../../lib/auth';
-import { useSaveLocale } from '../../lib/settings';
-import { AppearanceCard } from './components/AppearanceCard';
-import { FamilyCatalogSection } from './components/FamilyCatalogSection';
-import { FamilySettingsSection } from './components/FamilySettingsSection';
+import { FamilyTab } from './components/FamilyTab';
+import { YouTab } from './components/YouTab';
+import { useSettingsScreen, type SettingsTab } from './hooks/useSettingsScreen';
 
 export function SettingsPage() {
   const { t } = useTranslation('settings');
-  const session = useSession();
-  const signOut = useSignOut();
-  const saveLocale = useSaveLocale();
-  const navigate = useNavigate();
   const id = useId();
+  const { tab, selectTab } = useSettingsScreen();
 
   return (
     <>
       <AppScreenHeader title={t('title')} />
-      <Stack spacing={3}>
-        <FamilySettingsSection />
-        <FamilyCatalogSection />
-        <Stack component="section" spacing={1} aria-labelledby={`${id}-prefs`}>
-          <Typography
-            id={`${id}-prefs`}
-            variant="sectionLabel"
-            component="h2"
-            color="text.secondary"
-          >
-            {t('preferences')}
-          </Typography>
-          <Typography variant="meta" color="text.secondary">
-            {t('preferencesPrivate')}
-          </Typography>
-          <Typography variant="body1">{t('language')}</Typography>
-          <Box>
-            <LanguageSwitcher
-              onChange={(locale) => saveLocale.mutate(locale)}
-            />
-          </Box>
-          {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
-          <AppearanceCard />
-        </Stack>
-        {session.data?.user.role === 'admin' ? (
-          <Stack
-            component="section"
-            spacing={1}
-            aria-labelledby={`${id}-admin`}
-          >
-            <Typography
-              id={`${id}-admin`}
-              variant="sectionLabel"
-              component="h2"
-              color="text.secondary"
-            >
-              {t('admin')}
-            </Typography>
-            <Box>
-              <Link href="/admin">{t('openAdmin')}</Link>
-            </Box>
-          </Stack>
-        ) : null}
-        <Stack
-          component="section"
-          spacing={1}
-          aria-labelledby={`${id}-account`}
-        >
-          <Typography
-            id={`${id}-account`}
-            variant="sectionLabel"
-            component="h2"
-            color="text.secondary"
-          >
-            {t('account')}
-          </Typography>
-          {session.data ? (
-            <Typography variant="body1">
-              {t('signedInAs', { name: session.data.user.name })}
-            </Typography>
-          ) : null}
-          <Box>
-            <Button
-              variant="secondary"
-              startIcon={<SignOutIcon size={18} />}
-              disabled={signOut.isPending}
-              onClick={() =>
-                signOut.mutate(undefined, {
-                  onSuccess: () => navigate('/sign-in', { replace: true }),
-                })
-              }
-            >
-              {t('signOut')}
-            </Button>
-          </Box>
-        </Stack>
-      </Stack>
+      <Box sx={{ mb: 2 }}>
+        <SegmentedTabs<SettingsTab>
+          label={t('tabs.label')}
+          id={id}
+          tabs={[
+            { value: 'you', label: t('tabs.you') },
+            { value: 'family', label: t('tabs.family') },
+          ]}
+          value={tab}
+          onChange={selectTab}
+        />
+      </Box>
+      <Box
+        role="tabpanel"
+        id={segmentedTabPanelId(id, tab)}
+        aria-labelledby={segmentedTabId(id, tab)}
+      >
+        {tab === 'you' ? <YouTab /> : <FamilyTab />}
+      </Box>
     </>
   );
 }

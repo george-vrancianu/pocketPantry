@@ -9,7 +9,9 @@
     "tickedOff_other": "{{count}} de produse bifate",
     "moveToPantry_one": "Mută {{count}} în cămară",
     "moveToPantry_few": "Mută {{count}} în cămară",
-    "moveToPantry_other": "Mută {{count}} în cămară"
+    "moveToPantry_other": "Mută {{count}} în cămară",
+    "nothing": "Nimic de cumpărat",
+    "empty": "Lista ta este goală"
   },
   "add": {
     "quantity": "Cantitate",
@@ -25,8 +27,13 @@
   },
   "unmatchedGroup": "În afara catalogului",
   "empty": {
-    "title": "Lista ta este goală.",
-    "hint": "Adaugă ce ai nevoie sau pornește de la un șablon."
+    "title": "Începe-ți lista",
+    "hint": "Caută ce ai nevoie sau pornește de la unul dintre șabloanele tale.",
+    "addTitle": "Adaugă produse",
+    "addMeta": "Caută ingrediente și produse de bază care ți s-au terminat",
+    "importTitle": "Importă un șablon",
+    "importMeta_one": "{{count}} șablon",
+    "importMeta_other": "{{count}} șabloane"
   },
   "finish": {
     "reviewTitle": "Adaugă în cămară",
@@ -44,17 +51,14 @@
   },
   "addItems": "Adaugă produse",
   "added": "Ai adăugat {{name}}",
+  "addSheet": {
+    "title": "Adaugă produse"
+  },
   "sheet": {
-    "title": "Adaugă în listă",
     "done": "Gata",
     "doneCount_one": "Gata, {{count}} adăugat",
     "doneCount_few": "Gata, {{count}} adăugate",
-    "doneCount_other": "Gata, {{count}} adăugate",
-    "tabsLabel": "Adaugă în listă",
-    "tabs": {
-      "ingredients": "Ingrediente",
-      "templates": "Șabloane"
-    }
+    "doneCount_other": "Gata, {{count}} adăugate"
   },
   "search": {
     "onList": "Pe listă",
@@ -82,6 +86,40 @@
     "goneLabelExpired": "{{name}}, expirat {{when}}",
     "goneLabelStaple": "{{name}}, produs de bază lipsă"
   },
-  "templatesFromSearch": "Sau începe de la un șablon",
-  "seeAll": "Vezi tot"
+  "import": {
+    "button": "Importă",
+    "title": "Importă",
+    "close": "Închide",
+    "aria": "Importă dintr-un șablon",
+    "hint": "Bifează șabloane întregi sau deschide unul ca să alegi liniile. Poți combina mai multe.",
+    "section": "Șabloanele tale · {{count}}",
+    "manage": "Gestionează",
+    "tickLabel": "Importă {{name}}",
+    "selected": "{{ticked}} din {{total}} selectate",
+    "onListAddsUp": "Pe listă · se adună",
+    "tooMany": "Cel mult 100 de produse odată",
+    "from": "Din {{names}}",
+    "repeats_one": "{{count}} repetiție combinată",
+    "repeats_few": "{{count}} repetiții combinate",
+    "repeats_other": "{{count}} de repetiții combinate",
+    "confirm_one": "Importă {{count}} produs",
+    "confirm_few": "Importă {{count}} produse",
+    "confirm_other": "Importă {{count}} de produse",
+    "pending": "Se importă",
+    "pickOne": "Alege un șablon",
+    "done_one": "Am importat {{count}} produs din {{name}}",
+    "done_few": "Am importat {{count}} produse din {{name}}",
+    "done_other": "Am importat {{count}} de produse din {{name}}",
+    "doneMany_one": "Am importat {{count}} produs din {{templates}}",
+    "doneMany_few": "Am importat {{count}} produse din {{templates}}",
+    "doneMany_other": "Am importat {{count}} de produse din {{templates}}",
+    "none": "Niciun șablon încă. Salvează lista ca șablon de la finalul listei.",
+    "inTrolley": "În coș",
+    "rowItems_one": "{{count}} produs",
+    "rowItems_few": "{{count}} produse",
+    "rowItems_other": "{{count}} de produse",
+    "templateCount_one": "{{count}} șablon",
+    "templateCount_few": "{{count}} șabloane",
+    "templateCount_other": "{{count}} de șabloane"
+  }
 }

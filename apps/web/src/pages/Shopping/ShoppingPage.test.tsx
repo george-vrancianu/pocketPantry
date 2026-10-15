@@ -1060,7 +1060,9 @@ describe('ShoppingPage', () => {
         await act(() => vi.advanceTimersByTimeAsync(1000));
 
         expect(
-          screen.getByText('Your list is empty.').parentElement,
+          screen
+            .getByRole('heading', { name: 'Start your list' })
+            .closest('[tabindex="-1"]'),
         ).toHaveFocus();
       });
     });
@@ -1211,15 +1213,142 @@ describe('ShoppingPage', () => {
     );
   });
 
-  it('shows an empty state', async () => {
-    stubShopping({}, list([]));
-    renderWithProviders(<ShoppingPage />);
+  describe('empty list start block', () => {
+    const templateRoute = (count: number) => ({
+      'GET /api/shopping-templates': () =>
+        Response.json({
+          templates: Array.from({ length: count }, (_, i) => ({
+            id: `t${i}`,
+            name: `Template ${i}`,
+            lineCount: 1,
+            previewNames: ['Milk'],
+          })),
+        }),
+    });
 
-    expect(await screen.findByText('Your list is empty.')).toBeVisible();
-    expect(
-      screen.getByText('Add what you need, or start from a template.'),
-    ).toBeVisible();
-    expect(screen.getByText('0 to buy')).toBeVisible();
+    it('shows a plain summary card and the Start your list block', async () => {
+      stubShopping(templateRoute(2), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      expect(await screen.findByText('Nothing to buy')).toBeVisible();
+      expect(screen.getByText('Your list is empty')).toBeVisible();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add items' })).toBeVisible();
+      expect(
+        screen.getByRole('heading', { name: 'Start your list' }),
+      ).toBeVisible();
+      expect(
+        screen.getByText(
+          'Search for what you need, or start from one of your templates.',
+        ),
+      ).toBeVisible();
+      expect(
+        await screen.findByRole('button', { name: /Import a template/ }),
+      ).toHaveTextContent('2 templates');
+      expect(
+        screen.getByRole('button', { name: /Add items.*Search ingredients/ }),
+      ).toBeVisible();
+    });
+
+    it('uses the singular for one template', async () => {
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      expect(
+        await screen.findByRole('button', { name: /Import a template/ }),
+      ).toHaveTextContent('1 template');
+    });
+
+    it('hides the Import tile when the Family has no templates', async () => {
+      stubShopping(templateRoute(0), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      await screen.findByRole('heading', { name: 'Start your list' });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: /Import a template/ }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('opens Add items from its tile and returns focus to the tile on close', async () => {
+      const user = userEvent.setup();
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Add items.*Search ingredients/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Add items' });
+      await user.click(within(dialog).getByRole('button', { name: /Done/ }));
+
+      await waitFor(() => expect(tile).toHaveFocus());
+    });
+
+    it('puts focus on the + button when the Add items tile goes away after adding', async () => {
+      const user = userEvent.setup();
+      const added = list([
+        {
+          aisle: dairy,
+          items: [
+            item({ id: 'i3', name: 'Parmesan', quantity: 100, unit: 'g' }),
+          ],
+        },
+      ]);
+      const { setCurrent } = stubShopping(
+        {
+          ...templateRoute(1),
+          'POST /api/shopping-list/items': () => {
+            setCurrent(added);
+            return Response.json(added);
+          },
+        },
+        list([]),
+      );
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Add items.*Search ingredients/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Add items' });
+      await user.type(
+        within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(
+        await within(dialog).findByRole('option', { name: /Parmesan/ }),
+      );
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      await screen.findByText('Added Parmesan');
+      await user.click(within(dialog).getByRole('button', { name: /Done/ }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await waitFor(() => expect(tile).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Add items' })).toHaveFocus(),
+      );
+    });
+
+    it('opens Import from its tile and returns focus to the tile on close', async () => {
+      const user = userEvent.setup();
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Import a template/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Import' });
+      await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+      await waitFor(() => expect(tile).toHaveFocus());
+    });
   });
 
   it('shows the Finish row and item counts per Aisle', async () => {
@@ -1247,7 +1376,7 @@ describe('ShoppingPage', () => {
       await user.click(
         await screen.findByRole('button', { name: 'Add items' }),
       );
-      return screen.findByRole('dialog', { name: 'Add to list' });
+      return screen.findByRole('dialog', { name: 'Add items' });
     };
 
     it('does not offer Recently stocked: that is the Pantry search only', async () => {
@@ -1269,23 +1398,47 @@ describe('ShoppingPage', () => {
       ).toBe(false);
     });
 
-    it('opens on the Ingredients tab with focus in the search field', async () => {
+    it('opens without tabs, with focus in the search field', async () => {
       stubShopping();
       renderWithProviders(<ShoppingPage />);
 
       const dialog = await openSheet();
 
-      expect(
-        within(dialog).getByRole('tab', { name: 'Ingredients' }),
-      ).toHaveAttribute('aria-selected', 'true');
-      expect(
-        within(dialog).getByRole('tab', { name: 'Templates' }),
-      ).toHaveAttribute('aria-selected', 'false');
+      expect(within(dialog).queryByRole('tab')).toBeNull();
+      expect(within(dialog).queryByRole('tablist')).toBeNull();
       await waitFor(() =>
         expect(
           within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
         ).toHaveFocus(),
       );
+    });
+
+    it('shows no template chips on an empty search', async () => {
+      stubShopping({
+        'GET /api/shopping-templates': () =>
+          Response.json({
+            templates: [
+              {
+                id: 't1',
+                name: 'Taco night',
+                lineCount: 1,
+                previewNames: ['Milk'],
+              },
+            ],
+          }),
+      });
+      renderWithProviders(<ShoppingPage />);
+
+      const dialog = await openSheet();
+      await within(dialog).findByText('Nothing has run out or expired. Nice.');
+
+      expect(within(dialog).queryByText('Or start from a template')).toBeNull();
+      expect(
+        within(dialog).queryByRole('button', { name: /Taco night/ }),
+      ).toBeNull();
+      expect(
+        within(dialog).queryByRole('button', { name: 'See all' }),
+      ).toBeNull();
     });
 
     it('closes with Done, Escape and a scrim tap, returning focus to Add items', async () => {
@@ -1599,7 +1752,7 @@ describe('ShoppingPage', () => {
           screen.getByRole('button', { name: 'Adaugă produse' }),
         );
         const dialog = await screen.findByRole('dialog', {
-          name: 'Adaugă în listă',
+          name: 'Adaugă produse',
         });
         await user.type(
           within(dialog).getByRole('combobox', { name: 'Caută ingrediente' }),
@@ -2274,64 +2427,6 @@ describe('ShoppingPage', () => {
       expect(within(reopened).queryByRole('alert')).toBeNull();
     });
 
-    it('shows no stale add error when reopened from the save row', async () => {
-      withParmesan({
-        'POST /api/shopping-list/items': () =>
-          Response.json({ code: 'boom', params: {} }, { status: 500 }),
-      });
-      renderWithProviders(<ShoppingPage />);
-      const user = userEvent.setup();
-      const { dialog, option } = await findParmesanRow(user);
-      await user.click(option);
-      await user.click(
-        within(dialog).getByRole('button', {
-          name: 'Add Parmesan to the list',
-        }),
-      );
-      expect(await within(dialog).findByRole('alert')).toBeVisible();
-      await user.click(within(dialog).getByRole('button', { name: 'Done' }));
-      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-
-      await user.click(
-        screen.getByRole('button', { name: /Save this list as a template/ }),
-      );
-      const reopened = await screen.findByRole('dialog', {
-        name: 'Add to list',
-      });
-      await user.click(
-        within(reopened).getByRole('tab', { name: 'Ingredients' }),
-      );
-
-      expect(within(reopened).queryByRole('alert')).toBeNull();
-    });
-
-    it('keeps focus on the tablist when arrowing between tabs', async () => {
-      stubShopping();
-      renderWithProviders(<ShoppingPage />);
-      const user = userEvent.setup();
-      const dialog = await openSheet(user);
-
-      const tab = within(dialog).getByRole('tab', { name: 'Ingredients' });
-      tab.focus();
-      await user.keyboard('{ArrowRight}{ArrowLeft}');
-
-      expect(tab).toHaveFocus();
-    });
-
-    it('keeps the query when switching tabs and back', async () => {
-      withParmesan();
-      renderWithProviders(<ShoppingPage />);
-      const user = userEvent.setup();
-      const { dialog } = await findParmesanRow(user);
-
-      await user.click(within(dialog).getByRole('tab', { name: 'Templates' }));
-      await user.click(
-        within(dialog).getByRole('tab', { name: 'Ingredients' }),
-      );
-
-      expect(search(dialog)).toHaveValue('parm');
-    });
-
     it('closes the unit popover on Escape before the sheet', async () => {
       withParmesan();
       renderWithProviders(<ShoppingPage />);
@@ -2395,7 +2490,7 @@ describe('ShoppingPage', () => {
       await waitFor(() => expect(search(dialog)).toHaveFocus());
     });
 
-    describe('Templates tab', () => {
+    describe('Templates', () => {
       const line = (
         id: string,
         name: string,
@@ -2474,284 +2569,6 @@ describe('ShoppingPage', () => {
           },
           onList,
         );
-      const openTemplates = async (user = userEvent.setup()) => {
-        const dialog = await openSheet(user);
-        await user.click(
-          within(dialog).getByRole('tab', { name: 'Templates' }),
-        );
-        return dialog;
-      };
-
-      it('lists the templates with a preview line and a Manage link', async () => {
-        const { calls } = stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-
-        const dialog = await openTemplates();
-
-        const row = await within(dialog).findByRole('button', {
-          name: /Taco night/,
-        });
-        expect(row).toHaveTextContent('4 items · Milk, Tomato, Flour, Saffron');
-        expect(
-          within(dialog).getByRole('button', { name: /Empty one/ }),
-        ).toHaveTextContent('0 items');
-        expect(
-          within(dialog).getByRole('link', { name: 'Manage' }),
-        ).toHaveAttribute('href', '/shopping/templates');
-        expect(
-          calls.find((c) => c.key === 'GET /api/shopping-templates')?.search,
-        ).toContain('locale=en');
-      });
-
-      it('says there are no templates yet', async () => {
-        stubShopping({
-          'GET /api/shopping-templates': () => Response.json({ templates: [] }),
-        });
-        renderWithProviders(<ShoppingPage />);
-
-        const dialog = await openTemplates();
-
-        expect(
-          await within(dialog).findByText(/No templates yet/),
-        ).toBeVisible();
-      });
-
-      it('tags an Unmatched line On list when it differs by case and Danish spelling (Rødbeder, ROEDBEDER)', async () => {
-        stubShopping(
-          {
-            'GET /api/shopping-templates': () =>
-              Response.json({ templates: summaries }),
-            'GET /api/shopping-templates/t1': () =>
-              Response.json({
-                id: 't1',
-                name: 'Taco night',
-                lines: [
-                  line('beets', 'Rødbeder', {
-                    ingredientId: null,
-                    unmatched: true,
-                    aisle: null,
-                  }),
-                ],
-              }),
-          },
-          list([
-            {
-              aisle: null,
-              items: [item({ id: 'i9', name: 'ROEDBEDER ', unmatched: true })],
-            },
-          ]),
-        );
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        const box = await within(dialog).findByRole('checkbox', {
-          name: /Rødbeder/,
-        });
-        await waitFor(() => expect(box).toHaveTextContent('On list'));
-      });
-
-      it('starts Pantry lines unticked and tags In Pantry and On list', async () => {
-        stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        const box = (name: RegExp) =>
-          within(dialog).getByRole('checkbox', { name });
-        expect(
-          await within(dialog).findByText(
-            'Items already in your Pantry start unticked.',
-          ),
-        ).toBeVisible();
-        expect(box(/Milk/)).toHaveAttribute('aria-checked', 'false');
-        expect(box(/Milk/)).toHaveTextContent('1 L');
-        expect(box(/Milk/)).toHaveTextContent('In Pantry');
-        expect(box(/Tomato/)).toHaveAttribute('aria-checked', 'true');
-        expect(box(/Tomato/)).toHaveTextContent('On list');
-        expect(box(/Flour/)).toHaveAttribute('aria-checked', 'true');
-        expect(box(/Flour/)).not.toHaveTextContent(/On list|In Pantry/);
-        expect(box(/Saffron/)).toHaveTextContent('On list');
-        expect(
-          within(dialog).getByRole('heading', { name: 'Not in the catalog' }),
-        ).toBeVisible();
-        expect(
-          within(dialog).getByRole('button', { name: 'Add 3 items to list' }),
-        ).toBeEnabled();
-      });
-
-      it('adds only the ticked lines, closes the sheet and says so', async () => {
-        const { calls } = stubTemplates({
-          'POST /api/shopping-list/items/bulk': () => Response.json(onList),
-        });
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        await user.click(
-          await within(dialog).findByRole('checkbox', { name: /Milk/ }),
-        );
-        await user.click(
-          within(dialog).getByRole('checkbox', { name: /Flour/ }),
-        );
-        await user.click(
-          within(dialog).getByRole('button', { name: 'Add 3 items to list' }),
-        );
-
-        expect(
-          await screen.findByText('Added 3 items from Taco night'),
-        ).toBeVisible();
-        // A toast raised as the sheet closes lives outside it, so it does not
-        // slide away with the sheet or get announced a second time.
-        const alert = await screen.findByRole('alert');
-        expect(alert).toHaveTextContent('Added 3 items from Taco night');
-        expect(dialog).not.toContainElement(alert);
-        await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-        expect(screen.getAllByRole('alert')).toHaveLength(1);
-        expect(screen.getByRole('alert')).toBeVisible();
-        expect(
-          calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')
-            ?.body,
-        ).toEqual({
-          items: [
-            { ingredientId: 'milk-ingredient', quantity: 1, unit: 'l' },
-            { ingredientId: 'tomato-ingredient', quantity: 3 },
-            { name: 'Saffron' },
-          ],
-        });
-      });
-
-      it('disables adding when nothing is ticked', async () => {
-        stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        for (const name of [/Tomato/, /Flour/, /Saffron/]) {
-          await user.click(
-            await within(dialog).findByRole('checkbox', { name }),
-          );
-        }
-
-        expect(
-          within(dialog).getByRole('button', { name: 'Add 0 items to list' }),
-        ).toBeDisabled();
-      });
-
-      it('keeps the sheet open with an Alert when adding fails', async () => {
-        stubTemplates({
-          'POST /api/shopping-list/items/bulk': () =>
-            Response.json(
-              { code: 'shopping.list_full', params: {} },
-              { status: 400 },
-            ),
-        });
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        await user.click(
-          await within(dialog).findByRole('button', {
-            name: 'Add 3 items to list',
-          }),
-        );
-
-        expect(await within(dialog).findByRole('alert')).toBeVisible();
-        expect(dialog).toBeVisible();
-        expect(
-          within(dialog).getByRole('checkbox', { name: /Tomato/ }),
-        ).toBeVisible();
-      });
-
-      it('goes back to all templates, and back to the list when tabs change', async () => {
-        stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openTemplates(user);
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        await user.click(
-          await within(dialog).findByRole('button', { name: /All templates/ }),
-        );
-        expect(
-          within(dialog).getByRole('button', { name: /Taco night/ }),
-        ).toBeVisible();
-
-        await user.click(
-          within(dialog).getByRole('button', { name: /Taco night/ }),
-        );
-        await within(dialog).findByRole('checkbox', { name: /Milk/ });
-        await user.click(
-          within(dialog).getByRole('tab', { name: 'Ingredients' }),
-        );
-        await user.click(
-          within(dialog).getByRole('tab', { name: 'Templates' }),
-        );
-
-        expect(
-          within(dialog).getByRole('button', { name: /Taco night/ }),
-        ).toBeVisible();
-        expect(within(dialog).queryByRole('checkbox')).toBeNull();
-      });
-
-      it('offers template chips in the empty search, opening the apply view', async () => {
-        stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openSheet(user);
-
-        await user.click(
-          await within(dialog).findByRole('button', { name: /Taco night/ }),
-        );
-
-        expect(
-          await within(dialog).findByRole('checkbox', { name: /Milk/ }),
-        ).toBeVisible();
-        expect(
-          within(dialog).getByRole('tab', { name: 'Templates' }),
-        ).toHaveAttribute('aria-selected', 'true');
-      });
-
-      it('switches to the Templates tab with See all', async () => {
-        stubTemplates();
-        renderWithProviders(<ShoppingPage />);
-        const user = userEvent.setup();
-        const dialog = await openSheet(user);
-        expect(
-          await within(dialog).findByText('Or start from a template'),
-        ).toBeVisible();
-        expect(
-          within(dialog).getByText('Nothing has run out or expired. Nice.'),
-        ).toBeVisible();
-
-        await user.click(
-          within(dialog).getByRole('button', { name: 'See all' }),
-        );
-
-        expect(
-          within(dialog).getByRole('heading', { name: 'Add from a template' }),
-        ).toBeVisible();
-      });
-
       describe('Save as template', () => {
         const withEditor = (
           <Routes>
@@ -2763,56 +2580,26 @@ describe('ShoppingPage', () => {
           </Routes>
         );
         const openSave = async (user = userEvent.setup()) => {
-          const dialog = await openTemplates(user);
           await user.click(
-            within(dialog).getByRole('button', {
+            await screen.findByRole('button', {
               name: /Save this list as a template/,
             }),
           );
-          return dialog;
+          return screen.findByRole('dialog', { name: 'Save as template' });
         };
 
-        it('shows the save row with the item count', async () => {
-          stubTemplates();
+        it('hides the save row on an empty list', async () => {
+          stubShopping({}, list([]));
           renderWithProviders(<ShoppingPage />);
-          const dialog = await openTemplates();
-          expect(
-            await within(dialog).findByRole('button', {
-              name: /Save this list as a template.*3 items, quantities included/,
-            }),
-          ).toBeVisible();
-        });
-
-        it('hides both save rows on an empty list', async () => {
-          stubShopping(
-            {
-              'GET /api/shopping-templates': () =>
-                Response.json({ templates: [] }),
-            },
-            list([]),
-          );
-          renderWithProviders(<ShoppingPage />);
-          const user = userEvent.setup();
-          expect(await screen.findByText('0 to buy')).toBeVisible();
+          expect(await screen.findByText('Nothing to buy')).toBeVisible();
           expect(
             screen.queryByRole('button', {
               name: /Save this list as a template/,
             }),
           ).toBeNull();
-
-          const dialog = await openSheet(user);
-          await user.click(
-            within(dialog).getByRole('tab', { name: 'Templates' }),
-          );
-          await within(dialog).findByText(/No templates yet/);
-          expect(
-            within(dialog).queryByRole('button', {
-              name: /Save this list as a template/,
-            }),
-          ).toBeNull();
         });
 
-        it('opens the sheet on the save view from the row under the list', async () => {
+        it('opens its own sheet from the row under the list', async () => {
           stubTemplates();
           renderWithProviders(<ShoppingPage />);
           const user = userEvent.setup();
@@ -2824,11 +2611,14 @@ describe('ShoppingPage', () => {
           );
 
           const dialog = await screen.findByRole('dialog', {
-            name: 'Add to list',
+            name: 'Save as template',
           });
           expect(
             within(dialog).getByRole('textbox', { name: 'Template name' }),
           ).toHaveAttribute('placeholder', 'e.g. Weekly shop');
+          expect(
+            screen.queryByRole('dialog', { name: 'Add items' }),
+          ).toBeNull();
         });
 
         it('previews every item with its amount and focuses the name', async () => {
@@ -2853,38 +2643,15 @@ describe('ShoppingPage', () => {
           expect(
             within(dialog).getByRole('button', { name: 'Save template' }),
           ).toBeDisabled();
-          await user.click(
-            within(dialog).getByRole('button', { name: /Templates/ }),
-          );
-          expect(
-            await within(dialog).findByRole('heading', {
-              name: 'Add from a template',
-            }),
-          ).toBeVisible();
         });
 
-        it('saves under the name, stays in the sheet and offers Edit without navigating', async () => {
-          let saved = false;
-          const created = { id: 't3', name: 'Weekly shop', lines: [] };
+        it('saves under the name, closes and offers Edit', async () => {
           const { calls } = stubTemplates({
-            'POST /api/shopping-templates/from-list': () => {
-              saved = true;
-              return Response.json(created, { status: 201 });
-            },
-            'GET /api/shopping-templates': () =>
-              Response.json({
-                templates: saved
-                  ? [
-                      ...summaries,
-                      {
-                        id: 't3',
-                        name: 'Weekly shop',
-                        lineCount: 3,
-                        previewNames: ['Tomato'],
-                      },
-                    ]
-                  : summaries,
-              }),
+            'POST /api/shopping-templates/from-list': () =>
+              Response.json(
+                { id: 't3', name: 'Weekly shop', lines: [] },
+                { status: 201 },
+              ),
           });
           renderWithProviders(withEditor);
           const user = userEvent.setup();
@@ -2901,17 +2668,80 @@ describe('ShoppingPage', () => {
               (c) => c.key === 'POST /api/shopping-templates/from-list',
             )?.body,
           ).toEqual({ name: 'Weekly shop' });
-          const rows = await within(dialog).findAllByRole('button', {
-            name: /items? ·|0 items/,
-          });
-          expect(rows.at(-1)).toHaveTextContent('Weekly shop');
+          await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
           expect(screen.queryByText('Template editor')).toBeNull();
 
           await user.click(screen.getByRole('button', { name: 'Edit' }));
           expect(await screen.findByText('Template editor')).toBeVisible();
         });
 
-        it('keeps the name and shows the API error', async () => {
+        it('saves from the footer button too', async () => {
+          const { calls } = stubTemplates({
+            'POST /api/shopping-templates/from-list': () =>
+              Response.json(
+                { id: 't3', name: 'Weekly shop', lines: [] },
+                { status: 201 },
+              ),
+          });
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
+
+          await user.type(
+            within(dialog).getByRole('textbox', { name: 'Template name' }),
+            'Weekly shop',
+          );
+          await user.click(
+            within(dialog).getByRole('button', { name: 'Save template' }),
+          );
+
+          await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+          expect(
+            calls.some(
+              (c) => c.key === 'POST /api/shopping-templates/from-list',
+            ),
+          ).toBe(true);
+        });
+
+        it('closes without saving on Cancel', async () => {
+          const { calls } = stubTemplates();
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          const dialog = await openSave(user);
+          await user.type(
+            within(dialog).getByRole('textbox', { name: 'Template name' }),
+            'Weekly shop',
+          );
+
+          await user.click(
+            within(dialog).getByRole('button', { name: 'Cancel' }),
+          );
+
+          await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+          expect(
+            calls.some(
+              (c) => c.key === 'POST /api/shopping-templates/from-list',
+            ),
+          ).toBe(false);
+        });
+
+        it('closes without saving on Escape', async () => {
+          const { calls } = stubTemplates();
+          renderWithProviders(<ShoppingPage />);
+          const user = userEvent.setup();
+          await openSave(user);
+
+          await user.keyboard('{Escape}');
+
+          await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+          expect(
+            calls.some(
+              (c) => c.key === 'POST /api/shopping-templates/from-list',
+            ),
+          ).toBe(false);
+        });
+
+        it('keeps the sheet open with the name and shows the API error', async () => {
           stubTemplates({
             'POST /api/shopping-templates/from-list': () =>
               Response.json(
