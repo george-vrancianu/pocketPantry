@@ -1,14 +1,7 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Spinner,
-  Stack,
-  Typography,
-  displayType,
-} from '@pocket-pantry/ui';
+import { Alert, Box, Button, Spinner, Stack } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTemplates } from '../../lib/shoppingTemplates';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   RowToggleErrorProvider,
@@ -25,11 +18,13 @@ import { SaveTemplateSheet } from './components/SaveTemplateSheet';
 import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
+import { EmptyListStart } from './components/EmptyListStart';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
-  const { t } = useTranslation(['shopping', 'common']);
+  const { t, i18n } = useTranslation(['shopping', 'common']);
+  const templates = useTemplates(i18n.language);
   const screen = useShoppingScreen();
   const rowToggleErrors = useRowToggleErrors();
   const [reviewing, setReviewing] = useState(false);
@@ -96,22 +91,12 @@ export function ShoppingPage() {
               onAddItems={() => openSheet()}
             />
             {screen.list.groups.length === 0 ? (
-              <Box
-                ref={empty}
-                tabIndex={-1}
-                sx={{ textAlign: 'center', py: 3, outline: 'none' }}
-              >
-                <Typography
-                  sx={{
-                    ...displayType,
-                    fontSize: 18,
-                  }}
-                >
-                  {t('shopping:empty.title')}
-                </Typography>
-                <Typography variant="meta" color="text.secondary">
-                  {t('shopping:empty.hint')}
-                </Typography>
+              <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
+                <EmptyListStart
+                  templateCount={templates.data?.length ?? 0}
+                  onAddItems={() => openSheet()}
+                  onImport={() => setApplyOpen(true)}
+                />
               </Box>
             ) : (
               <ShoppingGroups

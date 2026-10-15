@@ -47,20 +47,26 @@ export function SummaryCard({
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            {t('summary.toBuy', { count: remaining })}
+            {total === 0
+              ? t('summary.nothing')
+              : t('summary.toBuy', { count: remaining })}
           </Typography>
           <Typography
-            sx={{ fontSize: 13, fontWeight: 500, mb: '9px' }}
+            sx={{ fontSize: 13, fontWeight: 500, mb: total === 0 ? 0 : '9px' }}
             color="text.secondary"
           >
-            {t('summary.inBasket', { checked, total })}
+            {total === 0
+              ? t('summary.empty')
+              : t('summary.inBasket', { checked, total })}
           </Typography>
-          <ProgressBar
-            label={t('summary.progress')}
-            value={checked}
-            max={total}
-            size="large"
-          />
+          {total > 0 ? (
+            <ProgressBar
+              label={t('summary.progress')}
+              value={checked}
+              max={total}
+              size="large"
+            />
+          ) : null}
         </Box>
         <AddButton aria-label={t('addItems')} onClick={onAddItems} />
       </Box>
