@@ -14,14 +14,18 @@ import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import {
+  allergens,
   family,
   familyExpiryOverrides,
   leafCategories,
+  memberAllergies,
   parentCategories,
   user,
 } from '../database/schema';
+import { loadMemberAllergenIds } from './member-allergies';
 import {
   THEME_IDS,
+  type AllergiesView,
   type CategoryOptionsView,
   type ExpiryOverrideView,
   type FamilySettingsView,
@@ -211,6 +215,62 @@ export class SettingsService {
       .update(user)
       .set({ locale: preferences.locale, theme: preferences.theme })
       .where(eq(user.id, memberId));
+  }
+
+  /** The Allergen list in its curated order, named in `locale`, and the Member's own Allergies. */
+  async getAllergies(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<AllergiesView> {
+    const scope = await this.catalogScopeForMember(memberId);
+    const [rows, own] = await Promise.all([
+      this.database
+        .select()
+        .from(allergens)
+        .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
+      loadMemberAllergenIds(this.database, memberId),
+    ]);
+    const names = await loadDisplayNames(
+      this.database,
+      scope,
+      locale,
+      rows.map((row) => row.id),
+    );
+    const ownIds = new Set(own);
+    return {
+      allergens: rows.map((row) => ({
+        id: row.id,
+        name: names.pick('allergen', row.id, row.name),
+      })),
+      // In the Allergen list's order, so the response is stable.
+      allergenIds: rows.map((row) => row.id).filter((id) => ownIds.has(id)),
+    };
+  }
+
+  /** Replaces the Member's own Allergies; they belong to the Member, not their Family. */
+  async setAllergies(memberId: string, allergenIds: string[]): Promise<void> {
+    const wanted = [...new Set(allergenIds)];
+    await this.database.transaction(async (tx) => {
+      if (wanted.length > 0) {
+        const known = await tx
+          .select({ id: allergens.id })
+          .from(allergens)
+          .where(inArray(allergens.id, wanted));
+        if (known.length !== wanted.length) {
+          throw new ApiException(404, 'settings.allergen_not_found');
+        }
+      }
+      await tx
+        .delete(memberAllergies)
+        .where(eq(memberAllergies.userId, memberId));
+      if (wanted.length > 0) {
+        await tx
+          .insert(memberAllergies)
+          .values(
+            wanted.map((allergenId) => ({ userId: memberId, allergenId })),
+          );
+      }
+    });
   }
 
   private async categoryType(

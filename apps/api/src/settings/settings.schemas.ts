@@ -60,3 +60,15 @@ export type PreferencesView = {
   locale: (typeof CATALOG_LOCALES)[number] | null;
   theme: ThemeId | null;
 };
+
+/** A Member replaces their own Allergies wholesale. */
+export const replaceAllergiesBody = z.object({
+  allergenIds: z.array(z.uuid()).max(100),
+});
+export type ReplaceAllergiesBody = z.infer<typeof replaceAllergiesBody>;
+
+/** The Allergen list (curated order, named in the locale) and which of them the Member has as Allergies. */
+export type AllergiesView = {
+  allergens: { id: string; name: string }[];
+  allergenIds: string[];
+};

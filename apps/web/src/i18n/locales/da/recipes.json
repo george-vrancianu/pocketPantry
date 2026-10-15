@@ -24,6 +24,14 @@
     "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres",
     "reminder": "Udledt af ingredienserne. Tjek altid produkternes etiketter."
   },
+  "allergyWarning": {
+    "title": "Allergiadvarsel",
+    "strong": "Indeholder {{names}}",
+    "optionalLine": "En valgfri ingrediens indeholder {{name}}",
+    "unchecked_one": "{{count}} ingrediens kunne ikke kontrolleres for allergener",
+    "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres for allergener",
+    "lineMarker": "Indeholder {{name}}"
+  },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",
   "cuisine": "Køkken",

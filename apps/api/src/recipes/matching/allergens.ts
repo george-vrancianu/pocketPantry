@@ -19,14 +19,21 @@ export type AllergenLine = {
   optional: boolean;
 };
 
+/** An Allergy that applies to the viewer. Later tickets add whose it is (Family Allergies, other Members'). */
+export type AllergyInput = {
+  allergenId: string;
+};
+
 /**
- * What the derivation works from. An object, so later inputs (Allergies, for
- * Allergy Warnings and hiding) can join `lines` without changing callers.
+ * What the derivation works from. An object, so later inputs can join it
+ * without changing callers.
  */
 export type DeriveAllergensInput<L extends AllergenLine = AllergenLine> = {
   lines: readonly L[];
   /** Allergen ids in the Admin-curated list order; others sort last. */
   allergenOrder: readonly string[];
+  /** The Allergies that apply to the viewer; none (the default) means no Allergy Warning. */
+  allergies?: readonly AllergyInput[];
 };
 
 export type DerivedAllergen<L extends AllergenLine = AllergenLine> = {
@@ -37,11 +44,40 @@ export type DerivedAllergen<L extends AllergenLine = AllergenLine> = {
   optionalOnly: boolean;
 };
 
+export type AllergyWarningSeverity = 'strong' | 'soft';
+
+/** A line that contains an Allergy: `soft` when the line is optional, so it can be left out. */
+export type AllergyWarningLine = {
+  lineId: string;
+  severity: AllergyWarningSeverity;
+};
+
+/** One Allergy the Recipe contains, with the lines that contain it. */
+export type AllergyWarningEntry = {
+  allergenId: string;
+  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  severity: AllergyWarningSeverity;
+  /** Every line (optional ones too) that contains it, in Recipe order, each with its own severity. */
+  lines: AllergyWarningLine[];
+};
+
+/** The notice for a Recipe that contains, or might contain, one of the viewer's Allergies. */
+export type AllergyWarning = {
+  /** `strong` when any entry is strong; `soft` otherwise. */
+  severity: AllergyWarningSeverity;
+  /** In the Admin-curated Allergen order. Empty when only Unchecked lines raise it. */
+  entries: AllergyWarningEntry[];
+  /** Lines that could not be checked, counted whenever the viewer has an Allergy. */
+  uncheckedCount: number;
+};
+
 export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
   /** In the Admin-curated Allergen order. */
   allergens: DerivedAllergen<L>[];
   /** Lines (optional ones too) that could not be checked for Allergens. */
   uncheckedCount: number;
+  /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
+  allergyWarning: AllergyWarning | null;
 };
 
 /**
@@ -72,15 +108,45 @@ export function deriveAllergens<L extends AllergenLine>(
     const index = input.allergenOrder.indexOf(id);
     return index === -1 ? input.allergenOrder.length : index;
   };
+  // Array sort is stable, so unlisted Allergens keep their order of appearance.
+  const allergens = [...sourcesOf]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([allergenId, sources]) => ({
+      allergenId,
+      sources,
+      optionalOnly: sources.every((line) => line.optional),
+    }));
   return {
-    // Array sort is stable, so unlisted Allergens keep their order of appearance.
-    allergens: [...sourcesOf]
-      .sort(([a], [b]) => rank(a) - rank(b))
-      .map(([allergenId, sources]) => ({
-        allergenId,
-        sources,
-        optionalOnly: sources.every((line) => line.optional),
+    allergens,
+    uncheckedCount,
+    allergyWarning: warningFor(
+      allergens,
+      uncheckedCount,
+      new Set((input.allergies ?? []).map((a) => a.allergenId)),
+    ),
+  };
+}
+
+function warningFor<L extends AllergenLine>(
+  allergens: readonly DerivedAllergen<L>[],
+  uncheckedCount: number,
+  allergyIds: ReadonlySet<string>,
+): AllergyWarning | null {
+  if (allergyIds.size === 0) return null;
+  const entries = allergens
+    .filter((a) => allergyIds.has(a.allergenId))
+    .map((a) => ({
+      allergenId: a.allergenId,
+      severity: a.optionalOnly ? ('soft' as const) : ('strong' as const),
+      lines: a.sources.map((line) => ({
+        lineId: line.id,
+        severity: line.optional ? ('soft' as const) : ('strong' as const),
       })),
+    }));
+  if (entries.length === 0 && uncheckedCount === 0) return null;
+  return {
+    severity: entries.some((e) => e.severity === 'strong') ? 'strong' : 'soft',
+    entries,
     uncheckedCount,
   };
 }

@@ -176,6 +176,13 @@
       "when": 1792083344842,
       "tag": "0024_allergens",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792084644997,
+      "tag": "0025_member_allergies",
+      "breakpoints": true
     }
   ]
 }

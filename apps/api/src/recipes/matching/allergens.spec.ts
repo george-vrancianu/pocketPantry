@@ -25,6 +25,7 @@ describe('deriveAllergens', () => {
     expect(derive([line(), line()])).toEqual({
       allergens: [],
       uncheckedCount: 0,
+      allergyWarning: null,
     });
   });
 
@@ -35,6 +36,7 @@ describe('deriveAllergens', () => {
         { allergenId: GLUTEN, sources: [flour], optionalOnly: false },
       ],
       uncheckedCount: 0,
+      allergyWarning: null,
     });
   });
 
@@ -136,5 +138,114 @@ describe('deriveAllergens', () => {
     };
     const { allergens } = derive([named]);
     expect(allergens[0].sources[0].ingredientName).toBe('Butter');
+  });
+
+  describe('Allergy Warning', () => {
+    const warn = (lines: AllergenLine[], allergies: string[]) =>
+      deriveAllergens({
+        lines,
+        allergenOrder: ORDER,
+        allergies: allergies.map((allergenId) => ({ allergenId })),
+      }).allergyWarning;
+
+    it('has none when the viewer has no Allergies, even with Unchecked lines', () => {
+      const lines = [
+        line({ allergenIds: [MILK] }),
+        line({ ingredient: uncheckedFamily }),
+      ];
+      expect(warn(lines, [])).toBeNull();
+      expect(derive(lines).allergyWarning).toBeNull();
+    });
+
+    it('has none when no checked line contains an Allergy and every line is checked', () => {
+      expect(
+        warn([line({ allergenIds: [MILK] }), line()], [PEANUTS]),
+      ).toBeNull();
+    });
+
+    it('is strong when a required, checked line contains an Allergy', () => {
+      const butter = line({ allergenIds: [MILK] });
+      expect(warn([butter, line()], [MILK])).toEqual({
+        severity: 'strong',
+        entries: [
+          {
+            allergenId: MILK,
+            severity: 'strong',
+            lines: [{ lineId: butter.id, severity: 'strong' }],
+          },
+        ],
+        uncheckedCount: 0,
+      });
+    });
+
+    it('is soft when only optional lines contain the Allergy', () => {
+      const nuts = line({ allergenIds: [PEANUTS], optional: true });
+      expect(warn([nuts], [PEANUTS])).toEqual({
+        severity: 'soft',
+        entries: [
+          {
+            allergenId: PEANUTS,
+            severity: 'soft',
+            lines: [{ lineId: nuts.id, severity: 'soft' }],
+          },
+        ],
+        uncheckedCount: 0,
+      });
+    });
+
+    it('marks an Allergen strong overall but lists optional source lines too', () => {
+      const optional = line({ allergenIds: [MILK], optional: true });
+      const required = line({ allergenIds: [MILK] });
+      expect(warn([optional, required], [MILK])?.entries).toEqual([
+        {
+          allergenId: MILK,
+          severity: 'strong',
+          lines: [
+            { lineId: optional.id, severity: 'soft' },
+            { lineId: required.id, severity: 'strong' },
+          ],
+        },
+      ]);
+    });
+
+    it('is soft with no entries when only Unchecked lines exist and the viewer has an Allergy', () => {
+      const family = line({ ingredient: uncheckedFamily });
+      const unmatched = line({ ingredient: null });
+      expect(warn([family, unmatched], [GLUTEN])).toEqual({
+        severity: 'soft',
+        entries: [],
+        uncheckedCount: 2,
+      });
+    });
+
+    it('stays strong when Unchecked lines come with a strong entry, and keeps the count', () => {
+      const flour = line({ allergenIds: [GLUTEN] });
+      const warning = warn([flour, line({ ingredient: null })], [GLUTEN]);
+      expect(warning?.severity).toBe('strong');
+      expect(warning?.uncheckedCount).toBe(1);
+    });
+
+    it('ignores Allergens the viewer does not have and orders entries by the Allergen list', () => {
+      const lines = [
+        line({ allergenIds: [PEANUTS] }),
+        line({ allergenIds: [GLUTEN, MILK] }),
+      ];
+      expect(
+        warn(lines, [PEANUTS, GLUTEN])?.entries.map((e) => e.allergenId),
+      ).toEqual([GLUTEN, PEANUTS]);
+    });
+
+    it('counts a tagged Unchecked Family line as a source for the Allergy', () => {
+      // Tags on a not-yet-checked Family Ingredient cannot exist: tagging checks it.
+      const tagged = line({ allergenIds: [MILK], ingredient: checkedFamily });
+      expect(warn([tagged], [MILK])?.severity).toBe('strong');
+    });
+
+    it('judges a Variant on its own lines: no Allergen in the Variant, no warning', () => {
+      const base = [line({ allergenIds: [PEANUTS] })];
+      const variant = [line()];
+      expect(warn(base, [PEANUTS])?.severity).toBe('strong');
+      expect(warn(variant, [PEANUTS])).toBeNull();
+    });
   });
 });

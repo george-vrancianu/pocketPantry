@@ -8,7 +8,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
-import { loadRecipeAllergens } from './recipe-allergens';
+import { loadRecipeAllergens, loadViewerAllergies } from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
@@ -134,43 +134,54 @@ export class RecipeBrowseService {
       locale,
     );
 
-    let base: RecipeDetail['base'] = null;
-    let diff: RecipeDetail['diff'] = null;
-    if (row.parentId) {
+    const baseAndDiff = async (): Promise<{
+      base: RecipeDetail['base'];
+      diff: RecipeDetail['diff'];
+    }> => {
+      if (!row.parentId) return { base: null, diff: null };
       const baseRow = await findVisibleRecipe(
         this.database,
         row.parentId,
         familyId,
       );
-      if (baseRow) {
-        const baseResolved = await resolveRecipe(
-          this.database,
-          catalogScope(familyId),
-          baseRow,
-          locale,
-        );
-        base = {
+      if (!baseRow) return { base: null, diff: null };
+      const baseResolved = await resolveRecipe(
+        this.database,
+        catalogScope(familyId),
+        baseRow,
+        locale,
+      );
+      return {
+        base: {
           id: baseRow.id,
           title: baseResolved.title,
           archived: baseResolved.archived,
-        };
-        diff = diffIngredients(diffLines(baseResolved), diffLines(resolved));
-      }
-    }
+        },
+        diff: diffIngredients(diffLines(baseResolved), diffLines(resolved)),
+      };
+    };
+    const [viewerAllergies, variants, { base, diff }] = await Promise.all([
+      loadViewerAllergies(this.database, memberId),
+      row.parentId
+        ? Promise.resolve([])
+        : this.variantsOf(row.id, familyId, locale),
+      baseAndDiff(),
+    ]);
 
+    const { allergens, allergyWarning } = await loadRecipeAllergens(
+      this.database,
+      catalogScope(familyId),
+      resolved,
+      locale,
+      viewerAllergies,
+    );
     return {
       ...resolved,
       base,
-      variants: row.parentId
-        ? []
-        : await this.variantsOf(row.id, familyId, locale),
+      variants,
       diff,
-      allergens: await loadRecipeAllergens(
-        this.database,
-        catalogScope(familyId),
-        resolved,
-        locale,
-      ),
+      allergens,
+      allergyWarning,
     };
   }
 

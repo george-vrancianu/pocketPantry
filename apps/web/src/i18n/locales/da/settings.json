@@ -41,6 +41,13 @@
     "saved": "Gemt"
   },
   "language": "Sprog",
+  "allergies": {
+    "title": "Allergier",
+    "hint": "Vælg, hvad du skal undgå, også intolerancer. Opskrifter, der indeholder det, får en advarsel.",
+    "familyCanSee": "Alle i din familie kan se dine allergier.",
+    "loadFailed": "Allergenlisten kunne ikke indlæses.",
+    "saveFailed": "Dine allergier kunne ikke gemmes. Prøv igen."
+  },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",
   "account": "Konto",

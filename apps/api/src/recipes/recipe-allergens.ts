@@ -4,10 +4,28 @@ import type { CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { Executor } from '../database/database.types';
 import { allergens, ingredientAllergens } from '../database/schema';
-import { deriveAllergens, type AllergenLine } from './matching/allergens';
-import type { RecipeAllergens, ResolvedRecipe } from './recipes.schemas';
+import { loadMemberAllergenIds } from '../settings/member-allergies';
+import {
+  deriveAllergens,
+  type AllergenLine,
+  type AllergyInput,
+} from './matching/allergens';
+import type {
+  AllergyWarningView,
+  RecipeAllergens,
+  ResolvedRecipe,
+} from './recipes.schemas';
 
 type SourceLine = AllergenLine & { ingredientName: string };
+
+/** The Allergies that apply to the viewer: today only their own. */
+export async function loadViewerAllergies(
+  executor: Executor,
+  memberId: string,
+): Promise<AllergyInput[]> {
+  const ids = await loadMemberAllergenIds(executor, memberId);
+  return ids.map((allergenId) => ({ allergenId }));
+}
 
 /**
  * A Recipe's Allergens (ADR 0014): loads the Allergen tags of its lines'
@@ -19,7 +37,11 @@ export async function loadRecipeAllergens(
   scope: CatalogScope,
   recipe: Pick<ResolvedRecipe, 'lines'>,
   locale: CatalogLocale,
-): Promise<RecipeAllergens> {
+  allergies: readonly AllergyInput[],
+): Promise<{
+  allergens: RecipeAllergens;
+  allergyWarning: AllergyWarningView | null;
+}> {
   const ingredientIds = [
     ...new Set(
       recipe.lines.flatMap((l) => (l.ingredientId ? [l.ingredientId] : [])),
@@ -75,30 +97,44 @@ export async function loadRecipeAllergens(
   const derived = deriveAllergens({
     lines,
     allergenOrder: allergenRows.map((row) => row.id),
+    allergies,
   });
-  const allergenIds = derived.allergens.map((a) => a.allergenId);
+  const warning = derived.allergyWarning;
+  const allergenIds = [
+    ...new Set([
+      ...derived.allergens.map((a) => a.allergenId),
+      ...(warning?.entries.map((e) => e.allergenId) ?? []),
+    ]),
+  ];
   const names = allergenIds.length
     ? await loadDisplayNames(executor, scope, locale, allergenIds)
     : null;
   const canonical = new Map(allergenRows.map((row) => [row.id, row.name]));
+  const named = (id: string) => ({
+    id,
+    name: names?.pick('allergen', id, canonical.get(id) ?? '') ?? '',
+  });
   return {
-    items: derived.allergens.map((item) => ({
-      allergen: {
-        id: item.allergenId,
-        name:
-          names?.pick(
-            'allergen',
-            item.allergenId,
-            canonical.get(item.allergenId) ?? '',
-          ) ?? '',
-      },
-      lines: item.sources.map((line) => ({
-        id: line.id,
-        ingredientName: line.ingredientName,
-        optional: line.optional,
+    allergens: {
+      items: derived.allergens.map((item) => ({
+        allergen: named(item.allergenId),
+        lines: item.sources.map((line) => ({
+          id: line.id,
+          ingredientName: line.ingredientName,
+          optional: line.optional,
+        })),
+        optionalOnly: item.optionalOnly,
       })),
-      optionalOnly: item.optionalOnly,
-    })),
-    uncheckedCount: derived.uncheckedCount,
+      uncheckedCount: derived.uncheckedCount,
+    },
+    allergyWarning: warning && {
+      severity: warning.severity,
+      entries: warning.entries.map((entry) => ({
+        allergen: named(entry.allergenId),
+        severity: entry.severity,
+        lines: entry.lines,
+      })),
+      uncheckedCount: warning.uncheckedCount,
+    },
   };
 }

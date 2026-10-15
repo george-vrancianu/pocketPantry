@@ -24,6 +24,14 @@
     "unchecked_other": "{{count}} ingredients couldn't be checked",
     "reminder": "Worked out from the ingredients. Always check product labels."
   },
+  "allergyWarning": {
+    "title": "Allergy Warning",
+    "strong": "Contains {{names}}",
+    "optionalLine": "Optional ingredient contains {{name}}",
+    "unchecked_one": "{{count}} ingredient couldn't be checked for allergens",
+    "unchecked_other": "{{count}} ingredients couldn't be checked for allergens",
+    "lineMarker": "Contains {{name}}"
+  },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",
   "cuisine": "Cuisine",

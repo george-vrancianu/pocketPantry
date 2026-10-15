@@ -17,13 +17,16 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   categoryIdParam,
   expiryOverrideBody,
+  replaceAllergiesBody,
   settingsLocaleQuery,
   updateFamilySettingsBody,
   updatePreferencesBody,
+  type AllergiesView,
   type CategoryOptionsView,
   type ExpiryOverrideBody,
   type FamilySettingsView,
   type PreferencesView,
+  type ReplaceAllergiesBody,
   type SettingsLocaleQuery,
   type UpdateFamilySettingsBody,
   type UpdatePreferencesBody,
@@ -117,5 +120,32 @@ export class SettingsController {
   ): Promise<PreferencesView> {
     await this.settings.setPreferences(member.id, body);
     return this.settings.getPreferences(member.id);
+  }
+
+  @Get('allergies')
+  @ApiOperation({
+    summary: "The Allergen list and the signed-in Member's own Allergies",
+  })
+  allergies(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<AllergiesView> {
+    return this.settings.getAllergies(member.id, query.locale);
+  }
+
+  @Put('allergies')
+  @ApiOperation({
+    summary: "Replace the signed-in Member's own Allergies (only their own)",
+  })
+  async setAllergies(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(replaceAllergiesBody))
+    body: ReplaceAllergiesBody,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<AllergiesView> {
+    await this.settings.setAllergies(member.id, body.allergenIds);
+    return this.settings.getAllergies(member.id, query.locale);
   }
 }
