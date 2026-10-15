@@ -127,18 +127,22 @@ export class BarcodeLookupService {
     };
   }
 
-  /** The product while the shared cache holds it fresh, or null. Never calls Open Food Facts. */
-  private async cachedProduct(
-    barcode: string,
-  ): Promise<OpenFoodFactsProduct | null> {
+  /** The shared cache row for a barcode while it is fresh, or null. A cached "not found" has a null product. */
+  private async freshCached(barcode: string) {
     const [cached] = await this.database
       .select()
       .from(openFoodFactsCache)
       .where(eq(openFoodFactsCache.barcode, barcode));
-    if (!cached?.product) return null;
-    return Date.now() - cached.fetchedAt.getTime() < HIT_TTL_MS
-      ? cached.product
-      : null;
+    if (!cached) return null;
+    const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
+    return Date.now() - cached.fetchedAt.getTime() < ttl ? cached : null;
+  }
+
+  /** The product while the shared cache holds it fresh, or null. Never calls Open Food Facts. */
+  private async cachedProduct(
+    barcode: string,
+  ): Promise<OpenFoodFactsProduct | null> {
+    return (await this.freshCached(barcode))?.product ?? null;
   }
 
   /** The product's mapped Allergens that are still active, named in `locale`, in list order. */
@@ -181,15 +185,8 @@ export class BarcodeLookupService {
    * cache while fresh; a failure throws and is never cached.
    */
   private async product(barcode: string): Promise<OpenFoodFactsProduct | null> {
-    const now = Date.now();
-    const [cached] = await this.database
-      .select()
-      .from(openFoodFactsCache)
-      .where(eq(openFoodFactsCache.barcode, barcode));
-    if (cached) {
-      const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
-      if (now - cached.fetchedAt.getTime() < ttl) return cached.product;
-    }
+    const cached = await this.freshCached(barcode);
+    if (cached) return cached.product;
     const fetched = await this.openFoodFacts.fetchProduct(barcode);
     // A product with no usable name cannot prefill anything: it is a not found.
     const product = fetched && hasName(fetched) ? fetched : null;

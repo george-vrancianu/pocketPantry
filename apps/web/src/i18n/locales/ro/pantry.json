@@ -86,7 +86,7 @@
       "mark": "Completat din produs",
       "credit": "Date despre produs: Open Food Facts",
       "lookingUp": "Caut codul de bare…",
-      "listsAllergens": "Acest produs menționează: {{names}}"
+      "listsAllergens": "Acest produs menționează {{names}}"
     }
   },
   "picker": {

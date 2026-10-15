@@ -123,7 +123,9 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       {camera.missingAllergens.length > 0 ? (
         <Typography variant="caption" color="text.secondary">
           {t('form.prefill.listsAllergens', {
-            names: camera.missingAllergens.map((a) => a.name).join(', '),
+            names: new Intl.ListFormat(i18n.language, {
+              type: 'conjunction',
+            }).format(camera.missingAllergens.map((a) => a.name)),
           })}
         </Typography>
       ) : null}

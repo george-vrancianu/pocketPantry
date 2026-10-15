@@ -16,8 +16,7 @@ export const BLANK_CONTAINS: ContainsSelection = {
 
 /**
  * The selection for what an Ingredient is already known to contain. `undefined` is blank;
- * an empty list is "None"; this is also how a later ticket (#352) pre-ticks the row from
- * Open Food Facts.
+ * an empty list is "None". A Barcode Lookup pre-ticks the row this way (a proposal only).
  */
 export function selectionFromAllergenIds(
   allergenIds: readonly string[] | undefined,

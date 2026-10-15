@@ -10,6 +10,7 @@ import type { Database } from '../src/database/database.types';
 import {
   allergens,
   catalogTranslations,
+  ingredientAllergens,
   openFoodFactsCache,
 } from '../src/database/schema';
 import type { OpenFoodFactsProduct } from '../src/barcode/open-food-facts.client';
@@ -375,12 +376,18 @@ describe('Barcode Lookup (integration)', () => {
     });
 
     it('does not change the matched Ingredient tags', async () => {
+      const tagsOfParmesan = () =>
+        database
+          .select()
+          .from(ingredientAllergens)
+          .where(
+            eq(ingredientAllergens.ingredientId, seedId.ingredient('parmesan')),
+          );
+      const before = await tagsOfParmesan();
       found = product({ productName: 'Parmesan', allergenTags: ['en:gluten'] });
-      await lookup(a).expect(200);
-      const res = await a
-        .get('/catalog/search?q=Parmesan&locale=en')
-        .expect(200);
-      expect(JSON.stringify(res.body)).not.toContain('gluten');
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body.missingAllergens).toEqual(named('gluten'));
+      expect(await tagsOfParmesan()).toEqual(before);
     });
 
     it('keeps the allergens in the cache and serves them without asking again', async () => {

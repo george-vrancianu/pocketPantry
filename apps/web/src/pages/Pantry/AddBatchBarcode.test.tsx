@@ -594,6 +594,16 @@ describe('Allergens from a Barcode Lookup', () => {
   const catalogRoutes = {
     // Nothing matches the product name, so "Add to your catalog" is offered.
     'GET /api/catalog/search': () => Response.json({ results: [] }),
+    'POST /api/catalog/family-ingredients': () =>
+      Response.json(
+        {
+          ...yogurt,
+          id: 'zorblax-id',
+          name: 'Zorblax Crunch',
+          owner: 'family',
+        },
+        { status: 201 },
+      ),
     'GET /api/catalog/allergens': () =>
       Response.json({ allergens: [MILK_ALLERGEN, GLUTEN_ALLERGEN] }),
     'GET /api/catalog/categories': () =>
@@ -657,6 +667,79 @@ describe('Allergens from a Barcode Lookup', () => {
       within(dialog).getByRole('button', { name: 'Gluten' }),
     ).toHaveAttribute('aria-pressed', 'true');
     expect(milkChip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('saves the Family Ingredient with the pre-ticked Allergens as the Member left them', async () => {
+    const { user, dialog, calls } = await lookUpUnmatched([MILK_ALLERGEN]);
+    await user.click(
+      await within(dialog).findByRole('button', { name: 'Gluten' }),
+    );
+    await user.click(
+      within(dialog).getByRole('combobox', { name: 'Category' }),
+    );
+    await user.click(
+      await within(dialog).findByRole('option', { name: /Other/ }),
+    );
+    await user.click(
+      within(dialog).getByRole('button', { name: /^Add & pick/ }),
+    );
+
+    await waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/catalog/family-ingredients')
+          ?.body,
+      ).toMatchObject({ allergenIds: ['al-milk', 'al-gluten'] }),
+    );
+  });
+
+  it('does not pre-tick when the lookup matched an Ingredient', async () => {
+    const user = userEvent.setup();
+    stubLookup(
+      () => Response.json(found({ allergens: [MILK_ALLERGEN], match: yogurt })),
+      catalogRoutes,
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    // Drop the match and create a new Ingredient instead.
+    await screen
+      .findByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      })
+      .then((box) => box.focus());
+    await user.keyboard('{Backspace}');
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await user.paste('Zorblax Crunch');
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Add “Zorblax Crunch” to your catalog',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Add to your catalog',
+    });
+    expect(
+      await within(dialog).findByRole('button', { name: 'Milk' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('joins several listed Allergens in the locale list style', async () => {
+    const user = userEvent.setup();
+    stubLookup(() =>
+      Response.json(
+        found({ missingAllergens: [MILK_ALLERGEN, GLUTEN_ALLERGEN] }),
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    expect(
+      await screen.findByText('This product lists Milk and Gluten'),
+    ).toBeVisible();
   });
 
   it('proposes nothing until the Member saves: no tags are sent by the lookup', async () => {

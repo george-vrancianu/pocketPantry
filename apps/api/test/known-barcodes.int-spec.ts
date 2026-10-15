@@ -254,6 +254,23 @@ describe('Known Barcodes (integration)', () => {
       });
     });
 
+    it('notes the cached allergens a matched Known Barcode Ingredient is not tagged with', async () => {
+      const code = freshBarcode();
+      // Parmesan is tagged milk in the seed.
+      found = {
+        ...offProduct(),
+        productName: 'Zorblax Spread',
+        allergenTags: ['en:milk', 'en:gluten'],
+      };
+      await lookup(a, code).expect(200);
+      await saveIngredient(a, code);
+      const res = await lookup(a, code).expect(200);
+      expect(res.body).toMatchObject({
+        source: 'known_barcode',
+        missingAllergens: [{ id: seedId.allergen('gluten'), name: 'Gluten' }],
+      });
+    });
+
     it('returns an Unmatched Known Barcode as the exact typed name', async () => {
       const code = freshBarcode();
       const rawName = unique('Zorblax');

@@ -241,13 +241,13 @@ export function useAddBatchForm({
   const [barcodeMissed, setBarcodeMissed] = useState(false);
   // Values came from Open Food Facts: the form credits it (ODbL).
   const [fromOpenFoodFacts, setFromOpenFoodFacts] = useState(false);
-  // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
-  // supplied one: a Barcode Lookup now, a barcode decoded from a Product photo. The Batch stores none.
   // The Allergens the last Barcode Lookup listed, and those the matched Ingredient is not tagged with.
   const [lookupAllergens, setLookupAllergens] = useState<{
     listed: CatalogAllergen[];
     missing: CatalogAllergen[];
   }>({ listed: [], missing: [] });
+  // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
+  // supplied one: a Barcode Lookup now, a barcode decoded from a Product photo. The Batch stores none.
   const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
   const productRead = useProductRead(i18n.language);
   const barcodeLookup = useBarcodeLookup(i18n.language);
@@ -290,7 +290,8 @@ export function useAddBatchForm({
         );
         setFromOpenFoodFacts(lookup.source === 'open_food_facts');
         setLookupAllergens({
-          listed: lookup.allergens,
+          // Pre-tick only for a new Ingredient: a confident match is not created.
+          listed: lookup.match ? [] : lookup.allergens,
           missing: lookup.missingAllergens,
         });
         setBarcodeToSend(result.code);
