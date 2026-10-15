@@ -11,11 +11,13 @@ export type BarcodeLookup =
   | { found: false }
   | {
       found: true;
-      /** Where the values came from; Open Food Facts is credited in the form. */
-      source: 'open_food_facts';
+      /** Where the values came from; only Open Food Facts is credited in the form. */
+      source: 'open_food_facts' | 'known_barcode';
       /** The confident Catalog match, or null: then the Ingredient search is pre-typed. */
       match: CatalogSearchResult | null;
       lowConfidence: boolean;
+      /** A Known Barcode saved under a typed name: the form fills exactly this name. */
+      unmatchedName?: string;
       productDescription: string;
       quantity: number | null;
       unit: Unit | null;
@@ -36,7 +38,7 @@ export function barcodeLine(
   lookup: Extract<BarcodeLookup, { found: true }>,
 ): ProposedLine {
   return {
-    name: lookup.productDescription,
+    name: lookup.unmatchedName ?? lookup.productDescription,
     sourceText: null,
     match: lookup.match,
     lowConfidence: lookup.lowConfidence,

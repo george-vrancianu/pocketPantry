@@ -11,6 +11,7 @@ import type {
 } from '../catalog/catalog.schemas';
 import { SettingsService } from '../settings/settings.service';
 import type { BarcodeLookupResponse } from './barcode.schemas';
+import { findKnownBarcode } from './known-barcodes';
 import { parseNetQuantity } from './net-quantity';
 import {
   InjectOpenFoodFacts,
@@ -43,15 +44,18 @@ export class BarcodeLookupService {
     locale: CatalogLocale,
   ): Promise<BarcodeLookupResponse> {
     // The resolution order of ADR 0013 starts here. The Family's Known Barcode
-    // (#348) is checked first and returns before this; the shared cache of
+    // is checked first and returns before this; the shared cache of
     // Open Food Facts results (#347) wraps `product` so a hit skips the client.
+    const familyId = await this.settings.familyIdOf(memberId);
+    const known = await this.knownBarcode(familyId, barcode, locale);
+    if (known) return known;
     const product = await this.product(barcode);
     if (!product) return { found: false };
 
     const names = candidateNames(product, locale);
     if (names.length === 0) return { found: false };
     const overrides = await this.settings.expiryOverridesForMember(memberId);
-    const scope = catalogScope(await this.settings.familyIdOf(memberId));
+    const scope = catalogScope(familyId);
     const match = await this.confidentMatch(scope, names, locale, overrides);
     return {
       found: true,
@@ -61,6 +65,35 @@ export class BarcodeLookupService {
       productDescription: names[0],
       ...parseNetQuantity(product.quantity),
     };
+  }
+
+  /** What the Family last saved this barcode as, exactly, or null. No Open Food Facts credit. */
+  private async knownBarcode(
+    familyId: string,
+    barcode: string,
+    locale: CatalogLocale,
+  ): Promise<BarcodeLookupResponse | null> {
+    const known = await findKnownBarcode(this.database, familyId, barcode);
+    if (!known) return null;
+    const base = {
+      found: true,
+      source: 'known_barcode',
+      lowConfidence: false,
+      productDescription: known.productDescription ?? '',
+      quantity: null,
+      unit: null,
+    } as const;
+    if (known.ingredientId === null) {
+      return { ...base, match: null, unmatchedName: known.rawName ?? '' };
+    }
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const [match] = await this.catalogSearch.findByIds(
+      catalogScope(familyId),
+      [known.ingredientId],
+      locale,
+      overrides,
+    );
+    return { ...base, match: match ?? null };
   }
 
   /**
