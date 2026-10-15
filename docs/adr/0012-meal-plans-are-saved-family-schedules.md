@@ -44,7 +44,8 @@ A Family can see what it Can Make tonight but can't plan ahead, or learn on Mond
 
 - Overlap safety rests on every plan write going through the service under the Family lock. A write that skips it can create overlapping plans, since the database does not check.
 - A slot's day number being inside the plan's length is also enforced in the service, not by a constraint.
-- Shortening a plan deletes the slots past the new end. The client asks for confirmation first.
+- Shortening a plan deletes the slots past the new end. The client asks for confirmation first. Past days are read-only, so shortening is refused (`meal_plan.day_in_past`) if it would drop a slot on a past day.
+- A plan that has already started can't be moved (`meal_plan.already_started`), since that would re-date its past slots and make them editable again.
 - The forecast stays right as the Pantry, the Shopping List and the plan change, at the cost of recomputing it on every read.
 - The forecast can be optimistic when Batches lack quantities. Uncertain lines show where it is guessing.
 - Archiving a Recipe never breaks a plan: its slots turn unavailable and the Member decides what replaces them.
