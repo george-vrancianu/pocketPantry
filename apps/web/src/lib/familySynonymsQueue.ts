@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { Locale } from '../i18n/resources';
+import { adminCatalogQueryKey } from './admin';
 import { ApiError, apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
 
@@ -20,12 +21,12 @@ type Page = {
   nextCursor: string | null;
 };
 
-const queueKey = ['admin-family-synonyms'] as const;
+export const familySynonymsQueueKey = ['admin-family-synonyms'] as const;
 
 /** Candidates one page at a time, fetched only while `enabled`. */
 export function useFamilySynonymsQueue(enabled: boolean) {
   return useInfiniteQuery({
-    queryKey: queueKey,
+    queryKey: familySynonymsQueueKey,
     enabled,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
@@ -64,15 +65,19 @@ export function useAddSharedSynonym() {
     // The candidate is gone (added by someone else): refresh the queue.
     onError: (error) => {
       if (error instanceof ApiError && error.status === 404) {
-        void queryClient.invalidateQueries({ queryKey: queueKey });
+        void queryClient.invalidateQueries({
+          queryKey: familySynonymsQueueKey,
+        });
       }
     },
     // Every Family now finds the name, and the Family copies are gone.
     onSuccess: () =>
       Promise.all(
-        [queueKey, catalogSearchQueryKey].map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
+        [
+          familySynonymsQueueKey,
+          adminCatalogQueryKey,
+          catalogSearchQueryKey,
+        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });
 }

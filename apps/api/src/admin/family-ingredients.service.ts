@@ -1,8 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedIngredients,
+  familyOwnedTranslations,
   SHARED_ONLY,
 } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
@@ -10,7 +11,7 @@ import { keepFamilyNames } from '../catalog/keep-family-names';
 import { mergeIngredients } from '../catalog/merge-ingredients';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Tx } from '../database/database.types';
 import { ingredients, leafCategories } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -181,14 +182,28 @@ export class FamilyIngredientsAdminService {
         tx,
         copies.map((copy) => copy.ownerFamilyId as string),
       );
-      const others = copies.filter((copy) => copy.id !== ingredientId);
+      // A Family-side rename only holds its Family lock: re-read the group.
+      const still = await this.groupNow(
+        tx,
+        key,
+        copies.map((copy) => copy.id),
+      );
+      if (!still.some((copy) => copy.id === ingredientId)) throw notFound();
+      const others = still.filter((copy) => copy.id !== ingredientId);
+      const moved = await this.synonymIdsOf(
+        tx,
+        others.map((copy) => copy.id),
+      );
       const merged = await mergeIngredients(
         tx,
         picked,
         others.map((copy) => copy.id),
       );
       // Their names stay theirs: no skip, the names equal the promoted one's.
-      await keepFamilyNames(tx, picked.id, merged, { skipSharedNames: false });
+      await keepFamilyNames(tx, picked.id, merged, {
+        skipSharedNames: false,
+        movedSynonymIds: moved,
+      });
       await tx
         .update(ingredients)
         .set({ ownerFamilyId: null })
@@ -221,12 +236,11 @@ export class FamilyIngredientsAdminService {
       .from(owned)
       .where(eq(owned.id, ingredientId));
     if (!peek) throw notFound();
+    const sharedPeek = catalogScope(SHARED_ONLY).ingredients(this.database);
     const [targetPeek] = await this.database
-      .select({ normalizedName: ingredients.normalizedName })
-      .from(ingredients)
-      .where(
-        and(eq(ingredients.id, targetId), isNull(ingredients.ownerFamilyId)),
-      );
+      .select({ normalizedName: sharedPeek.normalizedName })
+      .from(sharedPeek)
+      .where(eq(sharedPeek.id, targetId));
     if (!targetPeek) throw targetNotFound();
     const key = peek.normalizedName;
 
@@ -245,15 +259,14 @@ export class FamilyIngredientsAdminService {
         .from(ownedNow)
         .where(eq(ownedNow.normalizedName, key));
       if (!copies.some((copy) => copy.id === ingredientId)) throw notFound();
+      const sharedNow = catalogScope(SHARED_ONLY).ingredients(tx);
       const [target] = await tx
         .select({
-          id: ingredients.id,
-          leafCategoryId: ingredients.leafCategoryId,
+          id: sharedNow.id,
+          leafCategoryId: sharedNow.leafCategoryId,
         })
-        .from(ingredients)
-        .where(
-          and(eq(ingredients.id, targetId), isNull(ingredients.ownerFamilyId)),
-        )
+        .from(sharedNow)
+        .where(eq(sharedNow.id, targetId))
         .for('key share');
       if (!target) throw targetNotFound();
 
@@ -261,13 +274,50 @@ export class FamilyIngredientsAdminService {
         tx,
         copies.map((copy) => copy.ownerFamilyId as string),
       );
-      const ids = copies.map((copy) => copy.id);
+      // A Family-side rename only holds its Family lock: re-read the group.
+      const still = await this.groupNow(
+        tx,
+        key,
+        copies.map((copy) => copy.id),
+      );
+      if (!still.some((copy) => copy.id === ingredientId)) throw notFound();
+      const ids = still.map((copy) => copy.id);
+      const moved = await this.synonymIdsOf(tx, ids);
       const merged = await mergeIngredients(tx, target, ids);
-      await keepFamilyNames(tx, target.id, merged, { skipSharedNames: true });
+      await keepFamilyNames(tx, target.id, merged, {
+        skipSharedNames: true,
+        movedSynonymIds: moved,
+      });
       return { targetIngredientId: target.id, mergedIngredientIds: ids };
     });
     // Every owner lost a copy and gained a Synonym.
     this.scanCatalog.invalidate();
     return result;
+  }
+
+  /** The copies still named `key`, among `ids`, once the Family locks are held. */
+  private async groupNow(tx: Tx, key: string, ids: string[]) {
+    const owned = familyOwnedIngredients(tx);
+    return tx
+      .select({ id: owned.id })
+      .from(owned)
+      .where(and(eq(owned.normalizedName, key), inArray(owned.id, ids)));
+  }
+
+  /** Family Synonyms the Ingredients `ids` hold, before a merge moves them. */
+  private async synonymIdsOf(tx: Tx, ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const synonyms = familyOwnedTranslations(tx);
+    const rows = await tx
+      .select({ id: synonyms.id })
+      .from(synonyms)
+      .where(
+        and(
+          eq(synonyms.entityType, 'ingredient'),
+          eq(synonyms.kind, 'synonym'),
+          inArray(synonyms.entityId, ids),
+        ),
+      );
+    return rows.map((row) => row.id);
   }
 }

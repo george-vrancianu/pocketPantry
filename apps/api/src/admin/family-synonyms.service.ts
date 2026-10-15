@@ -1,11 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { and, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import {
+  catalogScope,
+  familyOwnedTranslations,
+  SHARED_ONLY,
+} from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { catalogTranslations, ingredients } from '../database/schema';
+import { catalogTranslations } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { AdminCatalogService } from './admin-catalog.service';
@@ -33,7 +37,9 @@ export class FamilySynonymsAdminService {
   ) {}
 
   async list(query: FamilySynonymsListQuery): Promise<FamilySynonymsPage> {
-    const rows = catalogTranslations;
+    const rows = familyOwnedTranslations(this.database);
+    const shared = catalogScope(SHARED_ONLY);
+    const ingredients = shared.ingredients(this.database);
     const count = sql`count(distinct ${rows.ownerFamilyId})`;
     const name = sql`${rows.normalizedValue} collate "C"`;
     const cursor = query.cursor;
@@ -56,8 +62,7 @@ export class FamilySynonymsAdminService {
         and(
           eq(rows.entityType, 'ingredient'),
           eq(rows.kind, 'synonym'),
-          isNotNull(rows.ownerFamilyId),
-          isNull(ingredients.ownerFamilyId),
+          this.isNewName(rows, ingredients),
         ),
       )
       .groupBy(rows.normalizedValue, rows.entityId)
@@ -85,6 +90,25 @@ export class FamilySynonymsAdminService {
   }
 
   /**
+   * True for a Family Synonym that says something new: not the Ingredient's own
+   * name and not one of its shared names or Synonyms (promote's kept names and
+   * merge leftovers are not candidates).
+   */
+  private isNewName(
+    rows: ReturnType<typeof familyOwnedTranslations>,
+    ingredients: ReturnType<ReturnType<typeof catalogScope>['ingredients']>,
+  ) {
+    const sharedTranslations = catalogScope(SHARED_ONLY).translations(
+      this.database,
+    );
+    return sql`${rows.normalizedValue} <> ${ingredients.normalizedName}
+      and not exists (
+        select 1 from ${sharedTranslations}
+        where ${sharedTranslations.entityId} = ${rows.entityId}
+          and ${sharedTranslations.normalizedValue} = ${rows.normalizedValue})`;
+  }
+
+  /**
    * Adds the candidate as a shared Synonym and removes every Family Synonym
    * with that name on the Ingredient.
    */
@@ -101,27 +125,30 @@ export class FamilySynonymsAdminService {
         eq(catalogTranslations.normalizedValue, key),
         isNotNull(catalogTranslations.ownerFamilyId),
       );
+      const rows = familyOwnedTranslations(tx);
+      const sharedIngredients = catalogScope(SHARED_ONLY).ingredients(tx);
       const found = await tx
         .select({
-          id: catalogTranslations.id,
-          value: catalogTranslations.value,
-          ownerFamilyId: catalogTranslations.ownerFamilyId,
+          id: rows.id,
+          value: rows.value,
+          ownerFamilyId: rows.ownerFamilyId,
         })
-        .from(catalogTranslations)
-        .innerJoin(
-          ingredients,
+        .from(rows)
+        .innerJoin(sharedIngredients, eq(sharedIngredients.id, rows.entityId))
+        .where(
           and(
-            eq(ingredients.id, catalogTranslations.entityId),
-            isNull(ingredients.ownerFamilyId),
+            eq(rows.entityType, 'ingredient'),
+            eq(rows.entityId, body.ingredientId),
+            eq(rows.kind, 'synonym'),
+            eq(rows.normalizedValue, key),
+            this.isNewName(rows, sharedIngredients),
           ),
         )
-        .where(matching)
-        .orderBy(catalogTranslations.createdAt, catalogTranslations.id);
+        .orderBy(rows.createdAt, rows.id);
       if (found.length === 0) throw notFound();
 
       // Another Ingredient's shared name (any locale) or shared Synonym.
       const shared = catalogScope(SHARED_ONLY);
-      const sharedIngredients = shared.ingredients(tx);
       const sharedTranslations = shared.translations(tx);
       const hits = await tx.execute<{ id: string }>(sql`
         SELECT c.id FROM (

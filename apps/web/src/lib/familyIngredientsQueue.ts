@@ -10,6 +10,7 @@ import { ApiError, apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
 import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { recipesQueryKey } from './recipes';
+import { familySynonymsQueueKey } from './familySynonymsQueue';
 import { shoppingListQueryKey } from './shopping';
 
 type Leaf = { id: string; name: string };
@@ -82,6 +83,7 @@ export function invalidateCatalogDependents(queryClient: QueryClient) {
   return Promise.all(
     [
       queueKey,
+      familySynonymsQueueKey,
       adminCatalogQueryKey,
       catalogSearchQueryKey,
       ['pantry'],

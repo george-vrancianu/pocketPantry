@@ -634,6 +634,25 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
       // Family Synonyms are not shared: an outsider has none.
       expect(await searchIds(d, name)).toContain(keep.id);
     });
+
+    it("keeps promote's Family Synonyms when another group is merged into the promoted Ingredient later", async () => {
+      const name = unique('Afm Later');
+      const keep = await made(a, name);
+      await made(b, name);
+      await made(c, name);
+      const familyB = await familyIdOf('b');
+      await promote(keep.id).expect(200);
+      expect(await familySynonymsOf(keep.id)).toHaveLength(2);
+
+      const other = await made(d, unique('Afm Later Other'));
+      await merge(other.id, keep.id).expect(200);
+
+      const rows = await familySynonymsOf(keep.id);
+      expect(rows.filter((x) => x.ownerFamilyId === familyB)).toHaveLength(1);
+      expect(
+        rows.filter((x) => x.normalizedValue === normalizeName(name)),
+      ).toHaveLength(2);
+    });
   });
 
   describe('Synonym candidates', () => {
@@ -760,6 +779,26 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
       );
       expect(await scan(d, name)).toMatchObject({ id: target.id });
       expect(await scan(a, name)).toMatchObject({ id: target.id });
+    });
+
+    it('leaves out candidates that repeat the Ingredient name, and answers 404 when asked to add one', async () => {
+      const name = unique('Afm Own Name');
+      const keep = await made(a, name);
+      await made(b, name);
+      await promote(keep.id).expect(200);
+      expect(await familySynonymsOf(keep.id)).toHaveLength(1);
+
+      expect(await candidatesOf(name)).toHaveLength(0);
+      const res = await addShared({
+        normalizedName: normalizeName(name),
+        ingredientId: keep.id,
+        locale: 'en',
+      });
+      expect([res.status, res.body]).toEqual([
+        404,
+        expect.objectContaining({ code: 'family_synonyms.not_found' }),
+      ]);
+      expect(await familySynonymsOf(keep.id)).toHaveLength(1);
     });
 
     it('answers 404 for a name that is no candidate, 400 for a bad locale, and 409 when another Ingredient owns the name', async () => {

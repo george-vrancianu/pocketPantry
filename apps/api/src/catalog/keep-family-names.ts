@@ -12,15 +12,19 @@ import { normalizeName } from './normalize';
  * a repeat a no-op.
  *
  * With `skipSharedNames` (merge into an existing shared Ingredient), a name the
- * target already answers to in any locale is not kept, and Family Synonyms on
- * the target that now repeat such a name are dropped. A promote must not skip:
- * the copies' names equal the promoted Ingredient's own.
+ * target already answers to in any locale is not kept, and so are the Family
+ * Synonyms this merge moved onto it (`movedSynonymIds`, read before the merge)
+ * that now repeat such a name. Synonyms the target already had are left alone.
+ * A promote must not skip: the copies' names equal the promoted Ingredient's own.
  */
 export async function keepFamilyNames(
   tx: Tx,
   targetId: string,
   merged: MergedIngredient[],
-  { skipSharedNames }: { skipSharedNames: boolean },
+  {
+    skipSharedNames,
+    movedSynonymIds = [],
+  }: { skipSharedNames: boolean; movedSynonymIds?: string[] },
 ): Promise<void> {
   const rows = merged.flatMap((copy) => {
     const key = normalizeName(copy.name);
@@ -39,14 +43,23 @@ export async function keepFamilyNames(
         ]
       : [];
   });
-  if (rows.length > 0) {
-    await tx.insert(catalogTranslations).values(rows).onConflictDoNothing();
-  }
+  const inserted =
+    rows.length > 0
+      ? await tx
+          .insert(catalogTranslations)
+          .values(rows)
+          .onConflictDoNothing()
+          .returning({ id: catalogTranslations.id })
+      : [];
   if (!skipSharedNames) return;
+  const ours = [...movedSynonymIds, ...inserted.map((row) => row.id)];
+  if (ours.length === 0) return;
   await tx.execute(sql`
     DELETE FROM ${catalogTranslations} f
-    WHERE f.entity_type = 'ingredient' AND f.entity_id = ${targetId}::uuid
-      AND f.kind = 'synonym' AND f.owner_family_id IS NOT NULL
+    WHERE f.id IN (${sql.join(
+      ours.map((id) => sql`${id}::uuid`),
+      sql`, `,
+    )})
       AND (
         f.normalized_value = (SELECT i.normalized_name FROM ingredients i WHERE i.id = ${targetId}::uuid)
         OR EXISTS (
