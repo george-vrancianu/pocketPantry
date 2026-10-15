@@ -56,6 +56,7 @@
     "retry": "Citește din nou fotografia"
   },
   "photoAdded": "Fotografia {{count}} a fost adăugată",
+  "barcodeAdded": "Codul de bare {{count}} a fost adăugat",
   "tickFailed_one": "{{count}} articol din lista de cumpărături nu a putut fi bifat.",
   "tickFailed_few": "{{count}} articole din lista de cumpărături nu au putut fi bifate.",
   "tickFailed_other": "{{count}} de articole din lista de cumpărături nu au putut fi bifate.",

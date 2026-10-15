@@ -23,6 +23,10 @@ import {
   type CameraMode,
 } from '../../../lib/cameraMode';
 
+/** A code identical to the last accepted one is taken again after this long without being seen. */
+const BARCODE_COOLDOWN_MS = 1500;
+const BARCODE_HAPTIC_MS = 12;
+
 /** What opens the camera decides which modes it offers and which one it starts in. */
 export type ScanScreenModes = {
   /** In dial order. Defaults to all five camera modes. */
@@ -68,6 +72,10 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const scanEpoch = useRef(0);
   /** The barcode just accepted; the same code is ignored until another is read or the mode changes. */
   const lastCode = useRef<string | null>(null);
+  /** When `lastCode` was last seen: every sighting of a held pack restarts its cooldown. */
+  const lastSeenAt = useRef(0);
+  /** Barcodes accepted since this screen opened; the live region announces each increase. */
+  const [barcodesRead, setBarcodesRead] = useState(0);
   useEffect(
     () => () => {
       scanEpoch.current += 1;
@@ -262,8 +270,14 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   // Barcode mode reads on its own. Each accepted code adds a card at once; the watch reads one
   // code per subscription, so it is re-armed after every read.
   const acceptCode = async (code: string) => {
-    // The simple dedupe: the code just accepted is ignored.
-    if (code === lastCode.current) return;
+    // The code just accepted is ignored while it keeps being seen: it is taken again once
+    // another code was accepted, or once it has gone unseen for the cooldown.
+    const now = Date.now();
+    const held =
+      code === lastCode.current &&
+      now - lastSeenAt.current < BARCODE_COOLDOWN_MS;
+    lastSeenAt.current = now;
+    if (held) return;
     // Remembered before the limit check, so a held pack at the limit toasts once, not every tick.
     lastCode.current = code;
     if (
@@ -297,6 +311,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       type: 'enqueue',
       scan: { id: crypto.randomUUID(), mode: 'barcode', code, thumbnail },
     });
+    navigator.vibrate?.(BARCODE_HAPTIC_MS);
+    setBarcodesRead((n) => n + 1);
     // The lookup starts at once, outside the read slots.
     readScans(i18n.language);
   };
@@ -343,6 +359,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     scanLanguageLocked: reading,
     camera,
     scans: session.scans,
+    barcodesRead,
     pending: pendingCount(session),
     done: () => navigate('/scan/review'),
     flash,

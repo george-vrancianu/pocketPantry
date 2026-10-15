@@ -55,6 +55,7 @@
     "retry": "Læs foto igen"
   },
   "photoAdded": "Foto {{count}} tilføjet",
+  "barcodeAdded": "Stregkode {{count}} tilføjet",
   "tickFailed_one": "{{count}} vare på indkøbslisten kunne ikke afkrydses.",
   "tickFailed_other": "{{count}} varer på indkøbslisten kunne ikke afkrydses.",
   "added_one": "Resultater tilføjet fra {{count}} foto",

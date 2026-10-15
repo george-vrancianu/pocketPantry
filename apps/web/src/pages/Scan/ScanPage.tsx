@@ -50,6 +50,8 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   const screen = useScanScreen({ modes, defaultMode, rememberMode });
+  // Barcode cards are announced as barcodes, not photos.
+  const photos = screen.scans.filter((scan) => scan.mode !== 'barcode').length;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
@@ -308,8 +310,9 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         {screen.scans.some((scan) => scan.status === 'failed')
           ? t('session.failed')
           : null}
-        {screen.scans.length > 0
-          ? t('photoAdded', { count: screen.scans.length })
+        {photos > 0 ? t('photoAdded', { count: photos }) : null}
+        {screen.barcodesRead > 0
+          ? t('barcodeAdded', { count: screen.barcodesRead })
           : null}
       </Box>
 
