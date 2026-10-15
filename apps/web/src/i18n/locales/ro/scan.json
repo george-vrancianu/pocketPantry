@@ -6,6 +6,7 @@
     "label": "Cum funcționează scanarea",
     "title": "Scanează-ți cămara",
     "body": "Îndreaptă camera spre un bon, un produs, ingrediente sau o farfurie, apoi atinge de două ori ghidajul. Verifici totul înainte de salvare.",
+    "dial": "Atinge de două ori sau ține apăsat cadranul de moduri pentru a scana; ținerea apăsată focalizează mai întâi.",
     "dismiss": "Închide"
   },
   "scanLanguage": {

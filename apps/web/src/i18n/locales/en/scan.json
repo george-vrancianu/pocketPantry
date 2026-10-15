@@ -6,6 +6,7 @@
     "label": "How scanning works",
     "title": "Scanning your pantry",
     "body": "Point the camera at a receipt, a product, loose ingredients or a plate, then double-tap the guide. You can check everything before it is saved.",
+    "dial": "Double-tap or hold the mode dial to scan; hold focuses first.",
     "dismiss": "Close"
   },
   "scanLanguage": {

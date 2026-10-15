@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../../test/render';
@@ -41,5 +41,17 @@ describe('InfoSheet mode list', () => {
     expect(items[0]).toHaveTextContent(/40 cm above the receipt/);
     expect(items[0]).toHaveTextContent(/fold where the guide ends/);
     expect(items[1]).not.toHaveTextContent(/40 cm/);
+  });
+});
+
+describe('InfoSheet dial gestures line', () => {
+  it.each([
+    ['en', /Double-tap or hold the mode dial to scan; hold focuses first\./],
+    ['ro', /Atinge de două ori sau ține apăsat cadranul de moduri/],
+    ['da', /Dobbelttryk eller hold på tilstandshjulet for at scanne/],
+  ])('says in %s how to scan from the dial', async (language, line) => {
+    const { i18n } = renderWithProviders(<InfoSheet onClose={vi.fn()} />);
+    await act(() => i18n.changeLanguage(language));
+    expect(screen.getByRole('dialog')).toHaveTextContent(line);
   });
 });

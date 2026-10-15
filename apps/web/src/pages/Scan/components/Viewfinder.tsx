@@ -40,13 +40,21 @@ type Props = {
   disabled: boolean;
   /** When the mode dial last finished a drag, so the tail of a drag is not read as a tap. */
   dragEndedAt: MutableRefObject<number | null>;
+  /** Filled with the Scan action, so the mode dial's gestures give the same flash, pulse and haptic. */
+  scanRef: MutableRefObject<(() => void) | null>;
 };
 
 /**
  * The guide brackets that follow the Scan Mode, centred over the full-screen feed. Double-tapping
  * the guide takes the Scan, with a white flash and a pulse.
  */
-export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
+export function Viewfinder({
+  mode,
+  onScan,
+  disabled,
+  dragEndedAt,
+  scanRef,
+}: Props) {
   const { t } = useTranslation('scan');
   const { width, height } = guideFor(mode);
   const [armed, setArmed] = useState(false);
@@ -95,6 +103,12 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
     navigator.vibrate?.(HAPTIC_MS);
     setShot((n) => n + 1);
   };
+  useEffect(() => {
+    scanRef.current = scan;
+    return () => {
+      scanRef.current = null;
+    };
+  });
   const onPointerDown = (event: PointerEvent) => {
     arm();
     press.current =

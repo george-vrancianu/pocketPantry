@@ -3,12 +3,15 @@ import {
   useEffect,
   useRef,
   useState,
+  type MouseEvent,
   type MutableRefObject,
   type PointerEvent,
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { FocusPass } from '../../../lib/camera';
 import type { CameraMode } from '../../../lib/cameraMode';
+import { isDoubleTap, type Tap } from '../../../lib/doubleTap';
 import {
   DIAL_ITEM_WIDTH,
   releaseTarget,
@@ -19,6 +22,13 @@ import { glassFocusRing, shade, translucent } from './glass';
 
 const HAPTIC_MS = 6;
 const CLICK_GUARD_MS = 50;
+/** How long the pointer rests on the current mode before it counts as a hold. */
+const HOLD_MS = 300;
+/**
+ * Pointer travel that still counts as resting (a hold) or as a tap. Must not be larger than
+ * DRAG_START_PX (dialGesture.ts): hold-versus-drag depends on it.
+ */
+const HOLD_SLOP = 10;
 
 const icon = (children: ReactNode) => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -59,11 +69,16 @@ export const MODE_ICONS: Record<CameraMode, ReactNode> = {
   ),
 };
 
+/** Pointer distance from where the press began. */
+const travelled = (event: PointerEvent, start: { x: number; y: number }) =>
+  Math.hypot(event.clientX - start.x, event.clientY - start.y);
+
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 
 /**
  * The Scan Mode dial: the selected icon sits in the ring with its name above. Tap an icon, or
- * press the left and right arrow keys, to change mode.
+ * press the left and right arrow keys, to change mode. Double-tapping the current mode, or
+ * holding it (which focuses first) and letting go, takes a Scan through `onScan`.
  */
 export function ModeDial<Mode extends CameraMode>({
   modes,
@@ -72,6 +87,9 @@ export function ModeDial<Mode extends CameraMode>({
   keysDisabled,
   dragEndedAt,
   onChange,
+  onScan,
+  scanDisabled,
+  focusForScan,
 }: {
   /** The modes the camera was opened with, in dial order. Hidden when there is only one. */
   modes: readonly Mode[];
@@ -82,12 +100,36 @@ export function ModeDial<Mode extends CameraMode>({
   /** Set to the time a drag ends, so the guide ignores the tap that can follow it. */
   dragEndedAt: MutableRefObject<number | null>;
   onChange: (mode: Mode) => void;
+  /** Takes a Scan (with its flash and haptic); called for a double tap, or a hold once released. */
+  onScan: () => void;
+  /** True when a Scan cannot start (Scan Cap reached, one in progress, camera not ready). */
+  scanDisabled: boolean;
+  /** Starts a best-effort focus pass for a hold; without it a hold scans on release. */
+  focusForScan?: () => FocusPass;
 }) {
   const { t } = useTranslation('scan');
   const index = modes.indexOf(mode);
 
-  const latest = useRef({ modes, index, keysDisabled, onChange });
-  latest.current = { modes, index, keysDisabled, onChange };
+  // Barcode Lookup is not a Scan, so neither gesture arms there.
+  const canScan = !scanDisabled && mode !== 'barcode';
+  const latest = useRef({
+    modes,
+    index,
+    keysDisabled,
+    onChange,
+    onScan,
+    focusForScan,
+    canScan,
+  });
+  latest.current = {
+    modes,
+    index,
+    keysDisabled,
+    onChange,
+    onScan,
+    focusForScan,
+    canScan,
+  };
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const step =
@@ -123,7 +165,44 @@ export function ModeDial<Mode extends CameraMode>({
     startOffset: number;
     startIndex: number;
     moved: boolean;
+    /** Whether the press began on the current mode, where the Scan gestures live. */
+    onCurrent: boolean;
+    /** pending: waiting for 300 ms; holding: ring filling; cancelled: moved off after holding. */
+    hold: 'pending' | 'holding' | 'cancelled' | null;
+    pass: FocusPass | null;
+    /** Which hold this is, so a stale one never clears a newer hold's ring. */
+    holdId: number;
   } | null>(null);
+  /** The id of the hold whose ring is showing, or null. */
+  const [holdingId, setHoldingId] = useState<number | null>(null);
+  const holding = holdingId !== null;
+  const clearRing = (id: number) =>
+    setHoldingId((current) => (current === id ? null : current));
+  const holdCount = useRef(0);
+  /** True from a hold's release until its Scan is sent: new gestures must not arm. */
+  const scanPending = useRef(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const lastTap = useRef<Tap | null>(null);
+  /** The focus pass of the latest hold, so unmounting can put the camera back. */
+  const activePass = useRef<FocusPass | null>(null);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      clearTimeout(holdTimer.current);
+      activePass.current?.cancel();
+    };
+  }, []);
+  const cancelHold = () => {
+    const start = drag.current;
+    clearTimeout(holdTimer.current);
+    if (start?.hold === 'pending') start.hold = null;
+    if (start?.hold !== 'holding') return;
+    start.hold = 'cancelled';
+    start.pass?.cancel();
+    clearRing(start.holdId);
+  };
   const justDragged = useRef(false);
   const clickGuard = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(clickGuard.current), []);
@@ -138,7 +217,16 @@ export function ModeDial<Mode extends CameraMode>({
   const dragging = dragOffset !== null;
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (disabled || !event.isPrimary || event.button !== 0) return;
+    const onCurrent =
+      event.target instanceof Element &&
+      event.target.closest('[aria-checked="true"]') !== null;
+    if (!onCurrent) lastTap.current = null;
+    clearTimeout(holdTimer.current);
     drag.current = {
+      onCurrent,
+      hold: null,
+      pass: null,
+      holdId: 0,
       pointerId: event.pointerId,
       startOffset: index * DIAL_ITEM_WIDTH,
       startIndex: index,
@@ -147,10 +235,34 @@ export function ModeDial<Mode extends CameraMode>({
       t: performance.now(),
       moved: false,
     };
+    if (!onCurrent || !latest.current.canScan || scanPending.current) return;
+    const start = drag.current;
+    start.hold = 'pending';
+    holdTimer.current = setTimeout(() => {
+      if (drag.current !== start || start.hold !== 'pending') return;
+      // The Scan may have become impossible during the 300 ms.
+      if (!latest.current.canScan) {
+        start.hold = null;
+        return;
+      }
+      start.hold = 'holding';
+      start.holdId = ++holdCount.current;
+      setHoldingId(start.holdId);
+      navigator.vibrate?.(HAPTIC_MS);
+      start.pass = activePass.current = latest.current.focusForScan?.() ?? null;
+    }, HOLD_MS);
   };
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     const start = drag.current;
     if (!start || start.pointerId !== event.pointerId) return;
+    if (travelled(event, start) > HOLD_SLOP) {
+      // Before the hold starts this becomes an ordinary drag; after it, the hold is off.
+      if (start.hold === 'pending') {
+        clearTimeout(holdTimer.current);
+        start.hold = null;
+      } else if (start.hold === 'holding') cancelHold();
+    }
+    if (start.hold === 'cancelled') return;
     if (
       !start.moved &&
       !startsHorizontalDrag(event.clientX - start.x, event.clientY - start.y)
@@ -171,7 +283,50 @@ export function ModeDial<Mode extends CameraMode>({
     const start = drag.current;
     if (!start || start.pointerId !== event.pointerId) return;
     drag.current = null;
-    if (!start.moved) return;
+    clearTimeout(holdTimer.current);
+    if (start.hold === 'holding') {
+      lastTap.current = null;
+      if (cancelled || disabled) {
+        start.pass?.cancel();
+        clearRing(start.holdId);
+        return;
+      }
+      // Letting go sends the Scan once focus has finished or timed out.
+      scanPending.current = true;
+      void (start.pass?.done ?? Promise.resolve()).then(() => {
+        scanPending.current = false;
+        if (!mounted.current) return;
+        clearRing(start.holdId);
+        // Barcode Lookup or the Scan Cap may have come up while focus was running.
+        if (latest.current.canScan) latest.current.onScan();
+      });
+      return;
+    }
+    if (start.hold === 'cancelled') {
+      lastTap.current = null;
+      return;
+    }
+    if (!start.moved) {
+      if (
+        cancelled ||
+        !start.onCurrent ||
+        travelled(event, start) > HOLD_SLOP
+      ) {
+        lastTap.current = null;
+        return;
+      }
+      const tap = { x: event.clientX, y: event.clientY, t: performance.now() };
+      if (!latest.current.canScan || scanPending.current) {
+        lastTap.current = null;
+      } else if (isDoubleTap(lastTap.current, tap, dragEndedAt.current)) {
+        lastTap.current = null;
+        latest.current.onScan();
+      } else {
+        lastTap.current = tap;
+      }
+      return;
+    }
+    lastTap.current = null;
     setDragOffset(null);
     dragEndedAt.current = performance.now();
     justDragged.current = true;
@@ -262,7 +417,27 @@ export function ModeDial<Mode extends CameraMode>({
           boxShadow: `0 0 0 6px ${translucent(tokens.color.accent, 14)}`,
           pointerEvents: 'none',
         }}
-      />
+      >
+        {holding ? (
+          <Box
+            data-testid="mode-dial-hold"
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              backgroundColor: translucent(tokens.color.accent, 45),
+              animation: `pp-dial-fill ${HOLD_MS}ms ease-out`,
+              '@keyframes pp-dial-fill': {
+                from: { transform: 'scale(0)' },
+                to: { transform: 'scale(1)' },
+              },
+              // The ring just changes colour: no growing fill.
+              [reducedMotion]: { animation: 'none' },
+            }}
+          />
+        ) : null}
+      </Box>
       <Box
         ref={groupRef}
         role="radiogroup"
@@ -285,6 +460,12 @@ export function ModeDial<Mode extends CameraMode>({
           return (
             <Box
               key={item}
+              onPointerLeave={active ? cancelHold : undefined}
+              onContextMenu={
+                active && holding
+                  ? (e: MouseEvent) => e.preventDefault()
+                  : undefined
+              }
               component="button"
               type="button"
               role="radio"
@@ -305,6 +486,8 @@ export function ModeDial<Mode extends CameraMode>({
                 borderRadius: '50%',
                 background: 'transparent',
                 cursor: 'pointer',
+                userSelect: 'none',
+                WebkitTouchCallout: 'none',
                 color: active ? tokens.color.accent : tokens.color.ink,
                 opacity: active ? 1 : 0.75,
                 transform: active ? 'none' : 'scale(.82)',
