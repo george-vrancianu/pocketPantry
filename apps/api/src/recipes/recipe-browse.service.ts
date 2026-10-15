@@ -96,28 +96,31 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const { allergies, hides } = await loadViewerAllergyContext(
-      this.database,
-      this.settings,
-      memberId,
-      familyId,
-      query.showHidden,
-    );
-    const [ref, { warnings, hidden }] = await Promise.all([
+    const [ref, { hides, allergy }] = await Promise.all([
       this.namedRefs(
         this.database,
         catalogScope(familyId),
         locale,
         matching.flatMap((r) => [r.cuisineId, r.methodId]),
       ),
-      loadAllergyWarnings(
+      loadViewerAllergyContext(
         this.database,
-        catalogScope(familyId),
-        matching.map((r) => r.id),
-        locale,
-        allergies,
-      ),
+        this.settings,
+        memberId,
+        familyId,
+        query.showHidden,
+      ).then(async ({ allergies, hides }) => ({
+        hides,
+        allergy: await loadAllergyWarnings(
+          this.database,
+          catalogScope(familyId),
+          matching.map((r) => r.id),
+          locale,
+          allergies,
+        ),
+      })),
     ]);
+    const { warnings, hidden } = allergy;
     const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
 
     const items = shown

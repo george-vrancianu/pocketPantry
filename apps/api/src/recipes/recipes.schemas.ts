@@ -193,13 +193,13 @@ export const recipeListQuery = z.object({
   archived: z.enum(['include', 'exclude']).default('include'),
 });
 
-/** Member browsing: no search or filter lists Base Recipes only. */
 /** The `showHidden` query flag, as a boolean. */
 const showHiddenQuery = z
   .enum(['true', 'false'])
   .transform((v) => v === 'true')
   .optional();
 
+/** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   search: z.string().trim().max(100).optional(),
@@ -535,7 +535,8 @@ export type CookTonightView = {
   cards: CookTonightCard[];
   /**
    * Every group that "Hide Recipes with my Allergies" left out or swapped for another Recipe of
-   * its group, not just the cards a widget shows (0 when off or overridden). Cards that "Hide Recipes with my Allergies" left out or swapped for another Recipe of their group (0 when off or overridden). */
+   * its group, not just the cards a widget shows (0 when off or overridden).
+   */
   hiddenByAllergiesCount: number;
 };
 
