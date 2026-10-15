@@ -78,7 +78,14 @@
     "description": "Descrierea produsului",
     "descriptionPlaceholder": "de ex. Grana Padano 200g",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
-    "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent."
+    "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
+    "prefill": {
+      "open": "Completează dintr-o poză",
+      "reading": "Citesc poza produsului…",
+      "cap": "Ai folosit toate scanările de azi. Completează formularul manual.",
+      "mark": "Completat din poza ta",
+      "check": "Verifică: potrivire cu încredere scăzută"
+    }
   },
   "picker": {
     "label": "Expiră",

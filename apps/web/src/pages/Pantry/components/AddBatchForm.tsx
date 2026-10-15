@@ -1,11 +1,16 @@
-import { Alert, Button, Stack, TextField } from '@pocket-pantry/ui';
+import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
 import { useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
-import { useAddBatchForm, type AddBatchStart } from '../hooks/useAddBatchForm';
+import { CameraOverlay } from '../../Scan/CameraOverlay';
+import {
+  useAddBatchForm,
+  type AddBatchStart,
+  type PrefillField,
+} from '../hooks/useAddBatchForm';
 import { AmountLocationRow } from './AmountLocationRow';
 
 type Props = {
@@ -15,12 +20,27 @@ type Props = {
   start?: AddBatchStart;
 };
 
+/** The camera the form opens: Product only for now, so no dial. */
+const FORM_CAMERA_MODES = ['product'] as const;
+
 export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
+  const { camera } = form;
+  /** Marks a field Prefill filled and the Member has not edited since. */
+  const mark = (field: PrefillField) =>
+    camera.prefilled.has(field) ? (
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        data-testid={`prefilled-${field}`}
+      >
+        {t('form.prefill.mark')}
+      </Typography>
+    ) : null;
 
   return (
     <Stack
@@ -30,6 +50,29 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       onSubmit={form.submit}
       aria-label={t('form.title')}
     >
+      <Button
+        type="button"
+        variant="ghost"
+        disabled={camera.reading}
+        onClick={camera.openCamera}
+      >
+        {t('form.prefill.open')}
+      </Button>
+      {camera.reading ? (
+        <Typography role="status" color="text.secondary">
+          {t('form.prefill.reading')}
+        </Typography>
+      ) : null}
+      {camera.readError ? <Alert>{camera.readError}</Alert> : null}
+      {camera.open ? (
+        <CameraOverlay
+          modes={FORM_CAMERA_MODES}
+          defaultMode="product"
+          onResult={camera.onResult}
+          onCancel={camera.cancel}
+        />
+      ) : null}
+
       <CatalogSearch
         autoFocus
         defaultQuery={form.initialQuery}
@@ -45,6 +88,10 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
         }
       />
 
+      {mark('ingredient')}
+      {camera.checkIngredient ? (
+        <Alert severity="warning">{t('form.prefill.check')}</Alert>
+      ) : null}
       {form.unmatchedName ? (
         <Alert severity="info">
           {t('form.unmatchedNotice', { name: form.unmatchedName })}
@@ -65,6 +112,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
             onSubmit={() => formRef.current?.requestSubmit()}
           />
 
+          {mark('amount')}
           <ExpiryField
             id={`${id}-expiry`}
             label={t('picker.label')}
@@ -83,6 +131,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
             )}
           />
 
+          {mark('expiry')}
           <TextField
             id={`${id}-description`}
             label={t('form.description')}
@@ -91,6 +140,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
             onChange={(event) => form.setDescription(event.target.value)}
             slotProps={{ htmlInput: { maxLength: 200 } }}
           />
+          {mark('description')}
         </>
       ) : null}
 

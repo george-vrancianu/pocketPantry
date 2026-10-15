@@ -62,5 +62,9 @@
   "discardScans_other": "Kasser {{count}} fotos?",
   "discarded": "Kasseret",
   "capReached": "Daglig scanningsgrænse nået",
-  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen."
+  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen.",
+  "overlay": {
+    "noCamera": "Kameraet er ikke tilgængeligt. Tjek kameratilladelsen, eller udfyld formularen selv.",
+    "photoFailed": "Det foto kunne ikke bruges. Prøv igen."
+  }
 }
