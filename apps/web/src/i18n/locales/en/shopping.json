@@ -108,6 +108,8 @@
     "doneMany_other": "Imported {{count}} items from {{templates}}",
     "none": "No templates yet. Save your list as one from the end of the list.",
     "inTrolley": "In trolley",
+    "rowItems_one": "{{count}} item",
+    "rowItems_other": "{{count}} items",
     "templateCount_one": "{{count}} template",
     "templateCount_other": "{{count}} templates"
   }
