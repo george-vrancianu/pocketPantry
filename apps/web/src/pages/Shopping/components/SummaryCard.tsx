@@ -9,6 +9,7 @@ import {
   displayType,
   radius,
 } from '@pocket-pantry/ui';
+import type { Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export type SummaryCardProps = {
@@ -18,6 +19,8 @@ export type SummaryCardProps = {
   onFinish: () => void;
   /** Opens the Add sheet. */
   onAddItems: () => void;
+  /** The "+" button, so focus can come back to it. */
+  addRef?: Ref<HTMLButtonElement>;
 };
 
 /** Items left to buy, how far the basket is, and Finish Shopping. */
@@ -26,6 +29,7 @@ export function SummaryCard({
   checked,
   onFinish,
   onAddItems,
+  addRef,
 }: SummaryCardProps) {
   const { t } = useTranslation('shopping');
   const total = remaining + checked;
@@ -68,7 +72,11 @@ export function SummaryCard({
             />
           ) : null}
         </Box>
-        <AddButton aria-label={t('addItems')} onClick={onAddItems} />
+        <AddButton
+          ref={addRef}
+          aria-label={t('addItems')}
+          onClick={onAddItems}
+        />
       </Box>
       {checked > 0 ? (
         <Box

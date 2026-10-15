@@ -274,6 +274,45 @@ describe('Import sheet', () => {
     ).toHaveAttribute('aria-checked', 'true');
   });
 
+  it('puts focus back on the Import pill when the tile that opened the sheet goes away', async () => {
+    const user = userEvent.setup();
+    let current: ShoppingList = {
+      id: 'l1',
+      groups: [],
+      summary: { remaining: 0, checked: 0 },
+    };
+    stub({
+      'GET /api/shopping-list': () => Response.json(current),
+      'POST /api/shopping-list/items/bulk': () => {
+        current = {
+          ...trolley,
+          summary: { remaining: 1, checked: 0 },
+        };
+        return Response.json(current);
+      },
+    });
+    renderWithProviders(<ShoppingPage />);
+    await user.click(
+      await screen.findByRole('button', { name: /Import a template/ }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Import' });
+    await user.click(
+      await within(dialog).findByRole('checkbox', { name: 'Import Baking' }),
+    );
+    await user.click(
+      await within(dialog).findByRole('button', { name: /^Import \d+ items/ }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Import from a template' }),
+      ).toHaveFocus(),
+    );
+    expect(
+      screen.queryByRole('button', { name: /Import a template/ }),
+    ).toBeNull();
+  });
+
   it('imports the ticked lines as they are in one call, then closes with a toast and focus on the pill', async () => {
     const user = userEvent.setup();
     const { calls } = stub({

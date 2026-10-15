@@ -29,8 +29,8 @@
   "empty": {
     "title": "Începe-ți lista",
     "hint": "Caută ce ai nevoie sau pornește de la unul dintre șabloanele tale.",
-    "addTitle": "Adaugă articole",
-    "addMeta": "Caută ingrediente și produse de bază care ți-au rămas fără",
+    "addTitle": "Adaugă produse",
+    "addMeta": "Caută ingrediente și produse de bază care ți s-au terminat",
     "importTitle": "Importă un șablon",
     "importMeta_one": "{{count}} șablon",
     "importMeta_other": "{{count}} șabloane"

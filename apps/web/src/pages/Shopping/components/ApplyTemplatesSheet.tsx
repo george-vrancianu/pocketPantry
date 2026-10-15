@@ -50,6 +50,8 @@ import {
 export type ApplyTemplatesSheetProps = {
   open: boolean;
   onClose: () => void;
+  /** Called once the close transition has finished. */
+  onExited?: () => void;
 };
 
 /**
@@ -60,6 +62,7 @@ export type ApplyTemplatesSheetProps = {
 export function ApplyTemplatesSheet({
   open,
   onClose,
+  onExited,
 }: ApplyTemplatesSheetProps) {
   const [form, setForm] = useState(0);
   const [wasOpen, setWasOpen] = useState(open);
@@ -67,10 +70,12 @@ export function ApplyTemplatesSheet({
     setWasOpen(open);
     if (open) setForm((n) => n + 1);
   }
-  return <ApplyForm key={form} open={open} onClose={onClose} />;
+  return (
+    <ApplyForm key={form} open={open} onClose={onClose} onExited={onExited} />
+  );
 }
 
-function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
+function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
   const { t, i18n } = useTranslation(['shopping', 'templates', 'common']);
   const toast = useToast();
   const templates = useTemplates(i18n.language);
@@ -287,6 +292,7 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
     <Sheet
       open={open}
       onClose={onClose}
+      onExited={onExited}
       label={t('shopping:import.title')}
       header={header}
       footer={footer}

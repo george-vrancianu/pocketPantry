@@ -27,7 +27,7 @@ const Tile = forwardRef<HTMLButtonElement, TileProps>(function Tile(
   ref,
 ) {
   return (
-    <Card>
+    <Card sx={{ p: 0 }}>
       <Box
         ref={ref}
         component="button"
@@ -66,7 +66,17 @@ const Tile = forwardRef<HTMLButtonElement, TileProps>(function Tile(
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box sx={{ fontSize: 15, fontWeight: 600 }}>{title}</Box>
-          <Box sx={{ fontSize: 13, color: tokens.color.muted }}>{meta}</Box>
+          <Box
+            sx={{
+              fontSize: 12.5,
+              color: tokens.color.muted,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {meta}
+          </Box>
         </Box>
         <Box aria-hidden sx={{ display: 'flex', color: tokens.color.muted }}>
           <ChevronRightIcon size={18} />

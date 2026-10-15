@@ -32,7 +32,7 @@ export function ShoppingPage() {
     'shopping',
     !reviewing && (screen.list?.groups.length ?? 0) > 0,
   );
-  // Removing the last row unmounts the list that held focus: hand it to the empty text.
+  // Removing the last row unmounts the list that held focus: hand it to the Start your list block.
   const empty = useRef<HTMLDivElement>(null);
   const hadGroups = useRef(false);
   const groupCount = screen.list?.groups.length ?? 0;
@@ -43,6 +43,17 @@ export function ShoppingPage() {
     }
     hadGroups.current = groupCount > 0;
   }, [groupCount]);
+  // A tile that opened a sheet unmounts once the sheet fills the list: put focus back on the
+  // header pill / "+" instead of leaving it on <body>.
+  const importPill = useRef<HTMLButtonElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const opener = useRef<Element | null>(null);
+  const refocusIfOpenerGone = (
+    target: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    if (opener.current && !opener.current.isConnected) target.current?.focus();
+    opener.current = null;
+  };
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
@@ -50,7 +61,13 @@ export function ShoppingPage() {
   // Every way in starts clean, with no error left from an earlier opening.
   const openSheet = () => {
     screen.resetAddError();
+    opener.current = document.activeElement;
     setSheetOpen(true);
+  };
+
+  const openApply = () => {
+    opener.current = document.activeElement;
+    setApplyOpen(true);
   };
 
   if (reviewing) {
@@ -70,7 +87,7 @@ export function ShoppingPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
-        trailing={<ImportPill onClick={() => setApplyOpen(true)} />}
+        trailing={<ImportPill ref={importPill} onClick={() => openApply()} />}
       />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
@@ -89,13 +106,14 @@ export function ShoppingPage() {
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
               onAddItems={() => openSheet()}
+              addRef={addButton}
             />
             {screen.list.groups.length === 0 ? (
               <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
                 <EmptyListStart
                   templateCount={templates.data?.length ?? 0}
                   onAddItems={() => openSheet()}
-                  onImport={() => setApplyOpen(true)}
+                  onImport={() => openApply()}
                 />
               </Box>
             ) : (
@@ -119,6 +137,7 @@ export function ShoppingPage() {
       <AddSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        onExited={() => refocusIfOpenerGone(addButton)}
         adding={screen.adding}
         onAdd={screen.add}
         addError={screen.addError}
@@ -127,6 +146,7 @@ export function ShoppingPage() {
       <ApplyTemplatesSheet
         open={applyOpen}
         onClose={() => setApplyOpen(false)}
+        onExited={() => refocusIfOpenerGone(importPill)}
       />
       <SaveTemplateSheet open={saveOpen} onClose={() => setSaveOpen(false)} />
     </RowToggleErrorProvider>
