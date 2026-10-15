@@ -9,6 +9,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { mealPlanSlots, mealPlans, recipes, user } from '../database/schema';
 import { lockMemberAndFamily, runLocked } from '../family/family-locks';
+import { fillPlan, randomTieBreaker } from '../recipes/matching/plan-fill';
 import {
   dayStatus,
   planTag,
@@ -17,6 +18,7 @@ import {
 import { recipeTitles, visibleTo } from '../recipes/recipe-view';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
+import { loadFill } from './plan-fill.loader';
 import {
   forecastFieldsOf,
   loadForecast,
@@ -29,6 +31,7 @@ import {
   MAX_START_AHEAD_DAYS,
   nameOrNull,
   type CreateMealPlanBody,
+  type FillBody,
   type MealPlanSummary,
   type MealPlanView,
   type MealWindowView,
@@ -270,6 +273,47 @@ export class MealPlansService {
           ],
           set: { recipeId: recipe.id, servings },
         });
+      return this.view(tx, familyId, plan.id, locale, today);
+    });
+  }
+
+  /**
+   * Fill: puts Recipes into the plan's empty slots on the Member's today or
+   * later (ADR 0012). Slots that already hold a Recipe and past days are never
+   * touched. Random among equally ranked Recipes, so pressing Fill again can
+   * give different ones.
+   */
+  async fill(
+    memberId: string,
+    id: string,
+    body: FillBody,
+    locale: CatalogLocale,
+    today = utcToday(),
+  ): Promise<MealPlanView> {
+    return runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
+      const plan = await this.findPlan(tx, familyId, id);
+      const { emptySlots, ...loaded } = await loadFill(
+        tx,
+        familyId,
+        plan,
+        today,
+      );
+      const choices = fillPlan({
+        today,
+        ...loaded,
+        staleThresholdDays: await this.settings.staleThresholdOf(familyId),
+        onlyWhatIHave: body.onlyWhatIHave,
+        tieBreaker: randomTieBreaker,
+      });
+      const rows = choices.flatMap(({ slotId, recipeId }) => {
+        const at = emptySlots.get(slotId);
+        return at ? [{ mealPlanId: plan.id, ...at, recipeId }] : [];
+      });
+      // A slot filled in the meantime is the Member's: never replace it.
+      if (rows.length > 0) {
+        await tx.insert(mealPlanSlots).values(rows).onConflictDoNothing();
+      }
       return this.view(tx, familyId, plan.id, locale, today);
     });
   }
