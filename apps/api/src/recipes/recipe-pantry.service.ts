@@ -139,7 +139,12 @@ export class RecipePantryService {
         ...(amount ?? {}),
       };
     });
-    return this.shopping.addItemsFromRecipe(memberId, recipeId, items, locale);
+    const { list } = await this.shopping.addItemsWithSourceRecipes(
+      memberId,
+      items.map((item) => ({ item, recipeIds: [recipeId] })),
+      locale,
+    );
+    return list;
   }
 
   /** The Family's unchecked Shopping Items, by Ingredient and by Unmatched name. No list is created. */

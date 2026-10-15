@@ -15,6 +15,10 @@ import { fold } from './fold';
 /** A calendar date as `YYYY-MM-DD`. */
 export type IsoDate = string;
 
+/** English dates read day first here ("Saturday 17 October"), as Romanian and Danish already do. */
+export const dateLocale = (language: string) =>
+  language === 'en' ? 'en-GB' : language;
+
 export type Batch = {
   id: string;
   /** Localised Ingredient name, or the typed name for an Unmatched Batch. */

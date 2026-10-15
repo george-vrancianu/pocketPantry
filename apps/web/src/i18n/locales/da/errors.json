@@ -128,5 +128,17 @@
   "family_synonyms": {
     "not_found": "Synonymet er ikke længere i køen. Måske har en anden allerede tilføjet det.",
     "shared_name_exists": "Navnet bruges allerede af en anden ingrediens."
+  },
+  "meal_plan": {
+    "cap_reached": "Jeres familie kan have {{cap}} madplaner. Slet en for at få plads.",
+    "overlap": "Datoerne overlapper {{other}} ({{dates}}). Vælg andre datoer.",
+    "overlapUnnamed": "Datoerne overlapper {{dates}}. Vælg andre datoer.",
+    "start_date_in_past": "En plan kan ikke starte før i dag.",
+    "start_date_too_far": "En plan kan starte op til 14 dage fra i dag.",
+    "day_in_past": "Den dag er gået og kan ikke ændres.",
+    "already_started": "En plan, der er startet, kan ikke flyttes.",
+    "day_out_of_range": "Den dag er ikke en del af planen.",
+    "not_found": "Madplanen findes ikke længere.",
+    "recipe_not_found": "Opskriften kunne ikke findes."
   }
 }

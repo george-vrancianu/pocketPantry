@@ -4,7 +4,7 @@ import { pantryHealth, type HealthInput } from './health';
 import { UNDO_WINDOW_MS } from './useDeferredRemoval';
 
 /**
- * What every Health fix toast shares (spec #323): the message with the score the fix leads to, and an
+ * What every Health fix toast shares (spec 323): the message with the score the fix leads to, and an
  * Undo toast of the standard window in the polite live region.
  */
 export function useHealthToast() {

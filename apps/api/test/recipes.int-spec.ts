@@ -191,6 +191,17 @@ describe('Recipes browsing and detail (integration)', () => {
       });
     });
 
+    it('lists Variants beside their bases when asked with includeVariants', async () => {
+      const a = await base();
+      const v = await variant(a.id);
+
+      const items = await list('includeVariants=true');
+      expect(titles(items)).toEqual(expect.arrayContaining([a.title, v.title]));
+      expect(items.find((r) => r.id === v.id)).toMatchObject({
+        parentId: a.id,
+      });
+    });
+
     it('orders by title and resolves it in the locale with source fallback', async () => {
       const x = await base({ title: `Bbb ${stamp}` });
       const y = await base({ title: `Aaa ${stamp}` });

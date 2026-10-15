@@ -10,6 +10,8 @@ type Props = {
   description?: string;
   /** The last API error of any write in the form, if any. */
   error: unknown;
+  /** The words for `error` when the caller words it itself (say, with params to format). */
+  errorText?: string;
   canSave: boolean;
   saving: boolean;
   onSubmit: () => void;
@@ -31,6 +33,7 @@ export function EditorForm({
   heading,
   description,
   error,
+  errorText,
   canSave,
   saving,
   onSubmit,
@@ -69,7 +72,7 @@ export function EditorForm({
           {description}
         </Typography>
       ) : null}
-      {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+      {error ? <Alert>{errorText ?? translateApiError(t, error)}</Alert> : null}
       {children}
       <Stack direction="row" spacing={1}>
         <Button type="submit" disabled={saving || !canSave}>
