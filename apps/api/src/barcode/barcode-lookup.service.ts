@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { openFoodFactsCache } from '../database/schema';
+import type { ExpiryOverride } from '../catalog/catalog-defaults';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type {
@@ -23,6 +24,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** How long the shared cache keeps a product, and a "not found". */
 const HIT_TTL_MS = 30 * DAY_MS;
 const NOT_FOUND_TTL_MS = DAY_MS;
+/** The Batch's Product Description limit (pantry.schemas). */
+const DESCRIPTION_MAX = 200;
 
 /**
  * Barcode Lookup (ADR 0013): a barcode as a Prefill proposal. Not a Scan, so
@@ -62,7 +65,7 @@ export class BarcodeLookupService {
       source: 'open_food_facts',
       match,
       lowConfidence: false,
-      productDescription: names[0],
+      productDescription: names[0].slice(0, DESCRIPTION_MAX),
       ...parseNetQuantity(product.quantity),
     };
   }
@@ -79,7 +82,10 @@ export class BarcodeLookupService {
       found: true,
       source: 'known_barcode',
       lowConfidence: false,
-      productDescription: known.productDescription ?? '',
+      productDescription: (known.productDescription ?? '').slice(
+        0,
+        DESCRIPTION_MAX,
+      ),
       quantity: null,
       unit: null,
     } as const;
@@ -93,7 +99,9 @@ export class BarcodeLookupService {
       locale,
       overrides,
     );
-    return { ...base, match: match ?? null };
+    // Not in the Family's scope any more: let Open Food Facts answer instead.
+    if (!match) return null;
+    return { ...base, match };
   }
 
   /**
@@ -110,7 +118,9 @@ export class BarcodeLookupService {
       const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
       if (now - cached.fetchedAt.getTime() < ttl) return cached.product;
     }
-    const product = await this.openFoodFacts.fetchProduct(barcode);
+    const fetched = await this.openFoodFacts.fetchProduct(barcode);
+    // A product with no usable name cannot prefill anything: it is a not found.
+    const product = fetched && hasName(fetched) ? fetched : null;
     const fetchedAt = new Date(Date.now());
     await this.database
       .insert(openFoodFactsCache)
@@ -126,7 +136,7 @@ export class BarcodeLookupService {
     scope: ReturnType<typeof catalogScope>,
     names: string[],
     locale: CatalogLocale,
-    overrides: Awaited<ReturnType<SettingsService['expiryOverridesForMember']>>,
+    overrides: ExpiryOverride[],
   ): Promise<CatalogSearchResult | null> {
     // Exact name or Synonym first; the Family's entries win (ADR 0011).
     const exact = await this.catalogSearch.findExact(
@@ -171,5 +181,16 @@ function candidateNames(
     product.genericNames.en,
     product.productName,
   ];
-  return [...new Set(ordered.filter((name): name is string => Boolean(name)))];
+  return [
+    ...new Set(ordered.filter((name): name is string => Boolean(name?.trim()))),
+  ];
+}
+
+function hasName(product: OpenFoodFactsProduct): boolean {
+  return [
+    product.productName,
+    product.genericName,
+    ...Object.values(product.productNames),
+    ...Object.values(product.genericNames),
+  ].some((name) => Boolean(name?.trim()));
 }

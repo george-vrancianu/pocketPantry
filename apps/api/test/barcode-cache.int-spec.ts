@@ -109,6 +109,21 @@ describe('Barcode Lookup cache (integration)', () => {
     expect(asked).toEqual([code, code]);
   });
 
+  it('caches a product with no usable name as a not found, for a day', async () => {
+    found = { ...parmesan, productName: null, productNames: { en: '  ' } };
+    expect((await lookup(a)).body).toEqual({ found: false });
+    now += 2 * DAY;
+    found = parmesan;
+    expect((await lookup(a)).body).toMatchObject({ found: true });
+    expect(asked).toEqual([code, code]);
+  });
+
+  it('clamps the Product Description to the Batch limit of 200 characters', async () => {
+    found = { ...parmesan, productName: 'P'.repeat(300) };
+    const body = (await lookup(a)).body as { productDescription: string };
+    expect(body.productDescription).toBe('P'.repeat(200));
+  });
+
   it('keeps a hit in the cache for longer than a not found', async () => {
     await lookup(a);
     now += 2 * DAY;
