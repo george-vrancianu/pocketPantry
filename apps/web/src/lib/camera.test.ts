@@ -1,5 +1,7 @@
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cameraConstraints } from './camera';
+import { cameraConstraints, useCamera } from './camera';
+import { GUIDE_CENTER_Y } from './scanGuides';
 
 describe('cameraConstraints', () => {
   it('asks for the rear camera at an ideal (never exact) 1080p, in every Scan Mode', () => {
@@ -68,5 +70,115 @@ describe('barcode detection', () => {
     }));
     const { readBarcode } = await import('./camera');
     expect(await readBarcode(video)).toBeNull();
+  });
+});
+
+describe('focusForScan', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    Reflect.deleteProperty(navigator, 'mediaDevices');
+  });
+
+  async function openCamera(capabilities: object | undefined) {
+    const applyConstraints = vi.fn(() => Promise.resolve());
+    const track = {
+      getCapabilities: capabilities ? () => capabilities : undefined,
+      applyConstraints,
+      stop: vi.fn(),
+    };
+    const stream = {
+      getVideoTracks: () => [track],
+      getTracks: () => [track],
+    } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia: () => Promise.resolve(stream) },
+      configurable: true,
+    });
+    const hook = renderHook(() => useCamera());
+    await waitFor(() => expect(hook.result.current.status).toBe('ready'));
+    return { hook, applyConstraints };
+  }
+
+  const settled = (promise: Promise<void>) => {
+    const state = { done: false };
+    void promise.then(() => (state.done = true));
+    return state;
+  };
+
+  it('where single-shot focus exists, focuses on the guide centre, then returns to continuous', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      focusMode: ['manual', 'single-shot', 'continuous'],
+    });
+    expect(hook.result.current.focusSupported).toBe(true);
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    expect(applyConstraints).toHaveBeenNthCalledWith(1, {
+      advanced: [
+        {
+          focusMode: 'single-shot',
+          pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
+        },
+      ],
+    });
+    await act(() => pass.done);
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('goes back to continuous when the hold is cancelled', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      focusMode: ['single-shot', 'continuous'],
+    });
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    await act(async () => pass.cancel());
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('gives up waiting for focus after about 1 s and still finishes', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      focusMode: ['single-shot'],
+    });
+    applyConstraints.mockImplementationOnce(() => new Promise(() => {}));
+    vi.useFakeTimers();
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    const state = settled(pass.done);
+    await act(() => vi.advanceTimersByTimeAsync(999));
+    expect(state.done).toBe(false);
+    await act(() => vi.advanceTimersByTimeAsync(2));
+    expect(state.done).toBe(true);
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('without single-shot (or without capabilities) only pauses about 400 ms and touches no constraints', async () => {
+    for (const capabilities of [{ focusMode: ['continuous'] }, {}, undefined]) {
+      const { hook, applyConstraints } = await openCamera(capabilities);
+      expect(hook.result.current.focusSupported).toBe(false);
+      vi.useFakeTimers();
+      let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+      act(() => {
+        pass = hook.result.current.focusForScan();
+      });
+      const state = settled(pass.done);
+      await act(() => vi.advanceTimersByTimeAsync(399));
+      expect(state.done).toBe(false);
+      await act(() => vi.advanceTimersByTimeAsync(2));
+      expect(state.done).toBe(true);
+      expect(applyConstraints).not.toHaveBeenCalled();
+      vi.useRealTimers();
+      hook.unmount();
+    }
   });
 });

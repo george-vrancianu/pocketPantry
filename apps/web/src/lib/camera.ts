@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { GUIDE_CENTER_Y } from './scanGuides';
 
 /** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
 export const HIGH_RESOLUTION_VIDEO = {
@@ -65,6 +66,21 @@ const SCAN_INTERVAL_MS = 250;
 
 export type CameraStatus = 'starting' | 'ready' | 'unavailable';
 
+/** How long a single-shot focus pass may take before the Scan goes ahead anyway. */
+export const FOCUS_TIMEOUT_MS = 1000;
+/** The steady pause where the browser cannot focus on demand (iOS Safari). */
+export const FOCUS_PAUSE_MS = 400;
+
+/** A focus pass started by a hold: `done` resolves once focus finishes, times out or is cancelled. */
+export type FocusPass = { done: Promise<void>; cancel: () => void };
+
+type FocusConstraints = MediaTrackConstraints & {
+  advanced?: Array<{
+    focusMode?: string;
+    pointsOfInterest?: Array<{ x: number; y: number }>;
+  }>;
+};
+
 type TorchConstraints = MediaTrackConstraints & {
   advanced?: Array<{ torch?: boolean }>;
 };
@@ -79,12 +95,15 @@ export function useCamera() {
   const [status, setStatus] = useState<CameraStatus>('starting');
   // Many devices (and every desktop webcam) have no torch: the flash toggle must say so.
   const [torchSupported, setTorchSupported] = useState(false);
+  // Best-effort focus: only browsers that expose single-shot focus (mostly Chrome on Android).
+  const [focusSupported, setFocusSupported] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setStatus('starting');
     // The new stream's torch starts off and its support is not known yet.
     setTorchSupported(false);
+    setFocusSupported(false);
     const devices = navigator.mediaDevices as MediaDevices | undefined;
     if (!devices?.getUserMedia) {
       setStatus('unavailable');
@@ -101,8 +120,11 @@ export function useCamera() {
         if (videoRef.current) videoRef.current.srcObject = stream;
         // `torch` is not in the DOM typings; `getCapabilities` itself is missing in some browsers.
         const capabilities = stream.getVideoTracks()[0]?.getCapabilities?.() as
-          { torch?: boolean } | undefined;
+          { torch?: boolean; focusMode?: string[] } | undefined;
         setTorchSupported(capabilities?.torch === true);
+        setFocusSupported(
+          capabilities?.focusMode?.includes('single-shot') === true,
+        );
         setStatus('ready');
       })
       .catch(() => {
@@ -140,6 +162,55 @@ export function useCamera() {
     }
   }, []);
 
+  const focusSupportedRef = useRef(false);
+  focusSupportedRef.current = focusSupported;
+
+  /**
+   * Gets the camera ready for a Scan. Where single-shot focus is supported it focuses on the guide
+   * centre (waiting up to 1 s) and always goes back to continuous; elsewhere it just pauses 400 ms.
+   * Focus failing never blocks the Scan: `done` always resolves.
+   */
+  const focusForScan = useCallback((): FocusPass => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let finish: () => void = () => {};
+    const done = new Promise<void>((resolve) => (finish = resolve));
+    if (!track || !focusSupportedRef.current) {
+      timer = setTimeout(finish, FOCUS_PAUSE_MS);
+      return {
+        done,
+        cancel: () => {
+          clearTimeout(timer);
+          finish();
+        },
+      };
+    }
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      clearTimeout(timer);
+      track
+        .applyConstraints({
+          advanced: [{ focusMode: 'continuous' }],
+        } as FocusConstraints)
+        .catch(() => {});
+      finish();
+    };
+    timer = setTimeout(restore, FOCUS_TIMEOUT_MS);
+    track
+      .applyConstraints({
+        advanced: [
+          {
+            focusMode: 'single-shot',
+            pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
+          },
+        ],
+      } as FocusConstraints)
+      .then(restore, restore);
+    return { done, cancel: restore };
+  }, []);
+
   /**
    * Reads barcodes from the live preview until the first one, which goes to `onCode`. Returns a
    * function that stops the watch. Starting it is what first loads a ZXing decoder.
@@ -170,5 +241,14 @@ export function useCamera() {
     };
   }, []);
 
-  return { videoRef, status, torchSupported, capture, setTorch, watchBarcodes };
+  return {
+    videoRef,
+    status,
+    torchSupported,
+    focusSupported,
+    focusForScan,
+    capture,
+    setTorch,
+    watchBarcodes,
+  };
 }
