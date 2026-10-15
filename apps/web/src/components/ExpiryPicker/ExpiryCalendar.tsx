@@ -30,7 +30,12 @@ import {
   localIso,
   type IsoDate,
 } from '../../lib/pantry';
-import { calendarMonths, daysInMonth, monthKey } from './calendarMonths';
+import {
+  calendarMonths,
+  daysInMonth,
+  monthKey,
+  type DateRange,
+} from './calendarMonths';
 
 export type ExpiryCalendarHandle = {
   /**
@@ -50,6 +55,8 @@ export type ExpiryCalendarProps = {
   usualDays: number | null;
   /** Days from today through today + this are the Expiring Soon band. */
   staleThresholdDays: number;
+  /** Only these days can be chosen (a start date, say); the Expiring Soon band is then not drawn. */
+  range?: DateRange;
 };
 
 /** Days an arrow key moves by. */
@@ -111,6 +118,7 @@ export function ExpiryCalendar({
   today,
   usualDays,
   staleThresholdDays,
+  range,
 }: ExpiryCalendarProps) {
   const { t, i18n } = useTranslation('pantry');
   const reduceMotion = usePrefersReducedMotion();
@@ -123,6 +131,7 @@ export function ExpiryCalendar({
       today,
       value,
       usualDays === null ? null : defaultExpiryDate(usualDays, today),
+      range,
     ),
   );
 
@@ -279,6 +288,7 @@ export function ExpiryCalendar({
             '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
           },
           '& .day[data-past]': { color: tokens.color.muted },
+          '& .day:disabled': { opacity: 0.35, cursor: 'default' },
           '& .day[data-band]': {
             backgroundColor: `color-mix(in srgb, ${tokens.color.soonBg} 70%, transparent)`,
           },
@@ -334,7 +344,11 @@ export function ExpiryCalendar({
                       if (iso === null)
                         return <span key={column} role="gridcell" />;
                       const days = daysUntil(iso, today);
-                      const inBand = isExpiringSoon(days, staleThresholdDays);
+                      const inBand =
+                        !range && isExpiringSoon(days, staleThresholdDays);
+                      const outOfRange =
+                        range !== undefined &&
+                        (iso < range.min || iso > range.max);
                       return (
                         <Box key={iso} role="gridcell" sx={{ display: 'grid' }}>
                           <button
@@ -348,6 +362,7 @@ export function ExpiryCalendar({
                             aria-describedby={inBand ? legendId : undefined}
                             data-past={days < 0 ? '' : undefined}
                             data-band={inBand ? '' : undefined}
+                            disabled={outOfRange}
                             onFocus={() => setFocusIso(iso)}
                             onClick={() => onChange(iso)}
                           >
@@ -375,24 +390,28 @@ export function ExpiryCalendar({
           color: tokens.color.muted,
         }}
       >
-        <Box
-          component="span"
-          sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-        >
+        {range ? (
+          <span />
+        ) : (
           <Box
             component="span"
-            aria-hidden
-            sx={{
-              width: 10,
-              height: 10,
-              borderRadius: nestedRadius(radius.box, 4),
-              backgroundColor: tokens.color.soonBg,
-            }}
-          />
-          <span id={legendId}>
-            {t('picker.within', { count: staleThresholdDays })}
-          </span>
-        </Box>
+            sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Box
+              component="span"
+              aria-hidden
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: nestedRadius(radius.box, 4),
+                backgroundColor: tokens.color.soonBg,
+              }}
+            />
+            <span id={legendId}>
+              {t('picker.within', { count: staleThresholdDays })}
+            </span>
+          </Box>
+        )}
         <Box
           component="button"
           type="button"

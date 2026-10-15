@@ -7,6 +7,11 @@ import { AdminPage } from './pages/Admin/AdminPage';
 import { CustomisePage } from './pages/Customise/CustomisePage';
 import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { FamilyPage } from './pages/Family/FamilyPage';
+import {
+  EditMealPlanPage,
+  NewMealPlanPage,
+} from './pages/MealPlans/MealPlanFormPage';
+import { MealPlansPage } from './pages/MealPlans/MealPlansPage';
 import { PantryPage } from './pages/Pantry/PantryPage';
 import {
   EditFamilyRecipePage,
@@ -46,6 +51,9 @@ export function App() {
             path="shopping/templates/:id"
             element={<TemplateEditorPage />}
           />
+          <Route path="meal-plans" element={<MealPlansPage />} />
+          <Route path="meal-plans/new" element={<NewMealPlanPage />} />
+          <Route path="meal-plans/:id/edit" element={<EditMealPlanPage />} />
           <Route path="scan" element={<ScanPage />} />
           <Route path="scan/review" element={<ReviewOverviewPage />} />
           <Route path="scan/review/:scanId" element={<ReviewPage />} />

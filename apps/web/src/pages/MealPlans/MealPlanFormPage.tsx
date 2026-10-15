@@ -1,0 +1,215 @@
+import { Alert, Box, Spinner, TextField, Typography } from '@pocket-pantry/ui';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { ConfirmPrompt } from '../../components/ConfirmAction';
+import { EditorForm } from '../../components/EditorForm';
+import { ExpiryField } from '../../components/ExpiryPicker';
+import { useFamily } from '../../lib/family';
+import { localIso, type IsoDate } from '../../lib/pantry';
+import {
+  addDaysIso,
+  MAX_NAME_LENGTH,
+  MAX_PLAN_DAYS,
+  MAX_START_AHEAD_DAYS,
+  planErrorMessage,
+  useMealPlan,
+  useMealPlanMutations,
+  type MealPlanDetail,
+  type PlanInput,
+} from '../../lib/mealPlans';
+import { useToday } from '../../lib/useToday';
+import { ServingsStepper, StepperPill } from '../Recipes/components/Servings';
+import { fullDate } from '../../components/MealPlanPopover/mealPlanText';
+
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** `/meal-plans/new`, with `?start=YYYY-MM-DD` from the Widget pre-filling the start date. */
+export function NewMealPlanPage() {
+  const { t } = useTranslation('mealPlans');
+  const [params] = useSearchParams();
+  return (
+    <>
+      <AppScreenHeader
+        title={t('newPlan')}
+        back={{ label: t('back'), href: '/meal-plans' }}
+      />
+      <MealPlanForm start={params.get('start')} />
+    </>
+  );
+}
+
+/** `/meal-plans/:id/edit`. */
+export function EditMealPlanPage() {
+  const { t, i18n } = useTranslation(['mealPlans', 'common']);
+  const { id = '' } = useParams();
+  const today = localIso(useToday());
+  const plan = useMealPlan(id, i18n.language, today);
+  return (
+    <>
+      <AppScreenHeader
+        title={t('mealPlans:editPlan')}
+        back={{ label: t('mealPlans:back'), href: `/meal-plans/${id}` }}
+      />
+      {plan.isPending ? <Spinner label={t('common:loading')} /> : null}
+      {plan.error ? (
+        <Alert>{planErrorMessage(t, i18n.language, plan.error)}</Alert>
+      ) : null}
+      {plan.data ? <MealPlanForm plan={plan.data} /> : null}
+    </>
+  );
+}
+
+function MealPlanForm({
+  plan,
+  start,
+}: {
+  plan?: MealPlanDetail;
+  start?: string | null;
+}) {
+  const { t, i18n } = useTranslation(['mealPlans', 'errors']);
+  const navigate = useNavigate();
+  const today = localIso(useToday());
+  const lastStart = addDaysIso(today, MAX_START_AHEAD_DAYS);
+  const family = useFamily();
+  const { create, update, remove } = useMealPlanMutations(i18n.language, today);
+
+  const prefilled =
+    start && ISO.test(start) && start >= today && start <= lastStart
+      ? start
+      : today;
+  const [name, setName] = useState(plan?.name ?? '');
+  const [startDate, setStartDate] = useState<IsoDate>(
+    plan?.startDate ?? prefilled,
+  );
+  const [days, setDays] = useState(plan?.days ?? 7);
+  // Until the Member picks, a new plan follows the Family's size (the API's default).
+  const [servings, setServings] = useState<number | null>(
+    plan?.servings ?? null,
+  );
+  const [confirming, setConfirming] = useState(false);
+
+  const shownServings = servings ?? family.data?.members.length ?? 2;
+  const dropped = plan
+    ? plan.slots.filter((slot) => slot.dayIndex >= days).length
+    : 0;
+
+  const save = () => {
+    if (!plan) {
+      const input: PlanInput = { startDate, days, name: name.trim() || null };
+      if (servings !== null) input.servings = servings;
+      create.mutate(input, {
+        onSuccess: (made) => navigate(`/meal-plans/${made.id}`),
+      });
+      return;
+    }
+    // Only what changed: moving a plan that has begun is refused, and renaming it should not be.
+    const changes: PlanInput = {};
+    if (name.trim() !== (plan.name ?? '')) changes.name = name.trim() || null;
+    if (startDate !== plan.startDate) changes.startDate = startDate;
+    if (days !== plan.days) changes.days = days;
+    if (shownServings !== plan.servings) changes.servings = shownServings;
+    update.mutate(
+      { id: plan.id, ...changes },
+      { onSuccess: () => navigate(`/meal-plans/${plan.id}`) },
+    );
+  };
+
+  const submit = () => {
+    if (plan && dropped > 0 && !confirming) {
+      setConfirming(true);
+      return;
+    }
+    save();
+  };
+
+  const writeError = create.error ?? update.error ?? remove.error;
+  const saving = create.isPending || update.isPending;
+
+  return (
+    <EditorForm
+      heading={
+        plan
+          ? t('mealPlans:form.editHeading')
+          : t('mealPlans:form.createHeading')
+      }
+      error={writeError}
+      errorText={
+        writeError ? planErrorMessage(t, i18n.language, writeError) : undefined
+      }
+      canSave
+      saving={saving}
+      saveLabel={plan ? undefined : t('mealPlans:form.create')}
+      savingLabel={plan ? undefined : t('mealPlans:form.creating')}
+      onSubmit={submit}
+      onCancel={() => navigate(plan ? `/meal-plans/${plan.id}` : '/meal-plans')}
+      onDelete={
+        plan
+          ? () =>
+              remove.mutate(plan.id, {
+                onSuccess: () => navigate('/meal-plans'),
+              })
+          : undefined
+      }
+      deleting={remove.isPending}
+    >
+      <TextField
+        label={t('mealPlans:form.name')}
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        slotProps={{ htmlInput: { maxLength: MAX_NAME_LENGTH } }}
+        helperText={t('mealPlans:form.namePlaceholder')}
+      />
+      <ExpiryField
+        label={t('mealPlans:form.starts')}
+        value={startDate}
+        onChange={(value) => value && setStartDate(value)}
+        usualDays={null}
+        context={t('mealPlans:form.startContext', {
+          date: fullDate(i18n.language, lastStart),
+        })}
+        range={{ min: today, max: lastStart }}
+      />
+      <Box>
+        <Typography
+          variant="sectionLabel"
+          color="text.secondary"
+          component="p"
+          sx={{ mb: 0.5 }}
+        >
+          {t('mealPlans:form.days')}
+        </Typography>
+        <StepperPill
+          value={days}
+          min={1}
+          max={MAX_PLAN_DAYS}
+          onChange={setDays}
+          fewerLabel={t('mealPlans:form.fewerDays')}
+          moreLabel={t('mealPlans:form.moreDays')}
+        >
+          <span>{t('mealPlans:form.daysValue', { count: days })}</span>
+        </StepperPill>
+      </Box>
+      <Box>
+        <Typography
+          variant="sectionLabel"
+          color="text.secondary"
+          component="p"
+          sx={{ mb: 0.5 }}
+        >
+          {t('mealPlans:form.servings')}
+        </Typography>
+        <ServingsStepper servings={shownServings} onChange={setServings} />
+      </Box>
+      {confirming && dropped > 0 ? (
+        <ConfirmPrompt
+          message={t('mealPlans:form.shorten', { days, count: dropped })}
+          disabled={saving}
+          onConfirm={save}
+          onCancel={() => setConfirming(false)}
+        />
+      ) : null}
+    </EditorForm>
+  );
+}

@@ -6,6 +6,7 @@ import {
   tokens,
   radius,
 } from '@pocket-pantry/ui';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /** The most Servings the API will match or add for (keep in step with MAX_MATCH_SERVINGS in apps/api/src/recipes/recipe-pantry.schemas.ts). */
@@ -17,15 +18,27 @@ export function Servings({ servings }: { servings: number }) {
   return <span>{t('servings', { count: servings })}</span>;
 }
 
-/** Servings with a stepper, as a white pill; the Pantry status and quantities follow it. */
-export function ServingsStepper({
-  servings,
+type StepperPillProps = {
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+  fewerLabel: string;
+  moreLabel: string;
+  /** The words between the buttons. */
+  children: ReactNode;
+};
+
+/** A count with a minus and a plus, as a white pill: the Servings stepper, and the Meal plan's Days stepper. */
+export function StepperPill({
+  value,
+  min,
+  max,
   onChange,
-}: {
-  servings: number;
-  onChange: (servings: number) => void;
-}) {
-  const { t } = useTranslation('recipes');
+  fewerLabel,
+  moreLabel,
+  children,
+}: StepperPillProps) {
   return (
     <Stack
       sx={{
@@ -42,24 +55,47 @@ export function ServingsStepper({
       }}
     >
       <IconButton
-        label={t('fewerServings')}
+        label={fewerLabel}
         size={34}
         tone="plain"
-        ariaDisabled={servings <= 1}
-        onClick={() => onChange(servings - 1)}
+        ariaDisabled={value <= min}
+        onClick={() => onChange(value - 1)}
       >
         <MinusIcon size={16} />
       </IconButton>
-      <Servings servings={servings} />
+      {children}
       <IconButton
-        label={t('moreServings')}
+        label={moreLabel}
         size={34}
         tone="plain"
-        ariaDisabled={servings >= MAX_SERVINGS}
-        onClick={() => onChange(servings + 1)}
+        ariaDisabled={value >= max}
+        onClick={() => onChange(value + 1)}
       >
         <PlusIcon size={16} />
       </IconButton>
     </Stack>
+  );
+}
+
+/** Servings with a stepper, as a white pill; the Pantry status and quantities follow it. */
+export function ServingsStepper({
+  servings,
+  onChange,
+}: {
+  servings: number;
+  onChange: (servings: number) => void;
+}) {
+  const { t } = useTranslation('recipes');
+  return (
+    <StepperPill
+      value={servings}
+      min={1}
+      max={MAX_SERVINGS}
+      onChange={onChange}
+      fewerLabel={t('fewerServings')}
+      moreLabel={t('moreServings')}
+    >
+      <Servings servings={servings} />
+    </StepperPill>
   );
 }
