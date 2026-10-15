@@ -10,6 +10,7 @@ import {
   HourglassIcon,
   IconButton,
   PlusIcon,
+  radius,
   StarIcon,
   tokens,
   usePrefersReducedMotion,
@@ -137,7 +138,7 @@ export function HealthTodos({ state, today }: Props) {
               display: 'grid',
               placeItems: 'center',
               bgcolor: tokens.color.accentTint,
-              color: tokens.color.accent,
+              color: tokens.color.accentOnTint,
             }}
           >
             <CheckIcon size={16} />
@@ -536,7 +537,7 @@ function TodoItemRow({
         gap: '8px',
         minHeight: 42,
         p: '4px 8px 4px 6px',
-        borderRadius: '10px',
+        borderRadius: radius.control,
         bgcolor: tokens.color.subtle,
       }}
     >

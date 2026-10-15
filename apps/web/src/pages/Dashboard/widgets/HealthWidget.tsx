@@ -3,7 +3,9 @@ import {
   ChevronRightIcon,
   displayType,
   InfoIcon,
+  nestedRadius,
   PulseIcon,
+  radius,
   tokens,
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
@@ -149,7 +151,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                     data-factor={factor}
                     sx={{
                       flex: FACTOR_WEIGHTS[factor],
-                      borderRadius: '2px',
+                      borderRadius: nestedRadius(radius.control, 9),
                       bgcolor: VERDICT_COLOR[verdictOf(health.factors[factor])],
                     }}
                   />
