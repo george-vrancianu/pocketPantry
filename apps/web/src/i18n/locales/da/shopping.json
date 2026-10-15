@@ -41,16 +41,13 @@
   },
   "addItems": "Tilføj varer",
   "added": "Tilføjede {{name}}",
+  "addSheet": {
+    "title": "Tilføj varer"
+  },
   "sheet": {
-    "title": "Føj til listen",
     "done": "Færdig",
     "doneCount_one": "Færdig, {{count}} tilføjet",
-    "doneCount_other": "Færdig, {{count}} tilføjet",
-    "tabsLabel": "Føj til listen",
-    "tabs": {
-      "ingredients": "Ingredienser",
-      "templates": "Skabeloner"
-    }
+    "doneCount_other": "Færdig, {{count}} tilføjet"
   },
   "search": {
     "onList": "På listen",
@@ -78,8 +75,6 @@
     "goneLabelExpired": "{{name}}, udløbet {{when}}",
     "goneLabelStaple": "{{name}}, manglende basisvare"
   },
-  "templatesFromSearch": "Eller start fra en skabelon",
-  "seeAll": "Se alle",
   "import": {
     "button": "Importér",
     "title": "Importér",

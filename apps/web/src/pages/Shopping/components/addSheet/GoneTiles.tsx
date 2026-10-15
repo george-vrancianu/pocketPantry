@@ -15,7 +15,7 @@ import {
   type Suggestion,
   type Suggestions,
 } from '../../../../lib/suggestions';
-import { useSheetToast } from './SheetFooter';
+import { useSheetToast } from './useSheetToast';
 
 export type GoneTilesProps = {
   suggestions: Suggestions;

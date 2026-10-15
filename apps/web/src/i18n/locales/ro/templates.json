@@ -21,7 +21,6 @@
     "rowMeta_other": "{{count}} de articole, cu cantități"
   },
   "apply": {
-    "none": "Încă nu ai șabloane. Salvează lista ca șablon sau creează unul la Șabloane.",
     "title": "Adaugă din {{name}}",
     "hint": "Articolele pe care le ai deja în cămară încep nebifate.",
     "empty": "Acest șablon nu are linii.",
@@ -32,12 +31,7 @@
     "inPantry": "În cămară",
     "unmatchedGroup": "Nu e în catalog",
     "cancel": "Înapoi",
-    "section": "Adaugă dintr-un șablon",
-    "allTemplates": "Toate șabloanele",
-    "onList": "Pe listă",
-    "added_one": "Am adăugat {{count}} articol din {{name}}",
-    "added_few": "Am adăugat {{count}} articole din {{name}}",
-    "added_other": "Am adăugat {{count}} de articole din {{name}}"
+    "onList": "Pe listă"
   },
   "list": {
     "empty": "Încă nu ai șabloane. Creează unul ca să refolosești o listă.",
@@ -59,6 +53,5 @@
     "empty": "Încă nu are linii. Adaugă mai jos ce îți trebuie.",
     "back": "Înapoi la șabloane",
     "apply": "Adaugă în listă"
-  },
-  "manage": "Gestionează"
+  }
 }

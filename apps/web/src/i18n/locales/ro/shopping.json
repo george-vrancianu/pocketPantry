@@ -44,17 +44,14 @@
   },
   "addItems": "Adaugă produse",
   "added": "Ai adăugat {{name}}",
+  "addSheet": {
+    "title": "Adaugă produse"
+  },
   "sheet": {
-    "title": "Adaugă în listă",
     "done": "Gata",
     "doneCount_one": "Gata, {{count}} adăugat",
     "doneCount_few": "Gata, {{count}} adăugate",
-    "doneCount_other": "Gata, {{count}} adăugate",
-    "tabsLabel": "Adaugă în listă",
-    "tabs": {
-      "ingredients": "Ingrediente",
-      "templates": "Șabloane"
-    }
+    "doneCount_other": "Gata, {{count}} adăugate"
   },
   "search": {
     "onList": "Pe listă",
@@ -82,8 +79,6 @@
     "goneLabelExpired": "{{name}}, expirat {{when}}",
     "goneLabelStaple": "{{name}}, produs de bază lipsă"
   },
-  "templatesFromSearch": "Sau începe de la un șablon",
-  "seeAll": "Vezi tot",
   "import": {
     "button": "Importă",
     "title": "Importă",

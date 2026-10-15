@@ -18,7 +18,7 @@ import { RowHintNote } from '../../components/RowHintNote';
 import { useRowHint } from '../../lib/useRowHint';
 import { itemCount } from '../../lib/shopping';
 import { UnverifiedToast } from '../../components/UnverifiedToast';
-import { AddSheet, type SheetView } from './components/addSheet/AddSheet';
+import { AddSheet } from './components/addSheet/AddSheet';
 import { FinishShoppingReview } from './components/FinishShoppingReview';
 import { ShoppingGroups } from './components/ShoppingGroups';
 import { SaveTemplateSheet } from './components/SaveTemplateSheet';
@@ -49,14 +49,12 @@ export function ShoppingPage() {
     hadGroups.current = groupCount > 0;
   }, [groupCount]);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [sheetView, setSheetView] = useState<SheetView>({ tab: 'ingredients' });
   const [saveOpen, setSaveOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
 
   // Every way in starts clean, with no error left from an earlier opening.
-  const openSheet = (view: SheetView) => {
+  const openSheet = () => {
     screen.resetAddError();
-    setSheetView(view);
     setSheetOpen(true);
   };
 
@@ -95,7 +93,7 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              onAddItems={() => openSheet({ tab: 'ingredients' })}
+              onAddItems={() => openSheet()}
             />
             {screen.list.groups.length === 0 ? (
               <Box
@@ -135,7 +133,6 @@ export function ShoppingPage() {
       </Stack>
       <AddSheet
         open={sheetOpen}
-        initialView={sheetView}
         onClose={() => setSheetOpen(false)}
         adding={screen.adding}
         onAdd={screen.add}

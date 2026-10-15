@@ -18,7 +18,6 @@
     "rowMeta_other": "{{count}} items, quantities included"
   },
   "apply": {
-    "none": "No templates yet. Save your list as one, or create one under Templates.",
     "title": "Add from {{name}}",
     "hint": "Items already in your Pantry start unticked.",
     "empty": "This template has no lines.",
@@ -28,11 +27,7 @@
     "inPantry": "In Pantry",
     "unmatchedGroup": "Not in the catalog",
     "cancel": "Back",
-    "section": "Add from a template",
-    "allTemplates": "All templates",
-    "onList": "On list",
-    "added_one": "Added {{count}} item from {{name}}",
-    "added_other": "Added {{count}} items from {{name}}"
+    "onList": "On list"
   },
   "list": {
     "empty": "No templates yet. Create one to reuse a shop.",
@@ -52,6 +47,5 @@
     "empty": "No lines yet. Add what this template needs below.",
     "back": "Back to templates",
     "apply": "Add to list"
-  },
-  "manage": "Manage"
+  }
 }

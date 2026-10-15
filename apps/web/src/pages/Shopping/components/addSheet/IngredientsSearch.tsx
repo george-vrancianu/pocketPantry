@@ -19,7 +19,7 @@ import {
 } from '../../../../lib/shopping';
 import type { Suggestion, Suggestions } from '../../../../lib/suggestions';
 import { EmptySearch } from './EmptySearch';
-import { useSheetToast } from './SheetFooter';
+import { useSheetToast } from './useSheetToast';
 
 /** What was picked in the search: a Catalog match, or the typed text as an Unmatched item. */
 type Chosen =
@@ -35,7 +35,7 @@ export type OpenPick = {
   attempted?: boolean;
 };
 
-/** What the Ingredients tab remembers; the Add sheet owns it so it survives a tab switch. */
+/** What the search remembers; the Add sheet owns it. */
 export type IngredientsState = {
   /** The text in the search field. */
   query: string;
@@ -50,7 +50,7 @@ export const emptyIngredients: IngredientsState = {
   searchKey: 0,
 };
 
-export type IngredientsTabProps = {
+export type IngredientsSearchProps = {
   state: IngredientsState;
   onStateChange: Dispatch<SetStateAction<IngredientsState>>;
   /** The search input, so the sheet can focus it once it has slid in. */
@@ -63,14 +63,10 @@ export type IngredientsTabProps = {
   suggestions: Suggestions;
   /** Called after each successful add. */
   onAdded: () => void;
-  /** Opens a template's apply view. */
-  onOpenTemplate: (id: string) => void;
-  /** Switches to the Templates tab. */
-  onSeeAllTemplates: () => void;
 };
 
-/** The Ingredients tab: the shared search, then an amount for the pick, then add. */
-export function IngredientsTab({
+/** The Add sheet search: the shared search, then an amount for the pick, then add. */
+export function IngredientsSearch({
   state,
   onStateChange,
   searchRef,
@@ -79,9 +75,7 @@ export function IngredientsTab({
   error,
   suggestions,
   onAdded,
-  onOpenTemplate,
-  onSeeAllTemplates,
-}: IngredientsTabProps) {
+}: IngredientsSearchProps) {
   const { t, i18n } = useTranslation('shopping');
   const toast = useSheetToast();
   const { query, open } = state;
@@ -207,7 +201,7 @@ export function IngredientsTab({
         autoFocus={state.searchKey > 0}
         inputRef={searchRef}
         defaultQuery={query}
-        // The empty state shows from the first paint and after a tab switch, before the field is focused.
+        // The empty state shows from the first paint before the field is focused.
         defaultOpen={!pick}
         rowTag={(row) =>
           unchecked.some((line) => isOnList(line, row))
@@ -221,12 +215,7 @@ export function IngredientsTab({
           onStateChange((s) => ({ ...s, query: value, open: null }))
         }
         emptyState={
-          <EmptySearch
-            suggestions={suggestions}
-            onPickGone={pickGone}
-            onOpenTemplate={onOpenTemplate}
-            onSeeAllTemplates={onSeeAllTemplates}
-          />
+          <EmptySearch suggestions={suggestions} onPickGone={pickGone} />
         }
       />
       {open ? (

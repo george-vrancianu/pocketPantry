@@ -42,16 +42,13 @@
   },
   "addItems": "Add items",
   "added": "Added {{name}}",
+  "addSheet": {
+    "title": "Add items"
+  },
   "sheet": {
-    "title": "Add to list",
     "done": "Done",
     "doneCount_one": "Done, {{count}} added",
-    "doneCount_other": "Done, {{count}} added",
-    "tabsLabel": "Add to list",
-    "tabs": {
-      "ingredients": "Ingredients",
-      "templates": "Templates"
-    }
+    "doneCount_other": "Done, {{count}} added"
   },
   "search": {
     "onList": "On list",
@@ -79,8 +76,6 @@
     "goneLabelExpired": "{{name}}, expired {{when}}",
     "goneLabelStaple": "{{name}}, missing staple"
   },
-  "templatesFromSearch": "Or start from a template",
-  "seeAll": "See all",
   "import": {
     "button": "Import",
     "title": "Import",

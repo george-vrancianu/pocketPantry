@@ -1,40 +1,23 @@
 import {
   Box,
   Sheet,
-  SegmentedTabs,
   Typography,
-  segmentedTabId,
-  segmentedTabPanelId,
   color,
   displayType,
   radius,
 } from '@pocket-pantry/ui';
-import { useId, useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
-import { ApplyTemplateView } from './ApplyTemplateView';
-import { SheetFooterContext } from './SheetFooter';
-import { TemplatesTab } from './TemplatesTab';
 import type { Suggestions } from '../../../../lib/suggestions';
 import {
   emptyIngredients,
-  IngredientsTab,
+  IngredientsSearch,
   type IngredientsState,
-} from './IngredientsTab';
-
-/** The Templates tab's sub-views: the list or applying one template. */
-export type TemplatesView = 'list' | { apply: string };
-
-/** Where the sheet opens. */
-export type SheetView =
-  { tab: 'ingredients' } | { tab: 'templates'; view: TemplatesView };
-
-type SheetTab = SheetView['tab'];
+} from './IngredientsSearch';
 
 export type AddSheetProps = {
   open: boolean;
-  /** The view each opening starts on; Ingredients by default. */
-  initialView?: SheetView;
   onClose: () => void;
   adding: boolean;
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
@@ -45,15 +28,13 @@ export type AddSheetProps = {
 };
 
 /**
- * The Add sheet: a header with Done, the Ingredients and Templates tabs, and
- * the selected tab's panel. It owns everything that belongs to one opening
- * (tab, Templates sub-view, query, pick, typed amount and unit, adds so
- * far) so it survives switching tabs. All of it resets whenever the sheet
- * opens; the lists polled behind it never reset it.
+ * The Add sheet: a header with Done, and the ingredient search. It owns
+ * everything that belongs to one opening (query, pick, typed amount and
+ * unit, adds so far). All of it resets whenever the sheet opens; the lists
+ * polled behind it never reset it.
  */
 export function AddSheet({
   open,
-  initialView = { tab: 'ingredients' },
   onClose,
   adding,
   onAdd,
@@ -61,18 +42,6 @@ export function AddSheet({
   suggestions,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
-  const tabsId = useId();
-  const [tab, setTab] = useState<SheetTab>(initialView.tab);
-  const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
-  // Whether the current view has a footer; none while it loads or fails.
-  const [hasFooter, setHasFooter] = useState(false);
-  const footerSlot = useMemo(
-    () => ({ host: footerHost, setHasFooter }),
-    [footerHost],
-  );
-  const [templatesView, setTemplatesView] = useState<TemplatesView>(
-    initialView.tab === 'templates' ? initialView.view : 'list',
-  );
   const [ingredients, setIngredients] =
     useState<IngredientsState>(emptyIngredients);
   const [addedCount, setAddedCount] = useState(0);
@@ -81,23 +50,10 @@ export function AddSheet({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setTab(initialView.tab);
-      setTemplatesView(
-        initialView.tab === 'templates' ? initialView.view : 'list',
-      );
       setIngredients(emptyIngredients);
       setAddedCount(0);
     }
   }
-  const selectTab = (next: SheetTab) => {
-    // Changing tabs returns Templates to its list view.
-    if (next !== tab) setTemplatesView('list');
-    setTab(next);
-  };
-  const openTemplate = (templateId: string) => {
-    setTab('templates');
-    setTemplatesView({ apply: templateId });
-  };
   const header = (
     <Box sx={{ p: '10px 16px 10px 20px' }}>
       <Box
@@ -116,7 +72,7 @@ export function AddSheet({
             fontSize: 22,
           }}
         >
-          {t('sheet.title')}
+          {t('addSheet.title')}
         </Typography>
         <Box
           component="button"
@@ -166,73 +122,39 @@ export function AddSheet({
           <span aria-hidden>{t('sheet.done')}</span>
         </Box>
       </Box>
-      <SegmentedTabs
-        label={t('sheet.tabsLabel')}
-        id={tabsId}
-        tabs={[
-          { value: 'ingredients', label: t('sheet.tabs.ingredients') },
-          { value: 'templates', label: t('sheet.tabs.templates') },
-        ]}
-        value={tab}
-        onChange={selectTab}
-      />
     </Box>
   );
 
   return (
-    <SheetFooterContext.Provider value={footerSlot}>
-      <Sheet
-        open={open}
-        onClose={onClose}
-        label={t('sheet.title')}
-        header={header}
-        footer={
-          tab === 'templates' && templatesView !== 'list' && hasFooter ? (
-            <Box ref={setFooterHost} />
-          ) : undefined
+    <Sheet
+      open={open}
+      onClose={onClose}
+      label={t('addSheet.title')}
+      header={header}
+      onEntered={() => {
+        // Do not steal focus from a field the Member has already reached.
+        const focused = document.activeElement;
+        if (
+          !focused ||
+          focused === document.body ||
+          focused.getAttribute('role') === 'dialog'
+        ) {
+          searchRef.current?.focus();
         }
-        onEntered={() => {
-          // Do not steal focus from a field the Member has already reached.
-          const focused = document.activeElement;
-          if (
-            !focused ||
-            focused === document.body ||
-            focused.getAttribute('role') === 'dialog'
-          ) {
-            searchRef.current?.focus();
-          }
-        }}
-      >
-        <Box
-          role="tabpanel"
-          id={segmentedTabPanelId(tabsId, tab)}
-          aria-labelledby={segmentedTabId(tabsId, tab)}
-          sx={{ p: '4px 20px 24px' }}
-        >
-          {tab === 'ingredients' ? (
-            <IngredientsTab
-              state={ingredients}
-              onStateChange={setIngredients}
-              searchRef={searchRef}
-              adding={adding}
-              onAdd={onAdd}
-              error={addError}
-              suggestions={suggestions}
-              onAdded={() => setAddedCount((count) => count + 1)}
-              onOpenTemplate={openTemplate}
-              onSeeAllTemplates={() => selectTab('templates')}
-            />
-          ) : typeof templatesView === 'object' ? (
-            <ApplyTemplateView
-              templateId={templatesView.apply}
-              onBack={() => setTemplatesView('list')}
-              onApplied={onClose}
-            />
-          ) : (
-            <TemplatesTab onOpenTemplate={openTemplate} />
-          )}
-        </Box>
-      </Sheet>
-    </SheetFooterContext.Provider>
+      }}
+    >
+      <Box sx={{ p: '4px 20px 24px' }}>
+        <IngredientsSearch
+          state={ingredients}
+          onStateChange={setIngredients}
+          searchRef={searchRef}
+          adding={adding}
+          onAdd={onAdd}
+          error={addError}
+          suggestions={suggestions}
+          onAdded={() => setAddedCount((count) => count + 1)}
+        />
+      </Box>
+    </Sheet>
   );
 }
