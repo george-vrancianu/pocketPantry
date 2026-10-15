@@ -90,6 +90,8 @@ export type MealWindow = {
   plan: MealPlanSummary | null;
   /** When the first plan starting beyond the window begins. */
   nextPlanStart: IsoDate | null;
+  /** The id of that plan, for linking to it. */
+  nextPlanId: string | null;
   /** What Add missing for the window would put on the Shopping List: one entry per Ingredient not on it yet. */
   missing: MissingItem[];
 };

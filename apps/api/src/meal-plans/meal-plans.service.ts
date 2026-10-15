@@ -131,6 +131,7 @@ export class MealPlansService {
       tag: forecast.tag,
       plan: headline ? summary(headline) : null,
       nextPlanStart: beyond?.startDate ?? null,
+      nextPlanId: beyond?.id ?? null,
       missing,
     };
   }

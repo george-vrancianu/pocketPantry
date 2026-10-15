@@ -36,6 +36,7 @@ import {
   type PlanTag,
   type WindowDay,
 } from '../../../lib/mealPlan';
+import { planEnd } from '../../../lib/mealPlanPage';
 import { fromIso, localIso, type IsoDate } from '../../../lib/pantry';
 import { useAddMissing } from '../../../lib/useAddMissing';
 import { useMealPlanLegend } from '../../../lib/useMealPlanLegend';
@@ -170,6 +171,10 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   );
 
   const view = mealWindow.data;
+  const coversToday =
+    !!view?.plan &&
+    view.plan.startDate <= todayIso &&
+    planEnd(view.plan) >= todayIso;
   const days = view?.days ?? [];
   const planned = days.length > 0;
   // A date no longer in the window shows nothing; the effect below then forgets it.
@@ -488,18 +493,26 @@ export function MealPlanWidget({ columns }: WidgetProps) {
               color: tokens.color.muted,
             }}
           >
-            {view.nextPlanStart ? (
-              <span>
+            {view.nextPlanStart && view.nextPlanId ? (
+              <Box
+                component={Link}
+                to={`/meal-plans/${view.nextPlanId}`}
+                sx={plainAction}
+              >
                 {t('mealPlan.nextPlanStarts', {
                   date: fullDate(language, view.nextPlanStart),
                 })}
-              </span>
+              </Box>
             ) : (
               <>
                 <span>{t('mealPlan.nothingThisWeek')}</span>
                 <Box
                   component={Link}
-                  to={`/meal-plans/new?start=${todayIso}`}
+                  to={
+                    coversToday
+                      ? `/meal-plans/${view.plan?.id}`
+                      : `/meal-plans/new?start=${todayIso}`
+                  }
                   sx={plainAction}
                 >
                   {t('mealPlan.planWeek')}

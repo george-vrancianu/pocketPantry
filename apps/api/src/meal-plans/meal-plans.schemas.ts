@@ -220,6 +220,8 @@ export type MealWindowView = {
   plan: MealPlanSummary | null;
   /** When the first plan starting beyond the window begins. */
   nextPlanStart: string | null;
+  /** The id of that plan, for linking to it. */
+  nextPlanId: string | null;
   /** What Add missing would add for the whole window. */
   missing: MissingItemView[];
 };

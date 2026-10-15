@@ -59,6 +59,7 @@ type Window = {
   tag: { kind: string; count?: number };
   plan: { id: string } | null;
   nextPlanStart: string | null;
+  nextPlanId: string | null;
   missing: {
     ingredientId: string | null;
     name: string;
@@ -375,6 +376,7 @@ describe('Plan Forecast (integration)', () => {
       expect(window.tag).toEqual({ kind: 'short', count: 1 });
       expect(window.plan).toMatchObject({ id: first });
       expect(window.nextPlanStart).toBe(at(10));
+      expect(window.nextPlanId).toBe(later);
       expect(window.missing).toEqual([
         {
           ingredientId: eggs,
@@ -401,12 +403,14 @@ describe('Plan Forecast (integration)', () => {
         tag: { kind: 'none' },
         plan: { id: upcoming },
         nextPlanStart: at(12),
+        nextPlanId: upcoming,
         missing: [],
       });
       expect(await readWindow(none)).toMatchObject({
         days: [],
         plan: null,
         nextPlanStart: null,
+        nextPlanId: null,
       });
     });
 

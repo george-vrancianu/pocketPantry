@@ -85,6 +85,7 @@ const windowOf = (
   tag: { kind: 'allCovered' },
   plan: null,
   nextPlanStart: null,
+  nextPlanId: null,
   missing: [],
   ...over,
 });
@@ -354,12 +355,20 @@ describe('MealPlanWidget header', () => {
 
 describe('MealPlanWidget empty states', () => {
   it('says when the next plan starts when nothing is planned in the window', async () => {
-    stub(windowOf([], { tag: { kind: 'none' }, nextPlanStart: iso(10) }));
+    stub(
+      windowOf([], {
+        tag: { kind: 'none' },
+        nextPlanStart: iso(10),
+        nextPlanId: 'p9',
+      }),
+    );
     renderWidget();
 
     expect(
-      await screen.findByText('Next plan starts Sunday 25 October'),
-    ).toBeInTheDocument();
+      await screen.findByRole('link', {
+        name: 'Next plan starts Sunday 25 October',
+      }),
+    ).toHaveAttribute('href', '/meal-plans/p9');
     expect(screen.queryByText('Plan your week')).not.toBeInTheDocument();
   });
 
@@ -375,6 +384,28 @@ describe('MealPlanWidget empty states', () => {
       screen.getByRole('link', { name: 'Plan your week' }),
     ).toBeInTheDocument();
     expect(screen.queryByText('All covered')).not.toBeInTheDocument();
+  });
+});
+
+describe('MealPlanWidget plan your week', () => {
+  it('opens the empty plan that already covers today instead of a new one', async () => {
+    stub(
+      windowOf([], {
+        tag: { kind: 'none' },
+        plan: {
+          id: 'p1',
+          name: null,
+          startDate: iso(-1),
+          days: 7,
+          servings: 2,
+        },
+      }),
+    );
+    renderWidget();
+
+    expect(
+      await screen.findByRole('link', { name: 'Plan your week' }),
+    ).toHaveAttribute('href', '/meal-plans/p1');
   });
 });
 

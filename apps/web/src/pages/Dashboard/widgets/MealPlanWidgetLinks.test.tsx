@@ -35,6 +35,7 @@ const windowOf = (over: Partial<MealWindow>): MealWindow => ({
   tag: { kind: 'allCovered' },
   plan: null,
   nextPlanStart: null,
+  nextPlanId: null,
   missing: [],
   ...over,
 });
