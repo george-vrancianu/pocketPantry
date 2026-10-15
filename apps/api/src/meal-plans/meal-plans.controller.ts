@@ -18,12 +18,14 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
   createMealPlanBody,
+  fillBody,
   mealPlanIdParam,
   mealPlanQuery,
   setSlotBody,
   slotParams,
   updateMealPlanBody,
   type CreateMealPlanBody,
+  type FillBody,
   type MealPlanQuery,
   type MealPlanSummary,
   type MealPlanView,
@@ -130,5 +132,19 @@ export class MealPlansController {
     @Param(slotParam) params: SlotParams,
   ): Promise<void> {
     await this.plans.clearSlot(member.id, params, today);
+  }
+
+  @Post(':id/fill')
+  @ApiOperation({
+    summary:
+      "Fill the plan's empty slots from today on with Recipes; never touches a filled slot or a past day",
+  })
+  fill(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(query) { locale, today }: MealPlanQuery,
+    @Param(idParam) { id }: { id: string },
+    @Body(new ZodValidationPipe(fillBody)) body: FillBody,
+  ): Promise<MealPlanView> {
+    return this.plans.fill(member.id, id, body, locale, today);
   }
 }

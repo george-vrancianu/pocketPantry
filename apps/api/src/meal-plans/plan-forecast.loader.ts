@@ -224,9 +224,9 @@ const minutesOf = (recipe: typeof recipes.$inferSelect): number | null =>
     ? null
     : (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0);
 
-type LoadedLine = ForecastLine;
+export type LoadedLine = ForecastLine;
 
-async function loadLines(
+export async function loadLines(
   executor: Executor,
   familyId: string,
   recipeRows: (typeof recipes.$inferSelect)[],
@@ -279,7 +279,7 @@ function tileAisle(
   return null;
 }
 
-async function loadBatches(
+export async function loadBatches(
   executor: Executor,
   familyId: string,
   today: string,
@@ -299,7 +299,7 @@ async function loadBatches(
 }
 
 /** The unchecked items on the active list, as Cook Tonight counts them (by stored normalised name). */
-async function loadShoppingList(
+export async function loadShoppingList(
   executor: Executor,
   familyId: string,
 ): Promise<ForecastListEntry[]> {
