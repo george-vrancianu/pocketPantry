@@ -1,15 +1,17 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedIngredients,
+  familyOwnedTranslations,
   SHARED_ONLY,
 } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
+import { keepFamilyNames } from '../catalog/keep-family-names';
 import { mergeIngredients } from '../catalog/merge-ingredients';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Tx } from '../database/database.types';
 import { ingredients, leafCategories } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -18,11 +20,14 @@ import {
   type FamilyIngredientCopy,
   type FamilyIngredientsListQuery,
   type FamilyIngredientsPage,
+  type MergedFamilyIngredients,
   type PromotedIngredient,
 } from './family-ingredients.schemas';
 import { encodeCursor } from './unmatched-queue.schemas';
 
 const notFound = () => new ApiException(404, 'family_ingredients.not_found');
+const targetNotFound = () =>
+  new ApiException(404, 'family_ingredients.target_not_found');
 
 /**
  * Admin curation of Family Ingredients (ADR 0011): the queue across Families
@@ -177,12 +182,28 @@ export class FamilyIngredientsAdminService {
         tx,
         copies.map((copy) => copy.ownerFamilyId as string),
       );
-      const others = copies.filter((copy) => copy.id !== ingredientId);
-      await mergeIngredients(
+      // A Family-side rename only holds its Family lock: re-read the group.
+      const still = await this.groupNow(
+        tx,
+        key,
+        copies.map((copy) => copy.id),
+      );
+      if (!still.some((copy) => copy.id === ingredientId)) throw notFound();
+      const others = still.filter((copy) => copy.id !== ingredientId);
+      const moved = await this.synonymIdsOf(
+        tx,
+        others.map((copy) => copy.id),
+      );
+      const merged = await mergeIngredients(
         tx,
         picked,
         others.map((copy) => copy.id),
       );
+      // Their names stay theirs: no skip, the names equal the promoted one's.
+      await keepFamilyNames(tx, picked.id, merged, {
+        skipSharedNames: false,
+        movedSynonymIds: moved,
+      });
       await tx
         .update(ingredients)
         .set({ ownerFamilyId: null })
@@ -196,5 +217,107 @@ export class FamilyIngredientsAdminService {
     // Owners lost a copy and every other Family gained a shared row.
     this.scanCatalog.invalidate();
     return result;
+  }
+
+  /**
+   * Folds every Family copy of the group `ingredientId` belongs to into the
+   * shared Ingredient `targetId`; each Family keeps the name as a Family Synonym.
+   *
+   * Locks: both names (sorted), then the owning Families in ascending id, and
+   * both rows are re-read under them.
+   */
+  async merge(
+    ingredientId: string,
+    targetId: string,
+  ): Promise<MergedFamilyIngredients> {
+    const owned = familyOwnedIngredients(this.database);
+    const [peek] = await this.database
+      .select({ normalizedName: owned.normalizedName })
+      .from(owned)
+      .where(eq(owned.id, ingredientId));
+    if (!peek) throw notFound();
+    const sharedPeek = catalogScope(SHARED_ONLY).ingredients(this.database);
+    const [targetPeek] = await this.database
+      .select({ normalizedName: sharedPeek.normalizedName })
+      .from(sharedPeek)
+      .where(eq(sharedPeek.id, targetId));
+    if (!targetPeek) throw targetNotFound();
+    const key = peek.normalizedName;
+
+    const result = await this.database.transaction(async (tx) => {
+      for (const name of [
+        ...new Set([key, targetPeek.normalizedName]),
+      ].sort()) {
+        await this.catalog.lockName(tx, name);
+      }
+      const ownedNow = familyOwnedIngredients(tx);
+      const copies = await tx
+        .select({
+          id: ownedNow.id,
+          ownerFamilyId: ownedNow.ownerFamilyId,
+        })
+        .from(ownedNow)
+        .where(eq(ownedNow.normalizedName, key));
+      if (!copies.some((copy) => copy.id === ingredientId)) throw notFound();
+      const sharedNow = catalogScope(SHARED_ONLY).ingredients(tx);
+      const [target] = await tx
+        .select({
+          id: sharedNow.id,
+          leafCategoryId: sharedNow.leafCategoryId,
+        })
+        .from(sharedNow)
+        .where(eq(sharedNow.id, targetId))
+        .for('key share');
+      if (!target) throw targetNotFound();
+
+      await lockFamilies(
+        tx,
+        copies.map((copy) => copy.ownerFamilyId as string),
+      );
+      // A Family-side rename only holds its Family lock: re-read the group.
+      const still = await this.groupNow(
+        tx,
+        key,
+        copies.map((copy) => copy.id),
+      );
+      if (!still.some((copy) => copy.id === ingredientId)) throw notFound();
+      const ids = still.map((copy) => copy.id);
+      const moved = await this.synonymIdsOf(tx, ids);
+      const merged = await mergeIngredients(tx, target, ids);
+      await keepFamilyNames(tx, target.id, merged, {
+        skipSharedNames: true,
+        movedSynonymIds: moved,
+      });
+      return { targetIngredientId: target.id, mergedIngredientIds: ids };
+    });
+    // Every owner lost a copy and gained a Synonym.
+    this.scanCatalog.invalidate();
+    return result;
+  }
+
+  /** The copies still named `key`, among `ids`, once the Family locks are held. */
+  private async groupNow(tx: Tx, key: string, ids: string[]) {
+    const owned = familyOwnedIngredients(tx);
+    return tx
+      .select({ id: owned.id })
+      .from(owned)
+      .where(and(eq(owned.normalizedName, key), inArray(owned.id, ids)));
+  }
+
+  /** Family Synonyms the Ingredients `ids` hold, before a merge moves them. */
+  private async synonymIdsOf(tx: Tx, ids: string[]): Promise<string[]> {
+    if (ids.length === 0) return [];
+    const synonyms = familyOwnedTranslations(tx);
+    const rows = await tx
+      .select({ id: synonyms.id })
+      .from(synonyms)
+      .where(
+        and(
+          eq(synonyms.entityType, 'ingredient'),
+          eq(synonyms.kind, 'synonym'),
+          inArray(synonyms.entityId, ids),
+        ),
+      );
+    return rows.map((row) => row.id);
   }
 }

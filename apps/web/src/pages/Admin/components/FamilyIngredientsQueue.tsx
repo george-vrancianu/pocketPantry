@@ -6,11 +6,12 @@ import {
   useFamilyIngredientsQueue,
   type FamilyIngredientGroup,
 } from '../../../lib/familyIngredientsQueue';
+import { FamilyIngredientMerge } from './FamilyIngredientMerge';
 import { FamilyIngredientPromote } from './FamilyIngredientPromote';
 
 /**
  * The Admin queue of Family Ingredients: one row per normalised name across
- * Families, most owned first. Promote opens a picker of the copies.
+ * Families, most owned first. Promote opens a picker of the copies; Merge a search for the shared Ingredient to fold them into.
  */
 export function FamilyIngredientsQueue() {
   const { t } = useTranslation(['admin', 'common']);
@@ -18,12 +19,15 @@ export function FamilyIngredientsQueue() {
   const [promoting, setPromoting] = useState<FamilyIngredientGroup | null>(
     null,
   );
+  const [merging, setMerging] = useState<FamilyIngredientGroup | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   // Where focus goes once the picker closes: back to the row, or to the result message.
   const [restoreFocus, setRestoreFocus] = useState<
-    { to: 'row'; name: string } | { to: 'notice' } | null
+    | { to: 'row'; name: string; action: 'promote' | 'merge' }
+    | { to: 'notice' }
+    | null
   >(null);
 
   // Index of the first row a Load more brings in, until focus has moved there.
@@ -38,18 +42,21 @@ export function FamilyIngredientsQueue() {
   }, [focusFrom, queue.isFetchingNextPage]);
 
   useEffect(() => {
-    if (promoting || !restoreFocus) return;
+    if (promoting || merging || !restoreFocus) return;
     if (restoreFocus.to === 'notice') {
       noticeRef.current?.focus();
     } else {
-      const buttons =
-        listRef.current?.querySelectorAll<HTMLElement>('[data-promote-for]');
+      const attribute =
+        restoreFocus.action === 'merge' ? 'data-merge-for' : 'data-promote-for';
+      const buttons = listRef.current?.querySelectorAll<HTMLElement>(
+        `[${attribute}]`,
+      );
       [...(buttons ?? [])]
-        .find((button) => button.dataset.promoteFor === restoreFocus.name)
+        .find((button) => button.getAttribute(attribute) === restoreFocus.name)
         ?.focus();
     }
     setRestoreFocus(null);
-  }, [promoting, restoreFocus, queue.data]);
+  }, [promoting, merging, restoreFocus, queue.data]);
 
   if (promoting) {
     return (
@@ -66,8 +73,38 @@ export function FamilyIngredientsQueue() {
           setRestoreFocus({ to: 'notice' });
         }}
         onCancel={() => {
-          setRestoreFocus({ to: 'row', name: promoting.normalizedName });
+          setRestoreFocus({
+            to: 'row',
+            name: promoting.normalizedName,
+            action: 'promote',
+          });
           setPromoting(null);
+        }}
+      />
+    );
+  }
+
+  if (merging) {
+    return (
+      <FamilyIngredientMerge
+        group={merging}
+        onDone={(target) => {
+          setNotice(
+            t('admin:familyIngredients.merged', {
+              name: merging.name,
+              target,
+            }),
+          );
+          setMerging(null);
+          setRestoreFocus({ to: 'notice' });
+        }}
+        onCancel={() => {
+          setRestoreFocus({
+            to: 'row',
+            name: merging.normalizedName,
+            action: 'merge',
+          });
+          setMerging(null);
         }}
       />
     );
@@ -106,7 +143,7 @@ export function FamilyIngredientsQueue() {
                 · {group.leafCategory.name} ·{' '}
                 {t(`admin:locales.${group.locale}`)}
               </Typography>
-              <div>
+              <Stack direction="row" spacing={1}>
                 <Button
                   aria-label={t('admin:familyIngredients.promoteName', {
                     name: group.name,
@@ -119,7 +156,20 @@ export function FamilyIngredientsQueue() {
                 >
                   {t('admin:familyIngredients.promote')}
                 </Button>
-              </div>
+                <Button
+                  variant="secondary"
+                  aria-label={t('admin:familyIngredients.mergeName', {
+                    name: group.name,
+                  })}
+                  data-merge-for={group.normalizedName}
+                  onClick={() => {
+                    setNotice(null);
+                    setMerging(group);
+                  }}
+                >
+                  {t('admin:familyIngredients.merge')}
+                </Button>
+              </Stack>
             </Stack>
           </li>
         ))}

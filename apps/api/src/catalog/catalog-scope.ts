@@ -118,3 +118,15 @@ export function familyOwnedIngredients(executor: Executor) {
     .where(isNotNull(ingredients.ownerFamilyId))
     .as('ingredients');
 }
+
+/**
+ * Family Synonyms of every Family, for the Admin curation queue only (#276).
+ * Like `familyOwnedIngredients`: never expose which Family owns a row.
+ */
+export function familyOwnedTranslations(executor: Executor) {
+  return executor
+    .select()
+    .from(catalogTranslations)
+    .where(isNotNull(catalogTranslations.ownerFamilyId))
+    .as('family_translations');
+}

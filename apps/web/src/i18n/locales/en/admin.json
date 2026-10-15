@@ -338,6 +338,23 @@
     "copy": "{{name}}, {{leaf}}, {{locale}}",
     "promoteHint": "The other families' copies are merged into it.",
     "promoted_one": "Promoted {{name}}. Merged {{count}} other copy.",
-    "promoted_other": "Promoted {{name}}. Merged {{count}} other copies."
+    "promoted_other": "Promoted {{name}}. Merged {{count}} other copies.",
+    "kindSynonyms": "Synonym candidates",
+    "merge": "Merge",
+    "mergeName": "Merge {{name}}",
+    "merging": "Merging…",
+    "mergeHint": "Every family's copy of this name goes into the ingredient you pick. Each family keeps the name as its own synonym.",
+    "merged": "Merged {{name}} into {{target}}."
+  },
+  "familySynonyms": {
+    "empty": "No Synonym candidates to review.",
+    "of": "Synonym of {{ingredient}}",
+    "add": "Add as shared synonym",
+    "adding": "Adding…",
+    "addName": "Add {{name}} as shared synonym",
+    "addTitle": "Add {{name}} as a shared synonym",
+    "addHint": "Every family will find {{ingredient}} by this name. The families' own copies are removed.",
+    "language": "Synonym language",
+    "added": "Added {{name}} as a shared synonym of {{ingredient}}."
   }
 }
