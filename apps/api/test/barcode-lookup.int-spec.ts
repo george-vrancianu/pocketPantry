@@ -9,6 +9,7 @@ import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { catalogTranslations } from '../src/database/schema';
 import type { OpenFoodFactsProduct } from '../src/barcode/open-food-facts.client';
+import { freshBarcode } from './support/fresh-barcode';
 import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
@@ -87,16 +88,10 @@ describe('Barcode Lookup (integration)', () => {
     );
   });
 
-  // The shared cache outlives a test run, so every test looks up a barcode of its own.
   let code = '';
-  const freshCode = (length = 13) =>
-    `${stamp}${++n}${Math.random().toString().slice(2)}`
-      .replace(/\D/g, '')
-      .slice(-length)
-      .padStart(length, '1');
 
   beforeEach(() => {
-    code = freshCode();
+    code = freshBarcode();
     asked.length = 0;
     found = null;
     failWith = null;
@@ -125,7 +120,7 @@ describe('Barcode Lookup (integration)', () => {
   );
 
   it.each([8, 12, 13])('accepts a %i-digit barcode', async (length) => {
-    const barcode = freshCode(length);
+    const barcode = freshBarcode(length);
     found = product({ productName: 'Parmesan' });
     await lookup(a, barcode).expect(200);
     expect(asked).toEqual([barcode]);
@@ -240,7 +235,7 @@ describe('Barcode Lookup (integration)', () => {
       genericNames: { ro: 'Nume Generic' },
     });
     const described = async (locale: string) =>
-      ((await lookup(a, freshCode(), locale).expect(200)).body as Json)
+      ((await lookup(a, freshBarcode(), locale).expect(200)).body as Json)
         .productDescription;
 
     it("prefers the product name in the Member's locale", async () => {

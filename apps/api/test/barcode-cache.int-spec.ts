@@ -5,6 +5,7 @@ import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import type { OpenFoodFactsProduct } from '../src/barcode/open-food-facts.client';
+import { freshBarcode } from './support/fresh-barcode';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -27,17 +28,11 @@ describe('Barcode Lookup cache (integration)', () => {
   let a: ReturnType<typeof client>;
   let b: ReturnType<typeof client>;
   const stamp = Date.now();
-  let n = 0;
   const asked: string[] = [];
   let found: OpenFoodFactsProduct | null = null;
   let failWith: Error | null = null;
   let now = 0;
 
-  // The cache lives in the database across runs, so every test uses its own barcode.
-  const freshCode = () =>
-    `${stamp}${++n}${Math.random().toString().slice(2)}`
-      .replace(/\D/g, '')
-      .slice(-13);
   let code = '';
 
   beforeAll(async () => {
@@ -62,7 +57,7 @@ describe('Barcode Lookup cache (integration)', () => {
   });
 
   beforeEach(() => {
-    code = freshCode();
+    code = freshBarcode();
     asked.length = 0;
     found = parmesan;
     failWith = null;
@@ -130,7 +125,7 @@ describe('Barcode Lookup cache (integration)', () => {
   });
 
   it('matches the Catalog per Family from the same cached product', async () => {
-    const name = `Cache Synonym ${stamp}-${n}`;
+    const name = `Cache Synonym ${stamp}`;
     found = { ...parmesan, productName: name };
     expect(((await lookup(a)).body as Json).match).toBeNull();
 
