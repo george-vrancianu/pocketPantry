@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
+import type { PlateMatch } from '../../lib/plateRecipe';
 import type { ProposedLine } from '../../lib/scan';
 import { getScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -47,9 +48,9 @@ const lines: ProposedLine[] = [
   },
 ];
 
-const matches = [
-  { id: 'pilaf-id', title: 'Pilaf', score: 0.9 },
-  { id: 'risotto-id', title: 'Risotto', score: 0.4 },
+const matches: PlateMatch[] = [
+  { id: 'pilaf-id', title: 'Pilaf', score: 0.9, allergyWarning: null },
+  { id: 'risotto-id', title: 'Risotto', score: 0.4, allergyWarning: null },
 ];
 
 function renderPlate(
@@ -346,5 +347,32 @@ describe('Plate Scan: save as a Recipe', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes/from-plate')
       ?.body as { lines: { quantity: number | null }[] };
     expect(body.lines[0].quantity).toBe(120);
+  });
+
+  it('marks a match whose Recipe contains an Allergy, naming the Allergen', async () => {
+    renderPlate({}, [
+      {
+        ...matches[0],
+        allergyWarning: {
+          severity: 'strong',
+          allergens: [
+            { id: 'a-pn', name: 'Peanuts', tier: 'yours', severity: 'strong' },
+          ],
+          uncheckedCount: 0,
+        },
+      },
+      { ...matches[1], allergyWarning: null },
+    ]);
+    const bases = await openPanel();
+    const indicator = await within(bases).findByRole('img', {
+      name: 'Contains Peanuts',
+    });
+    expect(indicator).toHaveAttribute('data-severity', 'strong');
+    expect(within(bases).getAllByRole('img')).toHaveLength(1);
+    expect(
+      within(bases).getByRole('radio', {
+        name: 'Pilaf (closest match) Contains Peanuts',
+      }),
+    ).toBeChecked();
   });
 });

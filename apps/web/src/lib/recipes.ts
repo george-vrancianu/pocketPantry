@@ -20,6 +20,22 @@ import { shoppingListQueryKey, type ShoppingList } from './shopping';
 export type RecipeOwner = 'catalog' | 'family';
 export type NamedRef = { id: string; name: string };
 
+/**
+ * The Allergy Warning as a list row, strip tile or match carries it (mirror of the API's
+ * `CompactAllergyWarning`): one item per Allergen, same severity as on Recipe detail.
+ */
+export type CompactAllergyWarning = {
+  severity: 'strong' | 'soft';
+  /** Empty when only Unchecked lines raise the warning. */
+  allergens: {
+    id: string;
+    name: string;
+    tier: 'yours' | 'members';
+    severity: 'strong' | 'soft';
+  }[];
+  uncheckedCount: number;
+};
+
 /** One row of the Recipe list (mirror of the API's `RecipeListItem`). */
 export type RecipeListItem = {
   id: string;
@@ -34,6 +50,7 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: Difficulty | null;
   owner: RecipeOwner;
+  allergyWarning: CompactAllergyWarning | null;
 };
 
 /** A Variant as listed on its base's detail. */

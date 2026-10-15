@@ -20,7 +20,6 @@ import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { PlateRecipesService } from './plate-recipes.service';
-import type { PlateMatch } from './plate-matches';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
@@ -42,6 +41,7 @@ import {
   type FamilyRecipeUpdate,
   type FromPlateBody,
   type PlateMatchesBody,
+  type PlateMatchView,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
@@ -129,10 +129,11 @@ export class RecipesController {
       'The Catalog Base Recipes closest to a Plate Scan dish, best first (at most five)',
   })
   async plateMatches(
+    @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
-  ): Promise<{ matches: PlateMatch[] }> {
-    return { matches: await this.plate.closestBases(body) };
+  ): Promise<{ matches: PlateMatchView[] }> {
+    return { matches: await this.plate.closestBases(member.id, body) };
   }
 
   @Post('from-plate')

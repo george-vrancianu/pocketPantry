@@ -3,6 +3,7 @@ import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
 import type { AllergyOwner } from './matching/allergens';
+import type { PlateMatch } from './plate-matches';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -326,6 +327,8 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
   owner: RecipeOwner;
+  /** The compact Allergy Warning, judged on this Recipe's own lines; null when nothing the viewer must avoid is, or might be, in it. */
+  allergyWarning: CompactAllergyWarning | null;
 };
 
 /** A Variant as listed on its base's detail. */
@@ -375,6 +378,30 @@ export type AllergyWarningView = {
   severity: 'strong' | 'soft';
   /** The Allergies the Recipe contains: own and Family first, then other Members'. Empty when only Unchecked lines raise it. */
   entries: AllergyWarningEntryView[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
+/**
+ * The Allergy Warning as a list row, strip tile or match shows it: the same severity as on
+ * Recipe detail, one item per Allergen (not per person) named in the viewer's locale. The line
+ * markers and whose-Allergy names stay on detail. Null when nothing the viewer must avoid is,
+ * or might be, in the Recipe.
+ *
+ * #359's `hidden` and `hiddenByAllergiesCount` will sit beside this warning, not inside it.
+ */
+export type CompactAllergyWarning = {
+  /** As on Recipe detail: `strong` when any Allergen is in a required line; `soft` otherwise. */
+  severity: 'strong' | 'soft';
+  /** The Allergens behind the warning, in the Allergy Warning's order. Empty when only Unchecked lines raise it. */
+  allergens: {
+    id: string;
+    name: string;
+    /** `yours` when it is the viewer's own or a Family Allergy, `members` when only another Member's. */
+    tier: 'yours' | 'members';
+    /** `strong` when a required line contains it for anyone listed, `soft` when only optional lines do. */
+    severity: 'strong' | 'soft';
+  }[];
   /** Lines that could not be checked for Allergens. */
   uncheckedCount: number;
 };
@@ -471,6 +498,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;
   /** Set only for a near miss: the one short or missing required line. */
@@ -481,3 +509,8 @@ export type CookTonightCard = {
 };
 
 export type CookTonightView = { cards: CookTonightCard[] };
+
+/** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
+export type PlateMatchView = PlateMatch & {
+  allergyWarning: CompactAllergyWarning | null;
+};

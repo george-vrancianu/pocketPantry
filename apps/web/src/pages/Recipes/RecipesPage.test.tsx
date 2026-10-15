@@ -34,6 +34,7 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: 'easy',
   owner: 'catalog',
+  allergyWarning: null,
   ...over,
 });
 
@@ -57,6 +58,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    allergyWarning: null,
     ...over.recipe,
   },
 });
@@ -659,6 +661,78 @@ describe('RecipesPage', () => {
       expect(row).not.toHaveTextContent('Can Make');
       expect(row).not.toHaveTextContent('Missing');
       expect(row).not.toHaveTextContent('expiring');
+    });
+  });
+
+  describe('allergen indicator', () => {
+    const peanuts = (
+      severity: 'strong' | 'soft',
+    ): NonNullable<RecipeListItem['allergyWarning']> => ({
+      severity,
+      allergens: [
+        { id: 'a-pn', name: 'Peanuts', tier: 'yours', severity },
+        { id: 'a-mk', name: 'Milk', tier: 'members', severity },
+      ],
+      uncheckedCount: 0,
+    });
+
+    it('marks a row strongly, naming the Allergens for a screen reader', async () => {
+      setup(() => [
+        item({ id: 'o', title: 'Omelette', allergyWarning: peanuts('strong') }),
+        soup,
+      ]);
+      const row = await findRow('Omelette');
+      const indicator = within(row).getByRole('img', {
+        name: 'Contains Peanuts, Milk',
+      });
+      expect(indicator).toHaveAttribute('data-severity', 'strong');
+      expect(within(await findRow('Soup')).queryByRole('img')).toBeNull();
+    });
+
+    it('marks a row softly when only optional lines contain the Allergen', async () => {
+      setup(() => [
+        item({ id: 'o', title: 'Omelette', allergyWarning: peanuts('soft') }),
+      ]);
+      const row = await findRow('Omelette');
+      expect(
+        within(row).getByRole('img', {
+          name: 'Optional: contains Peanuts, Milk',
+        }),
+      ).toHaveAttribute('data-severity', 'soft');
+    });
+
+    it('says when lines could not be checked, without claiming anything is free of Allergens', async () => {
+      setup(() => [
+        item({
+          id: 'o',
+          title: 'Omelette',
+          allergyWarning: {
+            severity: 'soft',
+            allergens: [],
+            uncheckedCount: 2,
+          },
+        }),
+      ]);
+      const row = await findRow('Omelette');
+      expect(
+        within(row).getByRole('img', {
+          name: "2 ingredients couldn't be checked for allergens",
+        }),
+      ).toBeVisible();
+    });
+
+    it('marks a Can Make tile, and names the Allergen in the tile link', async () => {
+      setup(
+        () => [omelette],
+        [card({ recipe: { allergyWarning: peanuts('strong') } })],
+      );
+      const strip = await findStrip();
+      expect(
+        within(strip).getByRole('img', { name: 'Contains Peanuts, Milk' }),
+      ).toHaveAttribute('data-severity', 'strong');
+      expect(tilesOf(strip)[0].getAttribute('aria-label')).toContain(
+        'Contains Peanuts, Milk',
+      );
     });
   });
 });

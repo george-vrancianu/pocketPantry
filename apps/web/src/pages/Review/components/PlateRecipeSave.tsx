@@ -8,18 +8,23 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AllergenIndicator } from '../../../components/AllergenIndicator';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   matchedIngredientIds,
   useSaveFromPlate,
   usePlateMatches,
 } from '../../../lib/plateRecipe';
-import { useRecipes } from '../../../lib/recipes';
+import { useRecipes, type CompactAllergyWarning } from '../../../lib/recipes';
 import type { ReviewLine } from '../../../lib/review';
 
 const STANDALONE = 'standalone';
 
-type Base = { id: string; title: string };
+type Base = {
+  id: string;
+  title: string;
+  allergyWarning?: CompactAllergyWarning | null;
+};
 
 type Props = {
   dishTitle: string;
@@ -35,11 +40,13 @@ function BaseOption({
   label,
   name,
   onSelect,
+  allergyWarning,
 }: {
   checked: boolean;
   label: string;
   name: string;
   onSelect: () => void;
+  allergyWarning?: CompactAllergyWarning | null;
 }) {
   return (
     <Box
@@ -54,6 +61,7 @@ function BaseOption({
         style={{ width: 20, height: 20 }}
       />
       {label}
+      <AllergenIndicator warning={allergyWarning} />
     </Box>
   );
 }
@@ -195,6 +203,7 @@ export function PlateRecipeSave({
                 : match.title
             }
             onSelect={() => setChosen(match.id)}
+            allergyWarning={match.allergyWarning}
           />
         ))}
         {extra ? (
@@ -203,6 +212,7 @@ export function PlateRecipeSave({
             checked={selected === extra.id}
             label={extra.title}
             onSelect={() => setChosen(extra.id)}
+            allergyWarning={extra.allergyWarning}
           />
         ) : null}
         {results.map((recipe) => (
@@ -212,6 +222,7 @@ export function PlateRecipeSave({
             checked={selected === recipe.id}
             label={recipe.title}
             onSelect={() => pick(recipe)}
+            allergyWarning={recipe.allergyWarning}
           />
         ))}
         <BaseOption

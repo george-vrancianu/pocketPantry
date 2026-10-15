@@ -4,10 +4,15 @@ import type { FamilyRecipeEdit, FamilyRecipeDocument } from './familyRecipes';
 import { parseQuantity } from './pantry';
 import type { ReviewLine } from './review';
 import { recipeChangeQueryKeys } from './queryKeys';
-import { recipesQueryKey } from './recipes';
+import { recipesQueryKey, type CompactAllergyWarning } from './recipes';
 
 /** A Catalog Base Recipe that resembles the dish, best first. */
-export type PlateMatch = { id: string; title: string; score: number };
+export type PlateMatch = {
+  id: string;
+  title: string;
+  score: number;
+  allergyWarning: CompactAllergyWarning | null;
+};
 
 /** The ids of the Ingredients the Plate Scan recognised, each once. */
 export const matchedIngredientIds = (lines: ReviewLine[]): string[] => [
