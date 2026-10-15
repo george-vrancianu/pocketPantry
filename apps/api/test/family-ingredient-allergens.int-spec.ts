@@ -1,10 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, ilike, inArray } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { ingredientAllergens } from '../src/database/schema';
+import { allergens, ingredientAllergens } from '../src/database/schema';
 import type {
   FamilyRecipeEdit,
   RecipeDetail,
@@ -80,6 +81,18 @@ describe('Family Ingredient Allergens (integration)', () => {
   });
 
   afterAll(async () => {
+    const stamped = (
+      await database
+        .select({ id: allergens.id })
+        .from(allergens)
+        .where(ilike(allergens.name, `Lychee ${stamp}-%`))
+    ).map((row) => row.id);
+    if (stamped.length > 0) {
+      await database
+        .delete(ingredientAllergens)
+        .where(inArray(ingredientAllergens.allergenId, stamped));
+      await database.delete(allergens).where(inArray(allergens.id, stamped));
+    }
     await app.close();
   });
 
@@ -90,12 +103,20 @@ describe('Family Ingredient Allergens (integration)', () => {
       defaultUnit: 'g',
       ...extra,
     });
-  const newAllergen = async () =>
-    (
-      await admin
-        .post('/admin/catalog/allergens', { name: unique('Lychee') })
-        .expect(201)
-    ).body as { id: string; name: string };
+  // Stamped Allergens go straight into the table, already retired, so no other suite ever
+  // sees an extra live Allergen (they count them).
+  const newAllergen = async (archived = true) => {
+    const name = unique('Lychee');
+    const id = randomUUID();
+    await database.insert(allergens).values({
+      id,
+      name,
+      normalizedName: name.toLowerCase(),
+      sortOrder: 1000 + n,
+      archivedAt: archived ? new Date() : null,
+    });
+    return { id, name };
+  };
   const made = async (who: Who, extra: object = {}) =>
     (await create(who, unique('Fia'), extra).expect(201)).body as Made;
   const rowOf = async (who: Who, id: string) =>
@@ -133,17 +154,20 @@ describe('Family Ingredient Allergens (integration)', () => {
       const list = (await a.get('/catalog/allergens?locale=ro').expect(200))
         .body as { allergens: { id: string; name: string }[] };
       expect(list.allergens).toContainEqual({ id: MILK, name: 'Lapte' });
-      const lychee = await newAllergen();
+      // The one test that needs a live Allergen; it is retired again straight after the check.
+      const lychee = await newAllergen(false);
       const offered = async () =>
         (
           (await a.get('/catalog/allergens?locale=en').expect(200)).body as {
             allergens: { id: string }[];
           }
         ).allergens.map((x) => x.id);
-      expect(await offered()).toContain(lychee.id);
-      await admin
-        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
-        .expect(200);
+      const live = await offered();
+      await database
+        .update(allergens)
+        .set({ archivedAt: new Date() })
+        .where(eq(allergens.id, lychee.id));
+      expect(live).toContain(lychee.id);
       expect(await offered()).not.toContain(lychee.id);
     });
   });
@@ -177,9 +201,6 @@ describe('Family Ingredient Allergens (integration)', () => {
     it('refuses a retired or unknown Allergen and creates nothing', async () => {
       const name = unique('Fia refused');
       const lychee = await newAllergen();
-      await admin
-        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
-        .expect(200);
       const retired = await create(a, name, { allergenIds: [lychee.id] });
       expect([retired.status, (retired.body as { code: string }).code]).toEqual(
         [409, 'catalog.allergen_retired'],
@@ -220,10 +241,10 @@ describe('Family Ingredient Allergens (integration)', () => {
 
     it('refuses a retired Allergen as a new tag but lets one it has stay', async () => {
       const lychee = await newAllergen();
-      const row = await made(a, { allergenIds: [lychee.id] });
-      await admin
-        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
-        .expect(200);
+      const row = await made(a, { allergenIds: [] });
+      await database
+        .insert(ingredientAllergens)
+        .values({ ingredientId: row.id, allergenId: lychee.id });
       await tag(a, row.id, [lychee.id, MILK]).expect(200);
       await tag(a, row.id, [lychee.id]).expect(200);
       // Still listed, by name, so a Member can untick it.
