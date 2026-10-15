@@ -25,6 +25,7 @@ const batch = (overrides: Partial<Batch> = {}): Batch => {
     aisle: null,
     amountScale: null,
     defaultUnit: null,
+    defaultExpiryDays: null,
     quantity: null,
     unit: null,
     location: 'fridge',
@@ -652,7 +653,7 @@ describe('HealthWidget', () => {
       ).toHaveTextContent('3 to do · Toss 1 expired');
     });
 
-    it('gives each bulk button its full accessible name; Date all waits for its own ticket', async () => {
+    it('gives each bulk button its full accessible name; Date all is disabled without a Default Expiry', async () => {
       const { sheet } = await open(
         [
           batch({ expiryDate: iso(-1) }),
@@ -1197,6 +1198,228 @@ describe('HealthWidget', () => {
       expect(
         within(sheet).queryByRole('button', { name: /^Used (Yogurt|Milk)/ }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  describe('dating Batches', () => {
+    const daysAgo = (days: number) => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.toISOString();
+    };
+    const pesto = () =>
+      batch({
+        id: 'pesto',
+        name: 'Pesto',
+        quantity: 190,
+        unit: 'g',
+        expiryDate: null,
+        defaultExpiryDays: 30,
+        createdAt: daysAgo(5),
+      });
+    const jam = () =>
+      batch({
+        id: 'jam',
+        name: 'Jam',
+        location: 'cupboard',
+        expiryDate: null,
+        defaultExpiryDays: 365,
+        // Added 400 days ago: its usual date, 35 days ago, has passed.
+        createdAt: daysAgo(400),
+      });
+    const mystery = () =>
+      batch({
+        id: 'mystery',
+        name: 'Mystery jar',
+        ingredientId: null,
+        unmatched: true,
+        expiryDate: null,
+        defaultExpiryDays: null,
+      });
+
+    /** A Pantry the stubbed API keeps: a PATCH changes the Batch's expiry date. */
+    async function openWith(batches: Batch[]) {
+      const pantry = batches.map((b) => ({ ...b }));
+      const patches: Array<{ id: string; expiryDate: unknown }> = [];
+      const patchRoute = (id: string) => async (url: URL) => {
+        void url;
+        const { body } = calls
+          .filter((call) => call.key === `PATCH /api/pantry/batches/${id}`)
+          .at(-1) as { body: { expiryDate: string | null } };
+        patches.push({ id, expiryDate: body.expiryDate });
+        const target = pantry.find((b) => b.id === id) as Batch;
+        target.expiryDate = body.expiryDate;
+        return Response.json(target);
+      };
+      const calls = stub({ batches: [], runningLow: [] }, [], undefined, [], {
+        'GET /api/pantry': () =>
+          Response.json({ batches: pantry, runningLow: [] }),
+        ...Object.fromEntries(
+          batches.map((b) => [
+            `PATCH /api/pantry/batches/${b.id}`,
+            patchRoute(b.id),
+          ]),
+        ),
+      });
+      stubMotion(true);
+      const user = userEvent.setup();
+      renderWithProviders(<HealthWidget size="wide" columns={2} />);
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      return { user, sheet, patches, pantry };
+    }
+
+    const filler = (count: number) =>
+      Array.from({ length: count }, () => batch());
+
+    it('opens the expiry sheet for one Batch with its context and the usual date pre-selected, and saves it', async () => {
+      const { user, sheet, patches } = await openWith([pesto(), ...filler(9)]);
+      await user.click(
+        within(sheet).getByRole('button', { name: /^Date 1 Batch/ }),
+      );
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Set date for Pesto' }),
+      );
+
+      const picker = await screen.findByRole('dialog', { name: 'Expires' });
+      expect(within(picker).getByText('Pesto · 190 g · Fridge')).toBeVisible();
+      expect(
+        within(picker).getByRole('button', { name: /^Usual, /, pressed: true }),
+      ).toBeInTheDocument();
+
+      await user.click(within(picker).getByRole('button', { name: 'Done' }));
+
+      await waitFor(() =>
+        expect(patches).toEqual([{ id: 'pesto', expiryDate: isoIn(30) }]),
+      );
+      expect(await screen.findByText(/^Pesto dated/)).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          within(sheet).queryByRole('button', { name: /^Date 1 Batch/ }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('puts the previous date back on Undo after Set date', async () => {
+      const { user, sheet, patches } = await openWith([pesto(), ...filler(9)]);
+      await user.click(
+        within(sheet).getByRole('button', { name: /^Date 1 Batch/ }),
+      );
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Set date for Pesto' }),
+      );
+      const picker = await screen.findByRole('dialog', { name: 'Expires' });
+      await user.click(within(picker).getByRole('button', { name: 'Done' }));
+      await screen.findByText(/^Pesto dated/);
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() =>
+        expect(patches.at(-1)).toEqual({ id: 'pesto', expiryDate: null }),
+      );
+      expect(
+        await within(sheet).findByRole('button', { name: /^Date 1 Batch/ }),
+      ).toBeInTheDocument();
+    });
+
+    it('saves nothing when the Batch is closed with no expiry', async () => {
+      const { user, sheet, patches } = await openWith([pesto(), ...filler(9)]);
+      await user.click(
+        within(sheet).getByRole('button', { name: /^Date 1 Batch/ }),
+      );
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Set date for Pesto' }),
+      );
+      const picker = await screen.findByRole('dialog', { name: 'Expires' });
+      await user.click(
+        within(picker).getByRole('button', { name: 'No expiry' }),
+      );
+      await user.click(within(picker).getByRole('button', { name: 'Done' }));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Expires' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(patches).toEqual([]);
+    });
+
+    it('dates only the Batches that have a Default Expiry, leaving the others listed', async () => {
+      const { user, sheet, patches } = await openWith([
+        pesto(),
+        jam(),
+        mystery(),
+        ...filler(7),
+      ]);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Date all 3 Batches' }),
+      );
+
+      await waitFor(() =>
+        expect(patches).toEqual(
+          expect.arrayContaining([
+            // Added 5 days ago plus 30 days; and 365 days from today, since its own date has passed.
+            { id: 'pesto', expiryDate: isoIn(25) },
+            { id: 'jam', expiryDate: isoIn(365) },
+          ]),
+        ),
+      );
+      expect(patches).toHaveLength(2);
+      expect(
+        await screen.findByText(
+          /^2 given their usual expiry · edit any in Pantry/,
+        ),
+      ).toBeInTheDocument();
+      const remaining = await within(sheet).findByRole('button', {
+        name: /^Date 1 Batch/,
+      });
+      await user.click(remaining);
+      expect(
+        within(sheet).getByRole('button', { name: 'Set date for Mystery jar' }),
+      ).toBeInTheDocument();
+    });
+
+    it('puts every date back on Undo after Date all', async () => {
+      const { user, sheet, patches, pantry } = await openWith([
+        pesto(),
+        jam(),
+        mystery(),
+        ...filler(7),
+      ]);
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Date all 3 Batches' }),
+      );
+      await screen.findByText(/^2 given their usual expiry/);
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+
+      await waitFor(() => expect(patches).toHaveLength(4));
+      expect(patches.slice(2)).toEqual(
+        expect.arrayContaining([
+          { id: 'pesto', expiryDate: null },
+          { id: 'jam', expiryDate: null },
+        ]),
+      );
+      expect(pantry.filter((b) => b.expiryDate === null)).toHaveLength(3);
+      expect(
+        await within(sheet).findByRole('button', {
+          name: 'Date all 3 Batches',
+        }),
+      ).toBeEnabled();
+    });
+
+    it('cannot Date all when no Batch has a Default Expiry', async () => {
+      const { sheet } = await openWith([mystery(), ...filler(9)]);
+
+      expect(
+        within(sheet).getByRole('button', { name: 'Date all (1 Batch)' }),
+      ).toBeDisabled();
     });
   });
 

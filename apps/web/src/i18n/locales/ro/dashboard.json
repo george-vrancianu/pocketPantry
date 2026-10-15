@@ -166,13 +166,19 @@
       "used": "Ai folosit {{name}}",
       "added_one": "{{count}} adăugat pe lista de cumpărături",
       "added_few": "{{count}} adăugate pe lista de cumpărături",
-      "added_other": "{{count}} adăugate pe lista de cumpărături"
+      "added_other": "{{count}} adăugate pe lista de cumpărături",
+      "dated": "{{name}} are acum dată",
+      "usual_one": "{{count}} lot a primit data obișnuită de expirare · modifică în cămară",
+      "usual_few": "{{count}} loturi au primit data obișnuită de expirare · modifică în cămară",
+      "usual_other": "{{count}} de loturi au primit data obișnuită de expirare · modifică în cămară"
     },
     "item": {
       "toss": "Aruncă {{name}}",
       "used": "Folosit",
       "usedName": "Ai folosit {{name}}",
-      "add": "Adaugă {{name}}"
+      "add": "Adaugă {{name}}",
+      "setDate": "Setează data",
+      "setDateName": "Setează data pentru {{name}}"
     }
   }
 }

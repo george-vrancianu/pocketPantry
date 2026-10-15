@@ -29,6 +29,7 @@ type Batch = {
   productDescription: string | null;
   aisle: { id: string; name: string; sortOrder: number } | null;
   amountScale: 'low' | 'medium' | 'large' | null;
+  defaultExpiryDays: number | null;
 };
 
 const inDays = (days: number) =>
@@ -185,6 +186,78 @@ describe('Pantry (integration)', () => {
       .from(batches)
       .where(eq(batches.id, batch.id));
     expect(row.leafCategoryId).toBe(seedId.leaf('dairy-other'));
+  });
+
+  describe('defaultExpiryDays', () => {
+    const putOverride = (cookie: string, categoryId: string, days: number) =>
+      request(app.getHttpServer())
+        .put(`/api/settings/family/expiry-overrides/${categoryId}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ days })
+        .expect(200);
+
+    it('is the Catalog Leaf value, else the Parent value', async () => {
+      const { cookie } = await signUp();
+      await add(cookie, { ingredientId: seedId.ingredient('parmesan') }).expect(
+        201,
+      );
+      await add(cookie, {
+        rawName: 'Mystery cheese',
+        parentCategoryId: seedId.parent('dairy'),
+      }).expect(201);
+      const byName = new Map(
+        (await list(cookie)).map((b) => [b.name, b.defaultExpiryDays]),
+      );
+      expect(byName.get('Parmesan')).toBe(60);
+      expect(byName.get('Mystery cheese')).toBe(10);
+    });
+
+    it('prefers a Family Leaf override, and a Family Parent override over the Catalog Leaf value', async () => {
+      const { cookie } = await signUp();
+      await add(cookie, { ingredientId: seedId.ingredient('parmesan') }).expect(
+        201,
+      );
+      await add(cookie, { ingredientId: seedId.ingredient('milk') }).expect(
+        201,
+      );
+      await putOverride(cookie, seedId.leaf('hard-cheese'), 14);
+      await putOverride(cookie, seedId.parent('dairy'), 9);
+      const byName = new Map(
+        (await list(cookie)).map((b) => [b.name, b.defaultExpiryDays]),
+      );
+      expect(byName.get('Parmesan')).toBe(14);
+      expect(byName.get('Milk')).toBe(9);
+    });
+
+    it('is null for an Unmatched Batch under the top-level Other', async () => {
+      const { cookie } = await signUp();
+      await add(cookie, {
+        rawName: 'Zorblax paste',
+        location: 'cupboard',
+      }).expect(201);
+      const [batch] = await list(cookie);
+      expect(batch.defaultExpiryDays).toBeNull();
+    });
+
+    it('comes with a created and an edited Batch too', async () => {
+      const { cookie } = await signUp();
+      const created = (
+        await add(cookie, {
+          ingredientId: seedId.ingredient('parmesan'),
+        }).expect(201)
+      ).body as Batch;
+      expect(created.defaultExpiryDays).toBe(60);
+      const edited = (
+        await request(app.getHttpServer())
+          .patch(`/api/pantry/batches/${created.id}`)
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .send({ expiryDate: null })
+          .expect(200)
+      ).body as Batch;
+      expect(edited.defaultExpiryDays).toBe(60);
+    });
   });
 
   // Own Parent so these tests never touch (or race on) the shared seed rows.

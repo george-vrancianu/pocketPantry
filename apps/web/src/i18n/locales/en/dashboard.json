@@ -149,13 +149,18 @@
       "tossed": "Tossed {{name}}",
       "used": "Used {{name}}",
       "added_one": "{{count}} added to the Shopping List",
-      "added_other": "{{count}} added to the Shopping List"
+      "added_other": "{{count}} added to the Shopping List",
+      "dated": "{{name}} dated",
+      "usual_one": "{{count}} given their usual expiry · edit any in Pantry",
+      "usual_other": "{{count}} given their usual expiry · edit any in Pantry"
     },
     "item": {
       "toss": "Toss {{name}}",
       "used": "Used",
       "usedName": "Used {{name}}",
-      "add": "Add {{name}}"
+      "add": "Add {{name}}",
+      "setDate": "Set date",
+      "setDateName": "Set date for {{name}}"
     }
   }
 }

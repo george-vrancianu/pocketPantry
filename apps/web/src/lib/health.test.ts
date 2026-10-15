@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   healthTodos,
   pantryHealth,
+  usualExpiryDate,
   verdictOf,
   type HealthBatch,
   type HealthInput,
@@ -15,6 +16,7 @@ const batch = (overrides: Partial<HealthBatch> = {}): HealthBatch => ({
   ingredientId: `i${n}`,
   location: 'fridge',
   expiryDate: '2027-01-01',
+  defaultExpiryDays: null,
   createdAt: '2026-10-10T08:00:00Z',
   ...overrides,
 });
@@ -441,9 +443,62 @@ describe('health to-do gain', () => {
     expect(gainOf(i, 'expiringSoon')).toBe(0);
   });
 
-  it('is hidden for undated Batches until they are simulated', () => {
-    const i = input({ batches: [batch({ expiryDate: null }), ...batches(9)] });
-    expect(gainOf(i, 'undated')).toBe(0);
+  describe('for undated Batches', () => {
+    const undated = (count: number, overrides: Partial<HealthBatch> = {}) =>
+      batches(count, { expiryDate: null, ...overrides });
+
+    it("is the score after Date all with each Batch's Default Expiry", () => {
+      // 4 of 10 undated: Dated 60, total 94. All dated in date: 100.
+      const i = input({
+        batches: [...batches(6), ...undated(4, { defaultExpiryDays: 30 })],
+      });
+      expect(scored(i).total).toBe(94);
+      expect(gainOf(i, 'undated')).toBe(6);
+    });
+
+    it('counts from when the Batch was added, or from today when that date has passed', () => {
+      // Added 2026-01-01 with 30 days is long past: dated from today instead, so in date, not Expired.
+      const i = input({
+        batches: [
+          ...batches(6),
+          ...undated(4, {
+            defaultExpiryDays: 30,
+            location: 'cupboard',
+            createdAt: '2026-01-01T12:00:00Z',
+          }),
+        ],
+      });
+      expect(gainOf(i, 'undated')).toBe(6);
+    });
+
+    it('is lower when the resulting dates are Expiring Soon', () => {
+      // Two Batches become Expiring Soon (Fresh 0.6 each): total 97 instead of 100.
+      const i = input({
+        batches: [
+          ...batches(6),
+          ...undated(2, { defaultExpiryDays: 30 }),
+          ...undated(2, { defaultExpiryDays: 2 }),
+        ],
+      });
+      expect(gainOf(i, 'undated')).toBe(3);
+    });
+
+    it('skips Batches without a Default Expiry', () => {
+      const i = input({
+        batches: [
+          ...batches(6),
+          ...undated(2, { defaultExpiryDays: 30 }),
+          ...undated(2),
+        ],
+      });
+      // Dated goes 60 to 80: total 94 to 97.
+      expect(gainOf(i, 'undated')).toBe(3);
+    });
+
+    it('is hidden when no Batch has a Default Expiry', () => {
+      const i = input({ batches: [...batches(9), ...undated(1)] });
+      expect(gainOf(i, 'undated')).toBe(0);
+    });
   });
 
   it('is hidden while the Pantry is not scored', () => {
@@ -453,5 +508,40 @@ describe('health to-do gain', () => {
     });
     expect(gainOf(i, 'expired')).toBe(0);
     expect(gainOf(i, 'missingStaples')).toBe(0);
+  });
+});
+
+describe('usual expiry date', () => {
+  const dated = (overrides: Partial<HealthBatch>) => batch(overrides);
+
+  it('is the day the Batch was added plus its Default Expiry', () => {
+    expect(
+      usualExpiryDate(
+        dated({ createdAt: '2026-10-10T12:00:00Z', defaultExpiryDays: 30 }),
+        TODAY,
+      ),
+    ).toBe('2026-11-09');
+  });
+
+  it('is today plus the Default Expiry once that date has passed', () => {
+    expect(
+      usualExpiryDate(
+        dated({ createdAt: '2026-01-01T12:00:00Z', defaultExpiryDays: 30 }),
+        TODAY,
+      ),
+    ).toBe('2026-11-14');
+  });
+
+  it('is today for a Batch whose usual date is today', () => {
+    expect(
+      usualExpiryDate(
+        dated({ createdAt: '2026-10-05T12:00:00Z', defaultExpiryDays: 10 }),
+        TODAY,
+      ),
+    ).toBe('2026-10-15');
+  });
+
+  it('is null without a Default Expiry', () => {
+    expect(usualExpiryDate(dated({}), TODAY)).toBeNull();
   });
 });

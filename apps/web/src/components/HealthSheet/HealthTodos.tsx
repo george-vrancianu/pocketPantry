@@ -30,7 +30,9 @@ import { ExpiryTag } from '../ExpiryTag';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { expiringSoonDay, todoTitle } from './todoText';
 import { todoItems, type TodoItem } from './todoItems';
+import { SetDateSheet } from './SetDateSheet';
 import { useAddToShoppingList, type ShoppingFix } from './useAddToShoppingList';
+import { useDateBatches, type DateFix } from './useDateBatches';
 
 const GROUPS: HealthTodoGroup[] = ['now', 'week', 'tidy'];
 
@@ -83,6 +85,8 @@ export function HealthTodos({ state, today }: Props) {
   const { todos, batches, staples, staleThresholdDays, tossBatches, markUsed } =
     state;
   const shopping = useAddToShoppingList(state);
+  const dating = useDateBatches(state);
+  const [settingDateId, setSettingDateId] = useState<string | null>(null);
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
     todoItems(todo, {
@@ -177,6 +181,13 @@ export function HealthTodos({ state, today }: Props) {
                   onToss={tossBatches}
                   onUsed={markUsed}
                   shopping={shopping}
+                  dating={dating}
+                  canDateAll={batches.some(
+                    (batch) =>
+                      batch.defaultExpiryDays !== null &&
+                      todo.itemIds.includes(batch.id),
+                  )}
+                  onSetDate={setSettingDateId}
                 />
               ))}
             </Box>
@@ -224,6 +235,11 @@ export function HealthTodos({ state, today }: Props) {
           ))}
         </Box>
       ) : null}
+      <SetDateSheet
+        batch={batches.find((batch) => batch.id === settingDateId) ?? null}
+        onClose={() => setSettingDateId(null)}
+        onSave={(batch, expiryDate) => void dating.setDate(batch, expiryDate)}
+      />
     </Box>
   );
 }
@@ -238,6 +254,10 @@ type RowProps = {
   onToss: PantryHealthState['tossBatches'];
   onUsed: PantryHealthState['markUsed'];
   shopping: ShoppingFix;
+  dating: DateFix;
+  /** Whether any Batch of an undated Health To-do has a Default Expiry to give. */
+  canDateAll: boolean;
+  onSetDate: (batchId: string) => void;
 };
 
 /** What a Member can do to one item of a Health To-do on its own row. */
@@ -258,6 +278,9 @@ function TodoRow({
   onToss,
   onUsed,
   shopping,
+  dating,
+  canDateAll,
+  onSetDate,
 }: RowProps) {
   const { t } = useTranslation('dashboard');
   const reduceMotion = usePrefersReducedMotion();
@@ -287,8 +310,12 @@ function TodoRow({
               disabled: shopping.isPending,
               onClick: () => void shopping.add(todo.key, todo.itemIds),
             }
-          : // Date all does nothing yet; it arrives with its own ticket.
-            { disabled: true };
+          : todo.key === 'undated'
+            ? {
+                disabled: !canDateAll || dating.isPending,
+                onClick: () => void dating.dateAll(todo.itemIds),
+              }
+            : { disabled: true };
 
   return (
     <Box
@@ -465,6 +492,9 @@ function TodoRow({
                     : undefined
                 }
                 addDisabled={shopping.isPending}
+                onSetDate={
+                  todo.key === 'undated' ? () => onSetDate(item.id) : undefined
+                }
               />
             ))}
           </Box>
@@ -482,6 +512,7 @@ function TodoItemRow({
   onUsed,
   onAdd,
   addDisabled,
+  onSetDate,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
@@ -491,6 +522,8 @@ function TodoItemRow({
   /** Set where the item's action is adding it to the Shopping List. */
   onAdd?: () => void;
   addDisabled: boolean;
+  /** Set where the item's action is dating the Batch by hand. */
+  onSetDate?: () => void;
 }) {
   const { t } = useTranslation('dashboard');
   return (
@@ -556,6 +589,18 @@ function TodoItemRow({
         >
           <DeleteIcon size={16} />
         </IconButton>
+      ) : null}
+      {onSetDate ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
+          aria-label={t('health.item.setDateName', { name: item.name })}
+          onClick={onSetDate}
+          sx={{ flexShrink: 0, minHeight: 30, height: 30, fontSize: 12.5 }}
+        >
+          {t('health.item.setDate')}
+        </Button>
       ) : null}
       {action === 'used' ? (
         <Button

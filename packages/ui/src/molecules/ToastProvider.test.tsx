@@ -1,6 +1,8 @@
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { useToast, writeAppearance, type ThemeId } from '../index';
+import { useToastHost } from './ToastProvider';
 import { paintedColour } from '../test/colour';
 import { renderWithTheme as render } from '../test/render';
 
@@ -54,5 +56,44 @@ describe('Toasts', () => {
     const { toast } = showIn('minimal');
     expect(getComputedStyle(toast).borderRadius).toBe('var(--pp-r-ctl)');
     expect(getComputedStyle(toast).boxShadow).toBe('var(--pp-shadow-float)');
+  });
+});
+
+describe('Toast hosts', () => {
+  afterEach(cleanup);
+
+  function Modal({ name, children }: { name: string; children?: ReactNode }) {
+    const [element, setElement] = useState<HTMLElement | null>(null);
+    useToastHost(element);
+    return (
+      <div data-testid={name} ref={setElement}>
+        {children}
+      </div>
+    );
+  }
+
+  it('goes back to the outer modal when the modal opened over it closes', () => {
+    function App() {
+      const [innerOpen, setInnerOpen] = useState(false);
+      const toast = useToast();
+      return (
+        <>
+          <Modal name="outer">
+            {innerOpen ? <Modal name="inner" /> : null}
+          </Modal>
+          <button onClick={() => setInnerOpen(true)}>open inner</button>
+          <button onClick={() => setInnerOpen(false)}>close inner</button>
+          <button onClick={() => toast.show('Saved')}>show</button>
+        </>
+      );
+    }
+    render(<App />);
+    act(() => fireEvent.click(screen.getByText('open inner')));
+    act(() => fireEvent.click(screen.getByText('close inner')));
+    act(() => fireEvent.click(screen.getByText('show')));
+
+    expect(
+      screen.getByTestId('outer').contains(screen.getByText('Saved')),
+    ).toBe(true);
   });
 });
