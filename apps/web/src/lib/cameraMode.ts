@@ -3,7 +3,7 @@ import type { ScanMode } from './scan';
 /**
  * A mode on the camera's dial. Barcode is a camera mode, not a Scan Mode (ADR 0013): it never
  * joins the Scan Mode list. It can be the Scan page's remembered mode, and its Session cards ride
- * apart from the Scan Cap (ADR 0015).
+ * apart from the Scan Cap (ADR 0016).
  */
 export type CameraMode = ScanMode | 'barcode';
 

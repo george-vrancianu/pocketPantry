@@ -17,7 +17,7 @@ export const MAX_SESSION_SCANS = 20;
 
 /**
  * One card of the Scan Session, from the double-tap (or the accepted barcode) until it is saved or
- * removed. A Barcode card is a Barcode Lookup, not a Scan (ADR 0013, ADR 0015): it has a `code`
+ * removed. A Barcode card is a Barcode Lookup, not a Scan (ADR 0013, ADR 0016): it has a `code`
  * instead of an `image`, is looked up outside the read slots, and is exempt from the Scan Cap.
  */
 export type SessionScan = {
