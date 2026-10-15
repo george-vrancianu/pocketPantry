@@ -669,7 +669,7 @@ describe('HealthWidget', () => {
         within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
       ).toBeDisabled();
       expect(
-        within(sheet).getByRole('button', { name: 'Date the Batch' }),
+        within(sheet).getByRole('button', { name: 'Date all (1 Batch)' }),
       ).toBeDisabled();
       expect(
         within(sheet).getByRole('link', { name: 'Recipes' }),

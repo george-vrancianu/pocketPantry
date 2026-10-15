@@ -90,7 +90,7 @@
     "gainSpoken_other": "hæver scoren med {{count}}",
     "todo": {
       "expired": {
-        "title_one": "Smid {{count}} udløbne ud",
+        "title_one": "Smid {{count}} udløbet vare ud",
         "title_other": "Smid {{count}} udløbne ud",
         "bulk": "Smid ud",
         "bulkName_one": "Smid {{count}} udløbet vare ud",
@@ -119,7 +119,7 @@
         "title_one": "Datér {{count}} parti",
         "title_other": "Datér {{count}} partier",
         "bulk": "Datér alle",
-        "bulkName_one": "Datér partiet",
+        "bulkName_one": "Datér alle ({{count}} parti)",
         "bulkName_other": "Datér alle {{count}} partier"
       }
     },
