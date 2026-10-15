@@ -62,7 +62,7 @@ export function normalizeUnit(unit: string): string {
   return UNIT_ALIASES[normalized] ?? normalized;
 }
 
-/** Receipt units onto the Pantry's units; anything else yields no quantity. */
+/** Scan units onto the Pantry's units; anything else yields no quantity. */
 export function toPantryQuantity(
   quantity: number | null,
   unit: string | null,
