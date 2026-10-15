@@ -141,6 +141,14 @@
       "age": "{{count}} d old",
       "inLocation": "{{duration}} in the {{location}}"
     },
+    "item": {
+      "add": "Add {{name}}"
+    },
+    "toast": {
+      "added_one": "{{count}} added to the Shopping List",
+      "added_other": "{{count}} added to the Shopping List",
+      "withScore": "{{message}} · score {{score}}"
+    },
     "close": "Close"
   }
 }

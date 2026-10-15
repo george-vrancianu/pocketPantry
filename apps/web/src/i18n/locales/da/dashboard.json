@@ -139,6 +139,14 @@
       "age": "{{count}} d gammel",
       "inLocation": "{{duration}} i {{location}}"
     },
+    "item": {
+      "add": "Tilføj {{name}}"
+    },
+    "toast": {
+      "added_one": "{{count}} føjet til indkøbslisten",
+      "added_other": "{{count}} føjet til indkøbslisten",
+      "withScore": "{{message}} · score {{score}}"
+    },
     "close": "Luk"
   }
 }

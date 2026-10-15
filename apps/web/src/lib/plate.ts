@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { ReviewLine } from './review';
 import type { ScanResponse } from './scan';
-import { type NewShoppingItem, type ShoppingList } from './shopping';
+import { type NewShoppingItem, type AddedShoppingItems } from './shopping';
 
 /** One guess at the dish in the photo. */
 export type DishGuess = { title: string; confidence: number };
@@ -22,7 +22,7 @@ export function usePlateIngredients(locale: string) {
 
 /** Adds reviewed Plate lines to the Shopping List, all or none; the server merges. */
 export const postShoppingItems = (locale: string, items: NewShoppingItem[]) =>
-  apiRequest<ShoppingList>(
+  apiRequest<AddedShoppingItems>(
     `/shopping-list/items/bulk?${new URLSearchParams({ locale })}`,
     { method: 'POST', body: { items } },
   );

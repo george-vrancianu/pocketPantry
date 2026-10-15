@@ -8,6 +8,8 @@ import {
   CookIcon,
   DeleteIcon,
   HourglassIcon,
+  IconButton,
+  PlusIcon,
   StarIcon,
   tokens,
   usePrefersReducedMotion,
@@ -28,6 +30,7 @@ import { ExpiryTag } from '../ExpiryTag';
 import { IngredientIconSlot } from '../IngredientIconSlot';
 import { expiringSoonDay, todoTitle } from './todoText';
 import { todoItems, type TodoItem } from './todoItems';
+import { useAddToShoppingList, type ShoppingFix } from './useAddToShoppingList';
 
 const GROUPS: HealthTodoGroup[] = ['now', 'week', 'tidy'];
 
@@ -78,6 +81,7 @@ export function HealthTodos({ state, today }: Props) {
   const { tagFor } = useExpiryTags(today);
   const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
   const { todos, batches, staples, staleThresholdDays } = state;
+  const shopping = useAddToShoppingList(state);
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
     todoItems(todo, {
@@ -169,6 +173,7 @@ export function HealthTodos({ state, today }: Props) {
                     setOpenKey(openKey === todo.key ? null : todo.key)
                   }
                   tagFor={tagFor}
+                  shopping={shopping}
                 />
               ))}
             </Box>
@@ -227,9 +232,18 @@ type RowProps = {
   open: boolean;
   onToggle: () => void;
   tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
+  shopping: ShoppingFix;
 };
 
-function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
+function TodoRow({
+  todo,
+  title,
+  items,
+  open,
+  onToggle,
+  tagFor,
+  shopping,
+}: RowProps) {
   const { t } = useTranslation('dashboard');
   const reduceMotion = usePrefersReducedMotion();
   const itemsId = useId();
@@ -244,11 +258,17 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
       ? t('health.moreNames', { names, count: items.length - NAMES_SHOWN })
       : names;
   const bulkName = t(`health.todo.${todo.key}.bulkName`, { count });
+  const addsToList = todo.key === 'missingStaples' || todo.key === 'runningLow';
   const bulkProps =
     todo.key === 'expiringSoon'
       ? { href: '/recipes' }
-      : // Only Recipes does anything yet; the other fixes arrive with their own tickets.
-        { disabled: true };
+      : addsToList
+        ? {
+            disabled: shopping.isPending,
+            onClick: () => void shopping.add(todo.key, todo.itemIds),
+          }
+        : // Toss and Date all do nothing yet; they arrive with their own tickets.
+          { disabled: true };
 
   return (
     <Box
@@ -412,7 +432,17 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
             }}
           >
             {items.map((item) => (
-              <TodoItemRow key={item.id} item={item} tagFor={tagFor} />
+              <TodoItemRow
+                key={item.id}
+                item={item}
+                tagFor={tagFor}
+                onAdd={
+                  addsToList
+                    ? () => void shopping.add(todo.key, [item.id])
+                    : undefined
+                }
+                addDisabled={shopping.isPending}
+              />
             ))}
           </Box>
         </Box>
@@ -424,10 +454,16 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
 function TodoItemRow({
   item,
   tagFor,
+  onAdd,
+  addDisabled,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
+  /** Set where the item's action is adding it to the Shopping List. */
+  onAdd?: () => void;
+  addDisabled: boolean;
 }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Box
       component="li"
@@ -481,6 +517,17 @@ function TodoItemRow({
       </Box>
       {item.expiryDate !== null ? (
         <ExpiryTag tag={tagFor(item.expiryDate)} />
+      ) : null}
+      {onAdd ? (
+        <IconButton
+          label={t('health.item.add', { name: item.name })}
+          tone="accentOutline"
+          size={34}
+          disabled={addDisabled}
+          onClick={onAdd}
+        >
+          <PlusIcon size={16} />
+        </IconButton>
       ) : null}
     </Box>
   );
