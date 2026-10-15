@@ -291,6 +291,51 @@ describe('FamilyCatalogSection', () => {
     expect(screen.getByRole('button', { name: 'Delete Kefir' })).toHaveFocus();
   });
 
+  it('keeps the neighbouring Synonym button enabled while a delete is pending', async () => {
+    let release: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const calls = stub(
+      {
+        ingredients: [],
+        synonyms: [
+          {
+            id: 's1',
+            name: 'Booch',
+            ingredient: { id: 'k1', name: 'Kombucha' },
+          },
+          {
+            id: 's2',
+            name: 'Kefir',
+            ingredient: { id: 'k1', name: 'Kombucha' },
+          },
+        ],
+      },
+      {
+        'DELETE /api/catalog/family-synonyms/s1': async () => {
+          await pending;
+          return new Response(null, { status: 204 });
+        },
+      },
+    );
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete Booch' }),
+    );
+    await vi.waitFor(() =>
+      expect(calls.map((c) => c.key)).toContain(
+        'DELETE /api/catalog/family-synonyms/s1',
+      ),
+    );
+
+    // A disabled button loses focus in a real browser, so only the row being
+    // deleted may be disabled.
+    expect(screen.getByRole('button', { name: 'Delete Kefir' })).toBeEnabled();
+    release();
+  });
+
   it('deletes a Family Synonym', async () => {
     const calls = stub();
     renderWithProviders(<FamilyCatalogSection />);

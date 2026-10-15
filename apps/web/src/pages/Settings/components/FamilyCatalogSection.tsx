@@ -227,7 +227,10 @@ export function FamilyCatalogSection() {
                 <Button
                   ref={register(`synonym:${synonym.id}`)}
                   variant="ghost"
-                  disabled={deleteSynonym.isPending}
+                  disabled={
+                    deleteSynonym.isPending &&
+                    deleteSynonym.variables === synonym.id
+                  }
                   aria-label={t('settings:familyCatalog.delete', {
                     name: synonym.name,
                   })}

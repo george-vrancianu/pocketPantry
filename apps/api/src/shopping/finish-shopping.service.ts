@@ -7,7 +7,6 @@ import {
 } from '../catalog/catalog-defaults';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
-  FALLBACK_LOCALE,
   type CatalogLocale,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
@@ -240,13 +239,16 @@ export class FinishShoppingService {
         ),
       );
     const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
-    const queued = unmatched.filter(({ itemId }) => localeOf.has(itemId));
+    const queued = unmatched.flatMap(({ batchId, itemId, rawName }) => {
+      const locale = localeOf.get(itemId);
+      return locale === undefined ? [] : [{ batchId, rawName, locale }];
+    });
     if (queued.length === 0) return;
     await recordUnmatched(
       tx,
-      queued.map(({ batchId, itemId, rawName }) => ({
+      queued.map(({ batchId, rawName, locale }) => ({
         rawName,
-        locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
+        locale,
         source: 'finish_shopping' as const,
         batchId,
       })),

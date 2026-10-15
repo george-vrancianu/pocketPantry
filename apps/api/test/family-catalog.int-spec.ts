@@ -624,26 +624,29 @@ describe('Family catalog (integration)', () => {
       });
       const shared = { id: sharedId };
 
-      expect(
-        (await b.del(`/catalog/family-synonyms/${synonym.id}`)).status,
-      ).toBe(404);
-      expect(
-        (await a.del(`/catalog/family-synonyms/${shared.id}`)).status,
-      ).toBe(404);
-      expect(
-        (await a.del(`/catalog/family-synonyms/${randomUUID()}`)).status,
-      ).toBe(404);
-      const [still] = await database
-        .select()
-        .from(catalogTranslations)
-        .where(eq(catalogTranslations.id, shared.id));
-      expect(still).toBeDefined();
-      expect((await catalogOf(a)).synonyms.map((s) => s.id)).toContain(
-        synonym.id,
-      );
-      await database
-        .delete(catalogTranslations)
-        .where(eq(catalogTranslations.id, sharedId));
+      try {
+        expect(
+          (await b.del(`/catalog/family-synonyms/${synonym.id}`)).status,
+        ).toBe(404);
+        expect(
+          (await a.del(`/catalog/family-synonyms/${shared.id}`)).status,
+        ).toBe(404);
+        expect(
+          (await a.del(`/catalog/family-synonyms/${randomUUID()}`)).status,
+        ).toBe(404);
+        const [still] = await database
+          .select()
+          .from(catalogTranslations)
+          .where(eq(catalogTranslations.id, shared.id));
+        expect(still).toBeDefined();
+        expect((await catalogOf(a)).synonyms.map((s) => s.id)).toContain(
+          synonym.id,
+        );
+      } finally {
+        await database
+          .delete(catalogTranslations)
+          .where(eq(catalogTranslations.id, sharedId));
+      }
     });
   });
 });
