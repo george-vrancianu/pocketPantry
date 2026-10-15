@@ -294,7 +294,8 @@ export function ModeDial<Mode extends CameraMode>({
         scanPending.current = false;
         if (!mounted.current) return;
         clearRing(start.holdId);
-        latest.current.onScan();
+        // Barcode Lookup or the Scan Cap may have come up while focus was running.
+        if (latest.current.canScan) latest.current.onScan();
       });
       return;
     }

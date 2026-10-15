@@ -165,6 +165,21 @@ describe('focusForScan', () => {
     });
   });
 
+  it('puts back continuous when the camera still reports single-shot from an unrestored pass', async () => {
+    const { hook, applyConstraints, track } = await openCamera({
+      focusMode: ['single-shot', 'continuous'],
+    });
+    track.getSettings = () => ({ focusMode: 'single-shot' });
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    await act(async () => pass.cancel());
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
   it('goes back to continuous when the hold is cancelled', async () => {
     const { hook, applyConstraints } = await openCamera({
       focusMode: ['single-shot', 'continuous'],

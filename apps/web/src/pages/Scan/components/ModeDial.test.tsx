@@ -313,6 +313,35 @@ describe('ModeDial Scan gestures on the current mode', () => {
       expect(onScan).not.toHaveBeenCalled();
     });
 
+    it('does not send the delayed Scan if it became impossible while waiting for focus', async () => {
+      let setOff: (off: boolean) => void = () => {};
+      function Harness() {
+        const [off, set] = useState(false);
+        setOff = set;
+        return (
+          <ModeDial
+            modes={['product', 'receipt', 'barcode']}
+            mode="product"
+            disabled={false}
+            keysDisabled={false}
+            dragEndedAt={dragEndedAt}
+            onChange={onChange}
+            onScan={onScan}
+            scanDisabled={off}
+            focusForScan={focusForScan}
+          />
+        );
+      }
+      renderWithProviders(<Harness />);
+      down();
+      await advance(301);
+      up();
+      act(() => setOff(true));
+      release();
+      await flush();
+      expect(onScan).not.toHaveBeenCalled();
+    });
+
     it('sliding off while the hold is still pending drops it', async () => {
       renderGestureDial();
       down();
