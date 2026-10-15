@@ -166,7 +166,41 @@ export type HealthTodo = {
   factor: HealthFactor;
   /** Batch ids (expired, expiringSoon, undated) or Ingredient ids (missingStaples, runningLow). */
   itemIds: string[];
+  /** Points the bulk fix adds to the score; 0 hides the pill (also while not scored). */
+  gain: number;
 };
+
+type PendingTodo = Omit<HealthTodo, 'gain'>;
+
+/** The input after the bulk fix of a Health To-do, or null when the fix cannot be simulated. */
+function afterFix(todo: PendingTodo, input: HealthInput): HealthInput | null {
+  const ids = new Set(todo.itemIds);
+  switch (todo.key) {
+    case 'expired':
+      return {
+        ...input,
+        batches: input.batches.filter((batch) => !ids.has(batch.id)),
+      };
+    case 'missingStaples':
+    case 'runningLow':
+      return {
+        ...input,
+        onShoppingList: new Set([...input.onShoppingList, ...ids]),
+      };
+    case 'expiringSoon': // The fix is cooking, which cannot be simulated.
+    case 'undated': // Simulated once Batches carry their Default Expiry.
+      return null;
+  }
+}
+
+/** Points the bulk fix adds to the score, 0 when it adds none, cannot be simulated or the Pantry is not scored. */
+function gainOf(todo: PendingTodo, input: HealthInput): number {
+  const now = pantryHealth(input);
+  const fixed = afterFix(todo, input);
+  if (!now.scored || fixed === null) return 0;
+  const after = pantryHealth(fixed);
+  return after.scored ? Math.max(0, after.total - now.total) : 0;
+}
 
 const byDaysLeft = (input: HealthInput) => (a: HealthBatch, b: HealthBatch) =>
   daysLeft(a, input) - daysLeft(b, input);
@@ -203,7 +237,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
     .sort((a, b) => overdueRatio(b, input) - overdueRatio(a, input));
   const rest = undated.filter((batch) => !isForgotten(batch, input));
 
-  const todos: HealthTodo[] = [
+  const todos: PendingTodo[] = [
     {
       key: 'expired',
       group: 'now',
@@ -235,5 +269,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
       itemIds: [...forgotten, ...rest].map((batch) => batch.id),
     },
   ];
-  return todos.filter((todo) => todo.itemIds.length > 0);
+  return todos
+    .filter((todo) => todo.itemIds.length > 0)
+    .map((todo) => ({ ...todo, gain: gainOf(todo, input) }));
 }

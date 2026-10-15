@@ -275,7 +275,13 @@ describe('health to-dos', () => {
       }),
     );
     expect(todos).toEqual([
-      { key: 'expired', group: 'now', factor: 'fresh', itemIds: ['b', 'a'] },
+      {
+        key: 'expired',
+        group: 'now',
+        factor: 'fresh',
+        itemIds: ['b', 'a'],
+        gain: 0,
+      },
     ]);
   });
 
@@ -296,6 +302,7 @@ describe('health to-dos', () => {
         group: 'week',
         factor: 'fresh',
         itemIds: ['b', 'a'],
+        gain: 0,
       },
     ]);
   });
@@ -318,6 +325,7 @@ describe('health to-dos', () => {
         group: 'now',
         factor: 'staples',
         itemIds: ['eggs'],
+        gain: 7,
       },
     ]);
   });
@@ -340,6 +348,7 @@ describe('health to-dos', () => {
         group: 'week',
         factor: 'staples',
         itemIds: ['milk'],
+        gain: 0,
       },
     ]);
   });
@@ -368,6 +377,7 @@ describe('health to-dos', () => {
         group: 'tidy',
         factor: 'dated',
         itemIds: ['freezer400', 'fridge30', 'fresh'],
+        gain: 0,
       },
     ]);
   });
@@ -392,5 +402,56 @@ describe('health to-dos', () => {
     expect(
       keys(input({ batches: [batch({ expiryDate: '2026-10-01' })] })),
     ).toEqual(['expired']);
+  });
+});
+
+describe('health to-do gain', () => {
+  const gainOf = (i: HealthInput, key: string) =>
+    healthTodos(i).find((todo) => todo.key === key)?.gain;
+
+  it('is the score after tossing every expired Batch, minus the score now', () => {
+    // 11 of 12 dated Batches in date: Fresh 92, total 97. Without the expired one: 100.
+    const i = input({
+      batches: [batch({ expiryDate: '2026-10-01' }), ...batches(11)],
+    });
+    expect(scored(i).total).toBe(97);
+    expect(gainOf(i, 'expired')).toBe(3);
+  });
+
+  it('is the score after putting every missing Staple on the list, minus the score now', () => {
+    // One Staple, missing: Staples 0, total 70. On the list it counts 0.5: 85.
+    const i = input({ staples: [{ ingredientId: 'eggs' }] });
+    expect(scored(i).total).toBe(70);
+    expect(gainOf(i, 'missingStaples')).toBe(15);
+  });
+
+  it('is the simulated difference for Running low too, here none: the flag still counts after listing', () => {
+    const i = input({
+      batches: [batch({ ingredientId: 'milk' }), ...batches(9)],
+      staples: [{ ingredientId: 'milk' }],
+      runningLow: new Set(['milk']),
+    });
+    expect(gainOf(i, 'runningLow')).toBe(0);
+  });
+
+  it('is never shown for Expiring Soon', () => {
+    const i = input({
+      batches: [batch({ expiryDate: '2026-10-16' }), ...batches(11)],
+    });
+    expect(gainOf(i, 'expiringSoon')).toBe(0);
+  });
+
+  it('is hidden for undated Batches until they are simulated', () => {
+    const i = input({ batches: [batch({ expiryDate: null }), ...batches(9)] });
+    expect(gainOf(i, 'undated')).toBe(0);
+  });
+
+  it('is hidden while the Pantry is not scored', () => {
+    const i = input({
+      batches: [batch({ expiryDate: '2026-10-01' }), ...batches(8)],
+      staples: [{ ingredientId: 'eggs' }],
+    });
+    expect(gainOf(i, 'expired')).toBe(0);
+    expect(gainOf(i, 'missingStaples')).toBe(0);
   });
 });
