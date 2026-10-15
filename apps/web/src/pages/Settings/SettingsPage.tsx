@@ -15,6 +15,7 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useSession, useSignOut } from '../../lib/auth';
 import { useSaveLocale } from '../../lib/settings';
 import { AppearanceCard } from './components/AppearanceCard';
+import { FamilyCatalogSection } from './components/FamilyCatalogSection';
 import { FamilySettingsSection } from './components/FamilySettingsSection';
 
 export function SettingsPage() {
@@ -30,6 +31,7 @@ export function SettingsPage() {
       <AppScreenHeader title={t('title')} />
       <Stack spacing={3}>
         <FamilySettingsSection />
+        <FamilyCatalogSection />
         <Stack component="section" spacing={1} aria-labelledby={`${id}-prefs`}>
           <Typography
             id={`${id}-prefs`}

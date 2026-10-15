@@ -37,5 +37,36 @@
     "matchSystem": "Følg systemet",
     "matchSystemHint": "Mørk først, når telefonen er i mørk tilstand, ellers dit lyse tema",
     "usedInDark": "Bruges i mørk tilstand"
+  },
+  "familyCatalog": {
+    "title": "Familiens katalog",
+    "help": "Det, din familie har tilføjet til kataloget. Alle medlemmer kan rette det.",
+    "ingredients": "Ingredienser",
+    "synonyms": "Andre navne",
+    "empty": "Intet tilføjet endnu. Brug „Tilføj til dit katalog“, når du søger efter en ingrediens.",
+    "meta": "{{category}} · {{aisle}} · {{unit}}",
+    "synonymRow": "{{name}} → {{ingredient}}",
+    "edit": "Redigér {{name}}",
+    "delete": "Slet {{name}}",
+    "deleteLabel": "Slet",
+    "name": "Navn",
+    "category": "Kategori",
+    "save": "Gem",
+    "deleteConfirm_one": "Slet {{name}}? {{usage}} bruger den. De bliver til umatchede varer under dens navn; dens basisvarer og andre navne fjernes.",
+    "deleteConfirm_other": "Slet {{name}}? {{usage}} bruger den. De bliver til umatchede varer under dens navn; dens basisvarer og andre navne fjernes.",
+    "deleteConfirmUnused": "Slet {{name}}? Intet bruger den. Dens andre navne fjernes.",
+    "usage": {
+      "batches_one": "{{count}} parti",
+      "batches_other": "{{count}} partier",
+      "shoppingItems_one": "{{count}} indkøbsvare",
+      "shoppingItems_other": "{{count}} indkøbsvarer",
+      "templateLines_one": "{{count}} skabelonlinje",
+      "templateLines_other": "{{count}} skabelonlinjer",
+      "recipeLines_one": "{{count}} opskriftslinje",
+      "recipeLines_other": "{{count}} opskriftslinjer",
+      "staples_one": "{{count}} basisvare",
+      "staples_other": "{{count}} basisvarer"
+    },
+    "editLabel": "Redigér"
   }
 }

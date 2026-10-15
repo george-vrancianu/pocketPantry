@@ -71,7 +71,8 @@
     "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
     "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
-    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first."
+    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
+    "family_ingredient_exists": "That name is already in your catalog."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",

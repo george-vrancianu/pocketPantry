@@ -71,7 +71,8 @@
     "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "eating_moment_order_stale": "Momentele de consum s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
-    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete."
+    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
+    "family_ingredient_exists": "Numele acesta este deja în catalogul tău."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",

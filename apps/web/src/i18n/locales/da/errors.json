@@ -71,7 +71,8 @@
     "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "eating_moment_order_stale": "Spisetidspunkterne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
-    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter."
+    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter.",
+    "family_ingredient_exists": "Det navn er allerede i dit katalog."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
