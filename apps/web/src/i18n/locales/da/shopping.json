@@ -7,7 +7,9 @@
     "tickedOff_one": "{{count}} afkrydset",
     "tickedOff_other": "{{count}} afkrydset",
     "moveToPantry_one": "Flyt {{count}} til spisekammeret",
-    "moveToPantry_other": "Flyt {{count}} til spisekammeret"
+    "moveToPantry_other": "Flyt {{count}} til spisekammeret",
+    "nothing": "Intet at købe",
+    "empty": "Din liste er tom"
   },
   "add": {
     "quantity": "Mængde",
@@ -23,8 +25,13 @@
   },
   "unmatchedGroup": "Ikke i kataloget",
   "empty": {
-    "title": "Din liste er tom.",
-    "hint": "Tilføj det, du mangler, eller start fra en skabelon."
+    "title": "Start din liste",
+    "hint": "Søg efter det, du mangler, eller start fra en af dine skabeloner.",
+    "addTitle": "Tilføj varer",
+    "addMeta": "Søg efter ingredienser og basisvarer, du er løbet tør for",
+    "importTitle": "Importér en skabelon",
+    "importMeta_one": "{{count}} skabelon",
+    "importMeta_other": "{{count}} skabeloner"
   },
   "finish": {
     "reviewTitle": "Føj til dit spisekammer",

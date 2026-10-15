@@ -7,7 +7,9 @@
     "tickedOff_one": "{{count}} ticked off",
     "tickedOff_other": "{{count}} ticked off",
     "moveToPantry_one": "Move {{count}} to Pantry",
-    "moveToPantry_other": "Move {{count}} to Pantry"
+    "moveToPantry_other": "Move {{count}} to Pantry",
+    "nothing": "Nothing to buy",
+    "empty": "Your list is empty"
   },
   "add": {
     "quantity": "Quantity",
@@ -23,8 +25,13 @@
   },
   "unmatchedGroup": "Not in the catalog",
   "empty": {
-    "title": "Your list is empty.",
-    "hint": "Add what you need, or start from a template."
+    "title": "Start your list",
+    "hint": "Search for what you need, or start from one of your templates.",
+    "addTitle": "Add items",
+    "addMeta": "Search ingredients, staples you're out of",
+    "importTitle": "Import a template",
+    "importMeta_one": "{{count}} template",
+    "importMeta_other": "{{count}} templates"
   },
   "finish": {
     "reviewTitle": "Add to your Pantry",

@@ -1,14 +1,7 @@
-import {
-  Alert,
-  Box,
-  Button,
-  Spinner,
-  Stack,
-  Typography,
-  displayType,
-} from '@pocket-pantry/ui';
+import { Alert, Box, Button, Spinner, Stack } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTemplates } from '../../lib/shoppingTemplates';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
   RowToggleErrorProvider,
@@ -25,11 +18,13 @@ import { SaveTemplateSheet } from './components/SaveTemplateSheet';
 import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
+import { EmptyListStart } from './components/EmptyListStart';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
 export function ShoppingPage() {
-  const { t } = useTranslation(['shopping', 'common']);
+  const { t, i18n } = useTranslation(['shopping', 'common']);
+  const templates = useTemplates(i18n.language);
   const screen = useShoppingScreen();
   const rowToggleErrors = useRowToggleErrors();
   const [reviewing, setReviewing] = useState(false);
@@ -37,7 +32,7 @@ export function ShoppingPage() {
     'shopping',
     !reviewing && (screen.list?.groups.length ?? 0) > 0,
   );
-  // Removing the last row unmounts the list that held focus: hand it to the empty text.
+  // Removing the last row unmounts the list that held focus: hand it to the Start your list block.
   const empty = useRef<HTMLDivElement>(null);
   const hadGroups = useRef(false);
   const groupCount = screen.list?.groups.length ?? 0;
@@ -48,6 +43,17 @@ export function ShoppingPage() {
     }
     hadGroups.current = groupCount > 0;
   }, [groupCount]);
+  // A tile that opened a sheet unmounts once the sheet fills the list: put focus back on the
+  // header pill / "+" instead of leaving it on <body>.
+  const importPill = useRef<HTMLButtonElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const opener = useRef<Element | null>(null);
+  const refocusIfOpenerGone = (
+    target: React.RefObject<HTMLButtonElement | null>,
+  ) => {
+    if (opener.current && !opener.current.isConnected) target.current?.focus();
+    opener.current = null;
+  };
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [applyOpen, setApplyOpen] = useState(false);
@@ -55,7 +61,13 @@ export function ShoppingPage() {
   // Every way in starts clean, with no error left from an earlier opening.
   const openSheet = () => {
     screen.resetAddError();
+    opener.current = document.activeElement;
     setSheetOpen(true);
+  };
+
+  const openApply = () => {
+    opener.current = document.activeElement;
+    setApplyOpen(true);
   };
 
   if (reviewing) {
@@ -75,7 +87,7 @@ export function ShoppingPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
-        trailing={<ImportPill onClick={() => setApplyOpen(true)} />}
+        trailing={<ImportPill ref={importPill} onClick={() => openApply()} />}
       />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
@@ -94,24 +106,15 @@ export function ShoppingPage() {
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
               onAddItems={() => openSheet()}
+              addRef={addButton}
             />
             {screen.list.groups.length === 0 ? (
-              <Box
-                ref={empty}
-                tabIndex={-1}
-                sx={{ textAlign: 'center', py: 3, outline: 'none' }}
-              >
-                <Typography
-                  sx={{
-                    ...displayType,
-                    fontSize: 18,
-                  }}
-                >
-                  {t('shopping:empty.title')}
-                </Typography>
-                <Typography variant="meta" color="text.secondary">
-                  {t('shopping:empty.hint')}
-                </Typography>
+              <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
+                <EmptyListStart
+                  templateCount={templates.data?.length ?? 0}
+                  onAddItems={() => openSheet()}
+                  onImport={() => openApply()}
+                />
               </Box>
             ) : (
               <ShoppingGroups
@@ -134,6 +137,7 @@ export function ShoppingPage() {
       <AddSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        onExited={() => refocusIfOpenerGone(addButton)}
         adding={screen.adding}
         onAdd={screen.add}
         addError={screen.addError}
@@ -142,6 +146,7 @@ export function ShoppingPage() {
       <ApplyTemplatesSheet
         open={applyOpen}
         onClose={() => setApplyOpen(false)}
+        onExited={() => refocusIfOpenerGone(importPill)}
       />
       <SaveTemplateSheet open={saveOpen} onClose={() => setSaveOpen(false)} />
     </RowToggleErrorProvider>

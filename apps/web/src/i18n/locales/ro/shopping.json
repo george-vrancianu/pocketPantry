@@ -9,7 +9,9 @@
     "tickedOff_other": "{{count}} de produse bifate",
     "moveToPantry_one": "Mută {{count}} în cămară",
     "moveToPantry_few": "Mută {{count}} în cămară",
-    "moveToPantry_other": "Mută {{count}} în cămară"
+    "moveToPantry_other": "Mută {{count}} în cămară",
+    "nothing": "Nimic de cumpărat",
+    "empty": "Lista ta este goală"
   },
   "add": {
     "quantity": "Cantitate",
@@ -25,8 +27,13 @@
   },
   "unmatchedGroup": "În afara catalogului",
   "empty": {
-    "title": "Lista ta este goală.",
-    "hint": "Adaugă ce ai nevoie sau pornește de la un șablon."
+    "title": "Începe-ți lista",
+    "hint": "Caută ce ai nevoie sau pornește de la unul dintre șabloanele tale.",
+    "addTitle": "Adaugă produse",
+    "addMeta": "Caută ingrediente și produse de bază care ți s-au terminat",
+    "importTitle": "Importă un șablon",
+    "importMeta_one": "{{count}} șablon",
+    "importMeta_other": "{{count}} șabloane"
   },
   "finish": {
     "reviewTitle": "Adaugă în cămară",

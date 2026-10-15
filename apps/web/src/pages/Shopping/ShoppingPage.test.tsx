@@ -1059,7 +1059,9 @@ describe('ShoppingPage', () => {
         await act(() => vi.advanceTimersByTimeAsync(1000));
 
         expect(
-          screen.getByText('Your list is empty.').parentElement,
+          screen
+            .getByRole('heading', { name: 'Start your list' })
+            .closest('[tabindex="-1"]'),
         ).toHaveFocus();
       });
     });
@@ -1210,15 +1212,93 @@ describe('ShoppingPage', () => {
     );
   });
 
-  it('shows an empty state', async () => {
-    stubShopping({}, list([]));
-    renderWithProviders(<ShoppingPage />);
+  describe('empty list start block', () => {
+    const templateRoute = (count: number) => ({
+      'GET /api/shopping-templates': () =>
+        Response.json({
+          templates: Array.from({ length: count }, (_, i) => ({
+            id: `t${i}`,
+            name: `Template ${i}`,
+            lineCount: 1,
+            previewNames: ['Milk'],
+          })),
+        }),
+    });
 
-    expect(await screen.findByText('Your list is empty.')).toBeVisible();
-    expect(
-      screen.getByText('Add what you need, or start from a template.'),
-    ).toBeVisible();
-    expect(screen.getByText('0 to buy')).toBeVisible();
+    it('shows a plain summary card and the Start your list block', async () => {
+      stubShopping(templateRoute(2), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      expect(await screen.findByText('Nothing to buy')).toBeVisible();
+      expect(screen.getByText('Your list is empty')).toBeVisible();
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Add items' })).toBeVisible();
+      expect(
+        screen.getByRole('heading', { name: 'Start your list' }),
+      ).toBeVisible();
+      expect(
+        screen.getByText(
+          'Search for what you need, or start from one of your templates.',
+        ),
+      ).toBeVisible();
+      expect(
+        await screen.findByRole('button', { name: /Import a template/ }),
+      ).toHaveTextContent('2 templates');
+      expect(
+        screen.getByRole('button', { name: /Add items.*Search ingredients/ }),
+      ).toBeVisible();
+    });
+
+    it('uses the singular for one template', async () => {
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      expect(
+        await screen.findByRole('button', { name: /Import a template/ }),
+      ).toHaveTextContent('1 template');
+    });
+
+    it('hides the Import tile when the Family has no templates', async () => {
+      stubShopping(templateRoute(0), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      await screen.findByRole('heading', { name: 'Start your list' });
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('button', { name: /Import a template/ }),
+        ).not.toBeInTheDocument(),
+      );
+    });
+
+    it('opens Add items from its tile and returns focus to the tile on close', async () => {
+      const user = userEvent.setup();
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Add items.*Search ingredients/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Add items' });
+      await user.click(within(dialog).getByRole('button', { name: /Done/ }));
+
+      await waitFor(() => expect(tile).toHaveFocus());
+    });
+
+    it('opens Import from its tile and returns focus to the tile on close', async () => {
+      const user = userEvent.setup();
+      stubShopping(templateRoute(1), list([]));
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Import a template/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Import' });
+      await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+
+      await waitFor(() => expect(tile).toHaveFocus());
+    });
   });
 
   it('shows the Finish row and item counts per Aisle', async () => {
@@ -2458,7 +2538,7 @@ describe('ShoppingPage', () => {
         it('hides the save row on an empty list', async () => {
           stubShopping({}, list([]));
           renderWithProviders(<ShoppingPage />);
-          expect(await screen.findByText('0 to buy')).toBeVisible();
+          expect(await screen.findByText('Nothing to buy')).toBeVisible();
           expect(
             screen.queryByRole('button', {
               name: /Save this list as a template/,

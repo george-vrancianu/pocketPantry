@@ -19,6 +19,8 @@ import {
 export type AddSheetProps = {
   open: boolean;
   onClose: () => void;
+  /** Called once the close transition has finished. */
+  onExited?: () => void;
   adding: boolean;
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
@@ -36,6 +38,7 @@ export type AddSheetProps = {
 export function AddSheet({
   open,
   onClose,
+  onExited,
   adding,
   onAdd,
   addError,
@@ -129,6 +132,7 @@ export function AddSheet({
     <Sheet
       open={open}
       onClose={onClose}
+      onExited={onExited}
       label={t('addSheet.title')}
       header={header}
       onEntered={() => {
