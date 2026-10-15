@@ -74,19 +74,21 @@ describe('Toast hosts', () => {
 
   it('goes back to the outer modal when the modal opened over it closes', () => {
     function App() {
-      const [innerOpen, setInnerOpen] = useState(true);
+      const [innerOpen, setInnerOpen] = useState(false);
       const toast = useToast();
       return (
         <>
           <Modal name="outer">
             {innerOpen ? <Modal name="inner" /> : null}
           </Modal>
+          <button onClick={() => setInnerOpen(true)}>open inner</button>
           <button onClick={() => setInnerOpen(false)}>close inner</button>
           <button onClick={() => toast.show('Saved')}>show</button>
         </>
       );
     }
     render(<App />);
+    act(() => fireEvent.click(screen.getByText('open inner')));
     act(() => fireEvent.click(screen.getByText('close inner')));
     act(() => fireEvent.click(screen.getByText('show')));
 
