@@ -25,6 +25,7 @@ const CLICK_GUARD_MS = 50;
 /** How long the pointer rests on the current mode before it counts as a hold. */
 const HOLD_MS = 300;
 /** Pointer travel that still counts as resting (a hold) or as a tap. */
+// Must not be larger than DRAG_START_PX (dialGesture.ts): hold-versus-drag depends on it.
 const HOLD_SLOP = 10;
 
 const icon = (children: ReactNode) => (

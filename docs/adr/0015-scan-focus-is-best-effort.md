@@ -1,10 +1,10 @@
 # Focus before a Scan is best-effort
 
-Holding the Mode Dial focuses before the Scan is taken. Browsers differ on whether a page may ask the camera to focus, so we do what each one allows and never let focus block a Scan.
+Holding the mode dial focuses before the Scan is taken. Browsers differ on whether a page may ask the camera to focus, so we do what each one allows and never let focus block a Scan.
 
 ## Decision
 
-- Where the video track's `getCapabilities().focusMode` includes `single-shot` (mostly Chrome on Android), a hold sets `pointsOfInterest` to the centre of the guide and runs one single-shot focus pass. It waits up to about 1 s, and afterwards always puts the camera back to the focus mode it had before (`continuous` if that is unknown), including when the hold is cancelled.
+- Where the video track's `getCapabilities().focusMode` includes `single-shot` (mostly Chrome on Android), a hold sets `pointsOfInterest` to the centre of the guide and runs one single-shot focus pass. It waits up to about 1 s, and afterwards always puts the camera back to `continuous`, including when the hold is cancelled.
 - Everywhere else, including iOS Safari, the hold is a steady pause of about 400 ms before the Scan. Nothing is focused, which is why holding looks like it does nothing on an iPhone.
 - Support is detected from the track's capabilities, the same way as `torchSupported`.
 - A Scan is always sent once the timeout runs out. A focus failure or a refused constraint never blocks it.

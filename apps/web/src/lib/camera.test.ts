@@ -150,7 +150,7 @@ describe('focusForScan', () => {
     });
   });
 
-  it('puts back the focus mode the camera was in', async () => {
+  it('goes back to continuous even when the camera was in another mode', async () => {
     const { hook, applyConstraints, track } = await openCamera({
       focusMode: ['single-shot', 'manual'],
     });
@@ -161,7 +161,7 @@ describe('focusForScan', () => {
     });
     await act(async () => pass.cancel());
     expect(applyConstraints).toHaveBeenLastCalledWith({
-      advanced: [{ focusMode: 'manual' }],
+      advanced: [{ focusMode: 'continuous' }],
     });
   });
 

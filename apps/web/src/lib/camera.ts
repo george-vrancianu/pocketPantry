@@ -163,7 +163,7 @@ export function useCamera() {
 
   /**
    * Gets the camera ready for a Scan. Where single-shot focus is supported it focuses on the guide
-   * centre (waiting up to 1 s) and puts back the previous focus mode (continuous when unknown); elsewhere it just pauses 400 ms.
+   * centre (waiting up to 1 s) and always puts the camera back to continuous afterwards, including on cancel; elsewhere it just pauses 400 ms.
    * Focus failing never blocks the Scan: `done` always resolves.
    */
   const focusForScan = useCallback((): FocusPass => {
@@ -181,21 +181,13 @@ export function useCamera() {
         },
       };
     }
-    // Put back whatever mode the camera was in; continuous when it does not say, or still reports single-shot from an unrestored pass.
-    const before = (track.getSettings?.() as { focusMode?: string } | undefined)
-      ?.focusMode;
     let restored = false;
     const restore = () => {
       if (restored) return;
       restored = true;
       track
         .applyConstraints({
-          advanced: [
-            {
-              focusMode:
-                before && before !== 'single-shot' ? before : 'continuous',
-            },
-          ],
+          advanced: [{ focusMode: 'continuous' }],
         } as FocusConstraints)
         .catch(() => {});
     };
@@ -208,7 +200,7 @@ export function useCamera() {
       settled = true;
       timers.forEach(clearTimeout);
       finish();
-      // Not before the Scan has taken its frame, so the lens is not changing mid-capture.
+      // Not before the Scan has taken its frame, so the lens is not changing while the Scan's frame is taken.
       setTimeout(restore, 0);
     };
     // `applyConstraints` resolves as soon as the settings are accepted, long before the lens has
