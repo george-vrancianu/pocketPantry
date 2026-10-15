@@ -26,15 +26,15 @@
   },
   "allergyWarning": {
     "title": "Allergiadvarsel",
-    "optionalLine": "En valgfri ingrediens indeholder {{name}}: {{who}}",
+    "optionalLine": "En valgfri ingrediens indeholder {{names}}: {{who}}",
     "unchecked_one": "{{count}} ingrediens kunne ikke kontrolleres for allergener",
     "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres for allergener",
     "lineMarker": "Indeholder {{name}}",
     "whoOwn": "din allergi",
     "whoFamily": "Familie",
-    "strongOwn": "Indeholder {{name}}: din allergi",
-    "strongOther": "{{who}}: {{name}}",
-    "memberOptional": "{{who}}: {{name}} (valgfri)"
+    "strongOwn": "Indeholder {{names}}: din allergi",
+    "strongOther": "{{who}}: {{names}}",
+    "memberOptional": "{{who}}: {{names}} (valgfri)"
   },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",

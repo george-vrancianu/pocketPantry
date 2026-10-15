@@ -21,6 +21,8 @@ jest.setTimeout(30_000);
 
 // Spec: #350 / #357, ADR 0014, ADR 0001. Family Allergies, other Members' Allergies
 // and the named Allergy Warning.
+const anyId = expect.any(String) as string;
+
 describe('Family Allergies and other Members Allergies (integration)', () => {
   let app: NestFastifyApplication;
   let database: Database;
@@ -277,10 +279,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(w)).toEqual([
         ['Milk', { kind: 'own' }],
         ['Peanuts', { kind: 'family', label: 'Mia' }],
-        [
-          'Gluten',
-          { kind: 'member', memberId: expect.any(String), name: 'Ben' },
-        ],
+        ['Gluten', { kind: 'member', memberId: anyId, name: 'Ben' }],
       ]);
       expect(w?.entries.map((e) => e.tier)).toEqual([
         'yours',
@@ -300,10 +299,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(await warning(recipe.id, benRecipes))).toEqual([
         ['Gluten', { kind: 'own' }],
         ['Peanuts', { kind: 'family', label: 'Mia' }],
-        [
-          'Milk',
-          { kind: 'member', memberId: expect.any(String), name: 'Alpha' },
-        ],
+        ['Milk', { kind: 'member', memberId: anyId, name: 'Alpha' }],
       ]);
     });
 
@@ -323,7 +319,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(await warning(recipe.id))).toEqual([
         ['Milk', { kind: 'own' }],
         ['Milk', { kind: 'family', label: 'Mia' }],
-        ['Milk', { kind: 'member', memberId: expect.any(String), name: 'Ben' }],
+        ['Milk', { kind: 'member', memberId: anyId, name: 'Ben' }],
       ]);
     });
 
@@ -342,10 +338,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       const w = await warning(recipe.id);
       expect(w?.severity).toBe('soft');
       expect(named(w)).toEqual([
-        [
-          'Peanuts',
-          { kind: 'member', memberId: expect.any(String), name: 'Ben' },
-        ],
+        ['Peanuts', { kind: 'member', memberId: anyId, name: 'Ben' }],
       ]);
     });
 

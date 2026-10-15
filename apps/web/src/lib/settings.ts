@@ -1,6 +1,7 @@
 import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { recipesQueryKey } from './recipes';
 import { recipeMatchingQueryKeys } from './queryKeys';
 import type { Locale } from '../i18n/resources';
 
@@ -176,7 +177,7 @@ export function useSaveAllergies(locale: string) {
       queryClient.setQueryData([...allergiesQueryKey, locale], saved);
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: allergiesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
       ]);
     },
   });
@@ -217,7 +218,7 @@ function useChangedFamilyAllergies() {
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: familyAllergiesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+      queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
     ]);
 }
 

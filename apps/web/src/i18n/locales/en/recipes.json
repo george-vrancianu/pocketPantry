@@ -26,15 +26,15 @@
   },
   "allergyWarning": {
     "title": "Allergy Warning",
-    "optionalLine": "Optional ingredient contains {{name}}: {{who}}",
+    "optionalLine": "Optional ingredient contains {{names}}: {{who}}",
     "unchecked_one": "{{count}} ingredient couldn't be checked for allergens",
     "unchecked_other": "{{count}} ingredients couldn't be checked for allergens",
     "lineMarker": "Contains {{name}}",
     "whoOwn": "your Allergy",
     "whoFamily": "Family",
-    "strongOwn": "Contains {{name}}: your Allergy",
-    "strongOther": "{{who}}: {{name}}",
-    "memberOptional": "{{who}}: {{name}} (optional)"
+    "strongOwn": "Contains {{names}}: your Allergy",
+    "strongOther": "{{who}}: {{names}}",
+    "memberOptional": "{{who}}: {{names}} (optional)"
   },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",

@@ -1117,12 +1117,14 @@ describe('RecipeDetailPage', () => {
     const strongPeanuts = {
       allergen: { id: 'a-peanuts', name: 'Peanuts' },
       owner: own,
+      tier: 'yours' as const,
       severity: 'strong' as const,
       lines: [{ lineId: 'l1', severity: 'strong' as const }],
     };
     const softNuts = {
       allergen: { id: 'a-nuts', name: 'Tree nuts' },
       owner: own,
+      tier: 'yours' as const,
       severity: 'soft' as const,
       lines: [{ lineId: 'l2', severity: 'soft' as const }],
     };
@@ -1145,6 +1147,7 @@ describe('RecipeDetailPage', () => {
               {
                 allergen: { id: 'a-milk', name: 'Milk' },
                 owner: own,
+                tier: 'yours',
                 severity: 'strong',
                 lines: [{ lineId: 'l1', severity: 'strong' as const }],
               },
@@ -1157,10 +1160,7 @@ describe('RecipeDetailPage', () => {
       });
       expect(banner).toHaveAttribute('data-severity', 'strong');
       expect(
-        within(banner).getByText('Contains Peanuts: your Allergy'),
-      ).toBeInTheDocument();
-      expect(
-        within(banner).getByText('Contains Milk: your Allergy'),
+        within(banner).getByText('Contains Peanuts, Milk: your Allergy'),
       ).toBeInTheDocument();
       const tabs = screen.getByRole('tablist');
       expect(
@@ -1297,6 +1297,8 @@ describe('RecipeDetailPage', () => {
       ) => ({
         allergen: { id, name },
         owner,
+        tier:
+          owner.kind === 'member' ? ('members' as const) : ('yours' as const),
         severity: extra.severity ?? ('strong' as const),
         lines: [
           {
@@ -1331,13 +1333,73 @@ describe('RecipeDetailPage', () => {
         expect(first).toHaveTextContent('Family: Milk');
       });
 
+      it("combines one person's Allergies into a single phrase, keeping the API order", async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-peanuts', 'Peanuts', own),
+                entry('a-nuts', 'Tree nuts', { kind: 'family', label: 'Mia' }),
+                entry('a-milk', 'Milk', own, { lineId: 'l2' }),
+                entry('a-sesame', 'Sesame', { kind: 'family', label: 'Mia' }),
+                entry('a-egg', 'Eggs', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+                entry('a-fish', 'Fish', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        expect(view.getAllByText(/your Allergy/)).toHaveLength(1);
+        expect(
+          view.getByText('Contains Peanuts, Milk: your Allergy'),
+        ).toBeInTheDocument();
+        expect(view.getByText('Mia: Tree nuts, Sesame')).toBeInTheDocument();
+        expect(view.getByText('Ana: Eggs, Fish')).toBeInTheDocument();
+      });
+
+      it('keeps two Members with the same name apart', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-1',
+                  name: 'Ana',
+                }),
+                entry('a-nuts', 'Tree nuts', {
+                  kind: 'member',
+                  memberId: 'm-2',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        expect(view.getByText('Ana: Milk')).toBeInTheDocument();
+        expect(view.getByText('Ana: Tree nuts')).toBeInTheDocument();
+      });
+
       it("puts other Members' Allergies on a quieter second line after the first", async () => {
         setup(
           recipe({
             allergyWarning: warning({
               entries: [
                 entry('a-peanuts', 'Peanuts', own),
-                entry('a-milk', 'Milk', { kind: 'member', name: 'Ana' }),
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
               ],
             }),
           }),
@@ -1359,8 +1421,16 @@ describe('RecipeDetailPage', () => {
           recipe({
             allergyWarning: warning({
               entries: [
-                entry('a-milk', 'Milk', { kind: 'member', name: 'Ana' }),
-                entry('a-nuts', 'Tree nuts', { kind: 'member', name: 'Ben' }),
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+                entry('a-nuts', 'Tree nuts', {
+                  kind: 'member',
+                  memberId: 'm-ben',
+                  name: 'Ben',
+                }),
               ],
             }),
           }),
@@ -1380,7 +1450,7 @@ describe('RecipeDetailPage', () => {
                 entry(
                   'a-milk',
                   'Milk',
-                  { kind: 'member', name: 'Ana' },
+                  { kind: 'member', memberId: 'm-ana', name: 'Ana' },
                   { severity: 'soft' },
                 ),
               ],
@@ -1422,7 +1492,11 @@ describe('RecipeDetailPage', () => {
               entries: [
                 entry('a-peanuts', 'Peanuts', own),
                 entry('a-peanuts', 'Peanuts', { kind: 'family', label: 'Mia' }),
-                entry('a-peanuts', 'Peanuts', { kind: 'member', name: 'Ana' }),
+                entry('a-peanuts', 'Peanuts', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
               ],
             }),
           }),

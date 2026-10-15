@@ -182,8 +182,7 @@
     "labelHint": "Pentru cine este, de exemplu Mia",
     "add": "Adaugă",
     "remove": "Elimină {{allergen}} pentru {{who}}",
-    "loadFailed": "Alergiile familiei nu au putut fi încărcate.",
-    "saveFailed": "Nu am putut salva. Încearcă din nou."
+    "loadFailed": "Alergiile familiei nu au putut fi încărcate."
   },
   "memberAllergies": {
     "title": "Alergiile membrilor",

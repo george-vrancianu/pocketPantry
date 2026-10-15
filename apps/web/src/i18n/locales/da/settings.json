@@ -169,8 +169,7 @@
     "labelHint": "Hvem det gælder, fx Mia",
     "add": "Tilføj",
     "remove": "Fjern {{allergen}} for {{who}}",
-    "loadFailed": "Familiens allergier kunne ikke indlæses.",
-    "saveFailed": "Det kunne ikke gemmes. Prøv igen."
+    "loadFailed": "Familiens allergier kunne ikke indlæses."
   },
   "memberAllergies": {
     "title": "Medlemmernes allergier",

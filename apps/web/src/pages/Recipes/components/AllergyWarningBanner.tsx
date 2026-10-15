@@ -13,34 +13,61 @@ function whose(entry: AllergyWarningEntry, t: TFunction): string {
   return owner.name;
 }
 
-/** "Contains Peanuts: your Allergy", "Mia: Tree nuts". */
-function phrase(entry: AllergyWarningEntry, t: TFunction): string {
-  const name = entry.allergen.name;
-  return entry.owner.kind === 'own'
-    ? t('allergyWarning.strongOwn', { name })
-    : t('allergyWarning.strongOther', { name, who: whose(entry, t) });
+function personKey({ owner }: AllergyWarningEntry): string {
+  if (owner.kind === 'own') return 'own';
+  if (owner.kind === 'family') return `family:${owner.label ?? ''}`;
+  return `member:${owner.memberId}`;
+}
+
+/** One person's Allergies in the Recipe, split by severity; names keep the API's order. */
+type Person = {
+  key: string;
+  who: string;
+  own: boolean;
+  strong: string[];
+  soft: string[];
+};
+
+/** Groups entries by person, in the API's order (first appearance of each person). */
+function peopleOf(entries: AllergyWarningEntry[], t: TFunction): Person[] {
+  const people = new Map<string, Person>();
+  for (const entry of entries) {
+    const key = personKey(entry);
+    let person = people.get(key);
+    if (!person) {
+      person = {
+        key,
+        who: whose(entry, t),
+        own: entry.owner.kind === 'own',
+        strong: [],
+        soft: [],
+      };
+      people.set(key, person);
+    }
+    person[entry.severity].push(entry.allergen.name);
+  }
+  return [...people.values()];
 }
 
 /**
  * The Allergy Warning above a Recipe's tabs (ADR 0014): strong when a required line contains one
- * of the Family's Allergies, softer when only optional or Unchecked lines might. The viewer's own
- * and Family Allergies come first; other Members' follow on a quieter second line. Never claims a
- * Recipe is free of anything; no warning means no banner.
+ * of the Family's Allergies, softer when only optional or Unchecked lines might. Entries arrive
+ * from the API already tiered and ordered: `yours` (own and Family) first, other Members' on a
+ * quieter second line. Each person's Allergies read as one phrase. Never claims a Recipe is free
+ * of anything; no warning means no banner.
  */
 export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
   const { t } = useTranslation('recipes');
-  const yours = warning.entries.filter((e) => e.owner.kind !== 'member');
-  const members = warning.entries.filter((e) => e.owner.kind === 'member');
-  const yoursStrong = yours.filter((e) => e.severity === 'strong');
-  const yoursSoft = yours.filter((e) => e.severity === 'soft');
-  const yoursStrongHeadline = yoursStrong.length > 0;
-  const memberPhrase = (e: AllergyWarningEntry) =>
-    t(
-      e.severity === 'soft'
-        ? 'allergyWarning.memberOptional'
-        : 'allergyWarning.strongOther',
-      { name: e.allergen.name, who: whose(e, t) },
-    );
+  const yours = peopleOf(
+    warning.entries.filter((e) => e.tier === 'yours'),
+    t,
+  );
+  const members = peopleOf(
+    warning.entries.filter((e) => e.tier === 'members'),
+    t,
+  );
+  const yoursStrong = yours.filter((p) => p.strong.length > 0);
+  const yoursSoft = yours.filter((p) => p.soft.length > 0);
   return (
     <div
       role="group"
@@ -49,27 +76,35 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
     >
       <Alert severity={warning.severity === 'strong' ? 'error' : 'warning'}>
         <Stack spacing={0.5}>
-          {yoursStrongHeadline ? (
+          {yoursStrong.length > 0 ? (
             <Box
               data-tier="yours"
               sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1.5 }}
             >
-              {yoursStrong.map((e, index) => (
+              {yoursStrong.map((p) => (
                 <Typography
-                  key={`${e.allergen.id}-${index}`}
+                  key={p.key}
                   component="span"
                   sx={{ fontWeight: 700 }}
                 >
-                  {phrase(e, t)}
+                  {t(
+                    p.own
+                      ? 'allergyWarning.strongOwn'
+                      : 'allergyWarning.strongOther',
+                    {
+                      names: p.strong.join(', '),
+                      who: p.who,
+                    },
+                  )}
                 </Typography>
               ))}
             </Box>
           ) : null}
-          {yoursSoft.map((e, index) => (
-            <Typography key={`optional-${e.allergen.id}-${index}`}>
+          {yoursSoft.map((p) => (
+            <Typography key={`optional-${p.key}`}>
               {t('allergyWarning.optionalLine', {
-                name: e.allergen.name,
-                who: whose(e, t),
+                names: p.soft.join(', '),
+                who: p.who,
               })}
             </Typography>
           ))}
@@ -83,15 +118,32 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
                 opacity: 0.85,
               }}
             >
-              {members.map((e, index) => (
-                <Typography
-                  key={`${e.allergen.id}-${index}`}
-                  component="span"
-                  variant="meta"
-                >
-                  {memberPhrase(e)}
-                </Typography>
-              ))}
+              {members.flatMap((p) => [
+                ...(p.strong.length > 0
+                  ? [
+                      <Typography key={p.key} component="span" variant="meta">
+                        {t('allergyWarning.strongOther', {
+                          names: p.strong.join(', '),
+                          who: p.who,
+                        })}
+                      </Typography>,
+                    ]
+                  : []),
+                ...(p.soft.length > 0
+                  ? [
+                      <Typography
+                        key={`optional-${p.key}`}
+                        component="span"
+                        variant="meta"
+                      >
+                        {t('allergyWarning.memberOptional', {
+                          names: p.soft.join(', '),
+                          who: p.who,
+                        })}
+                      </Typography>,
+                    ]
+                  : []),
+              ])}
             </Box>
           ) : null}
           {warning.uncheckedCount > 0 ? (

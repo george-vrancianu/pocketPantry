@@ -169,8 +169,7 @@
     "labelHint": "Who it is for, like Mia",
     "add": "Add",
     "remove": "Remove {{allergen}} for {{who}}",
-    "loadFailed": "Could not load the Family's Allergies.",
-    "saveFailed": "Could not save that. Try again."
+    "loadFailed": "Could not load the Family's Allergies."
   },
   "memberAllergies": {
     "title": "Members' Allergies",

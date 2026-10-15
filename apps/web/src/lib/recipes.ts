@@ -119,13 +119,15 @@ export type RecipeAllergens = {
 export type AllergyOwner =
   | { kind: 'own' }
   | { kind: 'family'; label: string | null }
-  | { kind: 'member'; name: string };
+  | { kind: 'member'; memberId: string; name: string };
 
 /** One person's Allergy a Recipe contains and the lines that contain it (mirror of the API's `AllergyWarningEntryView`). */
 export type AllergyWarningEntry = {
   allergen: { id: string; name: string };
   /** The viewer's own and Family Allergies come first, other Members' after. */
   owner: AllergyOwner;
+  /** `yours` counts as the viewer's own (their own, the Family's); `members` is another Member's. */
+  tier: 'yours' | 'members';
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: 'strong' | 'soft';
   /** Every line that contains it, each with its own severity (`soft` for an optional line). */

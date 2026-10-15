@@ -130,6 +130,8 @@
     "shared_name_exists": "Numele este deja folosit de un alt ingredient."
   },
   "settings": {
-    "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă."
+    "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă.",
+    "allergen_not_found": "Acest alergen nu mai există.",
+    "family_allergy_not_found": "Această alergie a familiei nu mai este în listă. Poate a șters-o deja altcineva."
   }
 }
