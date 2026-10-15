@@ -7,7 +7,7 @@ import {
   statusOf,
   type ReviewLine,
 } from '../../../lib/review';
-import type { ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
 import { ExcludedRow } from './ExcludedRow';
 import { ReviewGroup } from './ReviewGroup';
@@ -28,7 +28,7 @@ type Props = {
   onToggleSureGroup: () => void;
   /** Rows whose Save or Confirm was blocked. */
   blocked: Record<string, boolean>;
-  mode: ScanMode;
+  mode: CameraMode;
 };
 
 /** The card: a column header, the groups to check and the confident ones, then Excluded. */

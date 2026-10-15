@@ -1,7 +1,8 @@
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import { isIsoDate } from './dateFormat';
-import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
+import type { CameraMode } from './cameraMode';
+import type { ExclusionReason, ProposedLine } from './scan';
 import type { SessionScan } from './scanSession';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
@@ -26,6 +27,8 @@ export type ReviewLine = {
   /** Unmatched only: the Parent Category the Batch lands in; '' leaves it to the server's default (top-level Other). */
   parentCategoryId: string;
   description: string;
+  /** A Barcode card's code: saving sends it, so the Family learns the Known Barcode. It survives edits to the Ingredient or name. */
+  barcode?: string;
   /** Left out of the Pantry until the Member adds it back: the Scan excluded it (Receipt) or the Member removed it. Excluded lines are never saved. */
   excluded: { reason: ExclusionReason | 'removed' } | null;
 };
@@ -49,6 +52,7 @@ export function toReviewLine(
     parentCategoryId: '',
     description: line.productDescription ?? '',
     excluded: line.excluded ?? null,
+    ...(line.barcode ? { barcode: line.barcode } : {}),
   };
   return {
     ...base,
@@ -177,14 +181,20 @@ export function toNewBatch(line: ReviewLine): NewBatch {
     location: line.location,
     expiryDate: line.expiryDate === '' ? null : line.expiryDate,
     productDescription: line.description.trim() || null,
+    ...(line.barcode ? { barcode: line.barcode } : {}),
   };
 }
 
 /** The Batches a Scan's lines are saved as; the queue only records the source of Unmatched names. */
 export const toSaveBatches = (
   lines: ReviewLine[],
-  mode: Exclude<ScanMode, 'plate'>,
+  mode: Exclude<CameraMode, 'plate'>,
 ) =>
   lines
     .map(toNewBatch)
-    .map((batch) => (batch.rawName ? { ...batch, source: mode } : batch));
+    // A Barcode Lookup's unmatched name is product data: the queue records it as a Product's.
+    .map((batch) =>
+      batch.rawName
+        ? { ...batch, source: mode === 'barcode' ? 'product' : mode }
+        : batch,
+    );

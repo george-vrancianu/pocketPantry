@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from './api';
+import { barcodeCardLine, lookupBarcode } from './barcode';
 import type { PlateDishes } from './plate';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
@@ -6,6 +7,7 @@ import {
   capReached,
   dispatchScanSession,
   getScanSession,
+  isBarcodeCard,
   type SessionScan,
 } from './scanSession';
 
@@ -20,6 +22,8 @@ const READ: Record<
 };
 
 const inFlight = new Set<string>();
+/** Barcode Lookups under way: free and instant, so they take no read slot. */
+const lookups = new Set<string>();
 
 /** A dropped connection gets one more try; any other error is the answer. */
 const withNetworkRetry = <T>(request: () => Promise<T>) =>
@@ -60,6 +64,41 @@ async function send(
 /** Forgets the requests in flight; for tests, which abandon them. */
 export function resetReads() {
   inFlight.clear();
+  lookups.clear();
+}
+
+/** Starts the Barcode Lookup of every Barcode card waiting for one, outside the read slots and the Scan Cap. */
+function startLookups(locale: string) {
+  for (const scan of getScanSession().scans) {
+    if (
+      !isBarcodeCard(scan) ||
+      scan.status !== 'reading' ||
+      lookups.has(scan.id) ||
+      !scan.code
+    )
+      continue;
+    const code = scan.code;
+    lookups.add(scan.id);
+    lookupBarcode(code, locale)
+      .then((lookup) =>
+        dispatchScanSession({
+          type: 'read',
+          id: scan.id,
+          lines: [barcodeCardLine(code, lookup)],
+        }),
+      )
+      .catch((error: unknown) => {
+        const api = error instanceof ApiError ? error : null;
+        dispatchScanSession({
+          type: 'fail',
+          id: scan.id,
+          reason: 'error',
+          code: api?.code,
+          params: api?.params,
+        });
+      })
+      .finally(() => lookups.delete(scan.id));
+  }
 }
 
 /**
@@ -69,13 +108,19 @@ export function resetReads() {
  * status, so removing a reading Scan does not let a third request start.
  */
 export function readScans(locale: string) {
+  startLookups(locale);
   // Past the Scan Cap every read would fail; the rest wait until the capped Scan is retried or removed.
   if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
     return;
   dispatchScanSession({ type: 'start' });
   for (const scan of getScanSession().scans) {
     if (inFlight.size >= MAX_CONCURRENT_READS) return;
-    if (scan.status !== 'reading' || inFlight.has(scan.id)) continue;
+    if (
+      scan.status !== 'reading' ||
+      inFlight.has(scan.id) ||
+      scan.mode === 'barcode'
+    )
+      continue;
     inFlight.add(scan.id);
     (scan.mode === 'plate'
       ? readPlate(scan, locale)

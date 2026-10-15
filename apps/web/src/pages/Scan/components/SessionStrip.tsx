@@ -55,6 +55,7 @@ export function SessionStrip({
             key={scan.id}
             data-testid="scan-thumbnail"
             data-state={state}
+            data-mode={scan.mode}
             aria-label={
               scan.failure === 'cap'
                 ? t('capReached')

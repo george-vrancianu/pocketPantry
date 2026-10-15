@@ -18,7 +18,7 @@ import {
   type ReviewLine,
   type RowStatus,
 } from '../../../lib/review';
-import type { ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { ConfidencePill } from './ConfidencePill';
 import { controlSx } from './Field';
 import {
@@ -51,7 +51,7 @@ type Props = {
   toCheck: boolean;
   parents: CatalogParent[];
   shopping: boolean;
-  mode: ScanMode;
+  mode: CameraMode;
   /** A Save or Done was blocked on this row: show every error now. */
   blocked: boolean;
   onEdit: () => void;

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { ApiError, apiRequest } from './api';
-import type { CatalogSearchResult, Unit } from './catalog';
+import type { CatalogAllergen, CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
 /** In dial order. */
@@ -14,28 +14,6 @@ export type ScanMode = (typeof SCAN_MODES)[number];
 
 export function isScanMode(value: string | null): value is ScanMode {
   return SCAN_MODES.some((mode) => mode === value);
-}
-
-const MODE_KEY = 'pocket-pantry.scan-mode';
-
-/** The Scan Mode used last, else Receipt. */
-export function loadScanMode(): ScanMode {
-  try {
-    const saved = window.localStorage.getItem(MODE_KEY);
-    if (isScanMode(saved)) return saved;
-  } catch {
-    // Storage can be blocked; fall back to Receipt.
-  }
-  return 'receipt';
-}
-
-/** Remember the Scan Mode for the next visit. */
-export function saveScanMode(mode: ScanMode): void {
-  try {
-    window.localStorage.setItem(MODE_KEY, mode);
-  } catch {
-    // Not persisting is acceptable.
-  }
 }
 
 /**
@@ -56,6 +34,13 @@ export type ProposedLine = {
   /** `YYYY-MM-DD` read from the packaging, or null. */
   expiryDate: string | null;
   productDescription: string | null;
+  /** Barcode card: the code the line was looked up by. Saving sends it, so the Family learns the Known Barcode. */
+  barcode?: string;
+  /** Barcode card: where the lookup's values came from, for attribution in Review. */
+  source?: 'open_food_facts' | 'known_barcode';
+  /** Barcode card: the Allergens Open Food Facts lists, and those the matched Ingredient is not tagged with. */
+  allergens?: CatalogAllergen[];
+  missingAllergens?: CatalogAllergen[];
   /** Receipt Scan: the line was left out of the Pantry; the reason is a code the client localises. */
   excluded?: { reason: ExclusionReason };
 };

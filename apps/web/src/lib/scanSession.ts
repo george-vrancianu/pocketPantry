@@ -3,7 +3,8 @@ import type { ScanLanguage } from '../i18n/resources';
 import type { DishGuess } from './plate';
 import { MAX_RECEIPT_SECTIONS } from './receiptSections';
 import { reviewLinesOf, type ReviewLine } from './review';
-import type { ProposedLine, ScanMode } from './scan';
+import type { CameraMode } from './cameraMode';
+import type { ProposedLine } from './scan';
 
 /** How many Scans of a Scan Session are read at once. */
 export const MAX_CONCURRENT_READS = 2;
@@ -14,14 +15,20 @@ export type ScanFailure = 'error' | 'cap';
 /** The most Scans one Scan Session holds. */
 export const MAX_SESSION_SCANS = 20;
 
-/** One Scan in the Scan Session, from the double-tap until it is saved or removed. */
+/**
+ * One card of the Scan Session, from the double-tap (or the accepted barcode) until it is saved or
+ * removed. A Barcode card is a Barcode Lookup, not a Scan (ADR 0013, ADR 0015): it has a `code`
+ * instead of an `image`, is looked up outside the read slots, and is exempt from the Scan Cap.
+ */
 export type SessionScan = {
   id: string;
-  mode: ScanMode;
+  mode: CameraMode;
   /** What the Scan is read in; Plate has none. */
   scanLanguage?: ScanLanguage;
-  /** The prepared photo (a data URL) that is sent for reading. */
-  image: string;
+  /** The prepared photo (a data URL) that is sent for reading; a Barcode card sends none. */
+  image?: string;
+  /** A Barcode card: the decoded EAN/UPC code that is looked up. */
+  code?: string;
   thumbnail: string;
   /** `uncropped`: a gallery receipt waiting for the Member to crop it in Review. */
   status: 'uncropped' | 'queued' | 'reading' | 'read' | 'failed';
@@ -53,7 +60,13 @@ export type SessionAction =
       type: 'enqueue';
       scan: Pick<
         SessionScan,
-        'id' | 'mode' | 'scanLanguage' | 'image' | 'thumbnail' | 'source'
+        | 'id'
+        | 'mode'
+        | 'scanLanguage'
+        | 'image'
+        | 'code'
+        | 'thumbnail'
+        | 'source'
       >;
     }
   | { type: 'crop'; id: string; image: string }
@@ -91,6 +104,9 @@ const waiting = (state: SessionState) =>
     ? ({ status: 'failed', failure: 'cap' } as const)
     : ({ status: 'queued' } as const);
 
+/** Barcode cards are looked up at once and never wait for, or count against, the Scan Cap. */
+export const isBarcodeCard = (scan: SessionScan) => scan.mode === 'barcode';
+
 export const emptySession: SessionState = { scans: [] };
 
 export function sessionReducer(
@@ -104,7 +120,11 @@ export function sessionReducer(
           ...state.scans,
           {
             ...action.scan,
-            ...(action.scan.source ? { status: 'uncropped' } : waiting(state)),
+            ...(action.scan.source
+              ? { status: 'uncropped' }
+              : action.scan.mode === 'barcode'
+                ? { status: 'reading' }
+                : waiting(state)),
           },
         ],
       };
@@ -125,7 +145,9 @@ export function sessionReducer(
       // Promote the oldest waiting Scans into the free read slots.
       let free =
         MAX_CONCURRENT_READS -
-        state.scans.filter((scan) => scan.status === 'reading').length;
+        state.scans.filter(
+          (scan) => scan.status === 'reading' && !isBarcodeCard(scan),
+        ).length;
       if (free <= 0) return state;
       return {
         scans: state.scans.map((scan) =>
@@ -150,7 +172,8 @@ export function sessionReducer(
             ? {
                 ...scan,
                 status: 'failed',
-                failure: action.reason,
+                // A Barcode Lookup is never a Scan: it cannot hit the Scan Cap.
+                failure: isBarcodeCard(scan) ? 'error' : action.reason,
                 errorCode: action.code,
                 errorParams: action.params,
               }
@@ -168,7 +191,10 @@ export function sessionReducer(
         (scan.id === action.id ||
           (target?.failure === 'cap' && scan.failure === 'cap'));
       // A cap failure elsewhere keeps a retried Scan held too.
-      const held = target?.failure !== 'cap' && capReached(state);
+      const held =
+        target?.failure !== 'cap' &&
+        !(target && isBarcodeCard(target)) &&
+        capReached(state);
       return {
         scans: state.scans.map((scan) =>
           retried(scan)
@@ -176,7 +202,11 @@ export function sessionReducer(
                 ...scan,
                 ...(held
                   ? { status: 'failed', failure: 'cap' }
-                  : { status: 'queued', failure: undefined }),
+                  : {
+                      // A Barcode card is looked up again at once, without queueing for a read slot.
+                      status: isBarcodeCard(scan) ? 'reading' : 'queued',
+                      failure: undefined,
+                    }),
                 errorCode: undefined,
                 errorParams: undefined,
               }

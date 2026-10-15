@@ -1,31 +1,32 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadScanMode, saveScanMode } from './scan';
+import { loadScanPageMode, saveScanPageMode } from './cameraMode';
 
 const KEY = 'pocket-pantry.scan-mode';
 
-describe('last-used Scan Mode storage', () => {
+describe('Scan page remembered mode storage', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
 
   it('defaults to receipt when nothing is stored', () => {
-    expect(loadScanMode()).toBe('receipt');
+    expect(loadScanPageMode()).toBe('receipt');
   });
 
   it('falls back to receipt for an unknown stored value', () => {
-    localStorage.setItem(KEY, 'barcode');
-    expect(loadScanMode()).toBe('receipt');
+    localStorage.setItem(KEY, 'sonar');
+    expect(loadScanPageMode()).toBe('receipt');
   });
 
-  it('round-trips every Scan Mode', () => {
+  it('round-trips every camera mode', () => {
     for (const mode of [
       'receipt',
       'product',
+      'barcode',
       'ingredients',
       'plate',
     ] as const) {
-      saveScanMode(mode);
+      saveScanPageMode(mode);
       expect(localStorage.getItem(KEY)).toBe(mode);
-      expect(loadScanMode()).toBe(mode);
+      expect(loadScanPageMode()).toBe(mode);
     }
   });
 
@@ -33,13 +34,13 @@ describe('last-used Scan Mode storage', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    expect(loadScanMode()).toBe('receipt');
+    expect(loadScanPageMode()).toBe('receipt');
   });
 
   it('does not throw when writing storage throws', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('blocked');
     });
-    expect(() => saveScanMode('plate')).not.toThrow();
+    expect(() => saveScanPageMode('plate')).not.toThrow();
   });
 });
