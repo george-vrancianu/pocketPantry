@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, inArray, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import {
   amountScaleForParent,
   type AmountScale,
 } from '../catalog/amount-scale';
-import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
+import {
+  lockAisleOrder,
+  lockAllergenOrder,
+  lockEatingMomentOrder,
+} from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
@@ -21,6 +25,7 @@ import {
   catalogTranslations,
   cuisines,
   eatingMoments,
+  ingredientAllergens,
   ingredients,
   leafCategories,
   methods,
@@ -33,6 +38,7 @@ import type {
   AisleOrder,
   AisleUpdate,
   EatingMomentOrder,
+  IngredientAllergensBody,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -92,6 +98,8 @@ export class AdminCatalogService {
       cuisineRows,
       methodRows,
       eatingMomentRows,
+      allergenRows,
+      tagRows,
     ] = await Promise.all([
       this.database.select().from(aisles).orderBy(aisles.sortOrder),
       this.database
@@ -113,7 +121,30 @@ export class AdminCatalogService {
         .select()
         .from(eatingMoments)
         .orderBy(eatingMoments.sortOrder),
+      this.database
+        .select()
+        .from(allergens)
+        .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
+      // Shared Ingredients only: Family tags are not the Admin's to see.
+      this.database
+        .select({
+          ingredientId: ingredientAllergens.ingredientId,
+          allergenId: ingredientAllergens.allergenId,
+        })
+        .from(ingredientAllergens)
+        .innerJoin(
+          sharedIngredients,
+          eq(ingredientAllergens.ingredientId, sharedIngredients.id),
+        ),
     ]);
+
+    const tagsOf = new Map<string, string[]>();
+    for (const tag of tagRows) {
+      tagsOf.set(tag.ingredientId, [
+        ...(tagsOf.get(tag.ingredientId) ?? []),
+        tag.allergenId,
+      ]);
+    }
 
     const byEntity = new Map<string, unknown[]>();
     for (const row of translationRows) {
@@ -148,6 +179,13 @@ export class AdminCatalogService {
         archived: row.archivedAt !== null,
         translations: translations('eating_moment', row.id),
       })),
+      allergens: allergenRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sortOrder: row.sortOrder,
+        archived: row.archivedAt !== null,
+        translations: translations('allergen', row.id),
+      })),
       aisles: aisleRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -177,6 +215,7 @@ export class AdminCatalogService {
         leafCategoryId: row.leafCategoryId,
         defaultUnit: row.defaultUnit,
         pantryBasic: row.pantryBasic,
+        allergenIds: tagsOf.get(row.id) ?? [],
         translations: translations('ingredient', row.id),
       })),
     };
@@ -352,6 +391,107 @@ export class AdminCatalogService {
         .returning();
       if (!row) throw notFound('eating_moment');
       return row;
+    });
+  }
+
+  // Allergens: an ordered, translated, retirable list like Eating Moments. Never deleted:
+  // tags, Allergies and Family Allergies keep pointing at it, and dropping one would make a
+  // Recipe that contains it read as clear. Retiring only hides it from the pickers.
+
+  createAllergen(input: ListEntryCreate) {
+    return this.write(async (tx) => {
+      await lockAllergenOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(allergens.sortOrder) })
+        .from(allergens);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(allergens)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+          sortOrder: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'allergen', id, input.name);
+      return row;
+    });
+  }
+
+  updateAllergen(id: string, input: ListEntryUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(allergens)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(allergens.id, id))
+        .returning();
+      if (!row) throw notFound('allergen');
+      await this.renameCanonicalName(tx, 'allergen', id, input.name);
+      return row;
+    });
+  }
+
+  setAllergenArchived(id: string, archived: boolean) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(allergens)
+        .set({ archivedAt: archived ? new Date() : null })
+        .where(eq(allergens.id, id))
+        .returning();
+      if (!row) throw notFound('allergen');
+      return row;
+    });
+  }
+
+  /**
+   * Replaces a shared Ingredient's Allergen tags and marks it checked, so a later re-seed never
+   * re-applies its tags over this edit. Tags it already has on a retired Allergen may stay;
+   * a retired Allergen cannot be newly tagged.
+   */
+  setIngredientAllergens(id: string, { allergenIds }: IngredientAllergensBody) {
+    return this.write(async (tx) => {
+      // Locked so two edits of one Ingredient serialise instead of interleaving their tags.
+      const shared = adminScope.ingredients(tx);
+      const [ingredient] = await tx
+        .select({ id: shared.id })
+        .from(shared)
+        .where(eq(shared.id, id))
+        .for('update');
+      if (!ingredient) throw notFound('ingredient');
+      const known = allergenIds.length
+        ? await tx
+            .select({ id: allergens.id, archivedAt: allergens.archivedAt })
+            .from(allergens)
+            .where(inArray(allergens.id, allergenIds))
+        : [];
+      if (known.length !== allergenIds.length) throw notFound('allergen');
+      const current = new Set(
+        (
+          await tx
+            .select({ allergenId: ingredientAllergens.allergenId })
+            .from(ingredientAllergens)
+            .where(eq(ingredientAllergens.ingredientId, id))
+        ).map((row) => row.allergenId),
+      );
+      if (known.some((row) => row.archivedAt && !current.has(row.id))) {
+        throw new ApiException(409, 'catalog.allergen_retired');
+      }
+      await tx
+        .delete(ingredientAllergens)
+        .where(eq(ingredientAllergens.ingredientId, id));
+      if (allergenIds.length) {
+        await tx
+          .insert(ingredientAllergens)
+          .values(
+            allergenIds.map((allergenId) => ({ ingredientId: id, allergenId })),
+          );
+      }
+      await tx
+        .update(ingredients)
+        .set({ allergensChecked: true })
+        .where(eq(ingredients.id, id));
+      return { id, allergenIds };
     });
   }
 

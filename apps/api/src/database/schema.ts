@@ -290,6 +290,9 @@ export const allergens = pgTable(
     name: text('name').notNull(),
     normalizedName: text('normalized_name').notNull(),
     sortOrder: integer('sort_order').notNull(),
+    // Retired by an Admin: hidden from the pickers, kept on every tag and Allergy so a
+    // Recipe containing it is still warned about (never deleted, like Eating Moments).
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
     ...timestamps,
   },
   (table) => [

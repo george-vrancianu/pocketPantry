@@ -10,6 +10,7 @@ import {
   type IngredientInput,
 } from '../../../lib/admin';
 import { EditorForm } from '../../../components/EditorForm';
+import { IngredientAllergens } from './IngredientAllergens';
 import { IngredientFields } from './IngredientFields';
 import { TranslationsEditor } from './TranslationsEditor';
 
@@ -66,6 +67,12 @@ export function IngredientEditor({ ingredient, catalog, onDone }: Props) {
           onChange={setFields}
         />
       </EditorForm>
+      {ingredient ? (
+        <IngredientAllergens
+          ingredient={ingredient}
+          allergens={catalog.allergens}
+        />
+      ) : null}
       {ingredient ? (
         <TranslationsEditor
           entityType="ingredient"

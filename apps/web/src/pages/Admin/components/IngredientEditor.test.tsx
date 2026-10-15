@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AdminCatalog, AdminIngredient } from '../../../lib/admin';
@@ -9,6 +9,7 @@ const catalog: AdminCatalog = {
   aisles: [{ id: 'a1', name: 'Dairy & eggs', sortOrder: 1, translations: [] }],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [
     {
@@ -51,6 +52,7 @@ const parmesan: AdminIngredient = {
   leafCategoryId: 'l1',
   defaultUnit: 'g',
   pantryBasic: false,
+  allergenIds: [],
   translations: [
     { id: 't1', locale: 'en', kind: 'name', value: 'Parmesan' },
     { id: 't2', locale: 'ro', kind: 'name', value: 'Parmezan' },
@@ -130,6 +132,96 @@ describe('IngredientEditor', () => {
       defaultUnit: 'g',
       pantryBasic: false,
     });
+  });
+
+  it('tags the Allergens a shared Ingredient contains and saves them at once', async () => {
+    const withAllergens: AdminCatalog = {
+      ...catalog,
+      allergens: [
+        {
+          id: 'al-milk',
+          name: 'Milk',
+          sortOrder: 1,
+          archived: false,
+          translations: [],
+        },
+        {
+          id: 'al-soy',
+          name: 'Soy',
+          sortOrder: 2,
+          archived: false,
+          translations: [],
+        },
+        {
+          id: 'al-old',
+          name: 'Lupin',
+          sortOrder: 3,
+          archived: true,
+          translations: [],
+        },
+      ],
+    };
+    const calls = stub({
+      'PUT /api/admin/catalog/ingredients/i1/allergens': () =>
+        Response.json({ id: 'i1', allergenIds: ['al-milk', 'al-soy'] }),
+    });
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={{ ...parmesan, allergenIds: ['al-milk'] }}
+        catalog={withAllergens}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    const group = screen.getByRole('group', { name: 'Contains' });
+    // A retired Allergen nobody tagged is not offered.
+    expect(within(group).queryByRole('button', { name: 'Lupin' })).toBeNull();
+    expect(within(group).getByRole('button', { name: 'Milk' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(group).getByRole('button', { name: 'Soy' }));
+    await user.click(screen.getByRole('button', { name: 'Save Allergens' }));
+
+    await screen.findByText('Allergens saved.');
+    expect(calls.find((c) => c.key.startsWith('PUT'))?.body).toEqual({
+      allergenIds: ['al-milk', 'al-soy'],
+    });
+  });
+
+  it('saves an empty selection as containing none', async () => {
+    const withAllergens: AdminCatalog = {
+      ...catalog,
+      allergens: [
+        {
+          id: 'al-milk',
+          name: 'Milk',
+          sortOrder: 1,
+          archived: false,
+          translations: [],
+        },
+      ],
+    };
+    const calls = stub({
+      'PUT /api/admin/catalog/ingredients/i1/allergens': () =>
+        Response.json({ id: 'i1', allergenIds: [] }),
+    });
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={{ ...parmesan, allergenIds: ['al-milk'] }}
+        catalog={withAllergens}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Milk' }));
+    await user.click(screen.getByRole('button', { name: 'Save Allergens' }));
+    await vi.waitFor(() =>
+      expect(calls.find((c) => c.key.startsWith('PUT'))?.body).toEqual({
+        allergenIds: [],
+      }),
+    );
   });
 
   it('flags an Ingredient as a Pantry Basic', async () => {

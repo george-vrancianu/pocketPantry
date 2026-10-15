@@ -30,3 +30,15 @@ export async function lockEatingMomentOrder(
     sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-eating-moment-order', 0))`,
   );
 }
+
+/**
+ * Locks the set of Allergens, under its own key. Admin create takes it so two new
+ * Allergens never get the same place at the end of the list.
+ */
+export async function lockAllergenOrder(
+  executor: Pick<Executor, 'execute'>,
+): Promise<void> {
+  await executor.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtextextended('catalog-allergen-order', 0))`,
+  );
+}

@@ -33,7 +33,13 @@
     "leafCategory": "Leaf Category",
     "defaultUnit": "Default unit",
     "pantryBasic": "Pantry Basic",
-    "pantryBasicHint": "Recipe matching always counts it as in stock"
+    "pantryBasicHint": "Recipe matching always counts it as in stock",
+    "allergens": {
+      "title": "Contains",
+      "hint": "The Allergens this Ingredient contains. Saving with none picked records that it contains none.",
+      "save": "Save Allergens",
+      "saved": "Allergens saved."
+    }
   },
   "aisle": {
     "title": "Aisles",
@@ -307,6 +313,14 @@
         "moveDown": "Move {{name}} down",
         "unknown": "Eating Moment"
       }
+    },
+    "allergens": {
+      "title": "Allergens",
+      "hint": "Worked out from the Ingredient Lines and the Allergens tagged on their Ingredients.",
+      "none": "No common allergens found",
+      "optional": "optional",
+      "unchecked_one": "{{count}} ingredient couldn't be checked",
+      "unchecked_other": "{{count}} ingredients couldn't be checked"
     }
   },
   "eatingMoment": {
@@ -356,5 +370,17 @@
     "addHint": "Every family will find {{ingredient}} by this name. The families' own copies are removed.",
     "language": "Synonym language",
     "added": "Added {{name}} as a shared synonym of {{ingredient}}."
+  },
+  "allergen": {
+    "title": "Allergens",
+    "hint": "The list Members pick their Allergies from, and Admins tag Ingredients with. A retired Allergen is hidden from the pickers but stays on tags and Allergies, so Recipes that contain it still warn.",
+    "new": "New Allergen",
+    "edit": "Edit Allergen {{name}}",
+    "name": "Name (English)",
+    "empty": "No Allergens yet.",
+    "retiredBadge": "Retired",
+    "retire": "Retire",
+    "unretire": "Bring back",
+    "retiredNote": "This Allergen is retired. It is hidden from the pickers, and stays on the Ingredients tagged with it and on Members' Allergies."
   }
 }

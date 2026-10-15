@@ -84,6 +84,15 @@ export class AdminRecipesController {
     return this.recipes.detail(id);
   }
 
+  @Get(':id/allergens')
+  @ApiOperation({
+    summary:
+      "Admin only: the Allergens a Recipe is known to contain, derived from its lines' Ingredient tags",
+  })
+  allergens(@Id() { id }: { id: string }) {
+    return this.recipes.allergens(id);
+  }
+
   @Put(':id')
   @ApiOperation({
     summary:

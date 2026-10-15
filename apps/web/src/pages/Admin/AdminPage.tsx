@@ -5,6 +5,8 @@ import { AisleEditor } from './components/AisleEditor';
 import { AisleList } from './components/AisleList';
 import { CategoryEditor } from './components/CategoryEditor';
 import { CategoryTree } from './components/CategoryTree';
+import { AllergenEditor } from './components/AllergenEditor';
+import { AllergenList } from './components/AllergenList';
 import { EatingMomentEditor } from './components/EatingMomentEditor';
 import { EatingMomentList } from './components/EatingMomentList';
 import { IngredientEditor } from './components/IngredientEditor';
@@ -57,6 +59,14 @@ export function AdminPage() {
         onDone={screen.close}
       />
     );
+  } else if (catalog && editing?.type === 'allergen') {
+    body = (
+      <AllergenEditor
+        key={editing.id ?? 'new'}
+        allergen={screen.editedAllergen}
+        onDone={screen.close}
+      />
+    );
   } else if (catalog && editing?.type === 'list') {
     body = (
       <ListEntryEditor
@@ -91,13 +101,20 @@ export function AdminPage() {
           ]}
         />
         {screen.tab === 'ingredients' ? (
-          <IngredientList
-            ingredients={screen.ingredients}
-            filter={screen.filter}
-            onFilterChange={screen.setFilter}
-            onCreate={() => screen.edit({ type: 'ingredient', id: null })}
-            onEdit={(id) => screen.edit({ type: 'ingredient', id })}
-          />
+          <Stack spacing={4}>
+            <IngredientList
+              ingredients={screen.ingredients}
+              filter={screen.filter}
+              onFilterChange={screen.setFilter}
+              onCreate={() => screen.edit({ type: 'ingredient', id: null })}
+              onEdit={(id) => screen.edit({ type: 'ingredient', id })}
+            />
+            <AllergenList
+              allergens={catalog.allergens}
+              onCreate={() => screen.edit({ type: 'allergen', id: null })}
+              onEdit={(id) => screen.edit({ type: 'allergen', id })}
+            />
+          </Stack>
         ) : screen.tab === 'recipes' ? (
           <Stack spacing={4}>
             <RecipeList

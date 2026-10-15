@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
   methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [],
   leafCategories: [],
@@ -20,6 +21,7 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'g',
       pantryBasic: false,
+      allergenIds: [],
       translations: [],
     },
     {
@@ -28,6 +30,7 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
       pantryBasic: false,
+      allergenIds: [],
       translations: [],
     },
   ],

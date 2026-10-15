@@ -73,7 +73,8 @@
     "eating_moment_order_stale": "Spisetidspunkterne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
     "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter.",
-    "family_ingredient_exists": "„{{existing.name}}“ har allerede det navn."
+    "family_ingredient_exists": "„{{existing.name}}“ har allerede det navn.",
+    "allergen_retired": "Dette allergen er udgået. Genindfør det, før du mærker med det."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
@@ -133,7 +134,8 @@
   "settings": {
     "family_allergy_exists": "Allergenet er allerede på listen med samme navn.",
     "allergen_not_found": "Allergenet findes ikke længere.",
-    "family_allergy_not_found": "Den familieallergi er ikke længere på listen. Måske har en anden allerede fjernet den."
+    "family_allergy_not_found": "Den familieallergi er ikke længere på listen. Måske har en anden allerede fjernet den.",
+    "allergen_retired": "Dette allergen er udgået og kan ikke vælges."
   },
   "barcode": {
     "provider_unavailable": "Opslag af stregkoder er ikke tilgængeligt lige nu. Prøv igen, eller udfyld formularen selv."
