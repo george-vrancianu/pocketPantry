@@ -432,8 +432,8 @@ export function MealPlanWidget({ columns }: WidgetProps) {
                   onClick={() => addMissing.add({ scope: 'window' })}
                   sx={{
                     flexShrink: 0,
-                    minHeight: 32,
-                    height: 32,
+                    minHeight: 38,
+                    height: 38,
                     fontSize: 12.5,
                   }}
                 >

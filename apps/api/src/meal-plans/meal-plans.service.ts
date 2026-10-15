@@ -148,17 +148,11 @@ export class MealPlansService {
     today = utcToday(),
   ): Promise<AddedMissingView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const windowEnd = addDays(today, WINDOW_DAYS - 1);
-    const plan =
-      body.scope === 'plan'
-        ? await this.findPlan(this.database, familyId, body.planId)
-        : null;
-    const through =
-      body.scope === 'plan'
-        ? planEnd(plan as PlanRow)
-        : body.scope === 'date'
-          ? body.date
-          : windowEnd;
+    const { through, keepSlot, keepIssue } = await this.addScope(
+      familyId,
+      body,
+      today,
+    );
     const { forecast, missingOf } = await loadForecast(
       this.database,
       familyId,
@@ -166,41 +160,13 @@ export class MealPlansService {
       today,
       through,
     );
-    const days = forecast.days.flatMap((day) => {
-      const slots = day.slots.filter((slot) => {
-        if (body.scope === 'plan') {
-          return slot.id.startsWith(`${(plan as PlanRow).id}:`);
-        }
-        if (body.scope === 'date') return day.date === body.date;
-        return true;
-      });
-      if (body.scope === 'ingredient') {
-        const wanted = body.ingredientId ?? normalizeName(body.name ?? '');
-        const matches = (issue: {
-          ingredientId: string | null;
-          name: string | null;
-        }) =>
-          body.ingredientId
-            ? issue.ingredientId === wanted
-            : issue.ingredientId === null &&
-              normalizeName(issue.name ?? '') === wanted;
-        return [
-          {
-            ...day,
-            slots: slots.map((slot) => ({
-              ...slot,
-              issues: slot.issues.filter(matches),
-            })),
-          },
-        ];
-      }
-      return [{ ...day, slots }];
-    });
-    const entries = missingOf(
-      body.scope === 'window'
-        ? days.filter((day) => day.date <= windowEnd)
-        : days,
-    ).map((item) => {
+    const days = forecast.days.map((day) => ({
+      ...day,
+      slots: day.slots
+        .filter((slot) => keepSlot(day.date, slot.id))
+        .map((slot) => ({ ...slot, issues: slot.issues.filter(keepIssue) })),
+    }));
+    const entries = missingOf(days).map((item) => {
       const { quantity, unit } = readable(item.quantity, item.unit);
       return {
         item: {
@@ -219,6 +185,63 @@ export class MealPlansService {
       locale,
     );
     return { createdIds: insertedIds, count: entries.length };
+  }
+
+  /**
+   * What an Add missing scope covers: the last date to forecast to, which slots
+   * count and which issues count. The ingredient scope adds the window-wide
+   * total for that Ingredient (not one day's amount), as the Widget's per-line +
+   * deliberately does.
+   */
+  private async addScope(
+    familyId: string,
+    body: AddMissingBody,
+    today: string,
+  ): Promise<{
+    through: string;
+    keepSlot: (date: string, slotId: string) => boolean;
+    keepIssue: (issue: {
+      ingredientId: string | null;
+      name: string | null;
+    }) => boolean;
+  }> {
+    const windowEnd = addDays(today, WINDOW_DAYS - 1);
+    const everything = () => true;
+    switch (body.scope) {
+      case 'window':
+        return {
+          through: windowEnd,
+          keepSlot: everything,
+          keepIssue: everything,
+        };
+      case 'plan': {
+        const plan = await this.findPlan(this.database, familyId, body.planId);
+        return {
+          through: planEnd(plan),
+          keepSlot: (_date, slotId) => slotId.startsWith(`${plan.id}:`),
+          keepIssue: everything,
+        };
+      }
+      case 'date':
+        return {
+          through: body.date,
+          keepSlot: (date) => date === body.date,
+          keepIssue: everything,
+        };
+      case 'ingredient': {
+        const { ingredientId, name } = body;
+        const wanted = normalizeName(name ?? '');
+        return {
+          through: windowEnd,
+          keepSlot: everything,
+          keepIssue: (issue) =>
+            ingredientId
+              ? issue.ingredientId === ingredientId
+              : issue.ingredientId === null &&
+                normalizeName(issue.name ?? '') === wanted,
+        };
+      }
+    }
   }
 
   async create(

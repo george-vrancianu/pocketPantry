@@ -40,6 +40,7 @@ describe('Add missing for a Meal Plan (integration)', () => {
   let database: Database;
   const stamp = Date.now();
   let n = 0;
+  const basics: string[] = [];
   const eggs = seedId.ingredient('eggs');
   const flour = seedId.ingredient('flour');
   const milk = seedId.ingredient('milk');
@@ -57,6 +58,9 @@ describe('Add missing for a Meal Plan (integration)', () => {
       await database.delete(mealPlans).where(eq(mealPlans.familyId, familyId));
     }
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
+    for (const id of basics) {
+      await database.delete(ingredients).where(eq(ingredients.id, id));
+    }
     await app.close();
   });
 
@@ -77,7 +81,9 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
   async function recipe(
     lines: {
-      ingredientId: string;
+      ingredientId?: string;
+      /** An Unmatched line, by the name as typed. */
+      name?: string;
       quantity?: number;
       unit?: Unit;
       optional?: boolean;
@@ -96,7 +102,9 @@ describe('Add missing for a Meal Plan (integration)', () => {
         id: crypto.randomUUID(),
         recipeId: id,
         position,
-        ingredientId: line.ingredientId,
+        ingredientId: line.ingredientId ?? null,
+        rawName: line.name ?? null,
+        normalizedName: line.name?.trim().toLowerCase() ?? null,
         quantity: line.quantity ?? null,
         unit: line.unit ?? null,
         optional: line.optional ?? false,
@@ -311,6 +319,85 @@ describe('Add missing for a Meal Plan (integration)', () => {
 
     expect(res.body).toEqual({ createdIds: [], count: 0 });
     expect(await shopping(ana)).toEqual([]);
+  });
+
+  it('leaves out a Pantry Basic line', async () => {
+    const ana = await member('basic');
+    // A stamped Pantry Basic of our own, so no seed Ingredient is touched.
+    const [sample] = await database
+      .select()
+      .from(ingredients)
+      .where(eq(ingredients.id, milk));
+    const basic = { id: crypto.randomUUID() };
+    await database.insert(ingredients).values({
+      ...sample,
+      id: basic.id,
+      name: `Pantry Basic ${stamp}`,
+      normalizedName: `pantry basic ${stamp}`,
+      pantryBasic: true,
+    });
+    basics.push(basic.id);
+    const dish = await recipe([
+      { ingredientId: basic.id, quantity: 5, unit: 'pcs' },
+    ]);
+    const id = await plan(ana, TODAY, 1);
+    await fill(ana, id, 0, 'dinner', dish);
+
+    const res = await add(ana, { scope: 'window' });
+
+    expect(res.body).toEqual({ createdIds: [], count: 0 });
+  });
+
+  it('adds one Unmatched Ingredient by its name, whatever the case', async () => {
+    const ana = await member('unmatched');
+    const dish = await recipe([
+      { name: 'Dragon Fruit', quantity: 2, unit: 'pcs' },
+      { ingredientId: eggs, quantity: 4, unit: 'pcs' },
+    ]);
+    const id = await plan(ana, TODAY, 2);
+    await fill(ana, id, 0, 'dinner', dish);
+    await fill(ana, id, 1, 'dinner', dish);
+
+    const res = await add(ana, { scope: 'ingredient', name: ' dragon FRUIT ' });
+
+    expect((res.body as Added).count).toBe(1);
+    const items = await shopping(ana);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({
+      ingredientId: null,
+      quantity: 4,
+      unit: 'pcs',
+    });
+  });
+
+  it('adds one Ingredient only for days inside the window', async () => {
+    const ana = await member('beyond');
+    const dish = await recipe([
+      { ingredientId: eggs, quantity: 4, unit: 'pcs' },
+    ]);
+    // Days 5 to 9: the last two are beyond the 7-day window.
+    const id = await plan(ana, at(5), 5);
+    await fill(ana, id, 0, 'dinner', dish);
+    await fill(ana, id, 4, 'dinner', dish);
+
+    await add(ana, { scope: 'ingredient', ingredientId: eggs }).expect(201);
+
+    const items = await shopping(ana);
+    expect(items[0]).toMatchObject({ ingredientId: eggs, quantity: 4 });
+  });
+
+  it('keeps 3-decimal precision when converting to kg', async () => {
+    const ana = await member('precision');
+    const dish = await recipe([
+      { ingredientId: flour, quantity: 1234.567, unit: 'g' },
+    ]);
+    const id = await plan(ana, TODAY, 1);
+    await fill(ana, id, 0, 'dinner', dish);
+
+    await add(ana, { scope: 'window' }).expect(201);
+
+    const items = await shopping(ana);
+    expect([items[0].quantity, items[0].unit]).toEqual([1.235, 'kg']);
   });
 
   it('refuses another Family’s plan', async () => {

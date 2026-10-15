@@ -218,6 +218,7 @@ function IssueLine({
           {t('mealPlan.status.onList')}
         </Tag>
       ) : !uncertain ? (
+        // Deliberately adds that Ingredient's total across the window, not just this day's amount.
         <IconButton
           label={t('mealPlan.addLine', { name: issue.name })}
           tone="accentOutline"

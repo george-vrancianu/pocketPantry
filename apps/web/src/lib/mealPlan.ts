@@ -105,12 +105,18 @@ export type MissingItem = {
 /** What Add missing covers; the server works out the amounts itself, so none is ever sent. */
 export type AddMissingScope =
   | { scope: 'window' }
+  | { scope: 'plan'; planId: string }
   | { scope: 'date'; date: IsoDate }
   | { scope: 'ingredient'; ingredientId: string }
   | { scope: 'ingredient'; name: string };
 
 /** Mirror of the API's `AddedMissingView`: the Shopping Items created (Undo deletes them) and how many Ingredients were added. */
 export type AddedMissing = { createdIds: string[]; count: number };
+
+/** Identifies an Ingredient across issues: its id, or the normalised name of an Unmatched one (as the server's forecast does). */
+export const ingredientKey = (
+  issue: Pick<PlanIssue, 'ingredientId' | 'name'>,
+): string => issue.ingredientId ?? `name:${issue.name.trim().toLowerCase()}`;
 
 /** Issues Add missing would put on the list: not uncertain, not on it already. */
 const isAddable = (issue: PlanIssue) =>
@@ -122,8 +128,8 @@ export function dayMissing(day: WindowDay): PlanIssue[] {
   for (const slot of day.slots) {
     if (slot.status === 'unavailable') continue;
     for (const issue of slot.issues) {
-      if (isAddable(issue) && !byKey.has(issue.ingredientId ?? issue.name)) {
-        byKey.set(issue.ingredientId ?? issue.name, issue);
+      if (isAddable(issue) && !byKey.has(ingredientKey(issue))) {
+        byKey.set(ingredientKey(issue), issue);
       }
     }
   }
@@ -143,15 +149,20 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     if (!isAddable(issue)) return false;
     if (add.scope === 'window') return true;
     if (add.scope === 'date') return day.date === add.date;
+    // The Widget never sends a plan scope; it covers the same days as the window it shows.
+    if (add.scope === 'plan')
+      return day.slots.some((s) => s.planId === add.planId);
     return 'ingredientId' in add
       ? issue.ingredientId === add.ingredientId
-      : issue.ingredientId === null && issue.name === add.name;
+      : issue.ingredientId === null &&
+          ingredientKey(issue) ===
+            ingredientKey({ ingredientId: null, name: add.name });
   };
   for (const day of view.days) {
     for (const slot of day.slots) {
       if (slot.status === 'unavailable') continue;
       for (const issue of slot.issues) {
-        if (matches(day, issue)) flipped.add(issue.ingredientId ?? issue.name);
+        if (matches(day, issue)) flipped.add(ingredientKey(issue));
       }
     }
   }
@@ -159,7 +170,7 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     const slots = day.slots.map((slot): WindowSlot => {
       if (slot.status === 'unavailable') return slot;
       const issues = slot.issues.map((issue) =>
-        isAddable(issue) && flipped.has(issue.ingredientId ?? issue.name)
+        isAddable(issue) && flipped.has(ingredientKey(issue))
           ? { ...issue, onList: true }
           : issue,
       );
@@ -197,9 +208,7 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     ...view,
     days,
     tag,
-    missing: view.missing.filter(
-      (item) => !flipped.has(item.ingredientId ?? item.name),
-    ),
+    missing: view.missing.filter((item) => !flipped.has(ingredientKey(item))),
   };
 }
 

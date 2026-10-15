@@ -38,14 +38,18 @@ export function useAddMissing(locale: string, today: IsoDate) {
     );
 
   const undo = async (createdIds: string[]) => {
-    try {
-      // One at a time: each delete answers with the whole list, and parallel answers could cache a stale one.
-      for (const id of new Set(createdIds)) await remove.mutateAsync(id);
-    } catch (error) {
-      toast.show(translateApiError(t, error));
-    } finally {
-      await refetch();
+    let failure: unknown;
+    // One at a time: each delete answers with the whole list, and parallel answers could cache a stale one.
+    // A failed delete (say the item was already removed) does not stop the rest.
+    for (const id of new Set(createdIds)) {
+      try {
+        await remove.mutateAsync(id);
+      } catch (error) {
+        failure ??= error;
+      }
     }
+    if (failure !== undefined) toast.show(translateApiError(t, failure));
+    await refetch();
   };
 
   const mutation = useMutation({
@@ -70,10 +74,14 @@ export function useAddMissing(locale: string, today: IsoDate) {
     },
     onSuccess: ({ createdIds, count }) => {
       if (count === 0) return;
-      toast.show(
-        t('mealPlan.toast.added', { count }),
-        undoOptions(() => void undo(createdIds)),
-      );
+      const message = t('mealPlan.toast.added', { count });
+      // Everything merged into lines already on the list: nothing was created, so nothing to undo.
+      if (createdIds.length === 0) toast.show(message);
+      else
+        toast.show(
+          message,
+          undoOptions(() => void undo(createdIds)),
+        );
     },
     onSettled: refetch,
   });

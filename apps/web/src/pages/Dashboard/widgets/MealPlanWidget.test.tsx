@@ -953,6 +953,11 @@ describe('MealPlanWidget Add missing', () => {
     before: MealWindow,
     after: MealWindow,
     created = ['sh1', 'sh2', 'sh3'],
+    {
+      failPost = false,
+      missingDeletes = [] as string[],
+      count = created.length,
+    } = {},
   ) {
     let current = before;
     const deleted: string[] = [];
@@ -969,15 +974,26 @@ describe('MealPlanWidget Add missing', () => {
       'GET /api/shopping-list': list,
       'POST /api/meal-plans/add-missing': async () => {
         await gate;
+        if (failPost) {
+          return Response.json(
+            { code: 'validation_failed', params: {} },
+            { status: 400 },
+          );
+        }
         current = after;
-        return Response.json({ createdIds: created, count: created.length });
+        return Response.json({ createdIds: created, count });
       },
       ...Object.fromEntries(
         ['sh1', 'sh2', 'sh3'].map((id) => [
           `DELETE /api/shopping-list/items/${id}`,
           () => {
             deleted.push(id);
-            return list();
+            return missingDeletes.includes(id)
+              ? Response.json(
+                  { code: 'shopping.item_not_found', params: {} },
+                  { status: 404 },
+                )
+              : list();
           },
         ]),
       ),
@@ -1159,5 +1175,91 @@ describe('MealPlanWidget Add missing', () => {
       within(dialog).queryByRole('button', { name: /to the Shopping List/ }),
     ).toBeNull();
     expect(within(dialog).getAllByText('On list').length).toBeGreaterThan(0);
+  });
+
+  it('puts the buttons back and shows an error when the add fails', async () => {
+    const u = user();
+    setup(shortWeek(), allOnList(shortWeek()), ['sh1'], { failPost: true });
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    await u.click(
+      within(dialog).getByRole('button', {
+        name: 'Add Lemons to the Shopping List',
+      }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Please check your details',
+    );
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', {
+          name: 'Add Lemons to the Shopping List',
+        }),
+      ).toBeEnabled(),
+    );
+    expect(
+      within(dialog).getByRole('button', { name: 'Add 2 missing' }),
+    ).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Add 4' })).toBeInTheDocument();
+    expect(screen.queryByText(/added to the Shopping List/)).toBeNull();
+  });
+
+  it('offers no Undo when everything merged into lines already on the list', async () => {
+    const u = user();
+    setup(shortWeek(), allOnList(shortWeek()), [], { count: 2 });
+    renderWidget();
+
+    await u.click(await screen.findByRole('button', { name: 'Add 4' }));
+
+    expect(
+      await screen.findByText('2 added to the Shopping List'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
+  });
+
+  it('carries on undoing past an item that is already gone', async () => {
+    const u = user();
+    const api = setup(
+      shortWeek(),
+      allOnList(shortWeek()),
+      ['sh1', 'sh2', 'sh3'],
+      {
+        missingDeletes: ['sh1'],
+      },
+    );
+    renderWidget();
+    await u.click(await screen.findByRole('button', { name: 'Add 4' }));
+    await screen.findByText('3 added to the Shopping List');
+
+    await u.click(screen.getByRole('button', { name: 'Undo' }));
+
+    await waitFor(() => expect(api.deleted).toEqual(['sh1', 'sh2', 'sh3']));
+  });
+
+  it('counts an Unmatched Ingredient once however its name is cased', async () => {
+    const u = user();
+    const a = issue({ ingredientId: null, name: 'Dragon fruit' });
+    const b = issue({ ingredientId: null, name: ' dragon FRUIT ' });
+    stub(
+      windowOf(
+        [
+          day(0, [
+            { mealtime: 'lunch', status: 'short', issues: [a] },
+            { mealtime: 'dinner', status: 'short', issues: [b] },
+          ]),
+        ],
+        { tag: { kind: 'short', count: 2 }, missing: missingOf(a) },
+      ),
+    );
+    renderWidget();
+    await u.click((await screen.findAllByRole('button', { name: /meal/ }))[0]);
+    const dialog = await screen.findByRole('dialog');
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Add 1 missing' }),
+    ).toBeInTheDocument();
   });
 });
