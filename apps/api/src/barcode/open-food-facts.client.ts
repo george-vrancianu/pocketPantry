@@ -15,6 +15,11 @@ export type OpenFoodFactsProduct = {
   genericNames: Partial<Record<CatalogLocale, string>>;
   /** The printed net quantity, such as "200 g"; parsed later. */
   quantity: string | null;
+  /**
+   * The raw `allergens_tags` (such as `en:milk`), mapped onto Allergens at read time.
+   * Absent on products cached before allergens were kept.
+   */
+  allergenTags?: string[];
 };
 
 /**
@@ -32,6 +37,7 @@ const FIELDS = [
   'product_name',
   'generic_name',
   'quantity',
+  'allergens_tags',
   ...CATALOG_LOCALES.flatMap((locale) => [
     `product_name_${locale}`,
     `generic_name_${locale}`,
@@ -68,6 +74,11 @@ export function toOpenFoodFactsProduct(
     genericName: text(fields.generic_name),
     genericNames: perLocale(fields, 'generic_name'),
     quantity: text(fields.quantity),
+    allergenTags: Array.isArray(fields.allergens_tags)
+      ? fields.allergens_tags.filter(
+          (tag): tag is string => typeof tag === 'string',
+        )
+      : [],
   };
 }
 

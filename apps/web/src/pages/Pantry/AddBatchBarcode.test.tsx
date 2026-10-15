@@ -70,7 +70,12 @@ const milkBatch: Batch = {
   createdAt: '2026-10-01T00:00:00Z',
 };
 
+const MILK_ALLERGEN = { id: 'al-milk', name: 'Milk' };
+const GLUTEN_ALLERGEN = { id: 'al-gluten', name: 'Gluten' };
+
 const found = (overrides: object = {}) => ({
+  allergens: [],
+  missingAllergens: [],
   found: true,
   source: 'open_food_facts',
   match: yogurt,
@@ -81,7 +86,10 @@ const found = (overrides: object = {}) => ({
   ...overrides,
 });
 
-function stubLookup(answer: () => Response | Promise<Response>) {
+function stubLookup(
+  answer: () => Response | Promise<Response>,
+  extra: Record<string, (url: URL) => Response | Promise<Response>> = {},
+) {
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () =>
       Response.json({ batches: [milkBatch], runningLow: [] }),
@@ -94,6 +102,7 @@ function stubLookup(answer: () => Response | Promise<Response>) {
     [`GET /api/barcode-lookup/${CODE}`]: answer,
     'POST /api/scan/product': () => Response.json({ lines: [] }),
     'POST /api/pantry/batches': () => Response.json(milkBatch, { status: 201 }),
+    ...extra,
   });
   vi.stubGlobal('fetch', fetchMock);
   return calls;
@@ -567,5 +576,154 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     expect(
       calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
     ).toMatchObject({ rawName: 'Zorblax Crunch', barcode: CODE });
+  });
+});
+
+// Spec: #352. Open Food Facts allergens are a proposal for a new Family Ingredient's
+// Contains row, and an informational note on a matched Ingredient.
+describe('Allergens from a Barcode Lookup', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    camera.emit = null;
+    camera.watching = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const catalogRoutes = {
+    // Nothing matches the product name, so "Add to your catalog" is offered.
+    'GET /api/catalog/search': () => Response.json({ results: [] }),
+    'GET /api/catalog/allergens': () =>
+      Response.json({ allergens: [MILK_ALLERGEN, GLUTEN_ALLERGEN] }),
+    'GET /api/catalog/categories': () =>
+      Response.json({
+        categories: [
+          {
+            id: 'leaf',
+            name: 'Other',
+            parentCategory: { id: 'dairy', name: 'Dairy' },
+            aisle: { id: 'aisle', name: 'Dairy & eggs' },
+            defaults: { expiryDays: 10, location: 'fridge' },
+          },
+        ],
+      }),
+  };
+
+  async function lookUpUnmatched(allergens: object[]) {
+    const user = userEvent.setup();
+    const calls = stubLookup(
+      () =>
+        Response.json(
+          found({
+            match: null,
+            productDescription: 'Zorblax Crunch',
+            allergens,
+          }),
+        ),
+      catalogRoutes,
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Add “Zorblax Crunch” to your catalog',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Add to your catalog',
+    });
+    return { user, dialog, calls };
+  }
+
+  it('pre-ticks the listed Allergens in the Contains row of a new Family Ingredient, and the Member can change them', async () => {
+    const { user, dialog } = await lookUpUnmatched([MILK_ALLERGEN]);
+    const milkChip = await within(dialog).findByRole('button', {
+      name: 'Milk',
+    });
+    expect(milkChip).toHaveAttribute('aria-pressed', 'true');
+    expect(
+      within(dialog).getByRole('button', { name: 'Gluten' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+    expect(
+      within(dialog).getByRole('button', { name: 'None' }),
+    ).toHaveAttribute('aria-pressed', 'false');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Gluten' }));
+    await user.click(milkChip);
+    expect(
+      within(dialog).getByRole('button', { name: 'Gluten' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(milkChip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('proposes nothing until the Member saves: no tags are sent by the lookup', async () => {
+    const { calls } = await lookUpUnmatched([MILK_ALLERGEN]);
+    expect(
+      calls.some((call) => call.key === 'POST /api/catalog/family-ingredients'),
+    ).toBe(false);
+  });
+
+  it('pre-ticks nothing, and not "None", when Open Food Facts lists no Allergens', async () => {
+    const { dialog } = await lookUpUnmatched([]);
+    await within(dialog).findByRole('button', { name: 'Milk' });
+    for (const name of ['Milk', 'Gluten', 'None']) {
+      expect(within(dialog).getByRole('button', { name })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    }
+  });
+
+  it('notes the listed Allergens a matched Ingredient is not tagged with, and tags nothing', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() =>
+      Response.json(found({ missingAllergens: [MILK_ALLERGEN] })),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+
+    expect(await screen.findByText('This product lists Milk')).toBeVisible();
+    expect(
+      calls.some(
+        (call) => !call.key.startsWith('GET') && call.key.includes('allergens'),
+      ),
+    ).toBe(false);
+  });
+
+  it('shows no note when the matched Ingredient already has every listed Allergen', async () => {
+    const user = userEvent.setup();
+    stubLookup(() => Response.json(found({ allergens: [MILK_ALLERGEN] })));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+
+    await screen.findByText('Product data: Open Food Facts');
+    expect(screen.queryByText(/This product lists/)).toBeNull();
+  });
+
+  it('drops the note when the Member picks another Ingredient', async () => {
+    const user = userEvent.setup();
+    stubLookup(() =>
+      Response.json(found({ missingAllergens: [MILK_ALLERGEN] })),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByText('This product lists Milk');
+
+    screen
+      .getByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      })
+      .focus();
+    await user.keyboard('{Backspace}');
+    expect(screen.queryByText(/This product lists/)).toBeNull();
   });
 });

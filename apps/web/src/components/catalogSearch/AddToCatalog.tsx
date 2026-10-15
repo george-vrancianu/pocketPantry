@@ -25,6 +25,8 @@ export type AddToCatalogProps = {
   onPicked: (result: CatalogSearchResult) => void;
   /** Dismissed without picking; the search field takes focus back. */
   onDismiss: () => void;
+  /** Allergens to pre-tick in the Contains row (a proposal; nothing is tagged until the Member saves). */
+  initialAllergenIds?: readonly string[];
 };
 
 /**
@@ -36,6 +38,7 @@ export function AddToCatalog({
   typed,
   onPicked,
   onDismiss,
+  initialAllergenIds,
 }: AddToCatalogProps) {
   const { t, i18n } = useTranslation('catalog');
   const toast = useToast();
@@ -117,6 +120,7 @@ export function AddToCatalog({
       categoryRef={categoryRef as RefObject<HTMLInputElement | null>}
       onPicked={picked}
       onCancel={onDismiss}
+      initialAllergenIds={initialAllergenIds}
     />
   );
 

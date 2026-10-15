@@ -2,16 +2,19 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { openFoodFactsCache } from '../database/schema';
+import { ingredientAllergens, openFoodFactsCache } from '../database/schema';
 import type { ExpiryOverride } from '../catalog/catalog-defaults';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
+import { seedId } from '../catalog/seed/seed-ids';
 import type {
+  CatalogAllergen,
   CatalogLocale,
   CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { SettingsService } from '../settings/settings.service';
 import type { BarcodeLookupResponse } from './barcode.schemas';
+import { allergenSlugsOf } from './open-food-facts-allergens';
 import { findKnownBarcode } from './known-barcodes';
 import { parseNetQuantity } from './net-quantity';
 import {
@@ -50,7 +53,8 @@ export class BarcodeLookupService {
     // is checked first and returns before this; the shared cache of
     // Open Food Facts results (#347) wraps `product` so a hit skips the client.
     const familyId = await this.settings.familyIdOf(memberId);
-    const known = await this.knownBarcode(familyId, barcode, locale);
+    const scope = catalogScope(familyId);
+    const known = await this.knownBarcode(familyId, barcode, locale, scope);
     if (known) return known;
     const product = await this.product(barcode);
     if (!product) return { found: false };
@@ -58,13 +62,15 @@ export class BarcodeLookupService {
     const names = candidateNames(product, locale);
     if (names.length === 0) return { found: false };
     const overrides = await this.settings.expiryOverridesForMember(memberId);
-    const scope = catalogScope(familyId);
     const match = await this.confidentMatch(scope, names, locale, overrides);
+    const listed = await this.listedAllergens(scope, locale, product);
     return {
       found: true,
       source: 'open_food_facts',
       match,
       lowConfidence: false,
+      allergens: listed,
+      missingAllergens: await this.untaggedOn(match, listed),
       productDescription: names[0].slice(0, DESCRIPTION_MAX),
       ...parseNetQuantity(product.quantity),
     };
@@ -75,13 +81,21 @@ export class BarcodeLookupService {
     familyId: string,
     barcode: string,
     locale: CatalogLocale,
+    scope: ReturnType<typeof catalogScope>,
   ): Promise<BarcodeLookupResponse | null> {
     const known = await findKnownBarcode(this.database, familyId, barcode);
     if (!known) return null;
+    // Known Barcodes keep no allergens: re-read them from the shared cache, never fetching.
+    const listed = await this.listedAllergens(
+      scope,
+      locale,
+      await this.cachedProduct(barcode),
+    );
     const base = {
       found: true,
       source: 'known_barcode',
       lowConfidence: false,
+      allergens: listed,
       productDescription: (known.productDescription ?? '').slice(
         0,
         DESCRIPTION_MAX,
@@ -90,7 +104,12 @@ export class BarcodeLookupService {
       unit: null,
     } as const;
     if (known.ingredientId === null) {
-      return { ...base, match: null, unmatchedName: known.rawName ?? '' };
+      return {
+        ...base,
+        match: null,
+        missingAllergens: [],
+        unmatchedName: known.rawName ?? '',
+      };
     }
     const overrides = await this.settings.expiryOverridesOf(familyId);
     const [match] = await this.catalogSearch.findByIds(
@@ -101,7 +120,60 @@ export class BarcodeLookupService {
     );
     // Not in the Family's scope any more: let Open Food Facts answer instead.
     if (!match) return null;
-    return { ...base, match };
+    return {
+      ...base,
+      match,
+      missingAllergens: await this.untaggedOn(match, listed),
+    };
+  }
+
+  /** The product while the shared cache holds it fresh, or null. Never calls Open Food Facts. */
+  private async cachedProduct(
+    barcode: string,
+  ): Promise<OpenFoodFactsProduct | null> {
+    const [cached] = await this.database
+      .select()
+      .from(openFoodFactsCache)
+      .where(eq(openFoodFactsCache.barcode, barcode));
+    if (!cached?.product) return null;
+    return Date.now() - cached.fetchedAt.getTime() < HIT_TTL_MS
+      ? cached.product
+      : null;
+  }
+
+  /** The product's mapped Allergens that are still active, named in `locale`, in list order. */
+  private async listedAllergens(
+    scope: ReturnType<typeof catalogScope>,
+    locale: CatalogLocale,
+    product: OpenFoodFactsProduct | null,
+  ): Promise<CatalogAllergen[]> {
+    const ids = new Set(
+      allergenSlugsOf(product?.allergenTags).map((slug) =>
+        seedId.allergen(slug),
+      ),
+    );
+    if (ids.size === 0) return [];
+    // listAllergens leaves out retired Allergens, which are never proposed or noted.
+    return (await this.catalogSearch.listAllergens(scope, locale)).filter(
+      (allergen) => ids.has(allergen.id),
+    );
+  }
+
+  /** The `listed` Allergens the matched Ingredient is not tagged with. */
+  private async untaggedOn(
+    match: CatalogSearchResult | null,
+    listed: CatalogAllergen[],
+  ): Promise<CatalogAllergen[]> {
+    if (!match || listed.length === 0) return [];
+    const tagged = new Set(
+      (
+        await this.database
+          .select({ id: ingredientAllergens.allergenId })
+          .from(ingredientAllergens)
+          .where(eq(ingredientAllergens.ingredientId, match.id))
+      ).map((row) => row.id),
+    );
+    return listed.filter((allergen) => !tagged.has(allergen.id));
   }
 
   /**

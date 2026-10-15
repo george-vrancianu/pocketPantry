@@ -110,6 +110,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
         onSelect={form.selectIngredient}
         onQueryChange={form.changeQuery}
         onUseTyped={form.chooseTypedName}
+        newIngredientAllergenIds={camera.listedAllergenIds}
         emptyState={
           <>
             <RecentlyStocked />
@@ -119,6 +120,13 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       />
 
       {mark('ingredient')}
+      {camera.missingAllergens.length > 0 ? (
+        <Typography variant="caption" color="text.secondary">
+          {t('form.prefill.listsAllergens', {
+            names: camera.missingAllergens.map((a) => a.name).join(', '),
+          })}
+        </Typography>
+      ) : null}
       {camera.checkIngredient ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <StatusIcon status="low" />

@@ -85,7 +85,8 @@
       "cap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau completează formularul manual.",
       "mark": "Completat din produs",
       "credit": "Date despre produs: Open Food Facts",
-      "lookingUp": "Caut codul de bare…"
+      "lookingUp": "Caut codul de bare…",
+      "listsAllergens": "Acest produs menționează: {{names}}"
     }
   },
   "picker": {

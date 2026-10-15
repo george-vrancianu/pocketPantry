@@ -79,7 +79,8 @@
       "cap": "Du har brugt alle dagens scanninger. Scan en stregkode eller udfyld formularen selv.",
       "mark": "Udfyldt fra produktet",
       "credit": "Produktdata: Open Food Facts",
-      "lookingUp": "Slår stregkoden op…"
+      "lookingUp": "Slår stregkoden op…",
+      "listsAllergens": "Dette produkt angiver {{names}}"
     }
   },
   "picker": {
