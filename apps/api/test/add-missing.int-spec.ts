@@ -274,6 +274,42 @@ describe('Add missing for a Meal Plan (integration)', () => {
     expect(await sourcesOf(items[0].id)).toEqual([cake]);
   });
 
+  it('adds one Ingredient within one plan only', async () => {
+    const ana = await member('ingredient-in-plan');
+    const { id, cake } = await week(ana);
+    const other = await plan(ana, at(3), 1);
+    await fill(ana, other, 0, 'dinner', cake);
+
+    const res = await add(ana, {
+      scope: 'ingredient',
+      ingredientId: eggs,
+      planId: id,
+    });
+
+    expect((res.body as Added).count).toBe(1);
+    expect(await shopping(ana)).toMatchObject([
+      { ingredientId: eggs, quantity: 8 },
+    ]);
+  });
+
+  it('adds one Ingredient of an upcoming plan past the window', async () => {
+    const ana = await member('ingredient-upcoming');
+    const { cake } = await week(ana);
+    const later = await plan(ana, at(10), 1);
+    await fill(ana, later, 0, 'dinner', cake);
+
+    const res = await add(ana, {
+      scope: 'ingredient',
+      ingredientId: eggs,
+      planId: later,
+    });
+
+    expect((res.body as Added).count).toBe(1);
+    expect(await shopping(ana)).toMatchObject([
+      { ingredientId: eggs, quantity: 4 },
+    ]);
+  });
+
   it('adds nothing the second time, and nothing for an Ingredient already on the list', async () => {
     const ana = await member('twice');
     await week(ana);

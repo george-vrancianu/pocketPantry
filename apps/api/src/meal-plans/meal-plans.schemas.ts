@@ -82,7 +82,7 @@ export type FillBody = z.infer<typeof fillBody>;
 
 /**
  * What Add missing covers: the Widget's window, one plan, one date, or one
- * Ingredient (a Catalog `ingredientId`, or the `name` of an Unmatched one).
+ * Ingredient, optionally within one plan (a Catalog `ingredientId`, or the `name` of an Unmatched one).
  * The client never sends amounts; the server works the forecast out again.
  */
 export const addMissingBody = z.discriminatedUnion('scope', [
@@ -92,6 +92,8 @@ export const addMissingBody = z.discriminatedUnion('scope', [
   z
     .object({
       scope: z.literal('ingredient'),
+      /** Limits the Ingredient to this plan's days (from today on). */
+      planId: z.uuid().optional(),
       ingredientId: z.uuid().nullable().optional(),
       name: z.string().trim().min(1).max(100).optional(),
     })

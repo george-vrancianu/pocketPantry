@@ -53,7 +53,8 @@ export class RecipeBrowseService {
     const filtering =
       needle !== '' ||
       query.cuisineId !== undefined ||
-      query.methodId !== undefined;
+      query.methodId !== undefined ||
+      query.includeVariants === 'true';
 
     const rows = await this.database
       .select()
