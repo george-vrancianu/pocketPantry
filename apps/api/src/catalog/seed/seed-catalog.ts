@@ -8,6 +8,7 @@ import {
   parentCategories,
 } from '../../database/schema';
 import { amountScaleForParent } from '../amount-scale';
+import { catalogScope, SHARED_ONLY } from '../catalog-scope';
 import { seedId, stableId } from './seed-ids';
 import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
@@ -258,12 +259,13 @@ export async function seedCatalog(
 
     // Skipped or hand-made rows can leave a name or Synonym pointing at two
     // Ingredients, which makes an exact Match ambiguous. Report, never fail.
+    const shared = catalogScope(SHARED_ONLY).translations(tx);
     const ambiguous = await tx
-      .select({ key: catalogTranslations.normalizedValue })
-      .from(catalogTranslations)
-      .where(eq(catalogTranslations.entityType, 'ingredient'))
-      .groupBy(catalogTranslations.normalizedValue)
-      .having(sql`count(distinct ${catalogTranslations.entityId}) > 1`);
+      .select({ key: shared.normalizedValue })
+      .from(shared)
+      .where(eq(shared.entityType, 'ingredient'))
+      .groupBy(shared.normalizedValue)
+      .having(sql`count(distinct ${shared.entityId}) > 1`);
     if (ambiguous.length > 0) {
       console.warn(
         `Catalog: ${ambiguous.length} name(s) or Synonym(s) belong to more than one Ingredient: ${ambiguous.map((row) => `"${row.key}"`).join(', ')}`,

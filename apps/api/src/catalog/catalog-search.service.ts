@@ -6,7 +6,7 @@ import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
 import {
   ingredientTier,
-  SHARED_TIER,
+  translationTier,
   type CatalogScope,
 } from './catalog-scope';
 import {
@@ -224,7 +224,7 @@ export class CatalogSearchService {
         FROM ${ingredients}
         UNION ALL
         SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
-          ${SHARED_TIER}::int
+          ${translationTier(catalogTranslations)}
         FROM ${catalogTranslations}
         WHERE ${catalogTranslations.entityType} = 'ingredient'
       ) c

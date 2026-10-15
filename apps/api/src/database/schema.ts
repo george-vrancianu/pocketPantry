@@ -285,6 +285,10 @@ export const catalogTranslations = pgTable(
     kind: translationKind('kind').notNull(),
     value: text('value').notNull(),
     normalizedValue: text('normalized_value').notNull(),
+    // Set only on a Family Synonym (#273); NULL = shared. Names are always shared.
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
     ...timestamps,
   },
   (table) => [
@@ -297,7 +301,18 @@ export const catalogTranslations = pgTable(
       .where(sql`${table.kind} = 'name'`),
     uniqueIndex('catalog_translations_synonym_idx')
       .on(table.entityType, table.entityId, table.locale, table.normalizedValue)
-      .where(sql`${table.kind} = 'synonym'`),
+      .where(sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('catalog_translations_family_synonym_idx')
+      .on(
+        table.entityType,
+        table.entityId,
+        table.ownerFamilyId,
+        table.locale,
+        table.normalizedValue,
+      )
+      .where(
+        sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NOT NULL`,
+      ),
     index('catalog_translations_lookup_idx').on(table.normalizedValue),
   ],
 );

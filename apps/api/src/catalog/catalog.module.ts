@@ -3,12 +3,17 @@ import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.modul
 import { SettingsModule } from '../settings/settings.module';
 import { CatalogController } from './catalog.controller';
 import { FamilyIngredientsService } from './family-ingredients.service';
+import { FamilySynonymsService } from './family-synonyms.service';
 import { CatalogSearchService } from './catalog-search.service';
 
 @Module({
   imports: [SettingsModule, IngredientCatalogModule],
   controllers: [CatalogController],
-  providers: [CatalogSearchService, FamilyIngredientsService],
+  providers: [
+    CatalogSearchService,
+    FamilyIngredientsService,
+    FamilySynonymsService,
+  ],
   exports: [CatalogSearchService],
 })
 export class CatalogModule {}

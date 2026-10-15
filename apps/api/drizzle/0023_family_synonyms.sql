@@ -1,0 +1,5 @@
+DROP INDEX "catalog_translations_synonym_idx";--> statement-breakpoint
+ALTER TABLE "catalog_translations" ADD COLUMN "owner_family_id" uuid;--> statement-breakpoint
+ALTER TABLE "catalog_translations" ADD CONSTRAINT "catalog_translations_owner_family_id_family_id_fk" FOREIGN KEY ("owner_family_id") REFERENCES "public"."family"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "catalog_translations_family_synonym_idx" ON "catalog_translations" USING btree ("entity_type","entity_id","owner_family_id","locale","normalized_value") WHERE "catalog_translations"."kind" = 'synonym' AND "catalog_translations"."owner_family_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "catalog_translations_synonym_idx" ON "catalog_translations" USING btree ("entity_type","entity_id","locale","normalized_value") WHERE "catalog_translations"."kind" = 'synonym' AND "catalog_translations"."owner_family_id" IS NULL;
