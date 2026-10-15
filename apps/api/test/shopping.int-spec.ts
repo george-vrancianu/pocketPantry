@@ -3,7 +3,13 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { shoppingLists, user } from '../src/database/schema';
+import {
+  recipes,
+  shoppingItemSourceRecipes,
+  shoppingLists,
+  user,
+} from '../src/database/schema';
+import { ShoppingService } from '../src/shopping/shopping.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Item = {
@@ -454,6 +460,58 @@ describe('Shopping List (integration)', () => {
         .get('/api/shopping-list')
         .set('origin', TEST_ORIGIN)
         .expect(401);
+    });
+  });
+  describe('addItemsFromRecipe (Source Recipes per item)', () => {
+    const makeRecipe = async () => {
+      const id = crypto.randomUUID();
+      await database
+        .insert(recipes)
+        .values({ id, familyId: null, title: `Sources ${id}`, servings: 2 });
+      return id;
+    };
+    const sourcesOf = async (itemId: string) =>
+      (
+        await database
+          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, itemId))
+      )
+        .map((row) => row.recipeId)
+        .sort();
+
+    it('records several Source Recipes per item, on merged-into items too, and reports only the newly inserted items', async () => {
+      const { cookie, userId } = await signUp('Sources');
+      const eggs = await ingredientId(cookie, 'egg');
+      const feta = await ingredientId(cookie, 'feta');
+      const [r1, r2, r3] = [
+        await makeRecipe(),
+        await makeRecipe(),
+        await makeRecipe(),
+      ];
+      const existing = items(
+        await add(cookie, { ingredientId: eggs, quantity: 2, unit: 'pcs' }),
+      )[0];
+
+      const result = await app.get(ShoppingService).addItemsFromRecipe(
+        userId,
+        [
+          {
+            item: { ingredientId: eggs, quantity: 3, unit: 'pcs' },
+            recipeIds: [r1, r2, r3],
+          },
+          { item: { ingredientId: feta }, recipeIds: [r1] },
+        ],
+        'en',
+      );
+
+      const listed = items(result.list);
+      const eggsItem = listed.find((i) => i.id === existing.id);
+      const fetaItem = listed.find((i) => i.id !== existing.id);
+      expect(eggsItem?.quantity).toBe(5);
+      expect(result.insertedIds).toEqual([fetaItem?.id]);
+      expect(await sourcesOf(existing.id)).toEqual([r1, r2, r3].sort());
+      expect(await sourcesOf(fetaItem?.id ?? '')).toEqual([r1]);
     });
   });
 });
