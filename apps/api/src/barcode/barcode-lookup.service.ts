@@ -77,6 +77,7 @@ export class BarcodeLookupService {
     }
     // Then the Catalog search; only an unambiguous hit (one Ingredient) is confident.
     for (const name of names) {
+      // Limit 2 is only to detect ambiguity: exactly one hit is confident.
       const hits = await this.catalogSearch.search(
         scope,
         name,

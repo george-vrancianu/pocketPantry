@@ -1,4 +1,4 @@
-import { isScanMode, type ScanMode } from './scan';
+import type { ScanMode } from './scan';
 
 /**
  * A mode on the camera's dial. Barcode is a camera mode, not a Scan Mode (ADR 0013): it never
@@ -12,7 +12,7 @@ const OVERLAY_MODE_KEY = 'pocket-pantry.camera-overlay-mode';
 export function loadOverlayMode(): CameraMode {
   try {
     const saved = window.localStorage.getItem(OVERLAY_MODE_KEY);
-    if (saved === 'barcode' || isScanMode(saved)) return saved;
+    if (saved === 'barcode' || saved === 'product') return saved;
   } catch {
     // Storage can be blocked; fall back to Barcode.
   }

@@ -182,8 +182,17 @@ export function useAddBatchForm({
         setFrozenUnit(null);
         setCheckIngredient(read.lowConfidence);
         marks.add('ingredient');
-      } else if (noMatch === 'search' && read.name.trim()) {
-        setInitialQuery(read.name.trim());
+      } else if (noMatch === 'search') {
+        // No confident match: an earlier untouched pick would be wrong for this product.
+        setIngredient(null);
+        setUnmatchedName(null);
+        setCheckIngredient(false);
+        setPrefilled((was) => {
+          const next = new Set(was);
+          next.delete('ingredient');
+          return next;
+        });
+        if (read.name.trim()) setInitialQuery(read.name.trim());
       } else if (read.name.trim()) {
         setIngredient(null);
         setUnmatchedName(read.name.trim());
@@ -242,6 +251,7 @@ export function useAddBatchForm({
     setCameraOpen(false);
     productRead.reset();
     barcodeLookup.reset();
+    setFromOpenFoodFacts(false);
     if (result.kind === 'product') {
       productRead.mutate(result, {
         onSuccess: (read) => prefillNow.current(read),

@@ -319,6 +319,52 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     );
   });
 
+  it('drops the Open Food Facts credit once a Product photo is read after a barcode', async () => {
+    const user = userEvent.setup();
+    stubLookup(() => Response.json(found()));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByText('Product data: Open Food Facts');
+
+    await user.click(cameraButton());
+    await user.click(screen.getByRole('radio', { name: 'Product' }));
+    screen.getByTestId('scan-guide').focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.queryByText('Product data: Open Food Facts')).toBeNull(),
+    );
+  });
+
+  it('with no confident match, drops an earlier untouched pick', async () => {
+    const user = userEvent.setup();
+    let calls = 0;
+    stubLookup(() =>
+      Response.json(
+        ++calls === 1
+          ? found()
+          : found({ match: null, productDescription: 'Zorblax' }),
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByRole('combobox', {
+      name: 'Ingredient: Yogurt. Press Backspace to change',
+    });
+
+    camera.emit = null;
+    await user.click(cameraButton());
+    await decode();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', { name: 'Search ingredients' }),
+      ).toHaveValue('Zorblax'),
+    );
+  });
+
   it('shows the strings in Romanian and Danish', async () => {
     const user = userEvent.setup();
     stubLookup(() => Response.json(found()));
@@ -328,5 +374,14 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
       screen.getByRole('button', { name: 'Udfyld med kameraet' }),
     );
     expect(screen.getByRole('radio', { name: 'Stregkode' })).toBeChecked();
+  });
+
+  it('shows the barcode mode in Romanian', async () => {
+    const user = userEvent.setup();
+    stubLookup(() => Response.json(found()));
+    renderWithProviders(<PantryPage />, { locale: 'ro' });
+    await user.click(await screen.findByRole('button', { name: /^Adaugă/ }));
+    await user.click(screen.getByRole('button', { name: /camera/ }));
+    expect(screen.getByRole('radio', { name: 'Cod de bare' })).toBeChecked();
   });
 });
