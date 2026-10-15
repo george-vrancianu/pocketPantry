@@ -144,13 +144,14 @@ describe('Barcode Lookup (integration)', () => {
   describe('matching the Catalog', () => {
     it('returns an exact name match with its default unit, quantity, description and source', async () => {
       found = product({ productName: 'Parmesan', quantity: '200 g' });
-      expect((await lookup(a).expect(200)).body).toEqual({
+      expect((await lookup(a).expect(200)).body).toMatchObject({
         found: true,
         source: 'open_food_facts',
         match: {
           id: seedId.ingredient('parmesan'),
           name: 'Parmesan',
           defaultUnit: expect.any(String) as unknown,
+          defaults: { location: 'fridge', expiryDays: 60 },
         },
         lowConfidence: false,
         productDescription: 'Parmesan',

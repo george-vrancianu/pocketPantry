@@ -46,9 +46,7 @@ export class BarcodeLookupService {
     return {
       found: true,
       source: 'open_food_facts',
-      match: match
-        ? { id: match.id, name: match.name, defaultUnit: match.defaultUnit }
-        : null,
+      match,
       lowConfidence: false,
       productDescription: names[0],
       ...parseNetQuantity(product.quantity),

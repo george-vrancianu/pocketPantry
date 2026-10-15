@@ -17,7 +17,8 @@ export type BarcodeLookupResponse =
       found: true;
       /** Where the values came from; the form credits Open Food Facts for that one. */
       source: 'open_food_facts';
-      match: Pick<CatalogSearchResult, 'id' | 'name' | 'defaultUnit'> | null;
+      /** The Catalog Ingredient with its defaults, as a search result, so the form can apply Location and Default Expiry. */
+      match: CatalogSearchResult | null;
       /** A match the lookup was unsure of; always false for now, since only confident hits are returned. */
       lowConfidence: boolean;
       productDescription: string;

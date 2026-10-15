@@ -129,5 +129,8 @@
   "family_synonyms": {
     "not_found": "Sinonimul nu mai este în coadă. Poate l-a adăugat deja altcineva.",
     "shared_name_exists": "Numele este deja folosit de un alt ingredient."
+  },
+  "barcode": {
+    "provider_unavailable": "Căutarea codului de bare nu este disponibilă acum. Încearcă din nou sau completează formularul manual."
   }
 }

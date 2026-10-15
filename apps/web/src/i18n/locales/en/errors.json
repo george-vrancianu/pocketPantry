@@ -129,5 +129,8 @@
   "family_synonyms": {
     "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
     "shared_name_exists": "That name is already used by another ingredient."
+  },
+  "barcode": {
+    "provider_unavailable": "The barcode lookup is unavailable right now. Try again, or fill the form by hand."
   }
 }

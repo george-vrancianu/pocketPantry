@@ -80,10 +80,12 @@
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
     "prefill": {
-      "open": "Completează dintr-o poză",
+      "open": "Completează cu camera",
       "reading": "Citesc poza produsului…",
       "cap": "Ai folosit toate scanările de azi. Completează formularul manual.",
-      "mark": "Completat din poza ta"
+      "mark": "Completat din produs",
+      "credit": "Date despre produs: Open Food Facts",
+      "lookingUp": "Caut codul de bare…"
     }
   },
   "picker": {

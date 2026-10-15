@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { useCamera } from '../../lib/camera';
+import type { CameraMode } from '../../lib/cameraMode';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
 import { glassControl, glassFocusRing, shade } from './components/glass';
 import { ModeDial } from './components/ModeDial';
@@ -20,27 +21,33 @@ import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanLanguage } from './hooks/useScanLanguage';
 
-/** The modes an overlay camera offers. Only Product so far; Barcode joins it later. */
-export type CameraMode = 'product';
+export type { CameraMode };
 
-/**
- * What the camera hands back to whatever opened it, then closes. One kind per camera mode that
- * yields a result; a Barcode mode adds `{ kind: 'barcode'; code: string }` here.
- */
-export type CameraResult = {
-  kind: 'product';
-  /** The prepared photo, as a JPEG data URL. */
-  image: string;
-  /** The language the Member chose to read it in. */
-  scanLanguage: ScanLanguage;
-};
+/** What the camera hands back to whatever opened it, then closes: one kind per camera mode. */
+export type CameraResult =
+  | {
+      kind: 'product';
+      /** The prepared photo, as a JPEG data URL. */
+      image: string;
+      /** The language the Member chose to read it in. */
+      scanLanguage: ScanLanguage;
+    }
+  | {
+      kind: 'barcode';
+      /** The decoded EAN-13, EAN-8, UPC-A or UPC-E code. */
+      code: string;
+    };
 
 type Props = {
   /** In dial order; the dial is hidden when there is only one. */
   modes: readonly CameraMode[];
   /** The mode the camera opens in; the first of `modes` when it is not one of them. */
   defaultMode: CameraMode;
-  /** One shot was taken: the opener closes the overlay and owns the work that follows. */
+  /** The Member picked a mode on the dial: the opener may remember it. */
+  onModeChange?: (mode: CameraMode) => void;
+  /** A short message above the dial, such as why the overlay reopened. */
+  notice?: string;
+  /** One shot was taken, or a barcode was read: the opener closes the overlay and owns the work that follows. */
   onResult: (result: CameraResult) => void;
   /** Closed without a shot; the opener is left as it was. */
   onCancel: () => void;
@@ -60,13 +67,16 @@ const roundButton = {
 
 /**
  * The camera as a full-screen overlay for a page that needs one photo back (the add-Batch form),
- * not a Scan Session. Its mode lives in the overlay, never in the URL, and it remembers nothing:
- * it is opened over a page whose own address and settings are not its to change. The Scan
- * Language is the Scan page's remembered one.
+ * not a Scan Session. Its mode lives in the overlay, never in the URL, and the opener decides what
+ * to remember: it is opened over a page whose own address and settings are not its to change. The
+ * Scan Language is the Scan page's remembered one, and only Product mode has it: a Barcode Lookup
+ * is not a Scan.
  */
 export function CameraOverlay({
   modes,
   defaultMode,
+  onModeChange,
+  notice,
   onResult,
   onCancel,
 }: Props) {
@@ -109,8 +119,22 @@ export function CameraOverlay({
     };
   }, []);
 
+  // Barcode mode reads the live stream: the first code closes the overlay. The decoder (WASM
+  // where the browser has none) is loaded by this call, the first time the mode is used.
+  const resultRef = useRef(onResult);
+  resultRef.current = onResult;
+  const { watchBarcodes } = camera;
+  useEffect(() => {
+    if (mode !== 'barcode' || camera.status !== 'ready') return;
+    return watchBarcodes((code) => {
+      if (closed.current) return;
+      closed.current = true;
+      resultRef.current({ kind: 'barcode', code });
+    });
+  }, [mode, camera.status, watchBarcodes]);
+
   const shoot = async () => {
-    if (shooting.current) return;
+    if (mode === 'barcode' || shooting.current) return;
     shooting.current = true;
     setFailed(false);
     try {
@@ -182,7 +206,7 @@ export function CameraOverlay({
       />
       <Viewfinder
         mode={mode}
-        disabled={preparing || camera.status !== 'ready'}
+        disabled={mode === 'barcode' || preparing || camera.status !== 'ready'}
         onScan={() => void shoot()}
         dragEndedAt={dragEndedAt}
       />
@@ -227,12 +251,14 @@ export function CameraOverlay({
           </Box>
         ) : null}
         <Box sx={{ flex: 1 }} />
-        <ScanLanguageChip
-          value={scanLanguage}
-          locale={locale}
-          disabled={preparing}
-          onChange={setScanLanguage}
-        />
+        {mode === 'barcode' ? null : (
+          <ScanLanguageChip
+            value={scanLanguage}
+            locale={locale}
+            disabled={preparing}
+            onChange={setScanLanguage}
+          />
+        )}
       </Box>
       <Box
         sx={{
@@ -249,8 +275,13 @@ export function CameraOverlay({
           component="div"
           sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
-          {camera.status === 'unavailable' ? t('overlay.noCamera') : null}
+          {camera.status === 'unavailable'
+            ? t('overlay.noCamera')
+            : mode === 'barcode'
+              ? t('overlay.pointAtBarcode')
+              : null}
         </Typography>
+        {notice ? <Alert severity="info">{notice}</Alert> : null}
         {failed ? <Alert role="alert">{t('overlay.photoFailed')}</Alert> : null}
         {modes.length > 1 ? (
           <ModeDial
@@ -261,7 +292,9 @@ export function CameraOverlay({
             dragEndedAt={dragEndedAt}
             onChange={(next) => {
               const picked = modes.find((item) => item === next);
-              if (picked) setMode(picked);
+              if (!picked) return;
+              setMode(picked);
+              onModeChange?.(picked);
             }}
           />
         ) : (

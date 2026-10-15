@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 import {
   DIAL_ITEM_WIDTH,
   releaseTarget,
@@ -26,7 +26,7 @@ const icon = (children: ReactNode) => (
   </svg>
 );
 
-export const MODE_ICONS: Record<ScanMode, ReactNode> = {
+export const MODE_ICONS: Record<CameraMode, ReactNode> = {
   receipt: icon(
     <>
       <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
@@ -45,6 +45,11 @@ export const MODE_ICONS: Record<ScanMode, ReactNode> = {
       <path d="M6 10V6h3v4M12 10V5h4v5M7 18v-4h4v4M14 18v-5h3v5" />
     </>,
   ),
+  barcode: icon(
+    <>
+      <path d="M4 6v12M7 6v12M11 6v12M14 6v12M17 6v12M20 6v12" />
+    </>,
+  ),
   plate: icon(
     <>
       <circle cx="12" cy="12" r="6" />
@@ -60,7 +65,7 @@ const reducedMotion = '@media (prefers-reduced-motion: reduce)';
  * The Scan Mode dial: the selected icon sits in the ring with its name above. Tap an icon, or
  * press the left and right arrow keys, to change mode.
  */
-export function ModeDial({
+export function ModeDial<Mode extends CameraMode>({
   modes,
   mode,
   disabled,
@@ -69,14 +74,14 @@ export function ModeDial({
   onChange,
 }: {
   /** The modes the camera was opened with, in dial order. Hidden when there is only one. */
-  modes: readonly ScanMode[];
-  mode: ScanMode;
+  modes: readonly Mode[];
+  mode: Mode;
   disabled: boolean;
   /** Also true while an overlay or a read owns the arrow keys. */
   keysDisabled: boolean;
   /** Set to the time a drag ends, so the guide ignores the tap that can follow it. */
   dragEndedAt: MutableRefObject<number | null>;
-  onChange: (mode: ScanMode) => void;
+  onChange: (mode: Mode) => void;
 }) {
   const { t } = useTranslation('scan');
   const index = modes.indexOf(mode);

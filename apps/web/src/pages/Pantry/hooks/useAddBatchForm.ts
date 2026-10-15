@@ -8,6 +8,8 @@ import {
   type Unit,
 } from '../../../lib/catalog';
 import { ApiError } from '../../../lib/api';
+import { barcodeLine, useBarcodeLookup } from '../../../lib/barcode';
+import { loadOverlayMode, type CameraMode } from '../../../lib/cameraMode';
 import { useProductRead, type ProposedLine } from '../../../lib/scan';
 import type { CameraResult } from '../../Scan/CameraOverlay';
 import {
@@ -51,8 +53,9 @@ export function useAddBatchForm({
   const [ingredient, setIngredient] = useState<PickedIngredient | null>(
     startingIngredient,
   );
-  // The text the search field starts with: the starting Ingredient's name, or the Unmatched name.
-  const [initialQuery] = useState(() =>
+  // The text the search field holds when it is not being typed in: the starting Ingredient's name,
+  // or the Unmatched name; later a Barcode Lookup's product name when no Ingredient matched.
+  const [initialQuery, setInitialQuery] = useState(() =>
     start === undefined
       ? ''
       : 'ingredient' in start
@@ -165,7 +168,11 @@ export function useAddBatchForm({
    * Writes a Product Scan's line into the fields the Member has not touched and marks them. Location
    * and expiry keep the Catalog-default fallback when the line gives none.
    */
-  const applyPrefill = (read: ProposedLine) => {
+  const applyPrefill = (
+    read: ProposedLine,
+    /** With no Match: keep the read name as a typed Unmatched name (Product Scan), or pre-type it in the Ingredient search (Barcode Lookup). */
+    noMatch: 'typed-name' | 'search' = 'typed-name',
+  ) => {
     const marks = new Set<PrefillField>();
     const matched = touched.ingredient ? null : read.match;
     if (!touched.ingredient) {
@@ -175,6 +182,8 @@ export function useAddBatchForm({
         setFrozenUnit(null);
         setCheckIngredient(read.lowConfidence);
         marks.add('ingredient');
+      } else if (noMatch === 'search' && read.name.trim()) {
+        setInitialQuery(read.name.trim());
       } else if (read.name.trim()) {
         setIngredient(null);
         setUnmatchedName(read.name.trim());
@@ -217,27 +226,57 @@ export function useAddBatchForm({
   prefillNow.current = applyPrefill;
 
   const [cameraOpen, setCameraOpen] = useState(false);
+  // The mode the overlay opened in, and whether it reopened because a barcode was not found.
+  const [openMode, setOpenMode] = useState<CameraMode>('barcode');
+  const [barcodeMissed, setBarcodeMissed] = useState(false);
+  // Values came from Open Food Facts: the form credits it (ODbL).
+  const [fromOpenFoodFacts, setFromOpenFoodFacts] = useState(false);
   const productRead = useProductRead(i18n.language);
-  const readPhoto = (result: CameraResult) => {
+  const barcodeLookup = useBarcodeLookup(i18n.language);
+  const open = (mode: CameraMode, missed: boolean) => {
+    setOpenMode(mode);
+    setBarcodeMissed(missed);
+    setCameraOpen(true);
+  };
+  const onCameraResult = (result: CameraResult) => {
     setCameraOpen(false);
-    productRead.mutate(result, {
-      onSuccess: (read) => prefillNow.current(read),
+    productRead.reset();
+    barcodeLookup.reset();
+    if (result.kind === 'product') {
+      productRead.mutate(result, {
+        onSuccess: (read) => prefillNow.current(read),
+      });
+      return;
+    }
+    barcodeLookup.mutate(result.code, {
+      onSuccess: (lookup) => {
+        if (!lookup.found) return open('product', true);
+        prefillNow.current(barcodeLine(lookup), 'search');
+        setFromOpenFoodFacts(true);
+      },
     });
   };
-  const readError = productRead.error
-    ? productRead.error instanceof ApiError &&
-      productRead.error.code === 'scan.cap_reached'
+  const failure = productRead.error ?? barcodeLookup.error;
+  const readError = failure
+    ? failure instanceof ApiError && failure.code === 'scan.cap_reached'
       ? t('pantry:form.prefill.cap')
-      : translateApiError(t, productRead.error)
+      : translateApiError(t, failure)
     : null;
   const camera = {
     open: cameraOpen,
-    openCamera: () => setCameraOpen(true),
+    openCamera: () => open(loadOverlayMode(), false),
     cancel: () => setCameraOpen(false),
-    onResult: readPhoto,
+    onResult: onCameraResult,
+    /** The mode the overlay opens in. */
+    openMode,
+    /** The overlay reopened in Product mode because the barcode is not in Open Food Facts. */
+    barcodeMissed,
     /** A Product Scan is being read; the form stays editable. */
     reading: productRead.isPending,
+    /** A Barcode Lookup is under way. */
+    lookingUp: barcodeLookup.isPending,
     readError,
+    fromOpenFoodFacts,
     prefilled,
     checkIngredient,
   };
