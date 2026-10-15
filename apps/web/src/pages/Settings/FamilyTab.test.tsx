@@ -40,6 +40,8 @@ function stubFamilyTab({
 }: StubOptions = {}) {
   const { fetchMock, calls } = stubApi({
     'GET /api/family': () => Response.json(current),
+    'GET /api/catalog/family': () =>
+      Response.json({ ingredients: [], synonyms: [] }),
     'GET /api/settings/family': () =>
       Response.json({ staleThresholdDays: threshold, expiryOverrides: [] }),
     'PATCH /api/settings/family': () =>

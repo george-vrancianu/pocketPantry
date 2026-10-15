@@ -124,7 +124,6 @@
   "familyCatalog": {
     "title": "Familiens katalog",
     "help": "Det, din familie har tilføjet til kataloget. Alle medlemmer kan rette det.",
-    "ingredients": "Ingredienser",
     "synonyms": "Andre navne",
     "empty": "Intet tilføjet endnu. Brug „Tilføj til dit katalog“, når du søger efter en ingrediens.",
     "meta": "{{category}} · {{aisle}} · {{unit}}",
@@ -135,7 +134,7 @@
     "name": "Navn",
     "category": "Kategori",
     "save": "Gem",
-    "deleteConfirm_one": "Slet {{name}}? {{usage}} bruger den. De bliver til umatchede varer under dens navn; dens basisvarer og andre navne fjernes.",
+    "deleteConfirm_one": "Slet {{name}}? {{usage}} bruger den. Den bliver til en umatchet vare under dens navn; dens basisvarer og andre navne fjernes.",
     "deleteConfirm_other": "Slet {{name}}? {{usage}} bruger den. De bliver til umatchede varer under dens navn; dens basisvarer og andre navne fjernes.",
     "deleteConfirmUnused": "Slet {{name}}? Intet bruger den. Dens andre navne fjernes.",
     "usage": {

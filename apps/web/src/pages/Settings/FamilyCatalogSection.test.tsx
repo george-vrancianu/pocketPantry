@@ -201,7 +201,9 @@ describe('FamilyCatalogSection', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Delete Kombucha' }),
     );
-    expect(screen.getByText(/1 Batch uses it/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/1 Batch uses it. It stays as an unmatched item/),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await userEvent.click(
       screen.getByRole('button', { name: 'Delete Tempeh' }),

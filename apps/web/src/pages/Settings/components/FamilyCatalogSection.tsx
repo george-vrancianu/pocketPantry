@@ -28,7 +28,7 @@ const USAGE_KINDS: Array<keyof FamilyIngredientUsage> = [
   'staples',
 ];
 
-/** The Family catalog: what the Family added, which any Member can rename, move or delete (ticket 274). */
+/** The Family catalog: what the Family added, which any Member can rename, move or delete (ADR 0011). */
 export function FamilyCatalogSection() {
   const { t, i18n } = useTranslation(['settings', 'common']);
   const id = useId();
