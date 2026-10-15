@@ -1116,12 +1116,12 @@ describe('RecipeDetailPage', () => {
     const strongPeanuts = {
       allergen: { id: 'a-peanuts', name: 'Peanuts' },
       severity: 'strong' as const,
-      lineIds: ['l1'],
+      lines: [{ lineId: 'l1', severity: 'strong' as const }],
     };
     const softNuts = {
       allergen: { id: 'a-nuts', name: 'Tree nuts' },
       severity: 'soft' as const,
-      lineIds: ['l2'],
+      lines: [{ lineId: 'l2', severity: 'soft' as const }],
     };
 
     it('shows no banner without a warning', async () => {
@@ -1142,7 +1142,7 @@ describe('RecipeDetailPage', () => {
               {
                 allergen: { id: 'a-milk', name: 'Milk' },
                 severity: 'strong',
-                lineIds: ['l1'],
+                lines: [{ lineId: 'l1', severity: 'strong' as const }],
               },
             ],
           }),
@@ -1235,7 +1235,15 @@ describe('RecipeDetailPage', () => {
       setup(
         recipe({
           allergyWarning: warning({
-            entries: [{ ...strongPeanuts, lineIds: ['l1', 'l2'] }],
+            entries: [
+              {
+                ...strongPeanuts,
+                lines: [
+                  { lineId: 'l1', severity: 'strong' as const },
+                  { lineId: 'l2', severity: 'soft' as const },
+                ],
+              },
+            ],
           }),
         }),
       );

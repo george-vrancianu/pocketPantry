@@ -14,17 +14,19 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import type { Unit } from '../../../lib/catalog';
-import type {
-  AllergyWarningEntry,
-  PantryLine,
-  RecipeDetailLine,
-} from '../../../lib/recipes';
+import type { PantryLine, RecipeDetailLine } from '../../../lib/recipes';
 import { LineStatusPill } from './PantryStatus';
+
+/** An Allergy a line contains, with the severity the API worked out for that line. */
+export type LineAllergy = {
+  allergen: { id: string; name: string };
+  severity: 'strong' | 'soft';
+};
 
 type Props = {
   lines: RecipeDetailLine[];
   /** The Allergy Warning entries that name a line, by line id. */
-  allergiesByLine?: ReadonlyMap<string, AllergyWarningEntry[]>;
+  allergiesByLine?: ReadonlyMap<string, LineAllergy[]>;
   /** The Pantry status of each line, by line id; a line without one shows none yet. */
   pantryByLine: Map<string, PantryLine>;
   /** The line whose add button is showing, if any. */
@@ -69,7 +71,7 @@ function IngredientRow({
   onAdd,
 }: {
   line: RecipeDetailLine;
-  allergies: readonly AllergyWarningEntry[];
+  allergies: readonly LineAllergy[];
   pantry: PantryLine | undefined;
   selected: boolean;
   added: boolean;
@@ -167,11 +169,7 @@ function IngredientRow({
                 }}
               >
                 {allergies.map((entry) => {
-                  // An optional line can be left out, so its marker is soft even under a strong entry.
-                  const severity =
-                    entry.severity === 'strong' && !line.optional
-                      ? 'strong'
-                      : 'soft';
+                  const { severity } = entry;
                   return (
                     <Box
                       key={entry.allergen.id}

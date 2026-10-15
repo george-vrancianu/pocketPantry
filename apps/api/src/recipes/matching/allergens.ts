@@ -46,13 +46,19 @@ export type DerivedAllergen<L extends AllergenLine = AllergenLine> = {
 
 export type AllergyWarningSeverity = 'strong' | 'soft';
 
+/** A line that contains an Allergy: `soft` when the line is optional, so it can be left out. */
+export type AllergyWarningLine = {
+  lineId: string;
+  severity: AllergyWarningSeverity;
+};
+
 /** One Allergy the Recipe contains, with the lines that contain it. */
 export type AllergyWarningEntry = {
   allergenId: string;
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: AllergyWarningSeverity;
-  /** Every line (optional ones too) that contains it, in Recipe order. */
-  lineIds: string[];
+  /** Every line (optional ones too) that contains it, in Recipe order, each with its own severity. */
+  lines: AllergyWarningLine[];
 };
 
 /** The notice for a Recipe that contains, or might contain, one of the viewer's Allergies. */
@@ -132,7 +138,10 @@ function warningFor<L extends AllergenLine>(
     .map((a) => ({
       allergenId: a.allergenId,
       severity: a.optionalOnly ? ('soft' as const) : ('strong' as const),
-      lineIds: a.sources.map((line) => line.id),
+      lines: a.sources.map((line) => ({
+        lineId: line.id,
+        severity: line.optional ? ('soft' as const) : ('strong' as const),
+      })),
     }));
   if (entries.length === 0 && uncheckedCount === 0) return null;
   return {

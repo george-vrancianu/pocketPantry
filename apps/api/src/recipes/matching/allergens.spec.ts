@@ -168,7 +168,11 @@ describe('deriveAllergens', () => {
       expect(warn([butter, line()], [MILK])).toEqual({
         severity: 'strong',
         entries: [
-          { allergenId: MILK, severity: 'strong', lineIds: [butter.id] },
+          {
+            allergenId: MILK,
+            severity: 'strong',
+            lines: [{ lineId: butter.id, severity: 'strong' }],
+          },
         ],
         uncheckedCount: 0,
       });
@@ -179,7 +183,11 @@ describe('deriveAllergens', () => {
       expect(warn([nuts], [PEANUTS])).toEqual({
         severity: 'soft',
         entries: [
-          { allergenId: PEANUTS, severity: 'soft', lineIds: [nuts.id] },
+          {
+            allergenId: PEANUTS,
+            severity: 'soft',
+            lines: [{ lineId: nuts.id, severity: 'soft' }],
+          },
         ],
         uncheckedCount: 0,
       });
@@ -192,7 +200,10 @@ describe('deriveAllergens', () => {
         {
           allergenId: MILK,
           severity: 'strong',
-          lineIds: [optional.id, required.id],
+          lines: [
+            { lineId: optional.id, severity: 'soft' },
+            { lineId: required.id, severity: 'strong' },
+          ],
         },
       ]);
     });

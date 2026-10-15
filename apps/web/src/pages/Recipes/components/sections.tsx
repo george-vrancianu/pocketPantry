@@ -9,14 +9,13 @@ import {
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
-  AllergyWarningEntry,
   DiffEntry,
   PantryMatch,
   RecipeDetail,
   RecipeDetailLine,
 } from '../../../lib/recipes';
 import { GuidanceSection } from './GuidanceSection';
-import { IngredientList, lineAmount } from './IngredientList';
+import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
 import { AddMissing, PantryHeading } from './PantryStatus';
@@ -83,12 +82,12 @@ function IngredientsSection({
       ? { ...line, quantity: scaled.quantity, unit: scaled.unit }
       : line;
   });
-  const allergiesByLine = new Map<string, AllergyWarningEntry[]>();
+  const allergiesByLine = new Map<string, LineAllergy[]>();
   for (const entry of recipe.allergyWarning?.entries ?? []) {
-    for (const lineId of entry.lineIds) {
+    for (const { lineId, severity } of entry.lines) {
       allergiesByLine.set(lineId, [
         ...(allergiesByLine.get(lineId) ?? []),
-        entry,
+        { allergen: entry.allergen, severity },
       ]);
     }
   }

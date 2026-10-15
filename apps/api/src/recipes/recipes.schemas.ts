@@ -355,7 +355,8 @@ export type AllergyWarningEntryView = {
   allergen: { id: string; name: string };
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: 'strong' | 'soft';
-  lineIds: string[];
+  /** Every line that contains it, each with its own severity (`soft` for an optional line). */
+  lines: { lineId: string; severity: 'strong' | 'soft' }[];
 };
 
 /**

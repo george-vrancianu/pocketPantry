@@ -190,7 +190,7 @@ describe('Allergies and the Allergy Warning (integration)', () => {
           {
             allergen: { id: MILK, name: 'Milk' },
             severity: 'strong',
-            lineIds: [created.lines[1].id],
+            lines: [{ lineId: created.lines[1].id, severity: 'strong' }],
           },
         ],
         uncheckedCount: 0,
@@ -216,7 +216,7 @@ describe('Allergies and the Allergy Warning (integration)', () => {
           {
             allergen: { id: PEANUT, name: 'Peanuts' },
             severity: 'soft',
-            lineIds: [created.lines[1].id],
+            lines: [{ lineId: created.lines[1].id, severity: 'soft' }],
           },
         ],
         uncheckedCount: 0,
