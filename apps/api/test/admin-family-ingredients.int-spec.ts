@@ -336,6 +336,40 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       expect((await rowOf(copyB.id)).ownerFamilyId).not.toBeNull();
       expect(await groupsOf(name)).toHaveLength(1);
     });
+
+    it.each([
+      ['display name', 'name'],
+      ['Synonym', 'synonym'],
+    ])(
+      'is rejected with 409 when a shared Ingredient has that name as a %s in another locale',
+      async (_label, kind) => {
+        const name = unique('Afi Translated');
+        const copy = await made(a, name);
+        const sharedRes = await admin.post('/admin/catalog/ingredients', {
+          leafCategoryId: HARD_CHEESE,
+          name: unique('Afi Translated Shared'),
+          defaultUnit: 'g',
+        });
+        const sharedId = (sharedRes.body as { id: string }).id;
+        const translated = await admin.post('/admin/catalog/translations', {
+          entityType: 'ingredient',
+          entityId: sharedId,
+          locale: 'da',
+          kind,
+          value: name,
+        });
+        expect(translated.status).toBe(201);
+
+        const res = await promote(copy.id);
+
+        expect(res.status).toBe(409);
+        expect(res.body).toMatchObject({
+          code: 'family_ingredients.shared_name_exists',
+          params: { ingredientId: sharedId },
+        });
+        expect((await rowOf(copy.id)).ownerFamilyId).not.toBeNull();
+      },
+    );
   });
 
   describe('merging the other Families copies', () => {
@@ -350,10 +384,11 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
 
       // Family B uses its copy everywhere.
       await b
-        .post('/pantry/batches', {
+        .post('/pantry/batches?locale=en', {
           ingredientId: copyB.id,
           quantity: 2,
           unit: 'g',
+          location: 'cupboard',
         })
         .expect(201);
       await b
@@ -384,10 +419,11 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
         .expect(204);
       // Family C uses its copy too (a Batch is enough to have stock history).
       await c
-        .post('/pantry/batches', {
+        .post('/pantry/batches?locale=en', {
           ingredientId: copyC.id,
           quantity: 1,
           unit: 'g',
+          location: 'cupboard',
         })
         .expect(201);
 

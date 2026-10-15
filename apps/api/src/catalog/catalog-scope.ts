@@ -1,4 +1,4 @@
-import { eq, isNull, or, sql } from 'drizzle-orm';
+import { eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import type { Executor } from '../database/database.types';
 import { catalogTranslations, ingredients } from '../database/schema';
 
@@ -64,4 +64,17 @@ export function catalogScope(reader: CatalogReader): CatalogScope {
     ingredients: (executor) => scopedIngredients(executor, reader),
     translations: scopedTranslations,
   };
+}
+
+/**
+ * Family Ingredients of every Family, for the Admin curation queue only (#275).
+ * The one deliberate read across Families: callers must never expose which
+ * Family owns a row.
+ */
+export function familyOwnedIngredients(executor: Executor) {
+  return executor
+    .select()
+    .from(ingredients)
+    .where(isNotNull(ingredients.ownerFamilyId))
+    .as('ingredients');
 }
