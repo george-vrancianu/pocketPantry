@@ -1,4 +1,8 @@
-import { deriveAllergens, type AllergenLine } from './allergens';
+import {
+  deriveAllergens,
+  type AllergenLine,
+  type AllergyInput,
+} from './allergens';
 
 const GLUTEN = 'allergen-gluten';
 const MILK = 'allergen-milk';
@@ -17,6 +21,7 @@ const line = (over: Partial<AllergenLine> = {}): AllergenLine => ({
   ...over,
 });
 const ORDER = [GLUTEN, MILK, PEANUTS];
+const OWN = { kind: 'own' } as const;
 const derive = <L extends AllergenLine>(lines: L[]) =>
   deriveAllergens({ lines, allergenOrder: ORDER });
 
@@ -145,7 +150,10 @@ describe('deriveAllergens', () => {
       deriveAllergens({
         lines,
         allergenOrder: ORDER,
-        allergies: allergies.map((allergenId) => ({ allergenId })),
+        allergies: allergies.map((allergenId) => ({
+          allergenId,
+          owner: OWN,
+        })),
       }).allergyWarning;
 
     it('has none when the viewer has no Allergies, even with Unchecked lines', () => {
@@ -170,6 +178,7 @@ describe('deriveAllergens', () => {
         entries: [
           {
             allergenId: MILK,
+            owner: OWN,
             severity: 'strong',
             lines: [{ lineId: butter.id, severity: 'strong' }],
           },
@@ -185,6 +194,7 @@ describe('deriveAllergens', () => {
         entries: [
           {
             allergenId: PEANUTS,
+            owner: OWN,
             severity: 'soft',
             lines: [{ lineId: nuts.id, severity: 'soft' }],
           },
@@ -199,6 +209,7 @@ describe('deriveAllergens', () => {
       expect(warn([optional, required], [MILK])?.entries).toEqual([
         {
           allergenId: MILK,
+          owner: OWN,
           severity: 'strong',
           lines: [
             { lineId: optional.id, severity: 'soft' },
@@ -246,6 +257,117 @@ describe('deriveAllergens', () => {
       const variant = [line()];
       expect(warn(base, [PEANUTS])?.severity).toBe('strong');
       expect(warn(variant, [PEANUTS])).toBeNull();
+    });
+  });
+
+  describe('whose Allergy it is', () => {
+    const own = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: OWN,
+    });
+    const family = (
+      allergenId: string,
+      label: string | null,
+    ): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'family', label },
+    });
+    const member = (allergenId: string, name: string): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'member', name },
+    });
+    const warn = (lines: AllergenLine[], allergies: AllergyInput[]) =>
+      deriveAllergens({ lines, allergenOrder: ORDER, allergies })
+        .allergyWarning;
+    const who = (lines: AllergenLine[], allergies: AllergyInput[]) =>
+      warn(lines, allergies)?.entries.map((e) => [e.allergenId, e.owner]);
+    const everything = () => [
+      line({ allergenIds: [GLUTEN] }),
+      line({ allergenIds: [MILK] }),
+      line({ allergenIds: [PEANUTS] }),
+    ];
+
+    it('names the viewer as the owner of their own Allergy', () => {
+      expect(who(everything(), [own(MILK)])).toEqual([[MILK, OWN]]);
+    });
+
+    it('names a Family Allergy with its label, or none', () => {
+      expect(
+        who(everything(), [family(MILK, 'Mia'), family(GLUTEN, null)]),
+      ).toEqual([
+        [GLUTEN, { kind: 'family', label: null }],
+        [MILK, { kind: 'family', label: 'Mia' }],
+      ]);
+    });
+
+    it('names another Member by name', () => {
+      expect(who(everything(), [member(PEANUTS, 'Ana')])).toEqual([
+        [PEANUTS, { kind: 'member', name: 'Ana' }],
+      ]);
+    });
+
+    it('lists the viewer own and Family Allergies before other Members, whatever the Allergen order', () => {
+      const allergies = [
+        member(GLUTEN, 'Ana'),
+        family(PEANUTS, 'Mia'),
+        own(MILK),
+        member(MILK, 'Ana'),
+      ];
+      expect(who(everything(), allergies)).toEqual([
+        [MILK, OWN],
+        [PEANUTS, { kind: 'family', label: 'Mia' }],
+        [GLUTEN, { kind: 'member', name: 'Ana' }],
+        [MILK, { kind: 'member', name: 'Ana' }],
+      ]);
+    });
+
+    it('groups other Members by name, then by Allergen order', () => {
+      const allergies = [
+        member(PEANUTS, 'Zoe'),
+        member(MILK, 'Ana'),
+        member(GLUTEN, 'Zoe'),
+      ];
+      expect(who(everything(), allergies)?.map(([id]) => id)).toEqual([
+        MILK,
+        GLUTEN,
+        PEANUTS,
+      ]);
+    });
+
+    it('keeps one entry per person for the same Allergen, with the same lines', () => {
+      const butter = line({ allergenIds: [MILK] });
+      const entries = warn(
+        [butter],
+        [own(MILK), family(MILK, 'Mia'), family(MILK, 'Leo')],
+      )?.entries;
+      expect(entries?.map((e) => e.owner)).toEqual([
+        OWN,
+        { kind: 'family', label: 'Mia' },
+        { kind: 'family', label: 'Leo' },
+      ]);
+      expect(entries?.every((e) => e.lines[0].lineId === butter.id)).toBe(true);
+    });
+
+    it('collapses an exact repeat of the same Allergy', () => {
+      expect(
+        who(everything(), [family(MILK, 'Mia'), family(MILK, 'Mia')]),
+      ).toHaveLength(1);
+    });
+
+    it('is strong when only another Member has the Allergy in a required line', () => {
+      const w = warn(everything(), [member(MILK, 'Ana')]);
+      expect(w?.severity).toBe('strong');
+    });
+
+    it('is soft when the Allergy is another Member only in an optional line', () => {
+      const nuts = line({ allergenIds: [PEANUTS], optional: true });
+      expect(warn([nuts], [member(PEANUTS, 'Ana')])?.severity).toBe('soft');
+    });
+
+    it('warns about Unchecked lines when only Family or other Members have Allergies', () => {
+      const lines = [line({ ingredient: null })];
+      expect(warn(lines, [member(MILK, 'Ana')])?.uncheckedCount).toBe(1);
+      expect(warn(lines, [family(MILK, null)])?.uncheckedCount).toBe(1);
     });
   });
 });

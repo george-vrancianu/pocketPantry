@@ -1,9 +1,13 @@
-import { asc, inArray } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { Executor } from '../database/database.types';
-import { allergens, ingredientAllergens } from '../database/schema';
+import { allergens, ingredientAllergens, user } from '../database/schema';
+import {
+  loadFamilyAllergies,
+  loadOtherMemberAllergies,
+} from '../settings/family-allergies';
 import { loadMemberAllergenIds } from '../settings/member-allergies';
 import {
   deriveAllergens,
@@ -18,14 +22,39 @@ import type {
 
 type SourceLine = AllergenLine & { ingredientName: string };
 
-/** The Allergies that apply to the viewer: today only their own. */
+/**
+ * The Allergies that apply to the viewer: their own, their Family's, and the
+ * other Members' of that Family. Who is named, and in what order, is decided
+ * only by `deriveAllergens`.
+ */
 export async function loadViewerAllergies(
   executor: Executor,
   memberId: string,
 ): Promise<AllergyInput[]> {
-  const ids = await loadMemberAllergenIds(executor, memberId);
-  return ids.map((allergenId) => ({ allergenId }));
+  const [self] = await executor
+    .select({ familyId: user.familyId })
+    .from(user)
+    .where(eq(user.id, memberId))
+    .limit(1);
+  const [own, family, members] = await Promise.all([
+    loadMemberAllergenIds(executor, memberId),
+    self ? loadFamilyAllergies(executor, self.familyId) : [],
+    self ? loadOtherMemberAllergies(executor, self.familyId, memberId) : [],
+  ]);
+  return [
+    ...own.map((allergenId) => ({ allergenId, owner: OWN })),
+    ...family.map((row) => ({
+      allergenId: row.allergenId,
+      owner: { kind: 'family' as const, label: row.label },
+    })),
+    ...members.map((row) => ({
+      allergenId: row.allergenId,
+      owner: { kind: 'member' as const, name: row.name },
+    })),
+  ];
 }
+
+const OWN = { kind: 'own' } as const;
 
 /**
  * A Recipe's Allergens (ADR 0014): loads the Allergen tags of its lines'
@@ -131,6 +160,7 @@ export async function loadRecipeAllergens(
       severity: warning.severity,
       entries: warning.entries.map((entry) => ({
         allergen: named(entry.allergenId),
+        owner: entry.owner,
         severity: entry.severity,
         lines: entry.lines,
       })),

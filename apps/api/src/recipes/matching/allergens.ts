@@ -19,9 +19,19 @@ export type AllergenLine = {
   optional: boolean;
 };
 
-/** An Allergy that applies to the viewer. Later tickets add whose it is (Family Allergies, other Members'). */
+/**
+ * Whose Allergy it is. The viewer's own and Family Allergies count as the
+ * viewer's own (they can hide Recipes, #359); another Member's never does.
+ */
+export type AllergyOwner =
+  | { kind: 'own' }
+  | { kind: 'family'; label: string | null }
+  | { kind: 'member'; name: string };
+
+/** An Allergy that applies to the viewer, and whose it is. */
 export type AllergyInput = {
   allergenId: string;
+  owner: AllergyOwner;
 };
 
 /**
@@ -32,7 +42,10 @@ export type DeriveAllergensInput<L extends AllergenLine = AllergenLine> = {
   lines: readonly L[];
   /** Allergen ids in the Admin-curated list order; others sort last. */
   allergenOrder: readonly string[];
-  /** The Allergies that apply to the viewer; none (the default) means no Allergy Warning. */
+  /**
+   * The Allergies that apply: the viewer's own, the Family's and other Members'.
+   * None (the default) means no Allergy Warning.
+   */
   allergies?: readonly AllergyInput[];
 };
 
@@ -52,9 +65,11 @@ export type AllergyWarningLine = {
   severity: AllergyWarningSeverity;
 };
 
-/** One Allergy the Recipe contains, with the lines that contain it. */
+/** One person's Allergy the Recipe contains, with the lines that contain it. */
 export type AllergyWarningEntry = {
   allergenId: string;
+  /** Whose Allergy it is. */
+  owner: AllergyOwner;
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: AllergyWarningSeverity;
   /** Every line (optional ones too) that contains it, in Recipe order, each with its own severity. */
@@ -65,7 +80,11 @@ export type AllergyWarningEntry = {
 export type AllergyWarning = {
   /** `strong` when any entry is strong; `soft` otherwise. */
   severity: AllergyWarningSeverity;
-  /** In the Admin-curated Allergen order. Empty when only Unchecked lines raise it. */
+  /**
+   * One entry per person and Allergen. The viewer's own come first, then Family
+   * Allergies (each in the Admin-curated Allergen order), then other Members
+   * grouped by name. Empty when only Unchecked lines raise it.
+   */
   entries: AllergyWarningEntry[];
   /** Lines that could not be checked, counted whenever the viewer has an Allergy. */
   uncheckedCount: number;
@@ -122,7 +141,8 @@ export function deriveAllergens<L extends AllergenLine>(
     allergyWarning: warningFor(
       allergens,
       uncheckedCount,
-      new Set((input.allergies ?? []).map((a) => a.allergenId)),
+      input.allergies ?? [],
+      rank,
     ),
   };
 }
@@ -130,23 +150,69 @@ export function deriveAllergens<L extends AllergenLine>(
 function warningFor<L extends AllergenLine>(
   allergens: readonly DerivedAllergen<L>[],
   uncheckedCount: number,
-  allergyIds: ReadonlySet<string>,
+  allergies: readonly AllergyInput[],
+  rank: (allergenId: string) => number,
 ): AllergyWarning | null {
-  if (allergyIds.size === 0) return null;
-  const entries = allergens
-    .filter((a) => allergyIds.has(a.allergenId))
-    .map((a) => ({
-      allergenId: a.allergenId,
-      severity: a.optionalOnly ? ('soft' as const) : ('strong' as const),
-      lines: a.sources.map((line) => ({
-        lineId: line.id,
-        severity: line.optional ? ('soft' as const) : ('strong' as const),
-      })),
-    }));
+  if (allergies.length === 0) return null;
+  const sourcesOf = new Map(allergens.map((a) => [a.allergenId, a]));
+  const entries = uniqueAllergies(allergies)
+    .flatMap((allergy) => {
+      const found = sourcesOf.get(allergy.allergenId);
+      if (!found) return [];
+      return [
+        {
+          allergenId: allergy.allergenId,
+          owner: allergy.owner,
+          severity: found.optionalOnly
+            ? ('soft' as const)
+            : ('strong' as const),
+          lines: found.sources.map((line) => ({
+            lineId: line.id,
+            severity: line.optional ? ('soft' as const) : ('strong' as const),
+          })),
+        },
+      ];
+    })
+    .sort((a, b) => compareOwners(a, b, rank));
   if (entries.length === 0 && uncheckedCount === 0) return null;
   return {
     severity: entries.some((e) => e.severity === 'strong') ? 'strong' : 'soft',
     entries,
     uncheckedCount,
   };
+}
+
+const ownerKey = (owner: AllergyOwner): string =>
+  owner.kind === 'own'
+    ? 'own'
+    : owner.kind === 'family'
+      ? `family:${owner.label ?? ''}`
+      : `member:${owner.name}`;
+
+/** An exact repeat (same Allergen, same person) is one Allergy. */
+function uniqueAllergies(allergies: readonly AllergyInput[]): AllergyInput[] {
+  const seen = new Set<string>();
+  return allergies.filter((a) => {
+    const key = `${a.allergenId}|${ownerKey(a.owner)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const OWNER_TIER = { own: 0, family: 1, member: 2 } as const;
+
+/** Own, then Family (by Allergen order); then other Members by name (then Allergen order). Stable otherwise. */
+function compareOwners(
+  a: Pick<AllergyWarningEntry, 'allergenId' | 'owner'>,
+  b: Pick<AllergyWarningEntry, 'allergenId' | 'owner'>,
+  rank: (allergenId: string) => number,
+): number {
+  const tier = OWNER_TIER[a.owner.kind] - OWNER_TIER[b.owner.kind];
+  if (tier !== 0) return tier;
+  if (a.owner.kind === 'member' && b.owner.kind === 'member') {
+    const byName = a.owner.name.localeCompare(b.owner.name);
+    if (byName !== 0) return byName;
+  }
+  return rank(a.allergenId) - rank(b.allergenId);
 }

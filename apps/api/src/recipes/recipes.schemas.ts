@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
+import type { AllergyOwner } from './matching/allergens';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -350,9 +351,11 @@ export type RecipeAllergens = {
   uncheckedCount: number;
 };
 
-/** One Allergy a Recipe contains, with the lines that contain it (markers in the Ingredients tab). */
+/** One person's Allergy a Recipe contains, with the lines that contain it (markers in the Ingredients tab). */
 export type AllergyWarningEntryView = {
   allergen: { id: string; name: string };
+  /** Whose Allergy it is; the viewer's own and Family Allergies come first. */
+  owner: AllergyOwner;
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: 'strong' | 'soft';
   /** Every line that contains it, each with its own severity (`soft` for an optional line). */
@@ -366,7 +369,7 @@ export type AllergyWarningEntryView = {
 export type AllergyWarningView = {
   /** `strong` when any entry is strong; `soft` when only optional or Unchecked lines raise it. */
   severity: 'strong' | 'soft';
-  /** The Allergies the Recipe contains, in the Allergen list's order. Empty when only Unchecked lines raise it. */
+  /** The Allergies the Recipe contains: own and Family first, then other Members'. Empty when only Unchecked lines raise it. */
   entries: AllergyWarningEntryView[];
   /** Lines that could not be checked for Allergens. */
   uncheckedCount: number;
