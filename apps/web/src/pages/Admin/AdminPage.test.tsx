@@ -8,6 +8,7 @@ const catalog = {
   aisles: [],
   cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
   methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  allergens: [],
   eatingMoments: [
     {
       id: 'em1',

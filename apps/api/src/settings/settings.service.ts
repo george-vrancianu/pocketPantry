@@ -242,13 +242,15 @@ export class SettingsService {
     locale: CatalogLocale,
   ): Promise<AllergiesView> {
     const scope = await this.catalogScopeForMember(memberId);
-    const [rows, own] = await Promise.all([
+    const [all, own] = await Promise.all([
       this.database
         .select()
         .from(allergens)
         .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
       loadMemberAllergenIds(this.database, memberId),
     ]);
+    // A retired Allergen leaves the picker, unless the Member already has it.
+    const rows = all.filter((row) => !row.archivedAt || own.includes(row.id));
     const names = await loadDisplayNames(
       this.database,
       scope,
@@ -272,11 +274,16 @@ export class SettingsService {
     await this.database.transaction(async (tx) => {
       if (wanted.length > 0) {
         const known = await tx
-          .select({ id: allergens.id })
+          .select({ id: allergens.id, archivedAt: allergens.archivedAt })
           .from(allergens)
           .where(inArray(allergens.id, wanted));
         if (known.length !== wanted.length) {
           throw new ApiException(404, 'settings.allergen_not_found');
+        }
+        // A retired Allergen can be kept but not newly picked.
+        const held = new Set(await loadMemberAllergenIds(tx, memberId));
+        if (known.some((row) => row.archivedAt && !held.has(row.id))) {
+          throw new ApiException(409, 'settings.allergen_retired');
         }
       }
       await tx
@@ -333,7 +340,11 @@ export class SettingsService {
     const byOrder = (a: string, b: string) =>
       (order.get(a) ?? 0) - (order.get(b) ?? 0);
     return {
-      allergens: rows.map((row) => allergen(row.id)),
+      // A retired Allergen leaves the picker: a new Family Allergy cannot use it, and
+      // existing ones already carry their name.
+      allergens: rows
+        .filter((row) => !row.archivedAt)
+        .map((row) => allergen(row.id)),
       familyAllergies: family.map((row) => ({
         id: row.id,
         allergen: allergen(row.allergenId),
@@ -359,11 +370,18 @@ export class SettingsService {
   ): Promise<FamilyAllergyView> {
     const familyId = await this.familyIdOf(memberId);
     const [known] = await this.database
-      .select({ id: allergens.id, name: allergens.name })
+      .select({
+        id: allergens.id,
+        name: allergens.name,
+        archivedAt: allergens.archivedAt,
+      })
       .from(allergens)
       .where(eq(allergens.id, allergenId))
       .limit(1);
     if (!known) throw new ApiException(404, 'settings.allergen_not_found');
+    if (known.archivedAt) {
+      throw new ApiException(409, 'settings.allergen_retired');
+    }
     const [created] = await this.database
       .insert(familyAllergies)
       .values({ familyId, allergenId, label: label?.trim() || null })

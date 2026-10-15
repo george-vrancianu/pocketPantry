@@ -45,6 +45,14 @@ export const eatingMomentOrder = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
 });
 
+/** The full set of Allergens a shared Ingredient contains; empty means it contains none. */
+export const ingredientAllergensBody = z.object({
+  allergenIds: z
+    .array(id)
+    .max(100)
+    .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique'),
+});
+
 export const parentCategoryCreate = z.object({
   name: text,
   aisleId: id,
@@ -130,3 +138,4 @@ export type TranslationUpdate = z.infer<typeof translationUpdate>;
 export type ListEntryCreate = z.infer<typeof listEntryCreate>;
 export type ListEntryUpdate = z.infer<typeof listEntryUpdate>;
 export type EatingMomentOrder = z.infer<typeof eatingMomentOrder>;
+export type IngredientAllergensBody = z.infer<typeof ingredientAllergensBody>;

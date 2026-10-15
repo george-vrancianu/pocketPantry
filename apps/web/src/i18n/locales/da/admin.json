@@ -33,7 +33,13 @@
     "leafCategory": "Underkategori",
     "defaultUnit": "Standardenhed",
     "pantryBasic": "Altid på lager",
-    "pantryBasicHint": "Opskriftsmatchning regner den altid som på lager"
+    "pantryBasicHint": "Opskriftsmatchning regner den altid som på lager",
+    "allergens": {
+      "title": "Indeholder",
+      "hint": "De allergener, denne ingrediens indeholder. Gemmer du uden at vælge nogen, noteres det, at den ikke indeholder nogen.",
+      "save": "Gem allergener",
+      "saved": "Allergenerne er gemt."
+    }
   },
   "aisle": {
     "title": "Afdelinger",
@@ -307,6 +313,14 @@
         "moveDown": "Flyt {{name}} ned",
         "unknown": "Spisetidspunkt"
       }
+    },
+    "allergens": {
+      "title": "Allergener",
+      "hint": "Udledt af ingredienslinjerne og de allergener, deres ingredienser er mærket med.",
+      "none": "Ingen almindelige allergener fundet",
+      "optional": "valgfri",
+      "unchecked_one": "{{count}} ingrediens kunne ikke kontrolleres",
+      "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres"
     }
   },
   "eatingMoment": {
@@ -356,5 +370,17 @@
     "addHint": "Alle familier finder {{ingredient}} med dette navn. Familiernes egne kopier fjernes.",
     "language": "Synonymets sprog",
     "added": "{{name}} er tilføjet som fælles synonym for {{ingredient}}."
+  },
+  "allergen": {
+    "title": "Allergener",
+    "hint": "Listen, medlemmer vælger deres allergier fra, og som administratorer mærker ingredienser med. Et udgået allergen skjules i vælgerne, men bliver på mærker og allergier, så opskrifter, der indeholder det, stadig advarer.",
+    "new": "Nyt allergen",
+    "edit": "Redigér allergenet {{name}}",
+    "name": "Navn (engelsk)",
+    "empty": "Ingen allergener endnu.",
+    "retiredBadge": "Udgået",
+    "retire": "Udgå",
+    "unretire": "Genindfør",
+    "retiredNote": "Dette allergen er udgået. Det er skjult i vælgerne, men bliver på de ingredienser, der er mærket med det, og på medlemmers allergier."
   }
 }

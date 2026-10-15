@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [],
   leafCategories: [],
@@ -20,6 +21,7 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
       pantryBasic: false,
+      allergenIds: [],
       translations: [],
     },
   ],
@@ -91,6 +93,8 @@ function open(
 ) {
   const stub = stubApi({
     [`GET /api/admin/recipes/${recipe.id}`]: () => Response.json(recipe),
+    [`GET /api/admin/recipes/${recipe.id}/allergens`]: () =>
+      Response.json({ items: [], uncheckedCount: 0 }),
     ...extra,
   });
   vi.stubGlobal('fetch', stub.fetchMock);
@@ -106,6 +110,50 @@ function open(
 }
 
 describe('RecipeEditor', () => {
+  it('shows the Allergens derived from the Ingredient Lines, read-only', async () => {
+    open(base, {
+      'GET /api/admin/recipes/r1/allergens': () =>
+        Response.json({
+          items: [
+            {
+              allergen: { id: 'al-milk', name: 'Milk' },
+              lines: [{ id: 'l1', ingredientName: 'Milk', optional: false }],
+              optionalOnly: false,
+            },
+            {
+              allergen: { id: 'al-soy', name: 'Soy' },
+              lines: [{ id: 'l2', ingredientName: 'Tofu', optional: true }],
+              optionalOnly: true,
+            },
+          ],
+          uncheckedCount: 2,
+        }),
+    });
+    const section = (
+      await screen.findByRole('heading', { name: 'Allergens' })
+    ).closest('section') as HTMLElement;
+    expect(
+      await within(section).findByText('Milk', { selector: 'strong' }),
+    ).toBeVisible();
+    expect(within(section).getAllByRole('listitem')[1]).toHaveTextContent(
+      'Soy (optional): Tofu',
+    );
+    expect(
+      within(section).getByText("2 ingredients couldn't be checked"),
+    ).toBeVisible();
+    expect(within(section).queryByRole('button')).toBeNull();
+  });
+
+  it('says so when no common allergens are found, never that the Recipe is free of them', async () => {
+    open(base);
+    const section = (
+      await screen.findByRole('heading', { name: 'Allergens' })
+    ).closest('section') as HTMLElement;
+    expect(
+      await within(section).findByText('No common allergens found'),
+    ).toBeVisible();
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
   });

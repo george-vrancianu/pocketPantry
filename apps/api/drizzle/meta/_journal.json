@@ -201,8 +201,15 @@
     {
       "idx": 28,
       "version": "7",
-      "when": 1792089550625,
-      "tag": "0028_hide_allergy_recipes",
+      "when": 1792089211426,
+      "tag": "0028_allergen_archive",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792090279238,
+      "tag": "0029_hide_allergy_recipes",
       "breakpoints": true
     }
   ]

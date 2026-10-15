@@ -33,7 +33,13 @@
     "leafCategory": "Categorie frunză",
     "defaultUnit": "Unitate implicită",
     "pantryBasic": "Nelipsit din Cămară",
-    "pantryBasicHint": "Potrivirea rețetelor îl consideră mereu în stoc"
+    "pantryBasicHint": "Potrivirea rețetelor îl consideră mereu în stoc",
+    "allergens": {
+      "title": "Conține",
+      "hint": "Alergenii pe care îi conține acest ingredient. Salvarea fără nicio alegere înseamnă că nu conține niciunul.",
+      "save": "Salvează alergenii",
+      "saved": "Alergenii au fost salvați."
+    }
   },
   "aisle": {
     "title": "Raioane",
@@ -310,6 +316,15 @@
         "moveDown": "Mută {{name}} mai jos",
         "unknown": "Moment de servire"
       }
+    },
+    "allergens": {
+      "title": "Alergeni",
+      "hint": "Calculați din liniile de ingrediente și din alergenii etichetați pe ingredientele lor.",
+      "none": "Nu s-au găsit alergeni comuni",
+      "optional": "opțional",
+      "unchecked_one": "{{count}} ingredient nu a putut fi verificat",
+      "unchecked_few": "{{count}} ingrediente nu au putut fi verificate",
+      "unchecked_other": "{{count}} de ingrediente nu au putut fi verificate"
     }
   },
   "eatingMoment": {
@@ -361,5 +376,17 @@
     "addHint": "Toate familiile vor găsi {{ingredient}} după acest nume. Copiile proprii ale familiilor sunt eliminate.",
     "language": "Limba sinonimului",
     "added": "{{name}} a fost adăugat ca sinonim comun pentru {{ingredient}}."
+  },
+  "allergen": {
+    "title": "Alergeni",
+    "hint": "Lista din care membrii își aleg alergiile și cu care administratorii etichetează ingredientele. Un alergen retras dispare din selectoare, dar rămâne pe etichete și alergii, deci rețetele care îl conțin tot avertizează.",
+    "new": "Alergen nou",
+    "edit": "Editează alergenul {{name}}",
+    "name": "Nume (engleză)",
+    "empty": "Niciun alergen încă.",
+    "retiredBadge": "Retras",
+    "retire": "Retrage",
+    "unretire": "Readu",
+    "retiredNote": "Acest alergen este retras. Nu apare în selectoare, dar rămâne pe ingredientele etichetate cu el și pe alergiile membrilor."
   }
 }
