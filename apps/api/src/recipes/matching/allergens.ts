@@ -85,7 +85,7 @@ export type AllergyWarningEntry = {
   owner: AllergyOwner;
   /** `yours` when it counts as the viewer's own (their own, the Family's), `members` for another Member's. */
   tier: 'yours' | 'members';
-  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  /** `strong` when a required, checked line contains it, `soft` when only optional or Unchecked lines do. */
   severity: AllergyWarningSeverity;
   /** Every line (optional ones too) that contains it, in Recipe order, each with its own severity. */
   lines: AllergyWarningLine[];
@@ -109,7 +109,7 @@ export type AllergyWarningAllergen = {
 
 /** The notice for a Recipe that contains, or might contain, one of the viewer's Allergies. */
 export type AllergyWarning = {
-  /** `strong` when any entry is strong; `soft` otherwise. */
+  /** `strong` when any entry is strong; `soft` when only optional or Unchecked lines raise it. */
   severity: AllergyWarningSeverity;
   /**
    * One entry per person and Allergen. The viewer's own come first, then Family

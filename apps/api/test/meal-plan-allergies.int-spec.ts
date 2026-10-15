@@ -132,8 +132,8 @@ describe('Meal Plans and Allergies (integration)', () => {
       expiryDate: TODAY,
     });
   }
-  /** A milk-free Recipe on Expiring Soon eggs, so Fill has a safe Recipe to place. */
-  async function safeRecipe(email: string) {
+  /** A milk-free Recipe on Expiring Soon eggs, so Fill has a milk-free Recipe to place. */
+  async function milkFreeRecipe(email: string) {
     await stockMilk(email, 'eggs', 50, 'pcs');
     const id = crypto.randomUUID();
     await database.insert(recipes).values({
@@ -151,10 +151,13 @@ describe('Meal Plans and Allergies (integration)', () => {
     });
     return id;
   }
-  /** Fill placed the safe Recipe, and never a Recipe this file made with milk. */
-  const expectFilledWithoutMilkRecipes = (plan: PlanDetail, safe: string) => {
+  /** Fill placed the milk-free Recipe, and never a Recipe this file made with milk. */
+  const expectFilledWithoutMilkRecipes = (
+    plan: PlanDetail,
+    milkFree: string,
+  ) => {
     const placed = plan.slots.map((s) => s.recipeId);
-    expect(placed).toContain(safe);
+    expect(placed).toContain(milkFree);
     for (const id of milkRecipeIds) expect(placed).not.toContain(id);
   };
   const q = `?locale=en&today=${TODAY}`;
@@ -247,9 +250,9 @@ describe('Meal Plans and Allergies (integration)', () => {
       await bob.settings.put('/allergies', { allergenIds: [MILK] }).expect(200);
       // Neither Member hides: the Family's Allergies still bind Fill.
       await milkRecipe();
-      const safe = await safeRecipe(ana.email);
+      const milkFree = await milkFreeRecipe(ana.email);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
-      expectFilledWithoutMilkRecipes(plan, safe);
+      expectFilledWithoutMilkRecipes(plan, milkFree);
     });
 
     it('skips a Recipe with a Family Allergy', async () => {
@@ -259,9 +262,9 @@ describe('Meal Plans and Allergies (integration)', () => {
         .post('/family-allergies', { allergenId: MILK, label: 'Mia' })
         .expect(201);
       await milkRecipe();
-      const safe = await safeRecipe(ana.email);
+      const milkFree = await milkFreeRecipe(ana.email);
       const plan = await fill(ana.plans, (await createPlan(ana.plans)).id);
-      expectFilledWithoutMilkRecipes(plan, safe);
+      expectFilledWithoutMilkRecipes(plan, milkFree);
     });
 
     it('still picks a Recipe whose only match is an optional line', async () => {

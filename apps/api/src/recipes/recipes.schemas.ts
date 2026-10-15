@@ -384,9 +384,9 @@ export type AllergyWarningEntryView = {
   owner: AllergyOwner;
   /** `yours` when it counts as the viewer's own (their own, the Family's), `members` for another Member's. */
   tier: 'yours' | 'members';
-  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  /** `strong` when a required, checked line contains it, `soft` when only optional or Unchecked lines do. */
   severity: 'strong' | 'soft';
-  /** Every line that contains it, each with its own severity (`soft` for an optional line). */
+  /** Every line that contains it, each with its own severity (`soft` for an optional or Unchecked line). */
   lines: { lineId: string; severity: 'strong' | 'soft' }[];
 };
 
@@ -412,7 +412,7 @@ export type AllergyWarningView = {
  * Hiding (`hidden`, `hiddenByAllergiesCount`) is reported beside this warning, not inside it.
  */
 export type CompactAllergyWarning = {
-  /** As on Recipe detail: `strong` when any Allergen is in a required line; `soft` otherwise. */
+  /** As on Recipe detail: `strong` when any Allergen is in a required, checked line; `soft` when only optional or Unchecked lines raise it. */
   severity: 'strong' | 'soft';
   /** The Allergens behind the warning, in the Allergy Warning's order. Empty when only Unchecked lines raise it. */
   allergens: {
@@ -420,7 +420,7 @@ export type CompactAllergyWarning = {
     name: string;
     /** `yours` when it is the viewer's own or a Family Allergy, `members` when only another Member's. */
     tier: 'yours' | 'members';
-    /** `strong` when a required line contains it for anyone listed, `soft` when only optional lines do. */
+    /** `strong` when a required, checked line contains it for anyone listed, `soft` when only optional or Unchecked lines do. */
     severity: 'strong' | 'soft';
     /**
      * Whose Allergy it is, decided by `deriveAllergens`: the viewer (`own`), a Family Allergy
