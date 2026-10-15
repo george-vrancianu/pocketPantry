@@ -114,8 +114,10 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the quantity and unit a Product Scan read from the package', () => {
-    renderReview([sure({ quantity: 1, unit: 'l' })]);
+  it('shows the quantity and unit a Product Scan line proposes', () => {
+    renderReview([
+      sure({ quantity: 1, unit: 'l', productDescription: 'Whole milk 1 l' }),
+    ]);
     expect(row('Parmesan')).toHaveTextContent('1 L');
     expect(row('Parmesan')).not.toHaveTextContent('?');
   });

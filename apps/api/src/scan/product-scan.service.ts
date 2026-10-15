@@ -32,7 +32,7 @@ export class ProductScanService {
         type: 'input_text',
         text: [
           'Analyze this grocery package photo.',
-          `${scanLanguagePrompt('The text on these packages is', scanLanguage, 'product names, abbreviations, and date formats')} Prioritize visible package text. Match catalog ingredients across languages.`,
+          `${scanLanguagePrompt('The text on this package is', scanLanguage, 'product names, abbreviations, and date formats')} Prioritize visible package text. Match catalog ingredients across languages.`,
           'Identify its display name and broad product type.',
           'Match it against the application catalog below. Ingredient tuples are [id, name, category].',
           'Return matchedIngredientId only when that exact ID is present in the catalog and is a reasonable semantic match. Never invent an ID.',

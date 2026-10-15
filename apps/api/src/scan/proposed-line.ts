@@ -1,6 +1,8 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ProductScanResult } from './product-scan.schemas';
+import { toPantryQuantity } from './receipt-proposed-lines';
+import { normalizeUnit } from './receipt-quantity';
 
 /**
  * One line a Scan proposes to the Review screen. Every Scan Mode returns lines
@@ -49,41 +51,14 @@ export function applyThreshold(
   };
 }
 
-const PACKAGE_UNITS: Record<string, NonNullable<ProposedLine['unit']>> = {
-  g: 'g',
-  gram: 'g',
-  grams: 'g',
-  kg: 'kg',
-  kilogram: 'kg',
-  kilograms: 'kg',
-  ml: 'ml',
-  milliliter: 'ml',
-  milliliters: 'ml',
-  millilitre: 'ml',
-  millilitres: 'ml',
-  l: 'l',
-  liter: 'l',
-  liters: 'l',
-  litre: 'l',
-  litres: 'l',
-  pcs: 'pcs',
-  pc: 'pcs',
-  piece: 'pcs',
-  pieces: 'pcs',
-};
-
-/** The package net amount as a quantity and unit; both null unless it is positive and in a supported unit. */
+/** The package net amount as a quantity and unit, converted onto the Pantry's units; both null when unsupported. */
 function packageQuantity(
   result: Pick<ProductScanResult, 'netQuantity' | 'netUnit'>,
 ): Pick<ProposedLine, 'quantity' | 'unit'> {
-  const unit =
-    result.netUnit === null
-      ? undefined
-      : PACKAGE_UNITS[result.netUnit.trim().toLowerCase().replaceAll('.', '')];
-  if (!unit || result.netQuantity === null || !(result.netQuantity > 0)) {
-    return { quantity: null, unit: null };
-  }
-  return { quantity: result.netQuantity, unit };
+  return toPantryQuantity(
+    result.netQuantity,
+    result.netUnit === null ? null : normalizeUnit(result.netUnit),
+  );
 }
 
 /**

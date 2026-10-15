@@ -21,6 +21,7 @@ export const productScanModelResultSchema = z.object({
   fallbackIngredientName: z.string().trim().min(1).max(80),
   expiryDate: z.iso.date().nullable(),
   expiryText: z.string().trim().max(120).nullable(),
+  // Loose on purpose: a bad value becomes "no quantity", not a failed Scan.
   netQuantity: z.number().nullable(),
   netUnit: z.string().trim().max(30).nullable(),
   confidence: z.number().min(0).max(1),

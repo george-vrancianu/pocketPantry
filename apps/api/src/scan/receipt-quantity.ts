@@ -52,7 +52,7 @@ const UNIT_ALIASES: Record<string, string> = {
   l: 'l',
 };
 
-function normalizeUnit(unit: string): string {
+export function normalizeUnit(unit: string): string {
   const normalized = unit.trim().toLocaleLowerCase('en-US').replaceAll('.', '');
   return UNIT_ALIASES[normalized] ?? normalized;
 }

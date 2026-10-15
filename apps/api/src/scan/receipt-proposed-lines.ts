@@ -1,3 +1,4 @@
+import { exceedsMaxQuantity } from '../common/quantity';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
@@ -37,7 +38,7 @@ function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
 }
 
 /** Receipt units onto the Pantry's units; anything else yields no quantity. */
-function toPantryQuantity(
+export function toPantryQuantity(
   quantity: number | null,
   unit: string | null,
 ): { quantity: number | null; unit: PantryUnit | null } {
@@ -64,7 +65,10 @@ function toPantryQuantity(
     }
   })();
   // numeric(10,3) on the Batch: a quantity that rounds to nothing is no quantity.
-  return converted && converted.quantity >= 0.001
+  // And one past the Batch maximum would fail validation on save.
+  return converted &&
+    converted.quantity >= 0.001 &&
+    !exceedsMaxQuantity(converted.quantity)
     ? converted
     : { quantity: null, unit: null };
 }
