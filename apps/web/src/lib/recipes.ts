@@ -162,7 +162,12 @@ export function useRecipes(
   {
     searchOnly = false,
     includeVariants = false,
-  }: { searchOnly?: boolean; includeVariants?: boolean } = {},
+    enabled = true,
+  }: {
+    searchOnly?: boolean;
+    includeVariants?: boolean;
+    enabled?: boolean;
+  } = {},
 ) {
   const search = useDebounced(browse.search.trim(), 300);
   const { cuisineId, methodId } = browse;
@@ -187,14 +192,15 @@ export function useRecipes(
       ).then((body) => body.recipes);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).
-    enabled: !searchOnly || search !== '',
+    enabled: enabled && (!searchOnly || search !== ''),
     placeholderData: keepPreviousData,
   });
 }
 
 /** Cuisines and Methods for the filter pickers, named in `locale`. */
-export function useRecipeFilters(locale: string) {
+export function useRecipeFilters(locale: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: [...recipesQueryKey, 'filters', locale],
     queryFn: () =>
       apiRequest<RecipeFilterOptions>(

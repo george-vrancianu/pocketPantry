@@ -72,6 +72,12 @@ export function MealPlanPage() {
     }
   }, [loaded, focusDay]);
 
+  // Only the latest write's error shows: starting any write drops the others' old errors.
+  const clearErrors = () => {
+    mutations.setSlot.reset();
+    mutations.clearSlot.reset();
+    mutations.fill.reset();
+  };
   const writeError =
     mutations.setSlot.error ??
     mutations.clearSlot.error ??
@@ -98,7 +104,8 @@ export function MealPlanPage() {
     recipeId: string,
     servings?: number,
     onSuccess?: () => void,
-  ) =>
+  ) => {
+    clearErrors();
     mutations.setSlot.mutate(
       {
         id,
@@ -108,6 +115,7 @@ export function MealPlanPage() {
       },
       { onSuccess },
     );
+  };
 
   return (
     <>
@@ -147,7 +155,10 @@ export function MealPlanPage() {
             filling={mutations.fill.isPending}
             onlyWhatIHave={onlyWhatIHave}
             onOnlyWhatIHave={setOnlyWhatIHave}
-            onFill={() => mutations.fill.mutate({ id, onlyWhatIHave })}
+            onFill={() => {
+              clearErrors();
+              mutations.fill.mutate({ id, onlyWhatIHave });
+            }}
             adding={addMissing.isPending}
             onAddMissing={() => addMissing.add({ scope: 'plan', planId: id })}
           />
@@ -189,13 +200,14 @@ export function MealPlanPage() {
               putSlot(detail, detailSlot.recipeId, servings)
             }
             onChangeRecipe={() => setPicking(detail)}
-            onClear={() =>
-              detail &&
+            onClear={() => {
+              if (!detail) return;
+              clearErrors();
               mutations.clearSlot.mutate(
                 { id, ...detail },
                 { onSuccess: () => setDetail(null) },
-              )
-            }
+              );
+            }}
             onAddLine={addMissing.add}
             onClose={() => setDetail(null)}
           />
@@ -203,6 +215,7 @@ export function MealPlanPage() {
             open={picking !== null}
             context={picking ? contextOf(picking) : ''}
             error={picking ? errorText : null}
+            busy={mutations.setSlot.isPending}
             onPick={(recipeId) =>
               picking &&
               putSlot(

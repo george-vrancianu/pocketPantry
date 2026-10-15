@@ -155,7 +155,11 @@ export function SlotSheet({
                   i18n.language,
                   issue,
                 );
-                const meta = [uncertain ? null : detailText, reason]
+                // A short line's amount is in its pill; "need" has no pill amount.
+                const meta = [
+                  issue.kind === 'missing' ? detailText : null,
+                  reason,
+                ]
                   .filter(Boolean)
                   .join(' · ');
                 return (

@@ -1,4 +1,4 @@
-import { Box, Button, Card, Tag, tokens } from '@pocket-pantry/ui';
+import { Box, Button, Card, focusRing, Tag, tokens } from '@pocket-pantry/ui';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { statusMark } from '../../../components/MealPlanPopover/statusMark';
@@ -68,6 +68,7 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
             fontSize: 15,
             fontWeight: 700,
             outline: 'none',
+            ...focusRing,
             color: day.past ? tokens.color.muted : tokens.color.ink,
           }}
         >

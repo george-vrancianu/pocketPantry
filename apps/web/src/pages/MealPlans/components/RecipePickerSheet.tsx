@@ -17,6 +17,8 @@ type Props = {
   context: string;
   /** A failed slot write, shown here because the picker covers the page. */
   error: string | null;
+  /** A slot write is running; picks are ignored until it settles. */
+  busy: boolean;
   onPick: (recipeId: string) => void;
   onClose: () => void;
 };
@@ -26,6 +28,7 @@ export function RecipePickerSheet({
   open,
   context,
   error,
+  busy,
   onPick,
   onClose,
 }: Props) {
@@ -37,8 +40,9 @@ export function RecipePickerSheet({
   });
   const recipes = useRecipes(browse, i18n.language, {
     includeVariants: true,
+    enabled: open,
   });
-  const filters = useRecipeFilters(i18n.language);
+  const filters = useRecipeFilters(i18n.language, open);
   const items = recipes.data ?? [];
   const filtering = isFiltering(browse);
   return (
@@ -80,7 +84,9 @@ export function RecipePickerSheet({
               recipe={recipe}
               card={undefined}
               filtering
-              onSelect={() => onPick(recipe.id)}
+              onSelect={() => {
+                if (!busy) onPick(recipe.id);
+              }}
             />
           ))}
         </Box>

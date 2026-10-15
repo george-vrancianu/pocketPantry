@@ -445,7 +445,7 @@ describe('Meal Plan page', () => {
     await u.click(await screen.findByRole('button', { name: /Big stew/ }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/need 400 g/)).toBeVisible();
-    expect(within(dialog).getByText(/short 1\.5 kg/)).toBeVisible();
+    expect(within(dialog).queryByText(/short 1\.5 kg/)).toBeNull();
     expect(within(dialog).getByText('Short 1.5 kg')).toBeVisible();
     expect(within(dialog).queryByText(/1500/)).toBeNull();
   });
@@ -550,5 +550,82 @@ describe('Meal Plan page', () => {
     renderPage();
 
     expect(await screen.findByRole('button', { name: 'Fill' })).toBeDisabled();
+  });
+
+  it('does not fetch Recipes until the picker opens', async () => {
+    const api = setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await screen.findByRole('button', { name: /^Add Lunch/ });
+    expect(api.calls.some((c) => c.key === 'GET /api/recipes')).toBe(false);
+    await u.click(screen.getByRole('button', { name: /^Add Lunch/ }));
+    await screen.findByText('Green curry');
+    expect(api.calls.some((c) => c.key === 'GET /api/recipes')).toBe(true);
+  });
+
+  it('sends one write for a double tap in the picker', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const api = setup(week(), {
+      'PUT /api/meal-plans/p1/slots/1/lunch': async () => {
+        await gate;
+        return Response.json(week());
+      },
+    });
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    const row = await within(picker).findByText('Lemon pasta');
+    await u.click(row);
+    await u.click(row);
+    release();
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Choose a Recipe' }),
+      ).toBeNull(),
+    );
+    expect(
+      api.calls.filter((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/lunch'),
+    ).toHaveLength(1);
+  });
+
+  it('drops an old write error once a later action starts', async () => {
+    setup(week(), {
+      'PUT /api/meal-plans/p1/slots/1/lunch': () =>
+        Response.json(
+          { code: 'meal_plan.day_in_past', params: {} },
+          { status: 409 },
+        ),
+    });
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    await u.click(await within(picker).findByText('Lemon pasta'));
+    await within(picker).findByText(
+      "That day has passed and can't be changed.",
+    );
+    await u.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Choose a Recipe' }),
+      ).toBeNull(),
+    );
+
+    await u.click(screen.getByRole('button', { name: 'Fill' }));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("That day has passed and can't be changed."),
+      ).toBeNull(),
+    );
   });
 });
