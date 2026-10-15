@@ -2,6 +2,7 @@ import { act, fireEvent, screen, within } from '@testing-library/react';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { dispatchScanSession, resetScanSession } from '../../lib/scanSession';
 import { ScanPage } from './ScanPage';
 
 const camera = vi.hoisted(() => ({
@@ -78,6 +79,7 @@ describe('Scan page: Scan by the mode dial', () => {
   const vibrate = vi.fn(() => true);
   beforeEach(() => {
     localStorage.clear();
+    resetScanSession();
     now = 1000;
     camera.cancels = 0;
     camera.focuses = 0;
@@ -160,6 +162,37 @@ describe('Scan page: Scan by the mode dial', () => {
     expect(
       within(dial()).getByRole('radio', { name: 'Product' }),
     ).toBeChecked();
+  });
+
+  it('does not arm either gesture once the Scan Cap is reached', async () => {
+    dispatchScanSession({
+      type: 'enqueue',
+      scan: {
+        id: 'held',
+        mode: 'product',
+        scanLanguage: 'en',
+        image: 'data:image/jpeg;base64,YQ==',
+        thumbnail: 'data:image/jpeg;base64,YQ==',
+      },
+    });
+    dispatchScanSession({ type: 'fail', id: 'held', reason: 'cap' });
+    renderScan();
+    press();
+    lift();
+    now += 100;
+    press();
+    lift();
+    now += 1000;
+    press();
+    await advance(500);
+    expect(hold()).toBeNull();
+    expect(camera.focuses).toBe(0);
+    lift();
+    camera.finish();
+    await flush();
+    expect(vibrate).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('scan-flash')).toBeNull();
+    expect(scans()).toHaveLength(0);
   });
 
   it('with reduced motion the ring fill does not animate', async () => {

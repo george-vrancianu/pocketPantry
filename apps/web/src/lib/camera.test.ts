@@ -81,7 +81,7 @@ describe('focusForScan', () => {
 
   async function openCamera(capabilities: object | undefined) {
     const applyConstraints = vi.fn(() => Promise.resolve());
-    const track = {
+    const track: Record<string, unknown> = {
       getCapabilities: capabilities ? () => capabilities : undefined,
       applyConstraints,
       stop: vi.fn(),
@@ -96,7 +96,7 @@ describe('focusForScan', () => {
     });
     const hook = renderHook(() => useCamera());
     await waitFor(() => expect(hook.result.current.status).toBe('ready'));
-    return { hook, applyConstraints };
+    return { hook, applyConstraints, track };
   }
 
   const settled = (promise: Promise<void>) => {
@@ -109,7 +109,6 @@ describe('focusForScan', () => {
     const { hook, applyConstraints } = await openCamera({
       focusMode: ['manual', 'single-shot', 'continuous'],
     });
-    expect(hook.result.current.focusSupported).toBe(true);
     let pass!: ReturnType<typeof hook.result.current.focusForScan>;
     act(() => {
       pass = hook.result.current.focusForScan();
@@ -123,8 +122,46 @@ describe('focusForScan', () => {
       ],
     });
     await act(() => pass.done);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(applyConstraints).toHaveBeenLastCalledWith({
       advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('does not finish on the instant applyConstraints resolves, but after the 400 ms pause, and restores only after finishing', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      focusMode: ['single-shot'],
+    });
+    vi.useFakeTimers();
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    const state = settled(pass.done);
+    await act(() => vi.advanceTimersByTimeAsync(399));
+    expect(state.done).toBe(false);
+    expect(applyConstraints).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(state.done).toBe(true);
+    expect(applyConstraints).toHaveBeenCalledTimes(1);
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('puts back the focus mode the camera was in', async () => {
+    const { hook, applyConstraints, track } = await openCamera({
+      focusMode: ['single-shot', 'manual'],
+    });
+    track.getSettings = () => ({ focusMode: 'manual' });
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    await act(async () => pass.cancel());
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'manual' }],
     });
   });
 
@@ -165,7 +202,6 @@ describe('focusForScan', () => {
   it('without single-shot (or without capabilities) only pauses about 400 ms and touches no constraints', async () => {
     for (const capabilities of [{ focusMode: ['continuous'] }, {}, undefined]) {
       const { hook, applyConstraints } = await openCamera(capabilities);
-      expect(hook.result.current.focusSupported).toBe(false);
       vi.useFakeTimers();
       let pass!: ReturnType<typeof hook.result.current.focusForScan>;
       act(() => {

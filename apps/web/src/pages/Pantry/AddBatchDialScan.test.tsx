@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -8,6 +8,8 @@ import { PantryPage } from './PantryPage';
 const camera = vi.hoisted(() => ({
   focuses: 0,
   cancels: 0,
+  /** Ends the latest focus pass, as the camera does when focus finishes. */
+  finish: () => {},
 }));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
@@ -18,7 +20,7 @@ vi.mock('../../lib/camera', () => ({
     focusForScan: () => {
       camera.focuses += 1;
       return {
-        done: new Promise<void>((resolve) => setTimeout(resolve, 400)),
+        done: new Promise<void>((resolve) => (camera.finish = resolve)),
         cancel: () => (camera.cancels += 1),
       };
     },
@@ -65,14 +67,20 @@ const press = (target: Element) =>
   fireEvent.pointerDown(target, { ...base, clientX: 100, clientY: 100 });
 const release = (target: Element) =>
   fireEvent.pointerUp(target, { ...base, clientX: 100, clientY: 100 });
-const wait = (ms: number) =>
-  act(() => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+const advance = (ms: number) =>
+  act(() => {
+    vi.advanceTimersByTime(ms);
+  });
+const flush = () => act(async () => {});
 
 describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
+  let now = 1000;
   beforeEach(() => {
     localStorage.clear();
+    now = 1000;
     camera.focuses = 0;
     camera.cancels = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
     Object.defineProperty(navigator, 'vibrate', {
       value: vi.fn(() => true),
       configurable: true,
@@ -80,17 +88,24 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
   });
   afterEach(() => {
     Reflect.deleteProperty(navigator, 'vibrate');
+    vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
+  /** The overlay opens on real timers; the gestures then run on fake ones. */
+  const gesturesOnFakeTimers = () =>
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
-  it('double-tapping the current mode sends a Scan, with the guide flash', async () => {
+  it('double-tapping the current mode sends a Scan, with the guide haptic', async () => {
     const calls = stubPantry();
     await openOverlay('product');
+    gesturesOnFakeTimers();
     for (let i = 0; i < 2; i++) {
       press(current());
       release(current());
+      now += 100;
     }
-    await screen.findByTestId('scan-flash');
+    await flush();
     expect(scans(calls)).toHaveLength(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(12);
   });
@@ -98,27 +113,34 @@ describe('Scanning from the add-Batch camera overlay by the mode dial', () => {
   it('holding the current mode focuses, then sends exactly one Scan on release', async () => {
     const calls = stubPantry();
     await openOverlay('product');
+    gesturesOnFakeTimers();
     press(current());
-    await wait(320);
+    await advance(301);
     expect(camera.focuses).toBe(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(6);
     expect(screen.getByTestId('mode-dial-hold')).toBeInTheDocument();
     release(current());
-    await waitFor(() => expect(scans(calls)).toHaveLength(1));
+    expect(scans(calls)).toHaveLength(0);
+    camera.finish();
+    await flush();
+    expect(scans(calls)).toHaveLength(1);
     expect(navigator.vibrate).toHaveBeenCalledWith(12);
   });
 
   it('sends nothing for either gesture in Barcode Lookup', async () => {
     const calls = stubPantry();
     await openOverlay('barcode');
+    gesturesOnFakeTimers();
     for (let i = 0; i < 2; i++) {
       press(current());
       release(current());
+      now += 100;
     }
     press(current());
-    await wait(320);
+    await advance(500);
     release(current());
-    await wait(450);
+    camera.finish();
+    await flush();
     expect(camera.focuses).toBe(0);
     expect(screen.queryByTestId('scan-flash')).toBeNull();
     expect(scans(calls)).toHaveLength(0);

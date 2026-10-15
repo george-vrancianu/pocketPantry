@@ -66,6 +66,10 @@ export const MODE_ICONS: Record<CameraMode, ReactNode> = {
   ),
 };
 
+/** Pointer distance from where the press began. */
+const travelled = (event: PointerEvent, start: { x: number; y: number }) =>
+  Math.hypot(event.clientX - start.x, event.clientY - start.y);
+
 const reducedMotion = '@media (prefers-reduced-motion: reduce)';
 
 /**
@@ -163,8 +167,17 @@ export function ModeDial<Mode extends CameraMode>({
     /** pending: waiting for 300 ms; holding: ring filling; cancelled: moved off after holding. */
     hold: 'pending' | 'holding' | 'cancelled' | null;
     pass: FocusPass | null;
+    /** Which hold this is, so a stale one never clears a newer hold's ring. */
+    holdId: number;
   } | null>(null);
-  const [holding, setHolding] = useState(false);
+  /** The id of the hold whose ring is showing, or null. */
+  const [holdingId, setHoldingId] = useState<number | null>(null);
+  const holding = holdingId !== null;
+  const clearRing = (id: number) =>
+    setHoldingId((current) => (current === id ? null : current));
+  const holdCount = useRef(0);
+  /** True from a hold's release until its Scan is sent: new gestures must not arm. */
+  const scanPending = useRef(false);
   const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const lastTap = useRef<Tap | null>(null);
   /** The focus pass of the latest hold, so unmounting can put the camera back. */
@@ -181,10 +194,11 @@ export function ModeDial<Mode extends CameraMode>({
   const cancelHold = () => {
     const start = drag.current;
     clearTimeout(holdTimer.current);
+    if (start?.hold === 'pending') start.hold = null;
     if (start?.hold !== 'holding') return;
     start.hold = 'cancelled';
     start.pass?.cancel();
-    setHolding(false);
+    clearRing(start.holdId);
   };
   const justDragged = useRef(false);
   const clickGuard = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -209,6 +223,7 @@ export function ModeDial<Mode extends CameraMode>({
       onCurrent,
       hold: null,
       pass: null,
+      holdId: 0,
       pointerId: event.pointerId,
       startOffset: index * DIAL_ITEM_WIDTH,
       startIndex: index,
@@ -217,13 +232,19 @@ export function ModeDial<Mode extends CameraMode>({
       t: performance.now(),
       moved: false,
     };
-    if (!onCurrent || !latest.current.canScan) return;
+    if (!onCurrent || !latest.current.canScan || scanPending.current) return;
     const start = drag.current;
     start.hold = 'pending';
     holdTimer.current = setTimeout(() => {
       if (drag.current !== start || start.hold !== 'pending') return;
+      // The Scan may have become impossible during the 300 ms.
+      if (!latest.current.canScan) {
+        start.hold = null;
+        return;
+      }
       start.hold = 'holding';
-      setHolding(true);
+      start.holdId = ++holdCount.current;
+      setHoldingId(start.holdId);
       navigator.vibrate?.(HAPTIC_MS);
       start.pass = activePass.current = latest.current.focusForScan?.() ?? null;
     }, HOLD_MS);
@@ -231,11 +252,7 @@ export function ModeDial<Mode extends CameraMode>({
   const onPointerMove = (event: PointerEvent<HTMLElement>) => {
     const start = drag.current;
     if (!start || start.pointerId !== event.pointerId) return;
-    const travelled = Math.hypot(
-      event.clientX - start.x,
-      event.clientY - start.y,
-    );
-    if (travelled > HOLD_SLOP) {
+    if (travelled(event, start) > HOLD_SLOP) {
       // Before the hold starts this becomes an ordinary drag; after it, the hold is off.
       if (start.hold === 'pending') {
         clearTimeout(holdTimer.current);
@@ -268,13 +285,15 @@ export function ModeDial<Mode extends CameraMode>({
       lastTap.current = null;
       if (cancelled || disabled) {
         start.pass?.cancel();
-        setHolding(false);
+        clearRing(start.holdId);
         return;
       }
       // Letting go sends the Scan once focus has finished or timed out.
+      scanPending.current = true;
       void (start.pass?.done ?? Promise.resolve()).then(() => {
+        scanPending.current = false;
         if (!mounted.current) return;
-        setHolding(false);
+        clearRing(start.holdId);
         latest.current.onScan();
       });
       return;
@@ -284,16 +303,16 @@ export function ModeDial<Mode extends CameraMode>({
       return;
     }
     if (!start.moved) {
-      const travelled = Math.hypot(
-        event.clientX - start.x,
-        event.clientY - start.y,
-      );
-      if (cancelled || !start.onCurrent || travelled > HOLD_SLOP) {
+      if (
+        cancelled ||
+        !start.onCurrent ||
+        travelled(event, start) > HOLD_SLOP
+      ) {
         lastTap.current = null;
         return;
       }
       const tap = { x: event.clientX, y: event.clientY, t: performance.now() };
-      if (!latest.current.canScan) {
+      if (!latest.current.canScan || scanPending.current) {
         lastTap.current = null;
       } else if (isDoubleTap(lastTap.current, tap, dragEndedAt.current)) {
         lastTap.current = null;

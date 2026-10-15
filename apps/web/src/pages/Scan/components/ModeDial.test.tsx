@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
+import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModeDial } from './ModeDial';
@@ -278,6 +279,77 @@ describe('ModeDial Scan gestures on the current mode', () => {
       release();
       await flush();
       expect(onScan).not.toHaveBeenCalled();
+    });
+
+    it('does not start the hold when the Scan became impossible during the 300 ms', async () => {
+      let setOff: (off: boolean) => void = () => {};
+      function Harness() {
+        const [off, set] = useState(false);
+        setOff = set;
+        return (
+          <ModeDial
+            modes={['product', 'receipt', 'barcode']}
+            mode="product"
+            disabled={false}
+            keysDisabled={false}
+            dragEndedAt={dragEndedAt}
+            onChange={onChange}
+            onScan={onScan}
+            scanDisabled={off}
+            focusForScan={focusForScan}
+          />
+        );
+      }
+      renderWithProviders(<Harness />);
+      down();
+      await advance(100);
+      act(() => setOff(true));
+      await advance(300);
+      expect(fill()).toBeNull();
+      expect(vibrate).not.toHaveBeenCalled();
+      expect(focusForScan).not.toHaveBeenCalled();
+      up();
+      await flush();
+      expect(onScan).not.toHaveBeenCalled();
+    });
+
+    it('sliding off while the hold is still pending drops it', async () => {
+      renderGestureDial();
+      down();
+      fireEvent.pointerLeave(current(), { ...base });
+      await advance(500);
+      expect(fill()).toBeNull();
+      expect(focusForScan).not.toHaveBeenCalled();
+    });
+
+    it('ignores a double tap and a new hold while the released hold waits for focus', async () => {
+      renderGestureDial();
+      down();
+      await advance(301);
+      up();
+      tap(100);
+      tap(100);
+      down();
+      await advance(301);
+      expect(focusForScan).toHaveBeenCalledTimes(1);
+      up();
+      expect(onScan).not.toHaveBeenCalled();
+      release();
+      await flush();
+      expect(onScan).toHaveBeenCalledTimes(1);
+    });
+
+    it("a finished hold's Scan does not hide the ring of a newer hold", async () => {
+      renderGestureDial();
+      down();
+      await advance(301);
+      up();
+      release();
+      await flush();
+      expect(onScan).toHaveBeenCalledTimes(1);
+      down();
+      await advance(301);
+      expect(fill()).toBeInTheDocument();
     });
 
     it('a pointer cancel cancels the hold', async () => {

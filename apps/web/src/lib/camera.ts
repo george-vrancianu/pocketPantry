@@ -96,14 +96,14 @@ export function useCamera() {
   // Many devices (and every desktop webcam) have no torch: the flash toggle must say so.
   const [torchSupported, setTorchSupported] = useState(false);
   // Best-effort focus: only browsers that expose single-shot focus (mostly Chrome on Android).
-  const [focusSupported, setFocusSupported] = useState(false);
+  const focusSupportedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     setStatus('starting');
     // The new stream's torch starts off and its support is not known yet.
     setTorchSupported(false);
-    setFocusSupported(false);
+    focusSupportedRef.current = false;
     const devices = navigator.mediaDevices as MediaDevices | undefined;
     if (!devices?.getUserMedia) {
       setStatus('unavailable');
@@ -122,9 +122,8 @@ export function useCamera() {
         const capabilities = stream.getVideoTracks()[0]?.getCapabilities?.() as
           { torch?: boolean; focusMode?: string[] } | undefined;
         setTorchSupported(capabilities?.torch === true);
-        setFocusSupported(
-          capabilities?.focusMode?.includes('single-shot') === true,
-        );
+        focusSupportedRef.current =
+          capabilities?.focusMode?.includes('single-shot') === true;
         setStatus('ready');
       })
       .catch(() => {
@@ -162,9 +161,6 @@ export function useCamera() {
     }
   }, []);
 
-  const focusSupportedRef = useRef(false);
-  focusSupportedRef.current = focusSupported;
-
   /**
    * Gets the camera ready for a Scan. Where single-shot focus is supported it focuses on the guide
    * centre (waiting up to 1 s) and always goes back to continuous; elsewhere it just pauses 400 ms.
@@ -185,30 +181,64 @@ export function useCamera() {
         },
       };
     }
+    // Put back whatever mode the camera was in, continuous when it does not say.
+    const before = (track.getSettings?.() as { focusMode?: string } | undefined)
+      ?.focusMode;
     let restored = false;
     const restore = () => {
       if (restored) return;
       restored = true;
-      clearTimeout(timer);
       track
         .applyConstraints({
-          advanced: [{ focusMode: 'continuous' }],
+          advanced: [{ focusMode: before ?? 'continuous' }],
         } as FocusConstraints)
         .catch(() => {});
-      finish();
     };
-    timer = setTimeout(restore, FOCUS_TIMEOUT_MS);
+    let settled = false;
+    let applied = false;
+    let waited = false;
+    const timers: Array<ReturnType<typeof setTimeout>> = [];
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      timers.forEach(clearTimeout);
+      finish();
+      // Not before the Scan has taken its frame, so the lens is not changing mid-capture.
+      setTimeout(restore, 0);
+    };
+    // `applyConstraints` resolves as soon as the settings are accepted, long before the lens has
+    // moved: so wait at least the steady pause, and at most the timeout.
+    timers.push(
+      setTimeout(() => {
+        waited = true;
+        if (applied) settle();
+      }, FOCUS_PAUSE_MS),
+      setTimeout(settle, FOCUS_TIMEOUT_MS),
+    );
     track
       .applyConstraints({
         advanced: [
           {
             focusMode: 'single-shot',
+            // Approximate: the feed is object-fit: cover, so the guide centre in the video's own
+            // coordinates is not exactly (0.5, GUIDE_CENTER_Y).
             pointsOfInterest: [{ x: 0.5, y: GUIDE_CENTER_Y }],
           },
         ],
       } as FocusConstraints)
-      .then(restore, restore);
-    return { done, cancel: restore };
+      .then(() => {
+        applied = true;
+        if (waited) settle();
+      }, settle);
+    return {
+      done,
+      cancel: () => {
+        settled = true;
+        timers.forEach(clearTimeout);
+        restore();
+        finish();
+      },
+    };
   }, []);
 
   /**
@@ -245,7 +275,6 @@ export function useCamera() {
     videoRef,
     status,
     torchSupported,
-    focusSupported,
     focusForScan,
     capture,
     setTorch,
