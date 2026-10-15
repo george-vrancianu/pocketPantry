@@ -21,6 +21,7 @@ A Family can see what it Can Make tonight but can't plan ahead, or learn on Mond
 - A slot whose Recipe has since been archived is **unavailable**. It is left out of the forecast, the plan tag and Add missing, and is shown as "No longer available" rather than dropped without a trace.
 - The Shopping List is never stock. It only turns a short slot into "on list", never into covered.
 - Add missing sums shortfalls per Ingredient in g, ml or pcs and shows them as kg or l at 1000 or more. Ingredients already on the Shopping List, uncertain lines, Pantry Basics, optional lines and unavailable slots are left out. It runs on the server, which works out the forecast again, so the client never sends amounts.
+- The per-line + adds that Ingredient's total across the scope (the window, or the whole plan when opened from the plan page), not one day's amount. A plan may start at most 14 days after the Member's today. Undo removes only the Shopping Items the add newly created; it does not reverse merges into items that were already on the list.
 
 **Fill** picks Recipes for empty slots only and never overwrites a slot the Member chose.
 

@@ -15,7 +15,7 @@
 Status: approved (variant A · Week columns, window = planned days only), ready for implementation. Date: 2026-10-15.
 Reference prototype: `prototype.html` in this folder (self-contained, open in a browser; live at https://claude.ai/artifact/NwaCi1S2XdD4MqoJnxDmRb). A opens by default; B and C stay in the file for comparison only. The left panel sets **Days planned** (1–7) and resets the sample Pantry (Runs short midweek / All covered); the + buttons and Add buttons change the sample and the widget updates live. Ignore the "Always 7" window option: it was not chosen.
 
-Code touched: `apps/web/src/pages/Dashboard/widgets/PlaceholderWidgets.tsx` (remove the static Meal Plan placeholder), new `widgets/MealPlanWidget.tsx` and `components/MealPlanPopover/*`, `widgets/registry.ts` + `types.ts` (type `mealPlan` becomes real, wide only), `pages/Customise/WidgetPreview.tsx`, `i18n/locales/{en,da,ro}/dashboard.json`. Reuses `WidgetCard`, `Tag`, the snackbar with Undo, and the Shopping List bulk-add endpoint. API: new Meal Plan Entry table + read endpoint with coverage (§6), needs schema review.
+Code touched: `apps/web/src/pages/Dashboard/widgets/PlaceholderWidgets.tsx` (remove the static Meal Plan placeholder), new `widgets/MealPlanWidget.tsx` and `components/MealPlanPopover/*`, `widgets/registry.ts` + `types.ts` (type `mealPlan` becomes real, wide only), `pages/Customise/WidgetPreview.tsx`, `i18n/locales/{en,da,ro}/dashboard.json`. Reuses `WidgetCard`, `Tag`, and the snackbar with Undo. Add goes through the plan-scoped add-missing server action, not the Shopping List bulk-add endpoint. API: new Meal Plan Entry table + read endpoint with coverage (§6), needs schema review.
 
 Files in this folder:
 
