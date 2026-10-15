@@ -90,7 +90,8 @@ export class SuggestionsService {
     const rows = await this.database
       .select({ ingredientId: suggestionDismissals.ingredientId })
       .from(suggestionDismissals)
-      .where(eq(suggestionDismissals.familyId, familyId));
+      .where(eq(suggestionDismissals.familyId, familyId))
+      .orderBy(suggestionDismissals.ingredientId);
     return rows.map((row) => row.ingredientId);
   }
 

@@ -23,7 +23,7 @@ export type PantryHealthState = {
   todos: HealthTodo[];
 };
 
-/** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List and Stale Threshold reads. */
+/** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
 export function usePantryHealth(): PantryHealthState {
   const { i18n } = useTranslation();
   const locale = i18n.language;

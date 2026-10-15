@@ -115,18 +115,22 @@ describe('HealthWidget', () => {
   });
 
   it('counts a dismissed missing Staple neither for nor against the score', async () => {
+    const name = 'Pantry health, 94, In good shape, 2 things to do';
+
+    // Eggs is not a Staple at all: the score a dismissed Staple must match.
+    stub(tenBatchPantry(), [staple('milk')]);
+    const first = renderWithProviders(<HealthWidget size="wide" columns={2} />);
+    expect(await screen.findByRole('button', { name })).toBeInTheDocument();
+    first.unmount();
+    vi.unstubAllGlobals();
+
     stub(tenBatchPantry(), [staple('milk'), staple('eggs')], undefined, [
       'eggs',
     ]);
-
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
-    // Fresh 89, Staples 100 (eggs left out), Dated 90, Rotation 100; the to-dos no longer count eggs.
-    expect(
-      await screen.findByRole('button', {
-        name: 'Pantry health, 94, In good shape, 2 things to do',
-      }),
-    ).toBeInTheDocument();
+    // Fresh 89, Staples 100 (eggs left out), Dated 90, Rotation 100.
+    expect(await screen.findByRole('button', { name })).toBeInTheDocument();
   });
 
   it('shows the same on the small card, without the bar', async () => {
