@@ -135,7 +135,7 @@
         "title_few": "Datează {{count}} loturi",
         "title_other": "Datează {{count}} de loturi",
         "bulk": "Datează toate",
-        "bulkName_one": "Datează toate cele {{count}} lot",
+        "bulkName_one": "Datează lotul",
         "bulkName_few": "Datează toate cele {{count}} loturi",
         "bulkName_other": "Datează toate cele {{count}} de loturi"
       }
@@ -145,7 +145,8 @@
       "missingStaples": "Produse de bază acoperite",
       "expiringSoon": "Nimic care expiră curând",
       "runningLow": "Nimic aproape terminat",
-      "undated": "Totul are dată"
+      "undated": "Totul are dată",
+      "rotation": "Nimic uitat"
     },
     "line": {
       "since": "din {{day}}",

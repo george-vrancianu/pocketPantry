@@ -121,7 +121,7 @@
         "title_one": "Date {{count}} Batch",
         "title_other": "Date {{count}} Batches",
         "bulk": "Date all",
-        "bulkName_one": "Date all {{count}} Batch",
+        "bulkName_one": "Date the Batch",
         "bulkName_other": "Date all {{count}} Batches"
       }
     },
@@ -130,7 +130,8 @@
       "missingStaples": "Staples covered",
       "expiringSoon": "Nothing due soon",
       "runningLow": "Nothing low",
-      "undated": "All dated"
+      "undated": "All dated",
+      "rotation": "Nothing forgotten"
     },
     "line": {
       "since": "since {{day}}",

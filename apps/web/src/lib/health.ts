@@ -160,6 +160,14 @@ export function pantryHealth(input: HealthInput): PantryHealth {
 
 export type HealthTodoKey =
   'expired' | 'missingStaples' | 'expiringSoon' | 'runningLow' | 'undated';
+/** The Health To-do keys in display order. */
+export const HEALTH_TODO_KEYS: HealthTodoKey[] = [
+  'expired',
+  'missingStaples',
+  'expiringSoon',
+  'runningLow',
+  'undated',
+];
 export type HealthTodoGroup = 'now' | 'week' | 'tidy';
 
 export type HealthTodo = {

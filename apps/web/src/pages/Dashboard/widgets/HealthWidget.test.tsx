@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { Staple } from '../../../lib/staples';
 import { renderWithProviders, stubApi } from '../../../test/render';
@@ -628,7 +628,7 @@ describe('HealthWidget', () => {
       ]);
 
       // Fresh 88 and total 95 now; without the expired Batch 96 and 98.
-      expect(disclosure(sheet, /^Toss 1 expired/)).toHaveTextContent('+');
+      expect(disclosure(sheet, /^Toss 1 expired/)).toHaveTextContent('+3');
       expect(disclosure(sheet, /^Use 1 by /)).not.toHaveTextContent('+');
     });
 
@@ -669,7 +669,7 @@ describe('HealthWidget', () => {
         within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
       ).toBeDisabled();
       expect(
-        within(sheet).getByRole('button', { name: 'Date all 1 Batch' }),
+        within(sheet).getByRole('button', { name: 'Date the Batch' }),
       ).toBeDisabled();
       expect(
         within(sheet).getByRole('link', { name: 'Recipes' }),
@@ -735,9 +735,22 @@ describe('HealthWidget', () => {
           'Nothing due soon',
           'Nothing low',
           'All dated',
+          'Nothing forgotten',
         ]),
       );
       expect(pills).not.toContain('Nothing expired');
+    });
+
+    it('drops the Nothing forgotten pill while a Batch is Forgotten', async () => {
+      const { sheet } = await open([
+        batch({ expiryDate: null, createdAt: longAgo(40) }),
+        ...filler(9),
+      ]);
+
+      const pills = within(sheet)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent);
+      expect(pills).not.toContain('Nothing forgotten');
     });
 
     it('says all done, with every pill, when there is nothing to do', async () => {
@@ -746,7 +759,7 @@ describe('HealthWidget', () => {
       expect(sheet).toHaveTextContent(
         'Nothing to do. Everything is in date, stocked and accounted for.',
       );
-      expect(within(sheet).getAllByRole('listitem')).toHaveLength(5);
+      expect(within(sheet).getAllByRole('listitem')).toHaveLength(6);
     });
 
     it('keeps the open Health To-do open when the data changes', async () => {
@@ -786,6 +799,15 @@ describe('HealthWidget', () => {
   describe.each(['warm', 'minimal', 'dark'] as const)(
     'in the %s Theme',
     (theme) => {
+      // The open sheet prints dates ("since Tue"); a fixed day keeps the snapshots stable.
+      beforeEach(() => {
+        vi.useFakeTimers({ toFake: ['Date'] });
+        vi.setSystemTime(new Date('2026-10-15T12:00:00'));
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
       async function render(size: 'wide' | 'small') {
         localStorage.setItem(
           'pp.appearance',

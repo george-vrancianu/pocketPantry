@@ -15,12 +15,14 @@ import {
 } from '@pocket-pantry/ui';
 import { useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import type {
-  HealthTodo,
-  HealthTodoGroup,
-  HealthTodoKey,
+import {
+  HEALTH_TODO_KEYS,
+  isForgotten,
+  type HealthTodo,
+  type HealthTodoGroup,
+  type HealthTodoKey,
 } from '../../lib/health';
-import { useExpiryTags } from '../../lib/pantry';
+import { localIso, useExpiryTags } from '../../lib/pantry';
 import type { PantryHealthState } from '../../lib/usePantryHealth';
 import { ExpiryTag } from '../ExpiryTag';
 import { IngredientIconSlot } from '../IngredientIconSlot';
@@ -28,13 +30,6 @@ import { expiringSoonDay, todoTitle } from './todoText';
 import { todoItems, type TodoItem } from './todoItems';
 
 const GROUPS: HealthTodoGroup[] = ['now', 'week', 'tidy'];
-const TODO_KEYS: HealthTodoKey[] = [
-  'expired',
-  'missingStaples',
-  'expiringSoon',
-  'runningLow',
-  'undated',
-];
 
 /** Severity icon and colour pair of each Health To-do; colour is never the only signal. */
 const SEVERITY: Record<
@@ -96,9 +91,18 @@ export function HealthTodos({ state, today }: Props) {
   const firstGroup = GROUPS.find((group) =>
     todos.some((todo) => todo.group === group),
   );
-  const doneKeys = TODO_KEYS.filter(
-    (key) => !todos.some((todo) => todo.key === key),
-  );
+  const todayIso = localIso(today);
+  const doneKeys: Array<HealthTodoKey | 'rotation'> = [
+    ...HEALTH_TODO_KEYS.filter(
+      (key) => !todos.some((todo) => todo.key === key),
+    ),
+    ...(batches.some((batch) => isForgotten(batch, todayIso))
+      ? []
+      : (['rotation'] as const)),
+  ];
+  // A Health To-do that is gone must not reopen when it comes back.
+  if (openKey !== null && !todos.some((todo) => todo.key === openKey))
+    setOpenKey(null);
 
   return (
     <Box sx={{ p: '4px 18px 30px' }}>

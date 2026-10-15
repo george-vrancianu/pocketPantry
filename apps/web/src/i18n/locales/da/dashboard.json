@@ -93,7 +93,7 @@
         "title_one": "Smid {{count}} udløbne ud",
         "title_other": "Smid {{count}} udløbne ud",
         "bulk": "Smid ud",
-        "bulkName_one": "Smid {{count}} udløbne ud",
+        "bulkName_one": "Smid {{count}} udløbet vare ud",
         "bulkName_other": "Smid {{count}} udløbne ud"
       },
       "missingStaples": {
@@ -119,7 +119,7 @@
         "title_one": "Datér {{count}} parti",
         "title_other": "Datér {{count}} partier",
         "bulk": "Datér alle",
-        "bulkName_one": "Datér alle {{count}} parti",
+        "bulkName_one": "Datér partiet",
         "bulkName_other": "Datér alle {{count}} partier"
       }
     },
@@ -128,7 +128,8 @@
       "missingStaples": "Basisvarer på plads",
       "expiringSoon": "Intet udløber snart",
       "runningLow": "Intet ved at løbe tør",
-      "undated": "Alt har dato"
+      "undated": "Alt har dato",
+      "rotation": "Intet glemt"
     },
     "line": {
       "since": "siden {{day}}",
