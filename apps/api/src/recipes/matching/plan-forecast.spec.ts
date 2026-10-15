@@ -427,6 +427,20 @@ describe('forecastPlan: reasons', () => {
     });
   });
 
+  it('expires names the Batch that really expired with a remainder, not one an earlier slot used up', () => {
+    const result = forecast({
+      slots: [slot(2, 'dinner'), slot(4, 'dinner')],
+      batches: [
+        batch({ quantity: 4, expiryDate: day(1) }),
+        batch({ quantity: 4, expiryDate: day(3) }),
+      ],
+    });
+    expect(issueOf(result, 1)).toMatchObject({
+      kind: 'missing',
+      reason: { code: 'expires', date: day(1) },
+    });
+  });
+
   it('notInPantry when a Batch has no quantity left to give and nothing earlier took any', () => {
     const result = forecast({
       slots: [slot(0, 'dinner')],

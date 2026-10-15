@@ -235,7 +235,13 @@ export function forecastPlan(input: ForecastInput): Forecast {
         reason,
       });
       const absent = (): Reason => {
+        // Only leftovers really expired: a Batch earlier slots used up did not.
+        // A Batch with no comparable quantity is never used up, so it counts.
         const expired = all
+          .filter(
+            ({ dimension, remaining }) =>
+              dimension === null || remaining > EPSILON,
+          )
           .map(({ batch }) => batch.expiryDate)
           .filter((date): date is string => date !== null && date < slot.date);
         return expired.length > 0
@@ -285,7 +291,8 @@ export function forecastPlan(input: ForecastInput): Forecast {
       if (outstanding <= EPSILON) continue;
 
       // The usesLast / onlyLeftAfter split follows the handoff §5.4 table and
-      // deliberately differs from planCoverage.ts, where onlyLeftAfter never fires.
+      // deliberately differs from planCoverage.ts, where onlyLeftAfter practically never
+      // fires (only when just Batches in another unit are left).
       // usesLast needs the earlier slots to have emptied the stock: a remainder
       // that has expired by this slot's day is an expiry, not use.
       const expiredLeftover = all.some(
