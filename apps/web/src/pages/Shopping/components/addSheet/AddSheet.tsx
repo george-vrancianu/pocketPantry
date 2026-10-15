@@ -2,9 +2,9 @@ import {
   Box,
   Sheet,
   Typography,
-  color,
   displayType,
   radius,
+  tokens,
 } from '@pocket-pantry/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -95,8 +95,8 @@ export function AddSheet({
             border: 0,
             borderRadius: radius.pill,
             cursor: 'pointer',
-            backgroundColor: color.primary,
-            color: color.primaryInk,
+            backgroundColor: tokens.color.ink,
+            color: tokens.color.bg,
             font: 'inherit',
             fontSize: 14,
             fontWeight: 700,
@@ -113,8 +113,8 @@ export function AddSheet({
                 display: 'grid',
                 placeItems: 'center',
                 borderRadius: radius.pill,
-                backgroundColor: color.primaryInk,
-                color: color.primary,
+                backgroundColor: tokens.color.bg,
+                color: tokens.color.ink,
                 fontSize: 11.5,
                 fontWeight: 700,
               }}

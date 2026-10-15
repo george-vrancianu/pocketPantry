@@ -37,10 +37,7 @@
     "lines_one": "{{count}} linie",
     "lines_few": "{{count}} linii",
     "lines_other": "{{count}} de linii",
-    "back": "Înapoi la cumpărături",
-    "items_one": "{{count}} articol",
-    "items_few": "{{count}} articole",
-    "items_other": "{{count}} de articole"
+    "back": "Înapoi la cumpărături"
   },
   "editor": {
     "name": "Nume",

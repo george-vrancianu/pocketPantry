@@ -33,9 +33,7 @@
     "create": "Create template",
     "lines_one": "{{count}} line",
     "lines_other": "{{count}} lines",
-    "back": "Back to shopping",
-    "items_one": "{{count}} item",
-    "items_other": "{{count}} items"
+    "back": "Back to shopping"
   },
   "editor": {
     "name": "Name",

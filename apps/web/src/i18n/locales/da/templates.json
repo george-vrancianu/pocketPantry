@@ -33,9 +33,7 @@
     "create": "Opret skabelon",
     "lines_one": "{{count}} linje",
     "lines_other": "{{count}} linjer",
-    "back": "Tilbage til indkøb",
-    "items_one": "{{count}} vare",
-    "items_other": "{{count}} varer"
+    "back": "Tilbage til indkøb"
   },
   "editor": {
     "name": "Navn",

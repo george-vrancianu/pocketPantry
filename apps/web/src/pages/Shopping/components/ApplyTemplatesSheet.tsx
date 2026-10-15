@@ -209,7 +209,7 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
   const canApply =
     summary.items > 0 &&
     !summary.overCap &&
-    pending.size === 0 &&
+    !summaries.some((s) => pending.has(s.id)) &&
     !apply.isPending;
 
   const header = (
