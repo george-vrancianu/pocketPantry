@@ -98,14 +98,26 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
       expect(of(strong.id).allergyWarning).toEqual({
         severity: 'strong',
         allergens: [
-          { id: MILK, name: 'Milk', tier: 'yours', severity: 'strong' },
+          {
+            id: MILK,
+            name: 'Milk',
+            tier: 'yours',
+            severity: 'strong',
+            owners: [{ kind: 'own' }],
+          },
         ],
         uncheckedCount: 0,
       });
       expect(of(soft.id).allergyWarning).toEqual({
         severity: 'soft',
         allergens: [
-          { id: MILK, name: 'Milk', tier: 'yours', severity: 'soft' },
+          {
+            id: MILK,
+            name: 'Milk',
+            tier: 'yours',
+            severity: 'soft',
+            owners: [{ kind: 'own' }],
+          },
         ],
         uncheckedCount: 0,
       });
@@ -209,7 +221,13 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
       expect(of(strong.id).recipe.allergyWarning).toEqual({
         severity: 'strong',
         allergens: [
-          { id: MILK, name: 'Milk', tier: 'yours', severity: 'strong' },
+          {
+            id: MILK,
+            name: 'Milk',
+            tier: 'yours',
+            severity: 'strong',
+            owners: [{ kind: 'own' }],
+          },
         ],
         uncheckedCount: 0,
       });
@@ -280,7 +298,13 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
       expect(match.allergyWarning).toEqual({
         severity: 'strong',
         allergens: [
-          { id: MILK, name: 'Milk', tier: 'yours', severity: 'strong' },
+          {
+            id: MILK,
+            name: 'Milk',
+            tier: 'yours',
+            severity: 'strong',
+            owners: [{ kind: 'own' }],
+          },
         ],
         uncheckedCount: 0,
       });
@@ -312,7 +336,13 @@ describe('Allergy indicators on Recipe lists and matches (integration)', () => {
       expect(compact?.severity).toBe('soft');
       expect(compact?.severity).toBe(detail?.severity);
       expect(compact?.allergens).toEqual([
-        { id: MILK, name: 'Milk', tier: 'yours', severity: 'soft' },
+        {
+          id: MILK,
+          name: 'Milk',
+          tier: 'yours',
+          severity: 'soft',
+          owners: [{ kind: 'own' }],
+        },
       ]);
     });
   });

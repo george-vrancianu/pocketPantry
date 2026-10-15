@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { CompactAllergyWarning } from './recipes';
 import { apiRequest } from './api';
 import type { IsoDate } from './pantry';
 import { normalizeName } from './normalizeName';
@@ -54,6 +55,8 @@ export type WindowSlot = {
   servings: number;
   servingsOverride: number | null;
   unavailable: boolean;
+  /** The Allergy Warning for the reader, naming whose Allergy it is; never hides the slot. */
+  allergyWarning: CompactAllergyWarning | null;
   minutes: number | null;
   aisle: { id: string; name: string; sortOrder: number } | null;
   status: SlotStatus;

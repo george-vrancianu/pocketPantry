@@ -19,8 +19,20 @@ describe('AllergenIndicator', () => {
       <AllergenIndicator
         warning={warning({
           allergens: [
-            { id: 'milk', name: 'Milk', tier: 'yours', severity: 'soft' },
-            { id: 'pn', name: 'Peanuts', tier: 'members', severity: 'strong' },
+            {
+              id: 'milk',
+              name: 'Milk',
+              tier: 'yours',
+              severity: 'soft',
+              owners: [{ kind: 'own' }],
+            },
+            {
+              id: 'pn',
+              name: 'Peanuts',
+              tier: 'members',
+              severity: 'strong',
+              owners: [{ kind: 'member', name: 'Ana' }],
+            },
           ],
           uncheckedCount: 1,
         })}
@@ -36,5 +48,38 @@ describe('AllergenIndicator', () => {
   it('renders nothing without a warning', () => {
     renderWithProviders(<AllergenIndicator warning={null} />);
     expect(screen.queryByRole('img')).toBeNull();
+  });
+
+  it('names whose Allergy it is when asked to', () => {
+    renderWithProviders(
+      <AllergenIndicator
+        withOwners
+        warning={warning({
+          allergens: [
+            {
+              id: 'milk',
+              name: 'Milk',
+              tier: 'yours',
+              severity: 'strong',
+              owners: [
+                { kind: 'own' },
+                { kind: 'family', label: 'Mia' },
+                { kind: 'family', label: null },
+              ],
+            },
+            {
+              id: 'pn',
+              name: 'Peanuts',
+              tier: 'members',
+              severity: 'soft',
+              owners: [{ kind: 'member', name: 'Ana' }],
+            },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByRole('img')).toHaveAccessibleName(
+      'Contains Milk (you, Mia, family). Optional: contains Peanuts (Ana)',
+    );
   });
 });

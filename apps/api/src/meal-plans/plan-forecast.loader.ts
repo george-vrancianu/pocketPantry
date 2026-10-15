@@ -53,12 +53,15 @@ export const slotKey = (
   mealtime: string,
 ): string => `${planId}:${dayIndex}:${mealtime}`;
 
+/** A window slot before its Allergy Warning, which depends on who is reading, is added. */
+export type ForecastSlotView = Omit<WindowSlotView, 'allergyWarning'>;
+
 export type LoadedForecast = {
   /** Every Meal Plan of the Family, earliest start first. */
   plans: PlanRow[];
   forecast: Forecast;
   /** The forecast's slots from today to `through`, by `slotKey`, ready to send. */
-  slots: Map<string, WindowSlotView>;
+  slots: Map<string, ForecastSlotView>;
   /** What Add missing would add for all of those slots. */
   missing: MissingItemView[];
   /** What Add missing would add for just these days (a slice of `forecast.days`). */
@@ -174,7 +177,7 @@ export async function loadForecast(
       entry,
     ]),
   );
-  const views = new Map<string, WindowSlotView>();
+  const views = new Map<string, ForecastSlotView>();
   for (const result of forecast.slots) {
     const { plan, slot, recipe, date } = details.get(
       result.id,
@@ -222,7 +225,7 @@ export async function loadForecast(
 
 /** The slot fields a plan read shares with the window. */
 export function forecastFieldsOf(
-  view: WindowSlotView | undefined,
+  view: ForecastSlotView | undefined,
 ): Pick<PlanSlotView, 'status' | 'issues'> {
   return view
     ? { status: view.status, issues: view.issues }

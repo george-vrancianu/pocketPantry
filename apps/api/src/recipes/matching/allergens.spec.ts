@@ -45,6 +45,7 @@ describe('deriveAllergens', () => {
       uncheckedCount: 0,
       allergyWarning: null,
       hidden: false,
+      blocksFill: false,
     });
   });
 
@@ -57,6 +58,7 @@ describe('deriveAllergens', () => {
       uncheckedCount: 0,
       allergyWarning: null,
       hidden: false,
+      blocksFill: false,
     });
   });
 
@@ -212,6 +214,14 @@ describe('deriveAllergens', () => {
             lines: [{ lineId: butter.id, severity: 'strong' }],
           },
         ],
+        allergens: [
+          {
+            allergenId: MILK,
+            tier: 'yours',
+            severity: 'strong',
+            owners: [OWN],
+          },
+        ],
         uncheckedCount: 0,
       });
     });
@@ -227,6 +237,14 @@ describe('deriveAllergens', () => {
             tier: 'yours',
             severity: 'soft',
             lines: [{ lineId: nuts.id, severity: 'soft' }],
+          },
+        ],
+        allergens: [
+          {
+            allergenId: PEANUTS,
+            tier: 'yours',
+            severity: 'soft',
+            owners: [OWN],
           },
         ],
         uncheckedCount: 0,
@@ -256,6 +274,7 @@ describe('deriveAllergens', () => {
       expect(warn([family, unmatched], [GLUTEN])).toEqual({
         severity: 'soft',
         entries: [],
+        allergens: [],
         uncheckedCount: 2,
       });
     });
@@ -526,6 +545,141 @@ describe('deriveAllergens', () => {
     it('judges a Variant on its own lines', () => {
       const peanutFree = [line({ allergenIds: [GLUTEN] })];
       expect(hidden(peanutFree, [own(PEANUTS)])).toBe(false);
+    });
+  });
+
+  describe('blocksFill', () => {
+    const own = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: OWN,
+    });
+    const family = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'family', label: 'Mia' },
+    });
+    const member = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'member', memberId: 'm-1', name: 'Ana' },
+    });
+    const blocks = (lines: AllergenLine[], allergies: AllergyInput[]) =>
+      deriveAllergens({ lines, allergenOrder: ORDER, allergies }).blocksFill;
+
+    it('is true for the viewer own, a Family or another Member Allergy in a required, checked line', () => {
+      const lines = [line({ allergenIds: [MILK] })];
+      expect(blocks(lines, [own(MILK)])).toBe(true);
+      expect(blocks(lines, [family(MILK)])).toBe(true);
+      expect(blocks(lines, [member(MILK)])).toBe(true);
+    });
+
+    it('stays false where hidden is false for the viewer, unless it is another Member', () => {
+      const lines = [line({ allergenIds: [MILK] })];
+      const derived = deriveAllergens({
+        lines,
+        allergenOrder: ORDER,
+        allergies: [member(MILK)],
+      });
+      expect(derived.hidden).toBe(false);
+      expect(derived.blocksFill).toBe(true);
+    });
+
+    it('is false for optional-only and Unchecked matches', () => {
+      expect(
+        blocks([line({ allergenIds: [MILK], optional: true })], [member(MILK)]),
+      ).toBe(false);
+      expect(
+        blocks(
+          [line({ allergenIds: [MILK], ingredient: uncheckedFamily })],
+          [family(MILK)],
+        ),
+      ).toBe(false);
+      expect(blocks([line({ ingredient: null })], [own(MILK)])).toBe(false);
+    });
+
+    it('neither hides nor blocks when the only match is a required line on a shared Ingredient awaiting review', () => {
+      const awaiting = {
+        ownerFamilyId: null,
+        allergensChecked: false,
+        allergensReviewPending: true,
+      };
+      const allergies = [own(MILK), member(MILK)];
+      // Untagged (the usual state while awaiting): a soft, Unchecked-only warning.
+      const untagged = deriveAllergens({
+        lines: [line({ ingredient: awaiting })],
+        allergenOrder: ORDER,
+        allergies,
+      });
+      expect(untagged.allergyWarning).toMatchObject({
+        severity: 'soft',
+        entries: [],
+        uncheckedCount: 1,
+      });
+      expect(untagged.hidden).toBe(false);
+      expect(untagged.blocksFill).toBe(false);
+      // Even if it carries a tag, the line is Unchecked: counted, never hiding or blocking Fill.
+      const tagged = deriveAllergens({
+        lines: [line({ allergenIds: [MILK], ingredient: awaiting })],
+        allergenOrder: ORDER,
+        allergies,
+      });
+      expect(tagged.allergyWarning?.uncheckedCount).toBe(1);
+      expect(tagged.hidden).toBe(false);
+      expect(tagged.blocksFill).toBe(false);
+    });
+
+    it('is false without a matching Allergy', () => {
+      expect(blocks([line({ allergenIds: [GLUTEN] })], [member(MILK)])).toBe(
+        false,
+      );
+      expect(blocks([line({ allergenIds: [MILK] })], [])).toBe(false);
+    });
+  });
+
+  describe('allergens (compact view)', () => {
+    it('names whose Allergy each Allergen is, once per Allergen, in warning order', () => {
+      const lines = [line({ allergenIds: [MILK, PEANUTS] })];
+      const { allergyWarning } = deriveAllergens({
+        lines,
+        allergenOrder: ORDER,
+        allergies: [
+          {
+            allergenId: MILK,
+            owner: { kind: 'member', memberId: 'm', name: 'Ana' },
+          },
+          { allergenId: MILK, owner: { kind: 'family', label: 'Mia' } },
+          { allergenId: MILK, owner: OWN },
+          {
+            allergenId: PEANUTS,
+            owner: { kind: 'member', memberId: 'm', name: 'Ana' },
+          },
+        ],
+      });
+      expect(allergyWarning?.allergens).toEqual([
+        {
+          allergenId: MILK,
+          tier: 'yours',
+          severity: 'strong',
+          owners: [
+            { kind: 'own' },
+            { kind: 'family', label: 'Mia' },
+            { kind: 'member', name: 'Ana' },
+          ],
+        },
+        {
+          allergenId: PEANUTS,
+          tier: 'members',
+          severity: 'strong',
+          owners: [{ kind: 'member', name: 'Ana' }],
+        },
+      ]);
+    });
+
+    it('is empty when only Unchecked lines raise the warning', () => {
+      const { allergyWarning } = deriveAllergens({
+        lines: [line({ ingredient: null })],
+        allergenOrder: ORDER,
+        allergies: [{ allergenId: MILK, owner: OWN }],
+      });
+      expect(allergyWarning?.allergens).toEqual([]);
     });
   });
 });

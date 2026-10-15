@@ -16,6 +16,7 @@ import {
   type Mealtime,
 } from '../recipes/matching/plan-forecast';
 import { visibleTo } from '../recipes/recipe-view';
+import { loadFillBlocks } from './plan-allergies';
 import {
   loadBatches,
   loadLines,
@@ -43,13 +44,15 @@ export type LoadedFill = {
  * plus the Family's other filled slots from two days before `today` on (they
  * share the stock and the variety window); the Recipes the Family can see
  * (and those the slots use), with lines and Eating Moment uses; the Eating
- * Moments; the unexpired Batches and the active Shopping List.
+ * Moments; the unexpired Batches and the active Shopping List; and which Recipes
+ * the Family's Allergies rule out (`blocksFill`).
  */
 export async function loadFill(
   executor: Executor,
   familyId: string,
   plan: PlanRow,
   today: string,
+  memberId: string,
 ): Promise<LoadedFill> {
   const from = addDays(today, -LOOKBACK_DAYS);
   const rows = await executor
@@ -110,6 +113,12 @@ export async function loadFill(
   const recipeRows = [...visible, ...extra];
 
   const lines = await loadLines(executor, familyId, recipeRows);
+  const blocked = await loadFillBlocks(
+    executor,
+    familyId,
+    memberId,
+    recipeRows.map((recipe) => recipe.id),
+  );
   const uses = new Map<string, FillRecipe['moments']>();
   if (recipeRows.length > 0) {
     const momentRows = await executor
@@ -143,6 +152,7 @@ export async function loadFill(
       archived: recipe.archivedAt !== null,
       lines: lines.get(recipe.id) ?? [],
       moments: uses.get(recipe.id) ?? [],
+      blocksFill: blocked.has(recipe.id),
     })),
     eatingMomentIds: moments.map(({ id }) => id),
     batches: await loadBatches(executor, familyId, today),
