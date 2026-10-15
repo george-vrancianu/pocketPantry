@@ -26,7 +26,7 @@ import {
 export type ScanScreenModes = {
   /** In dial order. Defaults to all four Scan Modes. */
   modes?: readonly ScanMode[];
-  /** Used when the URL names no allowed mode, and when nothing is remembered. */
+  /** Used when the URL names no allowed mode and either `rememberMode` is false or the remembered mode isn't allowed. */
   defaultMode?: ScanMode;
   /** Load and save the Scan Mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
   rememberMode?: boolean;
@@ -41,15 +41,16 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
-  const allowed = (value: string | null): value is ScanMode =>
+  const allowed = (value: string | null | undefined): value is ScanMode =>
     modes.some((item) => item === value);
+  const { defaultMode } = config;
   const remembered = remembersMode ? loadScanMode() : null;
   const mode: ScanMode = allowed(requested)
     ? requested
     : allowed(remembered)
       ? remembered
-      : allowed(config.defaultMode ?? null)
-        ? config.defaultMode!
+      : allowed(defaultMode)
+        ? defaultMode
         : modes[0];
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
   useEffect(() => {
