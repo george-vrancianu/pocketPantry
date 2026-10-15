@@ -156,6 +156,15 @@
       "age": "vechi de {{count}} z",
       "inLocation": "{{duration}} în {{location}}"
     },
+    "item": {
+      "add": "Adaugă {{name}}"
+    },
+    "toast": {
+      "added_one": "{{count}} adăugat pe lista de cumpărături",
+      "added_few": "{{count}} adăugate pe lista de cumpărături",
+      "added_other": "{{count}} adăugate pe lista de cumpărături",
+      "withScore": "{{message}} · scor {{score}}"
+    },
     "close": "Închide"
   }
 }

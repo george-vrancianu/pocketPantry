@@ -40,6 +40,7 @@ type List = {
   groups: Array<{
     aisle: unknown;
     items: Array<{
+      id: string;
       name: string;
       quantity: number | null;
       unit: string | null;
@@ -475,7 +476,29 @@ describe('Plate Scan (integration)', () => {
         ]),
       );
       expect(items).toHaveLength(3);
-      expect(await listOf(cookie)).toEqual(response.body);
+      const { createdIds, ...list } = response.body as List & {
+        createdIds: string[];
+      };
+      expect(createdIds).toHaveLength(5);
+      expect(await listOf(cookie)).toEqual(list);
+    });
+
+    it('returns createdIds in request order: new lines get their own id, merged lines the id they merged into', async () => {
+      const cookie = await signUp();
+      const first = await post(cookie, 'shopping-list/items', {
+        ingredientId: milk,
+        quantity: 100,
+        unit: 'ml',
+      }).expect(200);
+      const milkId = flat(first.body as List)[0].id;
+      const response = await bulk(cookie, [
+        { ingredientId: flour, quantity: 60, unit: 'g' },
+        { ingredientId: milk, quantity: 200, unit: 'ml' },
+        { ingredientId: flour, quantity: 40, unit: 'g' },
+      ]).expect(200);
+      const body = response.body as List & { createdIds: string[] };
+      const flourId = flat(body).find((i) => i.name === 'Flour')?.id;
+      expect(body.createdIds).toEqual([flourId, milkId, flourId]);
     });
 
     describe('Unmatched queue', () => {

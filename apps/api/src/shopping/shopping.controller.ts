@@ -78,7 +78,7 @@ export class ShoppingController {
     @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addShoppingItemsBody))
     body: AddShoppingItemsBody,
-  ): Promise<ShoppingListView> {
+  ): Promise<ShoppingListView & { createdIds: string[] }> {
     return this.shopping.addItems(member.id, body.items, locale);
   }
 

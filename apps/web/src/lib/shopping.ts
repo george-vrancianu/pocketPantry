@@ -28,6 +28,9 @@ export type ShoppingList = {
   summary: { remaining: number; checked: number };
 };
 
+/** What a bulk add answers: the whole list, and the ids of the Shopping Items created or merged into, in request order. */
+export type AddedShoppingItems = ShoppingList & { createdIds: string[] };
+
 export type NewShoppingItem = {
   ingredientId?: string;
   name?: string;
@@ -124,6 +127,14 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
+  const addMany = useMutation({
+    mutationFn: (items: NewShoppingItem[]) =>
+      apiRequest<AddedShoppingItems>(path(locale, '/items/bulk'), {
+        method: 'POST',
+        body: { items },
+      }),
+    onSuccess: ({ createdIds: _createdIds, ...list }) => onSuccess(list),
+  });
   const setChecked = useMutation({
     mutationFn: ({ id, checked }: { id: string; checked: boolean }) =>
       apiRequest<ShoppingList>(path(locale, `/items/${id}`), {
@@ -157,5 +168,5 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
-  return { add, setChecked, setAmount, remove };
+  return { add, addMany, setChecked, setAmount, remove };
 }
