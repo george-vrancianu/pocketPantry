@@ -168,6 +168,24 @@ type Stock = {
  * undated ones last, counting only Batches not Expired on the slot's day.
  */
 export function forecastPlan(input: ForecastInput): Forecast {
+  const { results, days, tag } = run(input);
+  return { slots: results, days, tag };
+}
+
+/**
+ * What the Batches have left once all `input.slots` have used them up, in
+ * base units (g, ml, pcs) for Batches with a comparable quantity and as they
+ * were for the rest. Fill ranks Recipes against this for a slot's day.
+ */
+export function stockLeft(input: ForecastInput): ForecastBatch[] {
+  return run(input).stock.map(({ batch, dimension, remaining }) =>
+    dimension === null
+      ? batch
+      : { ...batch, quantity: round(remaining), unit: BASE_UNIT[dimension] },
+  );
+}
+
+function run(input: ForecastInput) {
   const slots = input.slots
     .filter((slot) => slot.date >= input.today)
     .sort(
@@ -328,9 +346,10 @@ export function forecastPlan(input: ForecastInput): Forecast {
   });
 
   return {
-    slots: results,
+    results,
     days: daysOf(input.today, results),
     tag: planTag(results),
+    stock: [...stock.values()].flat(),
   };
 }
 
