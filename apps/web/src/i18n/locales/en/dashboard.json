@@ -185,7 +185,8 @@
     "missingForPlan": "Missing for the plan:",
     "moreMissing": "+{{count}}",
     "addN": "Add {{count}}",
-    "addNMissing": "Add {{count}} missing",
+    "addNMissing_one": "Add {{count}} missing",
+    "addNMissing_other": "Add {{count}} missing",
     "addLine": "Add {{name}} to the Shopping List",
     "toast": {
       "added_one": "{{count}} added to the Shopping List",

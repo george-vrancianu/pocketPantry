@@ -47,7 +47,8 @@
   },
   "day": {
     "today": "Today",
-    "addMissing": "Add {{count}} missing",
+    "addMissing_one": "Add {{count}} missing",
+    "addMissing_other": "Add {{count}} missing",
     "addMissingLabel": "Add missing for {{day}}",
     "past": "Past day"
   },
@@ -63,7 +64,8 @@
     "filling": "Filling…"
   },
   "addMissing": {
-    "plan": "Add {{count}} missing"
+    "plan_one": "Add {{count}} missing",
+    "plan_other": "Add {{count}} missing"
   },
   "detail": {
     "servings": "Servings for this meal",

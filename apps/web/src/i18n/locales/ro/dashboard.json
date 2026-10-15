@@ -206,7 +206,9 @@
     "missingForPlan": "Lipsesc pentru plan:",
     "moreMissing": "+{{count}}",
     "addN": "Adaugă {{count}}",
-    "addNMissing": "Adaugă {{count}} lipsă",
+    "addNMissing_one": "Adaugă {{count}} ingredient lipsă",
+    "addNMissing_few": "Adaugă {{count}} ingrediente lipsă",
+    "addNMissing_other": "Adaugă {{count}} de ingrediente lipsă",
     "addLine": "Adaugă {{name}} pe lista de cumpărături",
     "toast": {
       "added_one": "{{count}} adăugat pe lista de cumpărături",

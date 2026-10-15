@@ -47,7 +47,8 @@
   },
   "day": {
     "today": "I dag",
-    "addMissing": "Tilføj {{count}} manglende",
+    "addMissing_one": "Tilføj {{count}} manglende",
+    "addMissing_other": "Tilføj {{count}} manglende",
     "addMissingLabel": "Tilføj manglende for {{day}}",
     "past": "Tidligere dag"
   },
@@ -63,7 +64,8 @@
     "filling": "Udfylder…"
   },
   "addMissing": {
-    "plan": "Tilføj {{count}} manglende"
+    "plan_one": "Tilføj {{count}} manglende",
+    "plan_other": "Tilføj {{count}} manglende"
   },
   "detail": {
     "servings": "Portioner til dette måltid",

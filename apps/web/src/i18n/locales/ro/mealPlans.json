@@ -52,7 +52,9 @@
   },
   "day": {
     "today": "Azi",
-    "addMissing": "Adaugă {{count}} lipsă",
+    "addMissing_one": "Adaugă {{count}} ingredient lipsă",
+    "addMissing_few": "Adaugă {{count}} ingrediente lipsă",
+    "addMissing_other": "Adaugă {{count}} de ingrediente lipsă",
     "addMissingLabel": "Adaugă ce lipsește pentru {{day}}",
     "past": "Zi trecută"
   },
@@ -68,7 +70,9 @@
     "filling": "Se completează…"
   },
   "addMissing": {
-    "plan": "Adaugă {{count}} lipsă"
+    "plan_one": "Adaugă {{count}} ingredient lipsă",
+    "plan_few": "Adaugă {{count}} ingrediente lipsă",
+    "plan_other": "Adaugă {{count}} de ingrediente lipsă"
   },
   "detail": {
     "servings": "Porții pentru această masă",

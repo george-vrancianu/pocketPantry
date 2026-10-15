@@ -183,7 +183,8 @@
     "missingForPlan": "Mangler til planen:",
     "moreMissing": "+{{count}}",
     "addN": "Tilføj {{count}}",
-    "addNMissing": "Tilføj {{count}} manglende",
+    "addNMissing_one": "Tilføj {{count}} manglende",
+    "addNMissing_other": "Tilføj {{count}} manglende",
     "addLine": "Tilføj {{name}} til indkøbslisten",
     "toast": {
       "added_one": "{{count}} føjet til indkøbslisten",
