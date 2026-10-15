@@ -27,6 +27,7 @@ import type {
   ShoppingGroupView,
   ShoppingItemView,
   ShoppingListView,
+  AddedShoppingItemsView,
 } from './shopping.schemas';
 
 /**
@@ -68,12 +69,13 @@ export class ShoppingService {
     body: AddShoppingItemBody,
     locale: CatalogLocale,
   ): Promise<ShoppingListView> {
-    const { id, groups, summary } = await this.addItems(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- only the bulk endpoint answers with createdIds
+    const { createdIds: _createdIds, ...view } = await this.addItems(
       memberId,
       [body],
       locale,
     );
-    return { id, groups, summary };
+    return view;
   }
 
   /**
@@ -84,7 +86,7 @@ export class ShoppingService {
     memberId: string,
     bodies: AddShoppingItemBody[],
     locale: CatalogLocale,
-  ): Promise<ShoppingListView & { createdIds: string[] }> {
+  ): Promise<AddedShoppingItemsView> {
     return this.database.transaction(async (tx) => {
       // Serialises with concurrent adds (merges never duplicate a line) and with Finish.
       const { listId, scope } = await this.lockActiveList(tx, memberId);

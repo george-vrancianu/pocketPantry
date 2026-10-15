@@ -828,6 +828,7 @@ describe('HealthWidget', () => {
         summary: { remaining: lines.length, checked: 0 },
       });
       const deleted: string[] = [];
+      let gate: Promise<void> = Promise.resolve();
       const routes: Record<string, () => Response> = {
         'GET /api/shopping-list': () => Response.json(view()),
       };
@@ -835,6 +836,15 @@ describe('HealthWidget', () => {
         lines,
         deleted,
         routes,
+        /** Holds the bulk-add response until the returned release is called. */
+        holdAdd: () => {
+          let release = () => {};
+          gate = new Promise<void>((resolve) => {
+            release = resolve;
+          });
+          return release;
+        },
+        waitForGate: () => gate,
         /** Adds the lines a bulk-add request names and answers with the list and their ids. */
         add: (items: Array<Omit<Line, 'id'>>) => {
           const createdIds = items.map((item) => {
@@ -861,7 +871,8 @@ describe('HealthWidget', () => {
       const shopping = shoppingApi();
       const calls = stub({ batches, runningLow }, staples, undefined, [], {
         ...shopping.routes,
-        'POST /api/shopping-list/items/bulk': () => {
+        'POST /api/shopping-list/items/bulk': async () => {
+          await shopping.waitForGate();
           const { body } = calls
             .filter((call) => call.key === 'POST /api/shopping-list/items/bulk')
             .at(-1) as { body: { items: Array<Omit<Line, 'id'>> } };
@@ -980,11 +991,12 @@ describe('HealthWidget', () => {
       ]);
     });
 
-    it('undoes exactly the Shopping Items the add returned', async () => {
+    it('undoes exactly the Shopping Items the add returned, leaving others alone', async () => {
       const { user, sheet, shopping } = await openWith(filler(10), [
         flour,
         salt,
       ]);
+      shopping.lines.push({ id: 'sh0', ingredientId: 'butter' });
       await user.click(
         within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
       );
@@ -993,8 +1005,30 @@ describe('HealthWidget', () => {
       await user.click(screen.getByRole('button', { name: 'Undo' }));
 
       await waitFor(() => expect(shopping.deleted).toEqual(['sh1', 'sh2']));
+      expect(shopping.lines.map((line) => line.id)).toEqual(['sh0']);
       expect(
         await within(sheet).findByRole('button', { name: 'Add 2 Staples' }),
+      ).toBeInTheDocument();
+    });
+
+    it('still shows the toast when the sheet is closed before the add answers', async () => {
+      const { user, sheet, shopping } = await openWith(filler(10), [
+        flour,
+        salt,
+      ]);
+      const release = shopping.holdAdd();
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
+      );
+
+      await user.click(within(sheet).getByRole('button', { name: 'Close' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      release();
+
+      expect(
+        await screen.findByText(/^2 added to the Shopping List/),
       ).toBeInTheDocument();
     });
   });

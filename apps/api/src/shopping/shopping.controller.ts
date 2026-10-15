@@ -28,6 +28,7 @@ import {
   type SetAmountBody,
   type SetCheckedBody,
   type ShoppingListView,
+  type AddedShoppingItemsView,
   type ShoppingLocaleQuery,
 } from './shopping.schemas';
 import { ShoppingService } from './shopping.service';
@@ -78,7 +79,7 @@ export class ShoppingController {
     @Query(localeQuery) { locale }: ShoppingLocaleQuery,
     @Body(new ZodValidationPipe(addShoppingItemsBody))
     body: AddShoppingItemsBody,
-  ): Promise<ShoppingListView & { createdIds: string[] }> {
+  ): Promise<AddedShoppingItemsView> {
     return this.shopping.addItems(member.id, body.items, locale);
   }
 

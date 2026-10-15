@@ -14,7 +14,7 @@ import type { PantryHealthState } from '../../lib/usePantryHealth';
 export type ShoppingFix = {
   isPending: boolean;
   /** Puts the Ingredients (by id) of a missingStaples or runningLow Health To-do on the Shopping List. */
-  add: (key: HealthTodoKey, ingredientIds: string[]) => void;
+  add: (key: HealthTodoKey, ingredientIds: string[]) => Promise<void>;
 };
 
 /**
@@ -45,7 +45,8 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
 
   const undo = async (createdIds: string[]) => {
     try {
-      await Promise.all(createdIds.map((id) => remove.mutateAsync(id)));
+      // One at a time: each delete answers with the whole list, and parallel answers could cache a stale one.
+      for (const id of new Set(createdIds)) await remove.mutateAsync(id);
     } catch (error) {
       toast.show(translateApiError(t, error));
     } finally {
@@ -53,32 +54,38 @@ export function useAddToShoppingList(state: PantryHealthState): ShoppingFix {
     }
   };
 
-  const add = (key: HealthTodoKey, ingredientIds: string[]) => {
-    addMany.mutate(itemsFor(key, ingredientIds), {
-      onSuccess: ({ createdIds }) => {
-        const after = pantryHealth({
-          ...state.input,
-          onShoppingList: new Set([
-            ...state.input.onShoppingList,
-            ...ingredientIds,
-          ]),
-        });
-        const message = t('health.toast.added', { count: createdIds.length });
-        toast.show(
-          after.scored
-            ? t('health.toast.withScore', { message, score: after.total })
-            : message,
-          {
-            duration: UNDO_WINDOW_MS,
-            action: {
-              label: tCommon('row.undo'),
-              onClick: () => void undo(createdIds),
-            },
-          },
-        );
-      },
-      onError: (error) => toast.show(translateApiError(t, error)),
+  // mutateAsync, not mutate: per-call callbacks are dropped if the sheet closes before the answer.
+  const add = async (key: HealthTodoKey, ingredientIds: string[]) => {
+    let createdIds: string[];
+    try {
+      ({ createdIds } = await addMany.mutateAsync(
+        itemsFor(key, ingredientIds),
+      ));
+    } catch (error) {
+      toast.show(translateApiError(t, error));
+      return;
+    }
+    const after = pantryHealth({
+      ...state.input,
+      onShoppingList: new Set([
+        ...state.input.onShoppingList,
+        ...ingredientIds,
+      ]),
     });
+    // The count is Ingredients added; two of them may have merged into one line.
+    const message = t('health.toast.added', { count: ingredientIds.length });
+    toast.show(
+      after.scored
+        ? t('health.toast.withScore', { message, score: after.total })
+        : message,
+      {
+        duration: UNDO_WINDOW_MS,
+        action: {
+          label: tCommon('row.undo'),
+          onClick: () => void undo(createdIds),
+        },
+      },
+    );
   };
 
   return { isPending: addMany.isPending, add };

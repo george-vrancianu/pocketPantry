@@ -265,7 +265,7 @@ function TodoRow({
       : addsToList
         ? {
             disabled: shopping.isPending,
-            onClick: () => shopping.add(todo.key, todo.itemIds),
+            onClick: () => void shopping.add(todo.key, todo.itemIds),
           }
         : // Toss and Date all do nothing yet; they arrive with their own tickets.
           { disabled: true };
@@ -438,7 +438,7 @@ function TodoRow({
                 tagFor={tagFor}
                 onAdd={
                   addsToList
-                    ? () => shopping.add(todo.key, [item.id])
+                    ? () => void shopping.add(todo.key, [item.id])
                     : undefined
                 }
                 addDisabled={shopping.isPending}
