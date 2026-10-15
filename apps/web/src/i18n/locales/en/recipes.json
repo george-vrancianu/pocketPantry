@@ -15,6 +15,14 @@
     "cleanses_palate": "Cleanses the palate",
     "regional_tradition": "Regional tradition"
   },
+  "allergens": {
+    "title": "Allergens",
+    "optional": "Optional",
+    "none": "No common allergens found",
+    "unchecked_one": "{{count}} ingredient couldn't be checked",
+    "unchecked_other": "{{count}} ingredients couldn't be checked",
+    "reminder": "Worked out from the ingredients. Always check product labels."
+  },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",
   "cuisine": "Cuisine",

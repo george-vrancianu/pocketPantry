@@ -102,6 +102,19 @@ export type RecipeGuidance = {
   eatingMoments: DetailEatingMoment[];
 };
 
+/** An Allergen a Recipe is known to contain, with its source lines (mirror of the API's `RecipeAllergenItem`). */
+export type RecipeAllergenItem = {
+  allergen: { id: string; name: string };
+  lines: { id: string; ingredientName: string; optional: boolean }[];
+  /** Every source line is optional. */
+  optionalOnly: boolean;
+};
+export type RecipeAllergens = {
+  items: RecipeAllergenItem[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
 /** The Member's Recipe detail (mirror of the API's `RecipeDetail`). */
 export type RecipeDetail = {
   id: string;
@@ -122,6 +135,7 @@ export type RecipeDetail = {
   variants: RecipeVariantItem[];
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
+  allergens: RecipeAllergens;
 };
 
 /** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */

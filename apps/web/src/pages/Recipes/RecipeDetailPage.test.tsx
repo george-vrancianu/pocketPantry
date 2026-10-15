@@ -54,6 +54,7 @@ const recipe = (over: Partial<RecipeDetail>): RecipeDetail => ({
   variants: [],
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+  allergens: { items: [], uncheckedCount: 0 },
   ...over,
 });
 
@@ -418,6 +419,132 @@ describe('RecipeDetailPage', () => {
     });
   });
 
+  describe('Allergens card', () => {
+    const REMINDER =
+      'Worked out from the ingredients. Always check product labels.';
+    const allergens = (over: Partial<RecipeDetail['allergens']>) => ({
+      items: [],
+      uncheckedCount: 0,
+      ...over,
+    });
+    const card = async (detail: RecipeDetail) => {
+      const user = userEvent.setup();
+      setup(detail);
+      await openTab(user, 'About');
+      return within(
+        (await screen.findByRole('heading', { name: 'Allergens' })).closest(
+          'section',
+        )!,
+      );
+    };
+
+    it('lists each Allergen with the lines it comes from', async () => {
+      const view = await card(
+        recipe({
+          allergens: allergens({
+            items: [
+              {
+                allergen: { id: 'a-milk', name: 'Milk' },
+                lines: [
+                  { id: 'l1', ingredientName: 'Parmesan', optional: false },
+                  { id: 'l2', ingredientName: 'Butter', optional: false },
+                ],
+                optionalOnly: false,
+              },
+              {
+                allergen: { id: 'a-gluten', name: 'Gluten' },
+                lines: [{ id: 'l3', ingredientName: 'Flour', optional: false }],
+                optionalOnly: false,
+              },
+            ],
+          }),
+        }),
+      );
+      const items = view.getAllByRole('listitem');
+      expect(items).toHaveLength(2);
+      expect(items[0]).toHaveTextContent('Milk');
+      expect(items[0]).toHaveTextContent('Parmesan, Butter');
+      expect(items[1]).toHaveTextContent('Gluten');
+      expect(items[1]).toHaveTextContent('Flour');
+      expect(view.queryByText('Optional')).toBeNull();
+      expect(view.queryByText('No common allergens found')).toBeNull();
+      expect(view.getByText(REMINDER)).toBeInTheDocument();
+    });
+
+    it('marks an Allergen that comes only from optional lines', async () => {
+      const view = await card(
+        recipe({
+          allergens: allergens({
+            items: [
+              {
+                allergen: { id: 'a-peanuts', name: 'Peanuts' },
+                lines: [
+                  { id: 'l1', ingredientName: 'Peanuts', optional: true },
+                ],
+                optionalOnly: true,
+              },
+            ],
+          }),
+        }),
+      );
+      expect(view.getByRole('listitem')).toHaveTextContent('Optional');
+    });
+
+    it('says how many ingredients could not be checked', async () => {
+      const view = await card(
+        recipe({ allergens: allergens({ uncheckedCount: 3 }) }),
+      );
+      expect(
+        view.getByText("3 ingredients couldn't be checked"),
+      ).toBeInTheDocument();
+    });
+
+    it('uses the singular for one ingredient', async () => {
+      const view = await card(
+        recipe({ allergens: allergens({ uncheckedCount: 1 }) }),
+      );
+      expect(
+        view.getByText("1 ingredient couldn't be checked"),
+      ).toBeInTheDocument();
+    });
+
+    it('says no common allergens were found, never that the Recipe is safe or allergen-free', async () => {
+      const view = await card(recipe({}));
+      expect(view.getByText('No common allergens found')).toBeInTheDocument();
+      expect(view.getByText(REMINDER)).toBeInTheDocument();
+      expect(view.queryByRole('list')).toBeNull();
+      expect(view.queryByText(/couldn't be checked/)).toBeNull();
+      expect(document.body.textContent).not.toMatch(/\bsafe\b|allergen-free/i);
+    });
+
+    it('sits after Nutrition and before the disclaimer', async () => {
+      const user = userEvent.setup();
+      setup(
+        recipe({
+          guidance: {
+            nutritionNote: 'Rich in fat.',
+            pairings: [],
+            eatingMoments: [],
+          },
+        }),
+      );
+      await openTab(user, 'About');
+      const nutrition = await screen.findByRole('heading', {
+        name: 'Nutrition',
+      });
+      const allergensHeading = screen.getByRole('heading', {
+        name: 'Allergens',
+      });
+      const disclaimer = screen.getByText(
+        'General guidance, not medical or dietary advice.',
+      );
+      const follows = (a: Node, b: Node) =>
+        a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
+      expect(follows(nutrition, allergensHeading)).toBeTruthy();
+      expect(follows(allergensHeading, disclaimer)).toBeTruthy();
+    });
+  });
+
   it('puts Variants last on the About tab of a Base Recipe', async () => {
     const user = userEvent.setup();
     setup(
@@ -448,7 +575,12 @@ describe('RecipeDetailPage', () => {
     );
     await openTab(user, 'About');
     const panel = await screen.findByRole('tabpanel');
-    expect(within(panel).queryByRole('heading')).toBeNull();
+    // Only the Allergens card is always there.
+    expect(
+      within(panel)
+        .getAllByRole('heading')
+        .map((h) => h.textContent),
+    ).toEqual(['Allergens']);
   });
 
   describe('Tabs', () => {

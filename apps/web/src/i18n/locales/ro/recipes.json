@@ -15,6 +15,15 @@
     "cleanses_palate": "Curăță palatul",
     "regional_tradition": "Tradiție regională"
   },
+  "allergens": {
+    "title": "Alergeni",
+    "optional": "Opțional",
+    "none": "Nu s-au găsit alergeni comuni",
+    "unchecked_one": "{{count}} ingredient nu a putut fi verificat",
+    "unchecked_few": "{{count}} ingrediente nu au putut fi verificate",
+    "unchecked_other": "{{count}} de ingrediente nu au putut fi verificate",
+    "reminder": "Stabilit pe baza ingredientelor. Verifică mereu etichetele produselor."
+  },
   "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",
   "cuisine": "Bucătărie",
