@@ -44,8 +44,6 @@ import {
 
 type PlanRow = typeof mealPlans.$inferSelect;
 
-const MEALTIMES = ['breakfast', 'lunch', 'dinner'] as const;
-
 const summary = (row: PlanRow): MealPlanSummary => ({
   id: row.id,
   name: row.name,
@@ -295,25 +293,25 @@ export class MealPlansService {
     return runLocked(this.database, async (tx) => {
       const { familyId } = await lockMemberAndFamily(tx, memberId);
       const plan = await this.findPlan(tx, familyId, id);
+      const { emptySlots, ...loaded } = await loadFill(
+        tx,
+        familyId,
+        plan,
+        today,
+      );
       const choices = fillPlan({
         today,
-        ...(await loadFill(tx, familyId, plan, today)),
+        ...loaded,
         staleThresholdDays: await this.settings.staleThresholdOf(familyId),
         onlyWhatIHave: body.onlyWhatIHave,
         tieBreaker: randomTieBreaker,
       });
-      if (choices.length > 0) {
-        const byId = new Map(choices.map((c) => [c.slotId, c.recipeId]));
-        const rows = [];
-        for (let dayIndex = 0; dayIndex < plan.days; dayIndex++) {
-          for (const mealtime of MEALTIMES) {
-            const recipeId = byId.get(slotKey(plan.id, dayIndex, mealtime));
-            if (recipeId) {
-              rows.push({ mealPlanId: plan.id, dayIndex, mealtime, recipeId });
-            }
-          }
-        }
-        // A slot filled in the meantime is the Member's: never replace it.
+      const rows = choices.flatMap(({ slotId, recipeId }) => {
+        const at = emptySlots.get(slotId);
+        return at ? [{ mealPlanId: plan.id, ...at, recipeId }] : [];
+      });
+      // A slot filled in the meantime is the Member's: never replace it.
+      if (rows.length > 0) {
         await tx.insert(mealPlanSlots).values(rows).onConflictDoNothing();
       }
       return this.view(tx, familyId, plan.id, locale, today);

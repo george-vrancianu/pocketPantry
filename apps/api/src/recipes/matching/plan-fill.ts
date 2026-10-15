@@ -9,6 +9,7 @@ import {
   type RecipeMatch,
 } from './pantry-match';
 import {
+  compareSlotOrder,
   forecastPlan,
   stockLeft,
   type ForecastBatch,
@@ -73,8 +74,6 @@ export type FillInput = {
 
 export type FillChoice = { slotId: string; recipeId: string };
 
-const MEALTIME_ORDER: readonly Mealtime[] = ['breakfast', 'lunch', 'dinner'];
-
 /** The Eating Moments (by seed slug) each Mealtime prefers; Dinner has none. */
 const PREFERRED_MOMENTS: Record<Mealtime, readonly string[]> = {
   breakfast: ['morning', 'brunch'],
@@ -84,10 +83,6 @@ const PREFERRED_MOMENTS: Record<Mealtime, readonly string[]> = {
 
 /** Days either side of a use in which its Base Recipe group may not repeat. */
 const VARIETY_DAYS = 2;
-
-const inOrder = (a: FillSlot, b: FillSlot) =>
-  a.date.localeCompare(b.date) ||
-  MEALTIME_ORDER.indexOf(a.mealtime) - MEALTIME_ORDER.indexOf(b.mealtime);
 
 type Option = { recipe: FillRecipe; preferred: boolean; match: RecipeMatch };
 
@@ -120,7 +115,7 @@ export function fillPlan(input: FillInput): FillChoice[] {
       shoppingList: input.shoppingList,
     });
 
-  const ordered = [...input.slots].sort(inOrder);
+  const ordered = [...input.slots].sort(compareSlotOrder);
   /** The Member's picks and the choices made so far. */
   const placed: ForecastSlot[] = [];
   for (const slot of ordered) {
@@ -166,21 +161,24 @@ export function fillPlan(input: FillInput): FillChoice[] {
     const stock = stockFor(slot);
     const options: Option[] = [];
     for (const recipe of allowed) {
+      const match = matchRecipe({
+        lines: recipe.lines.map((line, i): MatchLine => ({
+          ...line,
+          id: String(i),
+        })),
+        recipeServings: recipe.servings,
+        requestedServings: slot.servings,
+        stock,
+      });
+      // A Recipe the stock already can't cover can't pass the forecast either.
+      if (input.onlyWhatIHave && match.shortOrMissingCount > 0) continue;
       if (!fits(recipe)) continue;
       options.push({
         recipe,
         preferred: recipe.moments.some(
           (use) => use.polarity === 'good_for' && mapped.includes(use.momentId),
         ),
-        match: matchRecipe({
-          lines: recipe.lines.map((line, i): MatchLine => ({
-            ...line,
-            id: String(i),
-          })),
-          recipeServings: recipe.servings,
-          requestedServings: slot.servings,
-          stock,
-        }),
+        match,
       });
     }
     if (options.length === 0) return null;
@@ -205,7 +203,7 @@ export function fillPlan(input: FillInput): FillChoice[] {
 
   /** The Batches as they stand on the slot's day, after the slots before it. */
   function stockFor(slot: FillSlot): MatchBatch[] {
-    const before = placed.filter((used) => inOrder(used, slot) < 0);
+    const before = placed.filter((used) => compareSlotOrder(used, slot) < 0);
     return stockLeft({
       today: input.today,
       slots: before,
@@ -229,7 +227,7 @@ export function fillPlan(input: FillInput): FillChoice[] {
 
   /**
    * "Only what I have": no short or missing required line for the slot, and no
-   * slot that was covered turns short by taking this Recipe's ingredients.
+   * slot that was covered stops being covered by taking this Recipe's ingredients.
    */
   function makeable(slot: FillSlot): (recipe: FillRecipe) => boolean {
     const baseline = new Map(
@@ -241,9 +239,10 @@ export function fillPlan(input: FillInput): FillChoice[] {
         { ...slot, recipeId: recipe.id },
       ]).slots;
       const own = after.find((s) => s.id === slot.id);
-      if (own?.issues.some((issue) => issue.kind !== 'uncertain')) return false;
+      if (own?.status !== 'covered') return false;
+      // The Shopping List is not stock: a covered slot must stay covered.
       return !after.some(
-        (s) => baseline.get(s.id) === 'covered' && s.status === 'short',
+        (s) => baseline.get(s.id) === 'covered' && s.status !== 'covered',
       );
     };
   }

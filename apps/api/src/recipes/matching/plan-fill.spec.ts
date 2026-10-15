@@ -474,10 +474,26 @@ describe('fillPlan: only what I have', () => {
       onlyWhatIHave: true,
       slots: [filled(1, 'dinner', 'eggs-4'), empty(0, 'dinner')],
       batches: [eggs(6)],
-      tieBreaker: first,
+      tieBreaker: last,
       recipes: [
         recipe('eggs-4'),
         // Fine on its own day, but would leave day 1 with 2 of 4 eggs.
+        recipe('eggs-4-too', { groupId: 'other' }),
+        recipe('eggs-2', { lines: [line({ quantity: 2 })] }),
+      ],
+    });
+    expect(placed(choices)).toEqual(['0-dinner=eggs-2']);
+  });
+
+  it('does not let the Shopping List stand in for stock: a covered pick stays covered', () => {
+    const choices = fill({
+      onlyWhatIHave: true,
+      slots: [filled(1, 'dinner', 'eggs-4'), empty(0, 'dinner')],
+      batches: [eggs(6)],
+      shoppingList: [{ ingredientId: EGGS, name: null }],
+      tieBreaker: last,
+      recipes: [
+        recipe('eggs-4'),
         recipe('eggs-4-too', { groupId: 'other' }),
         recipe('eggs-2', { lines: [line({ quantity: 2 })] }),
       ],

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { addDays } from '../common/dates';
 import type { Executor } from '../database/database.types';
 import {
@@ -9,10 +9,11 @@ import {
   recipes,
 } from '../database/schema';
 import type { FillRecipe, FillSlot } from '../recipes/matching/plan-fill';
-import type {
-  ForecastBatch,
-  ForecastListEntry,
-  Mealtime,
+import {
+  MEALTIME_ORDER,
+  type ForecastBatch,
+  type ForecastListEntry,
+  type Mealtime,
 } from '../recipes/matching/plan-forecast';
 import { visibleTo } from '../recipes/recipe-view';
 import {
@@ -24,13 +25,13 @@ import {
 
 type PlanRow = typeof mealPlans.$inferSelect;
 
-const MEALTIMES: readonly Mealtime[] = ['breakfast', 'lunch', 'dinner'];
-
 /** Days before today whose slots still count for Fill's variety window. */
 const LOOKBACK_DAYS = 2;
 
 export type LoadedFill = {
   slots: FillSlot[];
+  /** Where each empty slot sits in its plan, by slot id. */
+  emptySlots: Map<string, { dayIndex: number; mealtime: Mealtime }>;
   recipes: FillRecipe[];
   eatingMomentIds: string[];
   batches: ForecastBatch[];
@@ -55,21 +56,25 @@ export async function loadFill(
     .select({ slot: mealPlanSlots, plan: mealPlans })
     .from(mealPlanSlots)
     .innerJoin(mealPlans, eq(mealPlans.id, mealPlanSlots.mealPlanId))
-    .where(eq(mealPlans.familyId, familyId));
-  const filled: FillSlot[] = rows
-    .map(({ slot, plan: owner }) => ({
-      id: slotKey(owner.id, slot.dayIndex, slot.mealtime),
-      date: addDays(owner.startDate, slot.dayIndex),
-      mealtime: slot.mealtime,
-      recipeId: slot.recipeId,
-      servings: slot.servings ?? owner.servings,
-    }))
-    .filter(({ date }) => date >= from);
+    .where(
+      and(
+        eq(mealPlans.familyId, familyId),
+        sql`${mealPlans.startDate} + ${mealPlanSlots.dayIndex} >= ${from}::date`,
+      ),
+    );
+  const filled: FillSlot[] = rows.map(({ slot, plan: owner }) => ({
+    id: slotKey(owner.id, slot.dayIndex, slot.mealtime),
+    date: addDays(owner.startDate, slot.dayIndex),
+    mealtime: slot.mealtime,
+    recipeId: slot.recipeId,
+    servings: slot.servings ?? owner.servings,
+  }));
 
   const taken = new Set(filled.map(({ id }) => id));
   const empty: FillSlot[] = [];
+  const emptySlots: LoadedFill['emptySlots'] = new Map();
   for (let dayIndex = 0; dayIndex < plan.days; dayIndex++) {
-    for (const mealtime of MEALTIMES) {
+    for (const mealtime of MEALTIME_ORDER) {
       const id = slotKey(plan.id, dayIndex, mealtime);
       if (taken.has(id)) continue;
       empty.push({
@@ -79,6 +84,7 @@ export async function loadFill(
         recipeId: null,
         servings: plan.servings,
       });
+      emptySlots.set(id, { dayIndex, mealtime });
     }
   }
 
@@ -129,6 +135,7 @@ export async function loadFill(
 
   return {
     slots: [...filled, ...empty],
+    emptySlots,
     recipes: recipeRows.map((recipe) => ({
       id: recipe.id,
       groupId: recipe.parentId ?? recipe.id,

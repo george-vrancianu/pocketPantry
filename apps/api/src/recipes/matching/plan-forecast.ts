@@ -13,7 +13,19 @@ import { toComparable, type Dimension, type Unit } from './units';
 
 export type Mealtime = (typeof mealtime.enumValues)[number];
 /** Breakfast, Lunch, Dinner: the order slots are used in within a day. */
-const MEALTIME_ORDER: readonly Mealtime[] = ['breakfast', 'lunch', 'dinner'];
+export const MEALTIME_ORDER: readonly Mealtime[] = [
+  'breakfast',
+  'lunch',
+  'dinner',
+];
+
+/** Orders anything with a date and a Mealtime the way slots are used: by date, then Mealtime. */
+export const compareSlotOrder = (
+  a: { date: string; mealtime: Mealtime },
+  b: { date: string; mealtime: Mealtime },
+): number =>
+  a.date.localeCompare(b.date) ||
+  MEALTIME_ORDER.indexOf(a.mealtime) - MEALTIME_ORDER.indexOf(b.mealtime);
 
 /** The unit a shortfall is reported in, one per dimension. */
 export type BaseUnit = 'g' | 'ml' | 'pcs';
@@ -188,11 +200,7 @@ export function stockLeft(input: ForecastInput): ForecastBatch[] {
 function run(input: ForecastInput) {
   const slots = input.slots
     .filter((slot) => slot.date >= input.today)
-    .sort(
-      (a, b) =>
-        a.date.localeCompare(b.date) ||
-        MEALTIME_ORDER.indexOf(a.mealtime) - MEALTIME_ORDER.indexOf(b.mealtime),
-    );
+    .sort(compareSlotOrder);
   const onList = new Set(input.shoppingList.map(keyOf));
   const stock = new Map<string, Stock[]>();
   for (const batch of input.batches) {
