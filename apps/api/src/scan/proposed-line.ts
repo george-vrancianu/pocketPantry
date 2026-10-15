@@ -1,6 +1,7 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ProductScanResult } from './product-scan.schemas';
+import { toPantryQuantityFromText } from './receipt-quantity';
 
 /**
  * One line a Scan proposes to the Review screen. Every Scan Mode returns lines
@@ -49,6 +50,13 @@ export function applyThreshold(
   };
 }
 
+/** The package net amount as a quantity and unit, converted onto the Pantry's units; both null when unsupported. */
+function packageQuantity(
+  result: Pick<ProductScanResult, 'netQuantity' | 'netUnit'>,
+): Pick<ProposedLine, 'quantity' | 'unit'> {
+  return toPantryQuantityFromText(result.netQuantity, result.netUnit);
+}
+
 /**
  * A Product Scan result as one proposed line. A Match whose confidence falls
  * below `threshold` is dropped, which makes the line Unmatched, as does having
@@ -64,8 +72,7 @@ export function productLine(
     name: result.fallbackIngredientName,
     sourceText: result.productName.slice(0, MAX_RAW_NAME),
     ...applyThreshold(match, result, threshold),
-    quantity: null,
-    unit: null,
+    ...packageQuantity(result),
     expiryDate: result.expiryDate,
     productDescription: result.productName,
   };

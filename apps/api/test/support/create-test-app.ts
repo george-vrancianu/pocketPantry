@@ -5,6 +5,10 @@ import { Test } from '@nestjs/testing';
 // Env comes from ./env.ts via jest setupFiles.
 import { StructuredOutputAiService } from '../../src/ai/structured-output-ai.service';
 import { AppModule } from '../../src/app.module';
+import {
+  OPEN_FOOD_FACTS_CLIENT,
+  type OpenFoodFactsClient,
+} from '../../src/barcode/open-food-facts.client';
 import { configureApp, MAX_REQUEST_BODY_BYTES } from '../../src/app.setup';
 import { serveWebApp } from '../../src/web-app';
 
@@ -17,12 +21,21 @@ export async function createTestApp(
   ai?: Pick<StructuredOutputAiService, 'generate'>,
   /** Built web app to serve alongside the API, as `WEB_DIST_DIR` does. */
   webDistDir?: string,
+  /** Stands in for the Open Food Facts client; no test reaches the real Open Food Facts. */
+  openFoodFacts?: OpenFoodFactsClient,
 ): Promise<NestFastifyApplication> {
   const builder = Test.createTestingModule({
     imports: [AppModule],
     controllers,
   });
   if (ai) builder.overrideProvider(StructuredOutputAiService).useValue(ai);
+  builder.overrideProvider(OPEN_FOOD_FACTS_CLIENT).useValue(
+    openFoodFacts ?? {
+      fetchProduct: () => {
+        throw new Error('This test did not provide an Open Food Facts client');
+      },
+    },
+  );
   const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter({ bodyLimit: MAX_REQUEST_BODY_BYTES }),

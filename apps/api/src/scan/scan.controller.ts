@@ -26,12 +26,12 @@ export class ScanController {
   @Post('product')
   @ApiOperation({
     summary:
-      'Product Scan: one proposed line (Match, Product Description, best-before date) for the Review screen. Images are forwarded, never stored.',
+      'Product Scan: one proposed line (Match, Product Description, quantity, best-before date) for the Review screen. The image is forwarded, never stored.',
   })
   product(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(scanQuery)) query: ScanQuery,
-    @Body(new ScanImagePipe(productScanSchema, ['productImage', 'expiryImage']))
+    @Body(new ScanImagePipe(productScanSchema, ['productImage']))
     body: ProductScanInput,
   ): Promise<ScanResponse> {
     return this.scan.scanProduct(

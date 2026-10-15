@@ -5,7 +5,7 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { RowStatus } from '../../../lib/review';
+import type { RowStatus } from '../lib/review';
 
 /** The row's status as an icon whose shape differs per status, so colour is never the only signal. */
 export function StatusIcon({ status }: { status: RowStatus }) {

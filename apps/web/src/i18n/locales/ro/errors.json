@@ -35,7 +35,8 @@
     "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
     "result_invalid": "Nu am putut citi fotografia. Încearcă una mai clară.",
     "plate_token_invalid": "Lista de preparate a expirat. Citește-o din nou.",
-    "not_configured": "Scanarea nu este încă configurată pe acest server."
+    "not_configured": "Scanarea nu este încă configurată pe acest server.",
+    "product_not_found": "Nu am putut citi un produs din poză. Completează formularul manual sau încearcă din nou."
   },
   "shopping": {
     "item_not_found": "Nu am găsit acel articol în listă.",
@@ -133,6 +134,9 @@
     "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă.",
     "allergen_not_found": "Acest alergen nu mai există.",
     "family_allergy_not_found": "Această alergie a familiei nu mai este în listă. Poate a șters-o deja altcineva."
+  },
+  "barcode": {
+    "provider_unavailable": "Căutarea codului de bare nu este disponibilă acum. Încearcă din nou sau completează formularul manual."
   },
   "meal_plan": {
     "cap_reached": "Familia ta poate avea {{cap}} planuri de mese. Șterge unul ca să faci loc.",
