@@ -21,6 +21,7 @@ import { recipeTitles } from '../recipes/recipe-view';
 import {
   forecastPlan,
   missingItems,
+  type DayForecast,
   type Forecast,
   type ForecastBatch,
   type ForecastLine,
@@ -58,8 +59,10 @@ export type LoadedForecast = {
   forecast: Forecast;
   /** The forecast's slots from today to `through`, by `slotKey`, ready to send. */
   slots: Map<string, WindowSlotView>;
-  /** What Add missing would add for those slots. */
+  /** What Add missing would add for all of those slots. */
   missing: MissingItemView[];
+  /** What Add missing would add for just these days (a slice of `forecast.days`). */
+  missingOf: (days: readonly DayForecast[]) => MissingItemView[];
 };
 
 /**
@@ -200,14 +203,21 @@ export async function loadForecast(
       })),
     });
   }
-  const missing = missingItems(forecast.days).map((item): MissingItemView => ({
-    ingredientId: item.ingredientId,
-    name: nameOf(item.ingredientId, item.name),
-    quantity: item.quantity,
-    unit: item.unit,
-    recipeIds: item.recipeIds,
-  }));
-  return { plans, forecast, slots: views, missing };
+  const missingOf = (days: readonly DayForecast[]) =>
+    missingItems(days).map((item): MissingItemView => ({
+      ingredientId: item.ingredientId,
+      name: nameOf(item.ingredientId, item.name),
+      quantity: item.quantity,
+      unit: item.unit,
+      recipeIds: item.recipeIds,
+    }));
+  return {
+    plans,
+    forecast,
+    slots: views,
+    missing: missingOf(forecast.days),
+    missingOf,
+  };
 }
 
 /** The slot fields a plan read shares with the window. */
