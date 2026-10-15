@@ -18,6 +18,7 @@ import {
 import { useToday } from '../../lib/useToday';
 import { ExpiryTag } from '../ExpiryTag';
 import { ExpiryCalendar, type ExpiryCalendarHandle } from './ExpiryCalendar';
+import type { DateRange } from './calendarMonths';
 import { QuickPicks } from './QuickPicks';
 
 export type ExpirySheetProps = {
@@ -36,6 +37,8 @@ export type ExpirySheetProps = {
   context: string;
   /** The title and the dialog's name, e.g. "Expires". */
   title: string;
+  /** Limits the days to choose from and drops what only makes sense for an expiry: quick picks, the tag and No expiry. */
+  range?: DateRange;
 };
 
 /**
@@ -51,6 +54,7 @@ export function ExpirySheet({
   usualDays,
   context,
   title,
+  range,
 }: ExpirySheetProps) {
   const { t, i18n } = useTranslation('pantry');
   const quickPicks = useRef<HTMLDivElement>(null);
@@ -85,22 +89,24 @@ export function ExpirySheet({
                 ? null
                 : dateAndRelativeDay(value, today, i18n.language)
             }
-            tag={tagFor(value)}
+            tag={range ? null : tagFor(value)}
           />
         </Box>
       }
       footer={
         <Stack direction="row" spacing={1.25} sx={{ px: 3, py: 1.5 }}>
-          <Button
-            type="button"
-            variant="ghost"
-            aria-pressed={value === null}
-            startIcon={<CloseIcon size={16} strokeWidth={2.4} />}
-            onClick={() => onChange(null)}
-            sx={{ flex: 'none', whiteSpace: 'nowrap' }}
-          >
-            {t('picker.clear')}
-          </Button>
+          {range ? null : (
+            <Button
+              type="button"
+              variant="ghost"
+              aria-pressed={value === null}
+              startIcon={<CloseIcon size={16} strokeWidth={2.4} />}
+              onClick={() => onChange(null)}
+              sx={{ flex: 'none', whiteSpace: 'nowrap' }}
+            >
+              {t('picker.clear')}
+            </Button>
+          )}
           <Button type="button" onClick={onClose} sx={{ flex: 1 }}>
             {t('picker.done')}
           </Button>
@@ -114,6 +120,7 @@ export function ExpirySheet({
         usualDays={usualDays}
         today={today}
         staleThresholdDays={staleThresholdDays}
+        range={range}
       />
     </Sheet>
   );
@@ -127,7 +134,8 @@ function SheetBody({
   usualDays,
   today,
   staleThresholdDays,
-}: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays'> & {
+  range,
+}: Pick<ExpirySheetProps, 'value' | 'onChange' | 'usualDays' | 'range'> & {
   quickPicks: Ref<HTMLDivElement>;
   today: Date;
   staleThresholdDays: number;
@@ -135,16 +143,18 @@ function SheetBody({
   const calendar = useRef<ExpiryCalendarHandle>(null);
   return (
     <Box sx={{ px: 3, pt: 0.5, pb: 2 }}>
-      <QuickPicks
-        ref={quickPicks}
-        value={value}
-        usualDays={usualDays}
-        today={today}
-        onPick={(iso) => {
-          onChange(iso);
-          calendar.current?.scrollToMonth(iso, true);
-        }}
-      />
+      {range ? null : (
+        <QuickPicks
+          ref={quickPicks}
+          value={value}
+          usualDays={usualDays}
+          today={today}
+          onPick={(iso) => {
+            onChange(iso);
+            calendar.current?.scrollToMonth(iso, true);
+          }}
+        />
+      )}
       <ExpiryCalendar
         ref={calendar}
         value={value}
@@ -152,6 +162,7 @@ function SheetBody({
         today={today}
         usualDays={usualDays}
         staleThresholdDays={staleThresholdDays}
+        range={range}
       />
     </Box>
   );
@@ -164,7 +175,7 @@ function Readout({
 }: {
   /** The chosen date and how far away it is; null for no expiry. */
   text: { date: string; relative: string } | null;
-  tag: ExpiryTagState;
+  tag: ExpiryTagState | null;
 }) {
   const { t } = useTranslation('pantry');
   return (
@@ -211,7 +222,7 @@ function Readout({
         </Box>
       )}
       {/* "No expiry date" beside it already says it. */}
-      <ExpiryTag tag={tag} decorative={text === null} />
+      {tag ? <ExpiryTag tag={tag} decorative={text === null} /> : null}
     </Box>
   );
 }

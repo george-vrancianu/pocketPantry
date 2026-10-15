@@ -5,7 +5,6 @@ import {
   CalendarIcon,
   Box,
   ChevronRightIcon,
-  CheckIcon,
   CloseIcon,
   displayType,
   DOCK_BOTTOM,
@@ -14,7 +13,6 @@ import {
   IconButton,
   PlusIcon,
   radius,
-  ShoppingIcon,
   shadow,
   border,
   Tag,
@@ -22,7 +20,6 @@ import {
   usePrefersReducedMotion,
   useBreakpointUp,
 } from '@pocket-pantry/ui';
-import type { TFunction } from 'i18next';
 import {
   useCallback,
   useId,
@@ -33,11 +30,11 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { keyframesSx } from '../../lib/keyframesSx';
 import {
   dayMissing,
   slotsInOrder,
-  unlistedShortCount,
   type AddMissingScope,
   type PlanIssue,
   type WindowDay,
@@ -45,12 +42,13 @@ import {
 } from '../../lib/mealPlan';
 import type { IsoDate } from '../../lib/pantry';
 import {
-  baseAmount,
   dayTitle,
   fullDate,
+  issueDetail,
   longWeekday,
   reasonText,
 } from './mealPlanText';
+import { statusMark } from './statusMark';
 import { plainAction } from './plainAction';
 
 /** Widest the popover grows, px. */
@@ -107,33 +105,6 @@ const ghostButton = {
   ...focusRing,
 } as const;
 
-const statusMark = (slot: WindowSlot, t: TFunction<'dashboard'>) => {
-  switch (slot.status) {
-    case 'covered':
-      return (
-        <Tag tone="accent" icon={<CheckIcon size={12} strokeWidth={3} />}>
-          {t('mealPlan.status.covered')}
-        </Tag>
-      );
-    case 'onList':
-      return (
-        <Tag tone="soon" icon={<ShoppingIcon size={12} strokeWidth={2.4} />}>
-          {t('mealPlan.status.onList')}
-        </Tag>
-      );
-    case 'short':
-      return (
-        <Tag tone="urgent">
-          {t('mealPlan.status.short', {
-            count: Math.max(1, unlistedShortCount(slot)),
-          })}
-        </Tag>
-      );
-    case 'unavailable':
-      return <Tag tone="neutral">{t('mealPlan.status.unavailable')}</Tag>;
-  }
-};
-
 function IssueLine({
   issue,
   today,
@@ -148,22 +119,7 @@ function IssueLine({
   const { t, i18n } = useTranslation('dashboard');
   const language = i18n.language;
   const uncertain = issue.kind === 'uncertain';
-  const amount =
-    issue.quantity === null
-      ? null
-      : baseAmount(t, language, issue.quantity, issue.unit);
-  const detail = uncertain
-    ? t('mealPlan.line.unknown')
-    : amount === null
-      ? null
-      : t(
-          issue.kind === 'missing'
-            ? 'mealPlan.line.need'
-            : 'mealPlan.line.short',
-          {
-            amount,
-          },
-        );
+  const detail = issueDetail(t, language, issue);
   const reason = uncertain ? null : reasonText(t, language, issue, today);
   return (
     <Box
@@ -369,8 +325,7 @@ function MealBlock({
 
 /**
  * A day's meals in a non-modal dialog anchored under (or, near the Dock, above) its column, with ‹ › to step
- * through the planned days. The page it would link to does not exist yet, so "Edit day", "Plan a meal" and
- * "Start a plan" are plain text.
+ * through the planned days. "Edit day", "Plan a meal" and "Start a plan" link to the Meal Plan page.
  */
 export function MealPlanPopover({
   days,
@@ -657,7 +612,15 @@ export function MealPlanPopover({
                 day: longWeekday(language, day.date),
               })}
             </span>
-            <Box component="span" sx={plainAction}>
+            <Box
+              component={Link}
+              to={
+                day.planId
+                  ? `/meal-plans/${day.planId}?day=${day.date}`
+                  : `/meal-plans/new?start=${day.date}`
+              }
+              sx={plainAction}
+            >
               {t(day.planId ? 'mealPlan.planMeal' : 'mealPlan.startPlan')}
             </Box>
           </Box>
@@ -686,7 +649,11 @@ export function MealPlanPopover({
               {t('mealPlan.addNMissing', { count: missing.length })}
             </Button>
           ) : null}
-          <Box component="span" sx={plainAction}>
+          <Box
+            component={Link}
+            to={`/meal-plans/${day.planId ?? day.slots[0]?.planId}?day=${day.date}`}
+            sx={plainAction}
+          >
             <CalendarIcon size={14} />
             {t('mealPlan.editDay')}
           </Box>

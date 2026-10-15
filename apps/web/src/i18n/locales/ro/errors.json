@@ -128,5 +128,17 @@
   "family_synonyms": {
     "not_found": "Sinonimul nu mai este în coadă. Poate l-a adăugat deja altcineva.",
     "shared_name_exists": "Numele este deja folosit de un alt ingredient."
+  },
+  "meal_plan": {
+    "cap_reached": "Familia ta poate avea {{cap}} planuri de mese. Șterge unul ca să faci loc.",
+    "overlap": "Aceste date se suprapun cu {{other}} ({{dates}}). Alege alte date.",
+    "overlapUnnamed": "Aceste date se suprapun cu {{dates}}. Alege alte date.",
+    "start_date_in_past": "Un plan nu poate începe înainte de azi.",
+    "start_date_too_far": "Un plan poate începe cel mult peste 14 zile.",
+    "day_in_past": "Ziua aceea a trecut și nu poate fi schimbată.",
+    "already_started": "Un plan început nu poate fi mutat.",
+    "day_out_of_range": "Ziua aceea nu face parte din plan.",
+    "not_found": "Planul de mese nu mai există.",
+    "recipe_not_found": "Rețeta nu a fost găsită."
   }
 }

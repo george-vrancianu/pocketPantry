@@ -108,8 +108,8 @@ export type AddMissingScope =
   | { scope: 'window' }
   | { scope: 'plan'; planId: string }
   | { scope: 'date'; date: IsoDate }
-  | { scope: 'ingredient'; ingredientId: string }
-  | { scope: 'ingredient'; name: string };
+  | { scope: 'ingredient'; ingredientId: string; planId?: string }
+  | { scope: 'ingredient'; name: string; planId?: string };
 
 /** Mirror of the API's `AddedMissingView`: the Shopping Items created (Undo deletes them) and how many Ingredients were added. */
 export type AddedMissing = { createdIds: string[]; count: number };
@@ -124,7 +124,9 @@ const isAddable = (issue: PlanIssue) =>
   issue.kind !== 'uncertain' && !issue.onList;
 
 /** The Ingredients of a day that Add missing for that day would add. */
-export function dayMissing(day: WindowDay): PlanIssue[] {
+export function dayMissing(day: {
+  slots: Pick<WindowSlot, 'status' | 'issues'>[];
+}): PlanIssue[] {
   const byKey = new Map<string, PlanIssue>();
   for (const slot of day.slots) {
     if (slot.status === 'unavailable') continue;
@@ -152,6 +154,8 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     if (add.scope === 'date') return day.date === add.date;
     // The Widget never sends a plan scope; it covers the same days as the window it shows.
     if (add.scope === 'plan') return day.planId === add.planId;
+    // An Ingredient scope with a plan covers that plan's days only.
+    if (add.planId && day.planId !== add.planId) return false;
     return 'ingredientId' in add
       ? issue.ingredientId === add.ingredientId
       : issue.ingredientId === null &&
@@ -264,7 +268,7 @@ export function slotsInOrder(day: WindowDay): WindowSlot[] {
 }
 
 /** How many short ingredients a slot lists that are not on the Shopping List yet. */
-export function unlistedShortCount(slot: WindowSlot): number {
+export function unlistedShortCount(slot: Pick<WindowSlot, 'issues'>): number {
   return slot.issues.filter(
     (issue) => issue.kind !== 'uncertain' && !issue.onList,
   ).length;

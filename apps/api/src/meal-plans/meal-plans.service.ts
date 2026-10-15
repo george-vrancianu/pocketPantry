@@ -191,7 +191,8 @@ export class MealPlansService {
    * What an Add missing scope covers: the last date to forecast to, which slots
    * count and which issues count. The ingredient scope adds the window-wide
    * total for that Ingredient (not one day's amount), as the Widget's per-line +
-   * deliberately does.
+   * deliberately does. With a `planId` it covers that plan's days from
+   * today on instead (beyond the window).
    */
   private async addScope(
     familyId: string,
@@ -229,11 +230,16 @@ export class MealPlansService {
           keepIssue: everything,
         };
       case 'ingredient': {
-        const { ingredientId, name } = body;
+        const { ingredientId, name, planId } = body;
         const wanted = normalizeName(name ?? '');
+        const plan = planId
+          ? await this.findPlan(this.database, familyId, planId)
+          : null;
         return {
-          through: windowEnd,
-          keepSlot: everything,
+          through: plan ? planEnd(plan) : windowEnd,
+          keepSlot: plan
+            ? (_date, slotId) => slotId.startsWith(`${plan.id}:`)
+            : everything,
           keepIssue: (issue) =>
             ingredientId
               ? issue.ingredientId === ingredientId

@@ -16,6 +16,7 @@ import {
 } from '../../lib/pantry';
 import { useToday } from '../../lib/useToday';
 import { ExpiryTag } from '../ExpiryTag';
+import type { DateRange } from './calendarMonths';
 import { ExpirySheet } from './ExpirySheet';
 
 export type ExpiryFieldProps = {
@@ -31,6 +32,8 @@ export type ExpiryFieldProps = {
   usualDays: number | null;
   /** The sheet's context line, e.g. "Greek yogurt · 500 g · Fridge". */
   context: string;
+  /** Limits the days to choose from; the field then has no tag and no No expiry (a start date, say). */
+  range?: DateRange;
 };
 
 /**
@@ -44,6 +47,7 @@ export function ExpiryField({
   onChange,
   usualDays,
   context,
+  range,
 }: ExpiryFieldProps) {
   const { t, i18n } = useTranslation('pantry');
   const fallbackId = useId();
@@ -145,7 +149,7 @@ export function ExpiryField({
             {shown === null ? t('picker.tapToSet') : shown.relative}
           </Box>
         </Box>
-        {value === null ? null : <ExpiryTag tag={tagFor(value)} />}
+        {value === null || range ? null : <ExpiryTag tag={tagFor(value)} />}
         <ChevronRightIcon
           size={18}
           color={color.muted}
@@ -162,6 +166,7 @@ export function ExpiryField({
         usualDays={usualDays}
         context={context}
         title={label}
+        range={range}
       />
     </Box>
   );

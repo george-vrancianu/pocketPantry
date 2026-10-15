@@ -50,10 +50,12 @@ export class RecipeBrowseService {
     const familyId = await this.settings.familyIdOf(memberId);
     const { locale } = query;
     const needle = normalizeName(query.search ?? '');
-    const filtering =
+    // Search and filters list Variants beside bases; so does asking for them outright.
+    const listsVariants =
       needle !== '' ||
       query.cuisineId !== undefined ||
-      query.methodId !== undefined;
+      query.methodId !== undefined ||
+      query.includeVariants === 'true';
 
     const rows = await this.database
       .select()
@@ -62,7 +64,7 @@ export class RecipeBrowseService {
         and(
           visibleTo(familyId),
           isNull(recipes.archivedAt),
-          filtering ? undefined : isNull(recipes.parentId),
+          listsVariants ? undefined : isNull(recipes.parentId),
           query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
           query.methodId ? eq(recipes.methodId, query.methodId) : undefined,
         ),

@@ -15,6 +15,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import {
   BAR_FILL,
   BAR_RADIUS,
@@ -227,12 +228,14 @@ export function MealPlanWidget({ columns }: WidgetProps) {
           }}
         >
           <Box
-            component="span"
+            component={Link}
+            to={view?.plan ? `/meal-plans/${view.plan.id}` : '/meal-plans'}
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               minWidth: 0,
+              textDecoration: 'none',
               fontSize: 11.5,
               fontWeight: 700,
               letterSpacing: '.07em',
@@ -494,7 +497,11 @@ export function MealPlanWidget({ columns }: WidgetProps) {
             ) : (
               <>
                 <span>{t('mealPlan.nothingThisWeek')}</span>
-                <Box component="span" sx={plainAction}>
+                <Box
+                  component={Link}
+                  to={`/meal-plans/new?start=${todayIso}`}
+                  sx={plainAction}
+                >
                   {t('mealPlan.planWeek')}
                 </Box>
               </>

@@ -1,0 +1,84 @@
+{
+  "title": "Meal plans",
+  "newPlan": "New plan",
+  "editPlan": "Edit plan",
+  "back": "Back to Meal plans",
+  "empty": "No Meal plans yet.",
+  "emptyHint": "Start one to plan a few days of meals.",
+  "dayCount_one": "{{count}} day",
+  "dayCount_other": "{{count}} days",
+  "servings_one": "{{count}} Serving",
+  "servings_other": "{{count}} Servings",
+  "phase": {
+    "past": "Past",
+    "current": "Current",
+    "upcoming": "Upcoming"
+  },
+  "mealtime": {
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner"
+  },
+  "form": {
+    "createHeading": "New Meal plan",
+    "editHeading": "Edit Meal plan",
+    "name": "Name (optional)",
+    "namePlaceholder": "The dates are used if left empty",
+    "starts": "Starts",
+    "startContext": "Today to {{date}}",
+    "days": "Days",
+    "fewerDays": "Fewer days",
+    "moreDays": "More days",
+    "daysValue_one": "{{count}} day",
+    "daysValue_other": "{{count}} days",
+    "servings": "Servings",
+    "create": "Create plan",
+    "creating": "Creating…",
+    "shorten_one": "Shortening to {{days}} days removes {{count}} planned Recipe. Continue?",
+    "shorten_other": "Shortening to {{days}} days removes {{count}} planned Recipes. Continue?",
+    "startLocked": "This plan has already begun, so its start date can't change."
+  },
+  "summary": {
+    "short_one": "{{count}} slot short from {{day}}",
+    "short_other": "{{count}} slots short from {{day}}",
+    "coveredOnceYouShop": "Covered once you shop",
+    "allCovered": "All covered",
+    "none": "Nothing planned yet"
+  },
+  "day": {
+    "today": "Today",
+    "addMissing": "Add {{count}} missing",
+    "addMissingLabel": "Add missing for {{day}}",
+    "past": "Past day"
+  },
+  "slot": {
+    "add": "Add",
+    "addLabel": "Add {{mealtime}} on {{day}}",
+    "open": "{{mealtime}} on {{day}}: {{title}}",
+    "empty": "Nothing planned"
+  },
+  "fill": {
+    "button": "Fill",
+    "onlyWhatIHave": "Only what I have",
+    "filling": "Filling…"
+  },
+  "addMissing": {
+    "plan": "Add {{count}} missing"
+  },
+  "detail": {
+    "servings": "Servings for this meal",
+    "changeRecipe": "Change Recipe",
+    "clear": "Clear",
+    "done": "Done",
+    "nothingShort": "Everything for this meal is covered.",
+    "unavailable": "This Recipe is no longer available.",
+    "lines": "Ingredients to check",
+    "uncertain": "Can't tell",
+    "uncertainNote": "Your Pantry has no quantity for it",
+    "addLine": "Add {{name}} to the Shopping List"
+  },
+  "picker": {
+    "title": "Choose a Recipe",
+    "for": "{{mealtime}} on {{day}}"
+  }
+}

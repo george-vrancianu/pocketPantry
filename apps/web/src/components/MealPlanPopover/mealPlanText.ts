@@ -5,7 +5,9 @@ import {
   type BaseUnit,
   type PlanIssue,
   type ReasonMeal,
+  type SlotStatus,
   type WindowDay,
+  unlistedShortCount,
 } from '../../lib/mealPlan';
 import { fromIso, type IsoDate } from '../../lib/pantry';
 
@@ -31,6 +33,21 @@ export const shortWeekday = (language: string, iso: IsoDate) =>
 
 export const longWeekday = (language: string, iso: IsoDate) =>
   format(language, iso, { weekday: 'long' });
+
+/** "Fri 16 Oct". */
+export const dayLabel = (language: string, iso: IsoDate) =>
+  format(language, iso, { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** A slot's forecast status in words: "Covered", "On list", "2 short", "No longer available". */
+export const statusLabel = (
+  t: T,
+  slot: { status: SlotStatus; issues: PlanIssue[] },
+): string =>
+  slot.status === 'short'
+    ? t('mealPlan.status.short', {
+        count: Math.max(1, unlistedShortCount(slot)),
+      })
+    : t(`mealPlan.status.${slot.status}`);
 
 const dayNumber = (iso: IsoDate) => {
   const [y, m, d] = iso.split('-').map(Number);
@@ -70,15 +87,39 @@ export function baseAmount(
   quantity: number,
   unit: BaseUnit | null,
 ): string {
-  if (unit === 'g' && quantity >= 1000) {
-    return formatAmount(quantity / 1000, 'kg', language, t as TFunction);
-  }
-  if (unit === 'ml' && quantity >= 1000) {
-    return formatAmount(quantity / 1000, 'l', language, t as TFunction);
-  }
-  return unit
-    ? formatAmount(quantity, unit as Unit, language, t as TFunction)
-    : new Intl.NumberFormat(language).format(quantity);
+  const shown = readableAmount(quantity, unit);
+  return shown.unit
+    ? formatAmount(shown.quantity, shown.unit, language, t as TFunction)
+    : new Intl.NumberFormat(language).format(shown.quantity);
+}
+
+/** A base amount as it reads best: 1500 g as 1.5 kg, 2000 ml as 2 l, anything else as it is. */
+export function readableAmount(
+  quantity: number,
+  unit: BaseUnit | null,
+): { quantity: number; unit: Unit | null } {
+  if (unit === 'g' && quantity >= 1000)
+    return { quantity: quantity / 1000, unit: 'kg' };
+  if (unit === 'ml' && quantity >= 1000)
+    return { quantity: quantity / 1000, unit: 'l' };
+  return { quantity, unit: unit as Unit | null };
+}
+
+/**
+ * The amount part of an issue line: "need 600 g" for a missing Ingredient, "short 1.5 kg" for a
+ * short one (amounts normalised to kg / l), "amount unknown" for an uncertain one, null with no quantity.
+ */
+export function issueDetail(
+  t: T,
+  language: string,
+  issue: PlanIssue,
+): string | null {
+  if (issue.kind === 'uncertain') return t('mealPlan.line.unknown');
+  if (issue.quantity === null) return null;
+  return t(
+    issue.kind === 'missing' ? 'mealPlan.line.need' : 'mealPlan.line.short',
+    { amount: baseAmount(t, language, issue.quantity, issue.unit) },
+  );
 }
 
 /** The accessible name of a day column: "Saturday 17 October: 2 meals, short". */

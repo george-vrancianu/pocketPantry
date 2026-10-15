@@ -159,30 +159,48 @@ export const isFiltering = (browse: RecipeBrowse) =>
 export function useRecipes(
   browse: RecipeBrowse,
   locale: string,
-  { searchOnly = false }: { searchOnly?: boolean } = {},
+  {
+    searchOnly = false,
+    includeVariants = false,
+    enabled = true,
+  }: {
+    searchOnly?: boolean;
+    includeVariants?: boolean;
+    enabled?: boolean;
+  } = {},
 ) {
   const search = useDebounced(browse.search.trim(), 300);
   const { cuisineId, methodId } = browse;
   return useQuery({
-    queryKey: [...recipesQueryKey, 'list', locale, search, cuisineId, methodId],
+    queryKey: [
+      ...recipesQueryKey,
+      'list',
+      locale,
+      search,
+      cuisineId,
+      methodId,
+      ...(includeVariants ? ['variants'] : []),
+    ],
     queryFn: () => {
       const params = new URLSearchParams({ locale });
       if (search) params.set('search', search);
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
+      if (includeVariants) params.set('includeVariants', 'true');
       return apiRequest<{ recipes: RecipeListItem[] }>(
         `/recipes?${params}`,
       ).then((body) => body.recipes);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).
-    enabled: !searchOnly || search !== '',
+    enabled: enabled && (!searchOnly || search !== ''),
     placeholderData: keepPreviousData,
   });
 }
 
 /** Cuisines and Methods for the filter pickers, named in `locale`. */
-export function useRecipeFilters(locale: string) {
+export function useRecipeFilters(locale: string, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: [...recipesQueryKey, 'filters', locale],
     queryFn: () =>
       apiRequest<RecipeFilterOptions>(
