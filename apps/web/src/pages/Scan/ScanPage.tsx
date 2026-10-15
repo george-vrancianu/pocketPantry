@@ -53,6 +53,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
+  const scanRef = useRef<(() => void) | null>(null);
   const closeInfo = useCallback(() => setInfoOpen(false), []);
 
   return (
@@ -101,6 +102,7 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
+        scanRef={scanRef}
       />
       <SessionStrip scans={screen.scans} onRetry={screen.retryScan} />
 
@@ -280,6 +282,11 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
           keysDisabled={screen.modesDisabled || infoOpen || screen.reading}
           dragEndedAt={dragEndedAt}
           onChange={screen.setMode}
+          onScan={() => scanRef.current?.()}
+          scanDisabled={
+            screen.controlsDisabled || screen.camera.status !== 'ready'
+          }
+          focusForScan={screen.camera.focusForScan}
         />
       </Box>
 
