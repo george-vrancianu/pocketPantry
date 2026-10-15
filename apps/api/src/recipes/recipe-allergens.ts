@@ -276,19 +276,26 @@ export async function loadFillBlockedRecipes(
   return (await deriveBatch(executor, scope, recipeIds, allergies)).blocksFill;
 }
 
+/** What `deriveBatch` found: raw warnings, the hidden and Fill-blocked ids, and the Allergen list. */
+type DerivedBatch = {
+  warnings: Map<string, AllergyWarning>;
+  hidden: Set<string>;
+  blocksFill: Set<string>;
+  allergenRows: { id: string; name: string }[];
+};
+
 /** Lines and Allergen tags of many Recipes in a fixed number of queries, each run through `deriveAllergens`. */
 async function deriveBatch(
   executor: Executor,
   scope: CatalogScope,
   recipeIds: readonly string[],
   allergies: readonly AllergyInput[],
-) {
+): Promise<DerivedBatch> {
   const warnings = new Map<string, AllergyWarning>();
   const hidden = new Set<string>();
   const blocksFill = new Set<string>();
-  const allergenRows: { id: string; name: string }[] = [];
   if (allergies.length === 0 || recipeIds.length === 0) {
-    return { warnings, hidden, blocksFill, allergenRows };
+    return { warnings, hidden, blocksFill, allergenRows: [] };
   }
   const lineRows = await executor
     .select({
@@ -298,14 +305,13 @@ async function deriveBatch(
       optional: recipeIngredientLines.optional,
     })
     .from(recipeIngredientLines)
-    .where(inArray(recipeIngredientLines.recipeId, recipeIds as string[]))
+    .where(inArray(recipeIngredientLines.recipeId, [...recipeIds]))
     .orderBy(asc(recipeIngredientLines.position));
-  const [allergenDataOf, allergenList] = await Promise.all([
+  const [allergenDataOf, allergenRows] = await Promise.all([
     loadIngredientAllergenData(executor, scope, lineRows),
     loadAllergenList(executor),
   ]);
-  allergenRows.push(...allergenList);
-  const allergenOrder = allergenList.map((row) => row.id);
+  const allergenOrder = allergenRows.map((row) => row.id);
   const linesOf = new Map<string, AllergenLine[]>();
   for (const row of lineRows) {
     linesOf.set(row.recipeId, [

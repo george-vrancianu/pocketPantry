@@ -133,11 +133,15 @@ export class MealPlansService {
           plans.find(
             (plan) => plan.startDate <= day.date && planEnd(plan) >= day.date,
           )?.id ?? null,
-        slots: day.slots.flatMap((slot) => {
+        slots: day.slots.map((slot) => {
           const view = slots.get(slot.id);
-          return view
-            ? [{ ...view, allergyWarning: warnings.get(view.recipeId) ?? null }]
-            : [];
+          if (!view) {
+            throw new Error(`Plan Slot ${slot.id} has no forecast view`);
+          }
+          return {
+            ...view,
+            allergyWarning: warnings.get(view.recipeId) ?? null,
+          };
         }),
       })),
       tag: forecast.tag,
