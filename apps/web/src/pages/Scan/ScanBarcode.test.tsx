@@ -266,6 +266,110 @@ describe('Barcode on the Scan page', () => {
       expect(thumbnails()).toHaveLength(3);
     });
 
+    describe('the cooldown', () => {
+      const vibrate = vi.fn(() => true);
+      beforeEach(() => {
+        vibrate.mockClear();
+        Object.defineProperty(navigator, 'vibrate', {
+          value: vibrate,
+          configurable: true,
+        });
+      });
+      afterEach(() => {
+        vi.useRealTimers();
+        Reflect.deleteProperty(navigator, 'vibrate');
+      });
+      const announced = () =>
+        screen
+          .getAllByRole('status')
+          .map((region) => region.textContent)
+          .join(' ');
+      /** Time passes, then the camera sees `code` (the watch has re-armed by then). */
+      const seeAfter = async (ms: number, code: string) => {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(ms);
+        });
+        expect(camera.listener).not.toBeNull();
+        await act(async () => {
+          camera.listener?.(code);
+          await vi.advanceTimersByTimeAsync(0);
+        });
+      };
+      const startWatching = async () => {
+        renderScan('/scan?mode=barcode');
+        await waitFor(() => expect(camera.listener).not.toBeNull());
+        vi.useFakeTimers();
+      };
+
+      it('adds one card however long the same code is held, every sighting restarting the 1.5 s', async () => {
+        await startWatching();
+        await seeAfter(0, A);
+        // Seen every 1.4 s for 7 s: no gap reaches 1.5 s, so it is never taken again.
+        for (let i = 0; i < 5; i++) await seeAfter(1400, A);
+        expect(thumbnails()).toHaveLength(1);
+        expect(vibrate).toHaveBeenCalledTimes(1);
+      });
+
+      it('takes the same code again once 1.5 s pass without it being seen', async () => {
+        await startWatching();
+        await seeAfter(0, A);
+        await seeAfter(1499, A);
+        expect(thumbnails()).toHaveLength(1);
+        await seeAfter(1500, A);
+        expect(thumbnails()).toHaveLength(2);
+      });
+
+      it('takes the same code again right after a different code was accepted', async () => {
+        await startWatching();
+        await seeAfter(0, A);
+        await seeAfter(SCAN_INTERVAL_MS, B);
+        await seeAfter(SCAN_INTERVAL_MS, A);
+        expect(thumbnails()).toHaveLength(3);
+      });
+
+      it('vibrates briefly and announces each accepted read, but not ignored sightings', async () => {
+        await startWatching();
+        await seeAfter(0, A);
+        expect(vibrate).toHaveBeenCalledTimes(1);
+        expect(vibrate.mock.calls[0]).toEqual([expect.any(Number)]);
+        expect(announced()).toContain('Barcode 1 added');
+
+        await seeAfter(SCAN_INTERVAL_MS, A);
+        expect(vibrate).toHaveBeenCalledTimes(1);
+        expect(announced()).toContain('Barcode 1 added');
+        expect(announced()).not.toContain('Barcode 2');
+
+        await seeAfter(1500, A);
+        expect(vibrate).toHaveBeenCalledTimes(2);
+        expect(announced()).toContain('Barcode 2 added');
+      });
+
+      it('counts the Session cards when the screen is opened again, and announces nothing until a read', async () => {
+        const first = renderScan('/scan?mode=barcode');
+        await decode(A);
+        await decode(B);
+        first.unmount();
+        renderScan('/scan?mode=barcode');
+        expect(announced()).not.toMatch(/Barcode \d+ added/);
+        await decode(A);
+        expect(announced()).toContain('Barcode 3 added');
+        expect(announced()).not.toContain('Barcode 1 added');
+      });
+
+      it('does not vibrate or announce a read refused by the Session limit', async () => {
+        await startWatching();
+        for (let i = 0; i < 20; i++)
+          await seeAfter(SCAN_INTERVAL_MS, `59400000000${10 + i}`);
+        expect(thumbnails()).toHaveLength(20);
+        vibrate.mockClear();
+        await seeAfter(SCAN_INTERVAL_MS, B);
+        expect(thumbnails()).toHaveLength(20);
+        expect(vibrate).not.toHaveBeenCalled();
+        expect(announced()).toContain('Barcode 20 added');
+        expect(announced()).not.toContain('Barcode 21');
+      });
+    });
+
     it('does not take a Scan when the guide is double-tapped', async () => {
       renderScan('/scan?mode=barcode');
       scanViaGuide();
