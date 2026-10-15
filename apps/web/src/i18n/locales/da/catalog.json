@@ -59,6 +59,17 @@
     "pick": "Vælg {{name}}",
     "exists": "“{{name}}” findes allerede i kataloget.",
     "failed": "Kunne ikke tilføje den. Tjek din forbindelse, og prøv igen.",
-    "added": "Tilføjede {{name}} til din families katalog · {{category}}"
+    "added": "Tilføjede {{name}} til din families katalog · {{category}}",
+    "modeNew": "Ny ingrediens",
+    "modeAlias": "Et andet navn for…",
+    "modes": "Sådan tilføjer du den",
+    "sameAs": "“{{name}}” er det samme som",
+    "aliasHint": "Din familie vil se dette navn i søgning, scanninger og kvitteringer, og det vil betyde den ingrediens.",
+    "aliasSearch": "Søg i kataloget",
+    "aliasNoMatch": "Ingen ingredienser matcher.",
+    "changeIngredient": "Skift ingrediens",
+    "link": "Kobl og vælg",
+    "linked": "“{{name}}” betyder nu {{ingredient}} for din familie",
+    "aliasExists": "“{{name}}” er allerede et navn for {{ingredient}}."
   }
 }

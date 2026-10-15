@@ -15,12 +15,15 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
 import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { FamilyIngredientsService } from './family-ingredients.service';
+import { FamilySynonymsService } from './family-synonyms.service';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
   catalogCategoriesQuery,
   familyIngredientBody,
   familyIngredientQuery,
+  familySynonymBody,
+  type FamilySynonymBody,
   type CatalogCategoriesQuery,
   type CatalogCategory,
   type FamilyIngredientBody,
@@ -41,6 +44,7 @@ export class CatalogController {
   constructor(
     private readonly searchService: CatalogSearchService,
     private readonly familyIngredients: FamilyIngredientsService,
+    private readonly familySynonyms: FamilySynonymsService,
     private readonly settings: SettingsService,
   ) {}
 
@@ -144,6 +148,27 @@ export class CatalogController {
         id: await this.settings.familyIdOf(member.id),
         memberId: member.id,
       },
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Post('family-synonyms')
+  @HttpCode(201)
+  @ApiOperation({
+    summary:
+      "Declare a name another name for an Ingredient, for the caller's Family; 409 with the Ingredient that already has the name",
+  })
+  async createFamilySynonym(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familySynonymBody))
+    body: FamilySynonymBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familySynonyms.create(
+      { id: await this.settings.familyIdOf(member.id) },
       body,
       query.locale,
       await this.settings.expiryOverridesForMember(member.id),

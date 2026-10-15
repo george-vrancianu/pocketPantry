@@ -1,4 +1,5 @@
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { sharedTranslation } from './catalog-scope';
 import type { Tx } from '../database/database.types';
 import {
   batches,
@@ -119,8 +120,32 @@ export async function mergeIngredients(
     .delete(ingredientStockHistory)
     .where(inArray(ingredientStockHistory.ingredientId, sourceIds));
 
+  // Shared translations go with the sources. A Family's Synonyms on a source
+  // move to the target (the Family's choice survives a promote), once per
+  // Family and name.
   await tx
     .delete(catalogTranslations)
+    .where(
+      and(
+        eq(catalogTranslations.entityType, 'ingredient'),
+        inArray(catalogTranslations.entityId, sourceIds),
+        sharedTranslation,
+      ),
+    );
+  await tx.execute(sql`
+    DELETE FROM ${catalogTranslations} s
+    WHERE s.entity_type = 'ingredient' AND s.entity_id IN (${uuids(sourceIds)})
+      AND s.owner_family_id IS NOT NULL
+      AND EXISTS (
+        SELECT 1 FROM ${catalogTranslations} t
+        WHERE t.entity_type = 'ingredient' AND t.kind = 'synonym'
+          AND t.owner_family_id = s.owner_family_id
+          AND t.normalized_value = s.normalized_value
+          AND (t.entity_id = ${target.id}::uuid
+            OR (t.entity_id IN (${uuids(sourceIds)}) AND t.id < s.id)))`);
+  await tx
+    .update(catalogTranslations)
+    .set({ entityId: target.id })
     .where(
       and(
         eq(catalogTranslations.entityType, 'ingredient'),

@@ -6,7 +6,7 @@ import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
 import {
   ingredientTier,
-  SHARED_TIER,
+  translationTier,
   type CatalogScope,
 } from './catalog-scope';
 import {
@@ -224,8 +224,9 @@ export class CatalogSearchService {
         FROM ${ingredients}
         UNION ALL
         SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
-          ${SHARED_TIER}::int
+          ${translationTier(catalogTranslations)}
         FROM ${catalogTranslations}
+        JOIN ${ingredients} ON ${ingredients.id} = ${catalogTranslations.entityId}
         WHERE ${catalogTranslations.entityType} = 'ingredient'
       ) c
       WHERE c.key = ANY(ARRAY[${keyList}]::text[])
@@ -361,8 +362,8 @@ export class CatalogSearchService {
 
   /**
    * The Ingredient (visible to `scope`) whose canonical name, display name in
-   * any locale, or Synonym equals `key` (a normalised name), if any. Shared
-   * rows win over the Family's own.
+   * any locale, or Synonym equals `key` (a normalised name), if any. The
+   * Family's own names and Synonyms come first (the tiers of `findExact`).
    */
   async findIdByName(
     scope: CatalogScope,
@@ -374,16 +375,18 @@ export class CatalogSearchService {
     const hits = await executor.execute<{ id: string }>(sql`
       SELECT c.id
       FROM (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
+        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key,
+          ${ingredientTier(ingredients)} AS tier
         FROM ${ingredients}
         UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
+        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
+          ${translationTier(catalogTranslations)}
         FROM ${catalogTranslations}
         WHERE ${catalogTranslations.entityType} = 'ingredient'
       ) c
       JOIN ${ingredients} ON ${ingredients.id} = c.id
       WHERE c.key = ${key}
-      ORDER BY (${ingredients.ownerFamilyId} IS NOT NULL), c.id
+      ORDER BY c.tier, (${ingredients.ownerFamilyId} IS NOT NULL), c.id
       LIMIT 1
     `);
     return hits.rows[0]?.id ?? null;

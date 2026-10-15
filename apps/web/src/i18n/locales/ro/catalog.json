@@ -62,6 +62,17 @@
     "pick": "Alege {{name}}",
     "exists": "„{{name}}” este deja în catalog.",
     "failed": "Nu l-am putut adăuga. Verifică conexiunea și încearcă din nou.",
-    "added": "{{name}} a fost adăugat în catalogul familiei tale · {{category}}"
+    "added": "{{name}} a fost adăugat în catalogul familiei tale · {{category}}",
+    "modeNew": "Ingredient nou",
+    "modeAlias": "Alt nume pentru…",
+    "modes": "Cum îl adaugi",
+    "sameAs": "„{{name}}” este același lucru cu",
+    "aliasHint": "Familia ta va vedea acest nume în căutare, scanări și bonuri, și va însemna acel ingredient.",
+    "aliasSearch": "Caută în catalog",
+    "aliasNoMatch": "Niciun ingredient nu se potrivește.",
+    "changeIngredient": "Schimbă ingredientul",
+    "link": "Leagă și alege",
+    "linked": "„{{name}}” înseamnă acum {{ingredient}} pentru familia ta",
+    "aliasExists": "„{{name}}” este deja un nume pentru {{ingredient}}."
   }
 }

@@ -19,7 +19,8 @@ export type CatalogReader = string | typeof SHARED_ONLY;
  * mistake that could leak one Family's names to another.
  *
  * A Family reader gets shared rows plus its own Family Ingredients; `SHARED_ONLY`
- * gets shared rows only. Family Synonyms add their predicate here too.
+ * gets shared rows only. Translations follow the same rule through their own
+ * owner (Family Synonyms, #273).
  * Inserts, updates and deletes still target the tables directly.
  */
 export type CatalogScope = {
@@ -29,7 +30,7 @@ export type CatalogScope = {
 
 /**
  * Exact-name tiers: a Family's own names (rank 0) win over shared ones (rank 1)
- * when both claim a name. Family Synonyms join rank 0 when they exist.
+ * when both claim a name. Family Synonyms are rank 0 too (#273).
  */
 export const FAMILY_TIER = 0;
 export const SHARED_TIER = 1;
@@ -40,6 +41,16 @@ export function ingredientTier(
 ) {
   return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER}::int ELSE ${FAMILY_TIER}::int END`;
 }
+
+/** The tier of each row of a scoped `translations` source: a Family Synonym is the Family's own. */
+export function translationTier(
+  scoped: ReturnType<CatalogScope['translations']>,
+) {
+  return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER}::int ELSE ${FAMILY_TIER}::int END`;
+}
+
+/** True for translations every Family sees (names and shared Synonyms), for writes that must leave Family Synonyms alone. */
+export const sharedTranslation = isNull(catalogTranslations.ownerFamilyId);
 
 function scopedIngredients(executor: Executor, reader: CatalogReader) {
   const rows = executor.select().from(ingredients);
@@ -55,14 +66,24 @@ function scopedIngredients(executor: Executor, reader: CatalogReader) {
   ).as('ingredients');
 }
 
-function scopedTranslations(executor: Executor) {
-  return executor.select().from(catalogTranslations).as('catalog_translations');
+function scopedTranslations(executor: Executor, reader: CatalogReader) {
+  const rows = executor.select().from(catalogTranslations);
+  return (
+    reader === SHARED_ONLY
+      ? rows.where(isNull(catalogTranslations.ownerFamilyId))
+      : rows.where(
+          or(
+            isNull(catalogTranslations.ownerFamilyId),
+            eq(catalogTranslations.ownerFamilyId, reader),
+          ),
+        )
+  ).as('catalog_translations');
 }
 
 export function catalogScope(reader: CatalogReader): CatalogScope {
   return {
     ingredients: (executor) => scopedIngredients(executor, reader),
-    translations: scopedTranslations,
+    translations: (executor) => scopedTranslations(executor, reader),
   };
 }
 

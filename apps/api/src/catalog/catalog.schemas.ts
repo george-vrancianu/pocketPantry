@@ -63,6 +63,12 @@ export const familyIngredientBody = z.object({
 });
 export type FamilyIngredientBody = z.infer<typeof familyIngredientBody>;
 
+export const familySynonymBody = z.object({
+  name: z.string().trim().min(1).max(100),
+  ingredientId: z.uuid(),
+});
+export type FamilySynonymBody = z.infer<typeof familySynonymBody>;
+
 export const catalogCategoriesQuery = z.object({
   q: z.string().max(100).default(''),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),

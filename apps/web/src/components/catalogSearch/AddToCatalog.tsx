@@ -12,7 +12,7 @@ import {
 import { useEffect, useRef, type KeyboardEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
-import { AddToCatalogForm } from './AddToCatalogForm';
+import { AddToCatalogForm, type PickOutcome } from './AddToCatalogForm';
 
 /** Marks the button that opens the popover, so a tap on it is not an "outside" tap. */
 export const ADD_TO_CATALOG_TRIGGER = 'data-add-to-catalog-trigger';
@@ -43,12 +43,19 @@ export function AddToCatalog({
   const categoryRef = useRef<HTMLInputElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  const picked = (result: CatalogSearchResult, added: boolean) => {
-    if (added) {
+  const picked = (result: CatalogSearchResult, outcome: PickOutcome) => {
+    if (outcome.kind === 'added') {
       toast.show(
         t('catalogAdd.added', {
           name: result.name,
           category: result.leafCategory.name,
+        }),
+      );
+    } else if (outcome.kind === 'linked') {
+      toast.show(
+        t('catalogAdd.linked', {
+          name: outcome.name,
+          ingredient: result.name,
         }),
       );
     }
