@@ -14,28 +14,43 @@ export function AllergyWarningBanner({ warning }: { warning: AllergyWarning }) {
   const lines = [
     ...(strong.length > 0
       ? [
-          t('allergyWarning.strong', {
-            names: strong.map((e) => e.allergen.name).join(', '),
-          }),
+          {
+            key: 'strong',
+            text: t('allergyWarning.strong', {
+              names: strong.map((e) => e.allergen.name).join(', '),
+            }),
+          },
         ]
       : []),
-    ...soft.map((e) =>
-      t('allergyWarning.optionalLine', { name: e.allergen.name }),
-    ),
+    ...soft.map((e) => ({
+      key: `optional-${e.allergen.id}`,
+      text: t('allergyWarning.optionalLine', { name: e.allergen.name }),
+    })),
     ...(warning.uncheckedCount > 0
-      ? [t('allergyWarning.unchecked', { count: warning.uncheckedCount })]
+      ? [
+          {
+            key: 'unchecked',
+            text: t('allergyWarning.unchecked', {
+              count: warning.uncheckedCount,
+            }),
+          },
+        ]
       : []),
   ];
   return (
-    <div data-testid="allergy-warning" data-severity={warning.severity}>
+    <div
+      role="group"
+      aria-label={t('allergyWarning.title')}
+      data-severity={warning.severity}
+    >
       <Alert severity={warning.severity === 'strong' ? 'error' : 'warning'}>
         <Stack spacing={0.5}>
           {lines.map((line, index) => (
             <Typography
-              key={line}
+              key={line.key}
               sx={{ fontWeight: index === 0 && strong.length > 0 ? 700 : 500 }}
             >
-              {line}
+              {line.text}
             </Typography>
           ))}
         </Stack>

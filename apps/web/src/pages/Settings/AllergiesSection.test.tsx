@@ -11,7 +11,7 @@ const ALLERGENS = [
   { id: 'a-peanuts', name: 'Peanuts' },
 ];
 
-function stubAllergies(initial: string[], saveOk = true) {
+function stubAllergies(initial: string[], saveOk = true, gate?: Promise<void>) {
   let current = initial;
   const { fetchMock, calls } = stubApi({
     'GET /api/auth/get-session': () =>
@@ -22,7 +22,8 @@ function stubAllergies(initial: string[], saveOk = true) {
       Response.json({ locale: null, theme: null }),
     'GET /api/settings/allergies': () =>
       Response.json({ allergens: ALLERGENS, allergenIds: current }),
-    'PUT /api/settings/allergies': () => {
+    'PUT /api/settings/allergies': async () => {
+      await gate;
       if (!saveOk)
         return Response.json(
           { code: 'server_error', params: {} },
@@ -78,6 +79,20 @@ describe('Settings You tab: Allergies', () => {
     ).toBeInTheDocument();
     const put = calls.find((c) => c.key === 'PUT /api/settings/allergies');
     expect(put?.body).toEqual({ allergenIds: ['a-milk', 'a-peanuts'] });
+  });
+
+  it('disables the chips while a save is pending, so a quick second tap cannot drop a change', async () => {
+    const user = userEvent.setup();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    stubAllergies([], true, gate);
+    const section = await open();
+    await user.click(await section.findByRole('button', { name: 'Milk' }));
+    expect(section.getByRole('button', { name: 'Gluten' })).toBeDisabled();
+    release();
+    await vi.waitFor(() =>
+      expect(section.getByRole('button', { name: 'Gluten' })).toBeEnabled(),
+    );
   });
 
   it('clears an Allergy', async () => {

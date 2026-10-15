@@ -134,6 +134,10 @@ export class RecipeBrowseService {
       locale,
     );
 
+    const viewerAllergies = loadViewerAllergies(this.database, memberId);
+    const variants = row.parentId
+      ? Promise.resolve([])
+      : this.variantsOf(row.id, familyId, locale);
     let base: RecipeDetail['base'] = null;
     let diff: RecipeDetail['diff'] = null;
     if (row.parentId) {
@@ -163,14 +167,12 @@ export class RecipeBrowseService {
       catalogScope(familyId),
       resolved,
       locale,
-      await loadViewerAllergies(this.database, memberId),
+      await viewerAllergies,
     );
     return {
       ...resolved,
       base,
-      variants: row.parentId
-        ? []
-        : await this.variantsOf(row.id, familyId, locale),
+      variants: await variants,
       diff,
       allergens,
       allergyWarning,

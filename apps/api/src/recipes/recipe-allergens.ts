@@ -1,13 +1,10 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { asc, inArray } from 'drizzle-orm';
+import { loadMemberAllergenIds } from '../settings/member-allergies';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { Executor } from '../database/database.types';
-import {
-  allergens,
-  ingredientAllergens,
-  memberAllergies,
-} from '../database/schema';
+import { allergens, ingredientAllergens } from '../database/schema';
 import {
   deriveAllergens,
   type AllergenLine,
@@ -26,11 +23,8 @@ export async function loadViewerAllergies(
   executor: Executor,
   memberId: string,
 ): Promise<AllergyInput[]> {
-  const rows = await executor
-    .select({ allergenId: memberAllergies.allergenId })
-    .from(memberAllergies)
-    .where(eq(memberAllergies.userId, memberId));
-  return rows;
+  const ids = await loadMemberAllergenIds(executor, memberId);
+  return ids.map((allergenId) => ({ allergenId }));
 }
 
 /**

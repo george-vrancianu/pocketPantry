@@ -22,6 +22,7 @@ import {
   parentCategories,
   user,
 } from '../database/schema';
+import { loadMemberAllergenIds } from './member-allergies';
 import {
   THEME_IDS,
   type AllergiesView,
@@ -227,10 +228,7 @@ export class SettingsService {
         .select()
         .from(allergens)
         .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
-      this.database
-        .select({ allergenId: memberAllergies.allergenId })
-        .from(memberAllergies)
-        .where(eq(memberAllergies.userId, memberId)),
+      loadMemberAllergenIds(this.database, memberId),
     ]);
     const names = await loadDisplayNames(
       this.database,
@@ -238,7 +236,7 @@ export class SettingsService {
       locale,
       rows.map((row) => row.id),
     );
-    const ownIds = new Set(own.map((row) => row.allergenId));
+    const ownIds = new Set(own);
     return {
       allergens: rows.map((row) => ({
         id: row.id,
@@ -252,16 +250,16 @@ export class SettingsService {
   /** Replaces the Member's own Allergies; they belong to the Member, not their Family. */
   async setAllergies(memberId: string, allergenIds: string[]): Promise<void> {
     const wanted = [...new Set(allergenIds)];
-    if (wanted.length > 0) {
-      const known = await this.database
-        .select({ id: allergens.id })
-        .from(allergens)
-        .where(inArray(allergens.id, wanted));
-      if (known.length !== wanted.length) {
-        throw new ApiException(404, 'settings.allergen_not_found');
-      }
-    }
     await this.database.transaction(async (tx) => {
+      if (wanted.length > 0) {
+        const known = await tx
+          .select({ id: allergens.id })
+          .from(allergens)
+          .where(inArray(allergens.id, wanted));
+        if (known.length !== wanted.length) {
+          throw new ApiException(404, 'settings.allergen_not_found');
+        }
+      }
       await tx
         .delete(memberAllergies)
         .where(eq(memberAllergies.userId, memberId));

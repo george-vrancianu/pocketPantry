@@ -44,6 +44,7 @@ export function AllergiesSection() {
                   key={allergen.id}
                   label={allergen.name}
                   selected={view.allergenIds.includes(allergen.id)}
+                  disabled={save.isPending}
                   onClick={() => toggle(allergen.id)}
                 />
               ))}

@@ -166,31 +166,39 @@ function IngredientRow({
                   mt: '4px',
                 }}
               >
-                {allergies.map((entry) => (
-                  <Box
-                    key={entry.allergen.id}
-                    component="span"
-                    sx={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      px: '8px',
-                      py: '1px',
-                      borderRadius: radius.pill,
-                      bgcolor:
-                        entry.severity === 'strong'
-                          ? tokens.color.urgentBg
-                          : tokens.color.soonBg,
-                      color:
-                        entry.severity === 'strong'
-                          ? tokens.color.urgentFg
-                          : tokens.color.soonFg,
-                    }}
-                  >
-                    {t('recipes:allergyWarning.lineMarker', {
-                      name: entry.allergen.name,
-                    })}
-                  </Box>
-                ))}
+                {allergies.map((entry) => {
+                  // An optional line can be left out, so its marker is soft even under a strong entry.
+                  const severity =
+                    entry.severity === 'strong' && !line.optional
+                      ? 'strong'
+                      : 'soft';
+                  return (
+                    <Box
+                      key={entry.allergen.id}
+                      component="span"
+                      data-severity={severity}
+                      sx={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                        px: '8px',
+                        py: '1px',
+                        borderRadius: radius.pill,
+                        bgcolor:
+                          severity === 'strong'
+                            ? tokens.color.urgentBg
+                            : tokens.color.soonBg,
+                        color:
+                          severity === 'strong'
+                            ? tokens.color.urgentFg
+                            : tokens.color.soonFg,
+                      }}
+                    >
+                      {t('recipes:allergyWarning.lineMarker', {
+                        name: entry.allergen.name,
+                      })}
+                    </Box>
+                  );
+                })}
               </Box>
             ) : null}
           </Box>

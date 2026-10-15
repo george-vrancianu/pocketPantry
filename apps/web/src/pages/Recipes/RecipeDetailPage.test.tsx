@@ -1127,7 +1127,9 @@ describe('RecipeDetailPage', () => {
     it('shows no banner without a warning', async () => {
       setup(recipe({}));
       await screen.findByRole('heading', { level: 1, name: 'Omelette' });
-      expect(screen.queryByTestId('allergy-warning')).toBeNull();
+      expect(
+        screen.queryByRole('group', { name: 'Allergy Warning' }),
+      ).toBeNull();
       expect(screen.queryByText(/Contains/)).toBeNull();
     });
 
@@ -1146,7 +1148,9 @@ describe('RecipeDetailPage', () => {
           }),
         }),
       );
-      const banner = await screen.findByTestId('allergy-warning');
+      const banner = await screen.findByRole('group', {
+        name: 'Allergy Warning',
+      });
       expect(banner).toHaveAttribute('data-severity', 'strong');
       expect(
         within(banner).getByText('Contains Peanuts, Milk'),
@@ -1163,7 +1167,9 @@ describe('RecipeDetailPage', () => {
           allergyWarning: warning({ severity: 'soft', entries: [softNuts] }),
         }),
       );
-      const banner = await screen.findByTestId('allergy-warning');
+      const banner = await screen.findByRole('group', {
+        name: 'Allergy Warning',
+      });
       expect(banner).toHaveAttribute('data-severity', 'soft');
       expect(
         within(banner).getByText('Optional ingredient contains Tree nuts'),
@@ -1176,7 +1182,9 @@ describe('RecipeDetailPage', () => {
           allergyWarning: warning({ severity: 'soft', uncheckedCount: 1 }),
         }),
       );
-      const banner = await screen.findByTestId('allergy-warning');
+      const banner = await screen.findByRole('group', {
+        name: 'Allergy Warning',
+      });
       expect(banner).toHaveAttribute('data-severity', 'soft');
       expect(
         within(banner).getByText(
@@ -1194,7 +1202,9 @@ describe('RecipeDetailPage', () => {
           }),
         }),
       );
-      const banner = await screen.findByTestId('allergy-warning');
+      const banner = await screen.findByRole('group', {
+        name: 'Allergy Warning',
+      });
       expect(within(banner).getByText('Contains Peanuts')).toBeInTheDocument();
       expect(
         within(banner).getByText('Optional ingredient contains Tree nuts'),
@@ -1221,17 +1231,37 @@ describe('RecipeDetailPage', () => {
       ).toBeInTheDocument();
     });
 
+    it('marks an optional line softly even under a strong entry', async () => {
+      setup(
+        recipe({
+          allergyWarning: warning({
+            entries: [{ ...strongPeanuts, lineIds: ['l1', 'l2'] }],
+          }),
+        }),
+      );
+      const list = await screen.findByRole('list', { name: 'Ingredients' });
+      const [egg, chives] = within(list).getAllByRole('listitem');
+      expect(within(egg!).getByText('Contains Peanuts')).toHaveAttribute(
+        'data-severity',
+        'strong',
+      );
+      expect(within(chives!).getByText('Contains Peanuts')).toHaveAttribute(
+        'data-severity',
+        'soft',
+      );
+    });
+
     it('does not change when Servings change', async () => {
       const user = userEvent.setup();
       setup(recipe({ allergyWarning: warning({ entries: [strongPeanuts] }) }));
-      await screen.findByTestId('allergy-warning');
+      await screen.findByRole('group', { name: 'Allergy Warning' });
       await user.click(
         await screen.findByRole('button', { name: 'More Servings' }),
       );
       expect(
-        within(screen.getByTestId('allergy-warning')).getByText(
-          'Contains Peanuts',
-        ),
+        within(
+          screen.getByRole('group', { name: 'Allergy Warning' }),
+        ).getByText('Contains Peanuts'),
       ).toBeInTheDocument();
     });
 
@@ -1245,7 +1275,7 @@ describe('RecipeDetailPage', () => {
           }),
         }),
       );
-      await screen.findByTestId('allergy-warning');
+      await screen.findByRole('group', { name: 'Allergy Warning' });
       expect(document.body.textContent).not.toMatch(/\bsafe\b|allergen-free/i);
     });
   });
