@@ -87,7 +87,16 @@ describe('Barcode Lookup (integration)', () => {
     );
   });
 
+  // The shared cache outlives a test run, so every test looks up a barcode of its own.
+  let code = '';
+  const freshCode = (length = 13) =>
+    `${stamp}${++n}${Math.random().toString().slice(2)}`
+      .replace(/\D/g, '')
+      .slice(-length)
+      .padStart(length, '1');
+
   beforeEach(() => {
+    code = freshCode();
     asked.length = 0;
     found = null;
     failWith = null;
@@ -97,8 +106,8 @@ describe('Barcode Lookup (integration)', () => {
     await app.close();
   });
 
-  const lookup = (who: typeof a, code = '3017620422003', locale = 'en') =>
-    who.get(`/barcode-lookup/${code}?locale=${locale}`);
+  const lookup = (who: typeof a, barcode = code, locale = 'en') =>
+    who.get(`/barcode-lookup/${barcode}?locale=${locale}`);
 
   it('requires authentication', async () => {
     await request(app.getHttpServer())
@@ -109,20 +118,18 @@ describe('Barcode Lookup (integration)', () => {
 
   it.each(['abc', '123', '12345678901234', '3017620422003x', '30176 20422003'])(
     'rejects the invalid barcode %j without asking Open Food Facts',
-    async (code) => {
-      await lookup(a, code).expect(400);
+    async (invalid) => {
+      await lookup(a, invalid).expect(400);
       expect(asked).toEqual([]);
     },
   );
 
-  it.each(['12345670', '012345678905', '3017620422003'])(
-    'accepts the 8-, 12- and 13-digit barcode %s',
-    async (code) => {
-      found = product({ productName: 'Parmesan' });
-      await lookup(a, code).expect(200);
-      expect(asked).toEqual([code]);
-    },
-  );
+  it.each([8, 12, 13])('accepts a %i-digit barcode', async (length) => {
+    const barcode = freshCode(length);
+    found = product({ productName: 'Parmesan' });
+    await lookup(a, barcode).expect(200);
+    expect(asked).toEqual([barcode]);
+  });
 
   it('answers not found when Open Food Facts does not know the barcode', async () => {
     found = null;
@@ -233,7 +240,7 @@ describe('Barcode Lookup (integration)', () => {
       genericNames: { ro: 'Nume Generic' },
     });
     const described = async (locale: string) =>
-      ((await lookup(a, undefined, locale).expect(200)).body as Json)
+      ((await lookup(a, freshCode(), locale).expect(200)).body as Json)
         .productDescription;
 
     it("prefers the product name in the Member's locale", async () => {
