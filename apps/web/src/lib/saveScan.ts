@@ -6,19 +6,20 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toNewShoppingItem, postShoppingItems } from './plate';
 import { postReceiptConfirm, type TickFailures } from './receiptScan';
-import { postBatches, type ScanMode } from './scan';
+import { postBatches } from './scan';
+import type { CameraMode } from './cameraMode';
 import { reviewLinesOf, toSaveBatches, type ReviewLine } from './review';
 import type { ScanLanguage } from '../i18n/resources';
 import type { SessionScan } from './scanSession';
 import { shoppingListQueryKey } from './shopping';
 
 /**
- * Saves reviewed lines as their Scan Mode does: Product and Ingredients through the bulk Batch
+ * Saves reviewed lines as their mode does: Product, Barcode and Ingredients through the bulk Batch
  * endpoint, Receipt through Receipt confirm, Plate to the Shopping List. Only Receipt can come
  * back with Shopping Items it failed to tick.
  */
 export async function saveLines(
-  mode: ScanMode,
+  mode: CameraMode,
   locale: string,
   scanLanguage: ScanLanguage | undefined,
   lines: ReviewLine[],
@@ -42,7 +43,7 @@ export function useSaveLines(locale: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (save: {
-      mode: ScanMode;
+      mode: CameraMode;
       scanLanguage?: ScanLanguage;
       lines: ReviewLine[];
     }) => saveLines(save.mode, locale, save.scanLanguage, save.lines),

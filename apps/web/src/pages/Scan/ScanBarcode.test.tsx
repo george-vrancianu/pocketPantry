@@ -1,0 +1,579 @@
+import { act, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SCAN_INTERVAL_MS } from '../../lib/cameraMode';
+import { resetReads } from '../../lib/scanReads';
+import { resetScanSession } from '../../lib/scanSession';
+import { renderWithProviders, stubApi } from '../../test/render';
+import { scanViaGuide } from '../../test/scan';
+import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
+import { ReviewPage } from '../Review/ReviewPage';
+import { ScanPage } from './ScanPage';
+
+// jsdom has no camera: the camera module is the seam, and it yields decoded barcodes one per watch.
+const camera = vi.hoisted(() => ({
+  listener: null as null | ((code: string) => void),
+  watching: 0,
+}));
+vi.mock('../../lib/camera', () => ({
+  useCamera: () => ({
+    videoRef: { current: null },
+    status: 'ready',
+    torchSupported: false,
+    capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
+    setTorch: () => Promise.resolve(true),
+    watchBarcodes: (onCode: (code: string) => void) => {
+      let active = true;
+      camera.watching += 1;
+      camera.listener = (code) => {
+        if (!active) return;
+        active = false;
+        camera.watching -= 1;
+        camera.listener = null;
+        onCode(code);
+      };
+      return () => {
+        if (!active) return;
+        active = false;
+        camera.watching -= 1;
+        camera.listener = null;
+      };
+    },
+  }),
+  readBarcode: () => Promise.resolve(null),
+}));
+vi.mock('../../lib/image', async (importActual) => ({
+  ...(await importActual<typeof import('../../lib/image')>()),
+  resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
+}));
+
+const dial = () => screen.getByRole('radiogroup', { name: 'Scan mode' });
+const selected = () =>
+  within(dial())
+    .getAllByRole('radio')
+    .filter((radio) => radio.getAttribute('aria-checked') === 'true')
+    .map((radio) => radio.getAttribute('aria-label'));
+
+const yogurt = {
+  owner: 'catalog',
+  amountScale: 'medium',
+  id: 'yogurt-id',
+  name: 'Yogurt',
+  defaultUnit: 'g',
+  leafCategory: { id: 'leaf', name: 'Leaf' },
+  parentCategory: {
+    id: 'dairy',
+    name: 'Dairy',
+    aisle: { id: 'aisle', name: 'Dairy & eggs' },
+  },
+  defaults: { expiryDays: 10, location: 'fridge' },
+};
+const found = (overrides: object = {}) => ({
+  found: true,
+  source: 'open_food_facts',
+  match: yogurt,
+  lowConfidence: false,
+  productDescription: 'Greek yogurt',
+  quantity: 400,
+  unit: 'g',
+  allergens: [],
+  missingAllergens: [],
+  ...overrides,
+});
+const A = '5941234567890';
+const B = '5949999999990';
+
+type Held = { code: string; search: string; respond: (r: Response) => void };
+/** Barcode Lookups and photo reads answer only when the test says so. */
+let lookups: Held[];
+let calls: ReturnType<typeof stubApi>['calls'];
+let answers: Record<string, () => Response>;
+/** When set, a photo read of a Product answers at once with this. */
+let productAnswer: (() => Response) | null;
+
+function renderScan(route = '/scan') {
+  lookups = [];
+  answers = {};
+  productAnswer = null;
+  const stub = stubApi({
+    'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
+    'GET /api/catalog/search': () =>
+      Response.json({
+        results: [yogurt, { ...yogurt, id: 'skyr-id', name: 'Skyr' }],
+      }),
+  });
+  calls = stub.calls;
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input), window.location.origin);
+    const key = `${init?.method ?? 'GET'} ${url.pathname}`;
+    const code = url.pathname.match(/^\/api\/barcode-lookup\/(\d+)$/)?.[1];
+    if (code) {
+      calls.push({ key, search: url.search, body: undefined });
+      const ready = answers[code];
+      if (ready) return Promise.resolve(ready());
+      return new Promise<Response>((resolve) =>
+        lookups.push({ code, search: url.search, respond: resolve }),
+      );
+    }
+    if (key === 'POST /api/scan/product') {
+      calls.push({ key, search: url.search, body: undefined });
+      if (productAnswer) return Promise.resolve(productAnswer());
+      return new Promise<Response>(() => {});
+    }
+    return stub.fetchMock(input, init);
+  });
+  return renderWithProviders(
+    <Routes>
+      <Route path="/scan" element={<ScanPage />} />
+      <Route path="/scan/review" element={<ReviewOverviewPage />} />
+      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
+    </Routes>,
+    { route },
+  );
+}
+
+const flush = () => act(async () => {});
+/** The camera decodes `code`: the Scan page accepts it and re-arms the watch. */
+async function decode(code: string) {
+  await waitFor(() => expect(camera.listener).not.toBeNull());
+  act(() => camera.listener?.(code));
+  await flush();
+}
+const thumbnails = () => screen.queryAllByTestId('scan-thumbnail');
+const states = () => thumbnails().map((t) => t.getAttribute('data-state'));
+const lookupCalls = () =>
+  calls.filter((call) => call.key.startsWith('GET /api/barcode-lookup'));
+
+describe('Barcode on the Scan page', () => {
+  beforeEach(() => {
+    resetScanSession();
+    resetReads();
+    localStorage.clear();
+    camera.listener = null;
+    camera.watching = 0;
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  describe('the mode dial', () => {
+    it('opens on Receipt the first time', () => {
+      renderScan();
+      expect(selected()).toEqual(['Receipt']);
+    });
+
+    it('reopens in Barcode after the Scan page was left in Barcode', async () => {
+      const user = userEvent.setup();
+      const first = renderScan();
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      first.unmount();
+
+      renderScan();
+      expect(selected()).toEqual(['Barcode']);
+    });
+
+    it("keeps apart from the add-Batch overlay's remembered mode", async () => {
+      const user = userEvent.setup();
+      localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
+      renderScan();
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      expect(localStorage.getItem('pocket-pantry.camera-overlay-mode')).toBe(
+        'product',
+      );
+      expect(localStorage.getItem('pocket-pantry.scan-mode')).toBe('barcode');
+    });
+  });
+
+  describe('the controls', () => {
+    it('disables the shutter, hides the guide from touch, shows the hint, and hides the language chip and gallery', async () => {
+      renderScan('/scan?mode=barcode');
+      expect(screen.getByTestId('scan-guide')).toHaveAttribute(
+        'aria-hidden',
+        'true',
+      );
+      expect(
+        screen.getByText('Point the camera at the barcode.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText('Reading as')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Choose from photos' }),
+      ).not.toBeInTheDocument();
+      await waitFor(() => expect(camera.watching).toBe(1));
+    });
+
+    it('stops reading barcodes in another mode', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await waitFor(() => expect(camera.watching).toBe(1));
+      await user.click(screen.getByRole('radio', { name: 'Product' }));
+      expect(camera.watching).toBe(0);
+      expect(screen.getByLabelText(/Reading as/)).toBeInTheDocument();
+    });
+  });
+  describe('accepting codes', () => {
+    it('adds a card per accepted code with the frozen frame and a barcode badge, and keeps reading', async () => {
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+
+      expect(thumbnails()).toHaveLength(1);
+      expect(thumbnails()[0]).toHaveAttribute('data-mode', 'barcode');
+      expect(thumbnails()[0].querySelector('img')).toHaveAttribute(
+        'src',
+        'data:image/jpeg;base64,YQ==',
+      );
+      expect(camera.watching).toBe(1);
+
+      await decode(B);
+      expect(thumbnails()).toHaveLength(2);
+    });
+
+    it('watches again only after the scan interval, so a held pack is not decoded back to back', async () => {
+      renderScan('/scan?mode=barcode');
+      await waitFor(() => expect(camera.listener).not.toBeNull());
+      vi.useFakeTimers();
+      try {
+        act(() => camera.listener?.(A));
+        expect(camera.watching).toBe(0);
+        act(() => {
+          vi.advanceTimersByTime(SCAN_INTERVAL_MS - 1);
+        });
+        expect(camera.watching).toBe(0);
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(camera.watching).toBe(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('takes the held pack again after the Member leaves Barcode and comes back', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+      await user.click(within(dial()).getByRole('radio', { name: /Product/ }));
+      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      await decode(A);
+      expect(thumbnails()).toHaveLength(2);
+    });
+
+    it('ignores a code identical to the last accepted one, but takes it again after another', async () => {
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+      await decode(A);
+      expect(thumbnails()).toHaveLength(1);
+      await decode(B);
+      await decode(A);
+      expect(thumbnails()).toHaveLength(3);
+    });
+
+    it('does not take a Scan when the guide is double-tapped', async () => {
+      renderScan('/scan?mode=barcode');
+      scanViaGuide();
+      await flush();
+      expect(thumbnails()).toHaveLength(0);
+    });
+
+    it('looks the code up at once in the UI locale, even when both photo reads are busy', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=product');
+      scanViaGuide();
+      await flush();
+      scanViaGuide();
+      await flush();
+      expect(
+        calls.filter((call) => call.key === 'POST /api/scan/product'),
+      ).toHaveLength(2);
+
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      await decode(A);
+
+      expect(lookupCalls()).toHaveLength(1);
+      expect(lookupCalls()[0].search).toBe('?locale=en');
+      expect(states()).toEqual(['reading', 'reading', 'reading']);
+    });
+  });
+
+  describe('the lookup result', () => {
+    it('reads a found product into one prefilled line', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        'Yogurt',
+      );
+      await user.click(screen.getByTestId('card-result'));
+      await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      expect(await screen.findByLabelText('Quantity')).toHaveValue(400);
+      expect(screen.getByLabelText('Unit')).toHaveValue('g');
+      expect(screen.getByLabelText('Product description')).toHaveValue(
+        'Greek yogurt',
+      );
+    });
+
+    it('leaves a low-confidence product Unmatched, with the Ingredient search pre-typed', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          found({
+            match: null,
+            lowConfidence: true,
+            quantity: null,
+            unit: null,
+          }),
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+      expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
+      await user.click(
+        await screen.findByRole('button', { name: /No match · Choose/ }),
+      );
+      expect(
+        await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      ).toHaveValue('Greek yogurt');
+    });
+
+    it('reads a product that is not found into one empty line to fill', async () => {
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json({ found: false });
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+
+      await userEvent.click(screen.getByRole('button', { name: /^Done/ }));
+      expect(await screen.findByTestId('card-result')).toHaveTextContent(
+        '1 item',
+      );
+    });
+
+    it('fails the card on an API error and repeats the lookup on Retry', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json({ code: 'internal', params: {} }, { status: 500 });
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['failed']));
+
+      answers[A] = () => Response.json(found());
+      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
+      await waitFor(() => expect(states()).toEqual(['read']));
+      expect(lookupCalls()).toHaveLength(2);
+    });
+  });
+
+  describe('the Scan Cap and the Session limit', () => {
+    it('keeps accepting codes once the Scan Cap is reached, never failing them with the cap', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=product');
+      // A Product Scan the API refuses with the Scan Cap.
+      vi.stubGlobal('fetch', (input: RequestInfo | URL) => {
+        const url = new URL(String(input), window.location.origin);
+        if (url.pathname === '/api/scan/product')
+          return Promise.resolve(
+            Response.json(
+              { code: 'scan.cap_reached', params: {} },
+              { status: 429 },
+            ),
+          );
+        calls.push({
+          key: `GET ${url.pathname}`,
+          search: url.search,
+          body: undefined,
+        });
+        return Promise.resolve(Response.json(found()));
+      });
+      scanViaGuide();
+      await flush();
+      await waitFor(() => expect(states()).toEqual(['failed']));
+      expect(screen.getByText('Daily scan limit reached')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('radio', { name: 'Barcode' }));
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['failed', 'read']));
+      expect(lookupCalls()).toHaveLength(1);
+    });
+
+    it('counts Barcode cards toward the 20-card limit and tells the Member when it is full', async () => {
+      renderScan('/scan?mode=barcode');
+      for (let i = 0; i < 20; i += 1)
+        await decode(`59412345${String(i).padStart(5, '0')}`);
+      expect(thumbnails()).toHaveLength(20);
+
+      await decode(B);
+      expect(thumbnails()).toHaveLength(20);
+      expect(
+        await screen.findByText(
+          'A Scan Session holds at most 20 photos. Add or discard these first.',
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('a held pack and the Session limit', () => {
+    it('toasts once for a code held at the limit, not on every decoder tick', async () => {
+      renderScan('/scan?mode=barcode');
+      for (let i = 0; i < 20; i += 1)
+        await decode(`59412345${String(i).padStart(5, '0')}`);
+      await decode(B);
+      await screen.findByText(/holds at most 20 photos/);
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByText(/holds at most 20 photos/)).toBeNull(),
+      );
+      await decode(B);
+      expect(screen.queryByText(/holds at most 20 photos/)).toBeNull();
+    });
+  });
+
+  describe('in Review', () => {
+    it('saves a found card with its barcode in the new Batch', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByRole('button', { name: 'Add all' }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const save = calls.find(
+        (call) => call.key === 'POST /api/pantry/batches/bulk',
+      );
+      expect(save?.body).toMatchObject({
+        batches: [{ ingredientId: 'yogurt-id', barcode: A }],
+      });
+    });
+
+    it('saves the Ingredient the Member picks with Change match', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+
+      await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      await user.click(
+        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+      );
+      const search = within(
+        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
+      ).getByRole('combobox', { name: 'Search ingredients' });
+      await user.type(search, 'skyr');
+      await user.click(await screen.findByRole('option', { name: /Skyr/ }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await user.click(screen.getByRole('button', { name: /^Save/ }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const save = calls.find(
+        (call) => call.key === 'POST /api/pantry/batches/bulk',
+      );
+      expect(save?.body).toMatchObject({
+        batches: [{ ingredientId: 'skyr-id', barcode: A }],
+      });
+    });
+
+    it('adds a read Product card and a Barcode card together, only the barcode one carrying its code', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=product');
+      productAnswer = () =>
+        Response.json({
+          lines: [
+            {
+              name: 'Milk',
+              sourceText: 'MILK',
+              match: { ...yogurt, id: 'milk-id', name: 'Milk' },
+              lowConfidence: false,
+              quantity: 1,
+              unit: 'l',
+              expiryDate: null,
+              productDescription: 'Whole milk',
+            },
+          ],
+        });
+      scanViaGuide();
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read', 'read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByRole('button', { name: 'Add all' }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const bodies = calls
+        .filter((call) => call.key === 'POST /api/pantry/batches/bulk')
+        .flatMap((call) => (call.body as { batches: object[] }).batches);
+      expect(bodies).toHaveLength(2);
+      const milk = bodies.find(
+        (b) => (b as { ingredientId: string }).ingredientId === 'milk-id',
+      );
+      expect(milk).not.toHaveProperty('barcode');
+      expect(bodies).toContainEqual(
+        expect.objectContaining({ ingredientId: 'yogurt-id', barcode: A }),
+      );
+    });
+
+    it('lets the Member open, name and save a not-found card alone, still sending its barcode', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json({ found: false });
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+
+      await user.type(await screen.findByLabelText('Name'), 'Mystery jar');
+      await user.click(screen.getByRole('button', { name: /^Save/ }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const save = calls.find(
+        (call) => call.key === 'POST /api/pantry/batches/bulk',
+      );
+      expect(save?.body).toMatchObject({
+        batches: [{ rawName: 'Mystery jar', barcode: A }],
+      });
+      // As the add-Batch form sends an Unmatched name: no source (stored as manual).
+      const [batch] = (save!.body as { batches: object[] }).batches;
+      expect(batch).not.toHaveProperty('source');
+    });
+
+    it('removes a Barcode card from the overview', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(
+        await screen.findByRole('button', { name: 'Remove photo' }),
+      );
+      expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
+    });
+  });
+});

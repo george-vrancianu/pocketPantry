@@ -30,13 +30,16 @@ export type BarcodeLookup =
       unit: Unit | null;
     };
 
+/** Looks a barcode up in Known Barcodes, then Open Food Facts, in the given locale. */
+export const lookupBarcode = (code: string, locale: string) =>
+  apiRequest<BarcodeLookup>(
+    `/barcode-lookup/${code}?${new URLSearchParams({ locale })}`,
+  );
+
 /** A Barcode Lookup owned by the form that asked for it. */
 export function useBarcodeLookup(locale: string) {
   return useMutation({
-    mutationFn: (code: string) =>
-      apiRequest<BarcodeLookup>(
-        `/barcode-lookup/${code}?${new URLSearchParams({ locale })}`,
-      ),
+    mutationFn: (code: string) => lookupBarcode(code, locale),
   });
 }
 
@@ -53,5 +56,35 @@ export function barcodeLine(
     unit: lookup.unit,
     expiryDate: null,
     productDescription: lookup.productDescription,
+  };
+}
+
+/**
+ * The line a Barcode card proposes in Review: what Prefill would fill, plus the code (so saving
+ * teaches the Known Barcode) and what Review needs for attribution and the Allergen row. Not
+ * found gives one empty line for the Member to fill.
+ */
+export function barcodeCardLine(
+  code: string,
+  lookup: BarcodeLookup,
+): ProposedLine {
+  if (!lookup.found)
+    return {
+      name: '',
+      sourceText: null,
+      match: null,
+      lowConfidence: false,
+      quantity: null,
+      unit: null,
+      expiryDate: null,
+      productDescription: null,
+      barcode: code,
+    };
+  return {
+    ...barcodeLine(lookup),
+    barcode: code,
+    source: lookup.source,
+    allergens: lookup.allergens,
+    missingAllergens: lookup.missingAllergens,
   };
 }

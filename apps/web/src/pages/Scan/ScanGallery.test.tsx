@@ -29,6 +29,7 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: false,
     capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
     setTorch: () => Promise.resolve(false),
+    watchBarcodes: () => () => {},
   }),
 }));
 vi.mock('../../lib/image', async (importActual) => ({

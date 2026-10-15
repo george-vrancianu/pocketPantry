@@ -51,6 +51,7 @@
     "needsCrop": "Needs crop",
     "read": "Photo read",
     "failed": "Could not read photo",
+    "retryLookup": "Retry lookup",
     "retry": "Retry reading photo"
   },
   "photoAdded": "Photo {{count}} added",

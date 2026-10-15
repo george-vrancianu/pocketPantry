@@ -98,7 +98,11 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       />
       <Viewfinder
         mode={screen.mode}
-        disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
+        disabled={
+          screen.mode === 'barcode' ||
+          screen.controlsDisabled ||
+          screen.camera.status !== 'ready'
+        }
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
       />
@@ -167,16 +171,18 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         >
           <InfoIcon size={20} />
         </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('gallery')}
-          disabled={screen.controlsDisabled}
-          onClick={screen.openGallery}
-          sx={roundButton(40)}
-        >
-          <GalleryIcon size={20} />
-        </Box>
+        {screen.mode === 'barcode' ? null : (
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('gallery')}
+            disabled={screen.controlsDisabled}
+            onClick={screen.openGallery}
+            sx={roundButton(40)}
+          >
+            <GalleryIcon size={20} />
+          </Box>
+        )}
         <Box
           component="button"
           type="button"
@@ -260,9 +266,14 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
           sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
           {screen.reading ? t('reading') : null}
-          {screen.camera.status === 'unavailable' ? t('noCamera') : null}
+          {screen.camera.status === 'unavailable'
+            ? t('noCamera')
+            : screen.mode === 'barcode'
+              ? t('overlay.pointAtBarcode')
+              : null}
         </Box>
-        {screen.capped ? (
+        {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
+        {screen.capped && screen.mode !== 'barcode' ? (
           <Box sx={{ mt: 1 }}>
             <Alert severity="warning">{t('capReached')}</Alert>
           </Box>

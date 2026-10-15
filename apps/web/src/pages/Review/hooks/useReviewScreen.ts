@@ -246,6 +246,7 @@ export function useReviewScreen() {
     open,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
+    swapQuery: swapLine?.barcode && !swapLine.match ? swapLine.name.trim() : '',
     swapOpen,
     openSwap,
     closeSwap,

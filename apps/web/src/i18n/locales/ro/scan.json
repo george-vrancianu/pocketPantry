@@ -52,6 +52,7 @@
     "needsCrop": "Trebuie decupată",
     "read": "Fotografie citită",
     "failed": "Fotografia nu a putut fi citită",
+    "retryLookup": "Caută din nou produsul",
     "retry": "Citește din nou fotografia"
   },
   "photoAdded": "Fotografia {{count}} a fost adăugată",

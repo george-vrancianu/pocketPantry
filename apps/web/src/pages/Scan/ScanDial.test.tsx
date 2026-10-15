@@ -13,10 +13,11 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: true,
     capture: () => Promise.resolve(new Blob(['frame'])),
     setTorch: () => Promise.resolve(true),
+    watchBarcodes: () => () => {},
   }),
 }));
 
-const ORDER = ['Receipt', 'Product', 'Ingredients', 'Plate'];
+const ORDER = ['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate'];
 
 function renderScan(route = '/scan') {
   return renderWithProviders(
@@ -41,7 +42,7 @@ describe('Scan mode dial', () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('lists Receipt, Product, Ingredients, Plate, each named by its Scan Mode', () => {
+  it('lists Receipt, Product, Barcode, Ingredients, Plate, each named by its mode', () => {
     renderScan();
     expect(
       within(dial())
@@ -70,7 +71,7 @@ describe('Scan mode dial', () => {
     renderScan();
     await userEvent.keyboard('{ArrowRight}');
     expect(selected()).toEqual(['Product']);
-    await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
     expect(selected()).toEqual(['Plate']);
     await userEvent.keyboard('{ArrowRight}');
     expect(selected()).toEqual(['Plate']);
@@ -128,7 +129,7 @@ describe('Scan mode dial', () => {
   });
 
   it('ignores an unknown stored mode and falls back to Receipt', () => {
-    localStorage.setItem('pocket-pantry.scan-mode', 'barcode');
+    localStorage.setItem('pocket-pantry.scan-mode', 'sonar');
     renderScan();
     expect(selected()).toEqual(['Receipt']);
   });

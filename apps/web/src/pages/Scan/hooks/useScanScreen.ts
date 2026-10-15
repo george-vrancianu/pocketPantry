@@ -16,36 +16,37 @@ import { resizeImage } from '../../../lib/image';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import {
-  loadScanMode,
-  saveScanMode,
-  SCAN_MODES,
-  type ScanMode,
-} from '../../../lib/scan';
+  CAMERA_MODES,
+  loadScanPageMode,
+  saveScanPageMode,
+  SCAN_INTERVAL_MS,
+  type CameraMode,
+} from '../../../lib/cameraMode';
 
-/** What opens the camera decides which Scan Modes it offers and which one it starts in. */
+/** What opens the camera decides which modes it offers and which one it starts in. */
 export type ScanScreenModes = {
-  /** In dial order. Defaults to all four Scan Modes. */
-  modes?: readonly ScanMode[];
+  /** In dial order. Defaults to all five camera modes. */
+  modes?: readonly CameraMode[];
   /** Used when the URL names no allowed mode and either `rememberMode` is false or the remembered mode isn't allowed. */
-  defaultMode?: ScanMode;
-  /** Load and save the Scan Mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
+  defaultMode?: CameraMode;
+  /** Load and save the mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
   rememberMode?: boolean;
 };
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
 export function useScanScreen(config: ScanScreenModes = {}) {
-  const modes = config.modes ?? SCAN_MODES;
+  const modes = config.modes ?? CAMERA_MODES;
   const remembersMode = config.rememberMode ?? true;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
-  const allowed = (value: string | null | undefined): value is ScanMode =>
+  const allowed = (value: string | null | undefined): value is CameraMode =>
     modes.some((item) => item === value);
   const { defaultMode } = config;
-  const remembered = remembersMode ? loadScanMode() : null;
-  const mode: ScanMode = allowed(requested)
+  const remembered = remembersMode ? loadScanPageMode() : null;
+  const mode: CameraMode = allowed(requested)
     ? requested
     : allowed(remembered)
       ? remembered
@@ -54,7 +55,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         : modes[0];
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
   useEffect(() => {
-    if (remembersMode) saveScanMode(mode);
+    if (remembersMode) saveScanPageMode(mode);
   }, [mode, remembersMode]);
 
   const camera = useCamera();
@@ -65,6 +66,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
    * reset, leaving the screen): a photo prepared under an older value is dropped, not sent.
    */
   const scanEpoch = useRef(0);
+  /** The barcode just accepted; the same code is ignored until another is read or the mode changes. */
+  const lastCode = useRef<string | null>(null);
   useEffect(
     () => () => {
       scanEpoch.current += 1;
@@ -76,6 +79,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   useEffect(() => {
     if (previousMode.current !== mode) {
       scanEpoch.current += 1;
+      // Coming back to Barcode takes the pack still held in front of the camera.
+      lastCode.current = null;
     }
     previousMode.current = mode;
   }, [mode]);
@@ -136,6 +141,9 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         width: feed?.clientWidth || window.innerWidth,
         height: feed?.clientHeight || window.innerHeight,
       };
+      // Barcode sends no photo: it never gets here.
+      if (mode === 'barcode')
+        return Promise.reject(new Error('Barcode has no photo to prepare'));
       return IMAGE_PREPARATION[mode](source, origin, view);
     },
   ): Promise<boolean> => {
@@ -186,7 +194,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   // A double tap on the guide must not send the same photo twice.
   const shooting = useRef(false);
   const shoot = async () => {
-    if (shooting.current || capped) return;
+    if (shooting.current || capped || mode === 'barcode') return;
     shooting.current = true;
     try {
       const frame = await camera.capture();
@@ -199,7 +207,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const pickFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = '';
-    if (picked.length === 0) return;
+    if (picked.length === 0 || mode === 'barcode') return;
     setLocalError(null);
     setNotAdded(false);
     // Take what fits under the Scan Session's cap, counting photos still being resized.
@@ -251,6 +259,71 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     }
   };
 
+  // Barcode mode reads on its own. Each accepted code adds a card at once; the watch reads one
+  // code per subscription, so it is re-armed after every read.
+  const acceptCode = async (code: string) => {
+    // The simple dedupe: the code just accepted is ignored.
+    if (code === lastCode.current) return;
+    // Remembered before the limit check, so a held pack at the limit toasts once, not every tick.
+    lastCode.current = code;
+    if (
+      getScanSession().scans.length + resizingPicks.current >=
+      MAX_SESSION_SCANS
+    ) {
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
+      return;
+    }
+    const epoch = scanEpoch.current;
+    // The card's thumbnail is the frame the code was read from, frozen now.
+    const frame = await camera.capture();
+    const thumbnail = frame ? await resizeImage(frame).catch(() => '') : '';
+    if (epoch !== scanEpoch.current) {
+      lastCode.current = null;
+      return;
+    }
+    // Another read may have filled the Scan Session while the frame was prepared.
+    if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+      lastCode.current = null;
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
+      return;
+    }
+    dispatchScanSession({
+      type: 'enqueue',
+      scan: { id: crypto.randomUUID(), mode: 'barcode', code, thumbnail },
+    });
+    // The lookup starts at once, outside the read slots.
+    readScans(i18n.language);
+  };
+  const onCode = useRef(acceptCode);
+  onCode.current = acceptCode;
+  const { watchBarcodes } = camera;
+  useEffect(() => {
+    if (mode !== 'barcode' || camera.status !== 'ready') return;
+    let stopped = false;
+    let stop = () => {};
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      stop = watchBarcodes((code) => {
+        if (stopped) return;
+        void onCode.current(code);
+        // The camera ticks as soon as it is watched, so a held pack waits out the scan interval.
+        timer = setTimeout(arm, SCAN_INTERVAL_MS);
+      });
+    };
+    arm();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      stop();
+    };
+  }, [mode, camera.status, watchBarcodes]);
+
   const toggleFlash = async () => {
     const next = !flash;
     // Only show the flash as on if the device actually switched the torch.
@@ -266,7 +339,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     scanLanguage,
     setScanLanguage,
     /** Plate Scan has no Scan Language. */
-    scanLanguageShown: mode !== 'plate',
+    scanLanguageShown: mode !== 'plate' && mode !== 'barcode',
     scanLanguageLocked: reading,
     camera,
     scans: session.scans,
@@ -285,8 +358,9 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     },
     fileInput,
     error,
-    setMode: (next: ScanMode) => {
+    setMode: (next: CameraMode) => {
       scanEpoch.current += 1;
+      lastCode.current = null;
       setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },

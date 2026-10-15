@@ -31,6 +31,7 @@ vi.mock('../../lib/camera', async () => {
         capture: () =>
           Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
         setTorch: () => Promise.resolve(true),
+        watchBarcodes: () => () => {},
       };
     },
   };
@@ -98,7 +99,7 @@ describe('ScanPage', () => {
     renderScan({}, '/scan');
     expect(
       screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label')),
-    ).toEqual(['Receipt', 'Product', 'Ingredients', 'Plate']);
+    ).toEqual(['Receipt', 'Product', 'Barcode', 'Ingredients', 'Plate']);
     expect(screen.getByRole('radio', { name: 'Receipt' })).toBeChecked();
     for (const name of [
       'Close scanner',
