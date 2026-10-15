@@ -6,7 +6,7 @@ import {
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
 import { ApiError, apiRequest } from './api';
-import { catalogSearchQueryKey } from './catalog';
+import { catalogChangeQueryKeys } from './queryKeys';
 
 /** One Family Synonym name on one Ingredient, across Families; no Family identity. */
 export type FamilySynonymCandidate = {
@@ -76,7 +76,7 @@ export function useAddSharedSynonym() {
         [
           familySynonymsQueueKey,
           adminCatalogQueryKey,
-          catalogSearchQueryKey,
+          ...catalogChangeQueryKeys,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });

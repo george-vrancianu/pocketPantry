@@ -19,8 +19,11 @@ export const pantryMatchesQueryKey = ['recipes', 'pantry-match'] as const;
 /** The Family's Recently Stocked Ingredients. Under `['pantry']`, so anything that invalidates the Pantry (Scan save, Finish Shopping, relink, a Batch change) refetches it. */
 export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;
 
-/** What adding a Family Ingredient can change: it relinks the Family's Unmatched Batches, Shopping Items, Template lines and Recipe lines. Literals, as the owning modules cannot be imported here without a cycle. */
-export const familyIngredientRelinkQueryKeys = [
+/** Everything a Catalog change makes stale: search, the Family catalog, Staples, and the Unmatched items it relinks (Batches, Shopping Items, Template lines, Recipe lines) with the Suggestions built on them. Literals, as the owning modules cannot be imported here without a cycle. */
+export const catalogChangeQueryKeys = [
+  ['catalog-search'],
+  ['family-catalog'],
+  ['staples'],
   ['pantry'],
   ['shopping-list'],
   ['shopping-templates'],

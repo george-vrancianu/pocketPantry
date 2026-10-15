@@ -7,11 +7,8 @@ import {
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
 import { ApiError, apiRequest } from './api';
-import { catalogSearchQueryKey } from './catalog';
-import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
-import { recipesQueryKey } from './recipes';
+import { catalogChangeQueryKeys } from './queryKeys';
 import { familySynonymsQueueKey } from './familySynonymsQueue';
-import { shoppingListQueryKey } from './shopping';
 
 type Leaf = { id: string; name: string };
 
@@ -85,12 +82,7 @@ export function invalidateCatalogDependents(queryClient: QueryClient) {
       queueKey,
       familySynonymsQueueKey,
       adminCatalogQueryKey,
-      catalogSearchQueryKey,
-      ['pantry'],
-      shoppingListQueryKey,
-      suggestionsQueryKey,
-      templateDetailsQueryKey,
-      recipesQueryKey,
+      ...catalogChangeQueryKeys,
     ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
   );
 }

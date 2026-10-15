@@ -1,11 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { catalogSearchQueryKey, type CatalogSearchResult } from './catalog';
-import {
-  familyIngredientRelinkQueryKeys,
-  recentlyStockedQueryKey,
-} from './queryKeys';
-import { staplesQueryKey } from './staples';
+import type { CatalogSearchResult } from './catalog';
+import { catalogChangeQueryKeys } from './queryKeys';
 
 /** What uses a Family Ingredient: the counts in the delete confirmation. */
 export type FamilyIngredientUsage = {
@@ -48,15 +44,11 @@ export function useFamilyCatalog(locale: string) {
 function useRefreshAfterCatalogChange() {
   const queryClient = useQueryClient();
   return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: familyCatalogQueryKey }),
-      queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
-      queryClient.invalidateQueries({ queryKey: staplesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: recentlyStockedQueryKey }),
-      ...familyIngredientRelinkQueryKeys.map((queryKey) =>
+    Promise.all(
+      catalogChangeQueryKeys.map((queryKey) =>
         queryClient.invalidateQueries({ queryKey }),
       ),
-    ]);
+    );
 }
 
 export type FamilyIngredientChange = {
