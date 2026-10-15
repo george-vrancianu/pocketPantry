@@ -96,7 +96,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       .select({ familyId: user.familyId })
       .from(user)
       .where(eq(user.email, emails[label]));
-    return row.familyId as string;
+    return row.familyId;
   };
 
   async function made(
