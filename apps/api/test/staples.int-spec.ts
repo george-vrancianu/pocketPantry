@@ -29,7 +29,7 @@ type Suggestion = {
   unit: string | null;
   aisle: { id: string; name: string; sortOrder: number } | null;
 };
-type Suggestions = { staples: Suggestion[] };
+type Suggestions = { staples: Suggestion[]; dismissed: string[] };
 type List = {
   groups: Array<{ items: Array<{ id: string; ingredientId: string | null }> }>;
 };
@@ -368,6 +368,22 @@ describe('Staples and Suggestions (integration)', () => {
         204,
       );
       expect((await suggestions(owner.cookie)).staples).toHaveLength(1);
+    });
+
+    it('lists the dismissed Ingredient ids for the Family, until a Batch of one is created', async () => {
+      const { cookie } = await signUp();
+      await addStaple(cookie, { ingredientId: milk }).expect(201);
+      expect((await suggestions(cookie)).dismissed).toEqual([]);
+
+      await api(
+        'post',
+        cookie,
+        `/shopping-list/suggestions/${milk}/dismiss`,
+      ).expect(204);
+      expect((await suggestions(cookie)).dismissed).toEqual([milk]);
+
+      await addBatch(cookie, { ingredientId: milk });
+      expect((await suggestions(cookie)).dismissed).toEqual([]);
     });
 
     it('drops the dismissal with its Staple, so a re-added Staple is suggested', async () => {

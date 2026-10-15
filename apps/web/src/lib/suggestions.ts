@@ -24,6 +24,8 @@ export type Suggestions = {
   usedUp: Suggestion[];
   runningLow: Suggestion[];
   expired: Suggestion[];
+  /** The Ingredient ids with an active dismissal for the Family. */
+  dismissed: string[];
 };
 
 export const noSuggestions: Suggestions = {
@@ -31,6 +33,7 @@ export const noSuggestions: Suggestions = {
   usedUp: [],
   runningLow: [],
   expired: [],
+  dismissed: [],
 };
 
 export type GoneReason = 'expired' | 'usedUp' | 'staple';
