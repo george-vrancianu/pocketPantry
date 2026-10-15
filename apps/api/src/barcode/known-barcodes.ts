@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm';
+import { normalizeName } from '../catalog/normalize';
 import type { Database, Tx } from '../database/database.types';
 import { knownBarcodes } from '../database/schema';
 
@@ -25,6 +26,8 @@ export async function rememberBarcodes(
     const fields = {
       ingredientId: save.ingredientId,
       rawName: save.ingredientId ? null : save.rawName,
+      normalizedName:
+        save.ingredientId || !save.rawName ? null : normalizeName(save.rawName),
       productDescription: save.productDescription,
     };
     await tx

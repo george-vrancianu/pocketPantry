@@ -6,6 +6,7 @@ import { recordStocked } from '../pantry/stock-history';
 import {
   batches,
   ingredients,
+  knownBarcodes,
   recipeIngredientLines,
   shoppingItemSourceRecipes,
   shoppingItems,
@@ -91,6 +92,21 @@ export async function relinkUnmatched(
     await recordStocked(tx, owner, [target.id]);
     await clearRunningLowOnRestock(tx, owner, [target.id]);
   }
+
+  // Known Barcodes saved under the typed name follow it to the Ingredient: the Family's own
+  // for a Family create, every Family's for an Admin resolve.
+  await tx
+    .update(knownBarcodes)
+    .set({ ingredientId: target.id, rawName: null, normalizedName: null })
+    .where(
+      and(
+        eq(knownBarcodes.normalizedName, key),
+        isNull(knownBarcodes.ingredientId),
+        familyId === undefined
+          ? undefined
+          : eq(knownBarcodes.familyId, familyId),
+      ),
+    );
 
   // Family Recipe lines: the line keeps its quantity, unit, note and position.
   const relinkedLines =

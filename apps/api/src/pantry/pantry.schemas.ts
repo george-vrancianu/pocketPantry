@@ -1,5 +1,5 @@
-import { barcodeValue } from '../barcode/barcode.schemas';
 import { z } from 'zod';
+import { barcodeValue } from '../barcode/barcode.schemas';
 import {
   CATALOG_LOCALES,
   FALLBACK_LOCALE,

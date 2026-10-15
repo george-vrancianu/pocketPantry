@@ -1,5 +1,5 @@
 {
-  "id": "328a721d-2ba1-427f-8d77-c5ff520f52e3",
+  "id": "59605ee3-e5d3-40dc-be06-51137f4fda5a",
   "prevId": "82a09395-fdf0-4e19-9204-b03207e33bc8",
   "version": "7",
   "dialect": "postgresql",
@@ -1235,139 +1235,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.known_barcodes": {
-      "name": "known_barcodes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "family_id": {
-          "name": "family_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "barcode": {
-          "name": "barcode",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "ingredient_id": {
-          "name": "ingredient_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "raw_name": {
-          "name": "raw_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "product_description": {
-          "name": "product_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "known_barcodes_family_barcode_idx": {
-          "name": "known_barcodes_family_barcode_idx",
-          "columns": [
-            {
-              "expression": "family_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "barcode",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "known_barcodes_ingredient_idx": {
-          "name": "known_barcodes_ingredient_idx",
-          "columns": [
-            {
-              "expression": "ingredient_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "known_barcodes_family_id_family_id_fk": {
-          "name": "known_barcodes_family_id_family_id_fk",
-          "tableFrom": "known_barcodes",
-          "tableTo": "family",
-          "columnsFrom": [
-            "family_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "known_barcodes_ingredient_id_ingredients_id_fk": {
-          "name": "known_barcodes_ingredient_id_ingredients_id_fk",
-          "tableFrom": "known_barcodes",
-          "tableTo": "ingredients",
-          "columnsFrom": [
-            "ingredient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "known_barcodes_match_state": {
-          "name": "known_barcodes_match_state",
-          "value": "(\"known_barcodes\".\"ingredient_id\" IS NOT NULL AND \"known_barcodes\".\"raw_name\" IS NULL) OR (\"known_barcodes\".\"ingredient_id\" IS NULL AND \"known_barcodes\".\"raw_name\" IS NOT NULL)"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.leaf_categories": {
       "name": "leaf_categories",
       "schema": "",
@@ -1554,6 +1421,37 @@
           "with": {}
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.open_food_facts_cache": {
+      "name": "open_food_facts_cache",
+      "schema": "",
+      "columns": {
+        "barcode": {
+          "name": "barcode",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "product": {
+          "name": "product",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

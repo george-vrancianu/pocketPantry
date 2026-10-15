@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
+import { openFoodFactsCache } from '../database/schema';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type {
@@ -16,6 +18,11 @@ import {
   type OpenFoodFactsClient,
   type OpenFoodFactsProduct,
 } from './open-food-facts.client';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** How long the shared cache keeps a product, and a "not found". */
+const HIT_TTL_MS = 30 * DAY_MS;
+const NOT_FOUND_TTL_MS = DAY_MS;
 
 /**
  * Barcode Lookup (ADR 0013): a barcode as a Prefill proposal. Not a Scan, so
@@ -39,7 +46,8 @@ export class BarcodeLookupService {
     // The resolution order of ADR 0013 starts here. The Family's Known Barcode
     // is checked first and returns before this; the shared cache of
     // Open Food Facts results (#347) wraps `product` so a hit skips the client.
-    const known = await this.knownBarcode(memberId, barcode, locale);
+    const familyId = await this.settings.familyIdOf(memberId);
+    const known = await this.knownBarcode(familyId, barcode, locale);
     if (known) return known;
     const product = await this.product(barcode);
     if (!product) return { found: false };
@@ -47,7 +55,7 @@ export class BarcodeLookupService {
     const names = candidateNames(product, locale);
     if (names.length === 0) return { found: false };
     const overrides = await this.settings.expiryOverridesForMember(memberId);
-    const scope = catalogScope(await this.settings.familyIdOf(memberId));
+    const scope = catalogScope(familyId);
     const match = await this.confidentMatch(scope, names, locale, overrides);
     return {
       found: true,
@@ -61,11 +69,10 @@ export class BarcodeLookupService {
 
   /** What the Family last saved this barcode as, exactly, or null. No Open Food Facts credit. */
   private async knownBarcode(
-    memberId: string,
+    familyId: string,
     barcode: string,
     locale: CatalogLocale,
   ): Promise<BarcodeLookupResponse | null> {
-    const familyId = await this.settings.familyIdOf(memberId);
     const known = await findKnownBarcode(this.database, familyId, barcode);
     if (!known) return null;
     const base = {
@@ -89,9 +96,30 @@ export class BarcodeLookupService {
     return { ...base, match: match ?? null };
   }
 
-  /** The product as Open Food Facts has it, or null. */
-  private product(barcode: string): Promise<OpenFoodFactsProduct | null> {
-    return this.openFoodFacts.fetchProduct(barcode);
+  /**
+   * The product as Open Food Facts has it, or null. Served from the shared
+   * cache while fresh; a failure throws and is never cached.
+   */
+  private async product(barcode: string): Promise<OpenFoodFactsProduct | null> {
+    const now = Date.now();
+    const [cached] = await this.database
+      .select()
+      .from(openFoodFactsCache)
+      .where(eq(openFoodFactsCache.barcode, barcode));
+    if (cached) {
+      const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
+      if (now - cached.fetchedAt.getTime() < ttl) return cached.product;
+    }
+    const product = await this.openFoodFacts.fetchProduct(barcode);
+    const fetchedAt = new Date(Date.now());
+    await this.database
+      .insert(openFoodFactsCache)
+      .values({ barcode, product, fetchedAt })
+      .onConflictDoUpdate({
+        target: openFoodFactsCache.barcode,
+        set: { product, fetchedAt },
+      });
+    return product;
   }
 
   private async confidentMatch(

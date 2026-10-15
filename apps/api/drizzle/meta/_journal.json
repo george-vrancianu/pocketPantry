@@ -173,8 +173,15 @@
     {
       "idx": 24,
       "version": "7",
-      "when": 1792082321542,
-      "tag": "0024_nasty_giant_girl",
+      "when": 1792082627339,
+      "tag": "0024_open_food_facts_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792082958168,
+      "tag": "0025_known_barcodes",
       "breakpoints": true
     }
   ]

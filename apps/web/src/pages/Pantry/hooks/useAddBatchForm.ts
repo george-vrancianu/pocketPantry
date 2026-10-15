@@ -298,7 +298,7 @@ export function useAddBatchForm({
     fromOpenFoodFacts,
     prefilled,
     checkIngredient,
-    /** Sets the barcode the Batch is saved with; for sources other than a Barcode Lookup. */
+    /** For the Product photo path (#349): a barcode read from the photo is sent with the Batch too. */
     setBarcodeToSend,
   };
 

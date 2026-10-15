@@ -1,5 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { and, eq, inArray } from 'drizzle-orm';
+import { normalizeName } from '../src/catalog/normalize';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -11,6 +12,7 @@ import {
   knownBarcodes,
   user,
 } from '../src/database/schema';
+import { freshBarcode } from './support/fresh-barcode';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
@@ -30,9 +32,6 @@ describe('Known Barcodes (integration)', () => {
   const stamp = Date.now();
   let n = 0;
   const unique = (label: string) => `${label} ${stamp}-${++n}`;
-  // Eight digits each, unique to this run's order of use.
-  let codeSeq = 10_000_000 + (stamp % 80_000_000);
-  const nextCode = () => String(++codeSeq).padStart(8, '0');
   const asked: string[] = [];
   let found: OpenFoodFactsProduct | null = null;
   const touched: string[] = [];
@@ -112,9 +111,12 @@ describe('Known Barcodes (integration)', () => {
       barcode: code,
       ...extra,
     });
-  async function familyIngredient(who: Who): Promise<string> {
+  async function familyIngredient(
+    who: Who,
+    name = unique('Kb Thing'),
+  ): Promise<string> {
     const res = await who.post('/catalog/family-ingredients?locale=en', {
-      name: unique('Kb Thing'),
+      name,
       leafCategoryId: GROUND_SPICES,
       defaultUnit: 'g',
     });
@@ -126,7 +128,7 @@ describe('Known Barcodes (integration)', () => {
 
   describe('saving a Batch with a barcode', () => {
     it('upserts the Known Barcode for an Ingredient, with the Product Description, and stores no barcode on the Batch', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       const res = await saveIngredient(a, code, {
         productDescription: 'Grana wedge',
       });
@@ -145,7 +147,7 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('upserts the Known Barcode for an Unmatched name', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       const rawName = unique('Zorblax');
       const res = await a.post('/pantry/batches?locale=en', {
         rawName,
@@ -163,7 +165,7 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('lets the latest save win, switching between an Ingredient and a name', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       await saveIngredient(a, code, { productDescription: 'first' }).expect(
         201,
       );
@@ -223,7 +225,7 @@ describe('Known Barcodes (integration)', () => {
 
   describe('Barcode Lookup', () => {
     it('returns the Known Barcode ahead of Open Food Facts, with its own source', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       found = { ...offProduct(), productName: 'Parmesan' };
       await saveIngredient(a, code, { productDescription: 'Our wedge' });
       const res = await lookup(a, code).expect(200);
@@ -237,7 +239,7 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('returns an Unmatched Known Barcode as the exact typed name', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       const rawName = unique('Zorblax');
       await a
         .post('/pantry/batches?locale=en', {
@@ -260,7 +262,7 @@ describe('Known Barcodes (integration)', () => {
     });
 
     it('does not show another Family the Known Barcode', async () => {
-      const code = nextCode();
+      const code = freshBarcode();
       await saveIngredient(a, code, { productDescription: 'Ours' });
       found = null;
       const res = await lookup(b, code).expect(200);
@@ -272,7 +274,7 @@ describe('Known Barcodes (integration)', () => {
   describe('Family Ingredient lifecycle', () => {
     it('deletes the Known Barcode with the Family Ingredient it points to', async () => {
       const id = await familyIngredient(a);
-      const code = nextCode();
+      const code = freshBarcode();
       await a
         .post('/pantry/batches?locale=en', {
           ingredientId: id,
@@ -289,7 +291,7 @@ describe('Known Barcodes (integration)', () => {
 
     it('re-points the Known Barcode when an Admin merges the Family Ingredient into a shared one', async () => {
       const id = await familyIngredient(a);
-      const code = nextCode();
+      const code = freshBarcode();
       await a
         .post('/pantry/batches?locale=en', {
           ingredientId: id,
@@ -323,6 +325,115 @@ describe('Known Barcodes (integration)', () => {
       expect((await lookup(a, code).expect(200)).body).toMatchObject({
         source: 'known_barcode',
         match: { id: targetId },
+      });
+    });
+  });
+  describe('relinking an Unmatched name', () => {
+    const saveUnmatched = (raw: string, code: string) =>
+      a
+        .post('/pantry/batches?locale=en', {
+          rawName: raw,
+          parentCategoryId: seedId.parent('dairy'),
+          location: 'fridge',
+          barcode: code,
+          productDescription: 'Relink tub',
+        })
+        .expect(201);
+
+    it('relinks it to a Family Ingredient created with the same name', async () => {
+      const raw = unique('Relink Thing');
+      const code = freshBarcode();
+      await saveUnmatched(raw, code);
+      expect((await lookup(a, code).expect(200)).body).toMatchObject({
+        unmatchedName: raw,
+      });
+
+      const res = await a.post('/catalog/family-ingredients?locale=en', {
+        name: raw,
+        leafCategoryId: GROUND_SPICES,
+        defaultUnit: 'g',
+      });
+      expect(res.status).toBe(201);
+      const id = (res.body as { id: string }).id;
+      touched.push(id);
+
+      const body = (await lookup(a, code).expect(200)).body as Json;
+      expect(body).toMatchObject({
+        source: 'known_barcode',
+        match: { id },
+        productDescription: 'Relink tub',
+      });
+      expect(body).not.toHaveProperty('unmatchedName');
+    });
+
+    it("leaves another Family's Unmatched Known Barcode alone", async () => {
+      const raw = unique('Relink Other');
+      const code = freshBarcode();
+      await b
+        .post('/pantry/batches?locale=en', {
+          rawName: raw,
+          parentCategoryId: seedId.parent('dairy'),
+          location: 'fridge',
+          barcode: code,
+        })
+        .expect(201);
+      const id = await familyIngredient(a, raw);
+      expect(id).toBeDefined();
+      expect((await lookup(b, code).expect(200)).body).toMatchObject({
+        match: null,
+        unmatchedName: raw,
+      });
+    });
+
+    it('relinks it when an Admin resolves the Unmatched queue to an Ingredient', async () => {
+      const raw = unique('Relink Queue');
+      const code = freshBarcode();
+      await saveUnmatched(raw, code);
+
+      await admin
+        .post('/admin/unmatched/resolve', {
+          normalizedName: normalizeName(raw),
+          ingredientId: seedId.ingredient('parmesan'),
+        })
+        .expect(201);
+
+      const body = (await lookup(a, code).expect(200)).body as Json;
+      expect(body).toMatchObject({
+        match: { id: seedId.ingredient('parmesan') },
+      });
+      expect(body).not.toHaveProperty('unmatchedName');
+    });
+  });
+
+  describe('promoting a Family Ingredient', () => {
+    it("points another Family's Known Barcode at the promoted Ingredient", async () => {
+      const name = unique('Kb Promote');
+      const copyA = await familyIngredient(a, name);
+      const copyB = await familyIngredient(b, name);
+      const codeA = freshBarcode();
+      const codeB = freshBarcode();
+      const save = (who: Who, ingredientId: string, barcode: string) =>
+        who
+          .post('/pantry/batches?locale=en', {
+            ingredientId,
+            quantity: 1,
+            unit: 'g',
+            location: 'cupboard',
+            barcode,
+          })
+          .expect(201);
+      await save(a, copyA, codeA);
+      await save(b, copyB, codeB);
+
+      await admin
+        .post('/admin/family-ingredients/promote', { ingredientId: copyA })
+        .expect(200);
+
+      expect((await lookup(a, codeA).expect(200)).body).toMatchObject({
+        match: { id: copyA },
+      });
+      expect((await lookup(b, codeB).expect(200)).body).toMatchObject({
+        match: { id: copyA },
       });
     });
   });

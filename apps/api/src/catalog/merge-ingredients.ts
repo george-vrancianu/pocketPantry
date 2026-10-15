@@ -31,9 +31,9 @@ export type MergedIngredient = {
 
 /**
  * Folds the `sourceIds` Ingredients into `target` and deletes them: every
- * reference (Known Barcodes included) is re-pointed, and rows a Family would then hold twice (Staples,
- * Running low, dismissals, stock history) are de-duplicated. Batches also take
- * the target's Leaf Category.
+ * reference (Known Barcodes included) is re-pointed, and rows a Family would
+ * then hold twice (Staples, Running low, dismissals, stock history) are
+ * de-duplicated. Batches also take the target's Leaf Category.
  *
  * The caller holds the name lock and the owning Families' locks (family-locks.ts)
  * and clears or checks ownership itself. Returns the merged rows as they were,
