@@ -186,7 +186,19 @@ _Avoid_: Batch (a Batch is a Pantry purchase), queue
 Product, Receipt, Plate, or Ingredients.
 
 **Product Scan**:
-Recognises a single packaged product and its best-before date from a photo.
+Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
+
+**Barcode Lookup**:
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
+_Avoid_: Barcode scan, barcode mode
+
+**Known Barcode**:
+A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins.
+_Avoid_: Barcode cache, saved product
+
+**Prefill**:
+Filling the add-Batch form from a Product Scan or a Barcode Lookup. It fills only the fields the Member has not touched, and the Member still saves the Batch themselves.
+_Avoid_: Autofill, auto-add
 
 **Receipt Scan**:
 Recognises every purchased line on a receipt photo.
