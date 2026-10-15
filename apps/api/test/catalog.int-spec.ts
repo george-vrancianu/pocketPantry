@@ -559,7 +559,7 @@ describe('Catalog (integration)', () => {
       const inRolledBackTransaction = (body: (tx: Database) => Promise<void>) =>
         expect(
           database.transaction(async (tx) => {
-            await body(tx as unknown as Database);
+            await body(tx);
             throw new Rollback();
           }),
         ).rejects.toBeInstanceOf(Rollback);

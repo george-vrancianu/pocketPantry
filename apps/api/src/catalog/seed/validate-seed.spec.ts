@@ -243,11 +243,10 @@ describe('Catalog seed validation', () => {
   });
 
   it('requires every Ingredient to declare its Allergens, an empty list meaning none', () => {
-    const { allergens: _declared, ...undeclared } = ingredient(
-      'a',
-      'Apple',
-      'Măr',
-    );
+    const undeclared: SeedIngredient = {
+      ...ingredient('a', 'Apple', 'Măr'),
+      allergens: undefined,
+    };
     expect(problems([undeclared, ingredient('b', 'Pear', 'Pară')])).toEqual([
       expect.stringContaining('ingredient "a": no Allergens declared'),
     ]);
