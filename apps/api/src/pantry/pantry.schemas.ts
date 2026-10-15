@@ -105,6 +105,12 @@ export const updateBatchBody = z
   });
 export type UpdateBatchBody = z.infer<typeof updateBatchBody>;
 
+/** Batches to delete together; ids of another Family are ignored. */
+export const deleteBatchesBody = z.object({
+  ids: z.array(z.uuid()).min(1).max(200),
+});
+export type DeleteBatchesBody = z.infer<typeof deleteBatchesBody>;
+
 export const batchIdParam = z.object({ id: z.uuid() });
 export type BatchIdParam = z.infer<typeof batchIdParam>;
 

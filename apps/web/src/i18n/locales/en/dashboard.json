@@ -141,19 +141,26 @@
       "age": "{{count}} d old",
       "inLocation": "{{duration}} in the {{location}}"
     },
-    "item": {
-      "add": "Add {{name}}",
-      "setDate": "Set date",
-      "setDateName": "Set date for {{name}}"
-    },
+    "close": "Close",
     "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Removed {{count}} expired",
+      "expired_other": "Removed {{count}} expired",
+      "tossed": "Tossed {{name}}",
+      "used": "Used {{name}}",
       "added_one": "{{count}} added to the Shopping List",
       "added_other": "{{count}} added to the Shopping List",
-      "withScore": "{{message}} · score {{score}}",
       "dated": "{{name}} dated",
       "usual_one": "{{count}} given their usual expiry · edit any in Pantry",
       "usual_other": "{{count}} given their usual expiry · edit any in Pantry"
     },
-    "close": "Close"
+    "item": {
+      "toss": "Toss {{name}}",
+      "used": "Used",
+      "usedName": "Used {{name}}",
+      "add": "Add {{name}}",
+      "setDate": "Set date",
+      "setDateName": "Set date for {{name}}"
+    }
   }
 }

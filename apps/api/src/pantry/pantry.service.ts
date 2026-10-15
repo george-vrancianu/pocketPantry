@@ -189,6 +189,14 @@ export class PantryService {
     }
   }
 
+  /** Deletes the Family's Batches among `batchIds`; ids of another Family or already gone are ignored. */
+  async removeMany(memberId: string, batchIds: string[]): Promise<void> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    await this.database.transaction((tx) =>
+      this.deleteBatches(tx, familyId, [...new Set(batchIds)]),
+    );
+  }
+
   /**
    * The one way to create Batches, so the stock history stays right (ADR 0005):
    * every caller (manual add, Scan save, Finish Shopping) goes through it, and a
