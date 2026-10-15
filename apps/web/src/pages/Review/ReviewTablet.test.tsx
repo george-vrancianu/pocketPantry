@@ -12,6 +12,8 @@ import { ReviewPage } from './ReviewPage';
 import { tabletTemplate } from './components/layout';
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',

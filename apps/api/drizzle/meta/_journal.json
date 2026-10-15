@@ -148,6 +148,76 @@
       "when": 1791990791560,
       "tag": "0020_running_low",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791993760477,
+      "tag": "0021_amount_scale",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792015501944,
+      "tag": "0022_family_ingredients",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792023965035,
+      "tag": "0023_family_synonyms",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792076351745,
+      "tag": "0024_meal_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792087653752,
+      "tag": "0025_open_food_facts_cache",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792087654586,
+      "tag": "0026_known_barcodes",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792089128004,
+      "tag": "0027_allergies",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792089211426,
+      "tag": "0028_allergen_archive",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792090279238,
+      "tag": "0029_hide_allergy_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792091440796,
+      "tag": "0030_ingredient_allergens_review",
+      "breakpoints": true
     }
   ]
 }

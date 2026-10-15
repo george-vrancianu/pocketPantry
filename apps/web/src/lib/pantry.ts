@@ -7,11 +7,17 @@ import {
   templateDetailsQueryKey,
 } from './queryKeys';
 import type { Aisle } from './staples';
+import type { AmountScale } from './usualAmounts';
 import { LOCATIONS, UNITS, type StorageLocation, type Unit } from './catalog';
 import { useStaleThresholdDays } from './settings';
+import { fold } from './fold';
 
 /** A calendar date as `YYYY-MM-DD`. */
 export type IsoDate = string;
+
+/** English dates read day first here ("Saturday 17 October"), as Romanian and Danish already do. */
+export const dateLocale = (language: string) =>
+  language === 'en' ? 'en-GB' : language;
 
 export type Batch = {
   id: string;
@@ -21,10 +27,16 @@ export type Batch = {
   unmatched: boolean;
   /** The Ingredient's Aisle; null for an Unmatched Batch. */
   aisle: Aisle | null;
+  /** The Ingredient's Amount Scale; null for an Unmatched Batch. */
+  amountScale: AmountScale | null;
+  /** The Ingredient's own unit: what a Batch with no stored unit opens on; null for an Unmatched Batch. */
+  defaultUnit: Unit | null;
   quantity: number | null;
   unit: Unit | null;
   location: StorageLocation;
   expiryDate: IsoDate | null;
+  /** The Default Expiry in days for the Batch's Category (the Family's override first); null when there is none. */
+  defaultExpiryDays: number | null;
   productDescription: string | null;
   createdAt: string;
 };
@@ -44,6 +56,8 @@ export type NewBatch = {
   /** `null` means no expiry. */
   expiryDate: IsoDate | null;
   productDescription?: string | null;
+  /** The barcode the form was prefilled from: saving teaches the Family it. The Batch stores none. */
+  barcode?: string;
 };
 
 /** The days-left tag of an expiry date; `none` (no date) is shown only where its absence is worth saying. */
@@ -187,21 +201,6 @@ export type PantryFilter = 'all' | StorageLocation;
 
 export const FILTERS: PantryFilter[] = ['all', ...LOCATIONS];
 
-/**
- * Lower-case and strip diacritics so "mamaliga" finds "Mămăligă". The Danish
- * letters fold as the API's matching key does (æ→ae, ø→oe, å→aa), so "maelk"
- * finds "Mælk".
- */
-function fold(text: string): string {
-  return text
-    .normalize('NFD')
-    .toLocaleLowerCase()
-    .replace(/a\u030A/g, 'aa')
-    .replace(/æ/g, 'ae')
-    .replace(/ø/g, 'oe')
-    .replace(/\p{Diacritic}/gu, '');
-}
-
 /** Search matches the localised name and the Product Description. */
 export function matchesSearch(batch: Batch, query: string): boolean {
   const needle = fold(query.trim());
@@ -249,6 +248,14 @@ function byExpiry(a: Batch, b: Batch): number {
   return a.expiryDate < b.expiryDate ? -1 : 1;
 }
 
+/** Soonest expiry first, none last, and the same expiry (or none) in the order the Batches were added. */
+function byExpiryThenAdded(a: Batch, b: Batch): number {
+  return (
+    byExpiry(a, b) ||
+    (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0)
+  );
+}
+
 /** Roll Batches of the same Ingredient up into one row each, in order of soonest expiry. */
 export function rollUp(batches: Batch[]): RollUp[] {
   const groups = new Map<string, Batch[]>();
@@ -258,7 +265,7 @@ export function rollUp(batches: Batch[]): RollUp[] {
   }
   return [...groups.entries()]
     .map(([key, members]) => {
-      const sorted = [...members].sort(byExpiry);
+      const sorted = [...members].sort(byExpiryThenAdded);
       const sums = new Map<Unit, number>();
       for (const { quantity, unit } of sorted) {
         if (quantity === null || unit === null) continue;
@@ -388,9 +395,9 @@ export function parseQuantity(text: string): {
   return { value, valid };
 }
 
-/** Parse a typed amount, where a decimal comma ("1,5") counts as a point. */
+/** Parse a typed amount, where a decimal comma ("1,5") counts as a point and surrounding spaces are ignored. */
 export function parseAmountText(text: string) {
-  return parseQuantity(text.replace(',', '.'));
+  return parseQuantity(text.trim().replace(',', '.'));
 }
 
 /** The fields to change; anything left out stays as it is. */
@@ -423,19 +430,38 @@ export function useUpdateBatch(locale: string) {
   });
 }
 
-export function useDeleteBatch() {
+/** What a deleted Batch changes elsewhere: the Pantry, Suggestions (Used Up), Recipe matching and Template details. */
+function useInvalidateAfterBatchDelete() {
   const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      ...recipeMatchingQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+      queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
+    ]);
+}
+
+export function useDeleteBatch() {
+  const invalidate = useInvalidateAfterBatchDelete();
   return useMutation({
     mutationFn: (id: string) =>
       apiRequest<void>(`/pantry/batches/${id}`, { method: 'DELETE' }),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-        ...recipeMatchingQueryKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
-      ]),
+    onSuccess: invalidate,
+  });
+}
+
+/** Delete many Batches in one request. */
+export function useDeleteBatches() {
+  const invalidate = useInvalidateAfterBatchDelete();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      apiRequest<void>('/pantry/batches/bulk-delete', {
+        method: 'POST',
+        body: { ids },
+      }),
+    onSuccess: invalidate,
   });
 }

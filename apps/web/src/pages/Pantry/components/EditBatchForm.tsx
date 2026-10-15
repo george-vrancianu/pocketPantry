@@ -35,6 +35,7 @@ export function EditBatchForm({ batch, onSaved, onCancel, onRemove }: Props) {
     >
       <AmountLocationRow
         name={batch.name}
+        amountScale={batch.amountScale}
         quantity={form.quantity}
         unit={form.unit}
         location={form.location}

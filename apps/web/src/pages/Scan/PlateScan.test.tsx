@@ -30,6 +30,8 @@ vi.mock('../../lib/image', async (importActual) => ({
 }));
 
 const milk: CatalogSearchResult = {
+  owner: 'catalog',
+  amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',
   defaultUnit: 'ml',

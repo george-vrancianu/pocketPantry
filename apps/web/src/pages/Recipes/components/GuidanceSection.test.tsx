@@ -4,6 +4,7 @@ import type {
   DetailEatingMoment,
   DetailPairing,
   RecipeDetail,
+  RecipeAllergens,
   RecipeGuidance,
 } from '../../../lib/recipes';
 import { renderWithProviders } from '../../../test/render';
@@ -36,8 +37,9 @@ function show(
     eatingMoments: [],
     ...guidance,
   };
+  const allergens: RecipeAllergens = { items: [], uncheckedCount: 0 };
   return renderWithProviders(
-    <GuidanceSection recipe={{ guidance: full } as RecipeDetail} />,
+    <GuidanceSection recipe={{ guidance: full, allergens } as RecipeDetail} />,
     { locale },
   );
 }
@@ -45,9 +47,13 @@ function show(
 const DISCLAIMER = 'General guidance, not medical or dietary advice.';
 
 describe('GuidanceSection', () => {
-  it('renders nothing, not even the disclaimer, without guidance', () => {
-    const { container } = show({});
-    expect(container).toBeEmptyDOMElement();
+  it('shows only the Allergens card, without the disclaimer, when there is no guidance', () => {
+    show({});
+    expect(
+      screen.getByRole('heading', { name: 'Allergens' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('heading')).toHaveLength(1);
+    expect(screen.queryByText(DISCLAIMER)).toBeNull();
   });
 
   it('groups Pairings as Food and Drink with label, Principle label and reason', () => {
@@ -184,7 +190,7 @@ describe('GuidanceSection', () => {
       eatingMoments: [moment({})],
     });
     expect(screen.getAllByText(DISCLAIMER)).toHaveLength(1);
-    expect(screen.getAllByRole('region')).toHaveLength(3);
+    expect(screen.getAllByRole('region')).toHaveLength(4);
   });
 
   it('orders Pairings, When to Eat, Nutrition, then the disclaimer', () => {

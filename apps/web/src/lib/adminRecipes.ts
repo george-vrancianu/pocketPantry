@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ScanLanguage } from '../i18n/resources';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-import { recipesQueryKey } from './recipes';
+import { recipeChangeQueryKeys } from './queryKeys';
+import type { RecipeAllergens } from './recipes';
 import type {
   Difficulty,
   PairingKind,
@@ -155,6 +156,19 @@ export function useAdminRecipe(id: string | null) {
   });
 }
 
+/**
+ * The Allergens a Catalog Recipe is known to contain, derived from its lines' Ingredient tags.
+ * Under the Recipe's detail key, so any Recipe save or Ingredient tag change refetches it.
+ */
+export function useAdminRecipeAllergens(id: string | null) {
+  return useQuery({
+    queryKey: [...recipeKey(id ?? ''), 'allergens'],
+    queryFn: () =>
+      apiRequest<RecipeAllergens>(`/admin/recipes/${id}/allergens`),
+    enabled: id !== null,
+  });
+}
+
 /** A write that refreshes the list and details; a returned Recipe seeds its detail. */
 function useRecipeWrite<Input>(send: (input: Input) => Promise<unknown>) {
   const queryClient = useQueryClient();
@@ -168,7 +182,9 @@ function useRecipeWrite<Input>(send: (input: Input) => Promise<unknown>) {
       // Members browse the same Recipes.
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+        ...recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
       ]);
     },
   });

@@ -14,10 +14,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountSheet } from '../../components/AmountSheet';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { CatalogSearch } from '../../components/CatalogSearch';
+import { CatalogSearch } from '../../components/catalogSearch/CatalogSearch';
+import { BrowseByAisle } from '../../components/catalogSearch/emptyState/BrowseByAisle';
 import { translateApiError } from '../../i18n/translateApiError';
 import { formatAmount, type Amount } from '../../lib/amount';
 import {
+  isPendingStaple,
   staplesQueryKey,
   useStapleMutations,
   useStaples,
@@ -69,10 +71,12 @@ export function StaplesPage() {
         <Typography color="text.secondary">{t('staples:hint')}</Typography>
         {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
         <CatalogSearch
+          emptyState={<BrowseByAisle />}
           key={formKey}
+          showUnit={false}
           onSelect={(ingredient) =>
             add.mutate(
-              { ingredientId: ingredient.id },
+              { ingredientId: ingredient.id, name: ingredient.name },
               { onSettled: () => setFormKey((key) => key + 1) },
             )
           }
@@ -140,7 +144,8 @@ function StapleRow({
         ref={row}
         name={staple.name}
         labels={labels}
-        disabled={editing}
+        // A Staple whose add is still out has no id to save or remove by yet.
+        disabled={editing || isPendingStaple(staple)}
         peek={peek}
         onLearned={onLearned}
         onEdit={() => setEditing(true)}

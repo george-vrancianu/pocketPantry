@@ -7,7 +7,9 @@
     "tickedOff_one": "{{count}} ticked off",
     "tickedOff_other": "{{count}} ticked off",
     "moveToPantry_one": "Move {{count}} to Pantry",
-    "moveToPantry_other": "Move {{count}} to Pantry"
+    "moveToPantry_other": "Move {{count}} to Pantry",
+    "nothing": "Nothing to buy",
+    "empty": "Your list is empty"
   },
   "add": {
     "quantity": "Quantity",
@@ -23,8 +25,13 @@
   },
   "unmatchedGroup": "Not in the catalog",
   "empty": {
-    "title": "Your list is empty.",
-    "hint": "Add what you need, or start from a template."
+    "title": "Start your list",
+    "hint": "Search for what you need, or start from one of your templates.",
+    "addTitle": "Add items",
+    "addMeta": "Search ingredients, staples you're out of",
+    "importTitle": "Import a template",
+    "importMeta_one": "{{count}} template",
+    "importMeta_other": "{{count}} templates"
   },
   "finish": {
     "reviewTitle": "Add to your Pantry",
@@ -42,25 +49,15 @@
   },
   "addItems": "Add items",
   "added": "Added {{name}}",
+  "addSheet": {
+    "title": "Add items"
+  },
   "sheet": {
-    "title": "Add to list",
     "done": "Done",
     "doneCount_one": "Done, {{count}} added",
-    "doneCount_other": "Done, {{count}} added",
-    "tabsLabel": "Add to list",
-    "tabs": {
-      "ingredients": "Ingredients",
-      "templates": "Templates"
-    }
+    "doneCount_other": "Done, {{count}} added"
   },
   "search": {
-    "placeholder": "Search ingredients",
-    "clear": "Clear search",
-    "matches_one": "{{count}} match",
-    "matches_other": "{{count}} matches",
-    "noMatch": "No catalog match",
-    "freeText": "Add “{{name}}”",
-    "freeTextHint": "Not in the catalog, added as free text",
     "onList": "On list",
     "onListHint": "Already on your list. Adding again increases the amount.",
     "onListOtherUnit": "Already on your list in {{unit}}. This adds a separate line.",
@@ -71,15 +68,49 @@
     "add": "Add {{name}} to the list"
   },
   "suggestions": {
-    "missingLabel": "Missing staples · {{count}}",
-    "usedUpLabel": "Recently used up · {{count}}",
-    "runningLowLabel": "Running low · {{count}}",
-    "stapleLabel": "Staples",
-    "allStocked": "All your staples are stocked.",
+    "runningLowLabel": "Running low",
+    "runningLowWhy": "running low",
+    "runningLowTile": "{{name}}, running low",
     "manage": "Manage",
     "dismissed": "Dismissed {{name}}",
-    "dismiss": "Dismiss {{name}}"
+    "dismiss": "Dismiss {{name}}",
+    "gone": "Gone from your Pantry",
+    "goneNone": "Nothing has run out or expired. Nice.",
+    "usedUpWhen": "used up · {{when}}",
+    "expiredWhen": "expired · {{when}}",
+    "stapleWhy": "staple",
+    "goneLabelUsedUp": "{{name}}, used up {{when}}",
+    "goneLabelExpired": "{{name}}, expired {{when}}",
+    "goneLabelStaple": "{{name}}, missing staple"
   },
-  "templatesFromSearch": "Or start from a template",
-  "seeAll": "See all"
+  "import": {
+    "button": "Import",
+    "title": "Import",
+    "close": "Close",
+    "aria": "Import from a template",
+    "hint": "Tick whole templates, or open one to choose lines. You can mix several.",
+    "section": "Your templates · {{count}}",
+    "manage": "Manage",
+    "tickLabel": "Import {{name}}",
+    "selected": "{{ticked}} of {{total}} selected",
+    "onListAddsUp": "On list · adds up",
+    "tooMany": "Up to 100 items at a time",
+    "from": "From {{names}}",
+    "repeats_one": "{{count}} repeat combined",
+    "repeats_other": "{{count}} repeats combined",
+    "confirm_one": "Import {{count}} item",
+    "confirm_other": "Import {{count}} items",
+    "pending": "Importing",
+    "pickOne": "Pick a template",
+    "done_one": "Imported {{count}} item from {{name}}",
+    "done_other": "Imported {{count}} items from {{name}}",
+    "doneMany_one": "Imported {{count}} item from {{templates}}",
+    "doneMany_other": "Imported {{count}} items from {{templates}}",
+    "none": "No templates yet. Save your list as one from the end of the list.",
+    "inTrolley": "In trolley",
+    "rowItems_one": "{{count}} item",
+    "rowItems_other": "{{count}} items",
+    "templateCount_one": "{{count}} template",
+    "templateCount_other": "{{count}} templates"
+  }
 }

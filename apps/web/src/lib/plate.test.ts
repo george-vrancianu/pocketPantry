@@ -4,6 +4,8 @@ import { toNewShoppingItem } from './plate';
 import { toReviewLine } from './review';
 
 const milk: CatalogSearchResult = {
+  owner: 'catalog',
+  amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',
   defaultUnit: 'ml',

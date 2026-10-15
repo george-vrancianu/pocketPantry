@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
 import type { AdminCatalog } from '../../../lib/admin';
 import { useAdminRecipe } from '../../../lib/adminRecipes';
+import { RecipeAllergens } from './RecipeAllergens';
 import { RecipeActions } from './RecipeActions';
 import { RecipeGuidance } from './RecipeGuidance';
 import { RecipeForm } from './RecipeForm';
@@ -53,6 +54,7 @@ export function RecipeEditor({ recipeId, catalog, onOpen, onClose }: Props) {
         onCancel={onClose}
       />
       <RecipeActions recipe={recipe} onOpen={onOpen} />
+      <RecipeAllergens recipeId={recipe.id} />
       <RecipeTips recipe={recipe} />
       <RecipeGuidance recipe={recipe} catalog={catalog} />
       <RecipeTranslations recipe={recipe} catalog={catalog} />

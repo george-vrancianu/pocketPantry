@@ -1,6 +1,7 @@
 import { z } from 'zod';
-import type { ingredientUnit } from '../database/schema';
+import { ingredientUnit } from '../database/schema';
 import type { ResolvedCatalogDefaults } from './catalog-defaults';
+import type { AmountScale } from './amount-scale';
 
 export const CATALOG_LOCALES = ['en', 'ro', 'da'] as const;
 export type CatalogLocale = (typeof CATALOG_LOCALES)[number];
@@ -14,10 +15,17 @@ export const FALLBACK_LOCALE: CatalogLocale = 'en';
 export const SCAN_LANGUAGES = ['en', 'ro', 'da'] as const;
 export type ScanLanguage = (typeof SCAN_LANGUAGES)[number];
 
+/** 'shared' reads the shared Catalog only: Admin curation and Catalog Recipe editing. */
+export const catalogScopeParam = z.enum(['family', 'shared']).default('family');
+
 export const catalogSearchQuery = z.object({
   q: z.string().max(100),
+  // Browse by aisle: an empty `q` lists the Aisle's Ingredients A to Z (limit 50); with `q` it filters within.
+  aisleId: z.uuid().optional(),
+  parentCategoryId: z.uuid().optional(),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  scope: catalogScopeParam,
 });
 export type CatalogSearchQuery = z.infer<typeof catalogSearchQuery>;
 
@@ -28,10 +36,135 @@ export type CatalogParentsQuery = z.infer<typeof catalogParentsQuery>;
 
 export type CatalogParent = { id: string; name: string };
 
+export const catalogAislesQuery = z.object({
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  scope: catalogScopeParam,
+});
+export type CatalogAislesQuery = z.infer<typeof catalogAislesQuery>;
+
+/** An Aisle with its Parent Categories, for Browse by aisle. */
+export type CatalogAisle = {
+  id: string;
+  name: string;
+  parentCategories: CatalogParent[];
+};
+
+/** An empty-`q` Aisle listing returns at most this many Ingredients. */
+export const AISLE_LISTING_LIMIT = 50;
+
+export const familyIngredientQuery = z.object({
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+});
+
+/** A set of Allergen ids. */
+export const allergenIdList = z
+  .array(z.uuid())
+  .max(100)
+  .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique');
+
+export const familyIngredientAllergensBody = z.object({
+  allergenIds: allergenIdList,
+});
+export type FamilyIngredientAllergensBody = z.infer<
+  typeof familyIngredientAllergensBody
+>;
+
+/** A Family Ingredient's Allergen state, as the Family catalog and tagging answer it. */
+export type FamilyIngredientAllergens = {
+  /** A Member has tagged it (or ticked "None"); false = Unchecked. */
+  allergensChecked: boolean;
+  allergenIds: string[];
+};
+
+/** An Allergen a Member can pick, named in the requested locale. */
+export type CatalogAllergen = { id: string; name: string };
+
+export const familyIngredientBody = z.object({
+  name: z.string().trim().min(1).max(100),
+  leafCategoryId: z.uuid(),
+  defaultUnit: z.enum(ingredientUnit.enumValues),
+  /**
+   * What the Ingredient contains: left out = Unchecked, empty = "None" (checked, no tags),
+   * otherwise tagged and checked (ADR 0014).
+   */
+  allergenIds: allergenIdList.optional(),
+});
+export type FamilyIngredientBody = z.infer<typeof familyIngredientBody>;
+
+export const familySynonymBody = z.object({
+  name: z.string().trim().min(1).max(100),
+  ingredientId: z.uuid(),
+});
+export type FamilySynonymBody = z.infer<typeof familySynonymBody>;
+
+export const familyIngredientPatchBody = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    leafCategoryId: z.uuid().optional(),
+  })
+  .refine(
+    (body) => body.name !== undefined || body.leafCategoryId !== undefined,
+  );
+export type FamilyIngredientPatchBody = z.infer<
+  typeof familyIngredientPatchBody
+>;
+
+export const idParam = z.object({ id: z.uuid() });
+export type IdParam = z.infer<typeof idParam>;
+
+/** What uses a Family Ingredient: shown in the delete confirmation. */
+export type FamilyIngredientUsage = {
+  batches: number;
+  shoppingItems: number;
+  templateLines: number;
+  recipeLines: number;
+  staples: number;
+};
+
+/** The Family catalog: Family Ingredients (with usage) and Family Synonyms. */
+export type FamilyCatalog = {
+  ingredients: Array<
+    CatalogSearchResult &
+      FamilyIngredientAllergens & {
+        /**
+         * The tagged Allergens by name in the requested locale, retired ones included, so a
+         * Member can still see and untick a tag the picker no longer offers.
+         */
+        allergens: CatalogAllergen[];
+        usage: FamilyIngredientUsage;
+      }
+  >;
+  synonyms: Array<{
+    id: string;
+    name: string;
+    ingredient: { id: string; name: string };
+  }>;
+};
+
+export const catalogCategoriesQuery = z.object({
+  q: z.string().max(100).default(''),
+  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type CatalogCategoriesQuery = z.infer<typeof catalogCategoriesQuery>;
+
+/** A Leaf Category to file a Family Ingredient under, with where it sits and its effective defaults. */
+export type CatalogCategory = {
+  id: string;
+  name: string;
+  parentCategory: { id: string; name: string };
+  aisle: { id: string; name: string };
+  defaults: ResolvedCatalogDefaults;
+};
+
 export type CatalogSearchResult = {
   id: string;
   name: string;
+  /** 'family' for a Family Ingredient (ADR 0011), 'catalog' for a shared row. */
+  owner: 'catalog' | 'family';
   defaultUnit: (typeof ingredientUnit.enumValues)[number];
+  /** How much a Member usually buys at once; always present, medium when unset. */
+  amountScale: AmountScale;
   leafCategory: { id: string; name: string };
   parentCategory: {
     id: string;

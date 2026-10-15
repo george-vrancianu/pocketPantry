@@ -4,7 +4,10 @@ import type { Unit } from './catalog';
 import { localIso } from './pantry';
 import { postShoppingItems } from './plate';
 import { shoppingListQueryKey, type NewShoppingItem } from './shopping';
-import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
+import {
+  shoppingListChangeQueryKeys,
+  templateDetailsQueryKey,
+} from './queryKeys';
 
 export type TemplateSummary = {
   id: string;
@@ -45,15 +48,20 @@ export function useTemplates(locale: string) {
   });
 }
 
-export function useTemplate(id: string, locale: string) {
+/** The query behind one Template's details; `useTemplates`-style callers fetching several share its cache. */
+export function templateQueryOptions(id: string, locale: string) {
   const today = localIso(new Date());
-  return useQuery({
+  return {
     queryKey: [...templateDetailsQueryKey, id, locale, today],
     queryFn: () =>
       apiRequest<Template>(
         `/shopping-templates/${id}?${new URLSearchParams({ locale, today })}`,
       ),
-  });
+  };
+}
+
+export function useTemplate(id: string, locale: string) {
+  return useQuery(templateQueryOptions(id, locale));
 }
 
 export type TemplateLineGroup = {
@@ -139,13 +147,13 @@ export function useTemplateMutations(locale: string) {
 export function useApplyTemplate(locale: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (lines: TemplateLine[]) =>
-      postShoppingItems(locale, lines.map(toLineBody)),
-    // Suggestions hide while the Ingredient is on the list.
+    mutationFn: (body: NewShoppingItem[]) => postShoppingItems(locale, body),
+    // Suggestions hide while the Ingredient is on the list; Recipe matches and the Meal Plan forecast show it too.
     onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-      ]),
+      Promise.all(
+        [shoppingListQueryKey, ...shoppingListChangeQueryKeys].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }

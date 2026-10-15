@@ -111,6 +111,9 @@ describe('defaultExpiryDate', () => {
 
 describe('groupByLocation', () => {
   const batch = (id: string, location: Batch['location']): Batch => ({
+    amountScale: null,
+    defaultUnit: null,
+    defaultExpiryDays: null,
     id,
     name: id,
     ingredientId: id,
@@ -145,6 +148,9 @@ const make = (overrides: Partial<Batch>): Batch => ({
   ingredientId: 'milk',
   unmatched: false,
   aisle: null,
+  amountScale: null,
+  defaultUnit: null,
+  defaultExpiryDays: null,
   quantity: null,
   unit: null,
   location: 'fridge',
@@ -168,6 +174,24 @@ describe('rollUp', () => {
       '2026-10-09',
       null,
     ]);
+  });
+
+  it('orders Batches with the same expiry, or none, by when they were added', () => {
+    const [row] = rollUp([
+      make({ id: 'c', expiryDate: null, createdAt: '2026-10-03T00:00:00Z' }),
+      make({
+        id: 'b',
+        expiryDate: '2026-10-09',
+        createdAt: '2026-10-02T00:00:00Z',
+      }),
+      make({ id: 'a', expiryDate: null, createdAt: '2026-10-01T00:00:00Z' }),
+      make({
+        id: 'd',
+        expiryDate: '2026-10-09',
+        createdAt: '2026-10-01T00:00:00Z',
+      }),
+    ]);
+    expect(row.batches.map((b) => b.id)).toEqual(['d', 'b', 'a', 'c']);
   });
 
   it('lists totals separately when the units differ', () => {
@@ -236,6 +260,10 @@ describe('countByLocation', () => {
 describe('parseAmountText', () => {
   it('reads a decimal comma as a point', () => {
     expect(parseAmountText('1,5')).toEqual({ value: 1.5, valid: true });
+  });
+
+  it('ignores surrounding spaces, as the amount field does', () => {
+    expect(parseAmountText(' 2 ')).toEqual({ value: 2, valid: true });
   });
 
   it('keeps the parseQuantity rules', () => {

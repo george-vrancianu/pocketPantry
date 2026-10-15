@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, inArray, notInArray } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import type { Tx } from '../database/database.types';
 import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   eatingMoments,
-  ingredients,
   recipeEatingMomentTranslations,
   recipeEatingMoments,
   recipeNutritionNoteTranslations,
@@ -64,6 +64,9 @@ export async function assertPairingLinks(
     ...new Set(pairings.flatMap((p) => p.linkedIngredientId ?? [])),
   ];
   if (ingredientIds.length > 0) {
+    const ingredients = catalogScope(
+      recipe.familyId ?? SHARED_ONLY,
+    ).ingredients(tx);
     const found = await tx
       .select({ id: ingredients.id })
       .from(ingredients)

@@ -5,7 +5,7 @@ Used Up Suggestions need to know that an Ingredient was in the Pantry and no lon
 ## Decision
 
 - A new table holds one row per Family and Ingredient with `last_stocked_at` and a nullable `used_up_at`.
-- Whenever a Batch is created for a matched Ingredient (manual add, Scan confirmation, Finish Shopping, or Admin relinking of an Unmatched Batch), the row is upserted with `last_stocked_at = now()` and `used_up_at = null`. Creating a Batch also clears any Staple dismissal for that Ingredient.
+- Whenever a Batch is created for a matched Ingredient (manual add, Scan confirmation, Finish Shopping, or Admin relinking of an Unmatched Batch), the row is upserted with `last_stocked_at = now()` and `used_up_at = null`. Creating a Batch also clears any dismissal for that Ingredient.
 - When a Batch delete leaves the Ingredient with no Batches, `used_up_at` is set to now, unless the deleted Batch was created less than 10 minutes earlier (a mistaken entry).
 - An Ingredient is Used Up when `used_up_at` is within the past 30 days, it has no Batches, and it is not a Staple. Dismissing a Used Up Suggestion clears `used_up_at`.
 - The migration fills the table from current Batches (`last_stocked_at` = newest `created_at`, `used_up_at` null). Ingredients used up before the release are not recovered.

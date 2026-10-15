@@ -1,17 +1,22 @@
-import { createHash } from 'node:crypto';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import {
   aisles,
+  allergens,
   catalogTranslations,
+  ingredientAllergens,
   ingredients,
   leafCategories,
   parentCategories,
 } from '../../database/schema';
+import { amountScaleForParent } from '../amount-scale';
+import { catalogScope, SHARED_ONLY } from '../catalog-scope';
+import { seedId, stableId } from './seed-ids';
 import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
+import { SEED_ALLERGENS } from './allergens';
 import {
   SEED_AISLES,
   SEED_INGREDIENTS,
@@ -19,6 +24,8 @@ import {
   SEED_PARENTS,
 } from './catalog-seed-data';
 import { assertCatalogSeedValid } from './validate-seed';
+
+export { seedId, stableId };
 
 type TranslationRow = typeof catalogTranslations.$inferInsert;
 
@@ -35,30 +42,6 @@ function synonymIdKey(value: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
     .trim();
 }
-
-/** Deterministic UUID from a stable key, so seed rows keep their ids forever. */
-export function stableId(key: string): string {
-  const hex = createHash('sha1').update(`pocket-pantry:${key}`).digest('hex');
-  const variant = ((parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    `5${hex.slice(13, 16)}`,
-    `${variant}${hex.slice(17, 20)}`,
-    hex.slice(20, 32),
-  ].join('-');
-}
-
-export const seedId = {
-  aisle: (slug: string) => stableId(`aisle:${slug}`),
-  parent: (slug: string) => stableId(`parent:${slug}`),
-  leaf: (slug: string) => stableId(`leaf:${slug}`),
-  ingredient: (slug: string) => stableId(`ingredient:${slug}`),
-  recipe: (slug: string) => stableId(`recipe:${slug}`),
-  cuisine: (slug: string) => stableId(`cuisine:${slug}`),
-  method: (slug: string) => stableId(`method:${slug}`),
-  eatingMoment: (slug: string) => stableId(`eating-moment:${slug}`),
-};
 
 export function translationRows(
   entityType: EntityType,
@@ -110,6 +93,15 @@ const RETIRED_SEED_TRANSLATIONS: string[] = [
   ),
 ];
 
+const PARENT_OF_LEAF = new Map(
+  SEED_LEAVES.map((leaf) => [leaf.slug, leaf.parent]),
+);
+
+/** The Parent Category id a seed Leaf belongs to, for its Ingredients' Amount Scale. */
+function parentIdOfLeaf(leafSlug: string): string {
+  return seedId.parent(PARENT_OF_LEAF.get(leafSlug) ?? '');
+}
+
 /**
  * The seed Aisles to insert. An Admin may reorder Aisles, so a seed Aisle the
  * Admin deleted can find its seed sort order taken; it then comes back last in
@@ -148,7 +140,9 @@ async function seedAisleRows(tx: Pick<Database, 'select'>) {
  * Ingredient (e.g. an Admin-made Ingredient with the same normalised name)
  * fails loudly. Danish rows that clash with an Admin's are skipped and
  * counted instead, and names owned by two Ingredients are logged. Rows listed
- * in RETIRED_SEED_TRANSLATIONS are deleted.
+ * in RETIRED_SEED_TRANSLATIONS are deleted. A seed Ingredient's Allergen tags
+ * are applied once, the first run that sees it untagged; after that they
+ * belong to the Admins.
  */
 export async function seedCatalog(
   database: Pick<Database, 'transaction'>,
@@ -158,6 +152,7 @@ export async function seedCatalog(
     parents: SEED_PARENTS,
     leaves: SEED_LEAVES,
     ingredients: SEED_INGREDIENTS,
+    allergens: SEED_ALLERGENS,
   });
   await database.transaction(async (tx) => {
     await lockAisleOrder(tx);
@@ -207,9 +202,60 @@ export async function seedCatalog(
           name: item.en,
           normalizedName: normalizeName(item.en),
           defaultUnit: item.unit,
+          amountScale: amountScaleForParent(parentIdOfLeaf(item.leaf)),
         })),
       )
       .onConflictDoNothing({ target: ingredients.id });
+
+    // The Allergen list. Like the other rows it is only ever inserted, never
+    // updated: an Admin's edits to the list are kept.
+    await tx
+      .insert(allergens)
+      .values(
+        SEED_ALLERGENS.map((allergen, index) => ({
+          id: seedId.allergen(allergen.slug),
+          name: allergen.en,
+          normalizedName: normalizeName(allergen.en),
+          sortOrder: index + 1,
+        })),
+      )
+      .onConflictDoNothing({ target: allergens.id });
+
+    // Each seed Ingredient's tags are applied once. `allergens_checked` marks
+    // a seed Ingredient whose tags have been applied (the flag is otherwise
+    // read for Family rows and for promoted shared rows, ADR 0014), so a database seeded before the
+    // tags existed gains them on this run, and an Admin's later edits (a tag
+    // removed, say) are never undone by a re-seed.
+    const untagged = await tx
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(
+        and(
+          inArray(
+            ingredients.id,
+            SEED_INGREDIENTS.map((item) => seedId.ingredient(item.slug)),
+          ),
+          eq(ingredients.allergensChecked, false),
+        ),
+      );
+    if (untagged.length > 0) {
+      const toApply = new Set(untagged.map((row) => row.id));
+      const tags = SEED_INGREDIENTS.filter((item) =>
+        toApply.has(seedId.ingredient(item.slug)),
+      ).flatMap((item) =>
+        (item.allergens ?? []).map((slug) => ({
+          ingredientId: seedId.ingredient(item.slug),
+          allergenId: seedId.allergen(slug),
+        })),
+      );
+      if (tags.length > 0) {
+        await tx.insert(ingredientAllergens).values(tags).onConflictDoNothing();
+      }
+      await tx
+        .update(ingredients)
+        .set({ allergensChecked: true })
+        .where(inArray(ingredients.id, [...toApply]));
+    }
 
     const translations: TranslationRow[] = [
       ...SEED_AISLES.flatMap((aisle) =>
@@ -220,6 +266,9 @@ export async function seedCatalog(
       ),
       ...SEED_LEAVES.flatMap((leaf) =>
         translationRows('leaf_category', seedId.leaf(leaf.slug), leaf),
+      ),
+      ...SEED_ALLERGENS.flatMap((allergen) =>
+        translationRows('allergen', seedId.allergen(allergen.slug), allergen),
       ),
       ...SEED_INGREDIENTS.flatMap((item) =>
         translationRows(
@@ -269,12 +318,13 @@ export async function seedCatalog(
 
     // Skipped or hand-made rows can leave a name or Synonym pointing at two
     // Ingredients, which makes an exact Match ambiguous. Report, never fail.
+    const shared = catalogScope(SHARED_ONLY).translations(tx);
     const ambiguous = await tx
-      .select({ key: catalogTranslations.normalizedValue })
-      .from(catalogTranslations)
-      .where(eq(catalogTranslations.entityType, 'ingredient'))
-      .groupBy(catalogTranslations.normalizedValue)
-      .having(sql`count(distinct ${catalogTranslations.entityId}) > 1`);
+      .select({ key: shared.normalizedValue })
+      .from(shared)
+      .where(eq(shared.entityType, 'ingredient'))
+      .groupBy(shared.normalizedValue)
+      .having(sql`count(distinct ${shared.entityId}) > 1`);
     if (ambiguous.length > 0) {
       console.warn(
         `Catalog: ${ambiguous.length} name(s) or Synonym(s) belong to more than one Ingredient: ${ambiguous.map((row) => `"${row.key}"`).join(', ')}`,

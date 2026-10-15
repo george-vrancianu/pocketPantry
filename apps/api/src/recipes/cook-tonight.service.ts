@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, inArray, isNull } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { ingredients, recipes } from '../database/schema';
+import { recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
 import { compareRecipeMatches, type LineMatch } from './matching/pantry-match';
@@ -11,6 +12,10 @@ import {
   PantryMatchingService,
   type PantryRecipeMatch,
 } from './matching/pantry-matching.service';
+import {
+  loadAllergyWarnings,
+  loadViewerAllergyContext,
+} from './recipe-allergens';
 import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
   CookTonightCard,
@@ -49,7 +54,8 @@ export class CookTonightService {
       const match = matches.get(row.id);
       return match && (match.canMake || match.shortOrMissingCount === 1);
     });
-    if (qualifying.length === 0) return { cards: [] };
+    if (qualifying.length === 0)
+      return { cards: [], hiddenByAllergiesCount: 0 };
 
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
@@ -75,22 +81,53 @@ export class CookTonightService {
       a.title.localeCompare(b.title, query.locale) ||
       a.row.id.localeCompare(b.row.id);
 
-    const groupsRanked = [...groups.entries()]
-      .flatMap(([baseId, members]) => {
-        const base = baseById.get(baseId);
-        const candidates = members
-          .map((row) => ({
-            row,
-            title: titles.get(row.id)!,
-            match: matches.get(row.id)!,
-          }))
-          .sort(byRank);
-        return base ? [{ base, candidates }] : [];
+    const ranked = [...groups.entries()].flatMap(([baseId, members]) => {
+      const base = baseById.get(baseId);
+      const candidates = members
+        .map((row) => ({
+          row,
+          title: titles.get(row.id)!,
+          match: matches.get(row.id)!,
+        }))
+        .sort(byRank);
+      return base ? [{ base, candidates }] : [];
+    });
+
+    // Hiding (#359) is decided per Recipe before a group picks its card, so a hidden Variant
+    // never stands for its group, nor counts in its "+N other Variants".
+    const { allergies, hides } = await loadViewerAllergyContext(
+      this.database,
+      this.settings,
+      memberId,
+      familyId,
+      query.showHidden,
+    );
+    // The warning belongs to the Recipe a card shows, which may be a Variant.
+    const { warnings, hidden } = await loadAllergyWarnings(
+      this.database,
+      catalogScope(familyId),
+      ranked.flatMap(({ candidates }) => candidates.map((c) => c.row.id)),
+      query.locale,
+      allergies,
+    );
+    let hiddenByAllergiesCount = 0;
+    const groupsRanked = ranked
+      .flatMap(({ base, candidates }) => {
+        if (!hides) return [{ base, candidates }];
+        const visible = candidates.filter((c) => !hidden.has(c.row.id));
+        // Counted only when the override would change the card, or bring the group back.
+        if (visible[0] !== candidates[0]) hiddenByAllergiesCount += 1;
+        return visible.length > 0 ? [{ base, candidates: visible }] : [];
       })
       .sort((a, b) => byRank(a.candidates[0], b.candidates[0]));
 
-    const names = await this.missingNames(groupsRanked, query.locale);
+    const names = await this.missingNames(
+      catalogScope(familyId),
+      groupsRanked,
+      query.locale,
+    );
     return {
+      hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
         const [top, ...others] = candidates;
         const short = top.match.lines.find(isShortOrMissing);
@@ -108,6 +145,7 @@ export class CookTonightService {
             servings: top.match.servings,
             prepMinutes: top.row.prepMinutes,
             cookMinutes: top.row.cookMinutes,
+            allergyWarning: warnings.get(top.row.id) ?? null,
           },
           canMake: top.match.canMake,
           missing:
@@ -129,6 +167,7 @@ export class CookTonightService {
 
   /** Display names, in `locale`, of the Ingredients the near-miss cards are short of. */
   private async missingNames(
+    scope: CatalogScope,
     cards: { candidates: Candidate[] }[],
     locale: CookTonightQuery['locale'],
   ): Promise<Map<string, string>> {
@@ -139,11 +178,14 @@ export class CookTonightService {
       if (line?.ingredientId) wanted.add(line.ingredientId);
     }
     if (wanted.size === 0) return new Map();
+    const ingredients = scope.ingredients(this.database);
     const rows = await this.database
       .select({ id: ingredients.id, name: ingredients.name })
       .from(ingredients)
       .where(inArray(ingredients.id, [...wanted]));
-    const display = await loadDisplayNames(this.database, locale, [...wanted]);
+    const display = await loadDisplayNames(this.database, scope, locale, [
+      ...wanted,
+    ]);
     return new Map(
       rows.map((r) => [r.id, display.pick('ingredient', r.id, r.name)]),
     );

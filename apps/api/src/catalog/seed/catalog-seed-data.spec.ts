@@ -13,6 +13,8 @@ import {
   DA_SYNONYMS,
 } from './data/danish';
 import { seedId, stableId } from './seed-catalog';
+import { SEED_ALLERGENS } from './allergens';
+import { SEED_INGREDIENT_ALLERGENS } from './data/ingredient-allergens';
 import { findSeedProblems } from './validate-seed';
 
 const duplicates = (values: string[]) =>
@@ -50,6 +52,7 @@ describe('catalog seed data', () => {
   it('is free of duplicate names, ambiguous Synonyms, and dangling references', () => {
     expect(
       findSeedProblems({
+        allergens: SEED_ALLERGENS,
         aisles: SEED_AISLES,
         parents: SEED_PARENTS,
         leaves: SEED_LEAVES,
@@ -178,5 +181,74 @@ describe('catalog seed data', () => {
     expect(stableId('x')).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
+  });
+
+  describe('Allergens', () => {
+    it('is the EU 14, translated in en, ro and da', () => {
+      expect(SEED_ALLERGENS.map((a) => a.slug)).toEqual([
+        'gluten',
+        'crustaceans',
+        'eggs',
+        'fish',
+        'peanuts',
+        'soy',
+        'milk',
+        'tree-nuts',
+        'celery',
+        'mustard',
+        'sesame',
+        'sulphites',
+        'lupin',
+        'molluscs',
+      ]);
+      for (const a of SEED_ALLERGENS) {
+        expect([
+          a.slug,
+          [a.en, a.ro, a.da].every((n) => n.trim() !== ''),
+        ]).toEqual([a.slug, true]);
+      }
+      expect(
+        duplicates(SEED_ALLERGENS.map((a) => normalizeName(a.da))),
+      ).toEqual([]);
+    });
+
+    it('tags only Ingredients that exist', () => {
+      const known = new Set(SEED_INGREDIENTS.map((i) => i.slug));
+      expect(
+        Object.keys(SEED_INGREDIENT_ALLERGENS).filter((s) => !known.has(s)),
+      ).toEqual([]);
+    });
+
+    it('declares Allergens for every shared Ingredient', () => {
+      expect(
+        SEED_INGREDIENTS.filter((i) => i.allergens === undefined).map(
+          (i) => i.slug,
+        ),
+      ).toEqual([]);
+      expect(
+        SEED_INGREDIENTS.filter((i) => (i.allergens ?? []).length > 0).length,
+      ).toBeGreaterThan(100);
+    });
+
+    it('tags composite and prepared Ingredients by what they are made of', () => {
+      const tags = (slug: string) =>
+        SEED_INGREDIENTS.find((i) => i.slug === slug)?.allergens;
+      expect(tags('parmesan')).toEqual(['milk']);
+      expect(tags('flour')).toEqual(['gluten']);
+      expect(tags('peanuts')).toEqual(['peanuts']);
+      expect(tags('bread')).toEqual(['gluten']);
+      expect(tags('pesto')).toEqual(['milk', 'tree-nuts']);
+      expect(tags('soy-sauce')).toEqual(['gluten', 'soy']);
+      expect(tags('mayonnaise')).toEqual(['eggs', 'mustard']);
+      expect(tags('worcestershire-sauce')).toEqual(['fish', 'gluten']);
+      expect(tags('tahini')).toEqual(['sesame']);
+      expect(tags('spaghetti')).toEqual(['gluten']);
+      expect(tags('egg-noodles')).toEqual(['eggs', 'gluten']);
+      expect(tags('celery')).toEqual(['celery']);
+      expect(tags('crab')).toEqual(['crustaceans']);
+      expect(tags('cozonac')).toEqual(['eggs', 'gluten', 'milk', 'tree-nuts']);
+      expect(tags('apple')).toEqual([]);
+      expect(tags('olive-oil')).toEqual([]);
+    });
   });
 });

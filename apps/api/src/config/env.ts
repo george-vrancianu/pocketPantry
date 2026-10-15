@@ -37,6 +37,8 @@ const envSchema = z.object({
   AI_REASONING_EFFORT: z.enum(REASONING_EFFORTS).optional(),
   /** Scan Cap: Scans per Member per UTC day. 0 disables the cap (unlimited). */
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
+  /** Meal Plans per Family, past ones included. */
+  MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),
@@ -44,6 +46,14 @@ const envSchema = z.object({
   SCAN_MATCH_CONFIDENCE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.6),
   /** Signs the Plate Scan token. Required in production; elsewhere a missing one becomes a random per-process secret (tokens do not survive a restart). */
   SCAN_TOKEN_SECRET: z.string().min(32).optional(),
+  /** Open Food Facts (Barcode Lookup). The User-Agent is what they ask every client to send: app name, version and a contact. */
+  OPEN_FOOD_FACTS_BASE_URL: z.url().default('https://world.openfoodfacts.org'),
+  OPEN_FOOD_FACTS_USER_AGENT: z
+    .string()
+    .min(1)
+    .default(
+      'PocketPantry/1.0 (https://github.com/george-vrancianu/pocketPantry)',
+    ),
   /** Built web app (`apps/web/dist`) to serve from the API's origin. Unset: API only. */
   WEB_DIST_DIR: z.string().min(1).optional(),
   /** Dev-only: save every Scan's photos and raw AI answer here. Refused in production, ignored outside development. */

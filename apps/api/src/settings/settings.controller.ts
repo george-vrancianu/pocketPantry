@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Put,
   Query,
   UseGuards,
@@ -15,15 +16,23 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
+  addFamilyAllergyBody,
   categoryIdParam,
   expiryOverrideBody,
+  familyAllergyIdParam,
+  replaceAllergiesBody,
   settingsLocaleQuery,
   updateFamilySettingsBody,
   updatePreferencesBody,
+  type AddFamilyAllergyBody,
+  type AllergiesView,
   type CategoryOptionsView,
   type ExpiryOverrideBody,
+  type FamilyAllergiesView,
+  type FamilyAllergyView,
   type FamilySettingsView,
   type PreferencesView,
+  type ReplaceAllergiesBody,
   type SettingsLocaleQuery,
   type UpdateFamilySettingsBody,
   type UpdatePreferencesBody,
@@ -64,10 +73,11 @@ export class SettingsController {
     summary: 'Parent and Leaf Categories a Default Expiry override can target',
   })
   categories(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(settingsLocaleQuery))
     query: SettingsLocaleQuery,
   ): Promise<CategoryOptionsView> {
-    return this.settings.categoryOptions(query.locale);
+    return this.settings.categoryOptions(member.id, query.locale);
   }
 
   @Put('family/expiry-overrides/:categoryId')
@@ -107,7 +117,8 @@ export class SettingsController {
 
   @Put('preferences')
   @ApiOperation({
-    summary: "Save the Member's locale and/or Theme; omitted ones are kept",
+    summary:
+      "Save the Member's locale, Theme and/or hide-Allergies preference; omitted ones are kept",
   })
   async setPreferences(
     @CurrentUser() member: CurrentUserValue,
@@ -116,5 +127,74 @@ export class SettingsController {
   ): Promise<PreferencesView> {
     await this.settings.setPreferences(member.id, body);
     return this.settings.getPreferences(member.id);
+  }
+
+  @Get('allergies')
+  @ApiOperation({
+    summary: "The Allergen list and the signed-in Member's own Allergies",
+  })
+  allergies(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<AllergiesView> {
+    return this.settings.getAllergies(member.id, query.locale);
+  }
+
+  @Put('allergies')
+  @ApiOperation({
+    summary: "Replace the signed-in Member's own Allergies (only their own)",
+  })
+  async setAllergies(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(replaceAllergiesBody))
+    body: ReplaceAllergiesBody,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<AllergiesView> {
+    await this.settings.setAllergies(member.id, body.allergenIds);
+    return this.settings.getAllergies(member.id, query.locale);
+  }
+
+  @Get('family-allergies')
+  @ApiOperation({
+    summary:
+      "The Family's Allergies and the other Members' Allergies (read-only)",
+  })
+  familyAllergies(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<FamilyAllergiesView> {
+    return this.settings.getFamilyAllergies(member.id, query.locale);
+  }
+
+  @Post('family-allergies')
+  @ApiOperation({
+    summary: 'Any Member: add a Family Allergy (Allergen and optional label)',
+  })
+  addFamilyAllergy(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(addFamilyAllergyBody))
+    body: AddFamilyAllergyBody,
+    @Query(new ZodValidationPipe(settingsLocaleQuery))
+    query: SettingsLocaleQuery,
+  ): Promise<FamilyAllergyView> {
+    return this.settings.addFamilyAllergy(
+      member.id,
+      body.allergenId,
+      body.label,
+      query.locale,
+    );
+  }
+
+  @Delete('family-allergies/:id')
+  @ApiOperation({ summary: 'Any Member: remove a Family Allergy' })
+  async removeFamilyAllergy(
+    @CurrentUser() member: CurrentUserValue,
+    @Param('id', new ZodValidationPipe(familyAllergyIdParam)) id: string,
+  ): Promise<{ id: string }> {
+    await this.settings.removeFamilyAllergy(member.id, id);
+    return { id };
   }
 }

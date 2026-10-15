@@ -11,6 +11,8 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const parmesan: CatalogSearchResult = {
+  owner: 'catalog',
+  amountScale: 'medium',
   id: 'parmesan-id',
   name: 'Parmesan',
   defaultUnit: 'g',
@@ -110,6 +112,14 @@ describe('ReviewPage', () => {
     expect(
       screen.getByText('Scanned product · 2 lines read'),
     ).toBeInTheDocument();
+  });
+
+  it('shows the quantity and unit a Product Scan line proposes', () => {
+    renderReview([
+      sure({ quantity: 1, unit: 'l', productDescription: 'Whole milk 1 l' }),
+    ]);
+    expect(row('Parmesan')).toHaveTextContent('1 L');
+    expect(row('Parmesan')).not.toHaveTextContent('?');
   });
 
   it('shows a confident line as one shut row with its quantity, Location and short date', () => {
@@ -351,7 +361,10 @@ describe('ReviewPage', () => {
     });
     expect(search).toHaveFocus();
     await userEvent.type(search, 'milk');
-    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+    const option = await screen.findByRole('option', { name: /Milk/ });
+    // The match dialog has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Milk, Hard cheese · Dairy');
+    await userEvent.click(option);
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -483,6 +496,28 @@ describe('ReviewPage', () => {
     expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
     expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('offers no Use as typed in the match dialog, only the no-match hint', async () => {
+    const calls = renderReview(
+      [line({ match: null, name: 'Mystery jar', quantity: 1 })],
+      { 'GET /api/catalog/search': () => Response.json({ results: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
   });
 
   it.each([
@@ -781,5 +816,119 @@ describe('ReviewPage', () => {
         ),
       );
     });
+  });
+});
+
+describe('ReviewPage match dialog has no Browse by aisle', () => {
+  it('offers no Browse by aisle in Change match and never lists Aisles', async () => {
+    const calls = renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      { 'GET /api/catalog/aisles': () => Response.json({ aisles: [] }) },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(screen.queryByText('Browse by aisle')).not.toBeInTheDocument();
+    expect(calls?.some((c) => c.key === 'GET /api/catalog/aisles')).toBeFalsy();
+  });
+});
+
+describe('ReviewPage: Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is offered in the Match dialog search, which has no Use as typed', async () => {
+    // A low-confidence line shows its Change button without opening the row.
+    renderReview(
+      [line({ expiryDate: null, lowConfidence: true, quantity: 1 })],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+      },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /Parmesan.*Change/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Parmesan',
+    });
+
+    await userEvent.type(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    const options = await within(dialog).findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+  });
+
+  it('matches an Unmatched line to the Family Ingredient added from the Match dialog', async () => {
+    const kombucha: CatalogSearchResult = {
+      ...parmesan,
+      owner: 'family',
+      id: 'kombucha-id',
+      name: 'Kombucha',
+      defaultUnit: 'ml',
+      leafCategory: { id: 'drinks', name: 'Soft drinks' },
+      defaults: { expiryDays: 30, location: 'fridge' },
+    };
+    const calls = renderReview(
+      [line({ match: null, name: 'Kombucha', quantity: 1 })],
+      {
+        'GET /api/catalog/search': () => Response.json({ results: [] }),
+        'GET /api/catalog/categories': () =>
+          Response.json({
+            categories: [
+              {
+                id: 'drinks',
+                name: 'Soft drinks',
+                parentCategory: { id: 'dairy', name: 'Drinks' },
+                aisle: { id: 'aisle', name: 'Drinks' },
+                defaults: { expiryDays: 30, location: 'fridge' },
+              },
+            ],
+          }),
+        'POST /api/catalog/family-ingredients': () =>
+          Response.json(kombucha, { status: 201 }),
+      },
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: /No match · Choose/ }),
+    );
+    const dialog = screen.getByRole('dialog', {
+      name: 'Change match for Kombucha',
+    });
+    await userEvent.click(
+      within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await userEvent.paste('Kombucha');
+    await userEvent.click(
+      await within(dialog).findByRole('option', {
+        name: /Add “Kombucha” to your catalog/,
+      }),
+    );
+    await userEvent.click(
+      await screen.findByRole('combobox', { name: 'Category' }),
+    );
+    await userEvent.paste('soft');
+    await userEvent.click(
+      await screen.findByRole('option', { name: /Soft drinks/ }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: /^Add & pick/ }));
+
+    const panel = await screen.findByRole('group', { name: 'Kombucha' });
+    expect(within(panel).queryByLabelText('Name')).not.toBeInTheDocument();
+    expect(within(panel).getByLabelText('Unit')).toHaveValue('ml');
+    expect(
+      calls?.some((c) => c.key === 'POST /api/catalog/family-ingredients'),
+    ).toBe(true);
   });
 });

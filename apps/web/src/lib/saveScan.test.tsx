@@ -13,6 +13,8 @@ const line = (
 ): ProposedLine => ({
   name,
   match: {
+    owner: 'catalog',
+    amountScale: 'medium',
     id: `${name}-id`,
     name,
     defaultUnit: 'pcs',

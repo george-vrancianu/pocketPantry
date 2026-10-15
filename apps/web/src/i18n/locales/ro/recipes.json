@@ -15,6 +15,43 @@
     "cleanses_palate": "Curăță palatul",
     "regional_tradition": "Tradiție regională"
   },
+  "allergens": {
+    "title": "Alergeni",
+    "optional": "Opțional",
+    "optionalLine": "{{name}} (opțional)",
+    "none": "Nu s-au găsit alergeni comuni",
+    "unchecked_one": "{{count}} ingredient nu a putut fi verificat",
+    "unchecked_few": "{{count}} ingrediente nu au putut fi verificate",
+    "unchecked_other": "{{count}} de ingrediente nu au putut fi verificate",
+    "reminder": "Stabilit pe baza ingredientelor. Verifică mereu etichetele produselor."
+  },
+  "allergyWarning": {
+    "title": "Avertisment alergie",
+    "optionalLine_one": "Un ingredient opțional conține {{names}}: {{who}}",
+    "optionalLine_few": "Ingredientele opționale conțin {{names}}: {{who}}",
+    "optionalLine_other": "Ingredientele opționale conțin {{names}}: {{who}}",
+    "unchecked_one": "{{count}} ingredient nu a putut fi verificat pentru alergeni",
+    "unchecked_few": "{{count}} ingrediente nu au putut fi verificate pentru alergeni",
+    "unchecked_other": "{{count}} de ingrediente nu au putut fi verificate pentru alergeni",
+    "lineMarker": "Conține {{name}}",
+    "whoOwn_one": "alergia ta",
+    "whoOwn_few": "alergiile tale",
+    "whoOwn_other": "alergiile tale",
+    "whoFamily": "Familie",
+    "strongOwn_one": "Conține {{names}}: alergia ta",
+    "strongOwn_few": "Conține {{names}}: alergiile tale",
+    "strongOwn_other": "Conține {{names}}: alergiile tale",
+    "strongOther": "{{who}}: {{names}}",
+    "memberOptional": "{{who}}: {{names}} (opțional)"
+  },
+  "allergyIndicator": {
+    "withOwners": "{{name}} ({{owners}})",
+    "ownerYou": "tu",
+    "ownerFamily": "familie",
+    "strong": "Conține {{names}}",
+    "optional": "Opțional: conține {{names}}",
+    "unchecked": "Verificare incompletă"
+  },
   "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",
   "cuisine": "Bucătărie",
@@ -99,8 +136,6 @@
     "title": "Titlu",
     "copyHint": "Aceasta este o copie pe care o poți schimba. Nu se salvează nimic până nu o salvezi.",
     "tipsHint": "Sfaturile copiate rămân la pașii lor; adaugă-le pe ale tale după ce salvezi varianta.",
-    "freeTextLabel": "Sau adaugă un ingredient după nume",
-    "freeTextAdd": "Adaugă numele",
     "freeTextNote": "Nu e în Catalog",
     "unavailable": "Această rețetă nu poate fi editată.",
     "guidanceHint": "Recomandări, o Notă nutrițională și Momente de consum. Se salvează odată cu rețeta.",
@@ -144,5 +179,11 @@
     "ingredients": "Ingrediente",
     "steps": "Pași",
     "about": "Despre"
+  },
+  "hiddenByAllergies": {
+    "note_one": "{{count}} rețetă ascunsă din cauza alergiilor tale",
+    "note_few": "{{count}} rețete ascunse din cauza alergiilor tale",
+    "note_other": "{{count}} de rețete ascunse din cauza alergiilor tale",
+    "show": "Arată"
   }
 }

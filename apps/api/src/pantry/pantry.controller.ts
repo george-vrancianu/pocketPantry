@@ -21,19 +21,25 @@ import {
   ingredientIdParam,
   createBatchBody,
   createBatchesBody,
+  deleteBatchesBody,
   updateBatchBody,
   pantryLocaleQuery,
+  recentlyStockedQuery,
+  type RecentlyStockedQuery,
+  type RecentlyStockedView,
   scanQuery,
   type BatchView,
   type BatchIdParam,
   type IngredientIdParam,
   type CreateBatchBody,
   type CreateBatchesBody,
+  type DeleteBatchesBody,
   type UpdateBatchBody,
   type PantryLocaleQuery,
   type ScanQuery,
 } from './pantry.schemas';
 import { PantryService } from './pantry.service';
+import { RecentlyStockedService } from './recently-stocked.service';
 import { RunningLowService } from './running-low.service';
 
 @ApiTags('pantry')
@@ -42,8 +48,28 @@ import { RunningLowService } from './running-low.service';
 export class PantryController {
   constructor(
     private readonly pantry: PantryService,
+    private readonly recentlyStocked: RecentlyStockedService,
     private readonly runningLow: RunningLowService,
   ) {}
+
+  @Get('recently-stocked')
+  @ApiOperation({
+    summary:
+      'The Ingredients the Family most recently added to the Pantry, newest first, in the Pantry or not',
+  })
+  async recentlyStockedList(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(recentlyStockedQuery))
+    query: RecentlyStockedQuery,
+  ): Promise<{ ingredients: RecentlyStockedView[] }> {
+    return {
+      ingredients: await this.recentlyStocked.list(
+        member.id,
+        query.locale,
+        query.limit,
+      ),
+    };
+  }
 
   @Get()
   @ApiOperation({
@@ -123,6 +149,19 @@ export class PantryController {
         query.scanLanguage,
       ),
     };
+  }
+
+  @Post('batches/bulk-delete')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Delete many Batches of the Family Pantry at once; ids of another Family are ignored',
+  })
+  async removeMany(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(deleteBatchesBody)) body: DeleteBatchesBody,
+  ): Promise<void> {
+    await this.pantry.removeMany(member.id, body.ids);
   }
 
   @Patch('batches/:id')

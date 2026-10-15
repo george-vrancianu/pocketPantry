@@ -33,12 +33,16 @@ _Avoid_: Owner, superuser
 ### Catalog
 
 **Catalog**:
-The canonical set of Ingredients and Categories that everything in the app matches against.
+The set of Ingredients and Categories that everything in the app matches against. A Family sees the shared Catalog plus its own Family Ingredients.
 _Avoid_: Ingredient list, dictionary, taxonomy
 
 **Ingredient**:
-A canonical, uniquely named entry in the Catalog, such as "Parmesan". Not a product and not a Batch.
+A named entry in the Catalog, such as "Parmesan", either shared by every Family or a Family Ingredient. Not a product and not a Batch.
 _Avoid_: Item, product, food
+
+**Family Ingredient**:
+An Ingredient a Member added for their Family, visible only to that Family, until an Admin promotes it to the shared Catalog. It sits in a Leaf Category like any other Ingredient.
+_Avoid_: Custom ingredient, private ingredient
 
 **Parent Category**:
 A top-level grouping of the Catalog, such as "Dairy". Carries the Aisle.
@@ -53,7 +57,7 @@ The ordered shop section a Parent Category maps to. Used to group the Shopping L
 _Avoid_: Section, department
 
 **Synonym**:
-An alternative name for an Ingredient in a given Scan Language, used for matching. Unlike display names, Synonyms are not limited to the catalog locales.
+An alternative name for an Ingredient in a given Scan Language, used for matching. Unlike display names, Synonyms are not limited to the catalog locales. A Family Synonym is one a Member added, matching only for their Family.
 _Avoid_: Alias, keyword
 
 **Default Expiry**:
@@ -67,6 +71,14 @@ _Avoid_: Unknown, custom, uncategorised
 **Pantry Basic**:
 An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List on its own; a Member can still add one by hand.
 _Avoid_: Staple (a Family's always-wanted Ingredient), essential, cupboard item
+
+**Allergen**:
+A substance some people react to, such as peanuts, milk, or gluten, from a fixed list Admins curate and translate, starting from the EU's 14 major allergens. Admins tag each shared Ingredient with the Allergens it contains, and Members tag their Family Ingredients. A Recipe's Allergens are those of its Ingredient Lines, derived at read time and never stored or tagged on the Recipe.
+_Avoid_: Allergy (a Member's own), intolerance, trigger
+
+**Unchecked**:
+The state of an Ingredient Line whose Allergens are not known: an Unmatched name, or a Family Ingredient no Member has tagged yet. Ticking "no Allergens" on a Family Ingredient counts as tagging it. A shared Ingredient is not Unchecked either: no tags means it contains none. The one exception is a shared Ingredient promoted from Family copies none of which were checked; it stays Unchecked until an Admin saves its Allergens.
+_Avoid_: Unknown, untagged, unverified
 
 **Ingredient Icon**:
 The picture shown for an Ingredient wherever it appears, coloured by its Aisle. Several Ingredients may share one, and an Ingredient without one shows the Default Icon. Belongs to the Ingredient, never to a Product Description.
@@ -90,6 +102,10 @@ _Avoid_: Pantry item, entry, stock line
 Where a Batch is stored: fridge, freezer, cupboard, or spices.
 _Avoid_: Storage, place
 
+**Recently Stocked**:
+The Ingredients a Family most recently added to the Pantry, newest first, whether or not they are still in it.
+_Avoid_: Recent, history, favourites
+
 **Product Description**:
 The free-text name of the actual product a Batch came from, such as "Grana Padano 200g", kept alongside the matched Ingredient.
 _Avoid_: Label, brand
@@ -105,6 +121,22 @@ _Avoid_: About to go stale, going off
 **Stale Threshold**:
 The Family Setting for how many days before expiry a Batch counts as Expiring Soon.
 _Avoid_: Warning window
+
+**Pantry Health**:
+A 0–100 score of how well a Family's Pantry is kept, weighted from four Health Factors. Derived at read time, never stored, and not given while the Pantry holds fewer than ten Batches.
+_Avoid_: Health score, pantry score, rating
+
+**Health Factor**:
+One of the four parts Pantry Health is weighted from: Fresh, Staples, Dated and Rotation, each 0–100.
+_Avoid_: Check (a Shopping Item is checked), metric, component
+
+**Health To-do**:
+A set of Batches or Ingredients that lower Pantry Health and that one action fixes, such as the Expired Batches to toss or the missing Staples to add. Derived at read time, never stored; a dismissed Suggestion never appears in one.
+_Avoid_: Task, alert, issue
+
+**Forgotten**:
+A Batch with no expiry date that has been in its Location longer than that Location's limit. Giving it an expiry date means it is no longer Forgotten. Derived at read time, never stored.
+_Avoid_: Stale, old, unchecked
 
 ### Shopping
 
@@ -129,8 +161,8 @@ An Ingredient the Family always wants in stock, with an optional preferred quant
 _Avoid_: Must-have, favourite, essential
 
 **Shopping Template**:
-A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list.
-_Avoid_: Predefined list, saved list, preset
+A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list. Several Shopping Templates, whole or line by line, can be applied in one go; the button that does it may read "Import", but the action is still applying.
+_Avoid_: Predefined list, saved list, preset, import (as a name for the action)
 
 **Template Line**:
 One Ingredient or Unmatched name in a Shopping Template, with an optional quantity and unit. Applying the Shopping Template turns each Template Line into a Shopping Item.
@@ -145,7 +177,7 @@ A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingr
 _Avoid_: Low stock, almost out, low quantity
 
 **Suggestion**:
-A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, or a Running low Ingredient, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple or Used Up Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
+A proposed Shopping Item, from a missing Staple, a Used Up Ingredient, a Running low Ingredient, or an Ingredient whose Batches are all Expired, that is not on the Shopping List yet. Derived at read time, never added automatically. Dismissing a missing Staple, Used Up or Expired Suggestion hides it for the Family until the Ingredient is restocked and runs out again; a Running low Suggestion has no dismissal, and it leaves when its flag is turned off. Not to be confused with plate matches: the closest Base Recipes offered when saving a Plate Scan as a Recipe.
 _Avoid_: Alert, notification, recommendation
 
 ### Scanning
@@ -162,7 +194,19 @@ _Avoid_: Batch (a Batch is a Pantry purchase), queue
 Product, Receipt, Plate, or Ingredients.
 
 **Product Scan**:
-Recognises a single packaged product and its best-before date from a photo.
+Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
+
+**Barcode Lookup**:
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
+_Avoid_: Barcode scan, barcode mode
+
+**Known Barcode**:
+A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins.
+_Avoid_: Barcode cache, saved product
+
+**Prefill**:
+Filling the add-Batch form from a Product Scan or a Barcode Lookup. It fills only the fields the Member has not touched, and the Member still saves the Batch themselves.
+_Avoid_: Autofill, auto-add
 
 **Receipt Scan**:
 Recognises every purchased line on a receipt photo.
@@ -257,7 +301,25 @@ _Avoid_: Macros, nutrition facts, calories
 
 **Eating Moment**:
 A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
-_Avoid_: Occasion, meal time, timing
+_Avoid_: Occasion, timing, Mealtime (Breakfast, Lunch, or Dinner in a Meal Plan)
+
+### Meal planning
+
+**Meal Plan**:
+A Family's saved schedule of Recipes over 1 to 7 consecutive days from a chosen start date, laid out in Plan Slots. Days already past stay visible.
+_Avoid_: Menu, schedule, weekly plan
+
+**Mealtime**:
+Breakfast, Lunch, or Dinner: the fixed parts of a day a Meal Plan is laid out in. Not an Eating Moment, which says when a Recipe suits rather than when it is planned.
+_Avoid_: Meal, Eating Moment, course
+
+**Plan Slot**:
+One Mealtime on one day of a Meal Plan, holding a Recipe and the Servings to cook it for. A Plan Slot can have its own Servings, otherwise it follows the Meal Plan's.
+_Avoid_: Meal, entry, cell
+
+**Plan Forecast**:
+Whether each Plan Slot from today onwards will still be covered by the Pantry, once the earlier Plan Slots have used up their ingredients and Batches have expired by that day. It carries on across consecutive Meal Plans. After the first use, a line whose amount can't be judged because a Batch has no quantity or a unit of another dimension is uncertain and doesn't make its Plan Slot short, and a Plan Slot whose Recipe has been archived is unavailable and left out. Derived at read time, never stored.
+_Avoid_: Projection, simulation, availability
 
 ### Lists
 
@@ -286,8 +348,20 @@ Settings shared by all Members of a Family: Default Expiry overrides per Categor
 _Avoid_: Preferences (reserved for per-Member settings)
 
 **Member Preferences**:
-Settings private to a Member: locale, Theme and Dashboard layout.
+Settings private to a Member: locale, Theme, Dashboard layout, and whether to hide Recipes containing their Allergies.
 _Avoid_: Settings
+
+**Allergy**:
+An Allergen a Member has said they must avoid, intolerances included. Each Member sets only their own, and every Member of their Family can see them. Not a Member Preference, because it is not private.
+_Avoid_: Allergen (the catalog entry), dietary restriction, intolerance
+
+**Family Allergy**:
+An Allergy the Family records for someone who is not a Member, such as a child, with an optional label like "Mia". Any Member can add or remove one, and it counts as every Member's own Allergy.
+_Avoid_: Shared allergy, household allergy
+
+**Allergy Warning**:
+The notice on a Recipe that contains an Allergy: stronger when a required Ingredient Line contains it, softer when only optional or Unchecked lines might. It names whose Allergy it is, the viewer's own and Family Allergies first. Recipes are hidden, when a Member chooses to, only for their own and Family Allergies in required lines, and only from browsing and matching, never from a Recipe's own page.
+_Avoid_: Alert, allergy badge
 
 **Theme**:
 The app's look, one of Warm editorial (`warm`, the default), Minimal crisp (`minimal`) and Dark-first (`dark`). A Member Preference, so it follows the Member across devices.

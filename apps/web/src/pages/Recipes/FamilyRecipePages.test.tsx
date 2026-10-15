@@ -171,6 +171,62 @@ describe('NewRecipePage', () => {
     expect(post?.body).toMatchObject({ parentId: null, title: 'Gran stew' });
   });
 
+  it('adds an ingredient line by Use as typed, saved by its name with no Ingredient', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+      'POST /api/recipes': () => Response.json(saved, { status: 201 }),
+    });
+    await user.type(await screen.findByLabelText(/^Title/), 'Gran stew');
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Dragon fruit',
+    );
+    const useTyped = await screen.findByRole('option', {
+      name: /Use “Dragon fruit” as typed/,
+    });
+    expect(useTyped).toHaveTextContent(
+      'Not in the catalog · saved as an unmatched item',
+    );
+    await user.click(useTyped);
+
+    expect(
+      await screen.findByLabelText('Quantity of Dragon fruit'),
+    ).toBeVisible();
+    expect(screen.getByText(/Not in the Catalog/)).toBeVisible();
+    // The search is ready for the next ingredient.
+    expect(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    ).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Save Recipe' }));
+    await vi.waitFor(() =>
+      expect(
+        calls.find((c) => c.key === 'POST /api/recipes')?.body,
+      ).toMatchObject({
+        lines: [{ ingredientId: null, rawName: 'Dragon fruit' }],
+      }),
+    );
+  });
+
+  it("offers Use as typed in a new Recipe's search, still on the Family scope", async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.type(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      'zzz',
+    );
+    await screen.findByRole('option', { name: /as typed/ });
+
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
+  });
+
   it('words the Guidance hint and Tips hint for a Recipe, not a Variant', async () => {
     setup('/recipes/new', {});
     await screen.findByLabelText(/^Title/);
@@ -284,6 +340,7 @@ describe('NewVariantPage', () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/x/variant/new', {
       'GET /api/recipes/x/variant-draft': () => Response.json(draft),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
       'POST /api/recipes': () => Response.json(saved, { status: 201 }),
     });
     fireEvent.change(await screen.findByLabelText(/^Title/), {
@@ -292,10 +349,15 @@ describe('NewVariantPage', () => {
     fireEvent.change(screen.getByLabelText('Cuisine'), {
       target: { value: 'c-fr' },
     });
-    fireEvent.change(screen.getByLabelText('Or add an ingredient by name'), {
-      target: { value: 'Gran’s herbs' },
-    });
-    await user.click(screen.getByRole('button', { name: 'Add name' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'Gran’s herbs',
+    );
+    await user.click(
+      await screen.findByRole('option', {
+        name: /Use “Gran’s herbs” as typed/,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: 'Save Variant' }));
 
     expect(await screen.findByText('Detail of the recipe')).toBeInTheDocument();
@@ -590,6 +652,32 @@ describe('EditFamilyRecipePage', () => {
     );
   });
 
+  it('links a Pairing to an Ingredient with a search that has no Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    const calls = setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+    await user.type(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+      'zzz',
+    );
+
+    expect(await screen.findByText('No match for “zzz”')).toBeVisible();
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/search',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).not.toBe('shared');
+    }
+  });
+
   it('adds a Tip and hides an inherited one straight away', async () => {
     const user = userEvent.setup({ delay: null });
     const calls = setup('/recipes/g/edit', {
@@ -619,5 +707,105 @@ describe('EditFamilyRecipePage', () => {
     expect(
       calls.find((c) => c.key === 'POST /api/recipes/g/tips')!.search,
     ).toContain('locale=en');
+  });
+});
+
+describe('Family Recipe Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  const browseAisles = {
+    aisles: [
+      {
+        id: 'aisle-dairy',
+        name: 'Dairy & eggs',
+        parentCategories: [{ id: 'p-dairy', name: 'Dairy' }],
+      },
+    ],
+  };
+  const aisleRoutes = {
+    'GET /api/catalog/aisles': () => Response.json(browseAisles),
+    'GET /api/catalog/search': () => Response.json({ results: [] }),
+  };
+
+  it('shows Browse by aisle in the ingredient search of the recipe form', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', aisleRoutes);
+
+    await user.click(
+      await screen.findByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    ).toBeVisible();
+  });
+
+  it('shows Browse by aisle in the Guidance link search', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      ...aisleRoutes,
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+
+    await user.click(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+  });
+});
+
+describe('Family Recipe form: Add to your catalog (#270)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('offers it in the ingredient search, above Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/new', {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await screen.findByLabelText(/^Title/);
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    await user.paste('kombucha');
+
+    // Only the search listbox's options: the form's native selects have options too.
+    const options = within(await screen.findByRole('listbox')).getAllByRole(
+      'option',
+    );
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
+    expect(options[1]).toHaveAccessibleName(/Use “kombucha” as typed/);
+  });
+
+  it('offers it in a Guidance link search, which has no Use as typed', async () => {
+    const user = userEvent.setup({ delay: null });
+    setup('/recipes/g/edit', {
+      'GET /api/recipes/g/edit': () => Response.json(saved),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    await user.selectOptions(
+      await screen.findByLabelText('Link of Pairing 1'),
+      'ingredient',
+    );
+
+    await user.click(
+      await screen.findByRole('combobox', {
+        name: 'Linked Ingredient of Pairing 1',
+      }),
+    );
+    await user.paste('kombucha');
+
+    const options = within(await screen.findByRole('listbox')).getAllByRole(
+      'option',
+    );
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/Add “kombucha” to your catalog/);
   });
 });

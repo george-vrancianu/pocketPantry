@@ -18,8 +18,7 @@
   },
   "unmatched": "Umatchet",
   "runningLow": {
-    "chip": "Ved at løbe tør",
-    "toggle": "Markér som ved at løbe tør"
+    "chip": "Ved at løbe tør"
   },
   "all": "Alle",
   "filters": "Filtrer efter placering",
@@ -30,8 +29,36 @@
   "noMatches": "Ingen partier matcher.",
   "batchCount_one": "{{count}} parti",
   "batchCount_other": "{{count}} partier",
-  "batchesOf": "Partier af {{name}}",
-  "noDetails": "Ingen mængde angivet",
+  "group": {
+    "label_one": "{{name}}, {{count}} parti",
+    "label_other": "{{name}}, {{count}} partier",
+    "runningLow": "Ved at løbe tør",
+    "notLow": "Har nok",
+    "staple": "Basisvare",
+    "makeStaple": "Gør til basisvare",
+    "addBatch": "Tilføj et parti af {{name}}"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} er markeret som ved at løbe tør",
+      "off": "{{name}} er ikke længere ved at løbe tør"
+    },
+    "staple": {
+      "on": "{{name}} er en basisvare",
+      "off": "{{name}} er ikke længere en basisvare"
+    }
+  },
+  "a11y": {
+    "markLow": "Markér som ved at løbe tør",
+    "clearLow": "Fjern ved at løbe tør",
+    "lowKey": "Tryk L: {{action}}.",
+    "stapleKey": "Tryk S: {{action}}.",
+    "makeStaple": "Gør til basisvare",
+    "removeStaple": "Fjern som basisvare"
+  },
+  "batch": {
+    "noDate": "ingen dato"
+  },
   "edit": {
     "title": "Rediger partiet {{name}}",
     "save": "Gem ændringer"
@@ -44,10 +71,17 @@
     "location": "Placering",
     "description": "Produktbeskrivelse",
     "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
-    "useUnmatched": "Ikke i kataloget? Tilføj \"{{name}}\" som umatchet",
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
     "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
-    "pickIngredient": "Vælg en ingrediens blandt søgeresultaterne, eller tilføj dit eget navn som umatchet."
+    "prefill": {
+      "open": "Udfyld med kameraet",
+      "reading": "Læser produktfotoet…",
+      "cap": "Du har brugt alle dagens scanninger. Scan en stregkode eller udfyld formularen selv.",
+      "mark": "Udfyldt fra produktet",
+      "credit": "Produktdata: Open Food Facts",
+      "lookingUp": "Slår stregkoden op…",
+      "listsAllergens": "Dette produkt angiver {{names}}"
+    }
   },
   "picker": {
     "label": "Udløber",

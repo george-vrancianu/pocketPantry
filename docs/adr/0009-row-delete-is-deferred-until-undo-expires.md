@@ -6,7 +6,7 @@ Row gestures (swipe left to remove, `docs/handoffs/row-gestures/handoff.md`) put
 
 - For Batches, Shopping Items and Staples, removing a row hides it in the client straight away. The delete request is sent when its Undo toast closes, is replaced by another toast, or the Member leaves the page (route change or `pagehide`). Undo just shows the row again; no request is made.
 - While a delete is pending, refetches (such as the Shopping List's 10 s poll) filter that record out so the row does not come back.
-- Only the most recent removal can be undone. A new toast sends any pending delete at once.
+- Only the most recent removal can be undone. A new toast sends any pending delete at once. One removal may hold several rows (such as tossing every Expired Batch in Pantry health): they share one Undo window and one toast, Undo brings all of them back, and one bulk delete request is sent for them when the window ends.
 - If the delayed delete fails, the row comes back with an error toast.
 - Template Lines are the exception: they are deleted at once and Undo puts the line back at its old position by replacing the Template's lines again. A Template Line is only a name, quantity and unit, so re-creating it loses nothing, and every Template save replaces all lines, which would otherwise have to leave out pending deletes.
 

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -118,7 +118,11 @@ describe('Recipes browsing and detail (integration)', () => {
       .where(eq(user.email, `recipes-browse-b-${stamp}@example.com`));
     familyB = b.familyId;
     ing = (
-      await database.select({ id: ingredients.id }).from(ingredients).limit(5)
+      await database
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
+        .limit(5)
     ).map((r) => r.id);
     cuisineId = crypto.randomUUID();
     otherCuisineId = crypto.randomUUID();
@@ -184,6 +188,17 @@ describe('Recipes browsing and detail (integration)', () => {
         variantCount: 1,
         owner: 'catalog',
         servings: 4,
+      });
+    });
+
+    it('lists Variants beside their bases when asked with includeVariants', async () => {
+      const a = await base();
+      const v = await variant(a.id);
+
+      const items = await list('includeVariants=true');
+      expect(titles(items)).toEqual(expect.arrayContaining([a.title, v.title]));
+      expect(items.find((r) => r.id === v.id)).toMatchObject({
+        parentId: a.id,
       });
     });
 

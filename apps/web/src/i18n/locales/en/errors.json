@@ -35,7 +35,8 @@
     "provider_incomplete": "The scan did not finish. Please try again.",
     "result_invalid": "We could not read that photo. Try a clearer one.",
     "plate_token_invalid": "That dish list has expired. Read it again.",
-    "not_configured": "Scanning is not set up on this server yet."
+    "not_configured": "Scanning is not set up on this server yet.",
+    "product_not_found": "We could not read a product from that photo. Fill the form by hand, or try again."
   },
   "shopping": {
     "item_not_found": "We could not find that item on the list.",
@@ -71,7 +72,9 @@
     "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
     "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
-    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first."
+    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
+    "family_ingredient_exists": "“{{existing.name}}” already has that name.",
+    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
@@ -118,5 +121,35 @@
     "pairing_self_link": "A Pairing cannot link to its own Recipe.",
     "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
     "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
+    "not_found": "That Family ingredient is no longer in the queue. Someone may have promoted it already.",
+    "target_not_found": "That shared ingredient no longer exists. Pick another."
+  },
+  "family_synonyms": {
+    "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
+    "shared_name_exists": "That name is already used by another ingredient."
+  },
+  "settings": {
+    "family_allergy_exists": "That Allergen is already on the list with the same label.",
+    "allergen_not_found": "That Allergen no longer exists.",
+    "family_allergy_not_found": "That Family Allergy is no longer on the list. Someone may have removed it already.",
+    "allergen_retired": "That Allergen is retired and can't be picked."
+  },
+  "barcode": {
+    "provider_unavailable": "The barcode lookup is unavailable right now. Try again, or fill the form by hand."
+  },
+  "meal_plan": {
+    "cap_reached": "Your Family can have {{cap}} Meal plans. Delete one to make room.",
+    "overlap": "These dates overlap {{other}} ({{dates}}). Pick other dates.",
+    "overlapUnnamed": "These dates overlap {{dates}}. Pick other dates.",
+    "start_date_in_past": "A plan can't start before today.",
+    "start_date_too_far": "A plan can start up to 14 days from today.",
+    "day_in_past": "That day has passed and can't be changed.",
+    "already_started": "A plan that has started can't be moved.",
+    "day_out_of_range": "That day isn't part of the plan.",
+    "not_found": "That Meal plan no longer exists.",
+    "recipe_not_found": "That Recipe can't be found."
   }
 }

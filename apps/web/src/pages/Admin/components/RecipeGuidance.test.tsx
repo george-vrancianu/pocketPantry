@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [
     {
       id: 'em1',
@@ -42,6 +43,8 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
       pantryBasic: false,
+      allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
   ],
@@ -243,7 +246,10 @@ describe('RecipeGuidance', () => {
       screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
       'milk',
     );
-    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    const option = await screen.findByRole('option', { name: /Milk/ });
+    // The link target has no use for a unit chip.
+    expect(option).toHaveAccessibleName('Milk, Milk · Dairy');
+    await user.click(option);
     expect(screen.getByText('Linked Ingredient: Milk')).toBeInTheDocument();
     expect(
       screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
@@ -262,6 +268,30 @@ describe('RecipeGuidance', () => {
     expect(saved(calls)?.body).toMatchObject({
       pairings: [{ linkedIngredientId: null, linkedRecipeId: 'r2' }],
     });
+  });
+
+  it('searches the shared Catalog only for an Ingredient link, with no Use as typed', async () => {
+    const calls = open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+      'mi',
+    );
+    await screen.findByRole('option', { name: /Milk/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
   });
 
   it('sends an Ingredient link picked by search', async () => {
@@ -441,5 +471,76 @@ describe('RecipeGuidance', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /cannot link to that Recipe/,
     );
+  });
+});
+
+describe('RecipeGuidance Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Browse by aisle in the linked Ingredient search, on the shared Catalog', async () => {
+    const calls = open(recipe, {
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [{ id: 'a1', name: 'Dairy & eggs', parentCategories: [] }],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+    );
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('a1');
+      expect(params.get('scope')).toBe('shared');
+    });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+});
+
+describe('RecipeGuidance: no Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers neither the button nor the option in a Pairing link search', async () => {
+    open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+    );
+    await user.paste('kombucha');
+
+    expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('option', { name: /to your catalog/ }),
+    ).toBeNull();
   });
 });

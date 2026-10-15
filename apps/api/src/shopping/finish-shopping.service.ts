@@ -5,18 +5,19 @@ import {
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
-  FALLBACK_LOCALE,
   type CatalogLocale,
+  type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
 import { loadDisplayNames } from '../catalog/display-names';
 import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
+import { readAmountScale, type AmountScale } from '../catalog/amount-scale';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
-  ingredients,
   leafCategories,
   parentCategories,
   shoppingItems,
@@ -44,7 +45,8 @@ type CheckedRow = {
   quantity: string | null;
   unit: (typeof shoppingItems.$inferSelect)['unit'];
   canonicalName: string | null;
-  defaultUnit: (typeof ingredients.$inferSelect)['defaultUnit'] | null;
+  defaultUnit: CatalogSearchResult['defaultUnit'] | null;
+  amountScale: AmountScale | null;
   leaf: typeof leafCategories.$inferSelect | null;
   parent: typeof parentCategories.$inferSelect | null;
 };
@@ -65,10 +67,15 @@ export class FinishShoppingService {
   ): Promise<FinishProposal> {
     const { listId, familyId } = await this.activeList(this.database, memberId);
     const overrides = await this.settings.expiryOverridesOf(familyId);
-    const rows = await this.checkedRows(this.database, listId);
+    const rows = await this.checkedRows(
+      this.database,
+      catalogScope(familyId),
+      listId,
+    );
     const other = await this.otherTarget(this.database);
     const names = await loadDisplayNames(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.flatMap((row) => (row.ingredientId ? [row.ingredientId] : [])),
     );
@@ -95,6 +102,10 @@ export class FinishShoppingService {
           // A Batch needs a unit whenever it has a quantity.
           unit:
             row.unit ?? (quantity === null ? null : (row.defaultUnit ?? 'pcs')),
+          defaultUnit: row.defaultUnit,
+          amountScale: row.ingredientId
+            ? readAmountScale(row.amountScale)
+            : null,
           location: defaults.location ?? FALLBACK_LOCATION,
           expiryDate: expiryDays === null ? null : addDays(today, expiryDays),
         };
@@ -126,7 +137,7 @@ export class FinishShoppingService {
         throw new ApiException(409, 'shopping.list_changed');
       }
 
-      const rows = await this.checkedRows(tx, listId);
+      const rows = await this.checkedRows(tx, catalogScope(familyId), listId);
       const accounted = [
         ...body.lines.map((line) => line.itemId),
         ...body.droppedItemIds,
@@ -206,7 +217,9 @@ export class FinishShoppingService {
 
   /**
    * Unmatched Shopping Items become Unmatched Batches: queue the Batches too,
-   * in the locale the name was first saved in (the Shopping Item's entry).
+   * in the locale the name was first saved in (the Shopping Item's entry). An
+   * item without an entry was made Unmatched by a Family deleting its Family
+   * Ingredient (ADR 0011): the Family discarded that name, so it is not queued.
    */
   private async queueUnmatchedBatches(
     tx: Tx,
@@ -226,11 +239,16 @@ export class FinishShoppingService {
         ),
       );
     const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
+    const queued = unmatched.flatMap(({ batchId, itemId, rawName }) => {
+      const locale = localeOf.get(itemId);
+      return locale === undefined ? [] : [{ batchId, rawName, locale }];
+    });
+    if (queued.length === 0) return;
     await recordUnmatched(
       tx,
-      unmatched.map(({ batchId, itemId, rawName }) => ({
+      queued.map(({ batchId, rawName, locale }) => ({
         rawName,
-        locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
+        locale,
         source: 'finish_shopping' as const,
         batchId,
       })),
@@ -260,8 +278,10 @@ export class FinishShoppingService {
 
   private checkedRows(
     executor: Executor,
+    scope: CatalogScope,
     listId: string,
   ): Promise<CheckedRow[]> {
+    const ingredients = scope.ingredients(executor);
     return executor
       .select({
         id: shoppingItems.id,
@@ -271,6 +291,7 @@ export class FinishShoppingService {
         unit: shoppingItems.unit,
         canonicalName: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
+        amountScale: ingredients.amountScale,
         leaf: leafCategories,
         parent: parentCategories,
       })

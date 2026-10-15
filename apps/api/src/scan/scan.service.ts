@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
@@ -39,13 +40,16 @@ export class ScanService {
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const scope = catalogScope(familyId);
     const result = await this.cap.withinCap(memberId, () =>
-      this.productScan.analyze(input, locale, scanLanguage),
+      this.productScan.analyze(input, locale, scanLanguage, familyId),
     );
     // The Family's Default Expiry overrides shape the proposed expiry, as in search.
     const overrides = await this.settings.expiryOverridesForMember(memberId);
     const [match] = result.matchedIngredientId
       ? await this.catalogSearch.findByIds(
+          scope,
           [result.matchedIngredientId],
           locale,
           overrides,
@@ -56,6 +60,7 @@ export class ScanService {
       ? undefined
       : (
           await this.catalogSearch.findExact(
+            scope,
             [result.productName],
             locale,
             overrides,
@@ -79,8 +84,9 @@ export class ScanService {
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
+    const familyId = await this.settings.familyIdOf(memberId);
     const result = await this.cap.withinCap(memberId, () =>
-      this.receiptScan.analyze(input, locale, scanLanguage),
+      this.receiptScan.analyze(input, locale, scanLanguage, familyId),
     );
     return {
       lines: await this.receiptProposal.propose(result, locale, memberId),
@@ -93,8 +99,10 @@ export class ScanService {
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
   ): Promise<ScanResponse> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const scope = catalogScope(familyId);
     const result = await this.cap.withinCap(memberId, () =>
-      this.ingredientsScan.analyze(input, locale, scanLanguage),
+      this.ingredientsScan.analyze(input, locale, scanLanguage, familyId),
     );
     const ids = [
       ...new Set(
@@ -105,12 +113,13 @@ export class ScanService {
     ];
     const overrides = await this.settings.expiryOverridesForMember(memberId);
     const matches = new Map(
-      (await this.catalogSearch.findByIds(ids, locale, overrides)).map(
+      (await this.catalogSearch.findByIds(scope, ids, locale, overrides)).map(
         (match) => [match.id, match],
       ),
     );
     // Items with no model Match: the printed name may be a curated Synonym (any Scan Language).
     const exact = await this.catalogSearch.findExact(
+      scope,
       result.items.flatMap((item) =>
         item.matchedIngredientId ? [] : [item.productName],
       ),

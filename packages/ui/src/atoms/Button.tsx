@@ -29,6 +29,8 @@ export type ButtonProps = Omit<ButtonBaseProps, 'color'> & {
   /** Icon before the label. */
   startIcon?: ReactNode;
   fullWidth?: boolean;
+  /** Renders a link through the theme's LinkComponent (the router link). */
+  href?: string;
 };
 
 function variantSx(variant: ButtonVariant) {

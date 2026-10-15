@@ -1,4 +1,4 @@
-import { pantryMatchesQueryKey, suggestionsQueryKey } from './queryKeys';
+import { shoppingListChangeQueryKeys } from './queryKeys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
@@ -28,12 +28,18 @@ export type ShoppingList = {
   summary: { remaining: number; checked: number };
 };
 
+/** What a bulk add answers: the whole list, and the ids of the Shopping Items created or merged into, in request order. */
+export type AddedShoppingItems = ShoppingList & { createdIds: string[] };
+
 export type NewShoppingItem = {
   ingredientId?: string;
   name?: string;
   quantity?: number;
   unit?: Unit;
 };
+
+/** How long Shopping toasts stay up. */
+export const SHOPPING_TOAST_MS = 3000;
 
 /** How many items are on the list, ticked ones included. */
 export const itemCount = (summary: ShoppingList['summary']): number =>
@@ -107,10 +113,11 @@ export function useShoppingMutations(locale: string) {
   const onSuccess = (list: ShoppingList) => {
     queryClient.setQueryData(listKey(locale), list);
     // Items on the list are hidden from Suggestions and flagged on Recipe lines.
-    return Promise.all([
-      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-      queryClient.invalidateQueries({ queryKey: pantryMatchesQueryKey }),
-    ]);
+    return Promise.all(
+      shoppingListChangeQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
   };
 
   const add = useMutation({
@@ -120,6 +127,14 @@ export function useShoppingMutations(locale: string) {
         body: item,
       }),
     onSuccess,
+  });
+  const addMany = useMutation({
+    mutationFn: (items: NewShoppingItem[]) =>
+      apiRequest<AddedShoppingItems>(path(locale, '/items/bulk'), {
+        method: 'POST',
+        body: { items },
+      }),
+    onSuccess: ({ createdIds: _createdIds, ...list }) => onSuccess(list),
   });
   const setChecked = useMutation({
     mutationFn: ({ id, checked }: { id: string; checked: boolean }) =>
@@ -154,5 +169,5 @@ export function useShoppingMutations(locale: string) {
       }),
     onSuccess,
   });
-  return { add, setChecked, setAmount, remove };
+  return { add, addMany, setChecked, setAmount, remove };
 }

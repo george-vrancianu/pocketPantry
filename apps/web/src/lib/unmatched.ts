@@ -7,7 +7,11 @@ import type { Locale, ScanLanguage } from '../i18n/resources';
 import { adminCatalogQueryKey, type IngredientInput } from './admin';
 import { apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
-import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
+import {
+  mealPlanQueryKey,
+  suggestionsQueryKey,
+  templateDetailsQueryKey,
+} from './queryKeys';
 import { recipesQueryKey } from './recipes';
 import { shoppingListQueryKey } from './shopping';
 import type { ScanMode } from './scan';
@@ -66,12 +70,19 @@ export type ResolveInput = {
 
 const queueKey = ['admin-unmatched'] as const;
 
-type UnmatchedPage = { entries: UnmatchedEntry[]; nextCursor: string | null };
+/** The query key of the queue with this status. */
+export const unmatchedQueueQueryKey = (status: UnmatchedStatus) =>
+  [...queueKey, status] as const;
+
+export type UnmatchedPage = {
+  entries: UnmatchedEntry[];
+  nextCursor: string | null;
+};
 
 /** The queue one page at a time; `fetchNextPage` follows the server's cursor. */
 export function useUnmatchedQueue(status: UnmatchedStatus) {
   return useInfiniteQuery({
-    queryKey: [...queueKey, status],
+    queryKey: unmatchedQueueQueryKey(status),
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
       apiRequest<UnmatchedPage>(
@@ -113,6 +124,7 @@ export function useResolveUnmatched() {
           suggestionsQueryKey,
           templateDetailsQueryKey,
           recipesQueryKey,
+          mealPlanQueryKey,
         ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
       ),
   });

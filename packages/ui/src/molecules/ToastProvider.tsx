@@ -26,6 +26,8 @@ export type ToastOptions = {
   bottom?: number;
   /** How long the toast stays, in ms. Defaults to 2600. */
   duration?: number;
+  /** Announce without interrupting (a status) instead of as an alert. */
+  polite?: boolean;
   /**
    * Something is waiting on this toast. Called once when the toast ends for
    * any reason (timeout, dismissed, replaced by another toast, or the provider
@@ -53,12 +55,14 @@ const ToastContext = createContext<ToastApi | null>(null);
  * How a modal registers itself as the toast's home while open. A modal
  * aria-hides the app root and traps focus, so a toast rendered at the root
  * would be neither heard nor reachable; it renders inside the modal instead.
+ * Hosts stack: the innermost open modal hosts the toast, and when it closes
+ * the toast goes back to the one beneath.
  */
 const ToastHostContext = createContext<
   ((element: HTMLElement) => () => void) | null
 >(null);
 
-/** Called by a modal: while `element` is set, toasts render inside it. */
+/** Called by a modal: while `element` is set, toasts render inside it, unless a modal opened later is still open. */
 export function useToastHost(element: HTMLElement | null): void {
   const register = useContext(ToastHostContext);
   useEffect(() => {
@@ -71,10 +75,12 @@ export function useToastHost(element: HTMLElement | null): void {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<Current | null>(null);
   const [open, setOpen] = useState(false);
-  const [host, setHost] = useState<HTMLElement | null>(null);
+  // The open modals, innermost last: when a modal opened over another closes, the toast goes back to the first.
+  const [hosts, setHosts] = useState<HTMLElement[]>([]);
+  const host = hosts.at(-1) ?? null;
   const registerHost = useCallback((element: HTMLElement) => {
-    setHost(element);
-    return () => setHost((prev) => (prev === element ? null : prev));
+    setHosts((prev) => [...prev, element]);
+    return () => setHosts((prev) => prev.filter((h) => h !== element));
   }, []);
   const reduceMotion = usePrefersReducedMotion();
   // The showing toast's `onClose`, until it has been called or its action used.
@@ -141,6 +147,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             }}
           >
             <MuiSnackbarContent
+              role={current.polite ? 'status' : 'alert'}
               message={current.message}
               action={
                 current.action ? (

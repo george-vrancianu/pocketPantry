@@ -1,6 +1,12 @@
 import { Box, RecipesIcon, tokens, radius } from '@pocket-pantry/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import {
+  AllergenIndicator,
+  allergenIndicatorLabel,
+} from '../../../components/AllergenIndicator';
+import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
@@ -23,7 +29,12 @@ function cardsFor(size: WidgetSize, columns: GridColumns): number {
 /** Cards for the Recipes the Family can make tonight (or nearly), one per Base Recipe. */
 export function CookTonightWidget({ size, columns }: WidgetProps) {
   const { t, i18n } = useTranslation('dashboard');
-  const cookTonight = useCookTonight(i18n.language, localIso(new Date()));
+  const [showHidden, setShowHidden] = useState(false);
+  const cookTonight = useCookTonight(
+    i18n.language,
+    localIso(new Date()),
+    showHidden,
+  );
   const cards = (cookTonight.data?.cards ?? []).slice(
     0,
     cardsFor(size, columns),
@@ -61,6 +72,10 @@ export function CookTonightWidget({ size, columns }: WidgetProps) {
           {t('widgets.cookTonight.seeAll')}
         </Box>
       </Box>
+      <HiddenByAllergiesNote
+        count={cookTonight.data?.hiddenByAllergiesCount ?? 0}
+        onShow={() => setShowHidden(true)}
+      />
       {cards.length === 0 ? (
         <Box sx={{ fontSize: 14, color: tokens.color.muted, py: '10px' }}>
           {t('widgets.cookTonight.empty')}
@@ -117,7 +132,10 @@ function CookCard({ card }: { card: CookTonightCard }) {
       : null,
   ].filter((part) => part !== null);
   // Block elements carry no spaces for a screen reader, so name the link explicitly.
-  const name = [heading, secondary, missing, meta.join(' · ')]
+  const allergy = recipe.allergyWarning
+    ? allergenIndicatorLabel(t, recipe.allergyWarning)
+    : null;
+  const name = [heading, secondary, missing, meta.join(' · '), allergy]
     .filter(Boolean)
     .join(', ');
 
@@ -162,6 +180,11 @@ function CookCard({ card }: { card: CookTonightCard }) {
       {meta.length > 0 && (
         <Box component="span" sx={line}>
           {meta.join(' · ')}
+        </Box>
+      )}
+      {recipe.allergyWarning && (
+        <Box component="span" sx={{ display: 'flex', mt: '4px' }}>
+          <AllergenIndicator warning={recipe.allergyWarning} />
         </Box>
       )}
     </Box>

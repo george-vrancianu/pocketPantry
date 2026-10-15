@@ -29,9 +29,9 @@
     "suggestions": {
       "title": "Sugestii",
       "empty": "Nicio sugestie",
-      "count_one": "produs de bază lipsă",
-      "count_few": "produse de bază lipsă",
-      "count_other": "de produse de bază lipsă"
+      "count_one": "dispărut din cămară",
+      "count_few": "dispărute din cămară",
+      "count_other": "de dispărute din cămară"
     },
     "cookTonight": {
       "title": "Gătește diseară",
@@ -57,6 +57,225 @@
       "protein": "Proteine",
       "carbs": "Carbohidrați",
       "fat": "Grăsimi"
+    }
+  },
+  "health": {
+    "title": "Starea cămării",
+    "verdict": {
+      "good": "În formă bună",
+      "some": "Câteva lucruri de pus la punct",
+      "attention": "Necesită atenție"
+    },
+    "toDo_one": "{{count}} de făcut",
+    "toDo_few": "{{count}} de făcut",
+    "toDo_other": "{{count}} de făcut",
+    "nothingToDo": "Nimic de făcut",
+    "nothingToDoSpoken": "nimic de făcut",
+    "toDoLong_one": "{{count}} lucru de făcut",
+    "toDoLong_few": "{{count}} lucruri de făcut",
+    "toDoLong_other": "{{count}} de lucruri de făcut",
+    "progress_one": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "progress_few": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "progress_other": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "factor": {
+      "fresh": "Prospețime",
+      "staples": "De bază",
+      "dated": "Cu dată",
+      "rotation": "Rotație"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "group": {
+      "now": "Acum",
+      "week": "Săptămâna aceasta",
+      "tidy": "Ordine"
+    },
+    "toDoFirst": "{{count}} de făcut · {{title}}",
+    "allDone": "Nimic de făcut. Totul este în termen, în stoc și la locul lui.",
+    "moreNames": "{{names}} +{{count}}",
+    "gainSpoken_one": "crește scorul cu {{count}}",
+    "gainSpoken_few": "crește scorul cu {{count}}",
+    "gainSpoken_other": "crește scorul cu {{count}}",
+    "todo": {
+      "expired": {
+        "title_one": "Aruncă {{count}} expirat",
+        "title_few": "Aruncă {{count}} expirate",
+        "title_other": "Aruncă {{count}} de expirate",
+        "bulk": "Aruncă",
+        "bulkName_one": "Aruncă {{count}} expirat",
+        "bulkName_few": "Aruncă {{count}} expirate",
+        "bulkName_other": "Aruncă {{count}} de expirate"
+      },
+      "missingStaples": {
+        "title_one": "Adaugă {{count}} produs de bază",
+        "title_few": "Adaugă {{count}} produse de bază",
+        "title_other": "Adaugă {{count}} de produse de bază",
+        "bulk": "Adaugă",
+        "bulkName_one": "Adaugă {{count}} produs de bază",
+        "bulkName_few": "Adaugă {{count}} produse de bază",
+        "bulkName_other": "Adaugă {{count}} de produse de bază"
+      },
+      "expiringSoon": {
+        "title": "Folosește {{count}} până {{day}}",
+        "bulk": "Rețete",
+        "bulkName": "Rețete"
+      },
+      "runningLow": {
+        "title_one": "Reface stocul: {{count}} aproape terminat",
+        "title_few": "Reface stocul: {{count}} aproape terminate",
+        "title_other": "Reface stocul: {{count}} de aproape terminate",
+        "bulk": "Adaugă",
+        "bulkName_one": "Adaugă {{count}} aproape terminat",
+        "bulkName_few": "Adaugă {{count}} aproape terminate",
+        "bulkName_other": "Adaugă {{count}} de aproape terminate"
+      },
+      "undated": {
+        "title_one": "Datează {{count}} lot",
+        "title_few": "Datează {{count}} loturi",
+        "title_other": "Datează {{count}} de loturi",
+        "bulk": "Datează toate",
+        "bulkName_one": "Datează toate ({{count}} lot)",
+        "bulkName_few": "Datează toate cele {{count}} loturi",
+        "bulkName_other": "Datează toate cele {{count}} de loturi"
+      }
+    },
+    "done": {
+      "expired": "Nimic expirat",
+      "missingStaples": "Produse de bază acoperite",
+      "expiringSoon": "Nimic care expiră curând",
+      "runningLow": "Nimic aproape terminat",
+      "undated": "Totul are dată",
+      "rotation": "Nimic uitat"
+    },
+    "line": {
+      "since": "din {{day}}",
+      "staple": "Produs de bază",
+      "usual": "de obicei {{amount}}",
+      "noneLeft": "nu a mai rămas",
+      "age": "vechi de {{count}} z",
+      "inLocation": "{{duration}} în {{location}}"
+    },
+    "close": "Închide",
+    "toast": {
+      "withScore": "{{message}} · scor {{score}}",
+      "expired_one": "Ai eliminat {{count}} produs expirat",
+      "expired_few": "Ai eliminat {{count}} produse expirate",
+      "expired_other": "Ai eliminat {{count}} de produse expirate",
+      "tossed": "Ai aruncat {{name}}",
+      "used": "Ai folosit {{name}}",
+      "added_one": "{{count}} adăugat pe lista de cumpărături",
+      "added_few": "{{count}} adăugate pe lista de cumpărături",
+      "added_other": "{{count}} adăugate pe lista de cumpărături",
+      "dated": "{{name}} are acum dată",
+      "usual_one": "{{count}} lot a primit data obișnuită de expirare · modifică în cămară",
+      "usual_few": "{{count}} loturi au primit data obișnuită de expirare · modifică în cămară",
+      "usual_other": "{{count}} de loturi au primit data obișnuită de expirare · modifică în cămară",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} dată nu a putut fi salvată",
+      "notSaved_few": "{{count}} date nu au putut fi salvate",
+      "notSaved_other": "{{count}} de date nu au putut fi salvate"
+    },
+    "item": {
+      "toss": "Aruncă {{name}}",
+      "used": "Folosit",
+      "usedName": "Ai folosit {{name}}",
+      "add": "Adaugă {{name}}",
+      "setDate": "Setează data",
+      "setDateName": "Setează data pentru {{name}}"
+    }
+  },
+  "mealPlan": {
+    "title_one": "Plan de mese · {{count}} zi",
+    "title_few": "Plan de mese · {{count}} zile",
+    "title_other": "Plan de mese · {{count}} de zile",
+    "titleEmpty": "Plan de mese",
+    "short_one": "{{count}} masă fără stoc",
+    "short_few": "{{count}} mese fără stoc",
+    "short_other": "{{count}} de mese fără stoc",
+    "coveredOnceYouShop": "Acoperit după cumpărături",
+    "allCovered": "Totul acoperit",
+    "nextPlanStarts": "Următorul plan începe {{date}}",
+    "nothingThisWeek": "Nimic planificat săptămâna aceasta.",
+    "planWeek": "Planifică săptămâna",
+    "nothingOn": "Nimic planificat pentru {{day}}.",
+    "nothingYet": "Încă nimic",
+    "today": "Azi",
+    "tomorrow": "Mâine",
+    "editDay": "Editează ziua",
+    "missingForPlan": "Lipsesc pentru plan:",
+    "moreMissing": "+{{count}}",
+    "addN": "Adaugă {{count}}",
+    "addNMissing_one": "Adaugă {{count}} ingredient lipsă",
+    "addNMissing_few": "Adaugă {{count}} ingrediente lipsă",
+    "addNMissing_other": "Adaugă {{count}} de ingrediente lipsă",
+    "addLine": "Adaugă {{name}} pe lista de cumpărături",
+    "toast": {
+      "added_one": "{{count}} adăugat pe lista de cumpărături",
+      "added_few": "{{count}} adăugate pe lista de cumpărături",
+      "added_other": "{{count}} adăugate pe lista de cumpărături"
+    },
+    "planMeal": "Planifică o masă",
+    "startPlan": "Începe un plan",
+    "slot": {
+      "breakfast": "Mic dejun",
+      "lunch": "Prânz",
+      "dinner": "Cină"
+    },
+    "legend": {
+      "covered": "Acoperit",
+      "onList": "Pe listă",
+      "short": "Lipsă",
+      "bars": "Bare: M · P · C"
+    },
+    "status": {
+      "covered": "Acoperit",
+      "onList": "Pe listă",
+      "short_one": "{{count}} lipsă",
+      "short_few": "{{count}} lipsă",
+      "short_other": "{{count}} lipsă",
+      "unavailable": "Nu mai este disponibilă"
+    },
+    "meta": "{{servings}} porții · {{minutes}} min",
+    "metaNoTime": "{{servings}} porții",
+    "line": {
+      "short": "lipsesc {{amount}}",
+      "need": "ai nevoie de {{amount}}",
+      "unknown": "cantitate necunoscută, în Cămara ta nu este o cantitate"
+    },
+    "reason": {
+      "usesLast": "{{who}} folosește tot ce a rămas",
+      "useLast": "{{who}} folosesc tot ce a rămas",
+      "earlierMeals_one": "{{count}} masă anterioară",
+      "earlierMeals_few": "{{count}} mese anterioare",
+      "earlierMeals_other": "{{count}} de mese anterioare",
+      "mealOf": "{{name}} de {{day}}",
+      "and": "{{first}} și {{second}}",
+      "expires": "Al tău expiră {{day}}",
+      "notInPantry": "Nu e în Cămara ta",
+      "onlyLeftAfter": "Au rămas doar {{amount}} după {{who}}",
+      "onlyInPantry": "Ai doar {{amount}} în Cămară"
+    },
+    "prevDay": "Ziua anterioară",
+    "nextDay": "Ziua următoare",
+    "close": "Închide",
+    "aria": {
+      "column": "{{date}}: {{summary}}",
+      "meals_one": "{{count}} masă, {{status}}",
+      "meals_few": "{{count}} mese, {{status}}",
+      "meals_other": "{{count}} de mese, {{status}}",
+      "allUnavailable_one": "{{count}} masă indisponibilă",
+      "allUnavailable_few": "{{count}} mese indisponibile",
+      "allUnavailable_other": "{{count}} de mese indisponibile",
+      "alsoUnavailable_one": "{{count}} indisponibilă",
+      "alsoUnavailable_few": "{{count}} indisponibile",
+      "alsoUnavailable_other": "{{count}} indisponibile",
+      "nothing": "nimic planificat",
+      "status": {
+        "covered": "acoperit",
+        "onList": "pe listă",
+        "short": "lipsă"
+      }
     }
   }
 }

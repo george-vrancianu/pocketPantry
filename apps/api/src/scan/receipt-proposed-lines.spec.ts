@@ -6,6 +6,8 @@ const milk: CatalogSearchResult = {
   id: 'milk-id',
   name: 'Lapte',
   defaultUnit: 'l',
+  owner: 'catalog',
+  amountScale: 'medium',
   leafCategory: { id: 'l', name: 'Lapte' },
   parentCategory: {
     id: 'p',
@@ -183,6 +185,16 @@ describe('receiptProposedLines', () => {
     expect(
       receiptProposedLines(
         receipt(line({ unit: 'oz', quantity: 8 })),
+        resolveMilk,
+        0.6,
+      )[0],
+    ).toMatchObject({ quantity: null, unit: null });
+  });
+
+  it('leaves quantity and unit empty for a quantity past the Batch maximum', () => {
+    expect(
+      receiptProposedLines(
+        receipt(line({ unit: 'g', quantity: 2_000_000 })),
         resolveMilk,
         0.6,
       )[0],

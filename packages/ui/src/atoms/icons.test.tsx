@@ -1,6 +1,19 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ClockIcon, PlusIcon } from '../index';
+import {
+  BangIcon,
+  BatteryLowIcon,
+  ClockIcon,
+  CookIcon,
+  HourglassIcon,
+  PulseIcon,
+  CopyIcon,
+  LogoutIcon,
+  MinusIcon,
+  PhoneIcon,
+  PlusIcon,
+  UserIcon,
+} from '../index';
 
 describe('icons', () => {
   afterEach(cleanup);
@@ -49,5 +62,58 @@ describe('icons', () => {
     const svg = container.querySelector('svg')!;
     expect(svg.getAttribute('width')).toBe('16');
     expect(svg.getAttribute('stroke-width')).toBe('2.4');
+  });
+
+  it('draw the battery-low with a heavier charge bar', () => {
+    const { container } = render(<BatteryLowIcon />);
+    const paths = container.querySelectorAll('path');
+    expect(container.querySelector('rect')).not.toBeNull();
+    expect(paths[1]!.getAttribute('d')).toBe('M6.5 10.5v3');
+    expect(paths[1]!.getAttribute('stroke-width')).toBe('3.2');
+  });
+
+  it('register the Pantry health glyphs from the handoff', () => {
+    const glyphs = [
+      [PulseIcon, 'M3 12h4l2-5 4 10 2-5h6'],
+      [CookIcon, 'M4 11h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z'],
+      [HourglassIcon, 'M7 3h10M7 21h10'],
+    ] as const;
+    for (const [Glyph, fragment] of glyphs) {
+      const { container, unmount } = render(<Glyph />);
+      expect(container.querySelector('path')!.getAttribute('d')).toContain(
+        fragment,
+      );
+      unmount();
+    }
+  });
+
+  it('register the Settings glyphs from the handoff set', () => {
+    const glyphs = [
+      [CopyIcon, 'M16 8V4H4v12h4'],
+      [LogoutIcon, 'M14 4h5v16h-5'],
+      [UserIcon, 'M4.5 21a7.5 7.5 0 0 1 15 0'],
+      [PhoneIcon, 'M11 18.5h2'],
+      [MinusIcon, 'M5 12h14'],
+    ] as const;
+    for (const [Glyph, fragment] of glyphs) {
+      const { container, unmount } = render(<Glyph />);
+      const svg = container.querySelector('svg')!;
+      expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+      expect(svg.getAttribute('stroke')).toBe('currentColor');
+      expect(svg.getAttribute('stroke-width')).toBe('2');
+      expect(svg.getAttribute('stroke-linecap')).toBe('round');
+      const drawn = [...svg.querySelectorAll('path, rect, circle')]
+        .map((node) => node.getAttribute('d') ?? '')
+        .join(' ');
+      expect(drawn).toContain(fragment);
+      unmount();
+    }
+  });
+
+  it('draw the Meal plan short marker', () => {
+    const { container } = render(<BangIcon />);
+    expect(container.querySelector('path')!.getAttribute('d')).toBe(
+      'M12 6v8M12 18v.01',
+    );
   });
 });

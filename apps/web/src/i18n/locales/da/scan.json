@@ -28,7 +28,8 @@
     "product": "Produkt",
     "receipt": "Kvittering",
     "plate": "Tallerken",
-    "ingredients": "Ingredienser"
+    "ingredients": "Ingredienser",
+    "barcode": "Stregkode"
   },
   "guide": {
     "scan": "Scan: dobbelttryk eller tryk Enter",
@@ -62,5 +63,11 @@
   "discardScans_other": "Kasser {{count}} fotos?",
   "discarded": "Kasseret",
   "capReached": "Daglig scanningsgrænse nået",
-  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen."
+  "notAdded": "Fotoet kunne ikke tilføjes. Prøv igen.",
+  "overlay": {
+    "noCamera": "Kameraet er ikke tilgængeligt. Tjek kameratilladelsen, eller udfyld formularen selv.",
+    "photoFailed": "Det foto kunne ikke bruges. Prøv igen.",
+    "pointAtBarcode": "Ret kameraet mod stregkoden.",
+    "barcodeNotFound": "Der blev ikke fundet noget produkt til den stregkode. Tag i stedet et foto af produktet."
+  }
 }

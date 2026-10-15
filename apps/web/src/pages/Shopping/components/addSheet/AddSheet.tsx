@@ -1,85 +1,50 @@
 import {
   Box,
   Sheet,
-  SegmentedTabs,
   Typography,
-  segmentedTabId,
-  segmentedTabPanelId,
-  color,
   displayType,
   radius,
+  tokens,
 } from '@pocket-pantry/ui';
-import { useId, useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { NewShoppingItem } from '../../../../lib/shopping';
-import { ApplyTemplateView } from './ApplyTemplateView';
-import { SheetFooterContext } from './SheetFooter';
-import { SaveTemplateView } from './SaveTemplateView';
-import { TemplatesTab } from './TemplatesTab';
-import type { Suggestion } from '../../../../lib/suggestions';
+import type { Suggestions } from '../../../../lib/suggestions';
 import {
   emptyIngredients,
-  IngredientsTab,
+  IngredientsSearch,
   type IngredientsState,
-} from './IngredientsTab';
-
-/** The Templates tab's sub-views: the list, the save view, or applying one template. */
-export type TemplatesView = 'list' | 'save' | { apply: string };
-
-/** Where the sheet opens. */
-export type SheetView =
-  { tab: 'ingredients' } | { tab: 'templates'; view: TemplatesView };
-
-type SheetTab = SheetView['tab'];
+} from './IngredientsSearch';
 
 export type AddSheetProps = {
   open: boolean;
-  /** The view each opening starts on; Ingredients by default. */
-  initialView?: SheetView;
   onClose: () => void;
+  /** Called once the close transition has finished. */
+  onExited?: () => void;
   adding: boolean;
   onAdd: (item: NewShoppingItem) => Promise<boolean>;
   /** Why the last add failed, or null. */
   addError: string | null;
-  /** Missing Staples, suggested while the search is empty. */
-  staples: Suggestion[];
-  /** Ingredients recently used up, suggested while the search is empty. */
-  usedUp: Suggestion[];
-  /** Ingredients flagged running low, suggested while the search is empty. */
-  runningLow: Suggestion[];
+  /** What is gone from the Pantry, and what is running low, shown as tiles while the search is empty. */
+  suggestions: Suggestions;
 };
 
 /**
- * The Add sheet: a header with Done, the Ingredients and Templates tabs, and
- * the selected tab's panel. It owns everything that belongs to one opening
- * (tab, Templates sub-view, query, open row, typed amount and unit, adds so
- * far) so it survives switching tabs. All of it resets whenever the sheet
- * opens; the lists polled behind it never reset it.
+ * The Add sheet: a header with Done, and the ingredient search. It owns
+ * everything that belongs to one opening (query, pick, typed amount and
+ * unit, adds so far). All of it resets whenever the sheet opens; the lists
+ * polled behind it never reset it.
  */
 export function AddSheet({
   open,
-  initialView = { tab: 'ingredients' },
   onClose,
+  onExited,
   adding,
   onAdd,
   addError,
-  staples,
-  usedUp,
-  runningLow,
+  suggestions,
 }: AddSheetProps) {
   const { t } = useTranslation('shopping');
-  const tabsId = useId();
-  const [tab, setTab] = useState<SheetTab>(initialView.tab);
-  const [footerHost, setFooterHost] = useState<HTMLElement | null>(null);
-  // Whether the current view has a footer; none while it loads or fails.
-  const [hasFooter, setHasFooter] = useState(false);
-  const footerSlot = useMemo(
-    () => ({ host: footerHost, setHasFooter }),
-    [footerHost],
-  );
-  const [templatesView, setTemplatesView] = useState<TemplatesView>(
-    initialView.tab === 'templates' ? initialView.view : 'list',
-  );
   const [ingredients, setIngredients] =
     useState<IngredientsState>(emptyIngredients);
   const [addedCount, setAddedCount] = useState(0);
@@ -88,23 +53,10 @@ export function AddSheet({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setTab(initialView.tab);
-      setTemplatesView(
-        initialView.tab === 'templates' ? initialView.view : 'list',
-      );
       setIngredients(emptyIngredients);
       setAddedCount(0);
     }
   }
-  const selectTab = (next: SheetTab) => {
-    // Changing tabs returns Templates to its list view.
-    if (next !== tab) setTemplatesView('list');
-    setTab(next);
-  };
-  const openTemplate = (templateId: string) => {
-    setTab('templates');
-    setTemplatesView({ apply: templateId });
-  };
   const header = (
     <Box sx={{ p: '10px 16px 10px 20px' }}>
       <Box
@@ -123,7 +75,7 @@ export function AddSheet({
             fontSize: 22,
           }}
         >
-          {t('sheet.title')}
+          {t('addSheet.title')}
         </Typography>
         <Box
           component="button"
@@ -143,8 +95,8 @@ export function AddSheet({
             border: 0,
             borderRadius: radius.pill,
             cursor: 'pointer',
-            backgroundColor: color.primary,
-            color: color.primaryInk,
+            backgroundColor: tokens.color.ink,
+            color: tokens.color.bg,
             font: 'inherit',
             fontSize: 14,
             fontWeight: 700,
@@ -161,8 +113,8 @@ export function AddSheet({
                 display: 'grid',
                 placeItems: 'center',
                 borderRadius: radius.pill,
-                backgroundColor: color.primaryInk,
-                color: color.primary,
+                backgroundColor: tokens.color.bg,
+                color: tokens.color.ink,
                 fontSize: 11.5,
                 fontWeight: 700,
               }}
@@ -173,80 +125,40 @@ export function AddSheet({
           <span aria-hidden>{t('sheet.done')}</span>
         </Box>
       </Box>
-      <SegmentedTabs
-        label={t('sheet.tabsLabel')}
-        id={tabsId}
-        tabs={[
-          { value: 'ingredients', label: t('sheet.tabs.ingredients') },
-          { value: 'templates', label: t('sheet.tabs.templates') },
-        ]}
-        value={tab}
-        onChange={selectTab}
-      />
     </Box>
   );
 
   return (
-    <SheetFooterContext.Provider value={footerSlot}>
-      <Sheet
-        open={open}
-        onClose={onClose}
-        label={t('sheet.title')}
-        header={header}
-        footer={
-          tab === 'templates' && templatesView !== 'list' && hasFooter ? (
-            <Box ref={setFooterHost} />
-          ) : undefined
+    <Sheet
+      open={open}
+      onClose={onClose}
+      onExited={onExited}
+      label={t('addSheet.title')}
+      header={header}
+      onEntered={() => {
+        // Do not steal focus from a field the Member has already reached.
+        const focused = document.activeElement;
+        if (
+          !focused ||
+          focused === document.body ||
+          focused.getAttribute('role') === 'dialog'
+        ) {
+          searchRef.current?.focus();
         }
-        onEntered={() => {
-          // Do not steal focus from a field the Member has already reached.
-          const focused = document.activeElement;
-          if (
-            !focused ||
-            focused === document.body ||
-            focused.getAttribute('role') === 'dialog'
-          ) {
-            searchRef.current?.focus();
-          }
-        }}
-      >
-        <Box
-          role="tabpanel"
-          id={segmentedTabPanelId(tabsId, tab)}
-          aria-labelledby={segmentedTabId(tabsId, tab)}
-          sx={{ p: '4px 20px 24px' }}
-        >
-          {tab === 'ingredients' ? (
-            <IngredientsTab
-              state={ingredients}
-              onStateChange={setIngredients}
-              searchRef={searchRef}
-              adding={adding}
-              onAdd={onAdd}
-              error={addError}
-              staples={staples}
-              usedUp={usedUp}
-              runningLow={runningLow}
-              onAdded={() => setAddedCount((count) => count + 1)}
-              onOpenTemplate={openTemplate}
-              onSeeAllTemplates={() => selectTab('templates')}
-            />
-          ) : typeof templatesView === 'object' ? (
-            <ApplyTemplateView
-              templateId={templatesView.apply}
-              onBack={() => setTemplatesView('list')}
-              onApplied={onClose}
-            />
-          ) : templatesView === 'save' ? (
-            <SaveTemplateView onBack={() => setTemplatesView('list')} />
-          ) : (
-            <TemplatesTab
-              onOpenTemplate={openTemplate}
-              onSave={() => setTemplatesView('save')}
-            />
-          )}
-        </Box>
-      </Sheet>
-    </SheetFooterContext.Provider>
+      }}
+    >
+      <Box sx={{ p: '4px 20px 24px' }}>
+        <IngredientsSearch
+          state={ingredients}
+          onStateChange={setIngredients}
+          searchRef={searchRef}
+          adding={adding}
+          onAdd={onAdd}
+          error={addError}
+          suggestions={suggestions}
+          onAdded={() => setAddedCount((count) => count + 1)}
+        />
+      </Box>
+    </Sheet>
   );
 }

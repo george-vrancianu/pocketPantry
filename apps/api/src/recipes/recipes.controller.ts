@@ -20,7 +20,6 @@ import { guidanceBody, type GuidanceBody } from './recipe-guidance.schemas';
 import { FamilyRecipesService } from './family-recipes.service';
 import { CookTonightService } from './cook-tonight.service';
 import { PlateRecipesService } from './plate-recipes.service';
-import type { PlateMatch } from './plate-matches';
 import { RecipeBrowseService } from './recipe-browse.service';
 import {
   browseQuery,
@@ -42,6 +41,7 @@ import {
   type FamilyRecipeUpdate,
   type FromPlateBody,
   type PlateMatchesBody,
+  type PlateMatches,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
@@ -52,7 +52,7 @@ import {
   type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
-  type RecipeListItem,
+  type RecipeList,
 } from './recipes.schemas';
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
@@ -78,8 +78,8 @@ export class RecipesController {
   async list(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
-  ): Promise<{ recipes: RecipeListItem[] }> {
-    return { recipes: await this.browse.list(member.id, query) };
+  ): Promise<RecipeList> {
+    return this.browse.list(member.id, query);
   }
 
   @Get('filters')
@@ -87,12 +87,13 @@ export class RecipesController {
     summary: 'Cuisines and Methods for the filter pickers, named in the locale',
   })
   filters(
+    @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(localeQuery))
     query: {
       locale: BrowseQuery['locale'];
     },
   ): Promise<RecipeFilters> {
-    return this.browse.filters(query.locale);
+    return this.browse.filters(member.id, query.locale);
   }
 
   // Declared before `:id` so it is not read as a Recipe id.
@@ -128,10 +129,11 @@ export class RecipesController {
       'The Catalog Base Recipes closest to a Plate Scan dish, best first (at most five)',
   })
   async plateMatches(
+    @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
-  ): Promise<{ matches: PlateMatch[] }> {
-    return { matches: await this.plate.closestBases(body) };
+  ): Promise<PlateMatches> {
+    return this.plate.closestBases(member.id, body);
   }
 
   @Post('from-plate')

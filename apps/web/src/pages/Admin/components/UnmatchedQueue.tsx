@@ -18,6 +18,8 @@ import {
   type UnmatchedEntry,
   type UnmatchedStatus,
 } from '../../../lib/unmatched';
+import { FamilyIngredientsQueue } from './FamilyIngredientsQueue';
+import { FamilySynonymsQueue } from './FamilySynonymsQueue';
 import { UnmatchedResolver } from './UnmatchedResolver';
 
 type Props = { catalog: AdminCatalog };
@@ -30,6 +32,9 @@ type Props = { catalog: AdminCatalog };
  */
 export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
+  const [kind, setKind] = useState<'unmatched' | 'family' | 'synonyms'>(
+    'unmatched',
+  );
   const [status, setStatus] = useState<UnmatchedStatus>('open');
   const [resolving, setResolving] = useState<UnmatchedEntry | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -105,70 +110,95 @@ export function UnmatchedQueue({ catalog }: Props) {
         {t('admin:unmatched.title')}
       </Typography>
       <SegmentedControl
-        label={t('admin:unmatched.statusLabel')}
-        value={status}
-        onChange={(next) => {
-          setStatus(next);
-          setNotice(null);
-        }}
+        label={t('admin:familyIngredients.kindLabel')}
+        value={kind}
+        onChange={setKind}
         options={[
-          { value: 'open', label: t('admin:unmatched.status.open') },
-          { value: 'dismissed', label: t('admin:unmatched.status.dismissed') },
+          {
+            value: 'unmatched',
+            label: t('admin:familyIngredients.kindUnmatched'),
+          },
+          { value: 'family', label: t('admin:familyIngredients.kindFamily') },
+          {
+            value: 'synonyms',
+            label: t('admin:familyIngredients.kindSynonyms'),
+          },
         ]}
       />
-      {/* A polite live region so the result of a resolve is announced. */}
-      <div role="status" ref={noticeRef} tabIndex={-1}>
-        {notice ? <Typography variant="body2">{notice}</Typography> : null}
-      </div>
-      {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
-      {queue.isPending ? <Spinner label={t('common:loading')} /> : null}
-      {queue.isSuccess && entries.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('admin:unmatched.empty')}
-        </Typography>
-      ) : null}
-      <Stack
-        component="ul"
-        ref={listRef}
-        spacing={2}
-        sx={{ m: 0, p: 0, listStyle: 'none' }}
-      >
-        {entries.map((entry) => (
-          <li key={entry.normalizedName}>
-            <QueueRow
-              entry={entry}
-              dismissed={status === 'dismissed'}
-              busy={dismiss.isPending || undismiss.isPending}
-              onResolve={() => {
-                setNotice(null);
-                setResolving(entry);
+      {kind === 'family' ? <FamilyIngredientsQueue /> : null}
+      {kind === 'synonyms' ? <FamilySynonymsQueue /> : null}
+      {kind === 'unmatched' ? (
+        <>
+          <SegmentedControl
+            label={t('admin:unmatched.statusLabel')}
+            value={status}
+            onChange={(next) => {
+              setStatus(next);
+              setNotice(null);
+            }}
+            options={[
+              { value: 'open', label: t('admin:unmatched.status.open') },
+              {
+                value: 'dismissed',
+                label: t('admin:unmatched.status.dismissed'),
+              },
+            ]}
+          />
+          {/* A polite live region so the result of a resolve is announced. */}
+          <div role="status" ref={noticeRef} tabIndex={-1}>
+            {notice ? <Typography variant="body2">{notice}</Typography> : null}
+          </div>
+          {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
+          {queue.isPending ? <Spinner label={t('common:loading')} /> : null}
+          {queue.isSuccess && entries.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              {t('admin:unmatched.empty')}
+            </Typography>
+          ) : null}
+          <Stack
+            component="ul"
+            ref={listRef}
+            spacing={2}
+            sx={{ m: 0, p: 0, listStyle: 'none' }}
+          >
+            {entries.map((entry) => (
+              <li key={entry.normalizedName}>
+                <QueueRow
+                  entry={entry}
+                  dismissed={status === 'dismissed'}
+                  busy={dismiss.isPending || undismiss.isPending}
+                  onResolve={() => {
+                    setNotice(null);
+                    setResolving(entry);
+                  }}
+                  onDismiss={() =>
+                    dismiss.mutate(entry.normalizedName, {
+                      onSuccess: focusHeading,
+                    })
+                  }
+                  onRestore={() =>
+                    undismiss.mutate(entry.normalizedName, {
+                      onSuccess: focusHeading,
+                    })
+                  }
+                />
+              </li>
+            ))}
+          </Stack>
+          {queue.hasNextPage ? (
+            <Button
+              variant="secondary"
+              aria-disabled={queue.isFetchingNextPage}
+              onClick={() => {
+                if (queue.isFetchingNextPage) return;
+                setFocusFrom(entries.length);
+                void queue.fetchNextPage();
               }}
-              onDismiss={() =>
-                dismiss.mutate(entry.normalizedName, {
-                  onSuccess: focusHeading,
-                })
-              }
-              onRestore={() =>
-                undismiss.mutate(entry.normalizedName, {
-                  onSuccess: focusHeading,
-                })
-              }
-            />
-          </li>
-        ))}
-      </Stack>
-      {queue.hasNextPage ? (
-        <Button
-          variant="secondary"
-          aria-disabled={queue.isFetchingNextPage}
-          onClick={() => {
-            if (queue.isFetchingNextPage) return;
-            setFocusFrom(entries.length);
-            void queue.fetchNextPage();
-          }}
-        >
-          {t('admin:unmatched.loadMore')}
-        </Button>
+            >
+              {t('admin:unmatched.loadMore')}
+            </Button>
+          ) : null}
+        </>
       ) : null}
     </Stack>
   );

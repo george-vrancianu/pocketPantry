@@ -1,5 +1,6 @@
 export { PocketPantryUiProvider } from './theme/PocketPantryUiProvider';
 export { createPocketPantryTheme, themeSelector } from './theme/theme';
+export { aisleTint } from './theme/aisleTints';
 export { tokens } from './theme/tokens';
 export { useForcedThemeColor } from './theme/useForcedThemeColor';
 export {
@@ -32,6 +33,7 @@ export {
   isThemeId,
   readAppearance,
   resolveTheme,
+  SYSTEM_DARK_QUERY,
   subscribeAppearance,
   writeAppearance,
   type Appearance,
@@ -74,6 +76,8 @@ export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
+  BangIcon,
+  BatteryLowIcon,
   BudgetIcon,
   ChevronDownIcon,
   ChevronRightIcon,
@@ -81,6 +85,10 @@ export {
   BookmarkIcon,
   TemplateIcon,
   CalendarIcon,
+  SubItemIcon,
+  PulseIcon,
+  CookIcon,
+  HourglassIcon,
   ChevronUpIcon,
   GripIcon,
   MinusIcon,
@@ -90,6 +98,11 @@ export {
   IngredientsScanIcon,
   CloseIcon,
   PlusIcon,
+  BookPlusIcon,
+  CopyIcon,
+  LogoutIcon,
+  UserIcon,
+  PhoneIcon,
   CustomiseIcon,
   FlashIcon,
   GalleryIcon,
@@ -112,9 +125,11 @@ export {
   BackIcon,
   MoreIcon,
   BranchIcon,
+  RunningLowIcon,
   StarIcon,
   StarFillIcon,
   UndoIcon,
+  ImportIcon,
   Icon,
   type IconName,
   type IconProps,
@@ -151,10 +166,13 @@ export {
   type SwipeRowLabels,
   type SwipeRowProps,
 } from './molecules/SwipeRow';
+export { SwipeToggle, type SwipeToggleProps } from './molecules/SwipeToggle';
 export {
   useRowGestures,
+  type RemoveGestureOptions,
   type RowGestureOptions,
   type RowGestures,
+  type ToggleGestureOptions,
   type SwipeZone,
 } from './molecules/useRowGestures';
 export { DockItem, type DockItemProps } from './molecules/DockItem';

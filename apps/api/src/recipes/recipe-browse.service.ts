@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, isNull } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
@@ -7,6 +8,12 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
+import {
+  loadAllergyWarnings,
+  loadRecipeAllergens,
+  loadViewerAllergies,
+  loadViewerAllergyContext,
+} from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
@@ -20,6 +27,7 @@ import type {
   BrowseQuery,
   RecipeDetail,
   RecipeFilters,
+  RecipeList,
   RecipeListItem,
   RecipeVariantItem,
   ResolvedRecipe,
@@ -45,14 +53,16 @@ export class RecipeBrowseService {
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
    */
-  async list(memberId: string, query: BrowseQuery): Promise<RecipeListItem[]> {
+  async list(memberId: string, query: BrowseQuery): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const { locale } = query;
     const needle = normalizeName(query.search ?? '');
-    const filtering =
+    // Search and filters list Variants beside bases; so does asking for them outright.
+    const listsVariants =
       needle !== '' ||
       query.cuisineId !== undefined ||
-      query.methodId !== undefined;
+      query.methodId !== undefined ||
+      query.includeVariants === 'true';
 
     const rows = await this.database
       .select()
@@ -61,7 +71,7 @@ export class RecipeBrowseService {
         and(
           visibleTo(familyId),
           isNull(recipes.archivedAt),
-          filtering ? undefined : isNull(recipes.parentId),
+          listsVariants ? undefined : isNull(recipes.parentId),
           query.cuisineId ? eq(recipes.cuisineId, query.cuisineId) : undefined,
           query.methodId ? eq(recipes.methodId, query.methodId) : undefined,
         ),
@@ -86,13 +96,34 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const ref = await this.namedRefs(
-      this.database,
-      locale,
-      matching.flatMap((r) => [r.cuisineId, r.methodId]),
-    );
+    const [ref, { hides, allergy }] = await Promise.all([
+      this.namedRefs(
+        this.database,
+        catalogScope(familyId),
+        locale,
+        matching.flatMap((r) => [r.cuisineId, r.methodId]),
+      ),
+      loadViewerAllergyContext(
+        this.database,
+        this.settings,
+        memberId,
+        familyId,
+        query.showHidden,
+      ).then(async ({ allergies, hides }) => ({
+        hides,
+        allergy: await loadAllergyWarnings(
+          this.database,
+          catalogScope(familyId),
+          matching.map((r) => r.id),
+          locale,
+          allergies,
+        ),
+      })),
+    ]);
+    const { warnings, hidden } = allergy;
+    const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
 
-    return matching
+    const items = shown
       .map((row): RecipeListItem => {
         const parent = row.parentId ? parents.get(row.parentId) : undefined;
         return {
@@ -110,9 +141,14 @@ export class RecipeBrowseService {
           cookMinutes: row.cookMinutes,
           difficulty: row.difficulty,
           owner: ownerOf(row),
+          allergyWarning: warnings.get(row.id) ?? null,
         };
       })
       .sort(byTitle(locale));
+    return {
+      recipes: items,
+      hiddenByAllergiesCount: matching.length - shown.length,
+    };
   }
 
   /** A visible Recipe (archived too) with its base, live Variants and ingredient diff. */
@@ -124,43 +160,70 @@ export class RecipeBrowseService {
     const familyId = await this.settings.familyIdOf(memberId);
     const row = await findVisibleRecipe(this.database, id, familyId);
     if (!row) throw recipeNotFound();
-    const resolved = await resolveRecipe(this.database, row, locale);
+    const resolved = await resolveRecipe(
+      this.database,
+      catalogScope(familyId),
+      row,
+      locale,
+    );
 
-    let base: RecipeDetail['base'] = null;
-    let diff: RecipeDetail['diff'] = null;
-    if (row.parentId) {
+    const baseAndDiff = async (): Promise<{
+      base: RecipeDetail['base'];
+      diff: RecipeDetail['diff'];
+    }> => {
+      if (!row.parentId) return { base: null, diff: null };
       const baseRow = await findVisibleRecipe(
         this.database,
         row.parentId,
         familyId,
       );
-      if (baseRow) {
-        const baseResolved = await resolveRecipe(
-          this.database,
-          baseRow,
-          locale,
-        );
-        base = {
+      if (!baseRow) return { base: null, diff: null };
+      const baseResolved = await resolveRecipe(
+        this.database,
+        catalogScope(familyId),
+        baseRow,
+        locale,
+      );
+      return {
+        base: {
           id: baseRow.id,
           title: baseResolved.title,
           archived: baseResolved.archived,
-        };
-        diff = diffIngredients(diffLines(baseResolved), diffLines(resolved));
-      }
-    }
+        },
+        diff: diffIngredients(diffLines(baseResolved), diffLines(resolved)),
+      };
+    };
+    const [viewerAllergies, variants, { base, diff }] = await Promise.all([
+      loadViewerAllergies(this.database, memberId, familyId),
+      row.parentId
+        ? Promise.resolve([])
+        : this.variantsOf(row.id, familyId, locale),
+      baseAndDiff(),
+    ]);
 
+    const { allergens, allergyWarning } = await loadRecipeAllergens(
+      this.database,
+      catalogScope(familyId),
+      resolved,
+      locale,
+      viewerAllergies,
+    );
     return {
       ...resolved,
       base,
-      variants: row.parentId
-        ? []
-        : await this.variantsOf(row.id, familyId, locale),
+      variants,
       diff,
+      allergens,
+      allergyWarning,
     };
   }
 
   /** Cuisines and Methods for the filter pickers, named in `locale`, sorted by name. */
-  async filters(locale: CatalogLocale): Promise<RecipeFilters> {
+  async filters(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<RecipeFilters> {
+    const scope = await this.settings.catalogScopeForMember(memberId);
     const [cuisineRows, methodRows, momentRows] = await Promise.all([
       this.database.select().from(cuisines),
       this.database.select().from(methods),
@@ -170,7 +233,7 @@ export class RecipeBrowseService {
         .where(isNull(eatingMoments.archivedAt))
         .orderBy(asc(eatingMoments.sortOrder), asc(eatingMoments.id)),
     ]);
-    const names = await loadDisplayNames(this.database, locale, [
+    const names = await loadDisplayNames(this.database, scope, locale, [
       ...cuisineRows.map((r) => r.id),
       ...methodRows.map((r) => r.id),
       ...momentRows.map((r) => r.id),
@@ -213,6 +276,7 @@ export class RecipeBrowseService {
     const titles = await recipeTitles(this.database, rows, locale);
     const ref = await this.namedRefs(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.flatMap((r) => [r.cuisineId, r.methodId]),
     );
@@ -277,6 +341,7 @@ export class RecipeBrowseService {
 
   private async namedRefs(
     executor: Executor,
+    scope: CatalogScope,
     locale: CatalogLocale,
     ids: (string | null)[],
   ) {
@@ -288,7 +353,7 @@ export class RecipeBrowseService {
       wanted.length === 0
         ? []
         : executor.select().from(methods).where(inArray(methods.id, wanted)),
-      loadDisplayNames(executor, locale, wanted),
+      loadDisplayNames(executor, scope, locale, wanted),
     ]);
     const cuisineName = new Map(cuisineRows.map((r) => [r.id, r.name]));
     const methodName = new Map(methodRows.map((r) => [r.id, r.name]));

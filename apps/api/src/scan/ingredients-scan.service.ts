@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -23,8 +24,9 @@ export class IngredientsScanService {
     input: IngredientsScanInput,
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
+    reader: CatalogReader,
   ): Promise<IngredientsScanResult> {
-    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
+    const catalog = await this.ingredientCatalog.getCatalogIn(reader, locale);
     try {
       const response = await this.ai.generate({
         prompt: [

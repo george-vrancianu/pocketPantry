@@ -1,12 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, eq, gt, isNotNull, sql } from 'drizzle-orm';
+import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
+import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import {
   batches,
-  ingredients,
   ingredientStockHistory,
   runningLow,
   shoppingItems,
@@ -24,6 +25,9 @@ import {
 } from '../catalog/ingredient-placement';
 import type { SuggestionView, SuggestionsView } from './suggestions.schemas';
 
+/** A Suggestion before its search result is attached. */
+type Suggestion = Omit<SuggestionView, 'ingredient'>;
+
 /**
  * Suggestions are derived on read and never stored. Each group is a key of the
  * result, so the Used Up group can join `staples` without changing the shape.
@@ -33,6 +37,7 @@ export class SuggestionsService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly settings: SettingsService,
+    private readonly search: CatalogSearchService,
   ) {}
 
   async list(
@@ -41,22 +46,66 @@ export class SuggestionsService {
     today: string = utcToday(),
   ): Promise<SuggestionsView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    return {
-      staples: await this.missingStaples(familyId, locale, today),
-      usedUp: await this.usedUp(familyId, locale),
-      runningLow: await this.runningLowGroup(familyId, locale),
+    const scope = catalogScope(familyId);
+    const staples = await this.missingStaples(scope, familyId, locale, today);
+    const expired = await this.expired(scope, familyId, locale, today);
+    // An Ingredient shows once: a Staple or an expired one is not also Running low.
+    const shown = new Set(
+      [...staples, ...expired].map((entry) => entry.ingredientId),
+    );
+    const groups = {
+      staples,
+      usedUp: await this.usedUp(scope, familyId, locale),
+      runningLow: (await this.runningLowGroup(scope, familyId, locale)).filter(
+        (entry) => !shown.has(entry.ingredientId),
+      ),
+      expired,
     };
+    const ids = Object.values(groups).flatMap((group) =>
+      group.map((entry) => entry.ingredientId),
+    );
+    const found = await this.search.mapByIds(
+      scope,
+      [...new Set(ids)],
+      locale,
+      await this.settings.expiryOverridesOf(familyId),
+    );
+    // An Ingredient the Family can no longer see in the Catalog has no result to select, so it is left out.
+    const withResult = (group: Suggestion[]): SuggestionView[] =>
+      group.flatMap((entry) => {
+        const ingredient = found.get(entry.ingredientId);
+        return ingredient ? [{ ...entry, ingredient }] : [];
+      });
+    return {
+      staples: withResult(groups.staples),
+      usedUp: withResult(groups.usedUp),
+      runningLow: withResult(groups.runningLow),
+      expired: withResult(groups.expired),
+      dismissed: await this.dismissedIds(familyId),
+    };
+  }
+
+  /** The Ingredients with an active dismissal for the Family (a Batch of one ends it). */
+  private async dismissedIds(familyId: string): Promise<string[]> {
+    const rows = await this.database
+      .select({ ingredientId: suggestionDismissals.ingredientId })
+      .from(suggestionDismissals)
+      .where(eq(suggestionDismissals.familyId, familyId))
+      .orderBy(suggestionDismissals.ingredientId);
+    return rows.map((row) => row.ingredientId);
   }
 
   /**
    * Hides the Suggestion for the whole Family until a Batch of the Ingredient is
    * created and it then goes missing or Used Up again. A Used Up Suggestion is
    * dismissed by clearing `used_up_at` (ADR 0005); a Staple's by a dismissal row.
-   * A Staple is Used Up never, so one row or the other is enough; the row is only
-   * written for a Staple, so it cannot hide the Ingredient if it becomes one later.
+   * A Staple is Used Up never, so one row or the other is enough. The row is written
+   * for a Staple or an Ingredient with Batches (an expired one); a row left on an
+   * expired Ingredient also hides it if it later becomes a Staple, until it is restocked.
    */
   async dismiss(memberId: string, ingredientId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
+    const ingredients = catalogScope(familyId).ingredients(this.database);
     const [found] = await this.database
       .select({ id: ingredients.id })
       .from(ingredients)
@@ -82,7 +131,9 @@ export class SuggestionsService {
             eq(staples.ingredientId, ingredientId),
           ),
         );
-      if (!staple) return;
+      if (!staple && !(await this.hasBatches(tx, familyId, ingredientId))) {
+        return;
+      }
       await tx
         .insert(suggestionDismissals)
         .values({ familyId, ingredientId })
@@ -95,12 +146,16 @@ export class SuggestionsService {
    * since. Hidden while a Staple (it is missing instead) or on the active list.
    */
   private async usedUp(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const since = new Date(Date.now() - USED_UP_WINDOW_MS);
     const rows = await this.database
-      .select({ ingredientId: ingredientStockHistory.ingredientId })
+      .select({
+        ingredientId: ingredientStockHistory.ingredientId,
+        usedUpAt: ingredientStockHistory.usedUpAt,
+      })
       .from(ingredientStockHistory)
       .where(
         and(
@@ -113,6 +168,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -123,6 +179,79 @@ export class SuggestionsService {
         quantity: null,
         unit: null,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: row.usedUpAt?.toISOString() ?? null,
+      }))
+      .sort(byShopOrder);
+  }
+
+  private async hasBatches(
+    executor: Executor,
+    familyId: string,
+    ingredientId: string,
+  ): Promise<boolean> {
+    const [batch] = await executor
+      .select({ id: batches.id })
+      .from(batches)
+      .where(
+        and(
+          eq(batches.familyId, familyId),
+          eq(batches.ingredientId, ingredientId),
+        ),
+      )
+      .limit(1);
+    return Boolean(batch);
+  }
+
+  /**
+   * Expired: at least one Batch and every one expired before `today` (an Expiring
+   * Soon Batch, or one with no expiry date, still counts as present). A Staple is
+   * missing instead, so it is left out here. Hidden while dismissed or on the
+   * active list; a new Batch ends the dismissal.
+   */
+  private async expired(
+    scope: CatalogScope,
+    familyId: string,
+    locale: CatalogLocale,
+    today: string,
+  ): Promise<Suggestion[]> {
+    const rows = await this.database
+      .select({
+        ingredientId: batches.ingredientId,
+        latestExpiry: sql<string>`max(${batches.expiryDate})::text`,
+      })
+      .from(batches)
+      .where(
+        and(eq(batches.familyId, familyId), isNotNull(batches.ingredientId)),
+      )
+      .groupBy(batches.ingredientId)
+      .having(
+        and(
+          sql`bool_and(${batches.expiryDate} IS NOT NULL AND ${batches.expiryDate} < ${today})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${staples} WHERE ${staples.familyId} = ${familyId} AND ${staples.ingredientId} = ${batches.ingredientId})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${suggestionDismissals} WHERE ${suggestionDismissals.familyId} = ${familyId} AND ${suggestionDismissals.ingredientId} = ${batches.ingredientId})`,
+          sql`NOT EXISTS (SELECT 1 FROM ${shoppingItems} INNER JOIN ${shoppingLists} ON ${shoppingLists.id} = ${shoppingItems.listId} WHERE ${shoppingLists.familyId} = ${familyId} AND ${shoppingLists.status} = 'active' AND ${shoppingItems.ingredientId} = ${batches.ingredientId})`,
+        ),
+      );
+    const ids = rows.flatMap((row) =>
+      row.ingredientId ? [row.ingredientId] : [],
+    );
+    const placements = await loadIngredientPlacements(
+      this.database,
+      scope,
+      locale,
+      ids,
+    );
+    return rows
+      .flatMap((row) =>
+        row.ingredientId ? [{ ...row, ingredientId: row.ingredientId }] : [],
+      )
+      .map((row) => ({
+        ingredientId: row.ingredientId,
+        name: placements.get(row.ingredientId)?.name ?? '',
+        quantity: null,
+        unit: null,
+        aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: row.latestExpiry,
       }))
       .sort(byShopOrder);
   }
@@ -133,9 +262,10 @@ export class SuggestionsService {
    * the flag off is the only dismissal.
    */
   private async runningLowGroup(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const rows = await this.database
       .select({ ingredientId: runningLow.ingredientId })
       .from(runningLow)
@@ -148,6 +278,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -158,6 +289,7 @@ export class SuggestionsService {
         quantity: null,
         unit: null,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: null,
       }))
       .sort(byShopOrder);
   }
@@ -167,10 +299,11 @@ export class SuggestionsService {
    * quantity is ignored). Hidden while dismissed or on the active list, checked or not.
    */
   private async missingStaples(
+    scope: CatalogScope,
     familyId: string,
     locale: CatalogLocale,
     today: string,
-  ): Promise<SuggestionView[]> {
+  ): Promise<Suggestion[]> {
     const rows = await this.database
       .select({
         ingredientId: staples.ingredientId,
@@ -188,6 +321,7 @@ export class SuggestionsService {
       );
     const placements = await loadIngredientPlacements(
       this.database,
+      scope,
       locale,
       rows.map((row) => row.ingredientId),
     );
@@ -198,6 +332,7 @@ export class SuggestionsService {
         quantity: row.quantity,
         unit: row.unit,
         aisle: placements.get(row.ingredientId)?.aisle ?? null,
+        since: null,
       }))
       .sort(byShopOrder);
   }

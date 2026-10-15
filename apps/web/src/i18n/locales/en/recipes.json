@@ -15,6 +15,38 @@
     "cleanses_palate": "Cleanses the palate",
     "regional_tradition": "Regional tradition"
   },
+  "allergens": {
+    "title": "Allergens",
+    "optional": "Optional",
+    "optionalLine": "{{name}} (optional)",
+    "none": "No common allergens found",
+    "unchecked_one": "{{count}} ingredient couldn't be checked",
+    "unchecked_other": "{{count}} ingredients couldn't be checked",
+    "reminder": "Worked out from the ingredients. Always check product labels."
+  },
+  "allergyWarning": {
+    "title": "Allergy Warning",
+    "optionalLine_one": "Optional ingredient contains {{names}}: {{who}}",
+    "optionalLine_other": "Optional ingredients contain {{names}}: {{who}}",
+    "unchecked_one": "{{count}} ingredient couldn't be checked for allergens",
+    "unchecked_other": "{{count}} ingredients couldn't be checked for allergens",
+    "lineMarker": "Contains {{name}}",
+    "whoOwn_one": "your Allergy",
+    "whoOwn_other": "your Allergies",
+    "whoFamily": "Family",
+    "strongOwn_one": "Contains {{names}}: your Allergy",
+    "strongOwn_other": "Contains {{names}}: your Allergies",
+    "strongOther": "{{who}}: {{names}}",
+    "memberOptional": "{{who}}: {{names}} (optional)"
+  },
+  "allergyIndicator": {
+    "withOwners": "{{name}} ({{owners}})",
+    "ownerYou": "you",
+    "ownerFamily": "family",
+    "strong": "Contains {{names}}",
+    "optional": "Optional: contains {{names}}",
+    "unchecked": "Not fully checked"
+  },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",
   "cuisine": "Cuisine",
@@ -95,8 +127,6 @@
     "title": "Title",
     "copyHint": "This is a copy to change. Nothing is saved until you save it.",
     "tipsHint": "Copied Tips stay with their Steps; add your own after saving the Variant.",
-    "freeTextLabel": "Or add an ingredient by name",
-    "freeTextAdd": "Add name",
     "freeTextNote": "Not in the Catalog",
     "unavailable": "This Recipe cannot be edited.",
     "guidanceHint": "Pairings, a Nutrition Note and Eating Moments. They are saved with the Recipe.",
@@ -137,5 +167,10 @@
     "ingredients": "Ingredients",
     "steps": "Steps",
     "about": "About"
+  },
+  "hiddenByAllergies": {
+    "note_one": "{{count}} Recipe hidden by your Allergies",
+    "note_other": "{{count}} Recipes hidden by your Allergies",
+    "show": "Show"
   }
 }

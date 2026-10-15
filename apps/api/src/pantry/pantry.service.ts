@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { rememberBarcodes } from '../barcode/known-barcodes';
 import {
   type ExpiryOverride,
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
+import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { loadIngredientPlacements } from '../catalog/ingredient-placement';
 import { seedId } from '../catalog/seed/seed-catalog';
@@ -13,12 +15,7 @@ import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
-import {
-  batches,
-  ingredients,
-  leafCategories,
-  parentCategories,
-} from '../database/schema';
+import { batches, leafCategories, parentCategories } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
 import {
@@ -58,7 +55,7 @@ export class PantryService {
         asc(batches.createdAt),
         asc(batches.id),
       );
-    return this.toViews(rows, locale);
+    return this.toViews(familyId, rows, locale);
   }
 
   async create(
@@ -79,7 +76,7 @@ export class PantryService {
   ): Promise<BatchView[]> {
     const familyId = await this.settings.familyIdOf(memberId);
     const overrides = await this.settings.expiryOverridesOf(familyId);
-    const targets = await this.targetsFor(bodies);
+    const targets = await this.targetsFor(familyId, bodies);
     const values = bodies.map((body, index) => ({
       id: randomUUID(),
       ...this.toRow(familyId, body, targets[index], overrides),
@@ -105,9 +102,26 @@ export class PantryService {
             : [],
         ),
       );
+      await rememberBarcodes(
+        tx,
+        familyId,
+        values.flatMap((value, index) => {
+          const barcode = bodies[index].barcode;
+          return barcode
+            ? [
+                {
+                  barcode,
+                  ingredientId: value.ingredientId ?? null,
+                  rawName: value.rawName ?? null,
+                  productDescription: value.productDescription ?? null,
+                },
+              ]
+            : [];
+        }),
+      );
       return inserted;
     });
-    return this.toViews(rows, locale);
+    return this.toViews(familyId, rows, locale);
   }
 
   private toRow(
@@ -179,7 +193,7 @@ export class PantryService {
       .returning();
     // Deleted by another Member between the read and the update.
     if (!row) throw new ApiException(404, 'pantry.batch_not_found');
-    return (await this.toViews([row], locale))[0];
+    return (await this.toViews(familyId, [row], locale))[0];
   }
 
   /** Another Family's Batch is indistinguishable from a missing one. */
@@ -191,6 +205,14 @@ export class PantryService {
     if (deleted.length === 0) {
       throw new ApiException(404, 'pantry.batch_not_found');
     }
+  }
+
+  /** Deletes the Family's Batches among `batchIds`; ids of another Family or already gone are ignored. */
+  async removeMany(memberId: string, batchIds: string[]): Promise<void> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    await this.database.transaction((tx) =>
+      this.deleteBatches(tx, familyId, [...new Set(batchIds)]),
+    );
   }
 
   /**
@@ -240,18 +262,6 @@ export class PantryService {
   }
 
   /**
-   * An existing Batch just became a Batch of the Ingredient (an Admin relinking an
-   * Unmatched Batch): same stock history effect as creating one.
-   */
-  async relinked(
-    executor: Executor,
-    familyId: string,
-    ingredientId: string,
-  ): Promise<void> {
-    await recordStocked(executor, familyId, [ingredientId]);
-  }
-
-  /**
    * The Leaf and Parent Category each body lands under, in body order, in at
    * most two queries however many bodies there are: matched bodies by their
    * Ingredient, Unmatched ones under their Parent's `is_other` Leaf. With no
@@ -259,7 +269,10 @@ export class PantryService {
    * identified by its fixed seed id (slugs and ids never change once shipped),
    * never by name.
    */
-  private async targetsFor(bodies: CreateBatchBody[]): Promise<Target[]> {
+  private async targetsFor(
+    familyId: string,
+    bodies: CreateBatchBody[],
+  ): Promise<Target[]> {
     const parentIdOf = (body: CreateBatchBody) =>
       body.parentCategoryId ?? TOP_LEVEL_OTHER_PARENT_ID;
     const ingredientIds = [
@@ -273,6 +286,7 @@ export class PantryService {
 
     const matched = new Map<string, { leaf: Leaf; parent: Parent }>();
     if (ingredientIds.length > 0) {
+      const ingredients = catalogScope(familyId).ingredients(this.database);
       const rows = await this.database
         .select({
           id: ingredients.id,
@@ -327,14 +341,18 @@ export class PantryService {
   }
 
   private async toViews(
+    familyId: string,
     rows: BatchRow[],
     locale: CatalogLocale,
   ): Promise<BatchView[]> {
     const placements = await loadIngredientPlacements(
       this.database,
+      catalogScope(familyId),
       locale,
       rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
     );
+
+    const expiryDays = await this.expiryDaysByLeaf(familyId, rows);
 
     return rows.map((row) => ({
       id: row.id,
@@ -346,12 +364,44 @@ export class PantryService {
       aisle: row.ingredientId
         ? (placements.get(row.ingredientId)?.aisle ?? null)
         : null,
+      amountScale: row.ingredientId
+        ? (placements.get(row.ingredientId)?.amountScale ?? null)
+        : null,
+      // The Ingredient's own unit, for a Batch with no stored unit (null when Unmatched).
+      defaultUnit: row.ingredientId
+        ? (placements.get(row.ingredientId)?.defaultUnit ?? null)
+        : null,
       quantity: row.quantity,
       unit: row.unit,
       location: row.location,
       expiryDate: row.expiryDate,
+      defaultExpiryDays: expiryDays.get(row.leafCategoryId) ?? null,
       productDescription: row.productDescription,
       createdAt: row.createdAt,
     }));
+  }
+
+  /** The Default Expiry in days of each Batch's Leaf Category, with the Family's current overrides. */
+  private async expiryDaysByLeaf(
+    familyId: string,
+    rows: BatchRow[],
+  ): Promise<Map<string, number | null>> {
+    const leafIds = [...new Set(rows.map((row) => row.leafCategoryId))];
+    if (leafIds.length === 0) return new Map();
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const categories = await this.database
+      .select({ leaf: leafCategories, parent: parentCategories })
+      .from(leafCategories)
+      .innerJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .where(inArray(leafCategories.id, leafIds));
+    return new Map(
+      categories.map(({ leaf, parent }) => [
+        leaf.id,
+        resolveExpiryDays(leaf, parent, overrides),
+      ]),
+    );
   }
 }

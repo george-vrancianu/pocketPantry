@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import {
   ConcurrentMove,
@@ -8,10 +9,7 @@ import {
   runLocked,
 } from '../family/family-locks';
 import { normalizeName } from '../catalog/normalize';
-import { exceedsMaxQuantity } from '../common/quantity';
-import { sumQuantities } from '../shopping/shopping.service';
-import { PantryService } from '../pantry/pantry.service';
-import { clearRunningLowOnRestock } from '../pantry/running-low-flags';
+import { relinkUnmatched } from '../catalog/relink-unmatched';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import {
@@ -21,9 +19,7 @@ import {
   recipeIngredientLines,
   recipes,
   shoppingItems,
-  shoppingItemSourceRecipes,
   shoppingLists,
-  shoppingTemplateLines,
   unmatchedEntries,
 } from '../database/schema';
 import { hasPgCode } from '../database/pg-errors';
@@ -40,6 +36,9 @@ type EntryRow = typeof unmatchedEntries.$inferSelect;
 
 const MAX_REFERENCES = 20;
 const MAX_LOCK_ATTEMPTS = 5;
+
+// The Unmatched queue is Admin curation: it reads shared Catalog rows only (ADR 0011).
+const adminScope = catalogScope(SHARED_ONLY);
 
 const notInQueue = () => new ApiException(404, 'unmatched.not_found');
 
@@ -61,7 +60,6 @@ export class UnmatchedQueueService {
   constructor(
     @Inject(DATABASE) private readonly database: Database,
     private readonly catalog: AdminCatalogService,
-    private readonly pantry: PantryService,
   ) {}
 
   /**
@@ -263,65 +261,13 @@ export class UnmatchedQueueService {
     const lineIds = entries.flatMap((e) =>
       e.ingredientLineId ? [e.ingredientLineId] : [],
     );
-    const relinkedShoppingItems = await this.relinkShoppingItems(
-      tx,
+    const relinked = await relinkUnmatched(tx, {
+      key,
+      target,
       itemIds,
-      target.id,
-    );
-    // Unmatched Template lines carry the same matching key; they have no queue entry of their own.
-    const relinkedTemplateLines = await tx
-      .update(shoppingTemplateLines)
-      .set({ ingredientId: target.id, name: null, normalizedName: null })
-      .where(
-        and(
-          eq(shoppingTemplateLines.normalizedName, key),
-          isNull(shoppingTemplateLines.ingredientId),
-        ),
-      )
-      .returning({ id: shoppingTemplateLines.id });
-    const relinkedBatchRows =
-      batchIds.length === 0
-        ? []
-        : await tx
-            .update(batches)
-            .set({
-              ingredientId: target.id,
-              // Under the Ingredient's own Leaf Category, no longer an "Other" Leaf.
-              leafCategoryId: target.leafCategoryId,
-              unmatched: false,
-              rawName: null,
-            })
-            .where(
-              and(inArray(batches.id, batchIds), eq(batches.unmatched, true)),
-            )
-            .returning({ id: batches.id, familyId: batches.familyId });
-    // A relinked Batch is a new Batch of the Ingredient: its Family's dismissal ends.
-    for (const familyId of new Set(
-      relinkedBatchRows.map((row) => row.familyId),
-    )) {
-      await this.pantry.relinked(tx, familyId, target.id);
-      // Same as a Batch insert: the Family has restocked this Ingredient.
-      await clearRunningLowOnRestock(tx, familyId, [target.id]);
-    }
-
-    // Family Recipe lines: the line keeps its quantity, unit, note and position.
-    const relinkedLines =
-      lineIds.length === 0
-        ? []
-        : await tx
-            .update(recipeIngredientLines)
-            .set({
-              ingredientId: target.id,
-              rawName: null,
-              normalizedName: null,
-            })
-            .where(
-              and(
-                inArray(recipeIngredientLines.id, lineIds),
-                isNull(recipeIngredientLines.ingredientId),
-              ),
-            )
-            .returning({ id: recipeIngredientLines.id });
+      batchIds,
+      lineIds,
+    });
 
     const synonymAdded = await this.addSynonym(
       tx,
@@ -371,10 +317,7 @@ export class UnmatchedQueueService {
     return {
       ingredientId: target.id,
       locale,
-      relinkedBatches: relinkedBatchRows.length,
-      relinkedShoppingItems,
-      relinkedTemplateLines: relinkedTemplateLines.length,
-      relinkedRecipeLines: relinkedLines.length,
+      ...relinked,
       synonymAdded,
       sourceSynonymAdded,
       sourceSynonymSkipped,
@@ -449,106 +392,6 @@ export class UnmatchedQueueService {
       if (covered) return entries;
     }
     throw new ApiException(409, 'unmatched.concurrent_change');
-  }
-
-  /**
-   * Relinks Unmatched Shopping Items to the Ingredient. On the active list a
-   * Shopping Item merges into an existing one for the same Ingredient and
-   * unit (the list's "adding an item for an Ingredient already on it merges"
-   * rule); archived lists are history, so there it only relinks, and so does a
-   * merge that would pass the quantity cap.
-   */
-  private async relinkShoppingItems(
-    tx: Tx,
-    itemIds: string[],
-    ingredientId: string,
-  ): Promise<number> {
-    if (itemIds.length === 0) return 0;
-    const rows = await tx
-      .select({
-        id: shoppingItems.id,
-        listId: shoppingItems.listId,
-        unit: shoppingItems.unit,
-        quantity: shoppingItems.quantity,
-        checked: shoppingItems.checked,
-        status: shoppingLists.status,
-      })
-      .from(shoppingItems)
-      .innerJoin(shoppingLists, eq(shoppingLists.id, shoppingItems.listId))
-      .where(
-        and(
-          inArray(shoppingItems.id, itemIds),
-          isNull(shoppingItems.ingredientId),
-        ),
-      )
-      .orderBy(shoppingItems.id);
-    for (const row of rows) {
-      const [twin] =
-        row.status === 'active'
-          ? await tx
-              .select({
-                id: shoppingItems.id,
-                quantity: shoppingItems.quantity,
-                checked: shoppingItems.checked,
-              })
-              .from(shoppingItems)
-              .where(
-                and(
-                  eq(shoppingItems.listId, row.listId),
-                  eq(shoppingItems.ingredientId, ingredientId),
-                  row.unit === null
-                    ? isNull(shoppingItems.unit)
-                    : eq(shoppingItems.unit, row.unit),
-                ),
-              )
-              .limit(1)
-              .for('update')
-          : [];
-      const merged = twin
-        ? sumQuantities(
-            twin.quantity === null ? null : Number(twin.quantity),
-            row.quantity === null ? null : Number(row.quantity),
-          )
-        : null;
-      // A merge past the cap is neither rejected nor clamped: an Admin cannot
-      // fix a Family's quantities, and clamping would lose some. The Shopping
-      // Item stays separate, relinked.
-      if (twin && !exceedsMaxQuantity(merged)) {
-        await tx
-          .update(shoppingItems)
-          .set({
-            quantity: merged === null ? null : String(merged),
-            // Still wanted if either Shopping Item was.
-            checked: twin.checked && row.checked,
-          })
-          .where(eq(shoppingItems.id, twin.id));
-        // Its Source Recipes move to the twin first, or the delete would
-        // cascade them away.
-        const sources = await tx
-          .select({ recipeId: shoppingItemSourceRecipes.recipeId })
-          .from(shoppingItemSourceRecipes)
-          .where(eq(shoppingItemSourceRecipes.shoppingItemId, row.id));
-        if (sources.length > 0) {
-          await tx
-            .insert(shoppingItemSourceRecipes)
-            .values(
-              sources.map(({ recipeId }) => ({
-                shoppingItemId: twin.id,
-                recipeId,
-              })),
-            )
-            .onConflictDoNothing();
-        }
-        // Its queue entry goes with it (cascade) and is also deleted by id.
-        await tx.delete(shoppingItems).where(eq(shoppingItems.id, row.id));
-      } else {
-        await tx
-          .update(shoppingItems)
-          .set({ ingredientId, name: null, normalizedName: null })
-          .where(eq(shoppingItems.id, row.id));
-      }
-    }
-    return rows.length;
   }
 
   /**
@@ -660,10 +503,11 @@ export class UnmatchedQueueService {
   }
 
   private async requireIngredient(tx: Tx, id: string) {
+    const shared = adminScope.ingredients(tx);
     const [row] = await tx
       .select()
-      .from(ingredients)
-      .where(eq(ingredients.id, id))
+      .from(shared)
+      .where(eq(shared.id, id))
       // Blocks a concurrent delete of the Ingredient until we commit.
       .for('key share');
     if (!row)
@@ -682,14 +526,15 @@ export class UnmatchedQueueService {
     locale: string,
   ): Promise<boolean> {
     if (target.normalizedName === key) return false;
+    const translations = adminScope.translations(tx);
     const [existing] = await tx
-      .select({ id: catalogTranslations.id })
-      .from(catalogTranslations)
+      .select({ id: translations.id })
+      .from(translations)
       .where(
         and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.entityId, target.id),
-          eq(catalogTranslations.normalizedValue, key),
+          eq(translations.entityType, 'ingredient'),
+          eq(translations.entityId, target.id),
+          eq(translations.normalizedValue, key),
         ),
       )
       .limit(1);

@@ -66,6 +66,14 @@ function renderSettings() {
   );
 }
 
+/** Sign out is a two-step inline confirm: ask, then confirm. */
+async function signOutInline() {
+  await userEvent.click(
+    await screen.findByRole('button', { name: 'Sign out' }),
+  );
+  await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+}
+
 const themeTiles = async () =>
   within(await screen.findByRole('radiogroup', { name: 'Appearance' }));
 
@@ -83,9 +91,9 @@ describe('Settings Appearance', () => {
 
     const tiles = await themeTiles();
     expect(tiles.getAllByRole('radio').map((r) => r.textContent)).toEqual([
-      'Warm editorial',
-      'Minimal crisp',
-      'Dark-first',
+      'AaWarm editorial',
+      'AaMinimal crisp',
+      'AaDark-first',
     ]);
     expect(tiles.getByRole('radio', { name: 'Minimal crisp' })).toHaveAttribute(
       'aria-checked',
@@ -96,38 +104,11 @@ describe('Settings Appearance', () => {
     ).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('applies a chosen Theme at once, stores it on the device and saves it on the Member', async () => {
-    stubSystemScheme(false);
-    store({ theme: 'warm', matchSystem: false });
-    const calls = stubPreferences({ locale: 'en', theme: null });
-    renderSettings();
-
-    await userEvent.click(
-      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
-    );
-
-    expect(rootTheme()).toBe('minimal');
-    expect(stored()).toEqual({ theme: 'minimal', matchSystem: false });
-    await vi.waitFor(() =>
-      expect(calls).toContainEqual(
-        expect.objectContaining({
-          key: 'PUT /api/settings/preferences',
-          body: { theme: 'minimal' },
-        }),
-      ),
-    );
-    expect(
-      (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
-    ).toHaveAttribute('aria-checked', 'true');
-  });
-
   it.each([
     { theme: 'minimal', matchSystem: false, systemDark: true, root: 'minimal' },
     { theme: 'dark', matchSystem: false, systemDark: false, root: 'dark' },
     { theme: 'minimal', matchSystem: true, systemDark: true, root: 'dark' },
     { theme: 'minimal', matchSystem: true, systemDark: false, root: 'minimal' },
-    { theme: 'dark', matchSystem: true, systemDark: false, root: 'warm' },
-    { theme: 'dark', matchSystem: true, systemDark: true, root: 'dark' },
   ])(
     'chosen $theme with Match system $matchSystem in system dark $systemDark resolves to $root',
     async ({ theme, matchSystem, systemDark, root }) => {
@@ -297,6 +278,107 @@ describe('Settings Appearance', () => {
     expect(stored()).toEqual({ theme: 'warm', matchSystem: false });
   });
 
+  describe('the Theme and Match system rules', () => {
+    it('applies a light Theme picked with Match system on in a dark phone as a toast only, changing nothing visible', async () => {
+      stubSystemScheme(true);
+      store({ theme: 'warm', matchSystem: true });
+      stubPreferences({ locale: null, theme: 'warm' });
+      renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+
+      expect(
+        await screen.findByText(
+          'Minimal crisp shows when the phone is in light mode.',
+        ),
+      ).toBeInTheDocument();
+      expect(rootTheme()).toBe('dark');
+      expect(stored()).toEqual({ theme: 'minimal', matchSystem: true });
+    });
+
+    it('turns Match system off when Dark-first is picked with it on, and says so', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: true });
+      const calls = stubPreferences({ locale: null, theme: 'warm' });
+      renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Dark-first' }),
+      );
+
+      expect(
+        await screen.findByText('Dark-first everywhere. Match system is off.'),
+      ).toBeInTheDocument();
+      expect(stored()).toEqual({ theme: 'dark', matchSystem: false });
+      expect(rootTheme()).toBe('dark');
+      expect(
+        screen.getByRole('switch', { name: 'Match system' }),
+      ).toHaveAttribute('aria-checked', 'false');
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({ body: { theme: 'dark' } }),
+        ),
+      );
+    });
+
+    it('switches the Theme to Warm editorial when Match system is turned on while Dark-first is chosen', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'dark', matchSystem: false });
+      const calls = stubPreferences({ locale: null, theme: 'dark' });
+      renderSettings();
+
+      await userEvent.click(
+        await screen.findByRole('switch', { name: 'Match system' }),
+      );
+
+      expect(stored()).toEqual({ theme: 'warm', matchSystem: true });
+      expect(rootTheme()).toBe('warm');
+      expect(
+        (await themeTiles()).getByRole('radio', { name: 'Warm editorial' }),
+      ).toHaveAttribute('aria-checked', 'true');
+      await vi.waitFor(() =>
+        expect(calls).toContainEqual(
+          expect.objectContaining({ body: { theme: 'warm' } }),
+        ),
+      );
+    });
+
+    it('marks the light Theme in use as used in light mode while Match system is on', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'minimal', matchSystem: true });
+      stubPreferences({ locale: null, theme: 'minimal' });
+      renderSettings();
+
+      const tiles = await themeTiles();
+      expect(
+        tiles.getByRole('radio', { name: 'Minimal crisp' }),
+      ).toHaveAccessibleDescription('Used in light mode');
+    });
+
+    it('shows a sync toast and keeps the chosen Theme on screen when the save fails', async () => {
+      stubSystemScheme(false);
+      store({ theme: 'warm', matchSystem: false });
+      stubPreferences({ locale: null, theme: 'warm' }, { online: false });
+      renderSettings();
+
+      await userEvent.click(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      );
+
+      expect(
+        await screen.findByText(
+          "Theme saved on this phone. We'll sync it when you're online.",
+        ),
+      ).toBeInTheDocument();
+      expect(
+        (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
+      ).toHaveAttribute('aria-checked', 'true');
+      expect(rootTheme()).toBe('minimal');
+    });
+  });
+
   describe('a Theme chosen offline or before preferences load', () => {
     const saves = (calls: Array<{ key: string; body: unknown }>) =>
       calls.filter((c) => c.key === 'PUT /api/settings/preferences');
@@ -383,7 +465,7 @@ describe('Settings Appearance', () => {
           'PUT /api/settings/preferences (failed)',
         ),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+      await signOutInline();
       await vi.waitFor(() =>
         expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
       );
@@ -475,7 +557,7 @@ describe('Settings Appearance', () => {
       await userEvent.click(
         (await themeTiles()).getByRole('radio', { name: 'Minimal crisp' }),
       );
-      await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+      await signOutInline();
       await vi.waitFor(() =>
         expect(calls.map((c) => c.key)).toContain('POST /api/auth/sign-out'),
       );
@@ -492,9 +574,10 @@ describe('Settings Appearance', () => {
         await new Promise((resolve) => setTimeout(resolve, 50));
       });
 
+      // The mounted You tab may read preferences again for the new session; A's answer is not it.
       expect(
         queryClient.getQueryData(['settings', 'preferences']),
-      ).toBeUndefined();
+      ).not.toMatchObject({ locale: 'ro', theme: 'minimal' });
       expect(i18n.language).not.toBe('ro');
     });
 

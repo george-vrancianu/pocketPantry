@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { z } from 'zod';
 import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import type { CatalogReader } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -61,8 +62,12 @@ export class PlateScanService {
     };
   }
 
-  async findIngredients(dishTitle: string, locale: CatalogLocale) {
-    const catalog = await this.ingredientCatalog.getCatalogIn(locale);
+  async findIngredients(
+    dishTitle: string,
+    locale: CatalogLocale,
+    reader: CatalogReader,
+  ) {
+    const catalog = await this.ingredientCatalog.getCatalogIn(reader, locale);
     const { items } = await this.ask(plateIngredientsModelResultSchema, {
       prompt: [
         'List the core ingredients needed to cook exactly one portion of the selected dish.',

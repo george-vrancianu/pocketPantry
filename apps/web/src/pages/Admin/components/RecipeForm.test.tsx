@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [{ id: 'cu1', name: 'Italian', translations: [] }],
   methods: [{ id: 'me1', name: 'Baking', translations: [] }],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [],
   leafCategories: [],
@@ -20,6 +21,8 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'g',
       pantryBasic: false,
+      allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
     {
@@ -28,6 +31,8 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
       pantryBasic: false,
+      allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
   ],
@@ -90,6 +95,30 @@ const saved: AdminRecipe = {
 describe('RecipeForm', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('searches the shared Catalog only, and offers no Use as typed', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const user = userEvent.setup();
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mi',
+    );
+    await screen.findByRole('option', { name: /Milk/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
   });
 
   it('creates a Base Recipe from title, an Ingredient with its default unit, and a Step', async () => {
@@ -318,5 +347,74 @@ describe('RecipeForm', () => {
       screen.getByRole('button', { name: 'Remove Step and Tips' }),
     );
     expect(screen.queryByLabelText('Step 1')).toBeNull();
+  });
+});
+
+describe('RecipeForm Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Browse by aisle, and its Aisle searches stay on the shared Catalog', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [{ id: 'a1', name: 'Dairy & eggs', parentCategories: [] }],
+        }),
+      'GET /api/catalog/search': () => Response.json({ results: [milk] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const user = userEvent.setup();
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('a1');
+      expect(params.get('scope')).toBe('shared');
+    });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+});
+
+describe('RecipeForm: no Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers neither the button nor the option when nothing matches', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(
+      <RecipeForm catalog={catalog} onSaved={vi.fn()} onCancel={vi.fn()} />,
+    );
+
+    await userEvent.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
+    expect(screen.queryByText(/to your catalog/)).toBeNull();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('option', { name: /to your catalog/ }),
+    ).toBeNull();
   });
 });

@@ -30,16 +30,44 @@
   "batchCount_one": "{{count}} lot",
   "batchCount_few": "{{count}} loturi",
   "batchCount_other": "{{count}} de loturi",
-  "batchesOf": "Loturi de {{name}}",
-  "noDetails": "Fără cantitate",
+  "group": {
+    "label_one": "{{name}}, {{count}} lot",
+    "label_few": "{{name}}, {{count}} loturi",
+    "label_other": "{{name}}, {{count}} de loturi",
+    "runningLow": "Pe sfârșite",
+    "notLow": "Nu e pe sfârșite",
+    "staple": "Produs de bază",
+    "makeStaple": "Fă-l produs de bază",
+    "addBatch": "Adaugă un lot de {{name}}"
+  },
+  "toast": {
+    "low": {
+      "on": "{{name}} marcat ca fiind pe sfârșite",
+      "off": "{{name}} nu mai e pe sfârșite"
+    },
+    "staple": {
+      "on": "{{name}} e produs de bază",
+      "off": "{{name}} nu mai e produs de bază"
+    }
+  },
+  "a11y": {
+    "markLow": "Marchează ca fiind pe sfârșite",
+    "clearLow": "Șterge marcajul „pe sfârșite”",
+    "lowKey": "Apasă L: {{action}}.",
+    "stapleKey": "Apasă S: {{action}}.",
+    "makeStaple": "Fă-l produs de bază",
+    "removeStaple": "Scoate din produsele de bază"
+  },
+  "batch": {
+    "noDate": "fără dată"
+  },
   "edit": {
     "title": "Editează lotul de {{name}}",
     "save": "Salvează modificările"
   },
   "unmatched": "Nepotrivit",
   "runningLow": {
-    "chip": "Pe sfârșite",
-    "toggle": "Marchează ca fiind pe sfârșite"
+    "chip": "Pe sfârșite"
   },
   "form": {
     "title": "Adaugă în cămară",
@@ -49,10 +77,17 @@
     "location": "Locație",
     "description": "Descrierea produsului",
     "descriptionPlaceholder": "de ex. Grana Padano 200g",
-    "useUnmatched": "Nu e în Catalog? Adaugă \"{{name}}\" ca Nepotrivit",
     "unmatchedNotice": "\"{{name}}\" va fi salvat ca Nepotrivit și marcat pentru verificare.",
     "quantityInvalid": "Introdu o cantitate între 0,001 și 1.000.000, cu maximum 3 zecimale și fără exponent.",
-    "pickIngredient": "Alege un ingredient din rezultatele căutării sau adaugă propriul nume ca Nepotrivit."
+    "prefill": {
+      "open": "Completează cu camera",
+      "reading": "Citesc poza produsului…",
+      "cap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau completează formularul manual.",
+      "mark": "Completat din produs",
+      "credit": "Date despre produs: Open Food Facts",
+      "lookingUp": "Caut codul de bare…",
+      "listsAllergens": "Acest produs menționează {{names}}"
+    }
   },
   "picker": {
     "label": "Expiră",

@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { OpenFoodFactsProduct } from '../barcode/open-food-facts.client';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -62,6 +63,10 @@ export const user = pgTable(
     locale: text('locale'),
     // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
     theme: text('theme'),
+    // Member Preference: leave out Recipes with the Member's own or Family Allergies (#359); off by default.
+    hideRecipesWithAllergies: boolean('hide_recipes_with_allergies')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [
@@ -153,6 +158,9 @@ export const ingredientUnit = pgEnum('ingredient_unit', [
   'pcs',
 ]);
 
+// How much of an Ingredient a Member usually buys at once. Null reads as medium.
+export const amountScale = pgEnum('amount_scale', ['low', 'medium', 'large']);
+
 export const catalogEntityType = pgEnum('catalog_entity_type', [
   'aisle',
   'parent_category',
@@ -161,6 +169,7 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'cuisine',
   'method',
   'eating_moment',
+  'allergen',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -244,11 +253,128 @@ export const ingredients = pgTable(
     defaultUnit: ingredientUnit('default_unit').notNull(),
     // Water, salt, pepper: Recipe matching always counts them as covered.
     pantryBasic: boolean('pantry_basic').notNull().default(false),
+    // Null reads as medium. Backfilled from the Parent Category by migration 0021.
+    amountScale: amountScale('amount_scale'),
+    // Null = shared Catalog row; set = a Family Ingredient only that Family sees (ADR 0011).
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
+    // The Member who added a Family Ingredient; kept as null if they leave.
+    createdByUserId: text('created_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
+    nameLocale: text('name_locale'),
+    // A Member has tagged a Family Ingredient's Allergens (ticking "None" counts).
+    // A shared Ingredient counts as checked too, except one promoted from Family copies none of
+    // which were checked: that stays Unchecked (false here plus allergens_review_pending below)
+    // until an Admin saves its Allergens (ADR 0014). On a seed Ingredient it records that the
+    // seed's tags were applied once. Do not reuse false on a shared row as a "flagged for
+    // review" marker: the seed would re-apply its tags to it.
+    allergensChecked: boolean('allergens_checked').notNull().default(false),
+    // Promoting or merging a Family Ingredient carried Member-entered tags onto a shared row
+    // (ADR 0011, 0014). The Admin reviews them; saving the Ingredient's Allergens clears this.
+    // A separate column from allergens_checked, which the seed reads (see above). While set on
+    // a shared row that is not checked, no Member has tagged it: its lines read as Unchecked.
+    allergensReviewPending: boolean('allergens_review_pending')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('ingredients_normalized_name_idx').on(table.normalizedName),
+    // Shared names are unique among shared rows; a Family's own names among that Family's.
+    uniqueIndex('ingredients_normalized_name_idx')
+      .on(table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('ingredients_family_normalized_name_idx')
+      .on(table.ownerFamilyId, table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NOT NULL`),
     index('ingredients_leaf_category_idx').on(table.leafCategoryId),
+  ],
+);
+
+// An Allergen is an Admin-curated, ordered, translated list entry (names in
+// catalog_translations, entity type `allergen`). Seeded with the EU's 14 (ADR 0014).
+export const allergens = pgTable(
+  'allergens',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    // Retired by an Admin: hidden from the pickers, kept on every tag and Allergy so a
+    // Recipe containing it is still warned about (never deleted, like Eating Moments).
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('allergens_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+// "This Ingredient contains this Allergen", for shared and Family Ingredients alike.
+// An Allergen in use cannot be deleted: dropping a tag would read as "contains none".
+export const ingredientAllergens = pgTable(
+  'ingredient_allergens',
+  {
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.ingredientId, table.allergenId] }),
+    index('ingredient_allergens_allergen_idx').on(table.allergenId),
+  ],
+);
+
+// An Allergy: "this Member must avoid this Allergen". Keyed to the Member, not their
+// Family, so it goes with them when they leave a Family or join another. An Allergen in
+// use cannot be deleted: dropping an Allergy would silently stop warning.
+export const memberAllergies = pgTable(
+  'member_allergies',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.allergenId] }),
+    index('member_allergies_allergen_idx').on(table.allergenId),
+  ],
+);
+
+// A Family Allergy: "someone in this Family without an account must avoid this
+// Allergen", with an optional label such as "Mia". Several rows may share an Allergen
+// with different labels. Owned by the Family and deleted with it (ADR 0001).
+export const familyAllergies = pgTable(
+  'family_allergies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    label: text('label'),
+    ...timestamps,
+  },
+  (table) => [
+    // The same Allergen and label twice would only repeat itself.
+    uniqueIndex('family_allergies_unique_idx').on(
+      table.familyId,
+      table.allergenId,
+      sql`coalesce(${table.label}, '')`,
+    ),
+    index('family_allergies_allergen_idx').on(table.allergenId),
   ],
 );
 
@@ -264,6 +390,10 @@ export const catalogTranslations = pgTable(
     kind: translationKind('kind').notNull(),
     value: text('value').notNull(),
     normalizedValue: text('normalized_value').notNull(),
+    // Set only on a Family Synonym; NULL = shared. Names are always shared.
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
     ...timestamps,
   },
   (table) => [
@@ -276,7 +406,18 @@ export const catalogTranslations = pgTable(
       .where(sql`${table.kind} = 'name'`),
     uniqueIndex('catalog_translations_synonym_idx')
       .on(table.entityType, table.entityId, table.locale, table.normalizedValue)
-      .where(sql`${table.kind} = 'synonym'`),
+      .where(sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('catalog_translations_family_synonym_idx')
+      .on(
+        table.entityType,
+        table.entityId,
+        table.ownerFamilyId,
+        table.locale,
+        table.normalizedValue,
+      )
+      .where(
+        sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NOT NULL`,
+      ),
     index('catalog_translations_lookup_idx').on(table.normalizedValue),
   ],
 );
@@ -987,3 +1128,108 @@ export const recipeEatingMomentTranslations = pgTable(
     primaryKey({ columns: [table.recipeEatingMomentId, table.locale] }),
   ],
 );
+
+// Meal Plans: a Family's saved schedule of Recipes over 1-7 consecutive days from `startDate`.
+// Plans of one Family never overlap and are capped (both enforced in the service under the
+// Family lock). `servings` is the plan default; a Plan Slot may override it.
+export const mealtime = pgEnum('mealtime', ['breakfast', 'lunch', 'dinner']);
+
+export const mealPlans = pgTable(
+  'meal_plans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    name: text('name'),
+    startDate: date('start_date', { mode: 'string' }).notNull(),
+    days: integer('days').notNull(),
+    servings: integer('servings').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index('meal_plans_family_start_idx').on(table.familyId, table.startDate),
+    check('meal_plans_days_range', sql`${table.days} BETWEEN 1 AND 7`),
+    check(
+      'meal_plans_servings_range',
+      sql`${table.servings} BETWEEN 1 AND 1000`,
+    ),
+  ],
+);
+
+// A filled Plan Slot; an empty slot is no row. Its date is the plan's `startDate` plus
+// `dayIndex` (the service keeps `dayIndex` below the plan's `days`). A null `servings`
+// follows the plan. Recipes are archived, never deleted, so `recipeId` has no cascade.
+export const mealPlanSlots = pgTable(
+  'meal_plan_slots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mealPlanId: uuid('meal_plan_id')
+      .notNull()
+      .references(() => mealPlans.id, { onDelete: 'cascade' }),
+    dayIndex: integer('day_index').notNull(),
+    mealtime: mealtime('mealtime').notNull(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id),
+    servings: integer('servings'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('meal_plan_slots_plan_day_mealtime_idx').on(
+      table.mealPlanId,
+      table.dayIndex,
+      table.mealtime,
+    ),
+    index('meal_plan_slots_recipe_idx').on(table.recipeId),
+    check('meal_plan_slots_day_range', sql`${table.dayIndex} BETWEEN 0 AND 6`),
+    check(
+      'meal_plan_slots_servings_range',
+      sql`${table.servings} BETWEEN 1 AND 1000`,
+    ),
+  ],
+);
+
+// A Family's Known Barcode (ADR 0013): what the Family last saved a barcode as, an
+// Ingredient or an Unmatched raw name (the same match-state rule as a Batch), plus the
+// Product Description. Written when a Batch is created with a `barcode`; the latest
+// save wins. Deleting the Ingredient deletes the row; an Admin merge re-points it.
+export const knownBarcodes = pgTable(
+  'known_barcodes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    barcode: text('barcode').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id, {
+      onDelete: 'cascade',
+    }),
+    rawName: text('raw_name'),
+    // The matching key of `rawName`, so a Family Ingredient, Synonym or Admin resolve can relink it.
+    normalizedName: text('normalized_name'),
+    productDescription: text('product_description'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('known_barcodes_family_barcode_idx').on(
+      table.familyId,
+      table.barcode,
+    ),
+    index('known_barcodes_ingredient_idx').on(table.ingredientId),
+    index('known_barcodes_normalized_name_idx').on(table.normalizedName),
+    check(
+      'known_barcodes_match_state',
+      sql`(${table.ingredientId} IS NOT NULL AND ${table.rawName} IS NULL) OR (${table.ingredientId} IS NULL AND ${table.rawName} IS NOT NULL)`,
+    ),
+  ],
+);
+
+// Open Food Facts cache (ADR 0013): shared by every Family, keyed by barcode.
+// Holds only Open Food Facts data, never Family data. A null payload is a
+// "not found". Entries are kept 30 days (hit) or 1 day (not found) from `fetchedAt`.
+export const openFoodFactsCache = pgTable('open_food_facts_cache', {
+  barcode: text('barcode').primaryKey(),
+  product: jsonb('product').$type<OpenFoodFactsProduct | null>(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+});

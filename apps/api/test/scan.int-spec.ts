@@ -23,6 +23,8 @@ const parmesan = (overrides: ModelResult = {}): ModelResult => ({
   fallbackIngredientName: 'Grana Padano',
   expiryDate: '2026-12-24',
   expiryText: 'BBE 24/12/26',
+  netQuantity: null,
+  netUnit: null,
   confidence: 0.95,
   ...overrides,
 });
@@ -92,10 +94,7 @@ describe('Product Scan (integration)', () => {
   it('proposes one matched line with its Catalog defaults, description and best-before date', async () => {
     respondWith(parmesan());
     const body = (
-      await scan(await signUp(), {
-        productImage: IMAGE,
-        expiryImage: IMAGE,
-      }).expect(201)
+      await scan(await signUp(), { productImage: IMAGE }).expect(201)
     ).body as unknown;
     expect(body).toMatchObject({
       lines: [
@@ -113,6 +112,67 @@ describe('Product Scan (integration)', () => {
         },
       ],
     });
+  });
+
+  describe('package quantity', () => {
+    const proposed = async (overrides: ModelResult) => {
+      respondWith(parmesan(overrides));
+      const body = (
+        await scan(await signUp(), { productImage: IMAGE }).expect(201)
+      ).body as { lines: { quantity: unknown; unit: unknown }[] };
+      return body.lines[0];
+    };
+
+    it.each([
+      [200, 'g', 200, 'g'],
+      [1, 'l', 1, 'l'],
+      [1.5, 'KG', 1.5, 'kg'],
+      [330, 'ml', 330, 'ml'],
+      [6, 'pcs', 6, 'pcs'],
+      [6, 'pieces', 6, 'pcs'],
+      [33, 'cl', 330, 'ml'],
+      [500, 'mg', 0.5, 'g'],
+    ])(
+      'proposes %s %s as the line quantity and unit',
+      async (netQuantity, netUnit, quantity, unit) => {
+        expect(await proposed({ netQuantity, netUnit })).toMatchObject({
+          quantity,
+          unit,
+        });
+      },
+    );
+
+    it('leaves quantity and unit empty for an unsupported unit', async () => {
+      expect(await proposed({ netQuantity: 12, netUnit: 'oz' })).toMatchObject({
+        quantity: null,
+        unit: null,
+      });
+    });
+
+    it('leaves quantity and unit empty when the package shows none', async () => {
+      expect(await proposed({})).toMatchObject({ quantity: null, unit: null });
+    });
+
+    it('leaves both empty for a quantity past the Batch maximum', async () => {
+      expect(
+        await proposed({ netQuantity: 2_000_000, netUnit: 'g' }),
+      ).toMatchObject({ quantity: null, unit: null });
+    });
+
+    it('leaves both empty for a non-positive quantity', async () => {
+      expect(await proposed({ netQuantity: 0, netUnit: 'g' })).toMatchObject({
+        quantity: null,
+        unit: null,
+      });
+    });
+  });
+
+  it('sends the model exactly one image and no second-image instructions', async () => {
+    respondWith(parmesan());
+    prompts.length = 0;
+    await scan(await signUp(), { productImage: IMAGE }).expect(201);
+    expect(prompts[0].images).toEqual([IMAGE]);
+    expect(prompts[0].prompt).not.toContain('second image');
   });
 
   describe('Family Default Expiry overrides', () => {
@@ -171,7 +231,7 @@ describe('Product Scan (integration)', () => {
         201,
       )
     ).body as { lines: { match: { name: string } }[] };
-    expect(prompts[0].prompt).toMatch(/packages is in Danish/);
+    expect(prompts[0].prompt).toMatch(/package is in Danish/);
     expect(prompts[0].prompt).toContain('fallbackIngredientName in Romanian');
     expect(body.lines[0].match.name).not.toBe('Parmesan');
   });
@@ -180,7 +240,7 @@ describe('Product Scan (integration)', () => {
     respondWith(parmesan());
     prompts.length = 0;
     await scan(await signUp(), { productImage: IMAGE }, 'ro').expect(201);
-    expect(prompts[0].prompt).toMatch(/packages is in Romanian/);
+    expect(prompts[0].prompt).toMatch(/package is in Romanian/);
   });
 
   it('rejects a Scan Language outside the supported list', async () => {
@@ -348,11 +408,6 @@ describe('Product Scan (integration)', () => {
           params: { field: 'productImage' },
         });
       }
-      const expiry = await scan(cookie, {
-        productImage: IMAGE,
-        expiryImage: 'data:text/plain;base64,YQ==',
-      }).expect(400);
-      expect(expiry.body).toMatchObject({ code: 'scan.image_invalid' });
     });
 
     it('rejects an oversized image', async () => {

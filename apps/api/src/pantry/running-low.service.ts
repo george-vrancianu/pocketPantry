@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { ingredients, runningLow } from '../database/schema';
+import { runningLow } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 
 /** The Family's manual "Running low" flags. Row existence means on. */
@@ -28,6 +29,7 @@ export class RunningLowService {
   /** Idempotent: flagging an Ingredient that is already flagged succeeds. */
   async set(memberId: string, ingredientId: string): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
+    const ingredients = catalogScope(familyId).ingredients(this.database);
     const [found] = await this.database
       .select({ id: ingredients.id })
       .from(ingredients)

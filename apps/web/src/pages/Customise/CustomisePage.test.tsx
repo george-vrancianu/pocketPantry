@@ -98,6 +98,7 @@ describe('CustomisePage', () => {
         .getAllByRole('button')
         .map((b) => b.getAttribute('aria-label')),
     ).toEqual([
+      'Add Pantry health widget',
       'Add Pantry widget',
       'Add Suggestions widget',
       'Add Cook tonight widget',
@@ -156,14 +157,16 @@ describe('CustomisePage', () => {
     });
   });
 
-  it('disables the size toggle for a Widget that only comes wide', async () => {
+  it('shows no size toggle for a Widget that only comes wide', async () => {
     setup();
     await rows();
 
-    const toggle = screen.getByRole('button', { name: /Size of Meal plan/ });
-    expect(toggle).toHaveAttribute('aria-disabled', 'true');
-    toggle.focus();
-    expect(toggle).toHaveFocus();
+    expect(
+      screen.queryByRole('button', { name: /Size of Meal plan/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Size of Shopping/ }),
+    ).toBeInTheDocument();
   });
 
   it('offers tall only at 900 px and up, cycling through the sizes the Widget supports', async () => {

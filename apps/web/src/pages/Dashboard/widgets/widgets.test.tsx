@@ -1,13 +1,10 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import {
-  BudgetWidget,
-  MealPlanWidget,
-  NutritionWidget,
-} from './PlaceholderWidgets';
+import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import { CookTonightWidget } from './CookTonightWidget';
@@ -25,6 +22,9 @@ const batch = (overrides: Partial<Batch> & { id: string }): Batch => ({
   ingredientId: 'ing',
   unmatched: false,
   aisle: null,
+  amountScale: null,
+  defaultUnit: null,
+  defaultExpiryDays: null,
   quantity: null,
   unit: null,
   location: 'fridge',
@@ -240,17 +240,7 @@ describe('PantryStockWidget', () => {
   });
 });
 
-it.each([
-  ['en', 'Meal plan', 'MTWTFSS'],
-  ['ro', 'Plan de mese', 'LMMJVSD'],
-] as const)('labels the Meal plan days in %s', (locale, name, days) => {
-  renderWithProviders(<MealPlanWidget size="small" columns={2} />, { locale });
-
-  expect(screen.getByRole('region', { name })).toHaveTextContent(days);
-});
-
 describe.each([
-  ['Meal plan', MealPlanWidget, 'Plan de mese'],
   ['Budget', BudgetWidget, 'Buget'],
   ['Nutrition', NutritionWidget, 'Nutriție'],
 ])('%s placeholder', (name, Widget, roName) => {
@@ -283,6 +273,7 @@ describe('CookTonightWidget', () => {
       servings: 2,
       prepMinutes: null,
       cookMinutes: null,
+      allergyWarning: null,
     },
     canMake: true,
     missing: null,
@@ -307,6 +298,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 10,
             cookMinutes: 20,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -356,6 +348,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: null,
             cookMinutes: null,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -422,6 +415,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 5,
             cookMinutes: null,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -480,6 +474,33 @@ describe('CookTonightWidget', () => {
     ).toBeInTheDocument();
   });
 
+  it('says how many Recipes are hidden by Allergies and brings them back on Show', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/cook-tonight': (url) =>
+        url.searchParams.get('showHidden') === 'true'
+          ? Response.json({
+              cards: [card('r1'), card('r2')],
+              hiddenByAllergiesCount: 0,
+            })
+          : Response.json({ cards: [card('r1')], hiddenByAllergiesCount: 1 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByText('1 Recipe hidden by your Allergies'),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(
+      await screen.findAllByRole('link', { name: /Base 2|r2/ }),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+    expect(new URLSearchParams(calls.at(-1)!.search).get('showHidden')).toBe(
+      'true',
+    );
+  });
+
   it('says so when nothing can be made tonight', async () => {
     stub(cookTonight([]));
 
@@ -501,5 +522,44 @@ describe('CookTonightWidget', () => {
     expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
     expect(search.get('locale')).toBe('en');
     expect(search.get('today')).toBe(isoIn(0));
+  });
+
+  it('shows an allergen indicator on a card, named in the link', async () => {
+    stub(
+      cookTonight([
+        card('r1', {
+          recipe: {
+            ...card('r1').recipe,
+            title: 'Pesto Pasta',
+            allergyWarning: {
+              severity: 'soft',
+              allergens: [
+                {
+                  id: 'a-nut',
+                  name: 'Tree nuts',
+                  tier: 'yours',
+                  severity: 'soft',
+                  owners: [{ kind: 'own' }],
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          },
+        }),
+        card('r2'),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    const region = await screen.findByRole('region', { name: 'Cook tonight' });
+    const link = await within(region).findByRole('link', {
+      name: /Pesto Pasta/,
+    });
+    expect(link).toHaveAccessibleName(/Optional: contains Tree nuts/);
+    expect(
+      within(link).getByRole('img', { name: 'Optional: contains Tree nuts' }),
+    ).toHaveAttribute('data-severity', 'soft');
+    expect(within(region).getAllByRole('img')).toHaveLength(1);
   });
 });

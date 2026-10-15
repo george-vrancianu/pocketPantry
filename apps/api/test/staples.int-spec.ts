@@ -1,5 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import request from 'supertest';
 import { normalizeName } from '../src/catalog/normalize';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -29,7 +29,7 @@ type Suggestion = {
   unit: string | null;
   aisle: { id: string; name: string; sortOrder: number } | null;
 };
-type Suggestions = { staples: Suggestion[] };
+type Suggestions = { staples: Suggestion[]; dismissed: string[] };
 type List = {
   groups: Array<{ items: Array<{ id: string; ingredientId: string | null }> }>;
 };
@@ -186,6 +186,7 @@ describe('Staples and Suggestions (integration)', () => {
       const all = await database
         .select({ id: ingredients.id })
         .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
         .limit(201);
       expect(all.length).toBe(201);
       await database
@@ -212,6 +213,7 @@ describe('Staples and Suggestions (integration)', () => {
       const [leaf] = await database
         .select({ id: ingredients.leafCategoryId })
         .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
         .limit(1);
       const made = (
         await api('post', admin.cookie, '/admin/catalog/ingredients')
@@ -366,6 +368,22 @@ describe('Staples and Suggestions (integration)', () => {
         204,
       );
       expect((await suggestions(owner.cookie)).staples).toHaveLength(1);
+    });
+
+    it('lists the dismissed Ingredient ids for the Family, until a Batch of one is created', async () => {
+      const { cookie } = await signUp();
+      await addStaple(cookie, { ingredientId: milk }).expect(201);
+      expect((await suggestions(cookie)).dismissed).toEqual([]);
+
+      await api(
+        'post',
+        cookie,
+        `/shopping-list/suggestions/${milk}/dismiss`,
+      ).expect(204);
+      expect((await suggestions(cookie)).dismissed).toEqual([milk]);
+
+      await addBatch(cookie, { ingredientId: milk });
+      expect((await suggestions(cookie)).dismissed).toEqual([]);
     });
 
     it('drops the dismissal with its Staple, so a re-added Staple is suggested', async () => {

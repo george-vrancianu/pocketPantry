@@ -3,12 +3,12 @@ import type { Theme } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 import { bodyFont, radius, themePalette } from '../theme/themeVars';
 
-export type TagTone = 'accent' | 'ok' | 'soon' | 'urgent';
+export type TagTone = 'accent' | 'ok' | 'soon' | 'urgent' | 'neutral';
 
 export type TagProps = Omit<BoxProps, 'children'> & {
   /**
    * Handoff section 4: `accent` (On list, Staple), `ok` (In Pantry), `soon`
-   * and `urgent` (expiry).
+   * and `urgent` (expiry); `neutral` is a muted chip for something inactive.
    */
   tone: TagTone;
   /** Leading icon, e.g. for an expired item. */
@@ -23,6 +23,7 @@ const pair = (tone: TagTone) => (theme: Theme) => {
     ok: [p.success.light, p.success.main],
     soon: [p.warning.light, p.warning.main],
     urgent: [p.error.light, p.error.main],
+    neutral: [p.pp.chip, p.text.secondary],
   }[tone];
   return { backgroundColor, color };
 };

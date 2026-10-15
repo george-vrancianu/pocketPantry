@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, eq, inArray, lt } from 'drizzle-orm';
+import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
@@ -7,7 +8,6 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor, Tx } from '../database/database.types';
 import {
   batches,
-  ingredients,
   shoppingItems,
   shoppingLists,
   shoppingTemplateLines,
@@ -68,6 +68,7 @@ export class ShoppingTemplatesService {
       .groupBy(shoppingTemplates.id)
       .orderBy(asc(shoppingTemplates.createdAt), asc(shoppingTemplates.id));
     const previews = await this.previewLines(
+      familyId,
       rows.map((row) => row.id),
       locale,
     );
@@ -81,6 +82,7 @@ export class ShoppingTemplatesService {
 
   /** The first lines' names per Template, in stored order, localised. */
   private async previewLines(
+    familyId: string,
     templateIds: string[],
     locale: CatalogLocale,
   ): Promise<Map<string, string[]>> {
@@ -101,6 +103,7 @@ export class ShoppingTemplatesService {
       .orderBy(asc(shoppingTemplateLines.position));
     const placements = await loadIngredientPlacements(
       this.database,
+      catalogScope(familyId),
       locale,
       lines.flatMap((line) => (line.ingredientId ? [line.ingredientId] : [])),
     );
@@ -137,7 +140,7 @@ export class ShoppingTemplatesService {
     return this.database.transaction(async (tx) => {
       const familyId = await this.lockFamily(tx, memberId);
       const id = await this.insertTemplate(tx, familyId, body.name);
-      await this.insertLines(tx, id, body.lines);
+      await this.insertLines(tx, familyId, id, body.lines);
       return this.view(tx, familyId, id, locale);
     });
   }
@@ -171,6 +174,7 @@ export class ShoppingTemplatesService {
       const id = await this.insertTemplate(tx, familyId, name);
       await this.insertLines(
         tx,
+        familyId,
         id,
         items.map((item): TemplateLineBody => {
           const shape = {
@@ -215,7 +219,7 @@ export class ShoppingTemplatesService {
         await tx
           .delete(shoppingTemplateLines)
           .where(eq(shoppingTemplateLines.templateId, id));
-        await this.insertLines(tx, id, body.lines);
+        await this.insertLines(tx, familyId, id, body.lines);
       }
       return this.view(tx, familyId, id, locale);
     });
@@ -264,6 +268,7 @@ export class ShoppingTemplatesService {
 
   private async insertLines(
     tx: Tx,
+    familyId: string,
     templateId: string,
     lines: TemplateLineBody[],
   ): Promise<void> {
@@ -274,6 +279,7 @@ export class ShoppingTemplatesService {
       ),
     ];
     if (ids.length > 0) {
+      const ingredients = catalogScope(familyId).ingredients(tx);
       const found = await tx
         .select({ id: ingredients.id })
         .from(ingredients)
@@ -338,6 +344,7 @@ export class ShoppingTemplatesService {
     );
     const placements = await loadIngredientPlacements(
       executor,
+      catalogScope(familyId),
       locale,
       ingredientIds,
     );

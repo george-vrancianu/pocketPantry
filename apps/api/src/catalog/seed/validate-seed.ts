@@ -1,6 +1,7 @@
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import { normalizeName } from '../normalize';
 import type {
+  SeedAllergen,
   SeedAisle,
   SeedIngredient,
   SeedLeaf,
@@ -12,6 +13,8 @@ export type CatalogSeed = {
   parents: SeedParent[];
   leaves: SeedLeaf[];
   ingredients: SeedIngredient[];
+  /** The Allergen list the Ingredients' tags refer to. */
+  allergens?: SeedAllergen[];
 };
 
 type Named = { slug: string } & Record<CatalogLocale, string>;
@@ -60,6 +63,7 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
     ...duplicatesIn('parent', seed.parents),
     ...duplicatesIn('leaf', seed.leaves),
     ...duplicatesIn('ingredient', seed.ingredients, false),
+    ...duplicatesIn('allergen', seed.allergens ?? []),
   ];
 
   const aisles = new Set(seed.aisles.map((a) => a.slug));
@@ -86,6 +90,20 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
   for (const i of seed.ingredients) {
     if (!leaves.has(i.leaf)) {
       problems.push(`ingredient "${i.slug}": unknown Leaf "${i.leaf}"`);
+    }
+  }
+
+  const allergens = new Set((seed.allergens ?? []).map((a) => a.slug));
+  for (const i of seed.ingredients) {
+    // A shared Ingredient with no tags counts as "contains none" (ADR 0014), so
+    // that has to be said on purpose: an empty list, never a missing entry.
+    if (i.allergens === undefined) {
+      problems.push(`ingredient "${i.slug}": no Allergens declared`);
+    }
+    for (const slug of i.allergens ?? []) {
+      if (!allergens.has(slug)) {
+        problems.push(`ingredient "${i.slug}": unknown Allergen "${slug}"`);
+      }
     }
   }
 

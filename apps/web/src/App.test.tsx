@@ -42,6 +42,7 @@ describe('App shell', () => {
           parentCategories: [],
           leafCategories: [],
           ingredients: [],
+          allergens: [],
         }),
     });
     vi.stubGlobal('fetch', fetchMock);

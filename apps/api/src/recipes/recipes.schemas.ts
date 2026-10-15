@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
+import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
+import type { PlateMatch } from './plate-matches';
 import type { RecipeDiff } from './recipe-diff';
 import {
   guidanceBody,
@@ -123,6 +125,8 @@ export const plateMatchesBody = z
     locale: memberLocale,
     dishTitle: z.string().trim().max(200),
     ingredientIds: z.array(id).max(100),
+    /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
+    showHidden: z.boolean().optional(),
   })
   .strict();
 
@@ -189,12 +193,26 @@ export const recipeListQuery = z.object({
   archived: z.enum(['include', 'exclude']).default('include'),
 });
 
+/** The `showHidden` query flag, as a boolean. */
+const showHiddenQuery = z
+  .enum(['true', 'false'])
+  .transform((v) => v === 'true')
+  .optional();
+
 /** Member browsing: no search or filter lists Base Recipes only. */
 export const browseQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
+  /** Opt in to Variants alongside Base Recipes with no search or filter. */
+  includeVariants: z.enum(['true', 'false']).optional(),
+  /**
+   * The "show hidden" override (#359): list Recipes even when the Member's "Hide Recipes with my
+   * Allergies" is on. The Meal Plan picker, the Pairing picker and the Plate Scan title search
+   * all pass it, since those never hide (ADR 0012).
+   */
+  showHidden: showHiddenQuery,
 });
 export const localeQuery = browseQuery.pick({ locale: true });
 
@@ -323,6 +341,15 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: AdminRecipeDetail['difficulty'];
   owner: RecipeOwner;
+  /** The compact Allergy Warning, judged on this Recipe's own lines; null when nothing the viewer must avoid is, or might be, in it. */
+  allergyWarning: CompactAllergyWarning | null;
+};
+
+/** The Member's Recipe list, with how many Recipes "Hide Recipes with my Allergies" left out (#359). */
+export type RecipeList = {
+  recipes: RecipeListItem[];
+  /** 0 when the preference is off or `showHidden` was passed. */
+  hiddenByAllergiesCount: number;
 };
 
 /** A Variant as listed on its base's detail. */
@@ -332,6 +359,78 @@ export type RecipeVariantItem = {
   cuisine: NamedRef | null;
   method: NamedRef | null;
   owner: RecipeOwner;
+};
+
+/** One Allergen a Recipe is known to contain, with the lines it comes from. */
+export type RecipeAllergenItem = {
+  allergen: { id: string; name: string };
+  lines: { id: string; ingredientName: string; optional: boolean }[];
+  /** Every source line is optional, so the Allergen can be left out. */
+  optionalOnly: boolean;
+};
+
+/** A Recipe's Allergens, derived from its own Ingredient Lines (ADR 0014). */
+export type RecipeAllergens = {
+  /** In the Admin-curated Allergen order. */
+  items: RecipeAllergenItem[];
+  /** Lines that could not be checked: untagged Family Ingredients and Unmatched lines. */
+  uncheckedCount: number;
+};
+
+/** One person's Allergy a Recipe contains, with the lines that contain it (markers in the Ingredients tab). */
+export type AllergyWarningEntryView = {
+  allergen: { id: string; name: string };
+  /** Whose Allergy it is; the viewer's own and Family Allergies come first. */
+  owner: AllergyOwner;
+  /** `yours` when it counts as the viewer's own (their own, the Family's), `members` for another Member's. */
+  tier: 'yours' | 'members';
+  /** `strong` when a required, checked line contains it, `soft` when only optional or Unchecked lines do. */
+  severity: 'strong' | 'soft';
+  /** Every line that contains it, each with its own severity (`soft` for an optional or Unchecked line). */
+  lines: { lineId: string; severity: 'strong' | 'soft' }[];
+};
+
+/**
+ * The Allergy Warning on a Recipe, from the viewer's Allergies (ADR 0014). Null when the
+ * Recipe holds none of them and every line could be checked.
+ */
+export type AllergyWarningView = {
+  /** `strong` when any entry is strong; `soft` when only optional or Unchecked lines raise it. */
+  severity: 'strong' | 'soft';
+  /** The Allergies the Recipe contains: own and Family first, then other Members'. Empty when only Unchecked lines raise it. */
+  entries: AllergyWarningEntryView[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
+/**
+ * The Allergy Warning as a list row, strip tile or match shows it: the same severity as on
+ * Recipe detail, one item per Allergen (not per person) named in the viewer's locale, with
+ * whose Allergy it is (`owners`). The line markers stay on detail. Null when nothing the viewer must avoid is,
+ * or might be, in the Recipe.
+ *
+ * Hiding (`hidden`, `hiddenByAllergiesCount`) is reported beside this warning, not inside it.
+ */
+export type CompactAllergyWarning = {
+  /** As on Recipe detail: `strong` when any Allergen is in a required, checked line; `soft` when only optional or Unchecked lines raise it. */
+  severity: 'strong' | 'soft';
+  /** The Allergens behind the warning, in the Allergy Warning's order. Empty when only Unchecked lines raise it. */
+  allergens: {
+    id: string;
+    name: string;
+    /** `yours` when it is the viewer's own or a Family Allergy, `members` when only another Member's. */
+    tier: 'yours' | 'members';
+    /** `strong` when a required, checked line contains it for anyone listed, `soft` when only optional or Unchecked lines do. */
+    severity: 'strong' | 'soft';
+    /**
+     * Whose Allergy it is, decided by `deriveAllergens`: the viewer (`own`), a Family Allergy
+     * by its optional label, or another Member by name. The viewer's own and Family
+     * Allergies come first.
+     */
+    owners: AllergyWarningOwner[];
+  }[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
 };
 
 /**
@@ -345,6 +444,10 @@ export type RecipeDetail = ResolvedRecipe & {
   variants: RecipeVariantItem[];
   /** Ingredients that differ from the base; null on a Base Recipe. */
   diff: RecipeDiff | null;
+  /** What the Recipe is known to contain, worked out from its own lines. */
+  allergens: RecipeAllergens;
+  /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
+  allergyWarning: AllergyWarningView | null;
 };
 
 export type RecipeFilters = {
@@ -407,6 +510,8 @@ export type FamilyRecipeDraft = {
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const cookTonightQuery = localeQuery.extend({
   today: z.iso.date().optional(),
+  /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
+  showHidden: showHiddenQuery,
 });
 export type CookTonightQuery = z.infer<typeof cookTonightQuery>;
 
@@ -422,6 +527,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;
   /** Set only for a near miss: the one short or missing required line. */
@@ -431,4 +537,22 @@ export type CookTonightCard = {
   otherVariantsCount: number;
 };
 
-export type CookTonightView = { cards: CookTonightCard[] };
+export type CookTonightView = {
+  cards: CookTonightCard[];
+  /**
+   * Every group that "Hide Recipes with my Allergies" left out or swapped for another Recipe of
+   * its group, not just the cards a widget shows (0 when off or overridden).
+   */
+  hiddenByAllergiesCount: number;
+};
+
+/** A Plate Scan's matches, with how many "Hide Recipes with my Allergies" left out of the closest five (#359). */
+export type PlateMatches = {
+  matches: PlateMatchView[];
+  hiddenByAllergiesCount: number;
+};
+
+/** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
+export type PlateMatchView = PlateMatch & {
+  allergyWarning: CompactAllergyWarning | null;
+};

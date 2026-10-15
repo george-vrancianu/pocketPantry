@@ -35,7 +35,8 @@
     "provider_incomplete": "Scanarea nu s-a încheiat. Încearcă din nou.",
     "result_invalid": "Nu am putut citi fotografia. Încearcă una mai clară.",
     "plate_token_invalid": "Lista de preparate a expirat. Citește-o din nou.",
-    "not_configured": "Scanarea nu este încă configurată pe acest server."
+    "not_configured": "Scanarea nu este încă configurată pe acest server.",
+    "product_not_found": "Nu am putut citi un produs din poză. Completează formularul manual sau încearcă din nou."
   },
   "shopping": {
     "item_not_found": "Nu am găsit acel articol în listă.",
@@ -71,7 +72,9 @@
     "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "eating_moment_order_stale": "Momentele de consum s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
-    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete."
+    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
+    "family_ingredient_exists": "„{{existing.name}}” are deja acest nume.",
+    "allergen_retired": "Acest alergen este retras. Readu-l înainte de a-l folosi la etichetare."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",
@@ -118,5 +121,35 @@
     "pairing_self_link": "O Asociere nu poate trimite la propria Rețetă.",
     "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere.",
     "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",
+    "not_found": "Acest ingredient de familie nu mai este în coadă. Poate că cineva l-a promovat deja.",
+    "target_not_found": "Ingredientul comun nu mai există. Alege altul."
+  },
+  "family_synonyms": {
+    "not_found": "Sinonimul nu mai este în coadă. Poate l-a adăugat deja altcineva.",
+    "shared_name_exists": "Numele este deja folosit de un alt ingredient."
+  },
+  "settings": {
+    "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă.",
+    "allergen_not_found": "Acest alergen nu mai există.",
+    "family_allergy_not_found": "Această alergie a familiei nu mai este în listă. Poate a șters-o deja altcineva.",
+    "allergen_retired": "Acest alergen este retras și nu poate fi ales."
+  },
+  "barcode": {
+    "provider_unavailable": "Căutarea codului de bare nu este disponibilă acum. Încearcă din nou sau completează formularul manual."
+  },
+  "meal_plan": {
+    "cap_reached": "Familia ta poate avea {{cap}} planuri de mese. Șterge unul ca să faci loc.",
+    "overlap": "Aceste date se suprapun cu {{other}} ({{dates}}). Alege alte date.",
+    "overlapUnnamed": "Aceste date se suprapun cu {{dates}}. Alege alte date.",
+    "start_date_in_past": "Un plan nu poate începe înainte de azi.",
+    "start_date_too_far": "Un plan poate începe cel mult peste 14 zile.",
+    "day_in_past": "Ziua aceea a trecut și nu poate fi schimbată.",
+    "already_started": "Un plan început nu poate fi mutat.",
+    "day_out_of_range": "Ziua aceea nu face parte din plan.",
+    "not_found": "Planul de mese nu mai există.",
+    "recipe_not_found": "Rețeta nu a fost găsită."
   }
 }

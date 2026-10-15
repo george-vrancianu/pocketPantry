@@ -5,21 +5,19 @@
     "submit": "Gem skabelon",
     "saving": "Gemmer",
     "row": "Gem denne liste som skabelon",
-    "back": "Skabeloner",
+    "title": "Gem som skabelon",
+    "cancel": "Annuller",
     "placeholder": "fx Ugens indkøb",
     "saved": "Gemte “{{name}}”",
     "edit": "Redigér",
     "preview_one": "Gemmer {{count}} vare, også de afkrydsede",
     "preview_other": "Gemmer alle {{count}} varer, også de afkrydsede",
     "rowHint_one": "Genbrug denne {{count}} vare næste gang",
-    "rowHint_other": "Genbrug disse {{count}} varer næste gang",
-    "rowMeta_one": "{{count}} vare, mængder med",
-    "rowMeta_other": "{{count}} varer, mængder med"
+    "rowHint_other": "Genbrug disse {{count}} varer næste gang"
   },
   "apply": {
-    "none": "Ingen skabeloner endnu. Gem din liste som skabelon, eller opret en under Skabeloner.",
     "title": "Tilføj fra {{name}}",
-    "hint": "Varer, du allerede har i spisekammeret, starter uafkrydsede.",
+    "hint": "Varer, du har i spisekammeret eller allerede i kurven, starter uafkrydsede.",
     "empty": "Denne skabelon har ingen linjer.",
     "confirm_one": "Tilføj {{count}} vare til listen",
     "confirm_other": "Tilføj {{count}} varer til listen",
@@ -27,11 +25,7 @@
     "inPantry": "I spisekammeret",
     "unmatchedGroup": "Ikke i kataloget",
     "cancel": "Tilbage",
-    "section": "Tilføj fra en skabelon",
-    "allTemplates": "Alle skabeloner",
-    "onList": "På listen",
-    "added_one": "Tilføjede {{count}} vare fra {{name}}",
-    "added_other": "Tilføjede {{count}} varer fra {{name}}"
+    "onList": "På listen"
   },
   "list": {
     "empty": "Ingen skabeloner endnu. Opret en for at genbruge en indkøbstur.",
@@ -39,9 +33,7 @@
     "create": "Opret skabelon",
     "lines_one": "{{count}} linje",
     "lines_other": "{{count}} linjer",
-    "back": "Tilbage til indkøb",
-    "items_one": "{{count}} vare",
-    "items_other": "{{count}} varer"
+    "back": "Tilbage til indkøb"
   },
   "editor": {
     "name": "Navn",
@@ -51,6 +43,5 @@
     "empty": "Ingen linjer endnu. Tilføj, hvad skabelonen skal bruge, nedenfor.",
     "back": "Tilbage til skabeloner",
     "apply": "Tilføj til listen"
-  },
-  "manage": "Administrer"
+  }
 }

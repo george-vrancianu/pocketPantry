@@ -26,6 +26,8 @@ vi.mock('../../lib/image', () => ({
 }));
 
 const catalogItem = (id: string, name: string): CatalogSearchResult => ({
+  owner: 'catalog',
+  amountScale: 'medium',
   id,
   name,
   defaultUnit: 'pcs',

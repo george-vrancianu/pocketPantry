@@ -11,6 +11,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [],
   parentCategories: [
     {
@@ -79,7 +80,10 @@ async function pickParmesan(user: ReturnType<typeof userEvent.setup>) {
     screen.getByRole('combobox', { name: 'Search ingredients' }),
     'parm',
   );
-  await user.click(await screen.findByRole('option', { name: /Parmesan/ }));
+  const option = await screen.findByRole('option', { name: /Parmesan/ });
+  // The resolver has no use for a unit chip.
+  expect(option).toHaveAccessibleName('Parmesan, Hard cheese · Dairy');
+  await user.click(option);
 }
 
 function stub(routes: Parameters<typeof stubApi>[0] = {}) {
@@ -183,6 +187,28 @@ describe('UnmatchedQueue', () => {
     expect(
       calls.find((c) => c.key === 'POST /api/admin/unmatched/dismiss')?.body,
     ).toEqual({ normalizedName: 'branza ciudata' });
+  });
+
+  it('searches the shared Catalog only in the resolver, with no Use as typed', async () => {
+    const calls = stub();
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Brânză ciudată' }),
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'par',
+    );
+    await screen.findByRole('option', { name: /Parmesan/ });
+
+    expect(screen.queryByRole('option', { name: /as typed/ })).toBeNull();
+    const searches = calls.filter((c) => c.key === 'GET /api/catalog/search');
+    expect(searches.length).toBeGreaterThan(0);
+    for (const call of searches) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
   });
 
   it('resolves to an existing Ingredient chosen from search, in the entry locale', async () => {
@@ -607,5 +633,73 @@ describe('UnmatchedQueue', () => {
       ).not.toBeInTheDocument(),
     );
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+});
+
+describe('UnmatchedQueue Browse by aisle', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Browse by aisle in the resolver search', async () => {
+    const calls = stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry], nextCursor: null }),
+      'GET /api/catalog/aisles': () =>
+        Response.json({
+          aisles: [{ id: 'a1', name: 'Dairy & eggs', parentCategories: [] }],
+        }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Cheese' }),
+    );
+    await user.click(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+    );
+
+    expect(await screen.findByText('Browse by aisle')).toBeVisible();
+    await user.click(
+      await screen.findByRole('button', { name: 'Dairy & eggs' }),
+    );
+    await vi.waitFor(() => {
+      const search = calls.filter((c) => c.key === 'GET /api/catalog/search');
+      const params = new URLSearchParams(search.at(-1)?.search);
+      expect(params.get('aisleId')).toBe('a1');
+      expect(params.get('scope')).toBe('shared');
+    });
+    for (const call of calls.filter(
+      (c) => c.key === 'GET /api/catalog/aisles',
+    )) {
+      expect(new URLSearchParams(call.search).get('scope')).toBe('shared');
+    }
+  });
+});
+
+describe('UnmatchedQueue resolver: no Add to your catalog (#270)', () => {
+  it('offers neither the button nor the option when nothing matches', async () => {
+    stub({
+      'GET /api/admin/unmatched': () =>
+        Response.json({ entries: [printedEntry], nextCursor: null }),
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    renderWithProviders(<UnmatchedQueue catalog={catalog} />);
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole('button', { name: 'Resolve Cheese' }),
+    );
+
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'kombucha',
+    );
+
+    expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('option', { name: /to your catalog/ }),
+    ).toBeNull();
   });
 });

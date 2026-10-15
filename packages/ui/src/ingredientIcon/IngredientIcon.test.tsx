@@ -26,10 +26,10 @@ describe('IngredientIcon', () => {
         </div>
       </>,
     );
-    // The light Themes keep the shopping handoff's pair.
-    expect(paintedColour(iconIn(container, 'warm'), 'fill')).toBe('#E3ECF3');
+    // Minimal keeps the shopping handoff's pair; Warm has its own.
+    expect(paintedColour(iconIn(container, 'warm'), 'fill')).toBe('#E4E9EA');
     expect(paintedColour(iconIn(container, 'minimal'), 'fill')).toBe('#E3ECF3');
-    expect(paintedColour(iconIn(container, 'dark'), 'fill')).toBe('#1F3647');
+    expect(paintedColour(iconIn(container, 'dark'), 'fill')).toBe('#1D2C38');
   });
 
   it('names the tint it uses', () => {

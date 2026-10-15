@@ -1,3 +1,8 @@
+import { exceedsMaxQuantity } from '../common/quantity';
+import type { ingredientUnit } from '../database/schema';
+
+type PantryUnit = (typeof ingredientUnit.enumValues)[number];
+
 export type ReceiptQuantityInput = {
   quantityType: 'count' | 'package_size' | 'measured' | null;
   purchasedCount: number | null;
@@ -52,9 +57,53 @@ const UNIT_ALIASES: Record<string, string> = {
   l: 'l',
 };
 
-function normalizeUnit(unit: string): string {
+export function normalizeUnit(unit: string): string {
   const normalized = unit.trim().toLocaleLowerCase('en-US').replaceAll('.', '');
   return UNIT_ALIASES[normalized] ?? normalized;
+}
+
+/** Scan units onto the Pantry's units; anything else yields no quantity. */
+export function toPantryQuantity(
+  quantity: number | null,
+  unit: string | null,
+): { quantity: number | null; unit: PantryUnit | null } {
+  if (quantity === null || unit === null) return { quantity: null, unit: null };
+  const scaled = (factor: number, to: PantryUnit) => ({
+    quantity: Math.round(quantity * factor * 1000) / 1000,
+    unit: to,
+  });
+  const converted = (() => {
+    switch (unit) {
+      case 'g':
+      case 'kg':
+      case 'ml':
+      case 'l':
+        return scaled(1, unit);
+      case 'item':
+        return scaled(1, 'pcs');
+      case 'cl':
+        return scaled(10, 'ml');
+      case 'mg':
+        return scaled(0.001, 'g');
+      default:
+        return null;
+    }
+  })();
+  // numeric(10,3) on the Batch: a quantity that rounds to nothing is no quantity.
+  // And one past the Batch maximum would fail validation on save.
+  return converted &&
+    converted.quantity >= 0.001 &&
+    !exceedsMaxQuantity(converted.quantity)
+    ? converted
+    : { quantity: null, unit: null };
+}
+
+/** `toPantryQuantity` for a unit as printed: normalised first; no quantity without a unit. */
+export function toPantryQuantityFromText(
+  quantity: number | null,
+  unit: string | null,
+): ReturnType<typeof toPantryQuantity> {
+  return toPantryQuantity(quantity, unit === null ? null : normalizeUnit(unit));
 }
 
 function roundQuantity(value: number): number {

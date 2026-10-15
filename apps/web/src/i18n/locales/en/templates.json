@@ -5,21 +5,19 @@
     "submit": "Save template",
     "saving": "Saving",
     "row": "Save this list as a template",
-    "back": "Templates",
+    "title": "Save as template",
+    "cancel": "Cancel",
     "placeholder": "e.g. Weekly shop",
     "saved": "Saved “{{name}}”",
     "edit": "Edit",
     "preview_one": "Saves {{count}} item, ticked ones too",
     "preview_other": "Saves all {{count}} items, ticked ones too",
     "rowHint_one": "Reuse this {{count}} item next time",
-    "rowHint_other": "Reuse these {{count}} items next time",
-    "rowMeta_one": "{{count}} item, quantities included",
-    "rowMeta_other": "{{count}} items, quantities included"
+    "rowHint_other": "Reuse these {{count}} items next time"
   },
   "apply": {
-    "none": "No templates yet. Save your list as one, or create one under Templates.",
     "title": "Add from {{name}}",
-    "hint": "Items already in your Pantry start unticked.",
+    "hint": "Items in your Pantry or already in your trolley start unticked.",
     "empty": "This template has no lines.",
     "confirm_one": "Add {{count}} item to list",
     "confirm_other": "Add {{count}} items to list",
@@ -27,11 +25,7 @@
     "inPantry": "In Pantry",
     "unmatchedGroup": "Not in the catalog",
     "cancel": "Back",
-    "section": "Add from a template",
-    "allTemplates": "All templates",
-    "onList": "On list",
-    "added_one": "Added {{count}} item from {{name}}",
-    "added_other": "Added {{count}} items from {{name}}"
+    "onList": "On list"
   },
   "list": {
     "empty": "No templates yet. Create one to reuse a shop.",
@@ -39,9 +33,7 @@
     "create": "Create template",
     "lines_one": "{{count}} line",
     "lines_other": "{{count}} lines",
-    "back": "Back to shopping",
-    "items_one": "{{count}} item",
-    "items_other": "{{count}} items"
+    "back": "Back to shopping"
   },
   "editor": {
     "name": "Name",
@@ -51,6 +43,5 @@
     "empty": "No lines yet. Add what this template needs below.",
     "back": "Back to templates",
     "apply": "Add to list"
-  },
-  "manage": "Manage"
+  }
 }

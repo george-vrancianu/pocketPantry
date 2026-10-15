@@ -1,3 +1,4 @@
+import type { CameraMode } from './cameraMode';
 import type { ScanMode } from './scan';
 
 export type Rect = { x: number; y: number; width: number; height: number };
@@ -10,6 +11,14 @@ export const SCAN_GUIDES: Record<ScanMode, { width: number; height: number }> =
     ingredients: { width: 0.88, height: 0.42 },
     plate: { width: 0.8, height: 0.5 },
   };
+
+/** Barcode is a camera mode, not a Scan Mode: a wide, shallow guide to aim at the bars. */
+const BARCODE_GUIDE = { width: 0.8, height: 0.3 };
+
+/** The guide to draw for any camera mode. */
+export function guideFor(mode: CameraMode): { width: number; height: number } {
+  return mode === 'barcode' ? BARCODE_GUIDE : SCAN_GUIDES[mode];
+}
 
 /** The guides are centred this far down the screen, a little above the middle. */
 export const GUIDE_CENTER_Y = 0.46;

@@ -14,6 +14,8 @@ import type { ProposedLine } from './scan';
 const today = new Date(2026, 9, 1);
 
 const butter: CatalogSearchResult = {
+  owner: 'catalog',
+  amountScale: 'medium',
   id: 'butter-id',
   name: 'Butter',
   defaultUnit: 'g',

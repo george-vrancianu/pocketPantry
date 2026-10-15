@@ -1,10 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, max, sql } from 'drizzle-orm';
-import { lockAisleOrder, lockEatingMomentOrder } from '../catalog/order-lock';
+import { and, asc, count, eq, max, sql } from 'drizzle-orm';
+import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
+import {
+  amountScaleForParent,
+  type AmountScale,
+} from '../catalog/amount-scale';
+import {
+  lockAisleOrder,
+  lockAllergenOrder,
+  lockEatingMomentOrder,
+} from '../catalog/order-lock';
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
+import { replaceIngredientAllergenTags } from '../catalog/ingredient-allergen-tags';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -12,9 +22,11 @@ import type { Database, Executor, Tx } from '../database/database.types';
 import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   aisles,
+  allergens,
   catalogTranslations,
   cuisines,
   eatingMoments,
+  ingredientAllergens,
   ingredients,
   leafCategories,
   methods,
@@ -27,6 +39,7 @@ import type {
   AisleOrder,
   AisleUpdate,
   EatingMomentOrder,
+  IngredientAllergensBody,
   IngredientCreate,
   IngredientUpdate,
   LeafCategoryCreate,
@@ -57,6 +70,9 @@ const otherLeafNameTaken = () =>
 type ListType = 'cuisine' | 'method';
 const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
 
+// Admin curation reads shared Catalog rows only (ADR 0011).
+const adminScope = catalogScope(SHARED_ONLY);
+
 const notFound = (entity: EntityType | 'translation') =>
   new ApiException(404, 'catalog.not_found', { entity });
 
@@ -73,6 +89,7 @@ export class AdminCatalogService {
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
   async overview() {
+    const sharedIngredients = adminScope.ingredients(this.database);
     const [
       aisleRows,
       parentRows,
@@ -82,6 +99,8 @@ export class AdminCatalogService {
       cuisineRows,
       methodRows,
       eatingMomentRows,
+      allergenRows,
+      tagRows,
     ] = await Promise.all([
       this.database.select().from(aisles).orderBy(aisles.sortOrder),
       this.database
@@ -94,16 +113,39 @@ export class AdminCatalogService {
         .orderBy(leafCategories.normalizedName),
       this.database
         .select()
-        .from(ingredients)
-        .orderBy(ingredients.normalizedName),
-      this.database.select().from(catalogTranslations),
+        .from(sharedIngredients)
+        .orderBy(sharedIngredients.normalizedName),
+      this.database.select().from(adminScope.translations(this.database)),
       this.database.select().from(cuisines).orderBy(cuisines.normalizedName),
       this.database.select().from(methods).orderBy(methods.normalizedName),
       this.database
         .select()
         .from(eatingMoments)
         .orderBy(eatingMoments.sortOrder),
+      this.database
+        .select()
+        .from(allergens)
+        .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
+      // Shared Ingredients only: Family tags are not the Admin's to see.
+      this.database
+        .select({
+          ingredientId: ingredientAllergens.ingredientId,
+          allergenId: ingredientAllergens.allergenId,
+        })
+        .from(ingredientAllergens)
+        .innerJoin(
+          sharedIngredients,
+          eq(ingredientAllergens.ingredientId, sharedIngredients.id),
+        ),
     ]);
+
+    const tagsOf = new Map<string, string[]>();
+    for (const tag of tagRows) {
+      tagsOf.set(tag.ingredientId, [
+        ...(tagsOf.get(tag.ingredientId) ?? []),
+        tag.allergenId,
+      ]);
+    }
 
     const byEntity = new Map<string, unknown[]>();
     for (const row of translationRows) {
@@ -138,6 +180,13 @@ export class AdminCatalogService {
         archived: row.archivedAt !== null,
         translations: translations('eating_moment', row.id),
       })),
+      allergens: allergenRows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        sortOrder: row.sortOrder,
+        archived: row.archivedAt !== null,
+        translations: translations('allergen', row.id),
+      })),
       aisles: aisleRows.map((row) => ({
         id: row.id,
         name: row.name,
@@ -167,6 +216,8 @@ export class AdminCatalogService {
         leafCategoryId: row.leafCategoryId,
         defaultUnit: row.defaultUnit,
         pantryBasic: row.pantryBasic,
+        allergenIds: tagsOf.get(row.id) ?? [],
+        allergensReviewPending: row.allergensReviewPending,
         translations: translations('ingredient', row.id),
       })),
     };
@@ -345,6 +396,76 @@ export class AdminCatalogService {
     });
   }
 
+  // Allergens: an ordered, translated, retirable list like Eating Moments. Never deleted:
+  // tags, Allergies and Family Allergies keep pointing at it, and dropping one would make a
+  // Recipe that contains it read as clear. Retiring only hides it from the pickers.
+
+  createAllergen(input: ListEntryCreate) {
+    return this.write(async (tx) => {
+      await lockAllergenOrder(tx);
+      const [{ last }] = await tx
+        .select({ last: max(allergens.sortOrder) })
+        .from(allergens);
+      const id = randomUUID();
+      const [row] = await tx
+        .insert(allergens)
+        .values({
+          id,
+          name: input.name,
+          normalizedName: normalizeName(input.name),
+          sortOrder: (last ?? 0) + 1,
+        })
+        .returning();
+      await this.addCanonicalName(tx, 'allergen', id, input.name);
+      return row;
+    });
+  }
+
+  updateAllergen(id: string, input: ListEntryUpdate) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(allergens)
+        .set({ name: input.name, normalizedName: normalizeName(input.name) })
+        .where(eq(allergens.id, id))
+        .returning();
+      if (!row) throw notFound('allergen');
+      await this.renameCanonicalName(tx, 'allergen', id, input.name);
+      return row;
+    });
+  }
+
+  setAllergenArchived(id: string, archived: boolean) {
+    return this.write(async (tx) => {
+      const [row] = await tx
+        .update(allergens)
+        .set({ archivedAt: archived ? new Date() : null })
+        .where(eq(allergens.id, id))
+        .returning();
+      if (!row) throw notFound('allergen');
+      return row;
+    });
+  }
+
+  /**
+   * Replaces a shared Ingredient's Allergen tags and marks it checked, so a later re-seed never
+   * re-applies its tags over this edit. Tags it already has on a retired Allergen may stay;
+   * a retired Allergen cannot be newly tagged.
+   */
+  setIngredientAllergens(id: string, { allergenIds }: IngredientAllergensBody) {
+    return this.write(async (tx) => {
+      // Locked so two edits of one Ingredient serialise instead of interleaving their tags.
+      const shared = adminScope.ingredients(tx);
+      const [ingredient] = await tx
+        .select({ id: shared.id })
+        .from(shared)
+        .where(eq(shared.id, id))
+        .for('update');
+      if (!ingredient) throw notFound('ingredient');
+      await replaceIngredientAllergenTags(tx, id, allergenIds);
+      return { id, allergenIds };
+    });
+  }
+
   // Cuisines and Methods: Admin-curated Recipe lists, translated like Aisles.
   // Deleting one a Recipe uses is refused; Recipes keep a reference, never a copy.
 
@@ -520,6 +641,8 @@ export class AdminCatalogService {
 
   updateLeafCategory(id: string, input: LeafCategoryUpdate) {
     return this.write(async (tx) => {
+      // The new Parent when this update moves the Leaf; its Ingredients re-derive their scale.
+      let movedToParent: string | null = null;
       if (input.parentId) {
         await this.requireRow(tx, 'parent_category', input.parentId);
         const [current] = await tx
@@ -532,6 +655,9 @@ export class AdminCatalogService {
         if (current?.isOther && current.parentId !== input.parentId) {
           throw otherLeafProtected();
         }
+        if (current && current.parentId !== input.parentId) {
+          movedToParent = input.parentId;
+        }
       }
       const [row] = await tx
         .update(leafCategories)
@@ -539,6 +665,12 @@ export class AdminCatalogService {
         .where(eq(leafCategories.id, id))
         .returning();
       if (!row) throw notFound('leaf_category');
+      if (movedToParent) {
+        await tx
+          .update(ingredients)
+          .set({ amountScale: amountScaleForParent(movedToParent) })
+          .where(eq(ingredients.leafCategoryId, id));
+      }
       if (input.name) {
         await this.renameCanonicalName(tx, 'leaf_category', id, input.name);
       }
@@ -556,6 +688,8 @@ export class AdminCatalogService {
           .where(eq(leafCategories.id, id));
         if (!leaf) throw notFound('leaf_category');
         if (leaf.isOther) throw otherLeafProtected();
+        // Counts every Ingredient in the Leaf, Family Ingredients included
+        // (deliberately not through a Catalog scope: this is a structural count, not a read).
         const [{ children }] = await tx
           .select({ children: count() })
           .from(ingredients)
@@ -582,10 +716,11 @@ export class AdminCatalogService {
   async createIngredientIn(tx: Tx, input: IngredientCreate) {
     await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
     const normalizedName = await this.claimName(tx, input.name);
+    const amountScale = await this.amountScaleOfLeaf(tx, input.leafCategoryId);
     const id = randomUUID();
     const [row] = await tx
       .insert(ingredients)
-      .values({ id, ...input, normalizedName })
+      .values({ id, ...input, normalizedName, amountScale })
       .returning();
     await this.addCanonicalName(tx, 'ingredient', id, input.name);
     return row;
@@ -593,13 +728,21 @@ export class AdminCatalogService {
 
   updateIngredient(id: string, input: IngredientUpdate) {
     return this.write(async (tx) => {
+      // 404 for a Family Ingredient: the Admin scope never sees them (ADR 0011).
+      await this.requireRow(tx, 'ingredient', id);
       if (input.leafCategoryId) {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
       }
       if (input.name) await this.claimName(tx, input.name, id);
+      // A new Leaf may sit under another Parent, whose Amount Scale the Ingredient takes.
+      const amountScale = input.leafCategoryId
+        ? {
+            amountScale: await this.amountScaleOfLeaf(tx, input.leafCategoryId),
+          }
+        : {};
       const [row] = await tx
         .update(ingredients)
-        .set({ ...input, ...this.normalized(input.name) })
+        .set({ ...input, ...this.normalized(input.name), ...amountScale })
         .where(eq(ingredients.id, id))
         .returning();
       if (!row) throw notFound('ingredient');
@@ -618,10 +761,11 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, 'ingredient', id);
-        // Translations first: a foreign-key failure on the delete below rolls
-        // them back with it.
-        await this.deleteTranslationsOf(tx, 'ingredient', id);
+        // The Ingredient first: a Family linking a Synonym holds a key-share
+        // lock on it, so none can land after its translations are gone. A
+        // foreign-key failure rolls both back.
         await tx.delete(ingredients).where(eq(ingredients.id, id));
+        await this.deleteTranslationsOf(tx, 'ingredient', id);
       },
       new ApiException(409, 'catalog.ingredient_in_use'),
     );
@@ -638,15 +782,16 @@ export class AdminCatalogService {
           await this.claimName(tx, input.value, input.entityId);
         }
         if (input.kind === 'name') {
+          const translations = adminScope.translations(tx);
           const [existing] = await tx
-            .select({ id: catalogTranslations.id })
-            .from(catalogTranslations)
+            .select({ id: translations.id })
+            .from(translations)
             .where(
               and(
-                eq(catalogTranslations.entityType, input.entityType),
-                eq(catalogTranslations.entityId, input.entityId),
-                eq(catalogTranslations.locale, input.locale),
-                eq(catalogTranslations.kind, 'name'),
+                eq(translations.entityType, input.entityType),
+                eq(translations.entityId, input.entityId),
+                eq(translations.locale, input.locale),
+                eq(translations.kind, 'name'),
               ),
             );
           if (existing) {
@@ -717,17 +862,19 @@ export class AdminCatalogService {
     key: string,
     ingredientId?: string,
   ): Promise<boolean> {
+    const shared = adminScope.ingredients(tx);
+    const translations = adminScope.translations(tx);
     const owners = await tx
-      .select({ id: ingredients.id })
-      .from(ingredients)
-      .where(eq(ingredients.normalizedName, key));
+      .select({ id: shared.id })
+      .from(shared)
+      .where(eq(shared.normalizedName, key));
     const translated = await tx
-      .select({ id: catalogTranslations.entityId })
-      .from(catalogTranslations)
+      .select({ id: translations.entityId })
+      .from(translations)
       .where(
         and(
-          eq(catalogTranslations.entityType, 'ingredient'),
-          eq(catalogTranslations.normalizedValue, key),
+          eq(translations.entityType, 'ingredient'),
+          eq(translations.normalizedValue, key),
         ),
       );
     return [...owners, ...translated].every(
@@ -822,12 +969,29 @@ export class AdminCatalogService {
   }
 
   private async requireTranslation(executor: Executor, id: string) {
+    const translations = adminScope.translations(executor);
     const [row] = await executor
       .select()
-      .from(catalogTranslations)
-      .where(eq(catalogTranslations.id, id));
+      .from(translations)
+      .where(eq(translations.id, id));
     if (!row) throw notFound('translation');
+    // Translations of a Family Ingredient are outside the Admin scope too.
+    if (row.entityType === 'ingredient') {
+      await this.requireRow(executor, 'ingredient', row.entityId);
+    }
     return row;
+  }
+
+  /** The default Amount Scale of an Ingredient in this Leaf: its Parent Category's. */
+  private async amountScaleOfLeaf(
+    executor: Executor,
+    leafId: string,
+  ): Promise<AmountScale> {
+    const [leaf] = await executor
+      .select({ parentId: leafCategories.parentId })
+      .from(leafCategories)
+      .where(eq(leafCategories.id, leafId));
+    return amountScaleForParent(leaf.parentId);
   }
 
   private async requireRow(
@@ -839,10 +1003,11 @@ export class AdminCatalogService {
       aisle: aisles,
       parent_category: parentCategories,
       leaf_category: leafCategories,
-      ingredient: ingredients,
+      ingredient: adminScope.ingredients(executor),
       cuisine: cuisines,
       method: methods,
       eating_moment: eatingMoments,
+      allergen: allergens,
     }[type];
     const [row] = await executor
       .select({ id: table.id })

@@ -31,7 +31,7 @@ import {
   QuantityUnitInput,
 } from './RowInputs';
 import { SourceText } from './SourceText';
-import { StatusIcon } from './StatusIcon';
+import { StatusIcon } from '../../../components/StatusIcon';
 import {
   ROW_TINT,
   fieldId,
