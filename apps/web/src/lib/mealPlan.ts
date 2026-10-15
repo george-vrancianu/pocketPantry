@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { IsoDate } from './pantry';
+import { normalizeName } from './normalizeName';
 import { mealPlanQueryKey } from './queryKeys';
 
 export type Mealtime = 'breakfast' | 'lunch' | 'dinner';
@@ -116,7 +117,7 @@ export type AddedMissing = { createdIds: string[]; count: number };
 /** Identifies an Ingredient across issues: its id, or the normalised name of an Unmatched one (as the server's forecast does). */
 export const ingredientKey = (
   issue: Pick<PlanIssue, 'ingredientId' | 'name'>,
-): string => issue.ingredientId ?? `name:${issue.name.trim().toLowerCase()}`;
+): string => issue.ingredientId ?? `name:${normalizeName(issue.name)}`;
 
 /** Issues Add missing would put on the list: not uncertain, not on it already. */
 const isAddable = (issue: PlanIssue) =>
@@ -150,8 +151,7 @@ export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
     if (add.scope === 'window') return true;
     if (add.scope === 'date') return day.date === add.date;
     // The Widget never sends a plan scope; it covers the same days as the window it shows.
-    if (add.scope === 'plan')
-      return day.slots.some((s) => s.planId === add.planId);
+    if (add.scope === 'plan') return day.planId === add.planId;
     return 'ingredientId' in add
       ? issue.ingredientId === add.ingredientId
       : issue.ingredientId === null &&
