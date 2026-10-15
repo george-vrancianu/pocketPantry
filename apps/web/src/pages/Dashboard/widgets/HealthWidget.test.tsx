@@ -182,7 +182,7 @@ describe('HealthWidget', () => {
       expect(calls.some((call) => call.key === 'GET /api/pantry')).toBe(true),
     );
     expect(
-      await screen.findByRole('status', { name: 'Loading' }),
+      await screen.findByRole('progressbar', { name: 'Loading' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     release();
