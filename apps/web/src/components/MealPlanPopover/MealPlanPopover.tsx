@@ -33,11 +33,11 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { keyframesSx } from '../../lib/keyframesSx';
 import {
   dayMissing,
   slotsInOrder,
-  unlistedShortCount,
   type AddMissingScope,
   type PlanIssue,
   type WindowDay,
@@ -45,13 +45,13 @@ import {
 } from '../../lib/mealPlan';
 import type { IsoDate } from '../../lib/pantry';
 import {
-  baseAmount,
   dayTitle,
   fullDate,
+  issueDetail,
   longWeekday,
   reasonText,
+  statusLabel,
 } from './mealPlanText';
-import { Link } from 'react-router-dom';
 import { plainAction } from './plainAction';
 
 /** Widest the popover grows, px. */
@@ -108,30 +108,29 @@ const ghostButton = {
   ...focusRing,
 } as const;
 
-const statusMark = (slot: WindowSlot, t: TFunction<'dashboard'>) => {
+/** A slot's forecast status as a Tag: the Widget's marks, reused by the Meal Plan page. */
+export const statusMark = (
+  slot: Pick<WindowSlot, 'status' | 'issues'>,
+  t: TFunction<'dashboard'>,
+) => {
+  const label = statusLabel(t, slot);
   switch (slot.status) {
     case 'covered':
       return (
         <Tag tone="accent" icon={<CheckIcon size={12} strokeWidth={3} />}>
-          {t('mealPlan.status.covered')}
+          {label}
         </Tag>
       );
     case 'onList':
       return (
         <Tag tone="soon" icon={<ShoppingIcon size={12} strokeWidth={2.4} />}>
-          {t('mealPlan.status.onList')}
+          {label}
         </Tag>
       );
     case 'short':
-      return (
-        <Tag tone="urgent">
-          {t('mealPlan.status.short', {
-            count: Math.max(1, unlistedShortCount(slot)),
-          })}
-        </Tag>
-      );
+      return <Tag tone="urgent">{label}</Tag>;
     case 'unavailable':
-      return <Tag tone="neutral">{t('mealPlan.status.unavailable')}</Tag>;
+      return <Tag tone="neutral">{label}</Tag>;
   }
 };
 
@@ -149,22 +148,7 @@ function IssueLine({
   const { t, i18n } = useTranslation('dashboard');
   const language = i18n.language;
   const uncertain = issue.kind === 'uncertain';
-  const amount =
-    issue.quantity === null
-      ? null
-      : baseAmount(t, language, issue.quantity, issue.unit);
-  const detail = uncertain
-    ? t('mealPlan.line.unknown')
-    : amount === null
-      ? null
-      : t(
-          issue.kind === 'missing'
-            ? 'mealPlan.line.need'
-            : 'mealPlan.line.short',
-          {
-            amount,
-          },
-        );
+  const detail = issueDetail(t, language, issue);
   const reason = uncertain ? null : reasonText(t, language, issue, today);
   return (
     <Box

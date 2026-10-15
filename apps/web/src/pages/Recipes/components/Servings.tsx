@@ -25,6 +25,8 @@ type StepperPillProps = {
   onChange: (value: number) => void;
   fewerLabel: string;
   moreLabel: string;
+  /** Both buttons off, say while a write is pending. */
+  disabled?: boolean;
   /** The words between the buttons. */
   children: ReactNode;
 };
@@ -37,6 +39,7 @@ export function StepperPill({
   onChange,
   fewerLabel,
   moreLabel,
+  disabled = false,
   children,
 }: StepperPillProps) {
   return (
@@ -58,7 +61,7 @@ export function StepperPill({
         label={fewerLabel}
         size={34}
         tone="plain"
-        ariaDisabled={value <= min}
+        ariaDisabled={disabled || value <= min}
         onClick={() => onChange(value - 1)}
       >
         <MinusIcon size={16} />
@@ -68,7 +71,7 @@ export function StepperPill({
         label={moreLabel}
         size={34}
         tone="plain"
-        ariaDisabled={value >= max}
+        ariaDisabled={disabled || value >= max}
         onClick={() => onChange(value + 1)}
       >
         <PlusIcon size={16} />
@@ -81,9 +84,11 @@ export function StepperPill({
 export function ServingsStepper({
   servings,
   onChange,
+  disabled,
 }: {
   servings: number;
   onChange: (servings: number) => void;
+  disabled?: boolean;
 }) {
   const { t } = useTranslation('recipes');
   return (
@@ -94,6 +99,7 @@ export function ServingsStepper({
       onChange={onChange}
       fewerLabel={t('fewerServings')}
       moreLabel={t('moreServings')}
+      disabled={disabled}
     >
       <Servings servings={servings} />
     </StepperPill>

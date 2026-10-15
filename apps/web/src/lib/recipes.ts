@@ -159,17 +159,29 @@ export const isFiltering = (browse: RecipeBrowse) =>
 export function useRecipes(
   browse: RecipeBrowse,
   locale: string,
-  { searchOnly = false }: { searchOnly?: boolean } = {},
+  {
+    searchOnly = false,
+    includeVariants = false,
+  }: { searchOnly?: boolean; includeVariants?: boolean } = {},
 ) {
   const search = useDebounced(browse.search.trim(), 300);
   const { cuisineId, methodId } = browse;
   return useQuery({
-    queryKey: [...recipesQueryKey, 'list', locale, search, cuisineId, methodId],
+    queryKey: [
+      ...recipesQueryKey,
+      'list',
+      locale,
+      search,
+      cuisineId,
+      methodId,
+      ...(includeVariants ? ['variants'] : []),
+    ],
     queryFn: () => {
       const params = new URLSearchParams({ locale });
       if (search) params.set('search', search);
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
+      if (includeVariants) params.set('includeVariants', 'true');
       return apiRequest<{ recipes: RecipeListItem[] }>(
         `/recipes?${params}`,
       ).then((body) => body.recipes);

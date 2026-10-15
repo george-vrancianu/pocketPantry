@@ -138,6 +138,29 @@ describe('Meal plan form', () => {
     ).toBeVisible();
   });
 
+  it('does not repeat the dates when the other plan has no name', async () => {
+    const { fetchMock } = stubApi({
+      'GET /api/family': () => Response.json(family),
+      'POST /api/meal-plans': () =>
+        conflict('meal_plan.overlap', {
+          id: 'p9',
+          name: null,
+          startDate: iso(1),
+          days: 4,
+        }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(routes, { route: '/meal-plans/new' });
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Create plan' }),
+    );
+    expect(
+      await screen.findByText(/^These dates overlap 16\D+19 Oct\. Pick/),
+    ).toBeVisible();
+  });
+
   it('says the cap is reached', async () => {
     const { fetchMock } = stubApi({
       'GET /api/family': () => Response.json(family),
@@ -206,6 +229,59 @@ describe('Meal plan form', () => {
     await screen.findByText('Plan page');
     expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
       days: 2,
+    });
+  });
+
+  it('asks again when the days change after the prompt', async () => {
+    const existing = plan({
+      id: 'p1',
+      days: 3,
+      slots: [slot(0, 2, 'dinner'), slot(0, 1, 'lunch')],
+    });
+    const { fetchMock, calls } = stubApi({
+      'GET /api/family': () => Response.json(family),
+      'GET /api/meal-plans/p1': () => Response.json(existing),
+      'PATCH /api/meal-plans/p1': () => Response.json(existing),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(routes, { route: '/meal-plans/p1/edit' });
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole('button', { name: 'Fewer days' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText(/to 2 days removes 1 planned Recipe\./),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Fewer days' }));
+    expect(screen.queryByText(/Shortening to/)).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(
+      await screen.findByText(/to 1 days removes 2 planned Recipes\./),
+    ).toBeVisible();
+    expect(calls.some((c) => c.key.startsWith('PATCH'))).toBe(false);
+  });
+
+  it('shows the start of a plan that has begun as text, not a picker', async () => {
+    const existing = plan({ id: 'p1', startOffset: -2, days: 5 });
+    const { fetchMock, calls } = stubApi({
+      'GET /api/family': () => Response.json(family),
+      'GET /api/meal-plans/p1': () => Response.json(existing),
+      'PATCH /api/meal-plans/p1': () => Response.json(existing),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    renderWithProviders(routes, { route: '/meal-plans/p1/edit' });
+    const user = userEvent.setup();
+
+    expect(await screen.findByText('Tuesday 13 October')).toBeVisible();
+    expect(screen.getByText(/already begun/)).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Starts/ })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'More days' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await screen.findByText('Plan page');
+    expect(calls.find((c) => c.key.startsWith('PATCH'))?.body).toEqual({
+      days: 6,
     });
   });
 

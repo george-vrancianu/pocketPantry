@@ -37,8 +37,10 @@
     "servings": "Porții",
     "create": "Creează planul",
     "creating": "Se creează…",
-    "shorten": "Scurtarea la {{days}} zile elimină {{count}} rețete planificate. Continui?",
-    "shortenConfirm": "Scurtează și elimină"
+    "shorten_one": "Scurtarea la {{days}} zile elimină {{count}} rețetă planificată. Continui?",
+    "shorten_few": "Scurtarea la {{days}} zile elimină {{count}} rețete planificate. Continui?",
+    "shorten_other": "Scurtarea la {{days}} zile elimină {{count}} de rețete planificate. Continui?",
+    "startLocked": "Planul a început deja, deci data de start nu mai poate fi schimbată."
   },
   "summary": {
     "short_one": "{{count}} masă în deficit din {{day}}",
@@ -60,14 +62,6 @@
     "open": "{{mealtime}}, {{day}}: {{title}}",
     "empty": "Nimic planificat"
   },
-  "status": {
-    "covered": "Acoperit",
-    "onList": "Pe listă",
-    "short_one": "lipsește {{count}}",
-    "short_few": "lipsesc {{count}}",
-    "short_other": "lipsesc {{count}}",
-    "unavailable": "Nu mai este disponibilă"
-  },
   "fill": {
     "button": "Completează",
     "onlyWhatIHave": "Doar ce am",
@@ -78,8 +72,6 @@
   },
   "detail": {
     "servings": "Porții pentru această masă",
-    "fewer": "Mai puține porții",
-    "more": "Mai multe porții",
     "changeRecipe": "Schimbă rețeta",
     "clear": "Șterge",
     "done": "Gata",
@@ -88,13 +80,10 @@
     "lines": "Ingrediente de verificat",
     "uncertain": "Nu se poate stabili",
     "uncertainNote": "Cămara nu are o cantitate pentru el",
-    "addLine": "Adaugă {{name}} pe lista de cumpărături",
-    "onList": "Pe listă"
+    "addLine": "Adaugă {{name}} pe lista de cumpărături"
   },
   "picker": {
     "title": "Alege o rețetă",
-    "for": "{{mealtime}}, {{day}}",
-    "close": "Închide"
-  },
-  "errorDefault": "Ceva nu a mers bine."
+    "for": "{{mealtime}}, {{day}}"
+  }
 }

@@ -15,19 +15,29 @@ type Props = {
   open: boolean;
   /** "Dinner on Fri 16 Oct". */
   context: string;
+  /** A failed slot write, shown here because the picker covers the page. */
+  error: string | null;
   onPick: (recipeId: string) => void;
   onClose: () => void;
 };
 
 /** Every Recipe the Family can see, with the Recipes list's search and filters. */
-export function RecipePickerSheet({ open, context, onPick, onClose }: Props) {
+export function RecipePickerSheet({
+  open,
+  context,
+  error,
+  onPick,
+  onClose,
+}: Props) {
   const { t, i18n } = useTranslation(['mealPlans', 'recipes', 'common']);
   const [browse, setBrowse] = useState<RecipeBrowse>({
     search: '',
     cuisineId: '',
     methodId: '',
   });
-  const recipes = useRecipes(browse, i18n.language);
+  const recipes = useRecipes(browse, i18n.language, {
+    includeVariants: true,
+  });
   const filters = useRecipeFilters(i18n.language);
   const items = recipes.data ?? [];
   const filtering = isFiltering(browse);
@@ -53,6 +63,7 @@ export function RecipePickerSheet({ open, context, onPick, onClose }: Props) {
       }
     >
       <Box sx={{ px: 3, pb: 2 }}>
+        {error ? <Alert>{error}</Alert> : null}
         {recipes.error ? (
           <Alert>{translateApiError(t, recipes.error)}</Alert>
         ) : null}

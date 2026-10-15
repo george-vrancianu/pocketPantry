@@ -34,8 +34,9 @@
     "servings": "Servings",
     "create": "Create plan",
     "creating": "Creating…",
-    "shorten": "Shortening to {{days}} days removes {{count}} planned Recipes. Continue?",
-    "shortenConfirm": "Shorten and remove"
+    "shorten_one": "Shortening to {{days}} days removes {{count}} planned Recipe. Continue?",
+    "shorten_other": "Shortening to {{days}} days removes {{count}} planned Recipes. Continue?",
+    "startLocked": "This plan has already begun, so its start date can't change."
   },
   "summary": {
     "short_one": "{{count}} slot short from {{day}}",
@@ -56,13 +57,6 @@
     "open": "{{mealtime}} on {{day}}: {{title}}",
     "empty": "Nothing planned"
   },
-  "status": {
-    "covered": "Covered",
-    "onList": "On list",
-    "short_one": "{{count}} short",
-    "short_other": "{{count}} short",
-    "unavailable": "No longer available"
-  },
   "fill": {
     "button": "Fill",
     "onlyWhatIHave": "Only what I have",
@@ -73,8 +67,6 @@
   },
   "detail": {
     "servings": "Servings for this meal",
-    "fewer": "Fewer servings",
-    "more": "More servings",
     "changeRecipe": "Change Recipe",
     "clear": "Clear",
     "done": "Done",
@@ -83,13 +75,10 @@
     "lines": "Ingredients to check",
     "uncertain": "Can't tell",
     "uncertainNote": "Your Pantry has no quantity for it",
-    "addLine": "Add {{name}} to the Shopping List",
-    "onList": "On list"
+    "addLine": "Add {{name}} to the Shopping List"
   },
   "picker": {
     "title": "Choose a Recipe",
-    "for": "{{mealtime}} on {{day}}",
-    "close": "Close"
-  },
-  "errorDefault": "Something went wrong."
+    "for": "{{mealtime}} on {{day}}"
+  }
 }

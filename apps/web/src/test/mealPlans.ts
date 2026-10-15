@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import type { Mealtime, PlanIssue, SlotStatus } from '../lib/mealPlan';
-import type { MealPlanDetail, PlanSlot } from '../lib/mealPlans';
+import type { MealPlanDetail, PlanSlot } from '../lib/mealPlanPage';
 import { stubViewport } from './viewport';
 
 /** Thursday 15 October 2026. */

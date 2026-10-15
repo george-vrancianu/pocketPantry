@@ -34,8 +34,9 @@
     "servings": "Portioner",
     "create": "Opret plan",
     "creating": "Opretter…",
-    "shorten": "Hvis du forkorter til {{days}} dage, fjernes {{count}} planlagte opskrifter. Fortsæt?",
-    "shortenConfirm": "Forkort og fjern"
+    "shorten_one": "Hvis du forkorter til {{days}} dage, fjernes {{count}} planlagt opskrift. Fortsæt?",
+    "shorten_other": "Hvis du forkorter til {{days}} dage, fjernes {{count}} planlagte opskrifter. Fortsæt?",
+    "startLocked": "Planen er allerede startet, så startdatoen kan ikke ændres."
   },
   "summary": {
     "short_one": "{{count}} måltid mangler fra {{day}}",
@@ -56,13 +57,6 @@
     "open": "{{mealtime}}, {{day}}: {{title}}",
     "empty": "Intet planlagt"
   },
-  "status": {
-    "covered": "Dækket",
-    "onList": "På listen",
-    "short_one": "mangler {{count}}",
-    "short_other": "mangler {{count}}",
-    "unavailable": "Ikke længere tilgængelig"
-  },
   "fill": {
     "button": "Udfyld",
     "onlyWhatIHave": "Kun det jeg har",
@@ -73,8 +67,6 @@
   },
   "detail": {
     "servings": "Portioner til dette måltid",
-    "fewer": "Færre portioner",
-    "more": "Flere portioner",
     "changeRecipe": "Skift opskrift",
     "clear": "Ryd",
     "done": "Færdig",
@@ -83,13 +75,10 @@
     "lines": "Ingredienser at tjekke",
     "uncertain": "Kan ikke afgøres",
     "uncertainNote": "Dit spisekammer har ingen mængde for den",
-    "addLine": "Føj {{name}} til indkøbslisten",
-    "onList": "På listen"
+    "addLine": "Føj {{name}} til indkøbslisten"
   },
   "picker": {
     "title": "Vælg en opskrift",
-    "for": "{{mealtime}}, {{day}}",
-    "close": "Luk"
-  },
-  "errorDefault": "Noget gik galt."
+    "for": "{{mealtime}}, {{day}}"
+  }
 }

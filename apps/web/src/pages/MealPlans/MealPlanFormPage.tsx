@@ -18,7 +18,7 @@ import {
   useMealPlanMutations,
   type MealPlanDetail,
   type PlanInput,
-} from '../../lib/mealPlans';
+} from '../../lib/mealPlanPage';
 import { useToday } from '../../lib/useToday';
 import { ServingsStepper, StepperPill } from '../Recipes/components/Servings';
 import { fullDate } from '../../components/MealPlanPopover/mealPlanText';
@@ -161,16 +161,33 @@ function MealPlanForm({
         slotProps={{ htmlInput: { maxLength: MAX_NAME_LENGTH } }}
         helperText={t('mealPlans:form.namePlaceholder')}
       />
-      <ExpiryField
-        label={t('mealPlans:form.starts')}
-        value={startDate}
-        onChange={(value) => value && setStartDate(value)}
-        usualDays={null}
-        context={t('mealPlans:form.startContext', {
-          date: fullDate(i18n.language, lastStart),
-        })}
-        range={{ min: today, max: lastStart }}
-      />
+      {plan && plan.startDate < today ? (
+        <Box>
+          <Typography
+            variant="sectionLabel"
+            color="text.secondary"
+            component="p"
+            sx={{ mb: 0.5 }}
+          >
+            {t('mealPlans:form.starts')}
+          </Typography>
+          <Typography>{fullDate(i18n.language, plan.startDate)}</Typography>
+          <Typography variant="meta" color="text.secondary">
+            {t('mealPlans:form.startLocked')}
+          </Typography>
+        </Box>
+      ) : (
+        <ExpiryField
+          label={t('mealPlans:form.starts')}
+          value={startDate}
+          onChange={(value) => value && setStartDate(value)}
+          usualDays={null}
+          context={t('mealPlans:form.startContext', {
+            date: fullDate(i18n.language, lastStart),
+          })}
+          range={{ min: today, max: lastStart }}
+        />
+      )}
       <Box>
         <Typography
           variant="sectionLabel"
@@ -184,7 +201,11 @@ function MealPlanForm({
           value={days}
           min={1}
           max={MAX_PLAN_DAYS}
-          onChange={setDays}
+          onChange={(value) => {
+            setDays(value);
+            // Shortening again must ask again.
+            setConfirming(false);
+          }}
           fewerLabel={t('mealPlans:form.fewerDays')}
           moreLabel={t('mealPlans:form.moreDays')}
         >

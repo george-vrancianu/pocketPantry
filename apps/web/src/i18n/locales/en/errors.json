@@ -132,6 +132,7 @@
   "meal_plan": {
     "cap_reached": "Your Family can have {{cap}} Meal plans. Delete one to make room.",
     "overlap": "These dates overlap {{other}} ({{dates}}). Pick other dates.",
+    "overlapUnnamed": "These dates overlap {{dates}}. Pick other dates.",
     "start_date_in_past": "A plan can't start before today.",
     "start_date_too_far": "A plan can start up to 14 days from today.",
     "day_in_past": "That day has passed and can't be changed.",

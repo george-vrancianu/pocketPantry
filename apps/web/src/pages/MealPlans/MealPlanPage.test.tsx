@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { MealPlanDetail } from '../../lib/mealPlans';
+import type { MealPlanDetail } from '../../lib/mealPlanPage';
 import type { RecipeListItem } from '../../lib/recipes';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { issue, iso, plan, slot, useFixedToday } from '../../test/mealPlans';
@@ -376,7 +376,11 @@ describe('Meal Plan page', () => {
         expect(
           api.calls.find((c) => c.key === 'POST /api/meal-plans/add-missing')
             ?.body,
-        ).toEqual({ scope: 'ingredient', ingredientId: 'ing-1' }),
+        ).toEqual({
+          scope: 'ingredient',
+          ingredientId: 'ing-1',
+          planId: 'p1',
+        }),
       );
     });
   });
@@ -406,7 +410,107 @@ describe('Meal Plan page', () => {
     });
     await u.click(await within(picker).findByText('Lemon pasta'));
     expect(
-      await screen.findByText("That day has passed and can't be changed."),
+      await within(picker).findByText(
+        "That day has passed and can't be changed.",
+      ),
     ).toBeVisible();
+  });
+
+  it('words a missing line with its amount and a large short amount in kg', async () => {
+    setup(
+      week({
+        slots: [
+          slot(-1, 1, 'dinner', {
+            recipeTitle: 'Big stew',
+            status: 'short',
+            issues: [
+              issue({ name: 'Tomatoes', kind: 'missing', quantity: 400 }),
+              issue({
+                ingredientId: 'ing-2',
+                name: 'Flour',
+                kind: 'short',
+                quantity: 1500,
+                reason: { code: 'onlyInPantry', amount: 500, unit: 'g' },
+              }),
+            ],
+          }),
+        ],
+      }),
+    );
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Big stew/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/need 400 g/)).toBeVisible();
+    expect(within(dialog).getByText(/short 1\.5 kg/)).toBeVisible();
+    expect(within(dialog).queryByText(/1500/)).toBeNull();
+  });
+
+  it('shows the Widget status marks and names the status on the row', async () => {
+    setup();
+    renderPage();
+
+    const row = await screen.findByRole('button', {
+      name: /Tomato pasta.*2 short/,
+    });
+    expect(within(row).getByText('2 short')).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: /Rice bowl.*On list/ }),
+    ).toBeVisible();
+  });
+
+  it('lists Variants in the picker and keeps the Servings override when the Recipe changes', async () => {
+    const api = setup(
+      week({
+        slots: [
+          slot(-1, 1, 'dinner', {
+            recipeTitle: 'Tomato pasta',
+            servings: 5,
+            servingsOverride: 5,
+          }),
+        ],
+      }),
+    );
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
+    await u.click(await screen.findByRole('button', { name: 'Change Recipe' }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    await u.click(await within(picker).findByText('Green curry'));
+
+    await waitFor(() =>
+      expect(
+        api.calls.find((c) => c.key === 'PUT /api/meal-plans/p1/slots/1/dinner')
+          ?.body,
+      ).toEqual({ recipeId: 'rc-2', servings: 5 }),
+    );
+    expect(
+      api.calls
+        .filter((c) => c.key === 'GET /api/recipes')
+        .every((c) => c.search.includes('includeVariants=true')),
+    ).toBe(true);
+  });
+
+  it('has no Servings stepper for an unavailable Recipe', async () => {
+    setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Retired stew/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(
+      within(dialog).queryByRole('button', { name: /Servings/ }),
+    ).toBeNull();
+  });
+
+  it('disables Fill for a plan that is over', async () => {
+    setup(week({ startDate: iso(-5), days: 3, slots: [] }));
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Fill' })).toBeDisabled();
   });
 });

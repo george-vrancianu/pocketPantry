@@ -1,47 +1,26 @@
-import {
-  Box,
-  Button,
-  Card,
-  Tag,
-  tokens,
-  type TagTone,
-} from '@pocket-pantry/ui';
+import { Box, Button, Card, Tag, tokens } from '@pocket-pantry/ui';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { statusMark } from '../../../components/MealPlanPopover/MealPlanPopover';
 import {
-  fullDate,
-  shortWeekday,
+  dayLabel,
+  statusLabel,
 } from '../../../components/MealPlanPopover/mealPlanText';
-import {
-  MEALTIMES,
-  unlistedShortCount,
-  type Mealtime,
-} from '../../../lib/mealPlan';
+import { MEALTIMES, type Mealtime } from '../../../lib/mealPlan';
 import {
   missingFor,
   type PlanDay,
   type PlanSlot,
-} from '../../../lib/mealPlans';
+} from '../../../lib/mealPlanPage';
 import { RecipeRowLayout } from '../../Recipes/components/RecipeRow';
 
-const STATUS_TONE: Record<string, TagTone> = {
-  covered: 'ok',
-  onList: 'accent',
-  short: 'soon',
-  unavailable: 'neutral',
-};
-
-/** A filled slot's forecast as a Tag: covered, short, on list, or "No longer available". */
+/** A filled slot's forecast as the Widget's Tag: covered, on list, short, or "No longer available". */
 function StatusTag({ slot }: { slot: PlanSlot }) {
-  const { t } = useTranslation('mealPlans');
+  const { t } = useTranslation('dashboard');
   if (!slot.status) return null;
   return (
     <Box sx={{ mt: '6px' }}>
-      <Tag tone={STATUS_TONE[slot.status]}>
-        {slot.status === 'short'
-          ? t('status.short', { count: unlistedShortCount(slot) })
-          : t(`status.${slot.status}`)}
-      </Tag>
+      {statusMark({ ...slot, status: slot.status }, t)}
     </Box>
   );
 }
@@ -63,16 +42,17 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
   headingRef,
 ) {
   const { t, i18n } = useTranslation('mealPlans');
+  const { t: tDashboard } = useTranslation('dashboard');
   const language = i18n.language;
   const headingId = `day-${day.date}`;
   const missing = day.past ? 0 : missingFor([day]).length;
-  const label = `${shortWeekday(language, day.date)} ${fullDate(language, day.date).replace(/^\S+\s/, '')}`;
+  const label = dayLabel(language, day.date);
   return (
     <Card
       component="section"
       aria-labelledby={headingId}
       data-selected={selected ? '' : undefined}
-      sx={{ p: '12px 14px', opacity: 1 }}
+      sx={{ p: '12px 14px' }}
     >
       <Box
         sx={{ display: 'flex', alignItems: 'center', gap: '8px', mb: '4px' }}
@@ -156,11 +136,18 @@ export const DayCard = forwardRef<HTMLHeadingElement, Props>(function DayCard(
               pills={day.past ? null : <StatusTag slot={slot} />}
               dimmed={day.past}
               onClick={day.past ? undefined : () => onOpenSlot(mealtime)}
-              aria-label={t('slot.open', {
-                mealtime: mealtimeName,
-                day: label,
-                title: slot.recipeTitle,
-              })}
+              aria-label={[
+                t('slot.open', {
+                  mealtime: mealtimeName,
+                  day: label,
+                  title: slot.recipeTitle,
+                }),
+                !day.past && slot.status
+                  ? statusLabel(tDashboard, { ...slot, status: slot.status })
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(', ')}
             />
           );
         })}

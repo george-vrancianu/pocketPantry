@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
 import {
-  fullDate,
+  dayLabel,
   shortWeekday,
 } from '../../components/MealPlanPopover/mealPlanText';
 import { type Mealtime } from '../../lib/mealPlan';
@@ -25,12 +25,13 @@ import {
   missingFor,
   planDays,
   planErrorMessage,
+  planPhase,
   planTitle,
   shortSummary,
   useMealPlan,
   useMealPlanMutations,
   type MealPlanDetail,
-} from '../../lib/mealPlans';
+} from '../../lib/mealPlanPage';
 import { useAddMissing } from '../../lib/useAddMissing';
 import { useToday } from '../../lib/useToday';
 import { DayCard } from './components/DayCard';
@@ -79,13 +80,12 @@ export function MealPlanPage() {
     ? planErrorMessage(t, language, writeError)
     : null;
 
-  const dayLabel = (iso: IsoDate) =>
-    `${shortWeekday(language, iso)} ${fullDate(language, iso).replace(/^\S+\s/, '')}`;
+  const labelOf = (iso: IsoDate) => dayLabel(language, iso);
   const contextOf = (ref: SlotRef) => {
     const day = days[ref.dayIndex];
     return t('mealPlans:picker.for', {
       mealtime: t(`mealPlans:mealtime.${ref.mealtime}`),
-      day: day ? dayLabel(day.date) : '',
+      day: day ? labelOf(day.date) : '',
     });
   };
 
@@ -93,13 +93,21 @@ export function MealPlanPage() {
     ? days[detail.dayIndex]?.slots[detail.mealtime]
     : undefined;
 
-  const putSlot = (ref: SlotRef, recipeId: string, servings?: number) =>
-    mutations.setSlot.mutate({
-      id,
-      ...ref,
-      recipeId,
-      ...(servings === undefined ? {} : { servings }),
-    });
+  const putSlot = (
+    ref: SlotRef,
+    recipeId: string,
+    servings?: number,
+    onSuccess?: () => void,
+  ) =>
+    mutations.setSlot.mutate(
+      {
+        id,
+        ...ref,
+        recipeId,
+        ...(servings === undefined ? {} : { servings }),
+      },
+      { onSuccess },
+    );
 
   return (
     <>
@@ -169,6 +177,7 @@ export function MealPlanPage() {
           <SlotSheet
             slot={detailSlot}
             context={detail ? contextOf(detail) : ''}
+            planId={id}
             planServings={view.servings}
             today={today}
             error={picking ? null : errorText}
@@ -193,20 +202,19 @@ export function MealPlanPage() {
           <RecipePickerSheet
             open={picking !== null}
             context={picking ? contextOf(picking) : ''}
+            error={picking ? errorText : null}
             onPick={(recipeId) =>
               picking &&
-              mutations.setSlot.mutate(
-                {
-                  id,
-                  ...picking,
-                  recipeId,
-                },
-                { onSuccess: () => setPicking(null) },
+              putSlot(
+                picking,
+                recipeId,
+                days[picking.dayIndex]?.slots[picking.mealtime]
+                  ?.servingsOverride ?? undefined,
+                () => setPicking(null),
               )
             }
             onClose={() => setPicking(null)}
           />
-          {errorText && picking ? <Alert>{errorText}</Alert> : null}
         </Stack>
       ) : null}
     </>
@@ -271,8 +279,12 @@ function PlanToolbar({
         ) : null}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <Button variant="secondary" disabled={filling} onClick={onFill}>
-          {t('fill.button')}
+        <Button
+          variant="secondary"
+          disabled={filling || planPhase(view, today) === 'past'}
+          onClick={onFill}
+        >
+          {filling ? t('fill.filling') : t('fill.button')}
         </Button>
         <Box
           component="label"

@@ -11,7 +11,6 @@ import {
   type PlanIssue,
   type PlanTag,
   type SlotStatus,
-  type WindowDay,
 } from './mealPlan';
 import { fromIso, localDate, localIso, type IsoDate } from './pantry';
 import { mealPlanQueryKey } from './queryKeys';
@@ -102,27 +101,14 @@ export function planErrorMessage(
 ): string {
   if (error instanceof ApiError && error.code === 'meal_plan.overlap') {
     const other = error.params as Partial<MealPlanSummary>;
-    const named =
+    const dates =
       other.startDate && other.days
-        ? planTitle(
-            {
-              name: other.name ?? null,
-              startDate: other.startDate,
-              days: other.days,
-            },
-            language,
-          )
+        ? dateRange({ startDate: other.startDate, days: other.days }, language)
         : '';
-    return t('errors:meal_plan.overlap', {
-      other: named,
-      dates:
-        other.startDate && other.days
-          ? dateRange(
-              { startDate: other.startDate, days: other.days },
-              language,
-            )
-          : '',
-    });
+    // An unnamed plan is titled by its dates, so naming it as well would say them twice.
+    return other.name
+      ? t('errors:meal_plan.overlap', { other: other.name, dates })
+      : t('errors:meal_plan.overlapUnnamed', { dates });
   }
   return translateApiError(t, error);
 }
@@ -241,28 +227,13 @@ export function planDays(plan: MealPlanDetail, today: IsoDate): PlanDay[] {
 
 /** The Ingredients Add missing would add for a day (or the whole plan): not uncertain, not on the list yet. */
 export function missingFor(days: PlanDay[]): PlanIssue[] {
-  const asWindow = (day: PlanDay): WindowDay => ({
-    date: day.date,
-    status: 'empty',
-    planId: null,
-    slots: MEALTIMES.flatMap((mealtime) => {
-      const slot = day.slots[mealtime];
-      return slot && slot.status
-        ? [
-            {
-              ...slot,
-              planId: '',
-              minutes: null,
-              aisle: null,
-              status: slot.status,
-            },
-          ]
-        : [];
-    }),
-  });
   const seen = new Map<string, PlanIssue>();
   for (const day of days) {
-    for (const issue of dayMissing(asWindow(day))) {
+    const slots = MEALTIMES.flatMap((mealtime) => {
+      const slot = day.slots[mealtime];
+      return slot?.status ? [{ ...slot, status: slot.status }] : [];
+    });
+    for (const issue of dayMissing({ slots })) {
       seen.set(ingredientKey(issue), issue);
     }
   }

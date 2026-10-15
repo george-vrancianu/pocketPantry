@@ -9,39 +9,20 @@ import {
   tokens,
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { reasonText } from '../../../components/MealPlanPopover/mealPlanText';
-import { ingredientKey, type PlanIssue } from '../../../lib/mealPlan';
+import {
+  issueDetail,
+  reasonText,
+} from '../../../components/MealPlanPopover/mealPlanText';
+import { ingredientKey } from '../../../lib/mealPlan';
 import type { AddMissingScope } from '../../../lib/mealPlan';
-import type { PlanSlot } from '../../../lib/mealPlans';
-import type { PantryLine } from '../../../lib/recipes';
-import { LineStatusPill } from '../../Recipes/components/PantryStatus';
+import type { PlanSlot } from '../../../lib/mealPlanPage';
 import { ServingsStepper } from '../../Recipes/components/Servings';
-
-/** A forecast issue as a Pantry-status line, so the Recipe page's pill words it. */
-function asPantryLine(issue: PlanIssue): PantryLine {
-  const quantified =
-    issue.kind === 'short' && issue.quantity !== null && issue.unit !== null;
-  return {
-    lineId: ingredientKey(issue),
-    ingredientId: issue.ingredientId,
-    name: issue.name,
-    status: quantified ? 'short' : 'missing',
-    optional: false,
-    pantryBasic: false,
-    quantity: issue.quantity,
-    unit: issue.unit,
-    shortfall: quantified
-      ? { quantity: issue.quantity!, unit: issue.unit! }
-      : null,
-    usesExpiringSoon: false,
-    onShoppingList: issue.onList,
-  };
-}
 
 type Props = {
   slot: PlanSlot | undefined;
   /** "Dinner on Fri 16 Oct". */
   context: string;
+  planId: string;
   planServings: number;
   today: string;
   error: string | null;
@@ -58,6 +39,7 @@ type Props = {
 export function SlotSheet({
   slot,
   context,
+  planId,
   planServings,
   today,
   error,
@@ -105,22 +87,25 @@ export function SlotSheet({
       {slot ? (
         <Stack spacing={2} sx={{ px: 3, pb: 2 }}>
           {error ? <Alert>{error}</Alert> : null}
-          <Box>
-            <Typography
-              variant="sectionLabel"
-              color="text.secondary"
-              component="p"
-              sx={{ mb: 0.5 }}
-            >
-              {t('detail.servings')}
-            </Typography>
-            <ServingsStepper
-              servings={slot.servings}
-              onChange={(servings) =>
-                onServings(servings === planServings ? undefined : servings)
-              }
-            />
-          </Box>
+          {slot.unavailable ? null : (
+            <Box>
+              <Typography
+                variant="sectionLabel"
+                color="text.secondary"
+                component="p"
+                sx={{ mb: 0.5 }}
+              >
+                {t('detail.servings')}
+              </Typography>
+              <ServingsStepper
+                servings={slot.servings}
+                disabled={busy}
+                onChange={(servings) =>
+                  onServings(servings === planServings ? undefined : servings)
+                }
+              />
+            </Box>
+          )}
           {slot.unavailable ? (
             <Alert severity="warning">{t('detail.unavailable')}</Alert>
           ) : slot.issues.length === 0 ? (
@@ -137,6 +122,11 @@ export function SlotSheet({
                   today,
                 );
                 const uncertain = issue.kind === 'uncertain';
+                const detailText = issueDetail(
+                  tDashboard,
+                  i18n.language,
+                  issue,
+                );
                 return (
                   <Box
                     component="li"
@@ -153,6 +143,21 @@ export function SlotSheet({
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Box sx={{ fontSize: 15, fontWeight: 600 }}>
                         {issue.name}
+                        {detailText && !uncertain ? (
+                          <Box
+                            component="span"
+                            sx={{
+                              fontWeight: 700,
+                              fontVariantNumeric: 'tabular-nums',
+                              color: issue.onList
+                                ? tokens.color.soonFg
+                                : tokens.color.urgentFg,
+                            }}
+                          >
+                            {' · '}
+                            {detailText}
+                          </Box>
+                        ) : null}
                       </Box>
                       {reason ? (
                         <Box sx={{ fontSize: 13, color: tokens.color.muted }}>
@@ -167,9 +172,11 @@ export function SlotSheet({
                     </Box>
                     {uncertain ? (
                       <Tag tone="neutral">{t('detail.uncertain')}</Tag>
-                    ) : (
-                      <LineStatusPill line={asPantryLine(issue)} />
-                    )}
+                    ) : issue.onList ? (
+                      <Tag tone="soon">
+                        {tDashboard('mealPlan.status.onList')}
+                      </Tag>
+                    ) : null}
                     {uncertain || issue.onList ? null : (
                       <Button
                         variant="ghost"
@@ -184,8 +191,13 @@ export function SlotSheet({
                               ? {
                                   scope: 'ingredient',
                                   ingredientId: issue.ingredientId,
+                                  planId,
                                 }
-                              : { scope: 'ingredient', name: issue.name },
+                              : {
+                                  scope: 'ingredient',
+                                  name: issue.name,
+                                  planId,
+                                },
                           )
                         }
                       >

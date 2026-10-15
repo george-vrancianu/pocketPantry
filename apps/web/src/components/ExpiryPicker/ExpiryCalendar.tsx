@@ -72,7 +72,30 @@ const ARROW_STEP: Record<string, number> = {
  * go to the Monday/Sunday of the week (cut at the month's edge), and Page Up/Down keep the day of the month,
  * falling back to the last day of a shorter month.
  */
-function keyTarget(iso: IsoDate, key: string): IsoDate | null {
+function keyTarget(
+  iso: IsoDate,
+  key: string,
+  range?: DateRange,
+): IsoDate | null {
+  const target = rawKeyTarget(iso, key);
+  if (target === null || !range) return target;
+  // Arrows stop at the range's edge; the other keys land on its nearest day.
+  if (key in ARROW_STEP) {
+    return target < range.min || target > range.max ? null : target;
+  }
+  return clampTo(target, range);
+}
+
+const clampTo = (iso: IsoDate, range?: DateRange): IsoDate =>
+  !range
+    ? iso
+    : iso < range.min
+      ? range.min
+      : iso > range.max
+        ? range.max
+        : iso;
+
+function rawKeyTarget(iso: IsoDate, key: string): IsoDate | null {
   const day = fromIso(iso);
   const step = ARROW_STEP[key];
   if (step !== undefined) {
@@ -158,7 +181,10 @@ export function ExpiryCalendar({
   // The calendar is a single Tab stop: the selected day when it is shown, otherwise today (until a day is focused).
   const shown = (iso: IsoDate | null) =>
     iso !== null && months.some((month) => month.key === monthKey(iso));
-  const initialStop = shown(value) ? value : localIso(today);
+  const initialStop = clampTo(
+    value !== null && shown(value) ? value : localIso(today),
+    range,
+  );
   // Roving tabindex: the Tab stop follows the focused day, so Shift+Tab back lands where the arrows left off.
   const [focusIso, setFocusIso] = useState<IsoDate | null>(null);
   // A new selection (a quick pick, No expiry) takes the Tab stop back.
@@ -169,7 +195,7 @@ export function ExpiryCalendar({
     const from = (event.target as HTMLElement).closest<HTMLElement>('.day')
       ?.dataset.iso;
     if (!from) return;
-    const to = keyTarget(from, event.key);
+    const to = keyTarget(from, event.key, range);
     if (to === null) {
       // Page Up/Down would otherwise scroll the list away from the focused day.
       if (event.key === 'PageUp' || event.key === 'PageDown')
