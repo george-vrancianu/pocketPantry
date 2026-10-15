@@ -1,5 +1,6 @@
 import {
   BudgetIcon,
+  CalendarIcon,
   ClockIcon,
   NutritionIcon,
   PulseIcon,
@@ -9,11 +10,8 @@ import {
 } from '@pocket-pantry/ui';
 import type { ComponentType } from 'react';
 import type { WidgetSize, WidgetType } from '../../../lib/dashboard';
-import {
-  BudgetWidget,
-  MealPlanWidget,
-  NutritionWidget,
-} from './PlaceholderWidgets';
+import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
+import { MealPlanWidget } from './MealPlanWidget';
 import { PantryStockWidget } from './PantryStockWidget';
 import { HealthWidget } from './HealthWidget';
 import { CookTonightWidget } from './CookTonightWidget';
@@ -82,7 +80,7 @@ export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
   'meal-plan': {
     component: MealPlanWidget,
     nameKey: 'widgets.mealPlan.title',
-    icon: RecipesIcon,
+    icon: CalendarIcon,
     sizes: ['wide'],
     defaultSize: 'wide',
   },

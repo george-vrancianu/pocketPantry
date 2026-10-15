@@ -133,5 +133,17 @@
     "family_allergy_exists": "That Allergen is already on the list with the same label.",
     "allergen_not_found": "That Allergen no longer exists.",
     "family_allergy_not_found": "That Family Allergy is no longer on the list. Someone may have removed it already."
+  },
+  "meal_plan": {
+    "cap_reached": "Your Family can have {{cap}} Meal plans. Delete one to make room.",
+    "overlap": "These dates overlap {{other}} ({{dates}}). Pick other dates.",
+    "overlapUnnamed": "These dates overlap {{dates}}. Pick other dates.",
+    "start_date_in_past": "A plan can't start before today.",
+    "start_date_too_far": "A plan can start up to 14 days from today.",
+    "day_in_past": "That day has passed and can't be changed.",
+    "already_started": "A plan that has started can't be moved.",
+    "day_out_of_range": "That day isn't part of the plan.",
+    "not_found": "That Meal plan no longer exists.",
+    "recipe_not_found": "That Recipe can't be found."
   }
 }

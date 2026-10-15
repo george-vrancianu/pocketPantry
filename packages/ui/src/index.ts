@@ -76,6 +76,7 @@ export { TextField, type TextFieldProps } from './atoms/TextField';
 export { Toggle, type ToggleProps } from './atoms/Toggle';
 export { Typography, type TypographyProps } from './atoms/Typography';
 export {
+  BangIcon,
   BatteryLowIcon,
   BudgetIcon,
   ChevronDownIcon,

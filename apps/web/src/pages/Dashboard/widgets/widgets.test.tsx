@@ -3,11 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
 import { renderWithProviders, stubApi } from '../../../test/render';
-import {
-  BudgetWidget,
-  MealPlanWidget,
-  NutritionWidget,
-} from './PlaceholderWidgets';
+import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import { CookTonightWidget } from './CookTonightWidget';
@@ -243,17 +239,7 @@ describe('PantryStockWidget', () => {
   });
 });
 
-it.each([
-  ['en', 'Meal plan', 'MTWTFSS'],
-  ['ro', 'Plan de mese', 'LMMJVSD'],
-] as const)('labels the Meal plan days in %s', (locale, name, days) => {
-  renderWithProviders(<MealPlanWidget size="small" columns={2} />, { locale });
-
-  expect(screen.getByRole('region', { name })).toHaveTextContent(days);
-});
-
 describe.each([
-  ['Meal plan', MealPlanWidget, 'Plan de mese'],
   ['Budget', BudgetWidget, 'Buget'],
   ['Nutrition', NutritionWidget, 'Nutriție'],
 ])('%s placeholder', (name, Widget, roName) => {

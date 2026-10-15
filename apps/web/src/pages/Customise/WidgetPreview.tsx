@@ -6,10 +6,10 @@ import {
   RecipesIcon,
   ShoppingIcon,
   tokens,
-  nestedRadius,
   radius,
 } from '@pocket-pantry/ui';
 import type { ReactNode } from 'react';
+import { BAR_RADIUS, HATCH } from '../../components/MealPlanPopover/barStyle';
 import type { WidgetType } from '../../lib/dashboard';
 
 const bar = (width: string, color: string) => (
@@ -39,32 +39,49 @@ const PREVIEWS: Record<WidgetType, ReactNode> = {
   'pantry-stock': centred(<PantryIcon size={30} />),
   suggestions: centred(<ShoppingIcon size={30} />),
   'cook-tonight': centred(<RecipesIcon size={30} />),
+  // Week columns: three bars per day, covered, short or on list, as the Widget draws them.
   'meal-plan': (
     <Box
       sx={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+        gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
         gap: '4px',
-        alignItems: 'end',
+        justifyItems: 'center',
+        alignContent: 'center',
         height: '100%',
       }}
     >
       {[
-        tokens.color.accent,
-        tokens.color.accent,
-        tokens.color.accentMid,
-        tokens.color.chipNeutral,
-        tokens.color.chipNeutral,
-      ].map((color, i) => (
+        [tokens.color.accent, tokens.color.accent, tokens.color.accent],
+        [tokens.color.accent, tokens.color.urgentFg, tokens.color.accent],
+        [tokens.color.accent, tokens.color.urgentFg, tokens.color.urgentFg],
+        [tokens.color.accent, HATCH, HATCH],
+        [tokens.color.accent, tokens.color.accent, tokens.color.accent],
+      ].map((bars, day) => (
         <Box
-          key={i}
+          key={day}
           component="span"
           sx={{
-            height: 36,
-            borderRadius: nestedRadius(radius.control, 6),
-            bgcolor: color,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '3px',
+            width: '100%',
+            maxWidth: 30,
           }}
-        />
+        >
+          {bars.map((fill, i) => (
+            <Box
+              key={i}
+              component="span"
+              sx={{
+                display: 'block',
+                height: 7,
+                borderRadius: BAR_RADIUS,
+                background: fill,
+              }}
+            />
+          ))}
+        </Box>
       ))}
     </Box>
   ),

@@ -197,39 +197,42 @@ function WidgetRow({
         >
           <ChevronDownIcon size={18} />
         </IconButton>
-        <Box
-          component="button"
-          type="button"
-          aria-disabled={canResize ? undefined : true}
-          aria-label={
-            canResize
-              ? t('sizeToggle', {
-                  name,
-                  current,
-                  next: t(`size.${nextOne}`),
-                })
-              : t('sizeLocked', { name, current })
-          }
-          onClick={canResize ? () => onResize(nextOne) : undefined}
-          sx={{
-            flexShrink: 0,
-            minWidth: 44,
-            height: 44,
-            px: '12px',
-            borderRadius: radius.control,
-            border: `${border.width} solid ${tokens.color.line}`,
-            bgcolor: tokens.color.subtle,
-            color: canResize ? tokens.color.ink : tokens.color.muted,
-            fontFamily: 'inherit',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: canResize ? 'pointer' : 'default',
-            opacity: canResize ? 1 : 0.6,
-            ...FOCUS_RING,
-          }}
-        >
-          {current}
-        </Box>
+        {/* A Widget that comes in one size has nothing to toggle. */}
+        {sizes.length > 1 ? (
+          <Box
+            component="button"
+            type="button"
+            aria-disabled={canResize ? undefined : true}
+            aria-label={
+              canResize
+                ? t('sizeToggle', {
+                    name,
+                    current,
+                    next: t(`size.${nextOne}`),
+                  })
+                : t('sizeLocked', { name, current })
+            }
+            onClick={canResize ? () => onResize(nextOne) : undefined}
+            sx={{
+              flexShrink: 0,
+              minWidth: 44,
+              height: 44,
+              px: '12px',
+              borderRadius: radius.control,
+              border: `${border.width} solid ${tokens.color.line}`,
+              bgcolor: tokens.color.subtle,
+              color: canResize ? tokens.color.ink : tokens.color.muted,
+              fontFamily: 'inherit',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: canResize ? 'pointer' : 'default',
+              opacity: canResize ? 1 : 0.6,
+              ...FOCUS_RING,
+            }}
+          >
+            {current}
+          </Box>
+        ) : null}
         <IconButton
           label={t('remove', { name })}
           tone="urgent"
