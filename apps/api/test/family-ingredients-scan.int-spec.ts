@@ -102,6 +102,8 @@ describe('Family Ingredients in Scans (integration)', () => {
     fallbackIngredientName: 'Something else',
     expiryDate: null,
     expiryText: null,
+    netQuantity: null,
+    netUnit: null,
     confidence: 0.95,
   });
   const scanProduct = async (who: typeof a, name: string) => {
