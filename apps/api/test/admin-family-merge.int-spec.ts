@@ -530,17 +530,18 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
       void copyB;
 
       // A name equal to the target's own name is not kept.
+      // (The Family copy comes first: adding one over a shared name is a 409.)
       const sameName = unique('Afm Same As Target');
-      const target2 = await shared(sameName);
       const dup = await made(c, sameName.toUpperCase());
+      const target2 = await shared(sameName);
       await merge(dup.id, target2.id).expect(200);
       expect(await familySynonymsOf(target2.id)).toHaveLength(0);
 
       // Nor a name that is already a shared Synonym of the target.
       const aliasName = unique('Afm Shared Alias');
       const target3 = await shared(unique('Afm Alias Target 3'));
-      await sharedSynonymRow(target3.id, aliasName, 'ro');
       const dup3 = await made(c, aliasName);
+      await sharedSynonymRow(target3.id, aliasName, 'ro');
       await merge(dup3.id, target3.id).expect(200);
       expect(await familySynonymsOf(target3.id)).toHaveLength(0);
     });

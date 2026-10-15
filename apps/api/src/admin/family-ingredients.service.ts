@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedIngredients,
   SHARED_ONLY,
 } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
+import { keepFamilyNames } from '../catalog/keep-family-names';
 import { mergeIngredients } from '../catalog/merge-ingredients';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -18,11 +19,14 @@ import {
   type FamilyIngredientCopy,
   type FamilyIngredientsListQuery,
   type FamilyIngredientsPage,
+  type MergedFamilyIngredients,
   type PromotedIngredient,
 } from './family-ingredients.schemas';
 import { encodeCursor } from './unmatched-queue.schemas';
 
 const notFound = () => new ApiException(404, 'family_ingredients.not_found');
+const targetNotFound = () =>
+  new ApiException(404, 'family_ingredients.target_not_found');
 
 /**
  * Admin curation of Family Ingredients (ADR 0011): the queue across Families
@@ -178,11 +182,13 @@ export class FamilyIngredientsAdminService {
         copies.map((copy) => copy.ownerFamilyId as string),
       );
       const others = copies.filter((copy) => copy.id !== ingredientId);
-      await mergeIngredients(
+      const merged = await mergeIngredients(
         tx,
         picked,
         others.map((copy) => copy.id),
       );
+      // Their names stay theirs: no skip, the names equal the promoted one's.
+      await keepFamilyNames(tx, picked.id, merged, { skipSharedNames: false });
       await tx
         .update(ingredients)
         .set({ ownerFamilyId: null })
@@ -194,6 +200,73 @@ export class FamilyIngredientsAdminService {
       };
     });
     // Owners lost a copy and every other Family gained a shared row.
+    this.scanCatalog.invalidate();
+    return result;
+  }
+
+  /**
+   * Folds every Family copy of the group `ingredientId` belongs to into the
+   * shared Ingredient `targetId`; each Family keeps the name as a Family Synonym.
+   *
+   * Locks: both names (sorted), then the owning Families in ascending id, and
+   * both rows are re-read under them.
+   */
+  async merge(
+    ingredientId: string,
+    targetId: string,
+  ): Promise<MergedFamilyIngredients> {
+    const owned = familyOwnedIngredients(this.database);
+    const [peek] = await this.database
+      .select({ normalizedName: owned.normalizedName })
+      .from(owned)
+      .where(eq(owned.id, ingredientId));
+    if (!peek) throw notFound();
+    const [targetPeek] = await this.database
+      .select({ normalizedName: ingredients.normalizedName })
+      .from(ingredients)
+      .where(
+        and(eq(ingredients.id, targetId), isNull(ingredients.ownerFamilyId)),
+      );
+    if (!targetPeek) throw targetNotFound();
+    const key = peek.normalizedName;
+
+    const result = await this.database.transaction(async (tx) => {
+      for (const name of [
+        ...new Set([key, targetPeek.normalizedName]),
+      ].sort()) {
+        await this.catalog.lockName(tx, name);
+      }
+      const ownedNow = familyOwnedIngredients(tx);
+      const copies = await tx
+        .select({
+          id: ownedNow.id,
+          ownerFamilyId: ownedNow.ownerFamilyId,
+        })
+        .from(ownedNow)
+        .where(eq(ownedNow.normalizedName, key));
+      if (!copies.some((copy) => copy.id === ingredientId)) throw notFound();
+      const [target] = await tx
+        .select({
+          id: ingredients.id,
+          leafCategoryId: ingredients.leafCategoryId,
+        })
+        .from(ingredients)
+        .where(
+          and(eq(ingredients.id, targetId), isNull(ingredients.ownerFamilyId)),
+        )
+        .for('key share');
+      if (!target) throw targetNotFound();
+
+      await lockFamilies(
+        tx,
+        copies.map((copy) => copy.ownerFamilyId as string),
+      );
+      const ids = copies.map((copy) => copy.id);
+      const merged = await mergeIngredients(tx, target, ids);
+      await keepFamilyNames(tx, target.id, merged, { skipSharedNames: true });
+      return { targetIngredientId: target.id, mergedIngredientIds: ids };
+    });
+    // Every owner lost a copy and gained a Synonym.
     this.scanCatalog.invalidate();
     return result;
   }

@@ -12,6 +12,17 @@ export type FamilyIngredientsListQuery = z.infer<
 export const promoteBody = z.object({ ingredientId: z.uuid() });
 export type PromoteBody = z.infer<typeof promoteBody>;
 
+export const mergeBody = z.object({
+  ingredientId: z.uuid(),
+  targetIngredientId: z.uuid(),
+});
+export type MergeBody = z.infer<typeof mergeBody>;
+
+export type MergedFamilyIngredients = {
+  targetIngredientId: string;
+  mergedIngredientIds: string[];
+};
+
 type Leaf = { id: string; name: string };
 
 /** One Family's copy. No Family identity is exposed. */
