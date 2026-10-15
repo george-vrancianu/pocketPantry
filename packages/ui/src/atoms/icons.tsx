@@ -147,6 +147,8 @@ const ICON_NODES = {
     ['path', { d: 'M22 10.5v3' }],
     ['path', { d: 'M6.5 10.5v3', strokeWidth: '3.2' }],
   ],
+  /** Not in the handoff set: the Meal plan handoff's short marker, drawn at 10 to 12 px with a heavier stroke. */
+  bang: [['path', { d: 'M12 6v8M12 18v.01' }]],
   /** Not in the handoff set: the Pantry health handoff's pulse, the Pantry health Widget's mark. */
   pulse: [['path', { d: 'M3 12h4l2-5 4 10 2-5h6' }]],
   /** Not in the handoff set: the Pantry health handoff's cook, the Expiring Soon Health To-do. */
@@ -268,6 +270,7 @@ export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
 export const BatteryLowIcon = handoff('battery-low');
 export const PulseIcon = handoff('pulse');
+export const BangIcon = handoff('bang');
 export const CookIcon = handoff('cook');
 export const HourglassIcon = handoff('hourglass');
 export const SubItemIcon = handoff('sub-item');

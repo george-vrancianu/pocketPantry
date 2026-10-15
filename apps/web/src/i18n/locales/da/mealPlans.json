@@ -1,0 +1,86 @@
+{
+  "title": "Madplaner",
+  "newPlan": "Ny plan",
+  "editPlan": "Rediger plan",
+  "back": "Tilbage til Madplaner",
+  "empty": "Ingen madplaner endnu.",
+  "emptyHint": "Start en for at planlægge måltider for nogle dage.",
+  "dayCount_one": "{{count}} dag",
+  "dayCount_other": "{{count}} dage",
+  "servings_one": "{{count}} portion",
+  "servings_other": "{{count}} portioner",
+  "phase": {
+    "past": "Tidligere",
+    "current": "Aktuel",
+    "upcoming": "Kommende"
+  },
+  "mealtime": {
+    "breakfast": "Morgenmad",
+    "lunch": "Frokost",
+    "dinner": "Aftensmad"
+  },
+  "form": {
+    "createHeading": "Ny madplan",
+    "editHeading": "Rediger madplan",
+    "name": "Navn (valgfrit)",
+    "namePlaceholder": "Datoerne bruges, hvis den står tom",
+    "starts": "Starter",
+    "startContext": "I dag til {{date}}",
+    "days": "Dage",
+    "fewerDays": "Færre dage",
+    "moreDays": "Flere dage",
+    "daysValue_one": "{{count}} dag",
+    "daysValue_other": "{{count}} dage",
+    "servings": "Portioner",
+    "create": "Opret plan",
+    "creating": "Opretter…",
+    "shorten_one": "Hvis du forkorter til {{days}} dage, fjernes {{count}} planlagt opskrift. Fortsæt?",
+    "shorten_other": "Hvis du forkorter til {{days}} dage, fjernes {{count}} planlagte opskrifter. Fortsæt?",
+    "startLocked": "Planen er allerede startet, så startdatoen kan ikke ændres."
+  },
+  "summary": {
+    "short_one": "{{count}} måltid mangler fra {{day}}",
+    "short_other": "{{count}} måltider mangler fra {{day}}",
+    "coveredOnceYouShop": "Dækket, når du har handlet",
+    "allCovered": "Alt er dækket",
+    "none": "Intet planlagt endnu"
+  },
+  "day": {
+    "today": "I dag",
+    "addMissing_one": "Tilføj {{count}} manglende",
+    "addMissing_other": "Tilføj {{count}} manglende",
+    "addMissingLabel": "Tilføj manglende for {{day}}",
+    "past": "Tidligere dag"
+  },
+  "slot": {
+    "add": "Tilføj",
+    "addLabel": "Tilføj {{mealtime}} for {{day}}",
+    "open": "{{mealtime}}, {{day}}: {{title}}",
+    "empty": "Intet planlagt"
+  },
+  "fill": {
+    "button": "Udfyld",
+    "onlyWhatIHave": "Kun det jeg har",
+    "filling": "Udfylder…"
+  },
+  "addMissing": {
+    "plan_one": "Tilføj {{count}} manglende",
+    "plan_other": "Tilføj {{count}} manglende"
+  },
+  "detail": {
+    "servings": "Portioner til dette måltid",
+    "changeRecipe": "Skift opskrift",
+    "clear": "Ryd",
+    "done": "Færdig",
+    "nothingShort": "Alt til dette måltid er dækket.",
+    "unavailable": "Denne opskrift er ikke længere tilgængelig.",
+    "lines": "Ingredienser at tjekke",
+    "uncertain": "Kan ikke afgøres",
+    "uncertainNote": "Dit spisekammer har ingen mængde for den",
+    "addLine": "Føj {{name}} til indkøbslisten"
+  },
+  "picker": {
+    "title": "Vælg en opskrift",
+    "for": "{{mealtime}}, {{day}}"
+  }
+}

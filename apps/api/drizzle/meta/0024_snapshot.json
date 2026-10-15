@@ -1,5 +1,5 @@
 {
-  "id": "59605ee3-e5d3-40dc-be06-51137f4fda5a",
+  "id": "3f29a384-f655-49db-bdee-5341daf74f84",
   "prevId": "82a09395-fdf0-4e19-9204-b03207e33bc8",
   "version": "7",
   "dialect": "postgresql",
@@ -1367,6 +1367,259 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.meal_plan_slots": {
+      "name": "meal_plan_slots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "meal_plan_id": {
+          "name": "meal_plan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day_index": {
+          "name": "day_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mealtime": {
+          "name": "mealtime",
+          "type": "mealtime",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "servings": {
+          "name": "servings",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "meal_plan_slots_plan_day_mealtime_idx": {
+          "name": "meal_plan_slots_plan_day_mealtime_idx",
+          "columns": [
+            {
+              "expression": "meal_plan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "day_index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "mealtime",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "meal_plan_slots_recipe_idx": {
+          "name": "meal_plan_slots_recipe_idx",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "meal_plan_slots_meal_plan_id_meal_plans_id_fk": {
+          "name": "meal_plan_slots_meal_plan_id_meal_plans_id_fk",
+          "tableFrom": "meal_plan_slots",
+          "tableTo": "meal_plans",
+          "columnsFrom": [
+            "meal_plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "meal_plan_slots_recipe_id_recipes_id_fk": {
+          "name": "meal_plan_slots_recipe_id_recipes_id_fk",
+          "tableFrom": "meal_plan_slots",
+          "tableTo": "recipes",
+          "columnsFrom": [
+            "recipe_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "meal_plan_slots_day_range": {
+          "name": "meal_plan_slots_day_range",
+          "value": "\"meal_plan_slots\".\"day_index\" BETWEEN 0 AND 6"
+        },
+        "meal_plan_slots_servings_range": {
+          "name": "meal_plan_slots_servings_range",
+          "value": "\"meal_plan_slots\".\"servings\" BETWEEN 1 AND 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.meal_plans": {
+      "name": "meal_plans",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "family_id": {
+          "name": "family_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "days": {
+          "name": "days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "servings": {
+          "name": "servings",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "meal_plans_family_start_idx": {
+          "name": "meal_plans_family_start_idx",
+          "columns": [
+            {
+              "expression": "family_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "meal_plans_family_id_family_id_fk": {
+          "name": "meal_plans_family_id_family_id_fk",
+          "tableFrom": "meal_plans",
+          "tableTo": "family",
+          "columnsFrom": [
+            "family_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "meal_plans_days_range": {
+          "name": "meal_plans_days_range",
+          "value": "\"meal_plans\".\"days\" BETWEEN 1 AND 7"
+        },
+        "meal_plans_servings_range": {
+          "name": "meal_plans_servings_range",
+          "value": "\"meal_plans\".\"servings\" BETWEEN 1 AND 1000"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.methods": {
       "name": "methods",
       "schema": "",
@@ -1421,37 +1674,6 @@
           "with": {}
         }
       },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.open_food_facts_cache": {
-      "name": "open_food_facts_cache",
-      "schema": "",
-      "columns": {
-        "barcode": {
-          "name": "barcode",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "product": {
-          "name": "product",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "fetched_at": {
-          "name": "fetched_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
@@ -4395,6 +4617,15 @@
         "ml",
         "l",
         "pcs"
+      ]
+    },
+    "public.mealtime": {
+      "name": "mealtime",
+      "schema": "public",
+      "values": [
+        "breakfast",
+        "lunch",
+        "dinner"
       ]
     },
     "public.pairing_kind": {

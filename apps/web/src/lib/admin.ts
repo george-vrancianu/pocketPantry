@@ -6,7 +6,7 @@ import {
   type StorageLocation,
   type Unit,
 } from './catalog';
-import { recipesQueryKey } from './recipes';
+import { recipeChangeQueryKeys } from './queryKeys';
 import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
@@ -100,7 +100,9 @@ function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+        ...recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
       ]),
   });
 }
