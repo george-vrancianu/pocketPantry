@@ -501,3 +501,254 @@ describe('Import sheet', () => {
     await waitFor(() => expect(again).toHaveAttribute('aria-checked', 'mixed'));
   });
 });
+
+describe('Import sheet: picking lines', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const withOnList: ShoppingList = {
+    id: 'l1',
+    groups: [
+      {
+        aisle: produce,
+        items: [
+          ...(trolley.groups[0]?.items ?? []),
+          {
+            id: 'i2',
+            ingredientId: 'sugar-ingredient',
+            name: 'Sugar',
+            quantity: 1,
+            unit: null,
+            checked: false,
+            unmatched: false,
+          },
+        ],
+      },
+    ],
+    summary: { remaining: 1, checked: 1 },
+  };
+
+  const opener = (dialog: HTMLElement, name: string) =>
+    within(dialog).findByRole('button', { name: new RegExp(`^${name}`) });
+
+  it('opens and closes rows, several at once, fetching details on open', async () => {
+    const user = userEvent.setup();
+    const { calls } = stub();
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+
+    const taco = await opener(dialog, 'Taco night');
+    expect(taco).toHaveAttribute('aria-expanded', 'false');
+    await user.click(taco);
+    expect(taco).toHaveAttribute('aria-expanded', 'true');
+    const bakeButton = await opener(dialog, 'Baking');
+    await user.click(bakeButton);
+
+    const tacoLines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    expect(taco).toHaveAttribute('aria-controls', tacoLines.id);
+    expect(
+      within(tacoLines)
+        .getAllByRole('checkbox')
+        .map((c) => c.textContent),
+    ).toEqual([
+      expect.stringContaining('Milk'),
+      expect.stringContaining('Tomato'),
+      expect.stringContaining('Flour'),
+      expect.stringContaining('Saffron'),
+    ]);
+    expect(
+      await within(dialog).findByRole('group', { name: 'Baking' }),
+    ).toBeVisible();
+    expect(
+      calls
+        .filter((c) => /\/api\/shopping-templates\/t\d/.test(c.key))
+        .map((c) => c.key)
+        .sort(),
+    ).toEqual([
+      'GET /api/shopping-templates/t1',
+      'GET /api/shopping-templates/t2',
+    ]);
+    // Opening alone includes nothing.
+    expect(
+      within(dialog).getByRole('checkbox', { name: 'Import Taco night' }),
+    ).toHaveAttribute('aria-checked', 'false');
+
+    await user.click(taco);
+    expect(taco).toHaveAttribute('aria-expanded', 'false');
+    expect(
+      within(dialog).queryByRole('group', { name: 'Taco night' }),
+    ).toBeNull();
+    expect(bakeButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('tags lines In Pantry, In trolley and On list · adds up', async () => {
+    const user = userEvent.setup();
+    stub({}, withOnList);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+    await user.click(await opener(dialog, 'Baking'));
+
+    const tacoLines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    expect(
+      within(tacoLines).getByRole('checkbox', { name: /^Milk.*In Pantry/ }),
+    ).toBeVisible();
+    expect(
+      within(tacoLines).getByRole('checkbox', { name: /^Tomato.*In trolley/ }),
+    ).toBeVisible();
+    const bakeLines = await within(dialog).findByRole('group', {
+      name: 'Baking',
+    });
+    expect(
+      within(bakeLines).getByRole('checkbox', {
+        name: /^Sugar.*On list · adds up/,
+      }),
+    ).toBeVisible();
+  });
+
+  it('includes the template on a line tap, and removes it when the last line is unticked', async () => {
+    const user = userEvent.setup();
+    stub({}, trolley);
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+    const lines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    const milk = within(lines).getByRole('checkbox', { name: /^Milk/ });
+    expect(milk).toHaveAttribute('aria-checked', 'false');
+
+    // Tapping a line that defaults to unticked ticks it on top of the defaults.
+    await user.click(milk);
+
+    const box = within(dialog).getByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    expect(box).toHaveAttribute('aria-checked', 'mixed');
+    expect(milk).toHaveAttribute('aria-checked', 'true');
+    expect(
+      within(lines).getByRole('checkbox', { name: /^Tomato/ }),
+    ).toHaveAttribute('aria-checked', 'false');
+    expect(dialog).toHaveTextContent('3 of 4 selected');
+    expect(
+      within(dialog).getByRole('button', { name: 'Import 3 items' }),
+    ).toBeEnabled();
+
+    await user.click(within(lines).getByRole('checkbox', { name: /^Flour/ }));
+    await user.click(within(lines).getByRole('checkbox', { name: /^Saffron/ }));
+    await user.click(milk);
+
+    expect(box).toHaveAttribute('aria-checked', 'false');
+    expect(
+      within(dialog).getByRole('button', { name: 'Pick a template' }),
+    ).toBeDisabled();
+  });
+
+  it('clears the whole template when a mixed checkbox is tapped', async () => {
+    const user = userEvent.setup();
+    stub();
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+    const lines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    await user.click(within(lines).getByRole('checkbox', { name: /^Tomato/ }));
+    const box = within(dialog).getByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    expect(box).toHaveAttribute('aria-checked', 'mixed');
+
+    await user.click(box);
+
+    expect(box).toHaveAttribute('aria-checked', 'false');
+    for (const l of within(lines).getAllByRole('checkbox')) {
+      expect(l).toHaveAttribute('aria-checked', 'false');
+    }
+  });
+
+  it('sends lines hand-picked from several open templates in one bulk request', async () => {
+    const user = userEvent.setup();
+    const { calls } = stub({
+      'POST /api/shopping-list/items/bulk': () =>
+        Response.json({
+          id: 'l1',
+          groups: [],
+          summary: { remaining: 0, checked: 0 },
+        }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+    await user.click(await opener(dialog, 'Baking'));
+    const tacoLines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    const bakeLines = await within(dialog).findByRole('group', {
+      name: 'Baking',
+    });
+    await user.click(
+      within(tacoLines).getByRole('checkbox', { name: /^Saffron/ }),
+    );
+    await user.click(
+      within(bakeLines).getByRole('checkbox', { name: /^Sugar/ }),
+    );
+
+    expect(dialog).toHaveTextContent('From Taco night, Baking');
+    await user.click(
+      await within(dialog).findByRole('button', {
+        name: 'Import 4 items',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key === 'POST /api/shopping-list/items/bulk'),
+      ).toHaveLength(1),
+    );
+    const body = calls.find(
+      (c) => c.key === 'POST /api/shopping-list/items/bulk',
+    )?.body as { items: unknown[] };
+    expect(body.items).toEqual([
+      { ingredientId: 'tomato-ingredient', quantity: 3 },
+      { ingredientId: 'flour-ingredient', quantity: 200, unit: 'g' },
+      { name: 'Saffron' },
+      { ingredientId: 'flour-ingredient', quantity: 1, unit: 'kg' },
+      { ingredientId: 'flour-ingredient', quantity: 5, unit: 'g' },
+      { ingredientId: 'sugar-ingredient', quantity: 2 },
+    ]);
+  });
+
+  it('shows an alert in an opened row whose lines fail to load, and a tick retries', async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    stub({
+      'GET /api/shopping-templates/t1': () =>
+        fail
+          ? Response.json(
+              { code: 'internal_error', params: {} },
+              { status: 500 },
+            )
+          : Response.json(taco),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    expect(within(dialog).queryByRole('status')).toBeNull();
+
+    fail = false;
+    const box = within(dialog).getByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    await user.click(box);
+    await waitFor(() => expect(box).toHaveAttribute('aria-checked', 'mixed'));
+    expect(
+      await within(dialog).findByRole('checkbox', { name: /^Tomato/ }),
+    ).toBeVisible();
+  });
+});

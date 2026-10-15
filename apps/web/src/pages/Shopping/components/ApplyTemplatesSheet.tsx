@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   CheckIcon,
+  ChevronRightIcon,
   ImportIcon,
   color as themeColor,
   Link,
@@ -19,24 +20,29 @@ import {
   useToast,
 } from '@pocket-pantry/ui';
 import { useQueries } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useShoppingList } from '../../../lib/shopping';
+import { useShoppingList, type ShoppingList } from '../../../lib/shopping';
 import {
   templateQueryOptions,
   useApplyTemplate,
   useTemplates,
   type Template,
+  type TemplateLine,
   type TemplateSummary,
 } from '../../../lib/shoppingTemplates';
 import {
   bulkBody,
   emptySelection,
   includeTemplate,
+  isLineTicked,
+  lineTag,
+  lineTagKey,
   removeTemplate,
   summarize,
   templateState,
+  toggleLine,
   type Selection,
   type TemplateState,
 } from '../../../lib/templateSelection';
@@ -75,11 +81,16 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
 
   const summaries = templates.data ?? [];
-  // Details are fetched only for Templates the Member has ticked.
+  // Rows the Member has opened to pick lines.
+  const [openRows, setOpenRows] = useState<ReadonlySet<string>>(new Set());
+  // Details are fetched only for Templates the Member has ticked or opened.
   const detailQueries = useQueries({
     queries: summaries.map((summary) => ({
       ...templateQueryOptions(summary.id, i18n.language),
-      enabled: pending.has(summary.id) || selection.has(summary.id),
+      enabled:
+        pending.has(summary.id) ||
+        selection.has(summary.id) ||
+        openRows.has(summary.id),
     })),
   });
   const details = new Map<string, Template>();
@@ -133,11 +144,14 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
     });
   });
 
-  const tick = (summary: TemplateSummary) => {
+  const tick = (summary: TemplateSummary, index: number) => {
     if (selection.has(summary.id)) {
       setSelection(removeTemplate(selection, summary.id));
       return;
     }
+    // A fetch that failed while the row was only open is retried by the tick.
+    const query = detailQueries[index];
+    if (query?.isError && query.fetchStatus === 'idle') void query.refetch();
     setFailed((current) => {
       const next = new Map(current);
       next.delete(summary.id);
@@ -149,6 +163,13 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
       return next;
     });
   };
+
+  const toggleOpen = (id: string) =>
+    setOpenRows((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
 
   const included = summaries.filter((s) => selection.has(s.id));
   const loaded = included.flatMap((s) => details.get(s.id) ?? []);
@@ -321,7 +342,7 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
           ) : null}
           {summaries.length > 0 ? (
             <Card variant="list" sx={{ p: 0 }}>
-              {summaries.map((row) => {
+              {summaries.map((row, index) => {
                 const detail = details.get(row.id);
                 return (
                   <TemplateRow
@@ -333,7 +354,34 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
                     loading={pending.has(row.id)}
                     ticked={selection.get(row.id)?.size ?? 0}
                     total={detail?.lines.length ?? row.lineCount}
-                    onTick={() => tick(row)}
+                    onTick={() => tick(row, index)}
+                    open={openRows.has(row.id)}
+                    onToggleOpen={() => toggleOpen(row.id)}
+                    lines={
+                      detail && listSettled ? (
+                        <TemplateLines
+                          detail={detail}
+                          selection={selection}
+                          list={shoppingList.data}
+                          onLineTap={(l) =>
+                            setSelection((current) =>
+                              toggleLine(current, detail, l, shoppingList.data),
+                            )
+                          }
+                        />
+                      ) : detailQueries[index]?.isError &&
+                        detailQueries[index]?.fetchStatus === 'idle' ? (
+                        <Box sx={{ p: 1.5 }}>
+                          <Alert>
+                            {translateApiError(t, detailQueries[index]?.error)}
+                          </Alert>
+                        </Box>
+                      ) : (
+                        <Box sx={{ p: 2 }}>
+                          <Spinner label={t('common:loading')} />
+                        </Box>
+                      )
+                    }
                   />
                 );
               })}
@@ -353,6 +401,10 @@ type TemplateRowProps = {
   ticked: number;
   total: number;
   onTick: () => void;
+  open: boolean;
+  onToggleOpen: () => void;
+  /** The nested lines, shown while the row is open. */
+  lines: React.ReactNode;
 };
 
 /**
@@ -366,7 +418,11 @@ function TemplateRow({
   ticked,
   total,
   onTick,
+  open,
+  onToggleOpen,
+  lines,
 }: TemplateRowProps) {
+  const linesId = useId();
   const { t } = useTranslation(['shopping', 'templates']);
   const { color } = tokens;
   const included = state !== 'excluded';
@@ -423,6 +479,11 @@ function TemplateRow({
           </Box>
         </Box>
         <Box
+          component="button"
+          type="button"
+          aria-expanded={open}
+          aria-controls={linesId}
+          onClick={onToggleOpen}
           sx={{
             flex: 1,
             minWidth: 0,
@@ -430,6 +491,13 @@ function TemplateRow({
             display: 'flex',
             alignItems: 'center',
             gap: 1.5,
+            border: 0,
+            backgroundColor: 'transparent',
+            color: 'inherit',
+            font: 'inherit',
+            textAlign: 'left',
+            cursor: 'pointer',
+            ...insetFocusRing,
           }}
         >
           <Box
@@ -478,8 +546,150 @@ function TemplateRow({
                   ].join(' · ')}
             </Box>
           </Box>
+          <Box
+            aria-hidden
+            sx={{
+              flexShrink: 0,
+              display: 'grid',
+              color: color.muted,
+              transform: open ? 'rotate(90deg)' : 'none',
+              transition: 'transform 150ms',
+            }}
+          >
+            <ChevronRightIcon size={18} />
+          </Box>
         </Box>
       </Box>
+      <Box
+        id={linesId}
+        role={open ? 'group' : undefined}
+        aria-label={open ? summary.name : undefined}
+        hidden={!open}
+        sx={{
+          backgroundColor: color.subtle,
+          borderTop: open ? `1px solid ${color.divider}` : 0,
+        }}
+      >
+        {open ? lines : null}
+      </Box>
+    </Box>
+  );
+}
+
+const okTag = { fg: tokens.color.okFg, bg: tokens.color.okBg };
+const soonTag = { fg: tokens.color.soonFg, bg: tokens.color.soonBg };
+
+/** The Import sheet words the On list tag "adds up"; the editor keeps plain "On list". */
+const importTagKey = { ...lineTagKey, onList: 'shopping:import.onListAddsUp' };
+
+type TemplateLinesProps = {
+  detail: Template;
+  selection: Selection;
+  list: ShoppingList | undefined;
+  onLineTap: (line: TemplateLine) => void;
+};
+
+/** A Template's lines in its own order, each the apply view's line row. */
+function TemplateLines({
+  detail,
+  selection,
+  list,
+  onLineTap,
+}: TemplateLinesProps) {
+  const { t } = useTranslation(['shopping', 'templates', 'common']);
+  const { color } = tokens;
+  if (detail.lines.length === 0) {
+    return (
+      <Box sx={{ p: '12px 14px 12px 28px', fontSize: 13, color: color.muted }}>
+        {t('templates:apply.empty')}
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ pl: '28px' }}>
+      {detail.lines.map((line) => {
+        const on = isLineTicked(selection, detail.id, line.id);
+        const kind = lineTag(line, list);
+        const tag = kind
+          ? {
+              text: t(importTagKey[kind]),
+              ...(kind === 'onList' ? soonTag : okTag),
+            }
+          : null;
+        const amount =
+          line.quantity === null
+            ? ''
+            : line.unit
+              ? `${line.quantity} ${t(`common:units.${line.unit}`)}`
+              : String(line.quantity);
+        return (
+          <Box
+            key={line.id}
+            component="button"
+            type="button"
+            role="checkbox"
+            aria-checked={on}
+            onClick={() => onLineTap(line)}
+            sx={{
+              width: '100%',
+              minHeight: 50,
+              p: '8px 14px 8px 8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              border: 0,
+              backgroundColor: 'transparent',
+              color: 'inherit',
+              font: 'inherit',
+              textAlign: 'left',
+              cursor: 'pointer',
+              '& + &': { borderTop: `1px solid ${color.divider}` },
+              ...insetFocusRing,
+            }}
+          >
+            <Box
+              aria-hidden
+              sx={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                display: 'grid',
+                placeItems: 'center',
+                borderRadius: radius.box,
+                border: `2px solid ${on ? color.accent : color.tickBorder}`,
+                backgroundColor: on ? color.accent : 'transparent',
+                color: themeColor.accentInk,
+              }}
+            >
+              {on ? <CheckIcon size={14} /> : null}
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ fontSize: 15, fontWeight: 600 }}>{line.name}</Box>
+              {amount ? (
+                <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
+                  {amount}
+                </Box>
+              ) : null}
+            </Box>
+            {tag ? (
+              <Box
+                component="span"
+                sx={{
+                  px: 1.25,
+                  py: 0.25,
+                  borderRadius: radius.pill,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  color: tag.fg,
+                  backgroundColor: tag.bg,
+                }}
+              >
+                {tag.text}
+              </Box>
+            ) : null}
+          </Box>
+        );
+      })}
     </Box>
   );
 }
