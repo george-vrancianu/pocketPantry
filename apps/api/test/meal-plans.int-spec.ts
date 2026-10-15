@@ -1,9 +1,9 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { recipes } from '../src/database/schema';
+import { mealPlans, recipes, user } from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -43,6 +43,15 @@ describe('Meal Plans (integration)', () => {
     database = app.get<Database>(DATABASE);
   });
   afterAll(async () => {
+    // A slot's Recipe FK has no cascade: plans first, then the Recipes this suite made.
+    const owners = await database
+      .select({ familyId: user.familyId })
+      .from(user)
+      .where(ilike(user.email, `mp-%-${stamp}-%`));
+    for (const { familyId } of owners) {
+      await database.delete(mealPlans).where(eq(mealPlans.familyId, familyId));
+    }
+    await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
     await app.close();
   });
 
@@ -77,6 +86,14 @@ describe('Meal Plans (integration)', () => {
     const { slots, ...plan } = res.body as PlanDetail;
     expect(slots).toEqual([]);
     return plan;
+  }
+
+  async function catalogRecipeForPlans() {
+    const id = crypto.randomUUID();
+    await database
+      .insert(recipes)
+      .values({ id, title: `Plain dish ${stamp}-${++n}`, servings: 4 });
+    return id;
   }
 
   describe('create, list, read, update and delete', () => {
@@ -247,7 +264,70 @@ describe('Meal Plans (integration)', () => {
     });
   });
 
+  it('allows plans of two Families on the same dates', async () => {
+    const one = await member('fam-one');
+    const two = await member('fam-two');
+    await create(one.api, { startDate: at(0), days: 3 });
+    await create(two.api, { startDate: at(0), days: 3 });
+  });
+
+  it('accepts no name as null on create, and refuses days 8 or servings 0 on update', async () => {
+    const { api } = await member('nulls');
+    const plan = await create(api, { name: null });
+    expect(plan.name).toBeNull();
+    await api.patch(`${'/' + plan.id}${q}`, { days: 8 }).expect(400);
+    await api.patch(`${'/' + plan.id}${q}`, { servings: 0 }).expect(400);
+  });
+
   describe('moving and resizing', () => {
+    it('lets a plan be moved so it only touches another at the edge', async () => {
+      const { api } = await member('edge');
+      await create(api, { startDate: at(0), days: 3 });
+      const b = await create(api, { startDate: at(5), days: 2 });
+      await api.patch(`/${b.id}${q}`, { startDate: at(3) }).expect(200);
+    });
+
+    it('refuses to move a plan that has already started, so past slots stay put', async () => {
+      const { api } = await member('started');
+      const plan = await create(api, { startDate: at(0), days: 3 });
+      const later = `?locale=en&today=${at(1)}`;
+      const refused = await api
+        .patch(`/${plan.id}${later}`, { startDate: at(2) })
+        .expect(400);
+      expect(code(refused)).toBe('meal_plan.already_started');
+      // Not yet started (starts today): moving is fine.
+      const fresh = await create(api, { startDate: at(8), days: 1 });
+      await api
+        .patch(`/${fresh.id}?locale=en&today=${at(8)}`, { startDate: at(9) })
+        .expect(200);
+    });
+
+    it('refuses to shorten away a past day, but drops future slots', async () => {
+      const { api } = await member('shorten');
+      const recipe = await catalogRecipeForPlans();
+      const plan = await create(api, { startDate: at(0), days: 4 });
+      for (const day of [0, 2, 3]) {
+        await api
+          .put(`/${plan.id}/slots/${day}/dinner${q}`, { recipeId: recipe })
+          .expect(200);
+      }
+      // Day 2 (at(2)) is past for a client whose today is at(3).
+      const late = `?locale=en&today=${at(3)}`;
+      const refused = await api
+        .patch(`/${plan.id}${late}`, { days: 2 })
+        .expect(400);
+      expect(code(refused)).toBe('meal_plan.day_in_past');
+      expect(
+        ((await api.get(`/${plan.id}${q}`).expect(200)).body as PlanDetail)
+          .slots,
+      ).toHaveLength(3);
+      // Dropping only days that are still ahead works.
+      const ok = (
+        await api.patch(`/${plan.id}${late}`, { days: 3 }).expect(200)
+      ).body as PlanDetail;
+      expect(ok.slots.map((x) => x.dayIndex)).toEqual([0, 2]);
+    });
+
     it('refuses a start date in the past or too far ahead when moving, but accepts an unchanged one', async () => {
       const { api } = await member('move');
       const plan = await create(api, { startDate: at(0), days: 2 });
@@ -367,9 +447,9 @@ describe('Meal Plans (integration)', () => {
       const tomorrow = `?locale=en&today=${at(1)}`;
       const past = await api
         .put(`/${plan.id}/slots/0/dinner${tomorrow}`, { recipeId: recipe.id })
-        .expect(409);
+        .expect(400);
       expect(code(past)).toBe('meal_plan.day_in_past');
-      await api.del(`/${plan.id}/slots/0/lunch${tomorrow}`).expect(409);
+      await api.del(`/${plan.id}/slots/0/lunch${tomorrow}`).expect(400);
       await api
         .put(`/${plan.id}/slots/1/dinner${tomorrow}`, { recipeId: recipe.id })
         .expect(200);

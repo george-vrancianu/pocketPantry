@@ -9,7 +9,7 @@ CREATE TABLE "meal_plan_slots" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "meal_plan_slots_day_range" CHECK ("meal_plan_slots"."day_index" BETWEEN 0 AND 6),
-	CONSTRAINT "meal_plan_slots_servings_range" CHECK ("meal_plan_slots"."servings" IS NULL OR "meal_plan_slots"."servings" BETWEEN 1 AND 1000)
+	CONSTRAINT "meal_plan_slots_servings_range" CHECK ("meal_plan_slots"."servings" BETWEEN 1 AND 1000)
 );
 --> statement-breakpoint
 CREATE TABLE "meal_plans" (

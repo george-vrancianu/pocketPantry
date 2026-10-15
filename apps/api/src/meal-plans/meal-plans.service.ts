@@ -1,18 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { and, asc, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNull, ne } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
-import type { Database, Executor, Tx } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import { mealPlanSlots, mealPlans, recipes, user } from '../database/schema';
-import { lockFamilies } from '../family/family-locks';
+import { lockMemberAndFamily, runLocked } from '../family/family-locks';
 import { recipeTitles, visibleTo } from '../recipes/recipe-view';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
 import {
+  MAX_SERVINGS,
   MAX_START_AHEAD_DAYS,
   nameOrNull,
   type CreateMealPlanBody,
@@ -78,8 +79,8 @@ export class MealPlansService {
     locale: CatalogLocale,
     today = utcToday(),
   ): Promise<MealPlanView> {
-    return this.database.transaction(async (tx) => {
-      const familyId = await this.lockFamily(tx, memberId);
+    return runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
       const existing = await tx
         .select()
         .from(mealPlans)
@@ -101,7 +102,8 @@ export class MealPlansService {
           name: nameOrNull(body.name),
           startDate: body.startDate,
           days: body.days,
-          servings: body.servings ?? Math.min(Math.max(members, 1), 1000),
+          servings:
+            body.servings ?? Math.min(Math.max(members, 1), MAX_SERVINGS),
         })
         .returning();
       return this.view(tx, familyId, row.id, locale);
@@ -115,14 +117,20 @@ export class MealPlansService {
     locale: CatalogLocale,
     today = utcToday(),
   ): Promise<MealPlanView> {
-    return this.database.transaction(async (tx) => {
-      const familyId = await this.lockFamily(tx, memberId);
+    return runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
       const plan = await this.findPlan(tx, familyId, id);
       const startDate = body.startDate ?? plan.startDate;
       const days = body.days ?? plan.days;
 
       const moved = startDate !== plan.startDate;
-      if (moved) assertStartDate(startDate, today);
+      if (moved) {
+        // Moving would re-date past slots and make them editable again.
+        if (plan.startDate < today) {
+          throw new ApiException(400, 'meal_plan.already_started');
+        }
+        assertStartDate(startDate, today);
+      }
       if (moved || days > plan.days) {
         const others = await tx
           .select()
@@ -133,19 +141,27 @@ export class MealPlansService {
         assertNoOverlap(others, startDate, days);
       }
       if (days < plan.days) {
-        const past = await tx
-          .select({ id: mealPlanSlots.id, dayIndex: mealPlanSlots.dayIndex })
+        const dropped = await tx
+          .select({ dayIndex: mealPlanSlots.dayIndex })
           .from(mealPlanSlots)
-          .where(eq(mealPlanSlots.mealPlanId, plan.id));
-        const dropped = past.filter((slot) => slot.dayIndex >= days);
-        if (dropped.length > 0) {
-          await tx.delete(mealPlanSlots).where(
-            inArray(
-              mealPlanSlots.id,
-              dropped.map((slot) => slot.id),
+          .where(
+            and(
+              eq(mealPlanSlots.mealPlanId, plan.id),
+              gte(mealPlanSlots.dayIndex, days),
             ),
           );
+        // Past days are read-only, so their slots can't be dropped either.
+        if (dropped.some((slot) => isPast(plan, slot.dayIndex, today))) {
+          throw new ApiException(400, 'meal_plan.day_in_past');
         }
+        await tx
+          .delete(mealPlanSlots)
+          .where(
+            and(
+              eq(mealPlanSlots.mealPlanId, plan.id),
+              gte(mealPlanSlots.dayIndex, days),
+            ),
+          );
       }
       await tx
         .update(mealPlans)
@@ -161,8 +177,8 @@ export class MealPlansService {
   }
 
   async remove(memberId: string, id: string): Promise<void> {
-    await this.database.transaction(async (tx) => {
-      const familyId = await this.lockFamily(tx, memberId);
+    await runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
       const plan = await this.findPlan(tx, familyId, id);
       await tx.delete(mealPlans).where(eq(mealPlans.id, plan.id));
     });
@@ -176,8 +192,8 @@ export class MealPlansService {
     locale: CatalogLocale,
     today = utcToday(),
   ): Promise<MealPlanView> {
-    return this.database.transaction(async (tx) => {
-      const familyId = await this.lockFamily(tx, memberId);
+    return runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
       const plan = await this.findPlan(tx, familyId, id);
       assertEditableDay(plan, dayIndex, today);
       const [recipe] = await tx
@@ -219,8 +235,8 @@ export class MealPlansService {
     { id, dayIndex, mealtime }: SlotParams,
     today = utcToday(),
   ): Promise<void> {
-    await this.database.transaction(async (tx) => {
-      const familyId = await this.lockFamily(tx, memberId);
+    await runLocked(this.database, async (tx) => {
+      const { familyId } = await lockMemberAndFamily(tx, memberId);
       const plan = await this.findPlan(tx, familyId, id);
       assertEditableDay(plan, dayIndex, today);
       await tx
@@ -233,12 +249,6 @@ export class MealPlansService {
           ),
         );
     });
-  }
-
-  private async lockFamily(tx: Tx, memberId: string): Promise<string> {
-    const familyId = await this.settings.familyIdOf(memberId);
-    await lockFamilies(tx, [familyId]);
-    return familyId;
   }
 
   private async findPlan(
@@ -334,7 +344,14 @@ function assertEditableDay(
       days: plan.days,
     });
   }
-  if (addDays(plan.startDate, dayIndex) < today) {
-    throw new ApiException(409, 'meal_plan.day_in_past');
+  if (isPast(plan, dayIndex, today)) {
+    throw new ApiException(400, 'meal_plan.day_in_past');
   }
 }
+
+/** A day is past once its date is before the Member's today. */
+const isPast = (
+  plan: Pick<PlanRow, 'startDate'>,
+  dayIndex: number,
+  today: string,
+) => addDays(plan.startDate, dayIndex) < today;

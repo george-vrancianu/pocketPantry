@@ -1,5 +1,5 @@
 {
-  "id": "eb7d36cd-6fb4-4b4d-8543-97bae8da774f",
+  "id": "3f29a384-f655-49db-bdee-5341daf74f84",
   "prevId": "82a09395-fdf0-4e19-9204-b03207e33bc8",
   "version": "7",
   "dialect": "postgresql",
@@ -1506,7 +1506,7 @@
         },
         "meal_plan_slots_servings_range": {
           "name": "meal_plan_slots_servings_range",
-          "value": "\"meal_plan_slots\".\"servings\" IS NULL OR \"meal_plan_slots\".\"servings\" BETWEEN 1 AND 1000"
+          "value": "\"meal_plan_slots\".\"servings\" BETWEEN 1 AND 1000"
         }
       },
       "isRLSEnabled": false

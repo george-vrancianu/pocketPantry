@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
+import { localeQuery } from '../recipes/recipes.schemas';
 import { mealtime } from '../database/schema';
 
 export const MAX_PLAN_DAYS = 7;
@@ -11,8 +11,7 @@ export const MAX_START_AHEAD_DAYS = 14;
 export type Mealtime = (typeof mealtime.enumValues)[number];
 
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
-export const mealPlanQuery = z.object({
-  locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+export const mealPlanQuery = localeQuery.extend({
   today: z.iso.date().optional(),
 });
 export type MealPlanQuery = z.infer<typeof mealPlanQuery>;
@@ -28,7 +27,7 @@ export const nameOrNull = (value: string | null | undefined) =>
 
 /** `servings` defaults to the number of Members in the Family. */
 export const createMealPlanBody = z.object({
-  name: name.optional(),
+  name: name.nullable().optional(),
   startDate,
   days,
   servings: servings.optional(),

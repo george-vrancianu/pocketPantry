@@ -1080,7 +1080,7 @@ export const mealPlanSlots = pgTable(
     check('meal_plan_slots_day_range', sql`${table.dayIndex} BETWEEN 0 AND 6`),
     check(
       'meal_plan_slots_servings_range',
-      sql`${table.servings} IS NULL OR ${table.servings} BETWEEN 1 AND 1000`,
+      sql`${table.servings} BETWEEN 1 AND 1000`,
     ),
   ],
 );
