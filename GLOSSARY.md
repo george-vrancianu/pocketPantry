@@ -33,12 +33,16 @@ _Avoid_: Owner, superuser
 ### Catalog
 
 **Catalog**:
-The canonical set of Ingredients and Categories that everything in the app matches against.
+The set of Ingredients and Categories that everything in the app matches against. A Family sees the shared Catalog plus its own Family Ingredients.
 _Avoid_: Ingredient list, dictionary, taxonomy
 
 **Ingredient**:
-A canonical, uniquely named entry in the Catalog, such as "Parmesan". Not a product and not a Batch.
+A named entry in the Catalog, such as "Parmesan", either shared by every Family or a Family Ingredient. Not a product and not a Batch.
 _Avoid_: Item, product, food
+
+**Family Ingredient**:
+An Ingredient a Member added for their Family, visible only to that Family, until an Admin promotes it to the shared Catalog. It sits in a Leaf Category like any other Ingredient.
+_Avoid_: Custom ingredient, private ingredient
 
 **Parent Category**:
 A top-level grouping of the Catalog, such as "Dairy". Carries the Aisle.
@@ -53,7 +57,7 @@ The ordered shop section a Parent Category maps to. Used to group the Shopping L
 _Avoid_: Section, department
 
 **Synonym**:
-An alternative name for an Ingredient in a given Scan Language, used for matching. Unlike display names, Synonyms are not limited to the catalog locales.
+An alternative name for an Ingredient in a given Scan Language, used for matching. Unlike display names, Synonyms are not limited to the catalog locales. A Family Synonym is one a Member added, matching only for their Family.
 _Avoid_: Alias, keyword
 
 **Default Expiry**:

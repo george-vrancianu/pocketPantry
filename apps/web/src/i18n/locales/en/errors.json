@@ -71,7 +71,8 @@
     "aisle_order_stale": "The Aisles changed while you were reordering. Check the order and try again.",
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
     "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
-    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first."
+    "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
+    "family_ingredient_exists": "“{{existing.name}}” already has that name."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
@@ -118,5 +119,14 @@
     "pairing_self_link": "A Pairing cannot link to its own Recipe.",
     "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
     "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
+    "not_found": "That Family ingredient is no longer in the queue. Someone may have promoted it already.",
+    "target_not_found": "That shared ingredient no longer exists. Pick another."
+  },
+  "family_synonyms": {
+    "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
+    "shared_name_exists": "That name is already used by another ingredient."
   }
 }

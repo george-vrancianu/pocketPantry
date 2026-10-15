@@ -1,5 +1,5 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq } from 'drizzle-orm';
+import { eq, isNull } from 'drizzle-orm';
 import request from 'supertest';
 import { normalizeName } from '../src/catalog/normalize';
 import { seedId } from '../src/catalog/seed/seed-catalog';
@@ -186,6 +186,7 @@ describe('Staples and Suggestions (integration)', () => {
       const all = await database
         .select({ id: ingredients.id })
         .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
         .limit(201);
       expect(all.length).toBe(201);
       await database
@@ -212,6 +213,7 @@ describe('Staples and Suggestions (integration)', () => {
       const [leaf] = await database
         .select({ id: ingredients.leafCategoryId })
         .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
         .limit(1);
       const made = (
         await api('post', admin.cookie, '/admin/catalog/ingredients')

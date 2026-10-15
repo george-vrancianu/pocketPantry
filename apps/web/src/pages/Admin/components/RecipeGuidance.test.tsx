@@ -510,3 +510,34 @@ describe('RecipeGuidance Browse by aisle', () => {
     }
   });
 });
+
+describe('RecipeGuidance: no Add to your catalog (#270)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('offers neither the button nor the option in a Pairing link search', async () => {
+    open(recipe, {
+      'GET /api/catalog/search': () => Response.json({ results: [] }),
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Add a Pairing' }));
+    await user.selectOptions(
+      screen.getByLabelText('Link of Pairing 1'),
+      'An Ingredient',
+    );
+
+    await user.click(
+      screen.getByRole('combobox', { name: 'Linked Ingredient of Pairing 1' }),
+    );
+    await user.paste('kombucha');
+
+    expect(await screen.findByText('No match for “kombucha”')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /to your catalog/ }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('option', { name: /to your catalog/ }),
+    ).toBeNull();
+  });
+});

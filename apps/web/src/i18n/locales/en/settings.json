@@ -120,5 +120,35 @@
     "save": "Save",
     "savedToast_one": "{{name}}: {{count}} day",
     "savedToast_other": "{{name}}: {{count}} days"
+  },
+  "familyCatalog": {
+    "title": "Family catalog",
+    "help": "What your Family added to the catalog. Any member can fix it.",
+    "synonyms": "Other names",
+    "empty": "Nothing added yet. Use “Add to your catalog” when you search for an ingredient.",
+    "meta": "{{category}} · {{aisle}} · {{unit}}",
+    "synonymRow": "{{name}} → {{ingredient}}",
+    "edit": "Edit {{name}}",
+    "delete": "Delete {{name}}",
+    "deleteLabel": "Delete",
+    "name": "Name",
+    "category": "Category",
+    "save": "Save",
+    "deleteConfirm_one": "Delete {{name}}? {{usage}} uses it. It stays as an unmatched item under its name; its Staples and other names are removed.",
+    "deleteConfirm_other": "Delete {{name}}? {{usage}} use it. They stay as unmatched items under its name; its Staples and other names are removed.",
+    "deleteConfirmUnused": "Delete {{name}}? Nothing uses it. Its other names are removed.",
+    "usage": {
+      "batches_one": "{{count}} Batch",
+      "batches_other": "{{count}} Batches",
+      "shoppingItems_one": "{{count}} Shopping Item",
+      "shoppingItems_other": "{{count}} Shopping Items",
+      "templateLines_one": "{{count}} Template Line",
+      "templateLines_other": "{{count}} Template Lines",
+      "recipeLines_one": "{{count}} Ingredient Line",
+      "recipeLines_other": "{{count}} Ingredient Lines",
+      "staples_one": "{{count}} Staple",
+      "staples_other": "{{count}} Staples"
+    },
+    "editLabel": "Edit"
   }
 }

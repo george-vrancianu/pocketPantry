@@ -1,12 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
+import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
-import type { CatalogScope } from './catalog-scope';
+import { nameClaims, type CatalogScope } from './catalog-scope';
 import {
   AISLE_LISTING_LIMIT,
   type CatalogAisle,
+  type CatalogCategory,
   type CatalogLocale,
   type CatalogParent,
   type CatalogSearchResult,
@@ -19,6 +21,8 @@ import {
 } from './catalog-defaults';
 import { normalizeName } from './normalize';
 import { readAmountScale } from './amount-scale';
+
+const TOP_LEVEL_OTHER_PARENT_ID = seedId.parent('other');
 
 /** Restricts a search to an Aisle, and within it to one Parent Category. */
 export type SearchWithin = { aisleId?: string; parentCategoryId?: string };
@@ -55,7 +59,6 @@ export class CatalogSearchService {
         : [];
     }
     const ingredients = scope.ingredients(this.database);
-    const catalogTranslations = scope.translations(this.database);
     const placed = within.aisleId || within.parentCategoryId;
     const placement = placed
       ? sql`JOIN ${leafCategories} ON ${leafCategories.id} = ${ingredients.leafCategoryId}
@@ -75,12 +78,7 @@ export class CatalogSearchService {
     const wordPrefix = `% ${key}%`;
     const ranked = await this.database.execute<{ id: string }>(sql`
       WITH candidates AS (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
-        FROM ${ingredients}
-        UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
-        FROM ${catalogTranslations}
-        WHERE ${catalogTranslations.entityType} = 'ingredient'
+        SELECT id, key, tier FROM ${nameClaims(scope, this.database)} n
       )
       SELECT c.id
       FROM candidates c
@@ -88,7 +86,7 @@ export class CatalogSearchService {
       ${placement}
       WHERE (c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix})${sql.join(inAisle)}
       GROUP BY c.id, ${ingredients.normalizedName}
-      ORDER BY MIN(CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END),
+      ORDER BY MIN((CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END) * 2 + c.tier),
                ${ingredients.normalizedName},
                c.id
       LIMIT ${limit}
@@ -197,29 +195,34 @@ export class CatalogSearchService {
     );
     const keys = [...new Set(keyOf.values())];
     if (keys.length === 0) return new Map();
-    const ingredients = scope.ingredients(this.database);
-    const catalogTranslations = scope.translations(this.database);
 
     const keyList = sql.join(
       keys.map((key) => sql`${key}`),
       sql`, `,
     );
-    const hits = await this.database.execute<{ id: string; key: string }>(sql`
-      SELECT DISTINCT c.id, c.key
-      FROM (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
-        FROM ${ingredients}
-        UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
-        FROM ${catalogTranslations}
-        WHERE ${catalogTranslations.entityType} = 'ingredient'
-      ) c
+    const hits = await this.database.execute<{
+      id: string;
+      key: string;
+      tier: number;
+    }>(sql`
+      SELECT DISTINCT c.id, c.key, c.tier
+      FROM ${nameClaims(scope, this.database)} c
       WHERE c.key = ANY(ARRAY[${keyList}]::text[])
     `);
-    const idsByKey = new Map<string, string[]>();
-    for (const { id, key } of hits.rows) {
-      idsByKey.set(key, [...(idsByKey.get(key) ?? []), id]);
+    // Per name, only the best tier that claims it counts; one Ingredient there
+    // is a hit, several are a clash and stay Unmatched.
+    const claims = new Map<string, { tier: number; ids: Set<string> }>();
+    for (const { id, key, tier } of hits.rows) {
+      const claim = claims.get(key);
+      if (!claim || tier < claim.tier) {
+        claims.set(key, { tier, ids: new Set([id]) });
+      } else if (tier === claim.tier) {
+        claim.ids.add(id);
+      }
     }
+    const idsByKey = new Map(
+      [...claims].map(([key, claim]) => [key, [...claim.ids]]),
+    );
     const unique = [...idsByKey.values()].flatMap((ids) =>
       ids.length === 1 ? ids : [],
     );
@@ -236,6 +239,123 @@ export class CatalogSearchService {
       if (match) result.set(name, match);
     }
     return result;
+  }
+
+  /**
+   * Leaf Categories a Family Ingredient can be filed under, named in `locale`.
+   * An empty query offers only the top-level "Other" Leaf. Otherwise ranks
+   * Leaf starts with, Leaf contains, Parent contains, Aisle contains, then A to Z.
+   */
+  async listCategories(
+    scope: CatalogScope,
+    query: string,
+    locale: CatalogLocale,
+    limit: number,
+    overrides: readonly ExpiryOverride[],
+  ): Promise<CatalogCategory[]> {
+    const key = normalizeName(query);
+    const rows = await this.database
+      .select({
+        leafId: leafCategories.id,
+        leafName: leafCategories.name,
+        leafExpiry: leafCategories.defaultExpiryDays,
+        leafLocation: leafCategories.defaultLocation,
+        isOther: leafCategories.isOther,
+        parentId: parentCategories.id,
+        parentName: parentCategories.name,
+        parentExpiry: parentCategories.defaultExpiryDays,
+        parentLocation: parentCategories.defaultLocation,
+        aisleId: aisles.id,
+        aisleName: aisles.name,
+      })
+      .from(leafCategories)
+      .innerJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .innerJoin(aisles, eq(parentCategories.aisleId, aisles.id))
+      .where(
+        key
+          ? undefined
+          : and(
+              eq(leafCategories.isOther, true),
+              eq(parentCategories.id, TOP_LEVEL_OTHER_PARENT_ID),
+            ),
+      );
+    const { pick } = await loadDisplayNames(
+      this.database,
+      scope,
+      locale,
+      rows.flatMap((row) => [row.leafId, row.parentId, row.aisleId]),
+    );
+    const named = rows.map((row) => ({
+      row,
+      leaf: pick('leaf_category', row.leafId, row.leafName),
+      parent: pick('parent_category', row.parentId, row.parentName),
+      aisle: pick('aisle', row.aisleId, row.aisleName),
+    }));
+    const tierOf = (entry: (typeof named)[number]): number => {
+      if (!key) return 0;
+      const leaf = normalizeName(entry.leaf);
+      if (leaf.startsWith(key)) return 0;
+      if (leaf.includes(key)) return 1;
+      if (normalizeName(entry.parent).includes(key)) return 2;
+      if (normalizeName(entry.aisle).includes(key)) return 3;
+      return 4;
+    };
+    return named
+      .map((entry) => ({ entry, tier: tierOf(entry) }))
+      .filter(({ tier }) => tier < 4)
+      .sort(
+        (a, b) =>
+          a.tier - b.tier ||
+          a.entry.leaf.localeCompare(b.entry.leaf, locale) ||
+          a.entry.row.leafId.localeCompare(b.entry.row.leafId),
+      )
+      .slice(0, limit)
+      .map(({ entry: { row, leaf, parent, aisle } }) => ({
+        id: row.leafId,
+        name: leaf,
+        parentCategory: { id: row.parentId, name: parent },
+        aisle: { id: row.aisleId, name: aisle },
+        defaults: {
+          ...resolveCatalogDefaults(
+            {
+              defaultExpiryDays: row.leafExpiry,
+              defaultLocation: row.leafLocation,
+            },
+            {
+              defaultExpiryDays: row.parentExpiry,
+              defaultLocation: row.parentLocation,
+            },
+          ),
+          expiryDays: resolveExpiryDays(
+            { id: row.leafId, defaultExpiryDays: row.leafExpiry },
+            { id: row.parentId, defaultExpiryDays: row.parentExpiry },
+            overrides,
+          ),
+        },
+      }));
+  }
+
+  /**
+   * The Ingredient (visible to `scope`) whose canonical name, display name in
+   * any locale, or Synonym equals `key` (a normalised name), if any. The
+   * Family's own names and Synonyms come first (the tiers of `findExact`).
+   */
+  async findIdByName(
+    scope: CatalogScope,
+    key: string,
+    executor: Executor = this.database,
+  ): Promise<string | null> {
+    const hits = await executor.execute<{ id: string }>(sql`
+      SELECT c.id
+      FROM ${nameClaims(scope, executor)} c
+      WHERE c.key = ${key}
+      ORDER BY c.tier, c.id
+      LIMIT 1
+    `);
+    return hits.rows[0]?.id ?? null;
   }
 
   /** Every Parent Category with its name in `locale`, sorted by that name. */
@@ -287,6 +407,7 @@ export class CatalogSearchService {
         name: ingredients.name,
         defaultUnit: ingredients.defaultUnit,
         amountScale: ingredients.amountScale,
+        ownerFamilyId: ingredients.ownerFamilyId,
         leafId: leafCategories.id,
         leafName: leafCategories.name,
         leafExpiry: leafCategories.defaultExpiryDays,
@@ -326,6 +447,7 @@ export class CatalogSearchService {
         {
           id: row.id,
           name: display('ingredient', row.id, row.name),
+          owner: row.ownerFamilyId ? ('family' as const) : ('catalog' as const),
           defaultUnit: row.defaultUnit,
           amountScale: readAmountScale(row.amountScale),
           leafCategory: {

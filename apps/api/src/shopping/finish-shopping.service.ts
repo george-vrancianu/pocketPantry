@@ -7,7 +7,6 @@ import {
 } from '../catalog/catalog-defaults';
 import { catalogScope, type CatalogScope } from '../catalog/catalog-scope';
 import {
-  FALLBACK_LOCALE,
   type CatalogLocale,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
@@ -218,7 +217,9 @@ export class FinishShoppingService {
 
   /**
    * Unmatched Shopping Items become Unmatched Batches: queue the Batches too,
-   * in the locale the name was first saved in (the Shopping Item's entry).
+   * in the locale the name was first saved in (the Shopping Item's entry). An
+   * item without an entry was made Unmatched by a Family deleting its Family
+   * Ingredient (ADR 0011): the Family discarded that name, so it is not queued.
    */
   private async queueUnmatchedBatches(
     tx: Tx,
@@ -238,11 +239,16 @@ export class FinishShoppingService {
         ),
       );
     const localeOf = new Map(locales.map((row) => [row.itemId, row.locale]));
+    const queued = unmatched.flatMap(({ batchId, itemId, rawName }) => {
+      const locale = localeOf.get(itemId);
+      return locale === undefined ? [] : [{ batchId, rawName, locale }];
+    });
+    if (queued.length === 0) return;
     await recordUnmatched(
       tx,
-      unmatched.map(({ batchId, itemId, rawName }) => ({
+      queued.map(({ batchId, rawName, locale }) => ({
         rawName,
-        locale: localeOf.get(itemId) ?? FALLBACK_LOCALE,
+        locale,
         source: 'finish_shopping' as const,
         batchId,
       })),

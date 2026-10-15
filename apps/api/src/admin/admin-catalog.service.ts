@@ -62,7 +62,7 @@ const otherLeafNameTaken = () =>
 type ListType = 'cuisine' | 'method';
 const LIST_TABLES = { cuisine: cuisines, method: methods } as const;
 
-// Admin curation reads shared Catalog rows only (the Family Ingredients ADR, #270).
+// Admin curation reads shared Catalog rows only (ADR 0011).
 const adminScope = catalogScope(SHARED_ONLY);
 
 const notFound = (entity: EntityType | 'translation') =>
@@ -576,12 +576,12 @@ export class AdminCatalogService {
           .where(eq(leafCategories.id, id));
         if (!leaf) throw notFound('leaf_category');
         if (leaf.isOther) throw otherLeafProtected();
-        // Counts shared Ingredients only: #270/#275 must also count Family Ingredients in this Leaf.
-        const shared = adminScope.ingredients(tx);
+        // Counts every Ingredient in the Leaf, Family Ingredients included
+        // (deliberately not through a Catalog scope: this is a structural count, not a read).
         const [{ children }] = await tx
           .select({ children: count() })
-          .from(shared)
-          .where(eq(shared.leafCategoryId, id));
+          .from(ingredients)
+          .where(eq(ingredients.leafCategoryId, id));
         if (children > 0) {
           throw new ApiException(409, 'catalog.category_not_empty', {
             children,
@@ -616,6 +616,8 @@ export class AdminCatalogService {
 
   updateIngredient(id: string, input: IngredientUpdate) {
     return this.write(async (tx) => {
+      // 404 for a Family Ingredient: the Admin scope never sees them (ADR 0011).
+      await this.requireRow(tx, 'ingredient', id);
       if (input.leafCategoryId) {
         await this.requireRow(tx, 'leaf_category', input.leafCategoryId);
       }
@@ -647,10 +649,11 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, 'ingredient', id);
-        // Translations first: a foreign-key failure on the delete below rolls
-        // them back with it.
-        await this.deleteTranslationsOf(tx, 'ingredient', id);
+        // The Ingredient first: a Family linking a Synonym holds a key-share
+        // lock on it, so none can land after its translations are gone. A
+        // foreign-key failure rolls both back.
         await tx.delete(ingredients).where(eq(ingredients.id, id));
+        await this.deleteTranslationsOf(tx, 'ingredient', id);
       },
       new ApiException(409, 'catalog.ingredient_in_use'),
     );
@@ -860,6 +863,10 @@ export class AdminCatalogService {
       .from(translations)
       .where(eq(translations.id, id));
     if (!row) throw notFound('translation');
+    // Translations of a Family Ingredient are outside the Admin scope too.
+    if (row.entityType === 'ingredient') {
+      await this.requireRow(executor, 'ingredient', row.entityId);
+    }
     return row;
   }
 

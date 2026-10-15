@@ -9,6 +9,7 @@ import { REVIEW_ROUTE, startReview } from '../../test/review';
 import { ReviewPage } from './ReviewPage';
 
 const milk: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',

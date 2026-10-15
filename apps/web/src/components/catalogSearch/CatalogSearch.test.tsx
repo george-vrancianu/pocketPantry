@@ -13,6 +13,7 @@ const DAIRY_AISLE = '244cde4d-f9a5-5df8-9f40-5e1f48fd4fcf';
 const DAIRY_TINT = 'dairy';
 
 const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'parmesan-id',
   name: locale === 'ro' ? 'Parmezan' : 'Parmesan',
@@ -30,6 +31,7 @@ const parmesan = (locale: 'en' | 'ro'): CatalogSearchResult => ({
 });
 
 const cheddar: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'cheddar-id',
   name: 'Cheddar',
@@ -428,7 +430,8 @@ describe('CatalogSearch', () => {
   describe('no match', () => {
     it('shows a non-interactive "No match for “…”" row with a hint', async () => {
       stubSearch(() => []);
-      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      // The shared scope has no "Add to your catalog" option (#270), so no option shows.
+      renderWithProviders(<CatalogSearch onSelect={() => {}} scope="shared" />);
       const input = screen.getByRole('combobox');
 
       await userEvent.setup().type(input, 'zzz');
@@ -538,7 +541,8 @@ describe('CatalogSearch', () => {
 
       await user.type(screen.getByRole('combobox'), 'parm');
       await screen.findByRole('alert');
-      // Past the clear × to Retry.
+      // Past the add and clear buttons to Retry.
+      await user.tab();
       await user.tab();
       await user.tab();
       expect(screen.getByRole('button', { name: 'Retry' })).toHaveFocus();
@@ -1020,7 +1024,11 @@ describe('CatalogSearch host extension points (#266)', () => {
       const search = stubControlled();
       const onUseTyped = vi.fn();
       renderWithProviders(
-        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+        <CatalogSearch
+          onSelect={() => {}}
+          onUseTyped={onUseTyped}
+          scope="shared"
+        />,
       );
       const user = userEvent.setup();
 
@@ -1085,7 +1093,11 @@ describe('CatalogSearch host extension points (#266)', () => {
       const search = stubControlled();
       const onUseTyped = vi.fn();
       renderWithProviders(
-        <CatalogSearch onSelect={() => {}} onUseTyped={onUseTyped} />,
+        <CatalogSearch
+          onSelect={() => {}}
+          onUseTyped={onUseTyped}
+          scope="shared"
+        />,
       );
       const user = userEvent.setup();
 
@@ -1138,7 +1150,7 @@ describe('CatalogSearch host extension points (#266)', () => {
 
     it('is absent without the prop: only the no-match hint shows', async () => {
       const search = stubControlled();
-      renderWithProviders(<CatalogSearch onSelect={() => {}} />);
+      renderWithProviders(<CatalogSearch onSelect={() => {}} scope="shared" />);
       const user = userEvent.setup();
 
       await typeQuery(user, 'zzz');

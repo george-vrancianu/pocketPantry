@@ -32,6 +32,8 @@ export class IngredientCatalogService {
     { value: IngredientCatalog; expiresAt: number }
   >();
   private readonly loading = new Map<string, Promise<IngredientCatalog>>();
+  // Bumped by `invalidate`: a load that started before it must not re-cache.
+  private readonly generations = new Map<string, number>();
 
   constructor(@Inject(DATABASE) private readonly database: Database) {}
 
@@ -42,9 +44,9 @@ export class IngredientCatalogService {
 
     let loading = this.loading.get(key);
     if (!loading) {
-      loading = this.loadCatalog(reader, key).finally(() => {
-        this.loading.delete(key);
-      });
+      const started = (loading = this.loadCatalog(reader, key).finally(() => {
+        if (this.loading.get(key) === started) this.loading.delete(key);
+      }));
       this.loading.set(key, loading);
     }
     return loading;
@@ -72,8 +74,27 @@ export class IngredientCatalogService {
     };
   }
 
-  invalidate(): void {
-    this.cached.clear();
+  /** Drops the snapshot of `reader`, or of every reader when none is given. */
+  invalidate(reader?: CatalogReader): void {
+    if (reader === undefined) {
+      for (const key of new Set([
+        ...this.cached.keys(),
+        ...this.loading.keys(),
+      ])) {
+        this.bump(key);
+      }
+      this.cached.clear();
+      this.loading.clear();
+    } else {
+      const key = cacheKey(reader);
+      this.bump(key);
+      this.cached.delete(key);
+      this.loading.delete(key);
+    }
+  }
+
+  private bump(key: string): void {
+    this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
   }
 
   toPrompt(catalog: IngredientCatalog): string {
@@ -102,6 +123,7 @@ export class IngredientCatalogService {
     reader: CatalogReader,
     key: string,
   ): Promise<IngredientCatalog> {
+    const generation = this.generations.get(key) ?? 0;
     const ingredients = catalogScope(reader).ingredients(this.database);
     const [rows, categoryRows] = await Promise.all([
       this.database
@@ -131,7 +153,9 @@ export class IngredientCatalogService {
     for (const [other, entry] of this.cached) {
       if (entry.expiresAt <= now) this.cached.delete(other);
     }
-    this.cached.set(key, { value, expiresAt: now + CACHE_TTL_MS });
+    if ((this.generations.get(key) ?? 0) === generation) {
+      this.cached.set(key, { value, expiresAt: now + CACHE_TTL_MS });
+    }
     return value;
   }
 }

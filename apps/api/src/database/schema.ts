@@ -249,10 +249,26 @@ export const ingredients = pgTable(
     pantryBasic: boolean('pantry_basic').notNull().default(false),
     // Null reads as medium. Backfilled from the Parent Category by migration 0021.
     amountScale: amountScale('amount_scale'),
+    // Null = shared Catalog row; set = a Family Ingredient only that Family sees (ADR 0011).
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
+    // The Member who added a Family Ingredient; kept as null if they leave.
+    createdByUserId: text('created_by_user_id').references(() => user.id, {
+      onDelete: 'set null',
+    }),
+    // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
+    nameLocale: text('name_locale'),
     ...timestamps,
   },
   (table) => [
-    uniqueIndex('ingredients_normalized_name_idx').on(table.normalizedName),
+    // Shared names are unique among shared rows; a Family's own names among that Family's.
+    uniqueIndex('ingredients_normalized_name_idx')
+      .on(table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('ingredients_family_normalized_name_idx')
+      .on(table.ownerFamilyId, table.normalizedName)
+      .where(sql`${table.ownerFamilyId} IS NOT NULL`),
     index('ingredients_leaf_category_idx').on(table.leafCategoryId),
   ],
 );
@@ -269,6 +285,10 @@ export const catalogTranslations = pgTable(
     kind: translationKind('kind').notNull(),
     value: text('value').notNull(),
     normalizedValue: text('normalized_value').notNull(),
+    // Set only on a Family Synonym; NULL = shared. Names are always shared.
+    ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
+      onDelete: 'cascade',
+    }),
     ...timestamps,
   },
   (table) => [
@@ -281,7 +301,18 @@ export const catalogTranslations = pgTable(
       .where(sql`${table.kind} = 'name'`),
     uniqueIndex('catalog_translations_synonym_idx')
       .on(table.entityType, table.entityId, table.locale, table.normalizedValue)
-      .where(sql`${table.kind} = 'synonym'`),
+      .where(sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NULL`),
+    uniqueIndex('catalog_translations_family_synonym_idx')
+      .on(
+        table.entityType,
+        table.entityId,
+        table.ownerFamilyId,
+        table.locale,
+        table.normalizedValue,
+      )
+      .where(
+        sql`${table.kind} = 'synonym' AND ${table.ownerFamilyId} IS NOT NULL`,
+      ),
     index('catalog_translations_lookup_idx').on(table.normalizedValue),
   ],
 );

@@ -1,4 +1,15 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  Patch,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -6,9 +17,25 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
 import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
+import { FamilyIngredientsService } from './family-ingredients.service';
+import { FamilyCatalogService } from './family-catalog.service';
+import { FamilySynonymsService } from './family-synonyms.service';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
+  familyIngredientPatchBody,
+  idParam,
+  type FamilyCatalog,
+  type FamilyIngredientPatchBody,
+  type IdParam,
+  catalogCategoriesQuery,
+  familyIngredientBody,
+  familyIngredientQuery,
+  familySynonymBody,
+  type FamilySynonymBody,
+  type CatalogCategoriesQuery,
+  type CatalogCategory,
+  type FamilyIngredientBody,
   catalogParentsQuery,
   type CatalogAisle,
   type CatalogAislesQuery,
@@ -25,6 +52,9 @@ import {
 export class CatalogController {
   constructor(
     private readonly searchService: CatalogSearchService,
+    private readonly familyIngredients: FamilyIngredientsService,
+    private readonly familySynonyms: FamilySynonymsService,
+    private readonly familyCatalog: FamilyCatalogService,
     private readonly settings: SettingsService,
   ) {}
 
@@ -87,6 +117,142 @@ export class CatalogController {
         },
       ),
     };
+  }
+
+  @Get('categories')
+  @ApiOperation({
+    summary:
+      'Search Leaf Categories (with Parent, Aisle and effective Default Expiry) to file a Family Ingredient under',
+  })
+  async categories(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(catalogCategoriesQuery))
+    query: CatalogCategoriesQuery,
+  ): Promise<{ categories: CatalogCategory[] }> {
+    return {
+      categories: await this.searchService.listCategories(
+        await this.settings.catalogScopeForMember(member.id),
+        query.q,
+        query.locale,
+        query.limit,
+        await this.settings.expiryOverridesForMember(member.id),
+      ),
+    };
+  }
+
+  @Post('family-ingredients')
+  @HttpCode(201)
+  @ApiOperation({
+    summary:
+      "Add an Ingredient only the caller's Family sees; 409 with the existing Ingredient when the name is taken",
+  })
+  async createFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familyIngredientBody))
+    body: FamilyIngredientBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familyIngredients.create(
+      {
+        id: await this.settings.familyIdOf(member.id),
+        memberId: member.id,
+      },
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Get('family')
+  @ApiOperation({
+    summary:
+      "List the caller's Family Ingredients (with what uses each) and Family Synonyms, for Family Settings",
+  })
+  async family(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+  ): Promise<FamilyCatalog> {
+    return this.familyCatalog.list(
+      await this.settings.familyIdOf(member.id),
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Patch('family-ingredients/:id')
+  @ApiOperation({
+    summary:
+      'Rename and/or recategorise a Family Ingredient; 409 with the existing Ingredient when the new name is taken',
+  })
+  async updateFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familyIngredientPatchBody))
+    body: FamilyIngredientPatchBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familyCatalog.update(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Delete('family-ingredients/:id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Delete a Family Ingredient; its Batches, Shopping Items, Template Lines and Recipe Lines become Unmatched',
+  })
+  async deleteFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+  ): Promise<void> {
+    await this.familyCatalog.remove(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+    );
+  }
+
+  @Delete('family-synonyms/:id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete a Family Synonym; it stops matching at once',
+  })
+  async deleteFamilySynonym(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+  ): Promise<void> {
+    await this.familyCatalog.removeSynonym(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+    );
+  }
+
+  @Post('family-synonyms')
+  @HttpCode(201)
+  @ApiOperation({
+    summary:
+      "Declare a name another name for an Ingredient, for the caller's Family; 409 with the Ingredient that already has the name",
+  })
+  async createFamilySynonym(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familySynonymBody))
+    body: FamilySynonymBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familySynonyms.create(
+      { id: await this.settings.familyIdOf(member.id) },
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
   }
 
   /** The Catalog scope a request asks for: shared rows only, or the Member's Family. */

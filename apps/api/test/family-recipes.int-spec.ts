@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { and, eq, ilike, inArray } from 'drizzle-orm';
+import { and, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import pg from 'pg';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -136,7 +136,11 @@ describe('Family Recipes (integration)', () => {
       sortOrder: 1000,
     });
     ing = (
-      await database.select({ id: ingredients.id }).from(ingredients).limit(5)
+      await database
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
+        .limit(5)
     ).map((r) => r.id);
   });
 

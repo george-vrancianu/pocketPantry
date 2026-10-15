@@ -1,6 +1,8 @@
 import { Box, tokens, radius } from '@pocket-pantry/ui';
+import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
+import { FamilyTag } from './FamilyTag';
 import { RowTag } from './RowTag';
 import { OptionRow } from './OptionRow';
 import { Highlighted } from './matchRange';
@@ -39,6 +41,7 @@ export function SearchResultRow({
   onSelect,
 }: SearchResultRowProps) {
   const { color } = tokens;
+  const { t } = useTranslation('catalog');
   const meta = resultMeta(result);
   return (
     <OptionRow
@@ -46,7 +49,13 @@ export function SearchResultRow({
       active={active}
       first={first}
       dimmed={dimmed}
-      label={[result.name, meta, showUnit ? result.defaultUnit : null, tag]
+      label={[
+        result.name,
+        result.owner === 'family' ? t('search.familyTag') : null,
+        meta,
+        showUnit ? result.defaultUnit : null,
+        tag,
+      ]
         .filter(Boolean)
         .join(', ')}
       onSelect={onSelect}
@@ -66,6 +75,7 @@ export function SearchResultRow({
           }}
         >
           <Highlighted text={result.name} query={query} />
+          {result.owner === 'family' ? <FamilyTag /> : null}
         </Box>
         <Box sx={{ fontSize: 13, fontWeight: 500, color: color.muted }}>
           {meta}

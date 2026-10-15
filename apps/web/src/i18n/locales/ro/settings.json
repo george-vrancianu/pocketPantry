@@ -127,5 +127,41 @@
     "savedToast_one": "{{name}}: {{count}} zi",
     "savedToast_few": "{{name}}: {{count}} zile",
     "savedToast_other": "{{name}}: {{count}} de zile"
+  },
+  "familyCatalog": {
+    "title": "Catalogul familiei",
+    "help": "Ce a adăugat familia ta în catalog. Orice membru îl poate corecta.",
+    "synonyms": "Alte denumiri",
+    "empty": "Nu ai adăugat nimic încă. Folosește „Adaugă în catalogul tău” când cauți un ingredient.",
+    "meta": "{{category}} · {{aisle}} · {{unit}}",
+    "synonymRow": "{{name}} → {{ingredient}}",
+    "edit": "Editează {{name}}",
+    "delete": "Șterge {{name}}",
+    "deleteLabel": "Șterge",
+    "name": "Nume",
+    "category": "Categorie",
+    "save": "Salvează",
+    "deleteConfirm_one": "Ștergi {{name}}? Îl folosește {{usage}}. Rămâne ca articol nepotrivit sub numele lui; produsele de bază și celelalte denumiri se elimină.",
+    "deleteConfirm_few": "Ștergi {{name}}? Îl folosesc {{usage}}. Ele rămân ca articole nepotrivite sub numele lui; produsele de bază și celelalte denumiri se elimină.",
+    "deleteConfirm_other": "Ștergi {{name}}? Îl folosesc {{usage}}. Ele rămân ca articole nepotrivite sub numele lui; produsele de bază și celelalte denumiri se elimină.",
+    "deleteConfirmUnused": "Ștergi {{name}}? Nu îl folosește nimic. Celelalte denumiri se elimină.",
+    "usage": {
+      "batches_one": "{{count}} lot",
+      "batches_few": "{{count}} loturi",
+      "batches_other": "{{count}} de loturi",
+      "shoppingItems_one": "{{count}} articol din lista de cumpărături",
+      "shoppingItems_few": "{{count}} articole din lista de cumpărături",
+      "shoppingItems_other": "{{count}} de articole din lista de cumpărături",
+      "templateLines_one": "{{count}} linie de șablon",
+      "templateLines_few": "{{count}} linii de șablon",
+      "templateLines_other": "{{count}} de linii de șablon",
+      "recipeLines_one": "{{count}} linie de rețetă",
+      "recipeLines_few": "{{count}} linii de rețetă",
+      "recipeLines_other": "{{count}} de linii de rețetă",
+      "staples_one": "{{count}} produs de bază",
+      "staples_few": "{{count}} produse de bază",
+      "staples_other": "{{count}} de produse de bază"
+    },
+    "editLabel": "Editează"
   }
 }

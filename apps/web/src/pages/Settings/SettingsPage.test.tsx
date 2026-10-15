@@ -14,6 +14,8 @@ function stubSettings(savedLocale: string | null = null, role = 'member') {
     theme: null,
   };
   const { fetchMock, calls } = stubApi({
+    'GET /api/catalog/family': () =>
+      Response.json({ ingredients: [], synonyms: [] }),
     'GET /api/settings/preferences': () => Response.json(saved),
     // A save answers with the merged preferences, as the API does.
     'PUT /api/settings/preferences': () => {
@@ -103,6 +105,19 @@ describe('SettingsPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Appearance' })).toBeNull();
+  });
+
+  it('shows the Family catalog section on the Family tab', async () => {
+    stubSettings();
+    renderWithProviders(<SettingsPage />, { route: '/settings?tab=family' });
+
+    const panel = await screen.findByRole('tabpanel', { name: 'Family' });
+    expect(
+      await within(panel).findByRole('heading', { name: 'Family catalog' }),
+    ).toBeInTheDocument();
+    expect(
+      await within(panel).findByText(/Nothing added yet/),
+    ).toBeInTheDocument();
   });
 
   it('exposes the tabs as a named tablist with tab and tabpanel roles', async () => {

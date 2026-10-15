@@ -26,6 +26,7 @@ vi.mock('../../lib/camera', () => ({
 }));
 
 const milk: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',

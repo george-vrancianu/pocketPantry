@@ -53,6 +53,15 @@ const ICON_NODES = {
     ['path', { d: 'M11 18.5h2' }],
   ],
   close: [['path', { d: 'M6 6l12 12M18 6L6 18' }]],
+  'book-plus': [
+    [
+      'path',
+      {
+        d: 'M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20',
+      },
+    ],
+    ['path', { d: 'M9 10h6M12 7v6' }],
+  ],
   check: [['path', { d: 'M5 12l5 5 9-10' }]],
   search: [
     ['circle', { cx: '11', cy: '11', r: '7' }],
@@ -220,6 +229,7 @@ export const LogoutIcon = handoff('logout');
 export const UserIcon = handoff('user');
 export const PhoneIcon = handoff('phone');
 export const CloseIcon = handoff('close');
+export const BookPlusIcon = handoff('book-plus');
 export const CheckIcon = handoff('check');
 export const SearchIcon = handoff('search');
 export const ChevronDownIcon = handoff('chevron-down');

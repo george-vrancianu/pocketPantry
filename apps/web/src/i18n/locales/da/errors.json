@@ -71,7 +71,8 @@
     "aisle_order_stale": "Afdelingerne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "eating_moment_order_stale": "Spisetidspunkterne blev ændret, mens du ændrede rækkefølgen. Tjek rækkefølgen, og prøv igen.",
     "cuisine_in_use": "Opskrifter bruger stadig dette køkken, så det kan ikke slettes. Ret først de opskrifter.",
-    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter."
+    "method_in_use": "Opskrifter bruger stadig denne metode, så den kan ikke slettes. Ret først de opskrifter.",
+    "family_ingredient_exists": "„{{existing.name}}“ har allerede det navn."
   },
   "family": {
     "rate_limited": "For mange forsøg med invitationskoder. Vent et minut, og prøv igen.",
@@ -118,5 +119,14 @@
     "pairing_self_link": "Et forslag kan ikke pege på sin egen opskrift.",
     "nutrition_note_too_long": "Ernæringsnoten kan højst være 500 tegn.",
     "nothing_to_translate": "Der er ingen kildetekst at oversætte. Tilføj den til opskriften først."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "Der findes allerede en fælles ingrediens med det navn. Flet denne ind i den i stedet.",
+    "not_found": "Den familieingrediens er ikke længere i køen. Måske har en anden allerede gjort den fælles.",
+    "target_not_found": "Den fælles ingrediens findes ikke længere. Vælg en anden."
+  },
+  "family_synonyms": {
+    "not_found": "Synonymet er ikke længere i køen. Måske har en anden allerede tilføjet det.",
+    "shared_name_exists": "Navnet bruges allerede af en anden ingrediens."
   }
 }

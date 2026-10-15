@@ -2,6 +2,7 @@ import { Box, CloseIcon, IconButton, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogSearchResult } from '../../lib/catalog';
 import { IngredientIconSlot } from '../IngredientIconSlot';
+import { FamilyTag } from './FamilyTag';
 import { resultMeta } from './SearchResultRow';
 
 /** The picked ingredient as a tinted pill with icon, name, meta and ×; tapping it clears the pick. */
@@ -49,6 +50,7 @@ export function SelectedToken({
           }}
         >
           {selected.name}
+          {selected.owner === 'family' ? <FamilyTag /> : null}
         </Box>
         <Box
           sx={{

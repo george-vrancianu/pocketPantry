@@ -94,6 +94,7 @@ export {
   IngredientsScanIcon,
   CloseIcon,
   PlusIcon,
+  BookPlusIcon,
   CopyIcon,
   LogoutIcon,
   UserIcon,

@@ -22,6 +22,8 @@ import {
   type CatalogSearchResult,
 } from '../../lib/catalog';
 import { normalizeName } from '../../lib/normalizeName';
+import { AddToCatalog } from './AddToCatalog';
+import { AddToCatalogRow } from './AddToCatalogRow';
 import { AisleViewHeader } from './AisleView';
 import { CatalogSearchEmptyStateContext } from './emptyState/context';
 import { ErrorRow } from './ErrorRow';
@@ -107,6 +109,8 @@ export function CatalogSearch({
   const [query, setQuery] = useState(defaultQuery);
   const [open, setOpen] = useState(defaultOpen);
   const [activeIndex, setActiveIndex] = useState(-1);
+  // Add to your catalog is showing (popover or Sheet).
+  const [adding, setAdding] = useState(false);
   // The aisle view (Browse by aisle): an Aisle opened from the empty state, and the Parent Category narrowing it.
   const [aisle, setAisle] = useState<CatalogAisle | null>(null);
   const [parentCategoryId, setParentCategoryId] = useState<string | null>(null);
@@ -153,7 +157,11 @@ export function CatalogSearch({
     !results.some(
       (result) => normalizeName(result.name) === normalizeName(typed),
     );
-  const optionCount = results.length + (useTypedOffered ? 1 : 0);
+  // Add to your catalog: a button in the field, and the first option when nothing matches.
+  const canAdd = scope !== 'shared' && !selected;
+  const addOptionOffered = canAdd && noMatch;
+  const addOffset = addOptionOffered ? 1 : 0;
+  const optionCount = addOffset + results.length + (useTypedOffered ? 1 : 0);
 
   const showPanel = open && !selected;
   const expanded = showPanel && optionCount > 0;
@@ -195,16 +203,36 @@ export function CatalogSearch({
     onSelect(ingredient);
   };
 
+  const openAdd = () => {
+    setAdding(true);
+    setOpen(false);
+    setActiveIndex(-1);
+  };
+
+  /** Closes Add to your catalog; the typed text stays and the field takes focus back. */
+  const dismissAdd = () => {
+    setAdding(false);
+    // A tap outside moves focus after this handler runs, so wait for it.
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const pickAdded = (ingredient: CatalogSearchResult) => {
+    setAdding(false);
+    select(ingredient);
+  };
+
   const pickTyped = () => {
     setOpen(false);
     setActiveIndex(-1);
     onUseTyped?.(typed);
   };
 
-  /** Picks option `index`: a result, or the "Use as typed" option after them. */
+  /** Picks option `index`: "Add to your catalog" first when offered, then the results, then "Use as typed". */
   const pick = (index: number) => {
-    if (index < results.length) select(results[index]);
-    else pickTyped();
+    if (addOptionOffered && index === 0) openAdd();
+    else if (index - addOffset < results.length) {
+      select(results[index - addOffset]);
+    } else pickTyped();
   };
 
   const keyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -241,8 +269,9 @@ export function CatalogSearch({
       event.preventDefault();
       pick(active);
     } else if (event.key === 'Enter' && expanded && !search.isSearching) {
-      // No row is active: pick the first option (the first result, or "Use as
-      // typed" when it is the only one), once the results for what is typed have arrived.
+      // No row is active: pick the first option (the first result; with no
+      // match, "Use as typed" or "Add to your catalog"), once the results for
+      // what is typed have arrived.
       event.preventDefault();
       pick(0);
     } else if (
@@ -295,6 +324,15 @@ export function CatalogSearch({
         selected={selected}
         onClear={clear}
         canClear={aisle !== null}
+        addToCatalog={
+          canAdd && typed !== ''
+            ? {
+                label: t('search.addToCatalog', { query: typed }),
+                open: adding,
+                onOpen: adding ? dismissAdd : openAdd,
+              }
+            : null
+        }
         refetching={refetching}
         reducedMotion={reducedMotion}
       />
@@ -373,16 +411,26 @@ export function CatalogSearch({
           hidden={!expanded}
           sx={{ listStyle: 'none', m: 0, p: 0 }}
         >
+          {addOptionOffered ? (
+            <AddToCatalogRow
+              id={optionId(0)}
+              name={typed}
+              active={active === 0}
+              onSelect={openAdd}
+            />
+          ) : null}
           {expanded &&
             results.map((result, index) => (
               <SearchResultRow
                 key={result.id}
-                id={optionId(index)}
+                id={optionId(addOffset + index)}
                 result={result}
                 query={typed}
                 showUnit={showUnit}
-                active={index === active}
-                dimmed={refetching && !reducedMotion && index !== active}
+                active={addOffset + index === active}
+                dimmed={
+                  refetching && !reducedMotion && addOffset + index !== active
+                }
                 first={index === 0}
                 tag={rowTag?.({ ingredientId: result.id, name: result.name })}
                 onSelect={() => select(result)}
@@ -390,16 +438,22 @@ export function CatalogSearch({
             ))}
           {useTypedOffered ? (
             <UseTypedRow
-              id={optionId(results.length)}
+              id={optionId(addOffset + results.length)}
               name={typed}
-              active={results.length === active}
-              first={results.length === 0}
+              active={addOffset + results.length === active}
+              first={addOffset + results.length === 0}
               tag={rowTag?.({ ingredientId: null, name: typed })}
               onSelect={pickTyped}
             />
           ) : null}
         </Box>
       </Box>
+      <AddToCatalog
+        open={adding && canAdd}
+        typed={typed}
+        onPicked={pickAdded}
+        onDismiss={dismissAdd}
+      />
     </Box>
   );
 }

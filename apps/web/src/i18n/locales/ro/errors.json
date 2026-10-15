@@ -71,7 +71,8 @@
     "aisle_order_stale": "Raioanele s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "eating_moment_order_stale": "Momentele de consum s-au schimbat cât timp le reordonai. Verifică ordinea și încearcă din nou.",
     "cuisine_in_use": "Rețete încă folosesc această Bucătărie, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
-    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete."
+    "method_in_use": "Rețete încă folosesc această Metodă, deci nu poate fi ștearsă. Schimbă mai întâi acele Rețete.",
+    "family_ingredient_exists": "„{{existing.name}}” are deja acest nume."
   },
   "family": {
     "rate_limited": "Prea multe încercări cu codul de invitație. Așteaptă un minut și încearcă din nou.",
@@ -118,5 +119,14 @@
     "pairing_self_link": "O Asociere nu poate trimite la propria Rețetă.",
     "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere.",
     "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",
+    "not_found": "Acest ingredient de familie nu mai este în coadă. Poate că cineva l-a promovat deja.",
+    "target_not_found": "Ingredientul comun nu mai există. Alege altul."
+  },
+  "family_synonyms": {
+    "not_found": "Sinonimul nu mai este în coadă. Poate l-a adăugat deja altcineva.",
+    "shared_name_exists": "Numele este deja folosit de un alt ingredient."
   }
 }

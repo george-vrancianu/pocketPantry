@@ -10,6 +10,7 @@ const dairy = { id: 'a4', name: 'Dairy & eggs', sortOrder: 4 };
 const produce = { id: 'a1', name: 'Fruit & veg', sortOrder: 1 };
 
 const milkResult: CatalogSearchResult = {
+  owner: 'catalog',
   amountScale: 'medium',
   id: 'milk-id',
   name: 'Milk',
