@@ -55,5 +55,115 @@
       "carbs": "Carbs",
       "fat": "Fat"
     }
+  },
+  "health": {
+    "title": "Pantry health",
+    "verdict": {
+      "good": "In good shape",
+      "some": "A few things to sort",
+      "attention": "Needs attention"
+    },
+    "toDo_one": "{{count}} to do",
+    "toDo_other": "{{count}} to do",
+    "nothingToDo": "Nothing to do",
+    "nothingToDoSpoken": "nothing to do",
+    "toDoLong_one": "{{count}} thing to do",
+    "toDoLong_other": "{{count}} things to do",
+    "progress_one": "Add {{count}} more to the Pantry to get your score",
+    "progress_other": "Add {{count}} more to the Pantry to get your score",
+    "factor": {
+      "fresh": "Fresh",
+      "staples": "Staples",
+      "dated": "Dated",
+      "rotation": "Rotation"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "group": {
+      "now": "Now",
+      "week": "This week",
+      "tidy": "Tidy up"
+    },
+    "toDoFirst": "{{count}} to do · {{title}}",
+    "allDone": "Nothing to do. Everything is in date, stocked and accounted for.",
+    "moreNames": "{{names}} +{{count}}",
+    "gainSpoken_one": "raises the score by {{count}}",
+    "gainSpoken_other": "raises the score by {{count}}",
+    "todo": {
+      "expired": {
+        "title_one": "Toss {{count}} expired",
+        "title_other": "Toss {{count}} expired",
+        "bulk": "Toss",
+        "bulkName_one": "Toss {{count}} expired",
+        "bulkName_other": "Toss {{count}} expired"
+      },
+      "missingStaples": {
+        "title_one": "Add {{count}} Staple",
+        "title_other": "Add {{count}} Staples",
+        "bulk": "Add",
+        "bulkName_one": "Add {{count}} Staple",
+        "bulkName_other": "Add {{count}} Staples"
+      },
+      "expiringSoon": {
+        "title": "Use {{count}} by {{day}}",
+        "bulk": "Recipes",
+        "bulkName": "Recipes"
+      },
+      "runningLow": {
+        "title_one": "Restock {{count}} running low",
+        "title_other": "Restock {{count}} running low",
+        "bulk": "Add",
+        "bulkName_one": "Add {{count}} running low",
+        "bulkName_other": "Add {{count}} running low"
+      },
+      "undated": {
+        "title_one": "Date {{count}} Batch",
+        "title_other": "Date {{count}} Batches",
+        "bulk": "Date all",
+        "bulkName_one": "Date all ({{count}} Batch)",
+        "bulkName_other": "Date all {{count}} Batches"
+      }
+    },
+    "done": {
+      "expired": "Nothing expired",
+      "missingStaples": "Staples covered",
+      "expiringSoon": "Nothing due soon",
+      "runningLow": "Nothing low",
+      "undated": "All dated",
+      "rotation": "Nothing forgotten"
+    },
+    "line": {
+      "since": "since {{day}}",
+      "staple": "Staple",
+      "usual": "usual {{amount}}",
+      "noneLeft": "none left",
+      "age": "{{count}} d old",
+      "inLocation": "{{duration}} in the {{location}}"
+    },
+    "close": "Close",
+    "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Removed {{count}} expired",
+      "expired_other": "Removed {{count}} expired",
+      "tossed": "Tossed {{name}}",
+      "used": "Used {{name}}",
+      "added_one": "{{count}} added to the Shopping List",
+      "added_other": "{{count}} added to the Shopping List",
+      "dated": "{{name}} dated",
+      "usual_one": "{{count}} given their usual expiry · edit any in Pantry",
+      "usual_other": "{{count}} given their usual expiry · edit any in Pantry",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} date could not be saved",
+      "notSaved_other": "{{count}} dates could not be saved"
+    },
+    "item": {
+      "toss": "Toss {{name}}",
+      "used": "Used",
+      "usedName": "Used {{name}}",
+      "add": "Add {{name}}",
+      "setDate": "Set date",
+      "setDateName": "Set date for {{name}}"
+    }
   }
 }

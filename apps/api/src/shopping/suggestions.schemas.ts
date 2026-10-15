@@ -26,4 +26,6 @@ export type SuggestionsView = {
   usedUp: SuggestionView[];
   runningLow: SuggestionView[];
   expired: SuggestionView[];
+  /** The Ingredient ids with an active dismissal for the Family, whether or not a Suggestion shows now. */
+  dismissed: string[];
 };

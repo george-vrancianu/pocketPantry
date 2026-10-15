@@ -13,6 +13,7 @@ export const widgetInstance = z.object({
     'meal-plan',
     'budget',
     'nutrition',
+    'health',
   ]),
   size: z.enum(['small', 'wide', 'tall']),
 });

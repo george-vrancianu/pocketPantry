@@ -189,6 +189,14 @@ export class PantryService {
     }
   }
 
+  /** Deletes the Family's Batches among `batchIds`; ids of another Family or already gone are ignored. */
+  async removeMany(memberId: string, batchIds: string[]): Promise<void> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    await this.database.transaction((tx) =>
+      this.deleteBatches(tx, familyId, [...new Set(batchIds)]),
+    );
+  }
+
   /**
    * The one way to create Batches, so the stock history stays right (ADR 0005):
    * every caller (manual add, Scan save, Finish Shopping) goes through it, and a
@@ -326,6 +334,8 @@ export class PantryService {
       rows.flatMap((r) => (r.ingredientId ? [r.ingredientId] : [])),
     );
 
+    const expiryDays = await this.expiryDaysByLeaf(familyId, rows);
+
     return rows.map((row) => ({
       id: row.id,
       name: row.ingredientId
@@ -347,8 +357,33 @@ export class PantryService {
       unit: row.unit,
       location: row.location,
       expiryDate: row.expiryDate,
+      defaultExpiryDays: expiryDays.get(row.leafCategoryId) ?? null,
       productDescription: row.productDescription,
       createdAt: row.createdAt,
     }));
+  }
+
+  /** The Default Expiry in days of each Batch's Leaf Category, with the Family's current overrides. */
+  private async expiryDaysByLeaf(
+    familyId: string,
+    rows: BatchRow[],
+  ): Promise<Map<string, number | null>> {
+    const leafIds = [...new Set(rows.map((row) => row.leafCategoryId))];
+    if (leafIds.length === 0) return new Map();
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const categories = await this.database
+      .select({ leaf: leafCategories, parent: parentCategories })
+      .from(leafCategories)
+      .innerJoin(
+        parentCategories,
+        eq(leafCategories.parentId, parentCategories.id),
+      )
+      .where(inArray(leafCategories.id, leafIds));
+    return new Map(
+      categories.map(({ leaf, parent }) => [
+        leaf.id,
+        resolveExpiryDays(leaf, parent, overrides),
+      ]),
+    );
   }
 }

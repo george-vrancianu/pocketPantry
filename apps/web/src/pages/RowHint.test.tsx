@@ -66,6 +66,7 @@ const line = {
 const batch = (id: string): Batch => ({
   amountScale: null,
   defaultUnit: null,
+  defaultExpiryDays: null,
   id,
   name: 'Milk',
   ingredientId: 'milk-id',

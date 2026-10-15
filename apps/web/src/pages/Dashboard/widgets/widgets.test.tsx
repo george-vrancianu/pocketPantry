@@ -27,6 +27,7 @@ const batch = (overrides: Partial<Batch> & { id: string }): Batch => ({
   aisle: null,
   amountScale: null,
   defaultUnit: null,
+  defaultExpiryDays: null,
   quantity: null,
   unit: null,
   location: 'fridge',

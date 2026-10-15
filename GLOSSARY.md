@@ -114,6 +114,22 @@ _Avoid_: About to go stale, going off
 The Family Setting for how many days before expiry a Batch counts as Expiring Soon.
 _Avoid_: Warning window
 
+**Pantry Health**:
+A 0–100 score of how well a Family's Pantry is kept, weighted from four Health Factors. Derived at read time, never stored, and not given while the Pantry holds fewer than ten Batches.
+_Avoid_: Health score, pantry score, rating
+
+**Health Factor**:
+One of the four parts Pantry Health is weighted from: Fresh, Staples, Dated and Rotation, each 0–100.
+_Avoid_: Check (a Shopping Item is checked), metric, component
+
+**Health To-do**:
+A set of Batches or Ingredients that lower Pantry Health and that one action fixes, such as the Expired Batches to toss or the missing Staples to add. Derived at read time, never stored; a dismissed Suggestion never appears in one.
+_Avoid_: Task, alert, issue
+
+**Forgotten**:
+A Batch with no expiry date that has been in its Location longer than that Location's limit. Giving it an expiry date means it is no longer Forgotten. Derived at read time, never stored.
+_Avoid_: Stale, old, unchecked
+
 ### Shopping
 
 **Shopping List**:

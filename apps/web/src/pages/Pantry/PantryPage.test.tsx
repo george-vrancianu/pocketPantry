@@ -33,6 +33,7 @@ function batch(overrides: Partial<Batch>): Batch {
     aisle: null,
     amountScale: null,
     defaultUnit: null,
+    defaultExpiryDays: null,
     quantity: null,
     unit: null,
     location: 'fridge',

@@ -73,3 +73,8 @@ export type ShoppingListView = {
   groups: ShoppingGroupView[];
   summary: { remaining: number; checked: number };
 };
+
+/** What a bulk add answers: the list, and the ids of the Shopping Items created or merged into, in request order. */
+export type AddedShoppingItemsView = ShoppingListView & {
+  createdIds: string[];
+};

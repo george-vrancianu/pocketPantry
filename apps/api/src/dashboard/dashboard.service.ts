@@ -9,10 +9,12 @@ import {
   type WidgetInstance,
 } from './dashboard.schemas';
 
-/** The handoff's Main mockup, less Quick Scan (the Dock already opens Scan): Use Soon, Shopping, Pantry Stock. */
-/** Fixed ids keep the default layout identical across fetches until the Member first saves. */
+/**
+ * Pantry health, Shopping, Pantry Stock. Use soon stays available in Customise; saved layouts are never migrated.
+ * Fixed ids keep the default layout identical across fetches until the Member first saves.
+ */
 const DEFAULT_LAYOUT: WidgetInstance[] = [
-  { id: 'default-use-soon', type: 'use-soon', size: 'wide' },
+  { id: 'default-health', type: 'health', size: 'wide' },
   { id: 'default-shopping', type: 'shopping', size: 'small' },
   { id: 'default-pantry-stock', type: 'pantry-stock', size: 'small' },
 ];

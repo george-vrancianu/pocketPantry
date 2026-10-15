@@ -2,6 +2,7 @@ import {
   BudgetIcon,
   ClockIcon,
   NutritionIcon,
+  PulseIcon,
   PantryIcon,
   RecipesIcon,
   ShoppingIcon,
@@ -14,6 +15,7 @@ import {
   NutritionWidget,
 } from './PlaceholderWidgets';
 import { PantryStockWidget } from './PantryStockWidget';
+import { HealthWidget } from './HealthWidget';
 import { CookTonightWidget } from './CookTonightWidget';
 import { ShoppingWidget } from './ShoppingWidget';
 import type { WidgetProps } from './types';
@@ -35,6 +37,13 @@ export type WidgetDefinition = {
  * its own data, so adding one is a new component and one entry here.
  */
 export const WIDGET_REGISTRY: Record<WidgetType, WidgetDefinition> = {
+  health: {
+    component: HealthWidget,
+    nameKey: 'health.title',
+    icon: PulseIcon,
+    sizes: ['small', 'wide'],
+    defaultSize: 'wide',
+  },
   'use-soon': {
     component: UseSoonWidget,
     nameKey: 'widgets.useSoon.title',

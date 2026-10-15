@@ -38,6 +38,8 @@ export const tokens = {
     /** Border of an unchecked tick box. */
     tickBorder: palette('pp-box'),
     accent,
+    /** The star colour: a middling verdict. */
+    star: palette('pp-star'),
     accentHover: mix(accent, 82, ink),
     accentTint: palette('pp-accentTint'),
     /** Text on `accentTint`; plain `accent` falls short of 4.5:1 there in Warm editorial. */

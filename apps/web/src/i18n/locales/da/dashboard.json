@@ -53,5 +53,115 @@
       "carbs": "Kulhydrater",
       "fat": "Fedt"
     }
+  },
+  "health": {
+    "title": "Spisekammerets tilstand",
+    "verdict": {
+      "good": "I god form",
+      "some": "Et par ting at ordne",
+      "attention": "Kræver opmærksomhed"
+    },
+    "toDo_one": "{{count}} at gøre",
+    "toDo_other": "{{count}} at gøre",
+    "nothingToDo": "Intet at gøre",
+    "nothingToDoSpoken": "intet at gøre",
+    "toDoLong_one": "{{count}} ting at gøre",
+    "toDoLong_other": "{{count}} ting at gøre",
+    "progress_one": "Tilføj {{count}} mere til spisekammeret for at få din score",
+    "progress_other": "Tilføj {{count}} mere til spisekammeret for at få din score",
+    "factor": {
+      "fresh": "Friskhed",
+      "staples": "Basisvarer",
+      "dated": "Datomærket",
+      "rotation": "Omsætning"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "group": {
+      "now": "Nu",
+      "week": "Denne uge",
+      "tidy": "Ryd op"
+    },
+    "toDoFirst": "{{count}} at gøre · {{title}}",
+    "allDone": "Intet at gøre. Alt er inden for datoen, på lager og styr på.",
+    "moreNames": "{{names}} +{{count}}",
+    "gainSpoken_one": "hæver scoren med {{count}}",
+    "gainSpoken_other": "hæver scoren med {{count}}",
+    "todo": {
+      "expired": {
+        "title_one": "Smid {{count}} udløbet vare ud",
+        "title_other": "Smid {{count}} udløbne ud",
+        "bulk": "Smid ud",
+        "bulkName_one": "Smid {{count}} udløbet vare ud",
+        "bulkName_other": "Smid {{count}} udløbne ud"
+      },
+      "missingStaples": {
+        "title_one": "Tilføj {{count}} basisvare",
+        "title_other": "Tilføj {{count}} basisvarer",
+        "bulk": "Tilføj",
+        "bulkName_one": "Tilføj {{count}} basisvare",
+        "bulkName_other": "Tilføj {{count}} basisvarer"
+      },
+      "expiringSoon": {
+        "title": "Brug {{count}} inden {{day}}",
+        "bulk": "Opskrifter",
+        "bulkName": "Opskrifter"
+      },
+      "runningLow": {
+        "title_one": "Fyld op: {{count}} er ved at løbe tør",
+        "title_other": "Fyld op: {{count}} er ved at løbe tør",
+        "bulk": "Tilføj",
+        "bulkName_one": "Tilføj {{count}} der er ved at løbe tør",
+        "bulkName_other": "Tilføj {{count}} der er ved at løbe tør"
+      },
+      "undated": {
+        "title_one": "Datér {{count}} parti",
+        "title_other": "Datér {{count}} partier",
+        "bulk": "Datér alle",
+        "bulkName_one": "Datér alle ({{count}} parti)",
+        "bulkName_other": "Datér alle {{count}} partier"
+      }
+    },
+    "done": {
+      "expired": "Intet udløbet",
+      "missingStaples": "Basisvarer på plads",
+      "expiringSoon": "Intet udløber snart",
+      "runningLow": "Intet ved at løbe tør",
+      "undated": "Alt har dato",
+      "rotation": "Intet glemt"
+    },
+    "line": {
+      "since": "siden {{day}}",
+      "staple": "Basisvare",
+      "usual": "sædvanligt {{amount}}",
+      "noneLeft": "ingen tilbage",
+      "age": "{{count}} d gammel",
+      "inLocation": "{{duration}} i {{location}}"
+    },
+    "close": "Luk",
+    "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Fjernede {{count}} udløbet vare",
+      "expired_other": "Fjernede {{count}} udløbne",
+      "tossed": "Smed {{name}} ud",
+      "used": "Brugte {{name}}",
+      "added_one": "{{count}} føjet til indkøbslisten",
+      "added_other": "{{count}} føjet til indkøbslisten",
+      "dated": "{{name}} er nu dateret",
+      "usual_one": "{{count}} fik sin sædvanlige udløbsdato · ret i spisekammeret",
+      "usual_other": "{{count}} fik deres sædvanlige udløbsdato · ret i spisekammeret",
+      "withNotSaved": "{{message}} · {{notSaved}}",
+      "notSaved_one": "{{count}} dato kunne ikke gemmes",
+      "notSaved_other": "{{count}} datoer kunne ikke gemmes"
+    },
+    "item": {
+      "toss": "Smid {{name}} ud",
+      "used": "Brugt",
+      "usedName": "Brugte {{name}}",
+      "add": "Tilføj {{name}}",
+      "setDate": "Sæt dato",
+      "setDateName": "Sæt dato for {{name}}"
+    }
   }
 }
