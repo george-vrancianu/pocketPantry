@@ -81,7 +81,17 @@ export class SuggestionsService {
       usedUp: withResult(groups.usedUp),
       runningLow: withResult(groups.runningLow),
       expired: withResult(groups.expired),
+      dismissed: await this.dismissedIds(familyId),
     };
+  }
+
+  /** The Ingredients with an active dismissal for the Family (a Batch of one ends it). */
+  private async dismissedIds(familyId: string): Promise<string[]> {
+    const rows = await this.database
+      .select({ ingredientId: suggestionDismissals.ingredientId })
+      .from(suggestionDismissals)
+      .where(eq(suggestionDismissals.familyId, familyId));
+    return rows.map((row) => row.ingredientId);
   }
 
   /**

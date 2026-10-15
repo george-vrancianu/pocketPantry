@@ -64,10 +64,19 @@ function stub(
   staples: Staple[] = [staple('milk'), staple('eggs')],
   settings: () => Response | Promise<Response> = () =>
     Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
+  dismissed: string[] = [],
 ) {
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': settings,
     'GET /api/pantry': () => Response.json(pantry),
+    'GET /api/shopping-list/suggestions': () =>
+      Response.json({
+        staples: [],
+        usedUp: [],
+        runningLow: [],
+        expired: [],
+        dismissed,
+      }),
     'GET /api/staples': () => Response.json({ staples }),
     'GET /api/shopping-list': () =>
       Response.json({
@@ -103,6 +112,21 @@ describe('HealthWidget', () => {
     expect(card).toHaveTextContent('A few things to sort');
     expect(card).toHaveTextContent('3 to do');
     expect(card.querySelectorAll('[data-factor]')).toHaveLength(4);
+  });
+
+  it('counts a dismissed missing Staple neither for nor against the score', async () => {
+    stub(tenBatchPantry(), [staple('milk'), staple('eggs')], undefined, [
+      'eggs',
+    ]);
+
+    renderWithProviders(<HealthWidget size="wide" columns={2} />);
+
+    // Fresh 89, Staples 100 (eggs left out), Dated 90, Rotation 100; the to-dos no longer count eggs.
+    expect(
+      await screen.findByRole('button', {
+        name: 'Pantry health, 94, In good shape, 2 things to do',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('shows the same on the small card, without the bar', async () => {
