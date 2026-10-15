@@ -113,7 +113,7 @@ Per line: `need = scaled − taken`. `taken > 0` → "short {need}", `taken = 0`
 Sum `need` per Ingredient over the day (popover) or the whole plan (footer), skipping Ingredients already on the list.
 
 ### 5.3 Add
-Bulk-add endpoint with one item per Ingredient: the summed shortfall in the line's unit, or no quantity for quantity-less lines. Items carry the Recipe(s) as Source Recipe, as Add missing does. Snackbar "{n} added to the Shopping List" with Undo (deletes the created items). The added Ingredients flip to "On list" immediately.
+Plan-scoped server action `POST /api/meal-plans/add-missing` (window, one plan, one date, or one Ingredient), one item per Ingredient: the summed shortfall in the line's unit, or no quantity for quantity-less lines. Items carry the Recipe(s) as Source Recipe, as Add missing does. The server recomputes the forecast and returns the created item ids for Undo. Snackbar "{n} added to the Shopping List" with Undo (deletes the created items). The added Ingredients flip to "On list" immediately.
 
 ### 5.4 Reason line (first that applies)
 | case | text |
