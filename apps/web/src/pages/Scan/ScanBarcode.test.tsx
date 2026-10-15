@@ -527,7 +527,7 @@ describe('Barcode on the Scan page', () => {
         batches: [{ rawName: 'Mystery jar', barcode: A }],
       });
       // As the add-Batch form sends an Unmatched name: no source (stored as manual).
-      const [batch] = (save?.body as { batches: object[] }).batches;
+      const [batch] = (save!.body as { batches: object[] }).batches;
       expect(batch).not.toHaveProperty('source');
     });
 
