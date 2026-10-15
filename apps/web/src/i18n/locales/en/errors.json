@@ -122,6 +122,11 @@
   },
   "family_ingredients": {
     "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
-    "not_found": "That Family ingredient is no longer in the queue. Someone may have promoted it already."
+    "not_found": "That Family ingredient is no longer in the queue. Someone may have promoted it already.",
+    "target_not_found": "That shared ingredient no longer exists. Pick another."
+  },
+  "family_synonyms": {
+    "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
+    "shared_name_exists": "That name is already used by another ingredient."
   }
 }

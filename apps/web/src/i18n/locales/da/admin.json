@@ -338,6 +338,23 @@
     "copy": "{{name}}, {{leaf}}, {{locale}}",
     "promoteHint": "De andre familiers kopier flettes ind i den.",
     "promoted_one": "{{name}} er gjort fælles. {{count}} anden kopi er flettet ind.",
-    "promoted_other": "{{name}} er gjort fælles. {{count}} andre kopier er flettet ind."
+    "promoted_other": "{{name}} er gjort fælles. {{count}} andre kopier er flettet ind.",
+    "kindSynonyms": "Synonymkandidater",
+    "merge": "Flet sammen",
+    "mergeName": "Flet {{name}} sammen",
+    "merging": "Fletter sammen…",
+    "mergeHint": "Alle familiers kopier af dette navn flettes ind i den ingrediens, du vælger. Hver familie beholder navnet som sit eget synonym.",
+    "merged": "{{name}} er flettet ind i {{target}}."
+  },
+  "familySynonyms": {
+    "empty": "Ingen synonymkandidater at gennemgå.",
+    "of": "Synonym for {{ingredient}}",
+    "add": "Tilføj som fælles synonym",
+    "adding": "Tilføjer…",
+    "addName": "Tilføj {{name}} som fælles synonym",
+    "addTitle": "Tilføj {{name}} som fælles synonym",
+    "addHint": "Alle familier finder {{ingredient}} med dette navn. Familiernes egne kopier fjernes.",
+    "language": "Synonymets sprog",
+    "added": "{{name}} er tilføjet som fælles synonym for {{ingredient}}."
   }
 }

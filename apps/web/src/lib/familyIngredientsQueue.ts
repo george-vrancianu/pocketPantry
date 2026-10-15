@@ -2,6 +2,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query';
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
@@ -68,6 +69,39 @@ export function useFamilyIngredientsQueue(enabled: boolean) {
   });
 }
 
+export type MergeResult = {
+  targetIngredientId: string;
+  mergedIngredientIds: string[];
+};
+
+/**
+ * Promote and merge turn Family copies into shared Ingredients (or fold them
+ * away), so everything that shows Ingredients, the Pantry or the lists is stale.
+ */
+export function invalidateCatalogDependents(queryClient: QueryClient) {
+  return Promise.all(
+    [
+      queueKey,
+      adminCatalogQueryKey,
+      catalogSearchQueryKey,
+      ['pantry'],
+      shoppingListQueryKey,
+      suggestionsQueryKey,
+      templateDetailsQueryKey,
+      recipesQueryKey,
+    ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  );
+}
+
+/** Someone else got there first: the picker is on a group that has gone. */
+function refreshOnNotFound(queryClient: QueryClient) {
+  return (error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) {
+      void queryClient.invalidateQueries({ queryKey: queueKey });
+    }
+  };
+}
+
 export function usePromoteFamilyIngredient() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -76,26 +110,21 @@ export function usePromoteFamilyIngredient() {
         method: 'POST',
         body: { ingredientId },
       }),
-    // Someone else promoted it first: the picker is on a group that has gone.
-    onError: (error) => {
-      if (error instanceof ApiError && error.status === 404) {
-        void queryClient.invalidateQueries({ queryKey: queueKey });
-      }
-    },
-    // The Ingredient turns shared and the other copies are merged away, so
-    // everything that shows Ingredients, the Pantry or the lists is stale.
-    onSuccess: () =>
-      Promise.all(
-        [
-          queueKey,
-          adminCatalogQueryKey,
-          catalogSearchQueryKey,
-          ['pantry'],
-          shoppingListQueryKey,
-          suggestionsQueryKey,
-          templateDetailsQueryKey,
-          recipesQueryKey,
-        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
-      ),
+    onError: refreshOnNotFound(queryClient),
+    onSuccess: () => invalidateCatalogDependents(queryClient),
+  });
+}
+
+/** Merge the whole group `ingredientId` belongs to into a shared Ingredient. */
+export function useMergeFamilyIngredient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { ingredientId: string; targetIngredientId: string }) =>
+      apiRequest<MergeResult>('/admin/family-ingredients/merge', {
+        method: 'POST',
+        body: input,
+      }),
+    onError: refreshOnNotFound(queryClient),
+    onSuccess: () => invalidateCatalogDependents(queryClient),
   });
 }

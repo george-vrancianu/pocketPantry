@@ -19,6 +19,7 @@ import {
   type UnmatchedStatus,
 } from '../../../lib/unmatched';
 import { FamilyIngredientsQueue } from './FamilyIngredientsQueue';
+import { FamilySynonymsQueue } from './FamilySynonymsQueue';
 import { UnmatchedResolver } from './UnmatchedResolver';
 
 type Props = { catalog: AdminCatalog };
@@ -31,7 +32,9 @@ type Props = { catalog: AdminCatalog };
  */
 export function UnmatchedQueue({ catalog }: Props) {
   const { t } = useTranslation(['admin', 'errors', 'common']);
-  const [kind, setKind] = useState<'unmatched' | 'family'>('unmatched');
+  const [kind, setKind] = useState<'unmatched' | 'family' | 'synonyms'>(
+    'unmatched',
+  );
   const [status, setStatus] = useState<UnmatchedStatus>('open');
   const [resolving, setResolving] = useState<UnmatchedEntry | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -116,9 +119,14 @@ export function UnmatchedQueue({ catalog }: Props) {
             label: t('admin:familyIngredients.kindUnmatched'),
           },
           { value: 'family', label: t('admin:familyIngredients.kindFamily') },
+          {
+            value: 'synonyms',
+            label: t('admin:familyIngredients.kindSynonyms'),
+          },
         ]}
       />
       {kind === 'family' ? <FamilyIngredientsQueue /> : null}
+      {kind === 'synonyms' ? <FamilySynonymsQueue /> : null}
       {kind === 'unmatched' ? (
         <>
           <SegmentedControl

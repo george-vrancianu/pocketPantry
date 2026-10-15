@@ -333,6 +333,7 @@
     "kindFamily": "Ingrediente de familie",
     "empty": "Nu există ingrediente de familie de revizuit.",
     "families_one": "{{count}} familie",
+    "families_few": "{{count}} familii",
     "families_other": "{{count}} familii",
     "promote": "Promovează",
     "promoteName": "Promovează {{name}}",
@@ -341,6 +342,23 @@
     "copy": "{{name}}, {{leaf}}, {{locale}}",
     "promoteHint": "Copiile celorlalte familii sunt îmbinate în ea.",
     "promoted_one": "{{name}} a fost promovat. {{count}} altă copie a fost îmbinată.",
-    "promoted_other": "{{name}} a fost promovat. {{count}} alte copii au fost îmbinate."
+    "promoted_other": "{{name}} a fost promovat. {{count}} alte copii au fost îmbinate.",
+    "kindSynonyms": "Sinonime candidate",
+    "merge": "Îmbină",
+    "mergeName": "Îmbină {{name}}",
+    "merging": "Se îmbină…",
+    "mergeHint": "Copia fiecărei familii a acestui nume intră în ingredientul ales. Fiecare familie păstrează numele ca sinonim propriu.",
+    "merged": "{{name}} a fost îmbinat în {{target}}."
+  },
+  "familySynonyms": {
+    "empty": "Nu există sinonime candidate de revizuit.",
+    "of": "Sinonim pentru {{ingredient}}",
+    "add": "Adaugă ca sinonim comun",
+    "adding": "Se adaugă…",
+    "addName": "Adaugă {{name}} ca sinonim comun",
+    "addTitle": "Adaugă {{name}} ca sinonim comun",
+    "addHint": "Toate familiile vor găsi {{ingredient}} după acest nume. Copiile proprii ale familiilor sunt eliminate.",
+    "language": "Limba sinonimului",
+    "added": "{{name}} a fost adăugat ca sinonim comun pentru {{ingredient}}."
   }
 }
