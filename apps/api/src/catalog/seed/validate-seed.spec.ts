@@ -37,7 +37,16 @@ const ingredient = (
   ro: string,
   synonyms?: SeedIngredient['synonyms'],
   da = `da-${slug}`,
-): SeedIngredient => ({ slug, leaf: 'l', en, ro, da, unit: 'g', synonyms });
+): SeedIngredient => ({
+  slug,
+  leaf: 'l',
+  en,
+  ro,
+  da,
+  unit: 'g',
+  synonyms,
+  allergens: [],
+});
 
 const problems = (ingredients: SeedIngredient[]) =>
   findSeedProblems({ aisles, parents, leaves, ingredients });
@@ -230,6 +239,16 @@ describe('Catalog seed validation', () => {
     expect(check(['milk'])).toEqual([]);
     expect(check(['milk', 'kryptonite'])).toEqual([
       expect.stringContaining('ingredient "a": unknown Allergen "kryptonite"'),
+    ]);
+  });
+
+  it('requires every Ingredient to declare its Allergens, an empty list meaning none', () => {
+    const undeclared: SeedIngredient = {
+      ...ingredient('a', 'Apple', 'Măr'),
+      allergens: undefined,
+    };
+    expect(problems([undeclared, ingredient('b', 'Pear', 'Pară')])).toEqual([
+      expect.stringContaining('ingredient "a": no Allergens declared'),
     ]);
   });
 

@@ -19,3 +19,4 @@ Members need an Allergy Warning on any Recipe that contains one of their Allergi
 
 - Because "no tags" on a shared Ingredient means "contains none", the whole shared Catalog seed must be tagged before the feature ships. Otherwise every Recipe would look safe.
 - The About tab says "No common allergens found", never "Allergen-free", and always carries a reminder to check product labels.
+- Every shared seed Ingredient declares its Allergens (an empty list means none) and seed validation fails if one does not. The seed applies an Ingredient's tags once: the first seed run that finds it unflagged inserts its tags and sets `allergens_checked`. Later runs leave it alone, so a tag an Admin removes is never re-added, and a database seeded before the tags existed gains them on its next seed. The cost is that a later correction to a seed tag does not reach Ingredients already flagged; an Admin edits those in the Catalog.

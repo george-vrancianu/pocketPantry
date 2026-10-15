@@ -44,7 +44,8 @@ export type SeedIngredient = {
   /**
    * The Allergens this Ingredient contains, by Allergen slug. Declared in
    * data/ingredient-allergens.ts. Shared Ingredients count as checked, so
-   * none listed means contains none (ADR 0014); #354 makes the declaration required.
+   * an empty list means contains none (ADR 0014). Seed validation requires the
+   * declaration: undefined is an error, not "none".
    */
   allergens?: string[];
 };
