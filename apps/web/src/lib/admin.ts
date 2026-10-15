@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryKey,
+} from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { ScanLanguage } from '../i18n/resources';
 import {
@@ -8,6 +13,7 @@ import {
 } from './catalog';
 import { adminRecipesQueryKey } from './adminRecipes';
 import { recipeChangeQueryKeys } from './queryKeys';
+import { allergiesQueryKey, familyAllergiesQueryKey } from './settings';
 import { shoppingListQueryKey } from './shopping';
 
 export type EntityType =
@@ -99,21 +105,32 @@ export function useAdminCatalog() {
   });
 }
 
-/** A write against the admin API that refreshes the Catalog afterwards. */
-function useAdminWrite<Input>(send: (input: Input) => Promise<unknown>) {
+/** Caches that show Allergen names or tags: the Admin Recipe editor and the Settings pickers. */
+const allergenQueryKeys: QueryKey[] = [
+  adminRecipesQueryKey,
+  allergiesQueryKey,
+  familyAllergiesQueryKey,
+];
+
+/**
+ * A write against the admin API that refreshes the Catalog afterwards. `alsoRefresh`
+ * names the extra caches a write touches, given its input.
+ */
+function useAdminWrite<Input>(
+  send: (input: Input) => Promise<unknown>,
+  alsoRefresh: (input: Input) => QueryKey[] = () => [],
+) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: send,
     // Member-facing Catalog search and Shopping List show the same names (and
     // Aisle order, and Recipes show Ingredient names), so refresh them too.
-    onSuccess: () =>
+    onSuccess: (_data, input) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: adminCatalogQueryKey }),
         queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
         queryClient.invalidateQueries({ queryKey: shoppingListQueryKey }),
-        // The Admin Recipe editor shows Allergens derived from Ingredient tags.
-        queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey }),
-        ...recipeChangeQueryKeys.map((queryKey) =>
+        ...[...recipeChangeQueryKeys, ...alsoRefresh(input)].map((queryKey) =>
           queryClient.invalidateQueries({ queryKey }),
         ),
       ]),
@@ -205,28 +222,37 @@ export function useArchiveEatingMoment() {
 }
 
 export function useSaveAllergen(id?: string) {
-  return useAdminWrite((input: { name: string }) =>
-    apiRequest(`${base}/allergens${id ? `/${id}` : ''}`, {
-      method: id ? 'PATCH' : 'POST',
-      body: input,
-    }),
+  return useAdminWrite(
+    (input: { name: string }) =>
+      apiRequest(`${base}/allergens${id ? `/${id}` : ''}`, {
+        method: id ? 'PATCH' : 'POST',
+        body: input,
+      }),
+    () => allergenQueryKeys,
   );
 }
 /** Retires or brings back an Allergen; it is never deleted. */
 export function useArchiveAllergen() {
-  return useAdminWrite(({ id, archive }: { id: string; archive: boolean }) =>
-    apiRequest(`${base}/allergens/${id}/${archive ? 'archive' : 'unarchive'}`, {
-      method: 'POST',
-    }),
+  return useAdminWrite(
+    ({ id, archive }: { id: string; archive: boolean }) =>
+      apiRequest(
+        `${base}/allergens/${id}/${archive ? 'archive' : 'unarchive'}`,
+        {
+          method: 'POST',
+        },
+      ),
+    () => allergenQueryKeys,
   );
 }
 /** Replaces the Allergens a shared Ingredient contains (empty = none). */
 export function useSetIngredientAllergens(id: string) {
-  return useAdminWrite((allergenIds: string[]) =>
-    apiRequest(`${base}/ingredients/${id}/allergens`, {
-      method: 'PUT',
-      body: { allergenIds },
-    }),
+  return useAdminWrite(
+    (allergenIds: string[]) =>
+      apiRequest(`${base}/ingredients/${id}/allergens`, {
+        method: 'PUT',
+        body: { allergenIds },
+      }),
+    () => [adminRecipesQueryKey],
   );
 }
 
@@ -265,20 +291,27 @@ export type TranslationInput = {
   value: string;
 };
 export function useAddTranslation() {
-  return useAdminWrite((input: TranslationInput) =>
-    apiRequest(`${base}/translations`, { method: 'POST', body: input }),
+  return useAdminWrite(
+    (input: TranslationInput) =>
+      apiRequest(`${base}/translations`, { method: 'POST', body: input }),
+    (input) => (input.entityType === 'allergen' ? allergenQueryKeys : []),
   );
 }
 export function useUpdateTranslation() {
-  return useAdminWrite(({ id, value }: { id: string; value: string }) =>
-    apiRequest(`${base}/translations/${id}`, {
-      method: 'PATCH',
-      body: { value },
-    }),
+  return useAdminWrite(
+    ({ id, value }: { id: string; value: string }) =>
+      apiRequest(`${base}/translations/${id}`, {
+        method: 'PATCH',
+        body: { value },
+      }),
+    // The entity type is not known here, so an Allergen name may have changed.
+    () => allergenQueryKeys,
   );
 }
 export function useDeleteTranslation() {
-  return useAdminWrite((id: string) =>
-    apiRequest(`${base}/translations/${id}`, { method: 'DELETE' }),
+  return useAdminWrite(
+    (id: string) =>
+      apiRequest(`${base}/translations/${id}`, { method: 'DELETE' }),
+    () => allergenQueryKeys,
   );
 }

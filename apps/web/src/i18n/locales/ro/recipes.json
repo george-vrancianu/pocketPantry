@@ -44,6 +44,11 @@
     "strongOther": "{{who}}: {{names}}",
     "memberOptional": "{{who}}: {{names}} (opțional)"
   },
+  "allergyIndicator": {
+    "strong": "Conține {{names}}",
+    "optional": "Opțional: conține {{names}}",
+    "unchecked": "Verificare incompletă"
+  },
   "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",
   "cuisine": "Bucătărie",

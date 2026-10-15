@@ -272,6 +272,7 @@ describe('CookTonightWidget', () => {
       servings: 2,
       prepMinutes: null,
       cookMinutes: null,
+      allergyWarning: null,
     },
     canMake: true,
     missing: null,
@@ -296,6 +297,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 10,
             cookMinutes: 20,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -345,6 +347,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: null,
             cookMinutes: null,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -411,6 +414,7 @@ describe('CookTonightWidget', () => {
             servings: 2,
             prepMinutes: 5,
             cookMinutes: null,
+            allergyWarning: null,
           },
         }),
       ]),
@@ -490,5 +494,43 @@ describe('CookTonightWidget', () => {
     expect(calls[0]?.key).toBe('GET /api/recipes/cook-tonight');
     expect(search.get('locale')).toBe('en');
     expect(search.get('today')).toBe(isoIn(0));
+  });
+
+  it('shows an allergen indicator on a card, named in the link', async () => {
+    stub(
+      cookTonight([
+        card('r1', {
+          recipe: {
+            ...card('r1').recipe,
+            title: 'Pesto Pasta',
+            allergyWarning: {
+              severity: 'soft',
+              allergens: [
+                {
+                  id: 'a-nut',
+                  name: 'Tree nuts',
+                  tier: 'yours',
+                  severity: 'soft',
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          },
+        }),
+        card('r2'),
+      ]),
+    );
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    const region = await screen.findByRole('region', { name: 'Cook tonight' });
+    const link = await within(region).findByRole('link', {
+      name: /Pesto Pasta/,
+    });
+    expect(link).toHaveAccessibleName(/Optional: contains Tree nuts/);
+    expect(
+      within(link).getByRole('img', { name: 'Optional: contains Tree nuts' }),
+    ).toHaveAttribute('data-severity', 'soft');
+    expect(within(region).getAllByRole('img')).toHaveLength(1);
   });
 });

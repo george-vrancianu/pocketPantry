@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, inArray } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
@@ -8,7 +8,11 @@ import {
   allergens,
   catalogTranslations,
   family,
+  familyAllergies,
+  ingredientAllergens,
   ingredients,
+  memberAllergies,
+  recipes as recipesTable,
 } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
@@ -38,6 +42,8 @@ describe('Admin Allergens (integration)', () => {
   let recipes: ReturnType<typeof client>;
   let memberSettings: ReturnType<typeof client>;
   const stamp = Date.now();
+  const ingredientIds: string[] = [];
+  const recipeIds: string[] = [];
   const GHOST = '00000000-0000-4000-8000-000000000000';
 
   const overview = async () =>
@@ -64,7 +70,7 @@ describe('Admin Allergens (integration)', () => {
       .select({ leaf: ingredients.leafCategoryId })
       .from(ingredients)
       .where(eq(ingredients.id, seedId.ingredient('onion')));
-    return (
+    const created = (
       await admin
         .post('/ingredients', {
           leafCategoryId: leaf,
@@ -73,6 +79,8 @@ describe('Admin Allergens (integration)', () => {
         })
         .expect(201)
     ).body as { id: string };
+    ingredientIds.push(created.id);
+    return created;
   };
 
   beforeAll(async () => {
@@ -92,8 +100,37 @@ describe('Admin Allergens (integration)', () => {
   });
 
   afterAll(async () => {
+    // Leave no rows behind even if a test failed midway: later specs in this worker count Catalog rows.
     const like = `%${stamp}%`;
+    if (recipeIds.length > 0) {
+      await database
+        .delete(recipesTable)
+        .where(inArray(recipesTable.id, recipeIds));
+    }
+    // Tags and Allergies restrict deleting an Allergen, so clear them first.
+    const stamped = (
+      await database
+        .select({ id: allergens.id })
+        .from(allergens)
+        .where(ilike(allergens.name, like))
+    ).map((row) => row.id);
+    if (stamped.length > 0) {
+      await database
+        .delete(ingredientAllergens)
+        .where(inArray(ingredientAllergens.allergenId, stamped));
+      await database
+        .delete(memberAllergies)
+        .where(inArray(memberAllergies.allergenId, stamped));
+      await database
+        .delete(familyAllergies)
+        .where(inArray(familyAllergies.allergenId, stamped));
+    }
     await database.delete(allergens).where(ilike(allergens.name, like));
+    if (ingredientIds.length > 0) {
+      await database
+        .delete(ingredients)
+        .where(inArray(ingredients.id, ingredientIds));
+    }
     await database
       .delete(catalogTranslations)
       .where(ilike(catalogTranslations.value, like));
@@ -210,6 +247,10 @@ describe('Admin Allergens (integration)', () => {
       await memberSettings
         .post('/family-allergies', { allergenId: fig.id })
         .expect(409);
+      const familyPicker = (
+        await memberSettings.get('/family-allergies').expect(200)
+      ).body as { allergens: { id: string }[] };
+      expect(familyPicker.allergens.map((a) => a.id)).not.toContain(fig.id);
     });
 
     it('keeps curation Admin-only', async () => {
@@ -243,6 +284,7 @@ describe('Admin Allergens (integration)', () => {
           })
           .expect(201)
       ).body as AdminRecipeDetail;
+      recipeIds.push(recipe.id);
       const derived = async () =>
         (await recipes.get(`/${recipe.id}/allergens`).expect(200))
           .body as RecipeAllergens;

@@ -16,22 +16,46 @@ import { resizeImage } from '../../../lib/image';
 import { IMAGE_PREPARATION, type ImageOrigin } from '../../../lib/scanImage';
 import { useScanLanguage } from './useScanLanguage';
 import {
-  isScanMode,
   loadScanMode,
   saveScanMode,
+  SCAN_MODES,
   type ScanMode,
 } from '../../../lib/scan';
 
+/** What opens the camera decides which Scan Modes it offers and which one it starts in. */
+export type ScanScreenModes = {
+  /** In dial order. Defaults to all four Scan Modes. */
+  modes?: readonly ScanMode[];
+  /** Used when the URL names no allowed mode and either `rememberMode` is false or the remembered mode isn't allowed. */
+  defaultMode?: ScanMode;
+  /** Load and save the Scan Mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
+  rememberMode?: boolean;
+};
+
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
-export function useScanScreen() {
+export function useScanScreen(config: ScanScreenModes = {}) {
+  const modes = config.modes ?? SCAN_MODES;
+  const remembersMode = config.rememberMode ?? true;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
   const requested = params.get('mode');
-  const mode: ScanMode = isScanMode(requested) ? requested : loadScanMode();
+  const allowed = (value: string | null | undefined): value is ScanMode =>
+    modes.some((item) => item === value);
+  const { defaultMode } = config;
+  const remembered = remembersMode ? loadScanMode() : null;
+  const mode: ScanMode = allowed(requested)
+    ? requested
+    : allowed(remembered)
+      ? remembered
+      : allowed(defaultMode)
+        ? defaultMode
+        : modes[0];
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
-  useEffect(() => saveScanMode(mode), [mode]);
+  useEffect(() => {
+    if (remembersMode) saveScanMode(mode);
+  }, [mode, remembersMode]);
 
   const camera = useCamera();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
@@ -236,6 +260,7 @@ export function useScanScreen() {
   const error = localError ? t(`errors:${localError}`) : null;
 
   return {
+    modes,
     mode,
     uiLocale: locale,
     scanLanguage,

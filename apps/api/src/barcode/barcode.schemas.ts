@@ -1,0 +1,28 @@
+import { z } from 'zod';
+import type { CatalogSearchResult } from '../catalog/catalog.schemas';
+import type { ingredientUnit } from '../database/schema';
+
+/** EAN-8 or UPC-E (8 digits), UPC-A (12) or EAN-13 (13): digits only. */
+export const barcodeValue = z.string().regex(/^(?:\d{8}|\d{12}|\d{13})$/);
+export const barcodeParams = z.object({ barcode: barcodeValue });
+
+/**
+ * What a Barcode Lookup proposes to Prefill the add-Batch form: an Ingredient
+ * match (only a confident one), the Product Description, and the net quantity.
+ */
+export type BarcodeLookupResponse =
+  | { found: false }
+  | {
+      found: true;
+      /** Where the values came from; the form credits Open Food Facts for that one only. */
+      source: 'open_food_facts' | 'known_barcode';
+      /** The Catalog Ingredient with its defaults, as a search result, so the form can apply Location and Default Expiry. */
+      match: CatalogSearchResult | null;
+      /** A match the lookup was unsure of; always false for now, since only confident hits are returned. */
+      lowConfidence: boolean;
+      /** A Known Barcode saved under a typed name: the Prefill fills this exact name, and `match` is null. */
+      unmatchedName?: string;
+      productDescription: string;
+      quantity: number | null;
+      unit: (typeof ingredientUnit.enumValues)[number] | null;
+    };

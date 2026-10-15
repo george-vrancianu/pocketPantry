@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { apiRequest } from './api';
+import { ApiError, apiRequest } from './api';
 import type { CatalogSearchResult, Unit } from './catalog';
 import type { Batch, NewBatch } from './pantry';
 
@@ -81,6 +81,23 @@ export function useProductScan(locale: string, scanLanguage: string) {
         `/scan/product?${scanQuery(locale, scanLanguage)}`,
         { method: 'POST', body: { productImage } },
       ),
+  });
+}
+
+/**
+ * A Product Scan owned by the form that asked for it, not by the Scan Session: the first line the
+ * photo yields. The Scan Cap and every other failure reach the caller as an `ApiError`.
+ */
+export function useProductRead(locale: string) {
+  return useMutation({
+    mutationFn: async (read: { image: string; scanLanguage: string }) => {
+      const { lines } = await apiRequest<ScanResponse>(
+        `/scan/product?${scanQuery(locale, read.scanLanguage)}`,
+        { method: 'POST', body: { productImage: read.image } },
+      );
+      if (lines.length === 0) throw new ApiError('scan.product_not_found', 0);
+      return lines[0];
+    },
   });
 }
 

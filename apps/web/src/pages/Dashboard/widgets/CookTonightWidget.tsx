@@ -1,6 +1,10 @@
 import { Box, RecipesIcon, tokens, radius } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import {
+  AllergenIndicator,
+  allergenIndicatorLabel,
+} from '../../../components/AllergenIndicator';
 import { translateApiError } from '../../../i18n/translateApiError';
 import { useCookTonight, type CookTonightCard } from '../../../lib/cookTonight';
 import type { WidgetSize } from '../../../lib/dashboard';
@@ -117,7 +121,10 @@ function CookCard({ card }: { card: CookTonightCard }) {
       : null,
   ].filter((part) => part !== null);
   // Block elements carry no spaces for a screen reader, so name the link explicitly.
-  const name = [heading, secondary, missing, meta.join(' · ')]
+  const allergy = recipe.allergyWarning
+    ? allergenIndicatorLabel(t, recipe.allergyWarning)
+    : null;
+  const name = [heading, secondary, missing, meta.join(' · '), allergy]
     .filter(Boolean)
     .join(', ');
 
@@ -162,6 +169,11 @@ function CookCard({ card }: { card: CookTonightCard }) {
       {meta.length > 0 && (
         <Box component="span" sx={line}>
           {meta.join(' · ')}
+        </Box>
+      )}
+      {recipe.allergyWarning && (
+        <Box component="span" sx={{ display: 'flex', mt: '4px' }}>
+          <AllergenIndicator warning={recipe.allergyWarning} />
         </Box>
       )}
     </Box>

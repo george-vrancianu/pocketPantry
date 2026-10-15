@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { recipesQueryKey, type RecipeOwner } from './recipes';
+import {
+  recipesQueryKey,
+  type CompactAllergyWarning,
+  type RecipeOwner,
+} from './recipes';
 
 /** One Base Recipe's best match tonight (mirror of the API's `CookTonightCard`). */
 export type CookTonightCard = {
@@ -14,6 +18,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;
   /** The one short or missing required line of a near miss. */

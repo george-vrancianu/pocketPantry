@@ -125,7 +125,17 @@ export class AdminCatalogService {
         .select()
         .from(allergens)
         .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
-      this.database.select().from(ingredientAllergens),
+      // Shared Ingredients only: Family tags are not the Admin's to see.
+      this.database
+        .select({
+          ingredientId: ingredientAllergens.ingredientId,
+          allergenId: ingredientAllergens.allergenId,
+        })
+        .from(ingredientAllergens)
+        .innerJoin(
+          sharedIngredients,
+          eq(ingredientAllergens.ingredientId, sharedIngredients.id),
+        ),
     ]);
 
     const tagsOf = new Map<string, string[]>();

@@ -328,12 +328,10 @@ export class SettingsService {
     const byOrder = (a: string, b: string) =>
       (order.get(a) ?? 0) - (order.get(b) ?? 0);
     return {
-      // A retired Allergen leaves the picker, unless a Family Allergy still uses it.
+      // A retired Allergen leaves the picker: a new Family Allergy cannot use it, and
+      // existing ones already carry their name.
       allergens: rows
-        .filter(
-          (row) =>
-            !row.archivedAt || family.some((f) => f.allergenId === row.id),
-        )
+        .filter((row) => !row.archivedAt)
         .map((row) => allergen(row.id)),
       familyAllergies: family.map((row) => ({
         id: row.id,
