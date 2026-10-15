@@ -69,6 +69,40 @@ export const familySynonymBody = z.object({
 });
 export type FamilySynonymBody = z.infer<typeof familySynonymBody>;
 
+export const familyIngredientPatchBody = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    leafCategoryId: z.uuid().optional(),
+  })
+  .refine(
+    (body) => body.name !== undefined || body.leafCategoryId !== undefined,
+  );
+export type FamilyIngredientPatchBody = z.infer<
+  typeof familyIngredientPatchBody
+>;
+
+export const idParam = z.object({ id: z.uuid() });
+export type IdParam = z.infer<typeof idParam>;
+
+/** What uses a Family Ingredient: shown in the delete confirmation. */
+export type FamilyIngredientUsage = {
+  batches: number;
+  shoppingItems: number;
+  templateLines: number;
+  recipeLines: number;
+  staples: number;
+};
+
+/** The Family catalog: Family Ingredients (with usage) and Family Synonyms. */
+export type FamilyCatalog = {
+  ingredients: Array<CatalogSearchResult & { usage: FamilyIngredientUsage }>;
+  synonyms: Array<{
+    id: string;
+    name: string;
+    ingredient: { id: string; name: string };
+  }>;
+};
+
 export const catalogCategoriesQuery = z.object({
   q: z.string().max(100).default(''),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),

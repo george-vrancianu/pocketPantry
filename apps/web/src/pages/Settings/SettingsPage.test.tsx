@@ -24,6 +24,8 @@ function stubSettings(
   const { fetchMock, calls } = stubApi({
     'GET /api/settings/family': () => Response.json(family),
     'GET /api/settings/categories': () => Response.json(categories),
+    'GET /api/catalog/family': () =>
+      Response.json({ ingredients: [], synonyms: [] }),
     'PATCH /api/settings/family': () => Response.json({}),
     'PUT /api/settings/family/expiry-overrides/hard-cheese': () =>
       Response.json({}),
@@ -69,6 +71,16 @@ describe('SettingsPage', () => {
       4,
     );
     expect(await screen.findByText('Hard cheese: 14 days')).toBeInTheDocument();
+  });
+
+  it('shows the Family catalog section', async () => {
+    stubSettings({ staleThresholdDays: 4, expiryOverrides: [] });
+    renderWithProviders(<SettingsPage />);
+
+    expect(
+      await screen.findByRole('heading', { name: 'Family catalog' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing added yet/)).toBeInTheDocument();
   });
 
   it('shows the same screen in Romanian', async () => {
