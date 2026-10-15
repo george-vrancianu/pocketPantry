@@ -105,7 +105,9 @@ const waiting = (state: SessionState) =>
     : ({ status: 'queued' } as const);
 
 /** Barcode cards are looked up at once and never wait for, or count against, the Scan Cap. */
-export const isBarcodeCard = (scan: SessionScan) => scan.mode === 'barcode';
+export const isBarcodeMode = (mode: CameraMode): mode is 'barcode' =>
+  mode === 'barcode';
+export const isBarcodeCard = (scan: SessionScan) => isBarcodeMode(scan.mode);
 
 export const emptySession: SessionState = { scans: [] };
 

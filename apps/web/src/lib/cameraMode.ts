@@ -7,6 +7,9 @@ import type { ScanMode } from './scan';
  */
 export type CameraMode = ScanMode | 'barcode';
 
+/** How often the barcode watch looks at a frame. */
+export const SCAN_INTERVAL_MS = 250;
+
 /** The Scan page's dial, in order: Barcode sits right after Product. */
 export const CAMERA_MODES = [
   'receipt',

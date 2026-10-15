@@ -8,6 +8,7 @@ import {
   dispatchScanSession,
   getScanSession,
   isBarcodeCard,
+  isBarcodeMode,
   type SessionScan,
 } from './scanSession';
 
@@ -118,14 +119,13 @@ export function readScans(locale: string) {
     if (
       scan.status !== 'reading' ||
       inFlight.has(scan.id) ||
-      isBarcodeCard(scan)
+      isBarcodeMode(scan.mode)
     )
       continue;
     inFlight.add(scan.id);
     (scan.mode === 'plate'
       ? readPlate(scan, locale)
-      : // Barcode cards were skipped above; the predicate cannot narrow `mode`.
-        send(scan, scan.mode as keyof typeof READ, locale).then((lines) =>
+      : send(scan, scan.mode, locale).then((lines) =>
           dispatchScanSession({ type: 'read', id: scan.id, lines }),
         )
     )

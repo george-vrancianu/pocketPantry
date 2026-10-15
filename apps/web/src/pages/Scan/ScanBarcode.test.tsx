@@ -2,6 +2,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SCAN_INTERVAL_MS } from '../../lib/cameraMode';
 import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -225,6 +226,36 @@ describe('Barcode on the Scan page', () => {
       expect(thumbnails()).toHaveLength(2);
     });
 
+    it('watches again only after the scan interval, so a held pack is not decoded back to back', async () => {
+      renderScan('/scan?mode=barcode');
+      await waitFor(() => expect(camera.listener).not.toBeNull());
+      vi.useFakeTimers();
+      try {
+        act(() => camera.listener?.(A));
+        expect(camera.watching).toBe(0);
+        act(() => {
+          vi.advanceTimersByTime(SCAN_INTERVAL_MS - 1);
+        });
+        expect(camera.watching).toBe(0);
+        act(() => {
+          vi.advanceTimersByTime(1);
+        });
+        expect(camera.watching).toBe(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('takes the held pack again after the Member leaves Barcode and comes back', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      await decode(A);
+      await user.click(within(dial()).getByRole('radio', { name: /Product/ }));
+      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      await decode(A);
+      expect(thumbnails()).toHaveLength(2);
+    });
+
     it('ignores a code identical to the last accepted one, but takes it again after another', async () => {
       renderScan('/scan?mode=barcode');
       await decode(A);
@@ -283,7 +314,7 @@ describe('Barcode on the Scan page', () => {
       );
     });
 
-    it('leaves a low-confidence product Unmatched, named by its description', async () => {
+    it('leaves a low-confidence product Unmatched, with the Ingredient search pre-typed', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
       answers[A] = () =>
@@ -300,12 +331,13 @@ describe('Barcode on the Scan page', () => {
 
       await user.click(screen.getByRole('button', { name: /^Done/ }));
       await user.click(await screen.findByTestId('card-result'));
-      // Review's match dialog has no pre-typed search: the low-confidence product stays
-      // Unmatched, named by its description, for the Member to choose an Ingredient.
-      expect(
-        await screen.findByRole('button', { name: /No match · Choose/ }),
-      ).toBeInTheDocument();
       expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
+      await user.click(
+        await screen.findByRole('button', { name: /No match · Choose/ }),
+      );
+      expect(
+        await screen.findByRole('combobox', { name: 'Search ingredients' }),
+      ).toHaveValue('Greek yogurt');
     });
 
     it('reads a product that is not found into one empty line to fill', async () => {

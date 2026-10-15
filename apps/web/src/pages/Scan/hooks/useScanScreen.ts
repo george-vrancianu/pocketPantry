@@ -19,6 +19,7 @@ import {
   CAMERA_MODES,
   loadScanPageMode,
   saveScanPageMode,
+  SCAN_INTERVAL_MS,
   type CameraMode,
 } from '../../../lib/cameraMode';
 
@@ -65,6 +66,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
    * reset, leaving the screen): a photo prepared under an older value is dropped, not sent.
    */
   const scanEpoch = useRef(0);
+  /** The barcode just accepted; the same code is ignored until another is read or the mode changes. */
+  const lastCode = useRef<string | null>(null);
   useEffect(
     () => () => {
       scanEpoch.current += 1;
@@ -76,6 +79,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   useEffect(() => {
     if (previousMode.current !== mode) {
       scanEpoch.current += 1;
+      // Coming back to Barcode takes the pack still held in front of the camera.
+      lastCode.current = null;
     }
     previousMode.current = mode;
   }, [mode]);
@@ -256,7 +261,6 @@ export function useScanScreen(config: ScanScreenModes = {}) {
 
   // Barcode mode reads on its own. Each accepted code adds a card at once; the watch reads one
   // code per subscription, so it is re-armed after every read.
-  const lastCode = useRef<string | null>(null);
   const acceptCode = async (code: string) => {
     // The simple dedupe: the code just accepted is ignored.
     if (code === lastCode.current) return;
@@ -303,16 +307,19 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     if (mode !== 'barcode' || camera.status !== 'ready') return;
     let stopped = false;
     let stop = () => {};
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const arm = () => {
       stop = watchBarcodes((code) => {
         if (stopped) return;
         void onCode.current(code);
-        arm();
+        // The camera ticks as soon as it is watched, so a held pack waits out the scan interval.
+        timer = setTimeout(arm, SCAN_INTERVAL_MS);
       });
     };
     arm();
     return () => {
       stopped = true;
+      clearTimeout(timer);
       stop();
     };
   }, [mode, camera.status, watchBarcodes]);
@@ -353,6 +360,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     error,
     setMode: (next: CameraMode) => {
       scanEpoch.current += 1;
+      lastCode.current = null;
       setLocalError(null);
       setParams({ mode: next }, { replace: true });
     },
