@@ -22,6 +22,7 @@ import {
   useRecipePantryMatch,
 } from '../../lib/recipes';
 import type { RecipeDetailLine } from '../../lib/recipes';
+import { AllergyWarningBanner } from './components/AllergyWarningBanner';
 import { RecipeHero } from './components/RecipeHero';
 import { RecipeHeader } from './components/RecipeHeader';
 import { linesToAdd } from './components/PantryStatus';
@@ -103,6 +104,9 @@ function RecipeDetail({ id }: { id: string }) {
         {recipe ? (
           <>
             <RecipeHero recipe={recipe} servings={servings} />
+            {recipe.allergyWarning ? (
+              <AllergyWarningBanner warning={recipe.allergyWarning} />
+            ) : null}
             <Box
               sx={{
                 position: 'sticky',

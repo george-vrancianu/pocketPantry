@@ -312,6 +312,26 @@ export const ingredientAllergens = pgTable(
   ],
 );
 
+// An Allergy: "this Member must avoid this Allergen". Keyed to the Member, not their
+// Family, so it goes with them when they leave a Family or join another. An Allergen in
+// use cannot be deleted: dropping an Allergy would silently stop warning.
+export const memberAllergies = pgTable(
+  'member_allergies',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.allergenId] }),
+    index('member_allergies_allergen_idx').on(table.allergenId),
+  ],
+);
+
 // Display names and Synonyms per entity and locale. `entityId` is polymorphic
 // (selected by `entityType`), so it carries no foreign key.
 export const catalogTranslations = pgTable(

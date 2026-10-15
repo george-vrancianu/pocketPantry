@@ -143,3 +143,41 @@ export function useSaveLocale() {
       ),
   });
 }
+
+/** An Allergen from the curated list, named in the Member's locale. */
+export type AllergenOption = { id: string; name: string };
+
+/** The Allergen list and which of them are the Member's own Allergies. */
+export type Allergies = {
+  allergens: AllergenOption[];
+  allergenIds: string[];
+};
+
+export const allergiesQueryKey = ['settings', 'allergies'] as const;
+
+export function useAllergies(locale: string) {
+  return useQuery({
+    queryKey: [...allergiesQueryKey, locale],
+    queryFn: () =>
+      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`),
+  });
+}
+
+/** Replaces the Member's own Allergies. Every Recipe's Allergy Warning depends on them. */
+export function useSaveAllergies(locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (allergenIds: string[]) =>
+      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`, {
+        method: 'PUT',
+        body: { allergenIds },
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData([...allergiesQueryKey, locale], saved);
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: allergiesQueryKey }),
+        queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+      ]);
+    },
+  });
+}

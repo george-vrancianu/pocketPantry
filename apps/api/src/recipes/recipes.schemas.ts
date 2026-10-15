@@ -350,6 +350,27 @@ export type RecipeAllergens = {
   uncheckedCount: number;
 };
 
+/** One Allergy a Recipe contains, with the lines that contain it (markers in the Ingredients tab). */
+export type AllergyWarningEntryView = {
+  allergen: { id: string; name: string };
+  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  severity: 'strong' | 'soft';
+  lineIds: string[];
+};
+
+/**
+ * The Allergy Warning on a Recipe, from the viewer's Allergies (ADR 0014). Null when the
+ * Recipe holds none of them and every line could be checked.
+ */
+export type AllergyWarningView = {
+  /** `strong` when any entry is strong; `soft` when only optional or Unchecked lines raise it. */
+  severity: 'strong' | 'soft';
+  /** The Allergies the Recipe contains, in the Allergen list's order. Empty when only Unchecked lines raise it. */
+  entries: AllergyWarningEntryView[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
 /**
  * The Member's Recipe detail. Extend with more sections (guidance, Pantry
  * status per line id) by adding fields here.
@@ -363,6 +384,8 @@ export type RecipeDetail = ResolvedRecipe & {
   diff: RecipeDiff | null;
   /** What the Recipe is known to contain, worked out from its own lines. */
   allergens: RecipeAllergens;
+  /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
+  allergyWarning: AllergyWarningView | null;
 };
 
 export type RecipeFilters = {

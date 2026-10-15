@@ -115,6 +115,21 @@ export type RecipeAllergens = {
   uncheckedCount: number;
 };
 
+/** One Allergy a Recipe contains and the lines that contain it (mirror of the API's `AllergyWarningEntryView`). */
+export type AllergyWarningEntry = {
+  allergen: { id: string; name: string };
+  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  severity: 'strong' | 'soft';
+  lineIds: string[];
+};
+/** The Allergy Warning on a Recipe (mirror of the API's `AllergyWarningView`). */
+export type AllergyWarning = {
+  severity: 'strong' | 'soft';
+  entries: AllergyWarningEntry[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
 /** The Member's Recipe detail (mirror of the API's `RecipeDetail`). */
 export type RecipeDetail = {
   id: string;
@@ -136,6 +151,8 @@ export type RecipeDetail = {
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
   allergens: RecipeAllergens;
+  /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
+  allergyWarning: AllergyWarning | null;
 };
 
 /** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */

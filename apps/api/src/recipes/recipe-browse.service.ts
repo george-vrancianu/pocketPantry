@@ -8,7 +8,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
-import { loadRecipeAllergens } from './recipe-allergens';
+import { loadRecipeAllergens, loadViewerAllergies } from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
@@ -158,6 +158,13 @@ export class RecipeBrowseService {
       }
     }
 
+    const { allergens, allergyWarning } = await loadRecipeAllergens(
+      this.database,
+      catalogScope(familyId),
+      resolved,
+      locale,
+      await loadViewerAllergies(this.database, memberId),
+    );
     return {
       ...resolved,
       base,
@@ -165,12 +172,8 @@ export class RecipeBrowseService {
         ? []
         : await this.variantsOf(row.id, familyId, locale),
       diff,
-      allergens: await loadRecipeAllergens(
-        this.database,
-        catalogScope(familyId),
-        resolved,
-        locale,
-      ),
+      allergens,
+      allergyWarning,
     };
   }
 

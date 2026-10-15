@@ -44,6 +44,13 @@
     "saved": "Salvat"
   },
   "language": "Limbă",
+  "allergies": {
+    "title": "Alergii",
+    "hint": "Alege ce trebuie să eviți, inclusiv intoleranțele. Rețetele care conțin acel alergen primesc un avertisment.",
+    "familyCanSee": "Toți din familia ta îți pot vedea alergiile.",
+    "loadFailed": "Lista de alergeni nu a putut fi încărcată.",
+    "saveFailed": "Alergiile nu au putut fi salvate. Încearcă din nou."
+  },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
   "account": "Cont",

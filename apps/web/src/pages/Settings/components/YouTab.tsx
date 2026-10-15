@@ -19,6 +19,7 @@ import { LanguageSwitcher } from '../../../components/LanguageSwitcher';
 import { useSession, useSignOut } from '../../../lib/auth';
 import { useSaveLocale } from '../../../lib/settings';
 import { useLoadedUnmatchedCount } from '../hooks/useLoadedUnmatchedCount';
+import { AllergiesSection } from './AllergiesSection';
 import { AppearanceCard } from './AppearanceCard';
 import { ScopeCaption, SectionHeading } from './SectionHeading';
 
@@ -88,6 +89,7 @@ export function YouTab() {
         </Box>
         {saveLocale.isError ? <Alert>{t('localeSaveFailed')}</Alert> : null}
       </Stack>
+      <AllergiesSection />
       {isAdmin ? (
         <Stack component="section" spacing={1} aria-labelledby={`${id}-admin`}>
           <SectionHeading

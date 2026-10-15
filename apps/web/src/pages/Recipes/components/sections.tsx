@@ -9,6 +9,7 @@ import {
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type {
+  AllergyWarningEntry,
   DiffEntry,
   PantryMatch,
   RecipeDetail,
@@ -82,6 +83,15 @@ function IngredientsSection({
       ? { ...line, quantity: scaled.quantity, unit: scaled.unit }
       : line;
   });
+  const allergiesByLine = new Map<string, AllergyWarningEntry[]>();
+  for (const entry of recipe.allergyWarning?.entries ?? []) {
+    for (const lineId of entry.lineIds) {
+      allergiesByLine.set(lineId, [
+        ...(allergiesByLine.get(lineId) ?? []),
+        entry,
+      ]);
+    }
+  }
   return (
     <Section title={t('sections.ingredients')}>
       <Stack spacing={1.5}>
@@ -96,6 +106,7 @@ function IngredientsSection({
         </Stack>
         <IngredientList
           lines={lines}
+          allergiesByLine={allergiesByLine}
           aria-label={t('sections.ingredients')}
           pantryByLine={byLine}
           selectedId={selectedId}

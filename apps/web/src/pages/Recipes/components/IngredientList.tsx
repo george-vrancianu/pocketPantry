@@ -14,11 +14,17 @@ import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { formatAmount } from '../../../lib/amount';
 import type { Unit } from '../../../lib/catalog';
-import type { PantryLine, RecipeDetailLine } from '../../../lib/recipes';
+import type {
+  AllergyWarningEntry,
+  PantryLine,
+  RecipeDetailLine,
+} from '../../../lib/recipes';
 import { LineStatusPill } from './PantryStatus';
 
 type Props = {
   lines: RecipeDetailLine[];
+  /** The Allergy Warning entries that name a line, by line id. */
+  allergiesByLine?: ReadonlyMap<string, AllergyWarningEntry[]>;
   /** The Pantry status of each line, by line id; a line without one shows none yet. */
   pantryByLine: Map<string, PantryLine>;
   /** The line whose add button is showing, if any. */
@@ -52,6 +58,7 @@ export function lineAmount(
 /** One Ingredient Line: name with its quantity tag, note under it, and the Pantry status on the right; selected, a cart button beside it. */
 function IngredientRow({
   line,
+  allergies,
   pantry,
   selected,
   added,
@@ -62,6 +69,7 @@ function IngredientRow({
   onAdd,
 }: {
   line: RecipeDetailLine;
+  allergies: readonly AllergyWarningEntry[];
   pantry: PantryLine | undefined;
   selected: boolean;
   added: boolean;
@@ -149,6 +157,42 @@ function IngredientRow({
                 {sub}
               </Box>
             ) : null}
+            {allergies.length > 0 ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '6px',
+                  mt: '4px',
+                }}
+              >
+                {allergies.map((entry) => (
+                  <Box
+                    key={entry.allergen.id}
+                    component="span"
+                    sx={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      px: '8px',
+                      py: '1px',
+                      borderRadius: radius.pill,
+                      bgcolor:
+                        entry.severity === 'strong'
+                          ? tokens.color.urgentBg
+                          : tokens.color.soonBg,
+                      color:
+                        entry.severity === 'strong'
+                          ? tokens.color.urgentFg
+                          : tokens.color.soonFg,
+                    }}
+                  >
+                    {t('recipes:allergyWarning.lineMarker', {
+                      name: entry.allergen.name,
+                    })}
+                  </Box>
+                ))}
+              </Box>
+            ) : null}
           </Box>
           {pantry ? (
             <LineStatusPill line={pantry} iconOnly={selected} added={listed} />
@@ -197,6 +241,7 @@ function IngredientRow({
 /** Ingredient Lines in order, as rows of a white card with their Pantry status. */
 export function IngredientList({
   lines,
+  allergiesByLine,
   pantryByLine,
   selectedId,
   onSelect,
@@ -219,6 +264,7 @@ export function IngredientList({
         <IngredientRow
           key={line.id}
           line={line}
+          allergies={allergiesByLine?.get(line.id) ?? []}
           pantry={pantryByLine.get(line.id)}
           selected={selectedId === line.id}
           added={addedId === line.id}
