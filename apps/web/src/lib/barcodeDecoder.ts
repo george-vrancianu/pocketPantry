@@ -7,7 +7,7 @@ import type { BarcodeFormat } from 'barcode-detector/ponyfill';
 
 /**
  * The ZXing WASM decoder, for browsers with no `BarcodeDetector` (Firefox, iOS Safari). This module
- * and the WASM it fetches are only ever loaded by a dynamic import, the first time Barcode mode is
+ * and the WASM it fetches are only ever loaded by a dynamic import, the first time Barcode is
  * used. The WASM is served from our own origin, not the library's default CDN.
  */
 export function createZXingDetector(formats: string[]) {

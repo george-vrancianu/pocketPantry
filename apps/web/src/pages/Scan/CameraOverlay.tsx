@@ -124,8 +124,8 @@ export function CameraOverlay({
     };
   }, []);
 
-  // Barcode mode reads the live stream: the first code closes the overlay. The decoder (WASM
-  // where the browser has none) is loaded by this call, the first time the mode is used.
+  // Barcode reads the live stream: the first code closes the overlay. The decoder (WASM
+  // where the browser has none) is loaded by this call, the first time Barcode is used.
   const resultRef = useRef(onResult);
   resultRef.current = onResult;
   const { watchBarcodes } = camera;

@@ -157,7 +157,7 @@ export function Viewfinder({ mode, onScan, disabled, dragEndedAt }: Props) {
         data-testid="scan-guide"
         data-armed={armed ? 'true' : undefined}
         data-pulse={pulse ? 'true' : undefined}
-        // Barcode mode reads on its own: the guide only shows where to aim.
+        // Barcode reads on its own: the guide only shows where to aim.
         role={mode === 'barcode' ? undefined : 'button'}
         tabIndex={mode === 'barcode' ? undefined : 0}
         aria-label={mode === 'barcode' ? undefined : t('guide.scan')}

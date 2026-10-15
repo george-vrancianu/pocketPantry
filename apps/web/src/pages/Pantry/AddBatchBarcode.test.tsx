@@ -377,7 +377,7 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(screen.getByRole('radio', { name: 'Stregkode' })).toBeChecked();
   });
 
-  it('shows the barcode mode in Romanian', async () => {
+  it('shows Barcode in Romanian', async () => {
     const user = userEvent.setup();
     stubLookup(() => Response.json(found()));
     renderWithProviders(<PantryPage />, { locale: 'ro' });
