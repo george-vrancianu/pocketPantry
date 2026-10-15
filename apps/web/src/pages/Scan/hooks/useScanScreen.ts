@@ -26,15 +26,16 @@ import {
 export type ScanScreenModes = {
   /** In dial order. Defaults to all four Scan Modes. */
   modes?: readonly ScanMode[];
-  /** Used when the URL names no allowed mode. Defaults to the Scan Mode used last. */
+  /** Used when the URL names no allowed mode, and when nothing is remembered. */
   defaultMode?: ScanMode;
+  /** Load and save the Scan Mode used last. Defaults to true, as on the main Scan page; callers with their own mode set pass false. */
+  rememberMode?: boolean;
 };
 
 /** Scan screen state: mode, camera, flash, and the photo-to-Review flow. */
 export function useScanScreen(config: ScanScreenModes = {}) {
   const modes = config.modes ?? SCAN_MODES;
-  // Only the main Scan page (all four modes) remembers its mode across visits.
-  const remembersMode = config.modes === undefined;
+  const remembersMode = config.rememberMode ?? true;
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,13 +43,14 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const requested = params.get('mode');
   const allowed = (value: string | null): value is ScanMode =>
     modes.some((item) => item === value);
-  const fallback =
-    config.defaultMode ?? (remembersMode ? loadScanMode() : null);
+  const remembered = remembersMode ? loadScanMode() : null;
   const mode: ScanMode = allowed(requested)
     ? requested
-    : fallback && allowed(fallback)
-      ? fallback
-      : modes[0];
+    : allowed(remembered)
+      ? remembered
+      : allowed(config.defaultMode ?? null)
+        ? config.defaultMode!
+        : modes[0];
   // Plain `/scan` (the Dock) comes back to whatever was used last, including a `?mode=` link.
   useEffect(() => {
     if (remembersMode) saveScanMode(mode);

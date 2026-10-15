@@ -1,9 +1,8 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createRef } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { ModeDial } from './components/ModeDial';
-import { renderWithProviders } from '../../test/render';
+import { ModeDial } from './ModeDial';
+import { renderWithProviders } from '../../../test/render';
 
 const renderDial = (
   modes: Parameters<typeof ModeDial>[0]['modes'],
@@ -16,7 +15,7 @@ const renderDial = (
       mode={mode}
       disabled={false}
       keysDisabled={false}
-      dragEndedAt={createRef<number | null>() as { current: number | null }}
+      dragEndedAt={{ current: null }}
       onChange={onChange}
     />,
   );
@@ -40,6 +39,12 @@ describe('ModeDial with a configured mode list', () => {
     expect(onChange).toHaveBeenLastCalledWith('receipt');
     onChange.mockClear();
     await userEvent.keyboard('{ArrowLeft}');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('does not step past the last mode', async () => {
+    const onChange = renderDial(['product', 'receipt'], 'receipt');
+    await userEvent.keyboard('{ArrowRight}');
     expect(onChange).not.toHaveBeenCalled();
   });
 

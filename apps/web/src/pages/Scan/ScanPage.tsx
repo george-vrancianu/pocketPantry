@@ -40,14 +40,16 @@ const roundButton = (size: number) => ({
   '&:focus-visible': glassFocusRing,
 });
 
+export type ScanPageProps = ScanScreenModes;
+
 /**
  * The dark camera screen (handoff section 7). It is always in Dark-first,
  * whatever the Member's Theme, so the chrome never washes out the camera view.
  */
-export function ScanPage(config: ScanScreenModes = {}) {
+export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
-  const screen = useScanScreen(config);
+  const screen = useScanScreen({ modes, defaultMode, rememberMode });
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
