@@ -1,5 +1,11 @@
 import type { StorageLocation } from './catalog';
-import { daysUntil, fromIso, localIso, type IsoDate } from './pantry';
+import {
+  daysUntil,
+  fromIso,
+  isExpiringSoon,
+  localIso,
+  type IsoDate,
+} from './pantry';
 
 /**
  * Pantry Health: the 0-100 score of how well a Family's Pantry is kept, and the Health To-dos behind
@@ -120,7 +126,7 @@ export function pantryHealth(input: HealthInput): PantryHealth {
     dated.map((batch) => {
       const days = daysLeft(batch, input);
       if (days < 0) return 0;
-      return days <= input.staleThresholdDays ? 0.6 : 1;
+      return isExpiringSoon(days, input.staleThresholdDays) ? 0.6 : 1;
     }),
   );
   const staples = mean(
@@ -175,10 +181,9 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
     .filter((batch) => daysLeft(batch, input) < 0)
     .sort(byDaysLeft(input));
   const expiringSoon = dated
-    .filter((batch) => {
-      const days = daysLeft(batch, input);
-      return days >= 0 && days <= input.staleThresholdDays;
-    })
+    .filter((batch) =>
+      isExpiringSoon(daysLeft(batch, input), input.staleThresholdDays),
+    )
     .sort(byDaysLeft(input));
   const missingStaples = input.staples
     .map((staple) => staple.ingredientId)

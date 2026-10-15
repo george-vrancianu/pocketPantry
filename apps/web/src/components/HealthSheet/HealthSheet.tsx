@@ -13,8 +13,7 @@ import {
   MIN_BATCHES_FOR_SCORE,
   type PantryHealth,
 } from '../../lib/health';
-import { HealthRing } from './HealthRing';
-import { VERDICT_COLOR } from './healthStyle';
+import { ScoreRing } from './HealthRing';
 
 type Props = {
   open: boolean;
@@ -45,23 +44,7 @@ export function HealthSheet({ open, onClose, health, batchCount }: Props) {
             borderBottom: `1px solid ${tokens.color.divider}`,
           }}
         >
-          {health.scored ? (
-            <HealthRing
-              percent={health.total}
-              label={health.total}
-              color={VERDICT_COLOR[health.verdict]}
-              size={52}
-              stroke={6}
-            />
-          ) : (
-            <HealthRing
-              percent={(batchCount / MIN_BATCHES_FOR_SCORE) * 100}
-              label={batchCount}
-              color={tokens.color.muted}
-              size={52}
-              stroke={6}
-            />
-          )}
+          <ScoreRing health={health} batchCount={batchCount} size={52} />
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {health.scored ? (
               <>

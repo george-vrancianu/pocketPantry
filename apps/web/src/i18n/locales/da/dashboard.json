@@ -64,6 +64,7 @@
     "toDo_one": "{{count}} at gøre",
     "toDo_other": "{{count}} at gøre",
     "nothingToDo": "Intet at gøre",
+    "nothingToDoSpoken": "intet at gøre",
     "toDoLong_one": "{{count}} ting at gøre",
     "toDoLong_other": "{{count}} ting at gøre",
     "progress_one": "Tilføj {{count}} mere til spisekammeret for at få din score",

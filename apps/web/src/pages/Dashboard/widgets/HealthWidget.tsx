@@ -8,7 +8,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { HealthRing } from '../../../components/HealthSheet/HealthRing';
+import { ScoreRing } from '../../../components/HealthSheet/HealthRing';
 import { HealthSheet } from '../../../components/HealthSheet/HealthSheet';
 import { VERDICT_COLOR } from '../../../components/HealthSheet/healthStyle';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -36,7 +36,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
       : t('health.toDo', { count: todoCount });
   const spokenTodos =
     todoCount === 0
-      ? t('health.nothingToDo').toLocaleLowerCase()
+      ? t('health.nothingToDoSpoken')
       : t('health.toDoLong', { count: todoCount });
   const headline = health.scored
     ? t(`health.verdict.${health.verdict}`)
@@ -67,8 +67,12 @@ export function HealthWidget({ size, columns }: WidgetProps) {
         padding="12px 14px 14px"
       >
         {wide ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Box
+            component="span"
+            sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          >
             <Box
+              component="span"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -76,30 +80,50 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                 color: tokens.color.muted,
               }}
             >
-              <WidgetTitle icon={<PulseIcon size={16} />}>
+              <WidgetTitle component="span" icon={<PulseIcon size={16} />}>
                 {t('health.title')}
               </WidgetTitle>
               <InfoIcon size={15} />
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Ring health={health} batchCount={batchCount} />
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Box sx={{ ...displayType, fontSize: 16 }}>{headline}</Box>
-                <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>
+            <Box
+              component="span"
+              sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+            >
+              <ScoreRing health={health} batchCount={batchCount} size={56} />
+              <Box component="span" sx={{ flex: 1, minWidth: 0 }}>
+                <Box
+                  component="span"
+                  sx={{ display: 'block', ...displayType, fontSize: 16 }}
+                >
+                  {headline}
+                </Box>
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'block',
+                    fontSize: 12.5,
+                    color: tokens.color.muted,
+                  }}
+                >
                   {subline}
                 </Box>
               </Box>
-              <Box sx={{ color: tokens.color.muted, display: 'flex' }}>
+              <Box
+                component="span"
+                sx={{ color: tokens.color.muted, display: 'flex' }}
+              >
                 <ChevronRightIcon size={18} />
               </Box>
             </Box>
             {health.scored ? (
               <Box
+                component="span"
                 aria-hidden="true"
                 sx={{ display: 'flex', gap: '2px', height: 8 }}
               >
                 {FACTORS.map((factor) => (
                   <Box
+                    component="span"
                     key={factor}
                     data-factor={factor}
                     sx={{
@@ -113,11 +137,26 @@ export function HealthWidget({ size, columns }: WidgetProps) {
             ) : null}
           </Box>
         ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <Ring health={health} batchCount={batchCount} />
-            <Box>
-              <Box sx={{ ...displayType, fontSize: 14.5 }}>{headline}</Box>
-              <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>
+          <Box
+            component="span"
+            sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+          >
+            <ScoreRing health={health} batchCount={batchCount} size={56} />
+            <Box component="span">
+              <Box
+                component="span"
+                sx={{ display: 'block', ...displayType, fontSize: 14.5 }}
+              >
+                {headline}
+              </Box>
+              <Box
+                component="span"
+                sx={{
+                  display: 'block',
+                  fontSize: 12.5,
+                  color: tokens.color.muted,
+                }}
+              >
                 {subline}
               </Box>
             </Box>
@@ -131,31 +170,5 @@ export function HealthWidget({ size, columns }: WidgetProps) {
         batchCount={batchCount}
       />
     </>
-  );
-}
-
-function Ring({
-  health,
-  batchCount,
-}: {
-  health: ReturnType<typeof usePantryHealth>['health'];
-  batchCount: number;
-}) {
-  return health.scored ? (
-    <HealthRing
-      percent={health.total}
-      label={health.total}
-      color={VERDICT_COLOR[health.verdict]}
-      size={56}
-      stroke={6}
-    />
-  ) : (
-    <HealthRing
-      percent={(batchCount / MIN_BATCHES_FOR_SCORE) * 100}
-      label={batchCount}
-      color={tokens.color.muted}
-      size={56}
-      stroke={6}
-    />
   );
 }

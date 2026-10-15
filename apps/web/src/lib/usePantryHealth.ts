@@ -8,7 +8,7 @@ import {
   type PantryHealth,
 } from './health';
 import { localIso, useBatches, useRunningLow } from './pantry';
-import { useStaleThresholdDays } from './settings';
+import { DEFAULT_STALE_THRESHOLD_DAYS, useFamilySettings } from './settings';
 import { useShoppingList } from './shopping';
 import { useStaples } from './staples';
 import { useToday } from './useToday';
@@ -31,7 +31,10 @@ export function usePantryHealth(): PantryHealthState {
   const runningLow = useRunningLow(locale);
   const staples = useStaples(locale);
   const shopping = useShoppingList(locale);
-  const staleThresholdDays = useStaleThresholdDays(locale);
+  const settings = useFamilySettings(locale);
+  // Until the Family Settings load (or if they fail) the API's default applies, as it does for expiry tags.
+  const staleThresholdDays =
+    settings.data?.staleThresholdDays ?? DEFAULT_STALE_THRESHOLD_DAYS;
 
   const input = useMemo<HealthInput>(
     () => ({
@@ -65,8 +68,9 @@ export function usePantryHealth(): PantryHealthState {
       batches.isPending ||
       staples.isPending ||
       shopping.isPending ||
-      runningLow.isPending,
-    error: batches.error ?? staples.error ?? shopping.error,
+      runningLow.isPending ||
+      settings.isPending,
+    error: batches.error ?? staples.error ?? shopping.error ?? runningLow.error,
     batchCount: input.batches.length,
     health,
     todos,

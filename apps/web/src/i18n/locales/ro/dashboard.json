@@ -70,6 +70,7 @@
     "toDo_few": "{{count}} de făcut",
     "toDo_other": "{{count}} de făcut",
     "nothingToDo": "Nimic de făcut",
+    "nothingToDoSpoken": "nimic de făcut",
     "toDoLong_one": "{{count}} lucru de făcut",
     "toDoLong_few": "{{count}} lucruri de făcut",
     "toDoLong_other": "{{count}} de lucruri de făcut",

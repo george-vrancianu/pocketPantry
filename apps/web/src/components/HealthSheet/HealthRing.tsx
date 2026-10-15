@@ -5,7 +5,8 @@ import {
   usePrefersReducedMotion,
 } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState } from 'react';
-import { SCORE_ANIMATION_MS, SCORE_EASING } from './healthStyle';
+import { MIN_BATCHES_FOR_SCORE, type PantryHealth } from '../../lib/health';
+import { SCORE_ANIMATION_MS, SCORE_EASING, VERDICT_COLOR } from './healthStyle';
 
 /** The number counting to `target` over 700 ms (ease-out cubic); with reduced motion it jumps. */
 function useAnimatedNumber(target: number, jump: boolean): number {
@@ -52,9 +53,11 @@ export function HealthRing({ percent, label, color, size, stroke }: Props) {
   const centre = size / 2;
   return (
     <Box
+      component="span"
       aria-hidden="true"
       sx={{
         position: 'relative',
+        display: 'block',
         width: size,
         height: size,
         flexShrink: 0,
@@ -103,5 +106,34 @@ export function HealthRing({ percent, label, color, size, stroke }: Props) {
         {shown}
       </Box>
     </Box>
+  );
+}
+
+/** The ring of a Pantry's health: the score in the verdict's colour, or the progress towards getting one. */
+export function ScoreRing({
+  health,
+  batchCount,
+  size,
+}: {
+  health: PantryHealth;
+  batchCount: number;
+  size: number;
+}) {
+  return health.scored ? (
+    <HealthRing
+      percent={health.total}
+      label={health.total}
+      color={VERDICT_COLOR[health.verdict]}
+      size={size}
+      stroke={6}
+    />
+  ) : (
+    <HealthRing
+      percent={(batchCount / MIN_BATCHES_FOR_SCORE) * 100}
+      label={batchCount}
+      color={tokens.color.muted}
+      size={size}
+      stroke={6}
+    />
   );
 }

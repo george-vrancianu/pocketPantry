@@ -98,13 +98,17 @@ export function WidgetTitle({
   icon,
   children,
   color = tokens.color.muted,
+  component = 'div',
 }: {
   icon: ReactNode;
   children: ReactNode;
   color?: string;
+  /** `span` inside a button card, which may hold only phrasing content. */
+  component?: 'div' | 'span';
 }) {
   return (
     <Box
+      component={component}
       sx={{
         display: 'flex',
         alignItems: 'center',

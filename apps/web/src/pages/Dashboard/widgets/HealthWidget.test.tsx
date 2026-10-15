@@ -62,10 +62,11 @@ function tenBatchPantry() {
 function stub(
   pantry: { batches: Batch[]; runningLow: string[] },
   staples: Staple[] = [staple('milk'), staple('eggs')],
+  settings: () => Response | Promise<Response> = () =>
+    Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
 ) {
   const { fetchMock, calls } = stubApi({
-    'GET /api/settings/family': () =>
-      Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
+    'GET /api/settings/family': settings,
     'GET /api/pantry': () => Response.json(pantry),
     'GET /api/staples': () => Response.json({ staples }),
     'GET /api/shopping-list': () =>
@@ -153,6 +154,40 @@ describe('HealthWidget', () => {
     expect(card).toHaveTextContent('1 to do');
     expect(card).not.toHaveTextContent('In good shape');
     expect(card.querySelector('[data-factor]')).toBeNull();
+  });
+
+  it('waits for the Family Settings before scoring, so the default Stale Threshold never shows', async () => {
+    let release: () => void = () => {};
+    const settingsLoaded = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const calls = stub(
+      {
+        batches: [
+          ...Array.from({ length: 9 }, () => batch()),
+          batch({ expiryDate: isoIn(5) }),
+        ],
+        runningLow: [],
+      },
+      [],
+      async () => {
+        await settingsLoaded;
+        return Response.json({ staleThresholdDays: 10, expiryOverrides: [] });
+      },
+    );
+
+    renderWithProviders(<HealthWidget size="wide" columns={2} />);
+
+    await waitFor(() =>
+      expect(calls.some((call) => call.key === 'GET /api/pantry')).toBe(true),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    release();
+    // With the default threshold of 3 the Batch five days out would count as fresh and the score be 100.
+    expect(
+      await screen.findByRole('button', { name: /^Pantry health, 98/ }),
+    ).toBeInTheDocument();
   });
 
   it('speaks Romanian', async () => {
