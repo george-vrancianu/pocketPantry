@@ -20,7 +20,7 @@ export function cameraConstraints(): MediaStreamConstraints {
 export const BARCODE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e'];
 
 type Detector = {
-  detect(source: HTMLVideoElement): Promise<Array<{ rawValue: string }>>;
+  detect(source: ImageBitmapSource): Promise<Array<{ rawValue: string }>>;
 };
 type NativeDetector = {
   new (options: { formats: string[] }): Detector;
@@ -50,9 +50,9 @@ function loadDetector(): Promise<Detector> {
   return detector;
 }
 
-/** The first product barcode in the current video frame (8, 12 or 13 digits), or null. */
+/** The first product barcode in a video frame or a captured image (8, 12 or 13 digits), or null. */
 export async function readBarcode(
-  video: HTMLVideoElement,
+  video: HTMLVideoElement | Blob,
 ): Promise<string | null> {
   const found = await (await loadDetector()).detect(video);
   return (

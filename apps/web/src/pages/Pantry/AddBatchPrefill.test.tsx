@@ -13,6 +13,9 @@ const camera = vi.hoisted(() => ({
   status: 'ready' as string,
   /** Holds image preparation until released. */
   prepare: null as Promise<void> | null,
+  /** What decoding each captured frame answers, in shot order; a frame past the end has no barcode. */
+  frames: [] as Array<() => Promise<string | null>>,
+  shots: 0,
 }));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
@@ -23,6 +26,7 @@ vi.mock('../../lib/camera', () => ({
     setTorch: () => Promise.resolve(true),
     watchBarcodes: () => () => {},
   }),
+  readBarcode: () => camera.frames[camera.shots++]?.() ?? Promise.resolve(null),
 }));
 vi.mock('../../lib/image', () => ({
   resizeImage: () =>
@@ -132,6 +136,8 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
     camera.status = 'ready';
     camera.prepare = null;
+    camera.frames = [];
+    camera.shots = 0;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -499,5 +505,104 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
       'The scan did not finish. Please try again.',
     );
     expect(screen.getByLabelText('Product description')).toHaveValue('Fresh');
+  });
+});
+
+describe('Learn barcodes from Product photos', () => {
+  const CODE = '5941234567890';
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('pocket-pantry.camera-overlay-mode', 'product');
+    camera.status = 'ready';
+    camera.prepare = null;
+    camera.frames = [];
+    camera.shots = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  async function save(
+    user: ReturnType<typeof userEvent.setup>,
+    calls: ReturnType<typeof stubApi>['calls'],
+  ) {
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    return calls.find((call) => call.key === 'POST /api/pantry/batches')?.body;
+  }
+
+  it('sends a barcode decoded from the captured frame with the save, without another Scan', async () => {
+    const user = userEvent.setup();
+    camera.frames = [() => Promise.resolve(CODE)];
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    await screen.findByTestId('prefilled-ingredient');
+
+    expect(await save(user, calls)).toMatchObject({
+      ingredientId: 'yogurt-id',
+      barcode: CODE,
+    });
+    expect(scanCalls(calls)).toHaveLength(1);
+  });
+
+  it('sends no barcode when the frame has none', async () => {
+    const user = userEvent.setup();
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    await screen.findByTestId('prefilled-ingredient');
+
+    expect(await save(user, calls)).not.toHaveProperty('barcode');
+  });
+
+  it('ignores a decode failure silently', async () => {
+    const user = userEvent.setup();
+    camera.frames = [() => Promise.reject(new Error('no decoder'))];
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    await screen.findByTestId('prefilled-ingredient');
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(await save(user, calls)).not.toHaveProperty('barcode');
+  });
+
+  it('does not let a slow decode overwrite a later photo', async () => {
+    const user = userEvent.setup();
+    let late: (code: string | null) => void = () => {};
+    camera.frames = [
+      () => new Promise<string | null>((resolve) => (late = resolve)),
+      () => Promise.resolve(null),
+    ];
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    await screen.findByTestId('prefilled-ingredient');
+    await shoot(user);
+    late(CODE);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(await save(user, calls)).not.toHaveProperty('barcode');
   });
 });

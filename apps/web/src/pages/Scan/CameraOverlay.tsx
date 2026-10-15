@@ -12,7 +12,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
-import { useCamera } from '../../lib/camera';
+import { readBarcode, useCamera } from '../../lib/camera';
 import type { CameraMode } from '../../lib/cameraMode';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
 import { glassControl, glassFocusRing, shade } from './components/glass';
@@ -31,6 +31,11 @@ export type CameraResult =
       image: string;
       /** The language the Member chose to read it in. */
       scanLanguage: ScanLanguage;
+      /**
+       * The barcode found in the captured frame, or null: decoded on the device alongside the
+       * read, never awaited by it. Never rejects; a frame that cannot be decoded just has none.
+       */
+      barcode: Promise<string | null>;
     }
   | {
       kind: 'barcode';
@@ -140,13 +145,16 @@ export function CameraOverlay({
     try {
       const frame = await camera.capture();
       if (!frame) return;
+      // Started before the photo is prepared and never awaited here: it must not delay the read.
+      const barcode = readBarcode(frame).catch(() => null);
       setPreparing(true);
       const feed = camera.videoRef.current;
       const image = await IMAGE_PREPARATION[mode](frame, 'camera', {
         width: feed?.clientWidth || window.innerWidth,
         height: feed?.clientHeight || window.innerHeight,
       });
-      if (!closed.current) onResult({ kind: 'product', image, scanLanguage });
+      if (!closed.current)
+        onResult({ kind: 'product', image, scanLanguage, barcode });
     } catch {
       setFailed(true);
     } finally {

@@ -27,6 +27,7 @@ vi.mock('../../lib/camera', () => ({
       };
     },
   }),
+  readBarcode: () => Promise.resolve(null),
 }));
 vi.mock('../../lib/image', () => ({
   resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
