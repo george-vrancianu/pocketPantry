@@ -45,6 +45,9 @@
     "memberOptional": "{{who}}: {{names}} (opțional)"
   },
   "allergyIndicator": {
+    "withOwners": "{{name}} ({{owners}})",
+    "ownerYou": "tu",
+    "ownerFamily": "familie",
     "strong": "Conține {{names}}",
     "optional": "Opțional: conține {{names}}",
     "unchecked": "Verificare incompletă"

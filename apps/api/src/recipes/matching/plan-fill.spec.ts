@@ -38,6 +38,7 @@ const recipe = (id: string, over: Partial<FillRecipe> = {}): FillRecipe => ({
   archived: false,
   lines: [line()],
   moments: [],
+  blocksFill: false,
   ...over,
 });
 const eggs = (quantity: number, over: Partial<ForecastBatch> = {}) => ({
@@ -105,6 +106,35 @@ describe('fillPlan: empty slots only', () => {
       recipes: [recipe('a', { archived: true })],
     });
     expect(choices).toEqual([]);
+  });
+});
+
+describe('fillPlan: Allergies', () => {
+  it('never places a Recipe that blocks Fill, even as the best ranked', () => {
+    const choices = fill({
+      slots: [empty(0, 'dinner')],
+      recipes: [
+        recipe('a', { blocksFill: true }),
+        recipe('b', { lines: [line({ quantity: 99 })] }),
+      ],
+    });
+    expect(placed(choices)).toEqual(['0-dinner=b']);
+  });
+
+  it('leaves the slot empty when every Recipe blocks Fill', () => {
+    const choices = fill({
+      slots: [empty(0, 'dinner')],
+      recipes: [recipe('a', { blocksFill: true })],
+    });
+    expect(choices).toEqual([]);
+  });
+
+  it('keeps a slot the Member filled with a blocking Recipe', () => {
+    const choices = fill({
+      slots: [filled(0, 'dinner', 'a'), empty(1, 'dinner')],
+      recipes: [recipe('a', { blocksFill: true }), recipe('b')],
+    });
+    expect(placed(choices)).toEqual(['1-dinner=b']);
   });
 });
 

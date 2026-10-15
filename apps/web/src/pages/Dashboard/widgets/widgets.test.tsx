@@ -539,6 +539,7 @@ describe('CookTonightWidget', () => {
                   name: 'Tree nuts',
                   tier: 'yours',
                   severity: 'soft',
+                  owners: [{ kind: 'own' }],
                 },
               ],
               uncheckedCount: 0,

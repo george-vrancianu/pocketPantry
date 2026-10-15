@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
-import type { AllergyOwner } from './matching/allergens';
+import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
 import type { RecipeDiff } from './recipe-diff';
 import {
@@ -405,8 +405,8 @@ export type AllergyWarningView = {
 
 /**
  * The Allergy Warning as a list row, strip tile or match shows it: the same severity as on
- * Recipe detail, one item per Allergen (not per person) named in the viewer's locale. The line
- * markers and whose-Allergy names stay on detail. Null when nothing the viewer must avoid is,
+ * Recipe detail, one item per Allergen (not per person) named in the viewer's locale, with
+ * whose Allergy it is (`owners`). The line markers stay on detail. Null when nothing the viewer must avoid is,
  * or might be, in the Recipe.
  *
  * #359's `hidden` and `hiddenByAllergiesCount` will sit beside this warning, not inside it.
@@ -422,6 +422,12 @@ export type CompactAllergyWarning = {
     tier: 'yours' | 'members';
     /** `strong` when a required line contains it for anyone listed, `soft` when only optional lines do. */
     severity: 'strong' | 'soft';
+    /**
+     * Whose Allergy it is, decided by `deriveAllergens`: the viewer (`own`), a Family Allergy
+     * by its optional label, or another Member by name. The viewer's own and Family
+     * Allergies come first.
+     */
+    owners: AllergyWarningOwner[];
   }[];
   /** Lines that could not be checked for Allergens. */
   uncheckedCount: number;

@@ -32,9 +32,16 @@ export type CompactAllergyWarning = {
     name: string;
     tier: 'yours' | 'members';
     severity: 'strong' | 'soft';
+    /** Whose Allergy it is: you, a Family Allergy (with its label) or another Member by name. */
+    owners: CompactAllergyOwner[];
   }[];
   uncheckedCount: number;
 };
+
+export type CompactAllergyOwner =
+  | { kind: 'own' }
+  | { kind: 'family'; label: string | null }
+  | { kind: 'member'; name: string };
 
 /** One row of the Recipe list (mirror of the API's `RecipeListItem`). */
 export type RecipeListItem = {

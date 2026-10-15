@@ -684,8 +684,20 @@ describe('RecipesPage', () => {
     ): NonNullable<RecipeListItem['allergyWarning']> => ({
       severity,
       allergens: [
-        { id: 'a-pn', name: 'Peanuts', tier: 'yours', severity },
-        { id: 'a-mk', name: 'Milk', tier: 'members', severity },
+        {
+          id: 'a-pn',
+          name: 'Peanuts',
+          tier: 'yours',
+          severity,
+          owners: [{ kind: 'own' }],
+        },
+        {
+          id: 'a-mk',
+          name: 'Milk',
+          tier: 'members',
+          severity,
+          owners: [{ kind: 'member', name: 'Ana' }],
+        },
       ],
       uncheckedCount: 0,
     });

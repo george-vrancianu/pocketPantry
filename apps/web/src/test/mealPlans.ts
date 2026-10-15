@@ -43,6 +43,7 @@ export const slot = (
   servings: 2,
   servingsOverride: null,
   unavailable: false,
+  allergyWarning: null,
   status: 'covered' as SlotStatus,
   issues: [],
   ...over,

@@ -40,6 +40,9 @@
     "memberOptional": "{{who}}: {{names}} (valgfri)"
   },
   "allergyIndicator": {
+    "withOwners": "{{name}} ({{owners}})",
+    "ownerYou": "du",
+    "ownerFamily": "familie",
     "strong": "Indeholder {{names}}",
     "optional": "Valgfrit: indeholder {{names}}",
     "unchecked": "Ikke fuldt tjekket"
