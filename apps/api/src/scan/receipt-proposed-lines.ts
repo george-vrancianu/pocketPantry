@@ -1,6 +1,4 @@
-import { exceedsMaxQuantity } from '../common/quantity';
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
-import type { ingredientUnit } from '../database/schema';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
@@ -8,8 +6,8 @@ import {
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
+import { toPantryQuantity } from './receipt-quantity';
 
-type PantryUnit = (typeof ingredientUnit.enumValues)[number];
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
 /** The Catalog Ingredient for a line; `exact` when found by exact name lookup rather than named by the model. */
@@ -35,42 +33,6 @@ function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
     default:
       return 'other';
   }
-}
-
-/** Receipt units onto the Pantry's units; anything else yields no quantity. */
-export function toPantryQuantity(
-  quantity: number | null,
-  unit: string | null,
-): { quantity: number | null; unit: PantryUnit | null } {
-  if (quantity === null || unit === null) return { quantity: null, unit: null };
-  const scaled = (factor: number, to: PantryUnit) => ({
-    quantity: Math.round(quantity * factor * 1000) / 1000,
-    unit: to,
-  });
-  const converted = (() => {
-    switch (unit) {
-      case 'g':
-      case 'kg':
-      case 'ml':
-      case 'l':
-        return scaled(1, unit);
-      case 'item':
-        return scaled(1, 'pcs');
-      case 'cl':
-        return scaled(10, 'ml');
-      case 'mg':
-        return scaled(0.001, 'g');
-      default:
-        return null;
-    }
-  })();
-  // numeric(10,3) on the Batch: a quantity that rounds to nothing is no quantity.
-  // And one past the Batch maximum would fail validation on save.
-  return converted &&
-    converted.quantity >= 0.001 &&
-    !exceedsMaxQuantity(converted.quantity)
-    ? converted
-    : { quantity: null, unit: null };
 }
 
 /**

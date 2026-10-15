@@ -190,4 +190,14 @@ describe('receiptProposedLines', () => {
       )[0],
     ).toMatchObject({ quantity: null, unit: null });
   });
+
+  it('leaves quantity and unit empty for a quantity past the Batch maximum', () => {
+    expect(
+      receiptProposedLines(
+        receipt(line({ unit: 'g', quantity: 2_000_000 })),
+        resolveMilk,
+        0.6,
+      )[0],
+    ).toMatchObject({ quantity: null, unit: null });
+  });
 });

@@ -1,8 +1,7 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ProductScanResult } from './product-scan.schemas';
-import { toPantryQuantity } from './receipt-proposed-lines';
-import { normalizeUnit } from './receipt-quantity';
+import { toPantryQuantityFromText } from './receipt-quantity';
 
 /**
  * One line a Scan proposes to the Review screen. Every Scan Mode returns lines
@@ -55,10 +54,7 @@ export function applyThreshold(
 function packageQuantity(
   result: Pick<ProductScanResult, 'netQuantity' | 'netUnit'>,
 ): Pick<ProposedLine, 'quantity' | 'unit'> {
-  return toPantryQuantity(
-    result.netQuantity,
-    result.netUnit === null ? null : normalizeUnit(result.netUnit),
-  );
+  return toPantryQuantityFromText(result.netQuantity, result.netUnit);
 }
 
 /**
