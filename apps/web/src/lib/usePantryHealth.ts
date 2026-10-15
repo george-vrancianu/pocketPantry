@@ -11,6 +11,7 @@ import { localIso, useBatches, useRunningLow } from './pantry';
 import { useFamilySettings, useStaleThresholdDays } from './settings';
 import { useShoppingList } from './shopping';
 import { useStaples } from './staples';
+import { useSuggestions } from './suggestions';
 import { useToday } from './useToday';
 
 export type PantryHealthState = {
@@ -22,7 +23,7 @@ export type PantryHealthState = {
   todos: HealthTodo[];
 };
 
-/** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List and Stale Threshold reads. */
+/** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
 export function usePantryHealth(): PantryHealthState {
   const { i18n } = useTranslation();
   const locale = i18n.language;
@@ -31,6 +32,7 @@ export function usePantryHealth(): PantryHealthState {
   const runningLow = useRunningLow(locale);
   const staples = useStaples(locale);
   const shopping = useShoppingList(locale);
+  const suggestions = useSuggestions(locale, today);
   const settings = useFamilySettings(locale);
   const staleThresholdDays = useStaleThresholdDays(locale);
 
@@ -46,8 +48,7 @@ export function usePantryHealth(): PantryHealthState {
           .flatMap((group) => group.items)
           .flatMap((item) => (item.ingredientId ? [item.ingredientId] : [])),
       ),
-      // Dismissed Suggestions join in with the Health To-do list.
-      dismissed: new Set(),
+      dismissed: new Set(suggestions.data?.dismissed),
     }),
     [
       today,
@@ -56,6 +57,7 @@ export function usePantryHealth(): PantryHealthState {
       staples.data,
       runningLow.data,
       shopping.data,
+      suggestions.data,
     ],
   );
   const health = useMemo(() => pantryHealth(input), [input]);
@@ -67,8 +69,14 @@ export function usePantryHealth(): PantryHealthState {
       staples.isPending ||
       shopping.isPending ||
       runningLow.isPending ||
+      suggestions.isPending ||
       settings.isPending,
-    error: batches.error ?? staples.error ?? shopping.error ?? runningLow.error,
+    error:
+      batches.error ??
+      staples.error ??
+      shopping.error ??
+      runningLow.error ??
+      suggestions.error,
     batchCount: input.batches.length,
     health,
     todos,
