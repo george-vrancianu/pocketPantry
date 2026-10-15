@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { DATABASE } from '../database/database.constants';
+import type { Database } from '../database/database.types';
+import { openFoodFactsCache } from '../database/schema';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type {
@@ -14,6 +18,11 @@ import {
   type OpenFoodFactsProduct,
 } from './open-food-facts.client';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** How long the shared cache keeps a product, and a "not found". */
+const HIT_TTL_MS = 30 * DAY_MS;
+const NOT_FOUND_TTL_MS = DAY_MS;
+
 /**
  * Barcode Lookup (ADR 0013): a barcode as a Prefill proposal. Not a Scan, so
  * it never touches the Scan Cap, and there is no AI call: the Ingredient is
@@ -25,6 +34,7 @@ export class BarcodeLookupService {
     @InjectOpenFoodFacts() private readonly openFoodFacts: OpenFoodFactsClient,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
+    @Inject(DATABASE) private readonly database: Database,
   ) {}
 
   async lookup(
@@ -53,9 +63,30 @@ export class BarcodeLookupService {
     };
   }
 
-  /** The product as Open Food Facts has it, or null. */
-  private product(barcode: string): Promise<OpenFoodFactsProduct | null> {
-    return this.openFoodFacts.fetchProduct(barcode);
+  /**
+   * The product as Open Food Facts has it, or null. Served from the shared
+   * cache while fresh; a failure throws and is never cached.
+   */
+  private async product(barcode: string): Promise<OpenFoodFactsProduct | null> {
+    const now = Date.now();
+    const [cached] = await this.database
+      .select()
+      .from(openFoodFactsCache)
+      .where(eq(openFoodFactsCache.barcode, barcode));
+    if (cached) {
+      const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
+      if (now - cached.fetchedAt.getTime() < ttl) return cached.product;
+    }
+    const product = await this.openFoodFacts.fetchProduct(barcode);
+    const fetchedAt = new Date(Date.now());
+    await this.database
+      .insert(openFoodFactsCache)
+      .values({ barcode, product, fetchedAt })
+      .onConflictDoUpdate({
+        target: openFoodFactsCache.barcode,
+        set: { product, fetchedAt },
+      });
+    return product;
   }
 
   private async confidentMatch(

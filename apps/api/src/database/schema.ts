@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { OpenFoodFactsProduct } from '../barcode/open-food-facts.client';
 
 const timestamps = {
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -1023,3 +1024,12 @@ export const recipeEatingMomentTranslations = pgTable(
     primaryKey({ columns: [table.recipeEatingMomentId, table.locale] }),
   ],
 );
+
+// Open Food Facts cache (ADR 0013): shared by every Family, keyed by barcode.
+// Holds only Open Food Facts data, never Family data. A null payload is a
+// "not found". Entries are kept 30 days (hit) or 1 day (not found) from `fetchedAt`.
+export const openFoodFactsCache = pgTable('open_food_facts_cache', {
+  barcode: text('barcode').primaryKey(),
+  product: jsonb('product').$type<OpenFoodFactsProduct | null>(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull(),
+});
