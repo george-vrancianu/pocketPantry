@@ -24,6 +24,8 @@ const result = (
   fallbackIngredientName: 'Grana Padano',
   expiryDate: '2026-12-24',
   expiryText: null,
+  netQuantity: null,
+  netUnit: null,
   confidence: 0.9,
   matchedIngredientName: 'Parmesan',
   matchedIngredientDefaultUnit: 'g',

@@ -10,7 +10,6 @@ export const imageDataUrlSchema = z
 
 export const productScanSchema = z.object({
   productImage: imageDataUrlSchema,
-  expiryImage: imageDataUrlSchema.nullable().optional(),
 });
 
 export const productScanModelResultSchema = z.object({
@@ -22,6 +21,8 @@ export const productScanModelResultSchema = z.object({
   fallbackIngredientName: z.string().trim().min(1).max(80),
   expiryDate: z.iso.date().nullable(),
   expiryText: z.string().trim().max(120).nullable(),
+  netQuantity: z.number().nullable(),
+  netUnit: z.string().trim().max(30).nullable(),
   confidence: z.number().min(0).max(1),
 });
 

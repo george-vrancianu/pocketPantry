@@ -114,6 +114,12 @@ describe('ReviewPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the quantity and unit a Product Scan read from the package', () => {
+    renderReview([sure({ quantity: 1, unit: 'l' })]);
+    expect(row('Parmesan')).toHaveTextContent('1 L');
+    expect(row('Parmesan')).not.toHaveTextContent('?');
+  });
+
   it('shows a confident line as one shut row with its quantity, Location and short date', () => {
     renderReview([sure()]);
     const button = row('Parmesan');
