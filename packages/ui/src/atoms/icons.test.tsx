@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  BangIcon,
   BatteryLowIcon,
   ClockIcon,
   CookIcon,
@@ -107,5 +108,12 @@ describe('icons', () => {
       expect(drawn).toContain(fragment);
       unmount();
     }
+  });
+
+  it('draw the Meal plan short marker', () => {
+    const { container } = render(<BangIcon />);
+    expect(container.querySelector('path')!.getAttribute('d')).toBe(
+      'M12 6v8M12 18v.01',
+    );
   });
 });
