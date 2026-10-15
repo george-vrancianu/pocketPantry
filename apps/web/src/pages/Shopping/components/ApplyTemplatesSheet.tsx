@@ -23,7 +23,7 @@ import { useQueries } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useShoppingList } from '../../../lib/shopping';
+import { useShoppingList, type ShoppingList } from '../../../lib/shopping';
 import {
   templateQueryOptions,
   useApplyTemplate,
@@ -46,7 +46,6 @@ import {
   type Selection,
   type TemplateState,
 } from '../../../lib/templateSelection';
-import { type ShoppingList } from '../../../lib/shopping';
 
 export type ApplyTemplatesSheetProps = {
   open: boolean;
@@ -145,11 +144,14 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
     });
   });
 
-  const tick = (summary: TemplateSummary) => {
+  const tick = (summary: TemplateSummary, index: number) => {
     if (selection.has(summary.id)) {
       setSelection(removeTemplate(selection, summary.id));
       return;
     }
+    // A fetch that failed while the row was only open is retried by the tick.
+    const query = detailQueries[index];
+    if (query?.isError && query.fetchStatus === 'idle') void query.refetch();
     setFailed((current) => {
       const next = new Map(current);
       next.delete(summary.id);
@@ -340,7 +342,7 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
           ) : null}
           {summaries.length > 0 ? (
             <Card variant="list" sx={{ p: 0 }}>
-              {summaries.map((row) => {
+              {summaries.map((row, index) => {
                 const detail = details.get(row.id);
                 return (
                   <TemplateRow
@@ -352,11 +354,11 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
                     loading={pending.has(row.id)}
                     ticked={selection.get(row.id)?.size ?? 0}
                     total={detail?.lines.length ?? row.lineCount}
-                    onTick={() => tick(row)}
+                    onTick={() => tick(row, index)}
                     open={openRows.has(row.id)}
                     onToggleOpen={() => toggleOpen(row.id)}
                     lines={
-                      detail ? (
+                      detail && listSettled ? (
                         <TemplateLines
                           detail={detail}
                           selection={selection}
@@ -367,6 +369,13 @@ function ApplyForm({ open, onClose }: ApplyTemplatesSheetProps) {
                             )
                           }
                         />
+                      ) : detailQueries[index]?.isError &&
+                        detailQueries[index]?.fetchStatus === 'idle' ? (
+                        <Box sx={{ p: 1.5 }}>
+                          <Alert>
+                            {translateApiError(t, detailQueries[index]?.error)}
+                          </Alert>
+                        </Box>
                       ) : (
                         <Box sx={{ p: 2 }}>
                           <Spinner label={t('common:loading')} />
@@ -556,6 +565,10 @@ function TemplateRow({
         role={open ? 'group' : undefined}
         aria-label={open ? summary.name : undefined}
         hidden={!open}
+        sx={{
+          backgroundColor: color.subtle,
+          borderTop: open ? `1px solid ${color.divider}` : 0,
+        }}
       >
         {open ? lines : null}
       </Box>
@@ -593,7 +606,7 @@ function TemplateLines({
     );
   }
   return (
-    <Box sx={{ backgroundColor: color.subtle, pl: '28px' }}>
+    <Box sx={{ pl: '28px' }}>
       {detail.lines.map((line) => {
         const on = isLineTicked(selection, detail.id, line.id);
         const kind = lineTag(line, list);

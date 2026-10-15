@@ -700,7 +700,7 @@ describe('Import sheet: picking lines', () => {
     expect(dialog).toHaveTextContent('From Taco night, Baking');
     await user.click(
       await within(dialog).findByRole('button', {
-        name: /^Import \d+ items?$/,
+        name: 'Import 4 items',
       }),
     );
 
@@ -712,11 +712,43 @@ describe('Import sheet: picking lines', () => {
     const body = calls.find(
       (c) => c.key === 'POST /api/shopping-list/items/bulk',
     )?.body as { items: unknown[] };
-    expect(body.items).toEqual(
-      expect.arrayContaining([
-        { name: 'Saffron' },
-        { ingredientId: 'sugar-ingredient', quantity: 2 },
-      ]),
-    );
+    expect(body.items).toEqual([
+      { ingredientId: 'tomato-ingredient', quantity: 3 },
+      { ingredientId: 'flour-ingredient', quantity: 200, unit: 'g' },
+      { name: 'Saffron' },
+      { ingredientId: 'flour-ingredient', quantity: 1, unit: 'kg' },
+      { ingredientId: 'flour-ingredient', quantity: 5, unit: 'g' },
+      { ingredientId: 'sugar-ingredient', quantity: 2 },
+    ]);
+  });
+
+  it('shows an alert in an opened row whose lines fail to load, and a tick retries', async () => {
+    const user = userEvent.setup();
+    let fail = true;
+    stub({
+      'GET /api/shopping-templates/t1': () =>
+        fail
+          ? Response.json(
+              { code: 'internal_error', params: {} },
+              { status: 500 },
+            )
+          : Response.json(taco),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(await opener(dialog, 'Taco night'));
+
+    expect(await within(dialog).findByRole('alert')).toBeVisible();
+    expect(within(dialog).queryByRole('status')).toBeNull();
+
+    fail = false;
+    const box = within(dialog).getByRole('checkbox', {
+      name: 'Import Taco night',
+    });
+    await user.click(box);
+    await waitFor(() => expect(box).toHaveAttribute('aria-checked', 'mixed'));
+    expect(
+      await within(dialog).findByRole('checkbox', { name: /^Tomato/ }),
+    ).toBeVisible();
   });
 });
