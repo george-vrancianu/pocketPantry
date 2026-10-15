@@ -50,6 +50,12 @@ export type MergeItemInput = Omit<AddShoppingItemBody, 'source'> & {
   source?: UnmatchedSource;
 };
 
+/** An item to add together with the Recipes it is needed for. */
+export type ItemWithSourceRecipes = {
+  item: MergeItemInput;
+  recipeIds: string[];
+};
+
 const itemNotFound = () => new ApiException(404, 'shopping.item_not_found');
 
 @Injectable()
@@ -81,6 +87,7 @@ export class ShoppingService {
   /**
    * Adds every item with the merge rules, in one transaction: all of them or none.
    * `createdIds` are the Shopping Items created or merged into, one per body in request order.
+   * Not the same as `insertedIds` of `addItemsWithSourceRecipes`: `createdIds` includes merge targets.
    */
   async addItems(
     memberId: string,
@@ -92,7 +99,9 @@ export class ShoppingService {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
       const createdIds: string[] = [];
       for (const body of bodies)
-        createdIds.push(await this.mergeItem(tx, listId, scope, body, locale));
+        createdIds.push(
+          (await this.mergeItem(tx, listId, scope, body, locale)).id,
+        );
       return {
         ...(await this.view(tx, listId, scope, locale)),
         createdIds,
@@ -101,37 +110,48 @@ export class ShoppingService {
   }
 
   /**
-   * Adds Shopping Items for a Recipe (add missing), merging as for any add,
-   * and records the Recipe as a Source Recipe of each target item, whether
-   * merged into or newly inserted. All in one transaction under the list lock.
+   * Adds Shopping Items for Recipes, merging as for any add, and records each
+   * item's own Source Recipes on the item it ended up on, whether merged into
+   * or newly inserted. All in one transaction under the list lock.
+   * `insertedIds` are the Shopping Items newly inserted (not merged into), deduplicated, in request order.
    */
-  async addItemsFromRecipe(
+  async addItemsWithSourceRecipes(
     memberId: string,
-    recipeId: string,
-    bodies: MergeItemInput[],
+    entries: ItemWithSourceRecipes[],
     locale: CatalogLocale,
-  ): Promise<ShoppingListView> {
+  ): Promise<{ list: ShoppingListView; insertedIds: string[] }> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      for (const body of bodies) {
-        const itemId = await this.mergeItem(tx, listId, scope, body, locale);
-        await tx
-          .insert(shoppingItemSourceRecipes)
-          .values({ shoppingItemId: itemId, recipeId })
-          .onConflictDoNothing();
+      const insertedIds: string[] = [];
+      for (const { item, recipeIds } of entries) {
+        const { id, inserted } = await this.mergeItem(
+          tx,
+          listId,
+          scope,
+          item,
+          locale,
+        );
+        if (inserted) insertedIds.push(id);
+        if (recipeIds.length > 0)
+          await tx
+            .insert(shoppingItemSourceRecipes)
+            .values(
+              recipeIds.map((recipeId) => ({ shoppingItemId: id, recipeId })),
+            )
+            .onConflictDoNothing();
       }
-      return this.view(tx, listId, scope, locale);
+      return { list: await this.view(tx, listId, scope, locale), insertedIds };
     });
   }
 
-  /** Merges or inserts the item and returns the id of the Shopping Item it ended up on. */
+  /** Merges or inserts the item; answers with the Shopping Item it ended up on and whether that row is new. */
   private async mergeItem(
     tx: Tx,
     listId: string,
     scope: CatalogScope,
     body: MergeItemInput,
     locale: CatalogLocale,
-  ): Promise<string> {
+  ): Promise<{ id: string; inserted: boolean }> {
     const unit = body.unit ?? null;
     const quantity = body.quantity ?? null;
     let identity;
@@ -191,7 +211,7 @@ export class ShoppingService {
           checked: false,
         })
         .where(eq(shoppingItems.id, existing.id));
-      return existing.id;
+      return { id: existing.id, inserted: false };
     }
 
     const [inserted] = await tx
@@ -214,7 +234,7 @@ export class ShoppingService {
         },
       ]);
     }
-    return inserted.id;
+    return { id: inserted.id, inserted: true };
   }
 
   /** Ids of unchecked Shopping Items on the Family's active list for any of these Ingredients. */
