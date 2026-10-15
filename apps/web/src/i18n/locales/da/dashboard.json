@@ -78,6 +78,66 @@
     "factorValue": "{{name}} {{value}}",
     "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
     "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "group": {
+      "now": "Nu",
+      "week": "Denne uge",
+      "tidy": "Ryd op"
+    },
+    "toDoFirst": "{{count}} at gøre · {{title}}",
+    "allDone": "Intet at gøre. Alt er inden for datoen, på lager og styr på.",
+    "moreNames": "{{names}} +{{count}}",
+    "gainSpoken_one": "hæver scoren med {{count}}",
+    "gainSpoken_other": "hæver scoren med {{count}}",
+    "todo": {
+      "expired": {
+        "title_one": "Smid {{count}} udløbne ud",
+        "title_other": "Smid {{count}} udløbne ud",
+        "bulk": "Smid ud",
+        "bulkName_one": "Smid {{count}} udløbne ud",
+        "bulkName_other": "Smid {{count}} udløbne ud"
+      },
+      "missingStaples": {
+        "title_one": "Tilføj {{count}} basisvare",
+        "title_other": "Tilføj {{count}} basisvarer",
+        "bulk": "Tilføj",
+        "bulkName_one": "Tilføj {{count}} basisvare",
+        "bulkName_other": "Tilføj {{count}} basisvarer"
+      },
+      "expiringSoon": {
+        "title": "Brug {{count}} inden {{day}}",
+        "bulk": "Opskrifter",
+        "bulkName": "Opskrifter"
+      },
+      "runningLow": {
+        "title_one": "Fyld op: {{count}} er ved at løbe tør",
+        "title_other": "Fyld op: {{count}} er ved at løbe tør",
+        "bulk": "Tilføj",
+        "bulkName_one": "Tilføj {{count}} der er ved at løbe tør",
+        "bulkName_other": "Tilføj {{count}} der er ved at løbe tør"
+      },
+      "undated": {
+        "title_one": "Datér {{count}} parti",
+        "title_other": "Datér {{count}} partier",
+        "bulk": "Datér alle",
+        "bulkName_one": "Datér alle {{count}} parti",
+        "bulkName_other": "Datér alle {{count}} partier"
+      }
+    },
+    "done": {
+      "expired": "Intet udløbet",
+      "missingStaples": "Basisvarer på plads",
+      "expiringSoon": "Intet udløber snart",
+      "runningLow": "Intet ved at løbe tør",
+      "undated": "Alt har dato"
+    },
+    "line": {
+      "since": "siden {{day}}",
+      "staple": "Basisvare",
+      "usual": "sædvanligt {{amount}}",
+      "noneLeft": "ingen tilbage",
+      "age": "{{count}} d gammel",
+      "inLocation": "{{duration}} i {{location}}"
+    },
     "close": "Luk"
   }
 }

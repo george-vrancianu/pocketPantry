@@ -81,17 +81,19 @@ const isLive = (batch: HealthBatch, input: HealthInput) =>
   batch.expiryDate === null || daysLeft(batch, input) >= 0;
 
 /** Whole days since the Batch was added, by the device's calendar. */
-const ageDays = (batch: HealthBatch, input: HealthInput) =>
-  -daysUntil(localIso(new Date(batch.createdAt)), todayDate(input));
+export const ageDays = (
+  batch: Pick<HealthBatch, 'createdAt'>,
+  today: IsoDate,
+) => -daysUntil(localIso(new Date(batch.createdAt)), fromIso(today));
 
 const overdueRatio = (batch: HealthBatch, input: HealthInput) =>
-  ageDays(batch, input) / FORGOTTEN_AFTER_DAYS[batch.location];
+  ageDays(batch, input.today) / FORGOTTEN_AFTER_DAYS[batch.location];
 
 /** An undated Batch older than its Location's limit. A dated Batch is never Forgotten. */
-function isForgotten(batch: HealthBatch, input: HealthInput): boolean {
+export function isForgotten(batch: HealthBatch, today: IsoDate): boolean {
   return (
     batch.expiryDate === null &&
-    ageDays(batch, input) > FORGOTTEN_AFTER_DAYS[batch.location]
+    ageDays(batch, today) > FORGOTTEN_AFTER_DAYS[batch.location]
   );
 }
 
@@ -137,7 +139,7 @@ export function pantryHealth(input: HealthInput): PantryHealth {
   const datedShare = dated.length / batches.length;
   const rotation =
     1 -
-    batches.filter((batch) => isForgotten(batch, input)).length /
+    batches.filter((batch) => isForgotten(batch, input.today)).length /
       batches.length;
 
   const percent = (value: number) => Math.round(value * 100);
@@ -233,9 +235,9 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
   );
   const undated = input.batches.filter((batch) => batch.expiryDate === null);
   const forgotten = undated
-    .filter((batch) => isForgotten(batch, input))
+    .filter((batch) => isForgotten(batch, input.today))
     .sort((a, b) => overdueRatio(b, input) - overdueRatio(a, input));
-  const rest = undated.filter((batch) => !isForgotten(batch, input));
+  const rest = undated.filter((batch) => !isForgotten(batch, input.today));
 
   const todos: PendingTodo[] = [
     {

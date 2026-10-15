@@ -1,5 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { Staple } from '../../../lib/staples';
@@ -83,6 +84,18 @@ function stub(
 /** The element's markup under the active Theme: a Theme is its CSS variables, set on the root. */
 const snapshotOf = (element: Element) =>
   `data-theme=${document.documentElement.dataset.theme}\n${element.outerHTML.replace(/_r_\w+_/g, '_r_N_')}`;
+
+/** The disclosure button of a Health To-do; its bulk button shares the start of the name. */
+const disclosure = (sheet: HTMLElement, name: RegExp) =>
+  within(sheet).getByRole('button', { name, expanded: false });
+
+/** The items a disclosure button controls. */
+const itemsOf = (button: HTMLElement) =>
+  within(
+    document.getElementById(
+      button.getAttribute('aria-controls') as string,
+    ) as HTMLElement,
+  ).getAllByRole('listitem');
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -325,6 +338,404 @@ describe('HealthWidget', () => {
     });
   });
 
+  describe('Health To-dos', () => {
+    const iso = isoIn;
+    /** Twelve Batches: two expired (Milk oldest), two expiring soon, one undated and a missing Staple. */
+    function todoPantry() {
+      return {
+        batches: [
+          batch({
+            name: 'Yogurt',
+            expiryDate: iso(-1),
+            quantity: 500,
+            unit: 'g',
+          }),
+          batch({ name: 'Milk', expiryDate: iso(-3), quantity: 1, unit: 'l' }),
+          batch({ name: 'Ham', expiryDate: iso(2), location: 'fridge' }),
+          batch({ name: 'Cheese', expiryDate: iso(1) }),
+          batch({ name: 'Rice', expiryDate: null }),
+          ...Array.from({ length: 7 }, () => batch()),
+        ],
+        runningLow: [] as string[],
+      };
+    }
+
+    async function openTodos(
+      pantry = todoPantry(),
+      staples = [staple('eggs')],
+    ) {
+      const calls = stub(pantry, staples);
+      stubMotion(true);
+      const user = userEvent.setup();
+      const view = renderWithProviders(
+        <HealthWidget size="wide" columns={2} />,
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      return { user, sheet, calls, ...view };
+    }
+
+    it('groups the Health To-dos as Now, This week and Tidy up with their titles', async () => {
+      const { sheet } = await openTodos();
+
+      const headings = within(sheet)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual([
+        expect.stringContaining('Now'),
+        expect.stringContaining('This week'),
+        expect.stringContaining('Tidy up'),
+      ]);
+      const disclosures = within(sheet)
+        .getAllByRole('button', { expanded: false })
+        .map((button) => button.textContent);
+      expect(disclosures).toEqual([
+        expect.stringContaining('Toss 2 expired'),
+        expect.stringContaining('Add 1 Staple'),
+        expect.stringContaining('Use 2 by '),
+        expect.stringContaining('Date 1 Batch'),
+      ]);
+    });
+
+    it('opens a Health To-do without re-mounting its items, so the transition plays', async () => {
+      const { user, sheet } = await openTodos();
+      const expired = disclosure(sheet, /^Toss 2 expired/);
+      const list = document.getElementById(
+        expired.getAttribute('aria-controls') as string,
+      );
+
+      await user.click(expired);
+
+      expect(
+        document.getElementById(
+          expired.getAttribute('aria-controls') as string,
+        ),
+      ).toBe(list);
+    });
+
+    it('names the first three items and the rest as +n', async () => {
+      const { sheet } = await openTodos({
+        ...todoPantry(),
+        batches: [
+          ...['A', 'B', 'C', 'D', 'E'].map((name, index) =>
+            batch({ name, expiryDate: iso(-1 - index) }),
+          ),
+          ...Array.from({ length: 6 }, () => batch()),
+        ],
+      });
+
+      // Oldest first: E (5 days ago), D, C, then +2.
+      expect(disclosure(sheet, /^Toss 5 expired/)).toHaveTextContent(
+        'E, D, C +2',
+      );
+    });
+
+    it('opens one Health To-do at a time, listing its Batches', async () => {
+      const { user, sheet } = await openTodos();
+
+      const expired = disclosure(sheet, /^Toss 2 expired/);
+      expect(expired).toHaveAttribute('aria-expanded', 'false');
+      await user.click(expired);
+
+      expect(expired).toHaveAttribute('aria-expanded', 'true');
+      const items = document.getElementById(
+        expired.getAttribute('aria-controls') as string,
+      ) as HTMLElement;
+      expect(within(items).getAllByRole('listitem')).toHaveLength(2);
+
+      const soon = disclosure(sheet, /^Use 2 by /);
+      await user.click(soon);
+
+      expect(soon).toHaveAttribute('aria-expanded', 'true');
+      expect(expired).toHaveAttribute('aria-expanded', 'false');
+      expect(within(items).queryByRole('listitem')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Health To-do details', () => {
+    const iso = isoIn;
+    const longAgo = (days: number) => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.toISOString();
+    };
+
+    async function open(
+      batches: Batch[],
+      staples: Staple[] = [],
+      runningLow: string[] = [],
+    ) {
+      stub({ batches, runningLow }, staples);
+      stubMotion(true);
+      const user = userEvent.setup();
+      const view = renderWithProviders(
+        <HealthWidget size="wide" columns={2} />,
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      return { user, sheet, ...view };
+    }
+
+    const filler = (count: number) =>
+      Array.from({ length: count }, () => batch());
+
+    it('writes each item line as the ticket words it', async () => {
+      const { user, sheet } = await open(
+        [
+          batch({
+            name: 'Yogurt',
+            quantity: 500,
+            unit: 'g',
+            expiryDate: iso(-2),
+          }),
+          batch({ name: 'Ham', quantity: 2, unit: 'pcs', expiryDate: iso(2) }),
+          batch({
+            name: 'Pesto',
+            quantity: 190,
+            unit: 'g',
+            createdAt: longAgo(5),
+            expiryDate: null,
+          }),
+          batch({
+            name: 'Peas',
+            location: 'freezer',
+            createdAt: longAgo(215),
+            expiryDate: null,
+          }),
+          ...filler(6),
+        ],
+        [{ ...staple('flour'), name: 'Flour', quantity: 1, unit: 'kg' }],
+      );
+
+      for (const name of [
+        /^Toss 1 expired/,
+        /^Add 1 Staple/,
+        /^Use 1 by /,
+        /^Date 2 Batches/,
+      ]) {
+        await user.click(
+          within(sheet).getByRole('button', { name, expanded: false }),
+        );
+        await user.click(
+          within(sheet).getByRole('button', { name, expanded: true }),
+        );
+      }
+      // Items are mounted closed too, so read all lines from the dialog's text.
+      const lines = within(sheet)
+        .getAllByRole('listitem', { hidden: true })
+        .map((item) => item.textContent);
+      expect(lines).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/Yogurt500 g · fridge · since \w{3}$/),
+          expect.stringContaining('FlourStaple · usual 1 kg · none left'),
+          expect.stringMatching(/Ham2 pcs · fridge/),
+          expect.stringContaining('Pesto190 g · fridge · 5 d old'),
+          expect.stringContaining('Peas7 months in the freezer'),
+        ]),
+      );
+    });
+
+    it('puts the days-left Tag on an Expiring Soon item', async () => {
+      const { user, sheet } = await open([
+        batch({ name: 'Ham', expiryDate: iso(2) }),
+        ...filler(9),
+      ]);
+
+      const soon = disclosure(sheet, /^Use 1 by /);
+      await user.click(soon);
+
+      expect(itemsOf(soon)[0]).toHaveTextContent('2 d left');
+    });
+
+    it('shows Running low items with their amount and Location', async () => {
+      const { user, sheet } = await open(
+        [
+          batch({
+            name: 'Milk',
+            ingredientId: 'milk',
+            quantity: 1,
+            unit: 'l',
+            location: 'fridge',
+          }),
+          ...filler(9),
+        ],
+        [],
+        ['milk'],
+      );
+
+      const low = disclosure(sheet, /^Restock 1 running low/);
+      await user.click(low);
+
+      expect(itemsOf(low)[0]).toHaveTextContent('1 L · fridge');
+    });
+
+    it('lists Forgotten Batches before the other undated ones', async () => {
+      const { user, sheet } = await open([
+        batch({ name: 'Recent', expiryDate: null }),
+        batch({ name: 'Forgotten', expiryDate: null, createdAt: longAgo(40) }),
+        ...filler(8),
+      ]);
+
+      const undated = disclosure(sheet, /^Date 2 Batches/);
+      await user.click(undated);
+
+      const names = itemsOf(undated).map((item) => item.textContent);
+      expect(names[0]).toContain('Forgotten40 days in the fridge');
+      expect(names[1]).toContain('Recent');
+    });
+
+    it('shows a gain pill where fixing raises the score, none for Expiring Soon', async () => {
+      const { sheet } = await open([
+        batch({ expiryDate: iso(-1) }),
+        batch({ expiryDate: iso(2) }),
+        ...filler(10),
+      ]);
+
+      // Fresh 88 and total 95 now; without the expired Batch 96 and 98.
+      expect(disclosure(sheet, /^Toss 1 expired/)).toHaveTextContent('+');
+      expect(disclosure(sheet, /^Use 1 by /)).not.toHaveTextContent('+');
+    });
+
+    it('shows no gain while the Pantry is not scored, and still lists the Health To-dos', async () => {
+      const { sheet } = await open([
+        batch({ expiryDate: iso(-1) }),
+        ...filler(2),
+      ]);
+
+      expect(disclosure(sheet, /^Toss 1 expired/)).not.toHaveTextContent('+');
+    });
+
+    it('names the card subline after the first Health To-do', async () => {
+      stub(tenBatchPantry());
+      renderWithProviders(<HealthWidget size="wide" columns={2} />);
+
+      expect(
+        await screen.findByRole('button', { name: /^Pantry health, 79/ }),
+      ).toHaveTextContent('3 to do · Toss 1 expired');
+    });
+
+    it('gives each bulk button its full accessible name, and only Recipes works yet', async () => {
+      const { sheet } = await open(
+        [
+          batch({ expiryDate: iso(-1) }),
+          batch({ expiryDate: iso(-2) }),
+          batch({ expiryDate: iso(2) }),
+          batch({ expiryDate: null }),
+          ...filler(7),
+        ],
+        [staple('eggs')],
+      );
+
+      expect(
+        within(sheet).getByRole('button', { name: 'Toss 2 expired' }),
+      ).toBeDisabled();
+      expect(
+        within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
+      ).toBeDisabled();
+      expect(
+        within(sheet).getByRole('button', { name: 'Date all 1 Batch' }),
+      ).toBeDisabled();
+      expect(
+        within(sheet).getByRole('link', { name: 'Recipes' }),
+      ).toHaveAttribute('href', '/recipes');
+    });
+
+    it('opens Recipes from the Expiring Soon Health To-do', async () => {
+      stub(
+        {
+          batches: [batch({ expiryDate: iso(1) }), ...filler(9)],
+          runningLow: [],
+        },
+        [],
+      );
+      stubMotion(true);
+      const user = userEvent.setup();
+      renderWithProviders(
+        <Routes>
+          <Route path="/" element={<HealthWidget size="wide" columns={2} />} />
+          <Route path="/recipes" element={<p>Recipes page</p>} />
+        </Routes>,
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+
+      await user.click(await screen.findByRole('link', { name: 'Recipes' }));
+
+      expect(await screen.findByText('Recipes page')).toBeInTheDocument();
+    });
+
+    it('shows a done pill for each Health To-do with nothing to do', async () => {
+      const { sheet } = await open([
+        batch({ expiryDate: iso(-1) }),
+        ...filler(9),
+      ]);
+
+      const pills = within(sheet)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent);
+      expect(pills).toEqual(
+        expect.arrayContaining([
+          'Staples covered',
+          'Nothing due soon',
+          'Nothing low',
+          'All dated',
+        ]),
+      );
+      expect(pills).not.toContain('Nothing expired');
+    });
+
+    it('says all done, with every pill, when there is nothing to do', async () => {
+      const { sheet } = await open(filler(10));
+
+      expect(sheet).toHaveTextContent(
+        'Nothing to do. Everything is in date, stocked and accounted for.',
+      );
+      expect(within(sheet).getAllByRole('listitem')).toHaveLength(5);
+    });
+
+    it('keeps the open Health To-do open when the data changes', async () => {
+      const pantry = {
+        batches: [
+          batch({ name: 'Milk', expiryDate: iso(-1) }),
+          batch({ name: 'Ham', expiryDate: iso(-2) }),
+          ...filler(10),
+        ],
+        runningLow: [] as string[],
+      };
+      stub(pantry, []);
+      stubMotion(true);
+      const user = userEvent.setup();
+      const { queryClient } = renderWithProviders(
+        <HealthWidget size="wide" columns={2} />,
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      await user.click(disclosure(sheet, /^Toss 2 expired/));
+
+      pantry.batches.splice(1, 1);
+      await queryClient.invalidateQueries({ queryKey: ['pantry'] });
+
+      const expired = await within(sheet).findByRole('button', {
+        name: /^Toss 1 expired/,
+        expanded: true,
+      });
+      expect(expired).toBeInTheDocument();
+    });
+  });
+
   describe.each(['warm', 'minimal', 'dark'] as const)(
     'in the %s Theme',
     (theme) => {
@@ -354,7 +765,7 @@ describe('HealthWidget', () => {
         expect(snapshotOf(card)).toMatchSnapshot();
       });
 
-      it('looks the same as an open sheet header', async () => {
+      it('looks the same as an open sheet', async () => {
         const { card } = await render('wide');
         await userEvent.setup().click(card);
         const sheet = await screen.findByRole('dialog', {
