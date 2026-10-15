@@ -202,3 +202,49 @@ export function useCreateFamilyIngredient(locale: string) {
       ]),
   });
 }
+
+export type FamilySynonymInput = { name: string; ingredientId: string };
+
+/** Alias-picker search: the Family's Catalog, a handful of rows (no scope, no Aisle). */
+export function useAliasSearch(query: string, locale: string) {
+  const debounced = useDebounced(query.trim(), 150);
+  const result = useQuery({
+    queryKey: [...catalogSearchQueryKey, 'alias', locale, debounced],
+    queryFn: () =>
+      apiRequest<{ results: CatalogSearchResult[] }>(
+        `/catalog/search?${new URLSearchParams({ q: debounced, locale, limit: '5' })}`,
+      ).then((body) => body.results),
+    enabled: debounced.length > 0,
+    placeholderData: (previous) => previous,
+    staleTime: 60_000,
+  });
+  return {
+    ...result,
+    isSearching: query.trim() !== debounced || result.isFetching,
+    active: debounced.length > 0,
+  };
+}
+
+/**
+ * Declares a name another name for an Ingredient, for the Family (named in
+ * `locale`, the Member's UI locale). A name that already means it fails with
+ * `catalog.family_synonym_exists` and the Ingredient in `params.existing`.
+ */
+export function useCreateFamilySynonym(locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: FamilySynonymInput) =>
+      apiRequest<CatalogSearchResult>(
+        `/catalog/family-synonyms?${new URLSearchParams({ locale })}`,
+        { method: 'POST', body: input },
+      ),
+    // The Family's Unmatched items of this name were relinked to it.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: catalogSearchQueryKey }),
+        ...familyIngredientRelinkQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ]),
+  });
+}

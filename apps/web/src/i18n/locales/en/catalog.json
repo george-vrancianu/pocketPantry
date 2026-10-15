@@ -59,6 +59,17 @@
     "pick": "Pick {{name}}",
     "exists": "“{{name}}” is already in the catalog.",
     "failed": "Couldn’t add it. Check your connection and try again.",
-    "added": "Added {{name}} to your family's catalog · {{category}}"
+    "added": "Added {{name}} to your family's catalog · {{category}}",
+    "modeNew": "New ingredient",
+    "modeAlias": "Another name for…",
+    "modes": "How to add it",
+    "sameAs": "“{{name}}” is the same as",
+    "aliasHint": "Your family will see this name in search, scans and receipts, and it will mean that ingredient.",
+    "aliasSearch": "Search the catalog",
+    "aliasNoMatch": "No ingredient matches.",
+    "changeIngredient": "Change ingredient",
+    "link": "Link & pick",
+    "linked": "“{{name}}” now means {{ingredient}} for your family",
+    "aliasExists": "“{{name}}” is already a name for {{ingredient}}."
   }
 }
