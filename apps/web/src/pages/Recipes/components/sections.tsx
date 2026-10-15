@@ -85,8 +85,11 @@ function IngredientsSection({
   const allergiesByLine = new Map<string, LineAllergy[]>();
   for (const entry of recipe.allergyWarning?.entries ?? []) {
     for (const { lineId, severity } of entry.lines) {
+      const marked = allergiesByLine.get(lineId) ?? [];
+      // Several people can share an Allergen; a line is marked once per Allergen.
+      if (marked.some((m) => m.allergen.id === entry.allergen.id)) continue;
       allergiesByLine.set(lineId, [
-        ...(allergiesByLine.get(lineId) ?? []),
+        ...marked,
         { allergen: entry.allergen, severity },
       ]);
     }

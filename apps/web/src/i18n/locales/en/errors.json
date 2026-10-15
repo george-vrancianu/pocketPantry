@@ -128,5 +128,10 @@
   "family_synonyms": {
     "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
     "shared_name_exists": "That name is already used by another ingredient."
+  },
+  "settings": {
+    "family_allergy_exists": "That Allergen is already on the list with the same label.",
+    "allergen_not_found": "That Allergen no longer exists.",
+    "family_allergy_not_found": "That Family Allergy is no longer on the list. Someone may have removed it already."
   }
 }

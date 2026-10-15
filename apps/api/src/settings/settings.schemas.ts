@@ -72,3 +72,35 @@ export type AllergiesView = {
   allergens: { id: string; name: string }[];
   allergenIds: string[];
 };
+
+const FAMILY_ALLERGY_LABEL_MAX = 60;
+
+/** Any Member adds a Family Allergy: an Allergen and an optional label such as "Mia". */
+export const addFamilyAllergyBody = z.object({
+  allergenId: z.uuid(),
+  label: z.string().trim().max(FAMILY_ALLERGY_LABEL_MAX).nullish(),
+});
+export type AddFamilyAllergyBody = z.infer<typeof addFamilyAllergyBody>;
+
+export const familyAllergyIdParam = z.uuid();
+
+/** An Allergy the Family records for someone without an account. */
+export type FamilyAllergyView = {
+  id: string;
+  allergen: { id: string; name: string };
+  label: string | null;
+};
+
+/**
+ * The Family tab's Allergies: the Allergen list (for the picker), the Family Allergies, and
+ * the other Members' Allergies (read-only; the viewer's own are in `AllergiesView`).
+ */
+export type FamilyAllergiesView = {
+  allergens: { id: string; name: string }[];
+  familyAllergies: FamilyAllergyView[];
+  members: {
+    id: string;
+    name: string;
+    allergens: { id: string; name: string }[];
+  }[];
+};

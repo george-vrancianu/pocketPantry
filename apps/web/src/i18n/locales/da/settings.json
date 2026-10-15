@@ -46,7 +46,8 @@
     "hint": "Vælg, hvad du skal undgå, også intolerancer. Opskrifter, der indeholder det, får en advarsel.",
     "familyCanSee": "Alle i din familie kan se dine allergier.",
     "loadFailed": "Allergenlisten kunne ikke indlæses.",
-    "saveFailed": "Dine allergier kunne ikke gemmes. Prøv igen."
+    "saveFailed": "Dine allergier kunne ikke gemmes. Prøv igen.",
+    "noAccount": "Er det en uden konto? Tilføj en familieallergi under fanen Familie."
   },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",
@@ -157,5 +158,23 @@
       "staples_other": "{{count}} basisvarer"
     },
     "editLabel": "Redigér"
+  },
+  "familyAllergies": {
+    "title": "Familieallergier",
+    "hint": "Til personer i din familie uden konto, for eksempel et barn. Alle medlemmer kan tilføje eller fjerne dem, og de tæller som alles allergier.",
+    "empty": "Ingen familieallergier endnu.",
+    "family": "Familie",
+    "allergen": "Allergen",
+    "label": "Navn (valgfrit)",
+    "labelHint": "Hvem det gælder, fx Mia",
+    "add": "Tilføj",
+    "remove": "Fjern {{allergen}} for {{who}}",
+    "loadFailed": "Familiens allergier kunne ikke indlæses."
+  },
+  "memberAllergies": {
+    "title": "Medlemmernes allergier",
+    "hint": "Hvert medlem angiver sine egne allergier. Du kan se dem her, men ikke ændre dem.",
+    "none": "Ingen registreret",
+    "loadFailed": "Medlemmernes allergier kunne ikke indlæses."
   }
 }

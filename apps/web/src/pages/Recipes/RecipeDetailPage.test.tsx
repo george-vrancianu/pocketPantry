@@ -1113,13 +1113,18 @@ describe('RecipeDetailPage', () => {
       uncheckedCount: 0,
       ...over,
     });
+    const own = { kind: 'own' } as const;
     const strongPeanuts = {
       allergen: { id: 'a-peanuts', name: 'Peanuts' },
+      owner: own,
+      tier: 'yours' as const,
       severity: 'strong' as const,
       lines: [{ lineId: 'l1', severity: 'strong' as const }],
     };
     const softNuts = {
       allergen: { id: 'a-nuts', name: 'Tree nuts' },
+      owner: own,
+      tier: 'yours' as const,
       severity: 'soft' as const,
       lines: [{ lineId: 'l2', severity: 'soft' as const }],
     };
@@ -1141,6 +1146,8 @@ describe('RecipeDetailPage', () => {
               strongPeanuts,
               {
                 allergen: { id: 'a-milk', name: 'Milk' },
+                owner: own,
+                tier: 'yours',
                 severity: 'strong',
                 lines: [{ lineId: 'l1', severity: 'strong' as const }],
               },
@@ -1153,7 +1160,7 @@ describe('RecipeDetailPage', () => {
       });
       expect(banner).toHaveAttribute('data-severity', 'strong');
       expect(
-        within(banner).getByText('Contains Peanuts, Milk'),
+        within(banner).getByText('Contains Peanuts, Milk: your Allergies'),
       ).toBeInTheDocument();
       const tabs = screen.getByRole('tablist');
       expect(
@@ -1172,7 +1179,9 @@ describe('RecipeDetailPage', () => {
       });
       expect(banner).toHaveAttribute('data-severity', 'soft');
       expect(
-        within(banner).getByText('Optional ingredient contains Tree nuts'),
+        within(banner).getByText(
+          'Optional ingredient contains Tree nuts: your Allergy',
+        ),
       ).toBeInTheDocument();
     });
 
@@ -1205,9 +1214,13 @@ describe('RecipeDetailPage', () => {
       const banner = await screen.findByRole('group', {
         name: 'Allergy Warning',
       });
-      expect(within(banner).getByText('Contains Peanuts')).toBeInTheDocument();
       expect(
-        within(banner).getByText('Optional ingredient contains Tree nuts'),
+        within(banner).getByText('Contains Peanuts: your Allergy'),
+      ).toBeInTheDocument();
+      expect(
+        within(banner).getByText(
+          'Optional ingredient contains Tree nuts: your Allergy',
+        ),
       ).toBeInTheDocument();
       expect(
         within(banner).getByText(
@@ -1269,8 +1282,254 @@ describe('RecipeDetailPage', () => {
       expect(
         within(
           screen.getByRole('group', { name: 'Allergy Warning' }),
-        ).getByText('Contains Peanuts'),
+        ).getByText('Contains Peanuts: your Allergy'),
       ).toBeInTheDocument();
+    });
+
+    describe('whose Allergy it is', () => {
+      const entry = (
+        id: string,
+        name: string,
+        owner: NonNullable<
+          RecipeDetail['allergyWarning']
+        >['entries'][number]['owner'],
+        extra: { severity?: 'strong' | 'soft'; lineId?: string } = {},
+      ) => ({
+        allergen: { id, name },
+        owner,
+        tier:
+          owner.kind === 'member' ? ('members' as const) : ('yours' as const),
+        severity: extra.severity ?? ('strong' as const),
+        lines: [
+          {
+            lineId: extra.lineId ?? 'l1',
+            severity: extra.severity ?? ('strong' as const),
+          },
+        ],
+      });
+      const banner = async () =>
+        within(await screen.findByRole('group', { name: 'Allergy Warning' }));
+
+      it("names Family Allergies by label next to the viewer's own, on the first line", async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-peanuts', 'Peanuts', own),
+                entry('a-nuts', 'Tree nuts', {
+                  kind: 'family',
+                  label: 'Mia',
+                }),
+                entry('a-milk', 'Milk', { kind: 'family', label: null }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        const first = view.getByText(
+          'Contains Peanuts: your Allergy',
+        ).parentElement!;
+        expect(first).toHaveTextContent('Mia: Tree nuts');
+        expect(first).toHaveTextContent('Family: Milk');
+      });
+
+      it("combines one person's Allergies into a single phrase, keeping the API order", async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-peanuts', 'Peanuts', own),
+                entry('a-nuts', 'Tree nuts', { kind: 'family', label: 'Mia' }),
+                entry('a-milk', 'Milk', own, { lineId: 'l2' }),
+                entry('a-sesame', 'Sesame', { kind: 'family', label: 'Mia' }),
+                entry('a-egg', 'Eggs', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+                entry('a-fish', 'Fish', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        expect(view.getAllByText(/your Allerg/)).toHaveLength(1);
+        expect(
+          view.getByText('Contains Peanuts, Milk: your Allergies'),
+        ).toBeInTheDocument();
+        expect(view.getByText('Mia: Tree nuts, Sesame')).toBeInTheDocument();
+        expect(view.getByText('Ana: Eggs, Fish')).toBeInTheDocument();
+      });
+
+      it('pluralises the optional note when it covers several optional lines', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              severity: 'soft',
+              entries: [
+                entry('a-nuts', 'Tree nuts', own, {
+                  severity: 'soft',
+                  lineId: 'l2',
+                }),
+                entry('a-milk', 'Milk', own, {
+                  severity: 'soft',
+                  lineId: 'l3',
+                }),
+              ],
+            }),
+          }),
+        );
+        expect(
+          (await banner()).getByText(
+            'Optional ingredients contain Tree nuts, Milk: your Allergies',
+          ),
+        ).toBeInTheDocument();
+      });
+
+      it('keeps two Members with the same name apart', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-1',
+                  name: 'Ana',
+                }),
+                entry('a-nuts', 'Tree nuts', {
+                  kind: 'member',
+                  memberId: 'm-2',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        expect(view.getByText('Ana: Milk')).toBeInTheDocument();
+        expect(view.getByText('Ana: Tree nuts')).toBeInTheDocument();
+      });
+
+      it("puts other Members' Allergies on a quieter second line after the first", async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-peanuts', 'Peanuts', own),
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        const first = view.getByText('Contains Peanuts: your Allergy');
+        const second = view.getByText('Ana: Milk');
+        expect(
+          first.compareDocumentPosition(second) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+        expect(second.parentElement).not.toBe(first.parentElement);
+        expect(second.parentElement).toHaveAttribute('data-tier', 'members');
+        expect(first.parentElement).toHaveAttribute('data-tier', 'yours');
+      });
+
+      it('shows only the second line when only other Members have the Allergy', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-milk', 'Milk', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+                entry('a-nuts', 'Tree nuts', {
+                  kind: 'member',
+                  memberId: 'm-ben',
+                  name: 'Ben',
+                }),
+              ],
+            }),
+          }),
+        );
+        const view = await banner();
+        expect(view.getByText('Ana: Milk')).toBeInTheDocument();
+        expect(view.getByText('Ben: Tree nuts')).toBeInTheDocument();
+        expect(view.queryByText(/your Allerg/)).toBeNull();
+      });
+
+      it('marks an optional-only Allergy of another Member as optional', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              severity: 'soft',
+              entries: [
+                entry(
+                  'a-milk',
+                  'Milk',
+                  { kind: 'member', memberId: 'm-ana', name: 'Ana' },
+                  { severity: 'soft' },
+                ),
+              ],
+            }),
+          }),
+        );
+        expect(
+          (await banner()).getByText('Ana: Milk (optional)'),
+        ).toBeInTheDocument();
+      });
+
+      it('names a Family Allergy in the optional note', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              severity: 'soft',
+              entries: [
+                entry(
+                  'a-nuts',
+                  'Tree nuts',
+                  { kind: 'family', label: 'Mia' },
+                  { severity: 'soft' },
+                ),
+              ],
+            }),
+          }),
+        );
+        expect(
+          (await banner()).getByText(
+            'Optional ingredient contains Tree nuts: Mia',
+          ),
+        ).toBeInTheDocument();
+      });
+
+      it('marks a line once per Allergen even when several people have it', async () => {
+        setup(
+          recipe({
+            allergyWarning: warning({
+              entries: [
+                entry('a-peanuts', 'Peanuts', own),
+                entry('a-peanuts', 'Peanuts', { kind: 'family', label: 'Mia' }),
+                entry('a-peanuts', 'Peanuts', {
+                  kind: 'member',
+                  memberId: 'm-ana',
+                  name: 'Ana',
+                }),
+              ],
+            }),
+          }),
+        );
+        const list = await screen.findByRole('list', { name: 'Ingredients' });
+        const [egg] = within(list).getAllByRole('listitem');
+        expect(within(egg!).getAllByText('Contains Peanuts')).toHaveLength(1);
+      });
     });
 
     it('never calls the Recipe safe', async () => {
