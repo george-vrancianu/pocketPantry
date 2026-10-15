@@ -21,6 +21,7 @@ import {
   aisleUpdate,
   eatingMomentOrder,
   idParam,
+  ingredientAllergensBody,
   ingredientCreate,
   ingredientUpdate,
   leafCategoryCreate,
@@ -35,6 +36,7 @@ import {
   type AisleOrder,
   type AisleUpdate,
   type EatingMomentOrder,
+  type IngredientAllergensBody,
   type IngredientCreate,
   type IngredientUpdate,
   type LeafCategoryCreate,
@@ -190,6 +192,40 @@ export class AdminCatalogController {
     return this.catalog.setEatingMomentArchived(id, false);
   }
 
+  @Post('allergens')
+  @ApiOperation({ summary: 'Admin only: create an Allergen, last in the list' })
+  createAllergen(
+    @Body(new ZodValidationPipe(listEntryCreate)) body: ListEntryCreate,
+  ) {
+    return this.catalog.createAllergen(body);
+  }
+
+  @Patch('allergens/:id')
+  @ApiOperation({ summary: 'Admin only: rename an Allergen' })
+  updateAllergen(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(listEntryUpdate)) body: ListEntryUpdate,
+  ) {
+    return this.catalog.updateAllergen(id, body);
+  }
+
+  @Post('allergens/:id/archive')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin only: retire an Allergen (hidden from the pickers, kept on tags and Allergies so Recipes still warn)',
+  })
+  archiveAllergen(@Id() { id }: IdParam) {
+    return this.catalog.setAllergenArchived(id, true);
+  }
+
+  @Post('allergens/:id/unarchive')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin only: bring a retired Allergen back' })
+  unarchiveAllergen(@Id() { id }: IdParam) {
+    return this.catalog.setAllergenArchived(id, false);
+  }
+
   @Post('parent-categories')
   @ApiOperation({ summary: 'Admin only: create a Parent Category' })
   createParent(
@@ -260,6 +296,19 @@ export class AdminCatalogController {
   @HttpCode(204)
   async deleteIngredient(@Id() { id }: IdParam) {
     await this.catalog.deleteIngredient(id);
+  }
+
+  @Put('ingredients/:id/allergens')
+  @ApiOperation({
+    summary:
+      'Admin only: replace the Allergens a shared Ingredient contains (empty = none) and mark it checked',
+  })
+  setIngredientAllergens(
+    @Id() { id }: IdParam,
+    @Body(new ZodValidationPipe(ingredientAllergensBody))
+    body: IngredientAllergensBody,
+  ) {
+    return this.catalog.setIngredientAllergens(id, body);
   }
 
   @Post('translations')
