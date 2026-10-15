@@ -27,12 +27,16 @@
   },
   "allergyWarning": {
     "title": "Avertisment alergie",
-    "strong": "Conține {{names}}",
-    "optionalLine": "Un ingredient opțional conține {{name}}",
+    "optionalLine": "Un ingredient opțional conține {{name}}: {{who}}",
     "unchecked_one": "{{count}} ingredient nu a putut fi verificat pentru alergeni",
     "unchecked_few": "{{count}} ingrediente nu au putut fi verificate pentru alergeni",
     "unchecked_other": "{{count}} de ingrediente nu au putut fi verificate pentru alergeni",
-    "lineMarker": "Conține {{name}}"
+    "lineMarker": "Conține {{name}}",
+    "whoOwn": "alergia ta",
+    "whoFamily": "Familie",
+    "strongOwn": "Conține {{name}}: alergia ta",
+    "strongOther": "{{who}}: {{name}}",
+    "memberOptional": "{{who}}: {{name}} (opțional)"
   },
   "disclaimer": "Recomandări generale, nu sfaturi medicale sau dietetice.",
   "search": "Caută rețete",

@@ -128,5 +128,8 @@
   "family_synonyms": {
     "not_found": "Sinonimul nu mai este în coadă. Poate l-a adăugat deja altcineva.",
     "shared_name_exists": "Numele este deja folosit de un alt ingredient."
+  },
+  "settings": {
+    "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă."
   }
 }

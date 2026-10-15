@@ -181,3 +181,65 @@ export function useSaveAllergies(locale: string) {
     },
   });
 }
+
+/** An Allergy the Family records for someone without an account (mirror of the API's `FamilyAllergyView`). */
+export type FamilyAllergy = {
+  id: string;
+  allergen: AllergenOption;
+  label: string | null;
+};
+
+/** The Family tab's Allergies (mirror of the API's `FamilyAllergiesView`): Family Allergies and the other Members' own. */
+export type FamilyAllergies = {
+  allergens: AllergenOption[];
+  familyAllergies: FamilyAllergy[];
+  members: { id: string; name: string; allergens: AllergenOption[] }[];
+};
+
+export const familyAllergiesQueryKey = [
+  'settings',
+  'family-allergies',
+] as const;
+
+export function useFamilyAllergies(locale: string) {
+  return useQuery({
+    queryKey: [...familyAllergiesQueryKey, locale],
+    queryFn: () =>
+      apiRequest<FamilyAllergies>(
+        `/settings/family-allergies?${localeParams(locale)}`,
+      ),
+  });
+}
+
+/** Any Member can change the Family's Allergies, and every Recipe's Allergy Warning depends on them. */
+function useChangedFamilyAllergies() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: familyAllergiesQueryKey }),
+      queryClient.invalidateQueries({ queryKey: ['recipes'] }),
+    ]);
+}
+
+export function useAddFamilyAllergy(locale: string) {
+  const changed = useChangedFamilyAllergies();
+  return useMutation({
+    mutationFn: (body: { allergenId: string; label: string | null }) =>
+      apiRequest<FamilyAllergy>(
+        `/settings/family-allergies?${localeParams(locale)}`,
+        { method: 'POST', body },
+      ),
+    onSuccess: changed,
+  });
+}
+
+export function useRemoveFamilyAllergy() {
+  const changed = useChangedFamilyAllergies();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiRequest<{ id: string }>(`/settings/family-allergies/${id}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: changed,
+  });
+}
