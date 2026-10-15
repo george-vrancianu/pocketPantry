@@ -63,6 +63,10 @@ export const user = pgTable(
     locale: text('locale'),
     // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
     theme: text('theme'),
+    // Member Preference: leave out Recipes with the Member's own or Family Allergies (#359); off by default.
+    hideRecipesWithAllergies: boolean('hide_recipes_with_allergies')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [

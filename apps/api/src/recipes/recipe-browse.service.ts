@@ -9,6 +9,7 @@ import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
+  hidesAllergyRecipes,
   loadAllergyWarnings,
   loadRecipeAllergens,
   loadViewerAllergies,
@@ -26,6 +27,7 @@ import type {
   BrowseQuery,
   RecipeDetail,
   RecipeFilters,
+  RecipeList,
   RecipeListItem,
   RecipeVariantItem,
   ResolvedRecipe,
@@ -51,7 +53,7 @@ export class RecipeBrowseService {
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
    */
-  async list(memberId: string, query: BrowseQuery): Promise<RecipeListItem[]> {
+  async list(memberId: string, query: BrowseQuery): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const { locale } = query;
     const needle = normalizeName(query.search ?? '');
@@ -94,7 +96,7 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const [ref, warnings] = await Promise.all([
+    const [ref, allergies, preferences] = await Promise.all([
       this.namedRefs(
         this.database,
         catalogScope(familyId),
@@ -110,9 +112,13 @@ export class RecipeBrowseService {
           allergies,
         ),
       ),
+      this.settings.getPreferences(memberId),
     ]);
+    const { warnings, hidden } = allergies;
+    const hides = hidesAllergyRecipes(preferences, query.showHidden);
+    const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
 
-    return matching
+    const items = shown
       .map((row): RecipeListItem => {
         const parent = row.parentId ? parents.get(row.parentId) : undefined;
         return {
@@ -134,6 +140,10 @@ export class RecipeBrowseService {
         };
       })
       .sort(byTitle(locale));
+    return {
+      recipes: items,
+      hiddenByAllergiesCount: matching.length - shown.length,
+    };
   }
 
   /** A visible Recipe (archived too) with its base, live Variants and ingredient diff. */

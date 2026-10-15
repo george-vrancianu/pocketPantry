@@ -125,6 +125,8 @@ export const plateMatchesBody = z
     locale: memberLocale,
     dishTitle: z.string().trim().max(200),
     ingredientIds: z.array(id).max(100),
+    /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
+    showHidden: z.boolean().optional(),
   })
   .strict();
 
@@ -199,6 +201,11 @@ export const browseQuery = z.object({
   methodId: id.optional(),
   /** Opt in to Variants alongside Base Recipes with no search or filter. */
   includeVariants: z.enum(['true', 'false']).optional(),
+  /**
+   * The "show hidden" override (#359): list Recipes even when the Member's "Hide Recipes with my
+   * Allergies" is on. The Meal Plan's calls always pass it, since Plan Slots never hide (ADR 0012).
+   */
+  showHidden: z.enum(['true', 'false']).optional(),
 });
 export const localeQuery = browseQuery.pick({ locale: true });
 
@@ -329,6 +336,13 @@ export type RecipeListItem = {
   owner: RecipeOwner;
   /** The compact Allergy Warning, judged on this Recipe's own lines; null when nothing the viewer must avoid is, or might be, in it. */
   allergyWarning: CompactAllergyWarning | null;
+};
+
+/** The Member's Recipe list, with how many Recipes "Hide Recipes with my Allergies" left out (#359). */
+export type RecipeList = {
+  recipes: RecipeListItem[];
+  /** 0 when the preference is off or `showHidden` was passed. */
+  hiddenByAllergiesCount: number;
 };
 
 /** A Variant as listed on its base's detail. */
@@ -483,6 +497,8 @@ export type FamilyRecipeDraft = {
 /** `today` is the Member's local date; it defaults to the server's UTC date. */
 export const cookTonightQuery = localeQuery.extend({
   today: z.iso.date().optional(),
+  /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
+  showHidden: z.enum(['true', 'false']).optional(),
 });
 export type CookTonightQuery = z.infer<typeof cookTonightQuery>;
 
@@ -508,7 +524,17 @@ export type CookTonightCard = {
   otherVariantsCount: number;
 };
 
-export type CookTonightView = { cards: CookTonightCard[] };
+export type CookTonightView = {
+  cards: CookTonightCard[];
+  /** Cards that "Hide Recipes with my Allergies" left out or swapped for another Recipe of their group (0 when off or overridden). */
+  hiddenByAllergiesCount: number;
+};
+
+/** A Plate Scan's matches, with how many "Hide Recipes with my Allergies" left out of the closest five (#359). */
+export type PlateMatches = {
+  matches: PlateMatchView[];
+  hiddenByAllergiesCount: number;
+};
 
 /** A Plate Scan's closest-match Base Recipe with the viewer's compact Allergy Warning. */
 export type PlateMatchView = PlateMatch & {

@@ -7,13 +7,17 @@ import { recipeIngredientLines, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { rankPlateMatches, type PlateCandidate } from './plate-matches';
-import { loadAllergyWarnings, loadViewerAllergies } from './recipe-allergens';
+import {
+  hidesAllergyRecipes,
+  loadAllergyWarnings,
+  loadViewerAllergies,
+} from './recipe-allergens';
 import { recipeTitles } from './recipe-view';
 import type {
   FamilyRecipeEdit,
   FromPlateBody,
+  PlateMatches,
   PlateMatchesBody,
-  PlateMatchView,
 } from './recipes.schemas';
 
 /** Saving a Plate Scan dish as a Family Recipe, and finding its closest Catalog base. */
@@ -30,7 +34,7 @@ export class PlateRecipesService {
   async closestBases(
     memberId: string,
     body: PlateMatchesBody,
-  ): Promise<PlateMatchView[]> {
+  ): Promise<PlateMatches> {
     const bases = await this.database
       .select()
       .from(recipes)
@@ -41,7 +45,7 @@ export class PlateRecipesService {
           isNull(recipes.archivedAt),
         ),
       );
-    if (bases.length === 0) return [];
+    if (bases.length === 0) return { matches: [], hiddenByAllergiesCount: 0 };
     const lines = await this.database
       .select({
         recipeId: recipeIngredientLines.recipeId,
@@ -68,19 +72,36 @@ export class PlateRecipesService {
       titles: [...new Set([titles.get(r.id)!, r.title])],
       ingredientIds: ingredientsOf.get(r.id) ?? [],
     }));
-    const ranked = rankPlateMatches(body, candidates);
     const familyId = await this.settings.familyIdOf(memberId);
-    const warnings = await loadAllergyWarnings(
-      this.database,
-      catalogScope(familyId),
-      ranked.map((m) => m.id),
-      body.locale,
-      await loadViewerAllergies(this.database, memberId, familyId),
-    );
-    return ranked.map((m) => ({
-      ...m,
-      allergyWarning: warnings.get(m.id) ?? null,
-    }));
+    // Hiding (#359) takes Recipes out before the closest five are picked, so the list fills up
+    // from the next best; the count is how many of the five the override would restore.
+    const [{ warnings, hidden }, preferences] = await Promise.all([
+      loadAllergyWarnings(
+        this.database,
+        catalogScope(familyId),
+        bases.map((r) => r.id),
+        body.locale,
+        await loadViewerAllergies(this.database, memberId, familyId),
+      ),
+      this.settings.getPreferences(memberId),
+    ]);
+    const closest = rankPlateMatches(body, candidates);
+    const hides = hidesAllergyRecipes(preferences, body.showHidden);
+    const ranked = hides
+      ? rankPlateMatches(
+          body,
+          candidates.filter((c) => !hidden.has(c.id)),
+        )
+      : closest;
+    return {
+      matches: ranked.map((m) => ({
+        ...m,
+        allergyWarning: warnings.get(m.id) ?? null,
+      })),
+      hiddenByAllergiesCount: hides
+        ? closest.filter((m) => hidden.has(m.id)).length
+        : 0,
+    };
   }
 
   /** One serving (GLOSSARY: Plate Scan is for one serving), ingredient lines only; parent rules are the Family editor's. */

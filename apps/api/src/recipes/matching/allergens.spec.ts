@@ -32,6 +32,7 @@ describe('deriveAllergens', () => {
       allergens: [],
       uncheckedCount: 0,
       allergyWarning: null,
+      hidden: false,
     });
   });
 
@@ -43,6 +44,7 @@ describe('deriveAllergens', () => {
       ],
       uncheckedCount: 0,
       allergyWarning: null,
+      hidden: false,
     });
   });
 
@@ -423,6 +425,82 @@ describe('deriveAllergens', () => {
       const lines = [line({ ingredient: null })];
       expect(warn(lines, [member(MILK, 'Ana')])?.uncheckedCount).toBe(1);
       expect(warn(lines, [family(MILK, null)])?.uncheckedCount).toBe(1);
+    });
+  });
+
+  describe('hidden', () => {
+    const own = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: OWN,
+    });
+    const family = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'family', label: 'Mia' },
+    });
+    const member = (allergenId: string): AllergyInput => ({
+      allergenId,
+      owner: { kind: 'member', memberId: 'm-1', name: 'Ana' },
+    });
+    const hidden = (lines: AllergenLine[], allergies: AllergyInput[]) =>
+      deriveAllergens({ lines, allergenOrder: ORDER, allergies }).hidden;
+
+    it('is true when the viewer own Allergy is in a required, checked line', () => {
+      expect(hidden([line({ allergenIds: [MILK] })], [own(MILK)])).toBe(true);
+    });
+
+    it('is true for a Family Allergy in a required, checked line', () => {
+      expect(hidden([line({ allergenIds: [MILK] })], [family(MILK)])).toBe(
+        true,
+      );
+    });
+
+    it('is true for a tagged, checked Family Ingredient line', () => {
+      const lines = [line({ allergenIds: [MILK], ingredient: checkedFamily })];
+      expect(hidden(lines, [own(MILK)])).toBe(true);
+    });
+
+    it('is false when only another Member has the Allergy', () => {
+      expect(hidden([line({ allergenIds: [MILK] })], [member(MILK)])).toBe(
+        false,
+      );
+    });
+
+    it('is false when the Allergy is only in optional lines', () => {
+      const lines = [line({ allergenIds: [MILK], optional: true })];
+      expect(hidden(lines, [own(MILK)])).toBe(false);
+    });
+
+    it('is false when the only matching line is Unchecked', () => {
+      const lines = [
+        line({ allergenIds: [MILK], ingredient: uncheckedFamily }),
+        line({ ingredient: null }),
+      ];
+      expect(hidden(lines, [own(MILK)])).toBe(false);
+    });
+
+    it('is true when a required checked line has it even if an optional one also does', () => {
+      const lines = [
+        line({ allergenIds: [MILK], optional: true }),
+        line({ allergenIds: [MILK] }),
+      ];
+      expect(hidden(lines, [own(MILK)])).toBe(true);
+    });
+
+    it('is true when another Member shares the Allergy with the viewer', () => {
+      const lines = [line({ allergenIds: [MILK] })];
+      expect(hidden(lines, [member(MILK), own(MILK)])).toBe(true);
+    });
+
+    it('is false when the Recipe has no Allergen the viewer has, or the viewer has no Allergies', () => {
+      expect(hidden([line({ allergenIds: [GLUTEN] })], [own(MILK)])).toBe(
+        false,
+      );
+      expect(hidden([line({ allergenIds: [MILK] })], [])).toBe(false);
+    });
+
+    it('judges a Variant on its own lines', () => {
+      const peanutFree = [line({ allergenIds: [GLUTEN] })];
+      expect(hidden(peanutFree, [own(PEANUTS)])).toBe(false);
     });
   });
 });

@@ -197,6 +197,13 @@
       "when": 1792089128004,
       "tag": "0027_allergies",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792089550625,
+      "tag": "0028_hide_allergy_recipes",
+      "breakpoints": true
     }
   ]
 }

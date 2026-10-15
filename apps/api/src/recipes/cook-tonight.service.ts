@@ -12,7 +12,11 @@ import {
   PantryMatchingService,
   type PantryRecipeMatch,
 } from './matching/pantry-matching.service';
-import { loadAllergyWarnings, loadViewerAllergies } from './recipe-allergens';
+import {
+  hidesAllergyRecipes,
+  loadAllergyWarnings,
+  loadViewerAllergies,
+} from './recipe-allergens';
 import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
   CookTonightCard,
@@ -51,7 +55,8 @@ export class CookTonightService {
       const match = matches.get(row.id);
       return match && (match.canMake || match.shortOrMissingCount === 1);
     });
-    if (qualifying.length === 0) return { cards: [] };
+    if (qualifying.length === 0)
+      return { cards: [], hiddenByAllergiesCount: 0 };
 
     const groups = new Map<string, RecipeRow[]>();
     for (const row of qualifying) {
@@ -77,17 +82,41 @@ export class CookTonightService {
       a.title.localeCompare(b.title, query.locale) ||
       a.row.id.localeCompare(b.row.id);
 
-    const groupsRanked = [...groups.entries()]
-      .flatMap(([baseId, members]) => {
-        const base = baseById.get(baseId);
-        const candidates = members
-          .map((row) => ({
-            row,
-            title: titles.get(row.id)!,
-            match: matches.get(row.id)!,
-          }))
-          .sort(byRank);
-        return base ? [{ base, candidates }] : [];
+    const ranked = [...groups.entries()].flatMap(([baseId, members]) => {
+      const base = baseById.get(baseId);
+      const candidates = members
+        .map((row) => ({
+          row,
+          title: titles.get(row.id)!,
+          match: matches.get(row.id)!,
+        }))
+        .sort(byRank);
+      return base ? [{ base, candidates }] : [];
+    });
+
+    // Hiding (#359) is decided per Recipe before a group picks its card, so a hidden Variant
+    // never stands for its group while a Recipe the Member can eat is left.
+    const [{ warnings, hidden }, preferences] = await Promise.all([
+      loadAllergyWarnings(
+        this.database,
+        catalogScope(familyId),
+        ranked.flatMap(({ candidates }) => candidates.map((c) => c.row.id)),
+        query.locale,
+        await loadViewerAllergies(this.database, memberId, familyId),
+      ),
+      this.settings.getPreferences(memberId),
+    ]);
+    const hides = hidesAllergyRecipes(preferences, query.showHidden);
+    let hiddenByAllergiesCount = 0;
+    const groupsRanked = ranked
+      .flatMap(({ base, candidates }) => {
+        if (!hides || !hidden.has(candidates[0].row.id)) {
+          return [{ base, candidates }];
+        }
+        // The group's best card is hidden: the override would change what the card shows.
+        hiddenByAllergiesCount += 1;
+        const visible = candidates.filter((c) => !hidden.has(c.row.id));
+        return visible.length > 0 ? [{ base, candidates: visible }] : [];
       })
       .sort((a, b) => byRank(a.candidates[0], b.candidates[0]));
 
@@ -97,14 +126,8 @@ export class CookTonightService {
       query.locale,
     );
     // The warning belongs to the Recipe a card shows, which may be a Variant.
-    const warnings = await loadAllergyWarnings(
-      this.database,
-      catalogScope(familyId),
-      groupsRanked.map(({ candidates }) => candidates[0].row.id),
-      query.locale,
-      await loadViewerAllergies(this.database, memberId, familyId),
-    );
     return {
+      hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
         const [top, ...others] = candidates;
         const short = top.match.lines.find(isShortOrMissing);
