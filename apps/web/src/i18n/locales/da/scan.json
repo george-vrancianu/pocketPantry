@@ -6,6 +6,7 @@
     "label": "Sådan virker scanning",
     "title": "Scan dit spisekammer",
     "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og dobbelttryk på guiden. Du kan tjekke alt, før det gemmes.",
+    "dial": "Dobbelttryk eller hold på tilstandshjulet for at scanne; hold fokuserer først.",
     "dismiss": "Luk"
   },
   "scanLanguage": {
