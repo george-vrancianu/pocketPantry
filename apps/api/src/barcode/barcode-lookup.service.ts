@@ -32,10 +32,10 @@ const NOT_FOUND_TTL_MS = DAY_MS;
 @Injectable()
 export class BarcodeLookupService {
   constructor(
-    @Inject(DATABASE) private readonly database: Database,
     @InjectOpenFoodFacts() private readonly openFoodFacts: OpenFoodFactsClient,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
+    @Inject(DATABASE) private readonly database: Database,
   ) {}
 
   async lookup(

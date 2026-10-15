@@ -389,6 +389,15 @@ describe('Known Barcodes (integration)', () => {
       const raw = unique('Relink Queue');
       const code = freshBarcode();
       await saveUnmatched(raw, code);
+      const codeB = freshBarcode();
+      await b
+        .post('/pantry/batches?locale=en', {
+          rawName: raw,
+          parentCategoryId: seedId.parent('dairy'),
+          location: 'fridge',
+          barcode: codeB,
+        })
+        .expect(201);
 
       await admin
         .post('/admin/unmatched/resolve', {
@@ -402,6 +411,9 @@ describe('Known Barcodes (integration)', () => {
         match: { id: seedId.ingredient('parmesan') },
       });
       expect(body).not.toHaveProperty('unmatchedName');
+      expect((await lookup(b, codeB).expect(200)).body).toMatchObject({
+        match: { id: seedId.ingredient('parmesan') },
+      });
     });
   });
 

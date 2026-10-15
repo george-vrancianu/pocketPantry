@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { rememberBarcodes } from '../barcode/known-barcodes';
 import {
   type ExpiryOverride,
   resolveCatalogDefaults,
   resolveExpiryDays,
 } from '../catalog/catalog-defaults';
-import { rememberBarcodes } from '../barcode/known-barcodes';
 import { catalogScope } from '../catalog/catalog-scope';
 import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { loadIngredientPlacements } from '../catalog/ingredient-placement';
