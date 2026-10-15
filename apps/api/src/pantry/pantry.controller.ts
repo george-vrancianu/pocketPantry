@@ -21,6 +21,7 @@ import {
   ingredientIdParam,
   createBatchBody,
   createBatchesBody,
+  deleteBatchesBody,
   updateBatchBody,
   pantryLocaleQuery,
   recentlyStockedQuery,
@@ -32,6 +33,7 @@ import {
   type IngredientIdParam,
   type CreateBatchBody,
   type CreateBatchesBody,
+  type DeleteBatchesBody,
   type UpdateBatchBody,
   type PantryLocaleQuery,
   type ScanQuery,
@@ -147,6 +149,19 @@ export class PantryController {
         query.scanLanguage,
       ),
     };
+  }
+
+  @Post('batches/bulk-delete')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Delete many Batches of the Family Pantry at once; ids of another Family are ignored',
+  })
+  async removeMany(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(deleteBatchesBody)) body: DeleteBatchesBody,
+  ): Promise<void> {
+    await this.pantry.removeMany(member.id, body.ids);
   }
 
   @Patch('batches/:id')
