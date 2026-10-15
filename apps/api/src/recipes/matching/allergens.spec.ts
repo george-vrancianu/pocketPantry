@@ -595,6 +595,26 @@ describe('deriveAllergens', () => {
       expect(blocks([line({ ingredient: null })], [own(MILK)])).toBe(false);
     });
 
+    it('is soft, not hidden and not blocking when the only match is a required line on a shared Ingredient awaiting review', () => {
+      const awaiting = {
+        ownerFamilyId: null,
+        allergensChecked: false,
+        allergensReviewPending: true,
+      };
+      const derived = deriveAllergens({
+        lines: [line({ allergenIds: [MILK], ingredient: awaiting })],
+        allergenOrder: ORDER,
+        allergies: [own(MILK), member(MILK)],
+      });
+      expect(derived.allergyWarning).toMatchObject({
+        severity: 'soft',
+        entries: [],
+        uncheckedCount: 1,
+      });
+      expect(derived.hidden).toBe(false);
+      expect(derived.blocksFill).toBe(false);
+    });
+
     it('is false without a matching Allergy', () => {
       expect(blocks([line({ allergenIds: [GLUTEN] })], [member(MILK)])).toBe(
         false,
