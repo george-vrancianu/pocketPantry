@@ -9,6 +9,7 @@ const camera = vi.hoisted(() => ({
   cancels: 0,
   focuses: 0,
   finish: () => {},
+  resize: null as null | Promise<string>,
 }));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
@@ -28,7 +29,8 @@ vi.mock('../../lib/camera', () => ({
 }));
 vi.mock('../../lib/image', async (importActual) => ({
   ...(await importActual<typeof import('../../lib/image')>()),
-  resizeImage: () => Promise.resolve('data:image/jpeg;base64,YQ=='),
+  resizeImage: () =>
+    camera.resize ?? Promise.resolve('data:image/jpeg;base64,YQ=='),
 }));
 
 let fetchCalls: ReturnType<typeof stubApi>['calls'];
@@ -83,6 +85,7 @@ describe('Scan page: Scan by the mode dial', () => {
     now = 1000;
     camera.cancels = 0;
     camera.focuses = 0;
+    camera.resize = null;
     vibrate.mockClear();
     Object.defineProperty(navigator, 'vibrate', {
       value: vibrate,
@@ -192,6 +195,34 @@ describe('Scan page: Scan by the mode dial', () => {
     await flush();
     expect(vibrate).not.toHaveBeenCalled();
     expect(screen.queryByTestId('scan-flash')).toBeNull();
+    expect(scans()).toHaveLength(0);
+  });
+
+  it('sends no Scan from a double tap or a hold while a Scan is being read', async () => {
+    camera.resize = new Promise<string>(() => {});
+    renderScan();
+    press();
+    lift();
+    now += 100;
+    press();
+    lift();
+    await flush();
+    expect(screen.getByText('Reading your photo')).toBeInTheDocument();
+    const focusesBefore = camera.focuses;
+    now += 1000;
+    press();
+    lift();
+    now += 100;
+    press();
+    lift();
+    now += 1000;
+    press();
+    await advance(500);
+    expect(hold()).toBeNull();
+    lift();
+    camera.finish();
+    await flush();
+    expect(camera.focuses).toBe(focusesBefore);
     expect(scans()).toHaveLength(0);
   });
 

@@ -128,7 +128,7 @@ describe('focusForScan', () => {
     });
   });
 
-  it('does not finish on the instant applyConstraints resolves, but after the 400 ms pause, and restores only after finishing', async () => {
+  it('does not finish on the instant applyConstraints resolves, but after the 400 ms pause, and returns to continuous only after finishing', async () => {
     const { hook, applyConstraints } = await openCamera({
       focusMode: ['single-shot'],
     });
@@ -154,22 +154,8 @@ describe('focusForScan', () => {
     const { hook, applyConstraints, track } = await openCamera({
       focusMode: ['single-shot', 'manual'],
     });
+    // Guards against a regression to restoring the previous focus mode.
     track.getSettings = () => ({ focusMode: 'manual' });
-    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
-    act(() => {
-      pass = hook.result.current.focusForScan();
-    });
-    await act(async () => pass.cancel());
-    expect(applyConstraints).toHaveBeenLastCalledWith({
-      advanced: [{ focusMode: 'continuous' }],
-    });
-  });
-
-  it('puts back continuous when the camera still reports single-shot from an unrestored pass', async () => {
-    const { hook, applyConstraints, track } = await openCamera({
-      focusMode: ['single-shot', 'continuous'],
-    });
-    track.getSettings = () => ({ focusMode: 'single-shot' });
     let pass!: ReturnType<typeof hook.result.current.focusForScan>;
     act(() => {
       pass = hook.result.current.focusForScan();
@@ -189,6 +175,22 @@ describe('focusForScan', () => {
       pass = hook.result.current.focusForScan();
     });
     await act(async () => pass.cancel());
+    expect(applyConstraints).toHaveBeenLastCalledWith({
+      advanced: [{ focusMode: 'continuous' }],
+    });
+  });
+
+  it('still finishes and goes back to continuous when the single-shot request is rejected', async () => {
+    const { hook, applyConstraints } = await openCamera({
+      focusMode: ['single-shot', 'continuous'],
+    });
+    applyConstraints.mockRejectedValueOnce(new Error('refused'));
+    let pass!: ReturnType<typeof hook.result.current.focusForScan>;
+    act(() => {
+      pass = hook.result.current.focusForScan();
+    });
+    await act(() => pass.done);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
     expect(applyConstraints).toHaveBeenLastCalledWith({
       advanced: [{ focusMode: 'continuous' }],
     });
