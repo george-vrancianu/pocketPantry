@@ -69,7 +69,6 @@ function stub(
   extraRoutes: Record<string, (url: URL) => Response | Promise<Response>> = {},
 ) {
   const { fetchMock, calls } = stubApi({
-    ...extraRoutes,
     'GET /api/settings/family': settings,
     'GET /api/pantry': () => Response.json(pantry),
     'GET /api/shopping-list/suggestions': () =>
@@ -1061,10 +1060,9 @@ describe('HealthWidget', () => {
       };
     }
 
-    /** The sheet open on the given Health To-do, with `DELETE`s applied to the stubbed Pantry. */
+    /** The sheet open on the given Health To-do, with bulk delete stubbed. */
     async function openTodo(name: RegExp) {
-      const data = pantry();
-      const calls = stub(data, [staple('eggs')], undefined, [], {
+      const calls = stub(pantry(), [staple('eggs')], undefined, [], {
         'POST /api/pantry/batches/bulk-delete': async () => {
           return new Response(null, { status: 204 });
         },
@@ -1080,7 +1078,7 @@ describe('HealthWidget', () => {
         name: 'Pantry health',
       });
       await user.click(disclosure(sheet, name));
-      return { user, sheet, calls, data };
+      return { user, sheet, calls };
     }
     const afterWindow = () => act(() => vi.advanceTimersByTimeAsync(5200));
     const bulkDeletes = (calls: ReturnType<typeof stub>) =>
