@@ -11,6 +11,7 @@ import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PairingKind } from '../../../lib/recipeVocabulary';
 import type { DetailEatingMoment, DetailPairing } from '../../../lib/recipes';
+import { AllergensCard } from './AllergensCard';
 import { Section } from './Section';
 import type { SectionProps } from './sections';
 
@@ -171,15 +172,15 @@ function WhenToEatSection({ moments }: { moments: DetailEatingMoment[] }) {
 }
 
 /**
- * Pairings, When to Eat and Nutrition, then the fixed guidance disclaimer.
- * Empty parts are left out; with no guidance at all nothing renders.
+ * Pairings, When to Eat and Nutrition, the Allergens card, then the fixed
+ * guidance disclaimer. Empty guidance parts and the disclaimer are left out
+ * when there is no guidance; the Allergens card is always there.
  */
 export function GuidanceSection({ recipe }: Pick<SectionProps, 'recipe'>) {
   const { t } = useTranslation('recipes');
   const { pairings, eatingMoments, nutritionNote } = recipe.guidance;
-  if (pairings.length + eatingMoments.length === 0 && !nutritionNote) {
-    return null;
-  }
+  const hasGuidance =
+    pairings.length + eatingMoments.length > 0 || Boolean(nutritionNote);
   return (
     <Fragment>
       <PairingsSection pairings={pairings} />
@@ -189,9 +190,12 @@ export function GuidanceSection({ recipe }: Pick<SectionProps, 'recipe'>) {
           <Typography sx={{ lineHeight: 1.5 }}>{nutritionNote}</Typography>
         </Section>
       ) : null}
-      <Typography variant="meta" color="text.secondary" component="p">
-        {t('disclaimer')}
-      </Typography>
+      <AllergensCard allergens={recipe.allergens} />
+      {hasGuidance ? (
+        <Typography variant="meta" color="text.secondary" component="p">
+          {t('disclaimer')}
+        </Typography>
+      ) : null}
     </Fragment>
   );
 }

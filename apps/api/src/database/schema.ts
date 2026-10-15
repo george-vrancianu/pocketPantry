@@ -164,6 +164,7 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'cuisine',
   'method',
   'eating_moment',
+  'allergen',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -259,6 +260,9 @@ export const ingredients = pgTable(
     }),
     // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
     nameLocale: text('name_locale'),
+    // A Member has tagged a Family Ingredient's Allergens (ticking "None" counts).
+    // Shared Ingredients always count as checked, so this is read only for Family rows (ADR 0014).
+    allergensChecked: boolean('allergens_checked').notNull().default(false),
     ...timestamps,
   },
   (table) => [
@@ -270,6 +274,41 @@ export const ingredients = pgTable(
       .on(table.ownerFamilyId, table.normalizedName)
       .where(sql`${table.ownerFamilyId} IS NOT NULL`),
     index('ingredients_leaf_category_idx').on(table.leafCategoryId),
+  ],
+);
+
+// An Allergen is an Admin-curated, ordered, translated list entry (names in
+// catalog_translations, entity type `allergen`). Seeded with the EU's 14 (ADR 0014).
+export const allergens = pgTable(
+  'allergens',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('allergens_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+// "This Ingredient contains this Allergen", for shared and Family Ingredients alike.
+// An Allergen in use cannot be deleted: dropping a tag would read as "contains none".
+export const ingredientAllergens = pgTable(
+  'ingredient_allergens',
+  {
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.ingredientId, table.allergenId] }),
+    index('ingredient_allergens_allergen_idx').on(table.allergenId),
   ],
 );
 

@@ -17,6 +17,7 @@ import type { Database, Executor, Tx } from '../database/database.types';
 import { hasPgCode, pgConstraint } from '../database/pg-errors';
 import {
   aisles,
+  allergens,
   catalogTranslations,
   cuisines,
   eatingMoments,
@@ -895,6 +896,7 @@ export class AdminCatalogService {
       cuisine: cuisines,
       method: methods,
       eating_moment: eatingMoments,
+      allergen: allergens,
     }[type];
     const [row] = await executor
       .select({ id: table.id })

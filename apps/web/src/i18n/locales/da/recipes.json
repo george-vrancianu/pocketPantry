@@ -15,6 +15,15 @@
     "cleanses_palate": "Renser ganen",
     "regional_tradition": "Regional tradition"
   },
+  "allergens": {
+    "title": "Allergener",
+    "optional": "Valgfri",
+    "optionalLine": "{{name}} (valgfri)",
+    "none": "Ingen almindelige allergener fundet",
+    "unchecked_one": "{{count}} ingrediens kunne ikke kontrolleres",
+    "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres",
+    "reminder": "Udledt af ingredienserne. Tjek altid produkternes etiketter."
+  },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",
   "cuisine": "Køkken",

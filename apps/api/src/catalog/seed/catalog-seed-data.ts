@@ -14,6 +14,7 @@ import {
   DA_PARENTS,
   DA_SYNONYMS,
 } from './data/danish';
+import { SEED_INGREDIENT_ALLERGENS } from './data/ingredient-allergens';
 import { herbs, produce } from './data/produce';
 import { beverage, snacks } from './data/snacks-drinks';
 import type {
@@ -164,6 +165,9 @@ export const SEED_INGREDIENTS: SeedIngredient[] = SECTIONS.flatMap(
 ).map((item) => ({
   ...item,
   da: DA_INGREDIENTS[item.slug] ?? '',
+  ...(SEED_INGREDIENT_ALLERGENS[item.slug]
+    ? { allergens: SEED_INGREDIENT_ALLERGENS[item.slug] }
+    : {}),
   ...(DA_SYNONYMS[item.slug]
     ? { synonyms: { ...item.synonyms, da: DA_SYNONYMS[item.slug] } }
     : {}),
