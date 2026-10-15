@@ -85,22 +85,11 @@ describe('Suggestions in the Add sheet', () => {
   };
 
   // The Gone from your Pantry tiles (select, dismiss, Staples link) are covered by GoneTiles.test.tsx.
-  it('shows the Gone tiles and the Template chips together while the search is empty, and both go once the Member types', async () => {
+  it('shows the Gone tiles while the search is empty, and they go once the Member types', async () => {
     const { fetchMock } = stubApi({
       'GET /api/shopping-list': () => Response.json(emptyList()),
       'GET /api/shopping-list/suggestions': () =>
         Response.json({ staples: [suggestion()], usedUp: [], expired: [] }),
-      'GET /api/shopping-templates': () =>
-        Response.json({
-          templates: [
-            {
-              id: 't1',
-              name: 'Taco night',
-              lineCount: 2,
-              previewNames: ['Milk', 'Tomato'],
-            },
-          ],
-        }),
       'GET /api/catalog/search': () => Response.json({ results: [flour] }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -112,10 +101,6 @@ describe('Suggestions in the Add sheet', () => {
         name: 'Milk, missing staple',
       }),
     ).toBeVisible();
-    expect(
-      await within(dialog).findByRole('button', { name: /Taco night/ }),
-    ).toBeVisible();
-    expect(within(dialog).getByText('Or start from a template')).toBeVisible();
 
     await userEvent.type(
       within(dialog).getByRole('combobox', { name: 'Search ingredients' }),

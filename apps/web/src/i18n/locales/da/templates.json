@@ -13,12 +13,9 @@
     "preview_one": "Gemmer {{count}} vare, også de afkrydsede",
     "preview_other": "Gemmer alle {{count}} varer, også de afkrydsede",
     "rowHint_one": "Genbrug denne {{count}} vare næste gang",
-    "rowHint_other": "Genbrug disse {{count}} varer næste gang",
-    "rowMeta_one": "{{count}} vare, mængder med",
-    "rowMeta_other": "{{count}} varer, mængder med"
+    "rowHint_other": "Genbrug disse {{count}} varer næste gang"
   },
   "apply": {
-    "none": "Ingen skabeloner endnu. Gem din liste som skabelon, eller opret en under Skabeloner.",
     "title": "Tilføj fra {{name}}",
     "hint": "Varer, du allerede har i spisekammeret, starter uafkrydsede.",
     "empty": "Denne skabelon har ingen linjer.",
@@ -28,11 +25,7 @@
     "inPantry": "I spisekammeret",
     "unmatchedGroup": "Ikke i kataloget",
     "cancel": "Tilbage",
-    "section": "Tilføj fra en skabelon",
-    "allTemplates": "Alle skabeloner",
-    "onList": "På listen",
-    "added_one": "Tilføjede {{count}} vare fra {{name}}",
-    "added_other": "Tilføjede {{count}} varer fra {{name}}"
+    "onList": "På listen"
   },
   "list": {
     "empty": "Ingen skabeloner endnu. Opret en for at genbruge en indkøbstur.",
@@ -52,6 +45,5 @@
     "empty": "Ingen linjer endnu. Tilføj, hvad skabelonen skal bruge, nedenfor.",
     "back": "Tilbage til skabeloner",
     "apply": "Tilføj til listen"
-  },
-  "manage": "Administrer"
+  }
 }
