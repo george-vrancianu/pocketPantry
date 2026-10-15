@@ -181,7 +181,9 @@ describe('HealthWidget', () => {
     await waitFor(() =>
       expect(calls.some((call) => call.key === 'GET /api/pantry')).toBe(true),
     );
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(
+      await screen.findByRole('status', { name: 'Loading' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     release();
     // With the default threshold of 3 the Batch five days out would count as fresh and the score be 100.

@@ -50,7 +50,7 @@ export function useFamilySettings(locale: string) {
 }
 
 /** The API's default Stale Threshold, used for expiry tags until Family Settings have loaded (or if they fail). */
-export const DEFAULT_STALE_THRESHOLD_DAYS = 3;
+const DEFAULT_STALE_THRESHOLD_DAYS = 3;
 
 /** The Family's Stale Threshold, which colours every expiry tag. Changing it re-colours them on the next render. */
 export function useStaleThresholdDays(locale: string): number {
