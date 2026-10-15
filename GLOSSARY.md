@@ -201,7 +201,7 @@ Reading a product's barcode in the camera and looking the code up, first among t
 _Avoid_: Barcode scan, barcode mode
 
 **Known Barcode**:
-A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins.
+A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins. A Product Scan's photo teaches one too: the barcode on it is decoded on the device, and goes with the Batch when the card read as exactly one line.
 _Avoid_: Barcode cache, saved product
 
 **Prefill**:

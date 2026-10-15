@@ -21,7 +21,11 @@ import {
   reviewGroups,
   reviewReducer,
 } from '../../../lib/reviewState';
-import { dispatchScanSession, getScanSession } from '../../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  useScanSession,
+} from '../../../lib/scanSession';
 import { useSaveLines } from '../../../lib/saveScan';
 import type { TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES } from '../../../lib/scan';
@@ -69,6 +73,22 @@ export function useReviewScreen() {
     if (state.lines !== initialLines.current)
       dispatchScanSession({ type: 'edit', id: scanId, lines: state.lines });
   }, [scanId, state.lines]);
+  // A Product Scan's photo barcode can settle while the editor is open: the editor's lines take it too.
+  const photoBarcode = useScanSession().scans.find(
+    (s) => s.id === scanId,
+  )?.barcode;
+  useEffect(() => {
+    if (
+      photoBarcode &&
+      state.lines.length === 1 &&
+      state.lines[0].barcode === undefined
+    )
+      dispatch({
+        type: 'update',
+        key: state.lines[0].key,
+        patch: { barcode: photoBarcode },
+      });
+  }, [photoBarcode, state.lines]);
   const saver = useSaveLines(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';

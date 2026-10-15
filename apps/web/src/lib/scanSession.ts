@@ -29,6 +29,12 @@ export type SessionScan = {
   image?: string;
   /** A Barcode card: the decoded EAN/UPC code that is looked up. */
   code?: string;
+  /**
+   * A Product Scan's barcode, decoded on the device from its photo (not looked up, so no Open Food
+   * Facts credit). It goes with the card's line to teach the Known Barcode, only when the card has
+   * exactly one line. Barcode cards use `code` instead.
+   */
+  barcode?: string;
   thumbnail: string;
   /** `uncropped`: a gallery receipt waiting for the Member to crop it in Review. */
   status: 'uncropped' | 'queued' | 'reading' | 'read' | 'failed';
@@ -70,6 +76,7 @@ export type SessionAction =
       >;
     }
   | { type: 'crop'; id: string; image: string }
+  | { type: 'photoBarcode'; id: string; code: string }
   | { type: 'start' }
   | { type: 'read'; id: string; lines: ProposedLine[] }
   | {
@@ -129,6 +136,23 @@ export function sessionReducer(
                 : waiting(state)),
           },
         ],
+      };
+    case 'photoBarcode':
+      // Dropped when the card is gone (saved or removed) or is not a Product Scan.
+      return {
+        scans: state.scans.map((scan) =>
+          scan.id === action.id && scan.mode === 'product'
+            ? {
+                ...scan,
+                barcode: action.code,
+                // Lines the Member already edited take it too, if there is still exactly one.
+                edited:
+                  scan.edited?.length === 1
+                    ? [{ ...scan.edited[0], barcode: action.code }]
+                    : scan.edited,
+              }
+            : scan,
+        ),
       };
     case 'crop':
       return {

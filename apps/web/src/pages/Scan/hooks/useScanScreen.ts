@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { useCamera } from '../../../lib/camera';
+import { readBarcode, useCamera } from '../../../lib/camera';
 import { readScans } from '../../../lib/scanReads';
 import {
   capReached,
@@ -26,6 +26,22 @@ import {
 /** A code identical to the last accepted one is taken again after this long without being seen. */
 const BARCODE_COOLDOWN_MS = 1500;
 const BARCODE_HAPTIC_MS = 12;
+
+/**
+ * Decodes a Product Scan's full-size photo for a barcode, on the device, alongside the read: it
+ * settles on its own and never delays or fails the card. A code for a card already saved or removed is dropped by the Session.
+ */
+function decodePhotoBarcode(id: string, photo: Blob) {
+  // After a microtask, so the read request is already out; a throwing decoder is just no barcode.
+  void Promise.resolve()
+    .then(() => readBarcode(photo))
+    .then(
+      (code) => {
+        if (code) dispatchScanSession({ type: 'photoBarcode', id, code });
+      },
+      () => {},
+    );
+}
 
 /** What opens the camera decides which modes it offers and which one it starts in. */
 export type ScanScreenModes = {
@@ -187,10 +203,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         });
         return false;
       }
+      const id = crypto.randomUUID();
       dispatchScanSession({
         type: 'enqueue',
         scan: {
-          id: crypto.randomUUID(),
+          id,
           mode,
           scanLanguage: mode === 'plate' ? undefined : scanLanguage,
           image,
@@ -198,6 +215,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         },
       });
       readScans(i18n.language);
+      // The full frame, before it was resized for the read: barcodes need the resolution.
+      if (mode === 'product') decodePhotoBarcode(id, source);
     }
     return false;
   };
@@ -261,6 +280,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
               scan: { ...base, id, image, thumbnail: image },
             });
             readScans(i18n.language);
+            if (base.mode === 'product') decodePhotoBarcode(id, file);
           },
           () => setLocalError('scan.image_invalid'),
         )
