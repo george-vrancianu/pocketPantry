@@ -334,6 +334,22 @@ export type RecipeVariantItem = {
   owner: RecipeOwner;
 };
 
+/** One Allergen a Recipe is known to contain, with the lines it comes from. */
+export type RecipeAllergenItem = {
+  allergen: { id: string; name: string };
+  lines: { id: string; ingredientName: string; optional: boolean }[];
+  /** Every source line is optional, so the Allergen can be left out. */
+  optionalOnly: boolean;
+};
+
+/** A Recipe's Allergens, derived from its own Ingredient Lines (ADR 0014). */
+export type RecipeAllergens = {
+  /** In Recipe order. */
+  items: RecipeAllergenItem[];
+  /** Lines that could not be checked: untagged Family Ingredients and Unmatched lines. */
+  uncheckedCount: number;
+};
+
 /**
  * The Member's Recipe detail. Extend with more sections (guidance, Pantry
  * status per line id) by adding fields here.
@@ -345,6 +361,8 @@ export type RecipeDetail = ResolvedRecipe & {
   variants: RecipeVariantItem[];
   /** Ingredients that differ from the base; null on a Base Recipe. */
   diff: RecipeDiff | null;
+  /** What the Recipe is known to contain, worked out from its own lines. */
+  allergens: RecipeAllergens;
 };
 
 export type RecipeFilters = {

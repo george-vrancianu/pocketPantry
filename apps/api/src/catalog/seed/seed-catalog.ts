@@ -2,7 +2,9 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import {
   aisles,
+  allergens,
   catalogTranslations,
+  ingredientAllergens,
   ingredients,
   leafCategories,
   parentCategories,
@@ -14,6 +16,7 @@ import { lockAisleOrder } from '../order-lock';
 import { CATALOG_LOCALES, type CatalogLocale } from '../catalog.schemas';
 import type { EntityType } from '../display-names';
 import { normalizeName } from '../normalize';
+import { SEED_ALLERGENS } from './allergens';
 import {
   SEED_AISLES,
   SEED_INGREDIENTS,
@@ -147,6 +150,7 @@ export async function seedCatalog(
     parents: SEED_PARENTS,
     leaves: SEED_LEAVES,
     ingredients: SEED_INGREDIENTS,
+    allergens: SEED_ALLERGENS,
   });
   await database.transaction(async (tx) => {
     await lockAisleOrder(tx);
@@ -201,6 +205,29 @@ export async function seedCatalog(
       )
       .onConflictDoNothing({ target: ingredients.id });
 
+    // The Allergen list, then each seed Ingredient's tags. Like the other rows
+    // they are only ever added: an Admin's edits to the list are kept.
+    await tx
+      .insert(allergens)
+      .values(
+        SEED_ALLERGENS.map((allergen, index) => ({
+          id: seedId.allergen(allergen.slug),
+          name: allergen.en,
+          normalizedName: normalizeName(allergen.en),
+          sortOrder: index + 1,
+        })),
+      )
+      .onConflictDoNothing({ target: allergens.id });
+    const tags = SEED_INGREDIENTS.flatMap((item) =>
+      (item.allergens ?? []).map((slug) => ({
+        ingredientId: seedId.ingredient(item.slug),
+        allergenId: seedId.allergen(slug),
+      })),
+    );
+    if (tags.length > 0) {
+      await tx.insert(ingredientAllergens).values(tags).onConflictDoNothing();
+    }
+
     const translations: TranslationRow[] = [
       ...SEED_AISLES.flatMap((aisle) =>
         translationRows('aisle', seedId.aisle(aisle.slug), aisle),
@@ -210,6 +237,9 @@ export async function seedCatalog(
       ),
       ...SEED_LEAVES.flatMap((leaf) =>
         translationRows('leaf_category', seedId.leaf(leaf.slug), leaf),
+      ),
+      ...SEED_ALLERGENS.flatMap((allergen) =>
+        translationRows('allergen', seedId.allergen(allergen.slug), allergen),
       ),
       ...SEED_INGREDIENTS.flatMap((item) =>
         translationRows(

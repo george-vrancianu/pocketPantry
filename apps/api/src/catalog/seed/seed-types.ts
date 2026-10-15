@@ -41,6 +41,20 @@ export type SeedIngredient = {
   da: string;
   unit: Unit;
   synonyms?: { en?: string[]; ro?: string[]; da?: string[] };
+  /**
+   * The Allergens this Ingredient contains, by Allergen slug. Declared in
+   * data/ingredient-allergens.ts. Shared Ingredients count as checked, so
+   * none listed means contains none (ADR 0014); #354 makes the declaration required.
+   */
+  allergens?: string[];
+};
+
+/** An entry of the Admin-curated Allergen list. */
+export type SeedAllergen = {
+  slug: string;
+  en: string;
+  ro: string;
+  da: string;
 };
 
 /**
@@ -50,7 +64,10 @@ export type SeedIngredient = {
 export type DeclaredRow<T> = Omit<T, 'da'>;
 
 /** A declared Ingredient may carry en and ro Synonyms only; Danish ones are merged in. */
-export type DeclaredIngredient = Omit<SeedIngredient, 'da' | 'synonyms'> & {
+export type DeclaredIngredient = Omit<
+  SeedIngredient,
+  'da' | 'synonyms' | 'allergens'
+> & {
   synonyms?: { en?: string[]; ro?: string[] };
 };
 

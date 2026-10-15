@@ -1,4 +1,5 @@
 import type {
+  SeedAllergen,
   SeedAisle,
   SeedIngredient,
   SeedLeaf,
@@ -212,6 +213,40 @@ describe('Catalog seed validation', () => {
         ingredient('a', 'Apple', 'Măr', { en: ['pomme'], ro: ['Pomme!'] }),
       ]),
     ).toEqual([expect.stringContaining('"Pomme!" is listed twice')]);
+  });
+
+  it('rejects an Ingredient tagged with an unknown Allergen', () => {
+    const allergens: SeedAllergen[] = [
+      { slug: 'milk', en: 'Milk', ro: 'Lapte', da: 'Mælk' },
+    ];
+    const check = (tags: string[]) =>
+      findSeedProblems({
+        aisles,
+        parents,
+        leaves,
+        allergens,
+        ingredients: [{ ...ingredient('a', 'Apple', 'Măr'), allergens: tags }],
+      });
+    expect(check(['milk'])).toEqual([]);
+    expect(check(['milk', 'kryptonite'])).toEqual([
+      expect.stringContaining('ingredient "a": unknown Allergen "kryptonite"'),
+    ]);
+  });
+
+  it('flags a duplicate Allergen slug or a missing Danish name', () => {
+    const milk = { slug: 'milk', en: 'Milk', ro: 'Lapte', da: 'Mælk' };
+    expect(
+      findSeedProblems({
+        aisles,
+        parents,
+        leaves,
+        ingredients: [],
+        allergens: [milk, { ...milk, da: '' }],
+      }),
+    ).toEqual([
+      expect.stringContaining('allergen: duplicate slug "milk"'),
+      expect.stringContaining('allergen "milk": missing Danish name'),
+    ]);
   });
 
   it('throws one error listing every problem', () => {
