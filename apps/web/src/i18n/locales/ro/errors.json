@@ -118,5 +118,9 @@
     "pairing_self_link": "O Asociere nu poate trimite la propria Rețetă.",
     "nutrition_note_too_long": "Nota nutrițională poate avea cel mult 500 de caractere.",
     "nothing_to_translate": "Nu există text sursă de tradus. Adaugă-l mai întâi în Rețetă."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "Există deja un ingredient comun cu acest nume. Îmbină-l pe acesta în el.",
+    "not_found": "Acest ingredient de familie nu mai este în coadă. Poate că cineva l-a promovat deja."
   }
 }

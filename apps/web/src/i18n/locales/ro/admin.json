@@ -326,5 +326,21 @@
     "archive": "Arhivează",
     "unarchive": "Dezarhivează",
     "archivedNote": "Acest Moment de consum este arhivat. Este ascuns din selector și din afișare și rămâne pe Rețetele care îl folosesc."
+  },
+  "familyIngredients": {
+    "kindLabel": "Afișează",
+    "kindUnmatched": "Nume nepotrivite",
+    "kindFamily": "Ingrediente de familie",
+    "empty": "Nu există ingrediente de familie de revizuit.",
+    "families_one": "{{count}} familie",
+    "families_other": "{{count}} familii",
+    "promote": "Promovează",
+    "promoteName": "Promovează {{name}}",
+    "promoting": "Se promovează…",
+    "pickCopy": "Copia de promovat",
+    "copy": "{{name}}, {{leaf}}, {{locale}}",
+    "promoteHint": "Copiile celorlalte familii sunt îmbinate în ea.",
+    "promoted_one": "{{name}} a fost promovat. {{count}} altă copie a fost îmbinată.",
+    "promoted_other": "{{name}} a fost promovat. {{count}} alte copii au fost îmbinate."
   }
 }

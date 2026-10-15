@@ -118,5 +118,9 @@
     "pairing_self_link": "A Pairing cannot link to its own Recipe.",
     "nutrition_note_too_long": "The Nutrition Note can be at most 500 characters.",
     "nothing_to_translate": "There is no source text to translate. Add it to the Recipe first."
+  },
+  "family_ingredients": {
+    "shared_name_exists": "A shared ingredient with that name already exists. Merge this one into it instead.",
+    "not_found": "That Family ingredient is no longer in the queue. Someone may have promoted it already."
   }
 }

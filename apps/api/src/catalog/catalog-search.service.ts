@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
 import {
@@ -364,10 +364,14 @@ export class CatalogSearchService {
    * any locale, or Synonym equals `key` (a normalised name), if any. Shared
    * rows win over the Family's own.
    */
-  async findIdByName(scope: CatalogScope, key: string): Promise<string | null> {
-    const ingredients = scope.ingredients(this.database);
-    const catalogTranslations = scope.translations(this.database);
-    const hits = await this.database.execute<{ id: string }>(sql`
+  async findIdByName(
+    scope: CatalogScope,
+    key: string,
+    executor: Executor = this.database,
+  ): Promise<string | null> {
+    const ingredients = scope.ingredients(executor);
+    const catalogTranslations = scope.translations(executor);
+    const hits = await executor.execute<{ id: string }>(sql`
       SELECT c.id
       FROM (
         SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
