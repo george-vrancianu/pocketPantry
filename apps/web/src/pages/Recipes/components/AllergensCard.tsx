@@ -3,6 +3,24 @@ import { useTranslation } from 'react-i18next';
 import type { RecipeAllergens } from '../../../lib/recipes';
 import { Section } from './Section';
 
+type Item = RecipeAllergens['items'][number];
+
+/**
+ * The Ingredient names behind an Allergen, each once. When the Allergen also
+ * comes from required lines, names found only on optional lines are marked.
+ */
+function sourceNames(item: Item, markOptional: (name: string) => string) {
+  const required = new Set<string>();
+  const names = new Set<string>();
+  for (const line of item.lines) {
+    names.add(line.ingredientName);
+    if (!line.optional) required.add(line.ingredientName);
+  }
+  return [...names].map((name) =>
+    item.optionalOnly || required.has(name) ? name : markOptional(name),
+  );
+}
+
 /**
  * What the Recipe is known to contain, worked out from its Ingredient Lines
  * (ADR 0014). Never claims a Recipe is free of anything: with nothing found it
@@ -51,7 +69,9 @@ export function AllergensCard({ allergens }: { allergens: RecipeAllergens }) {
                     color: tokens.color.muted,
                   }}
                 >
-                  {item.lines.map((line) => line.ingredientName).join(', ')}
+                  {sourceNames(item, (name) =>
+                    t('allergens.optionalLine', { name }),
+                  ).join(', ')}
                 </Box>
               </Box>
             ))}

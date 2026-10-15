@@ -9,12 +9,13 @@ export type AllergenLine = {
   id: string;
   /** The Allergens the line's Ingredient is tagged with; empty for none or unknown. */
   allergenIds: readonly string[];
-  /**
-   * The line's Ingredient has been checked for Allergens: always true for a
-   * shared Ingredient, true for a Family Ingredient once a Member tagged it
-   * (or ticked "None"), and false for an Unmatched line.
-   */
-  checked: boolean;
+  /** The line's Ingredient; null for an Unmatched line. */
+  ingredient: {
+    /** Null for a shared Catalog Ingredient. */
+    ownerFamilyId: string | null;
+    /** A Member tagged the Family Ingredient (or ticked "None"). */
+    allergensChecked: boolean;
+  } | null;
   optional: boolean;
 };
 
@@ -24,6 +25,8 @@ export type AllergenLine = {
  */
 export type DeriveAllergensInput<L extends AllergenLine = AllergenLine> = {
   lines: readonly L[];
+  /** Allergen ids in the Admin-curated list order; others sort last. */
+  allergenOrder: readonly string[];
 };
 
 export type DerivedAllergen<L extends AllergenLine = AllergenLine> = {
@@ -35,11 +38,22 @@ export type DerivedAllergen<L extends AllergenLine = AllergenLine> = {
 };
 
 export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
-  /** In order of first appearance in the Recipe. */
+  /** In the Admin-curated Allergen order. */
   allergens: DerivedAllergen<L>[];
   /** Lines (optional ones too) that could not be checked for Allergens. */
   uncheckedCount: number;
 };
+
+/**
+ * Whether a line could be checked for Allergens: a shared Ingredient always
+ * can, a Family Ingredient once a Member tagged it (or ticked "None"), and an
+ * Unmatched line never. Unchecked lines are counted, never assumed free.
+ */
+export function isLineChecked(line: Pick<AllergenLine, 'ingredient'>): boolean {
+  const { ingredient } = line;
+  if (!ingredient) return false;
+  return ingredient.ownerFamilyId === null || ingredient.allergensChecked;
+}
 
 export function deriveAllergens<L extends AllergenLine>(
   input: DeriveAllergensInput<L>,
@@ -47,19 +61,26 @@ export function deriveAllergens<L extends AllergenLine>(
   const sourcesOf = new Map<string, L[]>();
   let uncheckedCount = 0;
   for (const line of input.lines) {
-    if (!line.checked) uncheckedCount += 1;
+    if (!isLineChecked(line)) uncheckedCount += 1;
     for (const allergenId of new Set(line.allergenIds)) {
       const sources = sourcesOf.get(allergenId) ?? [];
       sources.push(line);
       sourcesOf.set(allergenId, sources);
     }
   }
+  const rank = (id: string) => {
+    const index = input.allergenOrder.indexOf(id);
+    return index === -1 ? input.allergenOrder.length : index;
+  };
   return {
-    allergens: [...sourcesOf].map(([allergenId, sources]) => ({
-      allergenId,
-      sources,
-      optionalOnly: sources.every((line) => line.optional),
-    })),
+    // Array sort is stable, so unlisted Allergens keep their order of appearance.
+    allergens: [...sourcesOf]
+      .sort(([a], [b]) => rank(a) - rank(b))
+      .map(([allergenId, sources]) => ({
+        allergenId,
+        sources,
+        optionalOnly: sources.every((line) => line.optional),
+      })),
     uncheckedCount,
   };
 }

@@ -18,6 +18,7 @@
   "allergens": {
     "title": "Allergener",
     "optional": "Valgfri",
+    "optionalLine": "{{name}} (valgfri)",
     "none": "Ingen almindelige allergener fundet",
     "unchecked_one": "{{count}} ingrediens kunne ikke kontrolleres",
     "unchecked_other": "{{count}} ingredienser kunne ikke kontrolleres",

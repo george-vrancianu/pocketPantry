@@ -206,7 +206,9 @@ export async function seedCatalog(
       .onConflictDoNothing({ target: ingredients.id });
 
     // The Allergen list, then each seed Ingredient's tags. Like the other rows
-    // they are only ever added: an Admin's edits to the list are kept.
+    // they are only ever inserted, never updated: an Admin's edits to the list
+    // are kept. A tag an Admin removed from a seed Ingredient would be
+    // inserted again on the next seed; #354 handles that.
     await tx
       .insert(allergens)
       .values(

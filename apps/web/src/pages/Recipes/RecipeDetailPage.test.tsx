@@ -471,6 +471,53 @@ describe('RecipeDetailPage', () => {
       expect(view.getByText(REMINDER)).toBeInTheDocument();
     });
 
+    it('names an Ingredient once when several lines share it', async () => {
+      const view = await card(
+        recipe({
+          allergens: allergens({
+            items: [
+              {
+                allergen: { id: 'a-milk', name: 'Milk' },
+                lines: [
+                  { id: 'l1', ingredientName: 'Butter', optional: false },
+                  { id: 'l2', ingredientName: 'Parmesan', optional: false },
+                  { id: 'l3', ingredientName: 'Butter', optional: false },
+                ],
+                optionalOnly: false,
+              },
+            ],
+          }),
+        }),
+      );
+      expect(view.getByRole('listitem')).toHaveTextContent(
+        /Milk\s*Butter, Parmesan$/,
+      );
+    });
+
+    it('marks the optional sources of an Allergen that also comes from required lines', async () => {
+      const view = await card(
+        recipe({
+          allergens: allergens({
+            items: [
+              {
+                allergen: { id: 'a-nuts', name: 'Tree nuts' },
+                lines: [
+                  { id: 'l1', ingredientName: 'Almonds', optional: false },
+                  { id: 'l2', ingredientName: 'Walnuts', optional: true },
+                  { id: 'l3', ingredientName: 'Almonds', optional: true },
+                ],
+                optionalOnly: false,
+              },
+            ],
+          }),
+        }),
+      );
+      const item = view.getByRole('listitem');
+      expect(item).toHaveTextContent('Almonds, Walnuts (optional)');
+      expect(item).not.toHaveTextContent('Almonds (optional)');
+      expect(view.queryByText('Optional')).toBeNull();
+    });
+
     it('marks an Allergen that comes only from optional lines', async () => {
       const view = await card(
         recipe({

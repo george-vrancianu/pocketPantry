@@ -18,7 +18,7 @@ export const SEED_ALLERGENS: SeedAllergen[] = [
   allergen('peanuts', 'Peanuts', 'Arahide', 'Jordnødder'),
   allergen('soy', 'Soy', 'Soia', 'Soja'),
   allergen('milk', 'Milk', 'Lapte', 'Mælk'),
-  allergen('tree-nuts', 'Tree nuts', 'Fructe cu coajă', 'Trænødder'),
+  allergen('tree-nuts', 'Tree nuts', 'Fructe cu coajă lemnoasă', 'Trænødder'),
   allergen('celery', 'Celery', 'Țelină', 'Selleri'),
   allergen('mustard', 'Mustard', 'Muștar', 'Sennep'),
   allergen('sesame', 'Sesame', 'Susan', 'Sesam'),

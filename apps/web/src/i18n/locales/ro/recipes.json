@@ -18,6 +18,7 @@
   "allergens": {
     "title": "Alergeni",
     "optional": "Opțional",
+    "optionalLine": "{{name}} (opțional)",
     "none": "Nu s-au găsit alergeni comuni",
     "unchecked_one": "{{count}} ingredient nu a putut fi verificat",
     "unchecked_few": "{{count}} ingrediente nu au putut fi verificate",

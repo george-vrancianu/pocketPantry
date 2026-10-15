@@ -89,6 +89,17 @@ describe('Recipe detail Allergens (integration)', () => {
       expect(allergens.uncheckedCount).toBe(0);
       expect(allergens.items).toEqual([
         {
+          allergen: { id: seedId.allergen('peanuts'), name: 'Peanuts' },
+          lines: [
+            {
+              id: created.lines[2].id,
+              ingredientName: 'Peanuts',
+              optional: true,
+            },
+          ],
+          optionalOnly: true,
+        },
+        {
           allergen: { id: seedId.allergen('milk'), name: 'Milk' },
           lines: [
             {
@@ -104,17 +115,16 @@ describe('Recipe detail Allergens (integration)', () => {
           ],
           optionalOnly: false,
         },
-        {
-          allergen: { id: seedId.allergen('peanuts'), name: 'Peanuts' },
-          lines: [
-            {
-              id: created.lines[2].id,
-              ingredientName: 'Peanuts',
-              optional: true,
-            },
-          ],
-          optionalOnly: true,
-        },
+      ]);
+    });
+
+    it('orders Allergens by the Admin-curated list, not by line order', async () => {
+      const created = await catalogRecipe([g(BUTTER), g(PEANUTS)]);
+      const { allergens } = await detail(created.id);
+      // Peanuts precede Milk in the list, though the Milk line comes first.
+      expect(allergens.items.map((i) => i.allergen.name)).toEqual([
+        'Peanuts',
+        'Milk',
       ]);
     });
 
@@ -186,8 +196,8 @@ describe('Recipe detail Allergens (integration)', () => {
           item.lines.map((l) => l.id),
         ]),
       ).toEqual([
-        ['Milk', [created.lines[0].id]],
         ['Peanuts', [created.lines[1].id]],
+        ['Milk', [created.lines[0].id]],
       ]);
     });
   });

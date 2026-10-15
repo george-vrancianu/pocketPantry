@@ -18,6 +18,7 @@
   "allergens": {
     "title": "Allergens",
     "optional": "Optional",
+    "optionalLine": "{{name}} (optional)",
     "none": "No common allergens found",
     "unchecked_one": "{{count}} ingredient couldn't be checked",
     "unchecked_other": "{{count}} ingredients couldn't be checked",

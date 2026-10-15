@@ -1,4 +1,4 @@
-import { inArray } from 'drizzle-orm';
+import { asc, inArray } from 'drizzle-orm';
 import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { CatalogScope } from '../catalog/catalog-scope';
 import { loadDisplayNames } from '../catalog/display-names';
@@ -42,11 +42,13 @@ export async function loadRecipeAllergens(
           .where(inArray(ingredientAllergens.ingredientId, ingredientIds)),
       ])
     : [[], []];
-  // A shared Ingredient is always checked; a Family one once a Member tagged it.
-  const checked = new Map(
+  const ingredientOf = new Map(
     ingredientRows.map((row) => [
       row.id,
-      row.ownerFamilyId === null || row.allergensChecked,
+      {
+        ownerFamilyId: row.ownerFamilyId,
+        allergensChecked: row.allergensChecked,
+      },
     ]),
   );
   const tags = new Map<string, string[]>();
@@ -62,20 +64,22 @@ export async function loadRecipeAllergens(
     ingredientName: line.ingredientName,
     optional: line.optional,
     allergenIds: (line.ingredientId && tags.get(line.ingredientId)) || [],
-    checked: (line.ingredientId && checked.get(line.ingredientId)) || false,
+    ingredient:
+      (line.ingredientId && ingredientOf.get(line.ingredientId)) || null,
   }));
-  const derived = deriveAllergens({ lines });
-
+  // The whole list is small; its curated order orders the card.
+  const allergenRows = await executor
+    .select()
+    .from(allergens)
+    .orderBy(asc(allergens.sortOrder), asc(allergens.name));
+  const derived = deriveAllergens({
+    lines,
+    allergenOrder: allergenRows.map((row) => row.id),
+  });
   const allergenIds = derived.allergens.map((a) => a.allergenId);
-  const [allergenRows, names] = allergenIds.length
-    ? await Promise.all([
-        executor
-          .select()
-          .from(allergens)
-          .where(inArray(allergens.id, allergenIds)),
-        loadDisplayNames(executor, scope, locale, allergenIds),
-      ])
-    : [[], null];
+  const names = allergenIds.length
+    ? await loadDisplayNames(executor, scope, locale, allergenIds)
+    : null;
   const canonical = new Map(allergenRows.map((row) => [row.id, row.name]));
   return {
     items: derived.allergens.map((item) => ({
