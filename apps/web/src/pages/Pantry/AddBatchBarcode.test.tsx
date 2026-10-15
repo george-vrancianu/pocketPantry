@@ -385,3 +385,123 @@ describe('Prefill the add-Batch form from a Barcode Lookup', () => {
     expect(screen.getByRole('radio', { name: 'Cod de bare' })).toBeChecked();
   });
 });
+
+describe('Known Barcodes on the add-Batch form (#348)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    camera.emit = null;
+    camera.watching = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const known = (overrides: object = {}) =>
+    found({
+      source: 'known_barcode',
+      productDescription: 'Our usual tub',
+      quantity: null,
+      unit: null,
+      ...overrides,
+    });
+
+  it('sends the looked-up barcode with the Batch create', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() => Response.json(found()));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByText('Product data: Open Food Facts');
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).toMatchObject({
+      ingredientId: 'yogurt-id',
+      barcode: CODE,
+    });
+  });
+
+  it('sends no barcode for a Batch typed by hand', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() => Response.json(found()));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mil',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).not.toHaveProperty('barcode');
+  });
+
+  it('prefills exactly what the Family saved, with no Open Food Facts credit', async () => {
+    const user = userEvent.setup();
+    stubLookup(() => Response.json(known()));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+
+    expect(
+      await screen.findByRole('combobox', {
+        name: 'Ingredient: Yogurt. Press Backspace to change',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Product description')).toHaveValue(
+      'Our usual tub',
+    );
+    expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
+  });
+
+  it('fills the typed Unmatched name exactly and still sends the barcode', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() =>
+      Response.json(
+        known({
+          match: null,
+          unmatchedName: 'Zorblax Crunch',
+          productDescription: 'Zorblax tub',
+        }),
+      ),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+
+    expect(
+      await screen.findByText(/"Zorblax Crunch" will be saved as Unmatched/),
+    ).toBeVisible();
+    expect(screen.getByLabelText('Product description')).toHaveValue(
+      'Zorblax tub',
+    );
+    expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    expect(
+      calls.find((call) => call.key === 'POST /api/pantry/batches')?.body,
+    ).toMatchObject({ rawName: 'Zorblax Crunch', barcode: CODE });
+  });
+});

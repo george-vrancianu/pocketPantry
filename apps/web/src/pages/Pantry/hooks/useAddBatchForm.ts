@@ -240,6 +240,9 @@ export function useAddBatchForm({
   const [barcodeMissed, setBarcodeMissed] = useState(false);
   // Values came from Open Food Facts: the form credits it (ODbL).
   const [fromOpenFoodFacts, setFromOpenFoodFacts] = useState(false);
+  // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
+  // supplied one: a Barcode Lookup now, a Product photo's barcode later. The Batch stores none.
+  const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
   const productRead = useProductRead(i18n.language);
   const barcodeLookup = useBarcodeLookup(i18n.language);
   const open = (mode: CameraMode, missed: boolean) => {
@@ -252,6 +255,7 @@ export function useAddBatchForm({
     productRead.reset();
     barcodeLookup.reset();
     setFromOpenFoodFacts(false);
+    setBarcodeToSend(null);
     if (result.kind === 'product') {
       productRead.mutate(result, {
         onSuccess: (read) => prefillNow.current(read),
@@ -261,8 +265,13 @@ export function useAddBatchForm({
     barcodeLookup.mutate(result.code, {
       onSuccess: (lookup) => {
         if (!lookup.found) return open('product', true);
-        prefillNow.current(barcodeLine(lookup), 'search');
-        setFromOpenFoodFacts(true);
+        // A Known Barcode saved under a typed name fills that name; otherwise no match pre-types the search.
+        prefillNow.current(
+          barcodeLine(lookup),
+          lookup.unmatchedName === undefined ? 'search' : 'typed-name',
+        );
+        setFromOpenFoodFacts(lookup.source === 'open_food_facts');
+        setBarcodeToSend(result.code);
       },
     });
   };
@@ -289,6 +298,8 @@ export function useAddBatchForm({
     fromOpenFoodFacts,
     prefilled,
     checkIngredient,
+    /** Sets the barcode the Batch is saved with; for sources other than a Barcode Lookup. */
+    setBarcodeToSend,
   };
 
   const submit = (event: FormEvent) => {
@@ -304,6 +315,7 @@ export function useAddBatchForm({
         location,
         expiryDate,
         productDescription: description.trim() || null,
+        ...(barcodeToSend ? { barcode: barcodeToSend } : {}),
       },
       { onSuccess: onSaved },
     );

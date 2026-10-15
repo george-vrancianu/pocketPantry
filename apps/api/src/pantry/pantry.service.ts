@@ -1,3 +1,4 @@
+import { rememberBarcodes } from '../barcode/known-barcodes';
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
@@ -100,6 +101,23 @@ export class PantryService {
               ]
             : [],
         ),
+      );
+      await rememberBarcodes(
+        tx,
+        familyId,
+        values.flatMap((value, index) => {
+          const barcode = bodies[index].barcode;
+          return barcode
+            ? [
+                {
+                  barcode,
+                  ingredientId: value.ingredientId ?? null,
+                  rawName: value.rawName ?? null,
+                  productDescription: value.productDescription ?? null,
+                },
+              ]
+            : [];
+        }),
       );
       return inserted;
     });

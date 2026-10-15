@@ -1,3 +1,4 @@
+import { barcodeValue } from '../barcode/barcode.schemas';
 import { z } from 'zod';
 import {
   CATALOG_LOCALES,
@@ -62,6 +63,8 @@ export const createBatchBody = z
     location: z.enum(storageLocation.enumValues).optional(),
     expiryDate: isoDate.nullish(),
     productDescription: z.string().trim().max(200).nullish(),
+    /** The barcode the form was prefilled from; saving teaches the Family it as a Known Barcode. Never stored on the Batch. */
+    barcode: barcodeValue.optional(),
   })
   .refine((body) => (body.ingredientId === undefined) !== !body.rawName, {
     message: 'exactly one of ingredientId or rawName',

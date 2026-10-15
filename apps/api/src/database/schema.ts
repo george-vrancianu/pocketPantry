@@ -1023,3 +1023,35 @@ export const recipeEatingMomentTranslations = pgTable(
     primaryKey({ columns: [table.recipeEatingMomentId, table.locale] }),
   ],
 );
+
+// A Family's Known Barcode (ADR 0013): what the Family last saved a barcode as, an
+// Ingredient or an Unmatched raw name (the same match-state rule as a Batch), plus the
+// Product Description. Written when a Batch is created with a `barcode`; the latest
+// save wins. Deleting the Ingredient deletes the row; an Admin merge re-points it.
+export const knownBarcodes = pgTable(
+  'known_barcodes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    barcode: text('barcode').notNull(),
+    ingredientId: uuid('ingredient_id').references(() => ingredients.id, {
+      onDelete: 'cascade',
+    }),
+    rawName: text('raw_name'),
+    productDescription: text('product_description'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('known_barcodes_family_barcode_idx').on(
+      table.familyId,
+      table.barcode,
+    ),
+    index('known_barcodes_ingredient_idx').on(table.ingredientId),
+    check(
+      'known_barcodes_match_state',
+      sql`(${table.ingredientId} IS NOT NULL AND ${table.rawName} IS NULL) OR (${table.ingredientId} IS NULL AND ${table.rawName} IS NOT NULL)`,
+    ),
+  ],
+);

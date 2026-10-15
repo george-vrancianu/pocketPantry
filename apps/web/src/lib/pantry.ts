@@ -52,6 +52,8 @@ export type NewBatch = {
   /** `null` means no expiry. */
   expiryDate: IsoDate | null;
   productDescription?: string | null;
+  /** The barcode the form was prefilled from: saving teaches the Family it. The Batch stores none. */
+  barcode?: string;
 };
 
 /** The days-left tag of an expiry date; `none` (no date) is shown only where its absence is worth saying. */

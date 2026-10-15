@@ -1,4 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { DATABASE } from '../database/database.constants';
+import type { Database } from '../database/database.types';
 import { catalogScope } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
 import type {
@@ -7,6 +9,7 @@ import type {
 } from '../catalog/catalog.schemas';
 import { SettingsService } from '../settings/settings.service';
 import type { BarcodeLookupResponse } from './barcode.schemas';
+import { findKnownBarcode } from './known-barcodes';
 import { parseNetQuantity } from './net-quantity';
 import {
   InjectOpenFoodFacts,
@@ -22,6 +25,7 @@ import {
 @Injectable()
 export class BarcodeLookupService {
   constructor(
+    @Inject(DATABASE) private readonly database: Database,
     @InjectOpenFoodFacts() private readonly openFoodFacts: OpenFoodFactsClient,
     private readonly catalogSearch: CatalogSearchService,
     private readonly settings: SettingsService,
@@ -33,8 +37,10 @@ export class BarcodeLookupService {
     locale: CatalogLocale,
   ): Promise<BarcodeLookupResponse> {
     // The resolution order of ADR 0013 starts here. The Family's Known Barcode
-    // (#348) is checked first and returns before this; the shared cache of
+    // is checked first and returns before this; the shared cache of
     // Open Food Facts results (#347) wraps `product` so a hit skips the client.
+    const known = await this.knownBarcode(memberId, barcode, locale);
+    if (known) return known;
     const product = await this.product(barcode);
     if (!product) return { found: false };
 
@@ -51,6 +57,36 @@ export class BarcodeLookupService {
       productDescription: names[0],
       ...parseNetQuantity(product.quantity),
     };
+  }
+
+  /** What the Family last saved this barcode as, exactly, or null. No Open Food Facts credit. */
+  private async knownBarcode(
+    memberId: string,
+    barcode: string,
+    locale: CatalogLocale,
+  ): Promise<BarcodeLookupResponse | null> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const known = await findKnownBarcode(this.database, familyId, barcode);
+    if (!known) return null;
+    const base = {
+      found: true,
+      source: 'known_barcode',
+      lowConfidence: false,
+      productDescription: known.productDescription ?? '',
+      quantity: null,
+      unit: null,
+    } as const;
+    if (known.ingredientId === null) {
+      return { ...base, match: null, unmatchedName: known.rawName ?? '' };
+    }
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const [match] = await this.catalogSearch.findByIds(
+      catalogScope(familyId),
+      [known.ingredientId],
+      locale,
+      overrides,
+    );
+    return { ...base, match: match ?? null };
   }
 
   /** The product as Open Food Facts has it, or null. */

@@ -6,6 +6,7 @@ import {
   catalogTranslations,
   ingredients,
   ingredientStockHistory,
+  knownBarcodes,
   recipeIngredientLines,
   recipePairings,
   runningLow,
@@ -30,7 +31,7 @@ export type MergedIngredient = {
 
 /**
  * Folds the `sourceIds` Ingredients into `target` and deletes them: every
- * reference is re-pointed, and rows a Family would then hold twice (Staples,
+ * reference (Known Barcodes included) is re-pointed, and rows a Family would then hold twice (Staples,
  * Running low, dismissals, stock history) are de-duplicated. Batches also take
  * the target's Leaf Category.
  *
@@ -74,6 +75,12 @@ export async function mergeIngredients(
     .update(recipePairings)
     .set({ linkedIngredientId: target.id })
     .where(inArray(recipePairings.linkedIngredientId, sourceIds));
+
+  // Known Barcodes are unique per (Family, barcode), so re-pointing never collides.
+  await tx
+    .update(knownBarcodes)
+    .set({ ingredientId: target.id })
+    .where(inArray(knownBarcodes.ingredientId, sourceIds));
 
   // Staples: the target's own row wins; among sources of one Family keep one.
   await tx
