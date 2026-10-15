@@ -14,6 +14,7 @@ import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
 type Item = {
   id: string;
+  ingredientId: string | null;
   name: string;
   quantity: number | null;
   unit: string | null;
@@ -462,7 +463,7 @@ describe('Shopping List (integration)', () => {
         .expect(401);
     });
   });
-  describe('addItemsFromRecipe (Source Recipes per item)', () => {
+  describe('addItemsWithSourceRecipes (Source Recipes per item)', () => {
     const makeRecipe = async () => {
       const id = crypto.randomUUID();
       await database
@@ -493,7 +494,7 @@ describe('Shopping List (integration)', () => {
         await add(cookie, { ingredientId: eggs, quantity: 2, unit: 'pcs' }),
       )[0];
 
-      const result = await app.get(ShoppingService).addItemsFromRecipe(
+      const result = await app.get(ShoppingService).addItemsWithSourceRecipes(
         userId,
         [
           {
@@ -507,11 +508,38 @@ describe('Shopping List (integration)', () => {
 
       const listed = items(result.list);
       const eggsItem = listed.find((i) => i.id === existing.id);
-      const fetaItem = listed.find((i) => i.id !== existing.id);
+      const fetaItem = listed.find((i) => i.ingredientId === feta);
       expect(eggsItem?.quantity).toBe(5);
-      expect(result.insertedIds).toEqual([fetaItem?.id]);
+      expect(fetaItem).toBeDefined();
+      expect(result.insertedIds).toEqual([fetaItem!.id]);
       expect(await sourcesOf(existing.id)).toEqual([r1, r2, r3].sort());
-      expect(await sourcesOf(fetaItem?.id ?? '')).toEqual([r1]);
+      expect(await sourcesOf(fetaItem!.id)).toEqual([r1]);
+    });
+    it("reports an item inserted and then merged into within one call once, with the union of both entries' Recipes", async () => {
+      const { cookie, userId } = await signUp('Twice');
+      const feta = await ingredientId(cookie, 'feta');
+      const [r1, r2] = [await makeRecipe(), await makeRecipe()];
+
+      const result = await app.get(ShoppingService).addItemsWithSourceRecipes(
+        userId,
+        [
+          {
+            item: { ingredientId: feta, quantity: 100, unit: 'g' },
+            recipeIds: [r1],
+          },
+          {
+            item: { ingredientId: feta, quantity: 50, unit: 'g' },
+            recipeIds: [r1, r2],
+          },
+        ],
+        'en',
+      );
+
+      const listed = items(result.list);
+      expect(listed).toHaveLength(1);
+      expect(listed[0].quantity).toBe(150);
+      expect(result.insertedIds).toEqual([listed[0].id]);
+      expect(await sourcesOf(listed[0].id)).toEqual([r1, r2].sort());
     });
   });
 });

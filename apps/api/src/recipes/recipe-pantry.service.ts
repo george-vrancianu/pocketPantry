@@ -139,7 +139,7 @@ export class RecipePantryService {
         ...(amount ?? {}),
       };
     });
-    const { list } = await this.shopping.addItemsFromRecipe(
+    const { list } = await this.shopping.addItemsWithSourceRecipes(
       memberId,
       items.map((item) => ({ item, recipeIds: [recipeId] })),
       locale,
