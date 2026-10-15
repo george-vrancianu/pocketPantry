@@ -7,6 +7,7 @@ import { hasPgCode } from '../database/pg-errors';
 import {
   batches,
   catalogTranslations,
+  ingredientAllergens,
   ingredients as ingredientsTable,
   ingredientStockHistory,
   leafCategories,
@@ -20,6 +21,7 @@ import {
 } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
+import { replaceIngredientAllergenTags } from './ingredient-allergen-tags';
 import { amountScaleForParent } from './amount-scale';
 import type { ExpiryOverride } from './catalog-defaults';
 import {
@@ -33,6 +35,7 @@ import type {
   CatalogLocale,
   CatalogSearchResult,
   FamilyCatalog,
+  FamilyIngredientAllergens,
   FamilyIngredientPatchBody,
   FamilyIngredientUsage,
 } from './catalog.schemas';
@@ -69,6 +72,7 @@ export class FamilyCatalogService {
       overrides,
     );
     const usage = await this.usageOf(rows.map((row) => row.id));
+    const allergenState = await this.allergensOf(rows.map((row) => row.id));
 
     const translations = scope.translations(this.database);
     const synonymRows = await this.database
@@ -99,7 +103,11 @@ export class FamilyCatalogService {
       a.name.localeCompare(b.name, locale);
     return {
       ingredients: rows
-        .map((row) => ({ ...row, usage: usage.get(row.id)! }))
+        .map((row) => ({
+          ...row,
+          ...allergenState.get(row.id)!,
+          usage: usage.get(row.id)!,
+        }))
         .sort(byName),
       synonyms: synonymRows
         .filter((row) => targets.has(row.ingredientId))
@@ -113,6 +121,29 @@ export class FamilyCatalogService {
         }))
         .sort(byName),
     };
+  }
+
+  /**
+   * Replaces the Allergens a Family Ingredient contains (empty = "None") and marks it
+   * checked. Only the Family's own Ingredients: another Family's, and shared ones, are 404.
+   */
+  async setAllergens(
+    familyId: string,
+    id: string,
+    allergenIds: string[],
+  ): Promise<{ id: string } & FamilyIngredientAllergens> {
+    await this.database.transaction(async (tx) => {
+      // Family lock first, as everywhere (family-locks.ts).
+      await lockFamilies(tx, [familyId]);
+      const [owned] = await tx
+        .select({ id: ingredientsTable.id })
+        .from(ingredientsTable)
+        .where(and(eq(ingredientsTable.id, id), ownedIngredient(familyId)))
+        .for('update');
+      if (!owned) throw notFound('ingredient');
+      await replaceIngredientAllergenTags(tx, id, allergenIds);
+    });
+    return { id, allergensChecked: true, allergenIds };
   }
 
   /**
@@ -335,6 +366,33 @@ export class FamilyCatalogService {
       .update(recipePairings)
       .set({ linkedIngredientId: null })
       .where(eq(recipePairings.linkedIngredientId, id));
+  }
+
+  private async allergensOf(
+    ids: string[],
+  ): Promise<Map<string, FamilyIngredientAllergens>> {
+    const state = new Map<string, FamilyIngredientAllergens>(
+      ids.map((id) => [id, { allergensChecked: false, allergenIds: [] }]),
+    );
+    if (ids.length === 0) return state;
+    const [checked, tags] = await Promise.all([
+      this.database
+        .select({
+          id: ingredientsTable.id,
+          checked: ingredientsTable.allergensChecked,
+        })
+        .from(ingredientsTable)
+        .where(inArray(ingredientsTable.id, ids)),
+      this.database
+        .select()
+        .from(ingredientAllergens)
+        .where(inArray(ingredientAllergens.ingredientId, ids)),
+    ]);
+    for (const row of checked)
+      state.get(row.id)!.allergensChecked = row.checked;
+    for (const tag of tags)
+      state.get(tag.ingredientId)?.allergenIds.push(tag.allergenId);
+    return state;
   }
 
   private async usageOf(

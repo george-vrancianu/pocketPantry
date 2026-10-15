@@ -15,6 +15,11 @@ export type AllergenLine = {
     ownerFamilyId: string | null;
     /** A Member tagged the Family Ingredient (or ticked "None"). */
     allergensChecked: boolean;
+    /**
+     * A promote or merge carried Member-entered tags onto this shared row for the Admin to
+     * review. With nothing checked yet, no one has tagged it: it reads as Unchecked, not "none".
+     */
+    allergensReviewPending?: boolean;
   } | null;
   optional: boolean;
 };
@@ -117,7 +122,8 @@ export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
 export function isLineChecked(line: Pick<AllergenLine, 'ingredient'>): boolean {
   const { ingredient } = line;
   if (!ingredient) return false;
-  return ingredient.ownerFamilyId === null || ingredient.allergensChecked;
+  if (ingredient.ownerFamilyId !== null) return ingredient.allergensChecked;
+  return ingredient.allergensChecked || !ingredient.allergensReviewPending;
 }
 
 export function deriveAllergens<L extends AllergenLine>(

@@ -8,6 +8,7 @@ import { hasPgCode } from '../database/pg-errors';
 import { ingredients, leafCategories } from '../database/schema';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { lockFamilies } from '../family/family-locks';
+import { replaceIngredientAllergenTags } from './ingredient-allergen-tags';
 import { amountScaleForParent } from './amount-scale';
 import type { ExpiryOverride } from './catalog-defaults';
 import { catalogScope } from './catalog-scope';
@@ -93,6 +94,9 @@ export class FamilyIngredientsService {
           createdByUserId: family.memberId,
           nameLocale: locale,
         });
+        if (body.allergenIds) {
+          await replaceIngredientAllergenTags(tx, id, body.allergenIds);
+        }
         await relinkFamilyUnmatched(tx, family.id, key, {
           id,
           leafCategoryId: body.leafCategoryId,

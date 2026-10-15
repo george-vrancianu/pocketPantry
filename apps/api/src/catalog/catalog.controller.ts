@@ -4,6 +4,7 @@ import {
   Delete,
   Param,
   Patch,
+  Put,
   Get,
   HttpCode,
   Post,
@@ -24,6 +25,10 @@ import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
   familyIngredientPatchBody,
+  familyIngredientAllergensBody,
+  type CatalogAllergen,
+  type FamilyIngredientAllergens,
+  type FamilyIngredientAllergensBody,
   idParam,
   type FamilyCatalog,
   type FamilyIngredientPatchBody,
@@ -89,6 +94,24 @@ export class CatalogController {
     return {
       aisles: await this.searchService.listAisles(
         await this.scopeFor(query, member.id),
+        query.locale,
+      ),
+    };
+  }
+
+  @Get('allergens')
+  @ApiOperation({
+    summary:
+      'List the Allergens a Family Ingredient can be tagged with (retired ones left out), named in the requested locale',
+  })
+  async allergens(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+  ): Promise<{ allergens: CatalogAllergen[] }> {
+    return {
+      allergens: await this.searchService.listAllergens(
+        await this.settings.catalogScopeForMember(member.id),
         query.locale,
       ),
     };
@@ -200,6 +223,24 @@ export class CatalogController {
       body,
       query.locale,
       await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Put('family-ingredients/:id/allergens')
+  @ApiOperation({
+    summary:
+      "Replace the Allergens one of the caller's Family Ingredients contains (empty = none) and mark it checked; tags update every Recipe using it",
+  })
+  async setFamilyIngredientAllergens(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+    @Body(new ZodValidationPipe(familyIngredientAllergensBody))
+    body: FamilyIngredientAllergensBody,
+  ): Promise<{ id: string } & FamilyIngredientAllergens> {
+    return this.familyCatalog.setAllergens(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+      body.allergenIds,
     );
   }
 

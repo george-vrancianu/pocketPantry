@@ -267,6 +267,13 @@ export const ingredients = pgTable(
     // Do not reuse false on a shared row as a "flagged for review" marker (e.g. after a future
     // promote or merge): the seed would re-apply its tags to it.
     allergensChecked: boolean('allergens_checked').notNull().default(false),
+    // Promoting or merging a Family Ingredient carried Member-entered tags onto a shared row
+    // (ADR 0011, 0014). The Admin reviews them; saving the Ingredient's Allergens clears this.
+    // A separate column from allergens_checked, which the seed reads (see above). While set on
+    // a shared row that is not checked, no Member has tagged it: its lines read as Unchecked.
+    allergensReviewPending: boolean('allergens_review_pending')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [

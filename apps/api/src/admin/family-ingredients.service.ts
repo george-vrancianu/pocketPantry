@@ -7,6 +7,7 @@ import {
   SHARED_ONLY,
 } from '../catalog/catalog-scope';
 import { CatalogSearchService } from '../catalog/catalog-search.service';
+import { carryOverAllergenTags } from '../catalog/carry-over-allergen-tags';
 import { keepFamilyNames } from '../catalog/keep-family-names';
 import { mergeIngredients } from '../catalog/merge-ingredients';
 import { ApiException } from '../common/api-exception';
@@ -194,6 +195,12 @@ export class FamilyIngredientsAdminService {
         tx,
         others.map((copy) => copy.id),
       );
+      await carryOverAllergenTags(
+        tx,
+        picked.id,
+        others.map((copy) => copy.id),
+        'promote',
+      );
       const merged = await mergeIngredients(
         tx,
         picked,
@@ -283,6 +290,7 @@ export class FamilyIngredientsAdminService {
       if (!still.some((copy) => copy.id === ingredientId)) throw notFound();
       const ids = still.map((copy) => copy.id);
       const moved = await this.synonymIdsOf(tx, ids);
+      await carryOverAllergenTags(tx, target.id, ids, 'merge');
       const merged = await mergeIngredients(tx, target, ids);
       await keepFamilyNames(tx, target.id, merged, {
         skipSharedNames: true,

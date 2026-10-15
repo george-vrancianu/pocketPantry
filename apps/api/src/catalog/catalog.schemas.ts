@@ -56,10 +56,38 @@ export const familyIngredientQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
 });
 
+/** A set of Allergen ids. */
+export const allergenIdList = z
+  .array(z.uuid())
+  .max(100)
+  .refine((ids) => new Set(ids).size === ids.length, 'ids must be unique');
+
+export const familyIngredientAllergensBody = z.object({
+  allergenIds: allergenIdList,
+});
+export type FamilyIngredientAllergensBody = z.infer<
+  typeof familyIngredientAllergensBody
+>;
+
+/** A Family Ingredient's Allergen state, as the Family catalog and tagging answer it. */
+export type FamilyIngredientAllergens = {
+  /** A Member has tagged it (or ticked "None"); false = Unchecked. */
+  allergensChecked: boolean;
+  allergenIds: string[];
+};
+
+/** An Allergen a Member can pick, named in the requested locale. */
+export type CatalogAllergen = { id: string; name: string };
+
 export const familyIngredientBody = z.object({
   name: z.string().trim().min(1).max(100),
   leafCategoryId: z.uuid(),
   defaultUnit: z.enum(ingredientUnit.enumValues),
+  /**
+   * What the Ingredient contains: left out = Unchecked, empty = "None" (checked, no tags),
+   * otherwise tagged and checked (ADR 0014).
+   */
+  allergenIds: allergenIdList.optional(),
 });
 export type FamilyIngredientBody = z.infer<typeof familyIngredientBody>;
 
@@ -95,7 +123,10 @@ export type FamilyIngredientUsage = {
 
 /** The Family catalog: Family Ingredients (with usage) and Family Synonyms. */
 export type FamilyCatalog = {
-  ingredients: Array<CatalogSearchResult & { usage: FamilyIngredientUsage }>;
+  ingredients: Array<
+    CatalogSearchResult &
+      FamilyIngredientAllergens & { usage: FamilyIngredientUsage }
+  >;
   synonyms: Array<{
     id: string;
     name: string;

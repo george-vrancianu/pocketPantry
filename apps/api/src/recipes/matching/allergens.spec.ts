@@ -97,6 +97,19 @@ describe('deriveAllergens', () => {
     );
   });
 
+  it('counts a shared Ingredient awaiting its first tags after a promote as Unchecked', () => {
+    const awaiting = {
+      ownerFamilyId: null,
+      allergensChecked: false,
+      allergensReviewPending: true,
+    };
+    const reviewed = { ...awaiting, allergensChecked: true };
+    expect(
+      derive([line({ ingredient: awaiting }), line({ ingredient: reviewed })])
+        .uncheckedCount,
+    ).toBe(1);
+  });
+
   it('counts an Unmatched line as Unchecked, optional or not', () => {
     const unmatched = line({ ingredient: null });
     const optional = line({ ingredient: null, optional: true });
