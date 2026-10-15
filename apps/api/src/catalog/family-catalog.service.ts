@@ -426,10 +426,10 @@ export class FamilyCatalogService {
         names.map((row) => [row.id, pick('allergen', row.id, row.name)]),
       );
       for (const entry of state.values()) {
-        entry.allergens = entry.allergenIds.map((id) => ({
-          id,
-          name: nameOf.get(id) ?? id,
-        }));
+        entry.allergens = entry.allergenIds.flatMap((id) => {
+          const name = nameOf.get(id);
+          return name === undefined ? [] : [{ id, name }];
+        });
       }
     }
     return state;

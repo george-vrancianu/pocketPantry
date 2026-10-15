@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { allergens, ingredientAllergens } from '../src/database/schema';
+import { ingredientAllergens } from '../src/database/schema';
 import type {
   FamilyRecipeEdit,
   RecipeDetail,
@@ -48,7 +48,6 @@ describe('Family Ingredient Allergens (integration)', () => {
   const GROUND_SPICES = seedId.leaf('ground-spices');
   const PEANUTS = seedId.allergen('peanuts');
   const MILK = seedId.allergen('milk');
-  const EGGS = seedId.allergen('eggs');
 
   beforeAll(async () => {
     app = await createTestApp();
@@ -76,6 +75,10 @@ describe('Family Ingredient Allergens (integration)', () => {
     await a2.post('/family/join', { code: invite.inviteCode }).expect(201);
   });
 
+  afterEach(async () => {
+    await a2.put('/settings/allergies', { allergenIds: [] }).expect(200);
+  });
+
   afterAll(async () => {
     await app.close();
   });
@@ -87,6 +90,12 @@ describe('Family Ingredient Allergens (integration)', () => {
       defaultUnit: 'g',
       ...extra,
     });
+  const newAllergen = async () =>
+    (
+      await admin
+        .post('/admin/catalog/allergens', { name: unique('Lychee') })
+        .expect(201)
+    ).body as { id: string; name: string };
   const made = async (who: Who, extra: object = {}) =>
     (await create(who, unique('Fia'), extra).expect(201)).body as Made;
   const rowOf = async (who: Who, id: string) =>
@@ -124,20 +133,18 @@ describe('Family Ingredient Allergens (integration)', () => {
       const list = (await a.get('/catalog/allergens?locale=ro').expect(200))
         .body as { allergens: { id: string; name: string }[] };
       expect(list.allergens).toContainEqual({ id: MILK, name: 'Lapte' });
-      await database
-        .update(allergens)
-        .set({ archivedAt: new Date() })
-        .where(eq(allergens.id, EGGS));
-      try {
-        const after = (await a.get('/catalog/allergens?locale=en').expect(200))
-          .body as { allergens: { id: string }[] };
-        expect(after.allergens.map((x) => x.id)).not.toContain(EGGS);
-      } finally {
-        await database
-          .update(allergens)
-          .set({ archivedAt: null })
-          .where(eq(allergens.id, EGGS));
-      }
+      const lychee = await newAllergen();
+      const offered = async () =>
+        (
+          (await a.get('/catalog/allergens?locale=en').expect(200)).body as {
+            allergens: { id: string }[];
+          }
+        ).allergens.map((x) => x.id);
+      expect(await offered()).toContain(lychee.id);
+      await admin
+        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
+        .expect(200);
+      expect(await offered()).not.toContain(lychee.id);
     });
   });
 
@@ -169,22 +176,14 @@ describe('Family Ingredient Allergens (integration)', () => {
 
     it('refuses a retired or unknown Allergen and creates nothing', async () => {
       const name = unique('Fia refused');
-      await database
-        .update(allergens)
-        .set({ archivedAt: new Date() })
-        .where(eq(allergens.id, EGGS));
-      try {
-        const retired = await create(a, name, { allergenIds: [EGGS] });
-        expect([
-          retired.status,
-          (retired.body as { code: string }).code,
-        ]).toEqual([409, 'catalog.allergen_retired']);
-      } finally {
-        await database
-          .update(allergens)
-          .set({ archivedAt: null })
-          .where(eq(allergens.id, EGGS));
-      }
+      const lychee = await newAllergen();
+      await admin
+        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
+        .expect(200);
+      const retired = await create(a, name, { allergenIds: [lychee.id] });
+      expect([retired.status, (retired.body as { code: string }).code]).toEqual(
+        [409, 'catalog.allergen_retired'],
+      );
       const unknown = await create(a, name, {
         allergenIds: ['00000000-0000-4000-8000-000000000000'],
       });
@@ -220,28 +219,21 @@ describe('Family Ingredient Allergens (integration)', () => {
     });
 
     it('refuses a retired Allergen as a new tag but lets one it has stay', async () => {
-      const row = await made(a, { allergenIds: [EGGS] });
-      await database
-        .update(allergens)
-        .set({ archivedAt: new Date() })
-        .where(eq(allergens.id, EGGS));
-      try {
-        await tag(a, row.id, [EGGS, MILK]).expect(200);
-        await tag(a, row.id, [EGGS]).expect(200);
-        // Still listed, by name, so a Member can untick it.
-        const listed = await rowOf(a, row.id);
-        expect(listed?.allergens).toEqual([{ id: EGGS, name: 'Eggs' }]);
-        const other = await made(a);
-        const res = await tag(a, other.id, [EGGS]).expect(409);
-        expect((res.body as { code: string }).code).toBe(
-          'catalog.allergen_retired',
-        );
-      } finally {
-        await database
-          .update(allergens)
-          .set({ archivedAt: null })
-          .where(eq(allergens.id, EGGS));
-      }
+      const lychee = await newAllergen();
+      const row = await made(a, { allergenIds: [lychee.id] });
+      await admin
+        .post(`/admin/catalog/allergens/${lychee.id}/archive`)
+        .expect(200);
+      await tag(a, row.id, [lychee.id, MILK]).expect(200);
+      await tag(a, row.id, [lychee.id]).expect(200);
+      // Still listed, by name, so a Member can untick it.
+      const listed = await rowOf(a, row.id);
+      expect(listed?.allergens).toEqual([{ id: lychee.id, name: lychee.name }]);
+      const other = await made(a);
+      const res = await tag(a, other.id, [lychee.id]).expect(409);
+      expect((res.body as { code: string }).code).toBe(
+        'catalog.allergen_retired',
+      );
     });
 
     it("keeps another Family's tags private: not listed, not changeable", async () => {
@@ -285,7 +277,6 @@ describe('Family Ingredient Allergens (integration)', () => {
       expect(await detail(recipesA, recipe.id)).toMatchObject({
         allergens: { uncheckedCount: 0, items: [] },
       });
-      await a2.put('/settings/allergies', { allergenIds: [] }).expect(200);
     });
   });
 
