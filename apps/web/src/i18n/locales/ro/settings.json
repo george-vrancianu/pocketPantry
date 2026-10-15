@@ -173,7 +173,7 @@
     "editLabel": "Editează",
     "allergensUnchecked": "Alergeni neverificați",
     "allergensContains": "Conține {{names}}",
-    "allergensNone": "Nu conține niciunul",
+    "allergensNone": "Niciun alergen etichetat",
     "uncheckedSummary_one": "{{count}} ingredient nu este verificat pentru alergeni.",
     "uncheckedSummary_few": "{{count}} ingrediente nu sunt verificate pentru alergeni.",
     "uncheckedSummary_other": "{{count}} de ingrediente nu sunt verificate pentru alergeni.",

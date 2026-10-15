@@ -27,6 +27,7 @@ const kombucha = {
   defaults: { expiryDays: null, location: null },
   allergensChecked: true,
   allergenIds: [],
+  allergens: [],
   usage: { ...usage, batches: 3, staples: 1 },
 };
 const tempeh = {

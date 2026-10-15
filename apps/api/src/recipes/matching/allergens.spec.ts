@@ -9,9 +9,21 @@ const GLUTEN = 'allergen-gluten';
 const MILK = 'allergen-milk';
 const PEANUTS = 'allergen-peanuts';
 
-const SHARED = { ownerFamilyId: null, allergensChecked: false };
-const checkedFamily = { ownerFamilyId: 'fam-1', allergensChecked: true };
-const uncheckedFamily = { ownerFamilyId: 'fam-1', allergensChecked: false };
+const SHARED = {
+  ownerFamilyId: null,
+  allergensChecked: false,
+  allergensReviewPending: false,
+};
+const checkedFamily = {
+  ownerFamilyId: 'fam-1',
+  allergensChecked: true,
+  allergensReviewPending: false,
+};
+const uncheckedFamily = {
+  ownerFamilyId: 'fam-1',
+  allergensChecked: false,
+  allergensReviewPending: false,
+};
 
 let lineCount = 0;
 const line = (over: Partial<AllergenLine> = {}): AllergenLine => ({

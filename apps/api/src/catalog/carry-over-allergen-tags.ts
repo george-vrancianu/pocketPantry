@@ -16,7 +16,9 @@ import { ingredientAllergens, ingredients } from '../database/schema';
  *   none"). Either way it is flagged for the Admin to review.
  * - `merge`: `targetId` is a shared Ingredient the Admin already curates. Its tags are kept and
  *   the copies' tags are added (a union). It is flagged only when a tag was actually added,
- *   as only then did the Family's entry change what the Admin curated.
+ *   as only then did the Family's entry change what the Admin curated. A target that is still
+ *   Unchecked (promoted from Unchecked copies) becomes checked once any merged copy was
+ *   checked, a "None" copy included, and stays flagged.
  */
 export async function carryOverAllergenTags(
   tx: Tx,
@@ -28,11 +30,17 @@ export async function carryOverAllergenTags(
     kind === 'promote' ? [targetId, ...sourceIds] : [...sourceIds];
   if (copyIds.length === 0) return;
   const copies = await tx
-    .select({ id: ingredients.id, checked: ingredients.allergensChecked })
+    .select({
+      id: ingredients.id,
+      checked: ingredients.allergensChecked,
+      pending: ingredients.allergensReviewPending,
+    })
     .from(ingredients)
-    .where(inArray(ingredients.id, copyIds));
+    .where(inArray(ingredients.id, [...new Set([targetId, ...copyIds])]));
+  const target = copies.find((copy) => copy.id === targetId);
+  const targetUnchecked = !!target && !target.checked && target.pending;
   const checkedIds = copies
-    .filter((copy) => copy.checked)
+    .filter((copy) => copy.checked && copyIds.includes(copy.id))
     .map((copy) => copy.id);
   const carried = checkedIds.length
     ? [
@@ -71,10 +79,15 @@ export async function carryOverAllergenTags(
         allergensReviewPending: true,
       })
       .where(eq(ingredients.id, targetId));
-  } else if (added.length) {
+  } else if (added.length || (targetUnchecked && checkedIds.length > 0)) {
+    // A checked copy (a "None" too) settles an Unchecked promoted target; it stays flagged
+    // for review. A curated target is flagged only when a tag was actually added.
     await tx
       .update(ingredients)
-      .set({ allergensReviewPending: true })
+      .set({
+        ...(checkedIds.length > 0 ? { allergensChecked: true } : {}),
+        allergensReviewPending: true,
+      })
       .where(eq(ingredients.id, targetId));
   }
 }

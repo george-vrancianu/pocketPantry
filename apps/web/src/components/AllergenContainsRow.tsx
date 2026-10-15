@@ -38,6 +38,12 @@ export type AllergenContainsRowProps = {
   value: ContainsSelection;
   onChange: (next: ContainsSelection) => void;
   disabled?: boolean;
+  /**
+   * Names for tags the Ingredient already has, so one the list no longer offers (a retired
+   * Allergen) still shows as a selected chip. It can be unticked, and once it is, it is gone:
+   * it is never offered as a new tag.
+   */
+  known?: readonly { id: string; name: string }[];
 };
 
 /**
@@ -50,6 +56,7 @@ export function AllergenContainsRow({
   value,
   onChange,
   disabled,
+  known = [],
 }: AllergenContainsRowProps) {
   const { t, i18n } = useTranslation('catalog');
   const labelId = useId();
@@ -95,6 +102,19 @@ export function AllergenContainsRow({
             onClick={() => toggle(allergen.id)}
           />
         ))}
+        {known
+          .filter(
+            (tag) => picked.has(tag.id) && !order.some((a) => a.id === tag.id),
+          )
+          .map((tag) => (
+            <Chip
+              key={tag.id}
+              label={tag.name}
+              selected
+              disabled={disabled}
+              onClick={() => toggle(tag.id)}
+            />
+          ))}
         {options.data ? (
           <Chip
             label={t('allergenContains.none')}

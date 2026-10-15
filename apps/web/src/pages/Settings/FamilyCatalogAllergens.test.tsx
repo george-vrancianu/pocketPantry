@@ -9,7 +9,16 @@ import { FamilyCatalogSection } from './components/FamilyCatalogSection';
 const ingredient = (
   id: string,
   name: string,
-  allergen: { allergensChecked: boolean; allergenIds: string[] },
+  {
+    allergensChecked,
+    allergenIds,
+    retired = [],
+  }: {
+    allergensChecked: boolean;
+    allergenIds: string[];
+    /** Tagged Allergens the picker no longer offers, by id and name. */
+    retired?: { id: string; name: string }[];
+  },
 ): FamilyCatalogIngredient => ({
   id,
   name,
@@ -30,7 +39,15 @@ const ingredient = (
     recipeLines: 2,
     staples: 0,
   },
-  ...allergen,
+  allergensChecked,
+  allergenIds,
+  allergens: allergenIds.map(
+    (id) =>
+      retired.find((r) => r.id === id) ?? {
+        id,
+        name: id === 'al-milk' ? 'Milk' : 'Peanuts',
+      },
+  ),
 });
 
 function stub(ingredients: FamilyCatalogIngredient[]) {
@@ -89,7 +106,7 @@ describe('Family catalog: Allergens', () => {
       'Not checked for allergens',
     );
     expect(await item('Nutella')).toHaveTextContent('Contains Milk');
-    expect(await item('Rice')).toHaveTextContent('Contains none');
+    expect(await item('Rice')).toHaveTextContent('No allergens tagged');
     expect(
       screen.getByText('1 ingredient is not checked for allergens.'),
     ).toBeVisible();
@@ -142,6 +159,31 @@ describe('Family catalog: Allergens', () => {
         )?.body,
       ).toEqual({ allergenIds: [] }),
     );
+  });
+
+  it('shows a retired tag by name and lets it be unticked, never offering it as new', async () => {
+    const eggs = { id: 'al-eggs', name: 'Eggs' };
+    const mayo = ingredient('mayo', 'Mayo', {
+      allergensChecked: true,
+      allergenIds: ['al-eggs', 'al-milk'],
+      retired: [eggs],
+    });
+    stub([mayo]);
+    renderWithProviders(<FamilyCatalogSection />);
+    const user = userEvent.setup();
+
+    expect(
+      (await screen.findByText('Mayo')).closest('li') as HTMLElement,
+    ).toHaveTextContent('Contains Eggs, Milk');
+    await user.click(
+      await screen.findByRole('button', { name: 'Tag allergens of Mayo' }),
+    );
+    const chip = await screen.findByRole('button', { name: 'Eggs' });
+    expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await user.click(chip);
+    expect(
+      screen.queryByRole('button', { name: 'Eggs' }),
+    ).not.toBeInTheDocument();
   });
 
   it('refreshes every Recipe screen after tagging', async () => {

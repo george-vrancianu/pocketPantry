@@ -21,6 +21,7 @@ type CatalogRow = {
   id: string;
   allergensChecked: boolean;
   allergenIds: string[];
+  allergens: { id: string; name: string }[];
 };
 type AdminIngredient = {
   id: string;
@@ -43,6 +44,7 @@ describe('Family Ingredient Allergens (integration)', () => {
   let admin: Who;
   let recipesA: Who;
   let recipesA2: Who;
+  let recipesB: Who;
   const GROUND_SPICES = seedId.leaf('ground-spices');
   const PEANUTS = seedId.allergen('peanuts');
   const MILK = seedId.allergen('milk');
@@ -57,11 +59,9 @@ describe('Family Ingredient Allergens (integration)', () => {
     a2 = client(app, cookieA2, '/api');
     recipesA = client(app, cookieA, '/api/recipes');
     recipesA2 = client(app, cookieA2, '/api/recipes');
-    b = client(
-      app,
-      await signUp(app, `fia-b-${stamp}@example.com`, 'B'),
-      '/api',
-    );
+    const cookieB = await signUp(app, `fia-b-${stamp}@example.com`, 'B');
+    b = client(app, cookieB, '/api');
+    recipesB = client(app, cookieB, '/api/recipes');
     c = client(
       app,
       await signUp(app, `fia-c-${stamp}@example.com`, 'C'),
@@ -228,6 +228,9 @@ describe('Family Ingredient Allergens (integration)', () => {
       try {
         await tag(a, row.id, [EGGS, MILK]).expect(200);
         await tag(a, row.id, [EGGS]).expect(200);
+        // Still listed, by name, so a Member can untick it.
+        const listed = await rowOf(a, row.id);
+        expect(listed?.allergens).toEqual([{ id: EGGS, name: 'Eggs' }]);
         const other = await made(a);
         const res = await tag(a, other.id, [EGGS]).expect(409);
         expect((res.body as { code: string }).code).toBe(
@@ -260,7 +263,21 @@ describe('Family Ingredient Allergens (integration)', () => {
         uncheckedCount: 1,
         items: [],
       });
+      await a2
+        .put('/settings/allergies', { allergenIds: [PEANUTS] })
+        .expect(200);
+      const warning = async () =>
+        (await detail(recipesA2, recipe.id)).allergyWarning;
+      expect(await warning()).toMatchObject({
+        severity: 'soft',
+        uncheckedCount: 1,
+      });
       await tag(a2, row.id, [PEANUTS]).expect(200);
+      expect(await warning()).toMatchObject({
+        severity: 'strong',
+        entries: [{ allergen: { id: PEANUTS }, severity: 'strong' }],
+        uncheckedCount: 0,
+      });
       const tagged = (await detail(recipesA2, recipe.id)).allergens;
       expect(tagged.uncheckedCount).toBe(0);
       expect(tagged.items.map((i) => i.allergen.id)).toEqual([PEANUTS]);
@@ -268,6 +285,7 @@ describe('Family Ingredient Allergens (integration)', () => {
       expect(await detail(recipesA, recipe.id)).toMatchObject({
         allergens: { uncheckedCount: 0, items: [] },
       });
+      await a2.put('/settings/allergies', { allergenIds: [] }).expect(200);
     });
   });
 
@@ -277,8 +295,7 @@ describe('Family Ingredient Allergens (integration)', () => {
       const copyA = (
         await create(a, name, { allergenIds: [PEANUTS] }).expect(201)
       ).body as Made;
-      const copyB = (await create(b, name, { allergenIds: [MILK] }).expect(201))
-        .body as Made;
+      await create(b, name, { allergenIds: [MILK] }).expect(201);
       await create(c, name).expect(201);
       await admin
         .post('/admin/family-ingredients/promote', { ingredientId: copyA.id })
@@ -287,7 +304,12 @@ describe('Family Ingredient Allergens (integration)', () => {
       expect([...row.allergenIds].sort()).toEqual([PEANUTS, MILK].sort());
       expect(row.allergensReviewPending).toBe(true);
       // The merged copy's Family now reads the shared row's tags.
-      expect(copyB.id).not.toBe(copyA.id);
+      const recipeB = await familyRecipe(recipesB, copyA.id);
+      const seenByB = (await detail(recipesB, recipeB.id)).allergens;
+      expect(seenByB.uncheckedCount).toBe(0);
+      expect(seenByB.items.map((i) => i.allergen.id).sort()).toEqual(
+        [PEANUTS, MILK].sort(),
+      );
     });
 
     it('promoting only Unchecked copies stays Unchecked until the Admin tags it', async () => {
@@ -339,6 +361,33 @@ describe('Family Ingredient Allergens (integration)', () => {
       const row = await adminRow(target.id);
       expect([...row.allergenIds].sort()).toEqual([PEANUTS, MILK].sort());
       expect(row.allergensReviewPending).toBe(true);
+    });
+
+    it('merging checked copies into a promoted Unchecked row makes it checked', async () => {
+      const promoted = async () => {
+        const copy = await made(a);
+        await admin
+          .post('/admin/family-ingredients/promote', { ingredientId: copy.id })
+          .expect(200);
+        return copy;
+      };
+      for (const extra of [{ allergenIds: [MILK] }, { allergenIds: [] }]) {
+        const target = await promoted();
+        const recipe = await familyRecipe(recipesA, target.id);
+        expect(
+          (await detail(recipesA, recipe.id)).allergens.uncheckedCount,
+        ).toBe(1);
+        const copy = await made(b, extra);
+        await admin
+          .post('/admin/family-ingredients/merge', {
+            ingredientId: copy.id,
+            targetIngredientId: target.id,
+          })
+          .expect(200);
+        expect(
+          (await detail(recipesA, recipe.id)).allergens.uncheckedCount,
+        ).toBe(0);
+      }
     });
 
     it('merge leaves the target alone when the copies add nothing', async () => {

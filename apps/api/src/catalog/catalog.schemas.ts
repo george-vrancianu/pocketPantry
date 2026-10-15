@@ -125,7 +125,14 @@ export type FamilyIngredientUsage = {
 export type FamilyCatalog = {
   ingredients: Array<
     CatalogSearchResult &
-      FamilyIngredientAllergens & { usage: FamilyIngredientUsage }
+      FamilyIngredientAllergens & {
+        /**
+         * The tagged Allergens by name in the requested locale, retired ones included, so a
+         * Member can still see and untick a tag the picker no longer offers.
+         */
+        allergens: CatalogAllergen[];
+        usage: FamilyIngredientUsage;
+      }
   >;
   synonyms: Array<{
     id: string;

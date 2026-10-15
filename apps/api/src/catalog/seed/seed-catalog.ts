@@ -223,7 +223,7 @@ export async function seedCatalog(
 
     // Each seed Ingredient's tags are applied once. `allergens_checked` marks
     // a seed Ingredient whose tags have been applied (the flag is otherwise
-    // read only for Family rows, ADR 0014), so a database seeded before the
+    // read for Family rows and for promoted shared rows, ADR 0014), so a database seeded before the
     // tags existed gains them on this run, and an Admin's later edits (a tag
     // removed, say) are never undone by a re-seed.
     const untagged = await tx

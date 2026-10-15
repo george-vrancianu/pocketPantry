@@ -16,7 +16,6 @@ import {
 } from '../../../components/AllergenContainsRow';
 import { ConfirmAction } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useAllergenOptions } from '../../../lib/catalog';
 import {
   useDeleteFamilyIngredient,
   useDeleteFamilySynonym,
@@ -45,7 +44,6 @@ export function FamilyCatalogSection() {
   const deleteIngredient = useDeleteFamilyIngredient();
   const deleteSynonym = useDeleteFamilySynonym();
   const setAllergens = useSetFamilyIngredientAllergens();
-  const allergenOptions = useAllergenOptions(i18n.language);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [taggingId, setTaggingId] = useState<string | null>(null);
   // Focus follows the Member: every control that disappears hands it on.
@@ -76,7 +74,7 @@ export function FamilyCatalogSection() {
   ].find(Boolean);
   const uncheckedCount =
     catalog.data?.ingredients.filter((i) => !i.allergensChecked).length ?? 0;
-  /** "Contains none", "Contains Milk, Soy" or "Not checked for allergens". */
+  /** "No allergens tagged", "Contains Milk, Soy" or "Not checked for allergens". */
   const allergenStatus = (ingredient: FamilyCatalogIngredient) => {
     if (!ingredient.allergensChecked) {
       return t('settings:familyCatalog.allergensUnchecked');
@@ -84,13 +82,8 @@ export function FamilyCatalogSection() {
     if (ingredient.allergenIds.length === 0) {
       return t('settings:familyCatalog.allergensNone');
     }
-    const names = ingredient.allergenIds.map(
-      (allergenId) =>
-        allergenOptions.data?.find((a) => a.id === allergenId)?.name ??
-        allergenId,
-    );
     return t('settings:familyCatalog.allergensContains', {
-      names: names.join(', '),
+      names: ingredient.allergens.map((a) => a.name).join(', '),
     });
   };
   const data = catalog.data;
@@ -363,6 +356,7 @@ function AllergenTagger({
         value={contains}
         onChange={setContains}
         disabled={saving}
+        known={ingredient.allergens}
       />
       <Stack direction="row" spacing={1}>
         <Button

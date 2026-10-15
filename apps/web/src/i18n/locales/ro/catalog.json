@@ -77,7 +77,7 @@
   },
   "allergenContains": {
     "label": "Conține",
-    "hint": "Opțional. Lasă gol dacă nu știi; ingredientul va conta atunci ca nebifat.",
+    "hint": "Opțional. Lasă gol dacă nu știi; ingredientul va conta atunci ca neverificat.",
     "none": "Niciunul",
     "loadFailed": "Nu s-a putut încărca lista de alergeni."
   }

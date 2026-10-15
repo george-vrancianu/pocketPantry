@@ -21,6 +21,8 @@ export type FamilyIngredientAllergens = {
 
 export type FamilyCatalogIngredient = CatalogSearchResult &
   FamilyIngredientAllergens & {
+    /** The tagged Allergens by name, retired ones included. */
+    allergens: { id: string; name: string }[];
     usage: FamilyIngredientUsage;
   };
 

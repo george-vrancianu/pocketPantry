@@ -5,6 +5,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Tx } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
 import {
+  allergens as allergensTable,
   batches,
   catalogTranslations,
   ingredientAllergens,
@@ -26,12 +27,15 @@ import { amountScaleForParent } from './amount-scale';
 import type { ExpiryOverride } from './catalog-defaults';
 import {
   catalogScope,
+  type CatalogScope,
   isFamilyOwned,
   ownedIngredient,
   ownedTranslation,
 } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
+import { loadDisplayNames } from './display-names';
 import type {
+  CatalogAllergen,
   CatalogLocale,
   CatalogSearchResult,
   FamilyCatalog,
@@ -72,7 +76,11 @@ export class FamilyCatalogService {
       overrides,
     );
     const usage = await this.usageOf(rows.map((row) => row.id));
-    const allergenState = await this.allergensOf(rows.map((row) => row.id));
+    const allergenState = await this.allergensOf(
+      scope,
+      locale,
+      rows.map((row) => row.id),
+    );
 
     const translations = scope.translations(this.database);
     const synonymRows = await this.database
@@ -369,10 +377,20 @@ export class FamilyCatalogService {
   }
 
   private async allergensOf(
+    scope: CatalogScope,
+    locale: CatalogLocale,
     ids: string[],
-  ): Promise<Map<string, FamilyIngredientAllergens>> {
-    const state = new Map<string, FamilyIngredientAllergens>(
-      ids.map((id) => [id, { allergensChecked: false, allergenIds: [] }]),
+  ): Promise<
+    Map<string, FamilyIngredientAllergens & { allergens: CatalogAllergen[] }>
+  > {
+    const state = new Map<
+      string,
+      FamilyIngredientAllergens & { allergens: CatalogAllergen[] }
+    >(
+      ids.map((id) => [
+        id,
+        { allergensChecked: false, allergenIds: [], allergens: [] },
+      ]),
     );
     if (ids.length === 0) return state;
     const [checked, tags] = await Promise.all([
@@ -392,6 +410,28 @@ export class FamilyCatalogService {
       state.get(row.id)!.allergensChecked = row.checked;
     for (const tag of tags)
       state.get(tag.ingredientId)?.allergenIds.push(tag.allergenId);
+    const tagged = [...new Set(tags.map((tag) => tag.allergenId))];
+    if (tagged.length > 0) {
+      const names = await this.database
+        .select({ id: allergensTable.id, name: allergensTable.name })
+        .from(allergensTable)
+        .where(inArray(allergensTable.id, tagged));
+      const { pick } = await loadDisplayNames(
+        this.database,
+        scope,
+        locale,
+        tagged,
+      );
+      const nameOf = new Map(
+        names.map((row) => [row.id, pick('allergen', row.id, row.name)]),
+      );
+      for (const entry of state.values()) {
+        entry.allergens = entry.allergenIds.map((id) => ({
+          id,
+          name: nameOf.get(id) ?? id,
+        }));
+      }
+    }
     return state;
   }
 

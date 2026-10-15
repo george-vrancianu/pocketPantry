@@ -160,7 +160,7 @@
     "editLabel": "Redigér",
     "allergensUnchecked": "Ikke kontrolleret for allergener",
     "allergensContains": "Indeholder {{names}}",
-    "allergensNone": "Indeholder ingen",
+    "allergensNone": "Ingen allergener markeret",
     "uncheckedSummary_one": "{{count}} ingrediens er ikke kontrolleret for allergener.",
     "uncheckedSummary_other": "{{count}} ingredienser er ikke kontrolleret for allergener.",
     "tagAllergens": "Angiv allergener for {{name}}",
