@@ -61,7 +61,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'green-beans': [],
   'fresh-peas': [],
   asparagus: [],
-  celery: [],
+  celery: ['celery'],
   fennel: [],
   okra: [],
 
@@ -153,7 +153,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'burger-buns': ['gluten'],
   'hot-dog-buns': ['gluten'],
   bagel: ['gluten'],
-  covrig: ['gluten'],
+  covrig: ['gluten', 'sesame'],
 
   // bakery/flatbreads-and-wraps
   'tortilla-wraps': ['gluten'],
@@ -164,7 +164,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // bakery/pastries
   croissant: ['gluten', 'milk'],
   brioche: ['eggs', 'gluten', 'milk'],
-  cozonac: ['eggs', 'gluten', 'milk'],
+  cozonac: ['eggs', 'gluten', 'milk', 'tree-nuts'],
   muffin: ['eggs', 'gluten', 'milk'],
   doughnut: ['eggs', 'gluten', 'milk'],
 
@@ -267,7 +267,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   // meat/chilled-meat-specialties
   'liver-pate': ['gluten', 'milk'],
   toba: [],
-  caltabos: ['gluten'],
+  caltabos: [],
   lebar: ['gluten'],
 
   // seafood/fish
@@ -306,7 +306,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   squid: ['molluscs'],
   octopus: ['molluscs'],
   scallops: ['molluscs'],
-  crab: [],
+  crab: ['crustaceans'],
 
   // seafood/fish-products
   surimi: ['eggs', 'fish', 'gluten'],
@@ -625,14 +625,14 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   mustard: ['mustard'],
   mayonnaise: ['eggs', 'mustard'],
   'hot-sauce': [],
-  'bbq-sauce': [],
+  'bbq-sauce': ['mustard'],
   'tartar-sauce': ['eggs', 'mustard'],
   horseradish: [],
   'sweet-chili-sauce': [],
 
   // condiments/asian-sauces
   'soy-sauce': ['gluten', 'soy'],
-  'worcestershire-sauce': ['fish'],
+  'worcestershire-sauce': ['fish', 'gluten'],
   'fish-sauce': ['fish'],
   'teriyaki-sauce': ['gluten', 'soy'],
   'oyster-sauce': ['gluten', 'molluscs', 'soy'],
@@ -652,7 +652,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
 
   // condiments/stock-and-seasoning-mixes
   'stock-cubes': ['celery', 'gluten'],
-  'vegetable-seasoning': ['celery', 'gluten'],
+  'vegetable-seasoning': ['celery'],
   'chicken-stock': ['celery'],
   'beef-stock': ['celery'],
   'soup-mix': ['celery', 'gluten'],
@@ -686,7 +686,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'rapeseed-oil': [],
   'corn-oil': [],
   'coconut-oil': [],
-  'cooking-spray': [],
+  'cooking-spray': ['soy'],
 
   // oils/speciality-oils
   'sesame-oil': ['sesame'],
@@ -804,7 +804,7 @@ export const SEED_INGREDIENT_ALLERGENS: Record<string, string[]> = {
   'rice-cakes': [],
   breadsticks: ['gluten'],
   'dried-bread-chips': ['gluten'],
-  'rice-crackers': ['soy'],
+  'rice-crackers': ['gluten', 'soy'],
 
   // snacks/nuts-and-seeds
   peanuts: ['peanuts'],

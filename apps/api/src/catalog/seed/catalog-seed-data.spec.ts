@@ -240,10 +240,13 @@ describe('catalog seed data', () => {
       expect(tags('pesto')).toEqual(['milk', 'tree-nuts']);
       expect(tags('soy-sauce')).toEqual(['gluten', 'soy']);
       expect(tags('mayonnaise')).toEqual(['eggs', 'mustard']);
-      expect(tags('worcestershire-sauce')).toEqual(['fish']);
+      expect(tags('worcestershire-sauce')).toEqual(['fish', 'gluten']);
       expect(tags('tahini')).toEqual(['sesame']);
       expect(tags('spaghetti')).toEqual(['gluten']);
       expect(tags('egg-noodles')).toEqual(['eggs', 'gluten']);
+      expect(tags('celery')).toEqual(['celery']);
+      expect(tags('crab')).toEqual(['crustaceans']);
+      expect(tags('cozonac')).toEqual(['eggs', 'gluten', 'milk', 'tree-nuts']);
       expect(tags('apple')).toEqual([]);
       expect(tags('olive-oil')).toEqual([]);
     });

@@ -554,7 +554,7 @@ describe('Catalog (integration)', () => {
     });
 
     describe('Allergen tags', () => {
-      // One transaction, rolled back: other test workers read the seeded rows.
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
       class Rollback extends Error {}
       const inRolledBackTransaction = (body: (tx: Database) => Promise<void>) =>
         expect(
@@ -655,7 +655,7 @@ describe('Catalog (integration)', () => {
             .from(aisles)
             .orderBy(aisles.sortOrder)
         ).map((row) => `${row.id === aisleId('frozen') ? row.name : row.id}`);
-      // One transaction, rolled back: other test workers read the seeded rows.
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
       class Rollback extends Error {}
       await expect(
         database.transaction(async (tx) => {
@@ -749,7 +749,7 @@ describe('Catalog (integration)', () => {
         value,
         normalizedValue: normalizeName(value),
       });
-      // One transaction, rolled back: other test workers read the seeded rows.
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
       class Rollback extends Error {}
       let failure: Error | undefined;
       await expect(
