@@ -96,6 +96,7 @@ async function loadIngredientAllergenData(
             id: catalog.id,
             ownerFamilyId: catalog.ownerFamilyId,
             allergensChecked: catalog.allergensChecked,
+            allergensReviewPending: catalog.allergensReviewPending,
           })
           .from(catalog)
           .where(inArray(catalog.id, ingredientIds)),
@@ -111,6 +112,7 @@ async function loadIngredientAllergenData(
       {
         ownerFamilyId: row.ownerFamilyId,
         allergensChecked: row.allergensChecked,
+        allergensReviewPending: row.allergensReviewPending,
       },
     ]),
   );

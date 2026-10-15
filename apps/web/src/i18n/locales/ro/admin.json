@@ -38,7 +38,9 @@
       "title": "Conține",
       "hint": "Alergenii pe care îi conține acest ingredient. Salvarea fără nicio alegere înseamnă că nu conține niciunul.",
       "save": "Salvează alergenii",
-      "saved": "Alergenii au fost salvați."
+      "saved": "Alergenii au fost salvați.",
+      "reviewTitle": "De verificat",
+      "reviewHint": "Preluat de la un ingredient al unei familii. Verifică etichetele și salvează pentru a le confirma."
     }
   },
   "aisle": {

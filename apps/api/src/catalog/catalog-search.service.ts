@@ -1,13 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { seedId } from './seed/seed-ids';
-import { aisles, leafCategories, parentCategories } from '../database/schema';
+import {
+  aisles,
+  allergens,
+  leafCategories,
+  parentCategories,
+} from '../database/schema';
 import { nameClaims, type CatalogScope } from './catalog-scope';
 import {
   AISLE_LISTING_LIMIT,
   type CatalogAisle,
+  type CatalogAllergen,
   type CatalogCategory,
   type CatalogLocale,
   type CatalogParent,
@@ -378,6 +384,31 @@ export class CatalogSearchService {
         name: pick('parent_category', row.id, row.name),
       }))
       .sort((a, b) => a.name.localeCompare(b.name, locale));
+  }
+
+  /**
+   * The Allergens a Member can tag an Ingredient with, in the Admin-curated order and named in
+   * `locale`. A retired Allergen is left out: it cannot be newly tagged.
+   */
+  async listAllergens(
+    scope: CatalogScope,
+    locale: CatalogLocale,
+  ): Promise<CatalogAllergen[]> {
+    const rows = await this.database
+      .select({ id: allergens.id, name: allergens.name })
+      .from(allergens)
+      .where(isNull(allergens.archivedAt))
+      .orderBy(asc(allergens.sortOrder), asc(allergens.name));
+    const { pick } = await loadDisplayNames(
+      this.database,
+      scope,
+      locale,
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      name: pick('allergen', row.id, row.name),
+    }));
   }
 
   /** `findByIds` keyed by Ingredient id, for callers that join the results to their own rows. */

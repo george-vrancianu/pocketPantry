@@ -63,6 +63,13 @@ type Options = {
 
 function stubCatalog({ results = [], create }: Options = {}) {
   const { fetchMock, calls } = stubApi({
+    'GET /api/catalog/allergens': () =>
+      Response.json({
+        allergens: [
+          { id: 'al-milk', name: 'Milk' },
+          { id: 'al-peanuts', name: 'Peanuts' },
+        ],
+      }),
     'GET /api/catalog/search': () => Response.json({ results }),
     'GET /api/catalog/categories': (url) =>
       Response.json({
@@ -353,6 +360,52 @@ describe('Add to your catalog', () => {
       // Picked: the token carries the Family tag and the popover is gone.
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(screen.getByText('Family')).toBeVisible();
+    });
+
+    describe('the Contains row', () => {
+      async function addWith(choose: (dialog: HTMLElement) => Promise<void>) {
+        const { user, dialog, calls, picked } = await open('Kombucha');
+        await user.click(
+          within(dialog).getByRole('combobox', { name: 'Category' }),
+        );
+        await user.paste('spice');
+        await user.click(
+          await within(dialog).findByRole('option', { name: /Ground spices/ }),
+        );
+        await choose(dialog);
+        await user.click(
+          within(dialog).getByRole('button', { name: /^Add & pick/ }),
+        );
+        await waitFor(() => expect(picked).toHaveBeenCalled());
+        return calls.find(
+          (c) => c.key === 'POST /api/catalog/family-ingredients',
+        )?.body;
+      }
+
+      it('is optional: left blank, the Ingredient is created without Allergens (Unchecked)', async () => {
+        const body = await addWith(async () => {});
+        expect(body).not.toHaveProperty('allergenIds');
+      });
+
+      it('sends the chosen Allergens', async () => {
+        const user = userEvent.setup();
+        const body = await addWith(async (dialog) => {
+          await user.click(
+            await within(dialog).findByRole('button', { name: 'Peanuts' }),
+          );
+        });
+        expect(body).toMatchObject({ allergenIds: ['al-peanuts'] });
+      });
+
+      it('sends an empty list for "None"', async () => {
+        const user = userEvent.setup();
+        const body = await addWith(async (dialog) => {
+          await user.click(
+            await within(dialog).findByRole('button', { name: 'None' }),
+          );
+        });
+        expect(body).toMatchObject({ allergenIds: [] });
+      });
     });
 
     it("refreshes what the Family's Unmatched items were relinked in (Pantry, Shopping List, Templates, Recipes)", async () => {

@@ -38,7 +38,9 @@
       "title": "Contains",
       "hint": "The Allergens this Ingredient contains. Saving with none picked records that it contains none.",
       "save": "Save Allergens",
-      "saved": "Allergens saved."
+      "saved": "Allergens saved.",
+      "reviewTitle": "Needs review",
+      "reviewHint": "Carried over from a Family’s Ingredient. Check the tags and save to confirm them."
     }
   },
   "aisle": {

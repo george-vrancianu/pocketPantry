@@ -22,6 +22,7 @@ const catalog: AdminCatalog = {
       defaultUnit: 'g',
       pantryBasic: false,
       allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
     {
@@ -31,6 +32,7 @@ const catalog: AdminCatalog = {
       defaultUnit: 'ml',
       pantryBasic: false,
       allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
   ],

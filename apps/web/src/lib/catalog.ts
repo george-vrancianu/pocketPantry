@@ -177,7 +177,26 @@ export type FamilyIngredientInput = {
   name: string;
   leafCategoryId: string;
   defaultUnit: Unit;
+  /** What it contains: left out = Unchecked, empty = "None", otherwise tagged (ADR 0014). */
+  allergenIds?: string[];
 };
+
+/** An Allergen a Member can tag an Ingredient with, named in their locale. */
+export type CatalogAllergen = { id: string; name: string };
+
+export const catalogAllergensQueryKey = ['catalog-allergens'] as const;
+
+/** The Allergens on offer for tagging (retired ones left out), in the Admin-curated order. */
+export function useAllergenOptions(locale: string) {
+  return useQuery({
+    queryKey: [...catalogAllergensQueryKey, locale],
+    queryFn: () =>
+      apiRequest<{ allergens: CatalogAllergen[] }>(
+        `/catalog/allergens?${new URLSearchParams({ locale })}`,
+      ).then((body) => body.allergens),
+    staleTime: 5 * 60_000,
+  });
+}
 
 /**
  * Adds a Family Ingredient (named in `locale`, the locale it was typed in).

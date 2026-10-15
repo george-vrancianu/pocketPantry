@@ -71,5 +71,11 @@
     "link": "Link & pick",
     "linked": "“{{name}}” now means {{ingredient}} for your family",
     "aliasExists": "“{{name}}” is already a name for {{ingredient}}."
+  },
+  "allergenContains": {
+    "label": "Contains",
+    "hint": "Optional. Leave it blank if you don't know; the ingredient then counts as not checked.",
+    "none": "None",
+    "loadFailed": "Couldn’t load the allergen list."
   }
 }

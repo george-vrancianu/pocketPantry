@@ -22,6 +22,7 @@ const catalog: AdminCatalog = {
       defaultUnit: 'ml',
       pantryBasic: false,
       allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
   ],
