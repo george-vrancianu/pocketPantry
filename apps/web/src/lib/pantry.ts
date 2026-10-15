@@ -422,19 +422,38 @@ export function useUpdateBatch(locale: string) {
   });
 }
 
-export function useDeleteBatch() {
+/** What a deleted Batch changes elsewhere: the Pantry, Suggestions (Used Up), Recipe matching and Template details. */
+function useInvalidateAfterBatchDelete() {
   const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['pantry'] }),
+      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
+      ...recipeMatchingQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+      queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
+    ]);
+}
+
+export function useDeleteBatch() {
+  const invalidate = useInvalidateAfterBatchDelete();
   return useMutation({
     mutationFn: (id: string) =>
       apiRequest<void>(`/pantry/batches/${id}`, { method: 'DELETE' }),
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['pantry'] }),
-        queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-        ...recipeMatchingQueryKeys.map((queryKey) =>
-          queryClient.invalidateQueries({ queryKey }),
-        ),
-        queryClient.invalidateQueries({ queryKey: templateDetailsQueryKey }),
-      ]),
+    onSuccess: invalidate,
+  });
+}
+
+/** Delete many Batches in one request. */
+export function useDeleteBatches() {
+  const invalidate = useInvalidateAfterBatchDelete();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      apiRequest<void>('/pantry/batches/bulk-delete', {
+        method: 'POST',
+        body: { ids },
+      }),
+    onSuccess: invalidate,
   });
 }

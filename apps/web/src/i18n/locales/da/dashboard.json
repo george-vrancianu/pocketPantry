@@ -139,14 +139,21 @@
       "age": "{{count}} d gammel",
       "inLocation": "{{duration}} i {{location}}"
     },
-    "item": {
-      "add": "Tilføj {{name}}"
-    },
+    "close": "Luk",
     "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Fjernede {{count}} udløbet vare",
+      "expired_other": "Fjernede {{count}} udløbne",
+      "tossed": "Smed {{name}} ud",
+      "used": "Brugte {{name}}",
       "added_one": "{{count}} føjet til indkøbslisten",
-      "added_other": "{{count}} føjet til indkøbslisten",
-      "withScore": "{{message}} · score {{score}}"
+      "added_other": "{{count}} føjet til indkøbslisten"
     },
-    "close": "Luk"
+    "item": {
+      "toss": "Smid {{name}} ud",
+      "used": "Brugt",
+      "usedName": "Brugte {{name}}",
+      "add": "Tilføj {{name}}"
+    }
   }
 }

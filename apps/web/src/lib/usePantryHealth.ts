@@ -7,11 +7,18 @@ import {
   type HealthTodo,
   type PantryHealth,
 } from './health';
-import { localIso, useBatches, useRunningLow, type Batch } from './pantry';
+import {
+  localIso,
+  useBatches,
+  useDeleteBatches,
+  useRunningLow,
+  type Batch,
+} from './pantry';
 import { useFamilySettings, useStaleThresholdDays } from './settings';
 import { useShoppingList } from './shopping';
 import { useStaples, type Staple } from './staples';
 import { useSuggestions } from './suggestions';
+import { useDeferredRemoval } from './useDeferredRemoval';
 import { useToday } from './useToday';
 
 export type PantryHealthState = {
@@ -27,11 +34,18 @@ export type PantryHealthState = {
   batches: Batch[];
   staples: Staple[];
   staleThresholdDays: number;
+  /**
+   * Remove Batches from the Pantry with one Undo toast (ADR 0009). They leave the Health To-dos and the score
+   * at once. `message` is the toast text, already translated; the new score is added to it when there is one.
+   */
+  tossBatches: (ids: string[], message: string) => void;
+  /** Like `tossBatches`, for Batches the Member used. Kept apart so a reason can be sent later. */
+  markUsed: (ids: string[], message: string) => void;
 };
 
 /** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
 export function usePantryHealth(): PantryHealthState {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const locale = i18n.language;
   const today = localIso(useToday());
   const batches = useBatches(locale);
@@ -42,11 +56,24 @@ export function usePantryHealth(): PantryHealthState {
   const settings = useFamilySettings(locale);
   const staleThresholdDays = useStaleThresholdDays(locale);
 
+  const { mutateAsync: sendDeleteMany } = useDeleteBatches();
+  const removal = useDeferredRemoval(
+    ['pantry'],
+    // Only `remove` of one record uses this; Pantry health always removes through `removeMany`.
+    (id: string) => sendDeleteMany([id]),
+    sendDeleteMany,
+  );
+  const { hiddenIds } = removal;
+  const stocked = useMemo(
+    () => (batches.data ?? []).filter((batch) => !hiddenIds.has(batch.id)),
+    [batches.data, hiddenIds],
+  );
+
   const input = useMemo<HealthInput>(
     () => ({
       today,
       staleThresholdDays,
-      batches: batches.data ?? [],
+      batches: stocked,
       staples: staples.data ?? [],
       runningLow: runningLow.data ?? new Set(),
       onShoppingList: new Set(
@@ -59,7 +86,7 @@ export function usePantryHealth(): PantryHealthState {
     [
       today,
       staleThresholdDays,
-      batches.data,
+      stocked,
       staples.data,
       runningLow.data,
       shopping.data,
@@ -68,6 +95,23 @@ export function usePantryHealth(): PantryHealthState {
   );
   const health = useMemo(() => pantryHealth(input), [input]);
   const todos = useMemo(() => healthTodos(input), [input]);
+
+  const removeBatches = (ids: string[], message: string) => {
+    const gone = new Set(ids);
+    const after = pantryHealth({
+      ...input,
+      batches: input.batches.filter((batch) => !gone.has(batch.id)),
+    });
+    removal.removeMany(
+      ids,
+      after.scored
+        ? t('dashboard:health.toast.withScore', {
+            message,
+            score: after.total,
+          })
+        : message,
+    );
+  };
 
   return {
     isPending:
@@ -83,11 +127,14 @@ export function usePantryHealth(): PantryHealthState {
       shopping.error ??
       runningLow.error ??
       suggestions.error,
+    // Both send the same request today; neither records why.
+    tossBatches: removeBatches,
+    markUsed: removeBatches,
     batchCount: input.batches.length,
     input,
     health,
     todos,
-    batches: batches.data ?? [],
+    batches: stocked,
     staples: staples.data ?? [],
     staleThresholdDays,
   };

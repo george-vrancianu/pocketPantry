@@ -80,7 +80,8 @@ export function HealthTodos({ state, today }: Props) {
   const { t, i18n } = useTranslation('dashboard');
   const { tagFor } = useExpiryTags(today);
   const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
-  const { todos, batches, staples, staleThresholdDays } = state;
+  const { todos, batches, staples, staleThresholdDays, tossBatches, markUsed } =
+    state;
   const shopping = useAddToShoppingList(state);
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
@@ -173,6 +174,8 @@ export function HealthTodos({ state, today }: Props) {
                     setOpenKey(openKey === todo.key ? null : todo.key)
                   }
                   tagFor={tagFor}
+                  onToss={tossBatches}
+                  onUsed={markUsed}
                   shopping={shopping}
                 />
               ))}
@@ -232,8 +235,18 @@ type RowProps = {
   open: boolean;
   onToggle: () => void;
   tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
+  onToss: PantryHealthState['tossBatches'];
+  onUsed: PantryHealthState['markUsed'];
   shopping: ShoppingFix;
 };
+
+/** What a Member can do to one item of a Health To-do on its own row. */
+function itemAction(todo: Pick<HealthTodo, 'key'>, item: TodoItem) {
+  if (todo.key === 'expired' || (todo.key === 'undated' && item.forgotten))
+    return 'toss';
+  if (todo.key === 'expiringSoon') return 'used';
+  return null;
+}
 
 function TodoRow({
   todo,
@@ -242,6 +255,8 @@ function TodoRow({
   open,
   onToggle,
   tagFor,
+  onToss,
+  onUsed,
   shopping,
 }: RowProps) {
   const { t } = useTranslation('dashboard');
@@ -262,13 +277,18 @@ function TodoRow({
   const bulkProps =
     todo.key === 'expiringSoon'
       ? { href: '/recipes' }
-      : addsToList
+      : todo.key === 'expired'
         ? {
-            disabled: shopping.isPending,
-            onClick: () => void shopping.add(todo.key, todo.itemIds),
+            onClick: () =>
+              onToss(todo.itemIds, t('health.toast.expired', { count })),
           }
-        : // Toss and Date all do nothing yet; they arrive with their own tickets.
-          { disabled: true };
+        : addsToList
+          ? {
+              disabled: shopping.isPending,
+              onClick: () => void shopping.add(todo.key, todo.itemIds),
+            }
+          : // Date all does nothing yet; it arrives with its own ticket.
+            { disabled: true };
 
   return (
     <Box
@@ -436,6 +456,9 @@ function TodoRow({
                 key={item.id}
                 item={item}
                 tagFor={tagFor}
+                action={itemAction(todo, item)}
+                onToss={(message) => onToss([item.id], message)}
+                onUsed={(message) => onUsed([item.id], message)}
                 onAdd={
                   addsToList
                     ? () => void shopping.add(todo.key, [item.id])
@@ -454,11 +477,17 @@ function TodoRow({
 function TodoItemRow({
   item,
   tagFor,
+  action,
+  onToss,
+  onUsed,
   onAdd,
   addDisabled,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
+  action: ReturnType<typeof itemAction>;
+  onToss: (message: string) => void;
+  onUsed: (message: string) => void;
   /** Set where the item's action is adding it to the Shopping List. */
   onAdd?: () => void;
   addDisabled: boolean;
@@ -517,6 +546,28 @@ function TodoItemRow({
       </Box>
       {item.expiryDate !== null ? (
         <ExpiryTag tag={tagFor(item.expiryDate)} />
+      ) : null}
+      {action === 'toss' ? (
+        <IconButton
+          label={t('health.item.toss', { name: item.name })}
+          tone="plain"
+          size={34}
+          onClick={() => onToss(t('health.toast.tossed', { name: item.name }))}
+        >
+          <DeleteIcon size={16} />
+        </IconButton>
+      ) : null}
+      {action === 'used' ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
+          aria-label={t('health.item.usedName', { name: item.name })}
+          sx={{ flexShrink: 0, minHeight: 30, height: 30, fontSize: 12.5 }}
+          onClick={() => onUsed(t('health.toast.used', { name: item.name }))}
+        >
+          {t('health.item.used')}
+        </Button>
       ) : null}
       {onAdd ? (
         <IconButton

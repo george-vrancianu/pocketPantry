@@ -141,14 +141,21 @@
       "age": "{{count}} d old",
       "inLocation": "{{duration}} in the {{location}}"
     },
-    "item": {
-      "add": "Add {{name}}"
-    },
+    "close": "Close",
     "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Removed {{count}} expired",
+      "expired_other": "Removed {{count}} expired",
+      "tossed": "Tossed {{name}}",
+      "used": "Used {{name}}",
       "added_one": "{{count}} added to the Shopping List",
-      "added_other": "{{count}} added to the Shopping List",
-      "withScore": "{{message}} · score {{score}}"
+      "added_other": "{{count}} added to the Shopping List"
     },
-    "close": "Close"
+    "item": {
+      "toss": "Toss {{name}}",
+      "used": "Used",
+      "usedName": "Used {{name}}",
+      "add": "Add {{name}}"
+    }
   }
 }
