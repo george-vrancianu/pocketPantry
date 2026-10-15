@@ -35,18 +35,36 @@ export type CatalogScope = {
 export const FAMILY_TIER = 0;
 export const SHARED_TIER = 1;
 
-/** The tier of each row of a scoped `ingredients` source, as an SQL expression. */
-export function ingredientTier(
-  scoped: ReturnType<CatalogScope['ingredients']>,
-) {
+/**
+ * The tier of each row of a scoped `ingredients` or `translations` source, as
+ * an SQL expression. A Family Synonym is the Family's own, like a Family Ingredient.
+ */
+export function ownerTier(scoped: {
+  ownerFamilyId: Parameters<typeof isNotNull>[0];
+}) {
   return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER}::int ELSE ${FAMILY_TIER}::int END`;
 }
 
-/** The tier of each row of a scoped `translations` source: a Family Synonym is the Family's own. */
-export function translationTier(
-  scoped: ReturnType<CatalogScope['translations']>,
-) {
-  return sql<number>`CASE WHEN ${scoped.ownerFamilyId} IS NULL THEN ${SHARED_TIER}::int ELSE ${FAMILY_TIER}::int END`;
+/**
+ * Every name an Ingredient answers to (canonical name, display names in any
+ * locale, Synonyms), as a parenthesised subquery of `(id, key, tier)` rows over
+ * the reader's scope. Use it as `FROM ${nameClaims(scope, db)} c`. The one
+ * place the exact-name tiers of ADR 0011 are defined.
+ */
+export function nameClaims(scope: CatalogScope, executor: Executor) {
+  const scopedIngredients = scope.ingredients(executor);
+  const translations = scope.translations(executor);
+  return sql`(
+    SELECT ${scopedIngredients.id} AS id, ${scopedIngredients.normalizedName} AS key,
+      ${ownerTier(scopedIngredients)} AS tier
+    FROM ${scopedIngredients}
+    UNION ALL
+    SELECT ${translations.entityId}, ${translations.normalizedValue},
+      ${ownerTier(translations)}
+    FROM ${translations}
+    JOIN ${scopedIngredients} ON ${scopedIngredients.id} = ${translations.entityId}
+    WHERE ${translations.entityType} = 'ingredient'
+  )`;
 }
 
 /** True for translations every Family sees (names and shared Synonyms), for writes that must leave Family Synonyms alone. */

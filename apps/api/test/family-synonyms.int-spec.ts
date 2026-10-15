@@ -689,6 +689,44 @@ describe('Family Synonyms (integration)', () => {
     });
   });
 
+  describe('search ranking on a tied name', () => {
+    // The shared row has the smallest possible id, so only the tier can put the Family's row first.
+    const FIRST_ID = '00000000-0000-4000-8000-000000000001';
+    const SMALL_ID = '00000000-0000-4000-8000-000000000002';
+
+    it("lists the Family Synonym's target before a shared Ingredient of the same name, for the owning Family only", async () => {
+      const name = unique('Aa Fsyn Search Syn');
+      const sharedId = await sharedIngredient(name, SMALL_ID);
+      try {
+        await linked(a, name, parmesan);
+
+        expect((await search(a, name)).map((r) => r.id)).toEqual([
+          parmesan,
+          sharedId,
+        ]);
+        expect((await search(b, name)).map((r) => r.id)).toEqual([sharedId]);
+      } finally {
+        await database.delete(ingredients).where(eq(ingredients.id, sharedId));
+      }
+    });
+
+    it('lists a Family Ingredient before a shared Ingredient of the same name added later', async () => {
+      const name = unique('Aa Fsyn Search Fi');
+      const mine = await madeIngredient(a, name);
+      await database.delete(ingredients).where(eq(ingredients.id, FIRST_ID));
+      await sharedIngredient(name, FIRST_ID);
+      try {
+        expect((await search(a, name)).map((r) => r.id)).toEqual([
+          mine.id,
+          FIRST_ID,
+        ]);
+        expect((await search(b, name)).map((r) => r.id)).toEqual([FIRST_ID]);
+      } finally {
+        await database.delete(ingredients).where(eq(ingredients.id, FIRST_ID));
+      }
+    });
+  });
+
   describe('another Family', () => {
     it('is unaffected: it cannot see the Synonym, and may create its own Family Ingredient of that name', async () => {
       const name = unique('Fsyn Unaffected');

@@ -11,12 +11,7 @@ import {
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import type { ExpiryOverride } from './catalog-defaults';
-import {
-  catalogScope,
-  FAMILY_TIER,
-  ingredientTier,
-  translationTier,
-} from './catalog-scope';
+import { catalogScope, FAMILY_TIER, nameClaims } from './catalog-scope';
 import { CatalogSearchService } from './catalog-search.service';
 import type {
   CatalogLocale,
@@ -79,21 +74,9 @@ export class FamilySynonymsService {
           entity: 'ingredient',
         });
       }
-      const ingredients = scope.ingredients(tx);
-      const translations = scope.translations(tx);
       const hits = await tx.execute<{ id: string; tier: number }>(sql`
         SELECT c.id, c.tier
-        FROM (
-          SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key,
-            ${ingredientTier(ingredients)} AS tier
-          FROM ${ingredients}
-          UNION ALL
-          SELECT ${translations.entityId}, ${translations.normalizedValue},
-            ${translationTier(translations)}
-          FROM ${translations}
-          JOIN ${ingredients} ON ${ingredients.id} = ${translations.entityId}
-          WHERE ${translations.entityType} = 'ingredient'
-        ) c
+        FROM ${nameClaims(scope, tx)} c
         WHERE c.key = ${key}
         ORDER BY c.id
       `);

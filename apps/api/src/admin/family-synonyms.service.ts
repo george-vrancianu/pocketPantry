@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
+import type { Executor } from '../database/database.types';
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedTranslations,
+  nameClaims,
   SHARED_ONLY,
 } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
@@ -62,7 +64,7 @@ export class FamilySynonymsAdminService {
         and(
           eq(rows.entityType, 'ingredient'),
           eq(rows.kind, 'synonym'),
-          this.isNewName(rows, ingredients),
+          this.isNewName(this.database, rows, ingredients),
         ),
       )
       .groupBy(rows.normalizedValue, rows.entityId)
@@ -95,12 +97,11 @@ export class FamilySynonymsAdminService {
    * merge leftovers are not candidates).
    */
   private isNewName(
+    executor: Executor,
     rows: ReturnType<typeof familyOwnedTranslations>,
     ingredients: ReturnType<ReturnType<typeof catalogScope>['ingredients']>,
   ) {
-    const sharedTranslations = catalogScope(SHARED_ONLY).translations(
-      this.database,
-    );
+    const sharedTranslations = catalogScope(SHARED_ONLY).translations(executor);
     return sql`${rows.normalizedValue} <> ${ingredients.normalizedName}
       and not exists (
         select 1 from ${sharedTranslations}
@@ -141,24 +142,15 @@ export class FamilySynonymsAdminService {
             eq(rows.entityId, body.ingredientId),
             eq(rows.kind, 'synonym'),
             eq(rows.normalizedValue, key),
-            this.isNewName(rows, sharedIngredients),
+            this.isNewName(tx, rows, sharedIngredients),
           ),
         )
         .orderBy(rows.createdAt, rows.id);
       if (found.length === 0) throw notFound();
 
       // Another Ingredient's shared name (any locale) or shared Synonym.
-      const shared = catalogScope(SHARED_ONLY);
-      const sharedTranslations = shared.translations(tx);
       const hits = await tx.execute<{ id: string }>(sql`
-        SELECT c.id FROM (
-          SELECT ${sharedIngredients.id} AS id, ${sharedIngredients.normalizedName} AS key
-          FROM ${sharedIngredients}
-          UNION ALL
-          SELECT ${sharedTranslations.entityId}, ${sharedTranslations.normalizedValue}
-          FROM ${sharedTranslations}
-          WHERE ${sharedTranslations.entityType} = 'ingredient'
-        ) c
+        SELECT c.id FROM ${nameClaims(catalogScope(SHARED_ONLY), tx)} c
         WHERE c.key = ${key} AND c.id <> ${body.ingredientId}::uuid
         ORDER BY c.id LIMIT 1`);
       if (hits.rows[0]) {

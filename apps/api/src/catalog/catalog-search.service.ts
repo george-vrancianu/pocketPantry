@@ -4,11 +4,7 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { seedId } from './seed/seed-ids';
 import { aisles, leafCategories, parentCategories } from '../database/schema';
-import {
-  ingredientTier,
-  translationTier,
-  type CatalogScope,
-} from './catalog-scope';
+import { nameClaims, type CatalogScope } from './catalog-scope';
 import {
   AISLE_LISTING_LIMIT,
   type CatalogAisle,
@@ -63,7 +59,6 @@ export class CatalogSearchService {
         : [];
     }
     const ingredients = scope.ingredients(this.database);
-    const catalogTranslations = scope.translations(this.database);
     const placed = within.aisleId || within.parentCategoryId;
     const placement = placed
       ? sql`JOIN ${leafCategories} ON ${leafCategories.id} = ${ingredients.leafCategoryId}
@@ -83,12 +78,7 @@ export class CatalogSearchService {
     const wordPrefix = `% ${key}%`;
     const ranked = await this.database.execute<{ id: string }>(sql`
       WITH candidates AS (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key
-        FROM ${ingredients}
-        UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue}
-        FROM ${catalogTranslations}
-        WHERE ${catalogTranslations.entityType} = 'ingredient'
+        SELECT id, key, tier FROM ${nameClaims(scope, this.database)} n
       )
       SELECT c.id
       FROM candidates c
@@ -97,6 +87,7 @@ export class CatalogSearchService {
       WHERE (c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix})${sql.join(inAisle)}
       GROUP BY c.id, ${ingredients.normalizedName}
       ORDER BY MIN(CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END),
+               MIN(c.tier),
                ${ingredients.normalizedName},
                c.id
       LIMIT ${limit}
@@ -205,8 +196,6 @@ export class CatalogSearchService {
     );
     const keys = [...new Set(keyOf.values())];
     if (keys.length === 0) return new Map();
-    const ingredients = scope.ingredients(this.database);
-    const catalogTranslations = scope.translations(this.database);
 
     const keyList = sql.join(
       keys.map((key) => sql`${key}`),
@@ -218,17 +207,7 @@ export class CatalogSearchService {
       tier: number;
     }>(sql`
       SELECT DISTINCT c.id, c.key, c.tier
-      FROM (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key,
-          ${ingredientTier(ingredients)} AS tier
-        FROM ${ingredients}
-        UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
-          ${translationTier(catalogTranslations)}
-        FROM ${catalogTranslations}
-        JOIN ${ingredients} ON ${ingredients.id} = ${catalogTranslations.entityId}
-        WHERE ${catalogTranslations.entityType} = 'ingredient'
-      ) c
+      FROM ${nameClaims(scope, this.database)} c
       WHERE c.key = ANY(ARRAY[${keyList}]::text[])
     `);
     // Per name, only the best tier that claims it counts; one Ingredient there
@@ -370,23 +349,11 @@ export class CatalogSearchService {
     key: string,
     executor: Executor = this.database,
   ): Promise<string | null> {
-    const ingredients = scope.ingredients(executor);
-    const catalogTranslations = scope.translations(executor);
     const hits = await executor.execute<{ id: string }>(sql`
       SELECT c.id
-      FROM (
-        SELECT ${ingredients.id} AS id, ${ingredients.normalizedName} AS key,
-          ${ingredientTier(ingredients)} AS tier
-        FROM ${ingredients}
-        UNION ALL
-        SELECT ${catalogTranslations.entityId}, ${catalogTranslations.normalizedValue},
-          ${translationTier(catalogTranslations)}
-        FROM ${catalogTranslations}
-        WHERE ${catalogTranslations.entityType} = 'ingredient'
-      ) c
-      JOIN ${ingredients} ON ${ingredients.id} = c.id
+      FROM ${nameClaims(scope, executor)} c
       WHERE c.key = ${key}
-      ORDER BY c.tier, (${ingredients.ownerFamilyId} IS NOT NULL), c.id
+      ORDER BY c.tier, c.id
       LIMIT 1
     `);
     return hits.rows[0]?.id ?? null;
