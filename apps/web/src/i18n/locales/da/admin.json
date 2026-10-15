@@ -323,5 +323,21 @@
     "archive": "Arkivér",
     "unarchive": "Fjern fra arkiv",
     "archivedNote": "Dette spisetidspunkt er arkiveret. Det skjules i vælgeren og i visningen og bliver på de opskrifter, der bruger det."
+  },
+  "familyIngredients": {
+    "kindLabel": "Vis",
+    "kindUnmatched": "Umatchede navne",
+    "kindFamily": "Familieingredienser",
+    "empty": "Ingen familieingredienser at gennemgå.",
+    "families_one": "{{count}} familie",
+    "families_other": "{{count}} familier",
+    "promote": "Gør fælles",
+    "promoteName": "Gør {{name}} fælles",
+    "promoting": "Gør fælles…",
+    "pickCopy": "Kopi der gøres fælles",
+    "copy": "{{name}}, {{leaf}}, {{locale}}",
+    "promoteHint": "De andre familiers kopier flettes ind i den.",
+    "promoted_one": "{{name}} er gjort fælles. {{count}} anden kopi er flettet ind.",
+    "promoted_other": "{{name}} er gjort fælles. {{count}} andre kopier er flettet ind."
   }
 }
