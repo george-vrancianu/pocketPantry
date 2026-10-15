@@ -145,16 +145,24 @@ export function CameraOverlay({
     try {
       const frame = await camera.capture();
       if (!frame) return;
-      // Started before the photo is prepared and never awaited here: it must not delay the read.
-      const barcode = readBarcode(frame).catch(() => null);
+      // The frame's barcode settles later, never delaying the read: the ZXing decode is main-thread
+      // work, so it only starts once the result is handed over and the read is under way.
+      let settle: (code: string | null) => void = () => {};
+      const barcode = new Promise<string | null>(
+        (resolve) => (settle = resolve),
+      );
       setPreparing(true);
       const feed = camera.videoRef.current;
       const image = await IMAGE_PREPARATION[mode](frame, 'camera', {
         width: feed?.clientWidth || window.innerWidth,
         height: feed?.clientHeight || window.innerHeight,
       });
-      if (!closed.current)
+      if (!closed.current) {
         onResult({ kind: 'product', image, scanLanguage, barcode });
+        setTimeout(() => {
+          readBarcode(frame).then(settle, () => settle(null));
+        }, 0);
+      }
     } catch {
       setFailed(true);
     } finally {

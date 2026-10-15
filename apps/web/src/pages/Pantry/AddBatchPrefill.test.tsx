@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -600,8 +600,26 @@ describe('Learn barcodes from Product photos', () => {
     release();
     await screen.findByTestId('prefilled-ingredient');
     await shoot(user);
-    late(CODE);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await act(async () => {
+      late(CODE);
+    });
+
+    expect(await save(user, calls)).not.toHaveProperty('barcode');
+  });
+
+  it('drops an earlier photo barcode when the next photo has none', async () => {
+    const user = userEvent.setup();
+    camera.frames = [() => Promise.resolve(CODE), () => Promise.resolve(null)];
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await shoot(user);
+    release();
+    await screen.findByTestId('prefilled-ingredient');
+    await shoot(user);
+    await waitFor(() => expect(camera.shots).toBe(2));
 
     expect(await save(user, calls)).not.toHaveProperty('barcode');
   });

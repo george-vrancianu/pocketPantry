@@ -52,9 +52,9 @@ function loadDetector(): Promise<Detector> {
 
 /** The first product barcode in a video frame or a captured image (8, 12 or 13 digits), or null. */
 export async function readBarcode(
-  video: HTMLVideoElement | Blob,
+  source: HTMLVideoElement | Blob,
 ): Promise<string | null> {
-  const found = await (await loadDetector()).detect(video);
+  const found = await (await loadDetector()).detect(source);
   return (
     found.find((code) => /^(?:\d{8}|\d{12}|\d{13})$/.test(code.rawValue))
       ?.rawValue ?? null
