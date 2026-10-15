@@ -1,11 +1,13 @@
 import {
   BangIcon,
   Box,
+  Button,
   CalendarIcon,
   CheckIcon,
   displayType,
   focusRing,
   radius,
+  PlusIcon,
   ShoppingIcon,
   Tag,
   tokens,
@@ -34,6 +36,7 @@ import {
   type WindowDay,
 } from '../../../lib/mealPlan';
 import { fromIso, localIso, type IsoDate } from '../../../lib/pantry';
+import { useAddMissing } from '../../../lib/useAddMissing';
 import { useMealPlanLegend } from '../../../lib/useMealPlanLegend';
 import { useToday } from '../../../lib/useToday';
 import { WidgetCard } from './WidgetCard';
@@ -41,6 +44,9 @@ import type { WidgetProps } from './types';
 
 /** The card's side padding, px; the card is this root's width plus both sides. */
 const CARD_PADDING_X = 14;
+
+/** How many missing Ingredients the footer names before "+n". */
+const FOOTER_NAMES = 3;
 
 /** Titles go under the bars when the columns are wide enough for them. */
 const MAX_DAYS_WITH_TITLES = 3;
@@ -137,6 +143,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const todayIso = localIso(useToday());
   const mealWindow = useMealWindow(language, todayIso);
   const legend = useMealPlanLegend();
+  const addMissing = useAddMissing(language, todayIso);
   // Keyed by date, not column, so a refetch that shifts the window keeps the same day open.
   const [openDate, setOpenDate] = useState<IsoDate | null>(null);
   const columnRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -381,6 +388,59 @@ export function MealPlanWidget({ columns }: WidgetProps) {
                 );
               })}
             </Box>
+            {view && view.missing.length > 0 ? (
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  pt: '10px',
+                  borderTop: `1px solid ${tokens.color.divider}`,
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontSize: 12.5,
+                    color: tokens.color.muted,
+                  }}
+                >
+                  {t('mealPlan.missingForPlan')}{' '}
+                  <Box
+                    component="b"
+                    sx={{ fontWeight: 700, color: tokens.color.ink }}
+                  >
+                    {view.missing
+                      .slice(0, FOOTER_NAMES)
+                      .map((item) => item.name)
+                      .join(', ')}
+                  </Box>
+                  {view.missing.length > FOOTER_NAMES
+                    ? ` ${t('mealPlan.moreMissing', {
+                        count: view.missing.length - FOOTER_NAMES,
+                      })}`
+                    : null}
+                </Box>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  shape="pill"
+                  startIcon={<PlusIcon size={14} strokeWidth={2.6} />}
+                  disabled={addMissing.isPending}
+                  onClick={() => addMissing.add({ scope: 'window' })}
+                  sx={{
+                    flexShrink: 0,
+                    minHeight: 38,
+                    height: 38,
+                    fontSize: 12.5,
+                  }}
+                >
+                  {t('mealPlan.addN', { count: view.missing.length })}
+                </Button>
+              </Box>
+            ) : null}
             {legend.visible ? (
               <Box
                 aria-hidden="true"
@@ -452,6 +512,8 @@ export function MealPlanWidget({ columns }: WidgetProps) {
           onStep={(index) => setOpenDate(days[index].date)}
           onClose={close}
           isInsideTrigger={isInsideColumn}
+          onAdd={addMissing.add}
+          adding={addMissing.isPending}
         />
       ) : null}
     </WidgetCard>

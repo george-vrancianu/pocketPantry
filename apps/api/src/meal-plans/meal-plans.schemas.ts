@@ -80,6 +80,31 @@ export type SetSlotBody = z.infer<typeof setSlotBody>;
 export const fillBody = z.object({ onlyWhatIHave: z.boolean() });
 export type FillBody = z.infer<typeof fillBody>;
 
+/**
+ * What Add missing covers: the Widget's window, one plan, one date, or one
+ * Ingredient (a Catalog `ingredientId`, or the `name` of an Unmatched one).
+ * The client never sends amounts; the server works the forecast out again.
+ */
+export const addMissingBody = z.discriminatedUnion('scope', [
+  z.object({ scope: z.literal('window') }),
+  z.object({ scope: z.literal('plan'), planId: z.uuid() }),
+  z.object({ scope: z.literal('date'), date: z.iso.date() }),
+  z
+    .object({
+      scope: z.literal('ingredient'),
+      ingredientId: z.uuid().nullable().optional(),
+      name: z.string().trim().min(1).max(100).optional(),
+    })
+    .refine((body) => !body.ingredientId !== !body.name, {
+      message: 'Provide either ingredientId or name',
+      path: ['ingredientId'],
+    }),
+]);
+export type AddMissingBody = z.infer<typeof addMissingBody>;
+
+/** `createdIds` are the Shopping Items newly created (Undo deletes them); `count` is how many Ingredients were added, merged ones included. */
+export type AddedMissingView = { createdIds: string[]; count: number };
+
 export type MealPlanSummary = {
   id: string;
   name: string | null;

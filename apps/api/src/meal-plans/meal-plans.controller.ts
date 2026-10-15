@@ -17,6 +17,7 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import {
+  addMissingBody,
   createMealPlanBody,
   fillBody,
   mealPlanIdParam,
@@ -24,6 +25,8 @@ import {
   setSlotBody,
   slotParams,
   updateMealPlanBody,
+  type AddedMissingView,
+  type AddMissingBody,
   type CreateMealPlanBody,
   type FillBody,
   type MealPlanQuery,
@@ -75,6 +78,19 @@ export class MealPlansController {
     @Query(query) { locale, today }: MealPlanQuery,
   ): Promise<MealWindowView> {
     return this.plans.window(member.id, locale, today);
+  }
+
+  @Post('add-missing')
+  @ApiOperation({
+    summary:
+      'Add what the Plan Forecast says is missing to the Shopping List: for the window, one plan, one date or one Ingredient',
+  })
+  addMissing(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(query) { locale, today }: MealPlanQuery,
+    @Body(new ZodValidationPipe(addMissingBody)) body: AddMissingBody,
+  ): Promise<AddedMissingView> {
+    return this.plans.addMissing(member.id, body, locale, today);
   }
 
   @Get(':id')

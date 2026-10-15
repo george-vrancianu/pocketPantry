@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { IsoDate } from './pantry';
+import { normalizeName } from './normalizeName';
 import { mealPlanQueryKey } from './queryKeys';
 
 export type Mealtime = 'breakfast' | 'lunch' | 'dinner';
@@ -89,8 +90,127 @@ export type MealWindow = {
   plan: MealPlanSummary | null;
   /** When the first plan starting beyond the window begins. */
   nextPlanStart: IsoDate | null;
-  missing: unknown[];
+  /** What Add missing for the window would put on the Shopping List: one entry per Ingredient not on it yet. */
+  missing: MissingItem[];
 };
+
+/** Mirror of the API's `MissingItemView`. */
+export type MissingItem = {
+  ingredientId: string | null;
+  name: string;
+  quantity: number | null;
+  unit: BaseUnit | null;
+  recipeIds: string[];
+};
+
+/** What Add missing covers; the server works out the amounts itself, so none is ever sent. */
+export type AddMissingScope =
+  | { scope: 'window' }
+  | { scope: 'plan'; planId: string }
+  | { scope: 'date'; date: IsoDate }
+  | { scope: 'ingredient'; ingredientId: string }
+  | { scope: 'ingredient'; name: string };
+
+/** Mirror of the API's `AddedMissingView`: the Shopping Items created (Undo deletes them) and how many Ingredients were added. */
+export type AddedMissing = { createdIds: string[]; count: number };
+
+/** Identifies an Ingredient across issues: its id, or the normalised name of an Unmatched one (as the server's forecast does). */
+export const ingredientKey = (
+  issue: Pick<PlanIssue, 'ingredientId' | 'name'>,
+): string => issue.ingredientId ?? `name:${normalizeName(issue.name)}`;
+
+/** Issues Add missing would put on the list: not uncertain, not on it already. */
+const isAddable = (issue: PlanIssue) =>
+  issue.kind !== 'uncertain' && !issue.onList;
+
+/** The Ingredients of a day that Add missing for that day would add. */
+export function dayMissing(day: WindowDay): PlanIssue[] {
+  const byKey = new Map<string, PlanIssue>();
+  for (const slot of day.slots) {
+    if (slot.status === 'unavailable') continue;
+    for (const issue of slot.issues) {
+      if (isAddable(issue) && !byKey.has(ingredientKey(issue))) {
+        byKey.set(ingredientKey(issue), issue);
+      }
+    }
+  }
+  return [...byKey.values()];
+}
+
+const WORST_FIRST: SlotStatus[] = ['short', 'onList', 'covered'];
+
+/**
+ * The window as it will read once the scope is on the Shopping List: those Ingredients' issues
+ * turn "On list", so short slots become on list, and the missing list loses them. The same
+ * rules as the server's forecast; the refetch that follows has the final say.
+ */
+export function flipOnList(view: MealWindow, add: AddMissingScope): MealWindow {
+  const flipped = new Set<string>();
+  const matches = (day: WindowDay, issue: PlanIssue): boolean => {
+    if (!isAddable(issue)) return false;
+    if (add.scope === 'window') return true;
+    if (add.scope === 'date') return day.date === add.date;
+    // The Widget never sends a plan scope; it covers the same days as the window it shows.
+    if (add.scope === 'plan') return day.planId === add.planId;
+    return 'ingredientId' in add
+      ? issue.ingredientId === add.ingredientId
+      : issue.ingredientId === null &&
+          ingredientKey(issue) ===
+            ingredientKey({ ingredientId: null, name: add.name });
+  };
+  for (const day of view.days) {
+    for (const slot of day.slots) {
+      if (slot.status === 'unavailable') continue;
+      for (const issue of slot.issues) {
+        if (matches(day, issue)) flipped.add(ingredientKey(issue));
+      }
+    }
+  }
+  const days = view.days.map((day): WindowDay => {
+    const slots = day.slots.map((slot): WindowSlot => {
+      if (slot.status === 'unavailable') return slot;
+      const issues = slot.issues.map((issue) =>
+        isAddable(issue) && flipped.has(ingredientKey(issue))
+          ? { ...issue, onList: true }
+          : issue,
+      );
+      const short = issues.some(isAddable);
+      return {
+        ...slot,
+        issues,
+        status: short
+          ? 'short'
+          : issues.some((issue) => issue.kind !== 'uncertain' && issue.onList)
+            ? 'onList'
+            : slot.status,
+      };
+    });
+    const status =
+      day.slots.length === 0
+        ? day.status
+        : (WORST_FIRST.find((s) => slots.some((sl) => sl.status === s)) ??
+          'unavailable');
+    return { ...day, slots, status };
+  });
+  const counted = days
+    .flatMap((day) => day.slots)
+    .filter((slot) => slot.status !== 'unavailable');
+  const short = counted.filter((slot) => slot.status === 'short').length;
+  const tag: PlanTag =
+    counted.length === 0
+      ? { kind: 'none' }
+      : short > 0
+        ? { kind: 'short', count: short }
+        : counted.some((slot) => slot.status === 'onList')
+          ? { kind: 'coveredOnceYouShop' }
+          : { kind: 'allCovered' };
+  return {
+    ...view,
+    days,
+    tag,
+    missing: view.missing.filter((item) => !flipped.has(ingredientKey(item))),
+  };
+}
 
 export const mealWindowQueryKey = [...mealPlanQueryKey, 'window'] as const;
 
