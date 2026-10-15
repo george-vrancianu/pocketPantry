@@ -8,6 +8,7 @@ import {
   CookIcon,
   DeleteIcon,
   HourglassIcon,
+  IconButton,
   StarIcon,
   tokens,
   usePrefersReducedMotion,
@@ -77,7 +78,7 @@ export function HealthTodos({ state, today }: Props) {
   const { t, i18n } = useTranslation('dashboard');
   const { tagFor } = useExpiryTags(today);
   const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
-  const { todos, batches, staples, staleThresholdDays } = state;
+  const { todos, batches, staples, staleThresholdDays, removeBatches } = state;
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
     todoItems(todo, {
@@ -169,6 +170,7 @@ export function HealthTodos({ state, today }: Props) {
                     setOpenKey(openKey === todo.key ? null : todo.key)
                   }
                   tagFor={tagFor}
+                  onRemove={removeBatches}
                 />
               ))}
             </Box>
@@ -227,9 +229,27 @@ type RowProps = {
   open: boolean;
   onToggle: () => void;
   tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
+  /** Remove Batches with an Undo toast. */
+  onRemove: PantryHealthState['removeBatches'];
 };
 
-function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
+/** What a Member can do to one item of a Health To-do on its own row; the rest arrive with their own tickets. */
+function itemAction(todo: Pick<HealthTodo, 'key'>, item: TodoItem) {
+  if (todo.key === 'expired' || (todo.key === 'undated' && item.forgotten))
+    return 'toss';
+  if (todo.key === 'expiringSoon') return 'used';
+  return null;
+}
+
+function TodoRow({
+  todo,
+  title,
+  items,
+  open,
+  onToggle,
+  tagFor,
+  onRemove,
+}: RowProps) {
   const { t } = useTranslation('dashboard');
   const reduceMotion = usePrefersReducedMotion();
   const itemsId = useId();
@@ -247,8 +267,13 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
   const bulkProps =
     todo.key === 'expiringSoon'
       ? { href: '/recipes' }
-      : // Only Recipes does anything yet; the other fixes arrive with their own tickets.
-        { disabled: true };
+      : todo.key === 'expired'
+        ? {
+            onClick: () =>
+              onRemove(todo.itemIds, t('health.toast.expired', { count })),
+          }
+        : // The other fixes arrive with their own tickets.
+          { disabled: true };
 
   return (
     <Box
@@ -412,7 +437,13 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
             }}
           >
             {items.map((item) => (
-              <TodoItemRow key={item.id} item={item} tagFor={tagFor} />
+              <TodoItemRow
+                key={item.id}
+                item={item}
+                tagFor={tagFor}
+                action={itemAction(todo, item)}
+                onRemove={(message) => onRemove([item.id], message)}
+              />
             ))}
           </Box>
         </Box>
@@ -424,10 +455,15 @@ function TodoRow({ todo, title, items, open, onToggle, tagFor }: RowProps) {
 function TodoItemRow({
   item,
   tagFor,
+  action,
+  onRemove,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
+  action: ReturnType<typeof itemAction>;
+  onRemove: (message: string) => void;
 }) {
+  const { t } = useTranslation('dashboard');
   return (
     <Box
       component="li"
@@ -481,6 +517,30 @@ function TodoItemRow({
       </Box>
       {item.expiryDate !== null ? (
         <ExpiryTag tag={tagFor(item.expiryDate)} />
+      ) : null}
+      {action === 'toss' ? (
+        <IconButton
+          label={t('health.item.toss', { name: item.name })}
+          tone="plain"
+          size={34}
+          onClick={() =>
+            onRemove(t('health.toast.tossed', { name: item.name }))
+          }
+        >
+          <DeleteIcon size={16} />
+        </IconButton>
+      ) : null}
+      {action === 'used' ? (
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
+          aria-label={t('health.item.usedName', { name: item.name })}
+          sx={{ flexShrink: 0, minHeight: 30, height: 30, fontSize: 12.5 }}
+          onClick={() => onRemove(t('health.toast.used', { name: item.name }))}
+        >
+          {t('health.item.used')}
+        </Button>
       ) : null}
     </Box>
   );

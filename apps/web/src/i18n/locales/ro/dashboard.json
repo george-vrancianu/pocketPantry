@@ -156,6 +156,19 @@
       "age": "vechi de {{count}} z",
       "inLocation": "{{duration}} în {{location}}"
     },
-    "close": "Închide"
+    "close": "Închide",
+    "toast": {
+      "withScore": "{{message}} · scor {{score}}",
+      "expired_one": "Am eliminat {{count}} expirat",
+      "expired_few": "Am eliminat {{count}} expirate",
+      "expired_other": "Am eliminat {{count}} de expirate",
+      "tossed": "Ai aruncat {{name}}",
+      "used": "Ai folosit {{name}}"
+    },
+    "item": {
+      "toss": "Aruncă {{name}}",
+      "used": "Folosit",
+      "usedName": "Ai folosit {{name}}"
+    }
   }
 }

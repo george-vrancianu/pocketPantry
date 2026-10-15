@@ -141,6 +141,18 @@
       "age": "{{count}} d old",
       "inLocation": "{{duration}} in the {{location}}"
     },
-    "close": "Close"
+    "close": "Close",
+    "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Removed {{count}} expired",
+      "expired_other": "Removed {{count}} expired",
+      "tossed": "Tossed {{name}}",
+      "used": "Used {{name}}"
+    },
+    "item": {
+      "toss": "Toss {{name}}",
+      "used": "Used",
+      "usedName": "Used {{name}}"
+    }
   }
 }

@@ -139,6 +139,18 @@
       "age": "{{count}} d gammel",
       "inLocation": "{{duration}} i {{location}}"
     },
-    "close": "Luk"
+    "close": "Luk",
+    "toast": {
+      "withScore": "{{message}} · score {{score}}",
+      "expired_one": "Fjernede {{count}} udløbet vare",
+      "expired_other": "Fjernede {{count}} udløbne",
+      "tossed": "Smed {{name}} ud",
+      "used": "Brugte {{name}}"
+    },
+    "item": {
+      "toss": "Smid {{name}} ud",
+      "used": "Brugt",
+      "usedName": "Brugte {{name}}"
+    }
   }
 }

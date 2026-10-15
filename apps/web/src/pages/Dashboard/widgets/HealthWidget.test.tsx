@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -66,8 +66,10 @@ function stub(
   settings: () => Response | Promise<Response> = () =>
     Response.json({ staleThresholdDays: 3, expiryOverrides: [] }),
   dismissed: string[] = [],
+  extraRoutes: Parameters<typeof stubApi>[0] = {},
 ) {
   const { fetchMock, calls } = stubApi({
+    ...extraRoutes,
     'GET /api/settings/family': settings,
     'GET /api/pantry': () => Response.json(pantry),
     'GET /api/shopping-list/suggestions': () =>
@@ -650,7 +652,7 @@ describe('HealthWidget', () => {
       ).toHaveTextContent('3 to do · Toss 1 expired');
     });
 
-    it('gives each bulk button its full accessible name, and only Recipes works yet', async () => {
+    it('gives each bulk button its full accessible name, and Add and Date all wait for their tickets', async () => {
       const { sheet } = await open(
         [
           batch({ expiryDate: iso(-1) }),
@@ -664,7 +666,7 @@ describe('HealthWidget', () => {
 
       expect(
         within(sheet).getByRole('button', { name: 'Toss 2 expired' }),
-      ).toBeDisabled();
+      ).toBeEnabled();
       expect(
         within(sheet).getByRole('button', { name: 'Add 1 Staple' }),
       ).toBeDisabled();
@@ -793,6 +795,174 @@ describe('HealthWidget', () => {
         expanded: true,
       });
       expect(expired).toBeInTheDocument();
+    });
+  });
+
+  describe('Toss and Used', () => {
+    const iso = isoIn;
+    const longAgo = (days: number) => {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      return date.toISOString();
+    };
+    /** Twelve Batches: Yogurt and Milk expired, Ham and Cheese expiring soon, Rice undated and Forgotten, a missing Staple. */
+    function pantry() {
+      return {
+        batches: [
+          batch({ id: 'yogurt', name: 'Yogurt', expiryDate: iso(-1) }),
+          batch({ id: 'milk', name: 'Milk', expiryDate: iso(-3) }),
+          batch({ id: 'ham', name: 'Ham', expiryDate: iso(2) }),
+          batch({ id: 'cheese', name: 'Cheese', expiryDate: iso(1) }),
+          batch({
+            id: 'rice',
+            name: 'Rice',
+            expiryDate: null,
+            createdAt: longAgo(40),
+          }),
+          ...Array.from({ length: 7 }, () => batch()),
+        ],
+        runningLow: [] as string[],
+      };
+    }
+
+    /** The sheet open on the given Health To-do, with `DELETE`s applied to the stubbed Pantry. */
+    async function openTodo(name: RegExp) {
+      const data = pantry();
+      const calls = stub(data, [staple('eggs')], undefined, [], {
+        'POST /api/pantry/batches/bulk-delete': async () => {
+          return new Response(null, { status: 204 });
+        },
+      });
+      stubMotion(true);
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderWithProviders(<HealthWidget size="wide" columns={2} />);
+      await user.click(
+        await screen.findByRole('button', { name: /^Pantry health, / }),
+      );
+      const sheet = await screen.findByRole('dialog', {
+        name: 'Pantry health',
+      });
+      await user.click(disclosure(sheet, name));
+      return { user, sheet, calls, data };
+    }
+    const afterWindow = () => act(() => vi.advanceTimersByTimeAsync(5200));
+    const bulkDeletes = (calls: ReturnType<typeof stub>) =>
+      calls.filter(
+        (call) => call.key === 'POST /api/pantry/batches/bulk-delete',
+      );
+
+    afterEach(() => vi.useRealTimers());
+
+    it('tosses every expired Batch with the primary button: rows go, the toast gives the new score, one request follows the window', async () => {
+      const { user, sheet, calls } = await openTodo(/^Toss 2 expired/);
+
+      const toss = within(sheet).getByRole('button', {
+        name: 'Toss 2 expired',
+      });
+      await user.click(toss);
+
+      expect(
+        within(sheet).queryByRole('button', { name: /^Toss 2 expired/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        await screen.findByText('Removed 2 expired · score 63'),
+      ).toBeInTheDocument();
+      expect(bulkDeletes(calls)).toHaveLength(0);
+
+      await afterWindow();
+
+      expect(bulkDeletes(calls)).toEqual([
+        expect.objectContaining({ body: { ids: ['milk', 'yogurt'] } }),
+      ]);
+    });
+
+    it('brings the rows back on Undo and sends nothing', async () => {
+      const { user, sheet, calls } = await openTodo(/^Toss 2 expired/);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Toss 2 expired' }),
+      );
+      await user.click(await screen.findByRole('button', { name: 'Undo' }));
+      await afterWindow();
+
+      expect(
+        within(sheet).getByRole('button', { name: 'Toss 2 expired' }),
+      ).toBeInTheDocument();
+      expect(bulkDeletes(calls)).toHaveLength(0);
+      expect(calls.some((call) => call.key.startsWith('DELETE'))).toBe(false);
+    });
+
+    it('tosses a single expired Batch from its row with "Toss {name}"', async () => {
+      const { user, sheet, calls } = await openTodo(/^Toss 2 expired/);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Toss Milk' }),
+      );
+
+      expect(
+        await screen.findByText('Tossed Milk · score 60'),
+      ).toBeInTheDocument();
+      expect(within(sheet).queryByText('Milk')).not.toBeInTheDocument();
+      expect(
+        within(sheet).getByRole('button', { name: 'Toss Yogurt' }),
+      ).toBeInTheDocument();
+
+      await afterWindow();
+
+      expect(bulkDeletes(calls)).toEqual([
+        expect.objectContaining({ body: { ids: ['milk'] } }),
+      ]);
+    });
+
+    it('tosses a Forgotten Batch from the Date to-do', async () => {
+      const { user, sheet, calls } = await openTodo(/^Date 1 Batch/);
+
+      await user.click(
+        within(sheet).getByRole('button', { name: 'Toss Rice' }),
+      );
+
+      expect(
+        await screen.findByText('Tossed Rice · score 60'),
+      ).toBeInTheDocument();
+      await afterWindow();
+      expect(bulkDeletes(calls)).toEqual([
+        expect.objectContaining({ body: { ids: ['rice'] } }),
+      ]);
+    });
+
+    it('marks an Expiring Soon Batch as Used, and undoing it sends nothing', async () => {
+      const { user, sheet, calls } = await openTodo(/^Use 2 by /);
+
+      await user.click(within(sheet).getByRole('button', { name: 'Used Ham' }));
+
+      expect(
+        await screen.findByText('Used Ham · score 58'),
+      ).toBeInTheDocument();
+      expect(within(sheet).queryByText('Ham')).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Undo' }));
+      await afterWindow();
+
+      expect(within(sheet).getByText('Ham')).toBeInTheDocument();
+      expect(bulkDeletes(calls)).toHaveLength(0);
+
+      await user.click(within(sheet).getByRole('button', { name: 'Used Ham' }));
+      await afterWindow();
+      expect(bulkDeletes(calls)).toEqual([
+        expect.objectContaining({ body: { ids: ['ham'] } }),
+      ]);
+    });
+
+    it('does not offer Toss on Expiring Soon items or Used on Expired ones', async () => {
+      const { sheet } = await openTodo(/^Use 2 by /);
+
+      expect(
+        within(sheet).queryByRole('button', { name: /^Toss (Ham|Cheese)/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(sheet).queryByRole('button', { name: /^Used (Yogurt|Milk)/ }),
+      ).not.toBeInTheDocument();
     });
   });
 
