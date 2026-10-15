@@ -88,11 +88,14 @@ describe('Meal Plans (integration)', () => {
     return plan;
   }
 
-  async function catalogRecipeForPlans() {
+  async function catalogRecipe(archived = false) {
     const id = crypto.randomUUID();
-    await database
-      .insert(recipes)
-      .values({ id, title: `Plain dish ${stamp}-${++n}`, servings: 4 });
+    await database.insert(recipes).values({
+      id,
+      title: `Catalog dish ${stamp}-${++n}`,
+      servings: 4,
+      archivedAt: archived ? new Date() : null,
+    });
     return id;
   }
 
@@ -275,8 +278,8 @@ describe('Meal Plans (integration)', () => {
     const { api } = await member('nulls');
     const plan = await create(api, { name: null });
     expect(plan.name).toBeNull();
-    await api.patch(`${'/' + plan.id}${q}`, { days: 8 }).expect(400);
-    await api.patch(`${'/' + plan.id}${q}`, { servings: 0 }).expect(400);
+    await api.patch(`/${plan.id}${q}`, { days: 8 }).expect(400);
+    await api.patch(`/${plan.id}${q}`, { servings: 0 }).expect(400);
   });
 
   describe('moving and resizing', () => {
@@ -304,7 +307,7 @@ describe('Meal Plans (integration)', () => {
 
     it('refuses to shorten away a past day, but drops future slots', async () => {
       const { api } = await member('shorten');
-      const recipe = await catalogRecipeForPlans();
+      const recipe = await catalogRecipe();
       const plan = await create(api, { startDate: at(0), days: 4 });
       for (const day of [0, 2, 3]) {
         await api
@@ -362,17 +365,6 @@ describe('Meal Plans (integration)', () => {
       });
       expect([res.status, res.body]).toEqual([201, expect.anything()]);
       return res.body as { id: string; title: string };
-    }
-
-    async function catalogRecipe(archived = false) {
-      const id = crypto.randomUUID();
-      await database.insert(recipes).values({
-        id,
-        title: `Catalog dish ${stamp}-${++n}`,
-        servings: 4,
-        archivedAt: archived ? new Date() : null,
-      });
-      return id;
     }
 
     const read = async (api: Api, id: string, query = q) =>

@@ -141,27 +141,19 @@ export class MealPlansService {
         assertNoOverlap(others, startDate, days);
       }
       if (days < plan.days) {
+        const pastEnd = and(
+          eq(mealPlanSlots.mealPlanId, plan.id),
+          gte(mealPlanSlots.dayIndex, days),
+        );
         const dropped = await tx
           .select({ dayIndex: mealPlanSlots.dayIndex })
           .from(mealPlanSlots)
-          .where(
-            and(
-              eq(mealPlanSlots.mealPlanId, plan.id),
-              gte(mealPlanSlots.dayIndex, days),
-            ),
-          );
+          .where(pastEnd);
         // Past days are read-only, so their slots can't be dropped either.
         if (dropped.some((slot) => isPast(plan, slot.dayIndex, today))) {
           throw new ApiException(400, 'meal_plan.day_in_past');
         }
-        await tx
-          .delete(mealPlanSlots)
-          .where(
-            and(
-              eq(mealPlanSlots.mealPlanId, plan.id),
-              gte(mealPlanSlots.dayIndex, days),
-            ),
-          );
+        await tx.delete(mealPlanSlots).where(pastEnd);
       }
       await tx
         .update(mealPlans)
