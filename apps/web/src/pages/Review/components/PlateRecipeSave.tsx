@@ -8,18 +8,24 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AllergenIndicator } from '../../../components/AllergenIndicator';
+import { HiddenByAllergiesNote } from '../../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
   matchedIngredientIds,
   useSaveFromPlate,
   usePlateMatches,
 } from '../../../lib/plateRecipe';
-import { useRecipes } from '../../../lib/recipes';
+import { useRecipes, type CompactAllergyWarning } from '../../../lib/recipes';
 import type { ReviewLine } from '../../../lib/review';
 
 const STANDALONE = 'standalone';
 
-type Base = { id: string; title: string };
+type Base = {
+  id: string;
+  title: string;
+  allergyWarning?: CompactAllergyWarning | null;
+};
 
 type Props = {
   dishTitle: string;
@@ -35,11 +41,13 @@ function BaseOption({
   label,
   name,
   onSelect,
+  allergyWarning,
 }: {
   checked: boolean;
   label: string;
   name: string;
   onSelect: () => void;
+  allergyWarning?: CompactAllergyWarning | null;
 }) {
   return (
     <Box
@@ -54,6 +62,7 @@ function BaseOption({
         style={{ width: 20, height: 20 }}
       />
       {label}
+      <AllergenIndicator warning={allergyWarning} />
     </Box>
   );
 }
@@ -85,11 +94,14 @@ export function PlateRecipeSave({
     wasOpen.current = open;
   }, [open]);
   const save = useSaveFromPlate(i18n.language);
+  // "Show" in the hidden-by-Allergies note asks for the closest matches again, hidden ones too.
+  const [showHidden, setShowHidden] = useState(false);
   const matches = usePlateMatches(
     {
       locale: i18n.language,
       dishTitle,
       ingredientIds: ingredientIds ?? [],
+      ...(showHidden ? { showHidden: true as const } : {}),
     },
     open,
   );
@@ -97,14 +109,16 @@ export function PlateRecipeSave({
   const found = useRecipes(
     { search: searching ? search : '', cuisineId: '', methodId: '' },
     i18n.language,
-    { searchOnly: true },
+    // A title search is a deliberate look-up with no note to show, so it lists every Recipe
+    // (each still carries its Allergy indicator); only the suggested matches hide (ADR 0014 records this exception).
+    { searchOnly: true, showHidden: true },
   );
 
-  const closestBases = matches.data ?? [];
+  const closestBases = matches.data?.matches ?? [];
   const listed = new Set(closestBases.map((s) => s.id));
   const results = !searching
     ? []
-    : (found.data ?? []).filter(
+    : (found.data?.recipes ?? []).filter(
         (recipe) =>
           recipe.owner === 'catalog' &&
           recipe.parentId === null &&
@@ -184,6 +198,10 @@ export function PlateRecipeSave({
             {t('plateRecipe.loading')}
           </Typography>
         ) : null}
+        <HiddenByAllergiesNote
+          count={matches.data?.hiddenByAllergiesCount ?? 0}
+          onShow={() => setShowHidden(true)}
+        />
         {closestBases.map((match, index) => (
           <BaseOption
             key={match.id}
@@ -195,6 +213,7 @@ export function PlateRecipeSave({
                 : match.title
             }
             onSelect={() => setChosen(match.id)}
+            allergyWarning={match.allergyWarning}
           />
         ))}
         {extra ? (
@@ -203,6 +222,7 @@ export function PlateRecipeSave({
             checked={selected === extra.id}
             label={extra.title}
             onSelect={() => setChosen(extra.id)}
+            allergyWarning={extra.allergyWarning}
           />
         ) : null}
         {results.map((recipe) => (
@@ -212,6 +232,7 @@ export function PlateRecipeSave({
             checked={selected === recipe.id}
             label={recipe.title}
             onSelect={() => pick(recipe)}
+            allergyWarning={recipe.allergyWarning}
           />
         ))}
         <BaseOption

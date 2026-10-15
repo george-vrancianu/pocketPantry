@@ -15,7 +15,7 @@ import type {
   RecipeDetailLine,
 } from '../../../lib/recipes';
 import { GuidanceSection } from './GuidanceSection';
-import { IngredientList, lineAmount } from './IngredientList';
+import { IngredientList, lineAmount, type LineAllergy } from './IngredientList';
 import { OwnerBadge } from './OwnerBadge';
 import { RecipeMeta } from './RecipeMeta';
 import { AddMissing, PantryHeading } from './PantryStatus';
@@ -82,6 +82,18 @@ function IngredientsSection({
       ? { ...line, quantity: scaled.quantity, unit: scaled.unit }
       : line;
   });
+  const allergiesByLine = new Map<string, LineAllergy[]>();
+  for (const entry of recipe.allergyWarning?.entries ?? []) {
+    for (const { lineId, severity } of entry.lines) {
+      const marked = allergiesByLine.get(lineId) ?? [];
+      // Several people can share an Allergen; a line is marked once per Allergen.
+      if (marked.some((m) => m.allergen.id === entry.allergen.id)) continue;
+      allergiesByLine.set(lineId, [
+        ...marked,
+        { allergen: entry.allergen, severity },
+      ]);
+    }
+  }
   return (
     <Section title={t('sections.ingredients')}>
       <Stack spacing={1.5}>
@@ -96,6 +108,7 @@ function IngredientsSection({
         </Stack>
         <IngredientList
           lines={lines}
+          allergiesByLine={allergiesByLine}
           aria-label={t('sections.ingredients')}
           pantryByLine={byLine}
           selectedId={selectedId}

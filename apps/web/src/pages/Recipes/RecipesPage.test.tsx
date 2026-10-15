@@ -34,6 +34,7 @@ const item = (over: Partial<RecipeListItem>): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: 'easy',
   owner: 'catalog',
+  allergyWarning: null,
   ...over,
 });
 
@@ -57,6 +58,7 @@ const card = (
     servings: 2,
     prepMinutes: 10,
     cookMinutes: 15,
+    allergyWarning: null,
     ...over.recipe,
   },
 });
@@ -92,11 +94,25 @@ function setup(
   cards: CookTonightCard[] = [],
   /** Holds every filtered list response until it resolves. */
   gate?: Promise<void>,
+  /** How many Recipes "Hide Recipes with my Allergies" left out, unless the request shows them. */
+  hidden = 0,
+  /** How many Can Make groups were left out, when that differs from the list's count. */
+  hiddenCards = hidden,
 ) {
+  const hiddenFor = (url: URL, count = hidden) =>
+    url.searchParams.get('showHidden') === 'true' ? 0 : count;
   const { fetchMock, calls } = stubApi({
-    'GET /api/recipes': (url) => Response.json({ recipes: list(url) }),
+    'GET /api/recipes': (url) =>
+      Response.json({
+        recipes: list(url),
+        hiddenByAllergiesCount: hiddenFor(url),
+      }),
     'GET /api/recipes/filters': () => Response.json(filters),
-    'GET /api/recipes/cook-tonight': () => Response.json({ cards }),
+    'GET /api/recipes/cook-tonight': (url) =>
+      Response.json({
+        cards,
+        hiddenByAllergiesCount: hiddenFor(url, hiddenCards),
+      }),
   });
   vi.stubGlobal(
     'fetch',
@@ -659,6 +675,165 @@ describe('RecipesPage', () => {
       expect(row).not.toHaveTextContent('Can Make');
       expect(row).not.toHaveTextContent('Missing');
       expect(row).not.toHaveTextContent('expiring');
+    });
+  });
+
+  describe('allergen indicator', () => {
+    const peanuts = (
+      severity: 'strong' | 'soft',
+    ): NonNullable<RecipeListItem['allergyWarning']> => ({
+      severity,
+      allergens: [
+        {
+          id: 'a-pn',
+          name: 'Peanuts',
+          tier: 'yours',
+          severity,
+          owners: [{ kind: 'own' }],
+        },
+        {
+          id: 'a-mk',
+          name: 'Milk',
+          tier: 'members',
+          severity,
+          owners: [{ kind: 'member', name: 'Ana' }],
+        },
+      ],
+      uncheckedCount: 0,
+    });
+
+    it('marks a row strongly, naming the Allergens for a screen reader', async () => {
+      setup(() => [
+        item({ id: 'o', title: 'Omelette', allergyWarning: peanuts('strong') }),
+        soup,
+      ]);
+      const row = await findRow('Omelette');
+      const indicator = within(row).getByRole('img', {
+        name: 'Contains Peanuts, Milk',
+      });
+      expect(indicator).toHaveAttribute('data-severity', 'strong');
+      expect(within(await findRow('Soup')).queryByRole('img')).toBeNull();
+    });
+
+    it('marks a row softly when only optional lines contain the Allergen', async () => {
+      setup(() => [
+        item({ id: 'o', title: 'Omelette', allergyWarning: peanuts('soft') }),
+      ]);
+      const row = await findRow('Omelette');
+      expect(
+        within(row).getByRole('img', {
+          name: 'Optional: contains Peanuts, Milk',
+        }),
+      ).toHaveAttribute('data-severity', 'soft');
+    });
+
+    it('says when lines could not be checked, without claiming anything is free of Allergens', async () => {
+      setup(() => [
+        item({
+          id: 'o',
+          title: 'Omelette',
+          allergyWarning: {
+            severity: 'soft',
+            allergens: [],
+            uncheckedCount: 2,
+          },
+        }),
+      ]);
+      const row = await findRow('Omelette');
+      expect(
+        within(row).getByRole('img', {
+          name: "2 ingredients couldn't be checked for allergens",
+        }),
+      ).toBeVisible();
+    });
+
+    it('marks a Can Make tile, and names the Allergen in the tile link', async () => {
+      setup(
+        () => [omelette],
+        [card({ recipe: { allergyWarning: peanuts('strong') } })],
+      );
+      const strip = await findStrip();
+      expect(
+        within(strip).getByRole('img', { name: 'Contains Peanuts, Milk' }),
+      ).toHaveAttribute('data-severity', 'strong');
+      expect(tilesOf(strip)[0].getAttribute('aria-label')).toContain(
+        'Contains Peanuts, Milk',
+      );
+    });
+  });
+
+  describe('hidden by Allergies', () => {
+    const note = (count: string) =>
+      screen.findByText(`${count} hidden by your Allergies`);
+
+    it('says how many Recipes are hidden, with a Show button', async () => {
+      setup(() => [omelette], [], undefined, 3);
+      expect(await note('3 Recipes')).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Show' })).toBeVisible();
+    });
+
+    it("counts the Can Make strip's hidden cards when they outnumber the list's", async () => {
+      setup(() => [omelette], [], undefined, 1, 4);
+      expect(await note('4 Recipes')).toBeVisible();
+    });
+
+    it("counts only the list's hidden Recipes while a search is active", async () => {
+      setup(
+        (url) => (filtered(url) ? [frittata] : [omelette]),
+        [card()],
+        undefined,
+        1,
+        4,
+      );
+      const user = userEvent.setup();
+      expect(await note('4 Recipes')).toBeVisible();
+      await user.type(screen.getByLabelText('Search Recipes'), 'frit');
+      expect(await note('1 Recipe')).toBeVisible();
+      expect(screen.queryByText('4 hidden by your Allergies')).toBeNull();
+    });
+
+    it('says "1 Recipe" in the singular', async () => {
+      setup(() => [omelette], [], undefined, 1);
+      expect(await note('1 Recipe')).toBeVisible();
+    });
+
+    it('shows no note when nothing is hidden', async () => {
+      setup(() => [omelette]);
+      await findRow('Omelette');
+      expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Show' })).toBeNull();
+    });
+
+    it('asks for the hidden Recipes, in the list and the Can Make strip, when Show is pressed', async () => {
+      const user = userEvent.setup();
+      const calls = setup(
+        (url) =>
+          url.searchParams.get('showHidden') === 'true'
+            ? [omelette, soup]
+            : [omelette],
+        [],
+        undefined,
+        1,
+      );
+      await user.click(await screen.findByRole('button', { name: 'Show' }));
+      expect(await findRow('Soup')).toBeVisible();
+      expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+      const cookTonight = calls.filter(
+        (c) => c.key === 'GET /api/recipes/cook-tonight',
+      );
+      expect(
+        new URLSearchParams(cookTonight.at(-1)!.search).get('showHidden'),
+      ).toBe('true');
+    });
+
+    it('does not ask to show hidden Recipes on the first load', async () => {
+      const calls = setup(() => [omelette]);
+      await findRow('Omelette');
+      for (const call of calls.filter((c) =>
+        c.key.startsWith('GET /api/recipes'),
+      )) {
+        expect(new URLSearchParams(call.search).has('showHidden')).toBe(false);
+      }
     });
   });
 });

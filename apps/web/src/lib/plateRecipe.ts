@@ -4,10 +4,21 @@ import type { FamilyRecipeEdit, FamilyRecipeDocument } from './familyRecipes';
 import { parseQuantity } from './pantry';
 import type { ReviewLine } from './review';
 import { recipeChangeQueryKeys } from './queryKeys';
-import { recipesQueryKey } from './recipes';
+import { recipesQueryKey, type CompactAllergyWarning } from './recipes';
 
 /** A Catalog Base Recipe that resembles the dish, best first. */
-export type PlateMatch = { id: string; title: string; score: number };
+export type PlateMatch = {
+  id: string;
+  title: string;
+  score: number;
+  allergyWarning: CompactAllergyWarning | null;
+};
+
+/** The matches, with how many "Hide Recipes with my Allergies" left out of the closest five. */
+export type PlateMatches = {
+  matches: PlateMatch[];
+  hiddenByAllergiesCount: number;
+};
 
 /** The ids of the Ingredients the Plate Scan recognised, each once. */
 export const matchedIngredientIds = (lines: ReviewLine[]): string[] => [
@@ -16,16 +27,22 @@ export const matchedIngredientIds = (lines: ReviewLine[]): string[] => [
 
 /** The closest Catalog Base Recipes to the picked dish, once the panel is open. */
 export function usePlateMatches(
-  input: { locale: string; dishTitle: string; ingredientIds: string[] },
+  input: {
+    locale: string;
+    dishTitle: string;
+    ingredientIds: string[];
+    /** Also ask for the matches "Hide Recipes with my Allergies" would leave out. */
+    showHidden?: true;
+  },
   enabled: boolean,
 ) {
   return useQuery({
     queryKey: [...recipesQueryKey, 'plate-matches', input],
     queryFn: () =>
-      apiRequest<{ matches: PlateMatch[] }>('/recipes/plate-matches', {
+      apiRequest<PlateMatches>('/recipes/plate-matches', {
         method: 'POST',
         body: input,
-      }).then((body) => body.matches),
+      }),
     enabled,
     staleTime: Infinity,
   });

@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { localeQuery } from '../recipes/recipes.schemas';
+import {
+  localeQuery,
+  type CompactAllergyWarning,
+} from '../recipes/recipes.schemas';
 import type { AisleView } from '../catalog/ingredient-placement';
 import { mealtime } from '../database/schema';
 import type {
@@ -165,6 +168,11 @@ export type PlanSlotView = {
   servingsOverride: number | null;
   /** The Recipe has been archived since. */
   unavailable: boolean;
+  /**
+   * The Allergy Warning for the reading Member, naming whose Allergy it is (ADR 0014). Never
+   * hides the slot; null when nothing they must avoid is, or might be, in the Recipe.
+   */
+  allergyWarning: CompactAllergyWarning | null;
   /** The Plan Forecast; null on a past day. */
   status: SlotStatus | null;
   /** Empty on a past day and on an unavailable slot. */

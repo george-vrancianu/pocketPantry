@@ -68,6 +68,7 @@ const recipe = (id: string, title: string): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: null,
   owner: 'catalog',
+  allergyWarning: null,
 });
 
 const shoppingList = () =>
@@ -81,7 +82,22 @@ function setup(view: MealPlanDetail = week(), extra = {}) {
       return Response.json({
         recipes: [
           recipe('rc-1', 'Lemon pasta'),
-          recipe('rc-2', 'Green curry'),
+          {
+            ...recipe('rc-2', 'Green curry'),
+            allergyWarning: {
+              severity: 'strong' as const,
+              allergens: [
+                {
+                  id: 'a-pn',
+                  name: 'Peanuts',
+                  tier: 'yours' as const,
+                  severity: 'strong' as const,
+                  owners: [{ kind: 'own' as const }],
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          },
         ].filter((r) => !search || r.title.toLowerCase().includes(search)),
       });
     },
@@ -134,6 +150,44 @@ describe('Meal Plan page', () => {
     const tomorrow = dayCard(/Fri/);
     expect(within(tomorrow).getByText('On list')).toBeVisible();
     expect(within(tomorrow).getByText('No longer available')).toBeVisible();
+  });
+
+  it('shows the Allergy Warning on a Plan Slot, naming whose Allergy it is', async () => {
+    setup(
+      week({
+        slots: [
+          slot(-1, 1, 'dinner', {
+            recipeTitle: 'Satay',
+            allergyWarning: {
+              severity: 'strong',
+              allergens: [
+                {
+                  id: 'a-pn',
+                  name: 'Peanuts',
+                  tier: 'members',
+                  severity: 'strong',
+                  owners: [{ kind: 'member', name: 'Ana' }],
+                },
+              ],
+              uncheckedCount: 0,
+            },
+          }),
+          slot(-1, 1, 'breakfast', { recipeTitle: 'Porridge' }),
+        ],
+      }),
+    );
+    renderPage();
+
+    const today = await screen.findByRole('region', { name: /Today/ });
+    const satay = within(today).getByRole('button', { name: /Satay/ });
+    expect(within(satay).getByRole('img')).toHaveAccessibleName(
+      'Contains Peanuts (Ana)',
+    );
+    expect(satay).toHaveAccessibleName(
+      expect.stringContaining('Contains Peanuts (Ana)'),
+    );
+    const porridge = within(today).getByRole('button', { name: /Porridge/ });
+    expect(within(porridge).queryByRole('img')).toBeNull();
   });
 
   it('summarises the forecast in the header', async () => {
@@ -193,6 +247,9 @@ describe('Meal Plan page', () => {
       name: 'Choose a Recipe',
     });
     expect(await within(picker).findByText('Green curry')).toBeVisible();
+    expect(
+      within(picker).getByRole('img', { name: 'Contains Peanuts' }),
+    ).toBeVisible();
     await u.type(within(picker).getByRole('searchbox'), 'lemon');
     await waitFor(() =>
       expect(within(picker).queryByText('Green curry')).toBeNull(),
@@ -496,6 +553,12 @@ describe('Meal Plan page', () => {
         .filter((c) => c.key === 'GET /api/recipes')
         .every((c) => c.search.includes('includeVariants=true')),
     ).toBe(true);
+    // Plan Slots never hide (ADR 0012): the picker asks for Recipes hidden by the Member's Allergies too.
+    const pickerCalls = api.calls.filter((c) => c.key === 'GET /api/recipes');
+    expect(pickerCalls.length).toBeGreaterThan(0);
+    expect(pickerCalls.every((c) => c.search.includes('showHidden=true'))).toBe(
+      true,
+    );
   });
 
   it('marks a line already on the list in its pill', async () => {

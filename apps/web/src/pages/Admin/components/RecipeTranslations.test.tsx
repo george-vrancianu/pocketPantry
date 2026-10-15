@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [
     {
       id: 'em1',

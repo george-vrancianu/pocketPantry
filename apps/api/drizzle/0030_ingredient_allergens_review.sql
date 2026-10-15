@@ -1,0 +1,1 @@
+ALTER TABLE "ingredients" ADD COLUMN "allergens_review_pending" boolean DEFAULT false NOT NULL;

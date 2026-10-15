@@ -11,6 +11,10 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { CookTonightCard } from '../../../lib/cookTonight';
+import {
+  AllergenIndicator,
+  allergenIndicatorLabel,
+} from '../../../components/AllergenIndicator';
 import { totalMinutes } from '../../../lib/recipes';
 import { bleedSx } from './bleed';
 import { SectionLabel } from './SectionLabel';
@@ -71,7 +75,16 @@ function Tile({ card }: { card: CookTonightCard }) {
         ? t('otherVariants', { count: card.otherVariantsCount })
         : null;
   // Block children carry no spaces for a screen reader, so name the link explicitly.
-  const name = [recipe.title, timeText, note].filter(Boolean).join(', ');
+  const name = [
+    recipe.title,
+    timeText,
+    note,
+    recipe.allergyWarning
+      ? allergenIndicatorLabel(t, recipe.allergyWarning)
+      : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
   return (
     <Box
       component={Link}
@@ -163,6 +176,11 @@ function Tile({ card }: { card: CookTonightCard }) {
           </Box>
         ) : null}
       </Box>
+      {recipe.allergyWarning ? (
+        <Box component="span" sx={{ mt: '6px', display: 'flex' }}>
+          <AllergenIndicator warning={recipe.allergyWarning} />
+        </Box>
+      ) : null}
     </Box>
   );
 }

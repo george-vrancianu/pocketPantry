@@ -10,6 +10,7 @@ const catalog: AdminCatalog = {
   aisles: [],
   cuisines: [],
   methods: [],
+  allergens: [],
   eatingMoments: [
     {
       id: 'em1',
@@ -42,6 +43,8 @@ const catalog: AdminCatalog = {
       leafCategoryId: 'l1',
       defaultUnit: 'ml',
       pantryBasic: false,
+      allergenIds: [],
+      allergensReviewPending: false,
       translations: [],
     },
   ],

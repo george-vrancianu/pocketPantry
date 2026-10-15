@@ -17,6 +17,7 @@ const slotOn = (offset: number) => ({
   servingsOverride: null,
   unavailable: false,
   minutes: 25,
+  allergyWarning: null,
   aisle: null,
   status: 'covered' as const,
   issues: [],

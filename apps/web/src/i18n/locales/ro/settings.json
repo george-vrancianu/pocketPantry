@@ -44,6 +44,17 @@
     "saved": "Salvat"
   },
   "language": "Limbă",
+  "allergies": {
+    "title": "Alergii",
+    "hint": "Alege ce trebuie să eviți, inclusiv intoleranțele. Rețetele care conțin acel alergen primesc un avertisment.",
+    "familyCanSee": "Toți din familia ta îți pot vedea alergiile.",
+    "loadFailed": "Lista de alergeni nu a putut fi încărcată.",
+    "saveFailed": "Alergiile nu au putut fi salvate. Încearcă din nou.",
+    "noAccount": "Cineva fără cont? Adaugă o alergie a familiei în fila Familie.",
+    "hideRecipes": "Ascunde rețetele cu alergiile mele",
+    "hideRecipesHint": "Lasă deoparte rețetele cu alergiile tale sau cu alergiile familiei din lista de rețete, „Poți găti”, „Gătește diseară” și potrivirile pentru Farfurie scanată. Alergiile altor membri nu ascund niciodată o rețetă. Poți deschide oricând orice rețetă, iar planul de mese le arată pe toate.",
+    "hideSaveFailed": "Setarea nu a putut fi salvată. Încearcă din nou."
+  },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
   "account": "Cont",
@@ -162,6 +173,33 @@
       "staples_few": "{{count}} produse de bază",
       "staples_other": "{{count}} de produse de bază"
     },
-    "editLabel": "Editează"
+    "editLabel": "Editează",
+    "allergensUnchecked": "Alergeni neverificați",
+    "allergensContains": "Conține {{names}}",
+    "allergensNone": "Niciun alergen etichetat",
+    "uncheckedSummary_one": "{{count}} ingredient nu este verificat pentru alergeni.",
+    "uncheckedSummary_few": "{{count}} ingrediente nu sunt verificate pentru alergeni.",
+    "uncheckedSummary_other": "{{count}} de ingrediente nu sunt verificate pentru alergeni.",
+    "tagAllergens": "Setează alergenii pentru {{name}}",
+    "tagLabel": "Alergeni",
+    "saveAllergens": "Salvează alergenii"
+  },
+  "familyAllergies": {
+    "title": "Alergiile familiei",
+    "hint": "Pentru persoane din familia ta fără cont, de exemplu un copil. Orice membru le poate adăuga sau elimina, iar ele contează ca alergiile tuturor.",
+    "empty": "Nicio alergie a familiei încă.",
+    "family": "Familie",
+    "allergen": "Alergen",
+    "label": "Etichetă (opțional)",
+    "labelHint": "Pentru cine este, de exemplu Mia",
+    "add": "Adaugă",
+    "remove": "Elimină {{allergen}} pentru {{who}}",
+    "loadFailed": "Alergiile familiei nu au putut fi încărcate."
+  },
+  "memberAllergies": {
+    "title": "Alergiile membrilor",
+    "hint": "Fiecare membru își stabilește propriile alergii. Le poți vedea aici, dar nu le poți schimba.",
+    "none": "Nimic înregistrat",
+    "loadFailed": "Alergiile membrilor nu au putut fi încărcate."
   }
 }

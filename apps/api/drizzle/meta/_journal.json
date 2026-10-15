@@ -190,6 +190,34 @@
       "when": 1792087654586,
       "tag": "0026_known_barcodes",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792089128004,
+      "tag": "0027_allergies",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792089211426,
+      "tag": "0028_allergen_archive",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792090279238,
+      "tag": "0029_hide_allergy_recipes",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1792091440796,
+      "tag": "0030_ingredient_allergens_review",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import type { CatalogSearchResult, Unit } from './catalog';
+import type { CatalogAllergen, CatalogSearchResult, Unit } from './catalog';
 import type { ProposedLine } from './scan';
 
 /**
@@ -18,6 +18,13 @@ export type BarcodeLookup =
       lowConfidence: boolean;
       /** A Known Barcode saved under a typed name: the form fills exactly this name. */
       unmatchedName?: string;
+      /**
+       * The active Allergens Open Food Facts lists for the product. Empty means it lists none,
+       * not that the product contains none.
+       */
+      allergens: CatalogAllergen[];
+      /** The listed Allergens the matched Ingredient is not tagged with: an informational note. */
+      missingAllergens: CatalogAllergen[];
       productDescription: string;
       quantity: number | null;
       unit: Unit | null;

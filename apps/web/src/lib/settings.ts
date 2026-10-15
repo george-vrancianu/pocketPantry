@@ -1,6 +1,7 @@
 import type { ThemeId } from '@pocket-pantry/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import { recipesQueryKey } from './recipes';
 import { recipeMatchingQueryKeys } from './queryKeys';
 import type { Locale } from '../i18n/resources';
 
@@ -33,6 +34,8 @@ export type CategoryOptions = {
 export type MemberPreferences = {
   locale: Locale | null;
   theme: ThemeId | null;
+  /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
+  hideRecipesWithAllergies: boolean;
 };
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
@@ -141,5 +144,129 @@ export function useSaveLocale() {
       queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
         old ? { ...old, locale: saved.locale } : saved,
       ),
+  });
+}
+
+/** Saves "Hide Recipes with my Allergies"; Recipe lists and matches depend on it. */
+export function useSaveHideRecipesWithAllergies() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (hideRecipesWithAllergies: boolean) =>
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { hideRecipesWithAllergies },
+      }),
+    onSuccess: async (saved) => {
+      // Only this preference; a locale or Theme save may have landed meanwhile.
+      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+        old
+          ? {
+              ...old,
+              hideRecipesWithAllergies: saved.hideRecipesWithAllergies,
+            }
+          : saved,
+      );
+      await queryClient.invalidateQueries({ queryKey: recipesQueryKey });
+    },
+  });
+}
+
+/** An Allergen from the curated list, named in the Member's locale. */
+export type AllergenOption = { id: string; name: string };
+
+/** The Allergen list and which of them are the Member's own Allergies. */
+export type Allergies = {
+  allergens: AllergenOption[];
+  allergenIds: string[];
+};
+
+export const allergiesQueryKey = ['settings', 'allergies'] as const;
+
+export function useAllergies(locale: string) {
+  return useQuery({
+    queryKey: [...allergiesQueryKey, locale],
+    queryFn: () =>
+      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`),
+  });
+}
+
+/** Replaces the Member's own Allergies. Every Recipe's Allergy Warning depends on them. */
+export function useSaveAllergies(locale: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (allergenIds: string[]) =>
+      apiRequest<Allergies>(`/settings/allergies?${localeParams(locale)}`, {
+        method: 'PUT',
+        body: { allergenIds },
+      }),
+    onSuccess: (saved) => {
+      queryClient.setQueryData([...allergiesQueryKey, locale], saved);
+      return Promise.all([
+        queryClient.invalidateQueries({ queryKey: allergiesQueryKey }),
+        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+      ]);
+    },
+  });
+}
+
+/** An Allergy the Family records for someone without an account (mirror of the API's `FamilyAllergyView`). */
+export type FamilyAllergy = {
+  id: string;
+  allergen: AllergenOption;
+  label: string | null;
+};
+
+/** The Family tab's Allergies (mirror of the API's `FamilyAllergiesView`): Family Allergies and the other Members' own. */
+export type FamilyAllergies = {
+  allergens: AllergenOption[];
+  familyAllergies: FamilyAllergy[];
+  members: { id: string; name: string; allergens: AllergenOption[] }[];
+};
+
+export const familyAllergiesQueryKey = [
+  'settings',
+  'family-allergies',
+] as const;
+
+export function useFamilyAllergies(locale: string) {
+  return useQuery({
+    queryKey: [...familyAllergiesQueryKey, locale],
+    queryFn: () =>
+      apiRequest<FamilyAllergies>(
+        `/settings/family-allergies?${localeParams(locale)}`,
+      ),
+  });
+}
+
+/** Any Member can change the Family's Allergies, and every Recipe's Allergy Warning depends on them. */
+function useChangedFamilyAllergies() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: familyAllergiesQueryKey }),
+      queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+    ]);
+}
+
+export function useAddFamilyAllergy(locale: string) {
+  const changed = useChangedFamilyAllergies();
+  return useMutation({
+    mutationFn: (body: { allergenId: string; label: string | null }) =>
+      apiRequest<FamilyAllergy>(
+        `/settings/family-allergies?${localeParams(locale)}`,
+        { method: 'POST', body },
+      ),
+    onSuccess: changed,
+  });
+}
+
+export function useRemoveFamilyAllergy() {
+  const changed = useChangedFamilyAllergies();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiRequest<{ id: string }>(`/settings/family-allergies/${id}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: changed,
   });
 }

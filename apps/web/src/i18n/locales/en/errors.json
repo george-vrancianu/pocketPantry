@@ -73,7 +73,8 @@
     "eating_moment_order_stale": "The Eating Moments changed while you were reordering. Check the order and try again.",
     "cuisine_in_use": "Recipes still use this Cuisine, so it cannot be deleted. Change those Recipes first.",
     "method_in_use": "Recipes still use this Method, so it cannot be deleted. Change those Recipes first.",
-    "family_ingredient_exists": "“{{existing.name}}” already has that name."
+    "family_ingredient_exists": "“{{existing.name}}” already has that name.",
+    "allergen_retired": "That Allergen is retired. Bring it back before tagging with it."
   },
   "family": {
     "rate_limited": "Too many Invite Code attempts. Wait a minute and try again.",
@@ -129,6 +130,12 @@
   "family_synonyms": {
     "not_found": "That synonym is no longer in the queue. Someone may have added it already.",
     "shared_name_exists": "That name is already used by another ingredient."
+  },
+  "settings": {
+    "family_allergy_exists": "That Allergen is already on the list with the same label.",
+    "allergen_not_found": "That Allergen no longer exists.",
+    "family_allergy_not_found": "That Family Allergy is no longer on the list. Someone may have removed it already.",
+    "allergen_retired": "That Allergen is retired and can't be picked."
   },
   "barcode": {
     "provider_unavailable": "The barcode lookup is unavailable right now. Try again, or fill the form by hand."

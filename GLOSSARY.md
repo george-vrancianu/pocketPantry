@@ -77,7 +77,7 @@ A substance some people react to, such as peanuts, milk, or gluten, from a fixed
 _Avoid_: Allergy (a Member's own), intolerance, trigger
 
 **Unchecked**:
-The state of an Ingredient Line whose Allergens are not known: an Unmatched name, or a Family Ingredient no Member has tagged yet. Ticking "no Allergens" on a Family Ingredient counts as tagging it. A shared Ingredient is never Unchecked; no tags means it contains none.
+The state of an Ingredient Line whose Allergens are not known: an Unmatched name, or a Family Ingredient no Member has tagged yet. Ticking "no Allergens" on a Family Ingredient counts as tagging it. A shared Ingredient is not Unchecked either: no tags means it contains none. The one exception is a shared Ingredient promoted from Family copies none of which were checked; it stays Unchecked until an Admin saves its Allergens.
 _Avoid_: Unknown, untagged, unverified
 
 **Ingredient Icon**:

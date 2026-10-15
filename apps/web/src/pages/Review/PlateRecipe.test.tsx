@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogSearchResult } from '../../lib/catalog';
+import type { PlateMatch } from '../../lib/plateRecipe';
 import type { ProposedLine } from '../../lib/scan';
 import { getScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
@@ -47,9 +48,9 @@ const lines: ProposedLine[] = [
   },
 ];
 
-const matches = [
-  { id: 'pilaf-id', title: 'Pilaf', score: 0.9 },
-  { id: 'risotto-id', title: 'Risotto', score: 0.4 },
+const matches: PlateMatch[] = [
+  { id: 'pilaf-id', title: 'Pilaf', score: 0.9, allergyWarning: null },
+  { id: 'risotto-id', title: 'Risotto', score: 0.4, allergyWarning: null },
 ];
 
 function renderPlate(
@@ -264,6 +265,41 @@ describe('Plate Scan: save as a Recipe', () => {
     ).toHaveFocus();
   });
 
+  it('says how many matches are hidden by Allergies and brings them back on Show', async () => {
+    let asked = 0;
+    const calls = renderPlate({
+      // The first answer hides one; asking again (with the override) brings it back.
+      'POST /api/recipes/plate-matches': () =>
+        ++asked > 1
+          ? Response.json({
+              matches: [
+                ...matches,
+                {
+                  id: 'peanut-id',
+                  title: 'Satay',
+                  score: 0.3,
+                  allergyWarning: null,
+                },
+              ],
+              hiddenByAllergiesCount: 0,
+            })
+          : Response.json({ matches, hiddenByAllergiesCount: 1 }),
+    });
+    const bases = await openPanel();
+    expect(
+      await screen.findByText('1 Recipe hidden by your Allergies'),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(
+      await within(bases).findByRole('radio', { name: 'Satay' }),
+    ).toBeVisible();
+    expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/recipes/plate-matches').at(-1)
+        ?.body,
+    ).toMatchObject({ showHidden: true });
+  });
+
   it('announces the search for Base Recipes as a status', async () => {
     renderPlate({
       'POST /api/recipes/plate-matches': () =>
@@ -346,5 +382,38 @@ describe('Plate Scan: save as a Recipe', () => {
     const body = calls.find((c) => c.key === 'POST /api/recipes/from-plate')
       ?.body as { lines: { quantity: number | null }[] };
     expect(body.lines[0].quantity).toBe(120);
+  });
+
+  it('marks a match whose Recipe contains an Allergy, naming the Allergen', async () => {
+    renderPlate({}, [
+      {
+        ...matches[0],
+        allergyWarning: {
+          severity: 'strong',
+          allergens: [
+            {
+              id: 'a-pn',
+              name: 'Peanuts',
+              tier: 'yours',
+              severity: 'strong',
+              owners: [{ kind: 'own' }],
+            },
+          ],
+          uncheckedCount: 0,
+        },
+      },
+      { ...matches[1], allergyWarning: null },
+    ]);
+    const bases = await openPanel();
+    const indicator = await within(bases).findByRole('img', {
+      name: 'Contains Peanuts',
+    });
+    expect(indicator).toHaveAttribute('data-severity', 'strong');
+    expect(within(bases).getAllByRole('img')).toHaveLength(1);
+    expect(
+      within(bases).getByRole('radio', {
+        name: 'Pilaf (closest match) Contains Peanuts',
+      }),
+    ).toBeChecked();
   });
 });

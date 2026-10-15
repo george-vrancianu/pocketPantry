@@ -22,10 +22,12 @@ import {
 } from './recipe-document-rules';
 import { copyGuidance } from './recipe-guidance-write';
 import { lockCatalogRecipe } from './recipe-locks';
-import { loadAdminDetail } from './recipe-view';
+import { loadRecipeAllergens } from './recipe-allergens';
+import { loadAdminDetail, loadCatalogRecipe } from './recipe-view';
 import type {
   AdminRecipeDetail,
   AdminRecipeListItem,
+  RecipeAllergens,
   RecipeDocument,
   RecipeListQuery,
   VariantCreate,
@@ -69,6 +71,23 @@ export class RecipesService {
     const detail = await loadAdminDetail(this.database, id);
     if (!detail) throw recipeNotFound();
     return detail;
+  }
+
+  /**
+   * The Allergens a Catalog Recipe is known to contain, derived from its own lines (ADR 0014),
+   * for the Admin to sanity-check. No viewer, so no Allergy Warning; named in English.
+   */
+  async allergens(id: string): Promise<RecipeAllergens> {
+    const recipe = await loadCatalogRecipe(this.database, id, 'en');
+    if (!recipe) throw recipeNotFound();
+    const { allergens } = await loadRecipeAllergens(
+      this.database,
+      catalogScope(SHARED_ONLY),
+      recipe,
+      'en',
+      [],
+    );
+    return allergens;
   }
 
   /** Creates a Base Recipe from the document. */

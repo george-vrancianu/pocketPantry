@@ -45,6 +45,8 @@ const detail: RecipeDetail = {
   variants: [],
   diff: null,
   guidance: { nutritionNote: null, pairings: [], eatingMoments: [] },
+  allergens: { items: [], uncheckedCount: 0 },
+  allergyWarning: null,
 };
 
 const line = (over: Partial<PantryLine> & { lineId: string }): PantryLine => ({

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
 import { ApiError, apiRequest } from './api';
+import type { CompactAllergyWarning } from './recipes';
 import {
   MEALTIMES,
   ingredientKey,
@@ -37,6 +38,8 @@ export type PlanSlot = {
   servings: number;
   servingsOverride: number | null;
   unavailable: boolean;
+  /** The Allergy Warning for the reader, naming whose Allergy it is; never hides the slot. */
+  allergyWarning: CompactAllergyWarning | null;
   status: SlotStatus | null;
   issues: PlanIssue[];
 };

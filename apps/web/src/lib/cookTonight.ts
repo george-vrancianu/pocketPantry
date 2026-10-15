@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
-import { recipesQueryKey, type RecipeOwner } from './recipes';
+import {
+  recipesQueryKey,
+  type CompactAllergyWarning,
+  type RecipeOwner,
+} from './recipes';
 
 /** One Base Recipe's best match tonight (mirror of the API's `CookTonightCard`). */
 export type CookTonightCard = {
@@ -14,6 +18,7 @@ export type CookTonightCard = {
     servings: number;
     prepMinutes: number | null;
     cookMinutes: number | null;
+    allergyWarning: CompactAllergyWarning | null;
   };
   canMake: boolean;
   /** The one short or missing required line of a near miss. */
@@ -22,16 +27,32 @@ export type CookTonightCard = {
   otherVariantsCount: number;
 };
 
-export type CookTonightView = { cards: CookTonightCard[] };
+export type CookTonightView = {
+  cards: CookTonightCard[];
+  /** Cards "Hide Recipes with my Allergies" left out or swapped for another Recipe of their group. */
+  hiddenByAllergiesCount: number;
+};
 
 /** Cards arrive ranked best first. */
-export function useCookTonight(locale: string, today: string) {
+export function useCookTonight(
+  locale: string,
+  today: string,
+  /** Also ask for the Recipes "Hide Recipes with my Allergies" would leave out. */
+  showHidden = false,
+) {
   return useQuery({
-    queryKey: [...recipesQueryKey, 'cook-tonight', locale, today],
-    queryFn: () =>
-      apiRequest<CookTonightView>(
-        `/recipes/cook-tonight?${new URLSearchParams({ locale, today })}`,
-      ),
+    queryKey: [
+      ...recipesQueryKey,
+      'cook-tonight',
+      locale,
+      today,
+      ...(showHidden ? ['showHidden'] : []),
+    ],
+    queryFn: () => {
+      const params = new URLSearchParams({ locale, today });
+      if (showHidden) params.set('showHidden', 'true');
+      return apiRequest<CookTonightView>(`/recipes/cook-tonight?${params}`);
+    },
   });
 }
 

@@ -21,6 +21,7 @@ import { ShoppingService } from '../shopping/shopping.service';
 import { normalizeName } from '../catalog/normalize';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
+import { loadSlotWarnings } from './plan-allergies';
 import { loadFill } from './plan-fill.loader';
 import {
   forecastFieldsOf,
@@ -41,7 +42,6 @@ import {
   type MealPlanView,
   type MealWindowView,
   type PlanSlotView,
-  type WindowSlotView,
   type SetSlotBody,
   type SlotParams,
   type UpdateMealPlanBody,
@@ -90,7 +90,7 @@ export class MealPlansService {
     today = utcToday(),
   ): Promise<MealPlanView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    return this.view(this.database, familyId, id, locale, today);
+    return this.view(this.database, memberId, familyId, id, locale, today);
   }
 
   /**
@@ -112,6 +112,13 @@ export class MealPlansService {
       today,
       through,
     );
+    const warnings = await loadSlotWarnings(
+      this.database,
+      familyId,
+      memberId,
+      locale,
+      [...slots.values()].map((slot) => slot.recipeId),
+    );
     // The plan covering today, else the next one to start.
     const headline =
       plans.find((plan) => plan.startDate <= today && planEnd(plan) >= today) ??
@@ -126,7 +133,16 @@ export class MealPlansService {
           plans.find(
             (plan) => plan.startDate <= day.date && planEnd(plan) >= day.date,
           )?.id ?? null,
-        slots: day.slots.map((slot) => slots.get(slot.id) as WindowSlotView),
+        slots: day.slots.map((slot) => {
+          const view = slots.get(slot.id);
+          if (!view) {
+            throw new Error(`Plan Slot ${slot.id} has no forecast view`);
+          }
+          return {
+            ...view,
+            allergyWarning: warnings.get(view.recipeId) ?? null,
+          };
+        }),
       })),
       tag: forecast.tag,
       plan: headline ? summary(headline) : null,
@@ -284,7 +300,7 @@ export class MealPlansService {
             body.servings ?? Math.min(Math.max(members, 1), MAX_SERVINGS),
         })
         .returning();
-      return this.view(tx, familyId, row.id, locale, today);
+      return this.view(tx, memberId, familyId, row.id, locale, today);
     });
   }
 
@@ -342,7 +358,7 @@ export class MealPlansService {
           ...(body.servings !== undefined && { servings: body.servings }),
         })
         .where(eq(mealPlans.id, plan.id));
-      return this.view(tx, familyId, plan.id, locale, today);
+      return this.view(tx, memberId, familyId, plan.id, locale, today);
     });
   }
 
@@ -395,7 +411,7 @@ export class MealPlansService {
           ],
           set: { recipeId: recipe.id, servings },
         });
-      return this.view(tx, familyId, plan.id, locale, today);
+      return this.view(tx, memberId, familyId, plan.id, locale, today);
     });
   }
 
@@ -420,6 +436,7 @@ export class MealPlansService {
         familyId,
         plan,
         today,
+        memberId,
       );
       const choices = fillPlan({
         today,
@@ -436,7 +453,7 @@ export class MealPlansService {
       if (rows.length > 0) {
         await tx.insert(mealPlanSlots).values(rows).onConflictDoNothing();
       }
-      return this.view(tx, familyId, plan.id, locale, today);
+      return this.view(tx, memberId, familyId, plan.id, locale, today);
     });
   }
 
@@ -477,6 +494,7 @@ export class MealPlansService {
 
   private async view(
     executor: Executor,
+    memberId: string,
     familyId: string,
     id: string,
     locale: CatalogLocale,
@@ -500,6 +518,13 @@ export class MealPlansService {
       today,
       planEnd(plan),
     );
+    const warnings = await loadSlotWarnings(
+      executor,
+      familyId,
+      memberId,
+      locale,
+      rows.map((row) => row.recipe.id),
+    );
     const order = { breakfast: 0, lunch: 1, dinner: 2 };
     const slots = rows
       .map(({ slot, recipe }): PlanSlotView => ({
@@ -511,6 +536,7 @@ export class MealPlansService {
         servings: slot.servings ?? plan.servings,
         servingsOverride: slot.servings,
         unavailable: recipe.archivedAt !== null,
+        allergyWarning: warnings.get(recipe.id) ?? null,
         ...forecastFieldsOf(
           forecasted.get(slotKey(plan.id, slot.dayIndex, slot.mealtime)),
         ),

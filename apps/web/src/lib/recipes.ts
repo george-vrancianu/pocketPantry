@@ -20,6 +20,29 @@ import { shoppingListQueryKey, type ShoppingList } from './shopping';
 export type RecipeOwner = 'catalog' | 'family';
 export type NamedRef = { id: string; name: string };
 
+/**
+ * The Allergy Warning as a list row, strip tile or match carries it (mirror of the API's
+ * `CompactAllergyWarning`): one item per Allergen, same severity as on Recipe detail.
+ */
+export type CompactAllergyWarning = {
+  severity: 'strong' | 'soft';
+  /** Empty when only Unchecked lines raise the warning. */
+  allergens: {
+    id: string;
+    name: string;
+    tier: 'yours' | 'members';
+    severity: 'strong' | 'soft';
+    /** Whose Allergy it is: you, a Family Allergy (with its label) or another Member by name. */
+    owners: CompactAllergyOwner[];
+  }[];
+  uncheckedCount: number;
+};
+
+export type CompactAllergyOwner =
+  | { kind: 'own' }
+  | { kind: 'family'; label: string | null }
+  | { kind: 'member'; name: string };
+
 /** One row of the Recipe list (mirror of the API's `RecipeListItem`). */
 export type RecipeListItem = {
   id: string;
@@ -34,6 +57,13 @@ export type RecipeListItem = {
   cookMinutes: number | null;
   difficulty: Difficulty | null;
   owner: RecipeOwner;
+  allergyWarning: CompactAllergyWarning | null;
+};
+
+/** The Recipe list with how many Recipes "Hide Recipes with my Allergies" left out (mirror of the API's `RecipeList`). */
+export type RecipeList = {
+  recipes: RecipeListItem[];
+  hiddenByAllergiesCount: number;
 };
 
 /** A Variant as listed on its base's detail. */
@@ -102,6 +132,45 @@ export type RecipeGuidance = {
   eatingMoments: DetailEatingMoment[];
 };
 
+/** An Allergen a Recipe is known to contain, with its source lines (mirror of the API's `RecipeAllergenItem`). */
+export type RecipeAllergenItem = {
+  allergen: { id: string; name: string };
+  lines: { id: string; ingredientName: string; optional: boolean }[];
+  /** Every source line is optional. */
+  optionalOnly: boolean;
+};
+export type RecipeAllergens = {
+  items: RecipeAllergenItem[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
+/** Whose Allergy it is (mirror of the API's `AllergyOwner`). */
+export type AllergyOwner =
+  | { kind: 'own' }
+  | { kind: 'family'; label: string | null }
+  | { kind: 'member'; memberId: string; name: string };
+
+/** One person's Allergy a Recipe contains and the lines that contain it (mirror of the API's `AllergyWarningEntryView`). */
+export type AllergyWarningEntry = {
+  allergen: { id: string; name: string };
+  /** The viewer's own and Family Allergies come first, other Members' after. */
+  owner: AllergyOwner;
+  /** `yours` counts as the viewer's own (their own, the Family's); `members` is another Member's. */
+  tier: 'yours' | 'members';
+  /** `strong` when a required line contains it, `soft` when only optional lines do. */
+  severity: 'strong' | 'soft';
+  /** Every line that contains it, each with its own severity (`soft` for an optional line). */
+  lines: { lineId: string; severity: 'strong' | 'soft' }[];
+};
+/** The Allergy Warning on a Recipe (mirror of the API's `AllergyWarningView`). */
+export type AllergyWarning = {
+  severity: 'strong' | 'soft';
+  entries: AllergyWarningEntry[];
+  /** Lines that could not be checked for Allergens. */
+  uncheckedCount: number;
+};
+
 /** The Member's Recipe detail (mirror of the API's `RecipeDetail`). */
 export type RecipeDetail = {
   id: string;
@@ -122,6 +191,9 @@ export type RecipeDetail = {
   variants: RecipeVariantItem[];
   diff: RecipeDiff | null;
   guidance: RecipeGuidance;
+  allergens: RecipeAllergens;
+  /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
+  allergyWarning: AllergyWarning | null;
 };
 
 /** Pickers' options; browsing uses Cuisines and Methods, the Family editor adds Eating Moments. */
@@ -162,10 +234,16 @@ export function useRecipes(
   {
     searchOnly = false,
     includeVariants = false,
+    showHidden = false,
     enabled = true,
   }: {
     searchOnly?: boolean;
     includeVariants?: boolean;
+    /**
+     * Ask for Recipes "Hide Recipes with my Allergies" would leave out. The Meal Plan and the
+     * Pairing picker always pass it: Plan Slots and Pairing links never hide.
+     */
+    showHidden?: boolean;
     enabled?: boolean;
   } = {},
 ) {
@@ -180,6 +258,7 @@ export function useRecipes(
       cuisineId,
       methodId,
       ...(includeVariants ? ['variants'] : []),
+      ...(showHidden ? ['showHidden'] : []),
     ],
     queryFn: () => {
       const params = new URLSearchParams({ locale });
@@ -187,9 +266,8 @@ export function useRecipes(
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
       if (includeVariants) params.set('includeVariants', 'true');
-      return apiRequest<{ recipes: RecipeListItem[] }>(
-        `/recipes?${params}`,
-      ).then((body) => body.recipes);
+      if (showHidden) params.set('showHidden', 'true');
+      return apiRequest<RecipeList>(`/recipes?${params}`);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).
     enabled: enabled && (!searchOnly || search !== ''),

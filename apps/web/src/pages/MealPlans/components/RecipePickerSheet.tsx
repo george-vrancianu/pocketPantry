@@ -38,12 +38,15 @@ export function RecipePickerSheet({
     cuisineId: '',
     methodId: '',
   });
+  // Plan Slots never hide (ADR 0012): "Hide Recipes with my Allergies" must not narrow what
+  // a Member can plan, so the picker always asks for the hidden Recipes too.
   const recipes = useRecipes(browse, i18n.language, {
     includeVariants: true,
+    showHidden: true,
     enabled: open,
   });
   const filters = useRecipeFilters(i18n.language, open);
-  const items = recipes.data ?? [];
+  const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
   return (
     <Sheet

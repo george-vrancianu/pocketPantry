@@ -74,6 +74,8 @@ export type CatalogSearchProps = {
   defaultQuery?: string;
   /** The search input, for a host that moves focus into it. */
   inputRef?: RefObject<HTMLInputElement | null>;
+  /** Allergens a Family Ingredient created from this search starts with ticked (a proposal, not a tag). */
+  newIngredientAllergenIds?: readonly string[];
 };
 
 /**
@@ -96,6 +98,7 @@ export function CatalogSearch({
   rowTag,
   defaultOpen = false,
   inputRef: hostInputRef,
+  newIngredientAllergenIds,
 }: CatalogSearchProps) {
   const { t, i18n } = useTranslation('catalog');
   const id = useId();
@@ -460,6 +463,7 @@ export function CatalogSearch({
         typed={typed}
         onPicked={pickAdded}
         onDismiss={dismissAdd}
+        initialAllergenIds={newIngredientAllergenIds}
       />
     </Box>
   );

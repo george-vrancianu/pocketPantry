@@ -12,7 +12,12 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import type { CookTonightCard } from '../../../lib/cookTonight';
-import { totalMinutes, type RecipeListItem } from '../../../lib/recipes';
+import { AllergenIndicator } from '../../../components/AllergenIndicator';
+import {
+  totalMinutes,
+  type CompactAllergyWarning,
+  type RecipeListItem,
+} from '../../../lib/recipes';
 import { OwnerBadge } from './OwnerBadge';
 
 type Props = {
@@ -54,7 +59,15 @@ export function RecipeRow({ recipe, card, filtering, onSelect }: Props) {
       }
       meta={meta}
       minutes={totalMinutes(recipe)}
-      pills={card ? <StatusPills recipeId={recipe.id} card={card} /> : null}
+      pills={
+        card || recipe.allergyWarning ? (
+          <StatusPills
+            recipeId={recipe.id}
+            card={card}
+            warning={recipe.allergyWarning}
+          />
+        ) : null
+      }
       to={onSelect ? undefined : `/recipes/${recipe.id}`}
       onClick={onSelect}
     />
@@ -189,14 +202,17 @@ export function RecipeRowLayout({
 function StatusPills({
   recipeId,
   card,
+  warning,
 }: {
   recipeId: string;
-  card: CookTonightCard;
+  card: CookTonightCard | undefined;
+  warning: CompactAllergyWarning | null;
 }) {
   const { t } = useTranslation('recipes');
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', mt: '6px' }}>
-      {card.canMake ? (
+      <AllergenIndicator warning={warning} />
+      {!card ? null : card.canMake ? (
         <Pill
           icon={<CheckIcon size={13} />}
           fg={tokens.color.accentOnTint}
@@ -215,7 +231,7 @@ function StatusPills({
           {t('missingOne', { name: card.missing.name })}
         </Pill>
       ) : null}
-      {card.expiringCount > 0 ? (
+      {card && card.expiringCount > 0 ? (
         <Pill
           icon={<IngredientsScanIcon size={13} />}
           fg={tokens.color.urgentFg}

@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "hide_recipes_with_allergies" boolean DEFAULT false NOT NULL;

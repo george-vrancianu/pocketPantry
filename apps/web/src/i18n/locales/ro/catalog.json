@@ -74,5 +74,11 @@
     "link": "Leagă și alege",
     "linked": "„{{name}}” înseamnă acum {{ingredient}} pentru familia ta",
     "aliasExists": "„{{name}}” este deja un nume pentru {{ingredient}}."
+  },
+  "allergenContains": {
+    "label": "Conține",
+    "hint": "Opțional. Lasă gol dacă nu știi; ingredientul va conta atunci ca neverificat.",
+    "none": "Niciunul",
+    "loadFailed": "Nu s-a putut încărca lista de alergeni."
   }
 }

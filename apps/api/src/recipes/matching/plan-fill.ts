@@ -37,6 +37,12 @@ export type FillRecipe = ForecastRecipe & {
   /** The Base Recipe's id: a Base Recipe and its Variants share it. */
   groupId: string;
   moments: EatingMomentUse[];
+  /**
+   * Any Allergy of the Family (any Member's, or a Family Allergy) is in a required, checked
+   * line, as `deriveAllergens` decides. Fill never places such a Recipe, whatever the hide
+   * preference; a slot the Member filled with one is left alone.
+   */
+  blocksFill: boolean;
 };
 
 /** A Plan Slot of the plan, or an empty one (`recipeId` null). */
@@ -102,7 +108,7 @@ export function fillPlan(input: FillInput): FillChoice[] {
     forecastRecipes[id] = { servings, archived, lines };
   }
   const candidates = input.recipes
-    .filter((recipe) => !recipe.archived)
+    .filter((recipe) => !recipe.archived && !recipe.blocksFill)
     .sort((a, b) => a.id.localeCompare(b.id));
   const groupOf = (recipeId: string) =>
     recipeById.get(recipeId)?.groupId ?? recipeId;

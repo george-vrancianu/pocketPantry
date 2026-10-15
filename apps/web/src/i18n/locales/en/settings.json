@@ -41,6 +41,17 @@
     "saved": "Saved"
   },
   "language": "Language",
+  "allergies": {
+    "title": "Allergies",
+    "hint": "Pick what you must avoid, intolerances included. Recipes that contain it get a warning.",
+    "familyCanSee": "Everyone in your family can see your Allergies.",
+    "loadFailed": "Could not load the Allergen list.",
+    "saveFailed": "Could not save your Allergies. Try again.",
+    "noAccount": "Someone without an account? Add a Family Allergy in the Family tab.",
+    "hideRecipes": "Hide Recipes with my Allergies",
+    "hideRecipesHint": "Leaves out Recipes with your Allergies, or your Family Allergies, from the Recipes list, Can Make, Cook tonight and Plate Scan matches. Other members' Allergies never hide a Recipe. You can still open any Recipe, and the Meal Plan shows everything.",
+    "hideSaveFailed": "Could not save this setting. Try again."
+  },
   "admin": "Catalog",
   "openAdmin": "Curate the Catalog",
   "account": "Account",
@@ -149,6 +160,32 @@
       "staples_one": "{{count}} Staple",
       "staples_other": "{{count}} Staples"
     },
-    "editLabel": "Edit"
+    "editLabel": "Edit",
+    "allergensUnchecked": "Not checked for allergens",
+    "allergensContains": "Contains {{names}}",
+    "allergensNone": "No allergens tagged",
+    "uncheckedSummary_one": "{{count}} ingredient is not checked for allergens.",
+    "uncheckedSummary_other": "{{count}} ingredients are not checked for allergens.",
+    "tagAllergens": "Tag allergens of {{name}}",
+    "tagLabel": "Allergens",
+    "saveAllergens": "Save allergens"
+  },
+  "familyAllergies": {
+    "title": "Family Allergies",
+    "hint": "For people in your family without an account, like a child. Any member can add or remove them, and they count as everyone's Allergies.",
+    "empty": "No Family Allergies yet.",
+    "family": "Family",
+    "allergen": "Allergen",
+    "label": "Label (optional)",
+    "labelHint": "Who it is for, like Mia",
+    "add": "Add",
+    "remove": "Remove {{allergen}} for {{who}}",
+    "loadFailed": "Could not load the Family's Allergies."
+  },
+  "memberAllergies": {
+    "title": "Members' Allergies",
+    "hint": "Each member sets their own Allergies. You can see them here but not change them.",
+    "none": "None recorded",
+    "loadFailed": "Could not load the members' Allergies."
   }
 }

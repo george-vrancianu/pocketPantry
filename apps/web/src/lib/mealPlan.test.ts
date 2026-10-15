@@ -30,6 +30,7 @@ const slot = (
   servingsOverride: null,
   unavailable: false,
   minutes: 20,
+  allergyWarning: null,
   aisle: null,
   status: 'short',
   issues,

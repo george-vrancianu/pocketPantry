@@ -63,6 +63,10 @@ export const user = pgTable(
     locale: text('locale'),
     // Member Preference: 'warm' | 'minimal' | 'dark' (validated in the API); null until chosen.
     theme: text('theme'),
+    // Member Preference: leave out Recipes with the Member's own or Family Allergies (#359); off by default.
+    hideRecipesWithAllergies: boolean('hide_recipes_with_allergies')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [
@@ -165,6 +169,7 @@ export const catalogEntityType = pgEnum('catalog_entity_type', [
   'cuisine',
   'method',
   'eating_moment',
+  'allergen',
 ]);
 
 export const translationKind = pgEnum('translation_kind', ['name', 'synonym']);
@@ -260,6 +265,20 @@ export const ingredients = pgTable(
     }),
     // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
     nameLocale: text('name_locale'),
+    // A Member has tagged a Family Ingredient's Allergens (ticking "None" counts).
+    // A shared Ingredient counts as checked too, except one promoted from Family copies none of
+    // which were checked: that stays Unchecked (false here plus allergens_review_pending below)
+    // until an Admin saves its Allergens (ADR 0014). On a seed Ingredient it records that the
+    // seed's tags were applied once. Do not reuse false on a shared row as a "flagged for
+    // review" marker: the seed would re-apply its tags to it.
+    allergensChecked: boolean('allergens_checked').notNull().default(false),
+    // Promoting or merging a Family Ingredient carried Member-entered tags onto a shared row
+    // (ADR 0011, 0014). The Admin reviews them; saving the Ingredient's Allergens clears this.
+    // A separate column from allergens_checked, which the seed reads (see above). While set on
+    // a shared row that is not checked, no Member has tagged it: its lines read as Unchecked.
+    allergensReviewPending: boolean('allergens_review_pending')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [
@@ -271,6 +290,91 @@ export const ingredients = pgTable(
       .on(table.ownerFamilyId, table.normalizedName)
       .where(sql`${table.ownerFamilyId} IS NOT NULL`),
     index('ingredients_leaf_category_idx').on(table.leafCategoryId),
+  ],
+);
+
+// An Allergen is an Admin-curated, ordered, translated list entry (names in
+// catalog_translations, entity type `allergen`). Seeded with the EU's 14 (ADR 0014).
+export const allergens = pgTable(
+  'allergens',
+  {
+    id: uuid('id').primaryKey(),
+    name: text('name').notNull(),
+    normalizedName: text('normalized_name').notNull(),
+    sortOrder: integer('sort_order').notNull(),
+    // Retired by an Admin: hidden from the pickers, kept on every tag and Allergy so a
+    // Recipe containing it is still warned about (never deleted, like Eating Moments).
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('allergens_normalized_name_idx').on(table.normalizedName),
+  ],
+);
+
+// "This Ingredient contains this Allergen", for shared and Family Ingredients alike.
+// An Allergen in use cannot be deleted: dropping a tag would read as "contains none".
+export const ingredientAllergens = pgTable(
+  'ingredient_allergens',
+  {
+    ingredientId: uuid('ingredient_id')
+      .notNull()
+      .references(() => ingredients.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.ingredientId, table.allergenId] }),
+    index('ingredient_allergens_allergen_idx').on(table.allergenId),
+  ],
+);
+
+// An Allergy: "this Member must avoid this Allergen". Keyed to the Member, not their
+// Family, so it goes with them when they leave a Family or join another. An Allergen in
+// use cannot be deleted: dropping an Allergy would silently stop warning.
+export const memberAllergies = pgTable(
+  'member_allergies',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    ...timestamps,
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.allergenId] }),
+    index('member_allergies_allergen_idx').on(table.allergenId),
+  ],
+);
+
+// A Family Allergy: "someone in this Family without an account must avoid this
+// Allergen", with an optional label such as "Mia". Several rows may share an Allergen
+// with different labels. Owned by the Family and deleted with it (ADR 0001).
+export const familyAllergies = pgTable(
+  'family_allergies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    label: text('label'),
+    ...timestamps,
+  },
+  (table) => [
+    // The same Allergen and label twice would only repeat itself.
+    uniqueIndex('family_allergies_unique_idx').on(
+      table.familyId,
+      table.allergenId,
+      sql`coalesce(${table.label}, '')`,
+    ),
+    index('family_allergies_allergen_idx').on(table.allergenId),
   ],
 );
 

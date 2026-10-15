@@ -1,13 +1,18 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { randomUUID } from 'node:crypto';
-import { like } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import request from 'supertest';
 import { ApiException } from '../src/common/api-exception';
 import { normalizeName } from '../src/catalog/normalize';
 import { seedCatalog, seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { catalogTranslations } from '../src/database/schema';
+import {
+  allergens,
+  catalogTranslations,
+  ingredientAllergens,
+  openFoodFactsCache,
+} from '../src/database/schema';
 import type { OpenFoodFactsProduct } from '../src/barcode/open-food-facts.client';
 import { freshBarcode } from './support/fresh-barcode';
 import { client, signUp } from './support/admin-session';
@@ -287,6 +292,126 @@ describe('Barcode Lookup (integration)', () => {
         expect(await quantityOf(text)).toEqual([null, null]);
       },
     );
+  });
+
+  // Spec: #352. Open Food Facts allergens, as a proposal for the Contains row
+  // (no match) or an informational note (a match missing them).
+  describe('allergens', () => {
+    const named = (...slugs: string[]) =>
+      slugs.map((slug) => ({
+        id: seedId.allergen(slug),
+        name: expect.any(String) as unknown,
+      }));
+
+    it('lists the mapped Allergens of an unmatched product and ignores unknown tags', async () => {
+      found = product({
+        productName: 'Zorblax Crunch 500g',
+        allergenTags: ['en:milk', 'en:kiwi', 'en:sesame-seeds'],
+      });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body).toMatchObject({ match: null });
+      expect(body.allergens).toEqual(named('milk', 'sesame'));
+      expect(body.missingAllergens).toEqual([]);
+    });
+
+    it('names the Allergens in the requested locale', async () => {
+      found = product({
+        productName: 'Zorblax Crunch 500g',
+        allergenTags: ['en:milk'],
+      });
+      const body = (await lookup(a, code, 'da').expect(200)).body as Json;
+      expect(body.allergens).toEqual([
+        { id: seedId.allergen('milk'), name: 'Mælk' },
+      ]);
+    });
+
+    it.each([
+      ['an empty list', []],
+      ['no list at all', undefined],
+      ['only unknown tags', ['en:kiwi']],
+    ])('lists none for %s', async (_label, allergenTags) => {
+      found = product({ productName: 'Zorblax Crunch 500g', allergenTags });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body.allergens).toEqual([]);
+    });
+
+    it('never lists a retired Allergen', async () => {
+      found = product({
+        productName: 'Zorblax Crunch 500g',
+        allergenTags: ['en:milk', 'en:lupin'],
+      });
+      const lupin = seedId.allergen('lupin');
+      await database
+        .update(allergens)
+        .set({ archivedAt: new Date() })
+        .where(eq(allergens.id, lupin));
+      try {
+        const body = (await lookup(a).expect(200)).body as Json;
+        expect(body.allergens).toEqual(named('milk'));
+      } finally {
+        await database
+          .update(allergens)
+          .set({ archivedAt: null })
+          .where(eq(allergens.id, lupin));
+      }
+    });
+
+    it('notes only the listed Allergens a matched Ingredient is not tagged with', async () => {
+      // Parmesan is tagged milk in the seed.
+      found = product({
+        productName: 'Parmesan',
+        allergenTags: ['en:milk', 'en:gluten'],
+      });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body).toMatchObject({
+        match: { id: seedId.ingredient('parmesan') },
+      });
+      expect(body.missingAllergens).toEqual(named('gluten'));
+    });
+
+    it('notes nothing when the matched Ingredient already has every listed Allergen', async () => {
+      found = product({ productName: 'Parmesan', allergenTags: ['en:milk'] });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body.missingAllergens).toEqual([]);
+    });
+
+    it('does not change the matched Ingredient tags', async () => {
+      const tagsOfParmesan = () =>
+        database
+          .select()
+          .from(ingredientAllergens)
+          .where(
+            eq(ingredientAllergens.ingredientId, seedId.ingredient('parmesan')),
+          );
+      const before = await tagsOfParmesan();
+      found = product({ productName: 'Parmesan', allergenTags: ['en:gluten'] });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body.missingAllergens).toEqual(named('gluten'));
+      expect(await tagsOfParmesan()).toEqual(before);
+    });
+
+    it('keeps the allergens in the cache and serves them without asking again', async () => {
+      found = product({
+        productName: 'Zorblax Crunch 500g',
+        allergenTags: ['en:eggs'],
+      });
+      await lookup(a).expect(200);
+      found = null;
+      const body = (await lookup(b).expect(200)).body as Json;
+      expect(asked).toEqual([code]);
+      expect(body.allergens).toEqual(named('eggs'));
+    });
+
+    it('lists none from a product cached before allergens were kept', async () => {
+      await database.insert(openFoodFactsCache).values({
+        barcode: code,
+        product: product({ productName: 'Zorblax Old Entry' }),
+        fetchedAt: new Date(),
+      });
+      const body = (await lookup(a).expect(200)).body as Json;
+      expect(body).toMatchObject({ found: true });
+      expect(body.allergens).toEqual([]);
+    });
   });
 
   it('never uses the Scan Cap', async () => {
