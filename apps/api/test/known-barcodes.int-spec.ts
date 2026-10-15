@@ -256,14 +256,16 @@ describe('Known Barcodes (integration)', () => {
 
     it('notes the cached allergens a matched Known Barcode Ingredient is not tagged with', async () => {
       const code = freshBarcode();
-      // Parmesan is tagged milk in the seed.
+      // The Known Barcode is saved against Parmesan, which is tagged milk in the seed.
       found = {
         ...offProduct(),
         productName: 'Zorblax Spread',
         allergenTags: ['en:milk', 'en:gluten'],
       };
       await lookup(a, code).expect(200);
-      await saveIngredient(a, code);
+      await saveIngredient(a, code, {
+        ingredientId: seedId.ingredient('parmesan'),
+      });
       const res = await lookup(a, code).expect(200);
       expect(res.body).toMatchObject({
         source: 'known_barcode',

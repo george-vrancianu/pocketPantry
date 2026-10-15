@@ -89,7 +89,7 @@ export class BarcodeLookupService {
     const listed = await this.listedAllergens(
       scope,
       locale,
-      await this.cachedProduct(barcode),
+      (await this.freshCached(barcode))?.product ?? null,
     );
     const base = {
       found: true,
@@ -136,13 +136,6 @@ export class BarcodeLookupService {
     if (!cached) return null;
     const ttl = cached.product ? HIT_TTL_MS : NOT_FOUND_TTL_MS;
     return Date.now() - cached.fetchedAt.getTime() < ttl ? cached : null;
-  }
-
-  /** The product while the shared cache holds it fresh, or null. Never calls Open Food Facts. */
-  private async cachedProduct(
-    barcode: string,
-  ): Promise<OpenFoodFactsProduct | null> {
-    return (await this.freshCached(barcode))?.product ?? null;
   }
 
   /** The product's mapped Allergens that are still active, named in `locale`, in list order. */
