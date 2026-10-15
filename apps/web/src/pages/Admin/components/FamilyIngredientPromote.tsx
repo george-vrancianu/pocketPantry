@@ -32,7 +32,9 @@ export function FamilyIngredientPromote({ group, onDone, onCancel }: Props) {
   return (
     <EditorForm
       heading={t('familyIngredients.promoteName', { name: group.name })}
-      description={t('familyIngredients.promoteHint')}
+      description={
+        group.copies.length > 1 ? t('familyIngredients.promoteHint') : undefined
+      }
       error={promote.error}
       canSave={chosen !== ''}
       saving={promote.isPending}

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import {
   catalogScope,
   familyOwnedIngredients,
@@ -136,35 +136,27 @@ export class FamilyIngredientsAdminService {
    * of the name into it.
    */
   async promote(ingredientId: string): Promise<PromotedIngredient> {
+    const owned = familyOwnedIngredients(this.database);
     const [peek] = await this.database
-      .select({ normalizedName: ingredients.normalizedName })
-      .from(ingredients)
-      .where(
-        and(
-          eq(ingredients.id, ingredientId),
-          isNotNull(ingredients.ownerFamilyId),
-        ),
-      );
+      .select({ normalizedName: owned.normalizedName })
+      .from(owned)
+      .where(eq(owned.id, ingredientId));
     if (!peek) throw notFound();
     const key = peek.normalizedName;
 
     const result = await this.database.transaction(async (tx) => {
       await this.catalog.lockName(tx, key);
+      const ownedNow = familyOwnedIngredients(tx);
       const copies = await tx
         .select({
-          id: ingredients.id,
-          name: ingredients.name,
-          leafCategoryId: ingredients.leafCategoryId,
-          ownerFamilyId: ingredients.ownerFamilyId,
+          id: ownedNow.id,
+          name: ownedNow.name,
+          leafCategoryId: ownedNow.leafCategoryId,
+          ownerFamilyId: ownedNow.ownerFamilyId,
         })
-        .from(ingredients)
-        .where(
-          and(
-            eq(ingredients.normalizedName, key),
-            isNotNull(ingredients.ownerFamilyId),
-          ),
-        )
-        .orderBy(asc(ingredients.createdAt), asc(ingredients.id));
+        .from(ownedNow)
+        .where(eq(ownedNow.normalizedName, key))
+        .orderBy(asc(ownedNow.createdAt), asc(ownedNow.id));
       const picked = copies.find((copy) => copy.id === ingredientId);
       if (!picked) throw notFound();
 
@@ -173,6 +165,7 @@ export class FamilyIngredientsAdminService {
       const clash = await this.search.findIdByName(
         catalogScope(SHARED_ONLY),
         key,
+        tx,
       );
       if (clash) {
         throw new ApiException(409, 'family_ingredients.shared_name_exists', {

@@ -26,6 +26,17 @@ export function FamilyIngredientsQueue() {
     { to: 'row'; name: string } | { to: 'notice' } | null
   >(null);
 
+  // Index of the first row a Load more brings in, until focus has moved there.
+  const [focusFrom, setFocusFrom] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (focusFrom === null || queue.isFetchingNextPage) return;
+    const buttons =
+      listRef.current?.querySelectorAll<HTMLElement>('[data-promote-for]');
+    buttons?.[focusFrom]?.focus();
+    setFocusFrom(null);
+  }, [focusFrom, queue.isFetchingNextPage]);
+
   useEffect(() => {
     if (promoting || !restoreFocus) return;
     if (restoreFocus.to === 'notice') {
@@ -119,6 +130,7 @@ export function FamilyIngredientsQueue() {
           aria-disabled={queue.isFetchingNextPage}
           onClick={() => {
             if (queue.isFetchingNextPage) return;
+            setFocusFrom(groups.length);
             void queue.fetchNextPage();
           }}
         >

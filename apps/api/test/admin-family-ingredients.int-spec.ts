@@ -62,7 +62,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
   let d: Who;
   const emails: Record<string, string> = {};
 
-  const HARD_CHEESE = seedId.leaf('hard-cheese');
+  const GROUND_SPICES = seedId.leaf('ground-spices');
   const OTHER = seedId.leaf('other-other');
 
   beforeAll(async () => {
@@ -102,7 +102,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
   async function made(
     who: Who,
     name: string,
-    leafCategoryId = HARD_CHEESE,
+    leafCategoryId = GROUND_SPICES,
     locale = 'en',
   ): Promise<Made> {
     const res = await who.post(`/catalog/family-ingredients?locale=${locale}`, {
@@ -174,19 +174,19 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       const two = unique('Afi Two');
       const one = unique('Afi One');
       // Case differs between Families: still one group.
-      const threeA = await made(a, three, HARD_CHEESE, 'ro');
+      const threeA = await made(a, three, GROUND_SPICES, 'ro');
       const threeB = await made(b, three.toUpperCase(), OTHER, 'ro');
       const threeC = await made(
         c,
         ` ${three.toLowerCase()} `,
-        HARD_CHEESE,
+        GROUND_SPICES,
         'ro',
       );
-      const twoA = await made(a, two, HARD_CHEESE, 'en');
-      const twoB = await made(b, two, HARD_CHEESE, 'da');
+      const twoA = await made(a, two, GROUND_SPICES, 'en');
+      const twoB = await made(b, two, GROUND_SPICES, 'da');
       const oneD = await made(d, one, OTHER, 'da');
       const shared = await admin.post('/admin/catalog/ingredients', {
-        leafCategoryId: HARD_CHEESE,
+        leafCategoryId: GROUND_SPICES,
         name: unique('Afi Shared Never Listed'),
         defaultUnit: 'g',
       });
@@ -200,7 +200,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
         name: three,
         familyCount: 3,
         locale: 'ro',
-        leafCategory: { id: HARD_CHEESE },
+        leafCategory: { id: GROUND_SPICES },
       });
       expect(g3.copies.map((x) => x.id).sort()).toEqual(
         [threeA.id, threeB.id, threeC.id].sort(),
@@ -317,7 +317,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       const copyB = await made(b, name);
       // Added after the Families filed their copies: both Families see two.
       const sharedRes = await admin.post('/admin/catalog/ingredients', {
-        leafCategoryId: HARD_CHEESE,
+        leafCategoryId: GROUND_SPICES,
         name: name.toUpperCase(),
         defaultUnit: 'g',
       });
@@ -346,7 +346,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
         const name = unique('Afi Translated');
         const copy = await made(a, name);
         const sharedRes = await admin.post('/admin/catalog/ingredients', {
-          leafCategoryId: HARD_CHEESE,
+          leafCategoryId: GROUND_SPICES,
           name: unique('Afi Translated Shared'),
           defaultUnit: 'g',
         });
@@ -375,7 +375,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
   describe('merging the other Families copies', () => {
     it('re-points every reference kind to the promoted Ingredient, and removes the merged copies', async () => {
       const name = unique('Afi Merge');
-      const keep = await made(a, name, HARD_CHEESE);
+      const keep = await made(a, name, GROUND_SPICES);
       // B and C file theirs under another Leaf Category.
       const copyB = await made(b, name, OTHER);
       const copyC = await made(c, name, OTHER);
@@ -451,7 +451,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
       // The Batch moves to the promoted Ingredient and to its Leaf Category.
       expect(bBatches[0]).toMatchObject({
         ingredientId: keep.id,
-        leafCategoryId: HARD_CHEESE,
+        leafCategoryId: GROUND_SPICES,
         unmatched: false,
       });
       const cBatches = await database
@@ -459,7 +459,7 @@ describe('Admin: Family Ingredients queue and promote (integration)', () => {
         .from(batches)
         .where(eq(batches.familyId, familyC));
       expect(cBatches.map((x) => [x.ingredientId, x.leafCategoryId])).toEqual([
-        [keep.id, HARD_CHEESE],
+        [keep.id, GROUND_SPICES],
       ]);
 
       const idsOf = async (

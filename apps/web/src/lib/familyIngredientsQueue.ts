@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-query';
 import type { Locale } from '../i18n/resources';
 import { adminCatalogQueryKey } from './admin';
-import { apiRequest } from './api';
+import { ApiError, apiRequest } from './api';
 import { catalogSearchQueryKey } from './catalog';
 import { suggestionsQueryKey, templateDetailsQueryKey } from './queryKeys';
 import { recipesQueryKey } from './recipes';
@@ -40,11 +40,11 @@ export type PromoteResult = {
   mergedIngredientIds: string[];
 };
 
-const queueKey = ['admin-family-ingredients'] as const;
-
 type Page = { groups: FamilyIngredientGroup[]; nextCursor: string | null };
 
 /** The queue one page at a time, fetched only while `enabled`. */
+const queueKey = ['admin-family-ingredients'] as const;
+
 export function useFamilyIngredientsQueue(enabled: boolean) {
   return useInfiniteQuery({
     queryKey: queueKey,
@@ -76,6 +76,12 @@ export function usePromoteFamilyIngredient() {
         method: 'POST',
         body: { ingredientId },
       }),
+    // Someone else promoted it first: the picker is on a group that has gone.
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 404) {
+        void queryClient.invalidateQueries({ queryKey: queueKey });
+      }
+    },
     // The Ingredient turns shared and the other copies are merged away, so
     // everything that shows Ingredients, the Pantry or the lists is stale.
     onSuccess: () =>
