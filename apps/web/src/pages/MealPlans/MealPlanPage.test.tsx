@@ -161,9 +161,11 @@ describe('Meal Plan page', () => {
     await u.click(await screen.findByRole('button', { name: /Tomato pasta/ }));
     const dialog = await screen.findByRole('dialog', { name: /Tomato pasta/ });
     expect(within(dialog).getByText('Tomatoes')).toBeVisible();
-    expect(within(dialog).getByText('Not in your Pantry')).toBeVisible();
+    expect(within(dialog).getByText(/Not in your Pantry/)).toBeVisible();
+    expect(within(dialog).getByText('Missing')).toBeVisible();
     expect(within(dialog).getByText('Cheese')).toBeVisible();
-    expect(within(dialog).getByText('Only 50 g in your Pantry')).toBeVisible();
+    expect(within(dialog).getByText(/Only 50 g in your Pantry/)).toBeVisible();
+    expect(within(dialog).getByText('Short 100 g')).toBeVisible();
     expect(within(dialog).getByText('Salt')).toBeVisible();
     expect(within(dialog).getByText("Can't tell")).toBeVisible();
   });
@@ -444,6 +446,7 @@ describe('Meal Plan page', () => {
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByText(/need 400 g/)).toBeVisible();
     expect(within(dialog).getByText(/short 1\.5 kg/)).toBeVisible();
+    expect(within(dialog).getByText('Short 1.5 kg')).toBeVisible();
     expect(within(dialog).queryByText(/1500/)).toBeNull();
   });
 
@@ -493,6 +496,41 @@ describe('Meal Plan page', () => {
         .filter((c) => c.key === 'GET /api/recipes')
         .every((c) => c.search.includes('includeVariants=true')),
     ).toBe(true);
+  });
+
+  it('marks a line already on the list in its pill', async () => {
+    setup();
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /Rice bowl/ }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText(/on list/)).toBeVisible();
+  });
+
+  it('labels a Variant in the picker without a search', async () => {
+    setup(week(), {
+      'GET /api/recipes': () =>
+        Response.json({
+          recipes: [
+            {
+              ...recipe('rc-3', 'Spicy curry'),
+              parentId: 'rc-2',
+              base: { id: 'rc-2', title: 'Green curry' },
+            },
+          ],
+        }),
+    });
+    const u = userEvent.setup();
+    renderPage();
+
+    await u.click(await screen.findByRole('button', { name: /^Add Lunch/ }));
+    const picker = await screen.findByRole('dialog', {
+      name: 'Choose a Recipe',
+    });
+    expect(
+      await within(picker).findByText('Variant of Green curry'),
+    ).toBeVisible();
   });
 
   it('has no Servings stepper for an unavailable Recipe', async () => {

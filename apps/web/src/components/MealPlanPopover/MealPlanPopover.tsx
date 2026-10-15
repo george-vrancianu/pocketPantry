@@ -5,7 +5,6 @@ import {
   CalendarIcon,
   Box,
   ChevronRightIcon,
-  CheckIcon,
   CloseIcon,
   displayType,
   DOCK_BOTTOM,
@@ -14,7 +13,6 @@ import {
   IconButton,
   PlusIcon,
   radius,
-  ShoppingIcon,
   shadow,
   border,
   Tag,
@@ -22,7 +20,6 @@ import {
   usePrefersReducedMotion,
   useBreakpointUp,
 } from '@pocket-pantry/ui';
-import type { TFunction } from 'i18next';
 import {
   useCallback,
   useId,
@@ -50,8 +47,8 @@ import {
   issueDetail,
   longWeekday,
   reasonText,
-  statusLabel,
 } from './mealPlanText';
+import { statusMark } from './statusMark';
 import { plainAction } from './plainAction';
 
 /** Widest the popover grows, px. */
@@ -107,32 +104,6 @@ const ghostButton = {
   '&:active:not(:disabled)': { transform: 'scale(.96)' },
   ...focusRing,
 } as const;
-
-/** A slot's forecast status as a Tag: the Widget's marks, reused by the Meal Plan page. */
-export const statusMark = (
-  slot: Pick<WindowSlot, 'status' | 'issues'>,
-  t: TFunction<'dashboard'>,
-) => {
-  const label = statusLabel(t, slot);
-  switch (slot.status) {
-    case 'covered':
-      return (
-        <Tag tone="accent" icon={<CheckIcon size={12} strokeWidth={3} />}>
-          {label}
-        </Tag>
-      );
-    case 'onList':
-      return (
-        <Tag tone="soon" icon={<ShoppingIcon size={12} strokeWidth={2.4} />}>
-          {label}
-        </Tag>
-      );
-    case 'short':
-      return <Tag tone="urgent">{label}</Tag>;
-    case 'unavailable':
-      return <Tag tone="neutral">{label}</Tag>;
-  }
-};
 
 function IssueLine({
   issue,

@@ -11,12 +11,40 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   issueDetail,
+  readableAmount,
   reasonText,
 } from '../../../components/MealPlanPopover/mealPlanText';
-import { ingredientKey } from '../../../lib/mealPlan';
+import { ingredientKey, type PlanIssue } from '../../../lib/mealPlan';
 import type { AddMissingScope } from '../../../lib/mealPlan';
 import type { PlanSlot } from '../../../lib/mealPlanPage';
+import type { PantryLine } from '../../../lib/recipes';
+import { LineStatusPill } from '../../Recipes/components/PantryStatus';
 import { ServingsStepper } from '../../Recipes/components/Servings';
+
+/** A forecast issue as a Pantry-status line, so the Recipe page's pill words it (short amounts as kg / l). */
+function asPantryLine(issue: PlanIssue): PantryLine {
+  const missing = issue.kind === 'missing';
+  const shortfall =
+    !missing && issue.quantity !== null && issue.unit !== null
+      ? readableAmount(issue.quantity, issue.unit)
+      : null;
+  return {
+    lineId: ingredientKey(issue),
+    ingredientId: issue.ingredientId,
+    name: issue.name,
+    status: missing ? 'missing' : 'short',
+    optional: false,
+    pantryBasic: false,
+    quantity: issue.quantity,
+    unit: issue.unit,
+    shortfall:
+      shortfall && shortfall.unit
+        ? { quantity: shortfall.quantity, unit: shortfall.unit }
+        : null,
+    usesExpiringSoon: false,
+    onShoppingList: issue.onList,
+  };
+}
 
 type Props = {
   slot: PlanSlot | undefined;
@@ -127,6 +155,9 @@ export function SlotSheet({
                   i18n.language,
                   issue,
                 );
+                const meta = [uncertain ? null : detailText, reason]
+                  .filter(Boolean)
+                  .join(' · ');
                 return (
                   <Box
                     component="li"
@@ -143,25 +174,10 @@ export function SlotSheet({
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Box sx={{ fontSize: 15, fontWeight: 600 }}>
                         {issue.name}
-                        {detailText && !uncertain ? (
-                          <Box
-                            component="span"
-                            sx={{
-                              fontWeight: 700,
-                              fontVariantNumeric: 'tabular-nums',
-                              color: issue.onList
-                                ? tokens.color.soonFg
-                                : tokens.color.urgentFg,
-                            }}
-                          >
-                            {' · '}
-                            {detailText}
-                          </Box>
-                        ) : null}
                       </Box>
-                      {reason ? (
+                      {meta ? (
                         <Box sx={{ fontSize: 13, color: tokens.color.muted }}>
-                          {reason}
+                          {meta}
                         </Box>
                       ) : null}
                       {uncertain ? (
@@ -172,11 +188,9 @@ export function SlotSheet({
                     </Box>
                     {uncertain ? (
                       <Tag tone="neutral">{t('detail.uncertain')}</Tag>
-                    ) : issue.onList ? (
-                      <Tag tone="soon">
-                        {tDashboard('mealPlan.status.onList')}
-                      </Tag>
-                    ) : null}
+                    ) : (
+                      <LineStatusPill line={asPantryLine(issue)} />
+                    )}
                     {uncertain || issue.onList ? null : (
                       <Button
                         variant="ghost"

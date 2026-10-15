@@ -79,7 +79,7 @@ export function RecipePickerSheet({
               key={recipe.id}
               recipe={recipe}
               card={undefined}
-              filtering={filtering}
+              filtering
               onSelect={() => onPick(recipe.id)}
             />
           ))}

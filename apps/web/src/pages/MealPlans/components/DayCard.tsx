@@ -1,7 +1,7 @@
 import { Box, Button, Card, Tag, tokens } from '@pocket-pantry/ui';
 import { forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { statusMark } from '../../../components/MealPlanPopover/MealPlanPopover';
+import { statusMark } from '../../../components/MealPlanPopover/statusMark';
 import {
   dayLabel,
   statusLabel,

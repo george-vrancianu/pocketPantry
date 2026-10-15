@@ -87,15 +87,22 @@ export function baseAmount(
   quantity: number,
   unit: BaseUnit | null,
 ): string {
-  if (unit === 'g' && quantity >= 1000) {
-    return formatAmount(quantity / 1000, 'kg', language, t as TFunction);
-  }
-  if (unit === 'ml' && quantity >= 1000) {
-    return formatAmount(quantity / 1000, 'l', language, t as TFunction);
-  }
-  return unit
-    ? formatAmount(quantity, unit as Unit, language, t as TFunction)
-    : new Intl.NumberFormat(language).format(quantity);
+  const shown = readableAmount(quantity, unit);
+  return shown.unit
+    ? formatAmount(shown.quantity, shown.unit, language, t as TFunction)
+    : new Intl.NumberFormat(language).format(shown.quantity);
+}
+
+/** A base amount as it reads best: 1500 g as 1.5 kg, 2000 ml as 2 l, anything else as it is. */
+export function readableAmount(
+  quantity: number,
+  unit: BaseUnit | null,
+): { quantity: number; unit: Unit | null } {
+  if (unit === 'g' && quantity >= 1000)
+    return { quantity: quantity / 1000, unit: 'kg' };
+  if (unit === 'ml' && quantity >= 1000)
+    return { quantity: quantity / 1000, unit: 'l' };
+  return { quantity, unit: unit as Unit | null };
 }
 
 /**
