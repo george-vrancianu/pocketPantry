@@ -168,8 +168,8 @@
       "added_few": "{{count}} adăugate pe lista de cumpărături",
       "added_other": "{{count}} adăugate pe lista de cumpărături",
       "dated": "{{name}} are acum dată",
-      "usual_one": "{{count}} a primit data obișnuită de expirare · modifică în cămară",
-      "usual_few": "{{count}} au primit data obișnuită de expirare · modifică în cămară",
+      "usual_one": "{{count}} lot a primit data obișnuită de expirare · modifică în cămară",
+      "usual_few": "{{count}} loturi au primit data obișnuită de expirare · modifică în cămară",
       "usual_other": "{{count}} de loturi au primit data obișnuită de expirare · modifică în cămară"
     },
     "item": {

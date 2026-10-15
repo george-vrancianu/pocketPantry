@@ -363,7 +363,7 @@ export class PantryService {
     }));
   }
 
-  /** The Default Expiry in days of each Leaf Category the Batches sit under, resolved as at creation. */
+  /** The Default Expiry in days of each Batch's Leaf Category, with the Family's current overrides. */
   private async expiryDaysByLeaf(
     familyId: string,
     rows: BatchRow[],

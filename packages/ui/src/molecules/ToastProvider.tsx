@@ -55,12 +55,14 @@ const ToastContext = createContext<ToastApi | null>(null);
  * How a modal registers itself as the toast's home while open. A modal
  * aria-hides the app root and traps focus, so a toast rendered at the root
  * would be neither heard nor reachable; it renders inside the modal instead.
+ * Hosts stack: the innermost open modal hosts the toast, and when it closes
+ * the toast goes back to the one beneath.
  */
 const ToastHostContext = createContext<
   ((element: HTMLElement) => () => void) | null
 >(null);
 
-/** Called by a modal: while `element` is set, toasts render inside it. */
+/** Called by a modal: while `element` is set, toasts render inside it, unless a modal opened later is still open. */
 export function useToastHost(element: HTMLElement | null): void {
   const register = useContext(ToastHostContext);
   useEffect(() => {

@@ -20,7 +20,8 @@ export function SetDateSheet({ batch, onClose, onSave }: Props) {
   const [chosen, setChosen] = useState<IsoDate | null>(null);
   // Kept through the close transition, so the sheet does not empty out as it leaves.
   const [shown, setShown] = useState<Batch | null>(null);
-  if (batch !== null && shown === null) {
+  // Also when another Batch opens before the last one's close transition ended.
+  if (batch !== null && batch.id !== shown?.id) {
     setShown(batch);
     setChosen(
       batch.defaultExpiryDays === null
