@@ -111,6 +111,7 @@ describe('Expired Suggestions (integration)', () => {
       usedUp: [],
       runningLow: [],
       expired: [],
+      dismissed: [],
     });
   });
 
