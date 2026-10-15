@@ -63,7 +63,7 @@ describe('Dashboard layout (integration)', () => {
 
     const widgets = (body as { widgets: Widget[] }).widgets;
     expect(widgets.map(({ type, size }) => ({ type, size }))).toEqual([
-      { type: 'use-soon', size: 'wide' },
+      { type: 'health', size: 'wide' },
       { type: 'shopping', size: 'small' },
       { type: 'pantry-stock', size: 'small' },
     ]);
@@ -77,6 +77,19 @@ describe('Dashboard layout (integration)', () => {
       { id: 'b', type: 'meal-plan', size: 'wide' },
       { id: 'c', type: 'budget', size: 'wide' },
       { id: 'd', type: 'meal-plan', size: 'tall' },
+    ];
+
+    await call('put', cookie).send({ widgets: layout }).expect(200);
+    const body = (await call('get', cookie).expect(200)).body as unknown;
+
+    expect(body).toEqual({ widgets: layout });
+  });
+
+  it('accepts a Pantry health Widget in a saved layout', async () => {
+    const { cookie } = await signUp('Dina');
+    const layout = [
+      { id: 'h', type: 'health', size: 'small' },
+      { id: 'w', type: 'health', size: 'wide' },
     ];
 
     await call('put', cookie).send({ widgets: layout }).expect(200);
