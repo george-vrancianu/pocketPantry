@@ -72,7 +72,13 @@
     "description": "Produktbeskrivelse",
     "descriptionPlaceholder": "f.eks. Grana Padano 200 g",
     "unmatchedNotice": "\"{{name}}\" gemmes som umatchet og markeres til gennemgang.",
-    "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent."
+    "quantityInvalid": "Angiv en mængde fra 0,001 til 1.000.000 med op til 3 decimaler og uden eksponent.",
+    "prefill": {
+      "open": "Udfyld fra et foto",
+      "reading": "Læser produktfotoet…",
+      "cap": "Du har brugt alle dagens scanninger. Udfyld formularen selv.",
+      "mark": "Udfyldt fra dit foto"
+    }
   },
   "picker": {
     "label": "Udløber",

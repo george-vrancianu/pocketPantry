@@ -73,7 +73,13 @@
     "description": "Product description",
     "descriptionPlaceholder": "e.g. Grana Padano 200g",
     "unmatchedNotice": "\"{{name}}\" will be saved as Unmatched and flagged for review.",
-    "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals and no exponent."
+    "quantityInvalid": "Enter an amount from 0.001 to 1,000,000, with up to 3 decimals and no exponent.",
+    "prefill": {
+      "open": "Fill from a photo",
+      "reading": "Reading the product photo…",
+      "cap": "You have used all of today’s scans. Fill the form by hand.",
+      "mark": "Filled from your photo"
+    }
   },
   "picker": {
     "label": "Expires",
