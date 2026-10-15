@@ -9,7 +9,11 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { PantryPage } from './PantryPage';
 
 // jsdom has no camera or canvas: the camera hook and image preparation are the seams.
-const camera = vi.hoisted(() => ({ status: 'ready' as string }));
+const camera = vi.hoisted(() => ({
+  status: 'ready' as string,
+  /** Holds image preparation until released. */
+  prepare: null as Promise<void> | null,
+}));
 vi.mock('../../lib/camera', () => ({
   useCamera: () => ({
     videoRef: { current: null },
@@ -20,7 +24,10 @@ vi.mock('../../lib/camera', () => ({
   }),
 }));
 vi.mock('../../lib/image', () => ({
-  resizeImage: () => Promise.resolve('data:image/jpeg;base64,AAAA'),
+  resizeImage: () =>
+    (camera.prepare ?? Promise.resolve()).then(
+      () => 'data:image/jpeg;base64,AAAA',
+    ),
 }));
 
 const result = (id: string, name: string, unit: 'g' | 'l', days: number) =>
@@ -121,6 +128,7 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
   beforeEach(() => {
     localStorage.clear();
     camera.status = 'ready';
+    camera.prepare = null;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -169,6 +177,31 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByTestId('camera-overlay')).not.toBeInTheDocument();
     expect(cameraButton()).toHaveFocus();
+  });
+
+  it('drops a photo still being prepared when the overlay is cancelled', async () => {
+    const user = userEvent.setup();
+    let finish: () => void = () => {};
+    camera.prepare = new Promise<void>((resolve) => (finish = resolve));
+    const { calls, release } = stubProductScan(() =>
+      Response.json({ lines: [line()] }),
+    );
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'x',
+    );
+    await user.click(cameraButton());
+    screen.getByTestId('scan-guide').focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard('{Escape}');
+    finish();
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(scanCalls(calls)).toHaveLength(0);
+    expect(screen.queryByText(/Reading the product photo/)).toBeNull();
+    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
   });
 
   it("leaves the Scan page's remembered mode alone", async () => {

@@ -64,6 +64,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
         variant="ghost"
         ref={cameraButton}
         aria-disabled={camera.reading || undefined}
+        className={camera.reading ? 'Mui-disabled' : undefined}
         onClick={() => {
           if (!camera.reading) camera.openCamera();
         }}

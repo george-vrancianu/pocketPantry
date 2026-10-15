@@ -86,13 +86,27 @@ export function CameraOverlay({
   // Focus moves into the dialog on open, and Escape closes it as Close does.
   const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => dialog.current?.focus(), []);
+  // Set once the overlay is cancelled or gone: a photo still being prepared is then dropped.
+  const closed = useRef(false);
+  const cancelRef = useRef(onCancel);
+  cancelRef.current = onCancel;
+  const cancel = () => {
+    closed.current = true;
+    cancelRef.current();
+  };
+  const cancelFromKey = useRef(cancel);
+  cancelFromKey.current = cancel;
   useEffect(() => {
+    closed.current = false;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
+      if (event.key === 'Escape') cancelFromKey.current();
     };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+    return () => {
+      closed.current = true;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
 
   const shoot = async () => {
     if (shooting.current) return;
@@ -107,7 +121,7 @@ export function CameraOverlay({
         width: feed?.clientWidth || window.innerWidth,
         height: feed?.clientHeight || window.innerHeight,
       });
-      onResult({ kind: 'product', image, scanLanguage });
+      if (!closed.current) onResult({ kind: 'product', image, scanLanguage });
     } catch {
       setFailed(true);
     } finally {
@@ -188,7 +202,7 @@ export function CameraOverlay({
           component="button"
           type="button"
           aria-label={t('close')}
-          onClick={onCancel}
+          onClick={cancel}
           sx={roundButton}
         >
           <CloseIcon size={20} />
