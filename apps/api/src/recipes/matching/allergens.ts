@@ -86,6 +86,22 @@ export type AllergyWarningEntry = {
   lines: AllergyWarningLine[];
 };
 
+/** Whose Allergy it is, as a list row names it: no ids, and a Member by name. */
+export type AllergyWarningOwner =
+  | { kind: 'own' }
+  | { kind: 'family'; label: string | null }
+  | { kind: 'member'; name: string };
+
+/** One Allergen the Recipe contains for someone, with every person it concerns. */
+export type AllergyWarningAllergen = {
+  allergenId: string;
+  /** `yours` if anyone whose Allergy counts as the viewer's has it, else `members`. */
+  tier: 'yours' | 'members';
+  severity: AllergyWarningSeverity;
+  /** Whose Allergy it is, in the warning's order (own, Family by label, Members by name). */
+  owners: AllergyWarningOwner[];
+};
+
 /** The notice for a Recipe that contains, or might contain, one of the viewer's Allergies. */
 export type AllergyWarning = {
   /** `strong` when any entry is strong; `soft` otherwise. */
@@ -96,6 +112,11 @@ export type AllergyWarning = {
    * grouped by name. Empty when only Unchecked lines raise it.
    */
   entries: AllergyWarningEntry[];
+  /**
+   * The same entries folded to one item per Allergen, with every owner named: what a list
+   * row or Plan Slot shows. Empty when only Unchecked lines raise the warning.
+   */
+  allergens: AllergyWarningAllergen[];
   /** Lines that could not be checked, counted whenever the viewer has an Allergy. */
   uncheckedCount: number;
 };
@@ -113,6 +134,12 @@ export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
    * Member's Allergy, optional lines and Unchecked lines never hide a Recipe.
    */
   hidden: boolean;
+  /**
+   * Whether Fill must not pick this Recipe (ADR 0012): any Allergy that applies, another
+   * Member's included, is in a required, checked line. Fill chooses for the whole Family, so
+   * unlike `hidden` it ignores whose Allergy it is and the hide preference.
+   */
+  blocksFill: boolean;
 };
 
 /**
@@ -160,19 +187,20 @@ export function deriveAllergens<L extends AllergenLine>(
       input.allergies ?? [],
       rank,
     ),
-    hidden: isHidden(allergens, input.allergies ?? []),
+    hidden: hitsRequiredCheckedLine(
+      allergens,
+      (input.allergies ?? []).filter((a) => countsAsViewersOwn(a.owner)),
+    ),
+    blocksFill: hitsRequiredCheckedLine(allergens, input.allergies ?? []),
   };
 }
 
-function isHidden<L extends AllergenLine>(
+/** Whether any of `allergies` is in a required, checked line. */
+function hitsRequiredCheckedLine<L extends AllergenLine>(
   allergens: readonly DerivedAllergen<L>[],
   allergies: readonly AllergyInput[],
 ): boolean {
-  const mine = new Set(
-    allergies
-      .filter((a) => countsAsViewersOwn(a.owner))
-      .map((a) => a.allergenId),
-  );
+  const mine = new Set(allergies.map((a) => a.allergenId));
   return allergens.some(
     (a) =>
       mine.has(a.allergenId) &&
@@ -214,8 +242,35 @@ function warningFor<L extends AllergenLine>(
   return {
     severity: entries.some((e) => e.severity === 'strong') ? 'strong' : 'soft',
     entries,
+    allergens: foldByAllergen(entries),
     uncheckedCount,
   };
+}
+
+/** One item per Allergen, owners kept in entry order. All entries of an Allergen share a severity. */
+function foldByAllergen(
+  entries: readonly AllergyWarningEntry[],
+): AllergyWarningAllergen[] {
+  const byAllergen = new Map<string, AllergyWarningAllergen>();
+  for (const entry of entries) {
+    const owner: AllergyWarningOwner =
+      entry.owner.kind === 'member'
+        ? { kind: 'member', name: entry.owner.name }
+        : entry.owner;
+    const seen = byAllergen.get(entry.allergenId);
+    if (!seen) {
+      byAllergen.set(entry.allergenId, {
+        allergenId: entry.allergenId,
+        tier: entry.tier,
+        severity: entry.severity,
+        owners: [owner],
+      });
+      continue;
+    }
+    if (entry.tier === 'yours') seen.tier = 'yours';
+    seen.owners.push(owner);
+  }
+  return [...byAllergen.values()];
 }
 
 const ownerKey = (owner: AllergyOwner): string =>

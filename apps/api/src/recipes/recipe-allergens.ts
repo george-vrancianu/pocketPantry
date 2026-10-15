@@ -238,8 +238,9 @@ export async function loadAllergyWarnings(
 ): Promise<AllergyWarnings> {
   const result = new Map<string, CompactAllergyWarning>();
   const hidden = new Set<string>();
+  const blocksFill = new Set<string>();
   if (allergies.length === 0 || recipeIds.length === 0) {
-    return { warnings: result, hidden };
+    return { warnings: result, hidden, blocksFill };
   }
   const lineRows = await executor
     .select({
@@ -268,6 +269,7 @@ export async function loadAllergyWarnings(
     const derived = deriveAllergens({ lines, allergenOrder, allergies });
     if (derived.allergyWarning) warnings.set(recipeId, derived.allergyWarning);
     if (derived.hidden) hidden.add(recipeId);
+    if (derived.blocksFill) blocksFill.add(recipeId);
   }
   const named = await allergenNamer(executor, scope, locale, allergenRows, [
     ...new Set(
@@ -277,13 +279,15 @@ export async function loadAllergyWarnings(
   for (const [recipeId, warning] of warnings) {
     result.set(recipeId, compactWarning(warning, named));
   }
-  return { warnings: result, hidden };
+  return { warnings: result, hidden, blocksFill };
 }
 
 /** The compact warnings of a batch of Recipes, and the ids "Hide Recipes with my Allergies" would leave out. */
 export type AllergyWarnings = {
   warnings: Map<string, CompactAllergyWarning>;
   hidden: ReadonlySet<string>;
+  /** The ids Fill must not pick: any Member's or a Family Allergy in a required, checked line (ADR 0012). */
+  blocksFill: ReadonlySet<string>;
 };
 
 /**
@@ -313,30 +317,17 @@ export async function loadViewerAllergyContext(
   return { allergies, hides: hidesAllergyRecipes(preferences, showHidden) };
 }
 
-/** One item per Allergen: `yours` if anyone whose Allergy counts as the viewer's has it. */
+/** The warning's per-Allergen items (folded, owners named, in `deriveAllergens`) in the viewer's locale. */
 function compactWarning(
   warning: AllergyWarning,
   named: (id: string) => { id: string; name: string },
 ): CompactAllergyWarning {
-  const byAllergen = new Map<
-    string,
-    CompactAllergyWarning['allergens'][number]
-  >();
-  for (const entry of warning.entries) {
-    const seen = byAllergen.get(entry.allergenId);
-    if (!seen) {
-      byAllergen.set(entry.allergenId, {
-        ...named(entry.allergenId),
-        tier: entry.tier,
-        severity: entry.severity,
-      });
-    } else if (entry.tier === 'yours') {
-      seen.tier = 'yours';
-    }
-  }
   return {
     severity: warning.severity,
-    allergens: [...byAllergen.values()],
+    allergens: warning.allergens.map(({ allergenId, ...item }) => ({
+      ...named(allergenId),
+      ...item,
+    })),
     uncheckedCount: warning.uncheckedCount,
   };
 }

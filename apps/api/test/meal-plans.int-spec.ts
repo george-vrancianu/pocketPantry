@@ -30,6 +30,7 @@ type Slot = {
   servings: number;
   servingsOverride: number | null;
   unavailable: boolean;
+  allergyWarning: unknown;
   status: string | null;
   issues: unknown[];
 };
@@ -435,6 +436,7 @@ describe('Meal Plans (integration)', () => {
           servings: plan.servings,
           servingsOverride: null,
           unavailable: false,
+          allergyWarning: null,
           status: 'short',
           issues: expect.any(Array) as unknown[],
         },
