@@ -95,7 +95,7 @@ export function useProductRead(locale: string) {
         `/scan/product?${scanQuery(locale, read.scanLanguage)}`,
         { method: 'POST', body: { productImage: read.image } },
       );
-      if (lines.length === 0) throw new ApiError('scan.nothing_found', 0);
+      if (lines.length === 0) throw new ApiError('scan.product_not_found', 0);
       return lines[0];
     },
   });

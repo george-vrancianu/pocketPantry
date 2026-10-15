@@ -196,7 +196,13 @@ export function useAddBatchForm({
       }
     }
     if (!touched.amount && read.quantity !== null) {
-      setQuantity(String(read.quantity));
+      // In the form's own notation ("0,5" in ro and da), so it parses back as typed text does.
+      setQuantity(
+        new Intl.NumberFormat(i18n.language, {
+          useGrouping: false,
+          maximumFractionDigits: 3,
+        }).format(read.quantity),
+      );
       setChosenUnit(read.unit);
       marks.add('amount');
     }

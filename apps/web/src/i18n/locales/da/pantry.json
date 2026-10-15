@@ -77,8 +77,7 @@
       "open": "Udfyld fra et foto",
       "reading": "Læser produktfotoet…",
       "cap": "Du har brugt alle dagens scanninger. Udfyld formularen selv.",
-      "mark": "Udfyldt fra dit foto",
-      "check": "Tjek dette: usikkert match"
+      "mark": "Udfyldt fra dit foto"
     }
   },
   "picker": {

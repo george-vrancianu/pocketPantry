@@ -9,17 +9,19 @@ import {
   useForcedThemeColor,
   visuallyHidden,
 } from '@pocket-pantry/ui';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { useCamera } from '../../lib/camera';
-import type { ScanMode } from '../../lib/scan';
 import { IMAGE_PREPARATION } from '../../lib/scanImage';
 import { glassControl, glassFocusRing, shade } from './components/glass';
 import { ModeDial } from './components/ModeDial';
 import { ScanLanguageChip } from './components/ScanLanguageChip';
 import { Viewfinder } from './components/Viewfinder';
 import { useScanLanguage } from './hooks/useScanLanguage';
+
+/** The modes an overlay camera offers. Only Product so far; Barcode joins it later. */
+export type CameraMode = 'product';
 
 /**
  * What the camera hands back to whatever opened it, then closes. One kind per camera mode that
@@ -35,9 +37,9 @@ export type CameraResult = {
 
 type Props = {
   /** In dial order; the dial is hidden when there is only one. */
-  modes: readonly ScanMode[];
+  modes: readonly CameraMode[];
   /** The mode the camera opens in; the first of `modes` when it is not one of them. */
-  defaultMode: ScanMode;
+  defaultMode: CameraMode;
   /** One shot was taken: the opener closes the overlay and owns the work that follows. */
   onResult: (result: CameraResult) => void;
   /** Closed without a shot; the opener is left as it was. */
@@ -72,7 +74,7 @@ export function CameraOverlay({
   useForcedThemeColor('dark');
   const camera = useCamera();
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
-  const [mode, setMode] = useState<ScanMode>(
+  const [mode, setMode] = useState<CameraMode>(
     modes.includes(defaultMode) ? defaultMode : modes[0],
   );
   const [flash, setFlash] = useState(false);
@@ -80,6 +82,17 @@ export function CameraOverlay({
   const [failed, setFailed] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
   const shooting = useRef(false);
+
+  // Focus moves into the dialog on open, and Escape closes it as Close does.
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => dialog.current?.focus(), []);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onCancel]);
 
   const shoot = async () => {
     if (shooting.current) return;
@@ -109,10 +122,12 @@ export function CameraOverlay({
 
   return (
     <Box
-      data-testid="scan-screen"
+      data-testid="camera-overlay"
       data-theme="dark"
       role="dialog"
       aria-modal="true"
+      ref={dialog}
+      tabIndex={-1}
       aria-label={t('title', {
         mode: t(`mode.${mode}`).toLocaleLowerCase(),
       })}
@@ -229,7 +244,10 @@ export function CameraOverlay({
             disabled={preparing}
             keysDisabled={preparing}
             dragEndedAt={dragEndedAt}
-            onChange={setMode}
+            onChange={(next) => {
+              const picked = modes.find((item) => item === next);
+              if (picked) setMode(picked);
+            }}
           />
         ) : (
           <Box sx={visuallyHidden}>{t(`mode.${mode}`)}</Box>

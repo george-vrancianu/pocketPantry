@@ -1,10 +1,11 @@
 import { Alert, Button, Stack, TextField, Typography } from '@pocket-pantry/ui';
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
+import { StatusIcon } from '../../../components/StatusIcon';
 import { CameraOverlay } from '../../Scan/CameraOverlay';
 import {
   useAddBatchForm,
@@ -27,9 +28,17 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
   const { t, i18n } = useTranslation('pantry');
   const form = useAddBatchForm({ onSaved, start });
   const id = useId();
+  const { t: tReview } = useTranslation('review');
+  const cameraButton = useRef<HTMLButtonElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const picked = form.ingredient?.name ?? form.unmatchedName;
   const { camera } = form;
+  // After the overlay closes, focus goes back to the button that opened it.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (wasOpen.current && !camera.open) cameraButton.current?.focus();
+    wasOpen.current = camera.open;
+  }, [camera.open]);
   /** Marks a field Prefill filled and the Member has not edited since. */
   const mark = (field: PrefillField) =>
     camera.prefilled.has(field) ? (
@@ -53,8 +62,11 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       <Button
         type="button"
         variant="ghost"
-        disabled={camera.reading}
-        onClick={camera.openCamera}
+        ref={cameraButton}
+        aria-disabled={camera.reading || undefined}
+        onClick={() => {
+          if (!camera.reading) camera.openCamera();
+        }}
       >
         {t('form.prefill.open')}
       </Button>
@@ -63,7 +75,9 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
           {t('form.prefill.reading')}
         </Typography>
       ) : null}
-      {camera.readError ? <Alert>{camera.readError}</Alert> : null}
+      <div aria-live="polite" data-testid="prefill-read-error">
+        {camera.readError ? <Alert>{camera.readError}</Alert> : null}
+      </div>
       {camera.open ? (
         <CameraOverlay
           modes={FORM_CAMERA_MODES}
@@ -90,7 +104,10 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
 
       {mark('ingredient')}
       {camera.checkIngredient ? (
-        <Alert severity="warning">{t('form.prefill.check')}</Alert>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <StatusIcon status="low" />
+          <Typography variant="caption">{tReview('msg.low')}</Typography>
+        </Stack>
       ) : null}
       {form.unmatchedName ? (
         <Alert severity="info">

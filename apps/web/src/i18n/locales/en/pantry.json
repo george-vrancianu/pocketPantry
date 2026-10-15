@@ -78,8 +78,7 @@
       "open": "Fill from a photo",
       "reading": "Reading the product photo…",
       "cap": "You have used all of today’s scans. Fill the form by hand.",
-      "mark": "Filled from your photo",
-      "check": "Check this: low confidence match"
+      "mark": "Filled from your photo"
     }
   },
   "picker": {
