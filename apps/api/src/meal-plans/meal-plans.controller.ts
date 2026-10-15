@@ -27,6 +27,7 @@ import {
   type MealPlanQuery,
   type MealPlanSummary,
   type MealPlanView,
+  type MealWindowView,
   type SetSlotBody,
   type SlotParams,
   type UpdateMealPlanBody,
@@ -62,14 +63,26 @@ export class MealPlansController {
     return this.plans.create(member.id, body, locale, today);
   }
 
+  @Get('window')
+  @ApiOperation({
+    summary:
+      "The Plan Forecast for the next 7 days from the client's today, across plans",
+  })
+  window(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(query) { locale, today }: MealPlanQuery,
+  ): Promise<MealWindowView> {
+    return this.plans.window(member.id, locale, today);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'A Meal Plan with its filled Plan Slots' })
   get(
     @CurrentUser() member: CurrentUserValue,
-    @Query(query) { locale }: MealPlanQuery,
+    @Query(query) { locale, today }: MealPlanQuery,
     @Param(idParam) { id }: { id: string },
   ): Promise<MealPlanView> {
-    return this.plans.get(member.id, id, locale);
+    return this.plans.get(member.id, id, locale, today);
   }
 
   @Patch(':id')

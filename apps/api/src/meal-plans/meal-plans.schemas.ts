@@ -1,8 +1,18 @@
 import { z } from 'zod';
 import { localeQuery } from '../recipes/recipes.schemas';
+import type { AisleView } from '../catalog/ingredient-placement';
 import { mealtime } from '../database/schema';
+import type {
+  BaseUnit,
+  DayStatus,
+  IssueKind,
+  PlanTag,
+  SlotStatus,
+} from '../recipes/matching/plan-forecast';
 
 export const MAX_PLAN_DAYS = 7;
+/** How many days from today the Widget looks at. */
+export const WINDOW_DAYS = 7;
 export const MAX_SERVINGS = 1000;
 export const MAX_NAME_LENGTH = 60;
 /** How far ahead of the Member's today a plan may start. */
@@ -74,6 +84,44 @@ export type MealPlanSummary = {
   servings: number;
 };
 
+/** A slot that used up stock the reader's slot also needs. */
+export type ReasonMealView = {
+  date: string;
+  mealtime: Mealtime;
+  recipeId: string;
+  recipeTitle: string;
+};
+
+/** Why a line is short, as codes and params; the client words it. */
+export type PlanReasonView =
+  | { code: 'usesLast'; meals: ReasonMealView[] }
+  | { code: 'expires'; date: string }
+  | { code: 'notInPantry' }
+  | {
+      code: 'onlyLeftAfter';
+      amount: number;
+      unit: BaseUnit;
+      meals: ReasonMealView[];
+    }
+  | { code: 'onlyInPantry'; amount: number; unit: BaseUnit }
+  | { code: 'noQuantity' };
+
+/** One Ingredient (or Unmatched name) a Plan Slot is short of, or can't judge. */
+export type PlanIssueView = {
+  /** Null for an Unmatched line. */
+  ingredientId: string | null;
+  /** The Ingredient's name in the request locale, or the Unmatched name as typed. */
+  name: string;
+  /** `short`: some was taken. `missing`: none. `uncertain`: no Batch quantity to judge by. */
+  kind: IssueKind;
+  /** The amount needed in g, ml or pcs; null when the line has no quantity. */
+  quantity: number | null;
+  unit: BaseUnit | null;
+  /** Already on the active Shopping List. */
+  onList: boolean;
+  reason: PlanReasonView;
+};
+
 export type PlanSlotView = {
   dayIndex: number;
   /** The plan's start date plus `dayIndex`. */
@@ -87,6 +135,60 @@ export type PlanSlotView = {
   servingsOverride: number | null;
   /** The Recipe has been archived since. */
   unavailable: boolean;
+  /** The Plan Forecast; null on a past day. */
+  status: SlotStatus | null;
+  /** Empty on a past day and on an unavailable slot. */
+  issues: PlanIssueView[];
 };
 
-export type MealPlanView = MealPlanSummary & { slots: PlanSlotView[] };
+export type MealPlanView = MealPlanSummary & {
+  slots: PlanSlotView[];
+  forecast: {
+    tag: PlanTag;
+    /** Each day of the plan from the Member's today; empty days included. */
+    days: { date: string; status: DayStatus }[];
+  };
+};
+
+/** One Ingredient (or Unmatched name) the forecast says is missing, ready for Add missing. */
+export type MissingItemView = {
+  ingredientId: string | null;
+  /** The Ingredient's name in the request locale, or the Unmatched name as typed. */
+  name: string;
+  /** Shortfalls added up in g, ml or pcs; null when any has no quantity. */
+  quantity: number | null;
+  unit: BaseUnit | null;
+  /** The Recipes that need it: its Source Recipes. */
+  recipeIds: string[];
+};
+
+export type WindowSlotView = Omit<PlanSlotView, 'status'> & {
+  planId: string;
+  /** Prep plus cook minutes; null when the Recipe has neither. */
+  minutes: number | null;
+  /** The Aisle of the Recipe's first Ingredient Line, which tints its tile. */
+  aisle: AisleView | null;
+  status: SlotStatus;
+};
+
+export type WindowDayView = {
+  date: string;
+  status: DayStatus;
+  /** The Meal Plan covering this date, if any (a gap day inside a plan has one). */
+  planId: string | null;
+  slots: WindowSlotView[];
+};
+
+/** The Widget's read: the Plan Forecast from `today` for up to `WINDOW_DAYS` days. */
+export type MealWindowView = {
+  today: string;
+  /** Planned days only: today to the last date with a slot, gap days `empty`. */
+  days: WindowDayView[];
+  tag: PlanTag;
+  /** The plan covering today, else the next one; null with no plan ahead. */
+  plan: MealPlanSummary | null;
+  /** When the first plan starting beyond the window begins. */
+  nextPlanStart: string | null;
+  /** What Add missing would add for the whole window. */
+  missing: MissingItemView[];
+};
