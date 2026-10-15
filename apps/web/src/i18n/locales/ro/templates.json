@@ -5,7 +5,8 @@
     "submit": "Salvează șablonul",
     "saving": "Se salvează",
     "row": "Salvează această listă ca șablon",
-    "back": "Șabloane",
+    "title": "Salvează ca șablon",
+    "cancel": "Anulează",
     "placeholder": "ex. Cumpărăturile săptămânii",
     "saved": "Am salvat „{{name}}”",
     "edit": "Editează",
@@ -14,15 +15,11 @@
     "preview_other": "Salvează toate cele {{count}} de articole, inclusiv cele bifate",
     "rowHint_one": "Refolosește acest articol data viitoare",
     "rowHint_few": "Refolosește aceste {{count}} articole data viitoare",
-    "rowHint_other": "Refolosește aceste {{count}} de articole data viitoare",
-    "rowMeta_one": "{{count}} articol, cu cantități",
-    "rowMeta_few": "{{count}} articole, cu cantități",
-    "rowMeta_other": "{{count}} de articole, cu cantități"
+    "rowHint_other": "Refolosește aceste {{count}} de articole data viitoare"
   },
   "apply": {
-    "none": "Încă nu ai șabloane. Salvează lista ca șablon sau creează unul la Șabloane.",
     "title": "Adaugă din {{name}}",
-    "hint": "Articolele pe care le ai deja în cămară încep nebifate.",
+    "hint": "Articolele pe care le ai în cămară sau deja în coș încep nebifate.",
     "empty": "Acest șablon nu are linii.",
     "confirm_one": "Adaugă {{count}} articol în listă",
     "confirm_few": "Adaugă {{count}} articole în listă",
@@ -31,12 +28,7 @@
     "inPantry": "În cămară",
     "unmatchedGroup": "Nu e în catalog",
     "cancel": "Înapoi",
-    "section": "Adaugă dintr-un șablon",
-    "allTemplates": "Toate șabloanele",
-    "onList": "Pe listă",
-    "added_one": "Am adăugat {{count}} articol din {{name}}",
-    "added_few": "Am adăugat {{count}} articole din {{name}}",
-    "added_other": "Am adăugat {{count}} de articole din {{name}}"
+    "onList": "Pe listă"
   },
   "list": {
     "empty": "Încă nu ai șabloane. Creează unul ca să refolosești o listă.",
@@ -45,10 +37,7 @@
     "lines_one": "{{count}} linie",
     "lines_few": "{{count}} linii",
     "lines_other": "{{count}} de linii",
-    "back": "Înapoi la cumpărături",
-    "items_one": "{{count}} articol",
-    "items_few": "{{count}} articole",
-    "items_other": "{{count}} de articole"
+    "back": "Înapoi la cumpărături"
   },
   "editor": {
     "name": "Nume",
@@ -58,6 +47,5 @@
     "empty": "Încă nu are linii. Adaugă mai jos ce îți trebuie.",
     "back": "Înapoi la șabloane",
     "apply": "Adaugă în listă"
-  },
-  "manage": "Gestionează"
+  }
 }

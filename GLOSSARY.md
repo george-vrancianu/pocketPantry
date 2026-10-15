@@ -133,8 +133,8 @@ An Ingredient the Family always wants in stock, with an optional preferred quant
 _Avoid_: Must-have, favourite, essential
 
 **Shopping Template**:
-A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list.
-_Avoid_: Predefined list, saved list, preset
+A named, reusable list of Ingredients or Unmatched names, each with an optional quantity and unit, that a Member applies to the Shopping List. Not a Shopping List: applying it adds Shopping Items to the one active list. Several Shopping Templates, whole or line by line, can be applied in one go; the button that does it may read "Import", but the action is still applying.
+_Avoid_: Predefined list, saved list, preset, import (as a name for the action)
 
 **Template Line**:
 One Ingredient or Unmatched name in a Shopping Template, with an optional quantity and unit. Applying the Shopping Template turns each Template Line into a Shopping Item.
