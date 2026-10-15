@@ -9,17 +9,31 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { mealPlanSlots, mealPlans, recipes, user } from '../database/schema';
 import { lockMemberAndFamily, runLocked } from '../family/family-locks';
+import {
+  dayStatus,
+  planTag,
+  type SlotStatus,
+} from '../recipes/matching/plan-forecast';
 import { recipeTitles, visibleTo } from '../recipes/recipe-view';
 import { SettingsService } from '../settings/settings.service';
 import { utcToday } from '../shopping/batch-presence';
 import {
+  forecastFieldsOf,
+  loadForecast,
+  planEnd,
+  slotKey,
+} from './plan-forecast.loader';
+import {
   MAX_SERVINGS,
+  WINDOW_DAYS,
   MAX_START_AHEAD_DAYS,
   nameOrNull,
   type CreateMealPlanBody,
   type MealPlanSummary,
   type MealPlanView,
+  type MealWindowView,
   type PlanSlotView,
+  type WindowSlotView,
   type SetSlotBody,
   type SlotParams,
   type UpdateMealPlanBody,
@@ -36,10 +50,6 @@ const summary = (row: PlanRow): MealPlanSummary => ({
 });
 
 const notFound = () => new ApiException(404, 'meal_plan.not_found');
-
-/** The last date a plan covers. */
-const endDate = (plan: Pick<PlanRow, 'startDate' | 'days'>) =>
-  addDays(plan.startDate, plan.days - 1);
 
 /**
  * Meal Plans are Family data: any Member reads and edits them, and another
@@ -68,9 +78,52 @@ export class MealPlansService {
     memberId: string,
     id: string,
     locale: CatalogLocale,
+    today = utcToday(),
   ): Promise<MealPlanView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    return this.view(this.database, familyId, id, locale);
+    return this.view(this.database, familyId, id, locale, today);
+  }
+
+  /**
+   * The Widget's read: the Plan Forecast from the Member's `today` for up to
+   * `WINDOW_DAYS` days across plans. Planned days run to the last date that has
+   * a slot, so gap days inside the window come back `empty`.
+   */
+  async window(
+    memberId: string,
+    locale: CatalogLocale,
+    today = utcToday(),
+  ): Promise<MealWindowView> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const through = addDays(today, WINDOW_DAYS - 1);
+    const { plans, forecast, slots, missing } = await loadForecast(
+      this.database,
+      familyId,
+      locale,
+      today,
+      through,
+    );
+    // The plan covering today, else the next one to start.
+    const headline =
+      plans.find((plan) => plan.startDate <= today && planEnd(plan) >= today) ??
+      plans.find((plan) => plan.startDate > today);
+    const beyond = plans.find((plan) => plan.startDate > through);
+    return {
+      today,
+      days: forecast.days.map((day) => ({
+        date: day.date,
+        status: day.status,
+        planId:
+          plans.find(
+            (plan) => plan.startDate <= day.date && planEnd(plan) >= day.date,
+          )?.id ?? null,
+        slots: day.slots.map((slot) => slots.get(slot.id) as WindowSlotView),
+      })),
+      tag: forecast.tag,
+      plan: headline ? summary(headline) : null,
+      nextPlanStart: beyond?.startDate ?? null,
+      missing,
+    };
   }
 
   async create(
@@ -106,7 +159,7 @@ export class MealPlansService {
             body.servings ?? Math.min(Math.max(members, 1), MAX_SERVINGS),
         })
         .returning();
-      return this.view(tx, familyId, row.id, locale);
+      return this.view(tx, familyId, row.id, locale, today);
     });
   }
 
@@ -164,7 +217,7 @@ export class MealPlansService {
           ...(body.servings !== undefined && { servings: body.servings }),
         })
         .where(eq(mealPlans.id, plan.id));
-      return this.view(tx, familyId, plan.id, locale);
+      return this.view(tx, familyId, plan.id, locale, today);
     });
   }
 
@@ -217,7 +270,7 @@ export class MealPlansService {
           ],
           set: { recipeId: recipe.id, servings },
         });
-      return this.view(tx, familyId, plan.id, locale);
+      return this.view(tx, familyId, plan.id, locale, today);
     });
   }
 
@@ -261,6 +314,7 @@ export class MealPlansService {
     familyId: string,
     id: string,
     locale: CatalogLocale,
+    today: string,
   ): Promise<MealPlanView> {
     const plan = await this.findPlan(executor, familyId, id);
     const rows = await executor
@@ -273,6 +327,13 @@ export class MealPlansService {
       rows.map((row) => row.recipe),
       locale,
     );
+    const { slots: forecasted } = await loadForecast(
+      executor,
+      familyId,
+      locale,
+      today,
+      planEnd(plan),
+    );
     const order = { breakfast: 0, lunch: 1, dinner: 2 };
     const slots = rows
       .map(({ slot, recipe }): PlanSlotView => ({
@@ -284,12 +345,33 @@ export class MealPlansService {
         servings: slot.servings ?? plan.servings,
         servingsOverride: slot.servings,
         unavailable: recipe.archivedAt !== null,
+        ...forecastFieldsOf(
+          forecasted.get(slotKey(plan.id, slot.dayIndex, slot.mealtime)),
+        ),
       }))
       .sort(
         (a, b) =>
           a.dayIndex - b.dayIndex || order[a.mealtime] - order[b.mealtime],
       );
-    return { ...summary(plan), slots };
+    // Past days carry no status; the tag and day statuses cover today onwards.
+    const upcoming = slots.filter(
+      (slot): slot is PlanSlotView & { status: SlotStatus } =>
+        slot.status !== null,
+    );
+    const days = [];
+    for (let i = 0; i < plan.days; i++) {
+      const date = addDays(plan.startDate, i);
+      if (date < today) continue;
+      days.push({
+        date,
+        status: dayStatus(upcoming.filter((slot) => slot.date === date)),
+      });
+    }
+    return {
+      ...summary(plan),
+      slots,
+      forecast: { tag: planTag(upcoming), days },
+    };
   }
 }
 
@@ -313,7 +395,7 @@ function assertNoOverlap(
 ): void {
   const end = addDays(startDate, days - 1);
   const clash = others.find(
-    (other) => other.startDate <= end && startDate <= endDate(other),
+    (other) => other.startDate <= end && startDate <= planEnd(other),
   );
   if (clash) {
     throw new ApiException(409, 'meal_plan.overlap', {

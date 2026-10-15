@@ -23,8 +23,10 @@ type Slot = {
   servings: number;
   servingsOverride: number | null;
   unavailable: boolean;
+  status: string | null;
+  issues: unknown[];
 };
-type PlanDetail = Plan & { slots: Slot[] };
+type PlanDetail = Plan & { slots: Slot[]; forecast: unknown };
 
 const TODAY = '2030-01-10';
 const at = (offset: number) =>
@@ -83,8 +85,9 @@ describe('Meal Plans (integration)', () => {
       ...body,
     });
     expect([res.status, res.body]).toEqual([201, expect.anything()]);
-    const { slots, ...plan } = res.body as PlanDetail;
+    const { slots, forecast, ...plan } = res.body as PlanDetail;
     expect(slots).toEqual([]);
+    expect(forecast).toBeDefined();
     return plan;
   }
 
@@ -120,7 +123,7 @@ describe('Meal Plans (integration)', () => {
 
       const read = (await bob.api.get(`/${made.id}${q}`).expect(200))
         .body as PlanDetail;
-      expect(read).toEqual({ ...made, slots: [] });
+      expect(read).toMatchObject({ ...made, slots: [] });
 
       const renamed = (
         await bob.api
@@ -405,6 +408,8 @@ describe('Meal Plans (integration)', () => {
           servings: plan.servings,
           servingsOverride: null,
           unavailable: false,
+          status: 'short',
+          issues: expect.any(Array) as unknown[],
         },
       ]);
 
