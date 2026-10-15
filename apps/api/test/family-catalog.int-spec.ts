@@ -649,4 +649,171 @@ describe('Family catalog (integration)', () => {
       }
     });
   });
+  describe('re-adding a deleted Family Ingredient name', () => {
+    /** One use of each kind, left Unmatched with no queue entry by the delete. */
+    async function usedThenDeleted(name: string) {
+      const created = await made(a, name);
+      await a
+        .post('/pantry/batches', {
+          ingredientId: created.id,
+          quantity: 3,
+          unit: 'g',
+        })
+        .expect(201);
+      await a
+        .post('/shopping-list/items', { ingredientId: created.id })
+        .expect(200);
+      await a
+        .post('/shopping-templates', {
+          name: unique('T'),
+          lines: [{ ingredientId: created.id }],
+        })
+        .expect(201);
+      await a
+        .post('/recipes', {
+          title: unique('R'),
+          servings: 2,
+          locale: 'en',
+          parentId: null,
+          lines: [{ ingredientId: created.id, quantity: 5, unit: 'g' }],
+          steps: [{ text: 'Stir' }],
+        })
+        .expect(201);
+      await a.del(`/catalog/family-ingredients/${created.id}`).expect(204);
+    }
+    const relinkedTo = async (id: string) => ({
+      batches: (
+        await database
+          .select()
+          .from(batches)
+          .where(eq(batches.ingredientId, id))
+      ).length,
+      items: (
+        await database
+          .select()
+          .from(shoppingItems)
+          .where(eq(shoppingItems.ingredientId, id))
+      ).length,
+      templateLines: (
+        await database
+          .select()
+          .from(shoppingTemplateLines)
+          .where(eq(shoppingTemplateLines.ingredientId, id))
+      ).length,
+      recipeLines: (
+        await database
+          .select()
+          .from(recipeIngredientLines)
+          .where(eq(recipeIngredientLines.ingredientId, id))
+      ).length,
+    });
+    const unmatchedLeft = async (name: string) =>
+      (await database.select().from(batches).where(eq(batches.rawName, name)))
+        .length +
+      (
+        await database
+          .select()
+          .from(shoppingItems)
+          .where(eq(shoppingItems.normalizedName, normalizeName(name)))
+      ).length +
+      (
+        await database
+          .select()
+          .from(shoppingTemplateLines)
+          .where(eq(shoppingTemplateLines.normalizedName, normalizeName(name)))
+      ).length +
+      (
+        await database
+          .select()
+          .from(recipeIngredientLines)
+          .where(eq(recipeIngredientLines.normalizedName, normalizeName(name)))
+      ).length;
+
+    it('relinks the Unmatched items the delete left, when the name is created again', async () => {
+      const name = unique('Reborn');
+      await usedThenDeleted(name);
+      expect(await unmatchedLeft(name)).toBe(4);
+
+      const again = await made(a, name);
+
+      expect(await relinkedTo(again.id)).toEqual({
+        batches: 1,
+        items: 1,
+        templateLines: 1,
+        recipeLines: 1,
+      });
+      expect(await unmatchedLeft(name)).toBe(0);
+    });
+
+    it('relinks them to the target when the name is linked as a Family Synonym', async () => {
+      const name = unique('Reborn syn');
+      await usedThenDeleted(name);
+
+      await synonymOf(a, name, parmesan);
+
+      expect(await unmatchedLeft(name)).toBe(0);
+    });
+  });
+
+  describe('deleting a Family that owns in-use Family Ingredients and Synonyms', () => {
+    it('succeeds, taking the Family Ingredients, Synonyms and their uses with it', async () => {
+      const solo = client(
+        app,
+        await signUp(app, `fc-solo-${stamp}@example.com`, 'Solo'),
+        '/api',
+      );
+      const name = unique('Cascaded');
+      const created = await made(solo, name);
+      await synonymOf(solo, unique('Cascaded alias'), created.id);
+      await solo
+        .post('/pantry/batches', {
+          ingredientId: created.id,
+          quantity: 1,
+          unit: 'g',
+        })
+        .expect(201);
+      await solo
+        .post('/shopping-list/items', { ingredientId: created.id })
+        .expect(200);
+      await solo
+        .post('/shopping-templates', {
+          name: unique('T'),
+          lines: [{ ingredientId: created.id }],
+        })
+        .expect(201);
+      const recipe = (
+        await solo
+          .post('/recipes', {
+            title: unique('R'),
+            servings: 2,
+            locale: 'en',
+            parentId: null,
+            lines: [{ ingredientId: created.id, quantity: 5, unit: 'g' }],
+            steps: [{ text: 'Stir' }],
+          })
+          .expect(201)
+      ).body as { id: string };
+      await database.insert(recipePairings).values({
+        id: randomUUID(),
+        recipeId: recipe.id,
+        position: 0,
+        kind: 'food',
+        label: 'With it',
+        reason: 'Because',
+        linkedIngredientId: created.id,
+      });
+      await solo
+        .post('/staples?locale=en', { ingredientId: created.id })
+        .expect(201);
+
+      await solo.del('/family').expect(200);
+
+      expect(
+        await database
+          .select()
+          .from(ingredients)
+          .where(eq(ingredients.id, created.id)),
+      ).toEqual([]);
+    });
+  });
 });

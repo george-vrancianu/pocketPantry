@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { Tx } from '../database/database.types';
 import {
   batches,
@@ -8,12 +8,15 @@ import {
   shoppingLists,
   unmatchedEntries,
 } from '../database/schema';
+import { normalizeName } from './normalize';
 import { relinkUnmatched } from './relink-unmatched';
 
 /**
  * The Admin resolve, limited to one Family: that Family's Unmatched Batches,
  * Shopping Items, Template lines and Recipe lines with this normalised name
- * get the Ingredient, and their Unmatched entries go (ADR 0011).
+ * get the Ingredient, and their Unmatched entries go (ADR 0011). Items a
+ * Family Ingredient delete left Unmatched have no entry, so they are found by
+ * name within the Family as well.
  */
 export async function relinkFamilyUnmatched(
   tx: Tx,
@@ -48,9 +51,51 @@ export async function relinkFamilyUnmatched(
     .innerJoin(recipes, eq(recipes.id, recipeIngredientLines.recipeId))
     .where(and(named, eq(recipes.familyId, familyId)));
 
-  const batchIds = batchEntries.map((e) => e.rowId).sort();
-  const itemIds = itemEntries.map((e) => e.rowId).sort();
-  const lineIds = lineEntries.map((e) => e.rowId).sort();
+  // Unmatched rows with no entry: a Family Ingredient delete leaves these.
+  const unqueuedItems = await tx
+    .select({ id: shoppingItems.id })
+    .from(shoppingItems)
+    .innerJoin(shoppingLists, eq(shoppingLists.id, shoppingItems.listId))
+    .where(
+      and(
+        eq(shoppingItems.normalizedName, key),
+        isNull(shoppingItems.ingredientId),
+        eq(shoppingLists.familyId, familyId),
+      ),
+    );
+  const unqueuedLines = await tx
+    .select({ id: recipeIngredientLines.id })
+    .from(recipeIngredientLines)
+    .innerJoin(recipes, eq(recipes.id, recipeIngredientLines.recipeId))
+    .where(
+      and(
+        eq(recipeIngredientLines.normalizedName, key),
+        isNull(recipeIngredientLines.ingredientId),
+        eq(recipes.familyId, familyId),
+      ),
+    );
+  // Batches keep no normalised name; one Family's Unmatched Batches are few.
+  const familyUnmatchedBatches = await tx
+    .select({ id: batches.id, rawName: batches.rawName })
+    .from(batches)
+    .where(and(eq(batches.familyId, familyId), eq(batches.unmatched, true)));
+  const unqueuedBatches = familyUnmatchedBatches.filter(
+    (row) => row.rawName !== null && normalizeName(row.rawName) === key,
+  );
+
+  const distinct = (ids: string[]) => [...new Set(ids)].sort();
+  const batchIds = distinct([
+    ...batchEntries.map((e) => e.rowId),
+    ...unqueuedBatches.map((row) => row.id),
+  ]);
+  const itemIds = distinct([
+    ...itemEntries.map((e) => e.rowId),
+    ...unqueuedItems.map((row) => row.id),
+  ]);
+  const lineIds = distinct([
+    ...lineEntries.map((e) => e.rowId),
+    ...unqueuedLines.map((row) => row.id),
+  ]);
   // Row locks in ascending id, as the Admin resolve takes them.
   if (itemIds.length > 0) {
     await tx
