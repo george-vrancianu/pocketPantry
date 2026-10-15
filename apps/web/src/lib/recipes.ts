@@ -14,7 +14,7 @@ import type {
 import type { Unit } from './catalog';
 import { useDebounced } from './catalog';
 import { localIso } from './pantry';
-import { pantryMatchesQueryKey, suggestionsQueryKey } from './queryKeys';
+import { shoppingListChangeQueryKeys } from './queryKeys';
 import { shoppingListQueryKey, type ShoppingList } from './shopping';
 
 export type RecipeOwner = 'catalog' | 'family';
@@ -259,10 +259,11 @@ export function useRecipePantryMatch(
 function shoppingListUpdated(queryClient: QueryClient, locale: string) {
   return (list: ShoppingList) => {
     queryClient.setQueryData([...shoppingListQueryKey, locale], list);
-    return Promise.all([
-      queryClient.invalidateQueries({ queryKey: suggestionsQueryKey }),
-      queryClient.invalidateQueries({ queryKey: pantryMatchesQueryKey }),
-    ]);
+    return Promise.all(
+      shoppingListChangeQueryKeys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey }),
+      ),
+    );
   };
 }
 

@@ -1,7 +1,11 @@
-/** Every Cook Tonight view and Recipe Pantry match ('recipes' must match `recipesQueryKey`, which cannot be imported here without a cycle); refetch after anything that changes the Pantry. */
+/** Every Meal Plan read: the Widget's window and (later) the plan pages. The Plan Forecast goes stale when the Pantry, the Shopping List, the Recipes or the plans change. */
+export const mealPlanQueryKey = ['meal-plans'] as const;
+
+/** Every Cook Tonight view, Recipe Pantry match and Meal Plan forecast ('recipes' must match `recipesQueryKey`, which cannot be imported here without a cycle); refetch after anything that changes the Pantry. */
 export const recipeMatchingQueryKeys = [
   ['recipes', 'cook-tonight'],
   ['recipes', 'pantry-match'],
+  mealPlanQueryKey,
 ] as const;
 
 /** Every locale's Suggestions; refetch after anything that changes the Pantry, the list or the Staples. */
@@ -16,6 +20,16 @@ export const templateDetailsQueryKey = [
 /** Every Recipe's Pantry match; its per-line "on your list" status goes stale when the Shopping List changes ('recipes' must match `recipesQueryKey`). */
 export const pantryMatchesQueryKey = ['recipes', 'pantry-match'] as const;
 
+/** Everything a Shopping List change makes stale: Suggestions, the Recipe Pantry matches and the Meal Plan forecast's "on list" flags. */
+export const shoppingListChangeQueryKeys = [
+  suggestionsQueryKey,
+  pantryMatchesQueryKey,
+  mealPlanQueryKey,
+] as const;
+
+/** Everything a Recipe change (edit, archive, new variant, Catalog rename) makes stale: every Recipe query and the Meal Plan forecast, whose slots may turn unavailable ('recipes' must match `recipesQueryKey`). */
+export const recipeChangeQueryKeys = [['recipes'], mealPlanQueryKey] as const;
+
 /** The Family's Recently Stocked Ingredients. Under `['pantry']`, so anything that invalidates the Pantry (Scan save, Finish Shopping, relink, a Batch change) refetches it. */
 export const recentlyStockedQueryKey = ['pantry', 'recently-stocked'] as const;
 
@@ -28,5 +42,6 @@ export const catalogChangeQueryKeys = [
   ['shopping-list'],
   ['shopping-templates'],
   ['recipes'],
+  mealPlanQueryKey,
   suggestionsQueryKey,
 ] as const;
