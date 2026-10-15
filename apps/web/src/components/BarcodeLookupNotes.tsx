@@ -1,4 +1,4 @@
-import { Typography } from '@pocket-pantry/ui';
+import { Box, Typography } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogAllergen } from '../lib/catalog';
 
@@ -28,5 +28,27 @@ export function ListedAllergensNote({
         }).format(allergens.map((a) => a.name)),
       })}
     </Typography>
+  );
+}
+
+/** The credit and the Allergen note of a Barcode card's lookup, or nothing when it has neither. */
+export function BarcodeLookupNotes({
+  lookup,
+  mb,
+}: {
+  /** Space below, only when something shows. */
+  mb?: string;
+  lookup: {
+    fromOpenFoodFacts: boolean;
+    missingAllergens: readonly CatalogAllergen[];
+  };
+}) {
+  if (!lookup.fromOpenFoodFacts && lookup.missingAllergens.length === 0)
+    return null;
+  return (
+    <Box sx={{ display: 'grid', gap: '2px', mb }}>
+      {lookup.fromOpenFoodFacts ? <OpenFoodFactsCredit /> : null}
+      <ListedAllergensNote allergens={lookup.missingAllergens} />
+    </Box>
   );
 }

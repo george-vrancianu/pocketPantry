@@ -6,6 +6,7 @@ import { SCAN_INTERVAL_MS } from '../../lib/cameraMode';
 import { resetReads } from '../../lib/scanReads';
 import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
+import { stubViewport } from '../../test/viewport';
 import { scanViaGuide } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
 import { ReviewPage } from '../Review/ReviewPage';
@@ -603,7 +604,7 @@ describe('Barcode on the Scan page', () => {
       ).toBeVisible();
     });
 
-    it('gives no credit to a Known Barcode line or a not-found line', async () => {
+    it('gives no credit to a Known Barcode line', async () => {
       await openLine(found({ source: 'known_barcode' }));
       await screen.findByLabelText('Quantity');
       expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
@@ -617,7 +618,7 @@ describe('Barcode on the Scan page', () => {
 
     it('notes the Allergens the matched Ingredient is not tagged with, and drops the note when another Ingredient is picked', async () => {
       const user = await openLine(
-        found({ allergens: [MILK], missingAllergens: [MILK, GLUTEN] }),
+        found({ allergens: [MILK, GLUTEN], missingAllergens: [MILK, GLUTEN] }),
       );
       expect(
         await screen.findByText('This product lists Milk and Gluten'),
@@ -635,6 +636,32 @@ describe('Barcode on the Scan page', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
       expect(screen.queryByText(/This product lists/)).toBeNull();
+    });
+
+    it('shows the credit and the note in the line row of the tablet table, without opening it', async () => {
+      stubViewport(1180);
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          found({
+            lowConfidence: true,
+            allergens: [MILK],
+            missingAllergens: [MILK],
+          }),
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+
+      const row = (await screen.findByRole('table')).querySelector(
+        '[role="row"]:has(input)',
+      ) as HTMLElement;
+      expect(
+        within(row).getByText('Product data: Open Food Facts'),
+      ).toBeVisible();
+      expect(within(row).getByText('This product lists Milk')).toBeVisible();
     });
 
     it('shows no note when the matched Ingredient already has every listed Allergen', async () => {
