@@ -71,5 +71,11 @@
     "link": "Kobl og vælg",
     "linked": "“{{name}}” betyder nu {{ingredient}} for din familie",
     "aliasExists": "“{{name}}” er allerede et navn for {{ingredient}}."
+  },
+  "allergenContains": {
+    "label": "Indeholder",
+    "hint": "Valgfrit. Lad feltet stå tomt, hvis du ikke ved det; ingrediensen tæller så som ikke kontrolleret.",
+    "none": "Ingen",
+    "loadFailed": "Allergenlisten kunne ikke indlæses."
   }
 }

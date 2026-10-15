@@ -53,6 +53,7 @@ const parmesan: AdminIngredient = {
   defaultUnit: 'g',
   pantryBasic: false,
   allergenIds: [],
+  allergensReviewPending: false,
   translations: [
     { id: 't1', locale: 'en', kind: 'name', value: 'Parmesan' },
     { id: 't2', locale: 'ro', kind: 'name', value: 'Parmezan' },
@@ -188,6 +189,44 @@ describe('IngredientEditor', () => {
     expect(calls.find((c) => c.key.startsWith('PUT'))?.body).toEqual({
       allergenIds: ['al-milk', 'al-soy'],
     });
+  });
+
+  it('flags tags carried over from a Family Ingredient for review until they are saved', async () => {
+    const withAllergens: AdminCatalog = {
+      ...catalog,
+      allergens: [
+        {
+          id: 'al-milk',
+          name: 'Milk',
+          sortOrder: 1,
+          archived: false,
+          translations: [],
+        },
+      ],
+    };
+    stub({
+      'PUT /api/admin/catalog/ingredients/i1/allergens': () =>
+        Response.json({ id: 'i1', allergenIds: ['al-milk'] }),
+    });
+    renderWithProviders(
+      <IngredientEditor
+        ingredient={{
+          ...parmesan,
+          allergenIds: ['al-milk'],
+          allergensReviewPending: true,
+        }}
+        catalog={withAllergens}
+        onDone={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup();
+
+    expect(
+      screen.getByRole('status', { name: 'Needs review' }),
+    ).toHaveTextContent('Carried over from a Family');
+    await user.click(screen.getByRole('button', { name: 'Save Allergens' }));
+    await screen.findByText('Allergens saved.');
+    expect(screen.queryByRole('status', { name: 'Needs review' })).toBeNull();
   });
 
   it('saves an empty selection as containing none', async () => {

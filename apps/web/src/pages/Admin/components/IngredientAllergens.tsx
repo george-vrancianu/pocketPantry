@@ -45,6 +45,16 @@ export function IngredientAllergens({ ingredient, allergens }: Props) {
       <Typography variant="body2" color="text.secondary">
         {t('admin:ingredient.allergens.hint')}
       </Typography>
+      {ingredient.allergensReviewPending && !saved ? (
+        <Typography
+          role="status"
+          aria-label={t('admin:ingredient.allergens.reviewTitle')}
+          variant="body2"
+          sx={{ fontWeight: 700 }}
+        >
+          {t('admin:ingredient.allergens.reviewHint')}
+        </Typography>
+      ) : null}
       <Stack
         direction="row"
         role="group"

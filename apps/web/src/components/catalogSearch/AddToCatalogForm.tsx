@@ -26,6 +26,12 @@ import {
   type CatalogSearchResult,
   type Unit,
 } from '../../lib/catalog';
+import {
+  AllergenContainsRow,
+  containsToAllergenIds,
+  selectionFromAllergenIds,
+  type ContainsSelection,
+} from '../AllergenContainsRow';
 import { AddToCatalogAlias } from './AddToCatalogAlias';
 import { AisleSwatch } from './AisleSwatch';
 
@@ -44,6 +50,11 @@ export type AddToCatalogFormProps = {
   onPicked: (result: CatalogSearchResult, outcome: PickOutcome) => void;
   /** Close without picking (Cancel, ×). */
   onCancel: () => void;
+  /**
+   * What the "Contains" row starts with: left out = blank (Unchecked), an empty list = "None",
+   * otherwise those Allergens ticked. A caller that knows more, such as a Barcode Lookup, passes it.
+   */
+  initialAllergenIds?: readonly string[];
 };
 
 const categoryMeta = (category: CatalogCategory) =>
@@ -69,6 +80,7 @@ export function AddToCatalogForm({
   categoryRef,
   onPicked,
   onCancel,
+  initialAllergenIds,
 }: AddToCatalogFormProps) {
   const { color } = tokens;
   const { t, i18n } = useTranslation('catalog');
@@ -77,6 +89,9 @@ export function AddToCatalogForm({
   const [mode, setMode] = useState<Mode>('new');
   const aliasRef = useRef<HTMLInputElement>(null);
   const [unit, setUnit] = useState<Unit>('pcs');
+  const [contains, setContains] = useState<ContainsSelection>(() =>
+    selectionFromAllergenIds(initialAllergenIds),
+  );
   const [category, setCategory] = useState<CatalogCategory | null>(null);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -96,8 +111,14 @@ export function AddToCatalogForm({
 
   const submit = () => {
     if (!category || trimmed === '' || create.isPending) return;
+    const allergenIds = containsToAllergenIds(contains);
     create.mutate(
-      { name: trimmed, leafCategoryId: category.id, defaultUnit: unit },
+      {
+        name: trimmed,
+        leafCategoryId: category.id,
+        defaultUnit: unit,
+        ...(allergenIds ? { allergenIds } : {}),
+      },
       { onSuccess: (result) => onPicked(result, { kind: 'added' }) },
     );
   };
@@ -313,6 +334,14 @@ export function AddToCatalogForm({
               </option>
             ))}
           </TextField>
+          <AllergenContainsRow
+            value={contains}
+            onChange={(next) => {
+              setContains(next);
+              create.reset();
+            }}
+            disabled={create.isPending}
+          />
           {failed ? (
             <Box role="alert" sx={{ fontSize: 13, color: color.urgentFg }}>
               {t('catalogAdd.failed')}

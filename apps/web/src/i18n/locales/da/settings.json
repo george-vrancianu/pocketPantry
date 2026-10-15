@@ -160,7 +160,15 @@
       "staples_one": "{{count}} basisvare",
       "staples_other": "{{count}} basisvarer"
     },
-    "editLabel": "Redigér"
+    "editLabel": "Redigér",
+    "allergensUnchecked": "Ikke kontrolleret for allergener",
+    "allergensContains": "Indeholder {{names}}",
+    "allergensNone": "Ingen allergener markeret",
+    "uncheckedSummary_one": "{{count}} ingrediens er ikke kontrolleret for allergener.",
+    "uncheckedSummary_other": "{{count}} ingredienser er ikke kontrolleret for allergener.",
+    "tagAllergens": "Angiv allergener for {{name}}",
+    "tagLabel": "Allergener",
+    "saveAllergens": "Gem allergener"
   },
   "familyAllergies": {
     "title": "Familieallergier",

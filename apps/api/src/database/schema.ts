@@ -266,11 +266,19 @@ export const ingredients = pgTable(
     // The locale a Family Ingredient's name was typed in: 'en' | 'ro' | 'da'.
     nameLocale: text('name_locale'),
     // A Member has tagged a Family Ingredient's Allergens (ticking "None" counts).
-    // Shared Ingredients always count as checked, so Allergy logic reads this only for Family
-    // rows (ADR 0014). On a seed Ingredient it records that the seed's tags were applied once.
-    // Do not reuse false on a shared row as a "flagged for review" marker (e.g. after a future
-    // promote or merge): the seed would re-apply its tags to it.
+    // A shared Ingredient counts as checked too, except one promoted from Family copies none of
+    // which were checked: that stays Unchecked (false here plus allergens_review_pending below)
+    // until an Admin saves its Allergens (ADR 0014). On a seed Ingredient it records that the
+    // seed's tags were applied once. Do not reuse false on a shared row as a "flagged for
+    // review" marker: the seed would re-apply its tags to it.
     allergensChecked: boolean('allergens_checked').notNull().default(false),
+    // Promoting or merging a Family Ingredient carried Member-entered tags onto a shared row
+    // (ADR 0011, 0014). The Admin reviews them; saving the Ingredient's Allergens clears this.
+    // A separate column from allergens_checked, which the seed reads (see above). While set on
+    // a shared row that is not checked, no Member has tagged it: its lines read as Unchecked.
+    allergensReviewPending: boolean('allergens_review_pending')
+      .notNull()
+      .default(false),
     ...timestamps,
   },
   (table) => [

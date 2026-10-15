@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray, max, sql } from 'drizzle-orm';
+import { and, asc, count, eq, max, sql } from 'drizzle-orm';
 import { catalogScope, SHARED_ONLY } from '../catalog/catalog-scope';
 import {
   amountScaleForParent,
@@ -14,6 +14,7 @@ import {
 import { FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { seedId } from '../catalog/seed/seed-catalog';
 import type { EntityType } from '../catalog/display-names';
+import { replaceIngredientAllergenTags } from '../catalog/ingredient-allergen-tags';
 import { normalizeName } from '../catalog/normalize';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
@@ -216,6 +217,7 @@ export class AdminCatalogService {
         defaultUnit: row.defaultUnit,
         pantryBasic: row.pantryBasic,
         allergenIds: tagsOf.get(row.id) ?? [],
+        allergensReviewPending: row.allergensReviewPending,
         translations: translations('ingredient', row.id),
       })),
     };
@@ -459,38 +461,7 @@ export class AdminCatalogService {
         .where(eq(shared.id, id))
         .for('update');
       if (!ingredient) throw notFound('ingredient');
-      const known = allergenIds.length
-        ? await tx
-            .select({ id: allergens.id, archivedAt: allergens.archivedAt })
-            .from(allergens)
-            .where(inArray(allergens.id, allergenIds))
-        : [];
-      if (known.length !== allergenIds.length) throw notFound('allergen');
-      const current = new Set(
-        (
-          await tx
-            .select({ allergenId: ingredientAllergens.allergenId })
-            .from(ingredientAllergens)
-            .where(eq(ingredientAllergens.ingredientId, id))
-        ).map((row) => row.allergenId),
-      );
-      if (known.some((row) => row.archivedAt && !current.has(row.id))) {
-        throw new ApiException(409, 'catalog.allergen_retired');
-      }
-      await tx
-        .delete(ingredientAllergens)
-        .where(eq(ingredientAllergens.ingredientId, id));
-      if (allergenIds.length) {
-        await tx
-          .insert(ingredientAllergens)
-          .values(
-            allergenIds.map((allergenId) => ({ ingredientId: id, allergenId })),
-          );
-      }
-      await tx
-        .update(ingredients)
-        .set({ allergensChecked: true })
-        .where(eq(ingredients.id, id));
+      await replaceIngredientAllergenTags(tx, id, allergenIds);
       return { id, allergenIds };
     });
   }

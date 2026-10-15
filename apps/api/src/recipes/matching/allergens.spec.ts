@@ -9,9 +9,21 @@ const GLUTEN = 'allergen-gluten';
 const MILK = 'allergen-milk';
 const PEANUTS = 'allergen-peanuts';
 
-const SHARED = { ownerFamilyId: null, allergensChecked: false };
-const checkedFamily = { ownerFamilyId: 'fam-1', allergensChecked: true };
-const uncheckedFamily = { ownerFamilyId: 'fam-1', allergensChecked: false };
+const SHARED = {
+  ownerFamilyId: null,
+  allergensChecked: false,
+  allergensReviewPending: false,
+};
+const checkedFamily = {
+  ownerFamilyId: 'fam-1',
+  allergensChecked: true,
+  allergensReviewPending: false,
+};
+const uncheckedFamily = {
+  ownerFamilyId: 'fam-1',
+  allergensChecked: false,
+  allergensReviewPending: false,
+};
 
 let lineCount = 0;
 const line = (over: Partial<AllergenLine> = {}): AllergenLine => ({
@@ -99,6 +111,19 @@ describe('deriveAllergens', () => {
     expect(derive([line({ ingredient: uncheckedFamily })]).uncheckedCount).toBe(
       1,
     );
+  });
+
+  it('counts a shared Ingredient awaiting its first tags after a promote as Unchecked', () => {
+    const awaiting = {
+      ownerFamilyId: null,
+      allergensChecked: false,
+      allergensReviewPending: true,
+    };
+    const reviewed = { ...awaiting, allergensChecked: true };
+    expect(
+      derive([line({ ingredient: awaiting }), line({ ingredient: reviewed })])
+        .uncheckedCount,
+    ).toBe(1);
   });
 
   it('counts an Unmatched line as Unchecked, optional or not', () => {
