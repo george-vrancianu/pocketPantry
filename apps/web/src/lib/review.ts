@@ -192,9 +192,7 @@ export const toSaveBatches = (
 ) =>
   lines
     .map(toNewBatch)
-    // A Barcode Lookup's unmatched name is product data: the queue records it as a Product's.
+    // A Barcode Lookup's unmatched name carries no source, as in the add-Batch form (stored as manual).
     .map((batch) =>
-      batch.rawName
-        ? { ...batch, source: mode === 'barcode' ? 'product' : mode }
-        : batch,
+      batch.rawName && mode !== 'barcode' ? { ...batch, source: mode } : batch,
     );

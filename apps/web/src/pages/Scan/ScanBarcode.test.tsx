@@ -88,13 +88,19 @@ type Held = { code: string; search: string; respond: (r: Response) => void };
 let lookups: Held[];
 let calls: ReturnType<typeof stubApi>['calls'];
 let answers: Record<string, () => Response>;
+/** When set, a photo read of a Product answers at once with this. */
+let productAnswer: (() => Response) | null;
 
 function renderScan(route = '/scan') {
   lookups = [];
   answers = {};
+  productAnswer = null;
   const stub = stubApi({
     'POST /api/pantry/batches/bulk': () => Response.json({ batches: [] }),
-    'GET /api/catalog/search': () => Response.json({ results: [yogurt] }),
+    'GET /api/catalog/search': () =>
+      Response.json({
+        results: [yogurt, { ...yogurt, id: 'skyr-id', name: 'Skyr' }],
+      }),
   });
   calls = stub.calls;
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
@@ -111,6 +117,7 @@ function renderScan(route = '/scan') {
     }
     if (key === 'POST /api/scan/product') {
       calls.push({ key, search: url.search, body: undefined });
+      if (productAnswer) return Promise.resolve(productAnswer());
       return new Promise<Response>(() => {});
     }
     return stub.fetchMock(input, init);
@@ -267,6 +274,38 @@ describe('Barcode on the Scan page', () => {
       expect(await screen.findByTestId('card-result')).toHaveTextContent(
         'Yogurt',
       );
+      await user.click(screen.getByTestId('card-result'));
+      await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      expect(await screen.findByLabelText('Quantity')).toHaveValue(400);
+      expect(screen.getByLabelText('Unit')).toHaveValue('g');
+      expect(screen.getByLabelText('Product description')).toHaveValue(
+        'Greek yogurt',
+      );
+    });
+
+    it('leaves a low-confidence product Unmatched, named by its description', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          found({
+            match: null,
+            lowConfidence: true,
+            quantity: null,
+            unit: null,
+          }),
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+      // Review's match dialog has no pre-typed search: the low-confidence product stays
+      // Unmatched, named by its description, for the Member to choose an Ingredient.
+      expect(
+        await screen.findByRole('button', { name: /No match · Choose/ }),
+      ).toBeInTheDocument();
+      expect(screen.getByLabelText('Name')).toHaveValue('Greek yogurt');
     });
 
     it('reads a product that is not found into one empty line to fill', async () => {
@@ -290,9 +329,7 @@ describe('Barcode on the Scan page', () => {
       await waitFor(() => expect(states()).toEqual(['failed']));
 
       answers[A] = () => Response.json(found());
-      await user.click(
-        screen.getByRole('button', { name: 'Retry reading photo' }),
-      );
+      await user.click(screen.getByRole('button', { name: 'Retry lookup' }));
       await waitFor(() => expect(states()).toEqual(['read']));
       expect(lookupCalls()).toHaveLength(2);
     });
@@ -346,6 +383,22 @@ describe('Barcode on the Scan page', () => {
     });
   });
 
+  describe('a held pack and the Session limit', () => {
+    it('toasts once for a code held at the limit, not on every decoder tick', async () => {
+      renderScan('/scan?mode=barcode');
+      for (let i = 0; i < 20; i += 1)
+        await decode(`59412345${String(i).padStart(5, '0')}`);
+      await decode(B);
+      await screen.findByText(/holds at most 20 photos/);
+      await userEvent.keyboard('{Escape}');
+      await waitFor(() =>
+        expect(screen.queryByText(/holds at most 20 photos/)).toBeNull(),
+      );
+      await decode(B);
+      expect(screen.queryByText(/holds at most 20 photos/)).toBeNull();
+    });
+  });
+
   describe('in Review', () => {
     it('saves a found card with its barcode in the new Batch', async () => {
       const user = userEvent.setup();
@@ -369,6 +422,87 @@ describe('Barcode on the Scan page', () => {
       });
     });
 
+    it('saves the Ingredient the Member picks with Change match', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+
+      await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      await user.click(
+        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+      );
+      const search = within(
+        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
+      ).getByRole('combobox', { name: 'Search ingredients' });
+      await user.type(search, 'skyr');
+      await user.click(await screen.findByRole('option', { name: /Skyr/ }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await user.click(screen.getByRole('button', { name: /^Save/ }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const save = calls.find(
+        (call) => call.key === 'POST /api/pantry/batches/bulk',
+      );
+      expect(save?.body).toMatchObject({
+        batches: [{ ingredientId: 'skyr-id', barcode: A }],
+      });
+    });
+
+    it('adds a read Product card and a Barcode card together, only the barcode one carrying its code', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=product');
+      productAnswer = () =>
+        Response.json({
+          lines: [
+            {
+              name: 'Milk',
+              sourceText: 'MILK',
+              match: { ...yogurt, id: 'milk-id', name: 'Milk' },
+              lowConfidence: false,
+              quantity: 1,
+              unit: 'l',
+              expiryDate: null,
+              productDescription: 'Whole milk',
+            },
+          ],
+        });
+      scanViaGuide();
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(within(dial()).getByRole('radio', { name: /Barcode/ }));
+      answers[A] = () => Response.json(found());
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read', 'read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByRole('button', { name: 'Add all' }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const bodies = calls
+        .filter((call) => call.key === 'POST /api/pantry/batches/bulk')
+        .flatMap((call) => (call.body as { batches: object[] }).batches);
+      expect(bodies).toHaveLength(2);
+      const milk = bodies.find(
+        (b) => (b as { ingredientId: string }).ingredientId === 'milk-id',
+      );
+      expect(milk).not.toHaveProperty('barcode');
+      expect(bodies).toContainEqual(
+        expect.objectContaining({ ingredientId: 'yogurt-id', barcode: A }),
+      );
+    });
+
     it('lets the Member open, name and save a not-found card alone, still sending its barcode', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');
@@ -390,8 +524,11 @@ describe('Barcode on the Scan page', () => {
         (call) => call.key === 'POST /api/pantry/batches/bulk',
       );
       expect(save?.body).toMatchObject({
-        batches: [{ rawName: 'Mystery jar', source: 'product', barcode: A }],
+        batches: [{ rawName: 'Mystery jar', barcode: A }],
       });
+      // As the add-Batch form sends an Unmatched name: no source (stored as manual).
+      const [batch] = (save?.body as { batches: object[] }).batches;
+      expect(batch).not.toHaveProperty('source');
     });
 
     it('removes a Barcode card from the overview', async () => {

@@ -51,6 +51,7 @@
     "needsCrop": "Skal beskæres",
     "read": "Foto læst",
     "failed": "Fotoet kunne ikke læses",
+    "retryLookup": "Slå op igen",
     "retry": "Læs foto igen"
   },
   "photoAdded": "Foto {{count}} tilføjet",

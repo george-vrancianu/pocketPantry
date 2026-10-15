@@ -260,6 +260,8 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const acceptCode = async (code: string) => {
     // The simple dedupe: the code just accepted is ignored.
     if (code === lastCode.current) return;
+    // Remembered before the limit check, so a held pack at the limit toasts once, not every tick.
+    lastCode.current = code;
     if (
       getScanSession().scans.length + resizingPicks.current >=
       MAX_SESSION_SCANS
@@ -270,14 +272,23 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       });
       return;
     }
-    lastCode.current = code;
     const epoch = scanEpoch.current;
     // The card's thumbnail is the frame the code was read from, frozen now.
     const frame = await camera.capture();
     const thumbnail = frame ? await resizeImage(frame).catch(() => '') : '';
-    if (epoch !== scanEpoch.current) return;
+    if (epoch !== scanEpoch.current) {
+      lastCode.current = null;
+      return;
+    }
     // Another read may have filled the Scan Session while the frame was prepared.
-    if (getScanSession().scans.length >= MAX_SESSION_SCANS) return;
+    if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+      lastCode.current = null;
+      setToast({
+        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+        severity: 'warning',
+      });
+      return;
+    }
     dispatchScanSession({
       type: 'enqueue',
       scan: { id: crypto.randomUUID(), mode: 'barcode', code, thumbnail },

@@ -3,6 +3,7 @@ import { shade, translucent } from './glass';
 import { useTranslation } from 'react-i18next';
 import {
   canRetry,
+  isBarcodeCard,
   scanDisplayState,
   type SessionScan,
 } from '../../../lib/scanSession';
@@ -82,12 +83,14 @@ export function SessionStrip({
               backgroundColor: translucent(tokens.color.surface, 82),
             }}
           >
-            <Box
-              component="img"
-              src={scan.thumbnail}
-              alt=""
-              sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            {scan.thumbnail ? (
+              <Box
+                component="img"
+                src={scan.thumbnail}
+                alt=""
+                sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : null}
             {reading ? (
               <Box
                 sx={{
@@ -147,7 +150,11 @@ export function SessionStrip({
                   <Box
                     component="button"
                     type="button"
-                    aria-label={t('session.retry')}
+                    aria-label={t(
+                      isBarcodeCard(scan)
+                        ? 'session.retryLookup'
+                        : 'session.retry',
+                    )}
                     onClick={() => onRetry(scan.id)}
                     sx={{
                       position: 'absolute',
