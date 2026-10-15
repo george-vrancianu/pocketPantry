@@ -9,11 +9,8 @@ import {
 } from '@pocket-pantry/ui';
 import type { ComponentType } from 'react';
 import type { WidgetSize, WidgetType } from '../../../lib/dashboard';
-import {
-  BudgetWidget,
-  MealPlanWidget,
-  NutritionWidget,
-} from './PlaceholderWidgets';
+import { BudgetWidget, NutritionWidget } from './PlaceholderWidgets';
+import { MealPlanWidget } from './MealPlanWidget';
 import { PantryStockWidget } from './PantryStockWidget';
 import { HealthWidget } from './HealthWidget';
 import { CookTonightWidget } from './CookTonightWidget';
