@@ -1,6 +1,7 @@
 import type { StorageLocation } from './catalog';
 import {
   daysUntil,
+  defaultExpiryDate,
   fromIso,
   isExpiringSoon,
   localIso,
@@ -40,6 +41,8 @@ export type HealthBatch = {
   ingredientId: string | null;
   location: StorageLocation;
   expiryDate: IsoDate | null;
+  /** The Default Expiry in days, resolved by the server; null when there is none. */
+  defaultExpiryDays: number | null;
   createdAt: string;
 };
 
@@ -158,6 +161,24 @@ export function pantryHealth(input: HealthInput): PantryHealth {
   return { scored: true, factors, total, verdict: verdictOf(total) };
 }
 
+/**
+ * The date "Date all" gives a Batch: its Default Expiry counted from the day it was added, or from today
+ * when that date has already passed. Null when the Batch has no Default Expiry.
+ */
+export function usualExpiryDate(
+  batch: Pick<HealthBatch, 'createdAt' | 'defaultExpiryDays'>,
+  today: IsoDate,
+): IsoDate | null {
+  if (batch.defaultExpiryDays === null) return null;
+  const fromAdded = defaultExpiryDate(
+    batch.defaultExpiryDays,
+    new Date(batch.createdAt),
+  );
+  return fromAdded < today
+    ? defaultExpiryDate(batch.defaultExpiryDays, fromIso(today))
+    : fromAdded;
+}
+
 export type HealthTodoKey =
   'expired' | 'missingStaples' | 'expiringSoon' | 'runningLow' | 'undated';
 /** The Health To-do keys in display order. */
@@ -197,8 +218,20 @@ function afterFix(todo: PendingTodo, input: HealthInput): HealthInput | null {
         ...input,
         onShoppingList: new Set([...input.onShoppingList, ...ids]),
       };
+    case 'undated':
+      return {
+        ...input,
+        batches: input.batches.map((batch) =>
+          ids.has(batch.id)
+            ? {
+                ...batch,
+                expiryDate:
+                  usualExpiryDate(batch, input.today) ?? batch.expiryDate,
+              }
+            : batch,
+        ),
+      };
     case 'expiringSoon': // The fix is cooking, which cannot be simulated.
-    case 'undated': // Simulated once Batches carry their Default Expiry.
       return null;
   }
 }

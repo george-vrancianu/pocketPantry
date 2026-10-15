@@ -31,6 +31,8 @@ export type Batch = {
   unit: Unit | null;
   location: StorageLocation;
   expiryDate: IsoDate | null;
+  /** The Default Expiry in days for the Batch's Category (the Family's override first); null when there is none. */
+  defaultExpiryDays: number | null;
   productDescription: string | null;
   createdAt: string;
 };
