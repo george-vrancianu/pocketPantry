@@ -247,6 +247,10 @@ export function useReviewScreen() {
     change,
     swapName: swapLine ? displayName(swapLine) : '',
     swapQuery: swapLine?.barcode && !swapLine.match ? swapLine.name.trim() : '',
+    /** Undefined when the line lists none (never []), as the add-Batch form passes it. */
+    swapAllergenIds: swapLine?.lookup?.listedAllergens.length
+      ? swapLine.lookup.listedAllergens.map((allergen) => allergen.id)
+      : undefined,
     swapOpen,
     openSwap,
     closeSwap,

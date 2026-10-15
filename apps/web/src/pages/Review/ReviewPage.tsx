@@ -134,6 +134,7 @@ export function ReviewPage() {
               open={screen.swapOpen}
               name={screen.swapName}
               defaultQuery={screen.swapQuery}
+              newIngredientAllergenIds={screen.swapAllergenIds}
               onSelect={screen.changeMatch}
               onClose={screen.closeSwap}
             />
@@ -183,6 +184,7 @@ export function ReviewPage() {
             open={screen.swapOpen}
             name={screen.swapName}
             defaultQuery={screen.swapQuery}
+            newIngredientAllergenIds={screen.swapAllergenIds}
             onSelect={screen.changeMatch}
             onClose={screen.closeSwap}
           />

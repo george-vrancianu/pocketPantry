@@ -1,4 +1,8 @@
 import {
+  ListedAllergensNote,
+  OpenFoodFactsCredit,
+} from '../../../components/BarcodeLookupNotes';
+import {
   Box,
   CalendarIcon,
   CheckIcon,
@@ -249,6 +253,12 @@ export function TabletReviewRow({
               </Box>
             )}
             <SourceText text={line.sourceText} mode={mode} />
+            {line.lookup ? (
+              <Box sx={{ display: 'grid', gap: '2px' }}>
+                {line.lookup.fromOpenFoodFacts ? <OpenFoodFactsCredit /> : null}
+                <ListedAllergensNote allergens={line.lookup.missingAllergens} />
+              </Box>
+            ) : null}
             {shopping ? null : (
               <DescriptionInput
                 line={line}

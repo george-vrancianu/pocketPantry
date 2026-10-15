@@ -15,6 +15,10 @@ import {
   type ReviewLine,
   type RowStatus,
 } from '../../../lib/review';
+import {
+  ListedAllergensNote,
+  OpenFoodFactsCredit,
+} from '../../../components/BarcodeLookupNotes';
 import { Field, controlSx } from './Field';
 import {
   CategorySelect,
@@ -98,6 +102,12 @@ export function RowEditPanel({
           }}
         >
           {message}
+        </Box>
+      ) : null}
+      {line.lookup ? (
+        <Box sx={{ display: 'grid', gap: '2px', mb: '8px' }}>
+          {line.lookup.fromOpenFoodFacts ? <OpenFoodFactsCredit /> : null}
+          <ListedAllergensNote allergens={line.lookup.missingAllergens} />
         </Box>
       ) : null}
       <Box

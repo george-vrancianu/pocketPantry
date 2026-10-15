@@ -81,6 +81,8 @@ const found = (overrides: object = {}) => ({
   missingAllergens: [],
   ...overrides,
 });
+const MILK = { id: 'al-milk', name: 'Milk' };
+const GLUTEN = { id: 'al-gluten', name: 'Gluten' };
 const A = '5941234567890';
 const B = '5949999999990';
 
@@ -102,6 +104,8 @@ function renderScan(route = '/scan') {
       Response.json({
         results: [yogurt, { ...yogurt, id: 'skyr-id', name: 'Skyr' }],
       }),
+    'GET /api/catalog/allergens': () =>
+      Response.json({ allergens: [MILK, GLUTEN] }),
   });
   calls = stub.calls;
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
@@ -574,6 +578,121 @@ describe('Barcode on the Scan page', () => {
         await screen.findByRole('button', { name: 'Remove photo' }),
       );
       expect(screen.queryByTestId('review-card')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Open Food Facts attribution and Allergens in Review', () => {
+    /** Decodes A, answers the lookup, and opens the card's line. */
+    async function openLine(answer: object, row: RegExp | null = /Yogurt/) {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () => Response.json(answer);
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+      if (row)
+        await user.click(await screen.findByRole('button', { name: row }));
+      return user;
+    }
+
+    it('credits Open Food Facts on a line whose lookup came from it', async () => {
+      await openLine(found());
+      expect(
+        await screen.findByText('Product data: Open Food Facts'),
+      ).toBeVisible();
+    });
+
+    it('gives no credit to a Known Barcode line or a not-found line', async () => {
+      await openLine(found({ source: 'known_barcode' }));
+      await screen.findByLabelText('Quantity');
+      expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
+    });
+
+    it('gives no credit to a not-found line', async () => {
+      await openLine({ found: false }, null);
+      await screen.findByLabelText('Name');
+      expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
+    });
+
+    it('notes the Allergens the matched Ingredient is not tagged with, and drops the note when another Ingredient is picked', async () => {
+      const user = await openLine(
+        found({ allergens: [MILK], missingAllergens: [MILK, GLUTEN] }),
+      );
+      expect(
+        await screen.findByText('This product lists Milk and Gluten'),
+      ).toBeVisible();
+
+      await user.click(
+        await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+      );
+      const search = within(
+        screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
+      ).getByRole('combobox', { name: 'Search ingredients' });
+      await user.type(search, 'skyr');
+      await user.click(await screen.findByRole('option', { name: /Skyr/ }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(screen.queryByText(/This product lists/)).toBeNull();
+    });
+
+    it('shows no note when the matched Ingredient already has every listed Allergen', async () => {
+      await openLine(found({ allergens: [MILK] }));
+      await screen.findByText('Product data: Open Food Facts');
+      expect(screen.queryByText(/This product lists/)).toBeNull();
+    });
+
+    it('pre-ticks the listed Allergens when the Member adds a new Family Ingredient from the line', async () => {
+      const user = await openLine(
+        found({ match: null, lowConfidence: true, allergens: [MILK] }),
+        null,
+      );
+      await user.click(
+        await screen.findByRole('button', { name: /No match · Choose/ }),
+      );
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'Add “Greek yogurt” to your catalog',
+        }),
+      );
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Add to your catalog',
+      });
+      expect(
+        await within(dialog).findByRole('button', { name: 'Milk' }),
+      ).toHaveAttribute('aria-pressed', 'true');
+      expect(
+        within(dialog).getByRole('button', { name: 'Gluten' }),
+      ).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it('shows no attribution or Allergen note on a Product card', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=product');
+      productAnswer = () =>
+        Response.json({
+          lines: [
+            {
+              name: 'Milk',
+              sourceText: 'MILK',
+              match: { ...yogurt, id: 'milk-id', name: 'Milk' },
+              lowConfidence: false,
+              quantity: 1,
+              unit: 'l',
+              expiryDate: null,
+              productDescription: null,
+            },
+          ],
+        });
+      scanViaGuide();
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+      await user.click(await screen.findByRole('button', { name: /Milk/ }));
+      await screen.findByLabelText('Quantity');
+      expect(screen.queryByText('Product data: Open Food Facts')).toBeNull();
+      expect(screen.queryByText(/This product lists/)).toBeNull();
     });
   });
 });
