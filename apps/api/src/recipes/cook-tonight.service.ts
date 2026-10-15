@@ -13,9 +13,8 @@ import {
   type PantryRecipeMatch,
 } from './matching/pantry-matching.service';
 import {
-  hidesAllergyRecipes,
   loadAllergyWarnings,
-  loadViewerAllergies,
+  loadViewerAllergyContext,
 } from './recipe-allergens';
 import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
@@ -95,27 +94,29 @@ export class CookTonightService {
     });
 
     // Hiding (#359) is decided per Recipe before a group picks its card, so a hidden Variant
-    // never stands for its group while a Recipe the Member can eat is left.
-    const [{ warnings, hidden }, preferences] = await Promise.all([
-      loadAllergyWarnings(
-        this.database,
-        catalogScope(familyId),
-        ranked.flatMap(({ candidates }) => candidates.map((c) => c.row.id)),
-        query.locale,
-        await loadViewerAllergies(this.database, memberId, familyId),
-      ),
-      this.settings.getPreferences(memberId),
-    ]);
-    const hides = hidesAllergyRecipes(preferences, query.showHidden);
+    // never stands for its group, nor counts in its "+N other Variants".
+    const { allergies, hides } = await loadViewerAllergyContext(
+      this.database,
+      this.settings,
+      memberId,
+      familyId,
+      query.showHidden,
+    );
+    // The warning belongs to the Recipe a card shows, which may be a Variant.
+    const { warnings, hidden } = await loadAllergyWarnings(
+      this.database,
+      catalogScope(familyId),
+      ranked.flatMap(({ candidates }) => candidates.map((c) => c.row.id)),
+      query.locale,
+      allergies,
+    );
     let hiddenByAllergiesCount = 0;
     const groupsRanked = ranked
       .flatMap(({ base, candidates }) => {
-        if (!hides || !hidden.has(candidates[0].row.id)) {
-          return [{ base, candidates }];
-        }
-        // The group's best card is hidden: the override would change what the card shows.
-        hiddenByAllergiesCount += 1;
+        if (!hides) return [{ base, candidates }];
         const visible = candidates.filter((c) => !hidden.has(c.row.id));
+        // Counted only when the override would change the card, or bring the group back.
+        if (visible[0] !== candidates[0]) hiddenByAllergiesCount += 1;
         return visible.length > 0 ? [{ base, candidates: visible }] : [];
       })
       .sort((a, b) => byRank(a.candidates[0], b.candidates[0]));
@@ -125,7 +126,6 @@ export class CookTonightService {
       groupsRanked,
       query.locale,
     );
-    // The warning belongs to the Recipe a card shows, which may be a Variant.
     return {
       hiddenByAllergiesCount,
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {

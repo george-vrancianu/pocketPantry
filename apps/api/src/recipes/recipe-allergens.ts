@@ -13,6 +13,7 @@ import {
   loadFamilyAllergies,
   loadOtherMemberAllergies,
 } from '../settings/family-allergies';
+import type { SettingsService } from '../settings/settings.service';
 import { loadMemberAllergenIds } from '../settings/member-allergies';
 import {
   deriveAllergens,
@@ -291,11 +292,26 @@ export type AllergyWarnings = {
  */
 export const hidesAllergyRecipes = (
   preferences: { hideRecipesWithAllergies: boolean },
-  showHidden: 'true' | 'false' | boolean | undefined,
-): boolean =>
-  preferences.hideRecipesWithAllergies &&
-  showHidden !== true &&
-  showHidden !== 'true';
+  showHidden: boolean | undefined,
+): boolean => preferences.hideRecipesWithAllergies && showHidden !== true;
+
+/**
+ * What a list needs before it loads warnings: the viewer's Allergies and whether the list hides
+ * Recipes (#359). Browse, Cook Tonight and Plate Scan matches all start here.
+ */
+export async function loadViewerAllergyContext(
+  executor: Executor,
+  settings: Pick<SettingsService, 'getPreferences'>,
+  memberId: string,
+  familyId: string | undefined,
+  showHidden: boolean | undefined,
+): Promise<{ allergies: AllergyInput[]; hides: boolean }> {
+  const [allergies, preferences] = await Promise.all([
+    loadViewerAllergies(executor, memberId, familyId),
+    settings.getPreferences(memberId),
+  ]);
+  return { allergies, hides: hidesAllergyRecipes(preferences, showHidden) };
+}
 
 /** One item per Allergen: `yours` if anyone whose Allergy counts as the viewer's has it. */
 function compactWarning(

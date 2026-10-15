@@ -9,10 +9,10 @@ import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import {
-  hidesAllergyRecipes,
   loadAllergyWarnings,
   loadRecipeAllergens,
   loadViewerAllergies,
+  loadViewerAllergyContext,
 } from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
@@ -96,26 +96,28 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const [ref, allergies, preferences] = await Promise.all([
+    const { allergies, hides } = await loadViewerAllergyContext(
+      this.database,
+      this.settings,
+      memberId,
+      familyId,
+      query.showHidden,
+    );
+    const [ref, { warnings, hidden }] = await Promise.all([
       this.namedRefs(
         this.database,
         catalogScope(familyId),
         locale,
         matching.flatMap((r) => [r.cuisineId, r.methodId]),
       ),
-      loadViewerAllergies(this.database, memberId, familyId).then((allergies) =>
-        loadAllergyWarnings(
-          this.database,
-          catalogScope(familyId),
-          matching.map((r) => r.id),
-          locale,
-          allergies,
-        ),
+      loadAllergyWarnings(
+        this.database,
+        catalogScope(familyId),
+        matching.map((r) => r.id),
+        locale,
+        allergies,
       ),
-      this.settings.getPreferences(memberId),
     ]);
-    const { warnings, hidden } = allergies;
-    const hides = hidesAllergyRecipes(preferences, query.showHidden);
     const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
 
     const items = shown

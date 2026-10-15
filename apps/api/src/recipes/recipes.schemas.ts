@@ -194,6 +194,12 @@ export const recipeListQuery = z.object({
 });
 
 /** Member browsing: no search or filter lists Base Recipes only. */
+/** The `showHidden` query flag, as a boolean. */
+const showHiddenQuery = z
+  .enum(['true', 'false'])
+  .transform((v) => v === 'true')
+  .optional();
+
 export const browseQuery = z.object({
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
   search: z.string().trim().max(100).optional(),
@@ -203,9 +209,10 @@ export const browseQuery = z.object({
   includeVariants: z.enum(['true', 'false']).optional(),
   /**
    * The "show hidden" override (#359): list Recipes even when the Member's "Hide Recipes with my
-   * Allergies" is on. The Meal Plan's calls always pass it, since Plan Slots never hide (ADR 0012).
+   * Allergies" is on. The Meal Plan picker, the Pairing picker and the Plate Scan title search
+   * all pass it, since those never hide (ADR 0012).
    */
-  showHidden: z.enum(['true', 'false']).optional(),
+  showHidden: showHiddenQuery,
 });
 export const localeQuery = browseQuery.pick({ locale: true });
 
@@ -498,7 +505,7 @@ export type FamilyRecipeDraft = {
 export const cookTonightQuery = localeQuery.extend({
   today: z.iso.date().optional(),
   /** The "show hidden" override for "Hide Recipes with my Allergies" (#359). */
-  showHidden: z.enum(['true', 'false']).optional(),
+  showHidden: showHiddenQuery,
 });
 export type CookTonightQuery = z.infer<typeof cookTonightQuery>;
 
@@ -526,7 +533,9 @@ export type CookTonightCard = {
 
 export type CookTonightView = {
   cards: CookTonightCard[];
-  /** Cards that "Hide Recipes with my Allergies" left out or swapped for another Recipe of their group (0 when off or overridden). */
+  /**
+   * Every group that "Hide Recipes with my Allergies" left out or swapped for another Recipe of
+   * its group, not just the cards a widget shows (0 when off or overridden). Cards that "Hide Recipes with my Allergies" left out or swapped for another Recipe of their group (0 when off or overridden). */
   hiddenByAllergiesCount: number;
 };
 

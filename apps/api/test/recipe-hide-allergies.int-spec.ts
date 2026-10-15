@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ilike } from 'drizzle-orm';
+import { eq, ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { recipes } from '../src/database/schema';
+import { batches, ingredients, recipes, user } from '../src/database/schema';
 import type {
   AdminRecipeDetail,
   CookTonightView,
@@ -31,6 +31,7 @@ describe('Hide Recipes with my Allergies (integration)', () => {
   let recipesApi: ReturnType<typeof client>;
   let benSettings: ReturnType<typeof client>;
   const stamp = Date.now();
+  const email = `hide-allergies-${stamp}@example.com`;
   let n = 0;
 
   const MILK = seedId.allergen('milk');
@@ -72,6 +73,28 @@ describe('Hide Recipes with my Allergies (integration)', () => {
     settings.put('/allergies', { allergenIds: ids }).expect(200);
   const hiding = (on: boolean) =>
     settings.put('/preferences', { hideRecipesWithAllergies: on }).expect(200);
+  const familyId = async () =>
+    (
+      await database
+        .select({ id: user.familyId })
+        .from(user)
+        .where(eq(user.email, email))
+    )[0].id;
+  const stock = async (slug: string) => {
+    const [{ leaf }] = await database
+      .select({ leaf: ingredients.leafCategoryId })
+      .from(ingredients)
+      .where(eq(ingredients.id, seedId.ingredient(slug)));
+    await database.insert(batches).values({
+      familyId: await familyId(),
+      ingredientId: seedId.ingredient(slug),
+      unmatched: false,
+      leafCategoryId: leaf,
+      location: 'fridge',
+      quantity: 500,
+      unit: 'g',
+    });
+  };
   const familyAllergyIds: string[] = [];
   const addFamilyAllergy = async (allergenId: string) => {
     const row = (
@@ -106,7 +129,6 @@ describe('Hide Recipes with my Allergies (integration)', () => {
   beforeAll(async () => {
     app = await createTestApp();
     database = app.get<Database>(DATABASE);
-    const email = `hide-allergies-${stamp}@example.com`;
     const cookie = await signUp(app, email, 'Hider');
     await promoteToAdmin(database, email);
     admin = client(app, cookie, '/api/admin/recipes');
@@ -135,6 +157,9 @@ describe('Hide Recipes with my Allergies (integration)', () => {
     }
     // Each test counts the Recipes it made, so none may linger into the next.
     await database.delete(recipes).where(ilike(recipes.title, `%${stamp}-%`));
+    await database
+      .delete(batches)
+      .where(eq(batches.familyId, await familyId()));
   });
 
   afterAll(async () => {
@@ -269,6 +294,25 @@ describe('Hide Recipes with my Allergies (integration)', () => {
       await hiding(true);
       const card = (await tonight()).cards.find((c) => c.base.id === base.id);
       expect(card?.recipe.id).toBe(variant.id);
+    });
+
+    it('keeps a hidden Variant out of "+N other Variants" when the top card is visible', async () => {
+      await stock('flour');
+      await stock('parmesan');
+      const base = await create([g('flour')]);
+      await variantOf(base, [g('flour'), g('parmesan')]);
+      await mine(MILK);
+      await hiding(true);
+      const shown = (await tonight()).cards.find((c) => c.base.id === base.id)!;
+      expect(shown.recipe.id).toBe(base.id);
+      expect(shown.otherVariantsCount).toBe(0);
+      // The override lists the Variant again.
+      const all = (await tonight('&showHidden=true')).cards.find(
+        (c) => c.base.id === base.id,
+      )!;
+      expect(all.otherVariantsCount + (all.recipe.id === base.id ? 0 : 1)).toBe(
+        1,
+      );
     });
 
     it('does not hide for another Member`s Allergy or an optional-only line', async () => {

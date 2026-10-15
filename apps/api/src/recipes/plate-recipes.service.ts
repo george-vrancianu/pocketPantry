@@ -8,9 +8,8 @@ import { SettingsService } from '../settings/settings.service';
 import { FamilyRecipesService } from './family-recipes.service';
 import { rankPlateMatches, type PlateCandidate } from './plate-matches';
 import {
-  hidesAllergyRecipes,
   loadAllergyWarnings,
-  loadViewerAllergies,
+  loadViewerAllergyContext,
 } from './recipe-allergens';
 import { recipeTitles } from './recipe-view';
 import type {
@@ -75,18 +74,23 @@ export class PlateRecipesService {
     const familyId = await this.settings.familyIdOf(memberId);
     // Hiding (#359) takes Recipes out before the closest five are picked, so the list fills up
     // from the next best; the count is how many of the five the override would restore.
-    const [{ warnings, hidden }, preferences] = await Promise.all([
-      loadAllergyWarnings(
-        this.database,
-        catalogScope(familyId),
-        bases.map((r) => r.id),
-        body.locale,
-        await loadViewerAllergies(this.database, memberId, familyId),
-      ),
-      this.settings.getPreferences(memberId),
-    ]);
+    const { allergies, hides } = await loadViewerAllergyContext(
+      this.database,
+      this.settings,
+      memberId,
+      familyId,
+      body.showHidden,
+    );
+    const scope = catalogScope(familyId);
     const closest = rankPlateMatches(body, candidates);
-    const hides = hidesAllergyRecipes(preferences, body.showHidden);
+    // Hiding needs every base judged; otherwise only the five shown need a warning.
+    const { warnings, hidden } = await loadAllergyWarnings(
+      this.database,
+      scope,
+      hides ? bases.map((r) => r.id) : closest.map((m) => m.id),
+      body.locale,
+      allergies,
+    );
     const ranked = hides
       ? rankPlateMatches(
           body,
