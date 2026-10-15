@@ -3,6 +3,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   BatteryLowIcon,
   ClockIcon,
+  CookIcon,
+  HourglassIcon,
+  PulseIcon,
   CopyIcon,
   LogoutIcon,
   MinusIcon,
@@ -66,6 +69,21 @@ describe('icons', () => {
     expect(container.querySelector('rect')).not.toBeNull();
     expect(paths[1]!.getAttribute('d')).toBe('M6.5 10.5v3');
     expect(paths[1]!.getAttribute('stroke-width')).toBe('3.2');
+  });
+
+  it('register the Pantry health glyphs from the handoff', () => {
+    const glyphs = [
+      [PulseIcon, 'M3 12h4l2-5 4 10 2-5h6'],
+      [CookIcon, 'M4 11h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z'],
+      [HourglassIcon, 'M7 3h10M7 21h10'],
+    ] as const;
+    for (const [Glyph, fragment] of glyphs) {
+      const { container, unmount } = render(<Glyph />);
+      expect(container.querySelector('path')!.getAttribute('d')).toContain(
+        fragment,
+      );
+      unmount();
+    }
   });
 
   it('register the Settings glyphs from the handoff set', () => {
