@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from '@pocket-pantry/ui';
-import { useId, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConfirmAction } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
@@ -37,6 +37,25 @@ export function FamilyCatalogSection() {
   const deleteIngredient = useDeleteFamilyIngredient();
   const deleteSynonym = useDeleteFamilySynonym();
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Focus follows the Member: every control that disappears hands it on.
+  const controls = useRef(new Map<string, HTMLElement | null>());
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [focusKey, setFocusKey] = useState<string | null>(null);
+  useEffect(() => {
+    if (focusKey && editingId === null) {
+      controls.current.get(focusKey)?.focus();
+      setFocusKey(null);
+    }
+  }, [focusKey, editingId]);
+  const register = (key: string) => (element: HTMLElement | null) => {
+    if (element) controls.current.set(key, element);
+    else controls.current.delete(key);
+  };
+  /** Focus the row after `index`, else the one before, else the heading. */
+  const focusNeighbour = (keys: string[], index: number) => {
+    const next = keys[index + 1] ?? keys[index - 1];
+    (next ? controls.current.get(next) : headingRef.current)?.focus();
+  };
 
   const error = [
     catalog.error,
@@ -76,6 +95,8 @@ export function FamilyCatalogSection() {
     <Stack component="section" spacing={1} aria-labelledby={`${id}-heading`}>
       <Typography
         id={`${id}-heading`}
+        ref={headingRef}
+        tabIndex={-1}
         variant="sectionLabel"
         component="h2"
         color="text.secondary"
@@ -99,7 +120,7 @@ export function FamilyCatalogSection() {
           spacing={1.5}
           sx={{ listStyle: 'none', p: 0, m: 0 }}
         >
-          {data.ingredients.map((ingredient) => (
+          {data.ingredients.map((ingredient, index) => (
             <Stack component="li" key={ingredient.id} spacing={1}>
               {editingId === ingredient.id ? (
                 <IngredientEditor
@@ -108,12 +129,18 @@ export function FamilyCatalogSection() {
                   error={updateIngredient.error}
                   onCancel={() => {
                     updateIngredient.reset();
+                    setFocusKey(`edit:${ingredient.id}`);
                     setEditingId(null);
                   }}
                   onSave={(changes) =>
                     updateIngredient.mutate(
                       { id: ingredient.id, ...changes },
-                      { onSuccess: () => setEditingId(null) },
+                      {
+                        onSuccess: () => {
+                          setFocusKey(`edit:${ingredient.id}`);
+                          setEditingId(null);
+                        },
+                      },
                     )
                   }
                 />
@@ -137,6 +164,7 @@ export function FamilyCatalogSection() {
                   </Stack>
                   <Stack direction="row" spacing={1}>
                     <Button
+                      ref={register(`edit:${ingredient.id}`)}
                       variant="ghost"
                       aria-label={t('settings:familyCatalog.edit', {
                         name: ingredient.name,
@@ -156,7 +184,13 @@ export function FamilyCatalogSection() {
                       })}
                       message={deleteMessage(ingredient)}
                       disabled={deleteIngredient.isPending}
-                      onConfirm={() => deleteIngredient.mutate(ingredient.id)}
+                      onConfirm={() => {
+                        focusNeighbour(
+                          data.ingredients.map((i) => `edit:${i.id}`),
+                          index,
+                        );
+                        deleteIngredient.mutate(ingredient.id);
+                      }}
                     />
                   </Stack>
                 </Stack>
@@ -176,7 +210,7 @@ export function FamilyCatalogSection() {
             spacing={1}
             sx={{ listStyle: 'none', p: 0, m: 0 }}
           >
-            {data.synonyms.map((synonym) => (
+            {data.synonyms.map((synonym, index) => (
               <Stack
                 component="li"
                 key={synonym.id}
@@ -191,12 +225,19 @@ export function FamilyCatalogSection() {
                   })}
                 </span>
                 <Button
+                  ref={register(`synonym:${synonym.id}`)}
                   variant="ghost"
                   disabled={deleteSynonym.isPending}
                   aria-label={t('settings:familyCatalog.delete', {
                     name: synonym.name,
                   })}
-                  onClick={() => deleteSynonym.mutate(synonym.id)}
+                  onClick={() => {
+                    focusNeighbour(
+                      data.synonyms.map((x) => `synonym:${x.id}`),
+                      index,
+                    );
+                    deleteSynonym.mutate(synonym.id);
+                  }}
                 >
                   {t('settings:familyCatalog.deleteLabel')}
                 </Button>
@@ -247,6 +288,7 @@ function IngredientEditor({
         id={`${id}-name`}
         label={t('settings:familyCatalog.name')}
         value={name}
+        autoFocus
         onChange={(event) => setName(event.target.value)}
         slotProps={{ htmlInput: { maxLength: 100 } }}
       />

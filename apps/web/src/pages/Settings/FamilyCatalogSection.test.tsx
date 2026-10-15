@@ -165,7 +165,7 @@ describe('FamilyCatalogSection', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'already in your catalog',
+      'Tempeh” already has that name',
     );
   });
 
@@ -220,6 +220,75 @@ describe('FamilyCatalogSection', () => {
       await screen.findByRole('button', { name: 'Șterge Kombucha' }),
     );
     expect(screen.getByText(/3 loturi/)).toBeInTheDocument();
+  });
+
+  it('puts focus in the Name field, and back on Edit after Cancel', async () => {
+    stub();
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Edit Kombucha' }),
+    );
+    expect(screen.getByLabelText('Name')).toHaveFocus();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.getByRole('button', { name: 'Edit Kombucha' })).toHaveFocus();
+  });
+
+  it('puts focus back on Edit after saving', async () => {
+    stub();
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Edit Kombucha' }),
+    );
+    await userEvent.type(screen.getByLabelText('Name'), 'x');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Edit Kombucha' }),
+      ).toHaveFocus(),
+    );
+  });
+
+  it('moves focus to the next row on delete, and to the heading when none is left', async () => {
+    stub({ ingredients: [kombucha, tempeh], synonyms: [] });
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete Kombucha' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(screen.getByRole('button', { name: 'Edit Tempeh' })).toHaveFocus();
+  });
+
+  it('moves focus to the heading when the last row is deleted', async () => {
+    stub({ ingredients: [kombucha], synonyms: [] });
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete Kombucha' }),
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(
+      screen.getByRole('heading', { name: 'Family catalog' }),
+    ).toHaveFocus();
+  });
+
+  it('moves focus on after deleting a Family Synonym', async () => {
+    stub({
+      ingredients: [],
+      synonyms: [
+        { id: 's1', name: 'Booch', ingredient: { id: 'k1', name: 'Kombucha' } },
+        { id: 's2', name: 'Kefir', ingredient: { id: 'k1', name: 'Kombucha' } },
+      ],
+    });
+    renderWithProviders(<FamilyCatalogSection />);
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Delete Booch' }),
+    );
+    expect(screen.getByRole('button', { name: 'Delete Kefir' })).toHaveFocus();
   });
 
   it('deletes a Family Synonym', async () => {
