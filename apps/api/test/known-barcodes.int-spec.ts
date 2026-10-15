@@ -238,6 +238,41 @@ describe('Known Barcodes (integration)', () => {
       expect(asked).toEqual([]);
     });
 
+    it('re-reads the product allergens from the cache for a Known Barcode', async () => {
+      const code = freshBarcode();
+      found = {
+        ...offProduct(),
+        productName: 'Zorblax Spread',
+        allergenTags: ['en:milk'],
+      };
+      await lookup(a, code).expect(200);
+      await saveIngredient(a, code, { productDescription: 'Our wedge' });
+      const res = await lookup(a, code).expect(200);
+      expect(res.body).toMatchObject({
+        source: 'known_barcode',
+        allergens: [{ id: seedId.allergen('milk'), name: 'Milk' }],
+      });
+    });
+
+    it('notes the cached allergens a matched Known Barcode Ingredient is not tagged with', async () => {
+      const code = freshBarcode();
+      // The Known Barcode is saved against Parmesan, which is tagged milk in the seed.
+      found = {
+        ...offProduct(),
+        productName: 'Zorblax Spread',
+        allergenTags: ['en:milk', 'en:gluten'],
+      };
+      await lookup(a, code).expect(200);
+      await saveIngredient(a, code, {
+        ingredientId: seedId.ingredient('parmesan'),
+      });
+      const res = await lookup(a, code).expect(200);
+      expect(res.body).toMatchObject({
+        source: 'known_barcode',
+        missingAllergens: [{ id: seedId.allergen('gluten'), name: 'Gluten' }],
+      });
+    });
+
     it('returns an Unmatched Known Barcode as the exact typed name', async () => {
       const code = freshBarcode();
       const rawName = unique('Zorblax');

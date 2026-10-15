@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import type { CatalogSearchResult } from '../catalog/catalog.schemas';
+import type {
+  CatalogAllergen,
+  CatalogSearchResult,
+} from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 
 /** EAN-8 or UPC-E (8 digits), UPC-A (12) or EAN-13 (13): digits only. */
@@ -24,5 +27,16 @@ export type BarcodeLookupResponse =
       unmatchedName?: string;
       productDescription: string;
       quantity: number | null;
+      /**
+       * The active Allergens Open Food Facts lists for the product (never retired ones),
+       * named in the requested locale. Empty when it lists none: that is not "contains none".
+       * The form proposes them in the "Contains" row of a new Family Ingredient.
+       */
+      allergens: CatalogAllergen[];
+      /**
+       * The listed Allergens the matched Ingredient is not tagged with: an informational
+       * note only, it changes no tags. Empty without a match.
+       */
+      missingAllergens: CatalogAllergen[];
       unit: (typeof ingredientUnit.enumValues)[number] | null;
     };

@@ -80,7 +80,8 @@
       "cap": "You have used all of today’s scans. Scan a barcode or fill the form by hand.",
       "mark": "Filled from the product",
       "credit": "Product data: Open Food Facts",
-      "lookingUp": "Looking up the barcode…"
+      "lookingUp": "Looking up the barcode…",
+      "listsAllergens": "This product lists {{names}}"
     }
   },
   "picker": {
