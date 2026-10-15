@@ -307,13 +307,13 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       </Snackbar>
 
       <Box role="status" sx={visuallyHidden}>
-        {screen.scans.some((scan) => scan.status === 'failed')
-          ? t('session.failed')
-          : null}
-        {photos > 0 ? t('photoAdded', { count: photos }) : null}
-        {screen.barcodesRead > 0
-          ? t('barcodeAdded', { count: screen.barcodesRead })
-          : null}
+        {screen.scans.some((scan) => scan.status === 'failed') ? (
+          <p>{t('session.failed')}</p>
+        ) : null}
+        {photos > 0 ? <p>{t('photoAdded', { count: photos })}</p> : null}
+        {screen.barcodesAnnounced > 0 ? (
+          <p>{t('barcodeAdded', { count: screen.barcodesAnnounced })}</p>
+        ) : null}
       </Box>
 
       <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>

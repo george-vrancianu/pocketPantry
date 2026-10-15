@@ -337,10 +337,23 @@ describe('Barcode on the Scan page', () => {
         await seeAfter(SCAN_INTERVAL_MS, A);
         expect(vibrate).toHaveBeenCalledTimes(1);
         expect(announced()).toContain('Barcode 1 added');
+        expect(announced()).not.toContain('Barcode 2');
 
         await seeAfter(1500, A);
         expect(vibrate).toHaveBeenCalledTimes(2);
         expect(announced()).toContain('Barcode 2 added');
+      });
+
+      it('counts the Session cards when the screen is opened again, and announces nothing until a read', async () => {
+        const first = renderScan('/scan?mode=barcode');
+        await decode(A);
+        await decode(B);
+        first.unmount();
+        renderScan('/scan?mode=barcode');
+        expect(announced()).not.toMatch(/Barcode \d+ added/);
+        await decode(A);
+        expect(announced()).toContain('Barcode 3 added');
+        expect(announced()).not.toContain('Barcode 1 added');
       });
 
       it('does not vibrate or announce a read refused by the Session limit', async () => {

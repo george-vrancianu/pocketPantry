@@ -70,11 +70,14 @@ export function useScanScreen(config: ScanScreenModes = {}) {
    * reset, leaving the screen): a photo prepared under an older value is dropped, not sent.
    */
   const scanEpoch = useRef(0);
-  /** The barcode just accepted; the same code is ignored until another is read or the mode changes. */
+  /**
+   * The barcode just accepted. The same code is ignored until another is accepted, the mode
+   * changes, or it goes unseen for the cooldown (see `lastSeenAt`).
+   */
   const lastCode = useRef<string | null>(null);
   /** When `lastCode` was last seen: every sighting of a held pack restarts its cooldown. */
   const lastSeenAt = useRef(0);
-  /** Barcodes accepted since this screen opened; the live region announces each increase. */
+  /** Barcodes accepted since this screen opened: only a change in it is announced, never what the Session already held. */
   const [barcodesRead, setBarcodesRead] = useState(0);
   useEffect(
     () => () => {
@@ -272,7 +275,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
   const acceptCode = async (code: string) => {
     // The code just accepted is ignored while it keeps being seen: it is taken again once
     // another code was accepted, or once it has gone unseen for the cooldown.
-    const now = Date.now();
+    const now = performance.now();
     const held =
       code === lastCode.current &&
       now - lastSeenAt.current < BARCODE_COOLDOWN_MS;
@@ -359,7 +362,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     scanLanguageLocked: reading,
     camera,
     scans: session.scans,
-    barcodesRead,
+    /** The Session's Barcode card count once a read happened on this screen, else 0: what the live region announces. */
+    barcodesAnnounced:
+      barcodesRead > 0
+        ? session.scans.filter((scan) => scan.mode === 'barcode').length
+        : 0,
     pending: pendingCount(session),
     done: () => navigate('/scan/review'),
     flash,
