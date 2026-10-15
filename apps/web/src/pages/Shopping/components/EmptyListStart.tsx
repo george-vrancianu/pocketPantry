@@ -10,7 +10,7 @@ import {
   radius,
   tokens,
 } from '@pocket-pantry/ui';
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, type MouseEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 type TileProps = {
@@ -19,7 +19,7 @@ type TileProps = {
   ink: string;
   title: string;
   meta: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 const Tile = forwardRef<HTMLButtonElement, TileProps>(function Tile(
@@ -89,8 +89,8 @@ const Tile = forwardRef<HTMLButtonElement, TileProps>(function Tile(
 export type EmptyListStartProps = {
   /** Shopping Templates the Family has; the Import tile is hidden at 0. */
   templateCount: number;
-  onAddItems: () => void;
-  onImport: () => void;
+  onAddItems: (event: MouseEvent<HTMLButtonElement>) => void;
+  onImport: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 /** What an empty Shopping List shows: a prompt and two ways to start. */

@@ -59,14 +59,15 @@ export function ShoppingPage() {
   const [applyOpen, setApplyOpen] = useState(false);
 
   // Every way in starts clean, with no error left from an earlier opening.
-  const openSheet = () => {
+  // The opener is the clicked element: Safari does not focus a button on tap.
+  const openSheet = (from: Element) => {
     screen.resetAddError();
-    opener.current = document.activeElement;
+    opener.current = from;
     setSheetOpen(true);
   };
 
-  const openApply = () => {
-    opener.current = document.activeElement;
+  const openApply = (from: Element) => {
+    opener.current = from;
     setApplyOpen(true);
   };
 
@@ -87,7 +88,12 @@ export function ShoppingPage() {
       <UnverifiedToast />
       <AppScreenHeader
         title={t('shopping:title')}
-        trailing={<ImportPill ref={importPill} onClick={() => openApply()} />}
+        trailing={
+          <ImportPill
+            ref={importPill}
+            onClick={(event) => openApply(event.currentTarget)}
+          />
+        }
       />
       <RowHintNote hint={hint} />
       <Stack spacing={2.5}>
@@ -105,15 +111,15 @@ export function ShoppingPage() {
               remaining={screen.list.summary.remaining}
               checked={screen.list.summary.checked}
               onFinish={() => setReviewing(true)}
-              onAddItems={() => openSheet()}
+              onAddItems={(event) => openSheet(event.currentTarget)}
               addRef={addButton}
             />
             {screen.list.groups.length === 0 ? (
               <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
                 <EmptyListStart
                   templateCount={templates.data?.length ?? 0}
-                  onAddItems={() => openSheet()}
-                  onImport={() => openApply()}
+                  onAddItems={(event) => openSheet(event.currentTarget)}
+                  onImport={(event) => openApply(event.currentTarget)}
                 />
               </Box>
             ) : (

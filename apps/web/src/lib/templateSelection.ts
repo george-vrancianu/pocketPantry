@@ -35,7 +35,7 @@ export const lineTagKey: Record<LineTag, string> = {
 export type TemplateState = 'excluded' | 'all' | 'mixed';
 
 /** The bulk-add endpoint takes at most this many items (MAX_BULK_SHOPPING_ITEMS in the API). */
-export const MAX_APPLY_ITEMS = 100;
+const MAX_APPLY_ITEMS = 100;
 
 const items = (list: ShoppingList | undefined): ShoppingItem[] =>
   (list?.groups ?? []).flatMap((group) => group.items);
@@ -89,20 +89,6 @@ export function removeTemplate(
   const next = new Map(selection);
   next.delete(templateId);
   return next;
-}
-
-/**
- * The tick on a Template row: includes an excluded Template with its default
- * selection, removes an included one.
- */
-export function toggleTemplate(
-  selection: Selection,
-  template: Template,
-  list: ShoppingList | undefined,
-): Selection {
-  return selection.has(template.id)
-    ? removeTemplate(selection, template.id)
-    : includeTemplate(selection, template, list);
 }
 
 /**

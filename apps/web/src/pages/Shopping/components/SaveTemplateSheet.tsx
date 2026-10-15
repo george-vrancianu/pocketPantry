@@ -15,7 +15,11 @@ import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useShoppingList, type ShoppingItem } from '../../../lib/shopping';
+import {
+  SHOPPING_TOAST_MS,
+  useShoppingList,
+  type ShoppingItem,
+} from '../../../lib/shopping';
 import {
   MAX_TEMPLATES,
   useTemplateMutations,
@@ -92,7 +96,7 @@ function SaveForm({
       onSuccess: (created) => {
         onClose();
         toast.show(t('templates:save.saved', { name: trimmed }), {
-          duration: 3000,
+          duration: SHOPPING_TOAST_MS,
           action: {
             label: t('templates:save.edit'),
             onClick: () => navigate(`/shopping/templates/${created.id}`),
@@ -125,9 +129,8 @@ function SaveForm({
           border: 0,
           borderRadius: radius.pill,
           cursor: 'pointer',
-          backgroundColor: tokens.color.surface,
-          boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
-          color: 'inherit',
+          backgroundColor: tokens.color.ink,
+          color: tokens.color.bg,
           font: 'inherit',
           fontSize: 14,
           fontWeight: 700,
