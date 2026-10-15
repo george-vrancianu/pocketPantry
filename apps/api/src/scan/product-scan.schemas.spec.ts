@@ -4,11 +4,10 @@ import {
 } from './product-scan.schemas';
 
 describe('product scan schemas', () => {
-  it('accepts the two supported image inputs', () => {
+  it('accepts the product image', () => {
     expect(
       productScanSchema.safeParse({
         productImage: 'data:image/jpeg;base64,YQ==',
-        expiryImage: 'data:image/png;base64,Yg==',
       }).success,
     ).toBe(true);
   });
@@ -31,6 +30,8 @@ describe('product scan schemas', () => {
       fallbackIngredientName: 'Yogurt',
       expiryDate: '2026-10-14',
       expiryText: 'EXP 14/10/26',
+      netQuantity: 500,
+      netUnit: 'g',
       confidence: 0.94,
     };
 

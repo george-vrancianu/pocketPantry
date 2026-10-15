@@ -240,6 +240,8 @@ describe('Admin: merge Family Ingredients, Synonym candidates (integration)', ()
       fallbackIngredientName: 'Something else',
       expiryDate: null,
       expiryText: null,
+      netQuantity: null,
+      netUnit: null,
       confidence: 0.95,
     };
     prompts.length = 0;
