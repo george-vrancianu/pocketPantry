@@ -7,6 +7,7 @@ import {
 import { apiRequest } from './api';
 import type { ScanLanguage } from '../i18n/resources';
 import {
+  catalogAllergensQueryKey,
   catalogSearchQueryKey,
   type StorageLocation,
   type Unit,
@@ -59,6 +60,8 @@ export type AdminIngredient = Translated & {
   pantryBasic: boolean;
   /** The Allergens this shared Ingredient contains; none means it contains none. */
   allergenIds: string[];
+  /** A promote or merge carried a Family's tags onto it; saving its Allergens clears this. */
+  allergensReviewPending: boolean;
 };
 
 /** A Cuisine or Method: an Admin-curated name list Recipes pick from. */
@@ -108,6 +111,7 @@ export function useAdminCatalog() {
 /** Caches that show Allergen names or tags: the Admin Recipe editor and the Settings pickers. */
 const allergenQueryKeys: QueryKey[] = [
   adminRecipesQueryKey,
+  catalogAllergensQueryKey,
   allergiesQueryKey,
   familyAllergiesQueryKey,
 ];

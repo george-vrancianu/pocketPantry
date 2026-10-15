@@ -8,12 +8,20 @@ import {
 } from '@pocket-pantry/ui';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  AllergenContainsRow,
+  containsToAllergenIds,
+  selectionFromAllergenIds,
+  type ContainsSelection,
+} from '../../../components/AllergenContainsRow';
 import { ConfirmAction } from '../../../components/ConfirmAction';
 import { translateApiError } from '../../../i18n/translateApiError';
+import { useAllergenOptions } from '../../../lib/catalog';
 import {
   useDeleteFamilyIngredient,
   useDeleteFamilySynonym,
   useFamilyCatalog,
+  useSetFamilyIngredientAllergens,
   useUpdateFamilyIngredient,
   type FamilyCatalogIngredient,
   type FamilyIngredientUsage,
@@ -36,7 +44,10 @@ export function FamilyCatalogSection() {
   const updateIngredient = useUpdateFamilyIngredient(i18n.language);
   const deleteIngredient = useDeleteFamilyIngredient();
   const deleteSynonym = useDeleteFamilySynonym();
+  const setAllergens = useSetFamilyIngredientAllergens();
+  const allergenOptions = useAllergenOptions(i18n.language);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [taggingId, setTaggingId] = useState<string | null>(null);
   // Focus follows the Member: every control that disappears hands it on.
   const controls = useRef(new Map<string, HTMLElement | null>());
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -61,7 +72,27 @@ export function FamilyCatalogSection() {
     catalog.error,
     deleteIngredient.error,
     deleteSynonym.error,
+    setAllergens.error,
   ].find(Boolean);
+  const uncheckedCount =
+    catalog.data?.ingredients.filter((i) => !i.allergensChecked).length ?? 0;
+  /** "Contains none", "Contains Milk, Soy" or "Not checked for allergens". */
+  const allergenStatus = (ingredient: FamilyCatalogIngredient) => {
+    if (!ingredient.allergensChecked) {
+      return t('settings:familyCatalog.allergensUnchecked');
+    }
+    if (ingredient.allergenIds.length === 0) {
+      return t('settings:familyCatalog.allergensNone');
+    }
+    const names = ingredient.allergenIds.map(
+      (allergenId) =>
+        allergenOptions.data?.find((a) => a.id === allergenId)?.name ??
+        allergenId,
+    );
+    return t('settings:familyCatalog.allergensContains', {
+      names: names.join(', '),
+    });
+  };
   const data = catalog.data;
   const empty = data && data.ingredients.length + data.synonyms.length === 0;
 
@@ -106,6 +137,13 @@ export function FamilyCatalogSection() {
       <Typography variant="meta" color="text.secondary">
         {t('settings:familyCatalog.help')}
       </Typography>
+      {uncheckedCount > 0 ? (
+        <Typography variant="meta" color="text.secondary">
+          {t('settings:familyCatalog.uncheckedSummary', {
+            count: uncheckedCount,
+          })}
+        </Typography>
+      ) : null}
       {error ? <Alert>{translateApiError(t, error)}</Alert> : null}
       {catalog.isLoading ? <Spinner label={t('common:loading')} /> : null}
       {empty ? (
@@ -161,6 +199,19 @@ export function FamilyCatalogSection() {
                         unit: ingredient.defaultUnit,
                       })}
                     </Typography>
+                    <Typography
+                      variant="meta"
+                      color={
+                        ingredient.allergensChecked
+                          ? 'text.secondary'
+                          : 'text.primary'
+                      }
+                      sx={{
+                        fontWeight: ingredient.allergensChecked ? 400 : 700,
+                      }}
+                    >
+                      {allergenStatus(ingredient)}
+                    </Typography>
                   </Stack>
                   <Stack direction="row" spacing={1}>
                     <Button
@@ -175,6 +226,19 @@ export function FamilyCatalogSection() {
                       }}
                     >
                       {t('settings:familyCatalog.editLabel')}
+                    </Button>
+                    <Button
+                      ref={register(`tag:${ingredient.id}`)}
+                      variant="ghost"
+                      aria-label={t('settings:familyCatalog.tagAllergens', {
+                        name: ingredient.name,
+                      })}
+                      onClick={() => {
+                        setAllergens.reset();
+                        setTaggingId(ingredient.id);
+                      }}
+                    >
+                      {t('settings:familyCatalog.tagLabel')}
                     </Button>
                     <ConfirmAction
                       variant="ghost"
@@ -195,6 +259,27 @@ export function FamilyCatalogSection() {
                   </Stack>
                 </Stack>
               )}
+              {taggingId === ingredient.id && editingId !== ingredient.id ? (
+                <AllergenTagger
+                  ingredient={ingredient}
+                  saving={setAllergens.isPending}
+                  onCancel={() => {
+                    setFocusKey(`tag:${ingredient.id}`);
+                    setTaggingId(null);
+                  }}
+                  onSave={(allergenIds) =>
+                    setAllergens.mutate(
+                      { id: ingredient.id, allergenIds },
+                      {
+                        onSuccess: () => {
+                          setFocusKey(`tag:${ingredient.id}`);
+                          setTaggingId(null);
+                        },
+                      },
+                    )
+                  }
+                />
+              ) : null}
             </Stack>
           ))}
         </Stack>
@@ -249,6 +334,47 @@ export function FamilyCatalogSection() {
           </Stack>
         </>
       ) : null}
+    </Stack>
+  );
+}
+
+/** Tags or re-tags what a Family Ingredient contains; blank is not a choice, so Save waits for one. */
+function AllergenTagger({
+  ingredient,
+  saving,
+  onCancel,
+  onSave,
+}: {
+  ingredient: FamilyCatalogIngredient;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (allergenIds: string[]) => void;
+}) {
+  const { t } = useTranslation(['settings', 'common']);
+  const [contains, setContains] = useState<ContainsSelection>(() =>
+    selectionFromAllergenIds(
+      ingredient.allergensChecked ? ingredient.allergenIds : undefined,
+    ),
+  );
+  const allergenIds = containsToAllergenIds(contains);
+  return (
+    <Stack spacing={1}>
+      <AllergenContainsRow
+        value={contains}
+        onChange={setContains}
+        disabled={saving}
+      />
+      <Stack direction="row" spacing={1}>
+        <Button
+          disabled={saving || allergenIds === undefined}
+          onClick={() => allergenIds && onSave(allergenIds)}
+        >
+          {t('settings:familyCatalog.saveAllergens')}
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>
+          {t('common:cancel')}
+        </Button>
+      </Stack>
     </Stack>
   );
 }

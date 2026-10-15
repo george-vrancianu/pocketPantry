@@ -157,7 +157,15 @@
       "staples_one": "{{count}} Staple",
       "staples_other": "{{count}} Staples"
     },
-    "editLabel": "Edit"
+    "editLabel": "Edit",
+    "allergensUnchecked": "Not checked for allergens",
+    "allergensContains": "Contains {{names}}",
+    "allergensNone": "Contains none",
+    "uncheckedSummary_one": "{{count}} ingredient is not checked for allergens.",
+    "uncheckedSummary_other": "{{count}} ingredients are not checked for allergens.",
+    "tagAllergens": "Tag allergens of {{name}}",
+    "tagLabel": "Allergens",
+    "saveAllergens": "Save allergens"
   },
   "familyAllergies": {
     "title": "Family Allergies",

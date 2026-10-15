@@ -25,6 +25,8 @@ const kombucha = {
     aisle: { id: 'a-drinks', name: 'Drinks aisle' },
   },
   defaults: { expiryDays: null, location: null },
+  allergensChecked: true,
+  allergenIds: [],
   usage: { ...usage, batches: 3, staples: 1 },
 };
 const tempeh = {
