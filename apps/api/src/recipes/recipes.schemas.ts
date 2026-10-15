@@ -196,6 +196,8 @@ export const browseQuery = z.object({
   search: z.string().trim().max(100).optional(),
   cuisineId: id.optional(),
   methodId: id.optional(),
+  /** Opt in to Variants alongside Base Recipes with no search or filter. */
+  includeVariants: z.enum(['true', 'false']).optional(),
 });
 export const localeQuery = browseQuery.pick({ locale: true });
 

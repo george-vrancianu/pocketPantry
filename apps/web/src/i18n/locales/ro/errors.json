@@ -133,5 +133,17 @@
     "family_allergy_exists": "Acest alergen este deja în listă cu aceeași etichetă.",
     "allergen_not_found": "Acest alergen nu mai există.",
     "family_allergy_not_found": "Această alergie a familiei nu mai este în listă. Poate a șters-o deja altcineva."
+  },
+  "meal_plan": {
+    "cap_reached": "Familia ta poate avea {{cap}} planuri de mese. Șterge unul ca să faci loc.",
+    "overlap": "Aceste date se suprapun cu {{other}} ({{dates}}). Alege alte date.",
+    "overlapUnnamed": "Aceste date se suprapun cu {{dates}}. Alege alte date.",
+    "start_date_in_past": "Un plan nu poate începe înainte de azi.",
+    "start_date_too_far": "Un plan poate începe cel mult peste 14 zile.",
+    "day_in_past": "Ziua aceea a trecut și nu poate fi schimbată.",
+    "already_started": "Un plan început nu poate fi mutat.",
+    "day_out_of_range": "Ziua aceea nu face parte din plan.",
+    "not_found": "Planul de mese nu mai există.",
+    "recipe_not_found": "Rețeta nu a fost găsită."
   }
 }

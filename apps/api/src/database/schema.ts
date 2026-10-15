@@ -1109,3 +1109,64 @@ export const recipeEatingMomentTranslations = pgTable(
     primaryKey({ columns: [table.recipeEatingMomentId, table.locale] }),
   ],
 );
+
+// Meal Plans: a Family's saved schedule of Recipes over 1-7 consecutive days from `startDate`.
+// Plans of one Family never overlap and are capped (both enforced in the service under the
+// Family lock). `servings` is the plan default; a Plan Slot may override it.
+export const mealtime = pgEnum('mealtime', ['breakfast', 'lunch', 'dinner']);
+
+export const mealPlans = pgTable(
+  'meal_plans',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    name: text('name'),
+    startDate: date('start_date', { mode: 'string' }).notNull(),
+    days: integer('days').notNull(),
+    servings: integer('servings').notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index('meal_plans_family_start_idx').on(table.familyId, table.startDate),
+    check('meal_plans_days_range', sql`${table.days} BETWEEN 1 AND 7`),
+    check(
+      'meal_plans_servings_range',
+      sql`${table.servings} BETWEEN 1 AND 1000`,
+    ),
+  ],
+);
+
+// A filled Plan Slot; an empty slot is no row. Its date is the plan's `startDate` plus
+// `dayIndex` (the service keeps `dayIndex` below the plan's `days`). A null `servings`
+// follows the plan. Recipes are archived, never deleted, so `recipeId` has no cascade.
+export const mealPlanSlots = pgTable(
+  'meal_plan_slots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    mealPlanId: uuid('meal_plan_id')
+      .notNull()
+      .references(() => mealPlans.id, { onDelete: 'cascade' }),
+    dayIndex: integer('day_index').notNull(),
+    mealtime: mealtime('mealtime').notNull(),
+    recipeId: uuid('recipe_id')
+      .notNull()
+      .references(() => recipes.id),
+    servings: integer('servings'),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex('meal_plan_slots_plan_day_mealtime_idx').on(
+      table.mealPlanId,
+      table.dayIndex,
+      table.mealtime,
+    ),
+    index('meal_plan_slots_recipe_idx').on(table.recipeId),
+    check('meal_plan_slots_day_range', sql`${table.dayIndex} BETWEEN 0 AND 6`),
+    check(
+      'meal_plan_slots_servings_range',
+      sql`${table.servings} BETWEEN 1 AND 1000`,
+    ),
+  ],
+);

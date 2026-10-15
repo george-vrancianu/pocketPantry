@@ -301,7 +301,25 @@ _Avoid_: Macros, nutrition facts, calories
 
 **Eating Moment**:
 A time or situation for eating, such as Morning, After a workout, or Before bed, from a list Admins curate and translate. A Recipe marks each Eating Moment it uses as Good for or Avoid, with an optional reason.
-_Avoid_: Occasion, meal time, timing
+_Avoid_: Occasion, timing, Mealtime (Breakfast, Lunch, or Dinner in a Meal Plan)
+
+### Meal planning
+
+**Meal Plan**:
+A Family's saved schedule of Recipes over 1 to 7 consecutive days from a chosen start date, laid out in Plan Slots. Days already past stay visible.
+_Avoid_: Menu, schedule, weekly plan
+
+**Mealtime**:
+Breakfast, Lunch, or Dinner: the fixed parts of a day a Meal Plan is laid out in. Not an Eating Moment, which says when a Recipe suits rather than when it is planned.
+_Avoid_: Meal, Eating Moment, course
+
+**Plan Slot**:
+One Mealtime on one day of a Meal Plan, holding a Recipe and the Servings to cook it for. A Plan Slot can have its own Servings, otherwise it follows the Meal Plan's.
+_Avoid_: Meal, entry, cell
+
+**Plan Forecast**:
+Whether each Plan Slot from today onwards will still be covered by the Pantry, once the earlier Plan Slots have used up their ingredients and Batches have expired by that day. It carries on across consecutive Meal Plans. After the first use, a line whose amount can't be judged because a Batch has no quantity or a unit of another dimension is uncertain and doesn't make its Plan Slot short, and a Plan Slot whose Recipe has been archived is unavailable and left out. Derived at read time, never stored.
+_Avoid_: Projection, simulation, availability
 
 ### Lists
 

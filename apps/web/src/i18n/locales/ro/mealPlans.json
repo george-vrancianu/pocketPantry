@@ -1,0 +1,93 @@
+{
+  "title": "Planuri de mese",
+  "newPlan": "Plan nou",
+  "editPlan": "Modifică planul",
+  "back": "Înapoi la Planuri de mese",
+  "empty": "Niciun plan de mese încă.",
+  "emptyHint": "Începe unul ca să-ți planifici mesele pe câteva zile.",
+  "dayCount_one": "{{count}} zi",
+  "dayCount_few": "{{count}} zile",
+  "dayCount_other": "{{count}} de zile",
+  "servings_one": "{{count}} porție",
+  "servings_few": "{{count}} porții",
+  "servings_other": "{{count}} de porții",
+  "phase": {
+    "past": "Trecut",
+    "current": "În curs",
+    "upcoming": "Viitor"
+  },
+  "mealtime": {
+    "breakfast": "Mic dejun",
+    "lunch": "Prânz",
+    "dinner": "Cină"
+  },
+  "form": {
+    "createHeading": "Plan de mese nou",
+    "editHeading": "Modifică planul de mese",
+    "name": "Nume (opțional)",
+    "namePlaceholder": "Dacă rămâne gol, se folosesc datele",
+    "starts": "Începe",
+    "startContext": "De azi până pe {{date}}",
+    "days": "Zile",
+    "fewerDays": "Mai puține zile",
+    "moreDays": "Mai multe zile",
+    "daysValue_one": "{{count}} zi",
+    "daysValue_few": "{{count}} zile",
+    "daysValue_other": "{{count}} de zile",
+    "servings": "Porții",
+    "create": "Creează planul",
+    "creating": "Se creează…",
+    "shorten_one": "Scurtarea la {{days}} zile elimină {{count}} rețetă planificată. Continui?",
+    "shorten_few": "Scurtarea la {{days}} zile elimină {{count}} rețete planificate. Continui?",
+    "shorten_other": "Scurtarea la {{days}} zile elimină {{count}} de rețete planificate. Continui?",
+    "startLocked": "Planul a început deja, deci data de start nu mai poate fi schimbată."
+  },
+  "summary": {
+    "short_one": "{{count}} masă în deficit din {{day}}",
+    "short_few": "{{count}} mese în deficit din {{day}}",
+    "short_other": "{{count}} de mese în deficit din {{day}}",
+    "coveredOnceYouShop": "Acoperit după cumpărături",
+    "allCovered": "Totul acoperit",
+    "none": "Nimic planificat încă"
+  },
+  "day": {
+    "today": "Azi",
+    "addMissing_one": "Adaugă {{count}} ingredient lipsă",
+    "addMissing_few": "Adaugă {{count}} ingrediente lipsă",
+    "addMissing_other": "Adaugă {{count}} de ingrediente lipsă",
+    "addMissingLabel": "Adaugă ce lipsește pentru {{day}}",
+    "past": "Zi trecută"
+  },
+  "slot": {
+    "add": "Adaugă",
+    "addLabel": "Adaugă {{mealtime}} pentru {{day}}",
+    "open": "{{mealtime}}, {{day}}: {{title}}",
+    "empty": "Nimic planificat"
+  },
+  "fill": {
+    "button": "Completează",
+    "onlyWhatIHave": "Doar ce am",
+    "filling": "Se completează…"
+  },
+  "addMissing": {
+    "plan_one": "Adaugă {{count}} ingredient lipsă",
+    "plan_few": "Adaugă {{count}} ingrediente lipsă",
+    "plan_other": "Adaugă {{count}} de ingrediente lipsă"
+  },
+  "detail": {
+    "servings": "Porții pentru această masă",
+    "changeRecipe": "Schimbă rețeta",
+    "clear": "Șterge",
+    "done": "Gata",
+    "nothingShort": "Tot ce trebuie pentru această masă este acoperit.",
+    "unavailable": "Această rețetă nu mai este disponibilă.",
+    "lines": "Ingrediente de verificat",
+    "uncertain": "Nu se poate stabili",
+    "uncertainNote": "Cămara nu are o cantitate pentru el",
+    "addLine": "Adaugă {{name}} pe lista de cumpărături"
+  },
+  "picker": {
+    "title": "Alege o rețetă",
+    "for": "{{mealtime}}, {{day}}"
+  }
+}

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ScanLanguage } from '../i18n/resources';
 import { apiRequest } from './api';
 import type { Unit } from './catalog';
-import { recipesQueryKey } from './recipes';
+import { recipeChangeQueryKeys } from './queryKeys';
 import type {
   Difficulty,
   PairingKind,
@@ -168,7 +168,9 @@ function useRecipeWrite<Input>(send: (input: Input) => Promise<unknown>) {
       // Members browse the same Recipes.
       return Promise.all([
         queryClient.invalidateQueries({ queryKey: adminRecipesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+        ...recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
       ]);
     },
   });

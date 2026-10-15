@@ -3,6 +3,7 @@ import { apiRequest } from './api';
 import type { FamilyRecipeEdit, FamilyRecipeDocument } from './familyRecipes';
 import { parseQuantity } from './pantry';
 import type { ReviewLine } from './review';
+import { recipeChangeQueryKeys } from './queryKeys';
 import { recipesQueryKey } from './recipes';
 
 /** A Catalog Base Recipe that resembles the dish, best first. */
@@ -66,6 +67,10 @@ export function useSaveFromPlate(locale: string) {
         },
       }),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: recipesQueryKey }),
+      Promise.all(
+        recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }

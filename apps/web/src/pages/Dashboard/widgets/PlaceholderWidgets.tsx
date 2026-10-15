@@ -55,57 +55,6 @@ function Placeholder({
   );
 }
 
-export function MealPlanWidget({ size, columns }: WidgetProps) {
-  const { t, i18n } = useTranslation('dashboard');
-  const weekday = new Intl.DateTimeFormat(i18n.language, {
-    weekday: 'narrow',
-    timeZone: 'UTC',
-  });
-  // 1 January 2024 was a Monday.
-  const dayInitials = Array.from({ length: 7 }, (_, day) =>
-    weekday.format(Date.UTC(2024, 0, 1 + day)),
-  );
-  return (
-    <Placeholder
-      title={t('widgets.mealPlan.title')}
-      size={size}
-      columns={columns}
-    >
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: '6px',
-        }}
-      >
-        {dayInitials.map((initial, index) => (
-          <Box
-            key={index}
-            aria-hidden="true"
-            sx={{
-              height: 44,
-              borderRadius: radius.control,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 700,
-              ...(index === 0
-                ? { bgcolor: tokens.color.ink, color: tokens.color.surface }
-                : {
-                    border: `1px dashed ${tokens.color.line}`,
-                    color: tokens.color.muted,
-                  }),
-            }}
-          >
-            {initial}
-          </Box>
-        ))}
-      </Box>
-    </Placeholder>
-  );
-}
-
 function Bar({ value, color }: { value: number; color: string }) {
   return (
     <Box

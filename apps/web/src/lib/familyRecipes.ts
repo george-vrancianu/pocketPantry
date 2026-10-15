@@ -3,6 +3,7 @@ import { apiRequest } from './api';
 import type { Unit } from './catalog';
 import type { GuidanceInput, RecipeStep, RecipeTip } from './adminRecipes';
 import type { Difficulty } from './recipeVocabulary';
+import { recipeChangeQueryKeys } from './queryKeys';
 import { recipesQueryKey } from './recipes';
 
 type GuidanceInputWithIds = {
@@ -140,11 +141,15 @@ function useFamilyWrite<Input, Result>(
           edit,
         );
       }
-      return queryClient.invalidateQueries({
-        queryKey: recipesQueryKey,
-        // Archiving navigates away: mark stale, do not refetch the archived page.
-        ...(refetchNow ? {} : { refetchType: 'none' as const }),
-      });
+      return Promise.all(
+        recipeChangeQueryKeys.map((queryKey) =>
+          queryClient.invalidateQueries({
+            queryKey,
+            // Archiving navigates away: mark stale, do not refetch the archived page.
+            ...(refetchNow ? {} : { refetchType: 'none' as const }),
+          }),
+        ),
+      );
     },
   });
 }
