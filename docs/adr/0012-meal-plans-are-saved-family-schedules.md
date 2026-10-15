@@ -24,7 +24,7 @@ A Family can see what it Can Make tonight but can't plan ahead, or learn on Mond
 
 **Fill** picks Recipes for empty slots only and never overwrites a slot the Member chose.
 
-- Each Base Recipe group puts forward its best member, ranked by ADR 0007's order.
+- Each Base Recipe group puts forward its best member, ranked by ADR 0007's order against the stock forecast for that slot's day.
 - Mealtimes map to Eating Moments by their stable keys, not their display names. Breakfast prefers Recipes marked Good for Morning or Brunch, Lunch prefers Good for Light lunch, and Dinner has no preference. "Prefers" means ranked first, before ADR 0007's order. A Recipe marked Avoid for a Mealtime's mapped Eating Moment is never placed there.
 - Variety: no Base Recipe group (a Base Recipe and its Variants) on the same day or within 2 days of another use, counting the slots the Member filled. If nothing passes, the slot stays empty.
 - "Only what I have" places only Recipes with no short or missing required line in the forecast, and never turns a slot that was covered into a short one, so a Member's own picks keep their ingredients.

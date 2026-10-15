@@ -3,14 +3,14 @@
 > **Changed after approval (2026-10-15).** Agreed in grilling after this handoff was approved: see #324 and [ADR 0012](../../adr/0012-meal-plans-are-saved-family-schedules.md). Where this note and the sections below disagree, follow this note.
 >
 > - **Terms**: Mealtime (Breakfast, Lunch, Dinner) and Plan Slot, not "Meal Slot" and "Meal Plan Entry".
-> - **Saved Meal Plan**: the table is `meal_plan_slots` under a saved `meal_plans` row (start date, 1 to 7 days, Servings), not a stand-alone `meal_plan_entries` table where plan length is whatever dates have entries. Slots store a day number relative to the plan's start date, not a date. Plans belong to the Family and never overlap.
+> - **Saved Meal Plan**: the table is `meal_plan_slots` under a saved `meal_plans` row (start date, 1 to 7 days, Servings), not a stand-alone `meal_plan_entries` table where plan length is whatever dates have entries. Slots store a day number relative to the plan's start date, not a date. Plans belong to the Family and never overlap. There is no created-by column, which overrides `created_by` in §6.1.
+> - **Add**: a plan-scoped server action (the Widget's window, one plan, one date, or one Ingredient), not the Shopping List bulk-add endpoint, which can't carry Source Recipes. The server works out the forecast again, sums shortfalls in g, ml or pcs, adds kg or l at 1000 or more, and returns the created item ids for Undo (ADR 0012). This overrides §5.3 and the bulk-add mention under "Code touched".
 > - **Uncertain lines**: a line covered by a Batch with no quantity is `uncertain` after the first use. It shows on the line in the popover ("amount unknown"), is never a bar colour, and never makes the slot short.
 > - **Unavailable slots**: a slot whose Recipe was archived shows an empty-outline bar and a "No longer available" tag, and is left out of the forecast, the plan tag and Add, instead of being dropped.
 > - **Empty states** add "Next plan starts {date}" and, for a day outside every plan, "Start a plan".
 > - **Legend**: hidden once the Member has opened a popover on this device.
 > - **Open questions (section 10), answered**: no "Cooked" state in this version; today's slots count all day; the glossary terms are as above; sharing a column component with the expiry strip is left to the implementer.
 > - `planCoverage.ts`, `schema-additions.ts` and `icons-additions.ts` are reference material, not code to paste in. The forecast belongs on the API so ADR 0007's comparable-unit logic stays in one place.
-
 
 Status: approved (variant A · Week columns, window = planned days only), ready for implementation. Date: 2026-10-15.
 Reference prototype: `prototype.html` in this folder (self-contained, open in a browser; live at https://claude.ai/artifact/NwaCi1S2XdD4MqoJnxDmRb). A opens by default; B and C stay in the file for comparison only. The left panel sets **Days planned** (1–7) and resets the sample Pantry (Runs short midweek / All covered); the + buttons and Add buttons change the sample and the widget updates live. Ignore the "Always 7" window option: it was not chosen.

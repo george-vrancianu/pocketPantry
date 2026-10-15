@@ -298,7 +298,7 @@ One Mealtime on one day of a Meal Plan, holding a Recipe and the Servings to coo
 _Avoid_: Meal, entry, cell
 
 **Plan Forecast**:
-Whether each Plan Slot from today onwards will still be covered by the Pantry, once the earlier Plan Slots have used up their ingredients and Batches have expired by that day. It carries on across consecutive Meal Plans. A line whose amount can't be judged because a Batch has no quantity is uncertain and doesn't make its Plan Slot short, and a Plan Slot whose Recipe has been archived is unavailable and left out. Derived at read time, never stored.
+Whether each Plan Slot from today onwards will still be covered by the Pantry, once the earlier Plan Slots have used up their ingredients and Batches have expired by that day. It carries on across consecutive Meal Plans. After the first use, a line whose amount can't be judged because a Batch has no quantity or a unit of another dimension is uncertain and doesn't make its Plan Slot short, and a Plan Slot whose Recipe has been archived is unavailable and left out. Derived at read time, never stored.
 _Avoid_: Projection, simulation, availability
 
 ### Lists

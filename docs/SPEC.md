@@ -237,7 +237,7 @@ Staples, Used Up Suggestions, and Shopping Templates make adding Shopping Items 
 ### Dashboard
 
 - Widget layout is per Member, stored as an ordered list of widget instances with type and size, persisted via the API as in retzetar's dashboard table.
-- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Suggestions (see Quick List), the Meal Plan widget (real, see #324), and the placeholder Budget and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
+- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Suggestions (see Quick List), the Meal plan Widget (real, see #324), and the placeholder Budget and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
 - Customise screen uses dnd-kit for reorder, with size toggle, remove, and an add gallery, as in the handoff.
 
 ### Settings
@@ -279,7 +279,7 @@ No end-to-end browser tests in wave 1.
 - Multiple Families per Member, merging Pantries on join.
 - Multiple named Shopping Lists. Shopping Templates are not Shopping Lists: applying one adds items to the single active list.
 - Unit conversions between mass, volume, and count.
-- Budget tracking and nutrition as real features. Their Widgets are static placeholders. (Meal planning is in scope: see #324 and ADR 0012.)
+- Budget tracking and nutrition as real features. Their Widgets are static placeholders.
 - Image storage.
 - Deployment and hosting.
 - Flutter mobile app.
