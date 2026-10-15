@@ -19,7 +19,7 @@
   },
   "apply": {
     "title": "Adaugă din {{name}}",
-    "hint": "Articolele pe care le ai deja în cămară încep nebifate.",
+    "hint": "Articolele pe care le ai în cămară sau deja în coș încep nebifate.",
     "empty": "Acest șablon nu are linii.",
     "confirm_one": "Adaugă {{count}} articol în listă",
     "confirm_few": "Adaugă {{count}} articole în listă",

@@ -17,7 +17,7 @@
   },
   "apply": {
     "title": "Tilføj fra {{name}}",
-    "hint": "Varer, du allerede har i spisekammeret, starter uafkrydsede.",
+    "hint": "Varer, du har i spisekammeret eller allerede i kurven, starter uafkrydsede.",
     "empty": "Denne skabelon har ingen linjer.",
     "confirm_one": "Tilføj {{count}} vare til listen",
     "confirm_other": "Tilføj {{count}} varer til listen",
