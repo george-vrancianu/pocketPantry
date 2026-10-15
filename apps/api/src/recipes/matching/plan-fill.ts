@@ -170,7 +170,10 @@ export function fillPlan(input: FillInput): FillChoice[] {
         requestedServings: slot.servings,
         stock,
       });
-      // A Recipe the stock already can't cover can't pass the forecast either.
+      // A Recipe the stock already can't cover can't pass the forecast either:
+      // stockFor and the forecast agree on expiry, on the benefit of the doubt
+      // for uncomparable Batches, and on skipping Pantry Basics and optional
+      // lines, so a short match is never covered in the forecast.
       if (input.onlyWhatIHave && match.shortOrMissingCount > 0) continue;
       if (!fits(recipe)) continue;
       options.push({
