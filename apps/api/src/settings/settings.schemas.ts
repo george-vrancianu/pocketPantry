@@ -27,10 +27,15 @@ export const updatePreferencesBody = z
   .object({
     locale: z.enum(CATALOG_LOCALES).optional(),
     theme: z.enum(THEME_IDS).optional(),
+    hideRecipesWithAllergies: z.boolean().optional(),
   })
-  .refine((body) => body.locale !== undefined || body.theme !== undefined, {
-    message: 'Nothing to update',
-  });
+  .refine(
+    (body) =>
+      body.locale !== undefined ||
+      body.theme !== undefined ||
+      body.hideRecipesWithAllergies !== undefined,
+    { message: 'Nothing to update' },
+  );
 export type UpdatePreferencesBody = z.infer<typeof updatePreferencesBody>;
 
 export type ExpiryOverrideView = {
@@ -59,6 +64,8 @@ export type CategoryOptionsView = {
 export type PreferencesView = {
   locale: (typeof CATALOG_LOCALES)[number] | null;
   theme: ThemeId | null;
+  /** Leave out Recipes with the Member's own or Family Allergies (#359). */
+  hideRecipesWithAllergies: boolean;
 };
 
 /** A Member replaces their own Allergies wholesale. */

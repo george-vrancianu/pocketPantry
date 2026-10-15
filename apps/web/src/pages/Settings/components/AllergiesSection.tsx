@@ -1,7 +1,19 @@
-import { Alert, Card, Chip, Stack, Typography } from '@pocket-pantry/ui';
+import {
+  Alert,
+  Card,
+  Checkbox,
+  Chip,
+  Stack,
+  Typography,
+} from '@pocket-pantry/ui';
 import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAllergies, useSaveAllergies } from '../../../lib/settings';
+import {
+  useAllergies,
+  useMemberPreferences,
+  useSaveAllergies,
+  useSaveHideRecipesWithAllergies,
+} from '../../../lib/settings';
 import { SectionHeading } from './SectionHeading';
 
 /**
@@ -14,6 +26,8 @@ export function AllergiesSection() {
   const query = useAllergies(i18n.language);
   const save = useSaveAllergies(i18n.language);
   const view = query.data;
+  const preferences = useMemberPreferences();
+  const saveHide = useSaveHideRecipesWithAllergies();
   const toggle = (allergenId: string) => {
     if (!view) return;
     const chosen = new Set(view.allergenIds);
@@ -52,6 +66,17 @@ export function AllergiesSection() {
             </Stack>
           ) : null}
           {save.isError ? <Alert>{t('allergies.saveFailed')}</Alert> : null}
+          {/* A Member Preference, unlike the Allergies above: private, and it follows the Member. */}
+          <Checkbox
+            label={t('allergies.hideRecipes')}
+            helperText={t('allergies.hideRecipesHint')}
+            checked={preferences.data?.hideRecipesWithAllergies ?? false}
+            disabled={!preferences.data || saveHide.isPending}
+            onChange={(event) => saveHide.mutate(event.target.checked)}
+          />
+          {saveHide.isError ? (
+            <Alert>{t('allergies.hideSaveFailed')}</Alert>
+          ) : null}
         </Stack>
       </Card>
     </Stack>

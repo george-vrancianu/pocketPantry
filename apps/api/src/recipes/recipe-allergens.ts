@@ -13,6 +13,7 @@ import {
   loadFamilyAllergies,
   loadOtherMemberAllergies,
 } from '../settings/family-allergies';
+import type { SettingsService } from '../settings/settings.service';
 import { loadMemberAllergenIds } from '../settings/member-allergies';
 import {
   deriveAllergens,
@@ -224,8 +225,9 @@ export async function loadRecipeAllergens(
  * loaded in a fixed number of queries, however many Recipes. A Recipe with no warning is
  * absent from the map; with no Allergies at all nothing is queried.
  *
- * #359's `hidden` and `hiddenByAllergiesCount` will sit beside these compact warnings
- * (derived by the same `deriveAllergens` call); they are not built here.
+ * Also returns which Recipes "Hide Recipes with my Allergies" would leave out (#359), from the
+ * same `deriveAllergens` call. The caller decides whether to hide: it depends on the Member's
+ * preference and the "show hidden" override.
  */
 export async function loadAllergyWarnings(
   executor: Executor,
@@ -233,9 +235,12 @@ export async function loadAllergyWarnings(
   recipeIds: readonly string[],
   locale: CatalogLocale,
   allergies: readonly AllergyInput[],
-): Promise<Map<string, CompactAllergyWarning>> {
+): Promise<AllergyWarnings> {
   const result = new Map<string, CompactAllergyWarning>();
-  if (allergies.length === 0 || recipeIds.length === 0) return result;
+  const hidden = new Set<string>();
+  if (allergies.length === 0 || recipeIds.length === 0) {
+    return { warnings: result, hidden };
+  }
   const lineRows = await executor
     .select({
       id: recipeIngredientLines.id,
@@ -260,12 +265,9 @@ export async function loadAllergyWarnings(
   }
   const warnings = new Map<string, AllergyWarning>();
   for (const [recipeId, lines] of linesOf) {
-    const { allergyWarning } = deriveAllergens({
-      lines,
-      allergenOrder,
-      allergies,
-    });
-    if (allergyWarning) warnings.set(recipeId, allergyWarning);
+    const derived = deriveAllergens({ lines, allergenOrder, allergies });
+    if (derived.allergyWarning) warnings.set(recipeId, derived.allergyWarning);
+    if (derived.hidden) hidden.add(recipeId);
   }
   const named = await allergenNamer(executor, scope, locale, allergenRows, [
     ...new Set(
@@ -275,7 +277,40 @@ export async function loadAllergyWarnings(
   for (const [recipeId, warning] of warnings) {
     result.set(recipeId, compactWarning(warning, named));
   }
-  return result;
+  return { warnings: result, hidden };
+}
+
+/** The compact warnings of a batch of Recipes, and the ids "Hide Recipes with my Allergies" would leave out. */
+export type AllergyWarnings = {
+  warnings: Map<string, CompactAllergyWarning>;
+  hidden: ReadonlySet<string>;
+};
+
+/**
+ * Whether a list should leave out hidden Recipes (#359): the Member's preference is on and the
+ * request did not ask to show hidden ones. Detail, Variants lists and Pairing links never ask.
+ */
+export const hidesAllergyRecipes = (
+  preferences: { hideRecipesWithAllergies: boolean },
+  showHidden: boolean | undefined,
+): boolean => preferences.hideRecipesWithAllergies && showHidden !== true;
+
+/**
+ * What a list needs before it loads warnings: the viewer's Allergies and whether the list hides
+ * Recipes (#359). Browse, Cook Tonight and Plate Scan matches all start here.
+ */
+export async function loadViewerAllergyContext(
+  executor: Executor,
+  settings: Pick<SettingsService, 'getPreferences'>,
+  memberId: string,
+  familyId: string | undefined,
+  showHidden: boolean | undefined,
+): Promise<{ allergies: AllergyInput[]; hides: boolean }> {
+  const [allergies, preferences] = await Promise.all([
+    loadViewerAllergies(executor, memberId, familyId),
+    settings.getPreferences(memberId),
+  ]);
+  return { allergies, hides: hidesAllergyRecipes(preferences, showHidden) };
 }
 
 /** One item per Allergen: `yours` if anyone whose Allergy counts as the viewer's has it. */

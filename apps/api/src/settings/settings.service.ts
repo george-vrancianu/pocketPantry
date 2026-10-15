@@ -203,14 +203,22 @@ export class SettingsService {
 
   async getPreferences(memberId: string): Promise<PreferencesView> {
     const [row] = await this.database
-      .select({ locale: user.locale, theme: user.theme })
+      .select({
+        locale: user.locale,
+        theme: user.theme,
+        hideRecipesWithAllergies: user.hideRecipesWithAllergies,
+      })
       .from(user)
       .where(eq(user.id, memberId))
       .limit(1);
     if (!row) throw new ApiException(401, 'auth.unauthenticated');
     const locale = CATALOG_LOCALES.find((l) => l === row.locale) ?? null;
     const theme = THEME_IDS.find((t) => t === row.theme) ?? null;
-    return { locale, theme };
+    return {
+      locale,
+      theme,
+      hideRecipesWithAllergies: row.hideRecipesWithAllergies,
+    };
   }
 
   /** Saves only the given preferences; the others keep their stored value. */
@@ -220,7 +228,11 @@ export class SettingsService {
   ): Promise<void> {
     await this.database
       .update(user)
-      .set({ locale: preferences.locale, theme: preferences.theme })
+      .set({
+        locale: preferences.locale,
+        theme: preferences.theme,
+        hideRecipesWithAllergies: preferences.hideRecipesWithAllergies,
+      })
       .where(eq(user.id, memberId));
   }
 

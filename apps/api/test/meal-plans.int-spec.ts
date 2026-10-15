@@ -380,6 +380,26 @@ describe('Meal Plans (integration)', () => {
     const read = async (api: Api, id: string, query = q) =>
       (await api.get(`/${id}${query}`).expect(200)).body as PlanDetail;
 
+    it('never hides a Plan Slot, whatever the Member`s "Hide Recipes with my Allergies" says (ADR 0012)', async () => {
+      const ana = await member('hide-allergy-slot');
+      const settings = client(app, ana.cookie, '/api/settings');
+      await settings
+        .put('/allergies', { allergenIds: [seedId.allergen('milk')] })
+        .expect(200);
+      await settings
+        .put('/preferences', { hideRecipesWithAllergies: true })
+        .expect(200);
+      const milky = await familyRecipe(ana, 'Milky');
+      const plan = await create(ana.api, { startDate: at(2), days: 1 });
+
+      await ana.api
+        .put(slotPath(plan.id, 0, 'dinner'), { recipeId: milky.id })
+        .expect(200);
+      expect((await read(ana.api, plan.id)).slots).toEqual([
+        expect.objectContaining({ recipeId: milky.id, unavailable: false }),
+      ]);
+    });
+
     it('sets, replaces and clears slots; the read gives date, title and effective servings', async () => {
       const ana = await member('slots');
       const own = await familyRecipe(ana, 'Omelette');

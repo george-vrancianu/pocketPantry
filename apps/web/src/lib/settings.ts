@@ -34,6 +34,8 @@ export type CategoryOptions = {
 export type MemberPreferences = {
   locale: Locale | null;
   theme: ThemeId | null;
+  /** Leave out Recipes with the Member's own or Family Allergies; off by default. */
+  hideRecipesWithAllergies: boolean;
 };
 
 export const preferencesQueryKey = ['settings', 'preferences'] as const;
@@ -142,6 +144,30 @@ export function useSaveLocale() {
       queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
         old ? { ...old, locale: saved.locale } : saved,
       ),
+  });
+}
+
+/** Saves "Hide Recipes with my Allergies"; Recipe lists and matches depend on it. */
+export function useSaveHideRecipesWithAllergies() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (hideRecipesWithAllergies: boolean) =>
+      apiRequest<MemberPreferences>('/settings/preferences', {
+        method: 'PUT',
+        body: { hideRecipesWithAllergies },
+      }),
+    onSuccess: async (saved) => {
+      // Only this preference; a locale or Theme save may have landed meanwhile.
+      queryClient.setQueryData<MemberPreferences>(preferencesQueryKey, (old) =>
+        old
+          ? {
+              ...old,
+              hideRecipesWithAllergies: saved.hideRecipesWithAllergies,
+            }
+          : saved,
+      );
+      await queryClient.invalidateQueries({ queryKey: recipesQueryKey });
+    },
   });
 }
 

@@ -41,7 +41,7 @@ import {
   type FamilyRecipeUpdate,
   type FromPlateBody,
   type PlateMatchesBody,
-  type PlateMatchView,
+  type PlateMatches,
   type HiddenTipsBody,
   type TipCreate,
   type TipOrder,
@@ -52,7 +52,7 @@ import {
   type LocaleQuery,
   type RecipeDetail,
   type RecipeFilters,
-  type RecipeListItem,
+  type RecipeList,
 } from './recipes.schemas';
 
 const Id = () => Param(new ZodValidationPipe(recipeParam));
@@ -78,8 +78,8 @@ export class RecipesController {
   async list(
     @CurrentUser() member: CurrentUserValue,
     @Query(new ZodValidationPipe(browseQuery)) query: BrowseQuery,
-  ): Promise<{ recipes: RecipeListItem[] }> {
-    return { recipes: await this.browse.list(member.id, query) };
+  ): Promise<RecipeList> {
+    return this.browse.list(member.id, query);
   }
 
   @Get('filters')
@@ -132,8 +132,8 @@ export class RecipesController {
     @CurrentUser() member: CurrentUserValue,
     @Body(new ZodValidationPipe(plateMatchesBody))
     body: PlateMatchesBody,
-  ): Promise<{ matches: PlateMatchView[] }> {
-    return { matches: await this.plate.closestBases(member.id, body) };
+  ): Promise<PlateMatches> {
+    return this.plate.closestBases(member.id, body);
   }
 
   @Post('from-plate')

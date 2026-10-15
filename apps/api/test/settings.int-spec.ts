@@ -417,6 +417,7 @@ describe('Settings (integration)', () => {
       ).toEqual({
         locale: null,
         theme: null,
+        hideRecipesWithAllergies: false,
       });
     });
 
@@ -455,6 +456,7 @@ describe('Settings (integration)', () => {
       ).toEqual({
         locale: 'ro',
         theme: null,
+        hideRecipesWithAllergies: false,
       });
     });
 
@@ -470,6 +472,7 @@ describe('Settings (integration)', () => {
       ).toEqual({
         locale: null,
         theme: null,
+        hideRecipesWithAllergies: false,
       });
     });
 
@@ -480,12 +483,38 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'da', theme: null });
+      ).toEqual({ locale: 'da', theme: null, hideRecipesWithAllergies: false });
       const [row] = await database
         .select({ locale: user.locale })
         .from(user)
         .where(eq(user.id, userId));
       expect(row.locale).toBe('da');
+    });
+
+    it('saves "Hide Recipes with my Allergies" for the Member only, keeping the other preferences', async () => {
+      const ana = await signUp();
+      const mihai = await signUp();
+      await joinFamilyOf(ana.userId, mihai.userId);
+      await call(ana.cookie, 'put', '/preferences')
+        .send({ locale: 'ro' })
+        .expect(200);
+      const saved = await call(ana.cookie, 'put', '/preferences')
+        .send({ hideRecipesWithAllergies: true })
+        .expect(200);
+      expect(saved.body).toEqual({
+        locale: 'ro',
+        theme: null,
+        hideRecipesWithAllergies: true,
+      });
+      expect(
+        (await call(mihai.cookie, 'get', '/preferences').expect(200)).body,
+      ).toMatchObject({ hideRecipesWithAllergies: false });
+      await call(ana.cookie, 'put', '/preferences')
+        .send({ hideRecipesWithAllergies: false })
+        .expect(200);
+      expect(
+        (await call(ana.cookie, 'get', '/preferences').expect(200)).body,
+      ).toMatchObject({ hideRecipesWithAllergies: false });
     });
 
     it('rejects an unsupported locale', async () => {
@@ -508,10 +537,18 @@ describe('Settings (integration)', () => {
             .send({ theme: 'dark' })
             .expect(200)
         ).body,
-      ).toEqual({ locale: null, theme: 'dark' });
+      ).toEqual({
+        locale: null,
+        theme: 'dark',
+        hideRecipesWithAllergies: false,
+      });
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: null, theme: 'dark' });
+      ).toEqual({
+        locale: null,
+        theme: 'dark',
+        hideRecipesWithAllergies: false,
+      });
       const [row] = await database
         .select({ theme: user.theme })
         .from(user)
@@ -529,7 +566,11 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'ro', theme: 'minimal' });
+      ).toEqual({
+        locale: 'ro',
+        theme: 'minimal',
+        hideRecipesWithAllergies: false,
+      });
 
       expect(
         (
@@ -537,7 +578,11 @@ describe('Settings (integration)', () => {
             .send({ locale: 'da' })
             .expect(200)
         ).body,
-      ).toEqual({ locale: 'da', theme: 'minimal' });
+      ).toEqual({
+        locale: 'da',
+        theme: 'minimal',
+        hideRecipesWithAllergies: false,
+      });
     });
 
     it('save the locale and the Theme together', async () => {
@@ -547,7 +592,11 @@ describe('Settings (integration)', () => {
         .expect(200);
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: 'en', theme: 'warm' });
+      ).toEqual({
+        locale: 'en',
+        theme: 'warm',
+        hideRecipesWithAllergies: false,
+      });
     });
 
     it('reject an unknown Theme', async () => {
@@ -568,7 +617,7 @@ describe('Settings (integration)', () => {
         .where(eq(user.id, userId));
       expect(
         (await call(cookie, 'get', '/preferences').expect(200)).body,
-      ).toEqual({ locale: null, theme: null });
+      ).toEqual({ locale: null, theme: null, hideRecipesWithAllergies: false });
     });
   });
 });

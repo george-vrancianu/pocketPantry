@@ -13,13 +13,24 @@ const ALLERGENS = [
 
 function stubAllergies(initial: string[], saveOk = true, gate?: Promise<void>) {
   let current = initial;
+  let hide = false;
   const { fetchMock, calls } = stubApi({
     'GET /api/auth/get-session': () =>
       Response.json({
         user: { id: 'u1', name: 'Ana', email: 'a@x.io', role: 'member' },
       }),
     'GET /api/settings/preferences': () =>
-      Response.json({ locale: null, theme: null }),
+      Response.json({
+        locale: null,
+        theme: null,
+        hideRecipesWithAllergies: hide,
+      }),
+    'PUT /api/settings/preferences': () =>
+      Response.json({
+        locale: null,
+        theme: null,
+        hideRecipesWithAllergies: hide,
+      }),
     'GET /api/settings/allergies': () =>
       Response.json({ allergens: ALLERGENS, allergenIds: current }),
     'PUT /api/settings/allergies': async () => {
@@ -33,6 +44,11 @@ function stubAllergies(initial: string[], saveOk = true, gate?: Promise<void>) {
     },
   });
   const wrapped = (input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'PUT' && String(input).includes('/preferences')) {
+      hide = (
+        JSON.parse(String(init.body)) as { hideRecipesWithAllergies: boolean }
+      ).hideRecipesWithAllergies;
+    }
     if (init?.method === 'PUT' && String(input).includes('/allergies')) {
       current = (JSON.parse(String(init.body)) as { allergenIds: string[] })
         .allergenIds;
@@ -129,5 +145,26 @@ describe('Settings You tab: Allergies', () => {
       ),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/\bsafe\b|allergen-free/i);
+  });
+
+  it('offers "Hide Recipes with my Allergies", off by default, and saves it at once', async () => {
+    const user = userEvent.setup();
+    const calls = stubAllergies(['a-milk']);
+    const section = await open();
+    const hide = await section.findByRole('checkbox', {
+      name: 'Hide Recipes with my Allergies',
+    });
+    expect(hide).not.toBeChecked();
+    await user.click(hide);
+    await vi.waitFor(() =>
+      expect(
+        section.getByRole('checkbox', {
+          name: 'Hide Recipes with my Allergies',
+        }),
+      ).toBeChecked(),
+    );
+    expect(
+      calls.find((c) => c.key === 'PUT /api/settings/preferences')?.body,
+    ).toEqual({ hideRecipesWithAllergies: true });
   });
 });

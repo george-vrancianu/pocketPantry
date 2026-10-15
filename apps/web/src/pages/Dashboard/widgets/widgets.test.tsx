@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Batch } from '../../../lib/pantry';
 import type { ShoppingItem, ShoppingList } from '../../../lib/shopping';
@@ -471,6 +472,33 @@ describe('CookTonightWidget', () => {
     expect(
       screen.getByText(/folosește 20 de ingrediente care expiră curând/),
     ).toBeInTheDocument();
+  });
+
+  it('says how many Recipes are hidden by Allergies and brings them back on Show', async () => {
+    const { fetchMock, calls } = stubApi({
+      'GET /api/recipes/cook-tonight': (url) =>
+        url.searchParams.get('showHidden') === 'true'
+          ? Response.json({
+              cards: [card('r1'), card('r2')],
+              hiddenByAllergiesCount: 0,
+            })
+          : Response.json({ cards: [card('r1')], hiddenByAllergiesCount: 1 }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithProviders(<CookTonightWidget size="wide" columns={2} />);
+
+    expect(
+      await screen.findByText('1 Recipe hidden by your Allergies'),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(
+      await screen.findAllByRole('link', { name: /Base 2|r2/ }),
+    ).not.toHaveLength(0);
+    expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+    expect(new URLSearchParams(calls.at(-1)!.search).get('showHidden')).toBe(
+      'true',
+    );
   });
 
   it('says so when nothing can be made tonight', async () => {
