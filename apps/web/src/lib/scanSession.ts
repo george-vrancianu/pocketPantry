@@ -95,6 +95,14 @@ export type SessionAction =
   | { type: 'reread'; id: string }
   | { type: 'edit'; id: string; lines: ReviewLine[] };
 
+/** A Product Scan's photo barcode goes only with a card that has exactly one line. */
+function withPhotoBarcode<T extends { barcode?: string }>(
+  lines: T[] | undefined,
+  barcode: string,
+): T[] | undefined {
+  return lines?.length === 1 ? [{ ...lines[0], barcode }] : lines;
+}
+
 const update = (
   state: SessionState,
   id: string,
@@ -145,11 +153,8 @@ export function sessionReducer(
             ? {
                 ...scan,
                 barcode: action.code,
-                // Lines the Member already edited take it too, if there is still exactly one.
-                edited:
-                  scan.edited?.length === 1
-                    ? [{ ...scan.edited[0], barcode: action.code }]
-                    : scan.edited,
+                lines: withPhotoBarcode(scan.lines, action.code),
+                edited: withPhotoBarcode(scan.edited, action.code),
               }
             : scan,
         ),
@@ -187,7 +192,13 @@ export function sessionReducer(
       return {
         scans: state.scans.map((scan) =>
           scan.id === action.id
-            ? { ...scan, status: 'read', lines: action.lines }
+            ? {
+                ...scan,
+                status: 'read',
+                lines: scan.barcode
+                  ? withPhotoBarcode(action.lines, scan.barcode)
+                  : action.lines,
+              }
             : scan,
         ),
       };
@@ -371,6 +382,10 @@ function setSession(next: SessionState) {
   session = next;
   listeners.forEach((listener) => listener());
 }
+
+/** The photo barcode a Product Scan card has decoded so far, if any. */
+export const photoBarcodeOf = (state: SessionState, id: string) =>
+  state.scans.find((scan) => scan.id === id)?.barcode;
 
 export const getScanSession = () => session;
 export const dispatchScanSession = (action: SessionAction) =>

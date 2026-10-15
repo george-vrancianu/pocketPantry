@@ -24,6 +24,7 @@ import {
 import {
   dispatchScanSession,
   getScanSession,
+  photoBarcodeOf,
   useScanSession,
 } from '../../../lib/scanSession';
 import { useSaveLines } from '../../../lib/saveScan';
@@ -73,22 +74,15 @@ export function useReviewScreen() {
     if (state.lines !== initialLines.current)
       dispatchScanSession({ type: 'edit', id: scanId, lines: state.lines });
   }, [scanId, state.lines]);
-  // A Product Scan's photo barcode can settle while the editor is open: the editor's lines take it too.
-  const photoBarcode = useScanSession().scans.find(
-    (s) => s.id === scanId,
-  )?.barcode;
+  // A Product Scan's photo barcode can settle while the editor is open: its single line takes it too.
+  const photoBarcode = photoBarcodeOf(useScanSession(), scanId);
+  const lineCount = state.lines.length;
+  const firstKey = state.lines[0]?.key;
+  const firstBarcode = state.lines[0]?.barcode;
   useEffect(() => {
-    if (
-      photoBarcode &&
-      state.lines.length === 1 &&
-      state.lines[0].barcode === undefined
-    )
-      dispatch({
-        type: 'update',
-        key: state.lines[0].key,
-        patch: { barcode: photoBarcode },
-      });
-  }, [photoBarcode, state.lines]);
+    if (photoBarcode && lineCount === 1 && firstBarcode === undefined)
+      dispatch({ type: 'attachBarcode', key: firstKey, barcode: photoBarcode });
+  }, [photoBarcode, lineCount, firstKey, firstBarcode]);
   const saver = useSaveLines(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
@@ -266,7 +260,7 @@ export function useReviewScreen() {
     open,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
-    swapQuery: swapLine?.barcode && !swapLine.match ? swapLine.name.trim() : '',
+    swapQuery: swapLine?.lookup && !swapLine.match ? swapLine.name.trim() : '',
     /** Undefined when the line lists none (never []), as the add-Batch form passes it. */
     swapAllergenIds: swapLine?.lookup?.listedAllergens.length
       ? swapLine.lookup.listedAllergens.map((allergen) => allergen.id)

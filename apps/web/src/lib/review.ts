@@ -93,15 +93,8 @@ export function reviewLinesOf(
     scan.edited ??
     (scan.sections
       ? scan.sections.flatMap((section) => reviewLinesOf(section, today))
-      : (scan.lines ?? []).map((line, index, all) =>
-          toReviewLine(
-            // A Product Scan's photo barcode goes only with a card that read as exactly one line.
-            scan.barcode && all.length === 1
-              ? { ...line, barcode: scan.barcode }
-              : line,
-            `line-${index}`,
-            today,
-          ),
+      : (scan.lines ?? []).map((line, index) =>
+          toReviewLine(line, `line-${index}`, today),
         ));
   // Keys only need to differ within the card.
   return lines.map((line, index) => ({ ...line, key: `line-${index}` }));

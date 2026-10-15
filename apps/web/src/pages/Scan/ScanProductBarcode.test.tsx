@@ -6,10 +6,10 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { resetReads } from '../../lib/scanReads';
-import { getScanSession, resetScanSession } from '../../lib/scanSession';
+import { resetScanSession } from '../../lib/scanSession';
 import { renderWithProviders, stubApi } from '../../test/render';
 import { scanViaGuide } from '../../test/scan';
 import { ReviewOverviewPage } from '../Review/ReviewOverviewPage';
@@ -70,6 +70,16 @@ const line = (name: string) => ({
 });
 const CODE = '5941234567890';
 
+/** A button that goes to the overview, as the browser Back does. */
+function BackToOverview() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate('/scan/review')}>
+      test back
+    </button>
+  );
+}
+
 let calls: ReturnType<typeof stubApi>['calls'];
 let readLines: object[];
 
@@ -93,7 +103,15 @@ function renderScan(route = '/scan?mode=product') {
     <Routes>
       <Route path="/scan" element={<ScanPage />} />
       <Route path="/scan/review" element={<ReviewOverviewPage />} />
-      <Route path="/scan/review/:scanId" element={<ReviewPage />} />
+      <Route
+        path="/scan/review/:scanId"
+        element={
+          <>
+            <ReviewPage />
+            <BackToOverview />
+          </>
+        }
+      />
     </Routes>,
     { route },
   );
@@ -133,8 +151,16 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     scanViaGuide();
     await waitFor(() => expect(states()).toEqual(['read']));
     await decoded(CODE);
-    await addAll(user);
+    // No lookup happened: nothing credits Open Food Facts in the editor.
+    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(await screen.findByTestId('card-result'));
+    await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+    expect(
+      screen.queryByText('Product data: Open Food Facts'),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Save/ }));
 
+    await waitFor(() => expect(saves().length).toBeGreaterThan(0));
     expect(saves()).toEqual([
       expect.objectContaining({ ingredientId: 'yogurt-id', barcode: CODE }),
     ]);
@@ -241,19 +267,116 @@ describe('Product Scans teach the Known Barcode decoded from their photo', () =>
     expect(saves()[0]).not.toHaveProperty('barcode');
   });
 
-  it('ignores a decode that settles after the card was removed', async () => {
+  describe('a decode that settles after its card is gone', () => {
+    /** Two Product Scans; the first one's decode is still pending. */
+    async function twoScans() {
+      renderScan();
+      scanViaGuide();
+      await waitFor(() => expect(states()).toEqual(['read']));
+      scanViaGuide();
+      await waitFor(() => expect(states()).toEqual(['read', 'read']));
+      await waitFor(() => expect(camera.decodes).toHaveLength(1));
+    }
+    /** The first decode settles late; the second then settles without a barcode. */
+    const settleLate = async () => {
+      await decoded(CODE, 0);
+      await decoded(null, 1);
+    };
+
+    it('is ignored when the card was removed', async () => {
+      const user = userEvent.setup();
+      await twoScans();
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      const [remove] = await screen.findAllByRole('button', {
+        name: 'Remove photo',
+      });
+      await user.click(remove);
+      await settleLate();
+      await user.click(await screen.findByRole('button', { name: 'Add all' }));
+
+      await waitFor(() => expect(saves()).toHaveLength(1));
+      expect(saves()[0]).not.toHaveProperty('barcode');
+    });
+
+    it('is ignored when the card was saved on its own', async () => {
+      const user = userEvent.setup();
+      await twoScans();
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      const [first] = await screen.findAllByTestId('card-result');
+      await user.click(first);
+      await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+      await user.click(screen.getByRole('button', { name: /^Save/ }));
+      await waitFor(() => expect(saves()).toHaveLength(1));
+      await settleLate();
+      await user.click(await screen.findByRole('button', { name: 'Add all' }));
+
+      await waitFor(() => expect(saves()).toHaveLength(2));
+      saves().forEach((batch) => expect(batch).not.toHaveProperty('barcode'));
+    });
+  });
+
+  it('decodes one photo at a time, so a gallery import does not run them all at once', async () => {
+    renderScan();
+    const photos = [1, 2, 3].map(
+      (n) => new File(['x'], `pack${n}.jpg`, { type: 'image/jpeg' }),
+    );
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('gallery-input'), {
+        target: { files: photos },
+      });
+    });
+    await waitFor(() => expect(camera.decodes).toHaveLength(1));
+    await flush();
+    expect(camera.decodes).toHaveLength(1);
+    await decoded(null, 0);
+    await waitFor(() => expect(camera.decodes).toHaveLength(2));
+  });
+
+  it('keeps the barcode when the Member renames an Unmatched line', async () => {
+    const user = userEvent.setup();
+    renderScan();
+    readLines = [{ ...line('Mystery'), match: null }];
+    scanViaGuide();
+    await waitFor(() => expect(states()).toEqual(['read']));
+    await decoded(CODE);
+    await user.click(screen.getByRole('button', { name: /^Done/ }));
+    await user.click(await screen.findByTestId('card-result'));
+    await user.type(await screen.findByLabelText('Name'), ' jar');
+    await user.click(screen.getByRole('button', { name: /^Save/ }));
+
+    await waitFor(() => expect(saves().length).toBeGreaterThan(0));
+    expect(saves()).toEqual([
+      expect.objectContaining({ rawName: 'Mystery jar', barcode: CODE }),
+    ]);
+  });
+
+  it('attaches a barcode that settles after the Member edited the card and went back to the overview', async () => {
     const user = userEvent.setup();
     renderScan();
     scanViaGuide();
     await waitFor(() => expect(states()).toEqual(['read']));
     await user.click(screen.getByRole('button', { name: /^Done/ }));
-    await user.click(await screen.findByRole('button', { name: /Remove/ }));
-    await waitFor(() => expect(getScanSession().scans).toEqual([]));
-
+    await user.click(await screen.findByTestId('card-result'));
+    await user.click(await screen.findByRole('button', { name: /Yogurt/ }));
+    await user.click(
+      await screen.findByRole('button', { name: /Yogurt.*Change/ }),
+    );
+    const search = within(
+      screen.getByRole('dialog', { name: 'Change match for Yogurt' }),
+    ).getByRole('combobox', { name: 'Search ingredients' });
+    await user.type(search, 'skyr');
+    await user.click(await screen.findByRole('option', { name: /Skyr/ }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'test back' }));
     await decoded(CODE);
-    await flush();
+    await user.click(await screen.findByRole('button', { name: 'Add all' }));
 
-    expect(getScanSession().scans).toEqual([]);
+    await waitFor(() => expect(saves().length).toBeGreaterThan(0));
+    expect(saves()).toEqual([
+      expect.objectContaining({ ingredientId: 'skyr-id', barcode: CODE }),
+    ]);
   });
 
   it('decodes Product photos imported from the gallery', async () => {
