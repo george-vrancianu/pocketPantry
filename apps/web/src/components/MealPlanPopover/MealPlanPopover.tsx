@@ -73,8 +73,8 @@ type Props = {
   today: IsoDate;
   /** The column the popover points at. */
   anchor: HTMLElement | null;
-  /** The Widget card; the popover is as wide as it less 2 x EDGE, up to MAX_WIDTH. */
-  card: HTMLElement | null;
+  /** The Widget card's width; the popover is as wide as it less 2 x EDGE, up to MAX_WIDTH. */
+  measureCard: () => number | undefined;
   onStep: (index: number) => void;
   /** `returnFocus` is false when the column has scrolled away. */
   onClose: (returnFocus: boolean) => void;
@@ -329,7 +329,7 @@ export function MealPlanPopover({
   index,
   today,
   anchor,
-  card,
+  measureCard,
   onStep,
   onClose,
   isInsideTrigger,
@@ -351,7 +351,7 @@ export function MealPlanPopover({
     const popover = popoverRef.current;
     if (!popover || !anchor) return;
     const column = anchor.getBoundingClientRect();
-    const cardWidth = card?.getBoundingClientRect().width;
+    const cardWidth = measureCard();
     popover.style.width = `${
       cardWidth ? Math.min(MAX_WIDTH, cardWidth - 2 * EDGE) : MAX_WIDTH
     }px`;
@@ -392,7 +392,7 @@ export function MealPlanPopover({
         ? previous
         : { left, top, arrowX, placement },
     );
-  }, [anchor, card, dockHeight]);
+  }, [anchor, measureCard, dockHeight]);
 
   // Place before paint, and again when the day (and so the height) or the anchor changes.
   useLayoutEffect(() => {

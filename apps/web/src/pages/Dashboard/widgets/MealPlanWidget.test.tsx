@@ -789,6 +789,29 @@ describe('MealPlanWidget day popover', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
       );
     });
+
+    it('moves focus to the nearest remaining column when it closes', async () => {
+      const u = user();
+      let view = windowOf(week(4));
+      stub(() => view);
+      const { queryClient } = renderWidget();
+
+      await u.click(
+        (await screen.findAllByRole('button', { name: /meal/ }))[2],
+      );
+      await screen.findByRole('dialog', { name: 'Saturday' });
+      expect(screen.getByRole('heading', { name: 'Saturday' })).toHaveFocus();
+
+      view = windowOf([day(0), day(1)]);
+      await queryClient.invalidateQueries();
+
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.getByRole('button', { name: /^Friday 16 October/ }),
+      ).toHaveFocus();
+    });
   });
 
   it('is as wide as the card less 24 px, up to 340', async () => {
@@ -796,7 +819,8 @@ describe('MealPlanWidget day popover', () => {
     stub(windowOf(week(3)));
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
       function (this: HTMLElement) {
-        const width = this.tagName === 'SECTION' ? 300 : 0;
+        // The card is 300 wide; its content is inside 14 px of padding.
+        const width = this.parentElement?.tagName === 'SECTION' ? 272 : 0;
         return {
           left: 0,
           top: 0,

@@ -33,11 +33,14 @@ import {
   type PlanTag,
   type WindowDay,
 } from '../../../lib/mealPlan';
-import { localIso, type IsoDate } from '../../../lib/pantry';
+import { fromIso, localIso, type IsoDate } from '../../../lib/pantry';
 import { useMealPlanLegend } from '../../../lib/useMealPlanLegend';
 import { useToday } from '../../../lib/useToday';
 import { WidgetCard } from './WidgetCard';
 import type { WidgetProps } from './types';
+
+/** The card's side padding, px; the card is this root's width plus both sides. */
+const CARD_PADDING_X = 14;
 
 /** Titles go under the bars when the columns are wide enough for them. */
 const MAX_DAYS_WITH_TITLES = 3;
@@ -138,6 +141,11 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const [openDate, setOpenDate] = useState<IsoDate | null>(null);
   const columnRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const openIndexRef = useRef(-1);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const measureCard = useCallback(() => {
+    const width = rootRef.current?.getBoundingClientRect().width;
+    return width ? width + 2 * CARD_PADDING_X : undefined;
+  }, []);
 
   const close = useCallback((returnFocus: boolean) => {
     const index = openIndexRef.current;
@@ -163,8 +171,22 @@ export function MealPlanWidget({ columns }: WidgetProps) {
   const openDay = open >= 0 ? days[open] : undefined;
 
   useEffect(() => {
-    if (openDate !== null && view && open < 0) setOpenDate(null);
-  }, [openDate, view, open]);
+    if (openDate === null || !view || open >= 0) return;
+    setOpenDate(null);
+    // The popover is gone with focus inside it, so focus fell to the page: give it to the nearest column.
+    const active = document.activeElement;
+    if (days.length > 0 && (!active || active === document.body)) {
+      const gone = fromIso(openDate).getTime();
+      let nearest = 0;
+      days.forEach((d, i) => {
+        const gap = Math.abs(fromIso(d.date).getTime() - gone);
+        if (gap < Math.abs(fromIso(days[nearest].date).getTime() - gone)) {
+          nearest = i;
+        }
+      });
+      columnRefs.current[nearest]?.focus({ preventScroll: true });
+    }
+  }, [openDate, view, open, days]);
 
   const toggle = (index: number) => {
     if (open === index) {
@@ -182,9 +204,12 @@ export function MealPlanWidget({ columns }: WidgetProps) {
       columns={columns}
       isLoading={mealWindow.isPending}
       error={mealWindow.error ? translateApiError(t, mealWindow.error) : null}
-      padding="12px 14px 14px"
+      padding={`12px ${CARD_PADDING_X}px 14px`}
     >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <Box
+        ref={rootRef}
+        sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -423,7 +448,7 @@ export function MealPlanWidget({ columns }: WidgetProps) {
           index={open}
           today={todayIso}
           anchor={columnRefs.current[open] ?? null}
-          card={columnRefs.current[open]?.closest('section') ?? null}
+          measureCard={measureCard}
           onStep={(index) => setOpenDate(days[index].date)}
           onClose={close}
           isInsideTrigger={isInsideColumn}
