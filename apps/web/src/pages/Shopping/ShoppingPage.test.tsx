@@ -1285,6 +1285,55 @@ describe('ShoppingPage', () => {
       await waitFor(() => expect(tile).toHaveFocus());
     });
 
+    it('puts focus on the + button when the Add items tile goes away after adding', async () => {
+      const user = userEvent.setup();
+      const added = list([
+        {
+          aisle: dairy,
+          items: [
+            item({ id: 'i3', name: 'Parmesan', quantity: 100, unit: 'g' }),
+          ],
+        },
+      ]);
+      const { setCurrent } = stubShopping(
+        {
+          ...templateRoute(1),
+          'POST /api/shopping-list/items': () => {
+            setCurrent(added);
+            return Response.json(added);
+          },
+        },
+        list([]),
+      );
+      renderWithProviders(<ShoppingPage />);
+
+      const tile = await screen.findByRole('button', {
+        name: /Add items.*Search ingredients/,
+      });
+      await user.click(tile);
+      const dialog = await screen.findByRole('dialog', { name: 'Add items' });
+      await user.type(
+        within(dialog).getByRole('combobox', { name: 'Search ingredients' }),
+        'parm',
+      );
+      await user.click(
+        await within(dialog).findByRole('option', { name: /Parmesan/ }),
+      );
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: 'Add Parmesan to the list',
+        }),
+      );
+      await screen.findByText('Added Parmesan');
+      await user.click(within(dialog).getByRole('button', { name: /Done/ }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      await waitFor(() => expect(tile).not.toBeInTheDocument());
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Add items' })).toHaveFocus(),
+      );
+    });
+
     it('opens Import from its tile and returns focus to the tile on close', async () => {
       const user = userEvent.setup();
       stubShopping(templateRoute(1), list([]));

@@ -402,6 +402,132 @@ describe('Import sheet', () => {
     ).toBeVisible();
   });
 
+  it('keeps Import disabled while a ticked template is still loading', async () => {
+    const user = userEvent.setup();
+    let release: (response: Response) => void = () => {};
+    const { calls } = stub({
+      'GET /api/shopping-templates/t2': () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+        }) as unknown as Response,
+      'POST /api/shopping-list/items/bulk': () =>
+        Response.json({
+          id: 'l1',
+          groups: [],
+          summary: { remaining: 0, checked: 0 },
+        }),
+    });
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'Import Taco night',
+      }),
+    );
+    await user.click(
+      await within(dialog).findByRole('checkbox', { name: 'Import Baking' }),
+    );
+
+    // Baking's lines are still on their way: nothing can be imported yet.
+    expect(
+      within(dialog).getByRole('button', { name: /^Import \d+ items?$/ }),
+    ).toBeDisabled();
+    expect(
+      within(dialog).getByRole('checkbox', { name: 'Import Baking' }),
+    ).toHaveAttribute('aria-busy', 'true');
+
+    release(Response.json(bake));
+    await user.click(
+      await within(dialog).findByRole('button', { name: 'Import 4 items' }),
+    );
+    const bulk = calls.filter(
+      (c) => c.key === 'POST /api/shopping-list/items/bulk',
+    );
+    expect(bulk).toHaveLength(1);
+    expect(bulk[0]?.body).toMatchObject({
+      items: expect.arrayContaining([
+        { ingredientId: 'sugar-ingredient', quantity: 2 },
+      ]),
+    });
+  });
+
+  it('counts Unmatched names that differ by case or Danish spelling as one item', async () => {
+    const user = userEvent.setup();
+    const beets = (id: string, name: string): TemplateLine =>
+      line(id, name, { ingredientId: null, unmatched: true, aisle: null });
+    const onList: ShoppingList = {
+      id: 'l1',
+      groups: [
+        {
+          aisle: produce,
+          items: [
+            {
+              id: 'i9',
+              ingredientId: null,
+              name: 'roedbeder',
+              quantity: null,
+              unit: null,
+              checked: false,
+              unmatched: true,
+            },
+          ],
+        },
+      ],
+      summary: { remaining: 1, checked: 0 },
+    };
+    const { calls } = stub(
+      {
+        'POST /api/shopping-list/items/bulk': () =>
+          Response.json({
+            id: 'l1',
+            groups: [],
+            summary: { remaining: 0, checked: 0 },
+          }),
+      },
+      onList,
+      [
+        { id: 't1', name: 'Taco night', lines: [beets('b1', 'Rødbeder')] },
+        { id: 't2', name: 'Baking', lines: [beets('b2', 'ROEDBEDER')] },
+      ],
+    );
+    renderWithProviders(<ShoppingPage />);
+    const dialog = await openImport(user);
+    await user.click(
+      await within(dialog).findByRole('button', { name: /^Taco night/ }),
+    );
+    const lines = await within(dialog).findByRole('group', {
+      name: 'Taco night',
+    });
+    expect(
+      await within(lines).findByRole('checkbox', {
+        name: /^Rødbeder.*On list · adds up/,
+      }),
+    ).toBeVisible();
+
+    await user.click(
+      await within(dialog).findByRole('checkbox', {
+        name: 'Import Taco night',
+      }),
+    );
+    await user.click(
+      await within(dialog).findByRole('checkbox', { name: 'Import Baking' }),
+    );
+
+    const button = await within(dialog).findByRole('button', {
+      name: 'Import 1 item',
+    });
+    expect(dialog).toHaveTextContent('1 repeat combined');
+    await user.click(button);
+    await waitFor(() =>
+      expect(
+        calls.filter((c) => c.key === 'POST /api/shopping-list/items/bulk'),
+      ).toHaveLength(1),
+    );
+    expect(
+      calls.find((c) => c.key === 'POST /api/shopping-list/items/bulk')?.body,
+    ).toEqual({ items: [{ name: 'Rødbeder' }, { name: 'ROEDBEDER' }] });
+  });
+
   it('reads Importing while the request runs', async () => {
     const user = userEvent.setup();
     stub({

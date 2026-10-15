@@ -107,6 +107,8 @@
     "doneMany_other": "Importerede {{count}} varer fra {{templates}}",
     "none": "Ingen skabeloner endnu. Gem din liste som skabelon fra bunden af listen.",
     "inTrolley": "I kurven",
+    "rowItems_one": "{{count}} vare",
+    "rowItems_other": "{{count}} varer",
     "templateCount_one": "{{count}} skabelon",
     "templateCount_other": "{{count}} skabeloner"
   }

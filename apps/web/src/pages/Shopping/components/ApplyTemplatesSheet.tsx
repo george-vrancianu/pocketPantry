@@ -23,7 +23,11 @@ import { useQueries } from '@tanstack/react-query';
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateApiError } from '../../../i18n/translateApiError';
-import { useShoppingList, type ShoppingList } from '../../../lib/shopping';
+import {
+  SHOPPING_TOAST_MS,
+  useShoppingList,
+  type ShoppingList,
+} from '../../../lib/shopping';
 import {
   templateQueryOptions,
   useApplyTemplate,
@@ -197,12 +201,16 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
                   count: pickedNames.length,
                 }),
               }),
-          { duration: 3000, polite: true },
+          { duration: SHOPPING_TOAST_MS, polite: true },
         );
       },
     });
 
-  const canApply = summary.items > 0 && !summary.overCap && !apply.isPending;
+  const canApply =
+    summary.items > 0 &&
+    !summary.overCap &&
+    pending.size === 0 &&
+    !apply.isPending;
 
   const header = (
     <Box
@@ -377,11 +385,17 @@ function ApplyForm({ open, onClose, onExited }: ApplyTemplatesSheetProps) {
                         />
                       ) : detailQueries[index]?.isError &&
                         detailQueries[index]?.fetchStatus === 'idle' ? (
-                        <Box sx={{ p: 1.5 }}>
-                          <Alert>
-                            {translateApiError(t, detailQueries[index]?.error)}
-                          </Alert>
-                        </Box>
+                        // A ticked row's failure already shows in the sheet-level alert.
+                        failed.has(row.id) ? null : (
+                          <Box sx={{ p: 1.5 }}>
+                            <Alert>
+                              {translateApiError(
+                                t,
+                                detailQueries[index]?.error,
+                              )}
+                            </Alert>
+                          </Box>
+                        )
                       ) : (
                         <Box sx={{ p: 2 }}>
                           <Spinner label={t('common:loading')} />
@@ -443,6 +457,7 @@ function TemplateRow({
             state === 'all' ? true : state === 'mixed' ? 'mixed' : false
           }
           aria-label={t('shopping:import.tickLabel', { name: summary.name })}
+          aria-busy={loading}
           onClick={onTick}
           sx={{
             p: '12px 4px 12px 14px',
@@ -545,7 +560,7 @@ function TemplateRow({
               {included
                 ? t('shopping:import.selected', { ticked, total })
                 : [
-                    t('templates:list.items', { count: summary.lineCount }),
+                    t('shopping:import.rowItems', { count: summary.lineCount }),
                     ...(summary.previewNames.length > 0
                       ? [summary.previewNames.slice(0, 3).join(', ')]
                       : []),

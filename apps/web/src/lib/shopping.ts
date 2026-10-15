@@ -35,6 +35,9 @@ export type NewShoppingItem = {
   unit?: Unit;
 };
 
+/** How long Shopping toasts stay up. */
+export const SHOPPING_TOAST_MS = 3000;
+
 /** How many items are on the list, ticked ones included. */
 export const itemCount = (summary: ShoppingList['summary']): number =>
   summary.remaining + summary.checked;

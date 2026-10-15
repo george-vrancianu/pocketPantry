@@ -9,7 +9,7 @@ import {
   displayType,
   radius,
 } from '@pocket-pantry/ui';
-import type { Ref } from 'react';
+import type { MouseEvent, Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export type SummaryCardProps = {
@@ -18,7 +18,7 @@ export type SummaryCardProps = {
   /** Opens the Finish Shopping Review. */
   onFinish: () => void;
   /** Opens the Add sheet. */
-  onAddItems: () => void;
+  onAddItems: (event: MouseEvent<HTMLButtonElement>) => void;
   /** The "+" button, so focus can come back to it. */
   addRef?: Ref<HTMLButtonElement>;
 };

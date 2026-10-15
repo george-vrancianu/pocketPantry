@@ -115,6 +115,9 @@
     "doneMany_other": "Am importat {{count}} de produse din {{templates}}",
     "none": "Niciun șablon încă. Salvează lista ca șablon de la finalul listei.",
     "inTrolley": "În coș",
+    "rowItems_one": "{{count}} produs",
+    "rowItems_few": "{{count}} produse",
+    "rowItems_other": "{{count}} de produse",
     "templateCount_one": "{{count}} șablon",
     "templateCount_few": "{{count}} șabloane",
     "templateCount_other": "{{count}} de șabloane"

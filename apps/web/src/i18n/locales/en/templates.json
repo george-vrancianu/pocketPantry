@@ -17,7 +17,7 @@
   },
   "apply": {
     "title": "Add from {{name}}",
-    "hint": "Items already in your Pantry start unticked.",
+    "hint": "Items in your Pantry or already in your trolley start unticked.",
     "empty": "This template has no lines.",
     "confirm_one": "Add {{count}} item to list",
     "confirm_other": "Add {{count}} items to list",
