@@ -67,6 +67,10 @@ never reach a client.
   Change the schema, then `npm run db:generate -w @pocket-pantry/api`.
 - `src/ai`: structured-output AI service (`AI_PROVIDER`, `AI_API_KEY`,
   `AI_VISION_MODEL`, `AI_BASE_URL`).
+- `src/meal-plans`: Meal Plans and their Plan Slots (`/api/meal-plans`). A Family
+  keeps at most `MEAL_PLAN_CAP` plans (default 10, past ones included); plans of
+  one Family never overlap. Routes take the Member's local `today` as a query
+  parameter, falling back to the UTC date.
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
   schemas. Only `POST /api/scan/product` is exposed so far. The Scan Cap is
   `SCAN_DAILY_CAP` Scans per Member per UTC day (default 30; `0` disables the

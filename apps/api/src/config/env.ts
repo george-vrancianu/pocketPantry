@@ -16,6 +16,8 @@ const envSchema = z.object({
   AI_VISION_MODEL: z.string().min(1).default('gpt-4o-mini-2024-07-18'),
   /** Scan Cap: Scans per Member per UTC day. 0 disables the cap (unlimited). */
   SCAN_DAILY_CAP: z.coerce.number().int().min(0).default(30),
+  /** Meal Plans per Family, past ones included. */
+  MEAL_PLAN_CAP: z.coerce.number().int().positive().default(10),
   /** Invite Code redemption (join-preview and join) requests per minute, per Member and per IP. */
   INVITE_CODE_LIMIT_PER_USER: z.coerce.number().int().positive().default(10),
   INVITE_CODE_LIMIT_PER_IP: z.coerce.number().int().positive().default(30),

@@ -1,0 +1,340 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { and, asc, count, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
+import { ApiException } from '../common/api-exception';
+import { addDays } from '../common/dates';
+import type { AppConfig } from '../config/env';
+import { DATABASE } from '../database/database.constants';
+import type { Database, Executor, Tx } from '../database/database.types';
+import { mealPlanSlots, mealPlans, recipes, user } from '../database/schema';
+import { lockFamilies } from '../family/family-locks';
+import { recipeTitles, visibleTo } from '../recipes/recipe-view';
+import { SettingsService } from '../settings/settings.service';
+import { utcToday } from '../shopping/batch-presence';
+import {
+  MAX_START_AHEAD_DAYS,
+  nameOrNull,
+  type CreateMealPlanBody,
+  type MealPlanSummary,
+  type MealPlanView,
+  type PlanSlotView,
+  type SetSlotBody,
+  type SlotParams,
+  type UpdateMealPlanBody,
+} from './meal-plans.schemas';
+
+type PlanRow = typeof mealPlans.$inferSelect;
+
+const summary = (row: PlanRow): MealPlanSummary => ({
+  id: row.id,
+  name: row.name,
+  startDate: row.startDate,
+  days: row.days,
+  servings: row.servings,
+});
+
+const notFound = () => new ApiException(404, 'meal_plan.not_found');
+
+/** The last date a plan covers. */
+const endDate = (plan: Pick<PlanRow, 'startDate' | 'days'>) =>
+  addDays(plan.startDate, plan.days - 1);
+
+/**
+ * Meal Plans are Family data: any Member reads and edits them, and another
+ * Family's plan is a 404. Every write holds the Family lock, which serialises
+ * the plan cap and the no-overlap rule.
+ */
+@Injectable()
+export class MealPlansService {
+  constructor(
+    @Inject(DATABASE) private readonly database: Database,
+    private readonly settings: SettingsService,
+    private readonly config: ConfigService<AppConfig, true>,
+  ) {}
+
+  async list(memberId: string): Promise<{ mealPlans: MealPlanSummary[] }> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const rows = await this.database
+      .select()
+      .from(mealPlans)
+      .where(eq(mealPlans.familyId, familyId))
+      .orderBy(desc(mealPlans.startDate), asc(mealPlans.id));
+    return { mealPlans: rows.map(summary) };
+  }
+
+  async get(
+    memberId: string,
+    id: string,
+    locale: CatalogLocale,
+  ): Promise<MealPlanView> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    return this.view(this.database, familyId, id, locale);
+  }
+
+  async create(
+    memberId: string,
+    body: CreateMealPlanBody,
+    locale: CatalogLocale,
+    today = utcToday(),
+  ): Promise<MealPlanView> {
+    return this.database.transaction(async (tx) => {
+      const familyId = await this.lockFamily(tx, memberId);
+      const existing = await tx
+        .select()
+        .from(mealPlans)
+        .where(eq(mealPlans.familyId, familyId));
+      const cap = this.config.get('MEAL_PLAN_CAP', { infer: true });
+      if (existing.length >= cap) {
+        throw new ApiException(409, 'meal_plan.cap_reached', { cap });
+      }
+      assertStartDate(body.startDate, today);
+      assertNoOverlap(existing, body.startDate, body.days);
+      const [{ members }] = await tx
+        .select({ members: count() })
+        .from(user)
+        .where(eq(user.familyId, familyId));
+      const [row] = await tx
+        .insert(mealPlans)
+        .values({
+          familyId,
+          name: nameOrNull(body.name),
+          startDate: body.startDate,
+          days: body.days,
+          servings: body.servings ?? Math.min(Math.max(members, 1), 1000),
+        })
+        .returning();
+      return this.view(tx, familyId, row.id, locale);
+    });
+  }
+
+  async update(
+    memberId: string,
+    id: string,
+    body: UpdateMealPlanBody,
+    locale: CatalogLocale,
+    today = utcToday(),
+  ): Promise<MealPlanView> {
+    return this.database.transaction(async (tx) => {
+      const familyId = await this.lockFamily(tx, memberId);
+      const plan = await this.findPlan(tx, familyId, id);
+      const startDate = body.startDate ?? plan.startDate;
+      const days = body.days ?? plan.days;
+
+      const moved = startDate !== plan.startDate;
+      if (moved) assertStartDate(startDate, today);
+      if (moved || days > plan.days) {
+        const others = await tx
+          .select()
+          .from(mealPlans)
+          .where(
+            and(eq(mealPlans.familyId, familyId), ne(mealPlans.id, plan.id)),
+          );
+        assertNoOverlap(others, startDate, days);
+      }
+      if (days < plan.days) {
+        const past = await tx
+          .select({ id: mealPlanSlots.id, dayIndex: mealPlanSlots.dayIndex })
+          .from(mealPlanSlots)
+          .where(eq(mealPlanSlots.mealPlanId, plan.id));
+        const dropped = past.filter((slot) => slot.dayIndex >= days);
+        if (dropped.length > 0) {
+          await tx.delete(mealPlanSlots).where(
+            inArray(
+              mealPlanSlots.id,
+              dropped.map((slot) => slot.id),
+            ),
+          );
+        }
+      }
+      await tx
+        .update(mealPlans)
+        .set({
+          ...(body.name !== undefined && { name: nameOrNull(body.name) }),
+          startDate,
+          days,
+          ...(body.servings !== undefined && { servings: body.servings }),
+        })
+        .where(eq(mealPlans.id, plan.id));
+      return this.view(tx, familyId, plan.id, locale);
+    });
+  }
+
+  async remove(memberId: string, id: string): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const familyId = await this.lockFamily(tx, memberId);
+      const plan = await this.findPlan(tx, familyId, id);
+      await tx.delete(mealPlans).where(eq(mealPlans.id, plan.id));
+    });
+  }
+
+  /** Puts a Recipe in a slot, replacing what was there. Omitting `servings` follows the plan. */
+  async setSlot(
+    memberId: string,
+    { id, dayIndex, mealtime }: SlotParams,
+    body: SetSlotBody,
+    locale: CatalogLocale,
+    today = utcToday(),
+  ): Promise<MealPlanView> {
+    return this.database.transaction(async (tx) => {
+      const familyId = await this.lockFamily(tx, memberId);
+      const plan = await this.findPlan(tx, familyId, id);
+      assertEditableDay(plan, dayIndex, today);
+      const [recipe] = await tx
+        .select({ id: recipes.id })
+        .from(recipes)
+        .where(
+          and(
+            eq(recipes.id, body.recipeId),
+            visibleTo(familyId),
+            isNull(recipes.archivedAt),
+          ),
+        );
+      if (!recipe) throw new ApiException(404, 'meal_plan.recipe_not_found');
+      const servings = body.servings ?? null;
+      await tx
+        .insert(mealPlanSlots)
+        .values({
+          mealPlanId: plan.id,
+          dayIndex,
+          mealtime,
+          recipeId: recipe.id,
+          servings,
+        })
+        .onConflictDoUpdate({
+          target: [
+            mealPlanSlots.mealPlanId,
+            mealPlanSlots.dayIndex,
+            mealPlanSlots.mealtime,
+          ],
+          set: { recipeId: recipe.id, servings },
+        });
+      return this.view(tx, familyId, plan.id, locale);
+    });
+  }
+
+  /** Empties a slot; clearing an empty one is fine. */
+  async clearSlot(
+    memberId: string,
+    { id, dayIndex, mealtime }: SlotParams,
+    today = utcToday(),
+  ): Promise<void> {
+    await this.database.transaction(async (tx) => {
+      const familyId = await this.lockFamily(tx, memberId);
+      const plan = await this.findPlan(tx, familyId, id);
+      assertEditableDay(plan, dayIndex, today);
+      await tx
+        .delete(mealPlanSlots)
+        .where(
+          and(
+            eq(mealPlanSlots.mealPlanId, plan.id),
+            eq(mealPlanSlots.dayIndex, dayIndex),
+            eq(mealPlanSlots.mealtime, mealtime),
+          ),
+        );
+    });
+  }
+
+  private async lockFamily(tx: Tx, memberId: string): Promise<string> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    await lockFamilies(tx, [familyId]);
+    return familyId;
+  }
+
+  private async findPlan(
+    executor: Executor,
+    familyId: string,
+    id: string,
+  ): Promise<PlanRow> {
+    const [plan] = await executor
+      .select()
+      .from(mealPlans)
+      .where(and(eq(mealPlans.id, id), eq(mealPlans.familyId, familyId)));
+    if (!plan) throw notFound();
+    return plan;
+  }
+
+  private async view(
+    executor: Executor,
+    familyId: string,
+    id: string,
+    locale: CatalogLocale,
+  ): Promise<MealPlanView> {
+    const plan = await this.findPlan(executor, familyId, id);
+    const rows = await executor
+      .select({ slot: mealPlanSlots, recipe: recipes })
+      .from(mealPlanSlots)
+      .innerJoin(recipes, eq(recipes.id, mealPlanSlots.recipeId))
+      .where(eq(mealPlanSlots.mealPlanId, plan.id));
+    const titles = await recipeTitles(
+      executor,
+      rows.map((row) => row.recipe),
+      locale,
+    );
+    const order = { breakfast: 0, lunch: 1, dinner: 2 };
+    const slots = rows
+      .map(({ slot, recipe }): PlanSlotView => ({
+        dayIndex: slot.dayIndex,
+        date: addDays(plan.startDate, slot.dayIndex),
+        mealtime: slot.mealtime,
+        recipeId: recipe.id,
+        recipeTitle: titles.get(recipe.id) ?? recipe.title,
+        servings: slot.servings ?? plan.servings,
+        servingsOverride: slot.servings,
+        unavailable: recipe.archivedAt !== null,
+      }))
+      .sort(
+        (a, b) =>
+          a.dayIndex - b.dayIndex || order[a.mealtime] - order[b.mealtime],
+      );
+    return { ...summary(plan), slots };
+  }
+}
+
+/** From the Member's today up to `MAX_START_AHEAD_DAYS` later. */
+function assertStartDate(startDate: string, today: string): void {
+  if (startDate < today) {
+    throw new ApiException(400, 'meal_plan.start_date_in_past');
+  }
+  if (startDate > addDays(today, MAX_START_AHEAD_DAYS)) {
+    throw new ApiException(400, 'meal_plan.start_date_too_far', {
+      max: MAX_START_AHEAD_DAYS,
+    });
+  }
+}
+
+/** Plans that only touch at the edges (one ends Tuesday, the next starts Wednesday) don't overlap. */
+function assertNoOverlap(
+  others: PlanRow[],
+  startDate: string,
+  days: number,
+): void {
+  const end = addDays(startDate, days - 1);
+  const clash = others.find(
+    (other) => other.startDate <= end && startDate <= endDate(other),
+  );
+  if (clash) {
+    throw new ApiException(409, 'meal_plan.overlap', {
+      id: clash.id,
+      name: clash.name,
+      startDate: clash.startDate,
+      days: clash.days,
+    });
+  }
+}
+
+/** The day must be inside the plan and not before the Member's today. */
+function assertEditableDay(
+  plan: Pick<PlanRow, 'startDate' | 'days'>,
+  dayIndex: number,
+  today: string,
+): void {
+  if (dayIndex >= plan.days) {
+    throw new ApiException(400, 'meal_plan.day_out_of_range', {
+      days: plan.days,
+    });
+  }
+  if (addDays(plan.startDate, dayIndex) < today) {
+    throw new ApiException(409, 'meal_plan.day_in_past');
+  }
+}

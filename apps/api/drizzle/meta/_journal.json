@@ -169,6 +169,13 @@
       "when": 1792023965035,
       "tag": "0023_family_synonyms",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792075823747,
+      "tag": "0024_meal_plans",
+      "breakpoints": true
     }
   ]
 }
