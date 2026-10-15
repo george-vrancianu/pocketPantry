@@ -256,6 +256,28 @@ describe('Plan Forecast (integration)', () => {
       expect(read.forecast.tag).toEqual({ kind: 'coveredOnceYouShop' });
     });
 
+    it('does not count a checked Shopping Item as on the list', async () => {
+      const ana = await member('checked');
+      const dish = await recipe([
+        { ingredientId: eggs, quantity: 4, unit: 'pcs' },
+      ]);
+      const id = await plan(ana, TODAY, 1);
+      await fill(ana, id, 0, 'dinner', dish);
+      const added = await ana.list
+        .post('/items?locale=en', { ingredientId: eggs })
+        .expect(200);
+      const itemId = (added.body as { groups: { items: { id: string }[] }[] })
+        .groups[0].items[0].id;
+      await ana.list
+        .patch(`/items/${itemId}?locale=en`, { checked: true })
+        .expect(200);
+      expect((await readPlan(ana, id)).slots[0].status).toBe('short');
+      await ana.list
+        .patch(`/items/${itemId}?locale=en`, { checked: false })
+        .expect(200);
+      expect((await readPlan(ana, id)).slots[0].status).toBe('onList');
+    });
+
     it('gives past days no status, and forecasts from the client today', async () => {
       const ana = await member('past');
       const dish = await recipe([

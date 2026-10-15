@@ -155,7 +155,7 @@ export type MissingItemView = {
   ingredientId: string | null;
   /** The Ingredient's name in the request locale, or the Unmatched name as typed. */
   name: string;
-  /** Shortfalls added up in g, ml or pcs; null when any has no quantity. */
+  /** Shortfalls added up in g, ml or pcs; null when any has no quantity or they mix dimensions (g with pcs). */
   quantity: number | null;
   unit: BaseUnit | null;
   /** The Recipes that need it: its Source Recipes. */

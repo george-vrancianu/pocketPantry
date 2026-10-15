@@ -415,6 +415,29 @@ describe('forecastPlan: reasons', () => {
     });
   });
 
+  it('expires, not usesLast, when what earlier slots left over has expired by this slot', () => {
+    const late = forecast({
+      recipes: { r1: recipe([line({ quantity: 2 })]), r2: recipe([line()]) },
+      slots: [slot(0, 'dinner', 'r1'), slot(2, 'dinner', 'r2')],
+      batches: [batch({ quantity: 4, expiryDate: day(1) })],
+    });
+    expect(issueOf(late, 1)).toMatchObject({
+      kind: 'missing',
+      reason: { code: 'expires', date: day(1) },
+    });
+  });
+
+  it('notInPantry when a Batch has no quantity left to give and nothing earlier took any', () => {
+    const result = forecast({
+      slots: [slot(0, 'dinner')],
+      batches: [batch({ quantity: 0 })],
+    });
+    expect(issueOf(result, 0)).toMatchObject({
+      kind: 'missing',
+      reason: { code: 'notInPantry' },
+    });
+  });
+
   it('notInPantry when there is no Batch at all', () => {
     const result = forecast({ slots: [slot(0, 'dinner')] });
     expect(issueOf(result, 0)).toMatchObject({
@@ -565,6 +588,25 @@ describe('missingItems', () => {
         quantity: 6,
         unit: 'pcs',
         recipeIds: ['r2', 'r1'],
+      },
+    ]);
+  });
+
+  it('has no quantity when shortfalls of one Ingredient are in different dimensions', () => {
+    const result = forecast({
+      recipes: {
+        r1: recipe([line({ quantity: 200, unit: 'g' })]),
+        r2: recipe([line({ quantity: 2, unit: 'pcs' })]),
+      },
+      slots: [slot(0, 'dinner', 'r1'), slot(1, 'dinner', 'r2')],
+    });
+    expect(missingItems(result.days)).toEqual([
+      {
+        ingredientId: EGGS,
+        name: null,
+        quantity: null,
+        unit: null,
+        recipeIds: ['r1', 'r2'],
       },
     ]);
   });

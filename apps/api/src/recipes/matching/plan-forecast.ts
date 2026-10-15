@@ -63,7 +63,7 @@ export type ForecastBatch = {
   expiryDate: string | null;
 };
 
-/** One entry of the active Shopping List, checked or not. */
+/** One unchecked entry of the active Shopping List (as Cook Tonight counts them). */
 export type ForecastListEntry = {
   ingredientId: string | null;
   name: string | null;
@@ -284,19 +284,30 @@ export function forecastPlan(input: ForecastInput): Forecast {
       if (taken > EPSILON) takers.set(key, [...prior, ref]);
       if (outstanding <= EPSILON) continue;
 
+      // The usesLast / onlyLeftAfter split follows the handoff §5.4 table and
+      // deliberately differs from planCoverage.ts, where onlyLeftAfter never fires.
+      // usesLast needs the earlier slots to have emptied the stock: a remainder
+      // that has expired by this slot's day is an expiry, not use.
+      const expiredLeftover = all.some(
+        ({ batch, dimension, remaining }) =>
+          dimension === required.dimension &&
+          remaining > EPSILON &&
+          batch.expiryDate !== null &&
+          batch.expiryDate < slot.date,
+      );
       const reason: Reason =
-        prior.length > 0 && taken <= EPSILON
-          ? { code: 'usesLast', meals: prior }
-          : usable.length === 0 && prior.length === 0
-            ? absent()
-            : prior.length > 0
-              ? {
-                  code: 'onlyLeftAfter',
-                  amount: round(taken),
-                  unit,
-                  meals: prior,
-                }
-              : { code: 'onlyInPantry', amount: round(taken), unit };
+        taken > EPSILON
+          ? prior.length > 0
+            ? {
+                code: 'onlyLeftAfter',
+                amount: round(taken),
+                unit,
+                meals: prior,
+              }
+            : { code: 'onlyInPantry', amount: round(taken), unit }
+          : prior.length > 0 && !expiredLeftover
+            ? { code: 'usesLast', meals: prior }
+            : absent();
       issues.push(
         issue(
           taken > EPSILON ? 'short' : 'missing',

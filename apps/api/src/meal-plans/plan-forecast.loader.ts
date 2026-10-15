@@ -53,7 +53,7 @@ export const slotKey = (
 ): string => `${planId}:${dayIndex}:${mealtime}`;
 
 export type LoadedForecast = {
-  /** Every Meal Plan of the Family, newest start first. */
+  /** Every Meal Plan of the Family, earliest start first. */
   plans: PlanRow[];
   forecast: Forecast;
   /** The forecast's slots from today to `through`, by `slotKey`, ready to send. */
@@ -298,6 +298,7 @@ async function loadBatches(
   return rows;
 }
 
+/** The unchecked items on the active list, as Cook Tonight counts them (by stored normalised name). */
 async function loadShoppingList(
   executor: Executor,
   familyId: string,
@@ -305,7 +306,7 @@ async function loadShoppingList(
   return executor
     .select({
       ingredientId: shoppingItems.ingredientId,
-      name: shoppingItems.name,
+      name: shoppingItems.normalizedName,
     })
     .from(shoppingItems)
     .innerJoin(shoppingLists, eq(shoppingLists.id, shoppingItems.listId))
@@ -313,6 +314,7 @@ async function loadShoppingList(
       and(
         eq(shoppingLists.familyId, familyId),
         eq(shoppingLists.status, 'active'),
+        eq(shoppingItems.checked, false),
       ),
     );
 }
