@@ -94,12 +94,13 @@ export function CameraOverlay({
     closed.current = true;
     cancelRef.current();
   };
-  const cancelFromKey = useRef(cancel);
-  cancelFromKey.current = cancel;
   useEffect(() => {
     closed.current = false;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') cancelFromKey.current();
+      if (event.key === 'Escape') {
+        closed.current = true;
+        cancelRef.current();
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {

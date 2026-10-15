@@ -188,20 +188,17 @@ describe('Prefill the add-Batch form from a Product Scan', () => {
     );
     renderWithProviders(<PantryPage />);
     await openForm(user);
-    await user.type(
-      screen.getByRole('combobox', { name: 'Search ingredients' }),
-      'x',
-    );
     await user.click(cameraButton());
     screen.getByTestId('scan-guide').focus();
     await user.keyboard('{Enter}');
     await user.keyboard('{Escape}');
     finish();
     release();
+    // Every promise is already settled; the wait only gives a wrongly started read time to show.
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(scanCalls(calls)).toHaveLength(0);
     expect(screen.queryByText(/Reading the product photo/)).toBeNull();
-    expect(screen.queryByTestId('prefilled-ingredient')).toBeNull();
+    expect(screen.queryByTestId('prefilled-expiry')).toBeNull();
   });
 
   it("leaves the Scan page's remembered mode alone", async () => {
