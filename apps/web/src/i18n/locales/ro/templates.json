@@ -15,10 +15,7 @@
     "preview_other": "Salvează toate cele {{count}} de articole, inclusiv cele bifate",
     "rowHint_one": "Refolosește acest articol data viitoare",
     "rowHint_few": "Refolosește aceste {{count}} articole data viitoare",
-    "rowHint_other": "Refolosește aceste {{count}} de articole data viitoare",
-    "rowMeta_one": "{{count}} articol, cu cantități",
-    "rowMeta_few": "{{count}} articole, cu cantități",
-    "rowMeta_other": "{{count}} de articole, cu cantități"
+    "rowHint_other": "Refolosește aceste {{count}} de articole data viitoare"
   },
   "apply": {
     "title": "Adaugă din {{name}}",

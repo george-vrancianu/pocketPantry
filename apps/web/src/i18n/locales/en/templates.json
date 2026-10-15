@@ -13,9 +13,7 @@
     "preview_one": "Saves {{count}} item, ticked ones too",
     "preview_other": "Saves all {{count}} items, ticked ones too",
     "rowHint_one": "Reuse this {{count}} item next time",
-    "rowHint_other": "Reuse these {{count}} items next time",
-    "rowMeta_one": "{{count}} item, quantities included",
-    "rowMeta_other": "{{count}} items, quantities included"
+    "rowHint_other": "Reuse these {{count}} items next time"
   },
   "apply": {
     "title": "Add from {{name}}",

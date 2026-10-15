@@ -2,7 +2,7 @@ import { useToast, type ToastApi } from '@pocket-pantry/ui';
 import { useMemo } from 'react';
 
 /** Distance in px that lifts a toast clear of the sheet's bottom edge. */
-export const TOAST_ABOVE_SHEET = 92;
+const TOAST_ABOVE_SHEET = 92;
 
 /** Toasts for the Add sheet: raised clear of the sheet's bottom edge. */
 export function useSheetToast(): ToastApi {

@@ -11,8 +11,8 @@ import {
 } from './templateSelection';
 
 /**
- * The selection of a single Template (the editor's Apply picker, the Add
- * sheet's apply view). Starts as the default selection of the Template and
+ * The selection of a single Template (the template editor's Apply picker).
+ * Starts as the default selection of the Template and
  * the current list; once the Member taps a line it is theirs, so a list
  * refetch no longer moves their ticks. They may untick every line.
  */
