@@ -3,7 +3,14 @@ import { eq, ilike } from 'drizzle-orm';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { mealPlans, recipes, user } from '../src/database/schema';
+import {
+  batches,
+  ingredients,
+  mealPlans,
+  recipeIngredientLines,
+  recipes,
+  user,
+} from '../src/database/schema';
 import { client, signUp } from './support/admin-session';
 import { createTestApp } from './support/create-test-app';
 
@@ -584,6 +591,108 @@ describe('Meal Plans (integration)', () => {
         .from(recipes)
         .where(eq(recipes.id, recipe));
       expect(row).toBeDefined();
+    });
+  });
+
+  describe('Fill', () => {
+    const slotPath = (planId: string, day: number, mealtime: string) =>
+      `/${planId}/slots/${day}/${mealtime}${q}`;
+    const fillPath = (planId: string, today = TODAY) =>
+      `/${planId}/fill?locale=en&today=${today}`;
+
+    it('writes only empty slots on today or later, keeps the Member picks and returns the forecast', async () => {
+      const { api } = await member('fill');
+      const pick = await catalogRecipe();
+      await catalogRecipe();
+      const plan = await create(api, { days: 3 });
+      await api
+        .put(slotPath(plan.id, 1, 'lunch'), { recipeId: pick })
+        .expect(200);
+      const pastPick = await catalogRecipe();
+      await api
+        .put(slotPath(plan.id, 0, 'dinner'), { recipeId: pastPick })
+        .expect(200);
+
+      // The client's today is day 1, so day 0 is past and read-only.
+      const res = await api
+        .post(fillPath(plan.id, at(1)), { onlyWhatIHave: false })
+        .expect(201);
+      const filled = res.body as PlanDetail;
+      // The past pick stays; the past empty slots stay empty.
+      expect(
+        filled.slots
+          .filter((s) => s.dayIndex === 0)
+          .map((s) => [s.mealtime, s.recipeId]),
+      ).toEqual([['dinner', pastPick]]);
+      expect(
+        filled.slots.find((s) => s.dayIndex === 1 && s.mealtime === 'lunch'),
+      ).toMatchObject({ recipeId: pick });
+      expect(filled.slots.length).toBeGreaterThan(1);
+      expect(
+        filled.slots
+          .filter((s) => s.dayIndex >= 1)
+          .every((s) => s.status !== null),
+      ).toBe(true);
+      expect(filled.forecast).toMatchObject({
+        tag: { kind: expect.any(String) as string },
+        days: [{ date: at(1) }, { date: at(2) }],
+      });
+
+      // The read agrees with what Fill returned.
+      expect(
+        await api.get(`/${plan.id}?locale=en&today=${at(1)}`).expect(200),
+      ).toMatchObject({ body: { slots: filled.slots } });
+    });
+
+    it('with "only what I have", places only a Recipe the Pantry covers', async () => {
+      const { api, email } = await member('fill-have');
+      const [{ familyId }] = await database
+        .select({ familyId: user.familyId })
+        .from(user)
+        .where(eq(user.email, email));
+      const milk = seedId.ingredient('milk');
+      const [{ leaf }] = await database
+        .select({ leaf: ingredients.leafCategoryId })
+        .from(ingredients)
+        .where(eq(ingredients.id, milk));
+      await database.insert(batches).values({
+        familyId,
+        ingredientId: milk,
+        leafCategoryId: leaf,
+        location: 'fridge',
+        quantity: 1000,
+        unit: 'ml',
+        // Expiring Soon, so it outranks Recipes that use nothing from the Pantry.
+        expiryDate: at(1),
+      });
+      const makeable = await catalogRecipe();
+      await database.insert(recipeIngredientLines).values({
+        id: crypto.randomUUID(),
+        recipeId: makeable,
+        position: 0,
+        ingredientId: milk,
+        quantity: 100,
+        unit: 'ml',
+      });
+
+      const plan = await create(api, { days: 1 });
+      const res = await api
+        .post(fillPath(plan.id), { onlyWhatIHave: true })
+        .expect(201);
+      const slots = (res.body as PlanDetail).slots;
+      // Variety allows the Recipe once; every placed slot is covered.
+      expect(slots.filter((s) => s.recipeId === makeable)).toHaveLength(1);
+      expect(slots.every((s) => s.status === 'covered')).toBe(true);
+    });
+
+    it('requires the switch, and answers 404 for another Family plan', async () => {
+      const ana = await member('fill-ana');
+      const bob = await member('fill-bob');
+      const plan = await create(ana.api);
+      await ana.api.post(fillPath(plan.id), {}).expect(400);
+      await bob.api
+        .post(fillPath(plan.id), { onlyWhatIHave: false })
+        .expect(404);
     });
   });
 });

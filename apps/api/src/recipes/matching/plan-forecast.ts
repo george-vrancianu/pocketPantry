@@ -13,7 +13,19 @@ import { toComparable, type Dimension, type Unit } from './units';
 
 export type Mealtime = (typeof mealtime.enumValues)[number];
 /** Breakfast, Lunch, Dinner: the order slots are used in within a day. */
-const MEALTIME_ORDER: readonly Mealtime[] = ['breakfast', 'lunch', 'dinner'];
+export const MEALTIME_ORDER: readonly Mealtime[] = [
+  'breakfast',
+  'lunch',
+  'dinner',
+];
+
+/** Orders anything with a date and a Mealtime the way slots are used: by date, then Mealtime. */
+export const compareSlotOrder = (
+  a: { date: string; mealtime: Mealtime },
+  b: { date: string; mealtime: Mealtime },
+): number =>
+  a.date.localeCompare(b.date) ||
+  MEALTIME_ORDER.indexOf(a.mealtime) - MEALTIME_ORDER.indexOf(b.mealtime);
 
 /** The unit a shortfall is reported in, one per dimension. */
 export type BaseUnit = 'g' | 'ml' | 'pcs';
@@ -168,13 +180,27 @@ type Stock = {
  * undated ones last, counting only Batches not Expired on the slot's day.
  */
 export function forecastPlan(input: ForecastInput): Forecast {
+  const { results, days, tag } = run(input);
+  return { slots: results, days, tag };
+}
+
+/**
+ * What the Batches have left once all `input.slots` have used them up, in
+ * base units (g, ml, pcs) for Batches with a comparable quantity and as they
+ * were for the rest. Fill ranks Recipes against this for a slot's day.
+ */
+export function stockLeft(input: ForecastInput): ForecastBatch[] {
+  return run(input).stock.map(({ batch, dimension, remaining }) =>
+    dimension === null
+      ? batch
+      : { ...batch, quantity: round(remaining), unit: BASE_UNIT[dimension] },
+  );
+}
+
+function run(input: ForecastInput) {
   const slots = input.slots
     .filter((slot) => slot.date >= input.today)
-    .sort(
-      (a, b) =>
-        a.date.localeCompare(b.date) ||
-        MEALTIME_ORDER.indexOf(a.mealtime) - MEALTIME_ORDER.indexOf(b.mealtime),
-    );
+    .sort(compareSlotOrder);
   const onList = new Set(input.shoppingList.map(keyOf));
   const stock = new Map<string, Stock[]>();
   for (const batch of input.batches) {
@@ -328,9 +354,10 @@ export function forecastPlan(input: ForecastInput): Forecast {
   });
 
   return {
-    slots: results,
+    results,
     days: daysOf(input.today, results),
     tag: planTag(results),
+    stock: [...stock.values()].flat(),
   };
 }
 

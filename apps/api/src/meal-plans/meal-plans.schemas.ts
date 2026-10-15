@@ -76,6 +76,10 @@ export const setSlotBody = z.object({
 });
 export type SetSlotBody = z.infer<typeof setSlotBody>;
 
+/** `onlyWhatIHave` limits Fill to Recipes the Pantry can still cover. */
+export const fillBody = z.object({ onlyWhatIHave: z.boolean() });
+export type FillBody = z.infer<typeof fillBody>;
+
 export type MealPlanSummary = {
   id: string;
   name: string | null;

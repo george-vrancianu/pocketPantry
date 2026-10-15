@@ -1,6 +1,7 @@
 import {
   forecastPlan,
   missingItems,
+  stockLeft,
   type ForecastBatch,
   type ForecastInput,
   type ForecastLine,
@@ -684,6 +685,34 @@ describe('missingItems', () => {
         unit: 'pcs',
         recipeIds: ['r1'],
       },
+    ]);
+  });
+});
+
+describe('stockLeft', () => {
+  it('returns each Batch with what the slots left of it, in base units', () => {
+    const left = stockLeft({
+      today: TODAY,
+      slots: [slot(0, 'dinner')],
+      recipes: { r1: recipe([line({ quantity: 4 })]) },
+      batches: [batch({ id: 'b1', quantity: 6 })],
+      shoppingList: [],
+    });
+    expect(left).toEqual([
+      expect.objectContaining({ id: 'b1', quantity: 2, unit: 'pcs' }),
+    ]);
+  });
+
+  it('keeps a Batch with no comparable quantity as it was', () => {
+    const left = stockLeft({
+      today: TODAY,
+      slots: [slot(0, 'dinner')],
+      recipes: { r1: recipe([line()]) },
+      batches: [batch({ id: 'b1', quantity: null, unit: null })],
+      shoppingList: [],
+    });
+    expect(left).toEqual([
+      expect.objectContaining({ id: 'b1', quantity: null, unit: null }),
     ]);
   });
 });
