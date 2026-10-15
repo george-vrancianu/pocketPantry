@@ -595,24 +595,35 @@ describe('deriveAllergens', () => {
       expect(blocks([line({ ingredient: null })], [own(MILK)])).toBe(false);
     });
 
-    it('is soft, not hidden and not blocking when the only match is a required line on a shared Ingredient awaiting review', () => {
+    it('neither hides nor blocks when the only match is a required line on a shared Ingredient awaiting review', () => {
       const awaiting = {
         ownerFamilyId: null,
         allergensChecked: false,
         allergensReviewPending: true,
       };
-      const derived = deriveAllergens({
-        lines: [line({ allergenIds: [MILK], ingredient: awaiting })],
+      const allergies = [own(MILK), member(MILK)];
+      // Untagged (the usual state while awaiting): a soft, Unchecked-only warning.
+      const untagged = deriveAllergens({
+        lines: [line({ ingredient: awaiting })],
         allergenOrder: ORDER,
-        allergies: [own(MILK), member(MILK)],
+        allergies,
       });
-      expect(derived.allergyWarning).toMatchObject({
+      expect(untagged.allergyWarning).toMatchObject({
         severity: 'soft',
         entries: [],
         uncheckedCount: 1,
       });
-      expect(derived.hidden).toBe(false);
-      expect(derived.blocksFill).toBe(false);
+      expect(untagged.hidden).toBe(false);
+      expect(untagged.blocksFill).toBe(false);
+      // Even if it carries a tag, the line is Unchecked: counted, never hiding or blocking Fill.
+      const tagged = deriveAllergens({
+        lines: [line({ allergenIds: [MILK], ingredient: awaiting })],
+        allergenOrder: ORDER,
+        allergies,
+      });
+      expect(tagged.allergyWarning?.uncheckedCount).toBe(1);
+      expect(tagged.hidden).toBe(false);
+      expect(tagged.blocksFill).toBe(false);
     });
 
     it('is false without a matching Allergy', () => {
