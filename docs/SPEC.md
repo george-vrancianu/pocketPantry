@@ -116,7 +116,7 @@ These stories were added on 2026-10-10 after a grilling session and number on fr
 66. ~~As a Member, I want a Quick Scan Widget with the four Scan Modes, so that scanning is one tap from home.~~ Dropped: the Dock already puts Scan one tap away.
 67. As a Member, I want to add, remove, reorder, and resize Widgets, so that the Dashboard fits me.
 68. As a Member, I want my Dashboard layout saved to my account, so that it follows me between devices.
-69. As a Member, I want placeholder Meal Plan, Budget, and Nutrition Widgets available, so that the Dashboard matches the design even before those features exist.
+69. As a Member, I want a Meal plan Widget showing a column for each planned day from today (up to 7), with a bar per Mealtime coloured by whether the Pantry covers it, a day popover, and one tap to add what's missing to the Shopping List, so that I see how the week's plan holds up. Budget and Nutrition Widgets stay placeholders until those features exist (see Meal Plans, #324, and [ADR 0012](adr/0012-meal-plans-are-saved-family-schedules.md)).
 
 ### Family Settings
 
@@ -237,7 +237,7 @@ Staples, Used Up Suggestions, and Shopping Templates make adding Shopping Items 
 ### Dashboard
 
 - Widget layout is per Member, stored as an ordered list of widget instances with type and size, persisted via the API as in retzetar's dashboard table.
-- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Suggestions (see Quick List), and the placeholder Meal Plan, Budget, and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
+- Wave 1 widget types: Use Soon, Shopping, Pantry Stock, Suggestions (see Quick List), the Meal Plan widget (real, see #324), and the placeholder Budget and Nutrition widgets with static content. Cook Tonight and Recipe of the Day are wave 2.
 - Customise screen uses dnd-kit for reorder, with size toggle, remove, and an add gallery, as in the handoff.
 
 ### Settings
@@ -279,7 +279,7 @@ No end-to-end browser tests in wave 1.
 - Multiple Families per Member, merging Pantries on join.
 - Multiple named Shopping Lists. Shopping Templates are not Shopping Lists: applying one adds items to the single active list.
 - Unit conversions between mass, volume, and count.
-- Meal planning, budget tracking, and nutrition as real features. Their Widgets are static placeholders.
+- Budget tracking and nutrition as real features. Their Widgets are static placeholders. (Meal planning is in scope: see #324 and ADR 0012.)
 - Image storage.
 - Deployment and hosting.
 - Flutter mobile app.
