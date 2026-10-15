@@ -95,6 +95,11 @@ export function findSeedProblems(seed: CatalogSeed): string[] {
 
   const allergens = new Set((seed.allergens ?? []).map((a) => a.slug));
   for (const i of seed.ingredients) {
+    // A shared Ingredient with no tags counts as "contains none" (ADR 0014), so
+    // that has to be said on purpose: an empty list, never a missing entry.
+    if (i.allergens === undefined) {
+      problems.push(`ingredient "${i.slug}": no Allergens declared`);
+    }
     for (const slug of i.allergens ?? []) {
       if (!allergens.has(slug)) {
         problems.push(`ingredient "${i.slug}": unknown Allergen "${slug}"`);

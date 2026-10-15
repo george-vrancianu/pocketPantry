@@ -219,15 +219,33 @@ describe('catalog seed data', () => {
       ).toEqual([]);
     });
 
-    it('tags a few Ingredients so the card can be demoed', () => {
+    it('declares Allergens for every shared Ingredient', () => {
+      expect(
+        SEED_INGREDIENTS.filter((i) => i.allergens === undefined).map(
+          (i) => i.slug,
+        ),
+      ).toEqual([]);
+      expect(
+        SEED_INGREDIENTS.filter((i) => (i.allergens ?? []).length > 0).length,
+      ).toBeGreaterThan(100);
+    });
+
+    it('tags composite and prepared Ingredients by what they are made of', () => {
       const tags = (slug: string) =>
         SEED_INGREDIENTS.find((i) => i.slug === slug)?.allergens;
       expect(tags('parmesan')).toEqual(['milk']);
-      expect(tags('butter')).toEqual(['milk']);
-      expect(tags('milk')).toEqual(['milk']);
-      expect(tags('eggs')).toEqual(['eggs']);
       expect(tags('flour')).toEqual(['gluten']);
       expect(tags('peanuts')).toEqual(['peanuts']);
+      expect(tags('bread')).toEqual(['gluten']);
+      expect(tags('pesto')).toEqual(['milk', 'tree-nuts']);
+      expect(tags('soy-sauce')).toEqual(['gluten', 'soy']);
+      expect(tags('mayonnaise')).toEqual(['eggs', 'mustard']);
+      expect(tags('worcestershire-sauce')).toEqual(['fish']);
+      expect(tags('tahini')).toEqual(['sesame']);
+      expect(tags('spaghetti')).toEqual(['gluten']);
+      expect(tags('egg-noodles')).toEqual(['eggs', 'gluten']);
+      expect(tags('apple')).toEqual([]);
+      expect(tags('olive-oil')).toEqual([]);
     });
   });
 });
