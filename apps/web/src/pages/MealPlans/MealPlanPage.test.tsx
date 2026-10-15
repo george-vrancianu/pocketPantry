@@ -68,6 +68,7 @@ const recipe = (id: string, title: string): RecipeListItem => ({
   cookMinutes: 20,
   difficulty: null,
   owner: 'catalog',
+  allergyWarning: null,
 });
 
 const shoppingList = () =>

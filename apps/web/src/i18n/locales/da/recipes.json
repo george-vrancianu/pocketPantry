@@ -39,6 +39,11 @@
     "strongOther": "{{who}}: {{names}}",
     "memberOptional": "{{who}}: {{names}} (valgfri)"
   },
+  "allergyIndicator": {
+    "strong": "Indeholder {{names}}",
+    "soft": "Kan indeholde {{names}}",
+    "unchecked": "Ikke fuldt tjekket"
+  },
   "disclaimer": "Generel vejledning, ikke medicinsk eller kostrådgivning.",
   "search": "Søg opskrifter",
   "cuisine": "Køkken",

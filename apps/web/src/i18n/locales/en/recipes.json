@@ -39,6 +39,11 @@
     "strongOther": "{{who}}: {{names}}",
     "memberOptional": "{{who}}: {{names}} (optional)"
   },
+  "allergyIndicator": {
+    "strong": "Contains {{names}}",
+    "soft": "May contain {{names}}",
+    "unchecked": "Not fully checked"
+  },
   "disclaimer": "General guidance, not medical or dietary advice.",
   "search": "Search Recipes",
   "cuisine": "Cuisine",
