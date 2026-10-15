@@ -77,7 +77,7 @@
     "prefill": {
       "open": "Fill from the camera",
       "reading": "Reading the product photo…",
-      "cap": "You have used all of today’s scans. Fill the form by hand.",
+      "cap": "You have used all of today’s scans. Scan a barcode or fill the form by hand.",
       "mark": "Filled from the product",
       "credit": "Product data: Open Food Facts",
       "lookingUp": "Looking up the barcode…"

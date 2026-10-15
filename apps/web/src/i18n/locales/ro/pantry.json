@@ -82,7 +82,7 @@
     "prefill": {
       "open": "Completează cu camera",
       "reading": "Citesc poza produsului…",
-      "cap": "Ai folosit toate scanările de azi. Completează formularul manual.",
+      "cap": "Ai folosit toate scanările de azi. Scanează un cod de bare sau completează formularul manual.",
       "mark": "Completat din produs",
       "credit": "Date despre produs: Open Food Facts",
       "lookingUp": "Caut codul de bare…"

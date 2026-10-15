@@ -430,6 +430,69 @@ describe('Known Barcodes on the add-Batch form (#348)', () => {
     });
   });
 
+  it('learns a barcode Open Food Facts does not know: not found, then a manual save sends it', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() => Response.json({ found: false }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByText(/No product found for that barcode/);
+    await user.click(screen.getByRole('button', { name: 'Close scanner' }));
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mil',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).toMatchObject({
+      ingredientId: 'milk-id',
+      barcode: CODE,
+    });
+  });
+
+  it('keeps the looked-up barcode through a Product photo with no decodable code', async () => {
+    const user = userEvent.setup();
+    const calls = stubLookup(() => Response.json({ found: false }));
+    renderWithProviders(<PantryPage />);
+    await openForm(user);
+    await user.click(cameraButton());
+    await decode();
+    await screen.findByText(/No product found for that barcode/);
+    screen.getByTestId('scan-guide').focus();
+    await user.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(calls.some((call) => call.key === 'POST /api/scan/product')).toBe(
+        true,
+      ),
+    );
+    await user.type(
+      screen.getByRole('combobox', { name: 'Search ingredients' }),
+      'mil',
+    );
+    await user.click(await screen.findByRole('option', { name: /Milk/ }));
+    await user.click(screen.getByRole('button', { name: 'Add to Pantry' }));
+
+    await waitFor(() =>
+      expect(
+        calls.some((call) => call.key === 'POST /api/pantry/batches'),
+      ).toBe(true),
+    );
+    const create = calls.find(
+      (call) => call.key === 'POST /api/pantry/batches',
+    );
+    expect(create?.body).toMatchObject({ barcode: CODE });
+  });
+
   it('sends no barcode for a Batch typed by hand', async () => {
     const user = userEvent.setup();
     const calls = stubLookup(() => Response.json(found()));

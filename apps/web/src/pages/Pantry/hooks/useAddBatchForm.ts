@@ -258,7 +258,9 @@ export function useAddBatchForm({
     productRead.reset();
     barcodeLookup.reset();
     setFromOpenFoodFacts(false);
-    setBarcodeToSend(null);
+    // A Product photo after a missed barcode keeps the looked-up code: Open Food Facts
+    // does not know it, so the Family learns it with this Batch.
+    if (result.kind !== 'product' || !barcodeMissed) setBarcodeToSend(null);
     if (result.kind === 'product') {
       void result.barcode.then((code) => {
         if (code && current === cameraResults.current) setBarcodeToSend(code);
@@ -270,7 +272,10 @@ export function useAddBatchForm({
     }
     barcodeLookup.mutate(result.code, {
       onSuccess: (lookup) => {
-        if (!lookup.found) return open('product', true);
+        if (!lookup.found) {
+          setBarcodeToSend(result.code);
+          return open('product', true);
+        }
         // A Known Barcode saved under a typed name fills that name; otherwise no match pre-types the search.
         prefillNow.current(
           barcodeLine(lookup),
