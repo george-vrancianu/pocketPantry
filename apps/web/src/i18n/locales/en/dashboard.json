@@ -142,12 +142,17 @@
       "inLocation": "{{duration}} in the {{location}}"
     },
     "item": {
-      "add": "Add {{name}}"
+      "add": "Add {{name}}",
+      "setDate": "Set date",
+      "setDateName": "Set date for {{name}}"
     },
     "toast": {
       "added_one": "{{count}} added to the Shopping List",
       "added_other": "{{count}} added to the Shopping List",
-      "withScore": "{{message}} · score {{score}}"
+      "withScore": "{{message}} · score {{score}}",
+      "dated": "{{name}} dated",
+      "usual_one": "{{count}} given their usual expiry · edit any in Pantry",
+      "usual_other": "{{count}} given their usual expiry · edit any in Pantry"
     },
     "close": "Close"
   }

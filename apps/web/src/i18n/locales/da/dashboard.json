@@ -140,12 +140,17 @@
       "inLocation": "{{duration}} i {{location}}"
     },
     "item": {
-      "add": "Tilføj {{name}}"
+      "add": "Tilføj {{name}}",
+      "setDate": "Sæt dato",
+      "setDateName": "Sæt dato for {{name}}"
     },
     "toast": {
       "added_one": "{{count}} føjet til indkøbslisten",
       "added_other": "{{count}} føjet til indkøbslisten",
-      "withScore": "{{message}} · score {{score}}"
+      "withScore": "{{message}} · score {{score}}",
+      "dated": "{{name}} er nu dateret",
+      "usual_one": "{{count}} fik sin sædvanlige udløbsdato · ret i spisekammeret",
+      "usual_other": "{{count}} fik deres sædvanlige udløbsdato · ret i spisekammeret"
     },
     "close": "Luk"
   }

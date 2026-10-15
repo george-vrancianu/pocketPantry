@@ -73,10 +73,12 @@ export function useToastHost(element: HTMLElement | null): void {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<Current | null>(null);
   const [open, setOpen] = useState(false);
-  const [host, setHost] = useState<HTMLElement | null>(null);
+  // The open modals, innermost last: when a modal opened over another closes, the toast goes back to the first.
+  const [hosts, setHosts] = useState<HTMLElement[]>([]);
+  const host = hosts.at(-1) ?? null;
   const registerHost = useCallback((element: HTMLElement) => {
-    setHost(element);
-    return () => setHost((prev) => (prev === element ? null : prev));
+    setHosts((prev) => [...prev, element]);
+    return () => setHosts((prev) => prev.filter((h) => h !== element));
   }, []);
   const reduceMotion = usePrefersReducedMotion();
   // The showing toast's `onClose`, until it has been called or its action used.
