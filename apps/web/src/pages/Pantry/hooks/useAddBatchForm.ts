@@ -241,7 +241,7 @@ export function useAddBatchForm({
   // Values came from Open Food Facts: the form credits it (ODbL).
   const [fromOpenFoodFacts, setFromOpenFoodFacts] = useState(false);
   // The barcode the Batch is saved with, so the Family learns it (a Known Barcode). Set by whatever
-  // supplied one: a Barcode Lookup now, a Product photo's barcode later. The Batch stores none.
+  // supplied one: a Barcode Lookup now, a barcode decoded from a Product photo. The Batch stores none.
   const [barcodeToSend, setBarcodeToSend] = useState<string | null>(null);
   const productRead = useProductRead(i18n.language);
   const barcodeLookup = useBarcodeLookup(i18n.language);
@@ -250,13 +250,19 @@ export function useAddBatchForm({
     setBarcodeMissed(missed);
     setCameraOpen(true);
   };
+  // Counts camera results: a photo's barcode that lands after a newer result is dropped.
+  const cameraResults = useRef(0);
   const onCameraResult = (result: CameraResult) => {
+    const current = ++cameraResults.current;
     setCameraOpen(false);
     productRead.reset();
     barcodeLookup.reset();
     setFromOpenFoodFacts(false);
     setBarcodeToSend(null);
     if (result.kind === 'product') {
+      void result.barcode.then((code) => {
+        if (code && current === cameraResults.current) setBarcodeToSend(code);
+      });
       productRead.mutate(result, {
         onSuccess: (read) => prefillNow.current(read),
       });
@@ -298,8 +304,6 @@ export function useAddBatchForm({
     fromOpenFoodFacts,
     prefilled,
     checkIngredient,
-    /** For the Product photo path (#349): a barcode read from the photo is sent with the Batch too. */
-    setBarcodeToSend,
   };
 
   const submit = (event: FormEvent) => {
