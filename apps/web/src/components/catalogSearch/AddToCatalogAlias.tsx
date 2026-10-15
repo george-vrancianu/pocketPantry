@@ -7,7 +7,13 @@ import {
   radius,
   tokens,
 } from '@pocket-pantry/ui';
-import { useId, useState, type KeyboardEvent, type RefObject } from 'react';
+import {
+  useEffect,
+  useId,
+  useState,
+  type KeyboardEvent,
+  type RefObject,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { ApiError } from '../../lib/api';
 import {
@@ -58,6 +64,9 @@ export function AddToCatalogAlias({
   const search = useAliasSearch(query, i18n.language);
   const link = useCreateFamilySynonym(i18n.language);
   const existing = link.error ? existingOf(link.error) : null;
+  // Editing the Name makes an earlier answer stale.
+  const reset = link.reset;
+  useEffect(() => reset(), [name, reset]);
   const failed = link.isError && !existing;
   const rows = search.active ? (search.data ?? []).slice(0, 5) : [];
   const active = activeIndex < rows.length ? activeIndex : -1;

@@ -1,10 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { catalogTranslations } from '../database/schema';
+import {
+  catalogTranslations,
+  ingredients as ingredientsTable,
+} from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import type { ExpiryOverride } from './catalog-defaults';
@@ -65,6 +68,17 @@ export class FamilySynonymsService {
     await this.database.transaction(async (tx) => {
       // Family lock first, as everywhere (family-locks.ts).
       await lockFamilies(tx, [family.id]);
+      // The target may have been merged away while this waited for the lock.
+      const [still] = await tx
+        .select({ id: ingredientsTable.id })
+        .from(ingredientsTable)
+        .where(eq(ingredientsTable.id, target.id))
+        .for('key share');
+      if (!still) {
+        throw new ApiException(404, 'catalog.not_found', {
+          entity: 'ingredient',
+        });
+      }
       const ingredients = scope.ingredients(tx);
       const translations = scope.translations(tx);
       const hits = await tx.execute<{ id: string; tier: number }>(sql`
@@ -77,6 +91,7 @@ export class FamilySynonymsService {
           SELECT ${translations.entityId}, ${translations.normalizedValue},
             ${translationTier(translations)}
           FROM ${translations}
+          JOIN ${ingredients} ON ${ingredients.id} = ${translations.entityId}
           WHERE ${translations.entityType} = 'ingredient'
         ) c
         WHERE c.key = ${key}

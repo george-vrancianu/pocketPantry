@@ -99,12 +99,3 @@ export function familyOwnedIngredients(executor: Executor) {
     .where(isNotNull(ingredients.ownerFamilyId))
     .as('ingredients');
 }
-
-/** A Family's own Synonyms only (not shared rows), for the clash rules of #273. */
-export function familyOwnedTranslations(executor: Executor, familyId: string) {
-  return executor
-    .select()
-    .from(catalogTranslations)
-    .where(eq(catalogTranslations.ownerFamilyId, familyId))
-    .as('catalog_translations');
-}

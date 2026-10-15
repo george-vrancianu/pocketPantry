@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import { hasPgCode } from '../database/pg-errors';
 import { ingredients, leafCategories } from '../database/schema';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
@@ -56,8 +56,8 @@ export class FamilyIngredientsService {
     if (!key) {
       throw new ApiException(400, 'validation_failed');
     }
-    const clash = async () => {
-      const existingId = await this.search.findIdByName(scope, key);
+    const clash = async (executor: Executor = this.database) => {
+      const existingId = await this.search.findIdByName(scope, key, executor);
       if (!existingId) return null;
       const [existing] = await this.search.findByIds(
         scope,
@@ -70,8 +70,8 @@ export class FamilyIngredientsService {
     const exists = (existing: CatalogSearchResult) =>
       new ApiException(409, 'catalog.family_ingredient_exists', { existing });
 
-    const found = await clash();
-    if (found) throw exists(found);
+    const early = await clash();
+    if (early) throw exists(early);
 
     const id = randomUUID();
     try {
@@ -79,6 +79,9 @@ export class FamilyIngredientsService {
       // transaction as the insert. Family lock first, as everywhere (family-locks.ts).
       await this.database.transaction(async (tx) => {
         await lockFamilies(tx, [family.id]);
+        // Under the lock, so a Synonym linked meanwhile is seen.
+        const found = await clash(tx);
+        if (found) throw exists(found);
         await tx.insert(ingredients).values({
           id,
           leafCategoryId: body.leafCategoryId,

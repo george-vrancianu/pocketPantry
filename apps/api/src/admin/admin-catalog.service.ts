@@ -649,10 +649,11 @@ export class AdminCatalogService {
     return this.write(
       async (tx) => {
         await this.requireRow(tx, 'ingredient', id);
-        // Translations first: a foreign-key failure on the delete below rolls
-        // them back with it.
-        await this.deleteTranslationsOf(tx, 'ingredient', id);
+        // The Ingredient first: a Family linking a Synonym holds a key-share
+        // lock on it, so none can land after its translations are gone. A
+        // foreign-key failure rolls both back.
         await tx.delete(ingredients).where(eq(ingredients.id, id));
+        await this.deleteTranslationsOf(tx, 'ingredient', id);
       },
       new ApiException(409, 'catalog.ingredient_in_use'),
     );

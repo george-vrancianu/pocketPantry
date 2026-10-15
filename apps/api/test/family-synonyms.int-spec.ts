@@ -137,8 +137,7 @@ describe('Family Synonyms (integration)', () => {
         .from(user)
         .where(eq(user.email, email(label)))
     )[0].familyId;
-  const sharedIngredient = async (name: string) => {
-    const id = randomUUID();
+  const sharedIngredient = async (name: string, id = randomUUID()) => {
     await database.insert(ingredients).values({
       id,
       leafCategoryId: GROUND_SPICES,
@@ -361,6 +360,50 @@ describe('Family Synonyms (integration)', () => {
       expect((await search(a, name)).map((r) => r.id)).toContain(parmesan);
       expect((await search(b, name)).map((r) => r.id)).toContain(cheddar);
       expect((await search(b, name)).map((r) => r.id)).not.toContain(parmesan);
+    });
+  });
+
+  describe('the Family Synonym tier in clash lookups', () => {
+    it("offers the Synonym's target, not a shared Ingredient of the same name, when creating a Family Ingredient", async () => {
+      const name = unique('Fsyn Tier Clash');
+      // The lowest possible id, so an id tiebreak alone would offer it first.
+      const sharedId = await sharedIngredient(
+        name,
+        '00000000-0000-4000-8000-00000000fa11',
+      );
+      try {
+        await linked(a, name, cheddar);
+
+        const res = await a.post('/catalog/family-ingredients', {
+          name,
+          leafCategoryId: GROUND_SPICES,
+          defaultUnit: 'g',
+        });
+
+        expect(res.status).toBe(409);
+        expect(res.body).toMatchObject({
+          params: { existing: { id: cheddar } },
+        });
+      } finally {
+        await database.delete(ingredients).where(eq(ingredients.id, sharedId));
+      }
+    });
+  });
+
+  describe('when Admin deletes a shared Ingredient', () => {
+    it("removes the Families' Synonyms on it", async () => {
+      const id = await sharedIngredient(unique('Fsyn Doomed'));
+      const name = unique('Fsyn Doomed Alias');
+      await linked(a, name, id);
+
+      await admin.del(`/admin/catalog/ingredients/${id}`).expect(204);
+
+      const rows = await database
+        .select()
+        .from(catalogTranslations)
+        .where(eq(catalogTranslations.normalizedValue, normalizeName(name)));
+      expect(rows).toEqual([]);
+      expect(await search(a, name)).toEqual([]);
     });
   });
 

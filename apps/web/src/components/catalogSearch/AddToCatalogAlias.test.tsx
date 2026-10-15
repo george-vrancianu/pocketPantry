@@ -389,6 +389,20 @@ describe('Add to your catalog: Another name for…', () => {
       );
     });
 
+    it('forgets the answer when the Name is edited', async () => {
+      const { user, dialog } = await conflict();
+      await within(dialog).findByRole('button', { name: 'Pick Parmesan' });
+
+      const name = within(dialog).getByRole('textbox', { name: 'Name' });
+      await user.clear(name);
+      await user.paste('Booch');
+
+      expect(
+        await within(dialog).findByRole('button', { name: /^Link & pick/ }),
+      ).toBeEnabled();
+      expect(within(dialog).queryByRole('alert')).toBeNull();
+    });
+
     it('picks the existing Ingredient on Pick, closes, and shows no toast', async () => {
       const { user, dialog, picked } = await conflict();
 
