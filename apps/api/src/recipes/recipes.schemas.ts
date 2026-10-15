@@ -356,6 +356,8 @@ export type AllergyWarningEntryView = {
   allergen: { id: string; name: string };
   /** Whose Allergy it is; the viewer's own and Family Allergies come first. */
   owner: AllergyOwner;
+  /** `yours` when it counts as the viewer's own (their own, the Family's), `members` for another Member's. */
+  tier: 'yours' | 'members';
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: 'strong' | 'soft';
   /** Every line that contains it, each with its own severity (`soft` for an optional line). */

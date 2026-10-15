@@ -49,7 +49,11 @@ export async function loadViewerAllergies(
     })),
     ...members.map((row) => ({
       allergenId: row.allergenId,
-      owner: { kind: 'member' as const, name: row.name },
+      owner: {
+        kind: 'member' as const,
+        memberId: row.memberId,
+        name: row.name,
+      },
     })),
   ];
 }
@@ -161,6 +165,7 @@ export async function loadRecipeAllergens(
       entries: warning.entries.map((entry) => ({
         allergen: named(entry.allergenId),
         owner: entry.owner,
+        tier: entry.tier,
         severity: entry.severity,
         lines: entry.lines,
       })),

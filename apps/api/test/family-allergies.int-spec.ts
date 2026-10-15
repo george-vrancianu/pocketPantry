@@ -277,7 +277,15 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(w)).toEqual([
         ['Milk', { kind: 'own' }],
         ['Peanuts', { kind: 'family', label: 'Mia' }],
-        ['Gluten', { kind: 'member', name: 'Ben' }],
+        [
+          'Gluten',
+          { kind: 'member', memberId: expect.any(String), name: 'Ben' },
+        ],
+      ]);
+      expect(w?.entries.map((e) => e.tier)).toEqual([
+        'yours',
+        'yours',
+        'members',
       ]);
       expect(w?.entries[2].lines).toEqual([
         { lineId: recipe.lines[2].id, severity: 'strong' },
@@ -292,7 +300,10 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(await warning(recipe.id, benRecipes))).toEqual([
         ['Gluten', { kind: 'own' }],
         ['Peanuts', { kind: 'family', label: 'Mia' }],
-        ['Milk', { kind: 'member', name: 'Alpha' }],
+        [
+          'Milk',
+          { kind: 'member', memberId: expect.any(String), name: 'Alpha' },
+        ],
       ]);
     });
 
@@ -312,7 +323,7 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       expect(named(await warning(recipe.id))).toEqual([
         ['Milk', { kind: 'own' }],
         ['Milk', { kind: 'family', label: 'Mia' }],
-        ['Milk', { kind: 'member', name: 'Ben' }],
+        ['Milk', { kind: 'member', memberId: expect.any(String), name: 'Ben' }],
       ]);
     });
 
@@ -330,7 +341,12 @@ describe('Family Allergies and other Members Allergies (integration)', () => {
       ).body as AdminRecipeDetail;
       const w = await warning(recipe.id);
       expect(w?.severity).toBe('soft');
-      expect(named(w)).toEqual([['Peanuts', { kind: 'member', name: 'Ben' }]]);
+      expect(named(w)).toEqual([
+        [
+          'Peanuts',
+          { kind: 'member', memberId: expect.any(String), name: 'Ben' },
+        ],
+      ]);
     });
 
     it("does not leak into another Family's Recipe page", async () => {

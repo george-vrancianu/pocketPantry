@@ -26,7 +26,15 @@ export type AllergenLine = {
 export type AllergyOwner =
   | { kind: 'own' }
   | { kind: 'family'; label: string | null }
-  | { kind: 'member'; name: string };
+  | { kind: 'member'; memberId: string; name: string };
+
+/**
+ * Whether an Allergy counts as the viewer's own: theirs and the Family's do, another
+ * Member's never does. The one place this rule lives (#359 reuses it to hide Recipes).
+ */
+export function countsAsViewersOwn(owner: AllergyOwner): boolean {
+  return owner.kind !== 'member';
+}
 
 /** An Allergy that applies to the viewer, and whose it is. */
 export type AllergyInput = {
@@ -70,6 +78,8 @@ export type AllergyWarningEntry = {
   allergenId: string;
   /** Whose Allergy it is. */
   owner: AllergyOwner;
+  /** `yours` when it counts as the viewer's own (their own, the Family's), `members` for another Member's. */
+  tier: 'yours' | 'members';
   /** `strong` when a required line contains it, `soft` when only optional lines do. */
   severity: AllergyWarningSeverity;
   /** Every line (optional ones too) that contains it, in Recipe order, each with its own severity. */
@@ -163,6 +173,9 @@ function warningFor<L extends AllergenLine>(
         {
           allergenId: allergy.allergenId,
           owner: allergy.owner,
+          tier: countsAsViewersOwn(allergy.owner)
+            ? ('yours' as const)
+            : ('members' as const),
           severity: found.optionalOnly
             ? ('soft' as const)
             : ('strong' as const),
@@ -187,7 +200,7 @@ const ownerKey = (owner: AllergyOwner): string =>
     ? 'own'
     : owner.kind === 'family'
       ? `family:${owner.label ?? ''}`
-      : `member:${owner.name}`;
+      : `member:${owner.memberId}`;
 
 /** An exact repeat (same Allergen, same person) is one Allergy. */
 function uniqueAllergies(allergies: readonly AllergyInput[]): AllergyInput[] {
@@ -213,6 +226,9 @@ function compareOwners(
   if (a.owner.kind === 'member' && b.owner.kind === 'member') {
     const byName = a.owner.name.localeCompare(b.owner.name);
     if (byName !== 0) return byName;
+    if (a.owner.memberId !== b.owner.memberId) {
+      return a.owner.memberId < b.owner.memberId ? -1 : 1;
+    }
   }
   return rank(a.allergenId) - rank(b.allergenId);
 }

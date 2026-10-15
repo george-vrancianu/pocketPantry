@@ -1,4 +1,5 @@
 import {
+  countsAsViewersOwn,
   deriveAllergens,
   type AllergenLine,
   type AllergyInput,
@@ -179,6 +180,7 @@ describe('deriveAllergens', () => {
           {
             allergenId: MILK,
             owner: OWN,
+            tier: 'yours',
             severity: 'strong',
             lines: [{ lineId: butter.id, severity: 'strong' }],
           },
@@ -195,6 +197,7 @@ describe('deriveAllergens', () => {
           {
             allergenId: PEANUTS,
             owner: OWN,
+            tier: 'yours',
             severity: 'soft',
             lines: [{ lineId: nuts.id, severity: 'soft' }],
           },
@@ -210,6 +213,7 @@ describe('deriveAllergens', () => {
         {
           allergenId: MILK,
           owner: OWN,
+          tier: 'yours',
           severity: 'strong',
           lines: [
             { lineId: optional.id, severity: 'soft' },
@@ -272,9 +276,13 @@ describe('deriveAllergens', () => {
       allergenId,
       owner: { kind: 'family', label },
     });
-    const member = (allergenId: string, name: string): AllergyInput => ({
+    const member = (
+      allergenId: string,
+      name: string,
+      memberId = `id-${name}`,
+    ): AllergyInput => ({
       allergenId,
-      owner: { kind: 'member', name },
+      owner: { kind: 'member', memberId, name },
     });
     const warn = (lines: AllergenLine[], allergies: AllergyInput[]) =>
       deriveAllergens({ lines, allergenOrder: ORDER, allergies })
@@ -302,7 +310,7 @@ describe('deriveAllergens', () => {
 
     it('names another Member by name', () => {
       expect(who(everything(), [member(PEANUTS, 'Ana')])).toEqual([
-        [PEANUTS, { kind: 'member', name: 'Ana' }],
+        [PEANUTS, { kind: 'member', memberId: 'id-Ana', name: 'Ana' }],
       ]);
     });
 
@@ -316,8 +324,8 @@ describe('deriveAllergens', () => {
       expect(who(everything(), allergies)).toEqual([
         [MILK, OWN],
         [PEANUTS, { kind: 'family', label: 'Mia' }],
-        [GLUTEN, { kind: 'member', name: 'Ana' }],
-        [MILK, { kind: 'member', name: 'Ana' }],
+        [GLUTEN, { kind: 'member', memberId: 'id-Ana', name: 'Ana' }],
+        [MILK, { kind: 'member', memberId: 'id-Ana', name: 'Ana' }],
       ]);
     });
 
@@ -346,6 +354,38 @@ describe('deriveAllergens', () => {
         { kind: 'family', label: 'Leo' },
       ]);
       expect(entries?.every((e) => e.lines[0].lineId === butter.id)).toBe(true);
+    });
+
+    it('keeps two Members with the same name apart', () => {
+      const entries = warn(everything(), [
+        member(MILK, 'Ana', 'm-1'),
+        member(MILK, 'Ana', 'm-2'),
+      ])?.entries;
+      expect(entries?.map((e) => e.owner)).toEqual([
+        { kind: 'member', memberId: 'm-1', name: 'Ana' },
+        { kind: 'member', memberId: 'm-2', name: 'Ana' },
+      ]);
+    });
+
+    it('tiers the viewer own and Family Allergies as yours and other Members as members', () => {
+      const entries = warn(everything(), [
+        member(GLUTEN, 'Ana'),
+        family(PEANUTS, 'Mia'),
+        own(MILK),
+      ])?.entries;
+      expect(entries?.map((e) => e.tier)).toEqual([
+        'yours',
+        'yours',
+        'members',
+      ]);
+    });
+
+    it('counts own and Family Allergies as the viewer own, never a Member', () => {
+      expect(countsAsViewersOwn(OWN)).toBe(true);
+      expect(countsAsViewersOwn({ kind: 'family', label: null })).toBe(true);
+      expect(
+        countsAsViewersOwn({ kind: 'member', memberId: 'm', name: 'Ana' }),
+      ).toBe(false);
     });
 
     it('collapses an exact repeat of the same Allergy', () => {

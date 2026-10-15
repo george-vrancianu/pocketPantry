@@ -347,7 +347,7 @@ export class SettingsService {
   ): Promise<FamilyAllergyView> {
     const familyId = await this.familyIdOf(memberId);
     const [known] = await this.database
-      .select({ id: allergens.id })
+      .select({ id: allergens.id, name: allergens.name })
       .from(allergens)
       .where(eq(allergens.id, allergenId))
       .limit(1);
@@ -358,10 +358,20 @@ export class SettingsService {
       .onConflictDoNothing()
       .returning();
     if (!created) throw new ApiException(409, 'settings.family_allergy_exists');
-    const view = await this.getFamilyAllergies(memberId, locale);
-    const item = view.familyAllergies.find((row) => row.id === created.id);
-    if (!item) throw new ApiException(404, 'settings.family_allergy_not_found');
-    return item;
+    const names = await loadDisplayNames(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      [allergenId],
+    );
+    return {
+      id: created.id,
+      allergen: {
+        id: allergenId,
+        name: names.pick('allergen', allergenId, known.name),
+      },
+      label: created.label,
+    };
   }
 
   /** Any Member removes a Family Allergy of their own Family; another Family's is not found. */
