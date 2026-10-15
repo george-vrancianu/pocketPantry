@@ -1620,7 +1620,7 @@ describe('ShoppingPage', () => {
           screen.getByRole('button', { name: 'Adaugă produse' }),
         );
         const dialog = await screen.findByRole('dialog', {
-          name: 'Adaugă în listă',
+          name: 'Adaugă produse',
         });
         await user.type(
           within(dialog).getByRole('combobox', { name: 'Caută ingrediente' }),
