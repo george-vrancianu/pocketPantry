@@ -95,13 +95,13 @@ describe('useDeferredRemoval, several rows at once', () => {
     expect(sendOne).not.toHaveBeenCalled();
   });
 
-  it('treats the same ids passed twice as two removals: Undo brings them back and sends nothing', async () => {
+  it('(characterisation) treats the same ids passed twice as two removals: Undo brings them back and sends nothing', async () => {
     setup();
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
     await user.click(screen.getByText('remove a and b twice'));
     await act(() => vi.advanceTimersByTimeAsync(0));
-    // The first removal was replaced by the second, so it is sent at once.
+    // The second removal replaces the first, which is sent at once.
     expect(sendMany).toHaveBeenCalledExactlyOnceWith(['a', 'b']);
 
     await user.click(screen.getByRole('button', { name: 'Undo' }));

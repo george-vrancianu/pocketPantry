@@ -4,6 +4,7 @@ import {
   pantryHealth,
   usualExpiryDate,
   verdictOf,
+  withExpiryDates,
   type HealthBatch,
   type HealthInput,
 } from './health';
@@ -543,5 +544,34 @@ describe('usual expiry date', () => {
 
   it('is null without a Default Expiry', () => {
     expect(usualExpiryDate(dated({}), TODAY)).toBeNull();
+  });
+});
+
+describe('withExpiryDates', () => {
+  const dated = [
+    batch({ id: 'a', expiryDate: '2026-11-01' }),
+    batch({ id: 'b', expiryDate: null }),
+    batch({ id: 'c', expiryDate: '2026-12-01' }),
+  ];
+
+  it.each([
+    [
+      'sets a date',
+      new Map([['b', '2026-11-20']]),
+      ['2026-11-01', '2026-11-20', '2026-12-01'],
+    ],
+    [
+      'sets a null entry to no date',
+      new Map([['a', null]]),
+      [null, null, '2026-12-01'],
+    ],
+    [
+      'leaves Batches without an entry as they are',
+      new Map(),
+      ['2026-11-01', null, '2026-12-01'],
+    ],
+  ])('%s', (_name, dates, expected) => {
+    const after = withExpiryDates(input({ batches: dated }), dates);
+    expect(after.batches.map((b) => b.expiryDate)).toEqual(expected);
   });
 });

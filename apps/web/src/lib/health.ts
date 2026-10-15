@@ -235,7 +235,9 @@ export function withExpiryDates(
     ...input,
     batches: input.batches.map((batch) => ({
       ...batch,
-      expiryDate: dates.get(batch.id) ?? batch.expiryDate,
+      expiryDate: dates.has(batch.id)
+        ? (dates.get(batch.id) as IsoDate | null)
+        : batch.expiryDate,
     })),
   };
 }

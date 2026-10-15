@@ -7,6 +7,19 @@ import { translateApiError } from '../i18n/translateApiError';
 /** How long a removal can be undone, ms. */
 export const UNDO_WINDOW_MS = 5000;
 
+export type RemovalOptions = {
+  /** Announce the Undo toast as a status (polite live region) instead of an alert. */
+  polite?: boolean;
+};
+
+/** The delete calls: one for a single record, one for several, and at least one of the two. */
+type SendArgs<Id> =
+  | [
+      mutateAsync: (id: Id) => Promise<unknown>,
+      mutateManyAsync?: (ids: Id[]) => Promise<unknown>,
+    ]
+  | [mutateAsync: undefined, mutateManyAsync: (ids: Id[]) => Promise<unknown>];
+
 /**
  * Remove a record with Undo (ADR 0009). `remove` hides the record at once and
  * shows an Undo toast; `send` (the real delete) only runs when that toast
@@ -36,19 +49,6 @@ export const UNDO_WINDOW_MS = 5000;
  * The error toast replaces a newer Undo toast and so sends that delete early;
  * that is intended (ADR 0009: a new toast sends any pending delete).
  */
-export type RemovalOptions = {
-  /** Announce the Undo toast as a status (polite live region) instead of an alert. */
-  polite?: boolean;
-};
-
-/** The delete calls: one for a single record, one for several, and at least one of the two. */
-type SendArgs<Id> =
-  | [
-      mutateAsync: (id: Id) => Promise<unknown>,
-      mutateManyAsync?: (ids: Id[]) => Promise<unknown>,
-    ]
-  | [mutateAsync: undefined, mutateManyAsync: (ids: Id[]) => Promise<unknown>];
-
 export function useDeferredRemoval<Id extends string | number>(
   queryKey: QueryKey,
   ...sends: SendArgs<Id>
