@@ -7,7 +7,7 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { CatalogSearch } from './CatalogSearch';
 
-// Contract: /home/giu/projects/notes-263/contract-273.md (#273). The popover's
+// Spec: #273, ADR 0011. The popover's
 // "Another name for…" mode; the "New ingredient" mode is covered in AddToCatalog.test.tsx.
 
 const DAIRY_AISLE = { id: 'dairy-aisle', name: 'Dairy & eggs' };

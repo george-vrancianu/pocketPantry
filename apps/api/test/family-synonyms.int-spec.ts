@@ -33,7 +33,7 @@ type Json = Record<string, unknown>;
 
 const IMAGE = 'data:image/jpeg;base64,YQ==';
 
-// Contract: /home/giu/projects/notes-263/contract-273.md. Everything made here
+// Spec: #273, ADR 0011. Everything made here
 // carries the run's stamp in its name, so afterAll can sweep it. Shared rows
 // (the clash Ingredient, the promoted copy) sit under Ground spices, never Dairy.
 describe('Family Synonyms (integration)', () => {

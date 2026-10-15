@@ -20,7 +20,7 @@ export type CatalogReader = string | typeof SHARED_ONLY;
  *
  * A Family reader gets shared rows plus its own Family Ingredients; `SHARED_ONLY`
  * gets shared rows only. Translations follow the same rule through their own
- * owner (Family Synonyms, #273).
+ * owner (Family Synonyms).
  * Inserts, updates and deletes still target the tables directly.
  */
 export type CatalogScope = {
@@ -30,7 +30,7 @@ export type CatalogScope = {
 
 /**
  * Exact-name tiers: a Family's own names (rank 0) win over shared ones (rank 1)
- * when both claim a name. Family Synonyms are rank 0 too (#273).
+ * when both claim a name. Family Synonyms are rank 0 too.
  */
 export const FAMILY_TIER = 0;
 export const SHARED_TIER = 1;
@@ -72,7 +72,7 @@ export const sharedTranslation = isNull(catalogTranslations.ownerFamilyId);
 
 /**
  * Narrows a scoped source to the reader's own Family rows (Family Ingredients,
- * Family Synonyms): for the Family catalog list (#274), which must never show
+ * Family Synonyms): for the Family catalog list, which must never show
  * the shared rows the scope also contains.
  */
 export function isFamilyOwned(scoped: {
@@ -125,7 +125,7 @@ export function catalogScope(reader: CatalogReader): CatalogScope {
 }
 
 /**
- * Family Ingredients of every Family, for the Admin curation queue only (#275).
+ * Family Ingredients of every Family, for the Admin curation queue only.
  * The one deliberate read across Families: callers must never expose which
  * Family owns a row.
  */
@@ -138,7 +138,7 @@ export function familyOwnedIngredients(executor: Executor) {
 }
 
 /**
- * Family Synonyms of every Family, for the Admin curation queue only (#276).
+ * Family Synonyms of every Family, for the Admin curation queue only.
  * Like `familyOwnedIngredients`: never expose which Family owns a row.
  */
 export function familyOwnedTranslations(executor: Executor) {

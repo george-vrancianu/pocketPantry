@@ -42,7 +42,7 @@ const UNIQUE_VIOLATION = '23505';
 const notFound = (entity: string) =>
   new ApiException(404, 'catalog.not_found', { entity });
 
-/** The Family catalog in Family Settings: list, rename, recategorise and delete (#274, ADR 0011). */
+/** The Family catalog in Family Settings: list, rename, recategorise and delete (ADR 0011). */
 @Injectable()
 export class FamilyCatalogService {
   constructor(

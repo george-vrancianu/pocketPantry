@@ -22,7 +22,7 @@ import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
-// Contract: see /home/giu/projects/notes-263/contract-275.md. Every Family here is
+// Spec: #275, ADR 0011. Every Family here is
 // throwaway and every name carries the run stamp, so assertions filter to our own
 // names and ids; the shared tables also hold rows from other suites.
 type Who = ReturnType<typeof client>;

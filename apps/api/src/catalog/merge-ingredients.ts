@@ -36,7 +36,7 @@ export type MergedIngredient = {
  *
  * The caller holds the name lock and the owning Families' locks (family-locks.ts)
  * and clears or checks ownership itself. Returns the merged rows as they were,
- * so a caller can keep their names as Synonyms (#273, #276).
+ * so a caller can keep their names as Synonyms (ADR 0011).
  */
 export async function mergeIngredients(
   tx: Tx,

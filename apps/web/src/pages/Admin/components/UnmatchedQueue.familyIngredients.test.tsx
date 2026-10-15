@@ -5,7 +5,7 @@ import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
-// Contract: see /home/giu/projects/notes-263/contract-275.md. The Family
+// Spec: #275, ADR 0011. The Family
 // Ingredients queue sits in the Unmatched tab, behind a "Family ingredients"
 // switch next to "Unmatched names".
 const catalog: AdminCatalog = {

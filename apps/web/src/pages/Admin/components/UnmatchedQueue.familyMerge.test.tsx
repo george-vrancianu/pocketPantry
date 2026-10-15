@@ -5,7 +5,7 @@ import type { AdminCatalog } from '../../../lib/admin';
 import { renderWithProviders, stubApi } from '../../../test/render';
 import { UnmatchedQueue } from './UnmatchedQueue';
 
-// Contract: see /home/giu/projects/notes-263/contract-276.md. Merge sits on
+// Spec: #276, ADR 0011. Merge sits on
 // each row of the Family ingredients queue; "Synonym candidates" is a third
 // kind in the same switch.
 const catalog: AdminCatalog = {

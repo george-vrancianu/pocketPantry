@@ -8,7 +8,7 @@ import { normalizeName } from './normalize';
 /**
  * Keeps the names of Family Ingredients just merged into `targetId` as Family
  * Synonyms of their own Family, so that Family's typing and Scans still match
- * (#276, ADR 0011). One per Family and normalised value; the Family index makes
+ * (ADR 0011). One per Family and normalised value; the Family index makes
  * a repeat a no-op.
  *
  * With `skipSharedNames` (merge into an existing shared Ingredient), a name the

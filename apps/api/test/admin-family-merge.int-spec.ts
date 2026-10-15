@@ -25,7 +25,7 @@ import { client, signUp } from './support/admin-session';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 import { promoteToAdmin } from './support/promote-to-admin';
 
-// Contract: see /home/giu/projects/notes-263/contract-276.md. Every Family is
+// Spec: #276, ADR 0011. Every Family is
 // throwaway and every name carries the run stamp; assertions filter to our own
 // names and ids because the shared tables also hold rows from other suites.
 // Everything that ends up shared sits under a non-Dairy Leaf (ground-spices)

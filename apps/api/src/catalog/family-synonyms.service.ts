@@ -21,7 +21,7 @@ import type {
 import { normalizeName } from './normalize';
 import { relinkFamilyUnmatched } from './relink-family-unmatched';
 
-/** Family Synonyms: a typed name that means an existing Ingredient for one Family (#273). */
+/** Family Synonyms: a typed name that means an existing Ingredient for one Family. */
 @Injectable()
 export class FamilySynonymsService {
   constructor(

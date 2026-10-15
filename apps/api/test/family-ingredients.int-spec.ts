@@ -44,7 +44,7 @@ type Category = {
 const inDays = (days: number) =>
   new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
 
-// Contract: see /home/giu/projects/notes-263/contract-270.md. Rows created here are
+// Spec: #270, ADR 0011. Rows created here are
 // owned by throwaway Families, so no other suite sees them; the test database is
 // torn down after the run.
 describe('Family Ingredients (integration)', () => {

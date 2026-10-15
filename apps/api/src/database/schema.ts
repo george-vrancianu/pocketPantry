@@ -285,7 +285,7 @@ export const catalogTranslations = pgTable(
     kind: translationKind('kind').notNull(),
     value: text('value').notNull(),
     normalizedValue: text('normalized_value').notNull(),
-    // Set only on a Family Synonym (#273); NULL = shared. Names are always shared.
+    // Set only on a Family Synonym; NULL = shared. Names are always shared.
     ownerFamilyId: uuid('owner_family_id').references(() => family.id, {
       onDelete: 'cascade',
     }),

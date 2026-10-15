@@ -7,7 +7,7 @@ import { renderWithProviders, stubApi } from '../../test/render';
 import { stubViewport } from '../../test/viewport';
 import { CatalogSearch, type CatalogSearchProps } from './CatalogSearch';
 
-// Contract: /home/giu/projects/notes-263/contract-270.md (#270).
+// Spec: #270, ADR 0011.
 
 const DAIRY_AISLE = { id: 'dairy-aisle', name: 'Dairy & eggs' };
 
