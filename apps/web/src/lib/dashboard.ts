@@ -11,7 +11,8 @@ export type WidgetType =
   | 'cook-tonight'
   | 'meal-plan'
   | 'budget'
-  | 'nutrition';
+  | 'nutrition'
+  | 'health';
 /** `tall` is two rows high on the four-column grid (900 px and up) and behaves as `wide` below it. */
 export type WidgetSize = 'small' | 'wide' | 'tall';
 

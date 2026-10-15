@@ -58,5 +58,34 @@
       "carbs": "Carbohidrați",
       "fat": "Grăsimi"
     }
+  },
+  "health": {
+    "title": "Starea cămării",
+    "verdict": {
+      "good": "În formă bună",
+      "some": "Câteva lucruri de pus la punct",
+      "attention": "Necesită atenție"
+    },
+    "toDo_one": "{{count}} de făcut",
+    "toDo_few": "{{count}} de făcut",
+    "toDo_other": "{{count}} de făcut",
+    "nothingToDo": "Nimic de făcut",
+    "nothingToDoSpoken": "nimic de făcut",
+    "toDoLong_one": "{{count}} lucru de făcut",
+    "toDoLong_few": "{{count}} lucruri de făcut",
+    "toDoLong_other": "{{count}} de lucruri de făcut",
+    "progress_one": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "progress_few": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "progress_other": "Adaugă încă {{count}} în cămară ca să primești scorul",
+    "factor": {
+      "fresh": "Prospețime",
+      "staples": "De bază",
+      "dated": "Cu dată",
+      "rotation": "Rotație"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "close": "Închide"
   }
 }

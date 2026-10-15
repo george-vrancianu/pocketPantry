@@ -53,5 +53,31 @@
       "carbs": "Kulhydrater",
       "fat": "Fedt"
     }
+  },
+  "health": {
+    "title": "Spisekammerets tilstand",
+    "verdict": {
+      "good": "I god form",
+      "some": "Et par ting at ordne",
+      "attention": "Kræver opmærksomhed"
+    },
+    "toDo_one": "{{count}} at gøre",
+    "toDo_other": "{{count}} at gøre",
+    "nothingToDo": "Intet at gøre",
+    "nothingToDoSpoken": "intet at gøre",
+    "toDoLong_one": "{{count}} ting at gøre",
+    "toDoLong_other": "{{count}} ting at gøre",
+    "progress_one": "Tilføj {{count}} mere til spisekammeret for at få din score",
+    "progress_other": "Tilføj {{count}} mere til spisekammeret for at få din score",
+    "factor": {
+      "fresh": "Friskhed",
+      "staples": "Basisvarer",
+      "dated": "Datomærket",
+      "rotation": "Omsætning"
+    },
+    "factorValue": "{{name}} {{value}}",
+    "cardName": "{{title}}, {{score}}, {{verdict}}, {{todos}}",
+    "cardNameProgress": "{{title}}, {{progress}}, {{todos}}",
+    "close": "Luk"
   }
 }

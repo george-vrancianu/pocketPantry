@@ -147,6 +147,22 @@ const ICON_NODES = {
     ['path', { d: 'M22 10.5v3' }],
     ['path', { d: 'M6.5 10.5v3', strokeWidth: '3.2' }],
   ],
+  /** Not in the handoff set: the Pantry health handoff's pulse, the Pantry health Widget's mark. */
+  pulse: [['path', { d: 'M3 12h4l2-5 4 10 2-5h6' }]],
+  /** Not in the handoff set: the Pantry health handoff's cook, the Expiring Soon Health To-do. */
+  cook: [
+    ['path', { d: 'M4 11h16v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6z' }],
+    ['path', { d: 'M9 7c0-1 1-1 1-2M14 7c0-1 1-1 1-2' }],
+  ],
+  /** Not in the handoff set: the Pantry health handoff's hourglass, a Forgotten Batch. */
+  hourglass: [
+    [
+      'path',
+      {
+        d: 'M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9',
+      },
+    ],
+  ],
   /** Not in the handoff set: a tree elbow that marks a row as belonging to the one above. */
   'sub-item': [['path', { d: 'M6 3v8a5 5 0 0 0 5 5h9' }]],
 } as const satisfies Record<string, IconNode>;
@@ -251,6 +267,9 @@ export const ImportIcon = handoff('import');
 export const UndoIcon = handoff('undo');
 export const CalendarIcon = handoff('calendar');
 export const BatteryLowIcon = handoff('battery-low');
+export const PulseIcon = handoff('pulse');
+export const CookIcon = handoff('cook');
+export const HourglassIcon = handoff('hourglass');
 export const SubItemIcon = handoff('sub-item');
 
 export const HomeIcon = lucide(House);
