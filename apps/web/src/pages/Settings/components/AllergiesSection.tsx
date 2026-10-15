@@ -29,7 +29,8 @@ export function AllergiesSection() {
       <Card>
         <Stack spacing={1.5}>
           <Typography variant="meta" color="text.secondary">
-            {t('allergies.hint')} {t('allergies.familyCanSee')}
+            {t('allergies.hint')} {t('allergies.familyCanSee')}{' '}
+            {t('allergies.noAccount')}
           </Typography>
           {query.isError ? <Alert>{t('allergies.loadFailed')}</Alert> : null}
           {view ? (

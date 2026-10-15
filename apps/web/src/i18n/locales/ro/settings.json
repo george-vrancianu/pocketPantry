@@ -49,7 +49,8 @@
     "hint": "Alege ce trebuie să eviți, inclusiv intoleranțele. Rețetele care conțin acel alergen primesc un avertisment.",
     "familyCanSee": "Toți din familia ta îți pot vedea alergiile.",
     "loadFailed": "Lista de alergeni nu a putut fi încărcată.",
-    "saveFailed": "Alergiile nu au putut fi salvate. Încearcă din nou."
+    "saveFailed": "Alergiile nu au putut fi salvate. Încearcă din nou.",
+    "noAccount": "Cineva fără cont? Adaugă o alergie a familiei în fila Familie."
   },
   "admin": "Catalog",
   "openAdmin": "Administrează Catalogul",
@@ -170,5 +171,23 @@
       "staples_other": "{{count}} de produse de bază"
     },
     "editLabel": "Editează"
+  },
+  "familyAllergies": {
+    "title": "Alergiile familiei",
+    "hint": "Pentru persoane din familia ta fără cont, de exemplu un copil. Orice membru le poate adăuga sau elimina, iar ele contează ca alergiile tuturor.",
+    "empty": "Nicio alergie a familiei încă.",
+    "family": "Familie",
+    "allergen": "Alergen",
+    "label": "Etichetă (opțional)",
+    "labelHint": "Pentru cine este, de exemplu Mia",
+    "add": "Adaugă",
+    "remove": "Elimină {{allergen}} pentru {{who}}",
+    "loadFailed": "Alergiile familiei nu au putut fi încărcate."
+  },
+  "memberAllergies": {
+    "title": "Alergiile membrilor",
+    "hint": "Fiecare membru își stabilește propriile alergii. Le poți vedea aici, dar nu le poți schimba.",
+    "none": "Nimic înregistrat",
+    "loadFailed": "Alergiile membrilor nu au putut fi încărcate."
   }
 }

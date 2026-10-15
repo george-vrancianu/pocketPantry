@@ -189,6 +189,8 @@ describe('Allergies and the Allergy Warning (integration)', () => {
         entries: [
           {
             allergen: { id: MILK, name: 'Milk' },
+            owner: { kind: 'own' },
+            tier: 'yours',
             severity: 'strong',
             lines: [{ lineId: created.lines[1].id, severity: 'strong' }],
           },
@@ -215,6 +217,8 @@ describe('Allergies and the Allergy Warning (integration)', () => {
         entries: [
           {
             allergen: { id: PEANUT, name: 'Peanuts' },
+            owner: { kind: 'own' },
+            tier: 'yours',
             severity: 'soft',
             lines: [{ lineId: created.lines[1].id, severity: 'soft' }],
           },

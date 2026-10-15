@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, ne } from 'drizzle-orm';
 import {
   resolveCatalogDefaults,
   type ExpiryOverride,
@@ -16,18 +16,25 @@ import type { Database } from '../database/database.types';
 import {
   allergens,
   family,
+  familyAllergies,
   familyExpiryOverrides,
   leafCategories,
   memberAllergies,
   parentCategories,
   user,
 } from '../database/schema';
+import {
+  loadFamilyAllergies,
+  loadOtherMemberAllergies,
+} from './family-allergies';
 import { loadMemberAllergenIds } from './member-allergies';
 import {
   THEME_IDS,
   type AllergiesView,
   type CategoryOptionsView,
   type ExpiryOverrideView,
+  type FamilyAllergiesView,
+  type FamilyAllergyView,
   type FamilySettingsView,
   type PreferencesView,
   type UpdatePreferencesBody,
@@ -271,6 +278,114 @@ export class SettingsService {
           );
       }
     });
+  }
+
+  /**
+   * The Family tab's Allergies: the Allergen list, the Family Allergies, and the other
+   * Members' Allergies (read-only). Everything is scoped to the caller's Family.
+   */
+  async getFamilyAllergies(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<FamilyAllergiesView> {
+    const familyId = await this.familyIdOf(memberId);
+    const scope = catalogScope(familyId);
+    const [rows, family, others, members] = await Promise.all([
+      this.database
+        .select()
+        .from(allergens)
+        .orderBy(asc(allergens.sortOrder), asc(allergens.name)),
+      loadFamilyAllergies(this.database, familyId),
+      loadOtherMemberAllergies(this.database, familyId, memberId),
+      this.database
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(and(eq(user.familyId, familyId), ne(user.id, memberId)))
+        .orderBy(asc(user.name), asc(user.id)),
+    ]);
+    const names = await loadDisplayNames(
+      this.database,
+      scope,
+      locale,
+      rows.map((row) => row.id),
+    );
+    const allergen = (id: string) => ({
+      id,
+      name: names.pick(
+        'allergen',
+        id,
+        rows.find((r) => r.id === id)?.name ?? '',
+      ),
+    });
+    const order = new Map(rows.map((row, index) => [row.id, index]));
+    const byOrder = (a: string, b: string) =>
+      (order.get(a) ?? 0) - (order.get(b) ?? 0);
+    return {
+      allergens: rows.map((row) => allergen(row.id)),
+      familyAllergies: family.map((row) => ({
+        id: row.id,
+        allergen: allergen(row.allergenId),
+        label: row.label,
+      })),
+      members: members.map((member) => ({
+        ...member,
+        allergens: others
+          .filter((row) => row.memberId === member.id)
+          .map((row) => row.allergenId)
+          .sort(byOrder)
+          .map(allergen),
+      })),
+    };
+  }
+
+  /** Any Member adds a Family Allergy; the same Allergen and label twice is rejected. */
+  async addFamilyAllergy(
+    memberId: string,
+    allergenId: string,
+    label: string | null | undefined,
+    locale: CatalogLocale,
+  ): Promise<FamilyAllergyView> {
+    const familyId = await this.familyIdOf(memberId);
+    const [known] = await this.database
+      .select({ id: allergens.id, name: allergens.name })
+      .from(allergens)
+      .where(eq(allergens.id, allergenId))
+      .limit(1);
+    if (!known) throw new ApiException(404, 'settings.allergen_not_found');
+    const [created] = await this.database
+      .insert(familyAllergies)
+      .values({ familyId, allergenId, label: label?.trim() || null })
+      .onConflictDoNothing()
+      .returning();
+    if (!created) throw new ApiException(409, 'settings.family_allergy_exists');
+    const names = await loadDisplayNames(
+      this.database,
+      catalogScope(familyId),
+      locale,
+      [allergenId],
+    );
+    return {
+      id: created.id,
+      allergen: {
+        id: allergenId,
+        name: names.pick('allergen', allergenId, known.name),
+      },
+      label: created.label,
+    };
+  }
+
+  /** Any Member removes a Family Allergy of their own Family; another Family's is not found. */
+  async removeFamilyAllergy(memberId: string, id: string): Promise<void> {
+    const familyId = await this.familyIdOf(memberId);
+    const removed = await this.database
+      .delete(familyAllergies)
+      .where(
+        and(eq(familyAllergies.id, id), eq(familyAllergies.familyId, familyId)),
+      )
+      .returning({ id: familyAllergies.id });
+    if (removed.length === 0) {
+      throw new ApiException(404, 'settings.family_allergy_not_found');
+    }
   }
 
   private async categoryType(

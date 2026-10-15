@@ -333,6 +333,33 @@ export const memberAllergies = pgTable(
   ],
 );
 
+// A Family Allergy: "someone in this Family without an account must avoid this
+// Allergen", with an optional label such as "Mia". Several rows may share an Allergen
+// with different labels. Owned by the Family and deleted with it (ADR 0001).
+export const familyAllergies = pgTable(
+  'family_allergies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    familyId: uuid('family_id')
+      .notNull()
+      .references(() => family.id, { onDelete: 'cascade' }),
+    allergenId: uuid('allergen_id')
+      .notNull()
+      .references(() => allergens.id),
+    label: text('label'),
+    ...timestamps,
+  },
+  (table) => [
+    // The same Allergen and label twice would only repeat itself.
+    uniqueIndex('family_allergies_unique_idx').on(
+      table.familyId,
+      table.allergenId,
+      sql`coalesce(${table.label}, '')`,
+    ),
+    index('family_allergies_allergen_idx').on(table.allergenId),
+  ],
+);
+
 // Display names and Synonyms per entity and locale. `entityId` is polymorphic
 // (selected by `entityType`), so it carries no foreign key.
 export const catalogTranslations = pgTable(
