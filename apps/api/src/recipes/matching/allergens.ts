@@ -112,6 +112,12 @@ export type DerivedAllergens<L extends AllergenLine = AllergenLine> = {
   uncheckedCount: number;
   /** Null when nothing the viewer must avoid is, or might be, in the Recipe. */
   allergyWarning: AllergyWarning | null;
+  /**
+   * Whether "Hide Recipes with my Allergies" would leave this Recipe out (#359): true only
+   * when the viewer's own or a Family Allergy is in a required, checked line. Another
+   * Member's Allergy, optional lines and Unchecked lines never hide a Recipe.
+   */
+  hidden: boolean;
 };
 
 /**
@@ -161,7 +167,24 @@ export function deriveAllergens<L extends AllergenLine>(
       input.allergies ?? [],
       rank,
     ),
+    hidden: isHidden(allergens, input.allergies ?? []),
   };
+}
+
+function isHidden<L extends AllergenLine>(
+  allergens: readonly DerivedAllergen<L>[],
+  allergies: readonly AllergyInput[],
+): boolean {
+  const mine = new Set(
+    allergies
+      .filter((a) => countsAsViewersOwn(a.owner))
+      .map((a) => a.allergenId),
+  );
+  return allergens.some(
+    (a) =>
+      mine.has(a.allergenId) &&
+      a.sources.some((line) => !line.optional && isLineChecked(line)),
+  );
 }
 
 function warningFor<L extends AllergenLine>(

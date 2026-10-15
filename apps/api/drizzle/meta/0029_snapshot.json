@@ -1,5 +1,5 @@
 {
-  "id": "b0373292-8db4-4ff3-bdd0-1438f15f33ee",
+  "id": "9ab04ba3-2d86-43ec-8a4b-c9c002f8b199",
   "prevId": "bc0ee13b-929d-4a6e-ae51-28450ac5ff96",
   "version": "7",
   "dialect": "postgresql",
@@ -1405,13 +1405,6 @@
         },
         "allergens_checked": {
           "name": "allergens_checked",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "allergens_review_pending": {
-          "name": "allergens_review_pending",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -4997,6 +4990,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "hide_recipes_with_allergies": {
+          "name": "hide_recipes_with_allergies",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",

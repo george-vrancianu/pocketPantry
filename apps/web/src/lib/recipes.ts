@@ -53,6 +53,12 @@ export type RecipeListItem = {
   allergyWarning: CompactAllergyWarning | null;
 };
 
+/** The Recipe list with how many Recipes "Hide Recipes with my Allergies" left out (mirror of the API's `RecipeList`). */
+export type RecipeList = {
+  recipes: RecipeListItem[];
+  hiddenByAllergiesCount: number;
+};
+
 /** A Variant as listed on its base's detail. */
 export type RecipeVariantItem = {
   id: string;
@@ -221,10 +227,16 @@ export function useRecipes(
   {
     searchOnly = false,
     includeVariants = false,
+    showHidden = false,
     enabled = true,
   }: {
     searchOnly?: boolean;
     includeVariants?: boolean;
+    /**
+     * Ask for Recipes "Hide Recipes with my Allergies" would leave out. The Meal Plan and the
+     * Pairing picker always pass it: Plan Slots and Pairing links never hide.
+     */
+    showHidden?: boolean;
     enabled?: boolean;
   } = {},
 ) {
@@ -239,6 +251,7 @@ export function useRecipes(
       cuisineId,
       methodId,
       ...(includeVariants ? ['variants'] : []),
+      ...(showHidden ? ['showHidden'] : []),
     ],
     queryFn: () => {
       const params = new URLSearchParams({ locale });
@@ -246,9 +259,8 @@ export function useRecipes(
       if (cuisineId) params.set('cuisineId', cuisineId);
       if (methodId) params.set('methodId', methodId);
       if (includeVariants) params.set('includeVariants', 'true');
-      return apiRequest<{ recipes: RecipeListItem[] }>(
-        `/recipes?${params}`,
-      ).then((body) => body.recipes);
+      if (showHidden) params.set('showHidden', 'true');
+      return apiRequest<RecipeList>(`/recipes?${params}`);
     },
     // `searchOnly`: nothing to fetch until a search term has settled (the debounce has run).
     enabled: enabled && (!searchOnly || search !== ''),

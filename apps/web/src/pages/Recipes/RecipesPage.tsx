@@ -10,6 +10,7 @@ import {
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
+import { HiddenByAllergiesNote } from '../../components/HiddenByAllergiesNote';
 import { translateApiError } from '../../i18n/translateApiError';
 import { cardFor, indexCards, useCookTonight } from '../../lib/cookTonight';
 import { localIso } from '../../lib/pantry';
@@ -32,11 +33,17 @@ export function RecipesPage() {
     cuisineId: '',
     methodId: '',
   });
-  const recipes = useRecipes(browse, i18n.language);
+  // "Show" in the hidden-by-Allergies note asks the list and the Can Make strip for everything.
+  const [showHidden, setShowHidden] = useState(false);
+  const recipes = useRecipes(browse, i18n.language, { showHidden });
   const filters = useRecipeFilters(i18n.language);
-  const cookTonight = useCookTonight(i18n.language, localIso(new Date()));
+  const cookTonight = useCookTonight(
+    i18n.language,
+    localIso(new Date()),
+    showHidden,
+  );
   const headingId = useId();
-  const items = recipes.data ?? [];
+  const items = recipes.data?.recipes ?? [];
   const filtering = isFiltering(browse);
   const cards = cookTonight.data?.cards ?? [];
   const canMakeCards = cards.filter((card) => card.canMake);
@@ -61,6 +68,13 @@ export function RecipesPage() {
           value={browse}
           onChange={setBrowse}
           options={filters.data}
+        />
+        <HiddenByAllergiesNote
+          count={Math.max(
+            recipes.data?.hiddenByAllergiesCount ?? 0,
+            cookTonight.data?.hiddenByAllergiesCount ?? 0,
+          )}
+          onShow={() => setShowHidden(true)}
         />
         {recipes.error ? (
           <Alert>{translateApiError(t, recipes.error)}</Alert>

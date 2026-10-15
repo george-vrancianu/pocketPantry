@@ -40,11 +40,15 @@ function FamilyRecipePicker({
 }: RecipePickerProps & { excludeId?: string }) {
   const { t, i18n } = useTranslation(['recipes', 'admin']);
   const [search, setSearch] = useState('');
+  // Pairing links never hide a Recipe, whatever "Hide Recipes with my Allergies" says.
   const results = useRecipes(
     { search, cuisineId: '', methodId: '' },
     i18n.language,
+    { showHidden: true },
   );
-  const options = (results.data ?? []).filter((r) => r.id !== excludeId);
+  const options = (results.data?.recipes ?? []).filter(
+    (r) => r.id !== excludeId,
+  );
   const known = options.some((r) => r.id === value);
   return (
     <Stack spacing={1}>

@@ -47,7 +47,10 @@
     "familyCanSee": "Alle i din familie kan se dine allergier.",
     "loadFailed": "Allergenlisten kunne ikke indlæses.",
     "saveFailed": "Dine allergier kunne ikke gemmes. Prøv igen.",
-    "noAccount": "Er det en uden konto? Tilføj en familieallergi under fanen Familie."
+    "noAccount": "Er det en uden konto? Tilføj en familieallergi under fanen Familie.",
+    "hideRecipes": "Skjul opskrifter med mine allergier",
+    "hideRecipesHint": "Udelader opskrifter med dine allergier eller familiens allergier fra opskriftslisten, Kan laves, Lav mad i aften og match for Scannet tallerken. Andre medlemmers allergier skjuler aldrig en opskrift. Du kan stadig åbne enhver opskrift, og madplanen viser alt.",
+    "hideSaveFailed": "Indstillingen kunne ikke gemmes. Prøv igen."
   },
   "admin": "Katalog",
   "openAdmin": "Kurater kataloget",

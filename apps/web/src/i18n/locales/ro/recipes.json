@@ -176,5 +176,11 @@
     "ingredients": "Ingrediente",
     "steps": "Pași",
     "about": "Despre"
+  },
+  "hiddenByAllergies": {
+    "note_one": "{{count}} rețetă ascunsă din cauza alergiilor tale",
+    "note_few": "{{count}} rețete ascunse din cauza alergiilor tale",
+    "note_other": "{{count}} de rețete ascunse din cauza alergiilor tale",
+    "show": "Arată"
   }
 }

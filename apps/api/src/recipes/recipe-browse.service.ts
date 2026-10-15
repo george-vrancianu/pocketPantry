@@ -12,6 +12,7 @@ import {
   loadAllergyWarnings,
   loadRecipeAllergens,
   loadViewerAllergies,
+  loadViewerAllergyContext,
 } from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
@@ -26,6 +27,7 @@ import type {
   BrowseQuery,
   RecipeDetail,
   RecipeFilters,
+  RecipeList,
   RecipeListItem,
   RecipeVariantItem,
   ResolvedRecipe,
@@ -51,7 +53,7 @@ export class RecipeBrowseService {
    * with its base. A base matches on its own fields only. Variants of an
    * archived base stay listed (the archived base itself does not).
    */
-  async list(memberId: string, query: BrowseQuery): Promise<RecipeListItem[]> {
+  async list(memberId: string, query: BrowseQuery): Promise<RecipeList> {
     const familyId = await this.settings.familyIdOf(memberId);
     const { locale } = query;
     const needle = normalizeName(query.search ?? '');
@@ -94,25 +96,34 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const [ref, warnings] = await Promise.all([
+    const [ref, { hides, allergy }] = await Promise.all([
       this.namedRefs(
         this.database,
         catalogScope(familyId),
         locale,
         matching.flatMap((r) => [r.cuisineId, r.methodId]),
       ),
-      loadViewerAllergies(this.database, memberId, familyId).then((allergies) =>
-        loadAllergyWarnings(
+      loadViewerAllergyContext(
+        this.database,
+        this.settings,
+        memberId,
+        familyId,
+        query.showHidden,
+      ).then(async ({ allergies, hides }) => ({
+        hides,
+        allergy: await loadAllergyWarnings(
           this.database,
           catalogScope(familyId),
           matching.map((r) => r.id),
           locale,
           allergies,
         ),
-      ),
+      })),
     ]);
+    const { warnings, hidden } = allergy;
+    const shown = hides ? matching.filter((r) => !hidden.has(r.id)) : matching;
 
-    return matching
+    const items = shown
       .map((row): RecipeListItem => {
         const parent = row.parentId ? parents.get(row.parentId) : undefined;
         return {
@@ -134,6 +145,10 @@ export class RecipeBrowseService {
         };
       })
       .sort(byTitle(locale));
+    return {
+      recipes: items,
+      hiddenByAllergiesCount: matching.length - shown.length,
+    };
   }
 
   /** A visible Recipe (archived too) with its base, live Variants and ingredient diff. */

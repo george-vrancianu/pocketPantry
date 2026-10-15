@@ -148,7 +148,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
     it('is empty when nothing matches', async () => {
       expect(
         await closestBases(`nothingmatches${stamp}`, [crypto.randomUUID()]),
-      ).toEqual({ matches: [] });
+      ).toEqual({ matches: [], hiddenByAllergiesCount: 0 });
     });
 
     it('refuses a malformed body', async () => {

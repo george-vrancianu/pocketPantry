@@ -265,6 +265,41 @@ describe('Plate Scan: save as a Recipe', () => {
     ).toHaveFocus();
   });
 
+  it('says how many matches are hidden by Allergies and brings them back on Show', async () => {
+    let asked = 0;
+    const calls = renderPlate({
+      // The first answer hides one; asking again (with the override) brings it back.
+      'POST /api/recipes/plate-matches': () =>
+        ++asked > 1
+          ? Response.json({
+              matches: [
+                ...matches,
+                {
+                  id: 'peanut-id',
+                  title: 'Satay',
+                  score: 0.3,
+                  allergyWarning: null,
+                },
+              ],
+              hiddenByAllergiesCount: 0,
+            })
+          : Response.json({ matches, hiddenByAllergiesCount: 1 }),
+    });
+    const bases = await openPanel();
+    expect(
+      await screen.findByText('1 Recipe hidden by your Allergies'),
+    ).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(
+      await within(bases).findByRole('radio', { name: 'Satay' }),
+    ).toBeVisible();
+    expect(screen.queryByText(/hidden by your Allergies/)).toBeNull();
+    expect(
+      calls.filter((c) => c.key === 'POST /api/recipes/plate-matches').at(-1)
+        ?.body,
+    ).toMatchObject({ showHidden: true });
+  });
+
   it('announces the search for Base Recipes as a status', async () => {
     renderPlate({
       'POST /api/recipes/plate-matches': () =>

@@ -164,5 +164,10 @@
     "ingredients": "Ingredienser",
     "steps": "Trin",
     "about": "Om"
+  },
+  "hiddenByAllergies": {
+    "note_one": "{{count}} opskrift skjult på grund af dine allergier",
+    "note_other": "{{count}} opskrifter skjult på grund af dine allergier",
+    "show": "Vis"
   }
 }
