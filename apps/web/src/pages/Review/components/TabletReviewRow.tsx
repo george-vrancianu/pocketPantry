@@ -1,3 +1,4 @@
+import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import {
   Box,
   CalendarIcon,
@@ -249,6 +250,7 @@ export function TabletReviewRow({
               </Box>
             )}
             <SourceText text={line.sourceText} mode={mode} />
+            {line.lookup ? <BarcodeLookupNotes lookup={line.lookup} /> : null}
             {shopping ? null : (
               <DescriptionInput
                 line={line}

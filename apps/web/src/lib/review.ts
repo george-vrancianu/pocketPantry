@@ -1,4 +1,9 @@
-import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
+import type {
+  CatalogAllergen,
+  CatalogSearchResult,
+  StorageLocation,
+  Unit,
+} from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import { isIsoDate } from './dateFormat';
 import type { CameraMode } from './cameraMode';
@@ -29,6 +34,14 @@ export type ReviewLine = {
   description: string;
   /** A Barcode card's code: saving sends it, so the Family learns the Known Barcode. It survives edits to the Ingredient or name. */
   barcode?: string;
+  /** A Barcode card's lookup: the Open Food Facts credit and Allergen info the add-Batch form shows after a Prefill. */
+  lookup?: {
+    fromOpenFoodFacts: boolean;
+    /** Pre-ticked in the Contains row of a new Family Ingredient; empty when the lookup matched an Ingredient (as Prefill). */
+    listedAllergens: CatalogAllergen[];
+    /** The listed Allergens the looked-up match is not tagged with; gone once the Member picks another Ingredient. */
+    missingAllergens: CatalogAllergen[];
+  };
   /** Left out of the Pantry until the Member adds it back: the Scan excluded it (Receipt) or the Member removed it. Excluded lines are never saved. */
   excluded: { reason: ExclusionReason | 'removed' } | null;
 };
@@ -53,6 +66,15 @@ export function toReviewLine(
     description: line.productDescription ?? '',
     excluded: line.excluded ?? null,
     ...(line.barcode ? { barcode: line.barcode } : {}),
+    ...(line.barcode && line.source
+      ? {
+          lookup: {
+            fromOpenFoodFacts: line.source === 'open_food_facts',
+            listedAllergens: match ? [] : (line.allergens ?? []),
+            missingAllergens: line.missingAllergens ?? [],
+          },
+        }
+      : {}),
   };
   return {
     ...base,
@@ -86,6 +108,9 @@ export function withMatch(
 ): ReviewLine {
   return {
     ...line,
+    ...(line.lookup
+      ? { lookup: { ...line.lookup, missingAllergens: [] } }
+      : {}),
     match,
     parentCategoryId: '',
     lowConfidence: false,

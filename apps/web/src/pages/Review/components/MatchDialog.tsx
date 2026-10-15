@@ -9,6 +9,8 @@ type Props = {
   name: string;
   /** Pre-types the search: a barcode product the lookup could not match with confidence. */
   defaultQuery?: string;
+  /** Ticked in the Contains row if the Member adds a new Family Ingredient: the Allergens a barcode product lists. */
+  newIngredientAllergenIds?: readonly string[];
   onSelect: (match: CatalogSearchResult) => void;
   /** Escape, backdrop click, or Cancel: the line stays as it was. */
   onClose: () => void;
@@ -22,6 +24,7 @@ export function MatchDialog({
   open,
   name,
   defaultQuery,
+  newIngredientAllergenIds,
   onSelect,
   onClose,
 }: Props) {
@@ -41,6 +44,7 @@ export function MatchDialog({
         autoFocus
         showUnit={false}
         defaultQuery={defaultQuery}
+        newIngredientAllergenIds={newIngredientAllergenIds}
         onSelect={onSelect}
       />
     </Dialog>
