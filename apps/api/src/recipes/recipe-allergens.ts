@@ -236,11 +236,59 @@ export async function loadAllergyWarnings(
   locale: CatalogLocale,
   allergies: readonly AllergyInput[],
 ): Promise<AllergyWarnings> {
+  const derived = await deriveBatch(executor, scope, recipeIds, allergies);
   const result = new Map<string, CompactAllergyWarning>();
+  if (derived.warnings.size > 0) {
+    const named = await allergenNamer(
+      executor,
+      scope,
+      locale,
+      derived.allergenRows,
+      [
+        ...new Set(
+          [...derived.warnings.values()].flatMap((w) =>
+            w.entries.map((e) => e.allergenId),
+          ),
+        ),
+      ],
+    );
+    for (const [recipeId, warning] of derived.warnings) {
+      result.set(recipeId, compactWarning(warning, named));
+    }
+  }
+  return {
+    warnings: result,
+    hidden: derived.hidden,
+    blocksFill: derived.blocksFill,
+  };
+}
+
+/**
+ * Only the ids Fill must not pick (ADR 0012), through the same `deriveAllergens` but without
+ * naming Allergens or building warnings: Fill needs no text.
+ */
+export async function loadFillBlockedRecipes(
+  executor: Executor,
+  scope: CatalogScope,
+  recipeIds: readonly string[],
+  allergies: readonly AllergyInput[],
+): Promise<ReadonlySet<string>> {
+  return (await deriveBatch(executor, scope, recipeIds, allergies)).blocksFill;
+}
+
+/** Lines and Allergen tags of many Recipes in a fixed number of queries, each run through `deriveAllergens`. */
+async function deriveBatch(
+  executor: Executor,
+  scope: CatalogScope,
+  recipeIds: readonly string[],
+  allergies: readonly AllergyInput[],
+) {
+  const warnings = new Map<string, AllergyWarning>();
   const hidden = new Set<string>();
   const blocksFill = new Set<string>();
+  const allergenRows: { id: string; name: string }[] = [];
   if (allergies.length === 0 || recipeIds.length === 0) {
-    return { warnings: result, hidden, blocksFill };
+    return { warnings, hidden, blocksFill, allergenRows };
   }
   const lineRows = await executor
     .select({
@@ -250,13 +298,14 @@ export async function loadAllergyWarnings(
       optional: recipeIngredientLines.optional,
     })
     .from(recipeIngredientLines)
-    .where(inArray(recipeIngredientLines.recipeId, [...recipeIds]))
+    .where(inArray(recipeIngredientLines.recipeId, recipeIds as string[]))
     .orderBy(asc(recipeIngredientLines.position));
-  const [allergenDataOf, allergenRows] = await Promise.all([
+  const [allergenDataOf, allergenList] = await Promise.all([
     loadIngredientAllergenData(executor, scope, lineRows),
     loadAllergenList(executor),
   ]);
-  const allergenOrder = allergenRows.map((row) => row.id);
+  allergenRows.push(...allergenList);
+  const allergenOrder = allergenList.map((row) => row.id);
   const linesOf = new Map<string, AllergenLine[]>();
   for (const row of lineRows) {
     linesOf.set(row.recipeId, [
@@ -264,22 +313,13 @@ export async function loadAllergyWarnings(
       { id: row.id, optional: row.optional, ...allergenDataOf(row) },
     ]);
   }
-  const warnings = new Map<string, AllergyWarning>();
   for (const [recipeId, lines] of linesOf) {
     const derived = deriveAllergens({ lines, allergenOrder, allergies });
     if (derived.allergyWarning) warnings.set(recipeId, derived.allergyWarning);
     if (derived.hidden) hidden.add(recipeId);
     if (derived.blocksFill) blocksFill.add(recipeId);
   }
-  const named = await allergenNamer(executor, scope, locale, allergenRows, [
-    ...new Set(
-      [...warnings.values()].flatMap((w) => w.entries.map((e) => e.allergenId)),
-    ),
-  ]);
-  for (const [recipeId, warning] of warnings) {
-    result.set(recipeId, compactWarning(warning, named));
-  }
-  return { warnings: result, hidden, blocksFill };
+  return { warnings, hidden, blocksFill, allergenRows };
 }
 
 /** The compact warnings of a batch of Recipes, and the ids "Hide Recipes with my Allergies" would leave out. */

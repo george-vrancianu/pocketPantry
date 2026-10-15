@@ -25,7 +25,6 @@ import { loadSlotWarnings } from './plan-allergies';
 import { loadFill } from './plan-fill.loader';
 import {
   forecastFieldsOf,
-  type ForecastSlotView,
   loadForecast,
   planEnd,
   slotKey,
@@ -134,12 +133,11 @@ export class MealPlansService {
           plans.find(
             (plan) => plan.startDate <= day.date && planEnd(plan) >= day.date,
           )?.id ?? null,
-        slots: day.slots.map((slot) => {
-          const view = slots.get(slot.id) as ForecastSlotView;
-          return {
-            ...view,
-            allergyWarning: warnings.get(view.recipeId) ?? null,
-          };
+        slots: day.slots.flatMap((slot) => {
+          const view = slots.get(slot.id);
+          return view
+            ? [{ ...view, allergyWarning: warnings.get(view.recipeId) ?? null }]
+            : [];
         }),
       })),
       tag: forecast.tag,

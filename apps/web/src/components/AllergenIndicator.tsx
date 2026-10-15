@@ -6,11 +6,11 @@ import type {
   CompactAllergyWarning,
 } from '../lib/recipes';
 
-/** "you", a Family Allergy's label ("Family" when it has none) or a Member's name. */
+/** "you", a Family Allergy's label ("family" when it has none) or a Member's name. */
 function ownerName(t: TFunction, owner: CompactAllergyOwner): string {
   if (owner.kind === 'own') return t('allergyIndicator.ownerYou');
   if (owner.kind === 'family') {
-    return owner.label ?? t('allergyWarning.whoFamily');
+    return owner.label ?? t('allergyIndicator.ownerFamily');
   }
   return owner.name;
 }

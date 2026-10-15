@@ -42,6 +42,7 @@
   "allergyIndicator": {
     "withOwners": "{{name}} ({{owners}})",
     "ownerYou": "you",
+    "ownerFamily": "family",
     "strong": "Contains {{names}}",
     "optional": "Optional: contains {{names}}",
     "unchecked": "Not fully checked"

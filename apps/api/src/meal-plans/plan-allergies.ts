@@ -3,6 +3,7 @@ import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { Executor } from '../database/database.types';
 import {
   loadAllergyWarnings,
+  loadFillBlockedRecipes,
   loadViewerAllergies,
 } from '../recipes/recipe-allergens';
 import type { CompactAllergyWarning } from '../recipes/recipes.schemas';
@@ -43,12 +44,10 @@ export async function loadFillBlocks(
   recipeIds: readonly string[],
 ): Promise<ReadonlySet<string>> {
   const allergies = await loadViewerAllergies(executor, memberId, familyId);
-  const { blocksFill } = await loadAllergyWarnings(
+  return loadFillBlockedRecipes(
     executor,
     catalogScope(familyId),
-    [...recipeIds],
-    'en',
+    recipeIds,
     allergies,
   );
-  return blocksFill;
 }

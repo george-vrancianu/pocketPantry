@@ -79,7 +79,7 @@ describe('AllergenIndicator', () => {
       />,
     );
     expect(screen.getByRole('img')).toHaveAccessibleName(
-      'Contains Milk (you, Mia, Family). Optional: contains Peanuts (Ana)',
+      'Contains Milk (you, Mia, family). Optional: contains Peanuts (Ana)',
     );
   });
 });

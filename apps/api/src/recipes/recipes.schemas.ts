@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { CATALOG_LOCALES, FALLBACK_LOCALE } from '../catalog/catalog.schemas';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, recipeDifficulty } from '../database/schema';
-import type { AllergyOwner } from './matching/allergens';
+import type { AllergyOwner, AllergyWarningOwner } from './matching/allergens';
 import type { PlateMatch } from './plate-matches';
 import type { RecipeDiff } from './recipe-diff';
 import {
@@ -427,11 +427,7 @@ export type CompactAllergyWarning = {
      * by its optional label, or another Member by name. The viewer's own and Family
      * Allergies come first.
      */
-    owners: (
-      | { kind: 'own' }
-      | { kind: 'family'; label: string | null }
-      | { kind: 'member'; name: string }
-    )[];
+    owners: AllergyWarningOwner[];
   }[];
   /** Lines that could not be checked for Allergens. */
   uncheckedCount: number;
