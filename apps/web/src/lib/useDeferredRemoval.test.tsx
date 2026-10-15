@@ -102,3 +102,24 @@ describe('useDeferredRemoval, several rows at once', () => {
     expect(sendMany).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useDeferredRemoval, one row then several', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    sendOne.mockClear();
+    sendMany.mockClear();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('sends the single delete when a bulk removal replaces it', async () => {
+    setup();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    await user.click(screen.getByText('remove a'));
+    await user.click(screen.getByText('remove c'));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+
+    expect(sendOne).toHaveBeenCalledExactlyOnceWith('a');
+    expect(sendMany).not.toHaveBeenCalled();
+  });
+});

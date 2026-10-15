@@ -78,7 +78,8 @@ export function HealthTodos({ state, today }: Props) {
   const { t, i18n } = useTranslation('dashboard');
   const { tagFor } = useExpiryTags(today);
   const [openKey, setOpenKey] = useState<HealthTodoKey | null>(null);
-  const { todos, batches, staples, staleThresholdDays, removeBatches } = state;
+  const { todos, batches, staples, staleThresholdDays, tossBatches, markUsed } =
+    state;
   const day = expiringSoonDay(today, staleThresholdDays, i18n.language);
   const itemsOf = (todo: HealthTodo) =>
     todoItems(todo, {
@@ -170,7 +171,8 @@ export function HealthTodos({ state, today }: Props) {
                     setOpenKey(openKey === todo.key ? null : todo.key)
                   }
                   tagFor={tagFor}
-                  onRemove={removeBatches}
+                  onToss={tossBatches}
+                  onUsed={markUsed}
                 />
               ))}
             </Box>
@@ -229,8 +231,8 @@ type RowProps = {
   open: boolean;
   onToggle: () => void;
   tagFor: ReturnType<typeof useExpiryTags>['tagFor'];
-  /** Remove Batches with an Undo toast. */
-  onRemove: PantryHealthState['removeBatches'];
+  onToss: PantryHealthState['tossBatches'];
+  onUsed: PantryHealthState['markUsed'];
 };
 
 /** What a Member can do to one item of a Health To-do on its own row; the rest arrive with their own tickets. */
@@ -248,7 +250,8 @@ function TodoRow({
   open,
   onToggle,
   tagFor,
-  onRemove,
+  onToss,
+  onUsed,
 }: RowProps) {
   const { t } = useTranslation('dashboard');
   const reduceMotion = usePrefersReducedMotion();
@@ -270,7 +273,7 @@ function TodoRow({
       : todo.key === 'expired'
         ? {
             onClick: () =>
-              onRemove(todo.itemIds, t('health.toast.expired', { count })),
+              onToss(todo.itemIds, t('health.toast.expired', { count })),
           }
         : // The other fixes arrive with their own tickets.
           { disabled: true };
@@ -442,7 +445,8 @@ function TodoRow({
                 item={item}
                 tagFor={tagFor}
                 action={itemAction(todo, item)}
-                onRemove={(message) => onRemove([item.id], message)}
+                onToss={(message) => onToss([item.id], message)}
+                onUsed={(message) => onUsed([item.id], message)}
               />
             ))}
           </Box>
@@ -456,12 +460,14 @@ function TodoItemRow({
   item,
   tagFor,
   action,
-  onRemove,
+  onToss,
+  onUsed,
 }: {
   item: TodoItem;
   tagFor: RowProps['tagFor'];
   action: ReturnType<typeof itemAction>;
-  onRemove: (message: string) => void;
+  onToss: (message: string) => void;
+  onUsed: (message: string) => void;
 }) {
   const { t } = useTranslation('dashboard');
   return (
@@ -523,9 +529,7 @@ function TodoItemRow({
           label={t('health.item.toss', { name: item.name })}
           tone="plain"
           size={34}
-          onClick={() =>
-            onRemove(t('health.toast.tossed', { name: item.name }))
-          }
+          onClick={() => onToss(t('health.toast.tossed', { name: item.name }))}
         >
           <DeleteIcon size={16} />
         </IconButton>
@@ -537,7 +541,7 @@ function TodoItemRow({
           shape="pill"
           aria-label={t('health.item.usedName', { name: item.name })}
           sx={{ flexShrink: 0, minHeight: 30, height: 30, fontSize: 12.5 }}
-          onClick={() => onRemove(t('health.toast.used', { name: item.name }))}
+          onClick={() => onUsed(t('health.toast.used', { name: item.name }))}
         >
           {t('health.item.used')}
         </Button>

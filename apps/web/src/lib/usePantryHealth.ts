@@ -36,7 +36,9 @@ export type PantryHealthState = {
    * Remove Batches from the Pantry with one Undo toast (ADR 0009). They leave the Health To-dos and the score
    * at once. `message` is the toast text, already translated; the new score is added to it when there is one.
    */
-  removeBatches: (ids: string[], message: string) => void;
+  tossBatches: (ids: string[], message: string) => void;
+  /** Like `tossBatches`, for Batches the Member used. Kept apart so a reason can be sent later. */
+  markUsed: (ids: string[], message: string) => void;
 };
 
 /** The Family's Pantry Health and Health To-dos, from the Pantry, Staples, Shopping List, Suggestions (dismissed ids) and Stale Threshold reads. */
@@ -55,6 +57,7 @@ export function usePantryHealth(): PantryHealthState {
   const { mutateAsync: sendDeleteMany } = useDeleteBatches();
   const removal = useDeferredRemoval(
     ['pantry'],
+    // Only `remove` of one record uses this; Pantry health always removes through `removeMany`.
     (id: string) => sendDeleteMany([id]),
     sendDeleteMany,
   );
@@ -91,7 +94,7 @@ export function usePantryHealth(): PantryHealthState {
   const health = useMemo(() => pantryHealth(input), [input]);
   const todos = useMemo(() => healthTodos(input), [input]);
 
-  const removeBatches: PantryHealthState['removeBatches'] = (ids, message) => {
+  const removeBatches = (ids: string[], message: string) => {
     const gone = new Set(ids);
     const after = pantryHealth({
       ...input,
@@ -122,7 +125,9 @@ export function usePantryHealth(): PantryHealthState {
       shopping.error ??
       runningLow.error ??
       suggestions.error,
-    removeBatches,
+    // Both send the same request today; neither records why.
+    tossBatches: removeBatches,
+    markUsed: removeBatches,
     batchCount: input.batches.length,
     health,
     todos,

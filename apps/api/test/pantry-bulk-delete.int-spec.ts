@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
@@ -133,6 +134,10 @@ describe('Pantry bulk Batch delete (integration)', () => {
     const cookie = await signUp();
     await bulkDelete(cookie, []).expect(400);
     await bulkDelete(cookie, ['not-a-uuid']).expect(400);
+    await bulkDelete(
+      cookie,
+      Array.from({ length: 201 }, () => randomUUID()),
+    ).expect(400);
     await bulkDelete(cookie, undefined).expect(400);
     await api('post', cookie, '/pantry/batches/bulk-delete')
       .send({})

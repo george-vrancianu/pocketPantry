@@ -159,9 +159,9 @@
     "close": "Închide",
     "toast": {
       "withScore": "{{message}} · scor {{score}}",
-      "expired_one": "Am eliminat {{count}} expirat",
-      "expired_few": "Am eliminat {{count}} expirate",
-      "expired_other": "Am eliminat {{count}} de expirate",
+      "expired_one": "Ai eliminat {{count}} produs expirat",
+      "expired_few": "Ai eliminat {{count}} produse expirate",
+      "expired_other": "Ai eliminat {{count}} de produse expirate",
       "tossed": "Ai aruncat {{name}}",
       "used": "Ai folosit {{name}}"
     },

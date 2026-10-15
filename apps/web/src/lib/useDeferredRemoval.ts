@@ -50,8 +50,11 @@ export function useDeferredRemoval<Id extends string | number>(
   const send = useCallback(
     async (ids: Id[], many: boolean) => {
       await queryClient.cancelQueries({ queryKey: keyRef.current });
-      if (many && mutateManyAsync) return mutateManyAsync(ids);
-      return mutateAsync(ids[0]);
+      if (!many) return mutateAsync(ids[0]);
+      // Without a bulk call, every record of the removal gets its own delete.
+      return mutateManyAsync
+        ? mutateManyAsync(ids)
+        : Promise.all(ids.map((id) => mutateAsync(id)));
     },
     [queryClient, mutateAsync, mutateManyAsync],
   );
@@ -128,12 +131,12 @@ export function useDeferredRemoval<Id extends string | number>(
   const remove = (id: Id, name: string, message?: string) =>
     start([id], false, message ?? t('row.removed', { name }));
 
-  /** Several records as one removal; `message` is the toast text, already translated. Needs `mutateManyAsync`. */
+  /** Several records as one removal; `message` is the toast text, already translated. Sends one `mutateManyAsync` call, or one `mutateAsync` per record without it. */
   const removeMany = (ids: Id[], message: string) => start(ids, true, message);
 
   /**
-   * Drop the removal of `id` still waiting on its Undo, without sending it: its toast closes and
-   * the record shows again. Call it before writing the record back, so the delete cannot follow.
+   * Drop the removal that holds `id` and is still waiting on its Undo, without sending it: its toast closes and
+   * all of its records show again. Call it before writing the record back, so the delete cannot follow.
    */
   const discard = (id: Id) => {
     const pending = waiting.current;
