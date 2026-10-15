@@ -128,6 +128,8 @@ export type BatchView = {
   location: (typeof storageLocation.enumValues)[number];
   /** ISO date (YYYY-MM-DD) or null. */
   expiryDate: string | null;
+  /** The Default Expiry for the Batch's Category, in days (Family override first); null when there is none. */
+  defaultExpiryDays: number | null;
   productDescription: string | null;
   createdAt: Date;
 };
