@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.types';
 import {
   aisles,
@@ -140,7 +140,9 @@ async function seedAisleRows(tx: Pick<Database, 'select'>) {
  * Ingredient (e.g. an Admin-made Ingredient with the same normalised name)
  * fails loudly. Danish rows that clash with an Admin's are skipped and
  * counted instead, and names owned by two Ingredients are logged. Rows listed
- * in RETIRED_SEED_TRANSLATIONS are deleted.
+ * in RETIRED_SEED_TRANSLATIONS are deleted. A seed Ingredient's Allergen tags
+ * are applied once, the first run that sees it untagged; after that they
+ * belong to the Admins.
  */
 export async function seedCatalog(
   database: Pick<Database, 'transaction'>,
@@ -205,10 +207,8 @@ export async function seedCatalog(
       )
       .onConflictDoNothing({ target: ingredients.id });
 
-    // The Allergen list, then each seed Ingredient's tags. Like the other rows
-    // they are only ever inserted, never updated: an Admin's edits to the list
-    // are kept. A tag an Admin removed from a seed Ingredient would be
-    // inserted again on the next seed; #354 handles that.
+    // The Allergen list. Like the other rows it is only ever inserted, never
+    // updated: an Admin's edits to the list are kept.
     await tx
       .insert(allergens)
       .values(
@@ -220,14 +220,41 @@ export async function seedCatalog(
         })),
       )
       .onConflictDoNothing({ target: allergens.id });
-    const tags = SEED_INGREDIENTS.flatMap((item) =>
-      (item.allergens ?? []).map((slug) => ({
-        ingredientId: seedId.ingredient(item.slug),
-        allergenId: seedId.allergen(slug),
-      })),
-    );
-    if (tags.length > 0) {
-      await tx.insert(ingredientAllergens).values(tags).onConflictDoNothing();
+
+    // Each seed Ingredient's tags are applied once. `allergens_checked` marks
+    // a seed Ingredient whose tags have been applied (the flag is otherwise
+    // read only for Family rows, ADR 0014), so a database seeded before the
+    // tags existed gains them on this run, and an Admin's later edits (a tag
+    // removed, say) are never undone by a re-seed.
+    const untagged = await tx
+      .select({ id: ingredients.id })
+      .from(ingredients)
+      .where(
+        and(
+          inArray(
+            ingredients.id,
+            SEED_INGREDIENTS.map((item) => seedId.ingredient(item.slug)),
+          ),
+          eq(ingredients.allergensChecked, false),
+        ),
+      );
+    if (untagged.length > 0) {
+      const toApply = new Set(untagged.map((row) => row.id));
+      const tags = SEED_INGREDIENTS.filter((item) =>
+        toApply.has(seedId.ingredient(item.slug)),
+      ).flatMap((item) =>
+        (item.allergens ?? []).map((slug) => ({
+          ingredientId: seedId.ingredient(item.slug),
+          allergenId: seedId.allergen(slug),
+        })),
+      );
+      if (tags.length > 0) {
+        await tx.insert(ingredientAllergens).values(tags).onConflictDoNothing();
+      }
+      await tx
+        .update(ingredients)
+        .set({ allergensChecked: true })
+        .where(inArray(ingredients.id, [...toApply]));
     }
 
     const translations: TranslationRow[] = [

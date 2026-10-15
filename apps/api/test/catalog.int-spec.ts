@@ -20,6 +20,7 @@ import type { Database } from '../src/database/database.types';
 import {
   aisles,
   catalogTranslations,
+  ingredientAllergens,
   ingredients,
   leafCategories,
   parentCategories,
@@ -552,6 +553,99 @@ describe('Catalog (integration)', () => {
       expect(await snapshot()).toEqual(before);
     });
 
+    describe('Allergen tags', () => {
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
+      class Rollback extends Error {}
+      const inRolledBackTransaction = (body: (tx: Database) => Promise<void>) =>
+        expect(
+          database.transaction(async (tx) => {
+            await body(tx);
+            throw new Rollback();
+          }),
+        ).rejects.toBeInstanceOf(Rollback);
+      const tagSlugs = async (db: Pick<Database, 'select'>, slug: string) =>
+        (
+          await db
+            .select({ id: ingredientAllergens.allergenId })
+            .from(ingredientAllergens)
+            .where(
+              eq(ingredientAllergens.ingredientId, seedId.ingredient(slug)),
+            )
+        )
+          .map((row) => row.id)
+          .sort();
+      const ids = (...slugs: string[]) =>
+        slugs.map((slug) => seedId.allergen(slug)).sort();
+
+      it('tags every seeded shared Ingredient as the seed declares', async () => {
+        const rows = await database
+          .select({
+            ingredientId: ingredientAllergens.ingredientId,
+            allergenId: ingredientAllergens.allergenId,
+          })
+          .from(ingredientAllergens)
+          .where(
+            inArray(
+              ingredientAllergens.ingredientId,
+              SEED_INGREDIENTS.map((i) => seedId.ingredient(i.slug)),
+            ),
+          );
+        const actual = rows.map((r) => `${r.ingredientId}:${r.allergenId}`);
+        const expected = SEED_INGREDIENTS.flatMap((i) =>
+          (i.allergens ?? []).map(
+            (a) => `${seedId.ingredient(i.slug)}:${seedId.allergen(a)}`,
+          ),
+        );
+        expect(actual.sort()).toEqual(expected.sort());
+      });
+
+      it('applies the tags to an already-seeded Ingredient that was never tagged', async () => {
+        await inRolledBackTransaction(async (tx) => {
+          const bread = seedId.ingredient('bread');
+          await tx
+            .delete(ingredientAllergens)
+            .where(eq(ingredientAllergens.ingredientId, bread));
+          await tx
+            .update(ingredients)
+            .set({ allergensChecked: false })
+            .where(eq(ingredients.id, bread));
+
+          await seedCatalog(tx);
+
+          expect(await tagSlugs(tx, 'bread')).toEqual(ids('gluten'));
+        });
+      });
+
+      it('does not bring back a tag an Admin removed, nor drop one an Admin added', async () => {
+        await inRolledBackTransaction(async (tx) => {
+          // Seeded and then taken over by an Admin: soy sauce loses gluten and
+          // gains sesame; an untouched Ingredient keeps the seed's tags.
+          const soy = seedId.ingredient('soy-sauce');
+          await tx
+            .delete(ingredientAllergens)
+            .where(
+              and(
+                eq(ingredientAllergens.ingredientId, soy),
+                eq(ingredientAllergens.allergenId, seedId.allergen('gluten')),
+              ),
+            );
+          await tx.insert(ingredientAllergens).values({
+            ingredientId: soy,
+            allergenId: seedId.allergen('sesame'),
+          });
+          await tx
+            .update(ingredients)
+            .set({ allergensChecked: true })
+            .where(eq(ingredients.id, soy));
+
+          await seedCatalog(tx);
+
+          expect(await tagSlugs(tx, 'soy-sauce')).toEqual(ids('sesame', 'soy'));
+          expect(await tagSlugs(tx, 'pesto')).toEqual(ids('milk', 'tree-nuts'));
+        });
+      });
+    });
+
     it('keeps Admin edits to Aisles, and restores a deleted Aisle last when its slot is taken', async () => {
       const aisleId = seedId.aisle;
       const order = async (tx: Pick<Database, 'select'>) =>
@@ -561,7 +655,7 @@ describe('Catalog (integration)', () => {
             .from(aisles)
             .orderBy(aisles.sortOrder)
         ).map((row) => `${row.id === aisleId('frozen') ? row.name : row.id}`);
-      // One transaction, rolled back: other test workers read the seeded rows.
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
       class Rollback extends Error {}
       await expect(
         database.transaction(async (tx) => {
@@ -655,7 +749,7 @@ describe('Catalog (integration)', () => {
         value,
         normalizedValue: normalizeName(value),
       });
-      // One transaction, rolled back: other test workers read the seeded rows.
+      // One transaction, rolled back: other files in the same worker read the seeded rows.
       class Rollback extends Error {}
       let failure: Error | undefined;
       await expect(
