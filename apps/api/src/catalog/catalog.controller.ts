@@ -1,6 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
+  Param,
+  Patch,
   Get,
   HttpCode,
   Post,
@@ -15,10 +18,16 @@ import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { SettingsService } from '../settings/settings.service';
 import { catalogScope, SHARED_ONLY, type CatalogScope } from './catalog-scope';
 import { FamilyIngredientsService } from './family-ingredients.service';
+import { FamilyCatalogService } from './family-catalog.service';
 import { FamilySynonymsService } from './family-synonyms.service';
 import { CatalogSearchService } from './catalog-search.service';
 import {
   catalogAislesQuery,
+  familyIngredientPatchBody,
+  idParam,
+  type FamilyCatalog,
+  type FamilyIngredientPatchBody,
+  type IdParam,
   catalogCategoriesQuery,
   familyIngredientBody,
   familyIngredientQuery,
@@ -45,6 +54,7 @@ export class CatalogController {
     private readonly searchService: CatalogSearchService,
     private readonly familyIngredients: FamilyIngredientsService,
     private readonly familySynonyms: FamilySynonymsService,
+    private readonly familyCatalog: FamilyCatalogService,
     private readonly settings: SettingsService,
   ) {}
 
@@ -151,6 +161,76 @@ export class CatalogController {
       body,
       query.locale,
       await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Get('family')
+  @ApiOperation({
+    summary:
+      "List the caller's Family Ingredients (with what uses each) and Family Synonyms, for Family Settings",
+  })
+  async family(
+    @CurrentUser() member: CurrentUserValue,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+  ): Promise<FamilyCatalog> {
+    return this.familyCatalog.list(
+      await this.settings.familyIdOf(member.id),
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Patch('family-ingredients/:id')
+  @ApiOperation({
+    summary:
+      'Rename and/or recategorise a Family Ingredient; 409 with the existing Ingredient when the new name is taken',
+  })
+  async updateFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+    @Query(new ZodValidationPipe(familyIngredientQuery))
+    query: { locale: 'en' | 'ro' | 'da' },
+    @Body(new ZodValidationPipe(familyIngredientPatchBody))
+    body: FamilyIngredientPatchBody,
+  ): Promise<CatalogSearchResult> {
+    return this.familyCatalog.update(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+      body,
+      query.locale,
+      await this.settings.expiryOverridesForMember(member.id),
+    );
+  }
+
+  @Delete('family-ingredients/:id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary:
+      'Delete a Family Ingredient; its Batches, Shopping Items, Template Lines and Recipe Lines become Unmatched',
+  })
+  async deleteFamilyIngredient(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+  ): Promise<void> {
+    await this.familyCatalog.remove(
+      await this.settings.familyIdOf(member.id),
+      params.id,
+    );
+  }
+
+  @Delete('family-synonyms/:id')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete a Family Synonym; it stops matching at once',
+  })
+  async deleteFamilySynonym(
+    @CurrentUser() member: CurrentUserValue,
+    @Param(new ZodValidationPipe(idParam)) params: IdParam,
+  ): Promise<void> {
+    await this.familyCatalog.removeSynonym(
+      await this.settings.familyIdOf(member.id),
+      params.id,
     );
   }
 

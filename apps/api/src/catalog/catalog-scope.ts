@@ -52,6 +52,25 @@ export function translationTier(
 /** True for translations every Family sees (names and shared Synonyms), for writes that must leave Family Synonyms alone. */
 export const sharedTranslation = isNull(catalogTranslations.ownerFamilyId);
 
+/**
+ * Narrows a scoped source to the reader's own Family rows (Family Ingredients,
+ * Family Synonyms): for the Family catalog list (#274), which must never show
+ * the shared rows the scope also contains.
+ */
+export function isFamilyOwned(scoped: {
+  ownerFamilyId: Parameters<typeof isNotNull>[0];
+}) {
+  return isNotNull(scoped.ownerFamilyId);
+}
+
+/** Writes on a Family Ingredient must target only rows this Family owns. */
+export const ownedIngredient = (familyId: string) =>
+  eq(ingredients.ownerFamilyId, familyId);
+
+/** Writes on a Family Synonym must target only rows this Family owns. */
+export const ownedTranslation = (familyId: string) =>
+  eq(catalogTranslations.ownerFamilyId, familyId);
+
 function scopedIngredients(executor: Executor, reader: CatalogReader) {
   const rows = executor.select().from(ingredients);
   return (
