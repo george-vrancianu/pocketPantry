@@ -337,12 +337,15 @@ describe('MealPlanWidget header', () => {
     await waitFor(() => expect(region).toHaveTextContent(text));
   });
 
-  it('keeps the page link as plain text until the Meal Plan page exists', async () => {
+  it('links the header to the Meal plans page', async () => {
     stub(windowOf(week(2)));
     renderWidget();
 
     await screen.findAllByRole('button', { name: /meal/ });
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Meal plan/ })).toHaveAttribute(
+      'href',
+      '/meal-plans',
+    );
     expect(
       screen.queryByRole('button', { name: /Meal plan/ }),
     ).not.toBeInTheDocument();
@@ -368,7 +371,9 @@ describe('MealPlanWidget empty states', () => {
       await screen.findByText('Nothing planned this week.'),
     ).toBeInTheDocument();
     expect(screen.getByText('Plan your week')).toBeInTheDocument();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Plan your week' }),
+    ).toBeInTheDocument();
     expect(screen.queryByText('All covered')).not.toBeInTheDocument();
   });
 });
@@ -480,7 +485,9 @@ describe('MealPlanWidget day popover', () => {
       within(dialog).getByText('Only 1 pcs in your Pantry'),
     ).toBeInTheDocument();
     expect(within(dialog).getByText('Edit day')).toBeInTheDocument();
-    expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('link', { name: 'Edit day' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Today' })).toHaveFocus();
   });
 
@@ -639,7 +646,9 @@ describe('MealPlanWidget day popover', () => {
       within(dialog).getByText('Nothing planned for Friday.'),
     ).toBeInTheDocument();
     expect(within(dialog).getByText('Plan a meal')).toBeInTheDocument();
-    expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('link', { name: 'Plan a meal' }),
+    ).toBeInTheDocument();
 
     await u.click(within(dialog).getByRole('button', { name: 'Next day' }));
     dialog = await screen.findByRole('dialog', { name: 'Saturday' });

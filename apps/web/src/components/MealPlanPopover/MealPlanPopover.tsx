@@ -51,6 +51,7 @@ import {
   longWeekday,
   reasonText,
 } from './mealPlanText';
+import { Link } from 'react-router-dom';
 import { plainAction } from './plainAction';
 
 /** Widest the popover grows, px. */
@@ -369,8 +370,7 @@ function MealBlock({
 
 /**
  * A day's meals in a non-modal dialog anchored under (or, near the Dock, above) its column, with ‹ › to step
- * through the planned days. The page it would link to does not exist yet, so "Edit day", "Plan a meal" and
- * "Start a plan" are plain text.
+ * through the planned days. "Edit day", "Plan a meal" and "Start a plan" link to the Meal Plan page.
  */
 export function MealPlanPopover({
   days,
@@ -657,7 +657,15 @@ export function MealPlanPopover({
                 day: longWeekday(language, day.date),
               })}
             </span>
-            <Box component="span" sx={plainAction}>
+            <Box
+              component={Link}
+              to={
+                day.planId
+                  ? `/meal-plans/${day.planId}?day=${day.date}`
+                  : `/meal-plans/new?start=${day.date}`
+              }
+              sx={plainAction}
+            >
               {t(day.planId ? 'mealPlan.planMeal' : 'mealPlan.startPlan')}
             </Box>
           </Box>
@@ -686,7 +694,11 @@ export function MealPlanPopover({
               {t('mealPlan.addNMissing', { count: missing.length })}
             </Button>
           ) : null}
-          <Box component="span" sx={plainAction}>
+          <Box
+            component={Link}
+            to={`/meal-plans/${day.planId ?? day.slots[0]?.planId}?day=${day.date}`}
+            sx={plainAction}
+          >
             <CalendarIcon size={14} />
             {t('mealPlan.editDay')}
           </Box>
