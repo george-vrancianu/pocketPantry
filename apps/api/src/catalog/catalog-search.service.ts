@@ -86,8 +86,7 @@ export class CatalogSearchService {
       ${placement}
       WHERE (c.key = ${key} OR c.key LIKE ${prefix} OR c.key LIKE ${wordPrefix})${sql.join(inAisle)}
       GROUP BY c.id, ${ingredients.normalizedName}
-      ORDER BY MIN(CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END),
-               MIN(c.tier),
+      ORDER BY MIN((CASE WHEN c.key = ${key} THEN 0 WHEN c.key LIKE ${prefix} THEN 1 ELSE 2 END) * 2 + c.tier),
                ${ingredients.normalizedName},
                c.id
       LIMIT ${limit}

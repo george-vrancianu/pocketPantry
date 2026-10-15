@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -76,6 +76,7 @@ describe('Recipe Variants, Tips and translations (integration)', () => {
     [{ id: flour }] = await database
       .select({ id: ingredients.id })
       .from(ingredients)
+      .where(isNull(ingredients.ownerFamilyId))
       .limit(1);
   });
 

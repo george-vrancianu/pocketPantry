@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -118,7 +118,11 @@ describe('Recipes browsing and detail (integration)', () => {
       .where(eq(user.email, `recipes-browse-b-${stamp}@example.com`));
     familyB = b.familyId;
     ing = (
-      await database.select({ id: ingredients.id }).from(ingredients).limit(5)
+      await database
+        .select({ id: ingredients.id })
+        .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
+        .limit(5)
     ).map((r) => r.id);
     cuisineId = crypto.randomUUID();
     otherCuisineId = crypto.randomUUID();

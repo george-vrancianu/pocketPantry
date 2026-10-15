@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import type { Executor } from '../database/database.types';
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
 import {
   catalogScope,
@@ -10,7 +9,7 @@ import {
 } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import { catalogTranslations } from '../database/schema';
 import { lockFamilies } from '../family/family-locks';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';

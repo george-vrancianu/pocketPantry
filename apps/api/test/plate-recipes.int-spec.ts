@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import { ingredients, recipes, unmatchedEntries } from '../src/database/schema';
@@ -68,6 +68,7 @@ describe('Plate Scan as a Family Recipe (integration)', () => {
       await database
         .select({ id: ingredients.id })
         .from(ingredients)
+        .where(isNull(ingredients.ownerFamilyId))
         .orderBy(ingredients.id)
         .limit(5)
     ).map((r) => r.id);

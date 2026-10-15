@@ -690,7 +690,7 @@ describe('Family Synonyms (integration)', () => {
   });
 
   describe('search ranking on a tied name', () => {
-    // The shared row has the smallest possible id, so only the tier can put the Family's row first.
+    // FIRST_ID is the smallest possible id, so in the Family Ingredient test only the tier can put the Family's row first.
     const FIRST_ID = '00000000-0000-4000-8000-000000000001';
     const SMALL_ID = '00000000-0000-4000-8000-000000000002';
 

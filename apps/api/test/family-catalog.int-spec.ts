@@ -764,7 +764,11 @@ describe('Family catalog (integration)', () => {
       );
       const name = unique('Cascaded');
       const created = await made(solo, name);
-      await synonymOf(solo, unique('Cascaded alias'), created.id);
+      const synonym = await synonymOf(
+        solo,
+        unique('Cascaded alias'),
+        created.id,
+      );
       await solo
         .post('/pantry/batches', {
           ingredientId: created.id,
@@ -813,6 +817,18 @@ describe('Family catalog (integration)', () => {
           .select()
           .from(ingredients)
           .where(eq(ingredients.id, created.id)),
+      ).toEqual([]);
+      expect(
+        await database
+          .select()
+          .from(catalogTranslations)
+          .where(eq(catalogTranslations.id, synonym.id)),
+      ).toEqual([]);
+      expect(
+        await database
+          .select()
+          .from(batches)
+          .where(eq(batches.ingredientId, created.id)),
       ).toEqual([]);
     });
   });

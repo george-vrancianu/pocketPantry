@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, ilike } from 'drizzle-orm';
+import { eq, ilike, isNull } from 'drizzle-orm';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
 import {
@@ -77,6 +77,7 @@ describe('Admin Recipes (integration)', () => {
     const rows = await database
       .select({ id: ingredients.id })
       .from(ingredients)
+      .where(isNull(ingredients.ownerFamilyId))
       .limit(2);
     [flour, salt] = rows.map((r) => r.id);
     cuisineId = crypto.randomUUID();

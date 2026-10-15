@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { eq, inArray, sql } from 'drizzle-orm';
+import { eq, inArray, sql, isNull } from 'drizzle-orm';
 import pg from 'pg';
 import request from 'supertest';
 import { DATABASE } from '../src/database/database.constants';
@@ -392,6 +392,7 @@ describe('Used Up Suggestions (integration)', () => {
     const [leaf] = await database
       .select({ id: ingredients.leafCategoryId })
       .from(ingredients)
+      .where(isNull(ingredients.ownerFamilyId))
       .limit(1);
     const made = (
       await api('post', admin, '/admin/catalog/ingredients')
