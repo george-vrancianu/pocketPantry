@@ -8,7 +8,11 @@ import { DATABASE } from '../database/database.constants';
 import type { Database, Executor } from '../database/database.types';
 import { cuisines, eatingMoments, methods, recipes } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
-import { loadRecipeAllergens, loadViewerAllergies } from './recipe-allergens';
+import {
+  loadAllergyWarnings,
+  loadRecipeAllergens,
+  loadViewerAllergies,
+} from './recipe-allergens';
 import { diffIngredients, lineKey, type DiffLine } from './recipe-diff';
 import { recipeNotFound } from './recipe-errors';
 import {
@@ -90,12 +94,23 @@ export class RecipeBrowseService {
 
     const baseIds = matching.filter((r) => !r.parentId).map((r) => r.id);
     const counts = await this.variantCounts(familyId, baseIds);
-    const ref = await this.namedRefs(
-      this.database,
-      catalogScope(familyId),
-      locale,
-      matching.flatMap((r) => [r.cuisineId, r.methodId]),
-    );
+    const [ref, warnings] = await Promise.all([
+      this.namedRefs(
+        this.database,
+        catalogScope(familyId),
+        locale,
+        matching.flatMap((r) => [r.cuisineId, r.methodId]),
+      ),
+      loadViewerAllergies(this.database, memberId).then((allergies) =>
+        loadAllergyWarnings(
+          this.database,
+          catalogScope(familyId),
+          matching.map((r) => r.id),
+          locale,
+          allergies,
+        ),
+      ),
+    ]);
 
     return matching
       .map((row): RecipeListItem => {
@@ -115,6 +130,7 @@ export class RecipeBrowseService {
           cookMinutes: row.cookMinutes,
           difficulty: row.difficulty,
           owner: ownerOf(row),
+          allergyWarning: warnings.get(row.id) ?? null,
         };
       })
       .sort(byTitle(locale));

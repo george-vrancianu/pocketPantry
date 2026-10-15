@@ -12,6 +12,7 @@ import {
   PantryMatchingService,
   type PantryRecipeMatch,
 } from './matching/pantry-matching.service';
+import { loadAllergyWarnings, loadViewerAllergies } from './recipe-allergens';
 import { ownerOf, recipeTitles, visibleTo } from './recipe-view';
 import type {
   CookTonightCard,
@@ -95,6 +96,14 @@ export class CookTonightService {
       groupsRanked,
       query.locale,
     );
+    // The warning belongs to the Recipe a card shows, which may be a Variant.
+    const warnings = await loadAllergyWarnings(
+      this.database,
+      catalogScope(familyId),
+      groupsRanked.map(({ candidates }) => candidates[0].row.id),
+      query.locale,
+      await loadViewerAllergies(this.database, memberId),
+    );
     return {
       cards: groupsRanked.map(({ base, candidates }): CookTonightCard => {
         const [top, ...others] = candidates;
@@ -113,6 +122,7 @@ export class CookTonightService {
             servings: top.match.servings,
             prepMinutes: top.row.prepMinutes,
             cookMinutes: top.row.cookMinutes,
+            allergyWarning: warnings.get(top.row.id) ?? null,
           },
           canMake: top.match.canMake,
           missing:
