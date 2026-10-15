@@ -72,6 +72,14 @@ _Avoid_: Unknown, custom, uncategorised
 An Ingredient Admins flag as always at hand, such as water, salt, or black pepper. Recipe matching treats its Ingredient Lines as covered and never adds them to the Shopping List on its own; a Member can still add one by hand.
 _Avoid_: Staple (a Family's always-wanted Ingredient), essential, cupboard item
 
+**Allergen**:
+A substance some people react to, such as peanuts, milk, or gluten, from a fixed list Admins curate and translate, starting from the EU's 14 major allergens. Admins tag each shared Ingredient with the Allergens it contains, and Members tag their Family Ingredients. A Recipe's Allergens are those of its Ingredient Lines, derived at read time and never stored or tagged on the Recipe.
+_Avoid_: Allergy (a Member's own), intolerance, trigger
+
+**Unchecked**:
+The state of an Ingredient Line whose Allergens are not known: an Unmatched name, or a Family Ingredient no Member has tagged yet. Ticking "no Allergens" on a Family Ingredient counts as tagging it. A shared Ingredient is never Unchecked; no tags means it contains none.
+_Avoid_: Unknown, untagged, unverified
+
 **Ingredient Icon**:
 The picture shown for an Ingredient wherever it appears, coloured by its Aisle. Several Ingredients may share one, and an Ingredient without one shows the Default Icon. Belongs to the Ingredient, never to a Product Description.
 _Avoid_: product icon, category icon, thumbnail
@@ -186,7 +194,19 @@ _Avoid_: Batch (a Batch is a Pantry purchase), queue
 Product, Receipt, Plate, or Ingredients.
 
 **Product Scan**:
-Recognises a single packaged product and its best-before date from a photo.
+Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
+
+**Barcode Lookup**:
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
+_Avoid_: Barcode scan, barcode mode
+
+**Known Barcode**:
+A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins.
+_Avoid_: Barcode cache, saved product
+
+**Prefill**:
+Filling the add-Batch form from a Product Scan or a Barcode Lookup. It fills only the fields the Member has not touched, and the Member still saves the Batch themselves.
+_Avoid_: Autofill, auto-add
 
 **Receipt Scan**:
 Recognises every purchased line on a receipt photo.
@@ -328,8 +348,20 @@ Settings shared by all Members of a Family: Default Expiry overrides per Categor
 _Avoid_: Preferences (reserved for per-Member settings)
 
 **Member Preferences**:
-Settings private to a Member: locale, Theme and Dashboard layout.
+Settings private to a Member: locale, Theme, Dashboard layout, and whether to hide Recipes containing their Allergies.
 _Avoid_: Settings
+
+**Allergy**:
+An Allergen a Member has said they must avoid, intolerances included. Each Member sets only their own, and every Member of their Family can see them. Not a Member Preference, because it is not private.
+_Avoid_: Allergen (the catalog entry), dietary restriction, intolerance
+
+**Family Allergy**:
+An Allergy the Family records for someone who is not a Member, such as a child, with an optional label like "Mia". Any Member can add or remove one, and it counts as every Member's own Allergy.
+_Avoid_: Shared allergy, household allergy
+
+**Allergy Warning**:
+The notice on a Recipe that contains an Allergy: stronger when a required Ingredient Line contains it, softer when only optional or Unchecked lines might. It names whose Allergy it is, the viewer's own and Family Allergies first. Recipes are hidden, when a Member chooses to, only for their own and Family Allergies in required lines, and only from browsing and matching, never from a Recipe's own page.
+_Avoid_: Alert, allergy badge
 
 **Theme**:
 The app's look, one of Warm editorial (`warm`, the default), Minimal crisp (`minimal`) and Dark-first (`dark`). A Member Preference, so it follows the Member across devices.

@@ -153,7 +153,7 @@ These stories were added on 2026-10-10 after a grilling session and number on fr
 - The UI package is a Material UI based component library themed with the handoff's tokens and fonts. Components are organised by atomic design (atoms, molecules, organisms). Storybook is configured but no stories are written in wave 1.
 - Web pages live under a pages directory, one directory per page named without the Page suffix, containing a main component with the Page suffix plus `hooks` and `components` subdirectories.
 - Routes: dashboard at root, customise, pantry, shopping, scan, plus settings, family, and admin routes not in the handoff. Recipes route exists as a placeholder screen in wave 1 so the Dock matches the design.
-- The barcode mode is not built. Product Scan is image-based.
+- The barcode mode is not built in wave 1. Product Scan is image-based. Barcode Lookup was added later; see [ADR 0013](adr/0013-barcode-lookup-is-not-a-scan.md).
 
 ### Auth and Family
 
@@ -275,7 +275,7 @@ No end-to-end browser tests in wave 1.
 - Recipes, favourites, Want to Cook, cook confirmation with Pantry deduction, recipe suggestions from Ingredients Scan, user recipes from Plate Scan.
 - Alerts and notifications, in-app or push: anything pushed to a Member or stored as a notification. The notifications table is not created in wave 1. Suggestions (see Quick List) are derived at read time and are not alerts.
 - Progressive web app installability, service worker, offline.
-- Barcode scanning and external product databases.
+- Barcode scanning and external product databases (since added; see [ADR 0013](adr/0013-barcode-lookup-is-not-a-scan.md)).
 - Multiple Families per Member, merging Pantries on join.
 - Multiple named Shopping Lists. Shopping Templates are not Shopping Lists: applying one adds items to the single active list.
 - Unit conversions between mass, volume, and count.
