@@ -75,6 +75,20 @@ describe('SCAN_DEBUG_DIR', () => {
   });
 });
 
+describe('Voice text model defaults', () => {
+  it('reads transcripts with gpt-5-mini at effort low, separate from the vision model', () => {
+    const env = validateEnv({ ...base, AI_VISION_MODEL: 'vendor-vision' });
+    expect(env.AI_TEXT_MODEL).toBe('gpt-5-mini');
+    expect(env.AI_TEXT_REASONING_EFFORT).toBe('low');
+  });
+
+  it('sends no text effort when the text model is set and the effort is not', () => {
+    const env = validateEnv({ ...base, AI_TEXT_MODEL: 'vendor-text' });
+    expect(env.AI_TEXT_MODEL).toBe('vendor-text');
+    expect(env.AI_TEXT_REASONING_EFFORT).toBeUndefined();
+  });
+});
+
 describe('Scan model defaults', () => {
   it('runs a fresh deploy on gpt-6-luna at effort none', () => {
     const env = validateEnv({ ...base });

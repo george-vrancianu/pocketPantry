@@ -1,12 +1,33 @@
 import { Module } from '@nestjs/common';
+import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
+import { CatalogModule } from '../catalog/catalog.module';
+import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
+import { PantryModule } from '../pantry/pantry.module';
 import { ScanModule } from '../scan/scan.module';
+import { SettingsModule } from '../settings/settings.module';
+import { ShoppingModule } from '../shopping/shopping.module';
 import { TranscriptionService } from './transcription.service';
 import { VoiceController } from './voice.controller';
+import { VoiceHandlers } from './voice-handlers.registry';
+import { VoiceReaderService } from './voice-reader.service';
 import { VoiceService } from './voice.service';
 
 @Module({
-  imports: [ScanModule],
+  imports: [
+    ScanModule,
+    CatalogModule,
+    IngredientCatalogModule,
+    SettingsModule,
+    ShoppingModule,
+    PantryModule,
+  ],
   controllers: [VoiceController],
-  providers: [TranscriptionService, VoiceService],
+  providers: [
+    StructuredOutputAiService,
+    TranscriptionService,
+    VoiceHandlers,
+    VoiceReaderService,
+    VoiceService,
+  ],
 })
 export class VoiceModule {}

@@ -16,6 +16,10 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 export const DEFAULT_VISION_MODEL = 'gpt-6-luna';
 /** Voice Note transcription model when AI_TRANSCRIBE_MODEL is unset. */
 export const DEFAULT_TRANSCRIBE_MODEL = 'gpt-transcribe';
+/** Voice Note text model (reads transcripts) when AI_TEXT_MODEL is unset, run at DEFAULT_TEXT_REASONING_EFFORT. */
+export const DEFAULT_TEXT_MODEL = 'gpt-5-mini';
+/** gpt-5-mini accepts minimal, low, medium and high; a transcript read needs little reasoning. */
+const DEFAULT_TEXT_REASONING_EFFORT: ReasoningEffort = 'low';
 /** Keeps temperature 0 on gpt-6-luna, and spends no reasoning tokens. */
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none';
 
@@ -34,6 +38,10 @@ const envSchema = z.object({
   AI_VISION_MODEL: z.string().min(1).default(DEFAULT_VISION_MODEL),
   /** Voice Notes: the audio transcription model, on the same key and base URL as the Scans. */
   AI_TRANSCRIBE_MODEL: z.string().min(1).default(DEFAULT_TRANSCRIBE_MODEL),
+  /** Voice Notes: the text model that reads a transcript into Voice Actions; separate from the vision model. */
+  AI_TEXT_MODEL: z.string().min(1).default(DEFAULT_TEXT_MODEL),
+  /** Reasoning effort for the text model. Unset: `low` with the default model, otherwise none is sent. */
+  AI_TEXT_REASONING_EFFORT: z.enum(REASONING_EFFORTS).optional(),
   /**
    * Reasoning effort for a reasoning model such as gpt-6-luna. Unset: `none` with the
    * default model, otherwise no effort is sent (gpt-4o-mini, openai-compatible vendors).
@@ -100,6 +108,11 @@ export function validateEnv(config: Record<string, unknown>): AppConfig {
       rest.AI_REASONING_EFFORT ??
       (present.AI_VISION_MODEL === undefined
         ? DEFAULT_REASONING_EFFORT
+        : undefined),
+    AI_TEXT_REASONING_EFFORT:
+      rest.AI_TEXT_REASONING_EFFORT ??
+      (present.AI_TEXT_MODEL === undefined
+        ? DEFAULT_TEXT_REASONING_EFFORT
         : undefined),
     // Only an explicit NODE_ENV=development counts, never the default for a missing one.
     SCAN_DEBUG_DIR:

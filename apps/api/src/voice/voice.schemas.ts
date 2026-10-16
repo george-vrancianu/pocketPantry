@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ResolvedVoiceAction } from './voice-actions';
 import {
   CATALOG_LOCALES,
   FALLBACK_LOCALE,
@@ -32,8 +33,10 @@ export const voiceNoteFields = z
 export type VoiceNoteFields = z.infer<typeof voiceNoteFields>;
 
 export type VoiceNoteResponse = {
-  /** What was said, as text. Empty when nothing was heard. */
+  /** What was said, as text. */
   transcript: string;
+  /** The Voice Actions read from it, each resolved against the current lists; nothing is written. */
+  actions: ResolvedVoiceAction[];
 };
 
 /** The container types a browser's MediaRecorder produces (Chromium webm, Safari mp4, Firefox ogg). */

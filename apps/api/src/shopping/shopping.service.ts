@@ -144,6 +144,20 @@ export class ShoppingService {
     });
   }
 
+  /**
+   * Adds one item with the merge rules inside the caller's transaction, under the
+   * active-list lock. For callers (Voice Notes) that write several things atomically.
+   */
+  async addInTransaction(
+    tx: Tx,
+    memberId: string,
+    body: MergeItemInput,
+    locale: CatalogLocale,
+  ): Promise<{ id: string; inserted: boolean }> {
+    const { listId, scope } = await this.lockActiveList(tx, memberId);
+    return this.mergeItem(tx, listId, scope, body, locale);
+  }
+
   /** Merges or inserts the item; answers with the Shopping Item it ended up on and whether that row is new. */
   private async mergeItem(
     tx: Tx,
