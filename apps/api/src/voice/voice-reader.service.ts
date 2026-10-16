@@ -73,7 +73,7 @@ export class VoiceReaderService {
         `Application catalog: ${this.ingredientCatalog.toPrompt(catalog)}`,
         'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry. Ingredient tuples in the catalog are [id, name, category].',
         `The note was spoken in ${LANGUAGE_NAMES[input.scanLanguage]}; the app is shown in ${LANGUAGE_NAMES[input.locale]}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`,
-        `Today is ${weekdayOf(input.today)} ${input.today}. The page the Member spoke on targets the ${input.defaultTarget} list: use target "${input.defaultTarget}" unless the note names the other list ("shopping list" or "pantry").`,
+        `Today is ${weekdayOf(input.today)} ${input.today}. The page the Member spoke on targets the ${input.defaultTarget} list: use target "${input.defaultTarget}" for each action unless that action names the other list ("shopping list" or "pantry"). An explicitly named list always wins over the page, and it applies to that action only: "got the bread, and put the yogurts straight in the pantry" is a shopping check and a pantry add.`,
         `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingItems))}.`,
         `Names currently in the Pantry (spelling hints only): ${JSON.stringify(names(batches))}.`,
         'Return one actions entry for every thing the Member asked for, in the order spoken. op is add, remove, check (bought or ticked off), uncheck, setQuantity (change an amount) or runningLow (the Pantry item is running low).',
