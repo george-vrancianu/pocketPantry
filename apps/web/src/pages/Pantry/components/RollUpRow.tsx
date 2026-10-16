@@ -2,6 +2,7 @@ import {
   Box,
   ChevronDownIcon,
   SwipeToggle,
+  type SwipeSweep,
   Typography,
   insetFocusRing,
   tokens,
@@ -76,11 +77,15 @@ export function RollUpRow({
   const staple = usePantryStaple(rollUp.key, rollUp.name);
   const rowActions = !expanded && !rollUp.unmatched && !rollUp.gone;
   const [popChip, setPopChip] = useState(false);
+  // The tint animates only for a flip from the closed row; undo, Batch changes, the open row's chip and
+  // the first load leave this unset or cleared, so they snap.
+  const [sweep, setSweep] = useState<SwipeSweep | null>(null);
   // From the closed row (swipe or L) the toast offers Undo and the row's chip pops in; the open
   // card's chip does neither.
   const flipLow = ({ fromRow = true }: { fromRow?: boolean } = {}) => {
     const on = !rollUp.runningLow;
     setPopChip(on && fromRow);
+    setSweep(fromRow ? { on, id: Date.now() } : null);
     lowToggle.toggle(
       { ingredientId: rollUp.key, name: rollUp.name, on },
       { undo: fromRow },
@@ -156,6 +161,8 @@ export function RollUpRow({
     <Box component="li" ref={item} sx={sx}>
       <SwipeToggle
         label={t(rollUp.runningLow ? 'group.notLow' : 'group.runningLow')}
+        on={rollUp.runningLow}
+        sweep={sweep}
         onToggle={onSwipeToggle}
         disabled={!rowActions}
       >
