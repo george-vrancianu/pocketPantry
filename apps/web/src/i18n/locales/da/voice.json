@@ -38,7 +38,23 @@
     "noUnit": "enhed",
     "change": "Skift",
     "changeMatch": "Skift match for {{name}}",
-    "remove": "Fjern {{name}}"
+    "remove": "Fjern {{name}}",
+    "pantry": {
+      "location": "Placering",
+      "chooseLocation": "Vælg en placering",
+      "expires": "Udløber",
+      "noExpiry": "Ingen udløbsdato",
+      "noDate": "ingen udløbsdato",
+      "whole": "hele partiet",
+      "take": "tager {{amount}}",
+      "batch": "{{amount}} · udløber {{date}}",
+      "noAmount": "ingen mængde",
+      "pickLabel": "Hvilket parti {{name}}?",
+      "pickPrompt": "Vælg et parti",
+      "pickNeeded": "Vælg det parti, der skal tages fra.",
+      "runningLow": "Marker {{name}} som ved at slippe op",
+      "shoppingFallback": "Tilføj {{name}} til indkøbslisten"
+    }
   },
   "toast": {
     "applied_one": "{{count}} stemmehandling anvendt.",
@@ -50,6 +66,11 @@
     "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
     "voice.not_supported": "understøttes ikke endnu",
     "voice.invalid_action": "ufuldstændig",
+    "pantry.batch_not_found": "partiet er allerede væk",
+    "voice.batch_required": "intet parti valgt",
+    "pantry.location_required": "ingen placering valgt",
+    "pantry.unit_required": "enhed påkrævet",
+    "pantry.ingredient_not_found": "ingrediensen er ikke længere tilgængelig",
     "other": "kunne ikke anvendes"
   }
 }

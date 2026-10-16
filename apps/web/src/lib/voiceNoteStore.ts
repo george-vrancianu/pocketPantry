@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { CatalogSearchResult, Unit } from './catalog';
+import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { Recording } from './microphone';
 import type { VoiceList, VoiceNoteResult, VoiceReviewAction } from './voice';
 
@@ -77,6 +77,10 @@ export const voiceNote = {
       unit: Unit | null;
       ingredient: CatalogSearchResult | null;
       name: string | null;
+      location: StorageLocation | null;
+      expiresOn: string | null;
+      noExpiry: boolean;
+      batchId: string | null;
     }>,
   ) {
     if (!state.note) return;

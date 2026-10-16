@@ -38,7 +38,23 @@
     "noUnit": "unit",
     "change": "Change",
     "changeMatch": "Change match for {{name}}",
-    "remove": "Remove {{name}}"
+    "remove": "Remove {{name}}",
+    "pantry": {
+      "location": "Location",
+      "chooseLocation": "Choose a location",
+      "expires": "Expires",
+      "noExpiry": "No expiry",
+      "noDate": "no expiry date",
+      "whole": "all of it",
+      "take": "takes {{amount}}",
+      "batch": "{{amount}} · expires {{date}}",
+      "noAmount": "no amount",
+      "pickLabel": "Which batch of {{name}}?",
+      "pickPrompt": "Choose a batch",
+      "pickNeeded": "Pick a batch to take it from.",
+      "runningLow": "Flag {{name}} as running low",
+      "shoppingFallback": "Add {{name}} to the Shopping List"
+    }
   },
   "toast": {
     "applied_one": "Applied {{count}} voice action.",
@@ -50,6 +66,11 @@
     "shopping.ingredient_not_found": "ingredient no longer available",
     "voice.not_supported": "not supported yet",
     "voice.invalid_action": "incomplete",
+    "pantry.batch_not_found": "that batch is already gone",
+    "voice.batch_required": "no batch picked",
+    "pantry.location_required": "no location chosen",
+    "pantry.unit_required": "unit needed",
+    "pantry.ingredient_not_found": "ingredient no longer available",
     "other": "could not be applied"
   }
 }

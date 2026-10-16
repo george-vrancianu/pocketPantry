@@ -15,6 +15,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AmountField } from './AmountField';
 import { MatchDialog } from './MatchDialog';
+import {
+  pantryActionIncomplete,
+  VoiceReviewPantryRow,
+} from './VoiceReviewPantryRow';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 import { translateApiError } from '../i18n/translateApiError';
 import { parseAmountText } from '../lib/pantry';
@@ -56,7 +60,11 @@ export function VoiceReview() {
   const [typed, setTyped] = useState<Record<string, string>>({});
 
   const actions = note?.actions ?? [];
-  const applicable = actions.filter((a) => a.status === 'ready');
+  const applicable = actions.filter(
+    (a) => a.status === 'ready' || (a.status === 'needsBatch' && a.batchId),
+  );
+  // A Pantry add with no Location, or a removal whose Batch is not picked, holds Apply back.
+  const incomplete = actions.filter(pantryActionIncomplete);
   const invalid = new Set(
     applicable
       .filter((a) => !parseAmountText(typed[a.id] ?? quantityText(a)).valid)
@@ -124,7 +132,10 @@ export function VoiceReview() {
             </Button>
             <Button
               disabled={
-                applicable.length === 0 || invalid.size > 0 || apply.isPending
+                applicable.length === 0 ||
+                invalid.size > 0 ||
+                incomplete.length > 0 ||
+                apply.isPending
               }
               onClick={() => apply.mutate()}
             >
@@ -261,6 +272,9 @@ function ActionRow({
   const { t } = useTranslation(['voice', 'common']);
   const name = displayName(action);
   const readOnly = action.status !== 'ready';
+  const pantry = action.target === 'pantry';
+  // A Pantry removal or Running low is tied to the Batches of its Match.
+  const canChangeMatch = !pantry || action.op === 'add';
 
   return (
     <Box
@@ -286,7 +300,7 @@ function ActionRow({
           </Typography>
         ) : null}
       </Box>
-      {readOnly ? null : (
+      {readOnly || (pantry && action.op === 'runningLow') ? null : (
         <>
           <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
             <AmountField
@@ -306,13 +320,15 @@ function ActionRow({
               onSubmit={() => undefined}
             />
           </Box>
-          <Button
-            variant="ghost"
-            aria-label={t('voice:review.changeMatch', { name })}
-            onClick={onChangeMatch}
-          >
-            {t('voice:review.change')}
-          </Button>
+          {canChangeMatch ? (
+            <Button
+              variant="ghost"
+              aria-label={t('voice:review.changeMatch', { name })}
+              onClick={onChangeMatch}
+            >
+              {t('voice:review.change')}
+            </Button>
+          ) : null}
         </>
       )}
       <IconButton
@@ -321,6 +337,9 @@ function ActionRow({
       >
         <CloseIcon />
       </IconButton>
+      {pantry && action.status !== 'notFound' ? (
+        <VoiceReviewPantryRow action={action} name={name} />
+      ) : null}
     </Box>
   );
 }

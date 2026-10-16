@@ -38,7 +38,23 @@
     "noUnit": "unitate",
     "change": "Schimbă",
     "changeMatch": "Schimbă potrivirea pentru {{name}}",
-    "remove": "Elimină {{name}}"
+    "remove": "Elimină {{name}}",
+    "pantry": {
+      "location": "Locație",
+      "chooseLocation": "Alege o locație",
+      "expires": "Expiră",
+      "noExpiry": "Fără expirare",
+      "noDate": "fără dată de expirare",
+      "whole": "tot lotul",
+      "take": "scoate {{amount}}",
+      "batch": "{{amount}} · expiră {{date}}",
+      "noAmount": "fără cantitate",
+      "pickLabel": "Ce lot de {{name}}?",
+      "pickPrompt": "Alege un lot",
+      "pickNeeded": "Alege lotul din care se scoate.",
+      "runningLow": "Marchează {{name}} ca pe terminate",
+      "shoppingFallback": "Adaugă {{name}} pe lista de cumpărături"
+    }
   },
   "toast": {
     "applied_one": "S-a aplicat {{count}} acțiune vocală.",
@@ -51,6 +67,11 @@
     "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
     "voice.not_supported": "încă nesuportat",
     "voice.invalid_action": "incompletă",
+    "pantry.batch_not_found": "lotul nu mai există",
+    "voice.batch_required": "niciun lot ales",
+    "pantry.location_required": "nicio locație aleasă",
+    "pantry.unit_required": "unitate necesară",
+    "pantry.ingredient_not_found": "ingredientul nu mai este disponibil",
     "other": "nu a putut fi aplicată"
   }
 }
