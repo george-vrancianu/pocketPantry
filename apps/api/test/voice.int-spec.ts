@@ -447,7 +447,7 @@ describe('Voice Note (integration)', () => {
       const { cookie } = await signUp();
       reading = {
         actions: [
-          model({ target: 'pantry', op: 'remove', spokenText: 'gone' }),
+          model({ target: 'pantry', op: 'setQuantity', spokenText: 'gone' }),
         ],
         unsupported: ['do a dance'],
       };
@@ -589,7 +589,7 @@ describe('Voice Note (integration)', () => {
         add({}, 'empty'),
         add({ name: 'Bread', quantity: 999_999, unit: 'kg' }, 'big'),
         add({ name: 'Bread', quantity: 999_999, unit: 'kg' }, 'big2'),
-        { ...add({ name: 'Bread' }, 'pantry'), target: 'pantry', op: 'remove' },
+        { ...add({ name: 'Bread' }, 'pantry'), target: 'pantry', op: 'check' },
       ]).expect(201);
       expect(response.body).toEqual({
         applied: ['ok', 'big'],

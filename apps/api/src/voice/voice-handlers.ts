@@ -12,6 +12,18 @@ import type {
 
 /** What a handler learns about the current lists; loaded once per request and shared. */
 export type VoiceListsView = {
+  /** The Family's Batches, soonest expiry first (undated last). */
+  pantryBatches(): Promise<
+    {
+      id: string;
+      ingredientId: string | null;
+      name: string;
+      quantity: number | null;
+      unit: VoiceUnit | null;
+      location: VoiceLocation;
+      expiryDate: string | null;
+    }[]
+  >;
   shoppingItems(): Promise<
     {
       id: string;
@@ -27,6 +39,8 @@ export type VoiceListsView = {
 export type ResolveContext = {
   memberId: string;
   locale: CatalogLocale;
+  /** The Member's local date. */
+  today: string;
   lists: VoiceListsView;
 };
 
@@ -39,6 +53,8 @@ export type Resolution = {
 export type ApplyContext = {
   memberId: string;
   locale: CatalogLocale;
+  /** The Member's local date (the client's, else the server's). */
+  today: string;
   /** The one transaction of the whole Apply; each action runs in its own savepoint. */
   tx: Tx;
 };
