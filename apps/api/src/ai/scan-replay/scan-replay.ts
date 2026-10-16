@@ -1,10 +1,11 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import {
   readAiUsage,
   type AiTokenUsage,
   type StructuredOutputRequest,
 } from '../structured-output-ai.service';
+import { VOICE_READ_SCHEMA_NAME } from '../../voice/voice-actions';
 import { INGREDIENTS_SCAN_SCHEMA_NAME } from '../../scan/ingredients-scan.schemas';
 import {
   PLATE_DISHES_SCHEMA_NAME,
@@ -75,12 +76,22 @@ export async function loadDebugCaptures(
   return { debugCaptures, skipped };
 }
 
+const exists = (path: string) =>
+  access(path).then(
+    () => true,
+    () => false,
+  );
+
 async function loadDebugCapture(
   dir: string,
   name: string,
 ): Promise<DebugCapture | SkippedDebugCapture> {
   let request: RecordedRequest;
   let response: RecordedResponse;
+  const VOICE_HINT = 'a Voice Note capture: replay it with voice:replay';
+  if (await exists(join(dir, 'transcription.json'))) {
+    return { name, reason: VOICE_HINT };
+  }
   try {
     request = JSON.parse(
       await readFile(join(dir, 'request.json'), 'utf8'),
@@ -90,6 +101,9 @@ async function loadDebugCapture(
     ) as RecordedResponse;
   } catch {
     return { name, reason: 'no request.json or response.json' };
+  }
+  if (request.schemaName === VOICE_READ_SCHEMA_NAME) {
+    return { name, reason: VOICE_HINT };
   }
   if (response.outcome !== 'ok') {
     return {

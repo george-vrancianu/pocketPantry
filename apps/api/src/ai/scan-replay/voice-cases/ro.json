@@ -1,0 +1,317 @@
+{
+  "source": "synthetic",
+  "note": "SYNTHETIC Romanian transcripts written by hand: not real Voice Notes and not recordings. They test the transcript read only. Real recordings still need capturing (see README.md).",
+  "cases": [
+    {
+      "id": "ro-01",
+      "scanLanguage": "ro",
+      "tags": ["basic"],
+      "transcript": "Adaugă lapte, ouă și pâine pe listă.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Lapte"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ouă"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Pâine"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-02",
+      "scanLanguage": "ro",
+      "tags": ["filler"],
+      "transcript": "Păi, deci, adică, aș vrea, știi tu, niște unt și, ăă, brânză.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Unt"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Brânză"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-03",
+      "scanLanguage": "ro",
+      "tags": ["correction", "units"],
+      "transcript": "Pune două, nu, trei mere.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mere",
+            "quantity": 3,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-04",
+      "scanLanguage": "ro",
+      "tags": ["correction"],
+      "transcript": "Adaugă ceapă. Stai, nu, mai bine usturoi.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Usturoi"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-05",
+      "scanLanguage": "ro",
+      "tags": ["units"],
+      "transcript": "Doi litri de lapte, jumătate de kil de făină, o duzină de ouă și patru roșii.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Lapte",
+            "quantity": 2,
+            "unit": "l"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Făină",
+            "quantity": 500,
+            "unit": "g"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ouă",
+            "quantity": 12,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Roșii",
+            "quantity": 4,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-06",
+      "scanLanguage": "ro",
+      "tags": ["relative-date", "units"],
+      "transcript": "Pune în cămară un kilogram de somon, expiră peste trei zile.",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Somon",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-07",
+      "scanLanguage": "ro",
+      "tags": ["relative-date"],
+      "transcript": "Pune două iaurturi în frigider, expiră mâine.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Iaurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "expiresOn": "2026-10-15",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-08",
+      "scanLanguage": "ro",
+      "tags": ["units", "relative-date"],
+      "transcript": "Adaugă un kil de orez, nu expiră niciodată.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Orez",
+            "quantity": 1,
+            "unit": "kg",
+            "noExpiry": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-09",
+      "scanLanguage": "ro",
+      "tags": ["unsupported"],
+      "transcript": "Cât costă un kilogram de roșii? Adaugă cafea.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Cafea"
+          }
+        ],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "ro-10",
+      "scanLanguage": "ro",
+      "tags": ["unsupported"],
+      "transcript": "Spune-mi o rețetă de sarmale.",
+      "expected": {
+        "actions": [],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "ro-11",
+      "scanLanguage": "ro",
+      "tags": ["mixed-lists", "relative-date", "units"],
+      "transcript": "Adaugă paste pe lista de cumpărături și pune trei lămâi în cămară, expiră pe douăzeci.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Paste"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Lămâi",
+            "quantity": 3,
+            "unit": "pcs",
+            "expiresOn": "2026-10-20"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-12",
+      "scanLanguage": "ro",
+      "tags": ["mixed-lists"],
+      "transcript": "Bifează pâinea, scoate laptele de pe listă și avem puțin orez în cămară.",
+      "shoppingList": ["Lapte", "Pâine"],
+      "pantry": ["Orez"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Pâine"
+          },
+          {
+            "target": "shopping",
+            "op": "remove",
+            "ingredient": "Lapte"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Orez"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-13",
+      "scanLanguage": "ro",
+      "tags": ["sound-alike"],
+      "transcript": "Adaugă pere, mere și ardei.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Pere"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mere"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ardei"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-14",
+      "scanLanguage": "ro",
+      "tags": ["sound-alike"],
+      "transcript": "Ceapă verde și ceapă, cea normală.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ceapă verde"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Ceapă"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ro-15",
+      "scanLanguage": "ro",
+      "tags": ["units"],
+      "transcript": "Schimbă laptele la trei litri.",
+      "shoppingList": ["Lapte"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Lapte",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    }
+  ]
+}
