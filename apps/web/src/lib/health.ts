@@ -112,11 +112,13 @@ const isMissingStaple = (ingredientId: string, input: HealthInput) =>
 
 /** What each Ingredient in Supply earns: the credit by its stock, Running low and Shopping List state. */
 function supplyCredits(input: HealthInput): number[] {
-  const stocked = new Set<string>();
-  for (const batch of input.batches)
-    if (batch.ingredientId !== null && isLive(batch, input))
-      stocked.add(batch.ingredientId);
-  const credits: number[] = [...stocked].map((id) =>
+  const held = new Set(
+    input.batches.flatMap((batch) =>
+      batch.ingredientId === null ? [] : [batch.ingredientId],
+    ),
+  );
+  const stocked = [...held].filter((id) => isStocked(id, input));
+  const credits: number[] = stocked.map((id) =>
     input.runningLow.has(id) ? (input.onShoppingList.has(id) ? 0.8 : 0.1) : 1,
   );
   const missing = new Set(
@@ -311,11 +313,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
       (id) => isMissingStaple(id, input) && !input.onShoppingList.has(id),
     );
   const runningLow = [...input.runningLow].filter(
-    (id) =>
-      !input.onShoppingList.has(id) &&
-      input.batches.some(
-        (batch) => batch.ingredientId === id && isLive(batch, input),
-      ),
+    (id) => !input.onShoppingList.has(id) && isStocked(id, input),
   );
   const undated = input.batches.filter((batch) => batch.expiryDate === null);
   const forgotten = undated

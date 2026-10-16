@@ -282,7 +282,7 @@ describe('pantry health score', () => {
       );
       expect(fresh0.factors.fresh).toBe(0);
       expect(fresh0.total).toBe(69);
-      // Supply 0 only: ten stocked Ingredients plus ten missing Staples.
+      // Supply 0 only: ten Unmatched Batches (left out) and one missing Staple.
       const supply0 = scored(
         input({
           batches: batches(10, { ingredientId: null }),
@@ -291,6 +291,29 @@ describe('pantry health score', () => {
       );
       expect(supply0.factors.supply).toBe(0);
       expect(supply0.total).toBe(55);
+    });
+
+    it('weights Dated 10 and Rotation 15', () => {
+      // One recent undated Batch: Dated 90 only. 30 + 45 + 9 + 15 = 99.
+      expect(
+        scored(input({ batches: [batch({ expiryDate: null }), ...batches(9)] }))
+          .total,
+      ).toBe(99);
+      // One undated Batch added 30 days ago (Forgotten in the fridge): Dated 90, Rotation 90.
+      // 30 + 45 + 9 + 13.5 = 97.5, rounded to 98.
+      const forgotten = scored(
+        input({
+          batches: [
+            batch({
+              expiryDate: null,
+              createdAt: '2026-09-15T08:00:00Z',
+            }),
+            ...batches(9),
+          ],
+        }),
+      );
+      expect(forgotten.factors.rotation).toBe(90);
+      expect(forgotten.total).toBe(98);
     });
 
     it('leaves Fresh out with no dated Batches and shares its weight', () => {
