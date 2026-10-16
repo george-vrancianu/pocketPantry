@@ -281,7 +281,11 @@ export function VoiceReview() {
   );
 }
 
-/** What a Pantry add falls back to for a Match: its Catalog Location and Default Expiry. */
+/**
+ * What a Pantry add falls back to for a Match: its Catalog Location and Default
+ * Expiry. Catalog search already applies the Family's expiry overrides to
+ * `expiryDays`, so this agrees with the server's `addDefaults`.
+ */
 function defaultsOf(ingredient: CatalogSearchResult) {
   const { location, expiryDays } = ingredient.defaults;
   return {

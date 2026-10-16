@@ -1,4 +1,4 @@
-import { VoiceNote } from '../Shopping/components/VoiceNote';
+import { VoiceNote } from '../../components/VoiceNote';
 import {
   Alert,
   Button,

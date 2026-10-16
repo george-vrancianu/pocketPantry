@@ -42,7 +42,6 @@
       "uncheck": "Uncheck",
       "remove": "Remove from list"
     },
-    "noUnit": "unit",
     "change": "Change",
     "changeMatch": "Change match for {{name}}",
     "remove": "Remove {{name}}",

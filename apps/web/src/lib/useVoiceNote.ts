@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { translateApiError } from '../../../i18n/translateApiError';
-import { ApiError } from '../../../lib/api';
+import { translateApiError } from '../i18n/translateApiError';
+import { ApiError } from './api';
 import {
   MicrophoneError,
   startRecording,
   type MicrophoneSession,
   type Recording,
-} from '../../../lib/microphone';
-import { localIso } from '../../../lib/pantry';
+} from './microphone';
+import { localIso } from './pantry';
 import {
   MAX_VOICE_NOTE_MS,
   micExplained,
@@ -17,13 +17,13 @@ import {
   rememberMicExplained,
   sendVoiceNote,
   type VoiceList,
-} from '../../../lib/voice';
+} from './voice';
 import {
   getVoiceNoteState,
   voiceNote,
   useVoiceNoteState,
-} from '../../../lib/voiceNoteStore';
-import { useScanLanguage } from '../../Scan/hooks/useScanLanguage';
+} from './voiceNoteStore';
+import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,

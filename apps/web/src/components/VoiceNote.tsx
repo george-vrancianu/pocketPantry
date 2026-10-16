@@ -10,10 +10,10 @@ import {
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { VoiceReview } from '../../../components/VoiceReview';
-import { ScanLanguageChip } from '../../Scan/components/ScanLanguageChip';
-import { useVoiceConfigured, type VoiceList } from '../../../lib/voice';
-import { useVoiceNote } from '../hooks/useVoiceNote';
+import { VoiceReview } from './VoiceReview';
+import { ScanLanguageChip } from '../pages/Scan/components/ScanLanguageChip';
+import { useVoiceConfigured, type VoiceList } from '../lib/voice';
+import { useVoiceNote } from '../lib/useVoiceNote';
 
 const formatElapsed = (ms: number) => {
   const seconds = Math.floor(ms / 1000);

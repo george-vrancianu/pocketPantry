@@ -42,7 +42,6 @@
       "uncheck": "Fjern afkrydsning",
       "remove": "Fjern fra listen"
     },
-    "noUnit": "enhed",
     "change": "Skift",
     "changeMatch": "Skift match for {{name}}",
     "remove": "Fjern {{name}}",

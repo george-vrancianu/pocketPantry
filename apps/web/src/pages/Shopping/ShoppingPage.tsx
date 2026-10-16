@@ -19,7 +19,7 @@ import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { EmptyListStart } from './components/EmptyListStart';
-import { VoiceNote } from './components/VoiceNote';
+import { VoiceNote } from '../../components/VoiceNote';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 

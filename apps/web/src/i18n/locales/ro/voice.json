@@ -42,7 +42,6 @@
       "uncheck": "Debifează",
       "remove": "Elimină din listă"
     },
-    "noUnit": "unitate",
     "change": "Schimbă",
     "changeMatch": "Schimbă potrivirea pentru {{name}}",
     "remove": "Elimină {{name}}",

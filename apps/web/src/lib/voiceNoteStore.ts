@@ -4,7 +4,7 @@ import type { Recording } from './microphone';
 import type { VoiceList, VoiceNoteResult, VoiceReviewAction } from './voice';
 
 /** Why the last Voice Note did not reach Review. */
-export type VoiceNotice =
+type VoiceNotice =
   | { kind: 'denied' }
   | { kind: 'unavailable' }
   | { kind: 'tooShort' }
@@ -12,14 +12,14 @@ export type VoiceNotice =
   | { kind: 'failed'; message: string; canRetry: boolean };
 
 /** A Voice Note being reviewed: what was said, and the Voice Actions as the Member is editing them. */
-export type VoiceReviewNote = {
+type VoiceReviewNote = {
   transcript: string;
   actions: VoiceReviewAction[];
   /** The list of the page that recorded it. */
   defaultTarget: VoiceList;
 };
 
-export type VoiceNoteState = {
+type VoiceNoteState = {
   sending: boolean;
   notice: VoiceNotice | null;
   /** A recording that failed to send, kept for Retry; never persisted, so a reload drops it. */
