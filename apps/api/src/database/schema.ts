@@ -636,7 +636,8 @@ export const unmatchedEntries = pgTable(
   ],
 );
 
-// Scan Cap bookkeeping: one row per Member per UTC day, counting Scans that reached the provider.
+// Daily cap bookkeeping: one row per Member per UTC day per kind, counting Scans (`scan`)
+// or Voice Notes (`voice`) that reached the provider.
 export const scanUsage = pgTable(
   'scan_usage',
   {
@@ -644,10 +645,13 @@ export const scanUsage = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     day: date('day', { mode: 'string' }).notNull(),
+    kind: text('kind', { enum: ['scan', 'voice'] })
+      .notNull()
+      .default('scan'),
     count: integer('count').notNull().default(0),
   },
   (table) => [
-    primaryKey({ columns: [table.memberId, table.day] }),
+    primaryKey({ columns: [table.memberId, table.day, table.kind] }),
     check('scan_usage_count_non_negative', sql`${table.count} >= 0`),
   ],
 );
