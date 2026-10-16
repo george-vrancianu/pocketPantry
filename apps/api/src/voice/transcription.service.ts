@@ -4,6 +4,10 @@ import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import type { ScanLanguage } from '../catalog/catalog.schemas';
+import {
+  createScanDebugRecorder,
+  type ScanDebugRecorder,
+} from '../ai/scan-debug-recorder';
 
 export const LANGUAGE_NAMES: Record<ScanLanguage, string> = {
   en: 'English',
@@ -19,6 +23,8 @@ export type TranscriptionRequest = {
   language: ScanLanguage;
   /** The other Scan Languages, as extra hints. */
   otherLanguages: ScanLanguage[];
+  /** Debug capture only: ties this recording to its transcript read. */
+  captureId?: string;
 };
 
 export type TranscriptionResult = { text: string };
@@ -29,6 +35,16 @@ const EXTENSIONS: Record<string, string> = {
   'audio/ogg': 'ogg',
 };
 
+/** The prompt hint sent with a recording; undefined when no other language is allowed. */
+export function transcriptionPrompt(
+  language: ScanLanguage,
+  otherLanguages: ScanLanguage[],
+): string | undefined {
+  if (otherLanguages.length === 0) return undefined;
+  const others = otherLanguages.map((l) => LANGUAGE_NAMES[l]);
+  return `A shopping and pantry note, mostly in ${LANGUAGE_NAMES[language]}; it may also contain ${others.join(' or ')} words.`;
+}
+
 const responseSchema = z.object({ text: z.string() });
 
 /**
@@ -38,7 +54,15 @@ const responseSchema = z.object({ text: z.string() });
  */
 @Injectable()
 export class TranscriptionService {
-  constructor(private readonly config: ConfigService<AppConfig, true>) {}
+  private readonly debug: ScanDebugRecorder | undefined;
+
+  constructor(private readonly config: ConfigService<AppConfig, true>) {
+    // Dev only, like the Scan captures: voice is personal data.
+    this.debug = createScanDebugRecorder(
+      config.get('NODE_ENV', { infer: true }),
+      config.get('SCAN_DEBUG_DIR', { infer: true }),
+    );
+  }
 
   /** Voice is on when there is a key, a transcription model, and (for a compatible vendor) a base URL. */
   isConfigured(): boolean {
@@ -56,6 +80,38 @@ export class TranscriptionService {
   ): Promise<TranscriptionResult> {
     if (!this.isConfigured())
       throw new ApiException(503, 'voice.not_configured');
+    if (!this.debug) return this.send(request);
+    const startedAt = new Date();
+    let transcript: string | undefined;
+    let error: { code: string } | undefined;
+    try {
+      const result = await this.send(request);
+      transcript = result.text;
+      return result;
+    } catch (caught) {
+      error = {
+        code: caught instanceof ApiException ? caught.code : 'unexpected',
+      };
+      throw caught;
+    } finally {
+      await this.debug.recordTranscription({
+        audio: request.audio,
+        mimeType: request.mimeType,
+        model: this.config.get('AI_TRANSCRIBE_MODEL', { infer: true }),
+        language: request.language,
+        prompt: transcriptionPrompt(request.language, request.otherLanguages),
+        startedAt,
+        durationMs: Date.now() - startedAt.getTime(),
+        captureId: request.captureId,
+        transcript,
+        error,
+      });
+    }
+  }
+
+  private async send(
+    request: TranscriptionRequest,
+  ): Promise<TranscriptionResult> {
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
     const model = this.config.get('AI_TRANSCRIBE_MODEL', { infer: true });
     const baseUrl = (
@@ -67,13 +123,11 @@ export class TranscriptionService {
     form.set('model', model);
     form.set('language', request.language);
     form.set('response_format', 'json');
-    if (request.otherLanguages.length > 0) {
-      const others = request.otherLanguages.map((l) => LANGUAGE_NAMES[l]);
-      form.set(
-        'prompt',
-        `A shopping and pantry note, mostly in ${LANGUAGE_NAMES[request.language]}; it may also contain ${others.join(' or ')} words.`,
-      );
-    }
+    const prompt = transcriptionPrompt(
+      request.language,
+      request.otherLanguages,
+    );
+    if (prompt) form.set('prompt', prompt);
     form.set(
       'file',
       new Blob([new Uint8Array(request.audio)], { type: request.mimeType }),
