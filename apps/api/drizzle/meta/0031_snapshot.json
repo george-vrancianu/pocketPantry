@@ -1,5 +1,5 @@
 {
-  "id": "10f920ee-c214-443c-ad8d-598234cb29bd",
+  "id": "8728b541-60d7-4431-9566-65d13f518686",
   "prevId": "9b663579-fe36-4abe-a1fc-1fee8fef39b9",
   "version": "7",
   "dialect": "postgresql",
@@ -3898,7 +3898,8 @@
         },
         "kind": {
           "name": "kind",
-          "type": "text",
+          "type": "usage_kind",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'scan'"
@@ -5286,6 +5287,14 @@
         "manual",
         "finish_shopping",
         "recipe"
+      ]
+    },
+    "public.usage_kind": {
+      "name": "usage_kind",
+      "schema": "public",
+      "values": [
+        "scan",
+        "voice"
       ]
     },
     "public.user_role": {

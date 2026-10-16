@@ -29,8 +29,9 @@ export class ScanCapService {
   ) {}
 
   /**
-   * Counts one Scan, atomically; throws `scan.cap_reached` once the Member is
-   * at the cap. Returns the UTC day it was counted on, which a refund must use.
+   * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap)
+   * or `voice.cap_reached` (Voice Cap) once the Member is at that kind's cap.
+   * Returns the UTC day it was counted on, which a refund must use.
    */
   async consume(
     memberId: string,
@@ -56,7 +57,7 @@ export class ScanCapService {
     return day;
   }
 
-  /** Counts the Scan before calling the provider, and hands it back if the provider fails. */
+  /** Counts one use of `kind` before calling the provider, and hands it back if the provider fails. */
   async withinCap<T>(
     memberId: string,
     run: () => Promise<T>,
@@ -72,7 +73,7 @@ export class ScanCapService {
   }
 
   /**
-   * Gives a Scan back when the provider failed, so an outage does not burn the
+   * Gives a use of `kind` back when the provider failed, so an outage does not burn the
    * Member's cap. `day` is the day `consume` returned, so a failure after UTC
    * midnight still refunds the day that was charged.
    */

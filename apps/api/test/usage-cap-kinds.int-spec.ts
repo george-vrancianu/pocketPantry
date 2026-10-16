@@ -1,5 +1,11 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { ConfigService } from '@nestjs/config';
+import { eq } from 'drizzle-orm';
 import request from 'supertest';
+import type { AppConfig } from '../src/config/env';
+import { DATABASE } from '../src/database/database.constants';
+import type { Database } from '../src/database/database.types';
+import { scanUsage } from '../src/database/schema';
 import { ScanCapService } from '../src/scan/scan-cap.service';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
@@ -53,5 +59,35 @@ describe('Daily caps counted by kind (integration)', () => {
     await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
       code: 'scan.cap_reached',
     });
+  });
+
+  it('refunds a voice use when the provider call fails, leaving scans alone', async () => {
+    const memberId = await signUp('refund');
+    for (let i = 0; i < 5; i++) {
+      await expect(
+        cap.withinCap(
+          memberId,
+          () => Promise.reject(new Error('provider down')),
+          'voice',
+        ),
+      ).rejects.toThrow('provider down');
+    }
+    // Never charged, so the full voice cap (2) is still available.
+    await cap.consume(memberId, new Date(), 'voice');
+    await cap.consume(memberId, new Date(), 'voice');
+  });
+
+  it('treats a voice cap of 0 as no cap and counts nothing', async () => {
+    const memberId = await signUp('nocap');
+    const uncapped = new ScanCapService(app.get<Database>(DATABASE), {
+      get: () => 0,
+    } as unknown as ConfigService<AppConfig, true>);
+    for (let i = 0; i < 5; i++) await uncapped.consume(memberId, now, 'voice');
+    const rows = await app
+      .get<Database>(DATABASE)
+      .select()
+      .from(scanUsage)
+      .where(eq(scanUsage.memberId, memberId));
+    expect(rows).toEqual([]);
   });
 });

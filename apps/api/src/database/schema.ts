@@ -29,6 +29,8 @@ const timestamps = {
 };
 
 export const userRole = pgEnum('user_role', ['admin', 'regular']);
+// What a daily cap counts: Scans or Voice Notes.
+export const usageKind = pgEnum('usage_kind', ['scan', 'voice']);
 export const familyRole = pgEnum('family_role', ['owner', 'member']);
 
 // A Family owns the Pantry, Shopping List and Family Settings.
@@ -645,9 +647,7 @@ export const scanUsage = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
     day: date('day', { mode: 'string' }).notNull(),
-    kind: text('kind', { enum: ['scan', 'voice'] })
-      .notNull()
-      .default('scan'),
+    kind: usageKind('kind').notNull().default('scan'),
     count: integer('count').notNull().default(0),
   },
   (table) => [
