@@ -51,12 +51,17 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
                   {t(`health.verdict.${health.verdict}`)}
                 </Box>
                 <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>
-                  {FACTORS.map((factor) =>
-                    t('health.factorValue', {
-                      name: t(`health.factor.${factor}`),
-                      value: health.factors[factor],
-                    }),
-                  ).join(' · ')}
+                  {FACTORS.flatMap((factor) => {
+                    const value = health.factors[factor];
+                    return value === undefined
+                      ? []
+                      : [
+                          t('health.factorValue', {
+                            name: t(`health.factor.${factor}`),
+                            value,
+                          }),
+                        ];
+                  }).join(' · ')}
                 </Box>
               </>
             ) : (
