@@ -2,6 +2,7 @@ import { keepConfident, type ResolvedMatch } from './catalog-matching';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
+  isLowConfidence,
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
@@ -38,8 +39,9 @@ function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
  * order. Arithmetic lines (totals, tax, payment, discounts) are dropped; other
  * lines the Scan left out of the Pantry stay, marked `excluded` with their
  * reason code, so the Member can re-include them. `resolve` supplies the validated
- * Catalog Ingredient for a line. A model Match below `threshold` is dropped,
- * which makes the line Unmatched; a Match found by exact name is kept.
+ * Catalog Ingredient for a line. The Match rule is `keepConfident`: a model
+ * Match below `threshold` is dropped, which makes the line Unmatched, while a
+ * Match found by exact name is kept.
  */
 export function receiptProposedLines(
   result: ReceiptScanResult,
@@ -70,7 +72,7 @@ export function receiptProposedLines(
         ),
         sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
         match: keepConfident(resolved, line.matchConfidence, threshold),
-        lowConfidence: line.confidence < threshold,
+        lowConfidence: isLowConfidence(line.confidence, threshold),
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,
