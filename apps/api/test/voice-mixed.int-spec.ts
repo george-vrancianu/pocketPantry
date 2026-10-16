@@ -252,23 +252,31 @@ describe('Voice Notes across both lists (integration)', () => {
           unit: 'pcs',
         }),
       ]);
+      // Fails the Pantry insert only when the bread add is already written in
+      // this transaction, so the test proves the first write happened.
       const trigger = `voice_mixed_fail_${counter}`;
-      await database.execute(
-        sql.raw(`CREATE FUNCTION ${trigger}() RETURNS trigger AS $$
-          BEGIN
-            IF NEW.family_id = '${familyId}' THEN RAISE EXCEPTION 'boom'; END IF;
-            RETURN NEW;
-          END $$ LANGUAGE plpgsql`),
-      );
-      await database.execute(
-        sql.raw(`CREATE TRIGGER ${trigger} BEFORE INSERT ON batches
-          FOR EACH ROW EXECUTE FUNCTION ${trigger}()`),
-      );
       try {
+        await database.execute(
+          sql.raw(`CREATE FUNCTION ${trigger}() RETURNS trigger AS $$
+            BEGIN
+              IF NEW.family_id = '${familyId}' AND EXISTS (
+                SELECT 1 FROM shopping_items i
+                JOIN shopping_lists l ON l.id = i.list_id
+                WHERE l.family_id = '${familyId}' AND i.ingredient_id = '${bread}'
+              ) THEN RAISE EXCEPTION 'boom'; END IF;
+              RETURN NEW;
+            END $$ LANGUAGE plpgsql`),
+        );
+        await database.execute(
+          sql.raw(`CREATE TRIGGER ${trigger} BEFORE INSERT ON batches
+            FOR EACH ROW EXECUTE FUNCTION ${trigger}()`),
+        );
         await applyRequest(cookie, actions.map(asSent)).expect(500);
       } finally {
-        await database.execute(sql.raw(`DROP TRIGGER ${trigger} ON batches`));
-        await database.execute(sql.raw(`DROP FUNCTION ${trigger}()`));
+        await database.execute(
+          sql.raw(`DROP TRIGGER IF EXISTS ${trigger} ON batches`),
+        );
+        await database.execute(sql.raw(`DROP FUNCTION IF EXISTS ${trigger}()`));
       }
       expect(await shoppingItems(cookie)).toEqual([]);
       expect(await batchNames(cookie)).toEqual([]);
