@@ -20,7 +20,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/catalog/seed/run-seed.ts",
-    "scan:replay": "tsx src/ai/scan-replay/run-scan-replay.ts"
+    "scan:replay": "tsx src/ai/scan-replay/run-scan-replay.ts",
+    "voice:replay": "tsx src/ai/scan-replay/run-voice-replay.ts"
   },
   "dependencies": {
     "@better-auth/core": "^1.7.7",

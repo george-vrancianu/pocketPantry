@@ -18,6 +18,8 @@ export type StructuredOutputRequest = {
   maxOutputTokens: number;
   /** Which configured model answers: the vision model (default, Scans) or the text model (Voice Notes). */
   model?: 'vision' | 'text';
+  /** Debug capture only: ties a Voice Note's transcript read to its recording. Never sent to the provider. */
+  captureId?: string;
 };
 
 export type StructuredOutputResult = {
