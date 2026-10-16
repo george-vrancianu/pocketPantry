@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SwipeToggle } from './SwipeToggle';
 
 function renderToggle(
-  props: { disabled?: boolean; label?: string } = {},
+  props: { disabled?: boolean; label?: string; on?: boolean } = {},
   onClick = vi.fn(),
 ) {
   const onToggle = vi.fn();
@@ -18,6 +18,7 @@ function renderToggle(
       label={props.label ?? 'Running low'}
       onToggle={onToggle}
       disabled={props.disabled}
+      on={props.on ?? false}
     >
       <button type="button" onClick={onClick}>
         Milk
@@ -28,6 +29,8 @@ function renderToggle(
     view.container.querySelector<HTMLElement>('[data-swipe-toggle-content]')!;
   const tab = () =>
     view.container.querySelector<HTMLElement>('[data-swipe-toggle-tab]')!;
+  const tint = () =>
+    view.container.querySelector<HTMLElement>('[data-swipe-toggle-tint]');
   const band = () =>
     view.container.querySelector<HTMLElement>('[data-swipe-toggle-band]')!;
   /** Press on the button at x=300 and drag to `300 + dx`. */
@@ -46,7 +49,17 @@ function renderToggle(
       clientX: 300 + dx,
       clientY: 0,
     });
-  return { view, onToggle, onClick, content, tab, band, drag, release };
+  return {
+    view,
+    onToggle,
+    onClick,
+    content,
+    tab,
+    tint,
+    band,
+    drag,
+    release,
+  };
 }
 
 function stubReducedMotion() {
@@ -66,6 +79,61 @@ describe('SwipeToggle', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
     Reflect.deleteProperty(navigator, 'vibrate');
+  });
+
+  describe('the Running low tint', () => {
+    it('shows the rail and glow while on, hidden from assistive technology', () => {
+      const { tint, content } = renderToggle({ on: true });
+      expect(tint()).not.toBeNull();
+      expect(tint()!.getAttribute('aria-hidden')).toBe('true');
+      expect(tint()!.querySelector('[data-swipe-toggle-rail]')).not.toBeNull();
+      expect(tint()!.querySelector('[data-swipe-toggle-glow]')).not.toBeNull();
+      expect(content().contains(tint())).toBe(true);
+    });
+
+    it('shows nothing while off', () => {
+      const { tint } = renderToggle({ on: false });
+      expect(tint()).toBeNull();
+    });
+
+    it('snaps in and out when the flag changes', () => {
+      const { view, tint } = renderToggle({ on: false });
+      const rerender = (on: boolean) =>
+        view.rerender(
+          <SwipeToggle label="Running low" onToggle={() => {}} on={on}>
+            <button type="button">Milk</button>
+          </SwipeToggle>,
+        );
+      rerender(true);
+      expect(tint()).not.toBeNull();
+      rerender(false);
+      expect(tint()).toBeNull();
+    });
+
+    it('moves with the row while dragging, with the band behind it', () => {
+      const { tint, content, band, drag } = renderToggle({ on: true });
+      drag(-60);
+      expect(content().contains(tint())).toBe(true);
+      expect(content().style.transform).toBe('translateX(-60px)');
+      expect(band()).not.toBeNull();
+      // The tint sits before the row's content, so the content draws over it.
+      const dim = content().querySelector('[data-swipe-toggle-dim]')!;
+      expect(
+        tint()!.compareDocumentPosition(dim) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('does not block taps or swipes', () => {
+      const { tint, onClick, onToggle, drag, release } = renderToggle({
+        on: true,
+      });
+      expect(getComputedStyle(tint()!).pointerEvents).toBe('none');
+      fireEvent.click(screen.getByRole('button', { name: 'Milk' }));
+      expect(onClick).toHaveBeenCalledTimes(1);
+      drag(-100);
+      release(-100);
+      expect(onToggle).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('has nothing behind the row at rest', () => {
