@@ -28,6 +28,9 @@ const WIPE_EDGE_PX = 48;
 /** A sweep request older than this never animates a change. */
 const SWEEP_FRESH_MS = 3000;
 
+/** A request to animate a change of `on`: the flag as it will be, and an id fresh for each request. */
+export type SwipeSweep = { on: boolean; id: number };
+
 type SweepPhase = 'idle' | 'in' | 'out';
 
 export type SwipeToggleProps = {
@@ -42,7 +45,7 @@ export type SwipeToggleProps = {
    * (a `Date.now()` stamp). It is used up by the first change of `on` after it arrives, and animates only if
    * it matches that change and is under 3 s old; any other change snaps. Reduced motion always snaps.
    */
-  sweep?: { on: boolean; id: number } | null;
+  sweep?: SwipeSweep | null;
   /** No swipe: the content stays put and taps go through as usual. */
   disabled?: boolean;
   /** The row's content, in practice its header button. Gets an opaque card background to cover the band. */
@@ -113,13 +116,21 @@ export function SwipeToggle({
       return;
     }
     setPhase(on ? 'in' : 'out');
+  }, [on, reduceMotion]);
+  // Reduced motion turned on mid-sweep ends it for good, so it cannot reappear when it turns off.
+  useLayoutEffect(() => {
+    if (reduceMotion) setPhase('idle');
+  }, [reduceMotion]);
+  // A sweep ends on its own; a new phase or unmount cancels the wait.
+  useEffect(() => {
+    if (phase === 'idle') return;
     const timer = setTimeout(
       () => setPhase('idle'),
-      on ? SWEEP_ON_MS : SWEEP_OFF_MS,
+      phase === 'in' ? SWEEP_ON_MS : SWEEP_OFF_MS,
     );
     return () => clearTimeout(timer);
-  }, [on, reduceMotion]);
-  const playing = reduceMotion ? 'idle' : phase;
+  }, [phase]);
+  const playing = phase;
 
   return (
     <Box

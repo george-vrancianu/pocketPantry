@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type ReactNode } from 'react';
 import { Box } from '../atoms/Layout';
 import { tokens } from '../theme/tokens';
-import { SwipeToggle } from './SwipeToggle';
+import { SwipeToggle, type SwipeSweep } from './SwipeToggle';
 
 const meta: Meta<typeof SwipeToggle> = {
   title: 'Molecules/SwipeToggle',
@@ -30,6 +30,17 @@ function ExpiryTag({ urgent }: { urgent?: boolean }) {
   );
 }
 
+/** A flag whose flips ask for the sweep, as the Pantry row does for a swipe. */
+function useSweepingFlag(initialOn: boolean) {
+  const [on, setOn] = useState(initialOn);
+  const [sweep, setSweep] = useState<SwipeSweep | null>(null);
+  const play = (next: boolean) => {
+    setSweep({ on: next, id: Date.now() });
+    setOn(next);
+  };
+  return { on, setOn, sweep, play };
+}
+
 /** A row that flips its own `on` when swiped to the zone. */
 function Row({
   name,
@@ -40,18 +51,14 @@ function Row({
   initialOn: boolean;
   urgent?: boolean;
 }) {
-  const [on, setOn] = useState(initialOn);
-  const [sweep, setSweep] = useState<{ on: boolean; id: number } | null>(null);
+  const { on, sweep, play } = useSweepingFlag(initialOn);
   return (
     <li>
       <SwipeToggle
         on={on}
         sweep={sweep}
         label={on ? 'Not low' : 'Running low'}
-        onToggle={() => {
-          setSweep({ on: !on, id: Date.now() });
-          setOn((value) => !value);
-        }}
+        onToggle={() => play(!on)}
       >
         <Box
           sx={{
@@ -113,12 +120,7 @@ export const OffAndOnStacked: Story = {
 
 /** Buttons that flip the flag the way a swipe does: Play on sweep, then Play off wipe. */
 function PlayRow() {
-  const [on, setOn] = useState(false);
-  const [sweep, setSweep] = useState<{ on: boolean; id: number } | null>(null);
-  const play = (next: boolean) => {
-    setSweep({ on: next, id: Date.now() });
-    setOn(next);
-  };
+  const { on, setOn, sweep, play } = useSweepingFlag(false);
   return (
     <Box sx={{ maxWidth: 420, p: 2 }}>
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>

@@ -7,7 +7,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { color } from '../theme/themeVars';
-import { SwipeToggle } from './SwipeToggle';
+import { SwipeToggle, type SwipeSweep } from './SwipeToggle';
 
 function renderToggle(
   props: { disabled?: boolean; label?: string; on?: boolean } = {},
@@ -83,7 +83,7 @@ describe('SwipeToggle', () => {
   });
 
   describe('the Running low sweep', () => {
-    type Sweep = { on: boolean; id: number } | null;
+    type Sweep = SwipeSweep | null;
     function renderSweep(initialOn: boolean) {
       const view = render(<Toggle on={initialOn} sweep={null} />);
       const rerender = (on: boolean, sweep: Sweep) =>
@@ -143,14 +143,10 @@ describe('SwipeToggle', () => {
     });
 
     it.each([
-      ['no request', null, false],
-      [
-        'a request for the other direction',
-        { on: false, id: Date.now() },
-        false,
-      ],
-      ['a request older than 3 s', { on: true, id: Date.now() - 3000 }, false],
-    ] as const)('snaps with %s', (_name, sweep, _unused) => {
+      ['no request', null],
+      ['a request for the other direction', { on: false, id: Date.now() }],
+      ['a request older than 3 s', { on: true, id: Date.now() - 3000 }],
+    ] as const)('snaps with %s', (_name, sweep) => {
       const { rerender, tint } = renderSweep(false);
       rerender(true, sweep as Sweep);
       expect(tint()).not.toBeNull();
@@ -187,6 +183,34 @@ describe('SwipeToggle', () => {
       rerender(true, request(true));
       expect(tint()!.hasAttribute('data-sweep')).toBe(false);
       rerender(false, request(false));
+      expect(tint()).toBeNull();
+    });
+
+    it('ends a sweep for good when reduced motion turns on mid-sweep', () => {
+      vi.useFakeTimers();
+      let reduce = false;
+      const listeners = new Set<() => void>();
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        get matches() {
+          return reduce && query.includes('reduce');
+        },
+        media: query,
+        addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+        removeEventListener: (_: string, fn: () => void) =>
+          listeners.delete(fn),
+        addListener: () => {},
+        removeListener: () => {},
+      }));
+      const setReduce = (value: boolean) => {
+        reduce = value;
+        act(() => listeners.forEach((fn) => fn()));
+      };
+      const { rerender, tint } = renderSweep(true);
+      rerender(false, request(false));
+      expect(tint()!.getAttribute('data-sweep')).toBe('off');
+      setReduce(true);
+      expect(tint()).toBeNull();
+      setReduce(false);
       expect(tint()).toBeNull();
     });
 

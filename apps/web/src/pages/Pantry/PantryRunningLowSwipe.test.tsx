@@ -41,10 +41,8 @@ const milkStaple = {
 };
 
 /** Running-low flags and Staples follow the PUT and DELETE calls, as the API does. */
-let serverFlagged = new Set<string>();
 function stubRunningLow(flaggedAtStart: string[] = []) {
   const flagged = new Set<string>(flaggedAtStart);
-  serverFlagged = flagged;
   let staples: (typeof milkStaple)[] = [];
   const { fetchMock, calls } = stubApi({
     'GET /api/pantry': () =>
@@ -82,7 +80,7 @@ function stubRunningLow(flaggedAtStart: string[] = []) {
     },
   });
   vi.stubGlobal('fetch', fetchMock);
-  return calls;
+  return { calls, flagged };
 }
 
 const row = (name: string) =>
@@ -117,25 +115,44 @@ function swipe(target: HTMLElement, dx: number) {
 
 async function renderPage(flagged: string[] = []) {
   vi.useFakeTimers({ shouldAdvanceTime: true });
-  const calls = stubRunningLow(flagged);
+  const { calls, flagged: serverFlagged } = stubRunningLow(flagged);
   const { queryClient } = renderWithProviders(<PantryPage />);
+  watchSweeps();
   await screen.findByRole('button', { name: /^Milk/ });
-  Object.assign(calls, { queryClient });
-  return calls;
+  return { calls, serverFlagged, queryClient };
 }
-/** Past the 220 ms between the release and the flag flipping. */
 const sweepOf = (name = 'Milk') =>
   tint(name)?.getAttribute('data-sweep') ?? null;
+
+/** Every data-sweep value that was ever on the page, so a short-lived sweep cannot slip by a later check. */
+let sweepsSeen: string[] = [];
+let sweepWatcher: MutationObserver | undefined;
+function watchSweeps() {
+  sweepsSeen = [];
+  sweepWatcher = new MutationObserver(() => {
+    document
+      .querySelectorAll('[data-sweep]')
+      .forEach((el) => sweepsSeen.push(el.getAttribute('data-sweep')!));
+  });
+  sweepWatcher.observe(document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ['data-sweep'],
+  });
+}
+/** Past the 220 ms between the release and the flag flipping. */
 const settle = () => act(() => vi.advanceTimersByTimeAsync(250));
 
 describe('swiping an Ingredient row to toggle Running low', () => {
   afterEach(() => {
+    sweepWatcher?.disconnect();
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
   it('does nothing on a release short of 92 pt', async () => {
-    const calls = await renderPage();
+    const { calls } = await renderPage();
     swipe(row('Milk'), -91);
     await settle();
     expect(saves(calls)).toEqual([]);
@@ -151,7 +168,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   });
 
   it('flags the Ingredient at 92 pt, shows the chip, and Undo clears it again', async () => {
-    const calls = await renderPage();
+    const { calls } = await renderPage();
     swipe(row('Milk'), -92);
     // The row springs back first; the flag flips 220 ms later.
     expect(saves(calls)).toEqual([]);
@@ -174,7 +191,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   });
 
   it('clears the flag on a row already running low', async () => {
-    const calls = await renderPage(['milk-id']);
+    const { calls } = await renderPage(['milk-id']);
     expect(chip()).toBeVisible();
     swipe(row('Milk'), -120);
     await settle();
@@ -195,7 +212,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   });
 
   it('does nothing on an open row', async () => {
-    const calls = await renderPage();
+    const { calls } = await renderPage();
     fireEvent.click(row('Milk'));
     expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
 
@@ -206,7 +223,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   });
 
   it('does nothing on an Unmatched row', async () => {
-    const calls = await renderPage();
+    const { calls } = await renderPage();
     swipe(row('Zorblax paste'), -120);
     await settle();
     expect(saves(calls)).toEqual([]);
@@ -306,7 +323,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
     });
 
     it('flips once and animates once for two quick swipes', async () => {
-      const calls = await renderPage();
+      const { calls } = await renderPage();
       swipe(row('Milk'), -92);
       await act(() => vi.advanceTimersByTimeAsync(100));
       swipe(row('Milk'), -92);
@@ -322,8 +339,11 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       swipe(row('Milk'), -92);
       await settle();
       await waitFor(() => expect(tint()).not.toBeNull());
+      await waitFor(() => expect(sweepOf()).toBeNull());
       fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-      await waitFor(() => expect(tint()).toBeNull());
+      await waitFor(() => expect(chip()).toBeNull());
+      expect(tint()).toBeNull();
+      expect(sweepsSeen).not.toContain('off');
     });
 
     it('shows and removes the tint without animating from the open row chip', async () => {
@@ -345,7 +365,16 @@ describe('swiping an Ingredient row to toggle Running low', () => {
           pressed: true,
         }),
       );
-      await waitFor(() => expect(tint()).toBeNull());
+      await waitFor(() =>
+        expect(
+          within(item).getByRole('button', {
+            name: /running low/i,
+            pressed: false,
+          }),
+        ).toBeVisible(),
+      );
+      expect(tint()).toBeNull();
+      expect(sweepsSeen).toEqual([]);
     });
 
     it('does not animate a chip flip that follows an earlier swipe', async () => {
@@ -362,7 +391,16 @@ describe('swiping an Ingredient row to toggle Running low', () => {
           pressed: true,
         }),
       );
-      await waitFor(() => expect(tint()).toBeNull());
+      await waitFor(() =>
+        expect(
+          within(item).getByRole('button', {
+            name: /running low/i,
+            pressed: false,
+          }),
+        ).toBeVisible(),
+      );
+      expect(tint()).toBeNull();
+      expect(sweepsSeen).not.toContain('off');
     });
 
     it('does not animate rows flagged when the Pantry loads', async () => {
@@ -371,27 +409,45 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       expect(sweepOf()).toBeNull();
     });
 
-    it('clears the tint without animating when adding a Batch clears the flag', async () => {
-      const { queryClient } = (await renderPage(['milk-id'])) as unknown as {
-        queryClient: {
-          invalidateQueries: (o: { queryKey: string[] }) => unknown;
-        };
-      };
+    it('clears the tint without animating when the server clears the flag and the Pantry is read again', async () => {
+      // Adding or removing a Batch does this: the API drops the flag and the Pantry read comes back without it.
+      const { queryClient, serverFlagged } = await renderPage(['milk-id']);
       expect(tint()).not.toBeNull();
-      // The server drops the flag when a Batch is added; the Pantry read then comes back without it.
       serverFlagged.delete('milk-id');
       await act(async () => {
         await queryClient.invalidateQueries({ queryKey: ['pantry'] });
       });
       await waitFor(() => expect(tint()).toBeNull());
+      expect(sweepsSeen).toEqual([]);
+    });
+
+    it('snaps in both directions under reduced motion', async () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('reduce'),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+      }));
+      await renderPage();
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() => expect(chip()).toBeVisible());
+      expect(tint()).not.toBeNull();
       expect(sweepOf()).toBeNull();
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() => expect(chip()).toBeNull());
+      expect(tint()).toBeNull();
+      expect(sweepsSeen).toEqual([]);
     });
   });
 
   describe('the L key', () => {
     it('toggles Running low on a focused closed row, which says so', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const calls = await renderPage();
+      const { calls } = await renderPage();
       await waitFor(() =>
         expect(row('Milk')).toHaveAccessibleDescription(
           'Press L: Mark running low. Press S: Make Staple.',
@@ -413,7 +469,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
 
     it('does nothing on an open row or an Unmatched row', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const calls = await renderPage();
+      const { calls } = await renderPage();
       expect(row('Zorblax paste')).not.toHaveAccessibleDescription();
       row('Zorblax paste').focus();
       await user.keyboard('l');
@@ -429,7 +485,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
   describe('the S key', () => {
     it('makes a focused closed row a Staple, and then no longer one, saying so each time', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const calls = await renderPage();
+      const { calls } = await renderPage();
       await waitFor(() =>
         expect(row('Milk')).toHaveAccessibleDescription(
           'Press L: Mark running low. Press S: Make Staple.',
@@ -460,7 +516,7 @@ describe('swiping an Ingredient row to toggle Running low', () => {
 
     it('does nothing on an open row or an Unmatched row', async () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const calls = await renderPage();
+      const { calls } = await renderPage();
       row('Zorblax paste').focus();
       await user.keyboard('s');
 

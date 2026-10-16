@@ -2,6 +2,7 @@ import {
   Box,
   ChevronDownIcon,
   SwipeToggle,
+  type SwipeSweep,
   Typography,
   insetFocusRing,
   tokens,
@@ -78,7 +79,7 @@ export function RollUpRow({
   const [popChip, setPopChip] = useState(false);
   // The tint animates only for a flip from the closed row; undo, Batch changes, the open row's chip and
   // the first load leave this unset or cleared, so they snap.
-  const [sweep, setSweep] = useState<{ on: boolean; id: number } | null>(null);
+  const [sweep, setSweep] = useState<SwipeSweep | null>(null);
   // From the closed row (swipe or L) the toast offers Undo and the row's chip pops in; the open
   // card's chip does neither.
   const flipLow = ({ fromRow = true }: { fromRow?: boolean } = {}) => {
