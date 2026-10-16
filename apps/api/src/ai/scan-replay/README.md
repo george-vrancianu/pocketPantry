@@ -49,7 +49,7 @@ Notes:
 
 ## Turning a capture into a case
 
-Make a private case folder, `apps/api/.voice-cases/` (git-ignored), and copy `catalog.json` from the seed set (replace it with ingredients that match your notes; the ids are only used to name matches). Copy each `audio.*` to `.voice-cases/audio/` and write a case file such as `.voice-cases/en.json`:
+Make a private case folder, `apps/api/.voice-cases/` (git-ignored). Copy each `audio.*` to `.voice-cases/audio/` and write a case file such as `.voice-cases/en.json`:
 
 ```json
 {
@@ -92,7 +92,7 @@ Make a private case folder, `apps/api/.voice-cases/` (git-ignored), and copy `ca
 - `transcript` is what was really said, typed by hand (copy it from `transcription.json` and correct it). Transcription replay scores against it as word error rate; the transcript read replays from it.
 - `today`, `defaultTarget`, `locale` (defaults to `scanLanguage`), `shoppingList` and `pantry` (names already on the lists) come from the `voice_note_actions` capture's prompt ("Today is ...", "targets the ... list", the two "Names currently ..." lines). `today` should be a fixed date so relative dates have one right answer.
 - `tags` (at least one): `basic`, `filler`, `correction`, `units`, `relative-date`, `unsupported`, `mixed-lists`, `sound-alike`.
-- `expected.actions` lists the Voice Actions that should come back, in any order. Per action: `target` (`shopping`/`pantry`), `op` (`add`, `remove`, `check`, `uncheck`, `setQuantity`, `runningLow`), `ingredient` (the name Review shows: the Catalog name in the case's locale, or the generic name when Unmatched; an array lists acceptable alternatives), and the fields that matter. `quantity`, `unit` (a quantity needs one, except for `check`), `expiresOn` and `noExpiry` default to none/false, so an invented amount or date is a miss. `scope` and `location` are checked only when you write them. A bare number is read as pieces (`pcs`), as in the app.
+- `expected.actions` lists the Voice Actions that should come back, in any order. Per action: `target` (`shopping`/`pantry`), `op` (`add`, `remove`, `check`, `uncheck`, `setQuantity`, `runningLow`), `ingredient` (the name Review shows: the seed Catalog name in the case's locale (`src/catalog/seed`, the whole seed Catalog is what every read is sent, built as the app builds a Member's Catalog), or the generic name when Unmatched; an array lists acceptable alternatives), and the fields that matter. `quantity`, `unit` (a quantity needs one, except for `check`), `expiresOn` and `noExpiry` default to none/false, so an invented amount or date is a miss. `scope` and `location` are checked only when you write them. A bare number is read as pieces (`pcs`), as in the app.
 - `expected.unsupported` is how many phrases should come back as Didn't understand (questions, chat, recipes). Only the count is compared.
 
 ## Running it
@@ -108,7 +108,7 @@ npm run voice:replay -- --mode transcribe --cases .voice-cases --model gpt-trans
 | Option                      | Default                                 |                                                                                                                                  |
 | --------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `--mode <read\|transcribe>` | `read`                                  | Which half to replay                                                                                                             |
-| `--cases <dir>`             | `src/ai/scan-replay/voice-cases`        | Folder with `catalog.json` and the case files (`*.json`; subfolders are ignored)                                                 |
+| `--cases <dir>`             | `src/ai/scan-replay/voice-cases`        | Folder with the case files (`*.json`; subfolders are ignored)                                                                    |
 | `--model <name>`            | `AI_TEXT_MODEL` / `AI_TRANSCRIBE_MODEL` | Model to replay on (defaults `gpt-5-mini` / `gpt-transcribe`)                                                                    |
 | `--effort <e>`              | `AI_TEXT_REASONING_EFFORT`              | Read mode only: `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `unset`. Unset env: `low` for `gpt-5-mini`, else `unset` |
 | `--price <in,cached,out>`   | none                                    | Read mode: USD per 1M tokens for the model, to estimate cost. Without it a model with no list price in the code shows `-`        |
@@ -120,7 +120,7 @@ npm run voice:replay -- --mode transcribe --cases .voice-cases --model gpt-trans
 
 The key and provider come from the shell, then `.env.local`, `.env` and `../../.env`, like the API (`AI_API_KEY`, `AI_PROVIDER`, `AI_BASE_URL`). The script never writes new debug captures. Every run is a billed call: start with `--limit 3`.
 
-Read mode writes `<out>/<time>-voice-read-<model>-<effort>/report.md` and `answers.json`. The report totals passed runs, tokens, estimated cost (and per run) and mean latency; then breaks results down by Scan Language (actions matched, mismatched, missing, extra) and by tag; then lists every miss with the field that differs. A run **passes** when every expected action was read exactly, nothing extra was read, and the unsupported count matches. A model's matched Ingredient counts only at or above `SCAN_MATCH_CONFIDENCE_THRESHOLD` (default 0.6), as in the app; the app's Matching and date sanity checks are not applied.
+Read mode writes `<out>/<time>-voice-read-<model>-<effort>/report.md` and `answers.json`. The report totals passed runs, tokens, estimated cost (and per run) and mean latency; then breaks results down by Scan Language (actions matched, mismatched, missing, extra) and by tag; then lists every miss with the field that differs. A run **passes** when every expected action was read exactly, nothing extra was read, and the unsupported count matches. A model's matched Ingredient counts only at or above `SCAN_MATCH_CONFIDENCE_THRESHOLD` (default 0.6), as in the app; Matching is approximated: a confident proposed Ingredient wins, otherwise an exact name or Synonym hit on the fallback name or spoken text (as `CatalogMatchService` does), over the shared seed Catalog only. The date sanity check (`sensibleDate`) and list state are not applied.
 
 Transcription mode writes `<out>/<time>-voice-transcribe-<model>/report.md` and `results.json`: per case the latency, word errors against the typed transcript and what was heard when it differs, with word error rate per Scan Language. Cost is not estimated (audio is not billed per token). The recording's extension (`.webm`, `.mp4`/`.m4a`, `.ogg`) sets the mime type sent.
 

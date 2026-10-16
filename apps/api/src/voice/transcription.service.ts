@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import type { ScanLanguage } from '../catalog/catalog.schemas';
+import { AUDIO_EXTENSIONS } from './voice.schemas';
 import {
   createScanDebugRecorder,
   type ScanDebugRecorder,
@@ -28,12 +29,6 @@ export type TranscriptionRequest = {
 };
 
 export type TranscriptionResult = { text: string };
-
-const EXTENSIONS: Record<string, string> = {
-  'audio/webm': 'webm',
-  'audio/mp4': 'mp4',
-  'audio/ogg': 'ogg',
-};
 
 /** The prompt hint sent with a recording; undefined when no other language is allowed. */
 export function transcriptionPrompt(
@@ -131,7 +126,7 @@ export class TranscriptionService {
     form.set(
       'file',
       new Blob([new Uint8Array(request.audio)], { type: request.mimeType }),
-      `voice-note.${EXTENSIONS[request.mimeType] ?? 'webm'}`,
+      `voice-note.${(AUDIO_EXTENSIONS as Record<string, string>)[request.mimeType] ?? 'webm'}`,
     );
 
     let response: Response;

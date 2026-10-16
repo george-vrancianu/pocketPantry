@@ -1,24 +1,43 @@
 import type { ModelVoiceAction } from '../../voice/voice-actions';
+import type { VoiceCatalog } from './voice-catalog';
 import {
   compareActions,
   compareTranscripts,
   normalizeActions,
   voiceCaseFileSchema,
-  type VoiceCatalog,
 } from './voice-cases';
 
+const none = { en: [], ro: [], da: [] };
 const catalog: VoiceCatalog = {
   categories: ['Dairy', 'Fruit'],
   ingredients: [
     {
       id: '00000000-0000-4000-8000-000000000001',
       category: 'Dairy',
+      defaultUnit: 'l',
       names: { en: 'Milk', ro: 'Lapte', da: 'Mælk' },
+      synonyms: { en: ['cow milk'], ro: [], da: ['sødmælk'] },
     },
     {
       id: '00000000-0000-4000-8000-000000000002',
       category: 'Fruit',
-      names: { en: 'Apples', ro: 'Mere', da: 'Æbler' },
+      defaultUnit: 'pcs',
+      names: { en: 'Apple', ro: 'Mere', da: 'Æbler' },
+      synonyms: none,
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000003',
+      category: 'Fruit',
+      defaultUnit: 'pcs',
+      names: { en: 'Apple pie', ro: 'Plăcintă', da: 'Æbletærte' },
+      synonyms: { en: ['pie'], ro: [], da: [] },
+    },
+    {
+      id: '00000000-0000-4000-8000-000000000004',
+      category: 'Fruit',
+      defaultUnit: 'pcs',
+      names: { en: 'Pear pie', ro: 'Plăcintă cu pere', da: 'Pæretærte' },
+      synonyms: { en: ['pie'], ro: [], da: [] },
     },
   ],
 };
@@ -66,6 +85,48 @@ describe('normalizeActions', () => {
       0.6,
     );
     expect(out.map((a) => a.ingredient)).toEqual(['Milk', 'Quinoa crackers']);
+  });
+
+  it('rescues a doubted or missing Match by an exact name or Synonym, as the app does', () => {
+    const out = normalizeActions(
+      {
+        actions: [
+          modelAction({
+            matchConfidence: 0.2,
+            fallbackIngredientName: 'Cow milk',
+          }),
+          modelAction({
+            matchedIngredientId: null,
+            matchConfidence: 0,
+            fallbackIngredientName: 'dairy thing',
+            spokenText: 'sødmælk',
+          }),
+          modelAction({
+            matchedIngredientId: null,
+            matchConfidence: 0,
+            fallbackIngredientName: 'Pie',
+            spokenText: 'a pie',
+          }),
+          modelAction({
+            matchedIngredientId: '00000000-0000-4000-8000-0000000000ff',
+            matchConfidence: 0.9,
+            fallbackIngredientName: 'Apple',
+          }),
+        ],
+        unsupported: [],
+      },
+      catalog,
+      'da',
+      0.6,
+    );
+    // The doubted proposal gives way to the exact hit; "Pie" is claimed by two Ingredients;
+    // a confident but unknown id is not looked up by name.
+    expect(out.map((a) => a.ingredient)).toEqual([
+      'Mælk',
+      'Mælk',
+      'Pie',
+      'Apple',
+    ]);
   });
 
   it('counts a bare number as pieces, and drops the date of a no-expiry action', () => {

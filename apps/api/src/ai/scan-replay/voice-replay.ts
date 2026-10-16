@@ -12,15 +12,17 @@ import type { AiTokenUsage } from '../structured-output-ai.service';
 import { estimateCostUsd, type Price, type ReplayRun } from './scan-replay';
 import {
   catalogTextFor,
+  seedVoiceCatalog,
+  type VoiceCatalog,
+} from './voice-catalog';
+import {
   compareActions,
   normalizeActions,
   voiceCaseFileSchema,
-  voiceCatalogSchema,
   type ActionComparison,
   type CaseTag,
   type TranscriptComparison,
   type VoiceCase,
-  type VoiceCatalog,
 } from './voice-cases';
 
 export type LoadedVoiceCase = VoiceCase & {
@@ -31,8 +33,6 @@ export type LoadedVoiceCase = VoiceCase & {
   /** Absolute path of the recording, when the case has one. */
   audioPath?: string;
 };
-
-const CATALOG_FILE = 'catalog.json';
 
 const readJson = (path: string, label: string): unknown => {
   try {
@@ -45,24 +45,17 @@ const readJson = (path: string, label: string): unknown => {
 };
 
 /**
- * Loads `catalog.json` and every other `*.json` file of `dir` (subfolders, such as the
- * recordings, are ignored). A file that does not fit the case format throws, naming it.
+ * Loads every `*.json` file of `dir` (subfolders, such as the recordings, are ignored) and
+ * pairs the cases with the seed Catalog, which every read is sent. A file that does not fit
+ * the case format throws, naming it.
  */
 export function loadVoiceCaseSet(
   dir: string,
   filter: { only?: string[]; language?: ScanLanguage } = {},
 ): { catalog: VoiceCatalog; cases: LoadedVoiceCase[] } {
   const root = resolve(dir);
-  const catalogResult = voiceCatalogSchema.safeParse(
-    readJson(join(root, CATALOG_FILE), CATALOG_FILE),
-  );
-  if (!catalogResult.success) {
-    throw new Error(`${CATALOG_FILE}: ${describeIssues(catalogResult.error)}`);
-  }
   const files = readdirSync(root, { withFileTypes: true })
-    .filter(
-      (e) => e.isFile() && e.name.endsWith('.json') && e.name !== CATALOG_FILE,
-    )
+    .filter((e) => e.isFile() && e.name.endsWith('.json'))
     .map((e) => e.name)
     .sort();
   const cases: LoadedVoiceCase[] = [];
@@ -86,7 +79,7 @@ export function loadVoiceCaseSet(
     }
   }
   return {
-    catalog: catalogResult.data,
+    catalog: seedVoiceCatalog(),
     cases: cases.filter(
       (c) =>
         (!filter.only || filter.only.includes(c.id)) &&
@@ -164,6 +157,13 @@ const usd = (value: number | undefined) =>
   value === undefined ? '-' : `$${value.toFixed(4)}`;
 const seconds = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
+/** A failed run's time is a timeout or an early error: it says nothing about latency. */
+const meanLatency = (runs: { ok: boolean; durationMs: number }[]) => {
+  const done = runs.filter((r) => r.ok);
+  return done.length
+    ? seconds(sum(done.map((r) => r.durationMs)) / done.length)
+    : '-';
+};
 
 export type ReadReportInput = {
   model: string;
@@ -193,7 +193,8 @@ export function renderReadReport({
     `# Voice Note read replay: ${model}, effort ${effort}, ${repeat} run(s) per case`,
     '',
     `Runs: ${results.length}, passed ${passed}, failed to answer ${failed.length}. A run passes when every expected Voice Action was read exactly, nothing extra was read, and the unsupported count matches.`,
-    `Tokens: ${sum(usage.map((u) => u.inputTokens))} in (${sum(usage.map((u) => u.cachedInputTokens ?? 0))} cached), ${sum(usage.map((u) => u.outputTokens))} out (${sum(usage.map((u) => u.reasoningTokens ?? 0))} reasoning). Estimated cost: ${usd(totalCost)}${perRun === undefined ? '' : ` (${usd(perRun)} per run)`}. Mean latency: ${results.length ? seconds(sum(results.map((r) => r.durationMs)) / results.length) : '-'}.`,
+    `Tokens: ${sum(usage.map((u) => u.inputTokens))} in (${sum(usage.map((u) => u.cachedInputTokens ?? 0))} cached), ${sum(usage.map((u) => u.outputTokens))} out (${sum(usage.map((u) => u.reasoningTokens ?? 0))} reasoning). Estimated cost: ${usd(totalCost)}${perRun === undefined ? '' : ` (${usd(perRun)} per run)`}. Mean latency (successful runs): ${meanLatency(results)}.`,
+    'Matching is approximated on the seed Catalog (not a Family Catalog): a confident proposed Ingredient wins, else an exact name or Synonym hit on the fallback name or spoken text, as in the app. Dates are scored as the model read them (no sensibleDate clamp), and no Pantry or Shopping List state is resolved.',
   ];
   if (results.some((r) => r.source === 'synthetic')) {
     lines.push(
@@ -295,7 +296,7 @@ export function renderTranscriptionReport({
   const lines = [
     `# Voice Note transcription replay: ${model}`,
     '',
-    `Replayed: ${results.length}, failed ${results.length - ok.length}, exact ${ok.filter((r) => r.comparison!.exact).length}. Word error rate: ${wer(errors, words)} (${errors} word errors in ${words} words). Mean latency: ${results.length ? seconds(sum(results.map((r) => r.durationMs)) / results.length) : '-'}. Transcription is billed per audio, not per token: cost is not estimated here.`,
+    `Replayed: ${results.length}, failed ${results.length - ok.length}, exact ${ok.filter((r) => r.comparison!.exact).length}. Word error rate: ${wer(errors, words)} (${errors} word errors in ${words} words). Mean latency (successful runs): ${meanLatency(results)}. Transcription is billed per audio, not per token: cost is not estimated here.`,
     '',
     '## By Scan Language',
     '',

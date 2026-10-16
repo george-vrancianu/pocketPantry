@@ -44,6 +44,7 @@ describe('StructuredOutputAiService', () => {
       schemaName: 'product',
       schema: { type: 'object' },
       maxOutputTokens: 123,
+      captureId: 'note-9',
     });
 
     expect(result).toEqual({
@@ -58,6 +59,9 @@ describe('StructuredOutputAiService', () => {
     expect(body).toHaveProperty('model', 'vendor-vision-model');
     expect(body).toHaveProperty('response_format.type', 'json_schema');
     expect(body).toHaveProperty('max_tokens', 123);
+    // The debug capture id never leaves the server.
+    expect(request.body as string).not.toContain('captureId');
+    expect(request.body as string).not.toContain('note-9');
   });
 
   describe('token usage logging', () => {

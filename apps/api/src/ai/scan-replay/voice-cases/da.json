@@ -31,7 +31,7 @@
       "id": "da-02",
       "scanLanguage": "da",
       "tags": ["filler"],
-      "transcript": "Øh, altså, jeg skal lige have, øh, noget smør og, ja, ost.",
+      "transcript": "Øh, altså, jeg skal lige have, øh, noget smør og, ja, cheddar.",
       "expected": {
         "actions": [
           {
@@ -42,7 +42,7 @@
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Ost"
+            "ingredient": "Cheddar"
           }
         ]
       }
@@ -96,7 +96,7 @@
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Mel",
+            "ingredient": "Hvedemel",
             "quantity": 500,
             "unit": "g"
           },
@@ -159,7 +159,7 @@
       "id": "da-08",
       "scanLanguage": "da",
       "tags": ["units", "relative-date"],
-      "transcript": "Tilføj et kilo ris til spisekammeret, det udløber aldrig.",
+      "transcript": "Tilføj et kilo ris til spisekammeret, den udløber aldrig.",
       "defaultTarget": "pantry",
       "expected": {
         "actions": [
@@ -204,18 +204,18 @@
       "id": "da-11",
       "scanLanguage": "da",
       "tags": ["mixed-lists", "relative-date", "units"],
-      "transcript": "Tilføj pasta til indkøbslisten og læg tre citroner i spisekammeret, de udløber den tyvende.",
+      "transcript": "Tilføj spaghetti til indkøbslisten og læg tre citroner i spisekammeret, de udløber den tyvende.",
       "expected": {
         "actions": [
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Pasta"
+            "ingredient": "Spaghetti"
           },
           {
             "target": "pantry",
             "op": "add",
-            "ingredient": "Citroner",
+            "ingredient": "Citron",
             "quantity": 3,
             "unit": "pcs",
             "expiresOn": "2026-10-20"
@@ -254,23 +254,23 @@
       "id": "da-13",
       "scanLanguage": "da",
       "tags": ["sound-alike"],
-      "transcript": "Tilføj ærter, æbler og æg.",
+      "transcript": "Tilføj peber, peberfrugt og pærer.",
       "expected": {
         "actions": [
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Ærter"
+            "ingredient": "Sort peber"
           },
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Æbler"
+            "ingredient": "Peberfrugt"
           },
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Æg"
+            "ingredient": "Pærer"
           }
         ]
       }
@@ -285,7 +285,7 @@
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Mel"
+            "ingredient": "Hvedemel"
           },
           {
             "target": "shopping",

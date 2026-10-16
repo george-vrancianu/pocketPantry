@@ -10,20 +10,10 @@ import {
   requestFor,
   type LoadedVoiceCase,
 } from './voice-replay';
-import type { VoiceCatalog } from './voice-cases';
+import { seedVoiceCatalog } from './voice-catalog';
 
-const MILK = '00000000-0000-4000-8000-000000000001';
-const catalog: VoiceCatalog = {
-  categories: ['Dairy'],
-  ingredients: [
-    {
-      id: MILK,
-      category: 'Dairy',
-      names: { en: 'Milk', ro: 'Lapte', da: 'Mælk' },
-    },
-  ],
-};
-const catalogFile = JSON.stringify(catalog);
+const catalog = seedVoiceCatalog();
+const MILK = catalog.ingredients.find((i) => i.names.en === 'Milk')!.id;
 
 const caseJson = (id: string, overrides: Record<string, unknown> = {}) => ({
   id,
@@ -49,8 +39,7 @@ describe('loadVoiceCaseSet', () => {
       typeof value === 'string' ? value : JSON.stringify(value),
     );
 
-  it('loads the Catalog and every case file, with the audio path resolved beside the file', () => {
-    write('catalog.json', catalogFile);
+  it('loads the seed Catalog and every case file, with the audio path resolved beside the file', () => {
     write('en.json', {
       source: 'recorded',
       cases: [caseJson('en-1', { audio: 'a/en-1.webm' })],
@@ -60,6 +49,7 @@ describe('loadVoiceCaseSet', () => {
     const set = loadVoiceCaseSet(dir);
 
     expect(set.catalog).toEqual(catalog);
+    expect(set.catalog.ingredients.length).toBeGreaterThan(500);
     expect(set.cases.map((c) => [c.id, c.source])).toEqual([
       ['da-1', 'synthetic'],
       ['en-1', 'recorded'],
@@ -69,7 +59,6 @@ describe('loadVoiceCaseSet', () => {
   });
 
   it('filters by id and by language', () => {
-    write('catalog.json', catalogFile);
     write('en.json', {
       source: 'synthetic',
       cases: [
@@ -83,7 +72,6 @@ describe('loadVoiceCaseSet', () => {
   });
 
   it('names the file and the case when one does not fit the format', () => {
-    write('catalog.json', catalogFile);
     write('en.json', {
       source: 'synthetic',
       cases: [caseJson('en-1', { tags: ['nonsense'] })],
@@ -91,18 +79,15 @@ describe('loadVoiceCaseSet', () => {
     expect(() => loadVoiceCaseSet(dir)).toThrow(/en\.json.*tags/s);
   });
 
-  it('rejects duplicate case ids and a missing Catalog', () => {
+  it('rejects duplicate case ids', () => {
     write('en.json', {
       source: 'synthetic',
       cases: [caseJson('x'), caseJson('x')],
     });
-    expect(() => loadVoiceCaseSet(dir)).toThrow(/catalog\.json/);
-    write('catalog.json', catalogFile);
     expect(() => loadVoiceCaseSet(dir)).toThrow(/duplicate case id "x"/);
   });
 
   it('ignores subfolders, so recordings can sit beside the case files', () => {
-    write('catalog.json', catalogFile);
     mkdirSync(join(dir, 'audio'));
     write('en.json', { source: 'synthetic', cases: [caseJson('en-1')] });
     expect(loadVoiceCaseSet(dir).cases).toHaveLength(1);
@@ -170,6 +155,28 @@ describe('requestFor', () => {
     expect(request.prompt).toContain('spoken in Danish');
     expect(request.prompt).toContain('Today is 2026-10-14');
     expect(request.prompt).toContain('Transcript: "add milk"');
+  });
+});
+
+describe('renderReadReport latency', () => {
+  it('averages over the runs that answered, not the failed ones', () => {
+    const run = (ok: boolean, durationMs: number) => ({
+      caseId: 'en-1',
+      scanLanguage: 'en' as const,
+      tags: ['basic' as const],
+      source: 'synthetic' as const,
+      run: 1,
+      ok,
+      durationMs,
+    });
+    const report = renderReadReport({
+      model: 'm',
+      effort: 'low',
+      repeat: 1,
+      results: [run(true, 2000), run(true, 4000), run(false, 60000)],
+    });
+    expect(report).toContain('Mean latency (successful runs): 3.0s');
+    expect(report).toContain('Matching is approximated');
   });
 });
 

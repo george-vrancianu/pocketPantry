@@ -12,6 +12,12 @@ import {
   type VoiceReadModelResult,
 } from '../../voice/voice-actions';
 import { VOICE_LISTS } from '../../voice/voice.schemas';
+import {
+  exactIngredient,
+  nameIn,
+  type VoiceCatalog,
+  type VoiceCatalogIngredient,
+} from './voice-catalog';
 import { ingredientUnit, storageLocation } from '../../database/schema';
 
 /** What a case exercises; the seed set must cover each one in every Scan Language. */
@@ -87,33 +93,6 @@ export const voiceCaseFileSchema = z.object({
   cases: z.array(voiceCaseSchema).min(1),
 });
 
-export const voiceCatalogSchema = z.object({
-  categories: z.array(z.string()),
-  ingredients: z.array(
-    z.object({
-      id: z.uuid(),
-      category: z.string(),
-      names: z.record(z.enum(CATALOG_LOCALES), z.string()),
-    }),
-  ),
-});
-export type VoiceCatalog = z.infer<typeof voiceCatalogSchema>;
-
-/** The Catalog text a read sends, in one locale (same shape as `catalogPrompt`). */
-export function catalogTextFor(
-  catalog: VoiceCatalog,
-  locale: CatalogLocale,
-): string {
-  return JSON.stringify({
-    categories: catalog.categories,
-    ingredients: catalog.ingredients.map((i) => [
-      i.id,
-      i.names[locale] ?? i.names.en,
-      i.category,
-    ]),
-  });
-}
-
 /** A Voice Action as the replay compares it. */
 export type ActionView = {
   target: (typeof VOICE_LISTS)[number];
@@ -127,21 +106,34 @@ export type ActionView = {
   location: (typeof storageLocation.enumValues)[number] | null;
 };
 
-/** What the model read, as Review would name and fill it (a doubted Match is Unmatched). */
+/**
+ * What the model read, as Review would name and fill it. Matching follows
+ * `CatalogMatchService.resolve` + `keepConfident` on the seed Catalog: a confident proposed
+ * id wins; otherwise (no id, or a doubted one) an exact name or Synonym hit on the fallback
+ * name or the spoken text wins; else the action is Unmatched. Approximated: no Family
+ * Catalog, and an unknown id never borrows a name another action in the batch looked up.
+ */
 export function normalizeActions(
   read: VoiceReadModelResult,
   catalog: VoiceCatalog,
   locale: CatalogLocale,
   threshold: number,
 ): ActionView[] {
-  const names = new Map(
-    catalog.ingredients.map((i) => [i.id, i.names[locale] ?? i.names.en]),
-  );
+  const byId = new Map(catalog.ingredients.map((i) => [i.id, i]));
   return read.actions.map((action) => {
-    const matched =
-      action.matchedIngredientId &&
-      action.matchConfidence >= threshold &&
-      names.get(action.matchedIngredientId);
+    const proposed = action.matchedIngredientId
+      ? byId.get(action.matchedIngredientId)
+      : undefined;
+    const doubted =
+      action.matchedIngredientId !== null && action.matchConfidence < threshold;
+    let matched: VoiceCatalogIngredient | null = null;
+    if (proposed && !doubted) matched = proposed;
+    else if (!action.matchedIngredientId || doubted) {
+      matched = exactIngredient(catalog, [
+        action.fallbackIngredientName,
+        action.spokenText,
+      ]);
+    }
     // As VoiceService.draftOf: check and setQuantity keep an unspoken unit empty.
     const amount =
       action.op === 'setQuantity' || action.op === 'check'
@@ -153,7 +145,9 @@ export function normalizeActions(
     return {
       target: action.target,
       op: action.op,
-      ingredient: matched || action.fallbackIngredientName,
+      ingredient: matched
+        ? nameIn(matched, locale)
+        : action.fallbackIngredientName,
       ...amount,
       expiresOn: action.noExpiry ? null : action.expiresOn,
       noExpiry: action.noExpiry,

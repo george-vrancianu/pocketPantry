@@ -162,6 +162,16 @@ describe('createScanDebugRecorder', () => {
     expect(existsSync(join(blocked, 'request.json'))).toBe(false);
   });
 
+  it('shares one recorder per folder and announces it once', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn');
+    const first = createScanDebugRecorder('development', dir);
+    const second = createScanDebugRecorder('development', dir);
+    expect(second).toBe(first);
+    expect(
+      warn.mock.calls.filter(([m]) => String(m).includes('capture is ON')),
+    ).toHaveLength(1);
+  });
+
   describe('Voice Note captures', () => {
     it('saves the recording with its type, the request parameters and the transcript', async () => {
       await createScanDebugRecorder('development', dir)!.recordTranscription(

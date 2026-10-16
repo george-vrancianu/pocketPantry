@@ -14,6 +14,8 @@ import {
 import { PRODUCT_SCAN_SCHEMA_NAME } from '../../scan/product-scan.schemas';
 import { RECEIPT_SCAN_SCHEMA_NAME } from '../../scan/receipt-scan.schemas';
 
+const VOICE_HINT = 'a Voice Note capture: replay it with voice:replay';
+
 /** One debug capture (a folder written under `SCAN_DEBUG_DIR`), ready to resend. */
 export type DebugCapture = {
   name: string;
@@ -88,7 +90,6 @@ async function loadDebugCapture(
 ): Promise<DebugCapture | SkippedDebugCapture> {
   let request: RecordedRequest;
   let response: RecordedResponse;
-  const VOICE_HINT = 'a Voice Note capture: replay it with voice:replay';
   if (await exists(join(dir, 'transcription.json'))) {
     return { name, reason: VOICE_HINT };
   }

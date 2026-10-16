@@ -46,6 +46,23 @@ export const SUPPORTED_AUDIO_TYPES = [
   'audio/ogg',
 ] as const;
 
+/** The file extension each supported container is saved or sent under. */
+export const AUDIO_EXTENSIONS: Record<
+  (typeof SUPPORTED_AUDIO_TYPES)[number],
+  string
+> = {
+  'audio/webm': 'webm',
+  'audio/mp4': 'mp4',
+  'audio/ogg': 'ogg',
+};
+
+/** The container type of an audio file name's extension (`.m4a` is mp4), or undefined. */
+export function audioTypeOfExtension(extension: string): string | undefined {
+  const bare = extension.replace(/^\./, '').toLowerCase();
+  if (bare === 'm4a') return 'audio/mp4';
+  return SUPPORTED_AUDIO_TYPES.find((type) => AUDIO_EXTENSIONS[type] === bare);
+}
+
 /** `audio/webm;codecs=opus` -> `audio/webm`, or undefined when we cannot read it. */
 export function supportedAudioType(mimeType: string): string | undefined {
   const base = mimeType.split(';')[0].trim().toLowerCase();

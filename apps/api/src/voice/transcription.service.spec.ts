@@ -47,6 +47,7 @@ describe('TranscriptionService', () => {
       mimeType: 'audio/mp4',
       language: 'da',
       otherLanguages: ['en', 'ro'],
+      captureId: 'note-9',
     });
 
     expect(result).toEqual({ text: 'hello' });
@@ -58,6 +59,19 @@ describe('TranscriptionService', () => {
     expect(form.get('language')).toBe('da');
     expect(form.get('prompt')).toContain('English or Romanian');
     expect((form.get('file') as File).name).toBe('voice-note.mp4');
+    // The debug capture id never leaves the server.
+    expect([...form.keys()].sort()).toEqual([
+      'file',
+      'language',
+      'model',
+      'prompt',
+      'response_format',
+    ]);
+    expect(
+      [...form.values()].some(
+        (v) => typeof v === 'string' && v.includes('note-9'),
+      ),
+    ).toBe(false);
   });
 
   it('maps a provider failure to voice.provider_unavailable', async () => {

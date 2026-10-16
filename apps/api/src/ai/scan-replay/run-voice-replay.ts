@@ -13,6 +13,7 @@ import {
   type AppConfig,
   type ReasoningEffort,
 } from '../../config/env';
+import { audioTypeOfExtension } from '../../voice/voice.schemas';
 import { TranscriptionService } from '../../voice/transcription.service';
 import { StructuredOutputAiService } from '../structured-output-ai.service';
 import { describe, env, fail, loadEnvFiles } from './replay-cli';
@@ -43,13 +44,6 @@ const { values } = parseArgs({
   },
 });
 
-const AUDIO_TYPES: Record<string, string> = {
-  '.webm': 'audio/webm',
-  '.mp4': 'audio/mp4',
-  '.m4a': 'audio/mp4',
-  '.ogg': 'audio/ogg',
-};
-
 const slug = (value: string) => value.replace(/[^a-z0-9._-]/gi, '_');
 
 async function main(): Promise<void> {
@@ -73,10 +67,11 @@ async function main(): Promise<void> {
     only: values.only?.split(',').map((id) => id.trim()),
     language: language as (typeof SCAN_LANGUAGES)[number] | undefined,
   });
-  const cases = set.cases.slice(
-    0,
-    values.limit === undefined ? undefined : Number(values.limit),
-  );
+  const limit = values.limit === undefined ? undefined : Number(values.limit);
+  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+    fail('--limit must be >= 1.');
+  }
+  const cases = set.cases.slice(0, limit);
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const outRoot = resolve(values.out);
 
@@ -100,7 +95,7 @@ async function main(): Promise<void> {
     );
     const results: TranscriptionRunResult[] = [];
     for (const c of withAudio) {
-      const mimeType = AUDIO_TYPES[extname(c.audioPath!).toLowerCase()];
+      const mimeType = audioTypeOfExtension(extname(c.audioPath!));
       if (!mimeType) {
         results.push({
           caseId: c.id,

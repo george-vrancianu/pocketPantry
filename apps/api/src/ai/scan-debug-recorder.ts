@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { Logger } from '@nestjs/common';
+import { AUDIO_EXTENSIONS } from '../voice/voice.schemas';
 import type { StructuredOutputRequest } from './structured-output-ai.service';
 
 /** What one AI call did, as the debug folder records it. */
@@ -45,12 +46,6 @@ export type ScanDebugRecorder = {
 };
 
 const IMAGE_DATA_URL = /^data:image\/([a-z0-9.+-]+);base64,(.*)$/is;
-// Voice Notes accept the containers a browser's MediaRecorder produces.
-const AUDIO_EXTENSIONS: Record<string, string> = {
-  'audio/webm': 'webm',
-  'audio/mp4': 'mp4',
-  'audio/ogg': 'ogg',
-};
 // Scans only accept these; anything else is saved without trusting its type.
 const EXTENSIONS: Record<string, string> = {
   jpeg: 'jpg',
@@ -58,9 +53,14 @@ const EXTENSIONS: Record<string, string> = {
   webp: 'webp',
 };
 
+// One recorder per folder: the Scan AI service and the transcription service both ask for
+// one, and the folder should be announced once.
+const recorders = new Map<string, ScanDebugRecorder>();
+
 /**
- * Dev-only capture of every Scan's photos and raw AI answer (and every Voice Note's recording, transcription request, transcript and transcript read), for improving
- * recognition. Receipts are personal data, so this exists only when
+ * Dev-only capture of every Scan's photos and raw AI answer, for improving recognition.
+ * It also records Voice Notes: each recording, its transcription request and transcript,
+ * and the transcript read. Receipts and voice are personal data, so this exists only when
  * `NODE_ENV` is `development` and `SCAN_DEBUG_DIR` is set. Env validation
  * refuses the flag in production; anywhere else it is ignored here.
  */
@@ -70,10 +70,14 @@ export function createScanDebugRecorder(
 ): ScanDebugRecorder | undefined {
   if (nodeEnv !== 'development' || !dir) return undefined;
   const root = resolve(dir);
+  const existing = recorders.get(root);
+  if (existing) return existing;
   const logger = new Logger('ScanDebug');
-  logger.warn(`Scan debug capture is ON: photos and AI answers go to ${root}`);
+  logger.warn(
+    `Scan debug capture is ON: photos, recordings and AI answers go to ${root}`,
+  );
 
-  return {
+  const recorder: ScanDebugRecorder = {
     dir: root,
     async record(call) {
       const folder = join(root, folderName(call));
@@ -121,7 +125,7 @@ export function createScanDebugRecorder(
       );
       try {
         await mkdir(folder, { recursive: true });
-        const audio = `audio.${AUDIO_EXTENSIONS[call.mimeType] ?? 'bin'}`;
+        const audio = `audio.${(AUDIO_EXTENSIONS as Record<string, string>)[call.mimeType] ?? 'bin'}`;
         await writeFile(join(folder, audio), call.audio);
         await writeJson(folder, 'transcription.json', {
           captureId: call.captureId,
@@ -144,6 +148,8 @@ export function createScanDebugRecorder(
       }
     },
   };
+  recorders.set(root, recorder);
+  return recorder;
 }
 
 function folderName({

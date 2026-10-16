@@ -31,7 +31,7 @@
       "id": "ro-02",
       "scanLanguage": "ro",
       "tags": ["filler"],
-      "transcript": "Păi, deci, adică, aș vrea, știi tu, niște unt și, ăă, brânză.",
+      "transcript": "Păi, deci, adică, aș vrea, știi tu, niște unt și, ăă, cheddar.",
       "expected": {
         "actions": [
           {
@@ -42,7 +42,7 @@
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Brânză"
+            "ingredient": "Cheddar"
           }
         ]
       }
@@ -204,18 +204,18 @@
       "id": "ro-11",
       "scanLanguage": "ro",
       "tags": ["mixed-lists", "relative-date", "units"],
-      "transcript": "Adaugă paste pe lista de cumpărături și pune trei lămâi în cămară, expiră pe douăzeci.",
+      "transcript": "Adaugă spaghete pe lista de cumpărături și pune trei lămâi în cămară, expiră pe douăzeci.",
       "expected": {
         "actions": [
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Paste"
+            "ingredient": "Spaghete"
           },
           {
             "target": "pantry",
             "op": "add",
-            "ingredient": "Lămâi",
+            "ingredient": "Lămâie",
             "quantity": 3,
             "unit": "pcs",
             "expiresOn": "2026-10-20"
@@ -227,7 +227,7 @@
       "id": "ro-12",
       "scanLanguage": "ro",
       "tags": ["mixed-lists"],
-      "transcript": "Bifează pâinea, scoate laptele de pe listă și avem puțin orez în cămară.",
+      "transcript": "Bifează pâinea, scoate laptele de pe listă și ni se termină orezul din cămară.",
       "shoppingList": ["Lapte", "Pâine"],
       "pantry": ["Orez"],
       "expected": {
@@ -254,23 +254,23 @@
       "id": "ro-13",
       "scanLanguage": "ro",
       "tags": ["sound-alike"],
-      "transcript": "Adaugă pere, mere și ardei.",
+      "transcript": "Adaugă orez, orz și orzo.",
       "expected": {
         "actions": [
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Pere"
+            "ingredient": "Orez"
           },
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Mere"
+            "ingredient": "Arpacaș"
           },
           {
             "target": "shopping",
             "op": "add",
-            "ingredient": "Ardei"
+            "ingredient": "Orzo"
           }
         ]
       }

@@ -2,6 +2,8 @@ import { join } from 'node:path';
 import { SCAN_LANGUAGES } from '../../catalog/catalog.schemas';
 import { CASE_TAGS } from './voice-cases';
 import { loadVoiceCaseSet } from './voice-replay';
+import { nameIn } from './voice-catalog';
+import { SEED_INGREDIENTS } from '../../catalog/seed/catalog-seed-data';
 
 // The committed seed set: hand-written transcripts, not real Voice Notes.
 const { catalog, cases } = loadVoiceCaseSet(join(__dirname, 'voice-cases'));
@@ -32,28 +34,28 @@ describe('seed Voice Note cases', () => {
     }
   });
 
-  it('names every expected and listed Ingredient as the Catalog does in the case locale', () => {
-    const names = new Map(
-      SCAN_LANGUAGES.map((language) => [
-        language,
-        new Set(catalog.ingredients.map((i) => i.names[language])),
-      ]),
-    );
+  it('names every expected and listed Ingredient as the seed Catalog does in the case locale', () => {
     for (const c of cases) {
-      const known = names.get(c.locale)!;
-      for (const action of c.expected.actions) {
-        for (const name of [action.ingredient].flat()) {
-          expect({ id: c.id, name, known: known.has(name) }).toEqual({
-            id: c.id,
-            name,
-            known: true,
-          });
-        }
-      }
-      for (const name of [...c.shoppingList, ...c.pantry]) {
-        expect(known.has(name)).toBe(true);
+      const known = new Set(
+        catalog.ingredients.map((i) => nameIn(i, c.locale)),
+      );
+      const names = [
+        ...c.expected.actions.flatMap((a) => [a.ingredient].flat()),
+        ...c.shoppingList,
+        ...c.pantry,
+      ];
+      for (const name of names) {
+        expect({ id: c.id, name, known: known.has(name) }).toEqual({
+          id: c.id,
+          name,
+          known: true,
+        });
       }
     }
+  });
+
+  it('sends the whole seed Catalog, not a trimmed copy', () => {
+    expect(catalog.ingredients).toHaveLength(SEED_INGREDIENTS.length);
   });
 
   it('expects at least one unsupported phrase in the unsupported cases', () => {
