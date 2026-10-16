@@ -76,7 +76,14 @@ export class PantryService {
   ): Promise<BatchView[]> {
     const familyId = await this.settings.familyIdOf(memberId);
     const rows = await this.database.transaction((tx) =>
-      this.insertFromBodies(tx, familyId, bodies, locale, scanLanguage),
+      this.insertFromBodies(
+        tx,
+        familyId,
+        bodies,
+        locale,
+        scanLanguage,
+        new Date().toISOString().slice(0, 10),
+      ),
     );
     return this.toViews(familyId, rows, locale);
   }
@@ -111,7 +118,7 @@ export class PantryService {
     bodies: CreateBatchBody[],
     locale: CatalogLocale,
     scanLanguage: ScanLanguage,
-    today: string = new Date().toISOString().slice(0, 10),
+    today: string,
   ): Promise<BatchRow[]> {
     const overrides = await this.settings.expiryOverridesOf(familyId);
     const targets = await this.targetsFor(familyId, bodies);
@@ -164,7 +171,7 @@ export class PantryService {
     body: CreateBatchBody,
     target: Target,
     overrides: ExpiryOverride[],
-    today: string = new Date().toISOString().slice(0, 10),
+    today: string,
   ): typeof batches.$inferInsert {
     const defaults = resolveCatalogDefaults(target.leaf, target.parent);
     const expiryDays = resolveExpiryDays(target.leaf, target.parent, overrides);
@@ -229,7 +236,7 @@ export class PantryService {
    */
   async addDefaults(
     memberId: string,
-    ingredientId: string | null,
+    target: { ingredientId: string } | { rawName: string },
     today: string,
   ): Promise<{
     location: BatchView['location'] | null;
@@ -237,18 +244,21 @@ export class PantryService {
   }> {
     const familyId = await this.settings.familyIdOf(memberId);
     const body: CreateBatchBody =
-      ingredientId === null ? { rawName: 'x' } : { ingredientId };
-    const [target] = await this.targetsFor(familyId, [body]);
+      'ingredientId' in target
+        ? { ingredientId: target.ingredientId }
+        : { rawName: target.rawName };
+    const [resolved] = await this.targetsFor(familyId, [body]);
     const overrides = await this.settings.expiryOverridesOf(familyId);
-    try {
-      const row = this.toRow(familyId, body, target, overrides, today);
-      return { location: row.location, expiryDate: row.expiryDate ?? null };
-    } catch (error) {
-      if (error instanceof ApiException) {
-        return { location: null, expiryDate: null };
-      }
-      throw error;
-    }
+    const defaults = resolveCatalogDefaults(resolved.leaf, resolved.parent);
+    const expiryDays = resolveExpiryDays(
+      resolved.leaf,
+      resolved.parent,
+      overrides,
+    );
+    return {
+      location: defaults.location ?? null,
+      expiryDate: expiryDays === null ? null : addDays(today, expiryDays),
+    };
   }
 
   /**

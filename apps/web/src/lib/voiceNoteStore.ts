@@ -81,6 +81,7 @@ export const voiceNote = {
       expiresOn: string | null;
       noExpiry: boolean;
       batchId: string | null;
+      defaults: VoiceReviewAction['defaults'];
     }>,
   ) {
     if (!state.note) return;

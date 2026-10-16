@@ -28,7 +28,9 @@ export const effectiveExpiry = (action: VoiceReviewAction): string | null =>
 /** Whether Review still needs something from the Member before this Pantry action can apply. */
 export function pantryActionIncomplete(action: VoiceReviewAction): boolean {
   if (action.target !== 'pantry') return false;
-  if (action.op === 'add') return effectiveLocation(action) === null;
+  if (action.op === 'add') {
+    return action.status === 'ready' && effectiveLocation(action) === null;
+  }
   return action.status === 'needsBatch' && !action.batchId;
 }
 
@@ -46,6 +48,18 @@ function batchLine(
       ? t('voice:review.pantry.noDate')
       : fullDate(batch.expiresOn, new Date(), language);
   return t('voice:review.pantry.batch', { amount, date });
+}
+
+/** What taking this Batch does: all of it, or an amount off it. */
+function takeLabel(
+  batch: VoiceBatchRow,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  return batch.take === null || batch.take === undefined
+    ? t('voice:review.pantry.whole')
+    : t('voice:review.pantry.take', {
+        amount: `${batch.take} ${batch.unit ?? ''}`.trim(),
+      });
 }
 
 /**
@@ -162,7 +176,7 @@ export function VoiceReviewPantryRow({
           <option value="">{t('voice:review.pantry.pickPrompt')}</option>
           {batches.map((batch) => (
             <option key={batch.id} value={batch.id}>
-              {batchLine(batch, t, i18n.language)}
+              {batchLine(batch, t, i18n.language)} · {takeLabel(batch, t)}
             </option>
           ))}
         </TextField>
@@ -190,11 +204,7 @@ export function VoiceReviewPantryRow({
         >
           {batchLine(batch, t, i18n.language)}
           {' · '}
-          {batch.take === null || batch.take === undefined
-            ? t('voice:review.pantry.whole')
-            : t('voice:review.pantry.take', {
-                amount: `${batch.take} ${batch.unit ?? ''}`.trim(),
-              })}
+          {takeLabel(batch, t)}
         </Typography>
       ))}
     </Box>

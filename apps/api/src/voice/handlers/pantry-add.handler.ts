@@ -17,7 +17,9 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
       }
       const defaults = await pantry.addDefaults(
         ctx.memberId,
-        draft.ingredientId,
+        draft.ingredientId === null
+          ? { rawName: draft.name ?? '' }
+          : { ingredientId: draft.ingredientId },
         ctx.today,
       );
       return {
@@ -25,9 +27,7 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
         rows: {},
         defaults: {
           ...(defaults.location ? { location: defaults.location } : {}),
-          ...(defaults.expiryDate && !draft.noExpiry
-            ? { expiresOn: defaults.expiryDate }
-            : {}),
+          ...(defaults.expiryDate ? { expiresOn: defaults.expiryDate } : {}),
         },
       };
     },
@@ -58,6 +58,9 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
             },
           ],
           ctx.locale,
+          // The note's Scan Language is not carried to Apply (it is not on the
+          // action or ApplyContext), so the UI locale stands in for the
+          // Unmatched queue's source language.
           ctx.locale,
           ctx.today,
         );

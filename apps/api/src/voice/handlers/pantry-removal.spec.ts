@@ -55,7 +55,7 @@ describe('planRemoval', () => {
 
   it('needs a Batch picked when the unit differs or a Batch has no amount', () => {
     expect(
-      planRemoval({ quantity: 1, unit: 'kg', scope: null }, sorted),
+      planRemoval({ quantity: 1, unit: 'l', scope: null }, sorted),
     ).toBeNull();
     expect(
       planRemoval({ quantity: 100, unit: 'g', scope: null }, [
@@ -74,6 +74,35 @@ describe('planRemoval', () => {
       { id: 'a', take: null },
       { id: 'b', take: null },
     ]);
+  });
+});
+
+describe('unit conversion', () => {
+  const rice = batch('rice', 1, 'kg', '2026-10-20');
+  it('subtracts grams from a kilogram Batch, keeping its unit', () => {
+    expect(
+      planRemoval({ quantity: 500, unit: 'g', scope: null }, [rice]),
+    ).toEqual([{ id: 'rice', take: 0.5, remaining: 0.5 }]);
+    expect(
+      planRemoval({ quantity: 0.3, unit: 'kg', scope: null }, [soon]),
+    ).toEqual([{ id: 'soon', take: null }]);
+    expect(
+      planRemoval({ quantity: 0.5, unit: 'l', scope: null }, [
+        batch('milk', 750, 'ml', null),
+      ]),
+    ).toEqual([{ id: 'milk', take: 500, remaining: 250 }]);
+  });
+
+  it('never converts between mass and volume', () => {
+    expect(
+      planRemoval({ quantity: 5, unit: 'ml', scope: null }, [rice]),
+    ).toBeNull();
+  });
+
+  it('subtracts a converted amount from a picked Batch', () => {
+    expect(planPicked({ quantity: 500, unit: 'g', scope: null }, rice)).toEqual(
+      { id: 'rice', take: 0.5, remaining: 0.5 },
+    );
   });
 });
 

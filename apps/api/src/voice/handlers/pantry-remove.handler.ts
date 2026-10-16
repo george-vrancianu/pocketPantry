@@ -1,15 +1,8 @@
 import { ApiException } from '../../common/api-exception';
-import { normalizeName } from '../../catalog/normalize';
 import { PantryService } from '../../pantry/pantry.service';
-import type { VoiceActionDraft } from '../voice-actions';
 import type { VoiceActionHandler } from '../voice-handlers';
-import { batchesOfDraft, rowOf } from './pantry-matching';
-import {
-  planPicked,
-  planRemoval,
-  type PlanBatch,
-  type RemovalStep,
-} from './pantry-removal';
+import { batchesOfDraft, candidatesOf, rowOf, toPlan } from './pantry-matching';
+import { planPicked, planRemoval, type RemovalStep } from './pantry-removal';
 
 /**
  * Pantry remove: "finished the milk" takes the Batch expiring soonest, "out
@@ -29,7 +22,13 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
       if (steps === null) {
         return {
           status: 'needsBatch',
-          rows: { batches: batches.map(rowOf) },
+          // Each candidate shows what picking it does: the whole Batch, or an amount.
+          rows: {
+            batches: batches.map((batch) => ({
+              ...rowOf(batch),
+              take: planPicked(draft, toPlan(batch)).take,
+            })),
+          },
           defaults: {},
         };
       }
@@ -92,35 +91,4 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
       }
     },
   };
-}
-
-export const toPlan = (row: {
-  id: string;
-  quantity: number | null;
-  unit: PlanBatch['unit'];
-  expiryDate: string | null;
-}): PlanBatch => ({
-  id: row.id,
-  quantity: row.quantity,
-  unit: row.unit,
-  expiryDate: row.expiryDate,
-});
-
-/** The Batch rows (locked) the draft's Ingredient or Unmatched name has right now. */
-export async function candidatesOf(
-  pantry: PantryService,
-  draft: Pick<VoiceActionDraft, 'ingredientId' | 'name'>,
-  ctx: { memberId: string; tx: Parameters<PantryService['findBatchRows']>[0] },
-) {
-  if (draft.ingredientId !== null) {
-    return pantry.findBatchRows(ctx.tx, ctx.memberId, {
-      ingredientId: draft.ingredientId,
-    });
-  }
-  if (draft.name === null) return [];
-  const wanted = normalizeName(draft.name);
-  const rows = await pantry.findBatchRows(ctx.tx, ctx.memberId, {
-    unmatched: true,
-  });
-  return rows.filter((row) => normalizeName(row.rawName ?? '') === wanted);
 }

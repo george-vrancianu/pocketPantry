@@ -1,3 +1,8 @@
+import {
+  fromComparable,
+  toComparable,
+  type Dimension,
+} from '../../recipes/matching/units';
 import type { VoiceUnit } from '../voice-actions';
 
 /** What the removal rules need to know of a Batch. */
@@ -27,8 +32,8 @@ const round = (value: number) => Math.round(value * 1000) / 1000;
 /**
  * The removal rules over a Family's Batches of one Ingredient, soonest expiry
  * first (undated last): "all" takes every Batch; no amount takes the first;
- * an amount in the Batches' unit is subtracted soonest first, deleting what
- * reaches zero and carrying the remainder over. Anything else (another unit,
+ * an amount in the Batches' dimension (g and kg, ml and l convert) is subtracted soonest first, deleting what
+ * reaches zero and carrying the remainder over. Anything else (another kind of unit,
  * a Batch without an amount, more than there is) returns null: Review must
  * ask which Batch.
  */
@@ -42,20 +47,24 @@ export function planRemoval(
   }
   if (ask.quantity === null) return [{ id: batches[0].id, take: null }];
 
-  const fits = batches.every(
-    (batch) => batch.quantity !== null && batch.unit === ask.unit,
-  );
-  if (!fits) return null;
-  let left = round(ask.quantity);
+  const asked = toComparable(ask.quantity, ask.unit);
+  if (asked === null) return null;
+  const have = batches.map((batch) => measure(batch, asked.dimension));
+  if (have.some((amount) => amount === null)) return null;
+  let left = round(asked.amount);
   const steps: RemovalStep[] = [];
-  for (const batch of batches) {
+  for (const [index, batch] of batches.entries()) {
     if (left <= 0) break;
-    const have = round(batch.quantity as number);
-    if (have <= left) {
+    const size = round(have[index] as number);
+    if (size <= left) {
       steps.push({ id: batch.id, take: null });
-      left = round(left - have);
+      left = round(left - size);
     } else {
-      steps.push({ id: batch.id, take: left, remaining: round(have - left) });
+      steps.push({
+        id: batch.id,
+        take: inUnitOf(batch, left),
+        remaining: inUnitOf(batch, size - left),
+      });
       left = 0;
     }
   }
@@ -64,17 +73,28 @@ export function planRemoval(
 
 /** A Batch picked in Review: the amount comes off it when it fits, otherwise the Batch goes. */
 export function planPicked(ask: Ask, batch: PlanBatch): RemovalStep {
-  if (
-    ask.quantity !== null &&
-    batch.quantity !== null &&
-    batch.unit === ask.unit &&
-    round(batch.quantity) > round(ask.quantity)
-  ) {
+  const asked = toComparable(ask.quantity, ask.unit);
+  const size = asked && measure(batch, asked.dimension);
+  if (asked && size !== null && round(size) > round(asked.amount)) {
     return {
       id: batch.id,
-      take: round(ask.quantity),
-      remaining: round(batch.quantity - ask.quantity),
+      take: inUnitOf(batch, round(asked.amount)),
+      remaining: inUnitOf(batch, round(size) - round(asked.amount)),
     };
   }
   return { id: batch.id, take: null };
+}
+
+/** The Batch's amount in its dimension's base unit; null when it has none or is another dimension. */
+function measure(batch: PlanBatch, dimension: Dimension): number | null {
+  const own = toComparable(batch.quantity, batch.unit);
+  return own !== null && own.dimension === dimension ? own.amount : null;
+}
+
+/** A base-unit amount in the Batch's own unit (g and kg, ml and l are one dimension). */
+function inUnitOf(batch: PlanBatch, amount: number): number {
+  const unit = batch.unit as VoiceUnit;
+  return round(
+    fromComparable(amount, toComparable(1, unit)!.dimension, unit) as number,
+  );
 }

@@ -21,7 +21,8 @@ import {
 } from './VoiceReviewPantryRow';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 import { translateApiError } from '../i18n/translateApiError';
-import { parseAmountText } from '../lib/pantry';
+import type { CatalogSearchResult } from '../lib/catalog';
+import { defaultExpiryDate, parseAmountText } from '../lib/pantry';
 import {
   catalogChangeQueryKeys,
   shoppingListChangeQueryKeys,
@@ -247,13 +248,31 @@ export function VoiceReview() {
         onClose={() => setMatching(null)}
         onSelect={(ingredient) => {
           if (matching) {
-            voiceNote.edit(matching.id, { ingredient, name: null });
+            voiceNote.edit(matching.id, {
+              ingredient,
+              name: null,
+              // A Pantry add's Location and Default Expiry follow the new Match.
+              ...(matching.target === 'pantry'
+                ? { defaults: defaultsOf(ingredient) }
+                : {}),
+            });
           }
           setMatching(null);
         }}
       />
     </>
   );
+}
+
+/** What a Pantry add falls back to for a Match: its Catalog Location and Default Expiry. */
+function defaultsOf(ingredient: CatalogSearchResult) {
+  const { location, expiryDays } = ingredient.defaults;
+  return {
+    ...(location ? { location } : {}),
+    ...(expiryDays === null
+      ? {}
+      : { expiresOn: defaultExpiryDate(expiryDays, new Date()) }),
+  };
 }
 
 function ActionRow({
@@ -300,7 +319,7 @@ function ActionRow({
           </Typography>
         ) : null}
       </Box>
-      {readOnly || (pantry && action.op === 'runningLow') ? null : (
+      {readOnly || (pantry && action.op !== 'add') ? null : (
         <>
           <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
             <AmountField

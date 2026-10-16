@@ -250,7 +250,8 @@ describe('Voice Notes on the Pantry (integration)', () => {
         spoken(yogurt, { noExpiry: true, expiresOn: '2026-10-20' }),
       ]);
       expect(action).toMatchObject({ noExpiry: true, expiresOn: null });
-      expect(action.defaults.expiresOn).toBeUndefined();
+      // The default stays visible so Review can offer it back.
+      expect(action.defaults.expiresOn).toEqual(expect.any(String));
       await apply(cookie, [asSent(action)]);
       expect((await pantry(cookie)).batches[0].expiryDate).toBeNull();
     });
@@ -303,10 +304,19 @@ describe('Voice Notes on the Pantry (integration)', () => {
 
     it('has no default Location for an Unmatched name, so Apply skips it until one is chosen', async () => {
       const cookie = await signUp();
+      await api(
+        'put',
+        cookie,
+        `/settings/family/expiry-overrides/${seedId.parent('other')}`,
+      )
+        .send({ days: 10 })
+        .expect(200);
       const [action] = await readNote(cookie, [
         model({ fallbackIngredientName: 'Quinoa crackers' }),
       ]);
       expect(action.defaults.location).toBeUndefined();
+      // The "Other" category's Default Expiry, as Apply would use.
+      expect(action.defaults.expiresOn).toBe('2026-10-26');
       const result = await apply(cookie, [asSent(action)]);
       expect(result.skipped).toEqual([
         { id: action.id, reason: 'pantry.location_required' },
@@ -389,6 +399,57 @@ describe('Voice Notes on the Pantry (integration)', () => {
       expect((await pantry(cookie)).batches).toMatchObject([
         { id: b.id, quantity: 200, unit: 'g' },
       ]);
+    });
+
+    it('subtracts grams from a kilogram Batch and keeps its unit', async () => {
+      const cookie = await signUp();
+      const a = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 1,
+        unit: 'kg',
+      });
+      const [action] = await readNote(cookie, [
+        spoken(rice, { op: 'remove', scope: 'one', quantity: 500, unit: 'g' }),
+      ]);
+      expect(action.status).toBe('ready');
+      expect(action.rows.batches).toMatchObject([{ id: a.id, take: 0.5 }]);
+      await apply(cookie, [asSent(action)]);
+      expect((await pantry(cookie)).batches).toMatchObject([
+        { id: a.id, quantity: 0.5, unit: 'kg' },
+      ]);
+    });
+
+    it('subtracts from a picked Batch when the amount fits, and shows what picking does', async () => {
+      const cookie = await signUp();
+      const a = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 300,
+        unit: 'g',
+        expiryDate: '2026-10-20',
+      });
+      const b = await stock(cookie, {
+        ingredientId: rice,
+        quantity: 2,
+        unit: 'kg',
+        expiryDate: '2026-11-20',
+      });
+      const c = await stock(cookie, { ingredientId: rice });
+      const [action] = await readNote(cookie, [
+        spoken(rice, { op: 'remove', scope: 'one', quantity: 500, unit: 'g' }),
+      ]);
+      // The Batch without an amount makes Review ask which one.
+      expect(action.status).toBe('needsBatch');
+      const takes = Object.fromEntries(
+        (action.rows.batches ?? []).map((r) => [r.id, r.take]),
+      );
+      expect(takes).toEqual({ [a.id]: null, [b.id]: 0.5, [c.id]: null });
+      await apply(cookie, [asSent(action, { batchId: b.id, batchIds: [] })]);
+      const left = (await pantry(cookie)).batches;
+      expect(left.map((x) => x.id).sort()).toEqual([a.id, b.id, c.id].sort());
+      expect(left.find((x) => x.id === b.id)).toMatchObject({
+        quantity: 1.5,
+        unit: 'kg',
+      });
     });
 
     it.each([
@@ -508,6 +569,16 @@ describe('Voice Notes on the Pantry (integration)', () => {
       expect(action.rows.batches).toHaveLength(1);
       await apply(cookie, [asSent(action)]);
       expect((await pantry(cookie)).runningLow).toEqual([rice]);
+      expect(await shopping(cookie)).toEqual([]);
+    });
+
+    it('is Not found for an Unmatched name', async () => {
+      const cookie = await signUp();
+      await stock(cookie, { rawName: 'Quinoa crackers', location: 'cupboard' });
+      const [action] = await readNote(cookie, [
+        model({ op: 'runningLow', fallbackIngredientName: 'Quinoa crackers' }),
+      ]);
+      expect(action.status).toBe('notFound');
       expect(await shopping(cookie)).toEqual([]);
     });
 

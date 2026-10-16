@@ -209,6 +209,21 @@ describe('Voice Notes on the Pantry page', () => {
     expect(apply).toBeEnabled();
   });
 
+  it("takes the new Match's Location when an Unmatched add gets matched", async () => {
+    setup([action({ ingredient: null, name: 'Quinoa crackers' })]);
+    const dialog = await openReview();
+    const apply = within(dialog).getByRole('button', { name: 'Apply' });
+    expect(apply).toBeDisabled();
+    await userEvent.click(
+      within(dialog).getByRole('button', {
+        name: 'Change match for Quinoa crackers',
+      }),
+    );
+    await userEvent.click(await screen.findByText('Rice'));
+    await waitFor(() => expect(apply).toBeEnabled());
+    expect(within(dialog).getByLabelText('Location')).toHaveValue('fridge');
+  });
+
   it('shows the Batches a removal will take, with their expiry dates', async () => {
     setup([
       action({
