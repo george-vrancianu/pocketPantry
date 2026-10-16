@@ -323,7 +323,7 @@ describe('Voice Notes on the Pantry page', () => {
       }),
     ]);
     const dialog = await openReview();
-    expect(within(dialog).getByText('Not found')).toBeTruthy();
+    expect(within(dialog).getByText('Not found: Rice')).toBeTruthy();
   });
 
   it('refreshes the Pantry after Apply and names what was skipped', async () => {
