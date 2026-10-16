@@ -166,7 +166,11 @@ export {
   type SwipeRowLabels,
   type SwipeRowProps,
 } from './molecules/SwipeRow';
-export { SwipeToggle, type SwipeToggleProps } from './molecules/SwipeToggle';
+export {
+  SwipeToggle,
+  type SwipeSweep,
+  type SwipeToggleProps,
+} from './molecules/SwipeToggle';
 export {
   useRowGestures,
   type RemoveGestureOptions,

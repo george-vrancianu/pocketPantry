@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Box } from '../atoms/Layout';
 import { tokens } from '../theme/tokens';
-import { SwipeToggle } from './SwipeToggle';
+import { SwipeToggle, type SwipeSweep } from './SwipeToggle';
 
 const meta: Meta<typeof SwipeToggle> = {
   title: 'Molecules/SwipeToggle',
@@ -30,6 +30,17 @@ function ExpiryTag({ urgent }: { urgent?: boolean }) {
   );
 }
 
+/** A flag whose flips ask for the sweep, as the Pantry row does for a swipe. */
+function useSweepingFlag(initialOn: boolean) {
+  const [on, setOn] = useState(initialOn);
+  const [sweep, setSweep] = useState<SwipeSweep | null>(null);
+  const play = (next: boolean) => {
+    setSweep({ on: next, id: Date.now() });
+    setOn(next);
+  };
+  return { on, setOn, sweep, play };
+}
+
 /** A row that flips its own `on` when swiped to the zone. */
 function Row({
   name,
@@ -40,13 +51,14 @@ function Row({
   initialOn: boolean;
   urgent?: boolean;
 }) {
-  const [on, setOn] = useState(initialOn);
+  const { on, sweep, play } = useSweepingFlag(initialOn);
   return (
     <li>
       <SwipeToggle
         on={on}
+        sweep={sweep}
         label={on ? 'Not low' : 'Running low'}
-        onToggle={() => setOn((value) => !value)}
+        onToggle={() => play(!on)}
       >
         <Box
           sx={{
@@ -73,7 +85,7 @@ function Row({
   );
 }
 
-function List({ children }: { children: React.ReactNode }) {
+function List({ children }: { children: ReactNode }) {
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 2, maxWidth: 420 }}>
       {children}
@@ -105,3 +117,44 @@ export const OffAndOnStacked: Story = {
     </List>
   ),
 };
+
+/** Buttons that flip the flag the way a swipe does: Play on sweep, then Play off wipe. */
+function PlayRow() {
+  const { on, setOn, sweep, play } = useSweepingFlag(false);
+  return (
+    <Box sx={{ maxWidth: 420, p: 2 }}>
+      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+        <button type="button" disabled={on} onClick={() => play(true)}>
+          Play on sweep
+        </button>
+        <button type="button" disabled={!on} onClick={() => play(false)}>
+          Play off wipe
+        </button>
+        <button type="button" onClick={() => setOn((value) => !value)}>
+          Snap flip
+        </button>
+      </Box>
+      <SwipeToggle
+        on={on}
+        sweep={sweep}
+        label={on ? 'Not low' : 'Running low'}
+        onToggle={() => play(!on)}
+      >
+        <Box
+          sx={{
+            minHeight: 60,
+            px: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            fontWeight: 600,
+          }}
+        >
+          Milk
+        </Box>
+      </SwipeToggle>
+    </Box>
+  );
+}
+
+/** Needs a human look in all three Themes; the off wipe must never flash white in Dark-first. */
+export const PlaySweepAndWipe: Story = { render: () => <PlayRow /> };
