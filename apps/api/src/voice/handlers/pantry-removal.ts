@@ -60,11 +60,7 @@ export function planRemoval(
       steps.push({ id: batch.id, take: null });
       left = round(left - size);
     } else {
-      steps.push({
-        id: batch.id,
-        take: inUnitOf(batch, left),
-        remaining: inUnitOf(batch, size - left),
-      });
+      steps.push(partOf(batch, left, size - left));
       left = 0;
     }
   }
@@ -76,11 +72,11 @@ export function planPicked(ask: Ask, batch: PlanBatch): RemovalStep {
   const asked = toComparable(ask.quantity, ask.unit);
   const size = asked && measure(batch, asked.dimension);
   if (asked && size !== null && round(size) > round(asked.amount)) {
-    return {
-      id: batch.id,
-      take: inUnitOf(batch, round(asked.amount)),
-      remaining: inUnitOf(batch, round(size) - round(asked.amount)),
-    };
+    return partOf(
+      batch,
+      round(asked.amount),
+      round(size) - round(asked.amount),
+    );
   }
   return { id: batch.id, take: null };
 }
@@ -97,4 +93,16 @@ function inUnitOf(batch: PlanBatch, amount: number): number {
   return round(
     fromComparable(amount, toComparable(1, unit)!.dimension, unit) as number,
   );
+}
+
+/** Part of a Batch comes off; a remainder that rounds to zero deletes it (quantity must stay above zero). */
+function partOf(
+  batch: PlanBatch,
+  take: number,
+  remaining: number,
+): RemovalStep {
+  const left = inUnitOf(batch, remaining);
+  return left > 0
+    ? { id: batch.id, take: inUnitOf(batch, take), remaining: left }
+    : { id: batch.id, take: null };
 }

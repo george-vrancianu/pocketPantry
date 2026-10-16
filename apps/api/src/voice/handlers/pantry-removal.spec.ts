@@ -93,6 +93,16 @@ describe('unit conversion', () => {
     ).toEqual([{ id: 'milk', take: 500, remaining: 250 }]);
   });
 
+  it('deletes a Batch whose remainder rounds to zero in its own unit', () => {
+    const litre = batch('litre', 1, 'l', null);
+    expect(
+      planRemoval({ quantity: 999.9, unit: 'ml', scope: null }, [litre]),
+    ).toEqual([{ id: 'litre', take: null }]);
+    expect(
+      planPicked({ quantity: 999.9, unit: 'ml', scope: null }, litre),
+    ).toEqual({ id: 'litre', take: null });
+  });
+
   it('never converts between mass and volume', () => {
     expect(
       planRemoval({ quantity: 5, unit: 'ml', scope: null }, [rice]),
