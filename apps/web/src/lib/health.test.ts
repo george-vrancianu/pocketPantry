@@ -190,10 +190,20 @@ describe('pantry health score', () => {
 
     it('is left out when there is no Ingredient to judge', () => {
       const result = scored(
-        input({ batches: batches(10, { ingredientId: null }) }),
+        input({
+          batches: [
+            ...batches(9, { ingredientId: null }),
+            batch({ ingredientId: null, expiryDate: null }),
+          ],
+        }),
       );
+      const { fresh, dated, rotation } = result.factors;
       expect(result.factors).not.toHaveProperty('supply');
-      expect(result.total).toBe(100);
+      expect(dated).toBe(90);
+      expect(result.total).toBe(
+        Math.round((30 * fresh! + 10 * dated! + 15 * rotation!) / 55),
+      );
+      expect(result.total).toBeLessThan(100);
     });
 
     it('scores 40 Running low Ingredients off the list 60', () => {

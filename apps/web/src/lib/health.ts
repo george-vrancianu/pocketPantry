@@ -75,6 +75,15 @@ export type PantryHealth =
       verdict: Verdict;
     };
 
+/** The Health Factors that have a value, in display order. Empty when there is no score. */
+export function presentFactors(health: PantryHealth): [HealthFactor, number][] {
+  if (!health.scored) return [];
+  return FACTORS.flatMap((factor): [HealthFactor, number][] => {
+    const value = health.factors[factor];
+    return value === undefined ? [] : [[factor, value]];
+  });
+}
+
 const todayDate = (input: HealthInput) => fromIso(input.today);
 
 const daysLeft = (batch: HealthBatch, input: HealthInput) =>
@@ -101,14 +110,40 @@ export function isForgotten(batch: HealthBatch, today: IsoDate): boolean {
   );
 }
 
-const isStocked = (ingredientId: string, input: HealthInput) =>
-  input.batches.some(
+/** Whether the Ingredient has a live (unexpired) Batch. */
+function isStocked(ingredientId: string, input: HealthInput): boolean {
+  return input.batches.some(
     (batch) => batch.ingredientId === ingredientId && isLive(batch, input),
   );
+}
 
 /** Whether a Staple is missing and not dismissed. */
-const isMissingStaple = (ingredientId: string, input: HealthInput) =>
-  !input.dismissed.has(ingredientId) && !isStocked(ingredientId, input);
+function isMissingStaple(ingredientId: string, input: HealthInput): boolean {
+  return !input.dismissed.has(ingredientId) && !isStocked(ingredientId, input);
+}
+
+type SupplyState =
+  'stocked' | 'lowListed' | 'low' | 'missingListed' | 'missing';
+
+/** What each Supply state earns (ADR 0018). */
+const SUPPLY_CREDIT: Record<SupplyState, number> = {
+  stocked: 1,
+  lowListed: 0.8,
+  low: 0.1,
+  missingListed: 0.5,
+  missing: 0,
+};
+
+function supplyState(
+  id: string,
+  stocked: boolean,
+  input: HealthInput,
+): SupplyState {
+  const listed = input.onShoppingList.has(id);
+  if (!stocked) return listed ? 'missingListed' : 'missing';
+  if (!input.runningLow.has(id)) return 'stocked';
+  return listed ? 'lowListed' : 'low';
+}
 
 /** What each Ingredient in Supply earns: the credit by its stock, Running low and Shopping List state. */
 function supplyCredits(input: HealthInput): number[] {
@@ -118,17 +153,15 @@ function supplyCredits(input: HealthInput): number[] {
     ),
   );
   const stocked = [...held].filter((id) => isStocked(id, input));
-  const credits: number[] = stocked.map((id) =>
-    input.runningLow.has(id) ? (input.onShoppingList.has(id) ? 0.8 : 0.1) : 1,
-  );
   const missing = new Set(
     input.staples
       .map((staple) => staple.ingredientId)
       .filter((id) => isMissingStaple(id, input)),
   );
-  for (const id of missing)
-    credits.push(input.onShoppingList.has(id) ? 0.5 : 0);
-  return credits;
+  return [
+    ...stocked.map((id) => SUPPLY_CREDIT[supplyState(id, true, input)]),
+    ...[...missing].map((id) => SUPPLY_CREDIT[supplyState(id, false, input)]),
+  ];
 }
 
 /** The mean, or null when there is nothing to measure. */
@@ -158,8 +191,8 @@ export function pantryHealth(input: HealthInput): PantryHealth {
       batches.length;
 
   const percent = (value: number | null) =>
-    value === null ? undefined : Math.round(value * 100);
-  const all = {
+    value === null ? null : Math.round(value * 100);
+  const measured = {
     fresh: percent(fresh),
     supply: percent(supply),
     dated: percent(datedShare),
@@ -169,12 +202,13 @@ export function pantryHealth(input: HealthInput): PantryHealth {
   let weighted = 0;
   let weights = 0;
   for (const factor of FACTORS) {
-    const value = all[factor];
-    if (value === undefined) continue;
+    const value = measured[factor];
+    if (value === null) continue;
     factors[factor] = value;
     weighted += FACTOR_WEIGHTS[factor] * value;
     weights += FACTOR_WEIGHTS[factor];
   }
+  // weights is never 0: Dated and Rotation always have a value once there is a score (ADR 0018).
   const total = Math.round(weighted / weights);
   return { scored: true, factors, total, verdict: verdictOf(total) };
 }

@@ -160,6 +160,34 @@ describe('HealthWidget', () => {
     expect(sheet).not.toHaveTextContent('Fresh');
   });
 
+  it('shows three bars and no Supply value when only Unmatched Batches are held', async () => {
+    stub(
+      {
+        batches: Array.from({ length: 10 }, () =>
+          batch({ ingredientId: null, unmatched: true }),
+        ),
+        runningLow: [],
+      },
+      [],
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<HealthWidget size="wide" columns={2} />);
+
+    const card = await screen.findByRole('button', {
+      name: /^Pantry health, /,
+    });
+    expect(
+      [...card.querySelectorAll('[data-factor]')].map((bar) =>
+        bar.getAttribute('data-factor'),
+      ),
+    ).toEqual(['fresh', 'dated', 'rotation']);
+    await user.click(card);
+    const sheet = await screen.findByRole('dialog', { name: 'Pantry health' });
+    expect(sheet).toHaveTextContent('Fresh 100 · Dated 100 · Rotation 100');
+    expect(sheet).not.toHaveTextContent('Supply');
+  });
+
   it.each([
     ['en', 'Supply'],
     ['ro', 'Provizii'],

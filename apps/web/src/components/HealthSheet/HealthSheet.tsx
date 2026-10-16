@@ -8,7 +8,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FACTORS, MIN_BATCHES_FOR_SCORE } from '../../lib/health';
+import { MIN_BATCHES_FOR_SCORE, presentFactors } from '../../lib/health';
 import type { PantryHealthState } from '../../lib/usePantryHealth';
 import { ScoreRing } from './HealthRing';
 import { HealthTodos } from './HealthTodos';
@@ -51,17 +51,14 @@ export function HealthSheet({ open, onClose, state, today }: Props) {
                   {t(`health.verdict.${health.verdict}`)}
                 </Box>
                 <Box sx={{ fontSize: 12.5, color: tokens.color.muted }}>
-                  {FACTORS.flatMap((factor) => {
-                    const value = health.factors[factor];
-                    return value === undefined
-                      ? []
-                      : [
-                          t('health.factorValue', {
-                            name: t(`health.factor.${factor}`),
-                            value,
-                          }),
-                        ];
-                  }).join(' · ')}
+                  {presentFactors(health)
+                    .map(([factor, value]) =>
+                      t('health.factorValue', {
+                        name: t(`health.factor.${factor}`),
+                        value,
+                      }),
+                    )
+                    .join(' · ')}
                 </Box>
               </>
             ) : (
