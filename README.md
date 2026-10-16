@@ -129,6 +129,25 @@ Set `CLIENT_ORIGIN` in `.env` to the `https://….trycloudflare.com` address it 
 
 In development, set `SCAN_DEBUG_DIR=.scan-debug` in `.env` and restart. Every Scan then saves a folder in `apps/api/.scan-debug/` with the photos, the prompt, and the AI's raw answer (or the error). Use it to work out why something was misread. It only works with `NODE_ENV=development` (the API won't start with it in production), the folder is ignored by Git, and you should delete it when you're done, since receipts are personal.
 
+To try another model or reasoning effort on those debug captures, replay them with `npm run scan:replay -w @pocket-pantry/api -- --model gpt-6-luna --effort low --repeat 3`. See [the usage notes](apps/api/src/ai/scan-replay/README.md).
+
+### Choose the Scan model
+
+With no AI settings, Scans run on OpenAI's `gpt-6-luna` at reasoning effort `none`. That effort keeps `temperature: 0` (repeatable receipt reads) and spends no reasoning tokens. To try a higher effort, set `AI_REASONING_EFFORT` (`low`, `medium`, `high` or `xhigh`; gpt-6-luna has no `minimal`).
+
+The default effort only comes with the default model. If you set `AI_VISION_MODEL` yourself, no effort is sent unless you also set `AI_REASONING_EFFORT`, so a reasoning model needs both lines.
+
+To go back to gpt-4o-mini while it still exists (OpenAI shuts it down on January 14, 2027), set the model and leave the effort out or empty:
+
+```bash
+AI_VISION_MODEL=gpt-4o-mini-2024-07-18
+AI_REASONING_EFFORT=
+```
+
+The API then sends the same requests as before gpt-6-luna: `temperature: 0` and no reasoning effort.
+
+With `AI_PROVIDER=openai-compatible`, set `AI_VISION_MODEL` to your vendor's model. With no effort set, requests stay as they were (`max_tokens`, no `reasoning_effort`), which vendors without reasoning support expect. Only set `AI_REASONING_EFFORT` if the vendor accepts `reasoning_effort` and `max_completion_tokens`.
+
 ### Run it in production
 
 Build everything, then start the API with `WEB_DIST_DIR` set. The build and database steps need the dev tools, so install with `--include=dev` even when `NODE_ENV=production` is already set. The API then serves the web app from the same address, which keeps sign-in working in Safari.

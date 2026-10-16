@@ -6,6 +6,7 @@ import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { IngredientCatalogService } from '../ingredients/ingredient-catalog.service';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
+  PRODUCT_SCAN_SCHEMA_NAME,
   productScanModelResultSchema,
   type ProductScanInput,
   type ProductScanResult,
@@ -55,7 +56,7 @@ export class ProductScanService {
         images: content
           .filter((item) => item.type === 'input_image')
           .map((item) => String(item.image_url)),
-        schemaName: 'grocery_product_scan',
+        schemaName: PRODUCT_SCAN_SCHEMA_NAME,
         schema: {
           type: 'object',
           additionalProperties: false,

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { z } from 'zod';
 import { ApiException } from '../common/api-exception';
-import type { AppConfig } from '../config/env';
+import type { AppConfig, ReasoningEffort } from '../config/env';
 import {
   createScanDebugRecorder,
   type ScanDebugCall,
@@ -14,12 +14,15 @@ export type StructuredOutputRequest = {
   images?: string[];
   schemaName: string;
   schema: Record<string, unknown>;
+  /** Budget for the answer itself; with a reasoning effort the service adds room for reasoning. */
   maxOutputTokens: number;
 };
 
 export type StructuredOutputResult = {
   data: unknown;
   requestId: string | null;
+  /** Billed tokens, when the provider reported them. */
+  usage?: AiTokenUsage;
 };
 
 export type StructuredOutputErrorCode =
@@ -41,10 +44,41 @@ export class StructuredOutputAiError extends ApiException {
   }
 }
 
+/**
+ * `temperature: 0` keeps receipt reads repeatable. gpt-6-luna accepts it only at effort
+ * `none` (no reasoning) and rejects it at low, medium, high and xhigh (probed on both APIs
+ * for low, on Responses for the rest). It has no `minimal` effort at all.
+ */
+function acceptsTemperature(effort: ReasoningEffort | undefined): boolean {
+  return effort === undefined || effort === 'none';
+}
+
+/**
+ * Reasoning tokens count against the output limit, so each effort adds room on top of a
+ * Scan Mode's answer budget. At effort low gpt-6-luna used ~70-270 reasoning tokens per Scan.
+ */
+const REASONING_HEADROOM: Record<ReasoningEffort, number> = {
+  none: 0,
+  minimal: 1000,
+  low: 2000,
+  medium: 8000,
+  high: 16_000,
+  xhigh: 32_000,
+};
+
+function outputBudget(
+  request: StructuredOutputRequest,
+  effort: ReasoningEffort | undefined,
+): number {
+  return request.maxOutputTokens + (effort ? REASONING_HEADROOM[effort] : 0);
+}
+
 export type AiTokenUsage = {
   inputTokens: number;
   outputTokens: number;
   cachedInputTokens?: number;
+  /** Counted within `outputTokens`; only reasoning models report it. */
+  reasoningTokens?: number;
 };
 
 type CallTrace = Partial<
@@ -73,6 +107,11 @@ function describeError(error: unknown): ScanDebugCall['error'] {
 
 const tokenCount = z.number().int().nonnegative();
 
+const reasoningDetails = z
+  .object({ reasoning_tokens: tokenCount.optional() })
+  .optional()
+  .catch(undefined);
+
 /** Usage is best-effort telemetry: a missing or malformed block is dropped, never an error. */
 const responsesUsageSchema = z
   .object({
@@ -82,11 +121,13 @@ const responsesUsageSchema = z
       .object({ cached_tokens: tokenCount.optional() })
       .optional()
       .catch(undefined),
+    output_tokens_details: reasoningDetails,
   })
   .transform((u): AiTokenUsage => ({
     inputTokens: u.input_tokens,
     outputTokens: u.output_tokens,
     cachedInputTokens: u.input_tokens_details?.cached_tokens,
+    reasoningTokens: u.output_tokens_details?.reasoning_tokens,
   }));
 
 const chatUsageSchema = z
@@ -97,12 +138,28 @@ const chatUsageSchema = z
       .object({ cached_tokens: tokenCount.optional() })
       .optional()
       .catch(undefined),
+    completion_tokens_details: reasoningDetails,
   })
   .transform((u): AiTokenUsage => ({
     inputTokens: u.prompt_tokens,
     outputTokens: u.completion_tokens,
     cachedInputTokens: u.prompt_tokens_details?.cached_tokens,
+    reasoningTokens: u.completion_tokens_details?.reasoning_tokens,
   }));
+
+/**
+ * Token usage from a provider body (`openai` is the Responses API, anything else Chat
+ * Completions). Best-effort telemetry: a missing or malformed block is `undefined`.
+ */
+export function readAiUsage(
+  provider: string,
+  body: unknown,
+): AiTokenUsage | undefined {
+  const schema: z.ZodType<AiTokenUsage> =
+    provider === 'openai' ? responsesUsageSchema : chatUsageSchema;
+  const usage = schema.safeParse((body as { usage?: unknown } | null)?.usage);
+  return usage.success ? usage.data : undefined;
+}
 
 const openAiResponsesBodySchema = z.object({
   status: z.string().optional(),
@@ -126,6 +183,7 @@ const chatCompletionsBodySchema = z.object({
   usage: z.unknown().optional(),
   choices: z.array(
     z.object({
+      finish_reason: z.string().nullable().optional(),
       message: z.object({
         content: z.union([
           z.string(),
@@ -192,6 +250,10 @@ export class StructuredOutputAiService {
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
     const model = this.config.get('AI_VISION_MODEL', { infer: true });
     const configuredBaseUrl = this.config.get('AI_BASE_URL', { infer: true });
+    // `|| undefined`: with no validated effort, ConfigService falls back to process.env,
+    // where `AI_REASONING_EFFORT=` is ''. That means no effort, as validateEnv reads it.
+    const effort =
+      this.config.get('AI_REASONING_EFFORT', { infer: true }) || undefined;
     trace.provider = provider;
     trace.model = model;
 
@@ -220,8 +282,8 @@ export class StructuredOutputAiService {
           },
           body: JSON.stringify(
             isResponsesApi
-              ? this.toResponsesRequest(request, model)
-              : this.toChatCompletionsRequest(request, model),
+              ? this.toResponsesRequest(request, model, effort)
+              : this.toChatCompletionsRequest(request, model, effort),
           ),
         },
       );
@@ -247,11 +309,16 @@ export class StructuredOutputAiService {
       trace.body = raw;
       const body: unknown = JSON.parse(raw);
       trace.body = body;
-      this.logUsage(isResponsesApi, body, request.schemaName, requestId);
+      const usage = readAiUsage(provider, body);
+      this.logUsage(usage, request.schemaName, requestId);
       const text = isResponsesApi
         ? this.readResponsesText(body, requestId)
         : this.readChatCompletionsText(body, requestId);
-      return { data: JSON.parse(text) as unknown, requestId };
+      return {
+        data: JSON.parse(text) as unknown,
+        requestId,
+        ...(usage ? { usage } : {}),
+      };
     } catch (error) {
       if (error instanceof ApiException) throw error;
       throw new ApiException(502, 'scan.result_invalid');
@@ -260,30 +327,31 @@ export class StructuredOutputAiService {
 
   /** Logs token counts only (never prompt, image or response content). */
   private logUsage(
-    isResponsesApi: boolean,
-    body: unknown,
+    usage: AiTokenUsage | undefined,
     schemaName: string,
     requestId: string | null,
   ) {
-    const schema: z.ZodType<AiTokenUsage> = isResponsesApi
-      ? responsesUsageSchema
-      : chatUsageSchema;
-    const usage = schema.safeParse((body as { usage?: unknown } | null)?.usage);
-    if (!usage.success) return;
-    const { cachedInputTokens, ...counts } = usage.data;
+    if (!usage) return;
+    const { cachedInputTokens, reasoningTokens, ...counts } = usage;
     this.logger.log({
       message: 'AI token usage',
       requestId,
       schemaName,
       ...counts,
       ...(cachedInputTokens === undefined ? {} : { cachedInputTokens }),
+      ...(reasoningTokens === undefined ? {} : { reasoningTokens }),
     });
   }
 
-  private toResponsesRequest(request: StructuredOutputRequest, model: string) {
+  private toResponsesRequest(
+    request: StructuredOutputRequest,
+    model: string,
+    effort: ReasoningEffort | undefined,
+  ) {
     return {
       model,
-      temperature: 0,
+      ...(acceptsTemperature(effort) ? { temperature: 0 } : {}),
+      ...(effort ? { reasoning: { effort } } : {}),
       store: false,
       input: [
         {
@@ -306,17 +374,19 @@ export class StructuredOutputAiService {
           schema: request.schema,
         },
       },
-      max_output_tokens: request.maxOutputTokens,
+      max_output_tokens: outputBudget(request, effort),
     };
   }
 
   private toChatCompletionsRequest(
     request: StructuredOutputRequest,
     model: string,
+    effort: ReasoningEffort | undefined,
   ) {
     return {
       model,
-      temperature: 0,
+      ...(acceptsTemperature(effort) ? { temperature: 0 } : {}),
+      ...(effort ? { reasoning_effort: effort } : {}),
       messages: [
         {
           role: 'user',
@@ -337,7 +407,10 @@ export class StructuredOutputAiService {
           schema: request.schema,
         },
       },
-      max_tokens: request.maxOutputTokens,
+      // Reasoning models reject `max_tokens`; without an effort, keep it for vendors that only know it.
+      ...(effort
+        ? { max_completion_tokens: outputBudget(request, effort) }
+        : { max_tokens: request.maxOutputTokens }),
     };
   }
 
@@ -370,9 +443,13 @@ export class StructuredOutputAiService {
     requestId: string | null,
   ): string {
     const response = chatCompletionsBodySchema.parse(body);
-    const message = response.choices[0]?.message;
+    const choice = response.choices[0];
+    const message = choice?.message;
     if (message?.refusal) {
       throw new StructuredOutputAiError('refusal', requestId);
+    }
+    if (choice?.finish_reason === 'length') {
+      throw new StructuredOutputAiError('incomplete', requestId);
     }
     const text =
       typeof message?.content === 'string'

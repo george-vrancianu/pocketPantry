@@ -7,6 +7,7 @@ import type { CatalogLocale, ScanLanguage } from '../catalog/catalog.schemas';
 import { fallbackNamePrompt, scanLanguagePrompt } from './scan-language';
 import {
   INGREDIENTS_SCAN_MAX_ITEMS,
+  INGREDIENTS_SCAN_SCHEMA_NAME,
   ingredientsScanModelJsonSchema,
   ingredientsScanModelResultSchema,
   type IngredientsScanInput,
@@ -45,7 +46,7 @@ export class IngredientsScanService {
           'Application catalog: ' + this.ingredientCatalog.toPrompt(catalog),
         ].join(' '),
         images: [input.ingredientsImage],
-        schemaName: 'grocery_ingredients_photo_scan',
+        schemaName: INGREDIENTS_SCAN_SCHEMA_NAME,
         schema: ingredientsScanModelJsonSchema,
         maxOutputTokens: 8000,
       });
