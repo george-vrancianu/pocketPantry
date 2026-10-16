@@ -672,6 +672,40 @@ describe('Barcode on the Scan page', () => {
       expect(batch).not.toHaveProperty('source');
     });
 
+    it('fills a Known Barcode saved under an Unmatched name with that exact name, and saves it with the barcode', async () => {
+      const user = userEvent.setup();
+      renderScan('/scan?mode=barcode');
+      answers[A] = () =>
+        Response.json(
+          found({
+            source: 'known_barcode',
+            match: null,
+            unmatchedName: 'Grandma jam',
+            productDescription: 'Homemade jam',
+            quantity: null,
+            unit: null,
+          }),
+        );
+      await decode(A);
+      await waitFor(() => expect(states()).toEqual(['read']));
+      await user.click(screen.getByRole('button', { name: /^Done/ }));
+      await user.click(await screen.findByTestId('card-result'));
+      expect(await screen.findByLabelText('Name')).toHaveValue('Grandma jam');
+      await user.click(screen.getByRole('button', { name: /^Save/ }));
+
+      await waitFor(() =>
+        expect(
+          calls.some((call) => call.key === 'POST /api/pantry/batches/bulk'),
+        ).toBe(true),
+      );
+      const save = calls.find(
+        (call) => call.key === 'POST /api/pantry/batches/bulk',
+      );
+      expect(save?.body).toMatchObject({
+        batches: [{ rawName: 'Grandma jam', barcode: A }],
+      });
+    });
+
     it('removes a Barcode card from the overview', async () => {
       const user = userEvent.setup();
       renderScan('/scan?mode=barcode');

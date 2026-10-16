@@ -131,6 +131,11 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       return { text: t('scan:discarded'), severity: 'success' };
     return null;
   });
+  const warnSessionFull = () =>
+    setToast({
+      text: t('scan:limit', { max: MAX_SESSION_SCANS }),
+      severity: 'warning',
+    });
   useEffect(() => {
     if (location.state === null) return;
     navigate(`${location.pathname}${location.search}`, {
@@ -181,10 +186,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
         getScanSession().scans.length + resizingPicks.current >=
         MAX_SESSION_SCANS
       ) {
-        setToast({
-          text: t('scan:limit', { max: MAX_SESSION_SCANS }),
-          severity: 'warning',
-        });
+        warnSessionFull();
         return false;
       }
       const id = crypto.randomUUID();
@@ -231,10 +233,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       MAX_SESSION_SCANS - getScanSession().scans.length - resizingPicks.current,
     );
     if (picked.length > room) {
-      setToast({
-        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
-        severity: 'warning',
-      });
+      warnSessionFull();
     }
     const base = {
       mode,
@@ -276,7 +275,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     }
   };
 
-  // Barcode mode reads on its own. Each accepted code adds a card at once; the watch reads one
+  // The Barcode dial mode reads on its own. Each accepted code adds a card at once; the watch reads one
   // code per subscription, so it is re-armed after every read.
   const acceptCode = async (code: string) => {
     // The code just accepted is ignored while it keeps being seen: it is taken again once
@@ -293,10 +292,7 @@ export function useScanScreen(config: ScanScreenModes = {}) {
       getScanSession().scans.length + resizingPicks.current >=
       MAX_SESSION_SCANS
     ) {
-      setToast({
-        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
-        severity: 'warning',
-      });
+      warnSessionFull();
       return;
     }
     const epoch = scanEpoch.current;
@@ -309,11 +305,9 @@ export function useScanScreen(config: ScanScreenModes = {}) {
     }
     // Another read may have filled the Scan Session while the frame was prepared.
     if (getScanSession().scans.length >= MAX_SESSION_SCANS) {
+      // Nothing was added, so the pack still held up must be taken again once there is room.
       lastCode.current = null;
-      setToast({
-        text: t('scan:limit', { max: MAX_SESSION_SCANS }),
-        severity: 'warning',
-      });
+      warnSessionFull();
       return;
     }
     dispatchScanSession({

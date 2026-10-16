@@ -122,7 +122,8 @@ const waiting = (state: SessionState) =>
 /** Barcode cards are looked up at once and never wait for, or count against, the Scan Cap. */
 export const isBarcodeMode = (mode: CameraMode): mode is 'barcode' =>
   mode === 'barcode';
-export const isBarcodeCard = (scan: SessionScan) => isBarcodeMode(scan.mode);
+export const isBarcodeCard = (scan: Pick<SessionScan, 'mode'>) =>
+  isBarcodeMode(scan.mode);
 
 export const emptySession: SessionState = { scans: [] };
 
@@ -139,7 +140,7 @@ export function sessionReducer(
             ...action.scan,
             ...(action.scan.source
               ? { status: 'uncropped' }
-              : action.scan.mode === 'barcode'
+              : isBarcodeCard(action.scan)
                 ? { status: 'reading' }
                 : waiting(state)),
           },
