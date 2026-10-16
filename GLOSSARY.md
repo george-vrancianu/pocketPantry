@@ -123,12 +123,16 @@ The Family Setting for how many days before expiry a Batch counts as Expiring So
 _Avoid_: Warning window
 
 **Pantry Health**:
-A 0–100 score of how well a Family's Pantry is kept, weighted from four Health Factors. Derived at read time, never stored, and not given while the Pantry holds fewer than ten Batches.
+A 0–100 score of how well a Family's Pantry is kept, weighted from four Health Factors; a Health Factor with nothing to measure is left out and the others share its weight. Derived at read time, never stored, and not given while the Pantry holds fewer than ten Batches.
 _Avoid_: Health score, pantry score, rating
 
 **Health Factor**:
-One of the four parts Pantry Health is weighted from: Fresh, Staples, Dated and Rotation, each 0–100.
+One of the four parts Pantry Health is weighted from: Fresh, Supply, Dated and Rotation, each 0–100.
 _Avoid_: Check (a Shopping Item is checked), metric, component
+
+**Supply**:
+The Health Factor for whether a Family has what it uses, judged per Ingredient over every Ingredient with an unexpired Batch and every missing Staple. A Running low or missing Ingredient lowers it, and less so once it is on the Shopping List.
+_Avoid_: Stock, Staples (as a Health Factor)
 
 **Health To-do**:
 A set of Batches or Ingredients that lower Pantry Health and that one action fixes, such as the Expired Batches to toss or the missing Staples to add. Derived at read time, never stored; a dismissed Suggestion never appears in one.
@@ -173,7 +177,7 @@ The state of an Ingredient whose last Batch was removed from the Pantry within t
 _Avoid_: Run out, finished, nothing left
 
 **Running low**:
-A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingredient still has at least one Batch. Per Family, never set automatically from quantities; cleared when a Batch is added or the last Batch is removed. Turning it off is the only way to clear it from the Running low Suggestions.
+A manual flag a Family sets on an Ingredient it is nearly out of, while the Ingredient still has at least one Batch. Per Family, never set automatically from quantities; cleared when a Batch is added or the last Batch is removed. Turning it off is the only way to clear it from the Running low Suggestions. Lowers Supply whether or not the Ingredient is a Staple.
 _Avoid_: Low stock, almost out, low quantity
 
 **Suggestion**:
