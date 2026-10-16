@@ -71,7 +71,7 @@
     "progress_other": "Tilføj {{count}} mere til spisekammeret for at få din score",
     "factor": {
       "fresh": "Friskhed",
-      "staples": "Basisvarer",
+      "supply": "Forråd",
       "dated": "Datomærket",
       "rotation": "Omsætning"
     },

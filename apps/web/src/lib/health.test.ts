@@ -5,6 +5,7 @@ import {
   usualExpiryDate,
   verdictOf,
   withExpiryDates,
+  withOnShoppingList,
   type HealthBatch,
   type HealthInput,
 } from './health';
@@ -62,7 +63,7 @@ describe('pantry health score', () => {
   it('scores a spotless Pantry 100', () => {
     expect(scored(input())).toMatchObject({
       total: 100,
-      factors: { fresh: 100, staples: 100, dated: 100, rotation: 100 },
+      factors: { fresh: 100, supply: 100, dated: 100, rotation: 100 },
     });
   });
 
@@ -81,13 +82,6 @@ describe('pantry health score', () => {
       expect(result.factors.fresh).toBe(fresh);
     });
 
-    it('is 100 with no dated Batches', () => {
-      expect(
-        scored(input({ batches: batches(10, { expiryDate: null }) })).factors
-          .fresh,
-      ).toBe(100);
-    });
-
     it('averages over dated Batches only', () => {
       const result = scored(
         input({
@@ -102,63 +96,139 @@ describe('pantry health score', () => {
     });
   });
 
-  describe('Staples', () => {
+  describe('Supply', () => {
     const staple = (ingredientId: string) => ({ ingredientId });
-    const withStaple = (overrides: Partial<HealthInput>) =>
+    const withSupply = (overrides: Partial<HealthInput>) =>
       scored(
         input({
           batches: [batch({ ingredientId: 'milk' }), ...batches(9)],
-          staples: [staple('milk')],
           ...overrides,
         }),
-      ).factors.staples;
+      ).factors.supply;
+    /** Forty stocked Ingredients, the first `low` of them Running low. */
+    const forty = (low: number, onList: boolean) => {
+      const ids = Array.from({ length: 40 }, (_, i) => `ing${i}`);
+      const lowIds = ids.slice(0, low);
+      return input({
+        batches: ids.map((id) => batch({ ingredientId: id })),
+        runningLow: new Set(lowIds),
+        onShoppingList: new Set(onList ? lowIds : []),
+      });
+    };
 
-    it('is 100 with no Staples', () => {
-      expect(withStaple({ staples: [] })).toBe(100);
+    it('counts a stocked Ingredient 1', () => {
+      expect(withSupply({})).toBe(100);
     });
 
-    it('counts a stocked Staple 1', () => {
-      expect(withStaple({})).toBe(100);
+    it('lowers for a Running low Ingredient that is not a Staple', () => {
+      // 10 Ingredients, one Running low off the list: (9 + 0.1) / 10.
+      expect(withSupply({ runningLow: new Set(['milk']) })).toBe(91);
     });
 
-    it('counts a stocked Running low Staple 0.6', () => {
-      expect(withStaple({ runningLow: new Set(['milk']) })).toBe(60);
+    it('counts a Running low Ingredient on the Shopping List 0.8', () => {
+      expect(
+        withSupply({
+          runningLow: new Set(['milk']),
+          onShoppingList: new Set(['milk']),
+        }),
+      ).toBe(98);
     });
 
-    it('counts a missing Staple 0', () => {
-      expect(withStaple({ staples: [staple('eggs')] })).toBe(0);
+    it('counts a Staple that is Running low once', () => {
+      expect(
+        withSupply({
+          staples: [staple('milk')],
+          runningLow: new Set(['milk']),
+        }),
+      ).toBe(91);
+    });
+
+    it('counts a missing Staple 0 off the list and 0.5 on it', () => {
+      // 10 stocked + the missing Staple.
+      expect(withSupply({ staples: [staple('eggs')] })).toBe(91);
+      expect(
+        withSupply({
+          staples: [staple('eggs')],
+          onShoppingList: new Set(['eggs']),
+        }),
+      ).toBe(95);
     });
 
     it('counts a Staple whose only Batch has expired as missing', () => {
       expect(
-        withStaple({
+        withSupply({
           batches: [
             batch({ ingredientId: 'milk', expiryDate: '2026-10-14' }),
             ...batches(9),
           ],
+          staples: [staple('milk')],
         }),
-      ).toBe(0);
+      ).toBe(90);
     });
 
-    it('counts a missing Staple on the Shopping List 0.5', () => {
+    it('leaves dismissed missing Staples out', () => {
       expect(
-        withStaple({
+        withSupply({
           staples: [staple('eggs')],
-          onShoppingList: new Set(['eggs']),
-        }),
-      ).toBe(50);
-    });
-
-    it('leaves dismissed Staples out of the average', () => {
-      expect(
-        withStaple({
-          staples: [staple('milk'), staple('eggs')],
           dismissed: new Set(['eggs']),
         }),
       ).toBe(100);
+    });
+
+    it('leaves Unmatched Batches and fully Expired non-Staples out', () => {
       expect(
-        withStaple({ staples: [staple('eggs')], dismissed: new Set(['eggs']) }),
+        withSupply({
+          batches: [
+            batch({ ingredientId: null }),
+            batch({ ingredientId: 'old', expiryDate: '2026-10-01' }),
+            ...batches(8),
+          ],
+          runningLow: new Set(['old']),
+        }),
       ).toBe(100);
+    });
+
+    it('is left out when there is no Ingredient to judge', () => {
+      const result = scored(
+        input({
+          batches: [
+            ...batches(9, { ingredientId: null }),
+            batch({ ingredientId: null, expiryDate: null }),
+          ],
+        }),
+      );
+      const { fresh, dated, rotation } = result.factors;
+      expect(result.factors).not.toHaveProperty('supply');
+      expect(dated).toBe(90);
+      expect(result.total).toBe(
+        Math.round((30 * fresh! + 10 * dated! + 15 * rotation!) / 55),
+      );
+      expect(result.total).toBeLessThan(100);
+    });
+
+    it('scores 40 Running low Ingredients off the list 60', () => {
+      const result = scored(forty(40, false));
+      expect(result.total).toBe(60);
+      expect(result.verdict).toBe('attention');
+    });
+
+    it('scores 40 Running low Ingredients on the list 91, the to-do gaining 31', () => {
+      const i = forty(40, false);
+      expect(scored(withOnShoppingList(i, [...i.runningLow])).total).toBe(91);
+      expect(scored(withOnShoppingList(i, [...i.runningLow])).verdict).toBe(
+        'good',
+      );
+      expect(healthTodos(i)).toEqual([
+        expect.objectContaining({
+          key: 'runningLow',
+          factor: 'supply',
+          gain: 31,
+        }),
+      ]);
+    });
+
+    it('scores one Running low Ingredient out of 40 at 99', () => {
+      expect(scored(forty(1, false)).total).toBe(99);
     });
   });
 
@@ -210,31 +280,71 @@ describe('pantry health score', () => {
   });
 
   describe('total', () => {
-    it('weights Fresh 40, Staples 30, Dated 15 and Rotation 15', () => {
-      // Fresh 0, Staples 100, Dated 100, Rotation 100.
+    it('weights Fresh 30, Supply 45, Dated 10 and Rotation 15', () => {
+      // Fresh 0, Supply 100, Dated 91 (10 of 11), Rotation 100: 0 + 45 + 9.1 + 15 = 69.
       const fresh0 = scored(
-        input({ batches: batches(10, { expiryDate: '2026-10-01' }) }),
+        input({
+          batches: [
+            ...batches(10, { expiryDate: '2026-10-01' }),
+            batch({ expiryDate: null }),
+          ],
+        }),
       );
-      expect(fresh0.total).toBe(60);
-      // Staples 0 only.
-      const staples0 = scored(input({ staples: [{ ingredientId: 'none' }] }));
-      expect(staples0.total).toBe(70);
-      // Dated 0 only (Fresh stays 100 with no dated Batches).
-      const dated0 = scored(
+      expect(fresh0.factors.fresh).toBe(0);
+      expect(fresh0.total).toBe(69);
+      // Supply 0 only: ten Unmatched Batches (left out) and one missing Staple.
+      const supply0 = scored(
+        input({
+          batches: batches(10, { ingredientId: null }),
+          staples: [{ ingredientId: 'none' }],
+        }),
+      );
+      expect(supply0.factors.supply).toBe(0);
+      expect(supply0.total).toBe(55);
+    });
+
+    it('weights Dated 10 and Rotation 15', () => {
+      // One recent undated Batch: Dated 90 only. 30 + 45 + 9 + 15 = 99.
+      expect(
+        scored(input({ batches: [batch({ expiryDate: null }), ...batches(9)] }))
+          .total,
+      ).toBe(99);
+      // One undated Batch added 30 days ago (Forgotten in the fridge): Dated 90, Rotation 90.
+      // 30 + 45 + 9 + 13.5 = 97.5, rounded to 98.
+      const forgotten = scored(
+        input({
+          batches: [
+            batch({
+              expiryDate: null,
+              createdAt: '2026-09-15T08:00:00Z',
+            }),
+            ...batches(9),
+          ],
+        }),
+      );
+      expect(forgotten.factors.rotation).toBe(90);
+      expect(forgotten.total).toBe(98);
+    });
+
+    it('leaves Fresh out with no dated Batches and shares its weight', () => {
+      const result = scored(
         input({ batches: batches(10, { expiryDate: null }) }),
       );
-      expect(dated0.total).toBe(85);
+      expect(result.factors).not.toHaveProperty('fresh');
+      expect(result.factors).toEqual({ supply: 100, dated: 0, rotation: 100 });
+      // (45 * 100 + 10 * 0 + 15 * 100) / 70 = 85.7
+      expect(result.total).toBe(86);
     });
 
     it('rounds the weighted sum', () => {
-      // Dated 90 -> 0.15 * 90 = 13.5 + 85 = 98.5 -> 99.
+      // Dated 95 -> 0.10 * 95 = 9.5 + 90 = 99.5 -> 100.
       const result = scored(
         input({
-          batches: [batch({ expiryDate: null }), ...batches(9)],
+          batches: [batch({ expiryDate: null }), ...batches(19)],
         }),
       );
-      expect(result.factors.dated).toBe(90);
-      expect(result.total).toBe(99);
+      expect(result.factors.dated).toBe(95);
+      expect(result.total).toBe(100);
     });
   });
 
@@ -326,9 +436,9 @@ describe('health to-dos', () => {
       {
         key: 'missingStaples',
         group: 'now',
-        factor: 'staples',
+        factor: 'supply',
         itemIds: ['eggs'],
-        gain: 7,
+        gain: 1,
       },
     ]);
   });
@@ -349,9 +459,9 @@ describe('health to-dos', () => {
       {
         key: 'runningLow',
         group: 'week',
-        factor: 'staples',
+        factor: 'supply',
         itemIds: ['milk'],
-        gain: 0,
+        gain: 3,
       },
     ]);
   });
@@ -413,28 +523,29 @@ describe('health to-do gain', () => {
     healthTodos(i).find((todo) => todo.key === key)?.gain;
 
   it('is the score after tossing every expired Batch, minus the score now', () => {
-    // 11 of 12 dated Batches in date: Fresh 92, total 97. Without the expired one: 100.
+    // 11 of 12 dated Batches in date: Fresh 92, total 98. Without the expired one: 100.
     const i = input({
       batches: [batch({ expiryDate: '2026-10-01' }), ...batches(11)],
     });
-    expect(scored(i).total).toBe(97);
-    expect(gainOf(i, 'expired')).toBe(3);
+    expect(scored(i).total).toBe(98);
+    expect(gainOf(i, 'expired')).toBe(2);
   });
 
   it('is the score after putting every missing Staple on the list, minus the score now', () => {
-    // One Staple, missing: Staples 0, total 70. On the list it counts 0.5: 85.
+    // Ten stocked and one missing Staple: Supply 91, total 96. On the list it counts 0.5: Supply 95, total 98.
     const i = input({ staples: [{ ingredientId: 'eggs' }] });
-    expect(scored(i).total).toBe(70);
-    expect(gainOf(i, 'missingStaples')).toBe(15);
+    expect(scored(i).total).toBe(96);
+    expect(gainOf(i, 'missingStaples')).toBe(2);
   });
 
-  it('is the simulated difference for Running low too, here none: the flag still counts after listing', () => {
+  it('is the simulated difference for Running low too: on the list it counts 0.8, not 1', () => {
     const i = input({
       batches: [batch({ ingredientId: 'milk' }), ...batches(9)],
       staples: [{ ingredientId: 'milk' }],
       runningLow: new Set(['milk']),
     });
-    expect(gainOf(i, 'runningLow')).toBe(0);
+    // Supply 91 (9.1 of 10) -> 98 (9.8 of 10): total 96 -> 99.
+    expect(gainOf(i, 'runningLow')).toBe(3);
   });
 
   it('is never shown for Expiring Soon', () => {
@@ -449,12 +560,12 @@ describe('health to-do gain', () => {
       batches(count, { expiryDate: null, ...overrides });
 
     it("is the score after Date all with each Batch's Default Expiry", () => {
-      // 4 of 10 undated: Dated 60, total 94. All dated in date: 100.
+      // 4 of 10 undated: Dated 60, total 96. All dated in date: 100.
       const i = input({
         batches: [...batches(6), ...undated(4, { defaultExpiryDays: 30 })],
       });
-      expect(scored(i).total).toBe(94);
-      expect(gainOf(i, 'undated')).toBe(6);
+      expect(scored(i).total).toBe(96);
+      expect(gainOf(i, 'undated')).toBe(4);
     });
 
     it('counts from when the Batch was added, or from today when that date has passed', () => {
@@ -469,11 +580,11 @@ describe('health to-do gain', () => {
           }),
         ],
       });
-      expect(gainOf(i, 'undated')).toBe(6);
+      expect(gainOf(i, 'undated')).toBe(4);
     });
 
     it('is lower when the resulting dates are Expiring Soon', () => {
-      // Two Batches become Expiring Soon (Fresh 0.6 each): total 97 instead of 100.
+      // Two Batches become Expiring Soon (Fresh 0.6 each): total 98 instead of 100.
       const i = input({
         batches: [
           ...batches(6),
@@ -481,7 +592,7 @@ describe('health to-do gain', () => {
           ...undated(2, { defaultExpiryDays: 2 }),
         ],
       });
-      expect(gainOf(i, 'undated')).toBe(3);
+      expect(gainOf(i, 'undated')).toBe(2);
     });
 
     it('skips Batches without a Default Expiry', () => {
@@ -492,8 +603,8 @@ describe('health to-do gain', () => {
           ...undated(2),
         ],
       });
-      // Dated goes 60 to 80: total 94 to 97.
-      expect(gainOf(i, 'undated')).toBe(3);
+      // Dated goes 60 to 80: total 96 to 98.
+      expect(gainOf(i, 'undated')).toBe(2);
     });
 
     it('is hidden when no Batch has a Default Expiry', () => {
