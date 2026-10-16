@@ -10,6 +10,6 @@ import { RunningLowService } from './running-low.service';
   imports: [SettingsModule, CatalogModule],
   controllers: [PantryController],
   providers: [PantryService, RecentlyStockedService, RunningLowService],
-  exports: [PantryService],
+  exports: [PantryService, RunningLowService],
 })
 export class PantryModule {}

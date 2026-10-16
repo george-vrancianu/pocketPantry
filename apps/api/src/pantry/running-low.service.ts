@@ -3,7 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { catalogScope } from '../catalog/catalog-scope';
 import { ApiException } from '../common/api-exception';
 import { DATABASE } from '../database/database.constants';
-import type { Database } from '../database/database.types';
+import type { Database, Executor } from '../database/database.types';
 import { runningLow } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 
@@ -28,14 +28,23 @@ export class RunningLowService {
 
   /** Idempotent: flagging an Ingredient that is already flagged succeeds. */
   async set(memberId: string, ingredientId: string): Promise<void> {
+    await this.setIn(this.database, memberId, ingredientId);
+  }
+
+  /** The same, in the caller's transaction. */
+  async setIn(
+    executor: Executor,
+    memberId: string,
+    ingredientId: string,
+  ): Promise<void> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const ingredients = catalogScope(familyId).ingredients(this.database);
-    const [found] = await this.database
+    const ingredients = catalogScope(familyId).ingredients(executor);
+    const [found] = await executor
       .select({ id: ingredients.id })
       .from(ingredients)
       .where(eq(ingredients.id, ingredientId));
     if (!found) throw new ApiException(404, 'pantry.ingredient_not_found');
-    await this.database
+    await executor
       .insert(runningLow)
       .values({ familyId, ingredientId })
       .onConflictDoNothing();

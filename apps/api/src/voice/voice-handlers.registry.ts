@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { PantryService } from '../pantry/pantry.service';
+import { RunningLowService } from '../pantry/running-low.service';
 import { ShoppingService } from '../shopping/shopping.service';
 import type { VoiceActionDraft } from './voice-actions';
+import { pantryAddHandler } from './handlers/pantry-add.handler';
+import { pantryRemoveHandler } from './handlers/pantry-remove.handler';
+import { pantryRunningLowHandler } from './handlers/pantry-running-low.handler';
 import { shoppingAddHandler } from './handlers/shopping-add.handler';
 import { shoppingCheckHandler } from './handlers/shopping-check.handler';
 import { shoppingRemoveHandler } from './handlers/shopping-remove.handler';
@@ -17,8 +22,13 @@ import { handlerKey, type VoiceActionHandler } from './voice-handlers';
 export class VoiceHandlers {
   private readonly handlers = new Map<string, VoiceActionHandler>();
 
-  constructor(shopping: ShoppingService) {
-    this.register('shopping', 'add', shoppingAddHandler(shopping));
+  constructor(
+    shopping: ShoppingService,
+    pantry: PantryService,
+    runningLow: RunningLowService,
+  ) {
+    const shoppingAdd = shoppingAddHandler(shopping);
+    this.register('shopping', 'add', shoppingAdd);
     this.register('shopping', 'check', shoppingCheckHandler(shopping));
     this.register('shopping', 'uncheck', shoppingUncheckHandler(shopping));
     this.register('shopping', 'remove', shoppingRemoveHandler(shopping));
@@ -26,6 +36,13 @@ export class VoiceHandlers {
       'shopping',
       'setQuantity',
       shoppingSetQuantityHandler(shopping),
+    );
+    this.register('pantry', 'add', pantryAddHandler(pantry));
+    this.register('pantry', 'remove', pantryRemoveHandler(pantry));
+    this.register(
+      'pantry',
+      'runningLow',
+      pantryRunningLowHandler(pantry, runningLow, shoppingAdd),
     );
   }
 

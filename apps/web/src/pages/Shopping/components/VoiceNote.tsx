@@ -12,7 +12,7 @@ import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VoiceReview } from '../../../components/VoiceReview';
 import { ScanLanguageChip } from '../../Scan/components/ScanLanguageChip';
-import { useVoiceConfigured } from '../../../lib/voice';
+import { useVoiceConfigured, type VoiceList } from '../../../lib/voice';
 import { useVoiceNote } from '../hooks/useVoiceNote';
 
 const formatElapsed = (ms: number) => {
@@ -57,15 +57,20 @@ function outside(event: PointerEvent<HTMLElement>) {
  * its notices, and the Review sheet that shows "What I heard". Hidden until the server says
  * transcription is configured.
  */
-export function VoiceNote() {
+export function VoiceNote({
+  defaultTarget = 'shopping',
+}: {
+  /** The list the page this sits on acts on. */
+  defaultTarget?: VoiceList;
+}) {
   const configured = useVoiceConfigured();
   if (!configured) return null;
-  return <VoiceNoteControls />;
+  return <VoiceNoteControls defaultTarget={defaultTarget} />;
 }
 
-function VoiceNoteControls() {
+function VoiceNoteControls({ defaultTarget }: { defaultTarget: VoiceList }) {
   const { t } = useTranslation(['voice', 'scan', 'common']);
-  const voice = useVoiceNote('shopping');
+  const voice = useVoiceNote(defaultTarget);
   const busy = voice.sending;
 
   const label = voice.recording

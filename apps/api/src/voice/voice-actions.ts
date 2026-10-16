@@ -76,10 +76,28 @@ export type VoiceActionDraft = {
   location: VoiceLocation | null;
   /** A Batch chosen in Review, when the action needed one. */
   batchId: string | null;
+  /** The Batches Review showed a resolved Pantry removal taking; Apply holds to exactly those. */
+  batchIds: string[];
 };
 
 /** The rows an action will touch, for Review to show. */
+export type ResolvedBatchRow = {
+  id: string;
+  /** The Ingredient's (or Unmatched) name. */
+  name: string;
+  quantity: number | null;
+  unit: VoiceUnit | null;
+  location: VoiceLocation;
+  expiresOn: string | null;
+  /** Removals: the amount taken from this Batch, or null when the whole Batch goes. */
+  take?: number | null;
+};
+
 export type ResolvedRows = {
+  /** Pantry removals and Running low: the Batches it will take, or the candidates to pick from (needsBatch). */
+  batches?: ResolvedBatchRow[];
+  /** Pantry Running low with no Batch: Apply adds the Ingredient to the Shopping List instead. */
+  shoppingFallback?: boolean;
   shoppingItem?: {
     id: string;
     name: string;
@@ -137,10 +155,13 @@ export const voiceApplyBody = z.object({
         noExpiry: z.boolean().default(false),
         location: z.enum(storageLocation.enumValues).nullable().default(null),
         batchId: z.uuid().nullable().default(null),
+        batchIds: z.array(z.uuid()).max(50).default([]),
       }),
     )
     .max(50),
   locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
+  /** The Member's local date, for a Pantry add that takes the Default Expiry. */
+  today: z.iso.date().optional(),
 });
 export type VoiceApplyBody = z.infer<typeof voiceApplyBody>;
 
