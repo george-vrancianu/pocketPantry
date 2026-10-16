@@ -151,5 +151,13 @@
     "day_out_of_range": "That day isn't part of the plan.",
     "not_found": "That Meal plan no longer exists.",
     "recipe_not_found": "That Recipe can't be found."
+  },
+  "voice": {
+    "cap_reached": "You have used all {{cap}} voice notes for today. Try again tomorrow, or add items by hand.",
+    "too_long": "That voice note is too long. Keep it under a minute.",
+    "unsupported_audio": "This browser's recording format is not supported.",
+    "not_configured": "Voice notes are not set up on this server yet.",
+    "provider_unavailable": "Voice notes are not available right now. Please try again in a moment.",
+    "result_invalid": "We could not read that voice note. Please try again."
   }
 }
