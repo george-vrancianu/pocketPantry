@@ -1,7 +1,13 @@
-import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
+import type {
+  CatalogAllergen,
+  CatalogSearchResult,
+  StorageLocation,
+  Unit,
+} from './catalog';
 import { defaultExpiryDate, parseQuantity, type NewBatch } from './pantry';
 import { isIsoDate } from './dateFormat';
-import type { ExclusionReason, ProposedLine, ScanMode } from './scan';
+import type { CameraMode } from './cameraMode';
+import type { ExclusionReason, ProposedLine } from './scan';
 import type { SessionScan } from './scanSession';
 
 const FALLBACK_LOCATION: StorageLocation = 'cupboard';
@@ -26,6 +32,16 @@ export type ReviewLine = {
   /** Unmatched only: the Parent Category the Batch lands in; '' leaves it to the server's default (top-level Other). */
   parentCategoryId: string;
   description: string;
+  /** A Barcode card's code: saving sends it, so the Family learns the Known Barcode. It survives edits to the Ingredient or name. */
+  barcode?: string;
+  /** A Barcode card's lookup: the Open Food Facts credit and Allergen info the add-Batch form shows after a Prefill. */
+  lookup?: {
+    fromOpenFoodFacts: boolean;
+    /** Pre-ticked in the Contains row of a new Family Ingredient; empty when the lookup matched an Ingredient (as Prefill). */
+    listedAllergens: CatalogAllergen[];
+    /** The listed Allergens the looked-up match is not tagged with; gone once the Member picks another Ingredient. */
+    missingAllergens: CatalogAllergen[];
+  };
   /** Left out of the Pantry until the Member adds it back: the Scan excluded it (Receipt) or the Member removed it. Excluded lines are never saved. */
   excluded: { reason: ExclusionReason | 'removed' } | null;
 };
@@ -49,6 +65,16 @@ export function toReviewLine(
     parentCategoryId: '',
     description: line.productDescription ?? '',
     excluded: line.excluded ?? null,
+    ...(line.barcode ? { barcode: line.barcode } : {}),
+    ...(line.barcode && line.source
+      ? {
+          lookup: {
+            fromOpenFoodFacts: line.source === 'open_food_facts',
+            listedAllergens: match ? [] : (line.allergens ?? []),
+            missingAllergens: line.missingAllergens ?? [],
+          },
+        }
+      : {}),
   };
   return {
     ...base,
@@ -82,6 +108,9 @@ export function withMatch(
 ): ReviewLine {
   return {
     ...line,
+    ...(line.lookup
+      ? { lookup: { ...line.lookup, missingAllergens: [] } }
+      : {}),
     match,
     parentCategoryId: '',
     lowConfidence: false,
@@ -177,14 +206,18 @@ export function toNewBatch(line: ReviewLine): NewBatch {
     location: line.location,
     expiryDate: line.expiryDate === '' ? null : line.expiryDate,
     productDescription: line.description.trim() || null,
+    ...(line.barcode ? { barcode: line.barcode } : {}),
   };
 }
 
 /** The Batches a Scan's lines are saved as; the queue only records the source of Unmatched names. */
 export const toSaveBatches = (
   lines: ReviewLine[],
-  mode: Exclude<ScanMode, 'plate'>,
+  mode: Exclude<CameraMode, 'plate'>,
 ) =>
   lines
     .map(toNewBatch)
-    .map((batch) => (batch.rawName ? { ...batch, source: mode } : batch));
+    // A Barcode Lookup's unmatched name carries no source, as in the add-Batch form (stored as manual).
+    .map((batch) =>
+      batch.rawName && mode !== 'barcode' ? { ...batch, source: mode } : batch,
+    );

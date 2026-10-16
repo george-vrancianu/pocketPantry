@@ -91,7 +91,7 @@ With the app running, in a second terminal:
 npm run db:seed -w @pocket-pantry/api
 ```
 
-This loads the ingredient catalog. In development it also creates two test accounts, `alice@test.local` and `bob@test.local`, both with the password `password123`.
+This loads the ingredient catalog. In development it also creates three test accounts, `alice@test.local`, `bob@test.local` and `george@test.local`, all with the password `password123`.
 
 ### Give yourself Admin access
 

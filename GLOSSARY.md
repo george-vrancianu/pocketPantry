@@ -187,7 +187,7 @@ A photo sent for recognition. One of four Scan Modes.
 _Avoid_: Capture, upload
 
 **Scan Session**:
-The Scans a Member takes from opening the camera until they are added or discarded. It is held in the app, in memory, and each Scan in it is read in the background while the Member keeps scanning.
+The Scans and Barcode Lookups a Member takes from opening the camera until they are added or discarded. It is held in the app, in memory, and each Scan in it is read in the background while the Member keeps scanning. Each Barcode Lookup in it is one card, looked up at once.
 _Avoid_: Batch (a Batch is a Pantry purchase), queue
 
 **Scan Mode**:
@@ -197,11 +197,11 @@ Product, Receipt, Plate, or Ingredients.
 Recognises a single packaged product from one photo, and its best-before date when the date is in that photo.
 
 **Barcode Lookup**:
-Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
+Reading a product's barcode in the camera and looking the code up, first among the Family's Known Barcodes and then in an open product database. It fills the add-Batch form, or adds a card to a Scan Session. Not a Scan: no photo is sent for recognition, it has no Scan Language, and it never counts against the Scan Cap. Barcode sits on the camera's mode dial but is not a Scan Mode.
 _Avoid_: Barcode scan, barcode mode
 
 **Known Barcode**:
-A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins.
+A barcode a Family has saved a Batch from, remembered with the Ingredient, or the Unmatched name, and the Product Description it was saved as. The latest save wins. A Product Scan's photo teaches one too: the barcode on it is decoded on the device, and goes with the Batch when the card read as exactly one line.
 _Avoid_: Barcode cache, saved product
 
 **Prefill**:

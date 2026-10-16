@@ -96,6 +96,7 @@ export function CameraOverlay({
   const [preparing, setPreparing] = useState(false);
   const [failed, setFailed] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
+  const scanRef = useRef<(() => void) | null>(null);
   const shooting = useRef(false);
 
   // Focus moves into the dialog on open, and Escape closes it as Close does.
@@ -225,6 +226,7 @@ export function CameraOverlay({
         disabled={mode === 'barcode' || preparing || camera.status !== 'ready'}
         onScan={() => void shoot()}
         dragEndedAt={dragEndedAt}
+        scanRef={scanRef}
       />
       <Box
         sx={{
@@ -306,6 +308,9 @@ export function CameraOverlay({
             disabled={preparing}
             keysDisabled={preparing}
             dragEndedAt={dragEndedAt}
+            onScan={() => scanRef.current?.()}
+            scanDisabled={preparing || camera.status !== 'ready'}
+            focusForScan={camera.focusForScan}
             onChange={(next) => {
               const picked = modes.find((item) => item === next);
               if (!picked) return;

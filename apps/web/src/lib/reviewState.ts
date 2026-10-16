@@ -25,6 +25,8 @@ export type ReviewAction =
   | { type: 'remove'; key: string }
   | { type: 'restore'; key: string }
   | { type: 'update'; key: string; patch: Partial<ReviewLine> }
+  /** A Product Scan's photo barcode settled while the editor was open; not an edit, so no row is confirmed by it. */
+  | { type: 'attachBarcode'; key: string; barcode: string }
   | {
       type: 'changeMatch';
       key: string;
@@ -138,6 +140,11 @@ export function reviewReducer(
         ? { ...next, confirmed: { ...next.confirmed, [action.key]: true } }
         : next;
     }
+    case 'attachBarcode':
+      return mapLine(state, action.key, (l) => ({
+        ...l,
+        barcode: action.barcode,
+      }));
     case 'changeMatch':
       return mapLine(state, action.key, (line) =>
         withMatch(line, action.match, action.today),

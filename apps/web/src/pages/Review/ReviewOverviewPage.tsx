@@ -35,6 +35,7 @@ import {
   canMerge,
   dispatchScanSession,
   getScanSession,
+  isBarcodeCard,
   pendingCount,
   resetScanSession,
   scanDisplayState,
@@ -172,9 +173,11 @@ export function ReviewOverviewPage() {
       (line) => line.lowConfidence || line.match === null,
     ).length;
     const mergeable = canMerge(session, scan.id);
+    // A not-found Barcode card's empty line has no name to show yet.
+    const firstName = lines.length > 0 ? displayName(lines[0]).trim() : '';
     const result =
-      scan.mode === 'product' && lines.length > 0
-        ? displayName(lines[0])
+      (scan.mode === 'product' || isBarcodeCard(scan)) && firstName
+        ? firstName
         : t('overview.items', { count: lines.length });
     return (
       <Box

@@ -1,11 +1,11 @@
 import { Typography, tokens } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import type { ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 
 type Props = {
   /** What the Scan read for the line; renders nothing when null. */
   text: string | null;
-  mode: ScanMode;
+  mode: CameraMode;
   /** A span for running inside a line of text, rather than a line of its own. */
   inline?: boolean;
 };

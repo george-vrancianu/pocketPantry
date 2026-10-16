@@ -90,6 +90,9 @@ export function InfoSheet({ onClose }: { onClose: () => void }) {
         <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
           {t('info.body')}
         </Typography>
+        <Typography sx={{ mt: 1, fontSize: 14, color: tokens.color.muted }}>
+          {t('info.dial')}
+        </Typography>
         <Box
           component="ul"
           sx={{ mt: 1.5, mb: 0, p: 0, listStyle: 'none', fontSize: 14 }}

@@ -6,6 +6,7 @@
     "label": "Sådan virker scanning",
     "title": "Scan dit spisekammer",
     "body": "Ret kameraet mod en kvittering, et produkt, løse ingredienser eller en tallerken, og dobbelttryk på guiden. Du kan tjekke alt, før det gemmes.",
+    "dial": "Dobbelttryk eller hold på tilstandshjulet for at scanne; hold fokuserer først.",
     "dismiss": "Luk"
   },
   "scanLanguage": {
@@ -51,9 +52,11 @@
     "needsCrop": "Skal beskæres",
     "read": "Foto læst",
     "failed": "Fotoet kunne ikke læses",
+    "retryLookup": "Slå op igen",
     "retry": "Læs foto igen"
   },
   "photoAdded": "Foto {{count}} tilføjet",
+  "barcodeAdded": "Stregkode {{count}} tilføjet",
   "tickFailed_one": "{{count}} vare på indkøbslisten kunne ikke afkrydses.",
   "tickFailed_other": "{{count}} varer på indkøbslisten kunne ikke afkrydses.",
   "added_one": "Resultater tilføjet fra {{count}} foto",

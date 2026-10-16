@@ -6,7 +6,8 @@
       "product": "Produs scanat",
       "receipt": "Bon scanat",
       "plate": "Farfurie scanată",
-      "ingredients": "Ingrediente scanate"
+      "ingredients": "Ingrediente scanate",
+      "barcode": "Căutare cod de bare"
     },
     "lines_one": "{{mode}} · {{count}} linie citită",
     "lines_few": "{{mode}} · {{count}} linii citite",

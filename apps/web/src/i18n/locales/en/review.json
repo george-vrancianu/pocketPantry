@@ -6,7 +6,8 @@
       "product": "Scanned product",
       "receipt": "Scanned receipt",
       "plate": "Scanned plate",
-      "ingredients": "Scanned ingredients"
+      "ingredients": "Scanned ingredients",
+      "barcode": "Barcode lookup"
     },
     "lines_one": "{{mode}} · {{count}} line read",
     "lines_other": "{{mode}} · {{count}} lines read"

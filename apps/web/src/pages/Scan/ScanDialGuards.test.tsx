@@ -12,6 +12,7 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: true,
     capture: () => Promise.resolve(new Blob(['frame'], { type: 'image/jpeg' })),
     setTorch: () => Promise.resolve(true),
+    watchBarcodes: () => () => {},
   }),
 }));
 vi.mock('../../lib/image', async (importActual) => ({
@@ -115,7 +116,7 @@ describe('Scan mode dial: when arrows must not change the mode', () => {
     await userEvent.keyboard('{ArrowRight}');
     await waitFor(() =>
       expect(
-        within(dial()).getByRole('radio', { name: 'Ingredients' }),
+        within(dial()).getByRole('radio', { name: 'Barcode' }),
       ).toHaveFocus(),
     );
   });

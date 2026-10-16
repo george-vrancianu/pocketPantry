@@ -11,6 +11,7 @@ vi.mock('../../lib/camera', () => ({
     torchSupported: true,
     capture: () => Promise.resolve(new Blob(['frame'])),
     setTorch: () => Promise.resolve(true),
+    watchBarcodes: () => () => {},
   }),
 }));
 
@@ -87,7 +88,7 @@ describe('Scan mode dial gestures', () => {
   it('a slow horizontal drag of more than half an item moves to the next mode', () => {
     renderScan('/scan?mode=product');
     drag(item('Product'), { dx: -50 });
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
   });
 
   it('dragging right moves to the previous mode', () => {
@@ -105,7 +106,7 @@ describe('Scan mode dial gestures', () => {
   it('a quick short flick advances exactly one step', () => {
     renderScan('/scan?mode=product');
     drag(item('Product'), { dx: -20, ms: 20 });
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
   });
 
   it('a vertical drag does not change mode', () => {
@@ -182,7 +183,7 @@ describe('Scan mode dial gestures', () => {
   it('works with a mouse pointer', () => {
     renderScan('/scan?mode=product');
     drag(item('Product'), { dx: -50, pointerType: 'mouse' });
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
   });
 
   it('ignores a second pointer: it neither moves the strip nor ends the drag', () => {
@@ -212,7 +213,7 @@ describe('Scan mode dial gestures', () => {
     // the first finger is still dragging and decides the release
     now += 300;
     fireEvent.pointerUp(radio, { ...first, clientX: 150, clientY: 500 });
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
   });
 
   it('keeps the strip and the release target relative to where the drag began when the mode changes mid-drag', () => {
@@ -229,7 +230,7 @@ describe('Scan mode dial gestures', () => {
     fireEvent.pointerMove(radio, { ...mouse, clientX: 180, clientY: 500 });
     expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
     fireEvent.keyDown(document, { key: 'ArrowRight' });
-    expect(selected()).toEqual(['Ingredients']);
+    expect(selected()).toEqual(['Barcode']);
     expect(dial()).toHaveStyle({ transform: 'translateX(-146px)' });
     fireEvent.pointerUp(radio, { ...mouse, clientX: 180, clientY: 500 });
     // 20 px from where the drag began snaps back to where it began
