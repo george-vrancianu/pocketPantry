@@ -8,6 +8,7 @@ process.env.BETTER_AUTH_SECRET =
   'test-secret-that-is-at-least-32-characters-long';
 // Small enough for the Scan Cap tests to reach it in a few requests.
 process.env.SCAN_DAILY_CAP = '3';
+process.env.VOICE_DAILY_CAP = '2';
 // Out of the way for most suites; family-join-rate-limit lowers them.
 process.env.INVITE_CODE_LIMIT_PER_USER = '1000';
 process.env.INVITE_CODE_LIMIT_PER_IP = '1000';

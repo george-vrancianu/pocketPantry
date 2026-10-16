@@ -1,0 +1,322 @@
+{
+  "source": "synthetic",
+  "note": "SYNTHETIC English transcripts written by hand: not real Voice Notes and not recordings. They test the transcript read only. Real recordings still need capturing (see README.md).",
+  "cases": [
+    {
+      "id": "en-01",
+      "scanLanguage": "en",
+      "tags": ["basic"],
+      "transcript": "Add milk, eggs and bread to the list.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Milk"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Eggs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Bread"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-02",
+      "scanLanguage": "en",
+      "tags": ["filler"],
+      "transcript": "Um, so, uh, I need, like, butter, you know, and some cheddar.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Butter"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Cheddar"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-03",
+      "scanLanguage": "en",
+      "tags": ["correction", "units"],
+      "transcript": "Add two, no, three apples.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Apple",
+            "quantity": 3,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-04",
+      "scanLanguage": "en",
+      "tags": ["correction"],
+      "transcript": "Put onions on the list. Actually no, make that garlic.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Garlic"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-05",
+      "scanLanguage": "en",
+      "tags": ["units"],
+      "transcript": "Two litres of milk, half a kilo of flour, a dozen eggs and four tomatoes.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Milk",
+            "quantity": 2,
+            "unit": "l"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Flour",
+            "quantity": 500,
+            "unit": "g"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Eggs",
+            "quantity": 12,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Tomato",
+            "quantity": 4,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-06",
+      "scanLanguage": "en",
+      "tags": ["relative-date", "units"],
+      "transcript": "Add a kilo of salmon to the pantry, it expires in three days.",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Salmon",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-07",
+      "scanLanguage": "en",
+      "tags": ["relative-date"],
+      "transcript": "Put two yoghurts in the fridge, they expire tomorrow.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yogurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "expiresOn": "2026-10-15",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-08",
+      "scanLanguage": "en",
+      "tags": ["units", "relative-date"],
+      "transcript": "Add one kilo of rice, it never expires.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Rice",
+            "quantity": 1,
+            "unit": "kg",
+            "noExpiry": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-09",
+      "scanLanguage": "en",
+      "tags": ["unsupported"],
+      "transcript": "What's the weather like tomorrow? Add coffee.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Coffee"
+          }
+        ],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "en-10",
+      "scanLanguage": "en",
+      "tags": ["unsupported"],
+      "transcript": "Tell me a recipe for lasagne.",
+      "expected": {
+        "actions": [],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "en-11",
+      "scanLanguage": "en",
+      "tags": ["mixed-lists", "relative-date", "units"],
+      "transcript": "Add spaghetti to the shopping list and put three lemons in the pantry, they expire on the twentieth.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Spaghetti"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Lemon",
+            "quantity": 3,
+            "unit": "pcs",
+            "expiresOn": "2026-10-20"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-12",
+      "scanLanguage": "en",
+      "tags": ["mixed-lists"],
+      "transcript": "Tick off the bread, take milk off the list, and we're running low on rice in the pantry.",
+      "shoppingList": ["Milk", "Bread"],
+      "pantry": ["Rice"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Bread"
+          },
+          {
+            "target": "shopping",
+            "op": "remove",
+            "ingredient": "Milk"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Rice"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-13",
+      "scanLanguage": "en",
+      "tags": ["sound-alike"],
+      "transcript": "Add pears, peas and black pepper.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Pear"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": [
+              "Frozen peas",
+              "Fresh peas",
+              "Canned peas",
+              "Split peas"
+            ]
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Black pepper"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-14",
+      "scanLanguage": "en",
+      "tags": ["sound-alike"],
+      "transcript": "Spring onions please, and also onions, the normal ones.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Spring onion"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Onion"
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-15",
+      "scanLanguage": "en",
+      "tags": ["units"],
+      "transcript": "Change the milk to three litres.",
+      "shoppingList": ["Milk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Milk",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    }
+  ]
+}

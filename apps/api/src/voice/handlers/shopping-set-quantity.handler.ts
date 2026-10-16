@@ -1,0 +1,41 @@
+import { ShoppingService } from '../../shopping/shopping.service';
+import { hasSubject } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
+import {
+  currentShoppingTarget,
+  resolveShoppingTarget,
+} from './shopping-target';
+
+/** "Make the eggs twelve": replaces the quantity and unit of the item on the list. */
+export function shoppingSetQuantityHandler(
+  shopping: ShoppingService,
+): VoiceActionHandler {
+  return {
+    resolve: (draft, ctx) => resolveShoppingTarget(draft, ctx),
+
+    apply: (draft, ctx) =>
+      skippingKnownErrors(async () => {
+        if (!hasSubject(draft) || draft.quantity === null) {
+          return { applied: false, reason: 'voice.invalid_action' };
+        }
+        const target = await currentShoppingTarget(shopping, draft, ctx);
+        if (!target) return { applied: false, reason: 'voice.item_not_found' };
+        // No spoken unit keeps the item's own unit.
+        const quantity = draft.quantity;
+        const unit = draft.unit ?? target.unit ?? 'pcs';
+        // Already that amount: nothing to do, which counts as applied.
+        if (target.quantity !== quantity || target.unit !== unit) {
+          await shopping.setAmountInTransaction(
+            ctx.tx,
+            ctx.memberId,
+            target.id,
+            { quantity, unit },
+          );
+        }
+        return { applied: true };
+      }),
+  };
+}

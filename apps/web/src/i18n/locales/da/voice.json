@@ -1,0 +1,87 @@
+{
+  "button": {
+    "label": "Hold for at tale",
+    "release": "Slip for at sende",
+    "sending": "Sender…"
+  },
+  "recording": {
+    "label": "Optager",
+    "cancelHint": "træk væk for at annullere"
+  },
+  "explainer": {
+    "title": "Stemmenoter bruger din mikrofon",
+    "body": "Hold knappen nede og sig, hvad du har købt eller brugt op. Din stemme bliver til tekst, som du kan tjekke. Optagelsen gemmes ikke.",
+    "allow": "Tillad mikrofon",
+    "notNow": "Ikke nu"
+  },
+  "denied": {
+    "title": "Mikrofonen er blokeret.",
+    "body": "For at bruge stemmenoter skal du tillade mikrofonen for dette websted i browserens indstillinger (kig efter lås- eller indstillingsikonet ved adressen) og derefter holde knappen nede igen."
+  },
+  "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
+  "tooShort": "Hold knappen nede, mens du taler.",
+  "nothingHeard": "Jeg opfangede ikke noget, prøv igen",
+  "retry": "Prøv igen",
+  "dismiss": "Luk",
+  "review": {
+    "title": "Stemmenote",
+    "heard": "Det jeg hørte",
+    "discard": "Kassér",
+    "apply": "Anvend",
+    "lists": {
+      "shopping": "Indkøbslisten",
+      "pantry": "Spisekammeret"
+    },
+    "notUnderstood": "Forstod ikke",
+    "unmatched": "ikke i kataloget",
+    "notFound": "Ikke fundet: {{name}}",
+    "ops": {
+      "setQuantity": "Sæt mængde",
+      "check": "Afkryds",
+      "addAndCheck": "Tilføj og afkryds",
+      "uncheck": "Fjern afkrydsning",
+      "remove": "Fjern fra listen"
+    },
+    "change": "Skift",
+    "changeMatch": "Skift match for {{name}}",
+    "remove": "Fjern {{name}}",
+    "pantry": {
+      "location": "Placering",
+      "chooseLocation": "Vælg en placering",
+      "expires": "Udløber",
+      "noExpiry": "Ingen udløbsdato",
+      "noDate": "ingen udløbsdato",
+      "whole": "hele partiet",
+      "take": "tager {{amount}}",
+      "batch": "{{amount}} · udløber {{date}}",
+      "noAmount": "ingen mængde",
+      "pickLabel": "Hvilket parti {{name}}?",
+      "pickPrompt": "Vælg et parti",
+      "pickNeeded": "Vælg det parti, der skal tages fra.",
+      "runningLow": "Marker {{name}} som ved at slippe op",
+      "shoppingFallback": "Tilføj {{name}} til indkøbslisten"
+    }
+  },
+  "toast": {
+    "applied_one": "{{count}} stemmehandling anvendt.",
+    "applied_other": "{{count}} stemmehandlinger anvendt.",
+    "skipped": "Sprunget over: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "mængden er for stor",
+    "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
+    "voice.not_supported": "understøttes ikke endnu",
+    "voice.invalid_action": "ufuldstændig",
+    "pantry.batch_not_found": "partiet er allerede væk",
+    "voice.batch_required": "intet parti valgt",
+    "pantry.location_required": "ingen placering valgt",
+    "pantry.unit_required": "enhed påkrævet",
+    "pantry.ingredient_not_found": "ingrediensen er ikke længere tilgængelig",
+    "shopping.item_not_found": "er ikke længere på listen",
+    "shopping.list_changed": "listen er ændret",
+    "pantry.category_not_found": "kategorien er ikke længere tilgængelig",
+    "pantry.other_leaf_missing": "ingen passende kategori tilgængelig",
+    "voice.item_not_found": "er ikke længere på listen",
+    "other": "kunne ikke anvendes"
+  }
+}

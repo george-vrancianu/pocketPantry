@@ -69,6 +69,17 @@ never reach a client.
   `AI_VISION_MODEL`, `AI_REASONING_EFFORT`, `AI_BASE_URL`). Unset, the model is
   `gpt-6-luna` at effort `none`; a model set without an effort sends no effort
   (see "Choose the Scan model" in the root README).
+- `src/voice`: Voice Notes. `POST /api/voice` (multipart: `audio`, `durationMs`,
+  `scanLanguage`, `locale`, `defaultTarget`, `today`) transcribes a held-to-talk recording
+  (webm, mp4 or ogg, at most 60 s / 2 MB) and returns `{ transcript, actions }` (the transcript read into Voice Actions by the text model, each
+  resolved against the current lists; nothing is written); `POST /api/voice/apply` (JSON) re-checks the
+  edited Voice Actions and writes them in one transaction, free of the Voice Cap; `GET /api/voice/config`
+  tells the web whether voice is on. Transcription uses `AI_TRANSCRIBE_MODEL` (default
+  `gpt-transcribe`) and reading uses `AI_TEXT_MODEL` (default `gpt-5-mini` at `AI_TEXT_REASONING_EFFORT`
+  `low`) on the same `AI_API_KEY` and `AI_BASE_URL`; without a key (or, for
+  `openai-compatible`, a base URL) the endpoint answers `voice.not_configured`. Each note is
+  charged to the Voice Cap first and refunded when the provider fails or nothing was heard.
+  Neither audio nor transcript is stored.
 - `src/meal-plans`: Meal Plans and their Plan Slots (`/api/meal-plans`). A Family
   keeps at most `MEAL_PLAN_CAP` plans (default 10, past ones included); plans of
   one Family never overlap. Routes take the Member's local `today` as a query
@@ -76,7 +87,9 @@ never reach a client.
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
   schemas. Only `POST /api/scan/product` is exposed so far. The Scan Cap is
   `SCAN_DAILY_CAP` Scans per Member per UTC day (default 30; `0` disables the
-  cap); `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
+  cap); `VOICE_DAILY_CAP` is the separate, independently counted Voice Cap
+  (Voice Notes per Member per UTC day, default 50; `0` disables the cap);
+  `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256
   token over the Member and the guessed dish titles; `POST /api/scan/plate/ingredients`

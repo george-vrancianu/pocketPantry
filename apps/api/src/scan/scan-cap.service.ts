@@ -7,11 +7,19 @@ import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
 import { scanUsage } from '../database/schema';
 
+export type UsageKind = 'scan' | 'voice';
+
+const LIMITS = {
+  scan: { setting: 'SCAN_DAILY_CAP', code: 'scan.cap_reached' },
+  voice: { setting: 'VOICE_DAILY_CAP', code: 'voice.cap_reached' },
+} as const;
+
 const utcDay = (now: Date) => now.toISOString().slice(0, 10);
 
 /**
- * The per-Member daily Scan Cap, counted per UTC day and enforced before the
- * provider is called. `SCAN_DAILY_CAP=0` disables the cap.
+ * The per-Member daily caps, counted per UTC day and per kind and enforced
+ * before the provider is called. The Scan Cap is `SCAN_DAILY_CAP` and the Voice
+ * Cap `VOICE_DAILY_CAP`; a cap of 0 disables it. Kinds never affect each other.
  */
 @Injectable()
 export class ScanCapService {
@@ -21,45 +29,59 @@ export class ScanCapService {
   ) {}
 
   /**
-   * Counts one Scan, atomically; throws `scan.cap_reached` once the Member is
-   * at the cap. Returns the UTC day it was counted on, which a refund must use.
+   * Counts one use of `kind`, atomically; throws `scan.cap_reached` (Scan Cap)
+   * or `voice.cap_reached` (Voice Cap) once the Member is at that kind's cap.
+   * Returns the UTC day it was counted on, which a refund must use.
    */
-  async consume(memberId: string, now = new Date()): Promise<string> {
-    const cap = this.config.get('SCAN_DAILY_CAP', { infer: true });
+  async consume(
+    memberId: string,
+    now = new Date(),
+    kind: UsageKind = 'scan',
+  ): Promise<string> {
+    const limit = LIMITS[kind];
+    const cap = this.config.get(limit.setting, { infer: true });
     const day = utcDay(now);
     if (cap === 0) return day;
     const rows = await this.database
       .insert(scanUsage)
-      .values({ memberId, day, count: 1 })
+      .values({ memberId, day, kind, count: 1 })
       .onConflictDoUpdate({
-        target: [scanUsage.memberId, scanUsage.day],
+        target: [scanUsage.memberId, scanUsage.day, scanUsage.kind],
         set: { count: sql`${scanUsage.count} + 1` },
         setWhere: lt(scanUsage.count, cap),
       })
       .returning({ count: scanUsage.count });
     if (rows.length === 0) {
-      throw new ApiException(429, 'scan.cap_reached', { cap });
+      throw new ApiException(429, limit.code, { cap });
     }
     return day;
   }
 
-  /** Counts the Scan before calling the provider, and hands it back if the provider fails. */
-  async withinCap<T>(memberId: string, run: () => Promise<T>): Promise<T> {
-    const day = await this.consume(memberId);
+  /** Counts one use of `kind` before calling the provider, and hands it back if the provider fails. */
+  async withinCap<T>(
+    memberId: string,
+    run: () => Promise<T>,
+    kind: UsageKind = 'scan',
+  ): Promise<T> {
+    const day = await this.consume(memberId, new Date(), kind);
     try {
       return await run();
     } catch (error) {
-      await this.refund(memberId, day);
+      await this.refund(memberId, day, kind);
       throw error;
     }
   }
 
   /**
-   * Gives a Scan back when the provider failed, so an outage does not burn the
-   * Member's cap. `day` is the day `consume` returned, so a failure after UTC
+   * Gives a use of `kind` back when the provider failed, so an outage does not
+   * burn the Member's cap. `day` is the day `consume` returned, so a failure after UTC
    * midnight still refunds the day that was charged.
    */
-  async refund(memberId: string, day: string): Promise<void> {
+  async refund(
+    memberId: string,
+    day: string,
+    kind: UsageKind = 'scan',
+  ): Promise<void> {
     await this.database
       .update(scanUsage)
       .set({ count: sql`${scanUsage.count} - 1` })
@@ -67,6 +89,7 @@ export class ScanCapService {
         and(
           eq(scanUsage.memberId, memberId),
           eq(scanUsage.day, day),
+          eq(scanUsage.kind, kind),
           sql`${scanUsage.count} > 0`,
         ),
       );

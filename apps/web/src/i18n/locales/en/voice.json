@@ -1,0 +1,87 @@
+{
+  "button": {
+    "label": "Hold to talk",
+    "release": "Release to send",
+    "sending": "Sending…"
+  },
+  "recording": {
+    "label": "Recording",
+    "cancelHint": "slide away to cancel"
+  },
+  "explainer": {
+    "title": "Voice notes use your microphone",
+    "body": "Hold the button and say what you bought or used up. Your voice is turned into text for you to check. The recording is not stored.",
+    "allow": "Allow microphone",
+    "notNow": "Not now"
+  },
+  "denied": {
+    "title": "The microphone is blocked.",
+    "body": "To use voice notes, allow the microphone for this site in your browser settings (look for the lock or settings icon next to the address), then hold the button again."
+  },
+  "unavailable": "This browser cannot record audio, so voice notes are not available here.",
+  "tooShort": "Hold the button while you speak.",
+  "nothingHeard": "Didn't catch anything, try again",
+  "retry": "Retry",
+  "dismiss": "Dismiss",
+  "review": {
+    "title": "Voice note",
+    "heard": "What I heard",
+    "discard": "Discard",
+    "apply": "Apply",
+    "lists": {
+      "shopping": "Shopping List",
+      "pantry": "Pantry"
+    },
+    "notUnderstood": "Didn't understand",
+    "unmatched": "not in the catalog",
+    "notFound": "Not found: {{name}}",
+    "ops": {
+      "setQuantity": "Set quantity",
+      "check": "Check",
+      "addAndCheck": "Add & check",
+      "uncheck": "Uncheck",
+      "remove": "Remove from list"
+    },
+    "change": "Change",
+    "changeMatch": "Change match for {{name}}",
+    "remove": "Remove {{name}}",
+    "pantry": {
+      "location": "Location",
+      "chooseLocation": "Choose a location",
+      "expires": "Expires",
+      "noExpiry": "No expiry",
+      "noDate": "no expiry date",
+      "whole": "all of it",
+      "take": "takes {{amount}}",
+      "batch": "{{amount}} · expires {{date}}",
+      "noAmount": "no amount",
+      "pickLabel": "Which batch of {{name}}?",
+      "pickPrompt": "Choose a batch",
+      "pickNeeded": "Pick a batch to take it from.",
+      "runningLow": "Flag {{name}} as running low",
+      "shoppingFallback": "Add {{name}} to the Shopping List"
+    }
+  },
+  "toast": {
+    "applied_one": "Applied {{count}} voice action.",
+    "applied_other": "Applied {{count}} voice actions.",
+    "skipped": "Skipped: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "amount too large",
+    "shopping.ingredient_not_found": "ingredient no longer available",
+    "voice.not_supported": "not supported yet",
+    "voice.invalid_action": "incomplete",
+    "pantry.batch_not_found": "that batch is already gone",
+    "voice.batch_required": "no batch picked",
+    "pantry.location_required": "no location chosen",
+    "pantry.unit_required": "unit needed",
+    "pantry.ingredient_not_found": "ingredient no longer available",
+    "shopping.item_not_found": "no longer on the list",
+    "shopping.list_changed": "the list changed",
+    "pantry.category_not_found": "category no longer available",
+    "pantry.other_leaf_missing": "no matching category available",
+    "voice.item_not_found": "no longer on the list",
+    "other": "could not be applied"
+  }
+}

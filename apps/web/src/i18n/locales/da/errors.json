@@ -151,5 +151,13 @@
     "day_out_of_range": "Den dag er ikke en del af planen.",
     "not_found": "Madplanen findes ikke længere.",
     "recipe_not_found": "Opskriften kunne ikke findes."
+  },
+  "voice": {
+    "cap_reached": "Du har brugt alle {{cap}} stemmenoter i dag. Prøv igen i morgen, eller tilføj varer manuelt.",
+    "too_long": "Stemmenoten er for lang. Hold den under et minut.",
+    "unsupported_audio": "Denne browsers optageformat understøttes ikke.",
+    "not_configured": "Stemmenoter er ikke sat op på denne server endnu.",
+    "provider_unavailable": "Stemmenoter er ikke tilgængelige lige nu. Prøv igen om et øjeblik.",
+    "nothing_heard": "Vi opfangede ikke noget. Prøv igen."
   }
 }

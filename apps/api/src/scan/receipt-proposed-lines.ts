@@ -1,8 +1,8 @@
-import type { CatalogSearchResult } from '../catalog/catalog.schemas';
+import { keepConfident, type ResolvedMatch } from './catalog-matching';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
-  applyThreshold,
+  isLowConfidence,
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
@@ -10,8 +10,7 @@ import { toPantryQuantity } from './receipt-quantity';
 
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
-/** The Catalog Ingredient for a line; `exact` when found by exact name lookup rather than named by the model. */
-export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
+export type { ResolvedMatch };
 
 /** Lines that are part of the receipt's arithmetic, never worth showing on Review. */
 const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([
@@ -40,8 +39,9 @@ function exclusionReason(lineType: ReceiptLine['lineType']): ExclusionReason {
  * order. Arithmetic lines (totals, tax, payment, discounts) are dropped; other
  * lines the Scan left out of the Pantry stay, marked `excluded` with their
  * reason code, so the Member can re-include them. `resolve` supplies the validated
- * Catalog Ingredient for a line. A model Match below `threshold` is dropped,
- * which makes the line Unmatched; a Match found by exact name is kept.
+ * Catalog Ingredient for a line. The Match rule is `keepConfident`: a model
+ * Match below `threshold` is dropped, which makes the line Unmatched, while a
+ * Match found by exact name is kept.
  */
 export function receiptProposedLines(
   result: ReceiptScanResult,
@@ -71,15 +71,8 @@ export function receiptProposedLines(
           MAX_RAW_NAME,
         ),
         sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
-        ...applyThreshold(
-          resolved?.match ?? null,
-          {
-            // Not scored by the model, so it always passes.
-            matchConfidence: resolved?.exact ? Infinity : line.matchConfidence,
-            confidence: line.confidence,
-          },
-          threshold,
-        ),
+        match: keepConfident(resolved, line.matchConfidence, threshold),
+        lowConfidence: isLowConfidence(line.confidence, threshold),
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,

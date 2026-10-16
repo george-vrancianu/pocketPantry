@@ -1,3 +1,4 @@
+import { VoiceNote } from '../../components/VoiceNote';
 import {
   Alert,
   Button,
@@ -72,6 +73,7 @@ export function PantryPage() {
         />
       ) : (
         <Stack spacing={1}>
+          <VoiceNote defaultTarget="pantry" />
           {screen.error ? <Alert>{screen.error}</Alert> : null}
           {rowToggleErrors.message ? (
             <Alert>{rowToggleErrors.message}</Alert>

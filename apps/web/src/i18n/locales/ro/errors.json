@@ -151,5 +151,13 @@
     "day_out_of_range": "Ziua aceea nu face parte din plan.",
     "not_found": "Planul de mese nu mai există.",
     "recipe_not_found": "Rețeta nu a fost găsită."
+  },
+  "voice": {
+    "cap_reached": "Ai folosit toate cele {{cap}} note vocale de azi. Încearcă mâine sau adaugă produsele manual.",
+    "too_long": "Nota vocală este prea lungă. Păstreaz-o sub un minut.",
+    "unsupported_audio": "Formatul de înregistrare al acestui browser nu este acceptat.",
+    "not_configured": "Notele vocale nu sunt încă configurate pe acest server.",
+    "provider_unavailable": "Notele vocale nu sunt disponibile acum. Încearcă din nou în câteva clipe.",
+    "nothing_heard": "Nu am prins nimic. Încearcă din nou."
   }
 }

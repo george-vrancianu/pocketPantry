@@ -1,6 +1,7 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ProductScanResult } from './product-scan.schemas';
+import { confidentMatch } from './catalog-matching';
 import { toPantryQuantityFromText } from './receipt-quantity';
 
 /**
@@ -34,10 +35,19 @@ export type ExclusionReason = 'not_food' | 'fee' | 'deposit' | 'other';
 
 export type ScanResponse = { lines: ProposedLine[] };
 
+/** An image read below `threshold` is flagged low-confidence. */
+export function isLowConfidence(
+  confidence: number,
+  threshold: number,
+): boolean {
+  return confidence < threshold;
+}
+
 /**
- * The confidence rules every Scan Mode shares. A Match whose confidence falls
- * below `threshold` is dropped (the line becomes Unmatched), as is a missing
- * one; an image read below `threshold` is flagged low-confidence.
+ * The confidence rules for Scan Modes whose Match is only ever proposed by the
+ * model (no exact-name lookup): a Match below `threshold` is dropped (the line
+ * becomes Unmatched, see `confidentMatch`), and a shaky image read is flagged
+ * low-confidence (see `isLowConfidence`).
  */
 export function applyThreshold(
   match: CatalogSearchResult | null,
@@ -45,8 +55,8 @@ export function applyThreshold(
   threshold: number,
 ): Pick<ProposedLine, 'match' | 'lowConfidence'> {
   return {
-    match: match !== null && item.matchConfidence >= threshold ? match : null,
-    lowConfidence: item.confidence < threshold,
+    match: confidentMatch(match, item.matchConfidence, threshold),
+    lowConfidence: isLowConfidence(item.confidence, threshold),
   };
 }
 

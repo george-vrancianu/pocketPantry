@@ -1,0 +1,327 @@
+{
+  "source": "synthetic",
+  "note": "SYNTHETIC Danish transcripts written by hand: not real Voice Notes and not recordings. They test the transcript read only. Real recordings still need capturing (see README.md).",
+  "cases": [
+    {
+      "id": "da-01",
+      "scanLanguage": "da",
+      "tags": ["basic"],
+      "transcript": "Tilføj mælk, æg og brød til listen.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mælk"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Æg"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Brød"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-02",
+      "scanLanguage": "da",
+      "tags": ["filler"],
+      "transcript": "Øh, altså, jeg skal lige have, øh, noget smør og, ja, cheddar.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Smør"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Cheddar"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-03",
+      "scanLanguage": "da",
+      "tags": ["correction", "units"],
+      "transcript": "Skriv to, nej, tre æbler.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Æbler",
+            "quantity": 3,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-04",
+      "scanLanguage": "da",
+      "tags": ["correction"],
+      "transcript": "Sæt løg på listen. Nej vent, hellere hvidløg.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Hvidløg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-05",
+      "scanLanguage": "da",
+      "tags": ["units"],
+      "transcript": "To liter mælk, et halvt kilo mel, et dusin æg og fire tomater.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mælk",
+            "quantity": 2,
+            "unit": "l"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Hvedemel",
+            "quantity": 500,
+            "unit": "g"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Æg",
+            "quantity": 12,
+            "unit": "pcs"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Tomater",
+            "quantity": 4,
+            "unit": "pcs"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-06",
+      "scanLanguage": "da",
+      "tags": ["relative-date", "units"],
+      "transcript": "Læg et kilo laks i spisekammeret, den udløber om tre dage.",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Laks",
+            "quantity": 1,
+            "unit": "kg",
+            "expiresOn": "2026-10-17"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-07",
+      "scanLanguage": "da",
+      "tags": ["relative-date"],
+      "transcript": "Læg to yoghurt i køleskabet, de udløber i morgen.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Yoghurt",
+            "quantity": 2,
+            "unit": "pcs",
+            "expiresOn": "2026-10-15",
+            "location": "fridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-08",
+      "scanLanguage": "da",
+      "tags": ["units", "relative-date"],
+      "transcript": "Tilføj et kilo ris til spisekammeret, den udløber aldrig.",
+      "defaultTarget": "pantry",
+      "expected": {
+        "actions": [
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Ris",
+            "quantity": 1,
+            "unit": "kg",
+            "noExpiry": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-09",
+      "scanLanguage": "da",
+      "tags": ["unsupported"],
+      "transcript": "Hvad er klokken? Tilføj kaffe.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Kaffe"
+          }
+        ],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "da-10",
+      "scanLanguage": "da",
+      "tags": ["unsupported"],
+      "transcript": "Fortæl mig en opskrift på frikadeller.",
+      "expected": {
+        "actions": [],
+        "unsupported": 1
+      }
+    },
+    {
+      "id": "da-11",
+      "scanLanguage": "da",
+      "tags": ["mixed-lists", "relative-date", "units"],
+      "transcript": "Tilføj spaghetti til indkøbslisten og læg tre citroner i spisekammeret, de udløber den tyvende.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Spaghetti"
+          },
+          {
+            "target": "pantry",
+            "op": "add",
+            "ingredient": "Citron",
+            "quantity": 3,
+            "unit": "pcs",
+            "expiresOn": "2026-10-20"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-12",
+      "scanLanguage": "da",
+      "tags": ["mixed-lists"],
+      "transcript": "Sæt flueben ved brødet, fjern mælken fra listen, og vi er ved at løbe tør for ris i spisekammeret.",
+      "shoppingList": ["Mælk", "Brød"],
+      "pantry": ["Ris"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "check",
+            "ingredient": "Brød"
+          },
+          {
+            "target": "shopping",
+            "op": "remove",
+            "ingredient": "Mælk"
+          },
+          {
+            "target": "pantry",
+            "op": "runningLow",
+            "ingredient": "Ris"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-13",
+      "scanLanguage": "da",
+      "tags": ["sound-alike"],
+      "transcript": "Tilføj peber, peberfrugt og pærer.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Sort peber"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Peberfrugt"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Pærer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-14",
+      "scanLanguage": "da",
+      "tags": ["sound-alike"],
+      "transcript": "Mel og mælk, og så løg og forårsløg.",
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Hvedemel"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Mælk"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Løg"
+          },
+          {
+            "target": "shopping",
+            "op": "add",
+            "ingredient": "Forårsløg"
+          }
+        ]
+      }
+    },
+    {
+      "id": "da-15",
+      "scanLanguage": "da",
+      "tags": ["units"],
+      "transcript": "Ret mælken til tre liter.",
+      "shoppingList": ["Mælk"],
+      "expected": {
+        "actions": [
+          {
+            "target": "shopping",
+            "op": "setQuantity",
+            "ingredient": "Mælk",
+            "quantity": 3,
+            "unit": "l"
+          }
+        ]
+      }
+    }
+  ]
+}

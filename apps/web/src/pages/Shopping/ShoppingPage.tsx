@@ -19,6 +19,7 @@ import { ImportPill } from './components/ImportPill';
 import { ApplyTemplatesSheet } from './components/ApplyTemplatesSheet';
 import { SaveListRow } from './components/SaveListRow';
 import { EmptyListStart } from './components/EmptyListStart';
+import { VoiceNote } from '../../components/VoiceNote';
 import { SummaryCard } from './components/SummaryCard';
 import { useShoppingScreen } from './hooks/useShoppingScreen';
 
@@ -114,6 +115,7 @@ export function ShoppingPage() {
               onAddItems={(event) => openSheet(event.currentTarget)}
               addRef={addButton}
             />
+            <VoiceNote />
             {screen.list.groups.length === 0 ? (
               <Box ref={empty} tabIndex={-1} sx={{ outline: 'none' }}>
                 <EmptyListStart
