@@ -216,7 +216,7 @@ A long receipt can be scanned across several photos, one per **Receipt Section**
 One photo of a folded part of the same receipt. It is read as one **Scan**, and in Review its card is merged with the card of the previous section (up to 10 sections).
 
 **Scan Language**:
-The language the text in a Scan is read in: English, Romanian, or Danish. Chosen per Scan and independent of the Member's UI locale. Plate Scans have none.
+The language the text in a Scan is read in, or a Voice Note is spoken in: English, Romanian, or Danish. Chosen per Scan or Voice Note and independent of the Member's UI locale. Plate Scans have none.
 _Avoid_: Scan locale, source language
 
 **Plate Scan**:
@@ -230,12 +230,26 @@ The link from a scanned or typed name to an Ingredient, with a confidence.
 _Avoid_: Mapping, resolution
 
 **Review**:
-The screen where a Member confirms, edits, or discards results before anything is saved: Scan results, or the Batches proposed for the checked Shopping Items when Finishing Shopping. For a Scan Session it is an overview with one card per Scan; opening a card edits that Scan's lines, and saving commits that card alone.
+The screen where a Member confirms, edits, or discards results before anything is saved: Scan results, the Voice Actions of a Voice Note, or the Batches proposed for the checked Shopping Items when Finishing Shopping. For a Scan Session it is an overview with one card per Scan; opening a card edits that Scan's lines, and saving commits that card alone.
 _Avoid_: Confirm sheet, preview
 
 **Scan Cap**:
 The maximum number of Scans a Member may run per day.
 _Avoid_: Quota, rate limit
+
+### Voice
+
+**Voice Note**:
+A short recording a Member speaks into the Shopping List or the Pantry, read into Voice Actions. Not a Scan: nothing is photographed, and it counts against the Voice Cap, never the Scan Cap.
+_Avoid_: Voice scan, voice command, dictation
+
+**Voice Action**:
+One change a Voice Note proposes: adding, removing, checking or unchecking a Shopping Item or setting its quantity, adding or removing Batches, or flagging an Ingredient Running low. Nothing is applied until the Member confirms it in Review.
+_Avoid_: Command, intent, voice line
+
+**Voice Cap**:
+The maximum number of Voice Notes a Member may record per day.
+_Avoid_: Voice quota, Scan Cap (a separate limit)
 
 ### Recipes
 
