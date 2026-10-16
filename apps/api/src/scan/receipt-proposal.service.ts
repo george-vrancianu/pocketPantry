@@ -1,17 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CatalogSearchService } from '../catalog/catalog-search.service';
-import type {
-  CatalogLocale,
-  CatalogSearchResult,
-} from '../catalog/catalog.schemas';
+import type { CatalogLocale } from '../catalog/catalog.schemas';
 import type { AppConfig } from '../config/env';
 import { SettingsService } from '../settings/settings.service';
+import { CatalogMatchService } from './catalog-matching';
 import type { ProposedLine } from './proposed-line';
-import {
-  receiptProposedLines,
-  type ResolvedMatch,
-} from './receipt-proposed-lines';
+import { receiptProposedLines } from './receipt-proposed-lines';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 
 /**
@@ -26,7 +20,7 @@ import type { ReceiptScanResult } from './receipt-scan.schemas';
 @Injectable()
 export class ReceiptProposalService {
   constructor(
-    private readonly catalogSearch: CatalogSearchService,
+    private readonly catalogMatch: CatalogMatchService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<AppConfig, true>,
   ) {}
@@ -40,52 +34,21 @@ export class ReceiptProposalService {
     const overrides = await this.settings.expiryOverridesForMember(memberId);
     const pantryLines = result.lines.filter((line) => line.includeInPantry);
 
-    const ids = [
-      ...new Set(
-        pantryLines.flatMap((line) =>
-          line.matchedIngredientId ? [line.matchedIngredientId] : [],
-        ),
-      ),
-    ];
-    const byId = new Map<string, CatalogSearchResult>(
-      (await this.catalogSearch.findByIds(scope, ids, locale, overrides)).map(
-        (match) => [match.id, match],
-      ),
-    );
-
-    // One query for every line the model left Unmatched. Only an exact
-    // normalised name hit counts; anything looser stays Unmatched.
-    // The printed `sourceText` is tried too: a Synonym a curator made from an
-    // Unmatched raw name (in any Scan Language) is that same text.
-    const names = [
-      ...new Set(
-        pantryLines.flatMap((line) =>
-          line.matchedIngredientId
-            ? []
-            : [line.fallbackIngredientName, line.sourceText].filter(
-                (name): name is string => !!name,
-              ),
-        ),
-      ),
-    ];
-    const byExactName = await this.catalogSearch.findExact(
+    // The printed `sourceText` is tried after the generic name: a Synonym a
+    // curator made from an Unmatched raw name (in any Scan Language) is that
+    // same text.
+    const resolved = await this.catalogMatch.resolve(
+      pantryLines.map((line) => ({
+        names: [line.fallbackIngredientName, line.sourceText],
+        proposedIngredientId: line.matchedIngredientId,
+      })),
       scope,
-      names,
       locale,
       overrides,
     );
-
-    const resolve = (line: ReceiptScanResult['lines'][number]) => {
-      const named = line.matchedIngredientId
-        ? byId.get(line.matchedIngredientId)
-        : undefined;
-      if (named) return { match: named, exact: false } satisfies ResolvedMatch;
-      const hit =
-        (line.fallbackIngredientName
-          ? byExactName.get(line.fallbackIngredientName)
-          : undefined) ?? byExactName.get(line.sourceText);
-      return hit ? ({ match: hit, exact: true } satisfies ResolvedMatch) : null;
-    };
+    const byLine = new Map(pantryLines.map((line, i) => [line, resolved[i]]));
+    const resolve = (line: ReceiptScanResult['lines'][number]) =>
+      byLine.get(line) ?? null;
     const threshold = this.config.get('SCAN_MATCH_CONFIDENCE_THRESHOLD', {
       infer: true,
     });

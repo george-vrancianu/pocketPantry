@@ -44,8 +44,15 @@ export async function apiRequest<T>(
     response = await fetch(`${apiOrigin}/api${path}`, {
       method,
       credentials: 'include',
-      headers: body === undefined ? {} : { 'content-type': 'application/json' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      // A FormData body sets its own multipart content type (with the boundary).
+      headers:
+        body === undefined || body instanceof FormData
+          ? {}
+          : { 'content-type': 'application/json' },
+      body:
+        body === undefined || body instanceof FormData
+          ? (body as FormData | undefined)
+          : JSON.stringify(body),
     });
   } catch {
     throw new ApiError('network_error', 0);

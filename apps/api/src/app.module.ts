@@ -16,6 +16,7 @@ import { MealPlansModule } from './meal-plans/meal-plans.module';
 import { PantryModule } from './pantry/pantry.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { ScanModule } from './scan/scan.module';
+import { VoiceModule } from './voice/voice.module';
 import { SettingsModule } from './settings/settings.module';
 
 @Module({
@@ -33,6 +34,7 @@ import { SettingsModule } from './settings/settings.module';
     ShoppingModule,
     PantryModule,
     ScanModule,
+    VoiceModule,
     BarcodeModule,
     DashboardModule,
     SettingsModule,

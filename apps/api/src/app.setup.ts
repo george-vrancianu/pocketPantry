@@ -1,7 +1,9 @@
+import multipart from '@fastify/multipart';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AUTH } from './auth/auth.constants';
 import type { AuthInstance } from './auth/auth.types';
 import { toErrorResponse } from './common/api-error';
+import { MAX_VOICE_AUDIO_BYTES } from './voice/voice.schemas';
 import { registerAuthHandler } from './auth/register-auth-handler';
 
 /** Scan images arrive as data URLs in the JSON body, so the default 1 MB is far too small. */
@@ -18,6 +20,17 @@ export function configureApp(app: NestFastifyApplication): void {
     .setErrorHandler((error, _request, reply) => {
       const { status, body } = toErrorResponse(error);
       void reply.code(status).send(body);
+    });
+  void app
+    .getHttpAdapter()
+    .getInstance()
+    .register(multipart, {
+      limits: {
+        fileSize: MAX_VOICE_AUDIO_BYTES,
+        files: 1,
+        fields: 10,
+        fieldSize: 1024,
+      },
     });
   registerAuthHandler(
     app.getHttpAdapter().getInstance(),

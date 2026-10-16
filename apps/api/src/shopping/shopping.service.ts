@@ -70,6 +70,32 @@ export class ShoppingService {
     return this.view(this.database, listId, scope, locale);
   }
 
+  /** The Family's active list for reading only: nothing is created, `null` when there is none yet. */
+  async peekList(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView | null> {
+    const [row] = await this.database
+      .select({ listId: shoppingLists.id, familyId: user.familyId })
+      .from(user)
+      .innerJoin(
+        shoppingLists,
+        and(
+          eq(shoppingLists.familyId, user.familyId),
+          eq(shoppingLists.status, 'active'),
+        ),
+      )
+      .where(eq(user.id, memberId))
+      .limit(1);
+    if (!row) return null;
+    return this.view(
+      this.database,
+      row.listId,
+      catalogScope(row.familyId),
+      locale,
+    );
+  }
+
   async addItem(
     memberId: string,
     body: AddShoppingItemBody,
@@ -142,6 +168,20 @@ export class ShoppingService {
       }
       return { list: await this.view(tx, listId, scope, locale), insertedIds };
     });
+  }
+
+  /**
+   * Adds one item with the merge rules inside the caller's transaction, under the
+   * active-list lock. For callers (Voice Notes) that write several things atomically.
+   */
+  async addInTransaction(
+    tx: Tx,
+    memberId: string,
+    body: MergeItemInput,
+    locale: CatalogLocale,
+  ): Promise<{ id: string; inserted: boolean }> {
+    const { listId, scope } = await this.lockActiveList(tx, memberId);
+    return this.mergeItem(tx, listId, scope, body, locale);
   }
 
   /** Merges or inserts the item; answers with the Shopping Item it ended up on and whether that row is new. */
@@ -266,14 +306,7 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const updated = await tx
-        .update(shoppingItems)
-        .set({ checked })
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (updated.length === 0) throw itemNotFound();
+      await this.checkRow(tx, listId, itemId, checked);
       return this.view(tx, listId, scope, locale);
     });
   }
@@ -293,17 +326,7 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const updated = await tx
-        .update(shoppingItems)
-        .set({
-          quantity: body.quantity === undefined ? null : String(body.quantity),
-          unit: body.unit ?? null,
-        })
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (updated.length === 0) throw itemNotFound();
+      await this.amountRow(tx, listId, itemId, body);
       return this.view(tx, listId, scope, locale);
     });
   }
@@ -315,15 +338,106 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const removed = await tx
-        .delete(shoppingItems)
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (removed.length === 0) throw itemNotFound();
+      await this.removeRow(tx, listId, itemId);
       return this.view(tx, listId, scope, locale);
     });
+  }
+
+  /**
+   * The active list's items (oldest first) under the list lock, for callers
+   * (Voice Notes) that must find the row to act on inside their own transaction.
+   */
+  async itemsInTransaction(tx: Tx, memberId: string) {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    return tx
+      .select({
+        id: shoppingItems.id,
+        ingredientId: shoppingItems.ingredientId,
+        normalizedName: shoppingItems.normalizedName,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+        checked: shoppingItems.checked,
+      })
+      .from(shoppingItems)
+      .where(eq(shoppingItems.listId, listId))
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+  }
+
+  /** `setChecked` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async setCheckedInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+    checked: boolean,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.checkRow(tx, listId, itemId, checked);
+  }
+
+  /** `setAmount` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async setAmountInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+    body: SetAmountBody,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.amountRow(tx, listId, itemId, body);
+  }
+
+  /** `removeItem` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async removeInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.removeRow(tx, listId, itemId);
+  }
+
+  private async checkRow(
+    tx: Tx,
+    listId: string,
+    itemId: string,
+    checked: boolean,
+  ) {
+    const updated = await tx
+      .update(shoppingItems)
+      .set({ checked })
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (updated.length === 0) throw itemNotFound();
+  }
+
+  private async amountRow(
+    tx: Tx,
+    listId: string,
+    itemId: string,
+    body: SetAmountBody,
+  ) {
+    const updated = await tx
+      .update(shoppingItems)
+      .set({
+        quantity: body.quantity === undefined ? null : String(body.quantity),
+        unit: body.unit ?? null,
+      })
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (updated.length === 0) throw itemNotFound();
+  }
+
+  private async removeRow(tx: Tx, listId: string, itemId: string) {
+    const removed = await tx
+      .delete(shoppingItems)
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (removed.length === 0) throw itemNotFound();
   }
 
   /**

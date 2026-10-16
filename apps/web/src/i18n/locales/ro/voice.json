@@ -1,0 +1,88 @@
+{
+  "button": {
+    "label": "Ține apăsat pentru a vorbi",
+    "release": "Eliberează pentru a trimite",
+    "sending": "Se trimite…"
+  },
+  "recording": {
+    "label": "Se înregistrează",
+    "cancelHint": "trage în afară pentru a anula"
+  },
+  "explainer": {
+    "title": "Notele vocale folosesc microfonul",
+    "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",
+    "allow": "Permite microfonul",
+    "notNow": "Nu acum"
+  },
+  "denied": {
+    "title": "Microfonul este blocat.",
+    "body": "Pentru a folosi notele vocale, permite microfonul pentru acest site din setările browserului (caută pictograma cu lacăt sau setări de lângă adresă), apoi ține din nou apăsat butonul."
+  },
+  "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
+  "tooShort": "Ține apăsat butonul cât timp vorbești.",
+  "nothingHeard": "Nu am prins nimic, încearcă din nou",
+  "retry": "Reîncearcă",
+  "dismiss": "Închide",
+  "review": {
+    "title": "Notă vocală",
+    "heard": "Ce am auzit",
+    "discard": "Renunță",
+    "apply": "Aplică",
+    "lists": {
+      "shopping": "Lista de cumpărături",
+      "pantry": "Cămara"
+    },
+    "notUnderstood": "Nu am înțeles",
+    "unmatched": "nu e în catalog",
+    "notFound": "Negăsit: {{name}}",
+    "ops": {
+      "setQuantity": "Setează cantitatea",
+      "check": "Bifează",
+      "addAndCheck": "Adaugă și bifează",
+      "uncheck": "Debifează",
+      "remove": "Elimină din listă"
+    },
+    "change": "Schimbă",
+    "changeMatch": "Schimbă potrivirea pentru {{name}}",
+    "remove": "Elimină {{name}}",
+    "pantry": {
+      "location": "Locație",
+      "chooseLocation": "Alege o locație",
+      "expires": "Expiră",
+      "noExpiry": "Fără expirare",
+      "noDate": "fără dată de expirare",
+      "whole": "tot lotul",
+      "take": "scoate {{amount}}",
+      "batch": "{{amount}} · expiră {{date}}",
+      "noAmount": "fără cantitate",
+      "pickLabel": "Ce lot de {{name}}?",
+      "pickPrompt": "Alege un lot",
+      "pickNeeded": "Alege lotul din care se scoate.",
+      "runningLow": "Marchează {{name}} ca pe terminate",
+      "shoppingFallback": "Adaugă {{name}} pe lista de cumpărături"
+    }
+  },
+  "toast": {
+    "applied_one": "S-a aplicat {{count}} acțiune vocală.",
+    "applied_few": "S-au aplicat {{count}} acțiuni vocale.",
+    "applied_other": "S-au aplicat {{count}} de acțiuni vocale.",
+    "skipped": "Omise: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "cantitate prea mare",
+    "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "voice.not_supported": "încă nesuportat",
+    "voice.invalid_action": "incompletă",
+    "pantry.batch_not_found": "lotul nu mai există",
+    "voice.batch_required": "niciun lot ales",
+    "pantry.location_required": "nicio locație aleasă",
+    "pantry.unit_required": "unitate necesară",
+    "pantry.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "shopping.item_not_found": "nu mai este pe listă",
+    "shopping.list_changed": "lista s-a schimbat",
+    "pantry.category_not_found": "categoria nu mai este disponibilă",
+    "pantry.other_leaf_missing": "nicio categorie potrivită disponibilă",
+    "voice.item_not_found": "nu mai este pe listă",
+    "other": "nu a putut fi aplicată"
+  }
+}

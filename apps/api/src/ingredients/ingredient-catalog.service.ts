@@ -15,6 +15,7 @@ import type { Database } from '../database/database.types';
 import { leafCategories } from '../database/schema';
 import {
   type CatalogMatch,
+  catalogPrompt,
   type IngredientCatalog,
   validateCatalogMatch,
 } from './ingredient-catalog';
@@ -97,15 +98,9 @@ export class IngredientCatalogService {
     this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
   }
 
+  // toPrompt and validateMatch delegate to the shared pipeline; new callers should use scan/catalog-matching.
   toPrompt(catalog: IngredientCatalog): string {
-    return JSON.stringify({
-      categories: catalog.categories,
-      ingredients: catalog.ingredients.map((ingredient) => [
-        ingredient.id,
-        ingredient.name,
-        ingredient.category,
-      ]),
-    });
+    return catalogPrompt(catalog);
   }
 
   validateMatch(

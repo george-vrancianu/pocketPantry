@@ -119,6 +119,24 @@ describe('loadDebugCaptures', () => {
     ]);
   });
 
+  it('skips Voice Note captures and points to voice:replay', async () => {
+    writeCapture(root, 'a-ok');
+    mkdirSync(join(root, 'b-transcription'));
+    writeFileSync(join(root, 'b-transcription', 'transcription.json'), '{}');
+    writeCapture(root, 'c-read');
+    const request = join(root, 'c-read', 'request.json');
+    writeFileSync(
+      request,
+      JSON.stringify({ schemaName: 'voice_note_actions', images: [] }),
+    );
+
+    const { debugCaptures, skipped } = await loadDebugCaptures(root);
+
+    expect(debugCaptures.map((c) => c.name)).toEqual(['a-ok']);
+    expect(skipped.map((s) => s.name)).toEqual(['b-transcription', 'c-read']);
+    for (const { reason } of skipped) expect(reason).toContain('voice:replay');
+  });
+
   it('loads only the named debug captures when a filter is given', async () => {
     writeCapture(root, 'a');
     writeCapture(root, 'b');

@@ -16,6 +16,10 @@ export type StructuredOutputRequest = {
   schema: Record<string, unknown>;
   /** Budget for the answer itself; with a reasoning effort the service adds room for reasoning. */
   maxOutputTokens: number;
+  /** Which configured model answers: the vision model (default, Scans) or the text model (Voice Notes). */
+  model?: 'vision' | 'text';
+  /** Debug capture only: ties a Voice Note's transcript read to its recording. Never sent to the provider. */
+  captureId?: string;
 };
 
 export type StructuredOutputResult = {
@@ -248,12 +252,20 @@ export class StructuredOutputAiService {
   ): Promise<StructuredOutputResult> {
     const provider = this.config.get('AI_PROVIDER', { infer: true });
     const apiKey = this.config.get('AI_API_KEY', { infer: true });
-    const model = this.config.get('AI_VISION_MODEL', { infer: true });
+    const text = request.model === 'text';
+    const model = this.config.get(text ? 'AI_TEXT_MODEL' : 'AI_VISION_MODEL', {
+      infer: true,
+    });
     const configuredBaseUrl = this.config.get('AI_BASE_URL', { infer: true });
     // `|| undefined`: with no validated effort, ConfigService falls back to process.env,
     // where `AI_REASONING_EFFORT=` is ''. That means no effort, as validateEnv reads it.
     const effort =
-      this.config.get('AI_REASONING_EFFORT', { infer: true }) || undefined;
+      this.config.get(
+        text ? 'AI_TEXT_REASONING_EFFORT' : 'AI_REASONING_EFFORT',
+        {
+          infer: true,
+        },
+      ) || undefined;
     trace.provider = provider;
     trace.model = model;
 
