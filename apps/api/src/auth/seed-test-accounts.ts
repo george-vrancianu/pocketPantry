@@ -8,6 +8,7 @@ export const TEST_ACCOUNT_PASSWORD = 'password123';
 export const TEST_ACCOUNTS = [
   { name: 'Alice Test', email: 'alice@test.local' },
   { name: 'Bob Test', email: 'bob@test.local' },
+  { name: 'George Test', email: 'george@test.local' },
 ] as const;
 
 /**
