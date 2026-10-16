@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { SCAN_INTERVAL_MS } from './cameraMode';
 import { GUIDE_CENTER_Y } from './scanGuides';
 
 /** Ask for 1080p where the device can, in every Scan Mode so the dial never restarts the stream: a receipt's small print is unreadable at the 640x480 browsers often default to. */
@@ -61,8 +62,6 @@ export async function readBarcode(
       ?.rawValue ?? null
   );
 }
-
-const SCAN_INTERVAL_MS = 250;
 
 export type CameraStatus = 'starting' | 'ready' | 'unavailable';
 

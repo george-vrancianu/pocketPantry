@@ -1,4 +1,5 @@
 import { ApiError, apiRequest } from './api';
+import { barcodeCardLine, lookupBarcode } from './barcode';
 import type { PlateDishes } from './plate';
 import { scanQuery, type ScanMode, type ScanResponse } from './scan';
 import {
@@ -6,6 +7,8 @@ import {
   capReached,
   dispatchScanSession,
   getScanSession,
+  isBarcodeCard,
+  isBarcodeMode,
   type SessionScan,
 } from './scanSession';
 
@@ -20,6 +23,8 @@ const READ: Record<
 };
 
 const inFlight = new Set<string>();
+/** Barcode Lookups under way: free and instant, so they take no read slot. */
+const lookups = new Set<string>();
 
 /** A dropped connection gets one more try; any other error is the answer. */
 const withNetworkRetry = <T>(request: () => Promise<T>) =>
@@ -57,9 +62,83 @@ async function send(
   return lines;
 }
 
+/** A decode that takes longer than this is given up on: no barcode. */
+export const PHOTO_DECODE_TIMEOUT_MS = 10_000;
+/** Photo barcode decodes waiting their turn: one at a time, across screens. */
+let decodeChain: Promise<void> = Promise.resolve();
+
+/**
+ * Decodes a Product Scan's full-size photo for a barcode, on the device, alongside the read: it
+ * settles on its own and never delays or fails the card. Decodes run one at a time, because a
+ * gallery import can bring up to 20 photos and each decode is heavy main-thread work. A decode
+ * that hangs is given up on after a timeout. A card saved or removed meanwhile is skipped, and a
+ * late code is dropped by the Session. It starts in a microtask, not the overlay's
+ * `setTimeout(0)`, so no timer is left pending; the read request is already out by then.
+ */
+export function decodePhotoBarcode(
+  id: string,
+  photo: Blob,
+  /** The camera module's photo barcode reader. */
+  readBarcode: (photo: Blob) => Promise<string | null>,
+) {
+  decodeChain = decodeChain
+    .then(async () => {
+      if (!getScanSession().scans.some((scan) => scan.id === id)) return;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        const code = await Promise.race([
+          readBarcode(photo),
+          new Promise<null>((resolve) => {
+            timer = setTimeout(resolve, PHOTO_DECODE_TIMEOUT_MS, null);
+          }),
+        ]);
+        if (code) dispatchScanSession({ type: 'photoBarcode', id, code });
+      } finally {
+        clearTimeout(timer);
+      }
+    })
+    .catch(() => {});
+}
+
 /** Forgets the requests in flight; for tests, which abandon them. */
 export function resetReads() {
   inFlight.clear();
+  lookups.clear();
+  decodeChain = Promise.resolve();
+}
+
+/** Starts the Barcode Lookup of every Barcode card waiting for one, outside the read slots and the Scan Cap. */
+function startLookups(locale: string) {
+  for (const scan of getScanSession().scans) {
+    if (
+      !isBarcodeCard(scan) ||
+      scan.status !== 'reading' ||
+      lookups.has(scan.id) ||
+      !scan.code
+    )
+      continue;
+    const code = scan.code;
+    lookups.add(scan.id);
+    lookupBarcode(code, locale)
+      .then((lookup) =>
+        dispatchScanSession({
+          type: 'read',
+          id: scan.id,
+          lines: [barcodeCardLine(code, lookup)],
+        }),
+      )
+      .catch((error: unknown) => {
+        const api = error instanceof ApiError ? error : null;
+        dispatchScanSession({
+          type: 'fail',
+          id: scan.id,
+          reason: 'error',
+          code: api?.code,
+          params: api?.params,
+        });
+      })
+      .finally(() => lookups.delete(scan.id));
+  }
 }
 
 /**
@@ -69,13 +148,19 @@ export function resetReads() {
  * status, so removing a reading Scan does not let a third request start.
  */
 export function readScans(locale: string) {
+  startLookups(locale);
   // Past the Scan Cap every read would fail; the rest wait until the capped Scan is retried or removed.
   if (inFlight.size >= MAX_CONCURRENT_READS || capReached(getScanSession()))
     return;
   dispatchScanSession({ type: 'start' });
   for (const scan of getScanSession().scans) {
     if (inFlight.size >= MAX_CONCURRENT_READS) return;
-    if (scan.status !== 'reading' || inFlight.has(scan.id)) continue;
+    if (
+      scan.status !== 'reading' ||
+      inFlight.has(scan.id) ||
+      isBarcodeMode(scan.mode)
+    )
+      continue;
     inFlight.add(scan.id);
     (scan.mode === 'plate'
       ? readPlate(scan, locale)

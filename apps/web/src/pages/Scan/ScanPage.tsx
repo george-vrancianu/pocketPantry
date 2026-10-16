@@ -50,6 +50,8 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
   const { t } = useTranslation('scan');
   useForcedThemeColor('dark');
   const screen = useScanScreen({ modes, defaultMode, rememberMode });
+  // Barcode cards are announced as barcodes, not photos.
+  const photos = screen.scans.filter((scan) => scan.mode !== 'barcode').length;
   const modeLabel = t(`mode.${screen.mode}`);
   const [infoOpen, setInfoOpen] = useState(false);
   const dragEndedAt = useRef<number | null>(null);
@@ -99,7 +101,11 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       />
       <Viewfinder
         mode={screen.mode}
-        disabled={screen.controlsDisabled || screen.camera.status !== 'ready'}
+        disabled={
+          screen.mode === 'barcode' ||
+          screen.controlsDisabled ||
+          screen.camera.status !== 'ready'
+        }
         onScan={() => void screen.shoot()}
         dragEndedAt={dragEndedAt}
         scanRef={scanRef}
@@ -169,16 +175,18 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
         >
           <InfoIcon size={20} />
         </Box>
-        <Box
-          component="button"
-          type="button"
-          aria-label={t('gallery')}
-          disabled={screen.controlsDisabled}
-          onClick={screen.openGallery}
-          sx={roundButton(40)}
-        >
-          <GalleryIcon size={20} />
-        </Box>
+        {screen.mode === 'barcode' ? null : (
+          <Box
+            component="button"
+            type="button"
+            aria-label={t('gallery')}
+            disabled={screen.controlsDisabled}
+            onClick={screen.openGallery}
+            sx={roundButton(40)}
+          >
+            <GalleryIcon size={20} />
+          </Box>
+        )}
         <Box
           component="button"
           type="button"
@@ -262,9 +270,14 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
           sx={{ mt: '24px', minHeight: 24, textAlign: 'center', fontSize: 13 }}
         >
           {screen.reading ? t('reading') : null}
-          {screen.camera.status === 'unavailable' ? t('noCamera') : null}
+          {screen.camera.status === 'unavailable'
+            ? t('noCamera')
+            : screen.mode === 'barcode'
+              ? t('overlay.pointAtBarcode')
+              : null}
         </Box>
-        {screen.capped ? (
+        {/* Barcode Lookups are not Scans: the Scan Cap does not stop them. */}
+        {screen.capped && screen.mode !== 'barcode' ? (
           <Box sx={{ mt: 1 }}>
             <Alert severity="warning">{t('capReached')}</Alert>
           </Box>
@@ -301,12 +314,13 @@ export function ScanPage({ modes, defaultMode, rememberMode }: ScanPageProps) {
       </Snackbar>
 
       <Box role="status" sx={visuallyHidden}>
-        {screen.scans.some((scan) => scan.status === 'failed')
-          ? t('session.failed')
-          : null}
-        {screen.scans.length > 0
-          ? t('photoAdded', { count: screen.scans.length })
-          : null}
+        {screen.scans.some((scan) => scan.status === 'failed') ? (
+          <p>{t('session.failed')}</p>
+        ) : null}
+        {photos > 0 ? <p>{t('photoAdded', { count: photos })}</p> : null}
+        {screen.barcodesAnnounced > 0 ? (
+          <p>{t('barcodeAdded', { count: screen.barcodesAnnounced })}</p>
+        ) : null}
       </Box>
 
       <Snackbar open={screen.notAdded} onClose={screen.dismissNotAdded}>

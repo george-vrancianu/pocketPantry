@@ -8,7 +8,7 @@ import {
 } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
 import type { CatalogParent } from '../../../lib/catalog';
-import type { ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { formatShortDate } from '../../../lib/dateFormat';
 import {
   displayName,
@@ -29,7 +29,7 @@ type Props = {
   open: boolean;
   parents: CatalogParent[];
   shopping: boolean;
-  mode: ScanMode;
+  mode: CameraMode;
   blocked: boolean;
   onToggle: () => void;
   onChange: (patch: Partial<ReviewLine>) => void;

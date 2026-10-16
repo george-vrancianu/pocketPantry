@@ -948,3 +948,72 @@ describe('Scans arriving after the Scan Cap (N2)', () => {
     expect(pendingCount(sessionReducer(capHit(), enqueue('late')))).toBe(0);
   });
 });
+
+describe('Barcode cards in the Scan Session reducer', () => {
+  const barcode = (id: string) =>
+    enqueue(id, {
+      mode: 'barcode',
+      code: '5941234567890',
+      image: undefined,
+      scanLanguage: undefined,
+    });
+
+  it('holds a Barcode card with a code and no image, reading at once', () => {
+    const state = run(barcode('a'));
+    expect(state.scans[0]).toMatchObject({
+      status: 'reading',
+      code: '5941234567890',
+    });
+    expect(state.scans[0].image).toBeUndefined();
+  });
+
+  it('is not held by the Scan Cap, and never counts toward it', () => {
+    const capped = run(
+      enqueue('p'),
+      { type: 'start' },
+      { type: 'fail', id: 'p', reason: 'cap' },
+    );
+    expect(capReached(capped)).toBe(true);
+    expect(sessionReducer(capped, barcode('b')).scans[1].status).toBe(
+      'reading',
+    );
+
+    const failed = run(barcode('b'), {
+      type: 'fail',
+      id: 'b',
+      reason: 'cap',
+    });
+    expect(failed.scans[0].failure).toBe('error');
+    expect(capReached(failed)).toBe(false);
+  });
+
+  it('does not take a photo read slot', () => {
+    const state = run(
+      barcode('b1'),
+      barcode('b2'),
+      enqueue('p1'),
+      enqueue('p2'),
+      {
+        type: 'start',
+      },
+    );
+    expect(status(state)).toEqual([
+      ['b1', 'reading'],
+      ['b2', 'reading'],
+      ['p1', 'reading'],
+      ['p2', 'reading'],
+    ]);
+  });
+
+  it('retries a failed lookup straight to reading, even while the cap holds Scans', () => {
+    const state = run(
+      enqueue('p'),
+      { type: 'start' },
+      { type: 'fail', id: 'p', reason: 'cap' },
+      barcode('b'),
+      { type: 'fail', id: 'b', reason: 'error' },
+      { type: 'retry', id: 'b' },
+    );
+    expect(state.scans[1].status).toBe('reading');
+  });
+});

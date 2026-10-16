@@ -4,6 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
 import { BrowseByAisle } from '../../../components/catalogSearch/emptyState/BrowseByAisle';
 import { RecentlyStocked } from '../../../components/catalogSearch/emptyState/RecentlyStocked';
+import {
+  ListedAllergensNote,
+  OpenFoodFactsCredit,
+} from '../../../components/BarcodeLookupNotes';
 import { ExpiryField, expiryContext } from '../../../components/ExpiryPicker';
 import { StatusIcon } from '../../../components/StatusIcon';
 import { saveOverlayMode } from '../../../lib/cameraMode';
@@ -97,11 +101,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
         />
       ) : null}
 
-      {camera.fromOpenFoodFacts ? (
-        <Typography variant="caption" color="text.secondary">
-          {t('form.prefill.credit')}
-        </Typography>
-      ) : null}
+      {camera.fromOpenFoodFacts ? <OpenFoodFactsCredit /> : null}
 
       <CatalogSearch
         autoFocus
@@ -120,15 +120,7 @@ export function AddBatchForm({ onSaved, onCancel, start }: Props) {
       />
 
       {mark('ingredient')}
-      {camera.missingAllergens.length > 0 ? (
-        <Typography variant="caption" color="text.secondary">
-          {t('form.prefill.listsAllergens', {
-            names: new Intl.ListFormat(i18n.language, {
-              type: 'conjunction',
-            }).format(camera.missingAllergens.map((a) => a.name)),
-          })}
-        </Typography>
-      ) : null}
+      <ListedAllergensNote allergens={camera.missingAllergens} />
       {camera.checkIngredient ? (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <StatusIcon status="low" />

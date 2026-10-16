@@ -21,7 +21,12 @@ import {
   reviewGroups,
   reviewReducer,
 } from '../../../lib/reviewState';
-import { dispatchScanSession, getScanSession } from '../../../lib/scanSession';
+import {
+  dispatchScanSession,
+  getScanSession,
+  photoBarcodeOf,
+  useScanSession,
+} from '../../../lib/scanSession';
 import { useSaveLines } from '../../../lib/saveScan';
 import type { TickFailures } from '../../../lib/receiptScan';
 import { MAX_BULK_BATCHES } from '../../../lib/scan';
@@ -69,6 +74,15 @@ export function useReviewScreen() {
     if (state.lines !== initialLines.current)
       dispatchScanSession({ type: 'edit', id: scanId, lines: state.lines });
   }, [scanId, state.lines]);
+  // A Product Scan's photo barcode can settle while the editor is open: its single line takes it too.
+  const photoBarcode = photoBarcodeOf(useScanSession(), scanId);
+  const lineCount = state.lines.length;
+  const firstKey = state.lines[0]?.key;
+  const firstBarcode = state.lines[0]?.barcode;
+  useEffect(() => {
+    if (photoBarcode && lineCount === 1 && firstBarcode === undefined)
+      dispatch({ type: 'attachBarcode', key: firstKey, barcode: photoBarcode });
+  }, [photoBarcode, lineCount, firstKey, firstBarcode]);
   const saver = useSaveLines(i18n.language);
   // Plate lines are things to buy, not things in the Pantry.
   const mode = draft?.mode ?? 'product';
@@ -246,6 +260,11 @@ export function useReviewScreen() {
     open,
     change,
     swapName: swapLine ? displayName(swapLine) : '',
+    swapQuery: swapLine?.lookup && !swapLine.match ? swapLine.name.trim() : '',
+    /** Undefined when the line lists none (never []), as the add-Batch form passes it. */
+    swapAllergenIds: swapLine?.lookup?.listedAllergens.length
+      ? swapLine.lookup.listedAllergens.map((allergen) => allergen.id)
+      : undefined,
     swapOpen,
     openSwap,
     closeSwap,

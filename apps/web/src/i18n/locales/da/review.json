@@ -6,7 +6,8 @@
       "product": "Scannet produkt",
       "receipt": "Scannet kvittering",
       "plate": "Scannet tallerken",
-      "ingredients": "Scannede ingredienser"
+      "ingredients": "Scannede ingredienser",
+      "barcode": "Stregkodeopslag"
     },
     "lines_one": "{{mode}} · {{count}} linje læst",
     "lines_other": "{{mode}} · {{count}} linjer læst"

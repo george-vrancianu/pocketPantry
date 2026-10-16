@@ -15,6 +15,7 @@ import {
   type ReviewLine,
   type RowStatus,
 } from '../../../lib/review';
+import { BarcodeLookupNotes } from '../../../components/BarcodeLookupNotes';
 import { Field, controlSx } from './Field';
 import {
   CategorySelect,
@@ -99,6 +100,9 @@ export function RowEditPanel({
         >
           {message}
         </Box>
+      ) : null}
+      {line.lookup ? (
+        <BarcodeLookupNotes lookup={line.lookup} mb="8px" />
       ) : null}
       <Box
         sx={{

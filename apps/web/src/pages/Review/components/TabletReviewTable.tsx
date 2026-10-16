@@ -9,7 +9,7 @@ import {
   type ReviewLine,
 } from '../../../lib/review';
 import { rowGroup, type ReviewState } from '../../../lib/reviewState';
-import type { ScanMode } from '../../../lib/scan';
+import type { CameraMode } from '../../../lib/cameraMode';
 import { ExcludedRow } from './ExcludedRow';
 import { TabletReviewRow } from './TabletReviewRow';
 import { linkButtonSx, tabletColumnsFor, tabletRowSx } from './layout';
@@ -19,7 +19,7 @@ type Props = {
   groups: { review: ReviewLine[]; sure: ReviewLine[]; excluded: ReviewLine[] };
   parents: CatalogParent[];
   shopping: boolean;
-  mode: ScanMode;
+  mode: CameraMode;
   /** Rows whose Save or Done was blocked. */
   blocked: Record<string, boolean>;
   onOpen: (key: string) => void;

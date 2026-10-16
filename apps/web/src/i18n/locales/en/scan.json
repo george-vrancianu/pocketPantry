@@ -52,9 +52,11 @@
     "needsCrop": "Needs crop",
     "read": "Photo read",
     "failed": "Could not read photo",
+    "retryLookup": "Retry lookup",
     "retry": "Retry reading photo"
   },
   "photoAdded": "Photo {{count}} added",
+  "barcodeAdded": "Barcode {{count}} added",
   "tickFailed_one": "{{count}} Shopping Item could not be ticked off.",
   "tickFailed_other": "{{count}} Shopping Items could not be ticked off.",
   "added_one": "Added results from {{count}} photo",
