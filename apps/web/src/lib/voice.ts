@@ -30,7 +30,7 @@ export type VoiceNoteRequest = {
   recording: Recording;
   scanLanguage: ScanLanguage;
   locale: Locale;
-  defaultList: VoiceList;
+  defaultTarget: VoiceList;
   /** The Member's local date, `YYYY-MM-DD`. */
   today: string;
 };
@@ -39,18 +39,22 @@ export function sendVoiceNote({
   recording,
   scanLanguage,
   locale,
-  defaultList,
+  defaultTarget,
   today,
 }: VoiceNoteRequest): Promise<VoiceNoteResult> {
   const form = new FormData();
   form.append('scanLanguage', scanLanguage);
   form.append('locale', locale);
-  form.append('defaultList', defaultList);
+  form.append('defaultTarget', defaultTarget);
   form.append('today', today);
   form.append('durationMs', String(Math.round(recording.durationMs)));
-  const extension = recording.mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const extension = /mp4/.test(recording.mimeType)
+    ? 'mp4'
+    : /ogg/.test(recording.mimeType)
+      ? 'ogg'
+      : 'webm';
   form.append('audio', recording.blob, `voice-note.${extension}`);
-  return apiRequest<VoiceNoteResult>('/voice/notes', {
+  return apiRequest<VoiceNoteResult>('/voice', {
     method: 'POST',
     body: form,
   });
@@ -81,4 +85,5 @@ export const NOT_RETRYABLE = new Set([
   'voice.too_long',
   'voice.unsupported_audio',
   'voice.not_configured',
+  'voice.nothing_heard',
 ]);

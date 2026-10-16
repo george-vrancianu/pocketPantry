@@ -76,17 +76,24 @@ export async function startRecording(): Promise<MicrophoneSession> {
 
   return {
     stop: () =>
-      new Promise<Recording>((resolve) => {
-        recorder.addEventListener('stop', () => {
+      new Promise<Recording>((resolve, reject) => {
+        const type = () => recorder.mimeType || mimeType || 'audio/webm';
+        const done = () => {
           release();
-          const type = recorder.mimeType || mimeType || 'audio/webm';
           resolve({
-            blob: new Blob(chunks, { type }),
-            mimeType: type,
+            blob: new Blob(chunks, { type: type() }),
+            mimeType: type(),
             durationMs: Date.now() - startedAt,
           });
+        };
+        recorder.addEventListener('stop', done);
+        recorder.addEventListener('error', () => {
+          release();
+          reject(new MicrophoneError('unavailable'));
         });
-        recorder.stop();
+        // Already stopped (the browser ended it): no `stop` event is coming.
+        if (recorder.state === 'inactive') done();
+        else recorder.stop();
       }),
     cancel: () => {
       if (recorder.state !== 'inactive') recorder.stop();

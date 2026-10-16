@@ -61,10 +61,10 @@ export class VoiceController {
     return { configured: this.voice.isConfigured() };
   }
 
-  @Post('notes')
+  @Post()
   @ApiOperation({
     summary:
-      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, scanLanguage, locale, defaultList, today). Neither the audio nor the transcript is stored.',
+      'Voice Note: transcribe a held-to-talk recording (multipart: audio, durationMs, scanLanguage, locale, defaultTarget, today). Neither the audio nor the transcript is stored.',
   })
   async note(
     @CurrentUser() member: CurrentUserValue,

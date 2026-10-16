@@ -48,7 +48,7 @@ function setup({ configured = true, note, explained = true }: Setup = {}) {
   const { fetchMock } = stubApi({
     'GET /api/shopping-list': () => Response.json(emptyList),
     'GET /api/voice/config': () => Response.json({ configured }),
-    'POST /api/voice/notes': () =>
+    'POST /api/voice': () =>
       note?.() ?? Response.json({ transcript: 'got the bread and sausages' }),
   });
   vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
@@ -109,7 +109,7 @@ describe('Voice Note on the Shopping List', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].get('scanLanguage')).toBe('en');
     expect(sent[0].get('locale')).toBe('en');
-    expect(sent[0].get('defaultList')).toBe('shopping');
+    expect(sent[0].get('defaultTarget')).toBe('shopping');
     expect(sent[0].get('today')).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(sent[0].get('durationMs')).toBe('3000');
     expect((sent[0].get('audio') as File).name).toBe('voice-note.webm');
@@ -131,6 +131,25 @@ describe('Voice Note on the Shopping List', () => {
     expect(session.stop).not.toHaveBeenCalled();
     expect(sent).toHaveLength(0);
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('cancels the recording and sends nothing when released before the microphone is ready', async () => {
+    const { sent } = setup();
+    let ready: (s: ReturnType<typeof fakeSession>) => void = () => {};
+    mic.start.mockImplementation(
+      () => new Promise((resolve) => (ready = resolve)),
+    );
+    renderWithProviders(<ShoppingPage />);
+
+    const button = await talkButton();
+    fireEvent.pointerDown(button);
+    fireEvent.pointerUp(button);
+    await act(async () => ready(session));
+
+    await waitFor(() => expect(session.cancel).toHaveBeenCalledTimes(1));
+    expect(session.stop).not.toHaveBeenCalled();
+    expect(sent).toHaveLength(0);
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
   it('stops itself and sends at 60 seconds', async () => {
@@ -181,7 +200,13 @@ describe('Voice Note on the Shopping List', () => {
   });
 
   it('says so, and opens no sheet, when nothing was heard', async () => {
-    setup({ note: () => Response.json({ transcript: '' }) });
+    setup({
+      note: () =>
+        Response.json(
+          { code: 'voice.nothing_heard', params: {} },
+          { status: 422 },
+        ),
+    });
     renderWithProviders(<ShoppingPage />);
 
     fireEvent.pointerUp(await hold());

@@ -33,7 +33,7 @@ export type VoiceNotice =
  * sends by itself. A recording that fails to send stays in memory for `retry`
  * until the page reloads.
  */
-export function useVoiceNote(defaultList: VoiceList) {
+export function useVoiceNote(defaultTarget: VoiceList) {
   const { t } = useTranslation(['errors']);
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const [recording, setRecording] = useState(false);
@@ -52,8 +52,8 @@ export function useVoiceNote(defaultList: VoiceList) {
     tick?: ReturnType<typeof setInterval>;
     limit?: ReturnType<typeof setTimeout>;
   }>({});
-  const options = useRef({ locale, scanLanguage, defaultList, t });
-  options.current = { locale, scanLanguage, defaultList, t };
+  const options = useRef({ locale, scanLanguage, defaultTarget, t });
+  options.current = { locale, scanLanguage, defaultTarget, t };
 
   const clearTimers = () => {
     clearInterval(timers.current.tick);
@@ -62,7 +62,7 @@ export function useVoiceNote(defaultList: VoiceList) {
   };
 
   const send = useCallback(async (audio: Recording) => {
-    const { locale, scanLanguage, defaultList, t } = options.current;
+    const { locale, scanLanguage, defaultTarget, t } = options.current;
     setSending(true);
     setNotice(null);
     try {
@@ -70,13 +70,18 @@ export function useVoiceNote(defaultList: VoiceList) {
         recording: audio,
         scanLanguage,
         locale,
-        defaultList,
+        defaultTarget,
         today: localIso(new Date()),
       });
       pending.current = null;
       if (result.transcript.trim() === '') setNotice({ kind: 'nothingHeard' });
       else setTranscript(result.transcript);
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'voice.nothing_heard') {
+        pending.current = null;
+        setNotice({ kind: 'nothingHeard' });
+        return;
+      }
       const canRetry = !(
         error instanceof ApiError && NOT_RETRYABLE.has(error.code)
       );
@@ -97,7 +102,13 @@ export function useVoiceNote(defaultList: VoiceList) {
     session.current = null;
     clearTimers();
     setRecording(false);
-    const audio = await active.stop();
+    let audio: Recording;
+    try {
+      audio = await active.stop();
+    } catch {
+      setNotice({ kind: 'unavailable' });
+      return;
+    }
     if (audio.durationMs < MIN_VOICE_NOTE_MS) {
       setNotice({ kind: 'tooShort' });
       return;

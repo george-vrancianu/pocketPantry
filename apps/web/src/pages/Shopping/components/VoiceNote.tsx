@@ -10,8 +10,7 @@ import {
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { scanLanguageOptions } from '../../../lib/scanLanguage';
-import type { ScanLanguage } from '../../../i18n/resources';
+import { ScanLanguageChip } from '../../Scan/components/ScanLanguageChip';
 import { useVoiceConfigured } from '../../../lib/voice';
 import { useVoiceNote } from '../hooks/useVoiceNote';
 
@@ -133,33 +132,13 @@ function VoiceNoteControls() {
           <MicIcon />
           {label}
         </Box>
-        <Box
-          component="select"
-          aria-label={t('scan:scanLanguage.label')}
+        <ScanLanguageChip
+          variant="surface"
           value={voice.scanLanguage}
+          locale={voice.locale}
           disabled={voice.recording || busy}
-          onChange={(event: { target: { value: string } }) =>
-            voice.setScanLanguage(event.target.value as ScanLanguage)
-          }
-          sx={{
-            height: 48,
-            px: '12px',
-            border: 0,
-            borderRadius: radius.pill,
-            backgroundColor: tokens.color.surface,
-            boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
-            color: tokens.color.ink,
-            fontFamily: 'inherit',
-            fontSize: 13,
-            fontWeight: 700,
-          }}
-        >
-          {scanLanguageOptions(voice.locale).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </Box>
+          onChange={voice.setScanLanguage}
+        />
       </Box>
 
       {voice.recording ? (

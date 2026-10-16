@@ -98,7 +98,7 @@ export class TranscriptionService {
     try {
       return responseSchema.parse(await response.json());
     } catch {
-      throw new ApiException(502, 'voice.result_invalid');
+      throw new ApiException(502, 'voice.provider_unavailable');
     }
   }
 }

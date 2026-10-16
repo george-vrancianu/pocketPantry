@@ -69,9 +69,9 @@ never reach a client.
   `AI_VISION_MODEL`, `AI_REASONING_EFFORT`, `AI_BASE_URL`). Unset, the model is
   `gpt-6-luna` at effort `none`; a model set without an effort sends no effort
   (see "Choose the Scan model" in the root README).
-- `src/voice`: Voice Notes. `POST /api/voice/notes` (multipart: `audio`, `durationMs`,
-  `scanLanguage`, `locale`, `defaultList`, `today`) transcribes a held-to-talk recording
-  (webm, mp4 or ogg, at most 60 s / 5 MB) and returns `{ transcript }`; `GET /api/voice/config`
+- `src/voice`: Voice Notes. `POST /api/voice` (multipart: `audio`, `durationMs`,
+  `scanLanguage`, `locale`, `defaultTarget`, `today`) transcribes a held-to-talk recording
+  (webm, mp4 or ogg, at most 60 s / 2 MB) and returns `{ transcript }`; `GET /api/voice/config`
   tells the web whether voice is on. Transcription uses `AI_TRANSCRIBE_MODEL` (default
   `gpt-transcribe`) on the same `AI_API_KEY` and `AI_BASE_URL`; without a key (or, for
   `openai-compatible`, a base URL) the endpoint answers `voice.not_configured`. Each note is

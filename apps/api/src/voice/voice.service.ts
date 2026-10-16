@@ -56,7 +56,10 @@ export class VoiceService {
       throw error;
     }
     const transcript = text.trim();
-    if (!transcript) await this.cap.refund(memberId, day, 'voice');
+    if (!transcript) {
+      await this.cap.refund(memberId, day, 'voice');
+      throw new ApiException(422, 'voice.nothing_heard');
+    }
     return { transcript };
   }
 }

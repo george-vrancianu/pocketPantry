@@ -10,7 +10,7 @@ export const MAX_VOICE_NOTE_SECONDS = 60;
 /** The app's timer and the recorder's stop never agree to the millisecond, so allow a second. */
 export const MAX_VOICE_NOTE_MS = (MAX_VOICE_NOTE_SECONDS + 1) * 1000;
 /** 60 seconds of webm/opus is ~250 KB and of mp4/aac ~1 MB; this leaves room for a better codec. */
-export const MAX_VOICE_AUDIO_BYTES = 5 * 1024 * 1024;
+export const MAX_VOICE_AUDIO_BYTES = 2 * 1024 * 1024;
 
 /** The list the page the Member recorded on targets (ADR 0017). */
 export const VOICE_LISTS = ['shopping', 'pantry'] as const;
@@ -20,7 +20,7 @@ export const voiceNoteFields = z
   .object({
     locale: z.enum(CATALOG_LOCALES).default(FALLBACK_LOCALE),
     scanLanguage: z.enum(SCAN_LANGUAGES).optional(),
-    defaultList: z.enum(VOICE_LISTS).default('shopping'),
+    defaultTarget: z.enum(VOICE_LISTS).default('shopping'),
     /** The Member's local date, for resolving spoken dates. */
     today: z.iso.date(),
     durationMs: z.coerce.number().int().min(0),

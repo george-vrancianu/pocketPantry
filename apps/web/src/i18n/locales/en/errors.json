@@ -158,6 +158,6 @@
     "unsupported_audio": "This browser's recording format is not supported.",
     "not_configured": "Voice notes are not set up on this server yet.",
     "provider_unavailable": "Voice notes are not available right now. Please try again in a moment.",
-    "result_invalid": "We could not read that voice note. Please try again."
+    "nothing_heard": "We did not catch anything. Please try again."
   }
 }

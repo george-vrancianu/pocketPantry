@@ -158,6 +158,6 @@
     "unsupported_audio": "Denne browsers optageformat understøttes ikke.",
     "not_configured": "Stemmenoter er ikke sat op på denne server endnu.",
     "provider_unavailable": "Stemmenoter er ikke tilgængelige lige nu. Prøv igen om et øjeblik.",
-    "result_invalid": "Vi kunne ikke læse stemmenoten. Prøv igen."
+    "nothing_heard": "Vi opfangede ikke noget. Prøv igen."
   }
 }
