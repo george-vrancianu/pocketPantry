@@ -73,7 +73,7 @@
     "progress_other": "Add {{count}} more to the Pantry to get your score",
     "factor": {
       "fresh": "Fresh",
-      "staples": "Staples",
+      "supply": "Supply",
       "dated": "Dated",
       "rotation": "Rotation"
     },

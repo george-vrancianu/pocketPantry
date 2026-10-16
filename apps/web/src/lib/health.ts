@@ -16,14 +16,14 @@ import {
 /** A Pantry holding fewer Batches than this gets no score, only a progress ring. */
 export const MIN_BATCHES_FOR_SCORE = 10;
 
-export const FACTORS = ['fresh', 'staples', 'dated', 'rotation'] as const;
+export const FACTORS = ['fresh', 'supply', 'dated', 'rotation'] as const;
 export type HealthFactor = (typeof FACTORS)[number];
 
 /** Each Health Factor's share of the total, in percent. */
 export const FACTOR_WEIGHTS: Record<HealthFactor, number> = {
-  fresh: 40,
-  staples: 30,
-  dated: 15,
+  fresh: 30,
+  supply: 45,
+  dated: 10,
   rotation: 15,
 };
 
@@ -69,10 +69,20 @@ export type PantryHealth =
   | { scored: false; batchCount: number }
   | {
       scored: true;
-      factors: Record<HealthFactor, number>;
+      /** A factor with nothing to measure is absent, and its weight goes to the others. */
+      factors: Partial<Record<HealthFactor, number>>;
       total: number;
       verdict: Verdict;
     };
+
+/** The Health Factors that have a value, in display order. Empty when there is no score. */
+export function presentFactors(health: PantryHealth): [HealthFactor, number][] {
+  if (!health.scored) return [];
+  return FACTORS.flatMap((factor): [HealthFactor, number][] => {
+    const value = health.factors[factor];
+    return value === undefined ? [] : [[factor, value]];
+  });
+}
 
 const todayDate = (input: HealthInput) => fromIso(input.today);
 
@@ -100,26 +110,65 @@ export function isForgotten(batch: HealthBatch, today: IsoDate): boolean {
   );
 }
 
-type StapleState = 'stocked' | 'low' | 'onList' | 'missing';
-
-function stapleState(ingredientId: string, input: HealthInput): StapleState {
-  const stocked = input.batches.some(
+/** Whether the Ingredient has a live (unexpired) Batch. */
+function isStocked(ingredientId: string, input: HealthInput): boolean {
+  return input.batches.some(
     (batch) => batch.ingredientId === ingredientId && isLive(batch, input),
   );
-  if (!stocked)
-    return input.onShoppingList.has(ingredientId) ? 'onList' : 'missing';
-  return input.runningLow.has(ingredientId) ? 'low' : 'stocked';
 }
 
-const STAPLE_VALUE: Record<StapleState, number> = {
+/** Whether a Staple is missing and not dismissed. */
+function isMissingStaple(ingredientId: string, input: HealthInput): boolean {
+  return !input.dismissed.has(ingredientId) && !isStocked(ingredientId, input);
+}
+
+type SupplyState =
+  'stocked' | 'lowListed' | 'low' | 'missingListed' | 'missing';
+
+/** What each Supply state earns (ADR 0018). */
+const SUPPLY_CREDIT: Record<SupplyState, number> = {
   stocked: 1,
-  low: 0.6,
-  onList: 0.5,
+  lowListed: 0.8,
+  low: 0.1,
+  missingListed: 0.5,
   missing: 0,
 };
 
+function supplyState(
+  id: string,
+  stocked: boolean,
+  input: HealthInput,
+): SupplyState {
+  const listed = input.onShoppingList.has(id);
+  if (!stocked) return listed ? 'missingListed' : 'missing';
+  if (!input.runningLow.has(id)) return 'stocked';
+  return listed ? 'lowListed' : 'low';
+}
+
+/** What each Ingredient in Supply earns: the credit by its stock, Running low and Shopping List state. */
+function supplyCredits(input: HealthInput): number[] {
+  const held = new Set(
+    input.batches.flatMap((batch) =>
+      batch.ingredientId === null ? [] : [batch.ingredientId],
+    ),
+  );
+  const stocked = [...held].filter((id) => isStocked(id, input));
+  const missing = new Set(
+    input.staples
+      .map((staple) => staple.ingredientId)
+      .filter((id) => isMissingStaple(id, input)),
+  );
+  return [
+    ...stocked.map((id) => SUPPLY_CREDIT[supplyState(id, true, input)]),
+    ...[...missing].map((id) => SUPPLY_CREDIT[supplyState(id, false, input)]),
+  ];
+}
+
+/** The mean, or null when there is nothing to measure. */
 const mean = (values: number[]) =>
-  values.length === 0 ? 1 : values.reduce((a, b) => a + b, 0) / values.length;
+  values.length === 0
+    ? null
+    : values.reduce((a, b) => a + b, 0) / values.length;
 
 export function pantryHealth(input: HealthInput): PantryHealth {
   const { batches } = input;
@@ -134,30 +183,33 @@ export function pantryHealth(input: HealthInput): PantryHealth {
       return isExpiringSoon(days, input.staleThresholdDays) ? 0.6 : 1;
     }),
   );
-  const staples = mean(
-    input.staples
-      .filter((staple) => !input.dismissed.has(staple.ingredientId))
-      .map((staple) => STAPLE_VALUE[stapleState(staple.ingredientId, input)]),
-  );
+  const supply = mean(supplyCredits(input));
   const datedShare = dated.length / batches.length;
   const rotation =
     1 -
     batches.filter((batch) => isForgotten(batch, input.today)).length /
       batches.length;
 
-  const percent = (value: number) => Math.round(value * 100);
-  const factors = {
+  const percent = (value: number | null) =>
+    value === null ? null : Math.round(value * 100);
+  const measured = {
     fresh: percent(fresh),
-    staples: percent(staples),
+    supply: percent(supply),
     dated: percent(datedShare),
     rotation: percent(rotation),
   };
-  const total = Math.round(
-    FACTORS.reduce(
-      (sum, factor) => sum + (FACTOR_WEIGHTS[factor] * factors[factor]) / 100,
-      0,
-    ),
-  );
+  const factors: Partial<Record<HealthFactor, number>> = {};
+  let weighted = 0;
+  let weights = 0;
+  for (const factor of FACTORS) {
+    const value = measured[factor];
+    if (value === null) continue;
+    factors[factor] = value;
+    weighted += FACTOR_WEIGHTS[factor] * value;
+    weights += FACTOR_WEIGHTS[factor];
+  }
+  // weights is never 0: Dated and Rotation always have a value once there is a score (ADR 0018).
+  const total = Math.round(weighted / weights);
   return { scored: true, factors, total, verdict: verdictOf(total) };
 }
 
@@ -292,14 +344,10 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
   const missingStaples = input.staples
     .map((staple) => staple.ingredientId)
     .filter(
-      (id) => !input.dismissed.has(id) && stapleState(id, input) === 'missing',
+      (id) => isMissingStaple(id, input) && !input.onShoppingList.has(id),
     );
   const runningLow = [...input.runningLow].filter(
-    (id) =>
-      !input.onShoppingList.has(id) &&
-      input.batches.some(
-        (batch) => batch.ingredientId === id && isLive(batch, input),
-      ),
+    (id) => !input.onShoppingList.has(id) && isStocked(id, input),
   );
   const undated = input.batches.filter((batch) => batch.expiryDate === null);
   const forgotten = undated
@@ -317,7 +365,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
     {
       key: 'missingStaples',
       group: 'now',
-      factor: 'staples',
+      factor: 'supply',
       itemIds: missingStaples,
     },
     {
@@ -329,7 +377,7 @@ export function healthTodos(input: HealthInput): HealthTodo[] {
     {
       key: 'runningLow',
       group: 'week',
-      factor: 'staples',
+      factor: 'supply',
       itemIds: runningLow,
     },
     {
