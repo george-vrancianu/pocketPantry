@@ -87,7 +87,7 @@ never reach a client.
   log the secret or tokens.
 - `src/catalog`: Catalog search (`GET /api/catalog/search`), name normalisation, and the
   starter seed (`npm run db:seed -w @pocket-pantry/api`, idempotent). With `NODE_ENV=development`
-  the seed also signs up the test accounts `alice@test.local` and `bob@test.local`
+  the seed also signs up the test accounts `alice@test.local`, `bob@test.local` and `george@test.local`
   (password `password123`, see `src/auth/seed-test-accounts.ts`).
 - `src/ingredients`: the scan-facing Catalog snapshot and match validator (Leaf Categories
   are the categories the AI sees).
