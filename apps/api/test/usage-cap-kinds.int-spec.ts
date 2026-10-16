@@ -75,12 +75,17 @@ describe('Daily caps counted by kind (integration)', () => {
     // Never charged, so the full voice cap (2) is still available.
     await cap.consume(memberId, new Date(), 'voice');
     await cap.consume(memberId, new Date(), 'voice');
+    // The voice refunds never touched the scan count: all 3 scans remain.
+    for (let i = 0; i < 3; i++) await cap.consume(memberId, now, 'scan');
+    await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
+      code: 'scan.cap_reached',
+    });
   });
 
-  it('treats a voice cap of 0 as no cap and counts nothing', async () => {
+  it('treats a voice cap of 0 as no cap and counts nothing, while scans are still counted', async () => {
     const memberId = await signUp('nocap');
     const uncapped = new ScanCapService(app.get<Database>(DATABASE), {
-      get: () => 0,
+      get: (key: string) => (key === 'VOICE_DAILY_CAP' ? 0 : 3),
     } as unknown as ConfigService<AppConfig, true>);
     for (let i = 0; i < 5; i++) await uncapped.consume(memberId, now, 'voice');
     const rows = await app
@@ -89,5 +94,17 @@ describe('Daily caps counted by kind (integration)', () => {
       .from(scanUsage)
       .where(eq(scanUsage.memberId, memberId));
     expect(rows).toEqual([]);
+
+    // The voice cap reads its own setting: scans are still capped and counted.
+    for (let i = 0; i < 3; i++) await uncapped.consume(memberId, now, 'scan');
+    await expect(uncapped.consume(memberId, now, 'scan')).rejects.toMatchObject(
+      { code: 'scan.cap_reached', params: { cap: 3 } },
+    );
+    const scanRows = await app
+      .get<Database>(DATABASE)
+      .select({ kind: scanUsage.kind, count: scanUsage.count })
+      .from(scanUsage)
+      .where(eq(scanUsage.memberId, memberId));
+    expect(scanRows).toEqual([{ kind: 'scan', count: 3 }]);
   });
 });

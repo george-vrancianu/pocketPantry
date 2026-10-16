@@ -73,8 +73,8 @@ export class ScanCapService {
   }
 
   /**
-   * Gives a use of `kind` back when the provider failed, so an outage does not burn the
-   * Member's cap. `day` is the day `consume` returned, so a failure after UTC
+   * Gives a use of `kind` back when the provider failed, so an outage does not
+   * burn the Member's cap. `day` is the day `consume` returned, so a failure after UTC
    * midnight still refunds the day that was charged.
    */
   async refund(
