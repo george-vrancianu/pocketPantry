@@ -1,4 +1,4 @@
-import type { CatalogSearchResult } from '../catalog/catalog.schemas';
+import type { ResolvedMatch } from './catalog-matching';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
@@ -10,8 +10,7 @@ import { toPantryQuantity } from './receipt-quantity';
 
 type ReceiptLine = ReceiptScanResult['lines'][number];
 
-/** The Catalog Ingredient for a line; `exact` when found by exact name lookup rather than named by the model. */
-export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
+export type { ResolvedMatch };
 
 /** Lines that are part of the receipt's arithmetic, never worth showing on Review. */
 const ARITHMETIC_LINES: ReadonlySet<ReceiptLine['lineType']> = new Set([

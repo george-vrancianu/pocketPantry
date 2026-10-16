@@ -1,6 +1,7 @@
 import type { CatalogSearchResult } from '../catalog/catalog.schemas';
 import type { ingredientUnit } from '../database/schema';
 import type { ProductScanResult } from './product-scan.schemas';
+import { confidentMatch } from './catalog-matching';
 import { toPantryQuantityFromText } from './receipt-quantity';
 
 /**
@@ -45,7 +46,7 @@ export function applyThreshold(
   threshold: number,
 ): Pick<ProposedLine, 'match' | 'lowConfidence'> {
   return {
-    match: match !== null && item.matchConfidence >= threshold ? match : null,
+    match: confidentMatch(match, item.matchConfidence, threshold),
     lowConfidence: item.confidence < threshold,
   };
 }

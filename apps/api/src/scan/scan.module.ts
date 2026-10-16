@@ -13,6 +13,7 @@ import { PlateTokenUses } from './plate-token-uses';
 import { ProductScanService } from './product-scan.service';
 import { ReceiptConfirmService } from './receipt-confirm.service';
 import { ReceiptProposalService } from './receipt-proposal.service';
+import { CatalogMatchService } from './catalog-matching';
 import { ReceiptScanController } from './receipt-scan.controller';
 import { ReceiptScanService } from './receipt-scan.service';
 import { ScanCapService } from './scan-cap.service';
@@ -36,6 +37,7 @@ import { ScanService } from './scan.service';
     PlateTokenUses,
     IngredientsScanService,
     ReceiptScanService,
+    CatalogMatchService,
     ReceiptProposalService,
     ReceiptConfirmService,
     ScanCapService,

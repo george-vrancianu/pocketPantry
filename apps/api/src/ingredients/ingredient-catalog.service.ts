@@ -15,6 +15,7 @@ import type { Database } from '../database/database.types';
 import { leafCategories } from '../database/schema';
 import {
   type CatalogMatch,
+  catalogPrompt,
   type IngredientCatalog,
   validateCatalogMatch,
 } from './ingredient-catalog';
@@ -98,14 +99,7 @@ export class IngredientCatalogService {
   }
 
   toPrompt(catalog: IngredientCatalog): string {
-    return JSON.stringify({
-      categories: catalog.categories,
-      ingredients: catalog.ingredients.map((ingredient) => [
-        ingredient.id,
-        ingredient.name,
-        ingredient.category,
-      ]),
-    });
+    return catalogPrompt(catalog);
   }
 
   validateMatch(

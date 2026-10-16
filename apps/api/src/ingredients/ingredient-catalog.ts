@@ -75,3 +75,18 @@ export function validateCatalogMatch(
     matchConfidence: candidate.matchConfidence,
   };
 }
+
+/**
+ * The Catalog as text for the model. Every Scan and Voice Note sends exactly
+ * this text, so the provider's prompt cache is shared between them.
+ */
+export function catalogPrompt(catalog: IngredientCatalog): string {
+  return JSON.stringify({
+    categories: catalog.categories,
+    ingredients: catalog.ingredients.map((ingredient) => [
+      ingredient.id,
+      ingredient.name,
+      ingredient.category,
+    ]),
+  });
+}
