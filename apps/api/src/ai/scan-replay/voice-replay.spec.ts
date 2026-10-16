@@ -153,7 +153,7 @@ describe('requestFor', () => {
     expect(request.model).toBe('text');
     expect(request.prompt).toContain('"Mælk"');
     expect(request.prompt).toContain('spoken in Danish');
-    expect(request.prompt).toContain('Today is 2026-10-14');
+    expect(request.prompt).toContain('Today is Wednesday 2026-10-14');
     expect(request.prompt).toContain('Transcript: "add milk"');
   });
 });

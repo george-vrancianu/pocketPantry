@@ -6,7 +6,6 @@ import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
 import type { Database } from '../database/database.types';
-import { addDays } from '../common/dates';
 import { CatalogMatchService, keepConfident } from '../scan/catalog-matching';
 import { ScanCapService } from '../scan/scan-cap.service';
 import { SettingsService } from '../settings/settings.service';
@@ -22,6 +21,8 @@ import {
 } from './voice-actions';
 import type { VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
+import { PantryService } from '../pantry/pantry.service';
+import { resolveSpokenDate } from './voice-dates';
 import { VoiceReaderService } from './voice-reader.service';
 import {
   MAX_VOICE_NOTE_MS,
@@ -35,18 +36,12 @@ export type VoiceNoteInput = VoiceNoteFields & {
   mimeType: string;
 };
 
+type PantryBatches = Awaited<ReturnType<PantryService['list']>>;
+
 class SkippedAction extends Error {
   constructor(readonly reason: string) {
     super(reason);
   }
-}
-
-const FIVE_YEARS_DAYS = 5 * 366;
-
-/** A spoken date in the past or more than five years out is dropped. */
-function sensibleDate(date: string | null, today: string): string | null {
-  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  return date >= today && date <= addDays(today, FIVE_YEARS_DAYS) ? date : null;
 }
 
 /**
@@ -66,6 +61,7 @@ export class VoiceService {
     private readonly catalogMatch: CatalogMatchService,
     private readonly settings: SettingsService,
     private readonly shopping: ShoppingService,
+    private readonly pantry: PantryService,
     private readonly handlers: VoiceHandlers,
     private readonly config: ConfigService<AppConfig, true>,
     @Inject(DATABASE) private readonly database: Database,
@@ -157,10 +153,17 @@ export class VoiceService {
       overrides,
     );
 
+    let pantryBatches: Promise<PantryBatches> | undefined;
     const ctx = {
       memberId,
       locale: input.locale,
-      lists: { shoppingItems: () => Promise.resolve(shoppingItems) },
+      today: input.today,
+      lists: {
+        shoppingItems: () => Promise.resolve(shoppingItems),
+        // Loaded once, and only when a Pantry action needs it.
+        pantryBatches: (): Promise<PantryBatches> =>
+          (pantryBatches ??= this.pantry.list(memberId, input.locale)),
+      },
     };
     const out: ResolvedVoiceAction[] = [];
     for (const [index, action] of read.actions.entries()) {
@@ -220,10 +223,13 @@ export class VoiceService {
           }
         : amountOf(action)),
       scope: action.scope,
-      expiresOn: action.noExpiry ? null : sensibleDate(action.expiresOn, today),
+      expiresOn: action.noExpiry
+        ? null
+        : resolveSpokenDate(action.expiresOn, today),
       noExpiry: action.noExpiry,
       location: action.location,
       batchId: null,
+      batchIds: [],
     };
   }
 
@@ -271,6 +277,7 @@ export class VoiceService {
             const outcome = await handler.apply(draft, {
               memberId,
               locale: body.locale,
+              today: body.today ?? new Date().toISOString().slice(0, 10),
               tx: savepoint,
             });
             if (!outcome.applied) throw new SkippedAction(outcome.reason);

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { rememberBarcodes } from '../barcode/known-barcodes';
 import {
   type ExpiryOverride,
@@ -14,7 +14,7 @@ import { seedId } from '../catalog/seed/seed-catalog';
 import { ApiException } from '../common/api-exception';
 import { addDays } from '../common/dates';
 import { DATABASE } from '../database/database.constants';
-import type { Database, Executor } from '../database/database.types';
+import type { Database, Executor, Tx } from '../database/database.types';
 import { batches, leafCategories, parentCategories } from '../database/schema';
 import { SettingsService } from '../settings/settings.service';
 import { recordUnmatched } from '../unmatched/unmatched-entries';
@@ -75,53 +75,95 @@ export class PantryService {
     scanLanguage: ScanLanguage = locale,
   ): Promise<BatchView[]> {
     const familyId = await this.settings.familyIdOf(memberId);
+    const rows = await this.database.transaction((tx) =>
+      this.insertFromBodies(
+        tx,
+        familyId,
+        bodies,
+        locale,
+        scanLanguage,
+        new Date().toISOString().slice(0, 10),
+      ),
+    );
+    return this.toViews(familyId, rows, locale);
+  }
+
+  /**
+   * Adds Batches in the caller's transaction, exactly as a manual add does
+   * (defaults, Unmatched queue, Known Barcodes, stock history, Running low).
+   * `today` is the date Default Expiry counts from.
+   */
+  async addInTransaction(
+    tx: Tx,
+    memberId: string,
+    bodies: CreateBatchBody[],
+    locale: CatalogLocale,
+    scanLanguage: ScanLanguage = locale,
+    today: string = new Date().toISOString().slice(0, 10),
+  ): Promise<BatchRow[]> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    return this.insertFromBodies(
+      tx,
+      familyId,
+      bodies,
+      locale,
+      scanLanguage,
+      today,
+    );
+  }
+
+  private async insertFromBodies(
+    tx: Tx,
+    familyId: string,
+    bodies: CreateBatchBody[],
+    locale: CatalogLocale,
+    scanLanguage: ScanLanguage,
+    today: string,
+  ): Promise<BatchRow[]> {
     const overrides = await this.settings.expiryOverridesOf(familyId);
     const targets = await this.targetsFor(familyId, bodies);
     const values = bodies.map((body, index) => ({
       id: randomUUID(),
-      ...this.toRow(familyId, body, targets[index], overrides),
+      ...this.toRow(familyId, body, targets[index], overrides, today),
     }));
-    const rows = await this.database.transaction(async (tx) => {
-      const inserted = await this.insertBatches(tx, familyId, values);
-      // The ids were generated above, so each entry is built from its own line.
-      await recordUnmatched(
-        tx,
-        values.flatMap((value, index) =>
-          value.unmatched
-            ? [
-                {
-                  rawName: value.rawName ?? '',
-                  // The raw name is UI-locale text; the printed text is in the Scan Language.
-                  locale,
-                  sourceText: bodies[index].sourceText,
-                  sourceLanguage: scanLanguage,
-                  source: bodies[index].source ?? 'manual',
-                  batchId: value.id,
-                },
-              ]
-            : [],
-        ),
-      );
-      await rememberBarcodes(
-        tx,
-        familyId,
-        values.flatMap((value, index) => {
-          const barcode = bodies[index].barcode;
-          return barcode
-            ? [
-                {
-                  barcode,
-                  ingredientId: value.ingredientId ?? null,
-                  rawName: value.rawName ?? null,
-                  productDescription: value.productDescription ?? null,
-                },
-              ]
-            : [];
-        }),
-      );
-      return inserted;
-    });
-    return this.toViews(familyId, rows, locale);
+    const inserted = await this.insertBatches(tx, familyId, values);
+    // The ids were generated above, so each entry is built from its own line.
+    await recordUnmatched(
+      tx,
+      values.flatMap((value, index) =>
+        value.unmatched
+          ? [
+              {
+                rawName: value.rawName ?? '',
+                // The raw name is UI-locale text; the printed text is in the Scan Language.
+                locale,
+                sourceText: bodies[index].sourceText,
+                sourceLanguage: scanLanguage,
+                source: bodies[index].source ?? 'manual',
+                batchId: value.id,
+              },
+            ]
+          : [],
+      ),
+    );
+    await rememberBarcodes(
+      tx,
+      familyId,
+      values.flatMap((value, index) => {
+        const barcode = bodies[index].barcode;
+        return barcode
+          ? [
+              {
+                barcode,
+                ingredientId: value.ingredientId ?? null,
+                rawName: value.rawName ?? null,
+                productDescription: value.productDescription ?? null,
+              },
+            ]
+          : [];
+      }),
+    );
+    return inserted;
   }
 
   private toRow(
@@ -129,6 +171,7 @@ export class PantryService {
     body: CreateBatchBody,
     target: Target,
     overrides: ExpiryOverride[],
+    today: string,
   ): typeof batches.$inferInsert {
     const defaults = resolveCatalogDefaults(target.leaf, target.parent);
     const expiryDays = resolveExpiryDays(target.leaf, target.parent, overrides);
@@ -139,7 +182,7 @@ export class PantryService {
         ? body.expiryDate
         : expiryDays === null
           ? null
-          : addDays(new Date().toISOString().slice(0, 10), expiryDays);
+          : addDays(today, expiryDays);
 
     return {
       familyId,
@@ -162,7 +205,97 @@ export class PantryService {
     locale: CatalogLocale,
   ): Promise<BatchView> {
     const familyId = await this.settings.familyIdOf(memberId);
-    const [current] = await this.database
+    const row = await this.updateRow(this.database, familyId, batchId, body);
+    return (await this.toViews(familyId, [row], locale))[0];
+  }
+
+  /** The same update in the caller's transaction (404 `pantry.batch_not_found` when gone). */
+  async updateInTransaction(
+    tx: Executor,
+    memberId: string,
+    batchId: string,
+    body: UpdateBatchBody,
+  ): Promise<void> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    await this.updateRow(tx, familyId, batchId, body);
+  }
+
+  /** Deletes through the same path as a manual remove (Used Up, Running low), in the caller's transaction. Returns the deleted rows. */
+  async removeInTransaction(
+    tx: Executor,
+    memberId: string,
+    batchIds: string[],
+  ): Promise<BatchRow[]> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    return this.deleteBatches(tx, familyId, [...new Set(batchIds)]);
+  }
+
+  /**
+   * The Location and expiry date a manual add would give a Batch of this
+   * Ingredient (or an Unmatched one) when none is typed; Review shows them.
+   */
+  async addDefaults(
+    memberId: string,
+    target: { ingredientId: string } | { rawName: string },
+    today: string,
+  ): Promise<{
+    location: BatchView['location'] | null;
+    expiryDate: string | null;
+  }> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const body: CreateBatchBody =
+      'ingredientId' in target
+        ? { ingredientId: target.ingredientId }
+        : { rawName: target.rawName };
+    const [resolved] = await this.targetsFor(familyId, [body]);
+    const overrides = await this.settings.expiryOverridesOf(familyId);
+    const defaults = resolveCatalogDefaults(resolved.leaf, resolved.parent);
+    const expiryDays = resolveExpiryDays(
+      resolved.leaf,
+      resolved.parent,
+      overrides,
+    );
+    return {
+      location: defaults.location ?? null,
+      expiryDate: expiryDays === null ? null : addDays(today, expiryDays),
+    };
+  }
+
+  /**
+   * The Family's Batch rows among `ids`, or of one Ingredient when `ingredientId`
+   * is given, soonest expiry first (undated last), locked for the transaction.
+   */
+  async findBatchRows(
+    tx: Tx,
+    memberId: string,
+    filter: { ids: string[] } | { ingredientId: string } | { unmatched: true },
+  ): Promise<BatchRow[]> {
+    const familyId = await this.settings.familyIdOf(memberId);
+    const scope =
+      'ids' in filter
+        ? inArray(batches.id, filter.ids)
+        : 'ingredientId' in filter
+          ? eq(batches.ingredientId, filter.ingredientId)
+          : isNull(batches.ingredientId);
+    return tx
+      .select()
+      .from(batches)
+      .where(and(eq(batches.familyId, familyId), scope))
+      .orderBy(
+        sql`${batches.expiryDate} ASC NULLS LAST`,
+        asc(batches.createdAt),
+        asc(batches.id),
+      )
+      .for('update');
+  }
+
+  private async updateRow(
+    executor: Executor,
+    familyId: string,
+    batchId: string,
+    body: UpdateBatchBody,
+  ): Promise<BatchRow> {
+    const [current] = await executor
       .select()
       .from(batches)
       .where(and(eq(batches.id, batchId), eq(batches.familyId, familyId)))
@@ -176,7 +309,7 @@ export class PantryService {
       throw new ApiException(400, 'pantry.unit_required');
     }
 
-    const [row] = await this.database
+    const [row] = await executor
       .update(batches)
       .set({
         quantity,
@@ -193,7 +326,7 @@ export class PantryService {
       .returning();
     // Deleted by another Member between the read and the update.
     if (!row) throw new ApiException(404, 'pantry.batch_not_found');
-    return (await this.toViews(familyId, [row], locale))[0];
+    return row;
   }
 
   /** Another Family's Batch is indistinguishable from a missing one. */

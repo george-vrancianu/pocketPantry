@@ -34,7 +34,7 @@ describe('buildVoiceReadRequest', () => {
   it('states the language, today, the default target and the list names', () => {
     const { prompt } = buildVoiceReadRequest(input);
     expect(prompt).toContain('spoken in Romanian; the app is shown in English');
-    expect(prompt).toContain('Today is 2026-10-16');
+    expect(prompt).toContain('Today is Friday 2026-10-16');
     expect(prompt).toContain('targets the pantry list');
     expect(prompt).toContain('Shopping List (spelling hints only): ["Milk"]');
     expect(prompt).toContain('Pantry (spelling hints only): ["Rice"]');

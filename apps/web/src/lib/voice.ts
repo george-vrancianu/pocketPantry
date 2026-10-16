@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
 import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { Recording } from './microphone';
+import { localIso } from './pantry';
 import type { Locale, ScanLanguage } from '../i18n/resources';
 
 /** A Voice Note lasts at most this long; the recording stops and sends itself here. */
@@ -14,6 +15,17 @@ export type VoiceList = 'shopping' | 'pantry';
 
 export type VoiceActionStatus =
   'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
+
+export type VoiceBatchRow = {
+  id: string;
+  name: string;
+  quantity: number | null;
+  unit: Unit | null;
+  location: StorageLocation;
+  expiresOn: string | null;
+  /** Removals: the amount taken from this Batch, or null when the whole Batch goes. */
+  take?: number | null;
+};
 
 /** A Voice Action as the server resolved it, and as Review edits it. */
 export type VoiceReviewAction = {
@@ -41,7 +53,13 @@ export type VoiceReviewAction = {
   expiresOn: string | null;
   noExpiry: boolean;
   location: StorageLocation | null;
+  /** A Batch picked in Review for a removal that needed one. Never sent by the server. */
+  batchId?: string | null;
   rows: {
+    /** Pantry removals and Running low: the Batches taken, or (needsBatch) the candidates to pick from. */
+    batches?: VoiceBatchRow[];
+    /** Pantry Running low with no Batch: Apply adds it to the Shopping List instead. */
+    shoppingFallback?: boolean;
     shoppingItem?: {
       id: string;
       name: string;
@@ -68,11 +86,13 @@ export type VoiceApplyResult = {
 export function applyVoiceActions(
   actions: VoiceReviewAction[],
   locale: Locale,
+  today: string = localIso(new Date()),
 ): Promise<VoiceApplyResult> {
   return apiRequest<VoiceApplyResult>('/voice/apply', {
     method: 'POST',
     body: {
       locale,
+      today,
       actions: actions.map((a) => ({
         id: a.id,
         target: a.target,
@@ -83,10 +103,18 @@ export function applyVoiceActions(
         quantity: a.quantity,
         unit: a.quantity === null ? null : a.unit,
         scope: a.scope,
-        expiresOn: a.expiresOn,
+        // What Review showed for an unspoken Location and expiry, defaults included.
+        expiresOn: a.noExpiry
+          ? null
+          : (a.expiresOn ?? a.defaults.expiresOn ?? null),
         noExpiry: a.noExpiry,
-        location: a.location,
-        batchId: null,
+        location: a.location ?? a.defaults.location ?? null,
+        batchId: a.batchId ?? null,
+        // A resolved removal holds to the Batches Review showed.
+        batchIds:
+          a.op === 'remove' && !a.batchId
+            ? (a.rows.batches ?? []).map((batch) => batch.id)
+            : [],
       })),
     },
   });
