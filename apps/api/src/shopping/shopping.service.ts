@@ -306,14 +306,7 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const updated = await tx
-        .update(shoppingItems)
-        .set({ checked })
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (updated.length === 0) throw itemNotFound();
+      await this.checkRow(tx, listId, itemId, checked);
       return this.view(tx, listId, scope, locale);
     });
   }
@@ -333,17 +326,7 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const updated = await tx
-        .update(shoppingItems)
-        .set({
-          quantity: body.quantity === undefined ? null : String(body.quantity),
-          unit: body.unit ?? null,
-        })
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (updated.length === 0) throw itemNotFound();
+      await this.amountRow(tx, listId, itemId, body);
       return this.view(tx, listId, scope, locale);
     });
   }
@@ -355,15 +338,106 @@ export class ShoppingService {
   ): Promise<ShoppingListView> {
     return this.database.transaction(async (tx) => {
       const { listId, scope } = await this.lockActiveList(tx, memberId);
-      const removed = await tx
-        .delete(shoppingItems)
-        .where(
-          and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
-        )
-        .returning({ id: shoppingItems.id });
-      if (removed.length === 0) throw itemNotFound();
+      await this.removeRow(tx, listId, itemId);
       return this.view(tx, listId, scope, locale);
     });
+  }
+
+  /**
+   * The active list's items (oldest first) under the list lock, for callers
+   * (Voice Notes) that must find the row to act on inside their own transaction.
+   */
+  async itemsInTransaction(tx: Tx, memberId: string) {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    return tx
+      .select({
+        id: shoppingItems.id,
+        ingredientId: shoppingItems.ingredientId,
+        normalizedName: shoppingItems.normalizedName,
+        quantity: shoppingItems.quantity,
+        unit: shoppingItems.unit,
+        checked: shoppingItems.checked,
+      })
+      .from(shoppingItems)
+      .where(eq(shoppingItems.listId, listId))
+      .orderBy(asc(shoppingItems.createdAt), asc(shoppingItems.id));
+  }
+
+  /** `setChecked` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async setCheckedInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+    checked: boolean,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.checkRow(tx, listId, itemId, checked);
+  }
+
+  /** `setAmount` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async setAmountInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+    body: SetAmountBody,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.amountRow(tx, listId, itemId, body);
+  }
+
+  /** `removeItem` inside the caller's transaction; throws `shopping.item_not_found`. */
+  async removeInTransaction(
+    tx: Tx,
+    memberId: string,
+    itemId: string,
+  ): Promise<void> {
+    const { listId } = await this.lockActiveList(tx, memberId);
+    await this.removeRow(tx, listId, itemId);
+  }
+
+  private async checkRow(
+    tx: Tx,
+    listId: string,
+    itemId: string,
+    checked: boolean,
+  ) {
+    const updated = await tx
+      .update(shoppingItems)
+      .set({ checked })
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (updated.length === 0) throw itemNotFound();
+  }
+
+  private async amountRow(
+    tx: Tx,
+    listId: string,
+    itemId: string,
+    body: SetAmountBody,
+  ) {
+    const updated = await tx
+      .update(shoppingItems)
+      .set({
+        quantity: body.quantity === undefined ? null : String(body.quantity),
+        unit: body.unit ?? null,
+      })
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (updated.length === 0) throw itemNotFound();
+  }
+
+  private async removeRow(tx: Tx, listId: string, itemId: string) {
+    const removed = await tx
+      .delete(shoppingItems)
+      .where(
+        and(eq(shoppingItems.id, itemId), eq(shoppingItems.listId, listId)),
+      )
+      .returning({ id: shoppingItems.id });
+    if (removed.length === 0) throw itemNotFound();
   }
 
   /**

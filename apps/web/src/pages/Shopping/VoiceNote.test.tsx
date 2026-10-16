@@ -590,4 +590,132 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const toast = await screen.findByText(/Applied 2 voice actions/);
     expect(toast).toHaveTextContent(/Skipped: Quinoa crackers/);
   });
+
+  describe('every other Shopping List Voice Action', () => {
+    const onList = (quantity: number | null = null) => ({
+      id: 'row-1',
+      name: 'Eggs',
+      quantity,
+      unit: null,
+      checked: false,
+    });
+    const opRow = (dialog: HTMLElement, name: string) =>
+      within(within(dialog).getByRole('region', { name: 'Shopping List' }))
+        .getByText(name)
+        .closest('li') as HTMLElement;
+
+    it('shows set quantity with its editable amount', async () => {
+      setupReview([
+        action({
+          op: 'setQuantity',
+          text: 'make the eggs twelve',
+          quantity: 12,
+          unit: 'pcs',
+          rows: { shoppingItem: onList(6) },
+        }),
+      ]);
+      const dialog = await openReview();
+      const row = within(await within(dialog).findByRole('listitem'));
+      expect(row.getByText('Set quantity')).toBeVisible();
+      expect(row.getByLabelText(/^Amount of Eggs/)).toHaveValue('12');
+    });
+
+    it('shows check, and Add & check when it is not on the list', async () => {
+      setupReview([
+        action({ id: 'a1', op: 'check', rows: { shoppingItem: onList() } }),
+        action({
+          id: 'a2',
+          op: 'check',
+          text: 'bread',
+          ingredient: null,
+          name: 'Bread',
+          rows: { shoppingItem: null },
+        }),
+      ]);
+      const dialog = await openReview();
+      expect(within(opRow(dialog, 'Eggs')).getByText('Check')).toBeVisible();
+      expect(
+        within(opRow(dialog, 'Bread')).getByText('Add & check'),
+      ).toBeVisible();
+    });
+
+    it('shows uncheck and remove without an amount field', async () => {
+      setupReview([
+        action({ id: 'a1', op: 'uncheck', rows: { shoppingItem: onList() } }),
+        action({
+          id: 'a2',
+          op: 'remove',
+          text: 'milk',
+          ingredient: milk,
+          rows: { shoppingItem: { ...onList(), name: 'Milk' } },
+        }),
+      ]);
+      const dialog = await openReview();
+      const uncheck = within(opRow(dialog, 'Eggs'));
+      expect(uncheck.getByText('Uncheck')).toBeVisible();
+      expect(uncheck.queryByLabelText(/^Amount of/)).toBeNull();
+      const remove = within(opRow(dialog, 'Milk'));
+      expect(remove.getByText('Remove from list')).toBeVisible();
+      expect(remove.queryByLabelText(/^Amount of/)).toBeNull();
+    });
+
+    it('shows Not found: … for nothing to act on and does not send it on Apply', async () => {
+      setupReview([
+        action({ id: 'a1', op: 'remove', status: 'notFound' }),
+        action({ id: 'a2', op: 'check', text: 'milk', ingredient: milk }),
+      ]);
+      const dialog = await openReview();
+      expect(await within(dialog).findByText('Not found: Eggs')).toBeVisible();
+      await userEvent.click(
+        within(dialog).getByRole('button', { name: 'Apply' }),
+      );
+      await waitFor(() => expect(applied).toHaveLength(1));
+      expect(
+        (applied[0] as { actions: { id: string }[] }).actions.map((a) => a.id),
+      ).toEqual(['a2']);
+    });
+
+    it('sends the op with the quantity on Apply, and names a partly skipped Apply in the toast', async () => {
+      setupReview(
+        [
+          action({
+            id: 'a1',
+            op: 'setQuantity',
+            quantity: 12,
+            unit: 'pcs',
+            rows: { shoppingItem: onList(6) },
+          }),
+          action({
+            id: 'a2',
+            op: 'uncheck',
+            text: 'milk',
+            ingredient: milk,
+            rows: { shoppingItem: { ...onList(), name: 'Milk' } },
+          }),
+        ],
+        () =>
+          Response.json(
+            {
+              applied: ['a1'],
+              skipped: [{ id: 'a2', reason: 'voice.item_not_found' }],
+            },
+            { status: 201 },
+          ),
+      );
+      const dialog = await openReview();
+      await userEvent.click(
+        await within(dialog).findByRole('button', { name: 'Apply' }),
+      );
+      const toast = await screen.findByText(/Applied 1 voice action\./);
+      expect(toast).toHaveTextContent(
+        /Skipped: Milk \(no longer on the list\)/,
+      );
+      expect(applied[0]).toMatchObject({
+        actions: [
+          { id: 'a1', op: 'setQuantity', quantity: 12, unit: 'pcs' },
+          { id: 'a2', op: 'uncheck', ingredientId: 'ing-milk' },
+        ],
+      });
+    });
+  });
 });
