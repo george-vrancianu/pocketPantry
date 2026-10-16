@@ -34,7 +34,14 @@
     },
     "notUnderstood": "Forstod ikke",
     "unmatched": "ikke i kataloget",
-    "notFound": "Ikke fundet",
+    "notFound": "Ikke fundet: {{name}}",
+    "ops": {
+      "setQuantity": "Sæt mængde",
+      "check": "Afkryds",
+      "addAndCheck": "Tilføj og afkryds",
+      "uncheck": "Fjern afkrydsning",
+      "remove": "Fjern fra listen"
+    },
     "noUnit": "enhed",
     "change": "Skift",
     "changeMatch": "Skift match for {{name}}",
@@ -50,6 +57,7 @@
     "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
     "voice.not_supported": "understøttes ikke endnu",
     "voice.invalid_action": "ufuldstændig",
+    "voice.item_not_found": "er ikke længere på listen",
     "other": "kunne ikke anvendes"
   }
 }
