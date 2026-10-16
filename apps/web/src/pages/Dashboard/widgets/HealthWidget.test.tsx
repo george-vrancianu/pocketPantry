@@ -47,7 +47,7 @@ const staple = (ingredientId: string): Staple => ({
 
 /**
  * Ten Batches: eight in date, one expired, one undated; two Staples, one stocked and one missing.
- * Fresh 89, Staples 50, Dated 90, Rotation 100: 79, with three Health To-dos (expired, missing Staple, undated).
+ * Fresh 89, Supply 90, Dated 90, Rotation 100: 91, with three Health To-dos (expired, missing Staple, undated).
  */
 function tenBatchPantry() {
   return {
@@ -125,17 +125,62 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, 79, A few things to sort, 3 things to do',
+      name: 'Pantry health, 91, In good shape, 3 things to do',
     });
     expect(card).toHaveAttribute('aria-haspopup', 'dialog');
-    expect(card).toHaveTextContent('79');
-    expect(card).toHaveTextContent('A few things to sort');
+    expect(card).toHaveTextContent('91');
+    expect(card).toHaveTextContent('In good shape');
     expect(card).toHaveTextContent('3 to do');
     expect(card.querySelectorAll('[data-factor]')).toHaveLength(4);
   });
 
+  it('shows three bars and no Fresh value when there are no dated Batches', async () => {
+    stub(
+      {
+        batches: Array.from({ length: 10 }, () => batch({ expiryDate: null })),
+        runningLow: [],
+      },
+      [],
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<HealthWidget size="wide" columns={2} />);
+
+    const card = await screen.findByRole('button', {
+      name: /^Pantry health, /,
+    });
+    expect(
+      [...card.querySelectorAll('[data-factor]')].map((bar) =>
+        bar.getAttribute('data-factor'),
+      ),
+    ).toEqual(['supply', 'dated', 'rotation']);
+    await user.click(card);
+    const sheet = await screen.findByRole('dialog', { name: 'Pantry health' });
+    expect(sheet).toHaveTextContent('Supply 100 · Dated 0 · Rotation 100');
+    expect(sheet).not.toHaveTextContent('Fresh');
+  });
+
+  it.each([
+    ['en', 'Supply'],
+    ['ro', 'Provizii'],
+    ['da', 'Forråd'],
+  ] as const)(
+    'names the Supply factor in the sheet in %s',
+    async (locale, name) => {
+      stub(tenBatchPantry());
+      const user = userEvent.setup();
+
+      renderWithProviders(<HealthWidget size="wide" columns={2} />, { locale });
+
+      await user.click(await screen.findByRole('button', { name: /,/ }));
+      const sheet = await screen.findByRole('dialog');
+      expect(sheet).toHaveTextContent(`${name} 90`);
+      expect(sheet).not.toHaveTextContent('Staples');
+    },
+  );
+
   it('counts a dismissed missing Staple neither for nor against the score', async () => {
-    const name = 'Pantry health, 94, In good shape, 2 things to do';
+    const name = 'Pantry health, 96, In good shape, 2 things to do';
 
     // Eggs is not a Staple at all: the score a dismissed Staple must match.
     stub(tenBatchPantry(), [staple('milk')]);
@@ -149,7 +194,7 @@ describe('HealthWidget', () => {
     ]);
     renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
-    // Fresh 89, Staples 100 (eggs left out), Dated 90, Rotation 100.
+    // Fresh 89, Supply 100 (eggs left out), Dated 90, Rotation 100.
     expect(await screen.findByRole('button', { name })).toBeInTheDocument();
   });
 
@@ -159,7 +204,7 @@ describe('HealthWidget', () => {
     renderWithProviders(<HealthWidget size="small" columns={2} />);
 
     const card = await screen.findByRole('button', {
-      name: 'Pantry health, 79, A few things to sort, 3 things to do',
+      name: 'Pantry health, 91, In good shape, 3 things to do',
     });
     expect(card).toHaveTextContent('3 to do');
     expect(card.querySelector('[data-factor]')).toBeNull();
@@ -236,7 +281,7 @@ describe('HealthWidget', () => {
     release();
     // With the default threshold of 3 the Batch five days out would count as fresh and the score be 100.
     expect(
-      await screen.findByRole('button', { name: /^Pantry health, 98/ }),
+      await screen.findByRole('button', { name: /^Pantry health, 99/ }),
     ).toBeInTheDocument();
   });
 
@@ -261,9 +306,9 @@ describe('HealthWidget', () => {
         <HealthWidget size="wide" columns={2} />,
       );
       const card = await screen.findByRole('button', {
-        name: /^Pantry health, 79/,
+        name: /^Pantry health, 91/,
       });
-      // Swapping the expired Batch for a dated one lifts Fresh to 100: 40 + 15 + 13.5 + 15 = 83.5, rounded to 84.
+      // Swapping the expired Batch for a dated one lifts Fresh to 100 and Supply to 91 (10 of 11): 30 + 40.95 + 9 + 15 = 94.95, rounded to 95.
       pantry.batches.splice(8, 1);
       pantry.batches.push(batch());
       await queryClient.invalidateQueries({ queryKey: ['pantry'] });
@@ -273,14 +318,14 @@ describe('HealthWidget', () => {
     it('jumps to the new score with reduced motion', async () => {
       const card = await changeScore(true);
 
-      await waitFor(() => expect(card).toHaveTextContent('84'));
+      await waitFor(() => expect(card).toHaveTextContent('95'));
     });
 
     it('counts to the new score otherwise', async () => {
       const card = await changeScore(false);
 
-      expect(card).toHaveTextContent('79');
-      await waitFor(() => expect(card).toHaveTextContent('84'), {
+      expect(card).toHaveTextContent('91');
+      await waitFor(() => expect(card).toHaveTextContent('95'), {
         timeout: 2000,
       });
     });
@@ -293,16 +338,16 @@ describe('HealthWidget', () => {
       renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
       await user.click(
-        await screen.findByRole('button', { name: /^Pantry health, 79/ }),
+        await screen.findByRole('button', { name: /^Pantry health, 91/ }),
       );
 
       const sheet = await screen.findByRole('dialog', {
         name: 'Pantry health',
       });
-      expect(sheet).toHaveTextContent('79');
-      expect(sheet).toHaveTextContent('A few things to sort');
+      expect(sheet).toHaveTextContent('91');
+      expect(sheet).toHaveTextContent('In good shape');
       expect(sheet).toHaveTextContent(
-        'Fresh 89 · Staples 50 · Dated 90 · Rotation 100',
+        'Fresh 89 · Supply 90 · Dated 90 · Rotation 100',
       );
       expect(
         within(sheet).getByRole('button', { name: 'Close' }),
@@ -333,7 +378,7 @@ describe('HealthWidget', () => {
       const user = userEvent.setup();
       renderWithProviders(<HealthWidget size="wide" columns={2} />);
       const card = await screen.findByRole('button', {
-        name: /^Pantry health, 79/,
+        name: /^Pantry health, 91/,
       });
       await user.click(card);
       await screen.findByRole('dialog', { name: 'Pantry health' });
@@ -653,7 +698,7 @@ describe('HealthWidget', () => {
       renderWithProviders(<HealthWidget size="wide" columns={2} />);
 
       expect(
-        await screen.findByRole('button', { name: /^Pantry health, 79/ }),
+        await screen.findByRole('button', { name: /^Pantry health, 91/ }),
       ).toHaveTextContent('3 to do · Toss 1 expired');
     });
 
@@ -941,11 +986,11 @@ describe('HealthWidget', () => {
         within(sheet).getByRole('button', { name: 'Add 2 Staples' }),
       );
 
-      // Staples go from 0 to 0.5 each: 40 + 15 + 15 + 15 = 85 from 70.
+      // Supply goes from 10 of 12 to 11 of 12 (92): 30 + 41.4 + 10 + 15 = 96.4, from 92.
       expect(
-        await screen.findByText('2 added to the Shopping List · score 85'),
+        await screen.findByText('2 added to the Shopping List · score 96'),
       ).toBeInTheDocument();
-      expect(politeToast('2 added to the Shopping List · score 85')).toBe(true);
+      expect(politeToast('2 added to the Shopping List · score 96')).toBe(true);
     });
 
     it('adds a single Staple from its row with a plus button', async () => {
@@ -1106,9 +1151,9 @@ describe('HealthWidget', () => {
         within(sheet).queryByRole('button', { name: /^Toss 2 expired/ }),
       ).not.toBeInTheDocument();
       expect(
-        await screen.findByText('Removed 2 expired · score 63'),
+        await screen.findByText('Removed 2 expired · score 91'),
       ).toBeInTheDocument();
-      expect(politeToast('Removed 2 expired · score 63')).toBe(true);
+      expect(politeToast('Removed 2 expired · score 91')).toBe(true);
       expect(bulkDeletes(calls)).toHaveLength(0);
 
       await afterWindow();
@@ -1142,7 +1187,7 @@ describe('HealthWidget', () => {
       );
 
       expect(
-        await screen.findByText('Tossed Milk · score 60'),
+        await screen.findByText('Tossed Milk · score 88'),
       ).toBeInTheDocument();
       expect(within(sheet).queryByText('Milk')).not.toBeInTheDocument();
       expect(
@@ -1164,7 +1209,7 @@ describe('HealthWidget', () => {
       );
 
       expect(
-        await screen.findByText('Tossed Rice · score 60'),
+        await screen.findByText('Tossed Rice · score 88'),
       ).toBeInTheDocument();
       await afterWindow();
       expect(bulkDeletes(calls)).toEqual([
@@ -1178,7 +1223,7 @@ describe('HealthWidget', () => {
       await user.click(within(sheet).getByRole('button', { name: 'Used Ham' }));
 
       expect(
-        await screen.findByText('Used Ham · score 58'),
+        await screen.findByText('Used Ham · score 86'),
       ).toBeInTheDocument();
       expect(within(sheet).queryByText('Ham')).not.toBeInTheDocument();
 
@@ -1473,7 +1518,7 @@ describe('HealthWidget', () => {
           <HealthWidget size={size} columns={2} />,
         );
         const card = await screen.findByRole('button', {
-          name: /^Pantry health, 79/,
+          name: /^Pantry health, 91/,
         });
         return { ...result, card };
       }

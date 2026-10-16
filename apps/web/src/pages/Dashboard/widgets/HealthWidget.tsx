@@ -144,18 +144,22 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                 aria-hidden="true"
                 sx={{ display: 'flex', gap: '2px', height: 8 }}
               >
-                {FACTORS.map((factor) => (
-                  <Box
-                    component="span"
-                    key={factor}
-                    data-factor={factor}
-                    sx={{
-                      flex: FACTOR_WEIGHTS[factor],
-                      borderRadius: nestedRadius(radius.control, 9),
-                      bgcolor: VERDICT_COLOR[verdictOf(health.factors[factor])],
-                    }}
-                  />
-                ))}
+                {FACTORS.map((factor) => {
+                  const value = health.factors[factor];
+                  if (value === undefined) return null;
+                  return (
+                    <Box
+                      component="span"
+                      key={factor}
+                      data-factor={factor}
+                      sx={{
+                        flex: FACTOR_WEIGHTS[factor],
+                        borderRadius: nestedRadius(radius.control, 9),
+                        bgcolor: VERDICT_COLOR[verdictOf(value)],
+                      }}
+                    />
+                  );
+                })}
               </Box>
             ) : null}
           </Box>
