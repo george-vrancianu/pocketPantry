@@ -10,7 +10,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 import { AppScreenHeader } from '../../components/AppScreenHeader';
-import { MatchDialog } from './components/MatchDialog';
+import { MatchDialog } from '../../components/MatchDialog';
 import { PlateRecipeSave } from './components/PlateRecipeSave';
 import { ReviewActionBar } from './components/ReviewActionBar';
 import { ReviewCounters } from './components/ReviewCounters';

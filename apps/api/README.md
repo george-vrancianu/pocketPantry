@@ -71,9 +71,12 @@ never reach a client.
   (see "Choose the Scan model" in the root README).
 - `src/voice`: Voice Notes. `POST /api/voice` (multipart: `audio`, `durationMs`,
   `scanLanguage`, `locale`, `defaultTarget`, `today`) transcribes a held-to-talk recording
-  (webm, mp4 or ogg, at most 60 s / 2 MB) and returns `{ transcript }`; `GET /api/voice/config`
+  (webm, mp4 or ogg, at most 60 s / 2 MB) and returns `{ transcript, actions }` (the transcript read into Voice Actions by the text model, each
+  resolved against the current lists; nothing is written); `POST /api/voice/apply` (JSON) re-checks the
+  edited Voice Actions and writes them in one transaction, free of the Voice Cap; `GET /api/voice/config`
   tells the web whether voice is on. Transcription uses `AI_TRANSCRIBE_MODEL` (default
-  `gpt-transcribe`) on the same `AI_API_KEY` and `AI_BASE_URL`; without a key (or, for
+  `gpt-transcribe`) and reading uses `AI_TEXT_MODEL` (default `gpt-5-mini` at `AI_TEXT_REASONING_EFFORT`
+  `low`) on the same `AI_API_KEY` and `AI_BASE_URL`; without a key (or, for
   `openai-compatible`, a base URL) the endpoint answers `voice.not_configured`. Each note is
   charged to the Voice Cap first and refunded when the provider fails or nothing was heard.
   Neither audio nor transcript is stored.

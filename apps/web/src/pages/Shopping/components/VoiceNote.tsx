@@ -10,6 +10,7 @@ import {
 } from '@pocket-pantry/ui';
 import type { KeyboardEvent, PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { VoiceReview } from '../../../components/VoiceReview';
 import { ScanLanguageChip } from '../../Scan/components/ScanLanguageChip';
 import { useVoiceConfigured } from '../../../lib/voice';
 import { useVoiceNote } from '../hooks/useVoiceNote';
@@ -210,25 +211,7 @@ function VoiceNoteControls() {
         </Stack>
       </Sheet>
 
-      <Sheet
-        open={voice.transcript !== null}
-        onClose={voice.closeTranscript}
-        label={t('voice:review.title')}
-        size="content"
-      >
-        <Stack spacing={2}>
-          <Typography variant="h2">{t('voice:review.title')}</Typography>
-          <Box component="section" aria-labelledby="voice-heard">
-            <Typography id="voice-heard" variant="h3">
-              {t('voice:review.heard')}
-            </Typography>
-            <Typography>{voice.transcript}</Typography>
-          </Box>
-          <Button onClick={voice.closeTranscript}>
-            {t('voice:review.discard')}
-          </Button>
-        </Stack>
-      </Sheet>
+      <VoiceReview />
     </Stack>
   );
 }

@@ -26,6 +26,31 @@
   "review": {
     "title": "Notă vocală",
     "heard": "Ce am auzit",
-    "discard": "Renunță"
+    "discard": "Renunță",
+    "apply": "Aplică",
+    "lists": {
+      "shopping": "Lista de cumpărături",
+      "pantry": "Cămara"
+    },
+    "notUnderstood": "Nu am înțeles",
+    "unmatched": "nu e în catalog",
+    "notFound": "Negăsit",
+    "noUnit": "unitate",
+    "change": "Schimbă",
+    "changeMatch": "Schimbă potrivirea pentru {{name}}",
+    "remove": "Elimină {{name}}"
+  },
+  "toast": {
+    "applied_one": "S-a aplicat {{count}} acțiune vocală.",
+    "applied_few": "S-au aplicat {{count}} acțiuni vocale.",
+    "applied_other": "S-au aplicat {{count}} de acțiuni vocale.",
+    "skipped": "Omise: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "cantitate prea mare",
+    "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "voice.not_supported": "încă nesuportat",
+    "voice.invalid_action": "incompletă",
+    "other": "nu a putut fi aplicată"
   }
 }

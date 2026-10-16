@@ -70,6 +70,32 @@ export class ShoppingService {
     return this.view(this.database, listId, scope, locale);
   }
 
+  /** The Family's active list for reading only: nothing is created, `null` when there is none yet. */
+  async peekList(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView | null> {
+    const [row] = await this.database
+      .select({ listId: shoppingLists.id, familyId: user.familyId })
+      .from(user)
+      .innerJoin(
+        shoppingLists,
+        and(
+          eq(shoppingLists.familyId, user.familyId),
+          eq(shoppingLists.status, 'active'),
+        ),
+      )
+      .where(eq(user.id, memberId))
+      .limit(1);
+    if (!row) return null;
+    return this.view(
+      this.database,
+      row.listId,
+      catalogScope(row.familyId),
+      locale,
+    );
+  }
+
   async addItem(
     memberId: string,
     body: AddShoppingItemBody,
@@ -142,6 +168,20 @@ export class ShoppingService {
       }
       return { list: await this.view(tx, listId, scope, locale), insertedIds };
     });
+  }
+
+  /**
+   * Adds one item with the merge rules inside the caller's transaction, under the
+   * active-list lock. For callers (Voice Notes) that write several things atomically.
+   */
+  async addInTransaction(
+    tx: Tx,
+    memberId: string,
+    body: MergeItemInput,
+    locale: CatalogLocale,
+  ): Promise<{ id: string; inserted: boolean }> {
+    const { listId, scope } = await this.lockActiveList(tx, memberId);
+    return this.mergeItem(tx, listId, scope, body, locale);
   }
 
   /** Merges or inserts the item; answers with the Shopping Item it ended up on and whether that row is new. */

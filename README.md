@@ -131,6 +131,10 @@ In development, set `SCAN_DEBUG_DIR=.scan-debug` in `.env` and restart. Every Sc
 
 To try another model or reasoning effort on those debug captures, replay them with `npm run scan:replay -w @pocket-pantry/api -- --model gpt-6-luna --effort low --repeat 3`. See [the usage notes](apps/api/src/ai/scan-replay/README.md).
 
+### Voice Notes models
+
+Voice Notes use two models besides the Scan model, on the same `AI_API_KEY` and `AI_BASE_URL`: `AI_TRANSCRIBE_MODEL` (default `gpt-transcribe`) turns the recording into text, and `AI_TEXT_MODEL` (default `gpt-5-mini`) reads that text into Voice Actions. The text model runs at `AI_TEXT_REASONING_EFFORT=low` by default; as with Scans, setting `AI_TEXT_MODEL` yourself sends no effort unless you also set one. The development debug capture (`SCAN_DEBUG_DIR`) records these reads too.
+
 ### Choose the Scan model
 
 With no AI settings, Scans run on OpenAI's `gpt-6-luna` at reasoning effort `none`. That effort keeps `temperature: 0` (repeatable receipt reads) and spends no reasoning tokens. To try a higher effort, set `AI_REASONING_EFFORT` (`low`, `medium`, `high` or `xhigh`; gpt-6-luna has no `minimal`).

@@ -1,10 +1,17 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
+import type { StructuredOutputRequest } from '../src/ai/structured-output-ai.service';
+import { seedId } from '../src/catalog/seed/seed-catalog';
 import { ApiException } from '../src/common/api-exception';
 import { DATABASE } from '../src/database/database.constants';
 import type { Database } from '../src/database/database.types';
-import { scanUsage } from '../src/database/schema';
+import {
+  scanUsage,
+  shoppingLists,
+  unmatchedEntries,
+  user,
+} from '../src/database/schema';
 import type {
   TranscriptionRequest,
   TranscriptionService,
@@ -18,7 +25,10 @@ describe('Voice Note (integration)', () => {
   let configured = true;
   let next: (input: TranscriptionRequest) => Promise<{ text: string }>;
   const calls: TranscriptionRequest[] = [];
+  const aiCalls: StructuredOutputRequest[] = [];
+  let reading: { actions: object[]; unsupported: string[] };
   let counter = 0;
+  let aiFailure: ApiException | null = null;
 
   beforeAll(async () => {
     const fake: Fake = {
@@ -28,7 +38,14 @@ describe('Voice Note (integration)', () => {
         return next(input);
       },
     };
-    app = await createTestApp([], undefined, undefined, undefined, fake);
+    const ai = {
+      generate: (input: StructuredOutputRequest) => {
+        aiCalls.push(input);
+        if (aiFailure) return Promise.reject(aiFailure);
+        return Promise.resolve({ data: reading, requestId: 'req-1' });
+      },
+    };
+    app = await createTestApp([], ai, undefined, undefined, fake);
   });
 
   afterAll(async () => {
@@ -38,6 +55,9 @@ describe('Voice Note (integration)', () => {
   beforeEach(() => {
     configured = true;
     calls.length = 0;
+    aiCalls.length = 0;
+    aiFailure = null;
+    reading = { actions: [], unsupported: [] };
     next = () => Promise.resolve({ text: 'got the bread and sausages' });
   });
 
@@ -107,7 +127,10 @@ describe('Voice Note (integration)', () => {
   it('transcribes the recording with the Scan Language as the main hint and the others as extra hints', async () => {
     const { cookie, memberId } = await signUp();
     const response = await note(cookie).expect(201);
-    expect(response.body).toEqual({ transcript: 'got the bread and sausages' });
+    expect(response.body).toEqual({
+      transcript: 'got the bread and sausages',
+      actions: [],
+    });
     expect(calls).toHaveLength(1);
     expect(calls[0].audio.toString()).toBe('fake-audio');
     expect(calls[0].mimeType).toBe('audio/webm');
@@ -212,5 +235,408 @@ describe('Voice Note (integration)', () => {
     expect(calls).toHaveLength(2);
     expect(await usage(memberId, 'voice')).toBe(2);
     expect(await usage(memberId, 'scan')).toBe(0);
+  });
+
+  describe('reading a Voice Note into Voice Actions', () => {
+    const model = (overrides: Record<string, unknown> = {}) => ({
+      target: 'shopping',
+      op: 'add',
+      spokenText: 'milk',
+      matchedIngredientId: null,
+      matchConfidence: 0,
+      fallbackIngredientName: 'Milk',
+      quantity: null,
+      unit: null,
+      scope: null,
+      expiresOn: null,
+      noExpiry: false,
+      location: null,
+      ...overrides,
+    });
+    const eggs = model({
+      spokenText: 'eggs',
+      matchedIngredientId: seedId.ingredient('eggs'),
+      matchConfidence: 0.95,
+      fallbackIngredientName: 'Eggs',
+    });
+    const milk = model({
+      spokenText: 'two litres of milk',
+      matchedIngredientId: seedId.ingredient('milk'),
+      matchConfidence: 0.9,
+      quantity: 2,
+      unit: 'l',
+    });
+    const crackers = model({
+      spokenText: 'quinoa crackers',
+      fallbackIngredientName: 'Quinoa crackers',
+    });
+
+    const listOf = async (cookie: string) =>
+      (
+        await request(app.getHttpServer())
+          .get('/api/shopping-list?locale=en')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', cookie)
+          .expect(200)
+      ).body as { groups: { items: { name: string }[] }[] };
+
+    it('reads with the text model and returns resolved add Voice Actions without writing anything', async () => {
+      const { cookie } = await signUp();
+      reading = { actions: [eggs, milk, crackers], unsupported: [] };
+      const response = await note(cookie).expect(201);
+      expect(aiCalls).toHaveLength(1);
+      expect(aiCalls[0].model).toBe('text');
+      const body = response.body as { actions: Record<string, unknown>[] };
+      expect(body.actions).toHaveLength(3);
+      expect(body.actions[0]).toMatchObject({
+        status: 'ready',
+        target: 'shopping',
+        op: 'add',
+        text: 'eggs',
+        ingredient: { id: seedId.ingredient('eggs') },
+        quantity: null,
+        unit: null,
+      });
+      expect(body.actions[1]).toMatchObject({
+        status: 'ready',
+        ingredient: { id: seedId.ingredient('milk') },
+        quantity: 2,
+        unit: 'l',
+      });
+      expect(body.actions[2]).toMatchObject({
+        status: 'ready',
+        ingredient: null,
+        name: 'Quinoa crackers',
+      });
+      expect(new Set(body.actions.map((a) => a.id)).size).toBe(3);
+      expect((await listOf(cookie)).groups).toEqual([]);
+    });
+
+    it('shows the Shopping Item an add will merge into', async () => {
+      const { cookie } = await signUp();
+      await request(app.getHttpServer())
+        .post('/api/shopping-list/items?locale=en')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({
+          ingredientId: seedId.ingredient('milk'),
+          quantity: 1,
+          unit: 'l',
+        })
+        .expect(200);
+      reading = { actions: [milk], unsupported: [] };
+      const response = await note(cookie).expect(201);
+      expect(
+        (response.body as { actions: unknown[] }).actions[0],
+      ).toMatchObject({
+        status: 'ready',
+        rows: { shoppingItem: { quantity: 1, unit: 'l' } },
+      });
+    });
+
+    it('matches an exact Catalog name or Synonym when the model proposed no id, and drops a low-confidence Match', async () => {
+      const { cookie } = await signUp();
+      reading = {
+        actions: [
+          // "Parmezan" is Parmesan's Romanian display name.
+          model({ spokenText: 'parmezan', fallbackIngredientName: 'Parmezan' }),
+          model({
+            spokenText: 'something',
+            matchedIngredientId: seedId.ingredient('milk'),
+            matchConfidence: 0.2,
+            fallbackIngredientName: 'Something',
+          }),
+        ],
+        unsupported: [],
+      };
+      const response = await note(cookie).expect(201);
+      const actions = (response.body as { actions: Record<string, unknown>[] })
+        .actions;
+      expect(actions[0]).toMatchObject({
+        ingredient: { id: seedId.ingredient('parmesan') },
+      });
+      expect(actions[1]).toMatchObject({ ingredient: null, name: 'Something' });
+    });
+
+    const post = (cookie: string, path: string, body: object) =>
+      request(app.getHttpServer())
+        .post(`/api${path}`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send(body);
+
+    it('matches a Family Synonym the model returned as a bare name, for that Family only', async () => {
+      const a = await signUp();
+      const b = await signUp();
+      const word = `Bapple${Date.now()}`;
+      await post(a.cookie, '/catalog/family-synonyms?locale=en', {
+        name: word,
+        ingredientId: seedId.ingredient('eggs'),
+      }).expect(201);
+      reading = {
+        actions: [model({ spokenText: word, fallbackIngredientName: word })],
+        unsupported: [],
+      };
+      const read = async (cookie: string) =>
+        (
+          (await note(cookie).expect(201)).body as {
+            actions: Record<string, unknown>[];
+          }
+        ).actions[0];
+      expect(await read(a.cookie)).toMatchObject({
+        ingredient: { id: seedId.ingredient('eggs') },
+      });
+      expect(await read(b.cookie)).toMatchObject({
+        ingredient: null,
+        name: word,
+      });
+    });
+
+    it("does not match another Family's Family Ingredient the model proposed by id", async () => {
+      const a = await signUp();
+      const b = await signUp();
+      const created = (
+        await post(a.cookie, '/catalog/family-ingredients?locale=en', {
+          name: `Aonly ${Date.now()}`,
+          leafCategoryId: seedId.leaf('hard-cheese'),
+          defaultUnit: 'g',
+        }).expect(201)
+      ).body as { id: string };
+      reading = {
+        actions: [
+          model({
+            spokenText: 'secret',
+            matchedIngredientId: created.id,
+            matchConfidence: 0.99,
+            fallbackIngredientName: 'Secret',
+          }),
+        ],
+        unsupported: [],
+      };
+      const actions = (
+        (await note(b.cookie).expect(201)).body as {
+          actions: Record<string, unknown>[];
+        }
+      ).actions;
+      expect(actions[0]).toMatchObject({ ingredient: null, name: 'Secret' });
+    });
+
+    it('refunds the Voice Cap and reports voice.provider_unavailable when reading fails after transcription', async () => {
+      const { cookie, memberId } = await signUp();
+      aiFailure = new ApiException(502, 'scan.provider_unavailable');
+      const response = await note(cookie).expect(502);
+      expect((response.body as { code: string }).code).toBe(
+        'voice.provider_unavailable',
+      );
+      expect(await usage(memberId, 'voice')).toBe(0);
+    });
+
+    it('does not create a Shopping List just by reading a note', async () => {
+      const { cookie, memberId } = await signUp();
+      await note(cookie).expect(201);
+      const rows = await app
+        .get<Database>(DATABASE)
+        .select({ id: shoppingLists.id })
+        .from(shoppingLists)
+        .innerJoin(user, eq(user.familyId, shoppingLists.familyId))
+        .where(eq(user.id, memberId));
+      expect(rows).toEqual([]);
+    });
+
+    it("returns phrases it could not use, and ops not yet supported, as Didn't understand", async () => {
+      const { cookie } = await signUp();
+      reading = {
+        actions: [
+          model({ target: 'pantry', op: 'remove', spokenText: 'gone' }),
+        ],
+        unsupported: ['do a dance'],
+      };
+      const response = await note(cookie).expect(201);
+      const actions = (response.body as { actions: Record<string, unknown>[] })
+        .actions;
+      expect(actions).toHaveLength(2);
+      expect(actions[0]).toMatchObject({
+        status: 'notUnderstood',
+        text: 'gone',
+      });
+      expect(actions[1]).toMatchObject({
+        status: 'notUnderstood',
+        text: 'do a dance',
+      });
+    });
+  });
+
+  describe('applying Voice Actions', () => {
+    const add = (fields: Record<string, unknown>, id = 'a1') => ({
+      id,
+      target: 'shopping',
+      op: 'add',
+      ingredientId: null,
+      name: null,
+      quantity: null,
+      unit: null,
+      ...fields,
+    });
+    const apply = (cookie: string, actions: object[]) =>
+      request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .send({ actions, locale: 'en' });
+    const list = async (cookie: string) => {
+      const groups = (
+        (
+          await request(app.getHttpServer())
+            .get('/api/shopping-list?locale=en')
+            .set('origin', TEST_ORIGIN)
+            .set('cookie', cookie)
+            .expect(200)
+        ).body as {
+          groups: {
+            items: {
+              name: string;
+              quantity: number | null;
+              unit: string | null;
+              unmatched: boolean;
+            }[];
+          }[];
+        }
+      ).groups;
+      return groups.flatMap((g) => g.items);
+    };
+    const queued = async (name: string) =>
+      (
+        await app
+          .get<Database>(DATABASE)
+          .select({ source: unmatchedEntries.source })
+          .from(unmatchedEntries)
+          .where(eq(unmatchedEntries.rawName, name))
+      ).length;
+
+    it('requires authentication', async () => {
+      await request(app.getHttpServer())
+        .post('/api/voice/apply')
+        .set('origin', TEST_ORIGIN)
+        .send({ actions: [] })
+        .expect(401);
+    });
+
+    it('adds matched and Unmatched names to the Shopping List, queueing the Unmatched one, for free', async () => {
+      const { cookie, memberId } = await signUp();
+      const name = `Quinoa crackers ${Date.now()}`;
+      const response = await apply(cookie, [
+        add({ ingredientId: seedId.ingredient('eggs') }, 'a1'),
+        add(
+          {
+            ingredientId: seedId.ingredient('milk'),
+            quantity: 2,
+            unit: 'l',
+          },
+          'a2',
+        ),
+        add({ name }, 'a3'),
+      ]).expect(201);
+      expect(response.body).toEqual({
+        applied: ['a1', 'a2', 'a3'],
+        skipped: [],
+      });
+      const items = await list(cookie);
+      expect(items).toHaveLength(3);
+      expect(items.find((i) => i.name === name)).toMatchObject({
+        unmatched: true,
+      });
+      expect(items.find((i) => i.quantity === 2)).toMatchObject({ unit: 'l' });
+      expect(await queued(name)).toBe(1);
+      expect(await usage(memberId, 'voice')).toBe(0);
+    });
+
+    it('merges into an existing Shopping Item by the usual add rules', async () => {
+      const { cookie } = await signUp();
+      await apply(cookie, [
+        add({
+          ingredientId: seedId.ingredient('milk'),
+          quantity: 1,
+          unit: 'l',
+        }),
+      ]).expect(201);
+      await apply(cookie, [
+        add({
+          ingredientId: seedId.ingredient('milk'),
+          quantity: 2,
+          unit: 'l',
+        }),
+        add(
+          {
+            ingredientId: seedId.ingredient('milk'),
+            quantity: 500,
+            unit: 'ml',
+          },
+          'a2',
+        ),
+      ]).expect(201);
+      const items = await list(cookie);
+      expect(items.map((i) => [i.quantity, i.unit]).sort()).toEqual([
+        [3, 'l'],
+        [500, 'ml'],
+      ]);
+    });
+
+    it('skips what cannot be applied with a reason, and still applies the rest', async () => {
+      const { cookie } = await signUp();
+      const response = await apply(cookie, [
+        add({ ingredientId: seedId.ingredient('eggs') }, 'ok'),
+        add({ ingredientId: '00000000-0000-4000-8000-000000000000' }, 'gone'),
+        add({}, 'empty'),
+        add({ name: 'Bread', quantity: 999_999, unit: 'kg' }, 'big'),
+        add({ name: 'Bread', quantity: 999_999, unit: 'kg' }, 'big2'),
+        { ...add({ name: 'Bread' }, 'pantry'), target: 'pantry', op: 'remove' },
+      ]).expect(201);
+      expect(response.body).toEqual({
+        applied: ['ok', 'big'],
+        skipped: [
+          { id: 'gone', reason: 'shopping.ingredient_not_found' },
+          { id: 'empty', reason: 'voice.invalid_action' },
+          { id: 'big2', reason: 'shopping.quantity_too_large' },
+          { id: 'pantry', reason: 'voice.not_supported' },
+        ],
+      });
+      expect(await list(cookie)).toHaveLength(2);
+    });
+
+    it("cannot add another Family's Family Ingredient", async () => {
+      const a = await signUp();
+      const b = await signUp();
+      const created = (
+        await request(app.getHttpServer())
+          .post('/api/catalog/family-ingredients?locale=en')
+          .set('origin', TEST_ORIGIN)
+          .set('cookie', a.cookie)
+          .send({
+            name: `Aonly ${Date.now()}`,
+            leafCategoryId: seedId.leaf('hard-cheese'),
+            defaultUnit: 'g',
+          })
+          .expect(201)
+      ).body as { id: string };
+      const response = await apply(b.cookie, [
+        add({ ingredientId: created.id }, 'theirs'),
+      ]).expect(201);
+      expect(response.body).toEqual({
+        applied: [],
+        skipped: [{ id: 'theirs', reason: 'shopping.ingredient_not_found' }],
+      });
+      expect(await list(b.cookie)).toEqual([]);
+      expect(await list(a.cookie)).toEqual([]);
+    });
+
+    it("only touches the Member's own Family's list", async () => {
+      const a = await signUp();
+      const b = await signUp();
+      await apply(b.cookie, [
+        add({ ingredientId: seedId.ingredient('eggs') }),
+      ]).expect(201);
+      expect(await list(a.cookie)).toEqual([]);
+      expect(await list(b.cookie)).toHaveLength(1);
+    });
   });
 });

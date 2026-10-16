@@ -1,11 +1,19 @@
-import { Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { AuthGuard } from '../auth/auth.guard';
 import type { CurrentUser as CurrentUserValue } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ApiException } from '../common/api-exception';
-import { toValidationIssues } from '../common/zod-validation.pipe';
+import {
+  toValidationIssues,
+  ZodValidationPipe,
+} from '../common/zod-validation.pipe';
+import {
+  voiceApplyBody,
+  type VoiceApplyBody,
+  type VoiceApplyResult,
+} from './voice-actions';
 import {
   supportedAudioType,
   voiceNoteFields,
@@ -87,5 +95,17 @@ export class VoiceController {
       audio: upload.audio.buffer,
       mimeType,
     });
+  }
+
+  @Post('apply')
+  @ApiOperation({
+    summary:
+      'Apply the Voice Actions as edited in Review: each is re-checked against the current lists and all are written in one transaction. Does not count against the Voice Cap.',
+  })
+  apply(
+    @CurrentUser() member: CurrentUserValue,
+    @Body(new ZodValidationPipe(voiceApplyBody)) body: VoiceApplyBody,
+  ): Promise<VoiceApplyResult> {
+    return this.voice.apply(member.id, body);
   }
 }

@@ -18,14 +18,12 @@ import {
   sendVoiceNote,
   type VoiceList,
 } from '../../../lib/voice';
+import {
+  getVoiceNoteState,
+  voiceNote,
+  useVoiceNoteState,
+} from '../../../lib/voiceNoteStore';
 import { useScanLanguage } from '../../Scan/hooks/useScanLanguage';
-
-export type VoiceNotice =
-  | { kind: 'denied' }
-  | { kind: 'unavailable' }
-  | { kind: 'tooShort' }
-  | { kind: 'nothingHeard' }
-  | { kind: 'failed'; message: string; canRetry: boolean };
 
 /**
  * Hold-to-talk Voice Note: `press` starts recording, `release` stops and sends,
@@ -38,16 +36,16 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   const { locale, scanLanguage, setScanLanguage } = useScanLanguage();
   const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [sending, setSending] = useState(false);
-  const [notice, setNotice] = useState<VoiceNotice | null>(null);
-  const [transcript, setTranscript] = useState<string | null>(null);
+  // The Voice Note itself lives in the shared store, so Review and the button on any page see it.
+  const { sending, notice, note } = useVoiceNoteState();
+  const setSending = voiceNote.setSending;
+  const setNotice = voiceNote.setNotice;
   const [explaining, setExplaining] = useState(false);
 
   const session = useRef<MicrophoneSession | null>(null);
   // The pointer is still down: a release before the microphone is ready cancels the start.
   const held = useRef(false);
   const starting = useRef(false);
-  const pending = useRef<Recording | null>(null);
   const timers = useRef<{
     tick?: ReturnType<typeof setInterval>;
     limit?: ReturnType<typeof setTimeout>;
@@ -73,19 +71,19 @@ export function useVoiceNote(defaultTarget: VoiceList) {
         defaultTarget,
         today: localIso(new Date()),
       });
-      pending.current = null;
+      voiceNote.setPending(null);
       if (result.transcript.trim() === '') setNotice({ kind: 'nothingHeard' });
-      else setTranscript(result.transcript);
+      else voiceNote.open(result, defaultTarget);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'voice.nothing_heard') {
-        pending.current = null;
+        voiceNote.setPending(null);
         setNotice({ kind: 'nothingHeard' });
         return;
       }
       const canRetry = !(
         error instanceof ApiError && NOT_RETRYABLE.has(error.code)
       );
-      pending.current = canRetry ? audio : null;
+      voiceNote.setPending(canRetry ? audio : null);
       setNotice({
         kind: 'failed',
         message: translateApiError(t, error),
@@ -113,7 +111,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
       setNotice({ kind: 'tooShort' });
       return;
     }
-    pending.current = audio;
+    voiceNote.setPending(audio);
     await send(audio);
   }, [send]);
 
@@ -129,7 +127,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
 
   const press = useCallback(async () => {
     if (session.current || starting.current || sending) return;
-    pending.current = null;
+    voiceNote.setPending(null);
     held.current = true;
     setNotice(null);
     if (!micExplained()) {
@@ -187,11 +185,12 @@ export function useVoiceNote(defaultTarget: VoiceList) {
   }, []);
 
   const retry = useCallback(() => {
-    if (pending.current) void send(pending.current);
+    const { pending } = getVoiceNoteState();
+    if (pending) void send(pending);
   }, [send]);
 
   const dismiss = useCallback(() => {
-    pending.current = null;
+    voiceNote.setPending(null);
     setNotice(null);
   }, []);
 
@@ -213,7 +212,7 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     elapsedMs,
     sending,
     notice,
-    transcript,
+    note,
     explaining,
     press,
     release,
@@ -222,6 +221,6 @@ export function useVoiceNote(defaultTarget: VoiceList) {
     dismissExplainer: () => setExplaining(false),
     retry,
     dismiss,
-    closeTranscript: () => setTranscript(null),
+    discard: voiceNote.discard,
   };
 }

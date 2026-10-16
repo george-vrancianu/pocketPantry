@@ -26,6 +26,30 @@
   "review": {
     "title": "Stemmenote",
     "heard": "Det jeg hørte",
-    "discard": "Kassér"
+    "discard": "Kassér",
+    "apply": "Anvend",
+    "lists": {
+      "shopping": "Indkøbslisten",
+      "pantry": "Spisekammeret"
+    },
+    "notUnderstood": "Forstod ikke",
+    "unmatched": "ikke i kataloget",
+    "notFound": "Ikke fundet",
+    "noUnit": "enhed",
+    "change": "Skift",
+    "changeMatch": "Skift match for {{name}}",
+    "remove": "Fjern {{name}}"
+  },
+  "toast": {
+    "applied_one": "{{count}} stemmehandling anvendt.",
+    "applied_other": "{{count}} stemmehandlinger anvendt.",
+    "skipped": "Sprunget over: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "mængden er for stor",
+    "shopping.ingredient_not_found": "ingrediensen findes ikke længere",
+    "voice.not_supported": "understøttes ikke endnu",
+    "voice.invalid_action": "ufuldstændig",
+    "other": "kunne ikke anvendes"
   }
 }

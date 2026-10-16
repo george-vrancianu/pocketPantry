@@ -26,6 +26,30 @@
   "review": {
     "title": "Voice note",
     "heard": "What I heard",
-    "discard": "Discard"
+    "discard": "Discard",
+    "apply": "Apply",
+    "lists": {
+      "shopping": "Shopping List",
+      "pantry": "Pantry"
+    },
+    "notUnderstood": "Didn't understand",
+    "unmatched": "not in the catalog",
+    "notFound": "Not found",
+    "noUnit": "unit",
+    "change": "Change",
+    "changeMatch": "Change match for {{name}}",
+    "remove": "Remove {{name}}"
+  },
+  "toast": {
+    "applied_one": "Applied {{count}} voice action.",
+    "applied_other": "Applied {{count}} voice actions.",
+    "skipped": "Skipped: {{names}}."
+  },
+  "skipReason": {
+    "shopping.quantity_too_large": "amount too large",
+    "shopping.ingredient_not_found": "ingredient no longer available",
+    "voice.not_supported": "not supported yet",
+    "voice.invalid_action": "incomplete",
+    "other": "could not be applied"
   }
 }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from './api';
+import type { CatalogSearchResult, StorageLocation, Unit } from './catalog';
 import type { Recording } from './microphone';
 import type { Locale, ScanLanguage } from '../i18n/resources';
 
@@ -11,10 +12,85 @@ export const MIN_VOICE_NOTE_MS = 400;
 /** The list the page a Voice Note is recorded on acts on (ADR 0017). */
 export type VoiceList = 'shopping' | 'pantry';
 
-export type VoiceNoteResult = {
-  /** What was said. Empty when nothing was heard. */
-  transcript: string;
+export type VoiceActionStatus =
+  'ready' | 'needsBatch' | 'notFound' | 'notUnderstood';
+
+/** A Voice Action as the server resolved it, and as Review edits it. */
+export type VoiceReviewAction = {
+  id: string;
+  status: VoiceActionStatus;
+  /** Null for a Didn't understand entry. */
+  target: VoiceList | null;
+  op:
+    | 'add'
+    | 'remove'
+    | 'check'
+    | 'uncheck'
+    | 'setQuantity'
+    | 'runningLow'
+    | null;
+  /** What was said. */
+  text: string;
+  /** The Match; null when Unmatched. */
+  ingredient: CatalogSearchResult | null;
+  /** The Unmatched name; null when matched. */
+  name: string | null;
+  quantity: number | null;
+  unit: Unit | null;
+  scope: 'one' | 'all' | null;
+  expiresOn: string | null;
+  noExpiry: boolean;
+  location: StorageLocation | null;
+  rows: {
+    shoppingItem?: {
+      id: string;
+      name: string;
+      quantity: number | null;
+      unit: Unit | null;
+      checked: boolean;
+    } | null;
+  };
+  defaults: { location?: StorageLocation; expiresOn?: string };
 };
+
+export type VoiceNoteResult = {
+  /** What was said. */
+  transcript: string;
+  actions: VoiceReviewAction[];
+};
+
+export type VoiceApplyResult = {
+  applied: string[];
+  skipped: { id: string; reason: string }[];
+};
+
+/** Apply the Voice Actions as edited in Review. Free of the Voice Cap. */
+export function applyVoiceActions(
+  actions: VoiceReviewAction[],
+  locale: Locale,
+): Promise<VoiceApplyResult> {
+  return apiRequest<VoiceApplyResult>('/voice/apply', {
+    method: 'POST',
+    body: {
+      locale,
+      actions: actions.map((a) => ({
+        id: a.id,
+        target: a.target,
+        op: a.op,
+        text: a.text,
+        ingredientId: a.ingredient?.id ?? null,
+        name: a.ingredient ? null : a.name,
+        quantity: a.quantity,
+        unit: a.quantity === null ? null : a.unit,
+        scope: a.scope,
+        expiresOn: a.expiresOn,
+        noExpiry: a.noExpiry,
+        location: a.location,
+        batchId: null,
+      })),
+    },
+  });
+}
 
 /** Whether the server can transcribe (AI key and transcription model set). Voice is hidden until it says so. */
 export function useVoiceConfigured(): boolean {
