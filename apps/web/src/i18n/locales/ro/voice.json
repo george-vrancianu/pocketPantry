@@ -34,7 +34,14 @@
     },
     "notUnderstood": "Nu am înțeles",
     "unmatched": "nu e în catalog",
-    "notFound": "Negăsit",
+    "notFound": "Negăsit: {{name}}",
+    "ops": {
+      "setQuantity": "Setează cantitatea",
+      "check": "Bifează",
+      "addAndCheck": "Adaugă și bifează",
+      "uncheck": "Debifează",
+      "remove": "Elimină din listă"
+    },
     "noUnit": "unitate",
     "change": "Schimbă",
     "changeMatch": "Schimbă potrivirea pentru {{name}}",
@@ -51,6 +58,7 @@
     "shopping.ingredient_not_found": "ingredientul nu mai este disponibil",
     "voice.not_supported": "încă nesuportat",
     "voice.invalid_action": "incompletă",
+    "voice.item_not_found": "nu mai este pe listă",
     "other": "nu a putut fi aplicată"
   }
 }

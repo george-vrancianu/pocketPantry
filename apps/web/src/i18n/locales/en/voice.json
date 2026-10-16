@@ -34,7 +34,14 @@
     },
     "notUnderstood": "Didn't understand",
     "unmatched": "not in the catalog",
-    "notFound": "Not found",
+    "notFound": "Not found: {{name}}",
+    "ops": {
+      "setQuantity": "Set quantity",
+      "check": "Check",
+      "addAndCheck": "Add & check",
+      "uncheck": "Uncheck",
+      "remove": "Remove from list"
+    },
     "noUnit": "unit",
     "change": "Change",
     "changeMatch": "Change match for {{name}}",
@@ -50,6 +57,7 @@
     "shopping.ingredient_not_found": "ingredient no longer available",
     "voice.not_supported": "not supported yet",
     "voice.invalid_action": "incomplete",
+    "voice.item_not_found": "no longer on the list",
     "other": "could not be applied"
   }
 }

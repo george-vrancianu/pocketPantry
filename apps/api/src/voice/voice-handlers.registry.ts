@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ShoppingService } from '../shopping/shopping.service';
 import type { VoiceActionDraft } from './voice-actions';
 import { shoppingAddHandler } from './handlers/shopping-add.handler';
+import { shoppingCheckHandler } from './handlers/shopping-check.handler';
+import { shoppingRemoveHandler } from './handlers/shopping-remove.handler';
+import { shoppingSetQuantityHandler } from './handlers/shopping-set-quantity.handler';
+import { shoppingUncheckHandler } from './handlers/shopping-uncheck.handler';
 import { handlerKey, type VoiceActionHandler } from './voice-handlers';
 
 /**
@@ -15,6 +19,14 @@ export class VoiceHandlers {
 
   constructor(shopping: ShoppingService) {
     this.register('shopping', 'add', shoppingAddHandler(shopping));
+    this.register('shopping', 'check', shoppingCheckHandler(shopping));
+    this.register('shopping', 'uncheck', shoppingUncheckHandler(shopping));
+    this.register('shopping', 'remove', shoppingRemoveHandler(shopping));
+    this.register(
+      'shopping',
+      'setQuantity',
+      shoppingSetQuantityHandler(shopping),
+    );
   }
 
   private register(

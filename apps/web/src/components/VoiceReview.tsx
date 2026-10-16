@@ -35,6 +35,23 @@ const LISTS: VoiceList[] = ['shopping', 'pantry'];
 const displayName = (action: VoiceReviewAction) =>
   action.ingredient?.name ?? action.name ?? action.text;
 
+/** The Review label of a Shopping op; plain adds carry none. */
+const opLabelKey = (action: VoiceReviewAction) => {
+  if (action.target !== 'shopping') return null;
+  if (action.op === 'check') {
+    return action.rows.shoppingItem ? 'check' : 'addAndCheck';
+  }
+  return action.op === 'setQuantity' ||
+    action.op === 'uncheck' ||
+    action.op === 'remove'
+    ? action.op
+    : null;
+};
+/** Ops that never carry an amount. */
+const hasNoAmount = (action: VoiceReviewAction) =>
+  action.target === 'shopping' &&
+  (action.op === 'uncheck' || action.op === 'remove');
+
 const quantityText = (action: VoiceReviewAction) =>
   action.quantity === null ? '' : String(action.quantity);
 
@@ -280,32 +297,39 @@ function ActionRow({
             ? action.text
             : `${action.text} · ${t('voice:review.unmatched')}`}
         </Typography>
+        {opLabelKey(action) && action.status === 'ready' ? (
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            {t(`voice:review.ops.${opLabelKey(action)}`)}
+          </Typography>
+        ) : null}
         {action.status === 'notFound' ? (
           <Typography variant="caption">
-            {t('voice:review.notFound')}
+            {t('voice:review.notFound', { name })}
           </Typography>
         ) : null}
       </Box>
       {readOnly ? null : (
         <>
-          <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
-            <AmountField
-              name={name}
-              quantity={quantity}
-              unit={action.unit ?? ''}
-              onQuantityChange={(text, typedUnit) => {
-                onQuantityChange(text);
-                if (typedUnit !== undefined) {
-                  voiceNote.edit(action.id, { unit: typedUnit || null });
+          {hasNoAmount(action) ? null : (
+            <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
+              <AmountField
+                name={name}
+                quantity={quantity}
+                unit={action.unit ?? ''}
+                onQuantityChange={(text, typedUnit) => {
+                  onQuantityChange(text);
+                  if (typedUnit !== undefined) {
+                    voiceNote.edit(action.id, { unit: typedUnit || null });
+                  }
+                }}
+                onUnitChange={(unit) =>
+                  voiceNote.edit(action.id, { unit: unit || null })
                 }
-              }}
-              onUnitChange={(unit) =>
-                voiceNote.edit(action.id, { unit: unit || null })
-              }
-              error={invalid ? t('common:amount.invalid') : null}
-              onSubmit={() => undefined}
-            />
-          </Box>
+                error={invalid ? t('common:amount.invalid') : null}
+                onSubmit={() => undefined}
+              />
+            </Box>
+          )}
           <Button
             variant="ghost"
             aria-label={t('voice:review.changeMatch', { name })}

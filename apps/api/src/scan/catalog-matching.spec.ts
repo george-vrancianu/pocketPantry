@@ -54,6 +54,61 @@ describe('CatalogMatchService.resolve', () => {
     expect(result).toEqual({ match: lapte, exact: true });
   });
 
+  describe('with a confidence floor (Voice Notes)', () => {
+    const floor = { confidence: 0.2, threshold: 0.7 };
+
+    it('prefers an exact name hit over a proposed Ingredient the model was not confident in', async () => {
+      const { matcher } = service({ lapte: lapte });
+      const [result] = await matcher.resolve(
+        [{ names: ['lapte'], proposedIngredientId: 'milk-id', ...floor }],
+        scope,
+        'en',
+      );
+      expect(result).toEqual({ match: lapte, exact: true });
+    });
+
+    it('falls back to the proposed Ingredient when there is no exact hit (and keepConfident then drops it)', async () => {
+      const { matcher } = service();
+      const [result] = await matcher.resolve(
+        [{ names: ['nothing'], proposedIngredientId: 'milk-id', ...floor }],
+        scope,
+        'en',
+      );
+      expect(result).toEqual({ match: milk, exact: false });
+      expect(
+        keepConfident(result, floor.confidence, floor.threshold),
+      ).toBeNull();
+    });
+
+    it('keeps a confident proposed Ingredient over an exact hit', async () => {
+      const { matcher } = service({ lapte: lapte });
+      const [result] = await matcher.resolve(
+        [
+          {
+            names: ['lapte'],
+            proposedIngredientId: 'milk-id',
+            confidence: 0.9,
+            threshold: 0.7,
+          },
+        ],
+        scope,
+        'en',
+      );
+      expect(result).toEqual({ match: milk, exact: false });
+    });
+  });
+
+  it('without a confidence floor, a low-confidence proposed Ingredient still skips the exact lookup (Receipt Scans)', async () => {
+    const { matcher, findExact } = service({ lapte: lapte });
+    const [result] = await matcher.resolve(
+      [{ names: ['lapte'], proposedIngredientId: 'milk-id' }],
+      scope,
+      'en',
+    );
+    expect(result).toEqual({ match: milk, exact: false });
+    expect(findExact).toHaveBeenCalledWith(scope, [], 'en', []);
+  });
+
   it('leaves an item Unmatched when the proposed id is unknown, and its names are not queried', async () => {
     const { matcher, findExact } = service({ x: lapte });
     const [result] = await matcher.resolve(

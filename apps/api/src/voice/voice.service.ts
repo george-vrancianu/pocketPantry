@@ -139,6 +139,9 @@ export class VoiceService {
       read.actions.map((action) => ({
         names: [action.fallbackIngredientName, action.spokenText],
         proposedIngredientId: action.matchedIngredientId,
+        // An exact name or Synonym hit beats a Match the model doubted.
+        confidence: action.matchConfidence,
+        threshold,
       })),
       scope,
       input.locale,

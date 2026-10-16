@@ -34,7 +34,21 @@ export type MatchItem = {
   names: readonly (string | null | undefined)[];
   /** The Ingredient id the model proposed, if any. */
   proposedIngredientId: string | null;
+  /**
+   * Opt in (with `threshold`) to preferring an exact name or Synonym hit over a
+   * proposed Ingredient the model was not confident in (`confidence` below
+   * `threshold`). Without it a proposed Ingredient in the Catalog always wins
+   * (Receipt Scans); Voice Notes set it.
+   */
+  confidence?: number;
+  threshold?: number;
 };
+
+const doubted = (item: MatchItem) =>
+  item.proposedIngredientId !== null &&
+  item.confidence !== undefined &&
+  item.threshold !== undefined &&
+  item.confidence < item.threshold;
 
 /** The Catalog Ingredient for an item; `exact` when found by exact name lookup rather than proposed by the model. */
 export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
@@ -100,7 +114,7 @@ export class CatalogMatchService {
     const names = [
       ...new Set(
         items.flatMap((item) =>
-          item.proposedIngredientId
+          item.proposedIngredientId && !doubted(item)
             ? []
             : item.names.filter((name): name is string => !!name),
         ),
@@ -116,12 +130,13 @@ export class CatalogMatchService {
       const named = item.proposedIngredientId
         ? byId.get(item.proposedIngredientId)
         : undefined;
-      if (named) return { match: named, exact: false };
+      if (named && !doubted(item)) return { match: named, exact: false };
       for (const name of item.names) {
         const hit = name ? byExactName.get(name) : undefined;
         if (hit) return { match: hit, exact: true };
       }
-      return null;
+      // Doubted and nothing exact: still the proposal, which keepConfident drops.
+      return named ? { match: named, exact: false } : null;
     });
   }
 }
