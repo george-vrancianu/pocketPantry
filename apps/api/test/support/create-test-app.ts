@@ -4,6 +4,7 @@ import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 // Env comes from ./env.ts via jest setupFiles.
 import { StructuredOutputAiService } from '../../src/ai/structured-output-ai.service';
+import { TranscriptionService } from '../../src/voice/transcription.service';
 import { AppModule } from '../../src/app.module';
 import {
   OPEN_FOOD_FACTS_CLIENT,
@@ -23,12 +24,17 @@ export async function createTestApp(
   webDistDir?: string,
   /** Stands in for the Open Food Facts client; no test reaches the real Open Food Facts. */
   openFoodFacts?: OpenFoodFactsClient,
+  /** Stands in for the audio transcription provider; no test calls the network. */
+  transcription?: Pick<TranscriptionService, 'isConfigured' | 'transcribe'>,
 ): Promise<NestFastifyApplication> {
   const builder = Test.createTestingModule({
     imports: [AppModule],
     controllers,
   });
   if (ai) builder.overrideProvider(StructuredOutputAiService).useValue(ai);
+  if (transcription) {
+    builder.overrideProvider(TranscriptionService).useValue(transcription);
+  }
   builder.overrideProvider(OPEN_FOOD_FACTS_CLIENT).useValue(
     openFoodFacts ?? {
       fetchProduct: () => {

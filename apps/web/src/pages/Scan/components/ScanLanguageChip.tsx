@@ -9,11 +9,19 @@ type Props = {
   /** The UI language, listed first. */
   locale: Locale;
   disabled: boolean;
+  /** `glass` is the translucent look on the camera; `surface` the plain pill used on a page. */
+  variant?: 'glass' | 'surface';
   onChange: (language: ScanLanguage) => void;
 };
 
 /** The language this Scan is read in ("EN ▾"), picked without touching the UI language. */
-export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
+export function ScanLanguageChip({
+  value,
+  locale,
+  disabled,
+  variant = 'glass',
+  onChange,
+}: Props) {
   const { t } = useTranslation('scan');
   return (
     <Box
@@ -24,10 +32,18 @@ export function ScanLanguageChip({ value, locale, disabled, onChange }: Props) {
       onChange={(event) => onChange(event.target.value as ScanLanguage)}
       sx={{
         // As tall as the Info and Done buttons beside it.
-        height: 40,
-        px: '10px',
+        height: variant === 'glass' ? 40 : 48,
+        px: variant === 'glass' ? '10px' : '12px',
         borderRadius: radius.pill,
-        ...glassControl(disabled),
+        ...(variant === 'glass'
+          ? glassControl(disabled)
+          : {
+              border: 0,
+              backgroundColor: tokens.color.surface,
+              boxShadow: `inset 0 0 0 1px ${tokens.color.line}`,
+              color: tokens.color.ink,
+              opacity: disabled ? 0.5 : 1,
+            }),
         fontFamily: 'inherit',
         fontSize: 13,
         fontWeight: 700,

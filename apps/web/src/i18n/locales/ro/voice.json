@@ -1,0 +1,31 @@
+{
+  "button": {
+    "label": "Ține apăsat pentru a vorbi",
+    "release": "Eliberează pentru a trimite",
+    "sending": "Se trimite…"
+  },
+  "recording": {
+    "label": "Se înregistrează",
+    "cancelHint": "trage în afară pentru a anula"
+  },
+  "explainer": {
+    "title": "Notele vocale folosesc microfonul",
+    "body": "Ține apăsat butonul și spune ce ai cumpărat sau ai terminat. Vocea ta este transformată în text pe care îl verifici. Înregistrarea nu este păstrată.",
+    "allow": "Permite microfonul",
+    "notNow": "Nu acum"
+  },
+  "denied": {
+    "title": "Microfonul este blocat.",
+    "body": "Pentru a folosi notele vocale, permite microfonul pentru acest site din setările browserului (caută pictograma cu lacăt sau setări de lângă adresă), apoi ține din nou apăsat butonul."
+  },
+  "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
+  "tooShort": "Ține apăsat butonul cât timp vorbești.",
+  "nothingHeard": "Nu am prins nimic, încearcă din nou",
+  "retry": "Reîncearcă",
+  "dismiss": "Închide",
+  "review": {
+    "title": "Notă vocală",
+    "heard": "Ce am auzit",
+    "discard": "Renunță"
+  }
+}

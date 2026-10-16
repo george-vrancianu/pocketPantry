@@ -1,0 +1,31 @@
+{
+  "button": {
+    "label": "Hold for at tale",
+    "release": "Slip for at sende",
+    "sending": "Sender…"
+  },
+  "recording": {
+    "label": "Optager",
+    "cancelHint": "træk væk for at annullere"
+  },
+  "explainer": {
+    "title": "Stemmenoter bruger din mikrofon",
+    "body": "Hold knappen nede og sig, hvad du har købt eller brugt op. Din stemme bliver til tekst, som du kan tjekke. Optagelsen gemmes ikke.",
+    "allow": "Tillad mikrofon",
+    "notNow": "Ikke nu"
+  },
+  "denied": {
+    "title": "Mikrofonen er blokeret.",
+    "body": "For at bruge stemmenoter skal du tillade mikrofonen for dette websted i browserens indstillinger (kig efter lås- eller indstillingsikonet ved adressen) og derefter holde knappen nede igen."
+  },
+  "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
+  "tooShort": "Hold knappen nede, mens du taler.",
+  "nothingHeard": "Jeg opfangede ikke noget, prøv igen",
+  "retry": "Prøv igen",
+  "dismiss": "Luk",
+  "review": {
+    "title": "Stemmenote",
+    "heard": "Det jeg hørte",
+    "discard": "Kassér"
+  }
+}

@@ -14,6 +14,8 @@ export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 
 /** Scan model when AI_VISION_MODEL is unset, run at DEFAULT_REASONING_EFFORT. */
 export const DEFAULT_VISION_MODEL = 'gpt-6-luna';
+/** Voice Note transcription model when AI_TRANSCRIBE_MODEL is unset. */
+export const DEFAULT_TRANSCRIBE_MODEL = 'gpt-transcribe';
 /** Keeps temperature 0 on gpt-6-luna, and spends no reasoning tokens. */
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none';
 
@@ -30,6 +32,8 @@ const envSchema = z.object({
   AI_API_KEY: z.string().min(1).optional(),
   AI_BASE_URL: z.url().optional(),
   AI_VISION_MODEL: z.string().min(1).default(DEFAULT_VISION_MODEL),
+  /** Voice Notes: the audio transcription model, on the same key and base URL as the Scans. */
+  AI_TRANSCRIBE_MODEL: z.string().min(1).default(DEFAULT_TRANSCRIBE_MODEL),
   /**
    * Reasoning effort for a reasoning model such as gpt-6-luna. Unset: `none` with the
    * default model, otherwise no effort is sent (gpt-4o-mini, openai-compatible vendors).

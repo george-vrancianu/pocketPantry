@@ -1,0 +1,31 @@
+{
+  "button": {
+    "label": "Hold to talk",
+    "release": "Release to send",
+    "sending": "Sending…"
+  },
+  "recording": {
+    "label": "Recording",
+    "cancelHint": "slide away to cancel"
+  },
+  "explainer": {
+    "title": "Voice notes use your microphone",
+    "body": "Hold the button and say what you bought or used up. Your voice is turned into text for you to check. The recording is not stored.",
+    "allow": "Allow microphone",
+    "notNow": "Not now"
+  },
+  "denied": {
+    "title": "The microphone is blocked.",
+    "body": "To use voice notes, allow the microphone for this site in your browser settings (look for the lock or settings icon next to the address), then hold the button again."
+  },
+  "unavailable": "This browser cannot record audio, so voice notes are not available here.",
+  "tooShort": "Hold the button while you speak.",
+  "nothingHeard": "Didn't catch anything, try again",
+  "retry": "Retry",
+  "dismiss": "Dismiss",
+  "review": {
+    "title": "Voice note",
+    "heard": "What I heard",
+    "discard": "Discard"
+  }
+}
