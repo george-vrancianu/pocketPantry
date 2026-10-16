@@ -76,7 +76,9 @@ never reach a client.
 - `src/scan`: Product, Receipt, Ingredients, and Plate scan services and
   schemas. Only `POST /api/scan/product` is exposed so far. The Scan Cap is
   `SCAN_DAILY_CAP` Scans per Member per UTC day (default 30; `0` disables the
-  cap); `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
+  cap); `VOICE_DAILY_CAP` is the separate, independently counted Voice Cap
+  (Voice Notes per Member per UTC day, default 50; `0` disables the cap);
+  `SCAN_MATCH_CONFIDENCE_THRESHOLD` is the confidence below which a Match
   becomes Unmatched and an image read is flagged low-confidence.
   `POST /api/scan/plate` also returns a short-lived (one hour) HMAC-SHA256
   token over the Member and the guessed dish titles; `POST /api/scan/plate/ingredients`
