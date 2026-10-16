@@ -79,6 +79,10 @@
     "pantry.location_required": "nicio locație aleasă",
     "pantry.unit_required": "unitate necesară",
     "pantry.ingredient_not_found": "ingredientul nu mai este disponibil",
+    "shopping.item_not_found": "nu mai este pe listă",
+    "shopping.list_changed": "lista s-a schimbat",
+    "pantry.category_not_found": "categoria nu mai este disponibilă",
+    "pantry.other_leaf_missing": "nicio categorie potrivită disponibilă",
     "voice.item_not_found": "nu mai este pe listă",
     "other": "nu a putut fi aplicată"
   }

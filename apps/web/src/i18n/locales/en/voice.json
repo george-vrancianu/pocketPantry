@@ -78,6 +78,10 @@
     "pantry.location_required": "no location chosen",
     "pantry.unit_required": "unit needed",
     "pantry.ingredient_not_found": "ingredient no longer available",
+    "shopping.item_not_found": "no longer on the list",
+    "shopping.list_changed": "the list changed",
+    "pantry.category_not_found": "category no longer available",
+    "pantry.other_leaf_missing": "no matching category available",
     "voice.item_not_found": "no longer on the list",
     "other": "could not be applied"
   }

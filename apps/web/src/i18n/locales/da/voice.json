@@ -78,6 +78,10 @@
     "pantry.location_required": "ingen placering valgt",
     "pantry.unit_required": "enhed påkrævet",
     "pantry.ingredient_not_found": "ingrediensen er ikke længere tilgængelig",
+    "shopping.item_not_found": "er ikke længere på listen",
+    "shopping.list_changed": "listen er ændret",
+    "pantry.category_not_found": "kategorien er ikke længere tilgængelig",
+    "pantry.other_leaf_missing": "ingen passende kategori tilgængelig",
     "voice.item_not_found": "er ikke længere på listen",
     "other": "kunne ikke anvendes"
   }
