@@ -133,7 +133,7 @@ To try another model or reasoning effort on those debug captures, replay them wi
 
 ### Voice Notes models
 
-Voice Notes use two models besides the Scan model, on the same `AI_API_KEY` and `AI_BASE_URL`: `AI_TRANSCRIBE_MODEL` (default `gpt-transcribe`) turns the recording into text, and `AI_TEXT_MODEL` (default `gpt-5-mini`) reads that text into Voice Actions. The text model runs at `AI_TEXT_REASONING_EFFORT=low` by default; as with Scans, setting `AI_TEXT_MODEL` yourself sends no effort unless you also set one. The development debug capture (`SCAN_DEBUG_DIR`) records these reads too.
+Voice Notes use two models besides the Scan model, on the same `AI_API_KEY` and `AI_BASE_URL`: `AI_TRANSCRIBE_MODEL` (default `gpt-transcribe`) turns the recording into text, and `AI_TEXT_MODEL` (default `gpt-5-mini`) reads that text into Voice Actions. The text model runs at `AI_TEXT_REASONING_EFFORT=low` by default; as with Scans, setting `AI_TEXT_MODEL` yourself sends no effort unless you also set one. The development debug capture (`SCAN_DEBUG_DIR`) records these reads too, and each Voice Note's recording and transcription request (voice is personal data: delete captures when done). `npm run voice:replay` in `apps/api` replays Voice Notes against real providers; see `apps/api/src/ai/scan-replay/README.md`.
 
 ### Choose the Scan model
 

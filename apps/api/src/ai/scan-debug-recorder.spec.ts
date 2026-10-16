@@ -12,6 +12,7 @@ import { Logger } from '@nestjs/common';
 import {
   createScanDebugRecorder,
   type ScanDebugCall,
+  type VoiceTranscriptionDebugCall,
 } from './scan-debug-recorder';
 
 const call = (overrides: Partial<ScanDebugCall> = {}): ScanDebugCall => ({
@@ -30,6 +31,21 @@ const call = (overrides: Partial<ScanDebugCall> = {}): ScanDebugCall => ({
   httpStatus: 200,
   body: { output: [] },
   data: { lines: [] },
+  ...overrides,
+});
+
+const transcription = (
+  overrides: Partial<VoiceTranscriptionDebugCall> = {},
+): VoiceTranscriptionDebugCall => ({
+  audio: Buffer.from('fake-audio'),
+  mimeType: 'audio/mp4',
+  model: 'gpt-transcribe',
+  language: 'ro',
+  prompt: 'A shopping note, mostly in Romanian.',
+  startedAt: new Date('2026-10-08T12:00:00.000Z'),
+  durationMs: 900,
+  captureId: 'note-1',
+  transcript: 'adauga doua lapte',
   ...overrides,
 });
 
@@ -144,5 +160,74 @@ describe('createScanDebugRecorder', () => {
       expect.stringContaining('Could not save'),
     );
     expect(existsSync(join(blocked, 'request.json'))).toBe(false);
+  });
+
+  it('shares one recorder per folder and announces it once', () => {
+    const warn = jest.spyOn(Logger.prototype, 'warn');
+    const first = createScanDebugRecorder('development', dir);
+    const second = createScanDebugRecorder('development', dir);
+    expect(second).toBe(first);
+    expect(
+      warn.mock.calls.filter(([m]) => String(m).includes('capture is ON')),
+    ).toHaveLength(1);
+  });
+
+  describe('Voice Note captures', () => {
+    it('saves the recording with its type, the request parameters and the transcript', async () => {
+      await createScanDebugRecorder('development', dir)!.recordTranscription(
+        transcription(),
+      );
+
+      const folder = onlyFolder();
+      expect(folder).toMatch(
+        /2026-10-08T12-00-00-000Z-voice_transcription-[0-9a-f]{6}$/,
+      );
+      expect(readFileSync(join(folder, 'audio.mp4'), 'utf8')).toBe(
+        'fake-audio',
+      );
+      expect(readJson(folder, 'transcription.json')).toEqual({
+        captureId: 'note-1',
+        startedAt: '2026-10-08T12:00:00.000Z',
+        durationMs: 900,
+        model: 'gpt-transcribe',
+        language: 'ro',
+        prompt: 'A shopping note, mostly in Romanian.',
+        mimeType: 'audio/mp4',
+        audio: 'audio.mp4',
+        outcome: 'ok',
+        transcript: 'adauga doua lapte',
+      });
+    });
+
+    it('names an unknown audio type .bin and records a failure', async () => {
+      await createScanDebugRecorder('development', dir)!.recordTranscription(
+        transcription({
+          mimeType: 'audio/../../x',
+          transcript: undefined,
+          error: { code: 'voice.provider_unavailable' },
+        }),
+      );
+
+      const folder = onlyFolder();
+      expect(readdirSync(folder).sort()).toEqual([
+        'audio.bin',
+        'transcription.json',
+      ]);
+      expect(readJson(folder, 'transcription.json')).toMatchObject({
+        outcome: 'error',
+        error: { code: 'voice.provider_unavailable' },
+      });
+    });
+
+    it('ties the transcript read to the recording through captureId', async () => {
+      const recorder = createScanDebugRecorder('development', dir)!;
+      await recorder.record(
+        call({ request: { ...call().request, captureId: 'note-1' } }),
+      );
+
+      expect(readJson(onlyFolder(), 'request.json')).toMatchObject({
+        captureId: 'note-1',
+      });
+    });
   });
 });

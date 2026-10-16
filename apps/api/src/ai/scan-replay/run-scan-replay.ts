@@ -10,11 +10,8 @@ import {
   type AppConfig,
   type ReasoningEffort,
 } from '../../config/env';
-import { ApiException } from '../../common/api-exception';
-import {
-  StructuredOutputAiError,
-  StructuredOutputAiService,
-} from '../structured-output-ai.service';
+import { StructuredOutputAiService } from '../structured-output-ai.service';
+import { describe, env, fail, loadEnvFiles } from './replay-cli';
 import {
   compareDebugCapture,
   loadDebugCaptures,
@@ -33,39 +30,6 @@ const { values } = parseArgs({
     out: { type: 'string', default: '.scan-replay' },
   },
 });
-
-/** Same files, same order as the API's ConfigModule; a file never overrides what is already set. */
-function loadEnvFiles(): void {
-  for (const file of ['.env.local', '.env', '../../.env']) {
-    try {
-      process.loadEnvFile(resolve(process.cwd(), file));
-    } catch {
-      // No such file: rely on the others and the environment.
-    }
-  }
-}
-
-/** `KEY=` means unset, as in validateEnv. */
-const env = (key: string): string | undefined => process.env[key] || undefined;
-
-/** Error code plus what the provider did (`reason`, HTTP status), never response content. */
-function describe(error: unknown): string {
-  if (error instanceof StructuredOutputAiError) {
-    return `${error.code} (${error.reason})`;
-  }
-  if (error instanceof ApiException) {
-    const status = error.params.status;
-    return status === undefined
-      ? error.code
-      : `${error.code} (HTTP ${JSON.stringify(status)})`;
-  }
-  return error instanceof Error ? error.message : String(error);
-}
-
-function fail(message: string): never {
-  console.error(message);
-  process.exit(1);
-}
 
 async function main(): Promise<void> {
   loadEnvFiles();

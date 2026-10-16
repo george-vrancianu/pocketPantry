@@ -1,10 +1,11 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import {
   readAiUsage,
   type AiTokenUsage,
   type StructuredOutputRequest,
 } from '../structured-output-ai.service';
+import { VOICE_READ_SCHEMA_NAME } from '../../voice/voice-actions';
 import { INGREDIENTS_SCAN_SCHEMA_NAME } from '../../scan/ingredients-scan.schemas';
 import {
   PLATE_DISHES_SCHEMA_NAME,
@@ -12,6 +13,8 @@ import {
 } from '../../scan/plate-scan.schemas';
 import { PRODUCT_SCAN_SCHEMA_NAME } from '../../scan/product-scan.schemas';
 import { RECEIPT_SCAN_SCHEMA_NAME } from '../../scan/receipt-scan.schemas';
+
+const VOICE_HINT = 'a Voice Note capture: replay it with voice:replay';
 
 /** One debug capture (a folder written under `SCAN_DEBUG_DIR`), ready to resend. */
 export type DebugCapture = {
@@ -75,12 +78,21 @@ export async function loadDebugCaptures(
   return { debugCaptures, skipped };
 }
 
+const exists = (path: string) =>
+  access(path).then(
+    () => true,
+    () => false,
+  );
+
 async function loadDebugCapture(
   dir: string,
   name: string,
 ): Promise<DebugCapture | SkippedDebugCapture> {
   let request: RecordedRequest;
   let response: RecordedResponse;
+  if (await exists(join(dir, 'transcription.json'))) {
+    return { name, reason: VOICE_HINT };
+  }
   try {
     request = JSON.parse(
       await readFile(join(dir, 'request.json'), 'utf8'),
@@ -90,6 +102,9 @@ async function loadDebugCapture(
     ) as RecordedResponse;
   } catch {
     return { name, reason: 'no request.json or response.json' };
+  }
+  if (request.schemaName === VOICE_READ_SCHEMA_NAME) {
+    return { name, reason: VOICE_HINT };
   }
   if (response.outcome !== 'ok') {
     return {
@@ -635,7 +650,7 @@ function statsRow(run: string, model: string, stats: AnswerStats): string {
   return `| ${run} | ${model} | ${stats.lines} | ${stats.matched} | ${count(usage?.inputTokens)} | ${count(usage?.cachedInputTokens)} | ${count(usage?.outputTokens)} | ${count(usage?.reasoningTokens)} | ${usd(stats.costUsd)} | ${seconds(stats.durationMs)} |`;
 }
 
-type Price = { input: number; cachedInput: number; output: number };
+export type Price = { input: number; cachedInput: number; output: number };
 
 /** USD per 1M tokens (OpenAI list prices, 2026-10). Reasoning tokens bill as output. */
 const PRICES: Record<string, Price> = {
@@ -647,8 +662,10 @@ const PRICES: Record<string, Price> = {
 export function estimateCostUsd(
   model: string,
   usage: AiTokenUsage | undefined,
+  /** A price given by the developer; wins over the list for models not priced here. */
+  given?: Price,
 ): number | undefined {
-  const price = PRICES[model.replace(/-\d{4}-\d{2}-\d{2}$/, '')];
+  const price = given ?? PRICES[model.replace(/-\d{4}-\d{2}-\d{2}$/, '')];
   if (!price || !usage) return undefined;
   const cached = usage.cachedInputTokens ?? 0;
   return (

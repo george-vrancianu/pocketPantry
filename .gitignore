@@ -22,6 +22,11 @@ coverage/
 .scan-debug/
 # Scan replay reports (apps/api scan:replay): quote receipt lines, never commit
 .scan-replay/
+# Personal Voice Note replay cases (apps/api voice:replay --cases .voice-cases): real recordings, never commit
+.voice-cases/
+# Audio dropped next to the seed Voice Note cases: only the case files are committed
+apps/api/src/ai/scan-replay/voice-cases/*
+!apps/api/src/ai/scan-replay/voice-cases/*.json
 
 # stray tsc output next to config files
 apps/api/drizzle.config.js

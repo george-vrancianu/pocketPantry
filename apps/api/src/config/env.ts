@@ -19,7 +19,7 @@ export const DEFAULT_TRANSCRIBE_MODEL = 'gpt-transcribe';
 /** Voice Note text model (reads transcripts) when AI_TEXT_MODEL is unset, run at DEFAULT_TEXT_REASONING_EFFORT. */
 export const DEFAULT_TEXT_MODEL = 'gpt-5-mini';
 /** gpt-5-mini accepts minimal, low, medium and high; a transcript read needs little reasoning. */
-const DEFAULT_TEXT_REASONING_EFFORT: ReasoningEffort = 'low';
+export const DEFAULT_TEXT_REASONING_EFFORT: ReasoningEffort = 'low';
 /** Keeps temperature 0 on gpt-6-luna, and spends no reasoning tokens. */
 const DEFAULT_REASONING_EFFORT: ReasoningEffort = 'none';
 

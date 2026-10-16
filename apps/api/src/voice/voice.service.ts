@@ -82,16 +82,24 @@ export class VoiceService {
       throw new ApiException(413, 'voice.too_long');
     }
     const day = await this.cap.consume(memberId, new Date(), 'voice');
+    // Debug capture only: ties the recording's transcription to its transcript read.
+    const captureId = randomUUID();
     try {
       const { text } = await this.transcription.transcribe({
         audio: input.audio,
         mimeType: input.mimeType,
         language: input.scanLanguage,
         otherLanguages: SCAN_LANGUAGES.filter((l) => l !== input.scanLanguage),
+        captureId,
       });
       const transcript = text.trim();
       if (!transcript) throw new ApiException(422, 'voice.nothing_heard');
-      const actions = await this.resolveTranscript(memberId, transcript, input);
+      const actions = await this.resolveTranscript(
+        memberId,
+        transcript,
+        input,
+        captureId,
+      );
       return { transcript, actions };
     } catch (error) {
       await this.cap.refund(memberId, day, 'voice');
@@ -103,6 +111,7 @@ export class VoiceService {
     memberId: string,
     transcript: string,
     input: VoiceNoteFields,
+    captureId: string,
   ): Promise<ResolvedVoiceAction[]> {
     const shoppingItems = await this.shopping
       .peekList(memberId, input.locale)
@@ -117,6 +126,7 @@ export class VoiceService {
         locale: input.locale,
         today: input.today,
         defaultTarget: input.defaultTarget,
+        captureId,
       });
     } catch (error) {
       // The shared AI service speaks `scan.*`; to a Member this is the voice provider failing.
