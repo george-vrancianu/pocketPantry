@@ -5,6 +5,7 @@ import {
   catalogPrompt,
   CatalogMatchService,
   confidentMatch,
+  keepConfident,
   validateCatalogMatch,
 } from './catalog-matching';
 
@@ -53,7 +54,7 @@ describe('CatalogMatchService.resolve', () => {
     expect(result).toEqual({ match: lapte, exact: true });
   });
 
-  it('leaves an item Unmatched when the proposed id is unknown, without looking up names', async () => {
+  it('leaves an item Unmatched when the proposed id is unknown, and its names are not queried', async () => {
     const { matcher, findExact } = service({ x: lapte });
     const [result] = await matcher.resolve(
       [{ names: ['x'], proposedIngredientId: 'invented' }],
@@ -62,6 +63,22 @@ describe('CatalogMatchService.resolve', () => {
     );
     expect(result).toBeNull();
     expect(findExact).toHaveBeenCalledWith(scope, [], 'en', []);
+  });
+
+  it('lets an item with an unknown id match a name another item queried', async () => {
+    const { matcher } = service({ lapte: lapte });
+    const results = await matcher.resolve(
+      [
+        { names: ['lapte'], proposedIngredientId: 'invented' },
+        { names: ['lapte'], proposedIngredientId: null },
+      ],
+      scope,
+      'en',
+    );
+    expect(results.map((r) => r?.match.id ?? null)).toEqual([
+      'lapte-id',
+      'lapte-id',
+    ]);
   });
 
   it('returns one result per item in order', async () => {
@@ -80,6 +97,18 @@ describe('CatalogMatchService.resolve', () => {
       null,
       'milk-id',
     ]);
+  });
+});
+
+describe('keepConfident', () => {
+  it('keeps an exact hit even at confidence 0.1', () => {
+    expect(keepConfident({ match: lapte, exact: true }, 0.1, 0.6)).toBe(lapte);
+  });
+
+  it('drops a proposed Ingredient at confidence 0.1', () => {
+    expect(keepConfident({ match: milk, exact: false }, 0.1, 0.6)).toBeNull();
+    expect(keepConfident({ match: milk, exact: false }, 0.6, 0.6)).toBe(milk);
+    expect(keepConfident(null, 1, 0.6)).toBeNull();
   });
 });
 

@@ -1,8 +1,7 @@
-import type { ResolvedMatch } from './catalog-matching';
+import { keepConfident, type ResolvedMatch } from './catalog-matching';
 import type { ReceiptScanResult } from './receipt-scan.schemas';
 import {
   MAX_RAW_NAME,
-  applyThreshold,
   type ExclusionReason,
   type ProposedLine,
 } from './proposed-line';
@@ -70,15 +69,8 @@ export function receiptProposedLines(
           MAX_RAW_NAME,
         ),
         sourceText: line.sourceText.slice(0, MAX_RAW_NAME),
-        ...applyThreshold(
-          resolved?.match ?? null,
-          {
-            // Not scored by the model, so it always passes.
-            matchConfidence: resolved?.exact ? Infinity : line.matchConfidence,
-            confidence: line.confidence,
-          },
-          threshold,
-        ),
+        match: keepConfident(resolved, line.matchConfidence, threshold),
+        lowConfidence: line.confidence < threshold,
         ...toPantryQuantity(line.quantity, line.unit),
         expiryDate: null,
         productDescription: line.productName,

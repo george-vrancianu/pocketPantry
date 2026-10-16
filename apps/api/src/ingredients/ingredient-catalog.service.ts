@@ -98,6 +98,7 @@ export class IngredientCatalogService {
     this.generations.set(key, (this.generations.get(key) ?? 0) + 1);
   }
 
+  // toPrompt and validateMatch delegate to the shared pipeline; new callers should use scan/catalog-matching.
   toPrompt(catalog: IngredientCatalog): string {
     return catalogPrompt(catalog);
   }

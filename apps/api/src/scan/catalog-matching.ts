@@ -20,7 +20,7 @@ import type { ExpiryOverride } from '../catalog/catalog-defaults';
  * 3. `CatalogMatchService.resolve`: the validated proposed Ingredient, else an
  *    exact name or Synonym hit (Family Synonyms included, scoped to the
  *    scanning Family only).
- * 4. `confidentMatch`: a Match below the confidence threshold is dropped and
+ * 4. `keepConfident` / `confidentMatch`: a Match below the confidence threshold is dropped and
  *    the item is Unmatched.
  */
 export {
@@ -51,6 +51,22 @@ export function confidentMatch(
   return match !== null && matchConfidence >= threshold ? match : null;
 }
 
+/**
+ * The confident Match for a resolved item. An exact name or Synonym hit is not
+ * scored by the model, so it always passes; a proposed Ingredient must reach
+ * `threshold` or the item is Unmatched.
+ */
+export function keepConfident(
+  resolved: ResolvedMatch | null,
+  matchConfidence: number,
+  threshold: number,
+): CatalogSearchResult | null {
+  if (!resolved) return null;
+  return resolved.exact
+    ? resolved.match
+    : confidentMatch(resolved.match, matchConfidence, threshold);
+}
+
 @Injectable()
 export class CatalogMatchService {
   constructor(private readonly catalogSearch: CatalogSearchService) {}
@@ -59,8 +75,9 @@ export class CatalogMatchService {
    * One Catalog query per kind for all `items`; returns a result per item, in
    * order. A proposed id that is in the Catalog wins. An item without one (or
    * whose id is unknown) is tried by exact normalised name or Synonym in any
-   * locale; only an item that was given no id falls back to names, and an
-   * ambiguous name stays Unmatched (null).
+   * locale. Names are only queried for items given no id, so an item with an
+   * unknown id matches by name only if another item in the batch queried the
+   * same name. An ambiguous name stays Unmatched (null).
    */
   async resolve(
     items: readonly MatchItem[],
