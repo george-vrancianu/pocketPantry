@@ -156,6 +156,7 @@ export function RollUpRow({
     <Box component="li" ref={item} sx={sx}>
       <SwipeToggle
         label={t(rollUp.runningLow ? 'group.notLow' : 'group.runningLow')}
+        on={rollUp.runningLow}
         onToggle={onSwipeToggle}
         disabled={!rowActions}
       >

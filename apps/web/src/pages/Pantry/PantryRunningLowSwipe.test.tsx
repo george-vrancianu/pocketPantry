@@ -87,6 +87,8 @@ const row = (name: string) =>
   screen.getByRole('button', { name: new RegExp(`^${name}`) });
 const chip = (name = 'Milk') =>
   within(row(name)).queryByText('Running low', { ignore: '[aria-hidden] *' });
+const tint = (name = 'Milk') =>
+  row(name).closest('li')!.querySelector('[data-swipe-toggle-tint]');
 const saves = (calls: { key: string }[]) =>
   calls.map((call) => call.key).filter((key) => key.includes('/running-low/'));
 const stapleSaves = (calls: { key: string }[]) =>
@@ -204,6 +206,74 @@ describe('swiping an Ingredient row to toggle Running low', () => {
     await settle();
     expect(saves(calls)).toEqual([]);
     expect(chip('Zorblax paste')).toBeNull();
+  });
+
+  describe('the Running low tint', () => {
+    it('shows on rows already running low when the Pantry loads, and not on others', async () => {
+      await renderPage(['milk-id']);
+      expect(tint()).not.toBeNull();
+      expect(tint()!.getAttribute('aria-hidden')).toBe('true');
+      expect(tint('Zorblax paste')).toBeNull();
+    });
+
+    it('shows on no row when nothing is flagged', async () => {
+      await renderPage();
+      expect(tint()).toBeNull();
+      expect(tint('Zorblax paste')).toBeNull();
+    });
+
+    it('appears after a swipe flags the row, and goes with Undo', async () => {
+      await renderPage();
+      swipe(row('Milk'), -92);
+      await settle();
+      await waitFor(() => expect(tint()).not.toBeNull());
+      fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+      await waitFor(() => expect(tint()).toBeNull());
+    });
+
+    it('goes when a swipe clears the flag', async () => {
+      await renderPage(['milk-id']);
+      swipe(row('Milk'), -120);
+      await settle();
+      await waitFor(() => expect(tint()).toBeNull());
+    });
+
+    it('appears and goes with the L key', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await renderPage();
+      row('Milk').focus();
+      await user.keyboard('l');
+      await waitFor(() => expect(tint()).not.toBeNull());
+      await user.keyboard('l');
+      await waitFor(() => expect(tint()).toBeNull());
+    });
+
+    it('stays on the header of an open row, and goes with the open row chip', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      await renderPage(['milk-id']);
+      await user.click(row('Milk'));
+      expect(row('Milk')).toHaveAttribute('aria-expanded', 'true');
+      expect(tint()).not.toBeNull();
+      await user.click(row('Milk'));
+      expect(tint()).not.toBeNull();
+
+      await user.click(row('Milk'));
+      const item = row('Milk').closest('li')!;
+      await user.click(
+        within(item).getByRole('button', {
+          name: /running low/i,
+          pressed: true,
+        }),
+      );
+      await waitFor(() => expect(tint()).toBeNull());
+    });
+
+    it('does not block the swipe', async () => {
+      await renderPage(['milk-id']);
+      swipe(row('Milk'), -120);
+      await settle();
+      await waitFor(() => expect(tint()).toBeNull());
+    });
   });
 
   describe('the L key', () => {
