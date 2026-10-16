@@ -7,7 +7,7 @@ import {
   type VoiceTarget,
 } from './voice-actions';
 
-export type VoiceReadRequestInput = {
+type VoiceReadRequestInput = {
   /** The Catalog as text (`catalogPrompt`), so the provider's prompt cache is shared with Scans. */
   catalogText: string;
   shoppingNames: string[];

@@ -1,7 +1,9 @@
-import { ApiException } from '../../common/api-exception';
 import { PantryService } from '../../pantry/pantry.service';
-import { amountOf } from '../voice-actions';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { amountOf, hasSubject, subjectOf } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 
 /**
  * Pantry add: a Batch like a manual add. Resolve shows the Location and
@@ -12,14 +14,12 @@ import type { VoiceActionHandler } from '../voice-handlers';
 export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
   return {
     async resolve(draft, ctx) {
-      if (draft.ingredientId === null && draft.name === null) {
+      if (!hasSubject(draft)) {
         return { status: 'notFound', rows: {}, defaults: {} };
       }
       const defaults = await pantry.addDefaults(
         ctx.memberId,
-        draft.ingredientId === null
-          ? { rawName: draft.name ?? '' }
-          : { ingredientId: draft.ingredientId },
+        subjectOf(draft, 'rawName'),
         ctx.today,
       );
       return {
@@ -32,20 +32,18 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
       };
     },
 
-    async apply(draft, ctx) {
-      if (draft.ingredientId === null && draft.name === null) {
-        return { applied: false, reason: 'voice.invalid_action' };
-      }
-      const { quantity, unit } = amountOf(draft);
-      try {
+    apply: (draft, ctx) =>
+      skippingKnownErrors(async () => {
+        if (!hasSubject(draft)) {
+          return { applied: false, reason: 'voice.invalid_action' };
+        }
+        const { quantity, unit } = amountOf(draft);
         await pantry.addInTransaction(
           ctx.tx,
           ctx.memberId,
           [
             {
-              ...(draft.ingredientId === null
-                ? { rawName: draft.name ?? '' }
-                : { ingredientId: draft.ingredientId }),
+              ...subjectOf(draft, 'rawName'),
               ...(quantity === null || unit === null ? {} : { quantity, unit }),
               ...(draft.location ? { location: draft.location } : {}),
               // null is "no expiry"; leaving it out is the Default Expiry.
@@ -58,19 +56,12 @@ export function pantryAddHandler(pantry: PantryService): VoiceActionHandler {
             },
           ],
           ctx.locale,
-          // The note's Scan Language is not carried to Apply (it is not on the
-          // action or ApplyContext), so the UI locale stands in for the
-          // Unmatched queue's source language.
+          // The Unmatched name is written in the UI locale (the read prompt
+          // asks for it), so that is the queue's source language too.
           ctx.locale,
           ctx.today,
         );
         return { applied: true };
-      } catch (error) {
-        if (error instanceof ApiException) {
-          return { applied: false, reason: error.code };
-        }
-        throw error;
-      }
-    },
+      }),
   };
 }

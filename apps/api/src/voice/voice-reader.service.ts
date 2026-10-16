@@ -79,7 +79,7 @@ export class VoiceReaderService {
             }
           : {}),
       });
-      throw new ApiException(502, 'scan.result_invalid');
+      throw new ApiException(502, 'voice.provider_unavailable');
     }
   }
 }

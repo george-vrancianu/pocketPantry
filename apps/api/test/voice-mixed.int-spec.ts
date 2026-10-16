@@ -176,7 +176,7 @@ describe('Voice Notes across both lists (integration)', () => {
   describe('naming the other list', () => {
     it('tells the model the page default and that a named list wins, per action', async () => {
       const { cookie } = await signUp();
-      await readNote(cookie, 'shopping', []);
+      await readNote(cookie, 'shopping', [spoken(bread, { op: 'add' })]);
       expect(prompts[0]).toContain('target "shopping"');
       expect(prompts[0]).toMatch(/each action/i);
       expect(prompts[0]).toContain('"pantry"');

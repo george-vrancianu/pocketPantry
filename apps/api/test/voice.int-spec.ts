@@ -57,7 +57,8 @@ describe('Voice Note (integration)', () => {
     calls.length = 0;
     aiCalls.length = 0;
     aiFailure = null;
-    reading = { actions: [], unsupported: [] };
+    // Something unreadable, so a note is never empty (an empty read refunds the cap).
+    reading = { actions: [], unsupported: ['mumble'] };
     next = () => Promise.resolve({ text: 'got the bread and sausages' });
   });
 
@@ -126,10 +127,11 @@ describe('Voice Note (integration)', () => {
 
   it('transcribes the recording with the Scan Language as the main hint and the others as extra hints', async () => {
     const { cookie, memberId } = await signUp();
+    reading = { actions: [], unsupported: ['do a dance'] };
     const response = await note(cookie).expect(201);
-    expect(response.body).toEqual({
+    expect(response.body).toMatchObject({
       transcript: 'got the bread and sausages',
-      actions: [],
+      actions: [{ status: 'notUnderstood' }],
     });
     expect(calls).toHaveLength(1);
     expect(calls[0].audio.toString()).toBe('fake-audio');
@@ -217,6 +219,19 @@ describe('Voice Note (integration)', () => {
   it('refunds the Voice Cap when nothing was heard', async () => {
     const { cookie, memberId } = await signUp();
     next = () => Promise.resolve({ text: '  ' });
+    for (let i = 0; i < 3; i++) {
+      const response = await note(cookie).expect(422);
+      expect((response.body as { code: string }).code).toBe(
+        'voice.nothing_heard',
+      );
+    }
+    expect(await usage(memberId, 'voice')).toBe(0);
+  });
+
+  it('refunds the Voice Cap and opens no Review when the note holds no Voice Actions', async () => {
+    const { cookie, memberId } = await signUp();
+    next = () => Promise.resolve({ text: 'Thank you.' });
+    reading = { actions: [], unsupported: [] };
     for (let i = 0; i < 3; i++) {
       const response = await note(cookie).expect(422);
       expect((response.body as { code: string }).code).toBe(

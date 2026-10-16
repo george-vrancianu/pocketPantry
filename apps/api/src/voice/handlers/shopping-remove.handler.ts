@@ -1,10 +1,12 @@
 import { ShoppingService } from '../../shopping/shopping.service';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { hasSubject } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 import {
   currentShoppingTarget,
-  hasSubject,
   resolveShoppingTarget,
-  skippingKnownErrors,
 } from './shopping-target';
 
 /**

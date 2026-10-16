@@ -1,8 +1,9 @@
-import { normalizeName } from '../../catalog/normalize';
-import { ApiException } from '../../common/api-exception';
 import { ShoppingService } from '../../shopping/shopping.service';
-import { amountOf } from '../voice-actions';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { amountOf, hasSubject, sameSubject, subjectOf } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 
 /**
  * Shopping add: merges by the Shopping List's usual add rules (same Ingredient
@@ -14,17 +15,10 @@ export function shoppingAddHandler(
 ): VoiceActionHandler {
   return {
     async resolve(draft, ctx) {
-      const items = await ctx.lists.shoppingItems();
-      const wanted = draft.name === null ? null : normalizeName(draft.name);
-      const target = items
-        .filter((item) =>
-          draft.ingredientId !== null
-            ? item.ingredientId === draft.ingredientId
-            : item.ingredientId === null &&
-              wanted !== null &&
-              normalizeName(item.name) === wanted,
-        )
-        .find((item) => item.unit === amountOf(draft).unit);
+      const same = sameSubject(draft);
+      const target = (await ctx.lists.shoppingItems()).find(
+        (item) => same(item) && item.unit === amountOf(draft).unit,
+      );
       return {
         status: 'ready',
         rows: { shoppingItem: target ?? null },
@@ -32,32 +26,26 @@ export function shoppingAddHandler(
       };
     },
 
-    async apply(draft, ctx) {
-      if (draft.ingredientId === null && draft.name === null) {
-        return { applied: false, reason: 'voice.invalid_action' };
-      }
-      const { quantity, unit } = amountOf(draft);
-      try {
+    apply: (draft, ctx) =>
+      skippingKnownErrors(async () => {
+        if (!hasSubject(draft)) {
+          return { applied: false, reason: 'voice.invalid_action' };
+        }
+        const { quantity, unit } = amountOf(draft);
         await shopping.addInTransaction(
           ctx.tx,
           ctx.memberId,
           {
-            ...(draft.ingredientId === null
-              ? { name: draft.name ?? '' }
-              : { ingredientId: draft.ingredientId }),
+            ...subjectOf(draft, 'name'),
             ...(quantity === null || unit === null ? {} : { quantity, unit }),
             // Queued for curation like any typed name.
             source: 'manual',
           },
+          // The Unmatched name is written in the UI locale (the read prompt asks
+          // for it), so that is the queue's source language.
           ctx.locale,
         );
         return { applied: true };
-      } catch (error) {
-        if (error instanceof ApiException) {
-          return { applied: false, reason: error.code };
-        }
-        throw error;
-      }
-    },
+      }),
   };
 }

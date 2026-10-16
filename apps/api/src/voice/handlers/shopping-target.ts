@@ -1,20 +1,19 @@
 import { normalizeName } from '../../catalog/normalize';
-import { ApiException } from '../../common/api-exception';
 import type { ShoppingService } from '../../shopping/shopping.service';
 import {
   amountOf,
+  sameSubject,
   type VoiceActionDraft,
   type VoiceUnit,
 } from '../voice-actions';
 import type {
   ApplyContext,
-  ApplyOutcome,
   ResolveContext,
   Resolution,
 } from '../voice-handlers';
 
 /** A Shopping Item as the Shopping handlers compare it. */
-export type ShoppingRow = {
+type ShoppingRow = {
   id: string;
   ingredientId: string | null;
   normalizedName: string | null;
@@ -29,18 +28,14 @@ export type ShoppingRow = {
  * units) the one in the spoken unit wins, then one that still has something to
  * do (`prefer` checked state), then the oldest. `items` are oldest first.
  */
-export function findShoppingTarget<T extends ShoppingRow>(
+function findShoppingTarget<T extends ShoppingRow>(
   items: readonly T[],
   draft: Pick<VoiceActionDraft, 'ingredientId' | 'name' | 'quantity' | 'unit'>,
   prefer?: { checked: boolean },
 ): T | null {
-  const wanted = draft.name === null ? null : normalizeName(draft.name);
+  const same = sameSubject(draft);
   const candidates = items.filter((item) =>
-    draft.ingredientId !== null
-      ? item.ingredientId === draft.ingredientId
-      : item.ingredientId === null &&
-        wanted !== null &&
-        item.normalizedName === wanted,
+    same({ ingredientId: item.ingredientId, name: item.normalizedName ?? '' }),
   );
   const unit = draft.quantity === null ? null : amountOf(draft).unit;
   const rank = (item: T) =>
@@ -54,24 +49,7 @@ export function findShoppingTarget<T extends ShoppingRow>(
   );
 }
 
-/** Converts a known service error to a skip reason; anything else is a bug and rolls back. */
-export async function skippingKnownErrors(
-  run: () => Promise<ApplyOutcome>,
-): Promise<ApplyOutcome> {
-  try {
-    return await run();
-  } catch (error) {
-    if (error instanceof ApiException) {
-      return { applied: false, reason: error.code };
-    }
-    throw error;
-  }
-}
-
-export const hasSubject = (draft: VoiceActionDraft) =>
-  draft.ingredientId !== null || draft.name !== null;
-
-export const toRow = (item: {
+const toRow = (item: {
   id: string;
   ingredientId: string | null;
   normalizedName: string | null;

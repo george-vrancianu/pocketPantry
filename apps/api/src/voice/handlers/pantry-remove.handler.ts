@@ -1,6 +1,9 @@
-import { ApiException } from '../../common/api-exception';
 import { PantryService } from '../../pantry/pantry.service';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { sameSubject } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 import { batchesOfDraft, candidatesOf, rowOf, toPlan } from './pantry-matching';
 import { planPicked, planRemoval, type RemovalStep } from './pantry-removal';
 
@@ -36,37 +39,47 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
       return {
         status: 'ready',
         rows: {
-          batches: steps.map((step) => ({
-            ...rowOf(byId.get(step.id) as (typeof batches)[number]),
-            take: step.take,
-          })),
+          batches: steps.flatMap((step) => {
+            const batch = byId.get(step.id);
+            return batch ? [{ ...rowOf(batch), take: step.take }] : [];
+          }),
         },
         defaults: {},
       };
     },
 
-    async apply(draft, ctx) {
-      const gone = {
-        applied: false,
-        reason: 'pantry.batch_not_found',
-      } as const;
-      let steps: RemovalStep[] | null;
-      if (draft.batchId !== null || draft.batchIds.length > 0) {
-        const ids = draft.batchId ? [draft.batchId] : draft.batchIds;
-        const rows = await pantry.findBatchRows(ctx.tx, ctx.memberId, { ids });
-        if (rows.length < new Set(ids).size) return gone;
-        steps = draft.batchId
-          ? [planPicked(draft, toPlan(rows[0]))]
-          : planRemoval(draft, rows.map(toPlan));
-      } else {
-        const rows = await candidatesOf(pantry, draft, ctx);
-        if (rows.length === 0) return gone;
-        steps = planRemoval(draft, rows.map(toPlan));
-      }
-      if (steps === null) {
-        return { applied: false, reason: 'voice.batch_required' };
-      }
-      try {
+    apply: (draft, ctx) =>
+      skippingKnownErrors(async () => {
+        const gone = {
+          applied: false,
+          reason: 'pantry.batch_not_found',
+        } as const;
+        let steps: RemovalStep[] | null;
+        if (draft.batchId !== null || draft.batchIds.length > 0) {
+          const ids = draft.batchId ? [draft.batchId] : draft.batchIds;
+          const found = await pantry.findBatchRows(ctx.tx, ctx.memberId, {
+            ids,
+          });
+          // Ids come from the client: only this Ingredient's own Batches count.
+          const matches = sameSubject(draft);
+          const rows = found.filter((row) =>
+            matches({
+              ingredientId: row.ingredientId,
+              name: row.rawName ?? '',
+            }),
+          );
+          if (rows.length < new Set(ids).size) return gone;
+          steps = draft.batchId
+            ? [planPicked(draft, toPlan(rows[0]))]
+            : planRemoval(draft, rows.map(toPlan));
+        } else {
+          const rows = await candidatesOf(pantry, draft, ctx);
+          if (rows.length === 0) return gone;
+          steps = planRemoval(draft, rows.map(toPlan));
+        }
+        if (steps === null) {
+          return { applied: false, reason: 'voice.batch_required' };
+        }
         for (const step of steps) {
           if (step.take !== null) {
             await pantry.updateInTransaction(ctx.tx, ctx.memberId, step.id, {
@@ -83,12 +96,6 @@ export function pantryRemoveHandler(pantry: PantryService): VoiceActionHandler {
           );
         }
         return { applied: true };
-      } catch (error) {
-        if (error instanceof ApiException) {
-          return { applied: false, reason: error.code };
-        }
-        throw error;
-      }
-    },
+      }),
   };
 }

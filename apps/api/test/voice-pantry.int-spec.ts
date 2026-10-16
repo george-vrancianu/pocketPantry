@@ -555,6 +555,42 @@ describe('Voice Notes on the Pantry (integration)', () => {
       });
       expect((await pantry(cookie)).batches[0].quantity).toBe(400);
     });
+
+    describe('Batch ids sent by the client', () => {
+      it("does not remove another Ingredient's Batch under a forged id", async () => {
+        const cookie = await signUp();
+        await stockMilk(cookie, {});
+        const ricebag = await stock(cookie, {
+          ingredientId: rice,
+          quantity: 500,
+          unit: 'g',
+        });
+        const [action] = await readNote(cookie, [remove()]);
+        const result = await apply(cookie, [
+          asSent(action, { batchId: ricebag.id, batchIds: [] }),
+        ]);
+        expect(result).toEqual({
+          applied: [],
+          skipped: [{ id: action.id, reason: 'pantry.batch_not_found' }],
+        });
+        expect((await pantry(cookie)).batches).toHaveLength(2);
+      });
+
+      it("cannot use another Family's Batch", async () => {
+        const mine = await signUp();
+        const theirs = await signUp();
+        const theirMilk = await stockMilk(theirs, {});
+        const [action] = await readNote(mine, [remove()]);
+        const result = await apply(mine, [
+          asSent(action, { batchId: theirMilk.id, batchIds: [] }),
+        ]);
+        expect(result).toEqual({
+          applied: [],
+          skipped: [{ id: action.id, reason: 'pantry.batch_not_found' }],
+        });
+        expect((await pantry(theirs)).batches).toHaveLength(1);
+      });
+    });
   });
 
   describe('Running low', () => {

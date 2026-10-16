@@ -1,11 +1,12 @@
 import { ShoppingService } from '../../shopping/shopping.service';
-import { amountOf } from '../voice-actions';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { amountOf, hasSubject, subjectOf } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 import {
   currentShoppingTarget,
-  hasSubject,
   resolveShoppingTarget,
-  skippingKnownErrors,
 } from './shopping-target';
 
 /**
@@ -37,9 +38,7 @@ export function shoppingCheckHandler(
             ctx.tx,
             ctx.memberId,
             {
-              ...(draft.ingredientId === null
-                ? { name: draft.name ?? '' }
-                : { ingredientId: draft.ingredientId }),
+              ...subjectOf(draft, 'name'),
               ...(quantity === null || unit === null ? {} : { quantity, unit }),
               source: 'manual',
             },

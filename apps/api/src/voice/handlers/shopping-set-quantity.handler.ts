@@ -1,10 +1,12 @@
 import { ShoppingService } from '../../shopping/shopping.service';
-import type { VoiceActionHandler } from '../voice-handlers';
+import { hasSubject } from '../voice-actions';
+import {
+  skippingKnownErrors,
+  type VoiceActionHandler,
+} from '../voice-handlers';
 import {
   currentShoppingTarget,
-  hasSubject,
   resolveShoppingTarget,
-  skippingKnownErrors,
 } from './shopping-target';
 
 /** "Make the eggs twelve": replaces the quantity and unit of the item on the list. */
@@ -30,10 +32,7 @@ export function shoppingSetQuantityHandler(
             ctx.tx,
             ctx.memberId,
             target.id,
-            {
-              quantity: quantity ?? undefined,
-              unit: unit ?? undefined,
-            },
+            { quantity, unit },
           );
         }
         return { applied: true };

@@ -4,6 +4,7 @@ import {
   FALLBACK_LOCALE,
   type CatalogSearchResult,
 } from '../catalog/catalog.schemas';
+import { normalizeName } from '../catalog/normalize';
 import { MAX_QUANTITY } from '../common/quantity';
 import { ingredientUnit, storageLocation } from '../database/schema';
 import { VOICE_LISTS } from './voice.schemas';
@@ -178,3 +179,34 @@ export const amountOf = (draft: {
   draft.quantity === null
     ? { quantity: null, unit: null }
     : { quantity: draft.quantity, unit: draft.unit ?? 'pcs' };
+
+type Subject = { ingredientId: string | null; name: string | null };
+
+/** A Voice Action needs a Match or an Unmatched name to be about anything. */
+export const hasSubject = (draft: Subject): boolean =>
+  draft.ingredientId !== null || draft.name !== null;
+
+/**
+ * The one rule for "the same thing" on either list: the Match's Ingredient, or
+ * an Unmatched entry with the same normalised name.
+ */
+export function sameSubject(
+  draft: Subject,
+): (item: { ingredientId: string | null; name: string }) => boolean {
+  if (draft.ingredientId !== null) {
+    return (item) => item.ingredientId === draft.ingredientId;
+  }
+  if (draft.name === null) return () => false;
+  const wanted = normalizeName(draft.name);
+  return (item) =>
+    item.ingredientId === null && normalizeName(item.name) === wanted;
+}
+
+/** The draft's subject as a service payload: `{ ingredientId }` or the name under `nameKey`. */
+export const subjectOf = <K extends string>(
+  draft: Subject,
+  nameKey: K,
+): { ingredientId: string } | { [key in K]: string } =>
+  draft.ingredientId === null
+    ? ({ [nameKey]: draft.name ?? '' } as { [key in K]: string })
+    : { ingredientId: draft.ingredientId };

@@ -75,9 +75,6 @@ export class VoiceService {
     memberId: string,
     input: VoiceNoteInput,
   ): Promise<VoiceNoteResponse> {
-    if (!this.transcription.isConfigured()) {
-      throw new ApiException(503, 'voice.not_configured');
-    }
     if (input.durationMs > MAX_VOICE_NOTE_MS) {
       throw new ApiException(413, 'voice.too_long');
     }
@@ -100,6 +97,11 @@ export class VoiceService {
         input,
         captureId,
       );
+      // Noise ("Thank you.") reads into nothing: no Review, and no charge. A
+      // note of only "Didn't understand" rows still opens Review.
+      if (actions.length === 0) {
+        throw new ApiException(422, 'voice.nothing_heard');
+      }
       return { transcript, actions };
     } catch (error) {
       await this.cap.refund(memberId, day, 'voice');
