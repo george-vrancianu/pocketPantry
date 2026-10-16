@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
-import { SCAN_LANGUAGES, type CatalogLocale } from '../catalog/catalog.schemas';
+import { SCAN_LANGUAGES } from '../catalog/catalog.schemas';
 import { ApiException } from '../common/api-exception';
 import type { AppConfig } from '../config/env';
 import { DATABASE } from '../database/database.constants';
@@ -12,14 +12,15 @@ import { ScanCapService } from '../scan/scan-cap.service';
 import { SettingsService } from '../settings/settings.service';
 import { ShoppingService } from '../shopping/shopping.service';
 import { TranscriptionService } from './transcription.service';
-import type {
-  ModelVoiceAction,
-  ResolvedVoiceAction,
-  VoiceActionDraft,
-  VoiceApplyBody,
-  VoiceApplyResult,
+import {
+  amountOf,
+  type ModelVoiceAction,
+  type ResolvedVoiceAction,
+  type VoiceActionDraft,
+  type VoiceApplyBody,
+  type VoiceApplyResult,
 } from './voice-actions';
-import type { VoiceActionHandler, VoiceListsView } from './voice-handlers';
+import type { VoiceActionHandler } from './voice-handlers';
 import { VoiceHandlers } from './voice-handlers.registry';
 import { VoiceReaderService } from './voice-reader.service';
 import {
@@ -107,9 +108,13 @@ export class VoiceService {
     transcript: string,
     input: VoiceNoteFields,
   ): Promise<ResolvedVoiceAction[]> {
+    const shoppingItems = await this.shopping
+      .peekList(memberId, input.locale)
+      .then((list) => list?.groups.flatMap((group) => group.items) ?? []);
     let read;
     try {
       read = await this.reader.read({
+        shoppingItems,
         memberId,
         transcript,
         scanLanguage: input.scanLanguage,
@@ -143,7 +148,7 @@ export class VoiceService {
     const ctx = {
       memberId,
       locale: input.locale,
-      lists: this.listsView(memberId, input.locale),
+      lists: { shoppingItems: () => Promise.resolve(shoppingItems) },
     };
     const out: ResolvedVoiceAction[] = [];
     for (const [index, action] of read.actions.entries()) {
@@ -188,7 +193,6 @@ export class VoiceService {
     ingredientId: string | null,
     today: string,
   ): VoiceActionDraft {
-    const quantity = action.quantity;
     return {
       id: randomUUID(),
       target: action.target,
@@ -196,9 +200,7 @@ export class VoiceService {
       text: action.spokenText,
       ingredientId,
       name: ingredientId ? null : action.fallbackIngredientName,
-      quantity,
-      // A unit goes with a quantity; a bare number counts pieces.
-      unit: quantity === null ? null : (action.unit ?? 'pcs'),
+      ...amountOf(action),
       scope: action.scope,
       expiresOn: action.noExpiry ? null : sensibleDate(action.expiresOn, today),
       noExpiry: action.noExpiry,
@@ -227,16 +229,6 @@ export class VoiceService {
     };
   }
 
-  private listsView(memberId: string, locale: CatalogLocale): VoiceListsView {
-    let shoppingItems: ReturnType<VoiceListsView['shoppingItems']> | undefined;
-    return {
-      shoppingItems: () =>
-        (shoppingItems ??= this.shopping
-          .getList(memberId, locale)
-          .then((list) => list.groups.flatMap((group) => group.items))),
-    };
-  }
-
   /**
    * Applies the Voice Actions as edited in Review, all in one transaction.
    * Each is re-checked against the current lists by its handler and runs in its
@@ -249,7 +241,7 @@ export class VoiceService {
     const result: VoiceApplyResult = { applied: [], skipped: [] };
     await this.database.transaction(async (tx) => {
       for (const action of body.actions) {
-        const draft: VoiceActionDraft = { ...action, batchId: action.batchId };
+        const draft: VoiceActionDraft = action;
         const handler: VoiceActionHandler | undefined =
           this.handlers.for(draft);
         if (!handler) {

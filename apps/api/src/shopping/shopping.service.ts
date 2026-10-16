@@ -70,6 +70,32 @@ export class ShoppingService {
     return this.view(this.database, listId, scope, locale);
   }
 
+  /** The Family's active list for reading only: nothing is created, `null` when there is none yet. */
+  async peekList(
+    memberId: string,
+    locale: CatalogLocale,
+  ): Promise<ShoppingListView | null> {
+    const [row] = await this.database
+      .select({ listId: shoppingLists.id, familyId: user.familyId })
+      .from(user)
+      .innerJoin(
+        shoppingLists,
+        and(
+          eq(shoppingLists.familyId, user.familyId),
+          eq(shoppingLists.status, 'active'),
+        ),
+      )
+      .where(eq(user.id, memberId))
+      .limit(1);
+    if (!row) return null;
+    return this.view(
+      this.database,
+      row.listId,
+      catalogScope(row.familyId),
+      locale,
+    );
+  }
+
   async addItem(
     memberId: string,
     body: AddShoppingItemBody,

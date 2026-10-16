@@ -7,7 +7,6 @@ import { IngredientCatalogService } from '../ingredients/ingredient-catalog.serv
 import { PantryService } from '../pantry/pantry.service';
 import { LANGUAGE_NAMES } from '../scan/scan-language';
 import { SettingsService } from '../settings/settings.service';
-import { ShoppingService } from '../shopping/shopping.service';
 import {
   VOICE_READ_SCHEMA_NAME,
   voiceReadJsonSchema,
@@ -17,6 +16,8 @@ import {
 import type { VoiceTarget } from './voice-actions';
 
 export type VoiceReadInput = {
+  /** The Shopping List's current items, loaded once by the caller (spelling hints only). */
+  shoppingItems: { name: string }[];
   memberId: string;
   transcript: string;
   scanLanguage: ScanLanguage;
@@ -40,7 +41,6 @@ export class VoiceReaderService {
     private readonly ai: StructuredOutputAiService,
     private readonly ingredientCatalog: IngredientCatalogService,
     private readonly settings: SettingsService,
-    private readonly shopping: ShoppingService,
     private readonly pantry: PantryService,
   ) {}
 
@@ -50,10 +50,7 @@ export class VoiceReaderService {
       familyId,
       input.locale,
     );
-    const [list, batches] = await Promise.all([
-      this.shopping.getList(input.memberId, input.locale),
-      this.pantry.list(input.memberId, input.locale),
-    ]);
+    const batches = await this.pantry.list(input.memberId, input.locale);
     const names = (items: { name: string }[]) =>
       [...new Set(items.map((item) => item.name))].slice(0, MAX_HINT_NAMES);
 
@@ -64,7 +61,7 @@ export class VoiceReaderService {
         'You turn a spoken grocery note into a list of actions on the Shopping List and the Pantry. Ingredient tuples in the catalog are [id, name, category].',
         `The note was spoken in ${LANGUAGE_NAMES[input.scanLanguage]}; the app is shown in ${LANGUAGE_NAMES[input.locale]}. Words from the other supported languages (English, Romanian, Danish) may appear; match catalog ingredients across languages.`,
         `Today is ${input.today}. The page the Member spoke on targets the ${input.defaultTarget} list: use target "${input.defaultTarget}" unless the note names the other list ("shopping list" or "pantry").`,
-        `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(list.groups.flatMap((group) => group.items)))}.`,
+        `Names currently on the Shopping List (spelling hints only): ${JSON.stringify(names(input.shoppingItems))}.`,
         `Names currently in the Pantry (spelling hints only): ${JSON.stringify(names(batches))}.`,
         'Return one actions entry for every thing the Member asked for, in the order spoken. op is add, remove, check (bought or ticked off), uncheck, setQuantity (change an amount) or runningLow (the Pantry item is running low).',
         'Return matchedIngredientId only when that exact ID is in the catalog and is a reasonable semantic match; never invent an ID. Otherwise use null. matchConfidence is your confidence in that match from 0 to 1 (0 when null).',

@@ -1,7 +1,7 @@
 import { Button, Dialog } from '@pocket-pantry/ui';
 import { useTranslation } from 'react-i18next';
-import { CatalogSearch } from '../../../components/catalogSearch/CatalogSearch';
-import type { CatalogSearchResult } from '../../../lib/catalog';
+import { CatalogSearch } from './catalogSearch/CatalogSearch';
+import type { CatalogSearchResult } from '../lib/catalog';
 
 type Props = {
   open: boolean;

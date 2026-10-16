@@ -417,8 +417,10 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(shopping.getAllByRole('listitem')).toHaveLength(3);
     expect(shopping.getByText('Eggs')).toBeVisible();
     expect(shopping.getByText('Quinoa crackers')).toBeVisible();
-    expect(shopping.getByLabelText('Quantity of Milk')).toHaveValue('2');
-    expect(shopping.getByLabelText('Unit of Milk')).toHaveValue('l');
+    expect(shopping.getByLabelText(/^Amount of Milk/)).toHaveValue('2');
+    expect(
+      shopping.getByRole('button', { name: 'Unit: L' }),
+    ).toBeInTheDocument();
 
     const unclear = within(
       within(dialog).getByRole('region', { name: "Didn't understand" }),
@@ -440,12 +442,12 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     const dialog = await openReview();
     const before = listFetches;
 
-    const quantity = await within(dialog).findByLabelText('Quantity of Eggs');
+    const quantity = await within(dialog).findByLabelText(/^Amount of Eggs/);
     await userEvent.type(quantity, '12');
-    await userEvent.selectOptions(
-      within(dialog).getByLabelText('Unit of Eggs'),
-      'pcs',
+    await userEvent.click(
+      within(dialog).getAllByRole('button', { name: /^Unit: / })[0],
     );
+    await userEvent.click(within(dialog).getByRole('button', { name: 'pcs' }));
     await userEvent.click(
       within(dialog).getByRole('button', { name: 'Apply' }),
     );
@@ -461,6 +463,35 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     });
     expect(await screen.findByText(/Applied 3 voice actions/)).toBeVisible();
     await waitFor(() => expect(listFetches).toBeGreaterThan(before));
+  });
+
+  it('shows an error and blocks Apply while a quantity is invalid, then applies once fixed', async () => {
+    setupReview(threeAdds);
+    const dialog = await openReview();
+    const apply = within(dialog).getByRole('button', { name: 'Apply' });
+    const quantity = await within(dialog).findByLabelText(/^Amount of Milk/);
+
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, '0');
+    expect(
+      within(dialog).getByText(/Enter an amount from 0.001/),
+    ).toBeVisible();
+    expect(apply).toBeDisabled();
+
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, 'abc');
+    expect(apply).toBeDisabled();
+
+    await userEvent.clear(quantity);
+    await userEvent.type(quantity, '3');
+    expect(within(dialog).queryByText(/Enter an amount from/)).toBeNull();
+    expect(apply).toBeEnabled();
+    await userEvent.click(apply);
+
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(applied[0]).toMatchObject({
+      actions: [{}, { id: 'a2', quantity: 3 }, {}],
+    });
   });
 
   it('lets the Member fix a Match with the catalog search', async () => {

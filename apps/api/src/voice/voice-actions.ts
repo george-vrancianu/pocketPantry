@@ -148,3 +148,12 @@ export type VoiceApplyResult = {
   applied: string[];
   skipped: { id: string; reason: string }[];
 };
+
+/** A unit only goes with a quantity; a bare number counts pieces. */
+export const amountOf = (draft: {
+  quantity: number | null;
+  unit: VoiceUnit | null;
+}): { quantity: number | null; unit: VoiceUnit | null } =>
+  draft.quantity === null
+    ? { quantity: null, unit: null }
+    : { quantity: draft.quantity, unit: draft.unit ?? 'pcs' };

@@ -35,8 +35,6 @@
     "notUnderstood": "Forstod ikke",
     "unmatched": "ikke i kataloget",
     "notFound": "Ikke fundet",
-    "quantityOf": "Mængde af {{name}}",
-    "unitOf": "Enhed for {{name}}",
     "noUnit": "enhed",
     "change": "Skift",
     "changeMatch": "Skift match for {{name}}",

@@ -13,10 +13,11 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MatchDialog } from '../pages/Review/components/MatchDialog';
+import { AmountField } from './AmountField';
+import { MatchDialog } from './MatchDialog';
 import { useScanLanguage } from '../pages/Scan/hooks/useScanLanguage';
 import { translateApiError } from '../i18n/translateApiError';
-import { UNITS, type Unit } from '../lib/catalog';
+import { parseAmountText } from '../lib/pantry';
 import {
   catalogChangeQueryKeys,
   shoppingListChangeQueryKeys,
@@ -34,13 +35,8 @@ const LISTS: VoiceList[] = ['shopping', 'pantry'];
 const displayName = (action: VoiceReviewAction) =>
   action.ingredient?.name ?? action.name ?? action.text;
 
-/** Quantity text -> number: empty is none, anything else must be a positive number. */
-function parseQuantity(text: string): number | null | undefined {
-  const trimmed = text.trim().replace(',', '.');
-  if (trimmed === '') return null;
-  const value = Number(trimmed);
-  return Number.isFinite(value) && value > 0 ? value : undefined;
-}
+const quantityText = (action: VoiceReviewAction) =>
+  action.quantity === null ? '' : String(action.quantity);
 
 /**
  * Review for a Voice Note: a sheet over the current page with a collapsed "What
@@ -56,8 +52,16 @@ export function VoiceReview() {
   const [heardOpen, setHeardOpen] = useState(false);
   const [matching, setMatching] = useState<VoiceReviewAction | null>(null);
 
+  // What the Member typed in each quantity field; the store only takes valid amounts.
+  const [typed, setTyped] = useState<Record<string, string>>({});
+
   const actions = note?.actions ?? [];
   const applicable = actions.filter((a) => a.status === 'ready');
+  const invalid = new Set(
+    applicable
+      .filter((a) => !parseAmountText(typed[a.id] ?? quantityText(a)).valid)
+      .map((a) => a.id),
+  );
 
   const apply = useMutation({
     mutationFn: () => applyVoiceActions(applicable, locale),
@@ -119,7 +123,9 @@ export function VoiceReview() {
               {t('voice:review.discard')}
             </Button>
             <Button
-              disabled={applicable.length === 0 || apply.isPending}
+              disabled={
+                applicable.length === 0 || invalid.size > 0 || apply.isPending
+              }
               onClick={() => apply.mutate()}
             >
               {t('voice:review.apply')}
@@ -175,6 +181,18 @@ export function VoiceReview() {
                     <ActionRow
                       key={action.id}
                       action={action}
+                      quantity={typed[action.id] ?? quantityText(action)}
+                      invalid={invalid.has(action.id)}
+                      onQuantityChange={(text) => {
+                        setTyped((current) => ({
+                          ...current,
+                          [action.id]: text,
+                        }));
+                        const parsed = parseAmountText(text);
+                        if (parsed.valid) {
+                          voiceNote.edit(action.id, { quantity: parsed.value });
+                        }
+                      }}
                       onChangeMatch={() => setMatching(action)}
                     />
                   ))}
@@ -210,7 +228,11 @@ export function VoiceReview() {
       <MatchDialog
         open={matching !== null}
         name={matching ? displayName(matching) : ''}
-        defaultQuery={matching?.name ?? undefined}
+        defaultQuery={
+          matching
+            ? (matching.ingredient?.name ?? matching.name ?? undefined)
+            : undefined
+        }
         onClose={() => setMatching(null)}
         onSelect={(ingredient) => {
           if (matching) {
@@ -225,16 +247,19 @@ export function VoiceReview() {
 
 function ActionRow({
   action,
+  quantity,
+  invalid,
+  onQuantityChange,
   onChangeMatch,
 }: {
   action: VoiceReviewAction;
+  quantity: string;
+  invalid: boolean;
+  onQuantityChange: (text: string) => void;
   onChangeMatch: () => void;
 }) {
-  const { t } = useTranslation(['voice']);
+  const { t } = useTranslation(['voice', 'common']);
   const name = displayName(action);
-  const [quantity, setQuantity] = useState(
-    action.quantity === null ? '' : String(action.quantity),
-  );
   const readOnly = action.status !== 'ready';
 
   return (
@@ -263,37 +288,23 @@ function ActionRow({
       </Box>
       {readOnly ? null : (
         <>
-          <Box
-            component="input"
-            inputMode="decimal"
-            aria-label={t('voice:review.quantityOf', { name })}
-            value={quantity}
-            onChange={(event: { target: { value: string } }) => {
-              setQuantity(event.target.value);
-              const parsed = parseQuantity(event.target.value);
-              if (parsed !== undefined) {
-                voiceNote.edit(action.id, { quantity: parsed });
+          <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
+            <AmountField
+              name={name}
+              quantity={quantity}
+              unit={action.unit ?? ''}
+              onQuantityChange={(text, typedUnit) => {
+                onQuantityChange(text);
+                if (typedUnit !== undefined) {
+                  voiceNote.edit(action.id, { unit: typedUnit || null });
+                }
+              }}
+              onUnitChange={(unit) =>
+                voiceNote.edit(action.id, { unit: unit || null })
               }
-            }}
-            sx={{ width: 72, height: 36, font: 'inherit', px: '8px' }}
-          />
-          <Box
-            component="select"
-            aria-label={t('voice:review.unitOf', { name })}
-            value={action.unit ?? ''}
-            onChange={(event: { target: { value: string } }) =>
-              voiceNote.edit(action.id, {
-                unit: (event.target.value || null) as Unit | null,
-              })
-            }
-            sx={{ height: 36, font: 'inherit' }}
-          >
-            <option value="">{t('voice:review.noUnit')}</option>
-            {UNITS.map((unit) => (
-              <option key={unit} value={unit}>
-                {unit}
-              </option>
-            ))}
+              error={invalid ? t('common:amount.invalid') : null}
+              onSubmit={() => undefined}
+            />
           </Box>
           <Button
             variant="ghost"

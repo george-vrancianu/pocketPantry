@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { StructuredOutputAiService } from '../ai/structured-output-ai.service';
 import { CatalogModule } from '../catalog/catalog.module';
 import { IngredientCatalogModule } from '../ingredients/ingredient-catalog.module';
 import { PantryModule } from '../pantry/pantry.module';
@@ -23,7 +22,6 @@ import { VoiceService } from './voice.service';
   ],
   controllers: [VoiceController],
   providers: [
-    StructuredOutputAiService,
     TranscriptionService,
     VoiceHandlers,
     VoiceReaderService,

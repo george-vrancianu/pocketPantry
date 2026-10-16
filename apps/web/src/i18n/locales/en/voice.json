@@ -35,8 +35,6 @@
     "notUnderstood": "Didn't understand",
     "unmatched": "not in the catalog",
     "notFound": "Not found",
-    "quantityOf": "Quantity of {{name}}",
-    "unitOf": "Unit of {{name}}",
     "noUnit": "unit",
     "change": "Change",
     "changeMatch": "Change match for {{name}}",

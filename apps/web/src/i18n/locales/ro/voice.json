@@ -35,8 +35,6 @@
     "notUnderstood": "Nu am înțeles",
     "unmatched": "nu e în catalog",
     "notFound": "Negăsit",
-    "quantityOf": "Cantitate pentru {{name}}",
-    "unitOf": "Unitate pentru {{name}}",
     "noUnit": "unitate",
     "change": "Schimbă",
     "changeMatch": "Schimbă potrivirea pentru {{name}}",

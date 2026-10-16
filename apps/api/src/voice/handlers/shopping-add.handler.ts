@@ -1,7 +1,7 @@
 import { normalizeName } from '../../catalog/normalize';
 import { ApiException } from '../../common/api-exception';
 import { ShoppingService } from '../../shopping/shopping.service';
-import type { VoiceUnit } from '../voice-actions';
+import { amountOf } from '../voice-actions';
 import type { VoiceActionHandler } from '../voice-handlers';
 
 /**
@@ -9,15 +9,6 @@ import type { VoiceActionHandler } from '../voice-handlers';
  * or Unmatched name, same unit, quantities summed). An Unmatched name is added
  * and queued for curation by the Shopping List service.
  */
-/** A unit only goes with a quantity; a bare number counts pieces. */
-const amountOf = (draft: {
-  quantity: number | null;
-  unit: VoiceUnit | null;
-}): { quantity?: number; unit?: VoiceUnit } =>
-  draft.quantity === null
-    ? {}
-    : { quantity: draft.quantity, unit: draft.unit ?? 'pcs' };
-
 export function shoppingAddHandler(
   shopping: ShoppingService,
 ): VoiceActionHandler {
@@ -33,7 +24,7 @@ export function shoppingAddHandler(
               wanted !== null &&
               normalizeName(item.name) === wanted,
         )
-        .find((item) => item.unit === (amountOf(draft).unit ?? null));
+        .find((item) => item.unit === amountOf(draft).unit);
       return {
         status: 'ready',
         rows: { shoppingItem: target ?? null },
@@ -45,6 +36,7 @@ export function shoppingAddHandler(
       if (draft.ingredientId === null && draft.name === null) {
         return { applied: false, reason: 'voice.invalid_action' };
       }
+      const { quantity, unit } = amountOf(draft);
       try {
         await shopping.addInTransaction(
           ctx.tx,
@@ -53,7 +45,7 @@ export function shoppingAddHandler(
             ...(draft.ingredientId === null
               ? { name: draft.name ?? '' }
               : { ingredientId: draft.ingredientId }),
-            ...amountOf(draft),
+            ...(quantity === null || unit === null ? {} : { quantity, unit }),
             // Queued for curation like any typed name.
             source: 'manual',
           },
