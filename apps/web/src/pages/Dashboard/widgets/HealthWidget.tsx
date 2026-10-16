@@ -15,8 +15,8 @@ import { HealthSheet } from '../../../components/HealthSheet/HealthSheet';
 import { VERDICT_COLOR } from '../../../components/HealthSheet/healthStyle';
 import { translateApiError } from '../../../i18n/translateApiError';
 import {
-  FACTORS,
   FACTOR_WEIGHTS,
+  presentFactors,
   MIN_BATCHES_FOR_SCORE,
   verdictOf,
 } from '../../../lib/health';
@@ -144,7 +144,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                 aria-hidden="true"
                 sx={{ display: 'flex', gap: '2px', height: 8 }}
               >
-                {FACTORS.map((factor) => (
+                {presentFactors(health).map(([factor, value]) => (
                   <Box
                     component="span"
                     key={factor}
@@ -152,7 +152,7 @@ export function HealthWidget({ size, columns }: WidgetProps) {
                     sx={{
                       flex: FACTOR_WEIGHTS[factor],
                       borderRadius: nestedRadius(radius.control, 9),
-                      bgcolor: VERDICT_COLOR[verdictOf(health.factors[factor])],
+                      bgcolor: VERDICT_COLOR[verdictOf(value)],
                     }}
                   />
                 ))}

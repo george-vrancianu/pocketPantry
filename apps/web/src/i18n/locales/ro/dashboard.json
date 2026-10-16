@@ -79,7 +79,7 @@
     "progress_other": "Adaugă încă {{count}} în cămară ca să primești scorul",
     "factor": {
       "fresh": "Prospețime",
-      "staples": "De bază",
+      "supply": "Provizii",
       "dated": "Cu dată",
       "rotation": "Rotație"
     },
