@@ -116,16 +116,18 @@ describe('SwipeToggle', () => {
       expect(content().contains(tint())).toBe(true);
       expect(content().style.transform).toBe('translateX(-60px)');
       expect(band()).not.toBeNull();
-      expect(band()!.contains(tint())).toBe(false);
+      // The tint sits before the row's content, so the content draws over it.
+      const dim = content().querySelector('[data-swipe-toggle-dim]')!;
+      expect(
+        tint()!.compareDocumentPosition(dim) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it('does not block taps or swipes', () => {
       const { tint, onClick, onToggle, drag, release } = renderToggle({
         on: true,
       });
-      expect(
-        tint()!.style.pointerEvents || getComputedStyle(tint()!).pointerEvents,
-      ).toBe('none');
+      expect(getComputedStyle(tint()!).pointerEvents).toBe('none');
       fireEvent.click(screen.getByRole('button', { name: 'Milk' }));
       expect(onClick).toHaveBeenCalledTimes(1);
       drag(-100);

@@ -267,13 +267,6 @@ describe('swiping an Ingredient row to toggle Running low', () => {
       );
       await waitFor(() => expect(tint()).toBeNull());
     });
-
-    it('does not block the swipe', async () => {
-      await renderPage(['milk-id']);
-      swipe(row('Milk'), -120);
-      await settle();
-      await waitFor(() => expect(tint()).toBeNull());
-    });
   });
 
   describe('the L key', () => {
