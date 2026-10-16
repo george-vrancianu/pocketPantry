@@ -1,5 +1,9 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import request from 'supertest';
+import { eq } from 'drizzle-orm';
+import { DATABASE } from '../src/database/database.constants';
+import type { Database } from '../src/database/database.types';
+import { recipes, shoppingItemSourceRecipes } from '../src/database/schema';
 import { seedId } from '../src/catalog/seed/seed-catalog';
 import { createTestApp, TEST_ORIGIN } from './support/create-test-app';
 
@@ -172,7 +176,7 @@ describe('Shopping List Voice Actions (integration)', () => {
           (a.rows as { shoppingItem: unknown }).shoppingItem,
         ).not.toBeNull();
       }
-      expect(actions[0]).toMatchObject({ quantity: 12, unit: 'pcs' });
+      expect(actions[0]).toMatchObject({ quantity: 12, unit: null });
     });
 
     it('shows a check for something not on the list as an add (no row), ready', async () => {
@@ -333,6 +337,62 @@ describe('Shopping List Voice Actions (integration)', () => {
           { id: 'no-qty', reason: 'voice.invalid_action' },
         ],
       });
+      expect(await list(cookie)).toMatchObject([{ checked: true }]);
+    });
+
+    it("keeps the item's own unit when none was spoken (set quantity and check)", async () => {
+      const cookie = await signUp();
+      await addItem(cookie, { ...MILK, quantity: 1, unit: 'kg' });
+      await addItem(cookie, { ...EGGS, quantity: 1, unit: 'kg' });
+      await apply(cookie, [
+        action('setQuantity', { ...MILK, quantity: 2 }, 'q'),
+        action('check', { ...EGGS, quantity: 3 }, 'c'),
+      ]).expect(201);
+      const items = await list(cookie);
+      expect(items.map((i) => [i.quantity, i.unit, i.checked]).sort()).toEqual([
+        [2, 'kg', false],
+        [3, 'kg', true],
+      ]);
+    });
+
+    it("removing by voice drops the item's Source Recipes like removing by hand", async () => {
+      const cookie = await signUp();
+      await addItem(cookie, EGGS);
+      const db = app.get<Database>(DATABASE);
+      const [recipe] = await db
+        .select({ id: recipes.id })
+        .from(recipes)
+        .limit(1);
+      const [item] = await list(cookie);
+      await db
+        .insert(shoppingItemSourceRecipes)
+        .values({ shoppingItemId: item.id, recipeId: recipe.id });
+      await apply(cookie, [action('remove', EGGS)]).expect(201);
+      expect(await list(cookie)).toEqual([]);
+      expect(
+        await db
+          .select()
+          .from(shoppingItemSourceRecipes)
+          .where(eq(shoppingItemSourceRecipes.shoppingItemId, item.id)),
+      ).toEqual([]);
+    });
+
+    it('a check whose item vanished between Review and Apply becomes an add that is already checked', async () => {
+      const cookie = await signUp();
+      await addItem(cookie, EGGS);
+      reading = { actions: [eggsModel('check')], unsupported: [] };
+      const [read1] = await read(cookie);
+      expect(
+        (read1.rows as { shoppingItem: unknown }).shoppingItem,
+      ).not.toBeNull();
+      const [item] = await list(cookie);
+      await request(app.getHttpServer())
+        .delete(`/api/shopping-list/items/${item.id}?locale=en`)
+        .set('origin', TEST_ORIGIN)
+        .set('cookie', cookie)
+        .expect(200);
+      const res = await apply(cookie, [action('check', EGGS)]).expect(201);
+      expect(res.body).toEqual({ applied: ['a1'], skipped: [] });
       expect(await list(cookie)).toMatchObject([{ checked: true }]);
     });
 

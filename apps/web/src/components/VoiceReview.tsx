@@ -308,28 +308,26 @@ function ActionRow({
           </Typography>
         ) : null}
       </Box>
-      {readOnly ? null : (
+      {readOnly || hasNoAmount(action) ? null : (
         <>
-          {hasNoAmount(action) ? null : (
-            <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
-              <AmountField
-                name={name}
-                quantity={quantity}
-                unit={action.unit ?? ''}
-                onQuantityChange={(text, typedUnit) => {
-                  onQuantityChange(text);
-                  if (typedUnit !== undefined) {
-                    voiceNote.edit(action.id, { unit: typedUnit || null });
-                  }
-                }}
-                onUnitChange={(unit) =>
-                  voiceNote.edit(action.id, { unit: unit || null })
+          <Box sx={{ flex: '1 1 220px', minWidth: 0 }}>
+            <AmountField
+              name={name}
+              quantity={quantity}
+              unit={action.unit ?? ''}
+              onQuantityChange={(text, typedUnit) => {
+                onQuantityChange(text);
+                if (typedUnit !== undefined) {
+                  voiceNote.edit(action.id, { unit: typedUnit || null });
                 }
-                error={invalid ? t('common:amount.invalid') : null}
-                onSubmit={() => undefined}
-              />
-            </Box>
-          )}
+              }}
+              onUnitChange={(unit) =>
+                voiceNote.edit(action.id, { unit: unit || null })
+              }
+              error={invalid ? t('common:amount.invalid') : null}
+              onSubmit={() => undefined}
+            />
+          </Box>
           <Button
             variant="ghost"
             aria-label={t('voice:review.changeMatch', { name })}
@@ -339,6 +337,15 @@ function ActionRow({
           </Button>
         </>
       )}
+      {!readOnly && hasNoAmount(action) ? (
+        <Button
+          variant="ghost"
+          aria-label={t('voice:review.changeMatch', { name })}
+          onClick={onChangeMatch}
+        >
+          {t('voice:review.change')}
+        </Button>
+      ) : null}
       <IconButton
         label={t('voice:review.remove', { name })}
         onClick={() => voiceNote.remove(action.id)}

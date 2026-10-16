@@ -35,20 +35,18 @@ export type MatchItem = {
   /** The Ingredient id the model proposed, if any. */
   proposedIngredientId: string | null;
   /**
-   * Opt in (with `threshold`) to preferring an exact name or Synonym hit over a
-   * proposed Ingredient the model was not confident in (`confidence` below
+   * Opt in to preferring an exact name or Synonym hit over a proposed
+   * Ingredient the model was not confident in (`confidence` below
    * `threshold`). Without it a proposed Ingredient in the Catalog always wins
    * (Receipt Scans); Voice Notes set it.
    */
-  confidence?: number;
-  threshold?: number;
+  floor?: { confidence: number; threshold: number };
 };
 
 const doubted = (item: MatchItem) =>
   item.proposedIngredientId !== null &&
-  item.confidence !== undefined &&
-  item.threshold !== undefined &&
-  item.confidence < item.threshold;
+  item.floor !== undefined &&
+  item.floor.confidence < item.floor.threshold;
 
 /** The Catalog Ingredient for an item; `exact` when found by exact name lookup rather than proposed by the model. */
 export type ResolvedMatch = { match: CatalogSearchResult; exact: boolean };
@@ -87,9 +85,11 @@ export class CatalogMatchService {
 
   /**
    * One Catalog query per kind for all `items`; returns a result per item, in
-   * order. A proposed id that is in the Catalog wins. An item without one (or
-   * whose id is unknown) is tried by exact normalised name or Synonym in any
-   * locale. Names are only queried for items given no id, so an item with an
+   * order. A proposed id that is in the Catalog wins, unless the item carries a
+   * `floor` and the proposal is below it (doubted): then an exact hit wins and
+   * the proposal is only the fallback. An item without an id (or whose id is
+   * unknown) is tried by exact normalised name or Synonym in any locale. Names
+   * are queried for items given no id and for doubted ones, so an item with an
    * unknown id matches by name only if another item in the batch queried the
    * same name. An ambiguous name stays Unmatched (null).
    */

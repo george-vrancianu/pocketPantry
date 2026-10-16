@@ -61,9 +61,10 @@ export function shoppingCheckHandler(
             true,
           );
         }
+        const keptUnit = draft.unit ?? target.unit ?? 'pcs';
         if (
           quantity !== null &&
-          (target.quantity !== quantity || target.unit !== unit)
+          (target.quantity !== quantity || target.unit !== keptUnit)
         ) {
           await shopping.setAmountInTransaction(
             ctx.tx,
@@ -71,7 +72,7 @@ export function shoppingCheckHandler(
             target.id,
             {
               quantity,
-              unit: unit ?? undefined,
+              unit: keptUnit,
             },
           );
         }

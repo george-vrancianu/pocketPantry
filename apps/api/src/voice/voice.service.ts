@@ -140,8 +140,7 @@ export class VoiceService {
         names: [action.fallbackIngredientName, action.spokenText],
         proposedIngredientId: action.matchedIngredientId,
         // An exact name or Synonym hit beats a Match the model doubted.
-        confidence: action.matchConfidence,
-        threshold,
+        floor: { confidence: action.matchConfidence, threshold },
       })),
       scope,
       input.locale,
@@ -203,7 +202,13 @@ export class VoiceService {
       text: action.spokenText,
       ingredientId,
       name: ingredientId ? null : action.fallbackIngredientName,
-      ...amountOf(action),
+      // An unspoken unit on set quantity / check means "the item's own unit".
+      ...(action.op === 'setQuantity' || action.op === 'check'
+        ? {
+            quantity: action.quantity,
+            unit: action.quantity === null ? null : action.unit,
+          }
+        : amountOf(action)),
       scope: action.scope,
       expiresOn: action.noExpiry ? null : sensibleDate(action.expiresOn, today),
       noExpiry: action.noExpiry,

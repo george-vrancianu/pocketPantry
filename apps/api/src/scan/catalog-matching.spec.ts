@@ -55,7 +55,7 @@ describe('CatalogMatchService.resolve', () => {
   });
 
   describe('with a confidence floor (Voice Notes)', () => {
-    const floor = { confidence: 0.2, threshold: 0.7 };
+    const floor = { floor: { confidence: 0.2, threshold: 0.7 } };
 
     it('prefers an exact name hit over a proposed Ingredient the model was not confident in', async () => {
       const { matcher } = service({ lapte: lapte });
@@ -75,9 +75,7 @@ describe('CatalogMatchService.resolve', () => {
         'en',
       );
       expect(result).toEqual({ match: milk, exact: false });
-      expect(
-        keepConfident(result, floor.confidence, floor.threshold),
-      ).toBeNull();
+      expect(keepConfident(result, 0.2, 0.7)).toBeNull();
     });
 
     it('keeps a confident proposed Ingredient over an exact hit', async () => {
@@ -87,8 +85,7 @@ describe('CatalogMatchService.resolve', () => {
           {
             names: ['lapte'],
             proposedIngredientId: 'milk-id',
-            confidence: 0.9,
-            threshold: 0.7,
+            floor: { confidence: 0.9, threshold: 0.7 },
           },
         ],
         scope,

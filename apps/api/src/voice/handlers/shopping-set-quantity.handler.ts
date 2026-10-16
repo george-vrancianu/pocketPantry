@@ -1,5 +1,4 @@
 import { ShoppingService } from '../../shopping/shopping.service';
-import { amountOf } from '../voice-actions';
 import type { VoiceActionHandler } from '../voice-handlers';
 import {
   currentShoppingTarget,
@@ -22,7 +21,9 @@ export function shoppingSetQuantityHandler(
         }
         const target = await currentShoppingTarget(shopping, draft, ctx);
         if (!target) return { applied: false, reason: 'voice.item_not_found' };
-        const { quantity, unit } = amountOf(draft);
+        // No spoken unit keeps the item's own unit.
+        const quantity = draft.quantity;
+        const unit = draft.unit ?? target.unit ?? 'pcs';
         // Already that amount: nothing to do, which counts as applied.
         if (target.quantity !== quantity || target.unit !== unit) {
           await shopping.setAmountInTransaction(
