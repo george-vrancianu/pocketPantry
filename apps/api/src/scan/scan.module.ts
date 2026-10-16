@@ -29,7 +29,7 @@ import { ScanService } from './scan.service';
     ShoppingModule,
   ],
   controllers: [ScanController, PlateScanController, ReceiptScanController],
-  exports: [CatalogMatchService],
+  exports: [CatalogMatchService, ScanCapService],
   providers: [
     StructuredOutputAiService,
     ProductScanService,
