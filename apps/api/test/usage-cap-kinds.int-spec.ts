@@ -53,27 +53,24 @@ describe('Daily caps counted by kind (integration)', () => {
       params: { cap: 3 },
     });
 
+    // Only the Voice Cap says when it resets: the next UTC midnight of the charged day.
+    const refused = async (kind: 'voice' | 'scan') =>
+      (await cap.consume(memberId, now, kind).then(
+        () => undefined,
+        (error: { params: unknown }) => error,
+      ))!.params;
+    expect(await refused('voice')).toEqual({
+      cap: 2,
+      resetsAt: '2020-05-02T00:00:00.000Z',
+    });
+    expect(await refused('scan')).toEqual({ cap: 3 });
+
     // A refund hands back only its own kind.
     await cap.refund(memberId, '2020-05-01', 'voice');
     await cap.consume(memberId, now, 'voice');
     await expect(cap.consume(memberId, now, 'scan')).rejects.toMatchObject({
       code: 'scan.cap_reached',
     });
-  });
-
-  it('tells the Voice Cap, and only it, when it resets: the next UTC midnight of the charged day', async () => {
-    const memberId = await signUp('resets');
-    for (let i = 0; i < 2; i++) await cap.consume(memberId, now, 'voice');
-    for (let i = 0; i < 3; i++) await cap.consume(memberId, now, 'scan');
-
-    const voice = await cap.consume(memberId, now, 'voice').catch((e) => e);
-    const scan = await cap.consume(memberId, now, 'scan').catch((e) => e);
-
-    expect(voice).toMatchObject({
-      code: 'voice.cap_reached',
-      params: { cap: 2, resetsAt: '2020-05-02T00:00:00.000Z' },
-    });
-    expect((scan as { params: unknown }).params).toEqual({ cap: 3 });
   });
 
   it('refunds a voice use when the provider call fails, leaving scans alone', async () => {
