@@ -53,7 +53,7 @@
     "retry": "I've allowed it",
     "still": "Still blocked. Allow the microphone in your browser, then try again."
   },
-  "unavailable": "This browser cannot record audio, so voice notes are not available here.",
+  "unavailable": "This browser cannot record audio, so Voice Notes are not available here.",
   "voiceButton": {
     "label": "Hold to record a Voice Note",
     "blocked": "Microphone blocked"
@@ -79,12 +79,7 @@
     "chipLabel": "Scan Language: {{language}}. Change",
     "title": "Scan Language",
     "saved": "Scan Language: {{language}}",
-    "savedHint": "Used for Voice Notes and the camera.",
-    "names": {
-      "en": "English",
-      "ro": "Romanian",
-      "da": "Danish"
-    }
+    "savedHint": "Used for Voice Notes and the camera."
   },
   "review": {
     "title": "Review",
@@ -238,7 +233,9 @@
     "cap": "That's today's {{cap}} Voice Notes",
     "capHint": "Voice is back tomorrow. Scans still work.",
     "ok": "OK",
+    "tooLongTitle": "Recording too long",
     "tooLong": "That recording was too long. Try a shorter one.",
+    "unsupportedTitle": "Can't read this recording",
     "unsupported": "This browser's recording format isn't supported",
     "tipBusy": "Still reading your last note",
     "tipFailed": "Retry or discard the last note first",

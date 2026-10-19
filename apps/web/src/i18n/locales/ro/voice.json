@@ -53,7 +53,7 @@
     "retry": "Am permis",
     "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
-  "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
+  "unavailable": "Acest browser nu poate înregistra sunet, deci Notele vocale nu sunt disponibile aici.",
   "voiceButton": {
     "label": "Ține apăsat pentru a înregistra o notă vocală",
     "blocked": "Microfon blocat"
@@ -79,12 +79,7 @@
     "chipLabel": "Limba de scanare: {{language}}. Schimbă",
     "title": "Limba de scanare",
     "saved": "Limba de scanare: {{language}}",
-    "savedHint": "Folosită pentru notele vocale și pentru cameră.",
-    "names": {
-      "en": "engleză",
-      "ro": "română",
-      "da": "daneză"
-    }
+    "savedHint": "Folosită pentru notele vocale și pentru cameră."
   },
   "review": {
     "title": "Verificare",
@@ -187,18 +182,18 @@
     }
   },
   "toast": {
-    "applied_one": "{{count}} aplicată",
-    "applied_few": "{{count}} aplicate",
-    "applied_other": "{{count}} de aplicate",
+    "applied_one": "{{count}} modificare aplicată",
+    "applied_few": "{{count}} modificări aplicate",
+    "applied_other": "{{count}} de modificări aplicate",
     "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
     "where": {
       "shopping": "pe listă",
       "pantry": "în cămară"
     },
     "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
-    "skippedCount_one": "{{count}} omisă",
-    "skippedCount_few": "{{count}} omise",
-    "skippedCount_other": "{{count}} de omise",
+    "skippedCount_one": "{{count}} modificare omisă",
+    "skippedCount_few": "{{count}} modificări omise",
+    "skippedCount_other": "{{count}} de modificări omise",
     "skippedItem": "{{name}} {{reason}}",
     "more": "+{{count}}",
     "already": "{{name}} era deja {{state}}, așa că se numără ca făcut.",
@@ -246,7 +241,9 @@
     "cap": "Ai folosit cele {{cap}} note vocale de azi",
     "capHint": "Vocea revine mâine. Scanările merg în continuare.",
     "ok": "OK",
+    "tooLongTitle": "Înregistrare prea lungă",
     "tooLong": "Înregistrarea a fost prea lungă. Încearcă una mai scurtă.",
+    "unsupportedTitle": "Nu se poate citi înregistrarea",
     "unsupported": "Formatul de înregistrare al acestui browser nu este acceptat",
     "tipBusy": "Încă citesc ultima notă",
     "tipFailed": "Reîncearcă sau șterge mai întâi ultima notă",

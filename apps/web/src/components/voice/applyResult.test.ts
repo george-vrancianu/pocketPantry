@@ -39,19 +39,25 @@ describe('applyToast plurals', () => {
   it('agrees the skipped count in Romanian: one, few and other', () => {
     const skip = (id: string) => ({ id, reason: 'x' });
     const one = { applied: [done('a3')], skipped: [skip('a1')] };
-    expect(toast('ro', one)).toMatch(/^1 aplicată, 1 omisă: /);
+    expect(toast('ro', one)).toMatch(
+      /^1 modificare aplicată, 1 modificare omisă: /,
+    );
     const few = {
       applied: [done('a3'), done('a4')],
       skipped: [skip('a1'), skip('a2')],
     };
-    expect(toast('ro', few)).toMatch(/^2 aplicate, 2 omise: /);
+    expect(toast('ro', few)).toMatch(
+      /^2 modificări aplicate, 2 modificări omise: /,
+    );
     const other = {
       applied: [done('a3')],
       skipped: Array.from({ length: 20 }, (_, i) =>
         skip(i < 2 ? `a${i + 1}` : `z${i}`),
       ),
     };
-    expect(toast('ro', other)).toMatch(/^1 aplicată, 20 de omise: /);
+    expect(toast('ro', other)).toMatch(
+      /^1 modificare aplicată, 20 de modificări omise: /,
+    );
   });
 
   it('agrees the applied count in the Romanian both-lists toast', () => {
@@ -60,7 +66,7 @@ describe('applyToast plurals', () => {
       skipped: [],
     };
     expect(toast('ro', result)).toMatch(
-      /^2 aplicate: 1 în cămară, 1 pe listă$/,
+      /^2 modificări aplicate: 1 în cămară, 1 pe listă$/,
     );
   });
 });

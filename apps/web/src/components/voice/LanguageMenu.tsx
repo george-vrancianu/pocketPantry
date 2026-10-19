@@ -2,14 +2,11 @@ import { Box, CheckIcon, radius, shadow, useToast } from '@pocket-pantry/ui';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SCAN_LANGUAGES, type ScanLanguage } from '../../i18n/resources';
-import { buttonBottom, toastBottom } from './placement';
-
-/** Each language in its own name, whatever the UI language. */
-const OWN_NAME: Record<ScanLanguage, string> = {
-  en: 'English',
-  ro: 'Română',
-  da: 'Dansk',
-};
+import {
+  buttonBottom,
+  voiceToast,
+  VOICE_LAYER,
+} from '../../lib/voicePlacement';
 
 type Props = {
   value: ScanLanguage;
@@ -22,7 +19,10 @@ type Props = {
  * writes the stored Scan Language (ADR 0003), so the camera's chip follows.
  */
 export function LanguageMenu({ value, disabled, onChange }: Props) {
-  const { t } = useTranslation('voice');
+  const { t } = useTranslation(['voice', 'settings']);
+  // Languages go by their own names (English, Română, Dansk) everywhere, as in Settings.
+  const nameOf = (language: ScanLanguage) =>
+    t(`settings:languageNames.${language}`);
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const chip = useRef<HTMLButtonElement>(null);
@@ -51,9 +51,9 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
     onChange(language);
     toast.show(
       `${t('languageMenu.saved', {
-        language: t(`languageMenu.names.${language}`),
+        language: nameOf(language),
       })} · ${t('languageMenu.savedHint')}`,
-      { polite: true, bottom: toastBottom },
+      voiceToast(),
     );
     close();
   };
@@ -84,7 +84,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
         ref={chip}
         type="button"
         aria-label={t('languageMenu.chipLabel', {
-          language: t(`languageMenu.names.${value}`),
+          language: nameOf(value),
         })}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -133,7 +133,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
             },
             width: 220,
             p: '6px',
-            zIndex: 1250,
+            zIndex: VOICE_LAYER.card,
             backgroundColor: 'pp.cardBg',
             borderRadius: radius.control,
             boxShadow: shadow.float,
@@ -180,7 +180,7 @@ export function LanguageMenu({ value, disabled, onChange }: Props) {
                 },
               }}
             >
-              <span style={{ flex: 1 }}>{OWN_NAME[language]}</span>
+              <span style={{ flex: 1 }}>{nameOf(language)}</span>
               <Box
                 component="span"
                 sx={{ fontSize: 12, color: 'text.secondary' }}

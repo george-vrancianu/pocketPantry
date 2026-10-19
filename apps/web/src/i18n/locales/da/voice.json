@@ -79,12 +79,7 @@
     "chipLabel": "Scansprog: {{language}}. Skift",
     "title": "Scansprog",
     "saved": "Scansprog: {{language}}",
-    "savedHint": "Bruges til stemmenoter og kameraet.",
-    "names": {
-      "en": "engelsk",
-      "ro": "rumænsk",
-      "da": "dansk"
-    }
+    "savedHint": "Bruges til stemmenoter og kameraet."
   },
   "review": {
     "title": "Gennemse",
@@ -238,7 +233,9 @@
     "cap": "Det er dagens {{cap}} stemmenoter",
     "capHint": "Stemmen er tilbage i morgen. Scanninger virker stadig.",
     "ok": "OK",
+    "tooLongTitle": "Optagelsen er for lang",
     "tooLong": "Optagelsen var for lang. Prøv en kortere.",
+    "unsupportedTitle": "Kan ikke læse optagelsen",
     "unsupported": "Denne browsers optageformat understøttes ikke",
     "tipBusy": "Læser stadig din sidste note",
     "tipFailed": "Prøv igen eller kassér den sidste note først",

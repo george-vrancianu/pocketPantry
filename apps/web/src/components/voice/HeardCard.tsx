@@ -3,16 +3,14 @@ import {
   ChevronDownIcon,
   QuoteIcon,
   Typography,
-  tokens,
   radius,
   focusRing,
+  palette,
 } from '@pocket-pantry/ui';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ScanLanguage } from '../../i18n/resources';
 import { formatClock } from '../../lib/voice';
-
-const { color } = tokens;
 
 /**
  * "What I heard": a card that shows the first line of the transcript and opens to
@@ -21,12 +19,12 @@ const { color } = tokens;
 export function HeardCard({
   transcript,
   language,
-  seconds,
+  durationMs,
   defaultOpen,
 }: {
   transcript: string;
   language: ScanLanguage;
-  seconds: number | undefined;
+  durationMs: number | undefined;
   defaultOpen: boolean;
 }) {
   const { t } = useTranslation(['voice', 'settings']);
@@ -35,14 +33,14 @@ export function HeardCard({
   const firstLine = transcript.split('\n')[0];
   const meta = t('voice:review.heardMeta', {
     language: t(`settings:languageNames.${language}`),
-    duration: formatClock(seconds ?? 0),
+    duration: formatClock(durationMs ?? 0),
   });
 
   return (
     <Box
       sx={{
-        backgroundColor: color.surface,
-        border: `1px solid ${color.line}`,
+        backgroundColor: palette('background-paper'),
+        border: `1px solid ${palette('pp-line')}`,
         borderRadius: radius.card,
         overflow: 'hidden',
       }}
@@ -62,7 +60,7 @@ export function HeardCard({
           border: 0,
           background: 'none',
           font: 'inherit',
-          color: color.ink,
+          color: palette('text-primary'),
           textAlign: 'left',
           cursor: 'pointer',
           ...focusRing,
@@ -77,8 +75,8 @@ export function HeardCard({
             borderRadius: radius.control,
             display: 'grid',
             placeItems: 'center',
-            backgroundColor: color.chipNeutral,
-            color: color.muted,
+            backgroundColor: palette('pp-chip'),
+            color: palette('text-secondary'),
           }}
         >
           <QuoteIcon size={16} />
@@ -92,7 +90,7 @@ export function HeardCard({
               lang={language}
               sx={{
                 fontSize: 12.5,
-                color: color.muted,
+                color: palette('text-secondary'),
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -130,7 +128,7 @@ export function HeardCard({
                 mt: '6px',
                 fontSize: 12,
                 fontWeight: 600,
-                color: color.muted,
+                color: palette('text-secondary'),
               }}
             >
               {meta}
