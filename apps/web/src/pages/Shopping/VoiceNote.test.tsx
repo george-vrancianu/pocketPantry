@@ -9,7 +9,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
 import { renderWithProviders, stubApi } from '../../test/render';
-import { resetVoiceNote } from '../../lib/voiceNoteStore';
+import { getVoiceNoteState, resetVoiceNote } from '../../lib/voiceNoteStore';
 import { ShoppingPage } from './ShoppingPage';
 
 // jsdom has no getUserMedia or MediaRecorder: the microphone module is the seam.
@@ -652,5 +652,200 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     expect(
       (applied[0] as { actions: { id: string }[] }).actions.map((a) => a.id),
     ).toEqual(['a1']);
+  });
+
+  it('opens one row at a time and shows what was heard, with line 2 following each edit', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    const header = (name: string) =>
+      within(rowOf(dialog, name)).getAllByRole('button')[0];
+
+    await userEvent.click(header('Eggs'));
+    expect(header('Eggs')).toHaveAttribute('aria-expanded', 'true');
+    expect(dialog.getByText(/Heard:/)).toHaveTextContent('Heard: “eggs”');
+
+    await userEvent.click(header('Milk'));
+    expect(header('Eggs')).toHaveAttribute('aria-expanded', 'false');
+    expect(header('Milk')).toHaveAttribute('aria-expanded', 'true');
+    expect(dialog.getAllByText(/Heard:/)).toHaveLength(1);
+
+    await userEvent.click(header('Eggs'));
+    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
+    expect(rowOf(dialog, 'Eggs').textContent).toContain('12 pcs');
+    await userEvent.click(dialog.getByRole('button', { name: 'Done' }));
+    expect(header('Eggs')).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('applies the edited amount and unit, refreshes the list and says what was added', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    const before = listFetches;
+
+    await userEvent.click(
+      within(rowOf(dialog, 'Eggs')).getAllByRole('button')[0],
+    );
+    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.click(dialog.getByRole('button', { name: 'pcs' }));
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(applied).toHaveLength(1);
+    expect(applied[0]).toMatchObject({
+      actions: [
+        { id: 'a1', ingredientId: 'ing-eggs', quantity: 12, unit: 'pcs' },
+        { id: 'a2', ingredientId: 'ing-milk', quantity: 2, unit: 'l' },
+        { id: 'a3', ingredientId: null, name: 'Quinoa crackers' },
+      ],
+    });
+    expect(await screen.findByText(/Applied 3 voice actions/)).toBeVisible();
+    await waitFor(() => expect(listFetches).toBeGreaterThan(before));
+  });
+
+  it('clears the amount to mean no amount, and blocks Apply while it cannot be read', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    await userEvent.click(
+      within(rowOf(dialog, 'Milk')).getAllByRole('button')[0],
+    );
+    const amount = dialog.getByLabelText('Amount of Milk');
+    const apply = dialog.getByRole('button', { name: 'Apply 3 changes' });
+
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '0');
+    expect(dialog.getByText(/Enter an amount from 0.001/)).toBeVisible();
+    expect(apply).toBeDisabled();
+
+    await userEvent.clear(amount);
+    expect(apply).toBeEnabled();
+    expect(rowOf(dialog, 'Milk').textContent).toContain('No amount');
+    await userEvent.click(apply);
+
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(applied[0]).toMatchObject({
+      actions: [{}, { id: 'a2', quantity: null, unit: null }, {}],
+    });
+  });
+
+  it('swaps the shared Catalog search into the row to change the Ingredient', async () => {
+    setupReview(threeAdds);
+    const dialog = within(await openReview());
+    await userEvent.click(
+      within(rowOf(dialog, 'Quinoa crackers')).getAllByRole('button')[0],
+    );
+    expect(dialog.getByText('Unmatched')).toBeVisible();
+
+    await userEvent.click(
+      dialog.getByRole('button', {
+        name: 'Change Ingredient: Quinoa crackers',
+      }),
+    );
+    const search = await screen.findByRole('combobox');
+    expect(search).toHaveValue('Quinoa crackers');
+    await userEvent.clear(search);
+    await userEvent.type(search, 'milk');
+    await userEvent.click(await screen.findByRole('option', { name: /Milk/ }));
+
+    expect(dialog.queryByText('Unmatched')).toBeNull();
+    expect(dialog.queryByRole('combobox')).toBeNull();
+    expect(dialog.queryByText('Quinoa crackers', { selector: 'b' })).toBeNull();
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    await waitFor(() => expect(applied).toHaveLength(1));
+    expect(applied[0]).toMatchObject({
+      actions: expect.arrayContaining([
+        expect.objectContaining({
+          id: 'a3',
+          ingredientId: 'ing-milk',
+          name: null,
+        }),
+      ]) as unknown,
+    });
+  });
+
+  it('opens What I heard and offers only Discard when nothing was understood', async () => {
+    setupReview([didntUnderstand('a1', 'do a dance')]);
+    const dialog = within(await openReview());
+
+    expect(await dialog.findByText('Nothing to apply')).toBeVisible();
+    expect(
+      dialog.getByRole('button', { name: /What I heard/ }),
+    ).toHaveAttribute('aria-expanded', 'true');
+    expect(dialog.getByRole('button', { name: 'Discard' })).toBeVisible();
+    expect(dialog.queryByRole('button', { name: /^Apply/ })).toBeNull();
+    expect(dialog.queryByRole('region', { name: 'Shopping List' })).toBeNull();
+  });
+
+  it('disables both buttons and shows Applying while the request is in flight', async () => {
+    let finish: (response: Response) => void = () => {};
+    setupReview(
+      threeAdds,
+      () =>
+        new Promise<Response>(
+          (resolve) => (finish = resolve),
+        ) as unknown as Response,
+    );
+    const dialog = within(await openReview());
+
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+    const applying = await dialog.findByRole('button', { name: 'Applying' });
+    expect(applying).toBeDisabled();
+    expect(dialog.getByRole('button', { name: 'Discard' })).toBeDisabled();
+
+    finish(
+      Response.json(
+        { applied: ['a1', 'a2', 'a3'], skipped: [] },
+        { status: 201 },
+      ),
+    );
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  it('keeps the sheet and every edit when Apply fails, with an alert at the top', async () => {
+    setupReview(threeAdds, () =>
+      Response.json(
+        { code: 'internal_error', message: 'boom' },
+        { status: 500 },
+      ),
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      within(rowOf(dialog, 'Eggs')).getAllByRole('button')[0],
+    );
+    await userEvent.type(dialog.getByLabelText('Amount of Eggs'), '12');
+    await userEvent.click(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    );
+
+    expect(await dialog.findByRole('alert')).toBeVisible();
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(
+      dialog.getByRole('button', { name: 'Apply 3 changes' }),
+    ).toBeEnabled();
+    expect(dialog.getByLabelText('Amount of Eggs')).toHaveValue('12');
+    expect(getVoiceNoteState().phase).toBe('review');
+  });
+
+  it('names what was skipped in the result toast', async () => {
+    setupReview(threeAdds, () =>
+      Response.json(
+        {
+          applied: ['a1', 'a2'],
+          skipped: [{ id: 'a3', reason: 'shopping.quantity_too_large' }],
+        },
+        { status: 201 },
+      ),
+    );
+    const dialog = within(await openReview());
+    await userEvent.click(
+      await dialog.findByRole('button', { name: 'Apply 3 changes' }),
+    );
+    const toast = await screen.findByText(/Applied 2 voice actions/);
+    expect(toast).toHaveTextContent(/Skipped: Quinoa crackers/);
   });
 });

@@ -400,7 +400,7 @@ function IngredientEditor({ action }: { action: VoiceReviewAction }) {
       >
         {t('voice:review.edit.ingredient')}
       </Typography>
-      <Typography component="b" sx={{ fontSize: 14 }}>
+      <Typography component="span" sx={{ fontSize: 14, fontWeight: 700 }}>
         {name}
       </Typography>
       {action.ingredient ? null : (
