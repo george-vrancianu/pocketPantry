@@ -24,7 +24,15 @@
     "hint": "Let go to send · slide off to cancel",
     "toShopping": "Goes to your Shopping List. Say “in the pantry” to add stock.",
     "toPantry": "Goes to your Pantry. Say “on the list” for the Shopping List.",
-    "tip": "Hold to talk, let go to send"
+    "tip": "Hold to talk, let go to send",
+    "recording": "Recording",
+    "cancelArmed": "Let go to cancel",
+    "slideBack": "Slide back to keep recording",
+    "left": "{{count}} s left",
+    "tenLeft": "10 seconds left",
+    "cancelled": "Cancelled. Nothing was sent.",
+    "stopped": "Stopped at 1 minute",
+    "stoppedHint": "Sending what you said."
   },
   "languageMenu": {
     "chipLabel": "Scan Language: {{language}}. Change",
