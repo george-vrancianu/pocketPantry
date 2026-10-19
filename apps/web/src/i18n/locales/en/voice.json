@@ -54,7 +54,6 @@
     "still": "Still blocked. Allow the microphone in your browser, then try again."
   },
   "unavailable": "This browser cannot record audio, so voice notes are not available here.",
-  "dismiss": "Dismiss",
   "voiceButton": {
     "label": "Hold to record a Voice Note",
     "blocked": "Microphone blocked"

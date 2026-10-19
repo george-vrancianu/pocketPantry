@@ -8,6 +8,7 @@ import {
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Recording } from '../../lib/microphone';
+import { MicrophoneError } from '../../lib/microphone';
 import {
   holdFor,
   holdLongEnough,
@@ -673,6 +674,22 @@ describe('Voice Note on the Shopping List', () => {
       expect(screen.queryByTestId('failed-dot')).toBeNull();
       expect(log).toHaveBeenCalled();
       log.mockRestore();
+    });
+
+    it('says the browser cannot record, with only OK', async () => {
+      setup();
+      mic.start.mockRejectedValue(new MicrophoneError('unavailable'));
+      renderWithProviders(<ShoppingPage />);
+
+      pressDown(await talkButton());
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent("Can't record here");
+      expect(within(alert).getAllByRole('button')).toHaveLength(1);
+      expect(within(alert).getByRole('button', { name: 'OK' })).toBeVisible();
+      expect(screen.queryByTestId('failed-dot')).toBeNull();
+      await userEvent.click(within(alert).getByRole('button', { name: 'OK' }));
+      expect(screen.queryByRole('alert')).toBeNull();
     });
 
     it('hides the button and drops the note silently when voice is not configured at runtime', async () => {

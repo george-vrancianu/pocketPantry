@@ -54,7 +54,6 @@
     "still": "Stadig blokeret. Tillad mikrofonen i din browser, og prøv igen."
   },
   "unavailable": "Denne browser kan ikke optage lyd, så stemmenoter er ikke tilgængelige her.",
-  "dismiss": "Luk",
   "voiceButton": {
     "label": "Hold for at optage en stemmenote",
     "blocked": "Mikrofon blokeret"

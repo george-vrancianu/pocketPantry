@@ -54,7 +54,6 @@
     "still": "Încă blocat. Permite microfonul în browser, apoi încearcă din nou."
   },
   "unavailable": "Acest browser nu poate înregistra sunet, deci notele vocale nu sunt disponibile aici.",
-  "dismiss": "Închide",
   "voiceButton": {
     "label": "Ține apăsat pentru a înregistra o notă vocală",
     "blocked": "Microfon blocat"
