@@ -83,7 +83,10 @@ export type VoiceNoteResult = {
 export type VoiceAppliedEntry = {
   actionId: string;
   list: VoiceList;
-  /** The Shopping Item or Batch touched; absent when it is gone (a removal). */
+  /**
+   * The Shopping Item or Batch touched. A Shopping removal names the row just removed (nothing to flash);
+   * a Batch removal names a surviving Batch of the Ingredient, and none when nothing is left.
+   */
   rowId?: string;
   /** Already satisfied when applied; still counts as applied. */
   alreadyDone: boolean;

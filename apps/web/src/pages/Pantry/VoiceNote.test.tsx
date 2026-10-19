@@ -563,25 +563,40 @@ describe('Voice Notes on the Pantry page', () => {
 
   it('names the Pantry first on its own page when both lists changed', async () => {
     setup(
-      [action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } })],
+      [
+        action({ defaults: { location: 'fridge', expiresOn: '2099-05-20' } }),
+        action({
+          id: 'a2',
+          text: 'rice',
+          ingredient: rice,
+          defaults: { location: 'cupboard', expiresOn: '2099-05-20' },
+        }),
+        action({
+          id: 'a3',
+          target: 'shopping',
+          text: 'eggs',
+          name: 'Eggs',
+          ingredient: null,
+        }),
+      ],
       () =>
         Response.json(
           {
             applied: [
               {
-                actionId: 'a1',
+                actionId: 'a3',
                 list: 'shopping',
                 rowId: 'i1',
                 alreadyDone: false,
               },
               {
-                actionId: 'a2',
+                actionId: 'a1',
                 list: 'pantry',
                 rowId: 'b1',
                 alreadyDone: false,
               },
               {
-                actionId: 'a3',
+                actionId: 'a2',
                 list: 'pantry',
                 rowId: 'b2',
                 alreadyDone: false,
@@ -594,7 +609,7 @@ describe('Voice Notes on the Pantry page', () => {
     );
     const dialog = within(await openReview());
     await userEvent.click(
-      await dialog.findByRole('button', { name: 'Apply 1 change' }),
+      await dialog.findByRole('button', { name: 'Apply 3 changes' }),
     );
     expect(
       await screen.findByText('3 applied: 2 in the Pantry, 1 on the list'),

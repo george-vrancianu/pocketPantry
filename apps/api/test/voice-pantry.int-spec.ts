@@ -548,7 +548,7 @@ describe('Voice Notes on the Pantry (integration)', () => {
       expect(await inPantry(cookie, rice)).toBe(true);
     });
 
-    it('reports the Batch it subtracted from, and each removal as its own entry', async () => {
+    it('reports the Batch it subtracted from', async () => {
       const cookie = await signUp();
       const bag = await stock(cookie, {
         ingredientId: rice,
@@ -566,6 +566,35 @@ describe('Voice Notes on the Pantry (integration)', () => {
           rowId: bag.id,
           alreadyDone: false,
         },
+      ]);
+    });
+
+    it('points a whole-Batch removal at a Batch of the Ingredient that is left', async () => {
+      const cookie = await signUp();
+      await stockMilk(cookie, { expiryDate: '2026-10-20' });
+      const later = await stockMilk(cookie, { expiryDate: '2026-11-20' });
+      const [action] = await readNote(cookie, [remove()]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        {
+          actionId: action.id,
+          list: 'pantry',
+          rowId: later.id,
+          alreadyDone: false,
+        },
+      ]);
+      expect((await pantry(cookie)).batches.map((x) => x.id)).toEqual([
+        later.id,
+      ]);
+    });
+
+    it('reports no row when the removal empties the Ingredient', async () => {
+      const cookie = await signUp();
+      await stockMilk(cookie, {});
+      const [action] = await readNote(cookie, [remove()]);
+      const result = await apply(cookie, [asSent(action)]);
+      expect(result.applied).toEqual([
+        { actionId: action.id, list: 'pantry', alreadyDone: false },
       ]);
     });
 

@@ -111,7 +111,12 @@ function ReviewSheet() {
         i18n.language,
       );
       voiceNote.applied();
-      flashRows(result.applied.flatMap((entry) => entry.rowId ?? []));
+      // Only this page's rows: the other list's rows are not on screen to flash.
+      flashRows(
+        result.applied.flatMap((entry) =>
+          entry.list === page && entry.rowId ? [entry.rowId] : [],
+        ),
+      );
       toast.show(message, {
         detail,
         polite: true,

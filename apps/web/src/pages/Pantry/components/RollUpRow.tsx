@@ -29,7 +29,7 @@ import { BatchDetail } from './BatchDetail';
 import { IngredientActions } from './IngredientActions';
 import { useRunningLowToggle } from '../hooks/useRunningLowToggle';
 import { usePantryStaple } from '../hooks/usePantryStaple';
-import { RowFlash } from '../../../components/RowFlash';
+import { RowFlash, flashHost } from '../../../components/RowFlash';
 import { keyframesSx } from '../../../lib/keyframesSx';
 import { rowKeyHintIds } from './RowKeyHints';
 import { LIFT_EASING, LIFT_MS } from './liftedBlock';
@@ -171,7 +171,7 @@ export function RollUpRow({
           // Awaiting its delete: nothing to expand, and nothing to focus.
           inert={rollUp.gone || undefined}
           sx={{
-            position: 'relative',
+            ...flashHost,
             display: 'flex',
             alignItems: 'center',
             gap: '4px',

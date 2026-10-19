@@ -47,27 +47,32 @@ export function applyToast(
     result.applied.filter((entry) => entry.list === list).length;
   const other: VoiceList = page === 'shopping' ? 'pantry' : 'shopping';
 
+  const applied = t('voice:toast.applied', { count });
   let message: string;
   if (skips.length > 0) {
+    // Deliberate: with skips the toast is "6 applied, 1 skipped: ..."; the per-list split is dropped to keep it short.
     const named = skips.slice(0, NAMED_SKIPS);
     if (skips.length > NAMED_SKIPS) {
       named.push(t('voice:toast.more', { count: skips.length - NAMED_SKIPS }));
     }
     message = t('voice:toast.skipped', {
-      count,
-      skipped: skips.length,
+      applied,
+      // Count every skip, even one whose action Review no longer has a name for.
+      skippedCount: t('voice:toast.skippedCount', {
+        count: result.skipped.length,
+      }),
       reasons: named.join(', '),
     });
   } else if (per(page) > 0 && per(other) > 0) {
     message = t('voice:toast.split', {
-      count,
+      applied,
       here: per(page),
       hereList: t(`voice:toast.where.${page}`),
       there: per(other),
       thereList: t(`voice:toast.where.${other}`),
     });
   } else {
-    message = t('voice:toast.applied', { count });
+    message = applied;
   }
 
   const already = result.applied.flatMap((entry) => {

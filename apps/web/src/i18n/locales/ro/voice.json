@@ -141,15 +141,18 @@
     "applied_one": "{{count}} aplicată",
     "applied_few": "{{count}} aplicate",
     "applied_other": "{{count}} de aplicate",
-    "split": "{{count}} aplicate: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
     "where": {
       "shopping": "pe listă",
       "pantry": "în cămară"
     },
-    "skipped": "{{count}} aplicate, {{skipped}} omise: {{reasons}}",
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} omisă",
+    "skippedCount_few": "{{count}} omise",
+    "skippedCount_other": "{{count}} de omise",
     "skippedItem": "{{name}} {{reason}}",
     "more": "+{{count}}",
-    "already": "{{name}} era deja {{state}}, așa că se numără ca făcută.",
+    "already": "{{name}} era deja {{state}}, așa că se numără ca făcut.",
     "alreadyMany_one": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
     "alreadyMany_few": "{{name}} și încă {{count}} erau deja făcute, așa că se numără ca făcute.",
     "alreadyMany_other": "{{name}} și încă {{count}} de acțiuni erau deja făcute, așa că se numără ca făcute.",
@@ -159,7 +162,6 @@
       "remove": "scos de pe listă",
       "setQuantity": "la cantitatea aceea",
       "runningLow": "marcat ca pe terminate",
-      "add": "acolo",
       "other": "făcut"
     }
   },

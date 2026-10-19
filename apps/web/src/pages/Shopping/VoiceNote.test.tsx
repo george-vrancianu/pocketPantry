@@ -1211,11 +1211,12 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
     setupReview(threeAdds);
     await applyAll();
     await screen.findByText('3 applied');
+    // jsdom's getComputedStyle ignores the responsive (media query) `bottom`, so the rule text is the only
+    // place to read it; kept loose on purpose. 62 px button + 10 px gap above it, rather than just above the Dock.
     const css = Array.from(document.styleSheets)
       .flatMap((sheet) => Array.from(sheet.cssRules))
       .map((rule) => rule.cssText)
       .join('\n');
-    // 62 px button + 10 px gap above it, rather than just above the Dock.
     expect(css).toMatch(/MuiSnackbar-root \{ bottom: calc\(72px \+/);
   });
 
@@ -1251,6 +1252,7 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
       ],
       summary: { remaining: 2, checked: 0 },
     };
+    // jsdom cannot paint, so the flash overlay is found by its marker attribute (it has no role or text).
     const flashed = () =>
       Array.from(document.querySelectorAll('[data-row-flash]')).map((el) =>
         el.closest('[role="group"]')?.getAttribute('aria-label'),
@@ -1271,6 +1273,12 @@ describe('Reviewing a Voice Note on the Shopping List', () => {
       await screen.findByText('Eggs').catch(() => undefined);
       await applyAll();
       await waitFor(() => expect(flashed()).toEqual(['Eggs']));
+      // The tint sits behind the row's content: a negative z-index inside a host that is its own stacking
+      // context (so it still lands above the opaque swipe surface, not behind it).
+      const tint = document.querySelector('[data-row-flash]') as HTMLElement;
+      expect(getComputedStyle(tint).zIndex).toBe('-1');
+      expect(getComputedStyle(tint.parentElement!).isolation).toBe('isolate');
+      expect(getComputedStyle(tint.parentElement!).position).toBe('relative');
       await act(() => vi.advanceTimersByTimeAsync(5000));
       expect(flashed()).toEqual([]);
     });

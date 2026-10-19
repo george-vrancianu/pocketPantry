@@ -1,0 +1,66 @@
+import { describe, expect, it } from 'vitest';
+import { createI18n } from '../../i18n';
+import type { VoiceApplyResult, VoiceReviewAction } from '../../lib/voice';
+import { applyToast } from './applyResult';
+
+const act = (id: string, name: string) =>
+  ({
+    id,
+    op: 'add',
+    target: 'pantry',
+    text: name,
+    name,
+    ingredient: null,
+  }) as unknown as VoiceReviewAction;
+
+const done = (actionId: string, list: 'shopping' | 'pantry' = 'pantry') => ({
+  actionId,
+  list,
+  alreadyDone: false,
+});
+
+const toast = (locale: 'en' | 'ro', result: VoiceApplyResult) => {
+  const i18n = createI18n(locale);
+  return applyToast(
+    result,
+    [act('a1', 'Milk'), act('a2', 'Eggs')],
+    'pantry',
+    i18n.t,
+    locale,
+  ).message;
+};
+
+describe('applyToast plurals', () => {
+  it('counts one skip and many skips in English', () => {
+    const one = { applied: [done('a3')], skipped: [{ id: 'a1', reason: 'x' }] };
+    expect(toast('en', one)).toMatch(/^1 applied, 1 skipped: milk/);
+  });
+
+  it('agrees the skipped count in Romanian: one, few and other', () => {
+    const skip = (id: string) => ({ id, reason: 'x' });
+    const one = { applied: [done('a3')], skipped: [skip('a1')] };
+    expect(toast('ro', one)).toMatch(/^1 aplicată, 1 omisă: /);
+    const few = {
+      applied: [done('a3'), done('a4')],
+      skipped: [skip('a1'), skip('a2')],
+    };
+    expect(toast('ro', few)).toMatch(/^2 aplicate, 2 omise: /);
+    const other = {
+      applied: [done('a3')],
+      skipped: Array.from({ length: 20 }, (_, i) =>
+        skip(i < 2 ? `a${i + 1}` : `z${i}`),
+      ),
+    };
+    expect(toast('ro', other)).toMatch(/^1 aplicată, 20 de omise: /);
+  });
+
+  it('agrees the applied count in the Romanian both-lists toast', () => {
+    const result = {
+      applied: [done('a1'), done('a2', 'shopping')],
+      skipped: [],
+    };
+    expect(toast('ro', result)).toMatch(
+      /^2 aplicate: 1 în cămară, 1 pe listă$/,
+    );
+  });
+});

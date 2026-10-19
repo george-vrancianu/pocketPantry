@@ -135,12 +135,14 @@
   "toast": {
     "applied_one": "{{count}} applied",
     "applied_other": "{{count}} applied",
-    "split": "{{count}} applied: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
     "where": {
       "shopping": "on the list",
       "pantry": "in the Pantry"
     },
-    "skipped": "{{count}} applied, {{skipped}} skipped: {{reasons}}",
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} skipped",
+    "skippedCount_other": "{{count}} skipped",
     "skippedItem": "{{name}} {{reason}}",
     "more": "+{{count}}",
     "already": "{{name}} was already {{state}}, so that one counts as done.",
@@ -152,7 +154,6 @@
       "remove": "off the list",
       "setQuantity": "at that amount",
       "runningLow": "marked as running low",
-      "add": "there",
       "other": "done"
     }
   },

@@ -135,12 +135,14 @@
   "toast": {
     "applied_one": "{{count}} anvendt",
     "applied_other": "{{count}} anvendt",
-    "split": "{{count}} anvendt: {{here}} {{hereList}}, {{there}} {{thereList}}",
+    "split": "{{applied}}: {{here}} {{hereList}}, {{there}} {{thereList}}",
     "where": {
       "shopping": "på listen",
       "pantry": "i spisekammeret"
     },
-    "skipped": "{{count}} anvendt, {{skipped}} sprunget over: {{reasons}}",
+    "skipped": "{{applied}}, {{skippedCount}}: {{reasons}}",
+    "skippedCount_one": "{{count}} sprunget over",
+    "skippedCount_other": "{{count}} sprunget over",
     "skippedItem": "{{name}} {{reason}}",
     "more": "+{{count}}",
     "already": "{{name}} var allerede {{state}}, så den tæller som udført.",
@@ -152,7 +154,6 @@
       "remove": "fjernet fra listen",
       "setQuantity": "på den mængde",
       "runningLow": "markeret som ved at løbe tør",
-      "add": "der",
       "other": "udført"
     }
   },

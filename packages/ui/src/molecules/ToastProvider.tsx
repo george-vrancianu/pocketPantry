@@ -1,6 +1,8 @@
+import Box from '@mui/material/Box';
 import MuiButton from '@mui/material/Button';
 import MuiSnackbar from '@mui/material/Snackbar';
 import MuiSnackbarContent from '@mui/material/SnackbarContent';
+import Typography from '@mui/material/Typography';
 import {
   createContext,
   useCallback,
@@ -163,16 +165,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               message={
                 current.detail ? (
                   <>
-                    <span style={{ display: 'block' }}>{current.message}</span>
-                    <span
-                      style={{
+                    <Box component="span" sx={{ display: 'block' }}>
+                      {current.message}
+                    </Box>
+                    <Typography
+                      component="span"
+                      sx={{
                         display: 'block',
                         fontSize: 13,
                         fontWeight: 500,
                       }}
                     >
                       {current.detail}
-                    </span>
+                    </Typography>
                   </>
                 ) : (
                   current.message
